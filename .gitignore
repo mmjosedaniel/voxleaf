@@ -1,0 +1,97 @@
+# Secrets and environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Node.js and frontend
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+.turbo/
+*.tsbuildinfo
+pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.pyright/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Rust and Tauri
+target/
+src-tauri/target/
+
+# Models and machine-learning artifacts
+models/
+weights/
+checkpoints/
+model-cache/
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.gguf
+
+# Books and user data
+books/
+library/
+user-data/
+*.epub
+*.mobi
+*.azw
+*.azw3
+*.pdf
+
+# Generated and temporary audio
+audio/
+generated-audio/
+*.wav
+*.mp3
+*.ogg
+*.flac
+*.pcm
+*.m4a
+
+# Runtime state
+cache/
+tmp/
+temp/
+logs/
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Benchmarks and profiling
+benchmarks/results/raw/
+profiling/
+*.prof
+*.trace
+
+# Editors and operating systems
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+.DS_Store
+Thumbs.db
+
+# Local Codex overrides and session artifacts
+AGENTS.override.md
+**/AGENTS.override.md
+.codex/local/
+.codex/sessions/
