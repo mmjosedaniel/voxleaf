@@ -1,0 +1,33 @@
+name: Feature request
+description: Propose a user-visible improvement
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe observable behavior rather than implementation only.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: How is the problem handled today?
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints
+      options:
+        - label: The core behavior can remain local and privacy-first.
+        - label: Generated audio does not need to be persisted.
+        - label: The proposal considers cancellation and bounded resource use.
