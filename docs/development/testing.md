@@ -23,6 +23,7 @@ The current deterministic tests are deliberately small:
 - `packages/shared/src/index.test.ts` proves that the shared production and test-support subpaths resolve independently and that fixed test identifiers are not exposed from the production root.
 - `packages/shared/src/primitives/*.test.ts` verify opaque identifier separation, numeric-unit separation, JSON-compatible bounds, and supported schema-version handling without private input in errors.
 - `packages/shared/src/contracts/book.test.ts` verifies versioned book identity, ordered spine metadata, local resources, navigation relationships, malformed structures, unsupported versions, and content-free errors using only synthetic values.
+- `packages/shared/src/contracts/locator.test.ts` verifies content-free locator round trips, optional progression, closed versioned anchors, deterministic range ordering, cross-book rejection, and content-free errors without resolving an EPUB.
 - `pnpm.cmd --filter @voxleaf/shared generate:check` deterministically verifies that committed TypeScript wire DTOs match the canonical JSON Schema files.
 - `packages/epub/src/index.test.ts` proves that the isolated EPUB package builds and resolves without adding archive, DOM, sanitizer, renderer, or locator behavior.
 - `apps/desktop/src/App.test.tsx` renders the React shell in jsdom and verifies an accessible main landmark and heading.

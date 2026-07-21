@@ -1,4 +1,10 @@
-export { BookContractError, decodeBookV1 } from "./contracts/index.js";
+export {
+  BookContractError,
+  LocatorContractError,
+  decodeBookV1,
+  decodeLocatorRangeV1,
+  decodeReadingLocatorV1,
+} from "./contracts/index.js";
 
 export type {
   BookContractErrorCode,
@@ -7,9 +13,14 @@ export type {
   LocalResourcePath,
   LocalResourceRoleV1,
   LocalResourceV1,
+  LocatorContractErrorCode,
+  LocatorRangeV1,
   NavigationEntryV1,
   PublicationMetadataV1,
+  ReadingLocatorV1,
   SpineItemV1,
+  StructuralAnchorV1,
+  StructuralAnchorValue,
 } from "./contracts/index.js";
 
 export {
