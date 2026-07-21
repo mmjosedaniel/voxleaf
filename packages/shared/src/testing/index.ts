@@ -60,3 +60,17 @@ export type {
   FakeTtsSourceErrorCode,
   FakeTtsSourceStep,
 } from "./fake-tts-source.js";
+
+export {
+  FakeAudioSinkError,
+  createFakeAudioSink,
+  createFakeAudioSource,
+} from "./fake-audio-pipeline.js";
+export type {
+  FakeAudioSink,
+  FakeAudioSinkErrorCode,
+  FakeAudioSinkOutcomeKind,
+  FakeAudioSinkOutcomeV1,
+  FakeAudioSource,
+  FakeAudioSourceStepV1,
+} from "./fake-audio-pipeline.js";
