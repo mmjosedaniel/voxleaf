@@ -445,7 +445,14 @@ pnpm.cmd --filter @voxleaf/shared test
 pnpm.cmd --filter @voxleaf/shared build
 ```
 
-**Status:** Not started.
+**Status:** Complete.
+
+**Validation results (2026-07-21):**
+
+- `pnpm.cmd --filter @voxleaf/shared typecheck` passed for source and compile-time test boundaries.
+- `pnpm.cmd --filter @voxleaf/shared test` passed 78 tests across 9 files, including synthetic narration-segment round trips, identity and range consistency, strict input validation, nested-version handling, and sensitive-text error exclusion.
+- `pnpm.cmd --filter @voxleaf/shared build` passed.
+- `pnpm.cmd --filter @voxleaf/shared generate:check` verified all 7 generated contract files match their canonical schemas.
 
 ### Task 3.3: Define privacy-safe error and capability contracts
 
@@ -817,6 +824,7 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - 2026-07-21: Completed Task 2.2. Added canonical locator and locator-range v1 schemas, generated wire DTOs, fail-closed public decoders, branded structural anchors, explicit spine/anchor indexes and Unicode-code-point offsets, optional recovery progression, and deterministic cross-book/range-order validation. Focused typecheck, 48 tests, build, generation drift, formatting, and lint checks passed.
 - 2026-07-21: Completed Task 2.3. Added the canonical persisted-reading-state v1 schema, generated wire DTO, fail-closed public decoder, matching root/locator book-identity validation, and a closed minimal preferences object for an opaque local voice and positive requested playback rate. Focused typecheck, 60 tests, build, generation drift, formatting, and lint checks passed; storage, migrations, display settings, and capability enforcement remain deferred.
 - 2026-07-21: Completed Task 3.1. Added the canonical reading-session v1 schema, generated wire DTO, fail-closed decoder, separate session/generation identities, immutable work/cancellation identities, and a pure active/stale eligibility classifier. Focused typecheck, 70 tests, build, generation drift, formatting, and lint checks passed; cancellation transport, queueing, process lifecycle, and UI state remain deferred.
+- 2026-07-21: Completed Task 3.2. Added the canonical narration-segment v1 schema, generated wire DTO boundary, fail-closed decoder, sensitive-text brand, locator-range/book-identity consistency check, and session/generation work-identity projection. The contract deliberately leaves normalization, segmentation, language, prosody, and chunk-size policy to later work. Focused typecheck, 78 tests, build, and generation-drift validation passed.
 
 ## Discoveries and decisions
 

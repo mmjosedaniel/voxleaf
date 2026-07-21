@@ -5,6 +5,11 @@ export {
   decodeReadingLocatorV1,
 } from "./locator.js";
 export {
+  NarrationSegmentContractError,
+  decodeNarrationSegmentV1,
+  getNarrationSegmentWorkIdentity,
+} from "./narration-segment.js";
+export {
   PersistedReadingStateContractError,
   decodePersistedReadingStateV1,
 } from "./persisted-reading-state.js";
@@ -36,6 +41,12 @@ export type {
   StructuralAnchorV1,
   StructuralAnchorValue,
 } from "./locator.js";
+
+export type {
+  NarrationSegmentContractErrorCode,
+  NarrationSegmentV1,
+  SensitiveNarrationTextV1,
+} from "./narration-segment.js";
 
 export type {
   PersistedReadingPreferencesV1,
