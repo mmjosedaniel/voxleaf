@@ -119,15 +119,15 @@ Implementation must not begin with blind framework generators. The environment b
 - The initial desktop and service code expose only deterministic smoke behavior. No local socket, WebSocket, sidecar launch, model adapter, or public protocol is introduced.
 - CI validates deterministic foundation behavior. Hardware and performance jobs are deferred.
 
-### Decisions that must be resolved before dependent tasks start
+### Decision status before dependent tasks start
 
-1. Select the JavaScript package manager and workspace mechanism. `pnpm` is the provisional default because it is already available to the user and supports workspaces, but it must be confirmed and pinned before Task 3.
-2. Select supported Node.js, Rust, and Python versions from versions supported by the chosen frameworks and future TTS evaluation. The currently installed Node.js version is evidence about the machine, not an automatic project decision.
-3. Select the version-pinning mechanism for Windows and WSL and document how contributors verify it.
-4. Select TypeScript formatting, linting, unit-testing, and type-checking tools with the smallest justified dependency set.
-5. Select Python environment, lockfile, formatting, linting, type-checking, testing, and build tools.
-6. Define whether deterministic CI runs on Windows only or uses a Windows job for native validation plus a separate portable job. Native Windows validation is mandatory before completing this milestone.
-7. Validate Tauri 2 against the native Windows prerequisites and a production build. Update ADR-0001 or create a superseding decision if validation changes the candidate direction.
+1. Resolved by Task 1.2 and ADR-0005: use the pinned pnpm release and its native workspace with one root JavaScript lockfile.
+2. Resolved by Task 1.2: the supported and selected Node.js, Rust, Cargo, and Python versions are pinned and documented. Future TTS evaluation may require a documented Python revision.
+3. Resolved by Tasks 1.1 and 1.2: repository declarations pin the runtimes, Windows is canonical, and Windows/WSL artifacts remain isolated.
+4. Resolved by ADR-0005: use TypeScript, ESLint with `typescript-eslint`, Prettier, and Vitest as development-only TypeScript quality tools.
+5. Resolved by ADR-0005: use a uv-managed Python project and lockfile with Ruff, mypy, pytest, and `uv_build`.
+6. Resolved by ADR-0005: require authoritative Windows CI and add a separate Ubuntu job for portable TypeScript and Python checks.
+7. Pending Task 3.2: validate Tauri 2 against the native Windows prerequisites and a production build. Update ADR-0001 or create a superseding decision if validation changes the candidate direction.
 
 ### Decisions explicitly deferred
 
@@ -237,7 +237,7 @@ git diff --check
 git status --short
 ```
 
-**Status:** Not started.
+**Status:** Complete. ADR-0005 selects pnpm workspace and lock ownership, runtime declarations, TypeScript and Python quality tools, cross-language root and focused command surfaces, and Windows-authoritative plus Ubuntu-portable CI.
 
 ## Implementation milestone 2: Initialize the TypeScript workspace and framework-independent packages
 
@@ -261,7 +261,7 @@ pnpm.cmd install --frozen-lockfile
 git diff --check
 ```
 
-These are planned commands based on the provisional `pnpm` decision. Replace them if Task 1.3 selects another tool.
+These are planned commands based on the accepted pnpm workspace decision in ADR-0005. Task 2.1 must verify their exact repository form before reporting them as working.
 
 **Status:** Not started.
 
@@ -378,17 +378,17 @@ The exact Tauri command must match the generated workspace configuration and be 
 
 **Validation commands:**
 
-Run from the documented activated environment using the exact selected Python command:
+Run from the repository root using the uv project and lock selected by ADR-0005:
 
 ```powershell
-python -m ruff format --check services/tts
-python -m ruff check services/tts
-python -m pyright services/tts
-python -m pytest services/tts
-python -m build services/tts
+uv run --project services/tts --locked ruff format --check services/tts
+uv run --project services/tts --locked ruff check services/tts
+uv run --directory services/tts --locked mypy .
+uv run --project services/tts --locked pytest services/tts
+uv build services/tts
 ```
 
-If Task 1.3 selects different tools or invocation, replace these planned commands with the verified repository commands before execution.
+These remain planned commands until Task 4.1 installs the pinned uv release, creates the project and lockfile, and verifies the exact invocations.
 
 **Status:** Not started.
 
@@ -426,7 +426,7 @@ These planned root commands must be updated to the exact selected command names 
 
 **Acceptance criteria:**
 
-- CI uses lockfiles and pinned or intentionally ranged action/tool versions.
+- CI uses lockfiles, exact tool versions, and GitHub Actions pinned to full commit SHAs, as required by ADR-0005.
 - A Windows job validates the native desktop shell.
 - Any portable job has a distinct purpose and does not duplicate work without justification.
 - CI does not use secrets, proprietary fixtures, model weights, CUDA, a GPU, generated audio, or network services at test runtime beyond dependency installation.
@@ -560,6 +560,7 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - 2026-07-20: Created this ExecPlan. No implementation tasks have started.
 - 2026-07-20: Completed Task 1.1 by documenting Windows as the canonical native Tauri environment, defining WSL's optional role, and isolating paths, line endings, dependency directories, Python environments, Rust targets, and generated artifacts. `git diff --check` passed and the scoped diff was reviewed; no application files were created.
 - 2026-07-20: Completed Task 1.2. Installed and verified Node.js `24.18.0`, pnpm `11.15.1`, rustup `1.29.0`, Rust/Cargo `1.97.1`, Python `3.12.10`, Visual Studio Build Tools 2022 `17.14.36` with MSVC `14.44.35207` and Windows SDK `10.0.26100.0`; confirmed WebView2 Evergreen `150.0.4078.83`; added conventional version declarations and the prerequisite matrix.
+- 2026-07-20: Completed Task 1.3 by accepting ADR-0005. Selected the pnpm workspace, per-ecosystem lock ownership, cross-language root command contract, TypeScript and Python quality stacks, focused Rust/Python checks, and Windows-authoritative plus Ubuntu-portable CI strategy. No dependencies or application code were added.
 
 ## Discoveries and decisions
 
@@ -569,6 +570,8 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - Native Windows validation is required. WSL remains useful, but sharing generated artifacts between Windows and Linux is outside the supported foundation workflow.
 - Node.js 20 was present but is end-of-life as of this task, so the project selects Node.js 24 LTS while retaining Node.js 22.12 or newer within the maintained Node 22 line as the minimum supported frontend runtime.
 - Task 1.2 now owns the minimal runtime version declarations needed to make its prerequisite matrix reproducible. Task 1.3 owns the broader workspace and quality-tool decision and must preserve or explicitly revise these pins.
+- The root pnpm command surface will orchestrate checks, but JavaScript, Python, and Rust retain separate lock ownership and direct focused commands. This avoids pretending pnpm owns Python or Cargo dependencies.
+- Native Windows CI is authoritative. The additional Ubuntu job is limited to portable TypeScript and Python checks and cannot satisfy native desktop acceptance.
 - No TTS model, EPUB implementation, local process protocol, or audio dependency is justified during this milestone.
 
 ## Final validation requirements
@@ -590,4 +593,4 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Not run for the complete plan. Tasks 1.1 and 1.2 are complete, but the application workspace and project validation commands do not exist yet; all later tasks and the final validation requirements remain outstanding.
+Not run for the complete plan. Tasks 1.1 through 1.3 are complete, but the application workspace and project validation commands do not exist yet; all later tasks and the final validation requirements remain outstanding.
