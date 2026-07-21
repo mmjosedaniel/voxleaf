@@ -32,6 +32,9 @@ Every ExecPlan must include:
 ## Rules
 
 - Write the plan so another developer can continue without chat history.
+- Name a plan that maps to one roadmap milestone `MNNN-descriptive-name.md`, where `NNN` is the zero-padded roadmap milestone number (for example, `M002-shared-contracts-and-test-harness.md`).
+- If one roadmap milestone needs multiple ExecPlans, use `MNNN-NNN-descriptive-name.md` for those plans (for example, `M003-001-secure-epub-ingestion.md`). Do not add the second number when a milestone has only one ExecPlan.
+- Keep a descriptive filename for a plan that intentionally spans multiple roadmap milestones until it is split into milestone-specific plans; do not assign it a misleading milestone number.
 - Use repository paths and concrete commands.
 - Do not invent commands that are absent from configuration.
 - Keep the progress log current.

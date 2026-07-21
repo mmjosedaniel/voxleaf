@@ -6,4 +6,4 @@ Completed plans are historical evidence. Do not edit them to describe a later im
 
 ## Completed plans
 
-- [`establish-engineering-foundation.md`](establish-engineering-foundation.md): established and validated roadmap Milestone 1.
+- [`M001-engineering-foundation.md`](M001-engineering-foundation.md): established and validated roadmap Milestone 1.

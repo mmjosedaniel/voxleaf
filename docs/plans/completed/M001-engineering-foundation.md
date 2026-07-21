@@ -622,7 +622,7 @@ Before moving this plan to `docs/plans/completed/`:
 9. Review dependencies, native permissions, logs, generated artifacts, and persisted files for scope and privacy regressions.
 10. Review the complete diff for unrelated changes.
 11. Update `README.md`, setup, testing, ADRs, roadmap status if applicable, and this plan with actual validated behavior.
-12. Move this file to `docs/plans/completed/establish-engineering-foundation.md` only when no required work remains.
+12. Move this file to `docs/plans/completed/M001-engineering-foundation.md` only when no required work remains.
 
 ## Final validation results
 
