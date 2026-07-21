@@ -339,7 +339,9 @@ pnpm.cmd --filter @voxleaf/desktop build
 
 Task 3.1 must create and verify this package name and these scripts before it is marked complete.
 
-**Status:** Not started.
+The exact commands above were verified on the canonical Windows environment on 2026-07-20. The deterministic jsdom smoke test locates the semantic main landmark and the `VoxLeaf development shell` level-one heading without importing or mocking any Tauri API.
+
+**Status:** Complete. `@voxleaf/desktop` provides a minimal React `19.2.7` and Vite `8.1.5` web shell, an accessible static development-state page, a DOM rendering test, and a successful production build. Native Tauri validation remains Task 3.2.
 
 ### Task 3.2: Validate the Tauri 2 native shell
 
@@ -568,6 +570,7 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - 2026-07-20: Completed Task 2.1. Added an explicit pnpm workspace for `apps/desktop`, `packages/shared`, and `packages/epub`; pinned TypeScript `7.0.2`; generated the pnpm lockfile; added shared strict compiler defaults; and verified both normal and clean frozen-lockfile installations with pnpm `11.15.1`.
 - 2026-07-20: Completed Task 2.2. Added `@voxleaf/shared` as a composite TypeScript project with an empty public entry point, pinned Vitest `4.1.10`, and verified type-checking, public-package resolution in a smoke test, and declaration/JavaScript builds. No runtime dependency or product contract was introduced.
 - 2026-07-20: Completed Task 2.3. Added dependency-free `@voxleaf/epub` as a composite TypeScript project, registered it in the root project-reference graph, and verified type-checking, public-package resolution from clean build output, and declaration/JavaScript builds. No archive, DOM, sanitizer, renderer, CFI, book-text, or logging behavior was introduced.
+- 2026-07-20: Completed Task 3.1. Added the `@voxleaf/desktop` React and TypeScript web shell, registered it in the TypeScript project-reference graph, and verified type-checking, one semantic rendering smoke test, and a Vite production build. The shell clearly reports that EPUB reading and narration are not implemented and contains no Tauri, file, persistence, TTS, audio, model, or network behavior.
 
 ## Discoveries and decisions
 
@@ -584,6 +587,8 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - The root TypeScript configuration contains only environment-independent strict defaults. Package-specific libraries, output settings, project references, and scripts remain owned by Tasks 2.2, 2.3, and 3.1 when those projects exist.
 - The shared package intentionally exports no values yet. Its smoke test imports the package by name and asserts the empty namespace, proving the runner and declared public entry resolve without creating a placeholder domain API.
 - The EPUB package mirrors the shared package's foundation structure but does not depend on it yet. This preserves isolation until a real shared contract justifies a `workspace:` dependency.
+- React `19.2.7`, React DOM `19.2.7`, Vite `8.1.5`, and the official React plugin `6.0.3` are verified for the web shell on the selected Node.js runtime. This validates only the web portion of the desktop candidate; Tauri adoption still depends on Task 3.2.
+- Testing Library and jsdom are scoped to the desktop package because its first real DOM rendering test now justifies them. `@testing-library/jest-dom` remains on mature release `6.9.1`; the newly published `7.0.0` would have required a pnpm release-age policy exception that this task did not justify.
 
 ## Final validation requirements
 
