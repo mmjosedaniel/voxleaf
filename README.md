@@ -84,6 +84,7 @@ Important files:
 - [`docs/product/project-brief.md`](docs/product/project-brief.md): detailed product context and candidate technical direction.
 - [`docs/product/mvp.md`](docs/product/mvp.md): MVP scope and acceptance criteria.
 - [`docs/architecture/overview.md`](docs/architecture/overview.md): planned component boundaries and data flow.
+- [`docs/plans/roadmap.md`](docs/plans/roadmap.md): high-level implementation sequence and technical decision gates.
 - [`.agents/PLANS.md`](.agents/PLANS.md): format for longer implementation plans.
 - [`.agents/skills/`](.agents/skills/): repeatable Codex workflows.
 

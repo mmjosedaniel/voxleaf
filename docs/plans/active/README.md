@@ -2,6 +2,8 @@
 
 Store ExecPlans currently being implemented in this directory.
 
+The high-level milestone order is maintained in [`../roadmap.md`](../roadmap.md). Create or refine detailed ExecPlans just in time for the milestone being implemented rather than planning the entire roadmap at implementation depth.
+
 Use descriptive names:
 
 ```text
