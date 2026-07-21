@@ -202,7 +202,7 @@ git diff -- docs/development/setup.md
 - Each selected version is justified by official support from the chosen stack rather than only the current machine state.
 - Required tools can be discovered from a new shell in the canonical Windows environment.
 - Missing Rust/Cargo and usable Python prerequisites are installed or documented as an explicit blocker before scaffolding proceeds.
-- Version declarations are committed in the conventional project files selected by Task 1.3.
+- Version declarations are recorded in conventional project files. Task 1.3 must preserve them or explicitly document and validate any revision while deciding the wider workspace and quality-tool strategy.
 
 **Validation commands:**
 
@@ -217,7 +217,7 @@ git diff --check
 
 If a different package-manager or Python command is selected, update this task with the exact verified command before marking it complete.
 
-**Status:** Not started.
+**Status:** Complete. Supported and selected prerequisites are documented and pinned; the canonical Windows host discovers every required command after its environment is refreshed, and the native C++ and WebView prerequisites are installed and verified.
 
 ### Task 1.3: Decide the workspace and quality-tool strategy
 
@@ -559,6 +559,7 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - 2026-07-20: Confirmed Milestone 1 is ready to begin once its environment and tool decisions are resolved in sequence.
 - 2026-07-20: Created this ExecPlan. No implementation tasks have started.
 - 2026-07-20: Completed Task 1.1 by documenting Windows as the canonical native Tauri environment, defining WSL's optional role, and isolating paths, line endings, dependency directories, Python environments, Rust targets, and generated artifacts. `git diff --check` passed and the scoped diff was reviewed; no application files were created.
+- 2026-07-20: Completed Task 1.2. Installed and verified Node.js `24.18.0`, pnpm `11.15.1`, rustup `1.29.0`, Rust/Cargo `1.97.1`, Python `3.12.10`, Visual Studio Build Tools 2022 `17.14.36` with MSVC `14.44.35207` and Windows SDK `10.0.26100.0`; confirmed WebView2 Evergreen `150.0.4078.83`; added conventional version declarations and the prerequisite matrix.
 
 ## Discoveries and decisions
 
@@ -566,6 +567,8 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - The existing `synchronized-reader-and-startup-buffer.md` plan spans later roadmap milestones and must not pull shared contracts or product behavior into this foundation plan.
 - Exact project validation commands cannot be truthfully reported as existing until the tasks above create and run them. Planned commands in this document are explicit targets and must be corrected to match verified configuration.
 - Native Windows validation is required. WSL remains useful, but sharing generated artifacts between Windows and Linux is outside the supported foundation workflow.
+- Node.js 20 was present but is end-of-life as of this task, so the project selects Node.js 24 LTS while retaining Node.js 22.12 or newer within the maintained Node 22 line as the minimum supported frontend runtime.
+- Task 1.2 now owns the minimal runtime version declarations needed to make its prerequisite matrix reproducible. Task 1.3 owns the broader workspace and quality-tool decision and must preserve or explicitly revise these pins.
 - No TTS model, EPUB implementation, local process protocol, or audio dependency is justified during this milestone.
 
 ## Final validation requirements
@@ -587,4 +590,4 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Not run. This plan defines future work only. The repository still has no implementation toolchain or project validation commands, and no milestone task has been implemented.
+Not run for the complete plan. Tasks 1.1 and 1.2 are complete, but the application workspace and project validation commands do not exist yet; all later tasks and the final validation requirements remain outstanding.

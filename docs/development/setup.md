@@ -2,7 +2,50 @@
 
 ## Current status
 
-The implementation toolchain has not been initialized. Commands must be added to this document only after they exist and have been run successfully.
+The prerequisite toolchains are installed and pinned, but the application workspace has not been initialized. The version checks in this document have been run successfully in Windows PowerShell. Project install, build, lint, and test commands must not be added until their configuration exists and has been validated.
+
+## Prerequisite version matrix
+
+The selected versions establish a reproducible foundation without selecting EPUB, audio, transport, or TTS-model dependencies.
+
+| Prerequisite | Selected version or policy | Minimum supported version | Verified Windows state |
+| --- | --- | --- | --- |
+| Windows development host | Native 64-bit Windows; current host is 25H2 build `26200.8875` | Windows 10 version 1803, 64-bit | Satisfied |
+| Node.js | `24.18.0` LTS, pinned in `.nvmrc` | `22.12.0` LTS; supported majors are constrained in `package.json` | `v24.18.0` |
+| Package manager | pnpm `11.15.1`, pinned by `packageManager` and `engines.pnpm` in `package.json` | Exactly `11.15.1` for reproducible installs | `11.15.1` |
+| Rust compiler | Rust `1.97.1`, MSVC host, pinned in `rust-toolchain.toml` | `1.77.2`, the Tauri 2 baseline | `rustc 1.97.1` |
+| Cargo | Cargo bundled with pinned Rust `1.97.1` | Cargo bundled with Rust `1.77.2` | `cargo 1.97.1` |
+| Python | CPython `3.12.10`, pinned in `.python-version` | Python `3.12`; use the pinned patch release | `Python 3.12.10` |
+| C++ build tools | Visual Studio Build Tools 2022 `17.14.36`, Desktop development with C++ workload | Visual Studio Build Tools 2022 with x64/x86 MSVC and a Windows SDK | MSVC `14.44.35207`; Windows SDK `10.0.26100.0` |
+| WebView | Automatically updated Evergreen WebView2 Runtime; do not pin a runtime patch | WebView2 Runtime `86.0.616.0` | Evergreen `150.0.4078.83` |
+
+### Selection rationale
+
+- [Tauri's Windows prerequisites](https://v2.tauri.app/start/prerequisites/) require Microsoft C++ Build Tools, WebView2, Rust with an MSVC host, and an LTS Node.js release for a JavaScript frontend.
+- [Vite requires Node.js 20.19+ or 22.12+](https://vite.dev/guide/). Node 20 is end-of-life, so VoxLeaf supports the maintained Node 22 and 24 LTS lines and selects the newer Node 24 LTS line. The [Node.js release policy](https://nodejs.org/en/about/previous-releases) recommends production applications use maintained LTS releases.
+- [pnpm 11 requires Node.js 22 or newer](https://pnpm.io/installation#compatibility). VoxLeaf pins one exact pnpm release so different package-manager versions cannot produce different lock data.
+- [Tauri 2's official plugins](https://github.com/tauri-apps/plugins-workspace#readme) establish Rust `1.77.2` as the baseline. VoxLeaf pins [the current stable Rust release](https://blog.rust-lang.org/releases/) instead of relying on a moving `stable` channel. Cargo is installed and selected with that Rust toolchain.
+- Python `3.12.10` is the last Python 3.12 maintenance release with an official Windows installer. Python 3.12 remains within [PyTorch's supported Windows range](https://pytorch.org/get-started/locally/), while the exact TTS-model compatibility decision remains deferred.
+- Microsoft recommends the Evergreen runtime for released WebView2 applications. The [minimum runtime capable of loading WebView2 is `86.0.616.0`](https://learn.microsoft.com/en-us/microsoft-edge/webview2/release-notes/about), but VoxLeaf must test against automatic Evergreen updates rather than assume one observed patch is permanent.
+- The [Visual Studio Desktop development with C++ workload](https://learn.microsoft.com/en-us/visualstudio/install/workload-component-id-vs-build-tools?view=vs-2022) supplies MSVC and a Windows SDK required by the native Rust target.
+
+The Windows 10 version 1803 minimum is a development compatibility floor derived from the combined Rust, Tauri, and bundled-WebView prerequisites; it is not yet the final end-user operating-system support policy. That product support decision must account for Microsoft lifecycle and packaging tests before release.
+
+### Installed Windows prerequisites
+
+The following commands were executed successfully from a Windows environment with the post-install user and machine `PATH`. Open a new PowerShell terminal after installing or changing these tools so it receives the updated `PATH`.
+
+```powershell
+node --version
+pnpm.cmd --version
+rustc --version
+cargo --version
+python --version
+```
+
+Expected selected versions are `v24.18.0`, `11.15.1`, `rustc 1.97.1`, `cargo 1.97.1`, and `Python 3.12.10`. Rust must report the `x86_64-pc-windows-msvc` toolchain when running `rustup show active-toolchain`.
+
+WebView2 Evergreen, Visual Studio Build Tools, MSVC, and the Windows SDK are native prerequisites rather than repository-managed dependencies. Their observed versions belong in the matrix, but automatic security and servicing updates may advance them. Re-run native validation after such updates.
 
 ## Windows and WSL environment boundary
 
@@ -10,7 +53,7 @@ The implementation toolchain has not been initialized. Commands must be added to
 
 Windows is the canonical environment for native Tauri development and validation. Native desktop setup, development, testing, and packaging must run from Windows because the shipped application targets Windows and depends on Windows-specific tooling and runtime behavior.
 
-The exact Rust target, Visual Studio Build Tools, WebView2, Node.js, package-manager, and Python requirements are not yet verified. Add their versions and commands here only after the corresponding foundation tasks introduce and validate them.
+The pinned toolchains and installed native prerequisites are recorded above. Application-level commands remain unverified until later foundation tasks create their configuration.
 
 ### Optional WSL environment
 
