@@ -1,1 +1,34 @@
-export {};
+export {
+  assertSupportedSchemaVersion,
+  createBookId,
+  createByteCount,
+  createCount,
+  createFrameId,
+  createGenerationId,
+  createHertz,
+  createIndex,
+  createMilliseconds,
+  createProgression,
+  createSampleCount,
+  createSchemaVersion,
+  createSegmentId,
+  createSessionId,
+  createSpineItemId,
+} from "./primitives/index.js";
+
+export type {
+  BookId,
+  ByteCount,
+  Count,
+  FrameId,
+  GenerationId,
+  Hertz,
+  Index,
+  Milliseconds,
+  Progression,
+  SampleCount,
+  SchemaVersion,
+  SegmentId,
+  SessionId,
+  SpineItemId,
+} from "./primitives/index.js";

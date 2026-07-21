@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "paths": {
+      "@voxleaf/shared": ["./src/index.ts"],
+      "@voxleaf/shared/testing": ["./src/testing/index.ts"]
+    },
+    "tsBuildInfoFile": null
+  },
+  "include": ["src/**/*.test.ts"],
+  "exclude": []
+}

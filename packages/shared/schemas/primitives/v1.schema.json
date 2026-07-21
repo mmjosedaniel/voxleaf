@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:schema:primitives:v1",
+  "title": "SharedPrimitiveV1",
+  "description": "Reusable serialized primitive definitions for VoxLeaf contracts.",
+  "$comment": "This definitions-only resource is not a persisted or cross-process contract root. The anyOf references keep every definition reachable by the deterministic TypeScript generator; serialized contract roots define their own schemaVersion.",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/bookId"
+    },
+    {
+      "$ref": "#/$defs/spineItemId"
+    },
+    {
+      "$ref": "#/$defs/sessionId"
+    },
+    {
+      "$ref": "#/$defs/generationId"
+    },
+    {
+      "$ref": "#/$defs/segmentId"
+    },
+    {
+      "$ref": "#/$defs/frameId"
+    },
+    {
+      "$ref": "#/$defs/schemaVersion"
+    },
+    {
+      "$ref": "#/$defs/count"
+    },
+    {
+      "$ref": "#/$defs/index"
+    },
+    {
+      "$ref": "#/$defs/milliseconds"
+    },
+    {
+      "$ref": "#/$defs/sampleCount"
+    },
+    {
+      "$ref": "#/$defs/hertz"
+    },
+    {
+      "$ref": "#/$defs/byteCount"
+    },
+    {
+      "$ref": "#/$defs/progression"
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "title": "IdentifierWire",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"
+    },
+    "bookId": {
+      "title": "BookIdWire",
+      "$ref": "#/$defs/identifier"
+    },
+    "spineItemId": {
+      "title": "SpineItemIdWire",
+      "$ref": "#/$defs/identifier"
+    },
+    "sessionId": {
+      "title": "SessionIdWire",
+      "$ref": "#/$defs/identifier"
+    },
+    "generationId": {
+      "title": "GenerationIdWire",
+      "$ref": "#/$defs/identifier"
+    },
+    "segmentId": {
+      "title": "SegmentIdWire",
+      "$ref": "#/$defs/identifier"
+    },
+    "frameId": {
+      "title": "FrameIdWire",
+      "$ref": "#/$defs/identifier"
+    },
+    "schemaVersion": {
+      "title": "SchemaVersionWire",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "count": {
+      "title": "CountWire",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "index": {
+      "title": "IndexWire",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "milliseconds": {
+      "title": "MillisecondsWire",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "sampleCount": {
+      "title": "SampleCountWire",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "hertz": {
+      "title": "HertzWire",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "byteCount": {
+      "title": "ByteCountWire",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "progression": {
+      "title": "ProgressionWire",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  }
+}
