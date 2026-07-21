@@ -1,5 +1,9 @@
 export { BookContractError, decodeBookV1 } from "./book.js";
 export {
+  CapabilityReportContractError,
+  decodeCapabilityReportV1,
+} from "./capability-report.js";
+export {
   LocatorContractError,
   decodeLocatorRangeV1,
   decodeReadingLocatorV1,
@@ -9,6 +13,11 @@ export {
   decodeNarrationSegmentV1,
   getNarrationSegmentWorkIdentity,
 } from "./narration-segment.js";
+export {
+  OperationalErrorContractError,
+  createOperationalErrorV1,
+  decodeOperationalErrorV1,
+} from "./operational-error.js";
 export {
   PersistedReadingStateContractError,
   decodePersistedReadingStateV1,
@@ -35,6 +44,13 @@ export type {
 } from "./book.js";
 
 export type {
+  CapabilityReportContractErrorCode,
+  CapabilityReportV1,
+  CapabilitySetV1,
+  CapabilityStatusV1,
+} from "./capability-report.js";
+
+export type {
   LocatorContractErrorCode,
   LocatorRangeV1,
   ReadingLocatorV1,
@@ -47,6 +63,14 @@ export type {
   NarrationSegmentV1,
   SensitiveNarrationTextV1,
 } from "./narration-segment.js";
+
+export type {
+  OperationalErrorCategoryV1,
+  OperationalErrorCodeV1,
+  OperationalErrorContractErrorCode,
+  OperationalErrorSeverityV1,
+  OperationalErrorV1,
+} from "./operational-error.js";
 
 export type {
   PersistedReadingPreferencesV1,
