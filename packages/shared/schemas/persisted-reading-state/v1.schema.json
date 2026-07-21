@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:schema:persisted-reading-state:v1",
+  "title": "PersistedReadingStateV1Wire",
+  "description": "Content-free local reading state for one book without choosing a storage implementation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "bookIdentity", "locator", "preferences"],
+  "properties": {
+    "schemaVersion": {
+      "allOf": [
+        {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"
+        },
+        {
+          "const": 1
+        }
+      ]
+    },
+    "bookIdentity": {
+      "$ref": "urn:voxleaf:schema:book:v1#/$defs/bookIdentity"
+    },
+    "locator": {
+      "$ref": "urn:voxleaf:schema:locator:v1",
+      "description": "The authoritative layout-independent reading position."
+    },
+    "preferences": {
+      "$ref": "#/$defs/readingPreferences"
+    }
+  },
+  "$defs": {
+    "preferenceIdentifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "readingPreferences": {
+      "title": "PersistedReadingPreferencesV1Wire",
+      "description": "Minimal preferences already defined by product requirements; capability support is validated by later application layers.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "selectedVoiceId": {
+          "$ref": "#/$defs/preferenceIdentifier",
+          "description": "Opaque local voice identifier; never a filesystem path."
+        },
+        "playbackRate": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Positive requested playback-rate multiplier; later capability contracts determine supported values."
+        }
+      }
+    }
+  }
+}

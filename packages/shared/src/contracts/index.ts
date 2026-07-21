@@ -4,6 +4,10 @@ export {
   decodeLocatorRangeV1,
   decodeReadingLocatorV1,
 } from "./locator.js";
+export {
+  PersistedReadingStateContractError,
+  decodePersistedReadingStateV1,
+} from "./persisted-reading-state.js";
 
 export type {
   BookContractErrorCode,
@@ -24,3 +28,11 @@ export type {
   StructuralAnchorV1,
   StructuralAnchorValue,
 } from "./locator.js";
+
+export type {
+  PersistedReadingPreferencesV1,
+  PersistedReadingStateContractErrorCode,
+  PersistedReadingStateV1,
+  PersistedVoiceId,
+  PlaybackRate,
+} from "./persisted-reading-state.js";
