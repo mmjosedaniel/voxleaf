@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import * as sharedPackage from "@voxleaf/shared";
-import { FIXED_TEST_IDENTIFIERS } from "@voxleaf/shared/testing";
+import {
+  FIXED_TEST_IDENTIFIERS,
+  createManualClock,
+} from "@voxleaf/shared/testing";
 
 describe("@voxleaf/shared", () => {
   it("resolves its production and testing entry points independently", () => {
@@ -9,6 +12,7 @@ describe("@voxleaf/shared", () => {
       "book:synthetic-1",
     );
     expect(FIXED_TEST_IDENTIFIERS.bookId).toBe("book:test");
+    expect(createManualClock(0).nowMs).toBe(0);
     expect(typeof sharedPackage.decodeAudioFrameV1).toBe("function");
     expect(typeof sharedPackage.calculateAudioFrameDurationMs).toBe("function");
     expect(typeof sharedPackage.decodeBufferStatusV1).toBe("function");

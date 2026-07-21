@@ -15,3 +15,10 @@ export const FIXED_TEST_IDENTIFIERS = Object.freeze({
   segmentId: createSegmentId("segment:test"),
   frameId: createFrameId("frame:test"),
 });
+
+export { ManualClockError, createManualClock } from "./manual-clock.js";
+export type {
+  ManualClock,
+  ManualClockErrorCode,
+  PendingManualClockTask,
+} from "./manual-clock.js";
