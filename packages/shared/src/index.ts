@@ -1,3 +1,17 @@
+export { BookContractError, decodeBookV1 } from "./contracts/index.js";
+
+export type {
+  BookContractErrorCode,
+  BookIdentityV1,
+  BookV1,
+  LocalResourcePath,
+  LocalResourceRoleV1,
+  LocalResourceV1,
+  NavigationEntryV1,
+  PublicationMetadataV1,
+  SpineItemV1,
+} from "./contracts/index.js";
+
 export {
   assertSupportedSchemaVersion,
   createBookId,

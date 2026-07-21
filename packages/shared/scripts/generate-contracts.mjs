@@ -57,9 +57,44 @@ async function expectedOutputs() {
   }
 
   const outputs = new Map();
+  const schemasById = new Map();
+
+  for (const schemaPath of schemaPaths) {
+    const contents = await readFile(schemaPath, "utf8");
+    const schema = JSON.parse(contents);
+
+    if (typeof schema.$id !== "string" || !schema.$id.startsWith("urn:voxleaf:schema:")) {
+      throw new Error(`Schema must declare a VoxLeaf URN $id: ${schemaPath}`);
+    }
+
+    if (schemasById.has(schema.$id)) {
+      throw new Error(`Duplicate schema $id: ${schema.$id}`);
+    }
+
+    schemasById.set(schema.$id, contents);
+  }
 
   for (const schemaPath of schemaPaths) {
     const generated = await compileFromFile(schemaPath, {
+      $refOptions: {
+        resolve: {
+          http: false,
+          voxleaf: {
+            order: 1,
+            canRead: ({ url }) => url.startsWith("urn:voxleaf:schema:"),
+            read: ({ url }) => {
+              const schemaId = url.split("#", 1)[0];
+              const contents = schemasById.get(schemaId);
+
+              if (contents === undefined) {
+                throw new Error(`Unregistered VoxLeaf schema reference: ${schemaId}`);
+              }
+
+              return contents;
+            },
+          },
+        },
+      },
       bannerComment,
       cwd: schemaRoot,
       format: true,

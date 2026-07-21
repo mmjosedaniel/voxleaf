@@ -9,6 +9,7 @@ describe("@voxleaf/shared", () => {
       "book:synthetic-1",
     );
     expect(FIXED_TEST_IDENTIFIERS.bookId).toBe("book:test");
+    expect(typeof sharedPackage.decodeBookV1).toBe("function");
     expect(Object.hasOwn(sharedPackage, "FIXED_TEST_IDENTIFIERS")).toBe(false);
   });
 });

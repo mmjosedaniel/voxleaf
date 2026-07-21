@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:schema:book:v1",
+  "title": "BookV1Wire",
+  "description": "Privacy-safe structural metadata for one opened book.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "identity",
+    "metadata",
+    "resources",
+    "spine",
+    "navigation"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "allOf": [
+        {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"
+        },
+        {
+          "const": 1
+        }
+      ]
+    },
+    "identity": {
+      "$ref": "#/$defs/bookIdentity"
+    },
+    "metadata": {
+      "$ref": "#/$defs/publicationMetadata"
+    },
+    "resources": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50000,
+      "items": {
+        "$ref": "#/$defs/localResource"
+      }
+    },
+    "spine": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/spineItem"
+      }
+    },
+    "navigation": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/navigationEntry"
+      }
+    }
+  },
+  "$defs": {
+    "boundedText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"
+    },
+    "bookIdentity": {
+      "title": "BookIdentityV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheme", "schemeVersion", "value"],
+      "properties": {
+        "scheme": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "schemeVersion": {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"
+        },
+        "value": {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/bookId",
+          "type": "string",
+          "maxLength": 512,
+          "pattern": "^[A-Za-z0-9._~-]+$"
+        }
+      }
+    },
+    "publicationMetadata": {
+      "title": "PublicationMetadataV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "authors"],
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/boundedText"
+        },
+        "authors": {
+          "type": "array",
+          "maxItems": 128,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/boundedText"
+          }
+        }
+      }
+    },
+    "localResourcePath": {
+      "title": "LocalResourcePathWire",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048,
+      "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*//)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*[\\\\?#])(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"
+    },
+    "localResource": {
+      "title": "LocalResourceV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "mediaType", "role"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/localResourcePath"
+        },
+        "mediaType": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 127,
+          "pattern": "^[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+$"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["content-document", "image"]
+        }
+      }
+    },
+    "spineItem": {
+      "title": "SpineItemV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "index", "resourcePath"],
+      "properties": {
+        "id": {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/spineItemId"
+        },
+        "index": {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/index"
+        },
+        "resourcePath": {
+          "$ref": "#/$defs/localResourcePath"
+        }
+      }
+    },
+    "navigationEntry": {
+      "title": "NavigationEntryV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "targetSpineItemId"],
+      "properties": {
+        "label": {
+          "$ref": "#/$defs/boundedText"
+        },
+        "targetSpineItemId": {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/spineItemId"
+        }
+      }
+    }
+  }
+}
