@@ -2,7 +2,7 @@
 
 ## Scope and ownership
 
-This inventory covers every dependency declared directly by the Milestone 1 foundation and explains how transitive dependencies are controlled. It does not approve future EPUB, TTS-model, process-transport, audio, persistence, hardware, installer, updater, or telemetry dependencies.
+This inventory covers every dependency declared directly by the repository and explains how transitive dependencies are controlled. The Milestone 1 foundation established the initial inventory; ADR-0006 adds only a development-time schema-to-TypeScript generator. This inventory does not approve future EPUB, TTS-model, process-transport, audio, persistence, hardware, installer, updater, or telemetry dependencies.
 
 Dependency declarations and resolved versions have one owner per ecosystem:
 
@@ -36,6 +36,7 @@ The Python package and the framework-independent `@voxleaf/shared` and `@voxleaf
 | `eslint-plugin-react-hooks` | `7.1.1` | Checks React Hook usage and dependency rules. |
 | `eslint-plugin-react-refresh` | `0.5.3` | Protects component exports needed for reliable Vite fast refresh. |
 | `globals` | `17.7.0` | Provides explicit browser and tool global definitions to ESLint. |
+| `json-schema-to-typescript` | `15.0.4` | Deterministically generates reviewable TypeScript wire DTOs from the canonical JSON Schema contracts selected by ADR-0006. |
 | `prettier` | `3.9.5` | Enforces deterministic formatting for supported web and configuration files. |
 | `typescript` | `6.0.3` | Compiles and type-checks the strict composite projects. |
 | `typescript-eslint` | `8.64.0` | Parses TypeScript for ESLint and supplies TypeScript-aware rules. |
@@ -51,6 +52,8 @@ The Python package and the framework-independent `@voxleaf/shared` and `@voxleaf
 | `vite` | `8.1.5` | Runs the focused browser development server and builds webview assets. |
 
 These packages are development-only. ESLint with `typescript-eslint`, Prettier, Vitest, Testing Library, and jsdom were selected as a compact stack aligned with React and Vite. Biome could combine formatting and linting, Jest could replace Vitest, and browser-driven component tests could replace jsdom; the selected tools require less custom integration for the current Vite shell. A monorepo task runner such as Nx or Turborepo remains unjustified for three TypeScript projects.
+
+`json-schema-to-typescript` is preferred over handwritten TypeScript wire DTOs because generated DTOs cannot silently become an independent contract authority. TypeScript-first runtime-schema libraries were rejected because the cross-language schema should not be generated from a language-specific executable source. The generator is development-only; future runtime validators must be justified and recorded separately when a real decoder requires them.
 
 ## Rust build dependency
 
