@@ -632,7 +632,13 @@ pnpm.cmd --filter @voxleaf/shared test
 pnpm.cmd --filter @voxleaf/shared build
 ```
 
-**Status:** Not started.
+**Status:** Complete.
+
+**Validation results (2026-07-21):**
+
+- `pnpm.cmd --filter @voxleaf/shared typecheck` passed for source and compile-time test boundaries.
+- `pnpm.cmd --filter @voxleaf/shared test` passed 169 tests across 16 files, including scripted success, cancellation acknowledgment, non-interruptible stale completion, recoverable error, and fatal error behavior without real inference, audio payloads, I/O, network access, processes, or hardware.
+- `pnpm.cmd --filter @voxleaf/shared build` passed through the shared test preflight and focused build validation.
 
 ### Task 5.4: Add a controllable fake audio source and sink
 
@@ -863,6 +869,7 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - 2026-07-21: Completed Task 4.2. Added the canonical payload-free buffer-status v1 schema, generated wire DTO, fail-closed decoder, session/generation ownership projection, ordered bounded duration thresholds, underrun count, and the justified `empty`, `buffering`, `ready`, `playing`, and `paused` states. State/depth validation treats zero-depth exhaustion as buffering and excludes terminal completion, fixed waits, payloads, and buffer/player behavior. Focused typecheck, 144 tests, build, generation-drift, formatting, and lint validation passed.
 - 2026-07-21: Completed Task 5.1. Added the test-only manually advanced clock with an explicit nonnegative millisecond start, deterministic first-scheduled ordering for equal-time callbacks (including zero-delay work scheduled while advancing), immutable pending-task inspection, and cleanup. It reads no system time and schedules no real timers; invalid time/callback input and unsafe time arithmetic fail immediately. Focused typecheck, 158 tests, build, generation-drift, formatting, and lint validation passed.
 - 2026-07-21: Completed Task 5.2. Added an immutable, explicitly synthetic multi-spine document fixture with navigation, headings, paragraphs, dialogue, a scene boundary, local image metadata, and contract-backed locators. Added named invalid raw fixtures and a deterministic scripted in-memory fake source with observable success, failure, and exhaustion behavior. A test-only fixture resolver recognizes only matching book/spine/anchor identities; it does not parse EPUBs or claim production locator resolution. Focused typecheck, 164 tests, build, generation-drift, formatting, and lint validation passed.
+- 2026-07-21: Completed Task 5.3. Added a test-only scripted TTS source controlled exclusively by the manual clock. It accepts narration segments but emits only identity-preserving frame metadata or closed operational errors; it exposes pending, cancellation-requested, cancelled, and completed states. Cancellation can be acknowledged immediately or deliberately allowed to complete later so consumers can deterministically exercise stale-generation rejection. Focused typecheck, 169 tests, build, formatting, and lint validation passed; no model, payload, process, network, or hardware behavior was introduced.
 
 ## Discoveries and decisions
 
@@ -892,6 +899,7 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - Buffer-status v1 names all depth values in whole `Milliseconds` and binds every snapshot to one session/generation pair. Threshold ordering and depth-at-maximum are domain invariants beyond the schema; `ready` begins at the target, `buffering` remains below it (including zero depth after an underrun), `empty` requires zero depth, and `playing` requires positive depth. `paused` does not imply a depth because pausing can occur with any bounded amount of valid audio. No `complete` state exists until later generation and playback protocols can distinguish end-of-work from temporary exhaustion.
 - The manual clock is test support rather than a serialized contract or production scheduler. Its clock starts from a caller-provided nonnegative millisecond instant, and advancement moves through due tasks in ascending due time then insertion order. A callback that schedules zero-delay work runs that new work after existing equal-time tasks, making reentrant behavior deterministic. Tests can inspect only due time and insertion order, never callback closures, and clear remaining work between scenarios.
 - Synthetic document fixtures are immutable in-memory test data, explicitly marked `synthetic`, and use only short repository-authored text. Invalid locator-reference input remains structurally valid under the standalone locator decoder because that decoder deliberately cannot know a book's loaded spine; the fixture resolver makes the unresolved reference observable without taking ownership of real EPUB locator resolution. The scripted fake consumes one configured result per `load()` call and exposes counts, with no archive, filesystem, network, DOM, sanitizer, or renderer dependency.
+- The fake TTS source is a test-only adapter over existing narration, audio-frame, operational-error, and manual-clock contracts. A response script always carries a delay and cancellation behavior. Immediate cancellation resolves to the closed `operation-cancelled` error; a `complete` behavior intentionally retains the original session, generation, and segment identities until its scheduled metadata-only result arrives. The consumer, rather than the fake, classifies that result as stale against its active reading session.
 
 ## Final validation requirements
 
@@ -915,4 +923,4 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Milestone-level final validation has not run. Task 1.1 decision and dependency validation and focused implementation validation for Tasks 1.2 through 5.2 are recorded above; Tasks 5.3 through 6.2 have not started.
+Milestone-level final validation has not run. Task 1.1 decision and dependency validation and focused implementation validation for Tasks 1.2 through 5.3 are recorded above; Tasks 5.4 through 6.2 have not started.

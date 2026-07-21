@@ -45,3 +45,18 @@ export type {
   SyntheticSceneBoundaryBlock,
   SyntheticSpineDocument,
 } from "./synthetic-document.js";
+
+export { FakeTtsSourceError, createFakeTtsSource } from "./fake-tts-source.js";
+export type {
+  FakeTtsCancellationBehavior,
+  FakeTtsCancelledResultV1,
+  FakeTtsErrorResultV1,
+  FakeTtsFrameScriptV1,
+  FakeTtsFramesResultV1,
+  FakeTtsRequest,
+  FakeTtsRequestStatus,
+  FakeTtsResultV1,
+  FakeTtsSource,
+  FakeTtsSourceErrorCode,
+  FakeTtsSourceStep,
+} from "./fake-tts-source.js";

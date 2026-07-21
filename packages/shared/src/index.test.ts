@@ -5,6 +5,7 @@ import {
   FIXED_TEST_IDENTIFIERS,
   createManualClock,
   createFakeDocumentSource,
+  createFakeTtsSource,
 } from "@voxleaf/shared/testing";
 
 describe("@voxleaf/shared", () => {
@@ -15,6 +16,7 @@ describe("@voxleaf/shared", () => {
     expect(FIXED_TEST_IDENTIFIERS.bookId).toBe("book:test");
     expect(createManualClock(0).nowMs).toBe(0);
     expect(typeof createFakeDocumentSource).toBe("function");
+    expect(typeof createFakeTtsSource).toBe("function");
     expect(typeof sharedPackage.decodeAudioFrameV1).toBe("function");
     expect(typeof sharedPackage.calculateAudioFrameDurationMs).toBe("function");
     expect(typeof sharedPackage.decodeBufferStatusV1).toBe("function");
