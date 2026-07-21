@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:schema:locator-range:v1",
+  "title": "LocatorRangeV1Wire",
+  "description": "An ordered content-free range between two logical reading positions.",
+  "$comment": "Semantic validation requires matching book identities and nondecreasing (spineItemIndex, anchorIndex, textOffsetCodePoints) position order.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "start", "end"],
+  "properties": {
+    "schemaVersion": {
+      "allOf": [
+        {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"
+        },
+        {
+          "const": 1
+        }
+      ]
+    },
+    "start": {
+      "$ref": "urn:voxleaf:schema:locator:v1"
+    },
+    "end": {
+      "$ref": "urn:voxleaf:schema:locator:v1"
+    }
+  }
+}

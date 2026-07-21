@@ -347,7 +347,15 @@ pnpm.cmd --filter @voxleaf/shared test
 pnpm.cmd --filter @voxleaf/shared build
 ```
 
-**Status:** Not started.
+**Status:** Complete.
+
+**Validation results (2026-07-21):**
+
+- `pnpm.cmd --filter @voxleaf/shared typecheck` passed for source and compile-time test boundaries.
+- `pnpm.cmd --filter @voxleaf/shared test` passed 48 tests across 6 files, including exact locator/range round trips and malformed anchor, version, progression, identity, and ordering cases.
+- `pnpm.cmd --filter @voxleaf/shared build` passed.
+- `pnpm.cmd --filter @voxleaf/shared generate:check` verified all 4 generated contract files match their canonical schemas.
+- `pnpm.cmd format:check:typescript` and `pnpm.cmd lint:typescript` passed.
 
 ### Task 2.3: Define persisted reading state version 1
 
@@ -790,6 +798,7 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - 2026-07-21: Completed Task 1.1. Accepted ADR-0006 with checked-in JSON Schema Draft 2020-12 as the canonical serialized-contract source, per-family immutable versions, fail-closed boundary validation, deterministic committed TypeScript generation, explicit identifier and unit conventions, opaque versioned book identity, extensible locator anchors, and the `@voxleaf/shared/testing` boundary. Pinned the development-only generator, updated its lock and dependency inventory, and passed the task's locked-install and formatting validations.
 - 2026-07-21: Completed Task 1.2. Added the definitions-only primitive v1 schema, deterministic generation and drift-check commands, committed TypeScript wire DTOs, branded identifier/unit/version constructors, and an isolated `@voxleaf/shared/testing` export with fixed synthetic identifiers. Focused type checks, 19 tests, build, generator drift, formatting, and lint validation passed.
 - 2026-07-21: Completed Task 2.1. Added the canonical book v1 schema and generated wire DTO, a fail-closed public decoder, branded privacy-safe domain contracts, bounded local resource metadata, ordered spine and navigation relationship checks, and synthetic tests. Added pinned Ajv `8.20.0` as the first runtime validator required by a real decoder; focused typecheck, 32 tests, build, generation drift, and lint checks passed.
+- 2026-07-21: Completed Task 2.2. Added canonical locator and locator-range v1 schemas, generated wire DTOs, fail-closed public decoders, branded structural anchors, explicit spine/anchor indexes and Unicode-code-point offsets, optional recovery progression, and deterministic cross-book/range-order validation. Focused typecheck, 48 tests, build, generation drift, formatting, and lint checks passed.
 
 ## Discoveries and decisions
 
@@ -808,6 +817,8 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - The TypeScript 6 test configuration maps the production and testing package subpaths directly without deprecated `baseUrl`, allowing compile-time boundary tests to run without weakening the package's production build configuration.
 - The first cross-schema contract required the generator to resolve VoxLeaf URN references from the checked-in schema registry. HTTP resolution is disabled, so generation remains deterministic and cannot fetch schema content from the network.
 - Book v1 keeps opaque identity (`scheme`, `schemeVersion`, and value) separate from publication title/authors, represents only bounded local resource metadata, and uses a flat ordered navigation list. EPUB extraction, hierarchy reconstruction, binary resources, content text, fingerprint generation, and locator resolution remain later-milestone work.
+- Locator v1 supports only the closed `element-id` anchor kind with anchor format version 1. It carries a structural anchor index and Unicode-code-point offset so ranges have deterministic tuple ordering without lexically ordering opaque IDs or claiming EPUB CFI support.
+- Locator progression is optional book-level recovery/display metadata and never replaces the logical book, spine, anchor, and offset position. Range ordering uses structural fields; when both endpoint progressions exist, decreasing recovery progression is rejected as inconsistent.
 
 ## Final validation requirements
 
@@ -831,4 +842,4 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Milestone-level final validation has not run. Task 1.1 decision and dependency validation and the focused implementation validation for Tasks 1.2 and 2.1 are recorded above; Tasks 2.2 through 6.2 have not started.
+Milestone-level final validation has not run. Task 1.1 decision and dependency validation and the focused implementation validation for Tasks 1.2 through 2.2 are recorded above; Tasks 2.3 through 6.2 have not started.

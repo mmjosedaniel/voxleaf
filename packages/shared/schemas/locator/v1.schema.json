@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:schema:locator:v1",
+  "title": "ReadingLocatorV1Wire",
+  "description": "A content-free, layout-independent logical position within one book.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "bookIdentity",
+    "spineItemId",
+    "spineItemIndex",
+    "anchor",
+    "textOffsetCodePoints"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "allOf": [
+        {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"
+        },
+        {
+          "const": 1
+        }
+      ]
+    },
+    "bookIdentity": {
+      "$ref": "urn:voxleaf:schema:book:v1#/$defs/bookIdentity"
+    },
+    "spineItemId": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/spineItemId"
+    },
+    "spineItemIndex": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/index",
+      "description": "Zero-based position of the spine item in the validated book contract."
+    },
+    "anchor": {
+      "$ref": "#/$defs/structuralAnchor"
+    },
+    "textOffsetCodePoints": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/index",
+      "description": "Zero-based Unicode code-point offset within the anchored text representation."
+    },
+    "progression": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/progression",
+      "description": "Optional book-level progression used only for recovery and progress display."
+    }
+  },
+  "$defs": {
+    "structuralAnchor": {
+      "title": "StructuralAnchorV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "formatVersion", "value", "anchorIndex"],
+      "properties": {
+        "kind": {
+          "const": "element-id"
+        },
+        "formatVersion": {
+          "allOf": [
+            {
+              "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"
+            },
+            {
+              "const": 1
+            }
+          ]
+        },
+        "value": {
+          "title": "StructuralAnchorValueWire",
+          "description": "Opaque structural element identifier; never a text quotation.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_][A-Za-z0-9._:-]*$"
+        },
+        "anchorIndex": {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/index",
+          "description": "Zero-based structural anchor order within the spine item."
+        }
+      }
+    }
+  }
+}
