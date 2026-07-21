@@ -6,6 +6,11 @@ export {
   decodeAudioFrameV1,
   getAudioFrameWorkIdentity,
 } from "./audio-frame.js";
+export {
+  BufferStatusContractError,
+  decodeBufferStatusV1,
+  getBufferStatusWorkIdentity,
+} from "./buffer-status.js";
 export { BookContractError, decodeBookV1 } from "./book.js";
 export {
   CapabilityReportContractError,
@@ -44,6 +49,13 @@ export type {
   AudioFrameContinuityErrorCode,
   AudioFrameV1,
 } from "./audio-frame.js";
+
+export type {
+  BufferStateV1,
+  BufferStatusContractErrorCode,
+  BufferStatusV1,
+  BufferThresholdsV1,
+} from "./buffer-status.js";
 
 export type {
   BookContractErrorCode,

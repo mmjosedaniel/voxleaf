@@ -11,6 +11,7 @@ describe("@voxleaf/shared", () => {
     expect(FIXED_TEST_IDENTIFIERS.bookId).toBe("book:test");
     expect(typeof sharedPackage.decodeAudioFrameV1).toBe("function");
     expect(typeof sharedPackage.calculateAudioFrameDurationMs).toBe("function");
+    expect(typeof sharedPackage.decodeBufferStatusV1).toBe("function");
     expect(typeof sharedPackage.decodeBookV1).toBe("function");
     expect(typeof sharedPackage.decodeCapabilityReportV1).toBe("function");
     expect(typeof sharedPackage.decodeReadingLocatorV1).toBe("function");

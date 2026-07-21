@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:schema:buffer-status:v1",
+  "title": "BufferStatusV1Wire",
+  "description": "A payload-free snapshot of bounded playable-audio status for one active session and generation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "sessionId",
+    "generationId",
+    "contiguousPlayableDurationMs",
+    "thresholds",
+    "underrunCount",
+    "state"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "allOf": [
+        {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"
+        },
+        {
+          "const": 1
+        }
+      ]
+    },
+    "sessionId": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/sessionId"
+    },
+    "generationId": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/generationId"
+    },
+    "contiguousPlayableDurationMs": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/milliseconds",
+      "description": "Contiguous media duration currently available to the player; this is not elapsed wall-clock time."
+    },
+    "thresholds": {
+      "$ref": "#/$defs/bufferThresholds"
+    },
+    "underrunCount": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/count",
+      "description": "Count of observed involuntary transitions from playback to buffering for this session and generation."
+    },
+    "state": {
+      "$ref": "#/$defs/bufferState"
+    }
+  },
+  "$defs": {
+    "bufferThresholds": {
+      "title": "BufferThresholdsV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lowWaterMarkMs", "targetBufferMs", "maximumBufferMs"],
+      "properties": {
+        "lowWaterMarkMs": {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/milliseconds"
+        },
+        "targetBufferMs": {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/milliseconds"
+        },
+        "maximumBufferMs": {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/milliseconds"
+        }
+      }
+    },
+    "bufferState": {
+      "title": "BufferStateV1Wire",
+      "type": "string",
+      "enum": ["empty", "buffering", "ready", "playing", "paused"],
+      "description": "Exhaustion while more audio is expected is represented as buffering, not as a separate terminal state."
+    }
+  }
+}

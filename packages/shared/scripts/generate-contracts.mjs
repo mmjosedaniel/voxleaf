@@ -100,7 +100,7 @@ async function expectedOutputs() {
       format: true,
       style: {
         bracketSpacing: true,
-        printWidth: 100,
+        printWidth: 80,
         semi: true,
         singleQuote: false,
         tabWidth: 2,
