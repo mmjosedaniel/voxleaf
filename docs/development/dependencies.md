@@ -2,7 +2,7 @@
 
 ## Scope and ownership
 
-This inventory covers every dependency declared directly by the repository and explains how transitive dependencies are controlled. The Milestone 1 foundation established the initial inventory; ADR-0006 adds only a development-time schema-to-TypeScript generator. This inventory does not approve future EPUB, TTS-model, process-transport, audio, persistence, hardware, installer, updater, or telemetry dependencies.
+This inventory covers every dependency declared directly by the repository and explains how transitive dependencies are controlled. The Milestone 1 foundation established the initial inventory; ADR-0006 added a development-time schema-to-TypeScript generator, and Milestone 2 Task 2.1 adds the first runtime JSON Schema validator for a real decoder. This inventory does not approve future EPUB, TTS-model, process-transport, audio, persistence, hardware, installer, updater, or telemetry dependencies.
 
 Dependency declarations and resolved versions have one owner per ecosystem:
 
@@ -23,9 +23,10 @@ These are the only direct libraries that can participate in the foundation appli
 | --- | --- | --- | --- |
 | `react` | `19.2.7` | Defines the desktop shell's component and accessibility structure. | Preact, Vue, Svelte, or a fully native UI were credible. React was selected with TypeScript because it matches the intended webview architecture and maintainer experience; changing UI framework would not remove the need for a native shell. |
 | `react-dom` | `19.2.7` | Mounts React into the Tauri webview DOM. | A different renderer or framework would require replacing React as well. `react-dom` is the standard browser renderer for the selected React UI and adds no network service. |
+| `ajv` | `8.20.0` | Validates untrusted shared-contract input against the canonical JSON Schema Draft 2020-12 documents before semantic domain construction. It performs no network access and does not log rejected input. | Handwritten structural validation could drift from the canonical schemas. Zod and TypeBox would make a TypeScript representation authoritative, contrary to ADR-0006. Ajv was selected because its dedicated 2020 export supports the repository's declared dialect and offline schema registration. |
 | `tauri` Rust crate | `2.11.5` | Creates the native Windows application and embeds the local webview. The current shell registers no commands or plugins and grants no capabilities. | Electron was rejected for its expected runtime footprint; browser-only deployment cannot satisfy future local process requirements; a fully native UI would increase implementation cost. ADR-0001 records the decision. |
 
-The Python package and the framework-independent `@voxleaf/shared` and `@voxleaf/epub` packages have no runtime dependencies. No EPUB parser, renderer, TTS engine, model runtime, server, audio library, or persistence library is installed.
+The Python package and framework-independent `@voxleaf/epub` package have no runtime dependencies. `@voxleaf/shared` has only the validator listed above. No EPUB parser, renderer, TTS engine, model runtime, server, audio library, or persistence library is installed.
 
 ## JavaScript and TypeScript development dependencies
 
@@ -53,7 +54,7 @@ The Python package and the framework-independent `@voxleaf/shared` and `@voxleaf
 
 These packages are development-only. ESLint with `typescript-eslint`, Prettier, Vitest, Testing Library, and jsdom were selected as a compact stack aligned with React and Vite. Biome could combine formatting and linting, Jest could replace Vitest, and browser-driven component tests could replace jsdom; the selected tools require less custom integration for the current Vite shell. A monorepo task runner such as Nx or Turborepo remains unjustified for three TypeScript projects.
 
-`json-schema-to-typescript` is preferred over handwritten TypeScript wire DTOs because generated DTOs cannot silently become an independent contract authority. TypeScript-first runtime-schema libraries were rejected because the cross-language schema should not be generated from a language-specific executable source. The generator is development-only; future runtime validators must be justified and recorded separately when a real decoder requires them.
+`json-schema-to-typescript` is preferred over handwritten TypeScript wire DTOs because generated DTOs cannot silently become an independent contract authority. TypeScript-first runtime-schema libraries were rejected because the cross-language schema should not be generated from a language-specific executable source. The generator is development-only. Ajv is recorded separately as a runtime dependency because Task 2.1 introduces the first decoder that must reject malformed and unsupported serialized input before domain construction.
 
 ## Rust build dependency
 
