@@ -16,6 +16,34 @@ GitHub Actions runs the same authoritative check in the `Windows native foundati
 
 Both jobs install from committed lockfiles. They do not use repository secrets, model weights, GPU hardware, books, generated audio, network services, or performance benchmarks. Network access is limited to tool and dependency installation before the deterministic checks execute.
 
+### Implemented foundation tests
+
+The current deterministic tests are deliberately small:
+
+- `packages/shared/src/index.test.ts` proves that the private shared package builds and resolves through its public entry point without speculative product contracts.
+- `packages/epub/src/index.test.ts` proves that the isolated EPUB package builds and resolves without adding archive, DOM, sanitizer, renderer, or locator behavior.
+- `apps/desktop/src/App.test.tsx` renders the React shell in jsdom and verifies an accessible main landmark and heading.
+- `services/tts/tests/test_health.py` imports the Python package and verifies its version function without loading a model, opening a server, using audio, or requiring hardware.
+- `cargo test` validates the native crate's test harness and compilation. The minimal Rust shell currently contains zero Rust unit tests because it has no domain behavior.
+
+The formatting, linting, type-checking, and production builds in `pnpm.cmd check` are deterministic validation stages, but they are not substitutes for behavior tests once product logic exists.
+
+### Focused test commands
+
+Run these from the repository root in native Windows PowerShell:
+
+```powershell
+pnpm.cmd --filter @voxleaf/shared test
+pnpm.cmd --filter @voxleaf/epub test
+pnpm.cmd --filter @voxleaf/desktop test
+cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
+uv run --project services/tts --locked pytest services/tts
+```
+
+## Deferred coverage
+
+No current test opens or renders an EPUB, creates or restores a reading locator, starts a TTS model, communicates across a process boundary, generates or plays audio, persists reading state, detects hardware, measures performance, builds an installer, or exercises an end-to-end reader flow. The examples below are requirements for later roadmap milestones, not claims about current coverage.
+
 ## Test levels
 
 ### Unit

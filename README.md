@@ -2,7 +2,7 @@
 
 A privacy-first desktop EPUB reader with on-device neural text-to-speech and in-memory audio streaming.
 
-> **Status:** foundation / pre-alpha. The repository currently documents the product direction and engineering constraints. The application is not yet usable.
+> **Status:** foundation / pre-alpha. The repository contains a reproducible development workspace and a minimal desktop shell, but no EPUB reading, narration, audio, persistence, hardware-detection, or installer behavior. The application is not yet usable as an ebook reader.
 
 ## Goal
 
@@ -90,9 +90,29 @@ Important files:
 
 ## Development
 
-The implementation toolchain has not been initialized yet. Do not copy commands from generic Tauri, Node.js, Rust, or Python projects into this README until the corresponding configuration exists and the commands have been verified.
+Windows PowerShell is the authoritative environment for the native shell. Install the pinned prerequisites described in [`docs/development/setup.md`](docs/development/setup.md), then run these commands from the repository root:
 
-See [`docs/development/setup.md`](docs/development/setup.md) for the proposed bootstrap order.
+```powershell
+pnpm.cmd install --frozen-lockfile
+uv sync --project services/tts --locked
+pnpm.cmd check
+```
+
+Use the browser shell for focused frontend development:
+
+```powershell
+pnpm.cmd --filter @voxleaf/desktop dev
+```
+
+The development server listens only on `http://127.0.0.1:5173`; stop it with `Ctrl+C`. It displays the foundation shell, not a working reader. Build all foundation artifacts, including the native Windows executable, with:
+
+```powershell
+pnpm.cmd build
+```
+
+The native executable is written to the ignored Tauri target directory. Installer bundling is intentionally disabled.
+
+See [`docs/development/setup.md`](docs/development/setup.md) for tool versions, focused commands, Windows and WSL boundaries, and generated outputs. See [`docs/development/testing.md`](docs/development/testing.md) for current test coverage and [`docs/development/dependencies.md`](docs/development/dependencies.md) for the dependency inventory and decision rationale.
 
 ## Contributing
 

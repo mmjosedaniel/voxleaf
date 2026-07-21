@@ -2,7 +2,7 @@
 
 ## Current status
 
-The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, minimal Tauri 2 native shell, isolated Python service foundation, and aggregate root quality commands are initialized. The version, focused, and root commands in this document have been run successfully in Windows PowerShell. Continuous integration is not initialized yet.
+The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, minimal Tauri 2 native shell, isolated Python service foundation, aggregate root quality commands, and deterministic continuous integration are initialized. The version, focused, development-server, and root commands identified as Windows commands in this document have been run successfully in Windows PowerShell. EPUB reading, TTS inference, audio, persistence, hardware detection, installers, and product-level integration are not implemented.
 
 ## Prerequisite version matrix
 
@@ -16,7 +16,7 @@ The selected versions establish a reproducible foundation without selecting EPUB
 | Rust compiler | Rust `1.97.1`, MSVC host, pinned in `rust-toolchain.toml` | `1.77.2`, the Tauri 2 baseline | `rustc 1.97.1` |
 | Cargo | Cargo bundled with pinned Rust `1.97.1` | Cargo bundled with Rust `1.77.2` | `cargo 1.97.1` |
 | Python | CPython `3.12.10`, pinned in `.python-version` | Python `3.12`; use the pinned patch release | `Python 3.12.10` |
-| Python project manager | uv `0.11.29`, pinned in setup and future CI configuration | Exactly `0.11.29` for reproducible lock and environment behavior | `uv 0.11.29` |
+| Python project manager | uv `0.11.29`, pinned in setup and CI | Exactly `0.11.29` for reproducible lock and environment behavior | `uv 0.11.29` |
 | C++ build tools | Visual Studio Build Tools 2022 `17.14.36`, Desktop development with C++ workload | Visual Studio Build Tools 2022 with x64/x86 MSVC and a Windows SDK | MSVC `14.44.35207`; Windows SDK `10.0.26100.0` |
 | WebView | Automatically updated Evergreen WebView2 Runtime; do not pin a runtime patch | WebView2 Runtime `86.0.616.0` | Evergreen `150.0.4078.83` |
 
@@ -65,11 +65,11 @@ Native Rust compilation executes unsigned build scripts and procedural macro lib
 
 Windows is the canonical environment for native Tauri development and validation. Native desktop setup, development, testing, and packaging must run from Windows because the shipped application targets Windows and depends on Windows-specific tooling and runtime behavior.
 
-The pinned toolchains and installed native prerequisites are recorded above. Application-level commands remain unverified until later foundation tasks create their configuration.
+The pinned toolchains and installed native prerequisites are recorded above. The browser development server, focused quality commands, aggregate root checks, and native production build documented below are verified. A native hot-reload workflow is not required foundation evidence; use the browser development server for focused UI work and the authoritative native build for shell validation.
 
 ### Optional WSL environment
 
-WSL Ubuntu may be used for Git operations, documentation work, and other platform-independent checks. TypeScript, Rust, or Python commands may be documented as WSL-compatible only after they exist in the repository and have been run successfully in WSL.
+The maintainer uses WSL Ubuntu for Git and terminal work, and it may also be used for documentation and isolated platform-independent checks. The Codex Windows execution context could not enumerate the maintainer's registered distribution during final Milestone 1 validation, so no WSL project command is claimed as locally validated evidence. The `Ubuntu portable foundation` CI job verifies `pnpm check:portable` on Ubuntu 24.04; this is portable Linux evidence, not proof that a particular WSL toolchain or clone is configured correctly.
 
 WSL is not an authoritative substitute for native Windows Tauri builds, packaging, Windows permissions, filesystem behavior, or desktop runtime validation. A check passing in WSL does not satisfy a task that requires native Windows validation.
 
@@ -84,7 +84,7 @@ Share tracked source files and lockfiles through Git, not generated directories.
 - Rust build output and target-specific artifacts, such as `target/` or a Tauri-specific target directory.
 - Application build, distribution, cache, and test-output directories.
 
-Do not copy or reuse these directories between Windows and WSL. If a working tree changes environments, regenerate artifacts using the repository's documented commands after those commands have been established and verified.
+Do not copy or reuse these directories between Windows and WSL. If a working tree changes environments, regenerate artifacts using the repository's documented locked installation commands.
 
 ### Paths and line endings
 
@@ -98,19 +98,22 @@ Do not copy or reuse these directories between Windows and WSL. If a working tre
 
 When project commands are introduced, record the required shell, working directory, and supported environment for each command. Document separate PowerShell and WSL forms only when both have been executed successfully. Native Windows validation remains required even when a portable check also runs in WSL.
 
-## Proposed bootstrap order
+## Reproduce the foundation
 
-1. Create the Tauri, React, and TypeScript desktop application.
-2. Add formatting, linting, type checking, and unit testing.
-3. Define shared book, reading-locator, session-generation, audio-frame, buffer-status, and persisted-state contracts.
-4. Create the EPUB package with safe extraction, sanitization, stable locator resolution, and synthetic fixtures.
-5. Add the reflowable visual reader and local position restoration before connecting narration.
-6. Create the Python TTS service with an isolated environment.
-7. Add Python linting, type checking, and testing.
-8. Define and prototype the typed local process protocol.
-9. Add one end-to-end health-check path between the desktop app and service.
-10. Add continuous integration for deterministic checks.
-11. Prototype one TTS model, then connect narration ranges to visual reading locators and the duration-based startup gate.
+1. Use a native Windows clone for authoritative desktop work.
+2. Install the selected prerequisites and open a new PowerShell terminal so their updated `PATH` is visible.
+3. Confirm the versions with the commands under **Installed Windows prerequisites**.
+4. Install JavaScript and Python dependencies from committed lock data:
+
+   ```powershell
+   pnpm.cmd install --frozen-lockfile
+   uv sync --project services/tts --locked
+   ```
+
+5. Run `pnpm.cmd check` before review. It is the same aggregate command used by authoritative Windows CI.
+6. Use the focused commands below when diagnosing one ecosystem.
+
+Cargo resolves the native shell from its committed `apps/desktop/src-tauri/Cargo.lock` during the relevant root command; it does not need a separate install command.
 
 ## Setup principles
 
@@ -127,6 +130,8 @@ Run the following verified commands from the repository root in native Windows P
 
 ```powershell
 pnpm.cmd install --frozen-lockfile
+uv sync --project services/tts --locked
+pnpm.cmd --filter @voxleaf/desktop dev
 pnpm.cmd --filter @voxleaf/desktop typecheck
 pnpm.cmd --filter @voxleaf/desktop test
 pnpm.cmd --filter @voxleaf/desktop build
@@ -134,13 +139,14 @@ cargo fmt --check --manifest-path apps/desktop/src-tauri/Cargo.toml
 cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
 pnpm.cmd --filter @voxleaf/desktop tauri build
-uv sync --project services/tts --locked
 uv run --project services/tts --locked ruff format --check services/tts
 uv run --project services/tts --locked ruff check services/tts
 uv run --directory services/tts --locked mypy .
 uv run --project services/tts --locked pytest services/tts
 uv build services/tts
 ```
+
+`pnpm.cmd --filter @voxleaf/desktop dev` starts the browser-only Vite development server on `http://127.0.0.1:5173`; it was verified with a successful local HTTP response. Stop it with `Ctrl+C`. It does not exercise the native Tauri runtime. Native shell acceptance uses `pnpm.cmd --filter @voxleaf/desktop tauri build`, which produces the Windows executable and previously passed a bounded launch check.
 
 After the locked JavaScript and Python environments are installed, use the verified root quality surface:
 
@@ -157,3 +163,11 @@ pnpm.cmd check
 `format` intentionally rewrites supported TypeScript, JavaScript, JSON, CSS, YAML, Rust, and Python files. The other commands are suitable for validation: `format:check`, `lint`, `typecheck`, and `test` do not intentionally modify tracked source; `build` writes only ignored build output. `check` runs those five validation stages in order and stops on the first failure. Each aggregate command delegates to the same focused pnpm, Cargo, and uv commands documented above, so focused commands remain available for diagnosis.
 
 The Tauri build produces the React frontend and a release-mode Windows executable. Installer bundling is intentionally disabled during foundation validation. The Python commands create only an isolated development environment, validate the dependency-free service package, and build source and wheel distributions under the ignored `services/tts/dist` directory. None of the root commands starts a development server, downloads models, reads books, requires GPU hardware, or persists generated audio.
+
+The root `check` command does not start the development server. The development server runs only when explicitly requested with the focused `dev` command above.
+
+## Continuous integration
+
+The `Foundation checks` workflow runs on pushes to `main` and `agent/**`, pull requests targeting `main`, and manual dispatches. `Windows native foundation` is authoritative and runs `pnpm.cmd check`; `Ubuntu portable foundation` runs the deliberately narrower `pnpm check:portable`. Both install from committed lockfiles. See [`testing.md`](testing.md) for the exact coverage distinction.
+
+Dependency ownership, direct package purposes, production alternatives, and transitive-lock review rules are documented in [`dependencies.md`](dependencies.md).

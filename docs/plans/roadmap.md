@@ -39,7 +39,7 @@ Some prototypes may inform later milestones before their full implementation beg
 
 ## Milestone 1: Establish the engineering foundation
 
-**Implement this milestone first.**
+**Status:** Complete as of 2026-07-21. Milestone 2 is the next implementation priority.
 
 ### Goal
 
@@ -338,7 +338,7 @@ Durable decisions belong in architecture decision records. Temporary implementat
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains detailed planning relevant to shared contracts, the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or authorize implementing all of those areas at once.
 
-Milestone 1 remains the first implementation priority. Before later work begins, the existing active plan should be used only for the portion corresponding to the current roadmap milestone and refined or split when practical experience makes that useful.
+Milestone 1 is complete, with its evidence retained in [`completed/establish-engineering-foundation.md`](completed/establish-engineering-foundation.md). Milestone 2 is the next implementation priority. Before later work begins, create a just-in-time ExecPlan for Milestone 2; use the existing synchronized-reader plan only for the portions that correspond to the current roadmap milestone, and refine or split it when practical experience makes that useful.
 
 ## MVP completion boundary
 

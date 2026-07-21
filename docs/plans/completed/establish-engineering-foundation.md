@@ -477,7 +477,7 @@ pnpm.cmd test
 pnpm.cmd build
 ```
 
-**Status:** Not started.
+**Status:** Complete. The root README and development documentation now contain the verified Windows installation, browser-development, focused validation, aggregate check, and production-build commands. Current smoke coverage and deferred product tests are explicit, every direct dependency has a purpose and classification, production alternatives are recorded, and transitive graphs remain controlled by the committed lockfiles.
 
 ## Acceptance criteria for Milestone 1
 
@@ -576,6 +576,7 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - 2026-07-20: Completed Task 5.1. Added the root cross-language format, lint, type-check, test, build, and aggregate check surface; introduced the selected ESLint flat configuration and Prettier; and verified every root command on Windows. A temporary unformatted fixture made `format:check` return nonzero and was removed, confirming failure propagation. TypeScript was adjusted from `7.0.2` to supported stable `6.0.3` because `typescript-eslint` `8.64.0` supports TypeScript only below `6.1.0`.
 - 2026-07-20: Implemented Task 5.2 locally. Added the pinned `Foundation checks` workflow with `Windows native foundation` as the authoritative job and `Ubuntu portable foundation` as the intentionally limited TypeScript/Python job.
 - 2026-07-21: Completed Task 5.2. The first remote run exposed a Windows checkout line-ending mismatch before native compilation, so `.gitattributes` now enforces LF for repository text while preserving the icon as binary. GitHub Actions run [29800516177](https://github.com/mmjosedaniel/voxleaf/actions/runs/29800516177) then passed with the exact job names `Windows native foundation` and `Ubuntu portable foundation`.
+- 2026-07-21: Completed Task 5.3. Replaced stale setup claims, added a contributor quick start, verified the browser development server with a local HTTP response, documented the implemented smoke tests and deferred product coverage, and added a complete direct-dependency inventory with production alternatives and transitive-lock review rules. `git diff --check`, both locked installs, and the separate root format, lint, type-check, test, and production-build commands passed in native Windows PowerShell.
 
 ## Discoveries and decisions
 
@@ -602,6 +603,9 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - Root scripts use package-manager command chaining that works in both Windows command execution and POSIX shells. Each aggregate stage delegates to named ecosystem-specific scripts, preserves the first failing exit code, and does not require an additional monorepo task runner.
 - CI uses supported explicit `windows-2025` and `ubuntu-24.04` runner labels. Checkout `6.0.2`, setup-node `6.4.0`, setup-python `6.2.0`, and setup-uv `8.1.0` are pinned to full release commit SHAs; pnpm `11.15.1`, uv `0.11.29`, and the repository toolchain declarations remain the executable version authorities.
 - Repository text is normalized to LF through `.gitattributes`, preventing operating-system checkout behavior from changing the input to deterministic format checks. Binary icon data is explicitly excluded from text normalization.
+- The maintainer has a WSL Ubuntu environment, but the Codex Windows execution context could not enumerate that registered distribution during final validation. Ubuntu 24.04 CI is therefore the recorded portable Linux evidence, while the documentation makes no claim that milestone commands were locally validated in the maintainer's WSL environment.
+- The verified focused development command is the browser-only Vite server. A bounded native hot-reload attempt was inconclusive and is not milestone evidence; native shell acceptance continues to use the successful authoritative production build and earlier bounded executable launch.
+- The only direct shipped foundation libraries are React, React DOM, and the Tauri Rust crate. The Python, shared, and EPUB packages have no runtime dependencies, and no future product dependency was introduced by the documentation task.
 
 ## Final validation requirements
 
@@ -622,4 +626,15 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Not run for the complete plan. Tasks 1.1 through 5.2 are complete and their focused, aggregate, and continuous-integration validation passes. Task 5.3 and the complete-plan final validation requirements remain outstanding.
+Completed on 2026-07-21.
+
+- Tasks 1.1 through 5.3 are complete.
+- `git diff --check` passed.
+- `pnpm.cmd install --frozen-lockfile` and `uv sync --project services/tts --locked` passed from committed lock data. Clean hosted installations also passed in GitHub Actions.
+- `pnpm.cmd format:check`, `pnpm.cmd lint`, `pnpm.cmd typecheck`, `pnpm.cmd test`, and `pnpm.cmd build` passed separately in native Windows PowerShell.
+- The TypeScript smoke tests passed: one shared-package resolution test, one EPUB-package isolation test, and one accessible React-shell render test.
+- Cargo test and the native Tauri production build passed; the minimal Rust shell intentionally has no domain unit tests, broad capabilities, commands, plugins, or installer bundling.
+- The Python version smoke test, strict typing, linting, formatting, and source and wheel distribution builds passed without runtime dependencies.
+- GitHub Actions run [29801109249](https://github.com/mmjosedaniel/voxleaf/actions/runs/29801109249) passed at the final Task 5.2 branch head with `Windows native foundation` and `Ubuntu portable foundation`; Task 5.3 changes only documentation.
+- The dependency, permissions, logs, ignored artifacts, and changed-file scope were reviewed. No EPUB, book, TTS model, audio, persistence, hardware, installer, secret, private data, content-bearing log, or unrelated application behavior was added.
+- Milestone 1 is complete. The next roadmap work is Milestone 2, which requires a just-in-time ExecPlan before public contracts or multi-component behavior are implemented.
