@@ -22,3 +22,26 @@ export type {
   ManualClockErrorCode,
   PendingManualClockTask,
 } from "./manual-clock.js";
+
+export {
+  FakeDocumentSourceError,
+  INVALID_SYNTHETIC_DOCUMENT_FIXTURES,
+  VALID_SYNTHETIC_DOCUMENT_FIXTURE,
+  createFakeDocumentSource,
+  findSyntheticDocumentBlock,
+} from "./synthetic-document.js";
+export type {
+  FakeDocumentSource,
+  FakeDocumentSourceErrorCode,
+  FakeDocumentSourceStep,
+  InvalidSyntheticDocumentFixture,
+  SyntheticDialogueBlock,
+  SyntheticDocumentBlock,
+  SyntheticDocumentBlockKind,
+  SyntheticDocumentFixture,
+  SyntheticHeadingBlock,
+  SyntheticLocalImageMetadata,
+  SyntheticParagraphBlock,
+  SyntheticSceneBoundaryBlock,
+  SyntheticSpineDocument,
+} from "./synthetic-document.js";
