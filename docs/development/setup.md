@@ -2,7 +2,7 @@
 
 ## Current status
 
-The prerequisite toolchains are installed and pinned, but the application workspace has not been initialized. The version checks in this document have been run successfully in Windows PowerShell. Project install, build, lint, and test commands must not be added until their configuration exists and has been validated.
+The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, and minimal Tauri 2 native shell are initialized. The version and desktop commands in this document have been run successfully in Windows PowerShell. The Python service, aggregate root quality commands, and continuous integration are not initialized yet.
 
 ## Prerequisite version matrix
 
@@ -46,6 +46,8 @@ python --version
 Expected selected versions are `v24.18.0`, `11.15.1`, `rustc 1.97.1`, `cargo 1.97.1`, and `Python 3.12.10`. Rust must report the `x86_64-pc-windows-msvc` toolchain when running `rustup show active-toolchain`.
 
 WebView2 Evergreen, Visual Studio Build Tools, MSVC, and the Windows SDK are native prerequisites rather than repository-managed dependencies. Their observed versions belong in the matrix, but automatic security and servicing updates may advance them. Re-run native validation after such updates.
+
+Native Rust compilation executes unsigned build scripts and procedural macro libraries generated under Cargo's target directory. An enforced Windows Application Control or Smart App Control policy may reject those intermediates with operating-system error `4551`; moving the target directory does not remove the signing requirement. Use an approved developer environment or an authorized policy configuration, and do not weaken an organization-managed policy without administrator approval.
 
 ## Windows and WSL environment boundary
 
@@ -111,17 +113,17 @@ When project commands are introduced, record the required shell, working directo
 
 ## Commands
 
-No project commands are defined yet.
+Run the following verified commands from the repository root in native Windows PowerShell. Cargo must be discoverable on `PATH`; open a fresh terminal after installing rustup if it is not.
 
-When toolchains are initialized, document:
+```powershell
+pnpm.cmd install --frozen-lockfile
+pnpm.cmd --filter @voxleaf/desktop typecheck
+pnpm.cmd --filter @voxleaf/desktop test
+pnpm.cmd --filter @voxleaf/desktop build
+cargo fmt --check --manifest-path apps/desktop/src-tauri/Cargo.toml
+cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets -- -D warnings
+cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
+pnpm.cmd --filter @voxleaf/desktop tauri build
+```
 
-- Dependency installation.
-- Development startup.
-- Formatting.
-- Linting.
-- Type checking.
-- Unit tests.
-- Integration tests.
-- End-to-end tests.
-- Performance benchmarks.
-- Production build.
+The Tauri command builds the React frontend and a release-mode Windows executable. Installer bundling is intentionally disabled during foundation validation. Aggregate formatting, linting, type-checking, testing, and build commands remain planned work for Task 5.1.

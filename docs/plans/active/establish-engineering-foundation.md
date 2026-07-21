@@ -127,7 +127,7 @@ Implementation must not begin with blind framework generators. The environment b
 4. Resolved by ADR-0005: use TypeScript, ESLint with `typescript-eslint`, Prettier, and Vitest as development-only TypeScript quality tools.
 5. Resolved by ADR-0005: use a uv-managed Python project and lockfile with Ruff, mypy, pytest, and `uv_build`.
 6. Resolved by ADR-0005: require authoritative Windows CI and add a separate Ubuntu job for portable TypeScript and Python checks.
-7. Pending Task 3.2: validate Tauri 2 against the native Windows prerequisites and a production build. Update ADR-0001 or create a superseding decision if validation changes the candidate direction.
+7. Completed Task 3.2: validated Tauri 2 against the native Windows prerequisites and a production build, and updated ADR-0001 to adopt the candidate direction.
 
 ### Decisions explicitly deferred
 
@@ -341,7 +341,7 @@ Task 3.1 must create and verify this package name and these scripts before it is
 
 The exact commands above were verified on the canonical Windows environment on 2026-07-20. The deterministic jsdom smoke test locates the semantic main landmark and the `VoxLeaf development shell` level-one heading without importing or mocking any Tauri API.
 
-**Status:** Complete. `@voxleaf/desktop` provides a minimal React `19.2.7` and Vite `8.1.5` web shell, an accessible static development-state page, a DOM rendering test, and a successful production build. Native Tauri validation remains Task 3.2.
+**Status:** Complete. `@voxleaf/desktop` provides a minimal React `19.2.7` and Vite `8.1.5` web shell, an accessible static development-state page, a DOM rendering test, and a successful production build. Native Tauri validation was completed separately in Task 3.2.
 
 ### Task 3.2: Validate the Tauri 2 native shell
 
@@ -364,9 +364,9 @@ cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
 pnpm.cmd --filter @voxleaf/desktop tauri build
 ```
 
-The exact Tauri command must match the generated workspace configuration and be updated before execution.
+These exact commands passed in the canonical Windows environment on 2026-07-20. The release executable was also launched in a bounded smoke check, remained running, exposed the configured `VoxLeaf development shell` window title, and was then stopped.
 
-**Status:** Not started.
+**Status:** Complete. Tauri 2 is adopted in ADR-0001; the React shell builds and launches as a native Windows executable with no plugins, registered commands, frontend Tauri API, or IPC capabilities.
 
 ## Implementation milestone 4: Initialize the Python TTS service project
 
@@ -571,6 +571,7 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - 2026-07-20: Completed Task 2.2. Added `@voxleaf/shared` as a composite TypeScript project with an empty public entry point, pinned Vitest `4.1.10`, and verified type-checking, public-package resolution in a smoke test, and declaration/JavaScript builds. No runtime dependency or product contract was introduced.
 - 2026-07-20: Completed Task 2.3. Added dependency-free `@voxleaf/epub` as a composite TypeScript project, registered it in the root project-reference graph, and verified type-checking, public-package resolution from clean build output, and declaration/JavaScript builds. No archive, DOM, sanitizer, renderer, CFI, book-text, or logging behavior was introduced.
 - 2026-07-20: Completed Task 3.1. Added the `@voxleaf/desktop` React and TypeScript web shell, registered it in the TypeScript project-reference graph, and verified type-checking, one semantic rendering smoke test, and a Vite production build. The shell clearly reports that EPUB reading and narration are not implemented and contains no Tauri, file, persistence, TTS, audio, model, or network behavior.
+- 2026-07-20: Completed Task 3.2. Added the pinned Tauri CLI, runtime, build crate, Rust manifest and lockfile, minimal Windows entry point, strict local configuration, and required Windows icon. Rust formatting, Clippy with warnings denied, zero-behavior native tests, the Tauri release build, and a bounded executable launch passed; ADR-0001 now confirms Tauri adoption.
 
 ## Discoveries and decisions
 
@@ -587,8 +588,11 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - The root TypeScript configuration contains only environment-independent strict defaults. Package-specific libraries, output settings, project references, and scripts remain owned by Tasks 2.2, 2.3, and 3.1 when those projects exist.
 - The shared package intentionally exports no values yet. Its smoke test imports the package by name and asserts the empty namespace, proving the runner and declared public entry resolve without creating a placeholder domain API.
 - The EPUB package mirrors the shared package's foundation structure but does not depend on it yet. This preserves isolation until a real shared contract justifies a `workspace:` dependency.
-- React `19.2.7`, React DOM `19.2.7`, Vite `8.1.5`, and the official React plugin `6.0.3` are verified for the web shell on the selected Node.js runtime. This validates only the web portion of the desktop candidate; Tauri adoption still depends on Task 3.2.
+- React `19.2.7`, React DOM `19.2.7`, Vite `8.1.5`, and the official React plugin `6.0.3` are verified for the web shell on the selected Node.js runtime. That result initially validated only the web portion of the desktop candidate; Task 3.2 subsequently confirmed Tauri adoption.
 - Testing Library and jsdom are scoped to the desktop package because its first real DOM rendering test now justifies them. `@testing-library/jest-dom` remains on mature release `6.9.1`; the newly published `7.0.0` would have required a pnpm release-age policy exception that this task did not justify.
+- Tauri `2.11.5`, Tauri CLI `2.11.4`, and `tauri-build` `2.6.3` are verified with the pinned Rust `1.97.1` MSVC toolchain. Installer bundling remains disabled because packaging and signing are outside the foundation milestone.
+- The main webview has an explicit empty capability list and no frontend Tauri API dependency. It cannot call native IPC until a later task adds a narrowly scoped command and permission with its behavior and security tests.
+- Enforced Windows Verified-and-Reputable Application Control blocked Cargo-generated unsigned build scripts and procedural macro libraries with error `4551`. Relocating Cargo output did not help; native validation succeeded after the user disabled Smart App Control. Managed development environments must instead use an administrator-approved policy or signing approach.
 
 ## Final validation requirements
 
