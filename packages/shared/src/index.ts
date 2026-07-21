@@ -1,8 +1,10 @@
 export {
   BookContractError,
   LocatorContractError,
+  PersistedReadingStateContractError,
   decodeBookV1,
   decodeLocatorRangeV1,
+  decodePersistedReadingStateV1,
   decodeReadingLocatorV1,
 } from "./contracts/index.js";
 
@@ -16,6 +18,11 @@ export type {
   LocatorContractErrorCode,
   LocatorRangeV1,
   NavigationEntryV1,
+  PersistedReadingPreferencesV1,
+  PersistedReadingStateContractErrorCode,
+  PersistedReadingStateV1,
+  PersistedVoiceId,
+  PlaybackRate,
   PublicationMetadataV1,
   ReadingLocatorV1,
   SpineItemV1,
