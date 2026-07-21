@@ -191,7 +191,7 @@ git diff --check
 git diff -- docs/development/setup.md
 ```
 
-**Status:** Not started.
+**Status:** Complete. The Windows/WSL boundary is recorded in `docs/development/setup.md`; the task's documentation validation passed on 2026-07-20.
 
 ### Task 1.2: Capture and satisfy the prerequisite version matrix
 
@@ -558,6 +558,7 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - 2026-07-20: Verified Node.js and Git are visible; found `pnpm.cmd` but could not verify it within the restricted inspection process; Rust/Cargo and a usable Python interpreter were not verified.
 - 2026-07-20: Confirmed Milestone 1 is ready to begin once its environment and tool decisions are resolved in sequence.
 - 2026-07-20: Created this ExecPlan. No implementation tasks have started.
+- 2026-07-20: Completed Task 1.1 by documenting Windows as the canonical native Tauri environment, defining WSL's optional role, and isolating paths, line endings, dependency directories, Python environments, Rust targets, and generated artifacts. `git diff --check` passed and the scoped diff was reviewed; no application files were created.
 
 ## Discoveries and decisions
 
