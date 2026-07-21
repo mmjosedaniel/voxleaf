@@ -508,7 +508,14 @@ pnpm.cmd --filter @voxleaf/shared test
 pnpm.cmd --filter @voxleaf/shared build
 ```
 
-**Status:** Not started.
+**Status:** Complete.
+
+**Validation results (2026-07-21):**
+
+- `pnpm.cmd --filter @voxleaf/shared typecheck` passed for source and compile-time test boundaries.
+- `pnpm.cmd --filter @voxleaf/shared test` passed 123 tests across 12 files, including payload exclusion, exact duration derivation, aggregate-before-truncation behavior, numeric and overflow boundaries, ownership and format consistency, unique frame IDs, sequence continuity, and segment termination.
+- `pnpm.cmd --filter @voxleaf/shared build` passed through the shared test preflight and focused build validation.
+- `pnpm.cmd --filter @voxleaf/shared generate:check` verified all 10 generated contract files match their canonical schemas.
 
 ### Task 4.2: Define bounded buffer-status contracts
 
@@ -533,7 +540,14 @@ pnpm.cmd --filter @voxleaf/shared test
 pnpm.cmd --filter @voxleaf/shared build
 ```
 
-**Status:** Not started.
+**Status:** Complete.
+
+**Validation results (2026-07-21):**
+
+- `pnpm.cmd --filter @voxleaf/shared typecheck` passed for source and compile-time test boundaries.
+- `pnpm.cmd --filter @voxleaf/shared test` passed 144 tests across 13 files, including threshold ordering, below/exactly-at/above-target cases, state/depth consistency, maximum bounds, identity projection, privacy exclusions, and version handling.
+- `pnpm.cmd --filter @voxleaf/shared build` passed through the shared test preflight and focused build validation.
+- `pnpm.cmd --filter @voxleaf/shared generate:check` verified all 11 generated contract files match their canonical schemas.
 
 ## Milestone 5: Build deterministic fakes and synthetic fixtures
 
@@ -833,6 +847,8 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - 2026-07-21: Completed Task 3.1. Added the canonical reading-session v1 schema, generated wire DTO, fail-closed decoder, separate session/generation identities, immutable work/cancellation identities, and a pure active/stale eligibility classifier. Focused typecheck, 70 tests, build, generation drift, formatting, and lint checks passed; cancellation transport, queueing, process lifecycle, and UI state remain deferred.
 - 2026-07-21: Completed Task 3.2. Added the canonical narration-segment v1 schema, generated wire DTO boundary, fail-closed decoder, sensitive-text brand, locator-range/book-identity consistency check, and session/generation work-identity projection. The contract deliberately leaves normalization, segmentation, language, prosody, and chunk-size policy to later work. Focused typecheck, 78 tests, build, and generation-drift validation passed.
 - 2026-07-21: Completed Task 3.3. Added closed canonical operational-error and capability-report v1 schemas, generated wire DTOs, fail-closed decoders, fixed code/category/recoverable-or-fatal semantics, and explicit supported/unsupported/unknown feature states. Free-form diagnostic data, content, audio, private paths, model/device identities, vendors, benchmarks, and hardware profiles are structurally excluded. Focused typecheck, 103 tests, build, and generation-drift validation passed.
+- 2026-07-21: Completed Task 4.1. Added the canonical payload-free audio-frame v1 schema, generated wire DTO, fail-closed decoder, session/generation ownership projection, and deterministic single-frame and contiguous-run duration helpers. Exact integer arithmetic sums samples before one conservative whole-millisecond truncation and rejects overflow; continuity validation rejects duplicate IDs, gaps, reversals, identity or format changes, and frames after a segment-end marker. Focused typecheck, 123 tests, build, and generation-drift validation passed.
+- 2026-07-21: Completed Task 4.2. Added the canonical payload-free buffer-status v1 schema, generated wire DTO, fail-closed decoder, session/generation ownership projection, ordered bounded duration thresholds, underrun count, and the justified `empty`, `buffering`, `ready`, `playing`, and `paused` states. State/depth validation treats zero-depth exhaustion as buffering and excludes terminal completion, fixed waits, payloads, and buffer/player behavior. Focused typecheck, 144 tests, build, generation-drift, formatting, and lint validation passed.
 
 ## Discoveries and decisions
 
@@ -858,6 +874,8 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - Reading session v1 carries one active `generationId` with its `sessionId` and book identity. The eligibility classifier prioritizes `stale-session` when a session is absent or differs, then `stale-generation` when only the generation differs. Cancellation intent identifies a target separately and cannot make a late result safe; callers must replace or clear the active session/generation pair before consuming new work.
 - Operational-error v1 deliberately omits arbitrary messages and details. Its six stable codes map to fixed categories and severity, with `internal-failure` as the only fatal v1 code; safe localized presentation and retry policy remain later application responsibilities. Unknown codes and fields are malformed under the immutable closed-v1 policy.
 - Capability-report v1 uses a complete fixed object rather than an open list so every known feature has an explicit supported, unsupported, or unknown status and missing data cannot imply support. It reports only model-independent local generation, streaming, cancellation, generic acceleration, and CPU-fallback support; adding features requires v2, while actual probing, profiles, benchmarks, and support claims remain later work.
+- Audio-frame v1 defines `sampleCountSamples` as a positive count of sample frames per channel, so channel count does not multiply duration. Whole-millisecond summaries use exact integer division and truncate sub-millisecond remainder conservatively; contiguous-run calculation first sums samples at one stable sample rate so repeated per-frame truncation cannot undercount. An empty run measures zero, and a run may begin at any sequence after earlier played frames were discarded, but all following sequences must be contiguous.
+- Buffer-status v1 names all depth values in whole `Milliseconds` and binds every snapshot to one session/generation pair. Threshold ordering and depth-at-maximum are domain invariants beyond the schema; `ready` begins at the target, `buffering` remains below it (including zero depth after an underrun), `empty` requires zero depth, and `playing` requires positive depth. `paused` does not imply a depth because pausing can occur with any bounded amount of valid audio. No `complete` state exists until later generation and playback protocols can distinguish end-of-work from temporary exhaustion.
 
 ## Final validation requirements
 
@@ -881,4 +899,4 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Milestone-level final validation has not run. Task 1.1 decision and dependency validation and the focused implementation validation for Tasks 1.2 through 3.1 are recorded above; Tasks 3.2 through 6.2 have not started.
+Milestone-level final validation has not run. Task 1.1 decision and dependency validation and focused implementation validation for Tasks 1.2 through 4.2 are recorded above; Tasks 5.1 through 6.2 have not started.
