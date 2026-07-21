@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "bookIdentity": {
+    "scheme": "synthetic-test",
+    "schemeVersion": 1,
+    "value": "book-test-001"
+  },
+  "locator": {
+    "schemaVersion": 1,
+    "bookIdentity": {
+      "scheme": "synthetic-test",
+      "schemeVersion": 1,
+      "value": "book-test-001"
+    },
+    "spineItemId": "spine:chapter-1",
+    "spineItemIndex": 0,
+    "anchor": {
+      "kind": "element-id",
+      "formatVersion": 1,
+      "value": "paragraph-1",
+      "anchorIndex": 0
+    },
+    "textOffsetCodePoints": 4
+  },
+  "preferences": {
+    "selectedVoiceId": "voice:synthetic",
+    "playbackRate": 1.25
+  }
+}

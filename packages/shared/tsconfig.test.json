@@ -5,6 +5,7 @@
     "declaration": false,
     "declarationMap": false,
     "noEmit": true,
+    "types": ["node"],
     "paths": {
       "@voxleaf/shared": ["./src/index.ts"],
       "@voxleaf/shared/testing": ["./src/testing/index.ts"]

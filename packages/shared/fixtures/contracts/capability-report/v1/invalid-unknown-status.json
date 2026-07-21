@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "capabilities": {
+    "localSpeechGeneration": "supported",
+    "streamingGeneration": "unknown",
+    "generationCancellation": "supported",
+    "hardwareAcceleration": "not-known",
+    "cpuFallback": "supported"
+  }
+}

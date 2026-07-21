@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 2,
+  "sessionId": "session:synthetic-1",
+  "bookIdentity": {
+    "scheme": "synthetic-test",
+    "schemeVersion": 1,
+    "value": "book-test-001"
+  },
+  "generationId": "generation:synthetic-1"
+}

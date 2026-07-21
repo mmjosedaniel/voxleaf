@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 2,
+  "sessionId": "session:synthetic-1",
+  "generationId": "generation:synthetic-1",
+  "contiguousPlayableDurationMs": 15000,
+  "thresholds": {
+    "lowWaterMarkMs": 1000,
+    "targetBufferMs": 15000,
+    "maximumBufferMs": 30000
+  },
+  "underrunCount": 0,
+  "state": "ready"
+}

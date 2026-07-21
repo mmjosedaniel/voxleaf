@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "code": "capability-unavailable",
+  "category": "availability",
+  "severity": "recoverable",
+  "details": "not-permitted"
+}
