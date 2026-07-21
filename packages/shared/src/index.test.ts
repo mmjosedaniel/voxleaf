@@ -13,6 +13,8 @@ describe("@voxleaf/shared", () => {
     expect(typeof sharedPackage.decodeReadingLocatorV1).toBe("function");
     expect(typeof sharedPackage.decodeLocatorRangeV1).toBe("function");
     expect(typeof sharedPackage.decodePersistedReadingStateV1).toBe("function");
+    expect(typeof sharedPackage.decodeReadingSessionV1).toBe("function");
+    expect(typeof sharedPackage.isGenerationWorkEligible).toBe("function");
     expect(Object.hasOwn(sharedPackage, "FIXED_TEST_IDENTIFIERS")).toBe(false);
   });
 });

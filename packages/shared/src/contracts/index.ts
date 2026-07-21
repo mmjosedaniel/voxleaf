@@ -8,6 +8,14 @@ export {
   PersistedReadingStateContractError,
   decodePersistedReadingStateV1,
 } from "./persisted-reading-state.js";
+export {
+  ReadingSessionContractError,
+  classifyGenerationWorkEligibility,
+  createGenerationCancellationIntent,
+  decodeReadingSessionV1,
+  getGenerationWorkIdentity,
+  isGenerationWorkEligible,
+} from "./reading-session.js";
 
 export type {
   BookContractErrorCode,
@@ -36,3 +44,11 @@ export type {
   PersistedVoiceId,
   PlaybackRate,
 } from "./persisted-reading-state.js";
+
+export type {
+  GenerationCancellationIntentV1,
+  GenerationWorkEligibilityV1,
+  GenerationWorkIdentityV1,
+  ReadingSessionContractErrorCode,
+  ReadingSessionV1,
+} from "./reading-session.js";
