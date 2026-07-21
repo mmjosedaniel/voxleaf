@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:schema:audio-frame:v1",
+  "title": "AudioFrameV1Wire",
+  "description": "Privacy-safe metadata for one in-memory audio frame. Audio payload and encoding are intentionally outside this contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "frameId",
+    "sessionId",
+    "generationId",
+    "segmentId",
+    "sequence",
+    "sampleRateHz",
+    "sampleCountSamples",
+    "channelCount",
+    "endOfSegment"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "allOf": [
+        {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"
+        },
+        {
+          "const": 1
+        }
+      ]
+    },
+    "frameId": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/frameId"
+    },
+    "sessionId": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/sessionId"
+    },
+    "generationId": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/generationId"
+    },
+    "segmentId": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/segmentId"
+    },
+    "sequence": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/index",
+      "description": "Monotonic frame order within the active generation."
+    },
+    "sampleRateHz": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/hertz"
+    },
+    "sampleCountSamples": {
+      "allOf": [
+        {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/sampleCount"
+        },
+        {
+          "type": "integer",
+          "minimum": 1
+        }
+      ],
+      "description": "Positive count of sample frames per channel; duration is this count divided by sampleRateHz."
+    },
+    "channelCount": {
+      "allOf": [
+        {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/count"
+        },
+        {
+          "type": "integer",
+          "minimum": 1
+        }
+      ],
+      "description": "Positive number of channels represented by the future payload; it does not multiply duration."
+    },
+    "endOfSegment": {
+      "type": "boolean",
+      "description": "True only for the final audio frame produced for this narration segment."
+    }
+  }
+}

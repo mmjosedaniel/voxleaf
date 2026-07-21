@@ -1,4 +1,6 @@
 export {
+  AudioFrameContractError,
+  AudioFrameContinuityError,
   BookContractError,
   CapabilityReportContractError,
   LocatorContractError,
@@ -6,9 +8,12 @@ export {
   OperationalErrorContractError,
   PersistedReadingStateContractError,
   ReadingSessionContractError,
+  calculateAudioFrameDurationMs,
+  calculateContiguousAudioDurationMs,
   classifyGenerationWorkEligibility,
   createGenerationCancellationIntent,
   createOperationalErrorV1,
+  decodeAudioFrameV1,
   decodeBookV1,
   decodeCapabilityReportV1,
   decodeLocatorRangeV1,
@@ -17,12 +22,16 @@ export {
   decodePersistedReadingStateV1,
   decodeReadingLocatorV1,
   decodeReadingSessionV1,
+  getAudioFrameWorkIdentity,
   getNarrationSegmentWorkIdentity,
   getGenerationWorkIdentity,
   isGenerationWorkEligible,
 } from "./contracts/index.js";
 
 export type {
+  AudioFrameContractErrorCode,
+  AudioFrameContinuityErrorCode,
+  AudioFrameV1,
   BookContractErrorCode,
   BookIdentityV1,
   BookV1,
