@@ -32,6 +32,7 @@ The existing `LICENSE` file is intentionally not included or replaced.
 - `docs/plans/active/README.md`
 - `docs/plans/active/synchronized-reader-and-startup-buffer.md`
 - `docs/plans/completed/README.md`
+- `docs/plans/roadmap.md`
 - `docs/product/glossary.md`
 - `docs/product/mvp.md`
 - `docs/product/project-brief.md`
