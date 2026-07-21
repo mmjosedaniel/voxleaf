@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:schema:reading-session:v1",
+  "title": "ReadingSessionV1Wire",
+  "description": "The active book-reading session and generation used to reject stale asynchronous work.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sessionId", "bookIdentity", "generationId"],
+  "properties": {
+    "schemaVersion": {
+      "allOf": [
+        {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"
+        },
+        {
+          "const": 1
+        }
+      ]
+    },
+    "sessionId": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/sessionId"
+    },
+    "bookIdentity": {
+      "$ref": "urn:voxleaf:schema:book:v1#/$defs/bookIdentity"
+    },
+    "generationId": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/generationId",
+      "description": "The currently active generation within this session."
+    }
+  }
+}

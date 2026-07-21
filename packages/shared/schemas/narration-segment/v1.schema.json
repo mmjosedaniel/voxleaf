@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:schema:narration-segment:v1",
+  "title": "NarrationSegmentV1Wire",
+  "description": "One sensitive narration payload tied to a stable reading range and asynchronous work identity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "segmentId",
+    "bookIdentity",
+    "sessionId",
+    "generationId",
+    "sequence",
+    "sourceRange",
+    "text"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "allOf": [
+        {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"
+        },
+        {
+          "const": 1
+        }
+      ]
+    },
+    "segmentId": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/segmentId"
+    },
+    "bookIdentity": {
+      "$ref": "urn:voxleaf:schema:book:v1#/$defs/bookIdentity"
+    },
+    "sessionId": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/sessionId"
+    },
+    "generationId": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/generationId"
+    },
+    "sequence": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/index",
+      "description": "Zero-based order within the active generation; segment production rules remain external."
+    },
+    "sourceRange": {
+      "$ref": "urn:voxleaf:schema:locator-range:v1",
+      "description": "The ordered logical reading range that supplied this narration text."
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Sensitive narration text. It must not be copied into errors, metrics, persisted reading state, or debug snapshots."
+    }
+  }
+}

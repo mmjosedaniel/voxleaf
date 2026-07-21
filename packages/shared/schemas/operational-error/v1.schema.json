@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:schema:operational-error:v1",
+  "title": "OperationalErrorV1Wire",
+  "description": "A privacy-safe machine-readable failure without content, paths, stack traces, or implementation details.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "code", "category", "severity"],
+  "properties": {
+    "schemaVersion": {
+      "allOf": [
+        {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"
+        },
+        {
+          "const": 1
+        }
+      ]
+    },
+    "code": {
+      "type": "string",
+      "enum": [
+        "invalid-input",
+        "unsupported-input",
+        "capability-unavailable",
+        "operation-cancelled",
+        "resource-exhausted",
+        "internal-failure"
+      ],
+      "description": "Stable machine-readable error code. Presentation layers map it to safe localized text."
+    },
+    "category": {
+      "type": "string",
+      "enum": ["input", "availability", "cancellation", "resource", "internal"]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["recoverable", "fatal"],
+      "description": "Whether the owning workflow can offer a safe recovery path or must stop."
+    }
+  }
+}

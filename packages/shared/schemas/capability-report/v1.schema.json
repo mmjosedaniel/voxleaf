@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:schema:capability-report:v1",
+  "title": "CapabilityReportV1Wire",
+  "description": "A model-independent report of local speech-generation features without model identity, hardware identity, or hardware-profile claims.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "capabilities"],
+  "properties": {
+    "schemaVersion": {
+      "allOf": [
+        {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"
+        },
+        {
+          "const": 1
+        }
+      ]
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "localSpeechGeneration",
+        "streamingGeneration",
+        "generationCancellation",
+        "hardwareAcceleration",
+        "cpuFallback"
+      ],
+      "properties": {
+        "localSpeechGeneration": {
+          "$ref": "#/$defs/capabilityStatus"
+        },
+        "streamingGeneration": {
+          "$ref": "#/$defs/capabilityStatus"
+        },
+        "generationCancellation": {
+          "$ref": "#/$defs/capabilityStatus"
+        },
+        "hardwareAcceleration": {
+          "$ref": "#/$defs/capabilityStatus"
+        },
+        "cpuFallback": {
+          "$ref": "#/$defs/capabilityStatus"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "capabilityStatus": {
+      "title": "CapabilityStatusV1Wire",
+      "type": "string",
+      "enum": ["supported", "unsupported", "unknown"],
+      "description": "Unknown is explicit when support has not been established; it must not be treated as supported."
+    }
+  }
+}

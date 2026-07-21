@@ -413,7 +413,15 @@ pnpm.cmd --filter @voxleaf/shared test
 pnpm.cmd --filter @voxleaf/shared build
 ```
 
-**Status:** Not started.
+**Status:** Complete.
+
+**Validation results (2026-07-21):**
+
+- `pnpm.cmd --filter @voxleaf/shared typecheck` passed for source and compile-time test boundaries.
+- `pnpm.cmd --filter @voxleaf/shared test` passed 70 tests across 8 files, including active, stale-session, stale-generation, missing-active-session, cancellation-intent, malformed-identity, and unsupported-version cases.
+- `pnpm.cmd --filter @voxleaf/shared build` passed.
+- `pnpm.cmd --filter @voxleaf/shared generate:check` verified all 6 generated contract files match their canonical schemas.
+- `pnpm.cmd format:check:typescript` and `pnpm.cmd lint:typescript` passed.
 
 ### Task 3.2: Define locator-linked narration segment contracts
 
@@ -437,7 +445,14 @@ pnpm.cmd --filter @voxleaf/shared test
 pnpm.cmd --filter @voxleaf/shared build
 ```
 
-**Status:** Not started.
+**Status:** Complete.
+
+**Validation results (2026-07-21):**
+
+- `pnpm.cmd --filter @voxleaf/shared typecheck` passed for source and compile-time test boundaries.
+- `pnpm.cmd --filter @voxleaf/shared test` passed 78 tests across 9 files, including synthetic narration-segment round trips, identity and range consistency, strict input validation, nested-version handling, and sensitive-text error exclusion.
+- `pnpm.cmd --filter @voxleaf/shared build` passed.
+- `pnpm.cmd --filter @voxleaf/shared generate:check` verified all 7 generated contract files match their canonical schemas.
 
 ### Task 3.3: Define privacy-safe error and capability contracts
 
@@ -461,7 +476,14 @@ pnpm.cmd --filter @voxleaf/shared test
 pnpm.cmd --filter @voxleaf/shared build
 ```
 
-**Status:** Not started.
+**Status:** Complete.
+
+**Validation results (2026-07-21):**
+
+- `pnpm.cmd --filter @voxleaf/shared typecheck` passed for source and compile-time test boundaries.
+- `pnpm.cmd --filter @voxleaf/shared test` passed 103 tests across 11 files, including fixed error semantics, all explicit capability states, closed-field compatibility, version handling, and privacy exclusions.
+- `pnpm.cmd --filter @voxleaf/shared build` passed through the shared test preflight and focused build validation.
+- `pnpm.cmd --filter @voxleaf/shared generate:check` verified all 9 generated contract files match their canonical schemas.
 
 ## Milestone 4: Define audio metadata and playable-buffer state
 
@@ -808,6 +830,9 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - 2026-07-21: Completed Task 2.1. Added the canonical book v1 schema and generated wire DTO, a fail-closed public decoder, branded privacy-safe domain contracts, bounded local resource metadata, ordered spine and navigation relationship checks, and synthetic tests. Added pinned Ajv `8.20.0` as the first runtime validator required by a real decoder; focused typecheck, 32 tests, build, generation drift, and lint checks passed.
 - 2026-07-21: Completed Task 2.2. Added canonical locator and locator-range v1 schemas, generated wire DTOs, fail-closed public decoders, branded structural anchors, explicit spine/anchor indexes and Unicode-code-point offsets, optional recovery progression, and deterministic cross-book/range-order validation. Focused typecheck, 48 tests, build, generation drift, formatting, and lint checks passed.
 - 2026-07-21: Completed Task 2.3. Added the canonical persisted-reading-state v1 schema, generated wire DTO, fail-closed public decoder, matching root/locator book-identity validation, and a closed minimal preferences object for an opaque local voice and positive requested playback rate. Focused typecheck, 60 tests, build, generation drift, formatting, and lint checks passed; storage, migrations, display settings, and capability enforcement remain deferred.
+- 2026-07-21: Completed Task 3.1. Added the canonical reading-session v1 schema, generated wire DTO, fail-closed decoder, separate session/generation identities, immutable work/cancellation identities, and a pure active/stale eligibility classifier. Focused typecheck, 70 tests, build, generation drift, formatting, and lint checks passed; cancellation transport, queueing, process lifecycle, and UI state remain deferred.
+- 2026-07-21: Completed Task 3.2. Added the canonical narration-segment v1 schema, generated wire DTO boundary, fail-closed decoder, sensitive-text brand, locator-range/book-identity consistency check, and session/generation work-identity projection. The contract deliberately leaves normalization, segmentation, language, prosody, and chunk-size policy to later work. Focused typecheck, 78 tests, build, and generation-drift validation passed.
+- 2026-07-21: Completed Task 3.3. Added closed canonical operational-error and capability-report v1 schemas, generated wire DTOs, fail-closed decoders, fixed code/category/recoverable-or-fatal semantics, and explicit supported/unsupported/unknown feature states. Free-form diagnostic data, content, audio, private paths, model/device identities, vendors, benchmarks, and hardware profiles are structurally excluded. Focused typecheck, 103 tests, build, and generation-drift validation passed.
 
 ## Discoveries and decisions
 
@@ -830,6 +855,9 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - Locator progression is optional book-level recovery/display metadata and never replaces the logical book, spine, anchor, and offset position. Range ordering uses structural fields; when both endpoint progressions exist, decreasing recovery progression is rejected as inconsistent.
 - Persisted reading state v1 repeats the opaque book identity at the state root and inside its authoritative locator so a lookup key and restored position can be checked for exact agreement before use. Its required closed preferences object allows only optional `selectedVoiceId` and `playbackRate`; display preferences and selected-model persistence remain deferred until their product semantics and capability identifiers exist.
 - Persisted `selectedVoiceId` uses a restricted opaque ASCII identifier that rejects whitespace, separators used by absolute paths, and URI-like values. `playbackRate` is positive and finite but has no contract-level maximum because supported speed ranges belong to later capability and playback contracts.
+- Reading session v1 carries one active `generationId` with its `sessionId` and book identity. The eligibility classifier prioritizes `stale-session` when a session is absent or differs, then `stale-generation` when only the generation differs. Cancellation intent identifies a target separately and cannot make a late result safe; callers must replace or clear the active session/generation pair before consuming new work.
+- Operational-error v1 deliberately omits arbitrary messages and details. Its six stable codes map to fixed categories and severity, with `internal-failure` as the only fatal v1 code; safe localized presentation and retry policy remain later application responsibilities. Unknown codes and fields are malformed under the immutable closed-v1 policy.
+- Capability-report v1 uses a complete fixed object rather than an open list so every known feature has an explicit supported, unsupported, or unknown status and missing data cannot imply support. It reports only model-independent local generation, streaming, cancellation, generic acceleration, and CPU-fallback support; adding features requires v2, while actual probing, profiles, benchmarks, and support claims remain later work.
 
 ## Final validation requirements
 
@@ -853,4 +881,4 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Milestone-level final validation has not run. Task 1.1 decision and dependency validation and the focused implementation validation for Tasks 1.2 through 2.3 are recorded above; Tasks 3.1 through 6.2 have not started.
+Milestone-level final validation has not run. Task 1.1 decision and dependency validation and the focused implementation validation for Tasks 1.2 through 3.1 are recorded above; Tasks 3.2 through 6.2 have not started.
