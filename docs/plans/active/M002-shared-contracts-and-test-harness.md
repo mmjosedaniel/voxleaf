@@ -50,7 +50,7 @@ Milestone 2 is ready to begin because:
 - The roadmap, product requirements, ADR-0002, ADR-0003, and ADR-0004 establish the privacy, locator, session, audio-retention, and startup-duration invariants that shape the contracts.
 - No existing public contract or persisted data must be migrated.
 
-There is no external blocker to starting Task 1.1. Downstream tasks are intentionally blocked until Task 1.1 resolves the canonical schema, code-generation or validation, and compatibility strategy. That unresolved decision is milestone work, not a reason to produce a misleading fixed contract layout now.
+Task 1.1 is complete and ADR-0006 resolves the canonical schema, code-generation, runtime-validation-boundary, and compatibility strategy. There is no external blocker to starting Task 1.2. Later tasks remain ordered by the dependencies below and must not define contract families before the shared primitives and generation boundary exist.
 
 ## Dependencies and prerequisites
 
@@ -127,6 +127,7 @@ No EPUB library, renderer, persistence library, TTS engine, process transport, a
 - `docs/architecture/decisions/ADR-0003-stable-reading-locators.md`
 - `docs/architecture/decisions/ADR-0004-start-after-audio-lead.md`
 - `docs/architecture/decisions/ADR-0005-engineering-workspace-and-quality-tooling.md`
+- `docs/architecture/decisions/ADR-0006-json-schema-contract-authority.md`
 - `docs/development/testing.md`
 - `docs/development/dependencies.md`
 - `docs/development/setup.md`
@@ -166,20 +167,20 @@ No EPUB library, renderer, persistence library, TTS engine, process transport, a
 - Vitest and pytest are the existing deterministic test runners. Hardware and model benchmarks remain separate.
 - JavaScript, Python, and Rust keep their existing manifest and lock ownership.
 
-## Technical decisions that must still be resolved
+## Technical decisions resolved by Task 1.1
 
-Task 1.1 must resolve these before dependent implementation begins:
+[ADR-0006](../../architecture/decisions/ADR-0006-json-schema-contract-authority.md) resolves the start-of-milestone decision gate:
 
-1. **Canonical contract source:** choose a language-neutral schema, generated bindings, or another single-source strategy that prevents TypeScript/Python/Rust drift. Compare at least JSON Schema with generated or inferred types, TypeScript-first schema generation, and manually synchronized DTOs with conformance fixtures. Independent unverified DTO copies are not acceptable.
-2. **Runtime validation boundary:** decide which untrusted persistence and future process inputs require runtime decoding now, which validation belongs to later adapters, and whether validation libraries are development-only or shipped.
-3. **Versioning and compatibility:** decide whether versioning is per contract family or one shared contract version, how unsupported versions fail, and when additive fields are backward compatible. Transport protocol versioning remains deferred.
-4. **Generated-file policy:** if code generation is selected, identify the source files, deterministic generation command, committed versus ignored outputs, drift check, and prohibition on manual edits.
-5. **Identifier and numeric conventions:** select UUID-like opaque strings or another deterministic representation for IDs; define integer/finite-number rules and explicit milliseconds, samples, hertz, byte counts, and progression units.
-6. **Book identity boundary:** define the opaque serialized identity and its algorithm/version slot without choosing the Milestone 3 byte-fingerprinting implementation.
-7. **Locator anchor extensibility:** define how CFI or an equivalent structural anchor is represented and versioned without claiming resolution support.
-8. **Test-support publication:** decide whether fakes and fixtures use a dedicated `@voxleaf/shared/testing` subpath or remain internal test modules, ensuring production consumers cannot accidentally depend on mutable fake state.
+1. **Canonical contract source:** checked-in JSON Schema Draft 2020-12 documents under `packages/shared/schemas/<family>/vN.schema.json` are authoritative. TypeScript wire DTOs are generated; Python and future Rust consumers must validate or derive from the same schemas.
+2. **Runtime validation boundary:** persisted and future process/native inputs are decoded from `unknown` at their trust boundary before domain construction. Structural schema checks precede handwritten semantic invariants, never coerce input, and never log raw payloads.
+3. **Versioning and compatibility:** each serialized family has an immutable positive integer `schemaVersion`. Unknown and malformed versions fail distinctly and content-free. Any published shape change, including an optional field, creates a new family version. Transport protocol versioning remains separate and deferred.
+4. **Generated-file policy:** the pinned development-only `json-schema-to-typescript` generator will produce committed TypeScript files deterministically. Task 1.2 must add the documented `generate` and non-mutating `generate:check` package commands with CI drift coverage before the first generated DTO is accepted.
+5. **Identifier and numeric conventions:** identifiers are bounded opaque strings and become separately branded domain values. Counts and unit-bearing values use validated JSON safe integers with explicit names; progression alone is fractional in `[0, 1]`.
+6. **Book identity boundary:** the serialized identity reserves scheme, scheme-version, and opaque-value slots while forbidding prose, metadata, and absolute paths. Milestone 3 still owns the fingerprint algorithm.
+7. **Locator anchor extensibility:** anchors form a closed versioned discriminated union. New kinds or representations require a new locator schema version; CFI parsing and resolution remain unimplemented.
+8. **Test-support publication:** reusable fakes and loaders use the explicit `@voxleaf/shared/testing` subpath and never the production root export. Cross-language fixtures live under `packages/shared/fixtures/contracts/<family>/vN/`.
 
-Record durable decisions in a new ADR. If the spike cannot identify a credible single-source and deterministic conformance approach, mark this plan blocked before defining public contracts rather than proceeding with duplicative models.
+Task 1.1 adds no serialized schema or runtime validator. Task 1.2 is now unblocked and owns the first schema, deterministic generator entry points, generated DTO, opaque domain primitives, and applicable validator dependency.
 
 ## Expected files or architectural areas affected
 
@@ -189,7 +190,7 @@ Implementation is expected to affect only:
 - `packages/shared/package.json` exports and development dependencies only when justified by the accepted strategy.
 - `packages/epub` manifest and a contract-consumer smoke test; no EPUB implementation.
 - `services/tts` development dependencies and contract-conformance tests only when required by the accepted cross-language strategy; no runtime model or server behavior.
-- Canonical schema and synthetic fixture directories owned by the shared-contract boundary, with exact placement decided by Task 1.1.
+- Canonical schemas under `packages/shared/schemas/<family>/vN.schema.json`, generated TypeScript DTOs under `packages/shared/src/generated/contracts/`, repository-owned generation support under `packages/shared/scripts/`, and synthetic fixtures under `packages/shared/fixtures/contracts/<family>/vN/`.
 - Root `pnpm-lock.yaml` and `services/tts/uv.lock` only when an accepted dependency change requires regeneration.
 - One new ADR under `docs/architecture/decisions` for the durable schema/versioning strategy.
 - `docs/development/testing.md`, `docs/development/dependencies.md`, architecture documentation, and this ExecPlan only where actual behavior or decisions change.
@@ -249,7 +250,13 @@ git diff --check
 pnpm.cmd format:check
 ```
 
-**Status:** Not started.
+**Status:** Complete.
+
+**Validation results (2026-07-21):**
+
+- `pnpm.cmd install --frozen-lockfile` passed with `json-schema-to-typescript` `15.0.4` pinned in the root manifest and lockfile.
+- `pnpm.cmd format:check` passed across the TypeScript, Rust, and Python check surfaces.
+- `git diff --check` passed after the ADR, plan, architecture, and dependency documentation updates.
 
 ### Task 1.2: Establish shared contract primitives and module boundaries
 
@@ -764,6 +771,7 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - 2026-07-21: Verified PR #4 is merged; its Windows and Ubuntu jobs passed; merged-main `Foundation checks` run [29839779965](https://github.com/mmjosedaniel/voxleaf/actions/runs/29839779965) passed.
 - 2026-07-21: Confirmed Milestone 2 is ready. No shared contract, schema, cross-language binding, deterministic fake, or synthetic document fixture currently exists.
 - 2026-07-21: Created this ExecPlan. No implementation task has started.
+- 2026-07-21: Completed Task 1.1. Accepted ADR-0006 with checked-in JSON Schema Draft 2020-12 as the canonical serialized-contract source, per-family immutable versions, fail-closed boundary validation, deterministic committed TypeScript generation, explicit identifier and unit conventions, opaque versioned book identity, extensible locator anchors, and the `@voxleaf/shared/testing` boundary. Pinned the development-only generator, updated its lock and dependency inventory, and passed the task's locked-install and formatting validations.
 
 ## Discoveries and decisions
 
@@ -775,6 +783,9 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - A synthetic document metadata fixture can cover contract shape, navigation, dialogue, and image references without creating a real EPUB archive or exercising sanitization.
 - Audio-frame metadata can support deterministic playable-duration calculations without selecting a payload encoding or implementing playback.
 - The schema/versioning decision is the only start-of-milestone gate. It is assigned to Task 1.1 rather than hidden as an implementation assumption.
+- JSON Schema authored directly is less convenient than a TypeScript-first runtime schema, but it keeps the cross-language contract language-neutral and makes generated DTOs disposable rather than authoritative.
+- Strict immutable family versions intentionally treat additive fields as new versions. This favors deterministic privacy-safe rejection and explicit migration over tolerant readers that could retain unknown data.
+- The schema-to-TypeScript generator is development-only. Runtime validators remain deferred until the first actual decoder so Milestone 2 does not ship an unused validation library.
 
 ## Final validation requirements
 
@@ -798,4 +809,4 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Not run. This document is a plan only. Milestone 2 implementation has not started.
+Milestone-level final validation has not run. Task 1.1 decision and dependency validation is recorded above; Tasks 1.2 through 6.2 have not started.

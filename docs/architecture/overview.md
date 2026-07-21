@@ -83,3 +83,9 @@ The protocol may use Tauri IPC, standard input/output, a local socket, or loopba
 - Pagination belongs to the renderer, while logical locator creation and resolution remain framework-independent.
 - Shared protocol types must not depend on either process implementation.
 - TTS model adapters implement an internal interface so benchmarking does not leak model-specific details through the application.
+
+## Shared contract authority
+
+[ADR-0006](decisions/ADR-0006-json-schema-contract-authority.md) establishes checked-in JSON Schema Draft 2020-12 documents under `packages/shared` as the authority for serialized contract families. TypeScript wire DTOs are generated from those schemas, while Python and any future Rust consumer must validate or derive from the same schemas rather than maintain an independent authoritative model.
+
+Schema-family versions govern persisted or cross-process payload shapes and remain separate from the future process transport version. Runtime decoding occurs at persistence and process trust boundaries before data can affect domain or playback state. Transport selection remains deferred until its planned prototype and ADR.
