@@ -25,6 +25,7 @@ Documentation is organized by purpose so contributors and Codex can load only th
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): work currently being implemented.
+- [`plans/active/establish-engineering-foundation.md`](plans/active/establish-engineering-foundation.md): detailed ExecPlan for the first roadmap milestone and current implementation priority.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): planned visual reader, position restoration, read-along synchronization, and startup audio lead.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

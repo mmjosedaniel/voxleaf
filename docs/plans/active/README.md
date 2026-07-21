@@ -16,4 +16,5 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
+- [`establish-engineering-foundation.md`](establish-engineering-foundation.md): implement roadmap Milestone 1; this is the first implementation priority.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): implement the reflowable reader, shared position restoration, narration synchronization, and duration-based startup gate.
