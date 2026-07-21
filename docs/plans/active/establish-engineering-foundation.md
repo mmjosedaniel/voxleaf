@@ -286,7 +286,9 @@ pnpm.cmd --filter @voxleaf/shared build
 
 Task 2.2 must create and verify this package name and these scripts before it is marked complete.
 
-**Status:** Not started.
+The exact commands above were verified on the canonical Windows environment on 2026-07-20. The test was also verified after deleting `packages/shared/dist`; its `pretest` lifecycle rebuilt the package before Vitest imported `@voxleaf/shared` through the declared public entry point.
+
+**Status:** Complete. `@voxleaf/shared` is a private, composite TypeScript package with an empty public module, no runtime dependencies or product contracts, and independently verified type-check, test, and build commands.
 
 ### Task 2.3: Add the minimal EPUB TypeScript package
 
@@ -562,6 +564,7 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - 2026-07-20: Completed Task 1.2. Installed and verified Node.js `24.18.0`, pnpm `11.15.1`, rustup `1.29.0`, Rust/Cargo `1.97.1`, Python `3.12.10`, Visual Studio Build Tools 2022 `17.14.36` with MSVC `14.44.35207` and Windows SDK `10.0.26100.0`; confirmed WebView2 Evergreen `150.0.4078.83`; added conventional version declarations and the prerequisite matrix.
 - 2026-07-20: Completed Task 1.3 by accepting ADR-0005. Selected the pnpm workspace, per-ecosystem lock ownership, cross-language root command contract, TypeScript and Python quality stacks, focused Rust/Python checks, and Windows-authoritative plus Ubuntu-portable CI strategy. No dependencies or application code were added.
 - 2026-07-20: Completed Task 2.1. Added an explicit pnpm workspace for `apps/desktop`, `packages/shared`, and `packages/epub`; pinned TypeScript `7.0.2`; generated the pnpm lockfile; added shared strict compiler defaults; and verified both normal and clean frozen-lockfile installations with pnpm `11.15.1`.
+- 2026-07-20: Completed Task 2.2. Added `@voxleaf/shared` as a composite TypeScript project with an empty public entry point, pinned Vitest `4.1.10`, and verified type-checking, public-package resolution in a smoke test, and declaration/JavaScript builds. No runtime dependency or product contract was introduced.
 
 ## Discoveries and decisions
 
@@ -576,6 +579,7 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - No TTS model, EPUB implementation, local process protocol, or audio dependency is justified during this milestone.
 - The root workspace declares exact future package paths instead of broad glob patterns, so adding unrelated directories under `apps` or `packages` will not silently make them workspace members.
 - The root TypeScript configuration contains only environment-independent strict defaults. Package-specific libraries, output settings, project references, and scripts remain owned by Tasks 2.2, 2.3, and 3.1 when those projects exist.
+- The shared package intentionally exports no values yet. Its smoke test imports the package by name and asserts the empty namespace, proving the runner and declared public entry resolve without creating a placeholder domain API.
 
 ## Final validation requirements
 
