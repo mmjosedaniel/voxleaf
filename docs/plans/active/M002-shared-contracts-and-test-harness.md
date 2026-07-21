@@ -180,7 +180,7 @@ No EPUB library, renderer, persistence library, TTS engine, process transport, a
 7. **Locator anchor extensibility:** anchors form a closed versioned discriminated union. New kinds or representations require a new locator schema version; CFI parsing and resolution remain unimplemented.
 8. **Test-support publication:** reusable fakes and loaders use the explicit `@voxleaf/shared/testing` subpath and never the production root export. Cross-language fixtures live under `packages/shared/fixtures/contracts/<family>/vN/`.
 
-Task 1.1 adds no serialized schema or runtime validator. Task 1.2 is now unblocked and owns the first schema, deterministic generator entry points, generated DTO, opaque domain primitives, and applicable validator dependency.
+Task 1.1 adds no serialized schema or runtime validator. Task 1.2 is now unblocked and owns the first schema, deterministic generator entry points, generated DTO, and opaque domain primitives. A runtime validator remains deferred until the first real decoder, as required by ADR-0006.
 
 ## Expected files or architectural areas affected
 
@@ -280,7 +280,15 @@ pnpm.cmd --filter @voxleaf/shared test
 pnpm.cmd --filter @voxleaf/shared build
 ```
 
-**Status:** Not started.
+**Status:** Complete.
+
+**Validation results (2026-07-21):**
+
+- `pnpm.cmd --filter @voxleaf/shared typecheck` passed, including compile-time tests that reject mixed identifier families and numeric units.
+- `pnpm.cmd --filter @voxleaf/shared test` passed 19 tests across 4 files.
+- `pnpm.cmd --filter @voxleaf/shared build` passed.
+- `pnpm.cmd --filter @voxleaf/shared generate:check` verified the committed generated contract file is current.
+- `pnpm.cmd format:check:typescript` and `pnpm.cmd lint:typescript` passed. On this managed Windows environment, both repository-wide file walkers required read-only execution outside the sandbox to traverse the existing `services/tts/.pytest_cache` directory.
 
 ## Milestone 2: Define book, location, and persisted-state contracts
 
@@ -772,6 +780,7 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - 2026-07-21: Confirmed Milestone 2 is ready. No shared contract, schema, cross-language binding, deterministic fake, or synthetic document fixture currently exists.
 - 2026-07-21: Created this ExecPlan. No implementation task has started.
 - 2026-07-21: Completed Task 1.1. Accepted ADR-0006 with checked-in JSON Schema Draft 2020-12 as the canonical serialized-contract source, per-family immutable versions, fail-closed boundary validation, deterministic committed TypeScript generation, explicit identifier and unit conventions, opaque versioned book identity, extensible locator anchors, and the `@voxleaf/shared/testing` boundary. Pinned the development-only generator, updated its lock and dependency inventory, and passed the task's locked-install and formatting validations.
+- 2026-07-21: Completed Task 1.2. Added the definitions-only primitive v1 schema, deterministic generation and drift-check commands, committed TypeScript wire DTOs, branded identifier/unit/version constructors, and an isolated `@voxleaf/shared/testing` export with fixed synthetic identifiers. Focused type checks, 19 tests, build, generator drift, formatting, and lint validation passed.
 
 ## Discoveries and decisions
 
@@ -786,6 +795,8 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - JSON Schema authored directly is less convenient than a TypeScript-first runtime schema, but it keeps the cross-language contract language-neutral and makes generated DTOs disposable rather than authoritative.
 - Strict immutable family versions intentionally treat additive fields as new versions. This favors deterministic privacy-safe rejection and explicit migration over tolerant readers that could retain unknown data.
 - The schema-to-TypeScript generator is development-only. Runtime validators remain deferred until the first actual decoder so Milestone 2 does not ship an unused validation library.
+- `json-schema-to-typescript` does not emit unreachable `$defs` reliably as the public result, so the definitions-only primitive schema references every definition through a top-level `anyOf`. `anyOf` is required because multiple opaque identifier families intentionally have the same serialized string constraints and would make `oneOf` reject valid identifiers.
+- The TypeScript 6 test configuration maps the production and testing package subpaths directly without deprecated `baseUrl`, allowing compile-time boundary tests to run without weakening the package's production build configuration.
 
 ## Final validation requirements
 
@@ -809,4 +820,4 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Milestone-level final validation has not run. Task 1.1 decision and dependency validation is recorded above; Tasks 1.2 through 6.2 have not started.
+Milestone-level final validation has not run. Task 1.1 decision and dependency validation and Task 1.2 focused implementation validation are recorded above; Tasks 2.1 through 6.2 have not started.

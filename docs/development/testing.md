@@ -20,7 +20,9 @@ Both jobs install from committed lockfiles. They do not use repository secrets, 
 
 The current deterministic tests are deliberately small:
 
-- `packages/shared/src/index.test.ts` proves that the private shared package builds and resolves through its public entry point without speculative product contracts.
+- `packages/shared/src/index.test.ts` proves that the shared production and test-support subpaths resolve independently and that fixed test identifiers are not exposed from the production root.
+- `packages/shared/src/primitives/*.test.ts` verify opaque identifier separation, numeric-unit separation, JSON-compatible bounds, and supported schema-version handling without private input in errors.
+- `pnpm.cmd --filter @voxleaf/shared generate:check` deterministically verifies that committed TypeScript wire DTOs match the canonical JSON Schema files.
 - `packages/epub/src/index.test.ts` proves that the isolated EPUB package builds and resolves without adding archive, DOM, sanitizer, renderer, or locator behavior.
 - `apps/desktop/src/App.test.tsx` renders the React shell in jsdom and verifies an accessible main landmark and heading.
 - `services/tts/tests/test_health.py` imports the Python package and verifies its version function without loading a model, opening a server, using audio, or requiring hardware.
