@@ -261,9 +261,9 @@ pnpm.cmd install --frozen-lockfile
 git diff --check
 ```
 
-These are planned commands based on the accepted pnpm workspace decision in ADR-0005. Task 2.1 must verify their exact repository form before reporting them as working.
+These exact commands were verified on the canonical Windows environment on 2026-07-20. The frozen installation was run after removing the generated root `node_modules` directory. The root manifest has no lifecycle or product scripts, and its only dependency is the pinned TypeScript development toolchain.
 
-**Status:** Not started.
+**Status:** Complete. The root pnpm workspace is limited to the three intended TypeScript areas, pnpm and TypeScript are pinned, the generated lockfile reproduces a clean installation, and the shared strict TypeScript configuration is accepted by the pinned compiler.
 
 ### Task 2.2: Add the minimal shared TypeScript package
 
@@ -284,7 +284,7 @@ pnpm.cmd --filter @voxleaf/shared test
 pnpm.cmd --filter @voxleaf/shared build
 ```
 
-The exact package name and scripts must be established by Task 2.1 and updated here before execution.
+Task 2.2 must create and verify this package name and these scripts before it is marked complete.
 
 **Status:** Not started.
 
@@ -307,7 +307,7 @@ pnpm.cmd --filter @voxleaf/epub test
 pnpm.cmd --filter @voxleaf/epub build
 ```
 
-The exact package name and scripts must be established by Task 2.1 and updated here before execution.
+Task 2.3 must create and verify this package name and these scripts before it is marked complete.
 
 **Status:** Not started.
 
@@ -333,7 +333,7 @@ pnpm.cmd --filter @voxleaf/desktop test
 pnpm.cmd --filter @voxleaf/desktop build
 ```
 
-The exact package name and scripts must be established by Task 2.1 and updated here before execution.
+Task 3.1 must create and verify this package name and these scripts before it is marked complete.
 
 **Status:** Not started.
 
@@ -561,6 +561,7 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - 2026-07-20: Completed Task 1.1 by documenting Windows as the canonical native Tauri environment, defining WSL's optional role, and isolating paths, line endings, dependency directories, Python environments, Rust targets, and generated artifacts. `git diff --check` passed and the scoped diff was reviewed; no application files were created.
 - 2026-07-20: Completed Task 1.2. Installed and verified Node.js `24.18.0`, pnpm `11.15.1`, rustup `1.29.0`, Rust/Cargo `1.97.1`, Python `3.12.10`, Visual Studio Build Tools 2022 `17.14.36` with MSVC `14.44.35207` and Windows SDK `10.0.26100.0`; confirmed WebView2 Evergreen `150.0.4078.83`; added conventional version declarations and the prerequisite matrix.
 - 2026-07-20: Completed Task 1.3 by accepting ADR-0005. Selected the pnpm workspace, per-ecosystem lock ownership, cross-language root command contract, TypeScript and Python quality stacks, focused Rust/Python checks, and Windows-authoritative plus Ubuntu-portable CI strategy. No dependencies or application code were added.
+- 2026-07-20: Completed Task 2.1. Added an explicit pnpm workspace for `apps/desktop`, `packages/shared`, and `packages/epub`; pinned TypeScript `7.0.2`; generated the pnpm lockfile; added shared strict compiler defaults; and verified both normal and clean frozen-lockfile installations with pnpm `11.15.1`.
 
 ## Discoveries and decisions
 
@@ -573,6 +574,8 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - The root pnpm command surface will orchestrate checks, but JavaScript, Python, and Rust retain separate lock ownership and direct focused commands. This avoids pretending pnpm owns Python or Cargo dependencies.
 - Native Windows CI is authoritative. The additional Ubuntu job is limited to portable TypeScript and Python checks and cannot satisfy native desktop acceptance.
 - No TTS model, EPUB implementation, local process protocol, or audio dependency is justified during this milestone.
+- The root workspace declares exact future package paths instead of broad glob patterns, so adding unrelated directories under `apps` or `packages` will not silently make them workspace members.
+- The root TypeScript configuration contains only environment-independent strict defaults. Package-specific libraries, output settings, project references, and scripts remain owned by Tasks 2.2, 2.3, and 3.1 when those projects exist.
 
 ## Final validation requirements
 

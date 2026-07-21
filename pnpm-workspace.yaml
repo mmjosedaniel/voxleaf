@@ -1,0 +1,7 @@
+packages:
+  - apps/desktop
+  - packages/shared
+  - packages/epub
+
+linkWorkspacePackages: false
+sharedWorkspaceLockfile: true
