@@ -692,7 +692,15 @@ uv run --directory services/tts --locked mypy .
 uv run --project services/tts --locked pytest services/tts
 ```
 
-**Status:** Not started.
+**Status:** Complete.
+
+**Validation results (2026-07-21):**
+
+- `pnpm.cmd --filter @voxleaf/shared test` passed 175 tests across 18 files, including the TypeScript consumer of the shared 17-case serialized fixture manifest.
+- `uv run --directory services/tts --locked mypy .` passed strict checking of all three Python source and test files.
+- `uv run --project services/tts --locked pytest services/tts` passed 3 tests, including the Python consumer of the same fixture manifest and offline schema registry.
+- The corpus covers all ten current root contract families. Invalid cases isolate unsupported versions, unknown fields, non-coerced numeric strings, closed enums, and numeric bounds; the only fixture containing narration text is explicitly marked sensitive.
+- The tests add no process transport, Rust DTO, model, server, audio payload, network access, runtime service, or hardware dependency.
 
 ## Milestone 6: Prove package boundaries and complete milestone validation
 
@@ -877,6 +885,7 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - 2026-07-21: Completed Task 5.2. Added an immutable, explicitly synthetic multi-spine document fixture with navigation, headings, paragraphs, dialogue, a scene boundary, local image metadata, and contract-backed locators. Added named invalid raw fixtures and a deterministic scripted in-memory fake source with observable success, failure, and exhaustion behavior. A test-only fixture resolver recognizes only matching book/spine/anchor identities; it does not parse EPUBs or claim production locator resolution. Focused typecheck, 164 tests, build, generation-drift, formatting, and lint validation passed.
 - 2026-07-21: Completed Task 5.3. Added a test-only scripted TTS source controlled exclusively by the manual clock. It accepts narration segments but emits only identity-preserving frame metadata or closed operational errors; it exposes pending, cancellation-requested, cancelled, and completed states. Cancellation can be acknowledged immediately or deliberately allowed to complete later so consumers can deterministically exercise stale-generation rejection. Focused typecheck, 169 tests, build, formatting, and lint validation passed; no model, payload, process, network, or hardware behavior was introduced.
 - 2026-07-21: Completed Task 5.4. Added test-only manually timed metadata source and sink fakes. The source releases frames only when the manual clock advances; the sink can consume immediately or on that clock and reports accepted, stale-session, stale-generation, duplicate, out-of-order, sequence-gap, post-end, and end-of-stream outcomes. Only accepted active frames add to its diagnostic duration total. Focused typecheck, 173 tests, build, formatting, and lint validation passed; no audio payload, device, buffer, player, underrun, startup-gate, or playback-speed behavior was introduced.
+- 2026-07-21: Completed Task 5.5. Added one manifest-driven corpus of 17 synthetic serialized fixtures consumed directly by TypeScript and Python against the same offline canonical Draft 2020-12 schemas. Added test-only Python schema validation and Node filesystem declarations, documented both dependencies, and verified strict no-coercion, optional-field, unknown-field, numeric-bound, supported-version, and unsupported-version behavior across all ten root contract families. Focused TypeScript and Python tests and typechecks passed; no production protocol, runtime service, Rust binding, model, audio, network, or hardware behavior was introduced.
 
 ## Discoveries and decisions
 
@@ -908,6 +917,7 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - Synthetic document fixtures are immutable in-memory test data, explicitly marked `synthetic`, and use only short repository-authored text. Invalid locator-reference input remains structurally valid under the standalone locator decoder because that decoder deliberately cannot know a book's loaded spine; the fixture resolver makes the unresolved reference observable without taking ownership of real EPUB locator resolution. The scripted fake consumes one configured result per `load()` call and exposes counts, with no archive, filesystem, network, DOM, sanitizer, or renderer dependency.
 - The fake TTS source is a test-only adapter over existing narration, audio-frame, operational-error, and manual-clock contracts. A response script always carries a delay and cancellation behavior. Immediate cancellation resolves to the closed `operation-cancelled` error; a `complete` behavior intentionally retains the original session, generation, and segment identities until its scheduled metadata-only result arrives. The consumer, rather than the fake, classifies that result as stale against its active reading session.
 - The fake audio source schedules already-built frame metadata from its construction instant and only releases it after manual-clock advancement. The sink tracks continuity per segment and records only lightweight metadata outcomes. It rejects stale session/generation work before continuity checks, so stale frames cannot contaminate active frame identity, ordering, end-of-stream state, or diagnostic duration. Its duration total is explicitly a test observation, not a bounded production queue or playback calculation.
+- Cross-language conformance uses one checked-in manifest rather than language-specific fixture lists, so adding or changing a case changes both consumers together. Both validators register only checked-in Draft 2020-12 schemas and disable or avoid coercion and default insertion. Python's validator and typing support are test-only dependencies; future Rust consumption remains required by ADR-0006 to use this same canonical source rather than handwritten authority.
 
 ## Final validation requirements
 
@@ -931,4 +941,4 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Milestone-level final validation has not run. Task 1.1 decision and dependency validation and focused implementation validation for Tasks 1.2 through 5.4 are recorded above; Tasks 5.5 through 6.2 have not started.
+Milestone-level final validation has not run. Task 1.1 decision and dependency validation and focused implementation validation for Tasks 1.2 through 5.5 are recorded above; Tasks 6.1 and 6.2 have not started.

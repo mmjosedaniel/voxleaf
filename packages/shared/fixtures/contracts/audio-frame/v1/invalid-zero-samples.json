@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "frameId": "frame:synthetic-1",
+  "sessionId": "session:synthetic-1",
+  "generationId": "generation:synthetic-1",
+  "segmentId": "segment:synthetic-1",
+  "sequence": 0,
+  "sampleRateHz": 48000,
+  "sampleCountSamples": 0,
+  "channelCount": 1,
+  "endOfSegment": true
+}

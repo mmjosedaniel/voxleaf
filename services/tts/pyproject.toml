@@ -11,9 +11,11 @@ dependencies = []
 
 [dependency-groups]
 dev = [
+    "jsonschema>=4.25,<5",
     "mypy>=2.3.0,<3",
     "pytest>=9.1.1,<10",
     "ruff>=0.15.22,<0.16",
+    "types-jsonschema>=4.26,<5",
 ]
 
 [tool.mypy]

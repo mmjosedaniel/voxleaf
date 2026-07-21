@@ -2,7 +2,7 @@
 
 ## Scope and ownership
 
-This inventory covers every dependency declared directly by the repository and explains how transitive dependencies are controlled. The Milestone 1 foundation established the initial inventory; ADR-0006 added a development-time schema-to-TypeScript generator, and Milestone 2 Task 2.1 adds the first runtime JSON Schema validator for a real decoder. This inventory does not approve future EPUB, TTS-model, process-transport, audio, persistence, hardware, installer, updater, or telemetry dependencies.
+This inventory covers every dependency declared directly by the repository and explains how transitive dependencies are controlled. The Milestone 1 foundation established the initial inventory; ADR-0006 added a development-time schema-to-TypeScript generator, Milestone 2 Task 2.1 added the first runtime JSON Schema validator for a real decoder, and Task 5.5 added test-only Python schema validation plus Node declarations for cross-language fixture conformance. This inventory does not approve future EPUB, TTS-model, process-transport, audio, persistence, hardware, installer, updater, or telemetry dependencies.
 
 Dependency declarations and resolved versions have one owner per ecosystem:
 
@@ -48,6 +48,7 @@ The Python package and framework-independent `@voxleaf/epub` package have no run
 | `@testing-library/react` | `16.3.2` | Renders React components for the shell smoke test. |
 | `@types/react` | `19.2.17` | Provides React's TypeScript declarations. |
 | `@types/react-dom` | `19.2.3` | Provides React DOM's TypeScript declarations. |
+| `@types/node` | `26.1.1` | Types the test-only Node filesystem and path APIs that load the shared serialized conformance corpus. |
 | `@vitejs/plugin-react` | `6.0.3` | Integrates React transforms and fast refresh with Vite. |
 | `jsdom` | `29.1.1` | Supplies an in-process browser-like DOM for component tests. |
 | `vite` | `8.1.5` | Runs the focused browser development server and builds webview assets. |
@@ -70,10 +71,12 @@ Rustfmt, Clippy, Cargo test, and Cargo build come from the pinned Rust toolchain
 | --- | --- | --- |
 | `ruff` | `0.15.22` | Formats and lints the Python package. |
 | `mypy` | `2.3.0` | Performs strict static type checking. |
-| `pytest` | `9.1.1` | Runs the deterministic package smoke test. |
+| `pytest` | `9.1.1` | Runs deterministic Python smoke and cross-language contract-conformance tests. |
+| `jsonschema` | `4.26.0` | Validates the shared serialized fixture corpus against the canonical Draft 2020-12 schemas entirely offline during Python tests. |
+| `types-jsonschema` | `4.26.0.20260518` | Supplies mypy declarations for the test-only `jsonschema` API. |
 | `uv_build` | compatible `0.11.x` selected by the build frontend | Builds the pure-Python source distribution and wheel; it is an isolated build-system requirement, not a service runtime dependency. |
 
-Ruff replaces the overlapping Black, isort, and Flake8 toolchain. Mypy and pytest are established focused tools for typing and tests. `uv_build` is appropriate for the current pure-Python package; a compiled-extension requirement could justify a different backend later without replacing uv's environment and lock ownership.
+Ruff replaces the overlapping Black, isort, and Flake8 toolchain. Mypy and pytest are established focused tools for typing and tests. Python's `jsonschema` validator was selected instead of a handwritten structural model so Python checks the language-neutral canonical schemas rather than creating a second contract authority; it and its typing package remain in the development group and are not service runtime dependencies. `uv_build` is appropriate for the current pure-Python package; a compiled-extension requirement could justify a different backend later without replacing uv's environment and lock ownership.
 
 ## Continuous-integration actions
 

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "segmentId": "segment:synthetic-1",
+  "bookIdentity": {
+    "scheme": "synthetic-test",
+    "schemeVersion": 1,
+    "value": "book-test-001"
+  },
+  "sessionId": "session:synthetic-1",
+  "generationId": "generation:synthetic-1",
+  "sequence": 0,
+  "sourceRange": {
+    "schemaVersion": 1,
+    "start": {
+      "schemaVersion": 1,
+      "bookIdentity": {
+        "scheme": "synthetic-test",
+        "schemeVersion": 1,
+        "value": "book-test-001"
+      },
+      "spineItemId": "spine:chapter-1",
+      "spineItemIndex": 0,
+      "anchor": {
+        "kind": "element-id",
+        "formatVersion": 1,
+        "value": "paragraph-1",
+        "anchorIndex": 0
+      },
+      "textOffsetCodePoints": 0
+    },
+    "end": {
+      "schemaVersion": 1,
+      "bookIdentity": {
+        "scheme": "synthetic-test",
+        "schemeVersion": 1,
+        "value": "book-test-001"
+      },
+      "spineItemId": "spine:chapter-1",
+      "spineItemIndex": 0,
+      "anchor": {
+        "kind": "element-id",
+        "formatVersion": 1,
+        "value": "paragraph-1",
+        "anchorIndex": 0
+      },
+      "textOffsetCodePoints": 24
+    }
+  },
+  "text": "Synthetic sensitive narration."
+}
