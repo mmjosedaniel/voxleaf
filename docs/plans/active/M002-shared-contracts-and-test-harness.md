@@ -19,10 +19,10 @@ The completed Milestone 1 ExecPlan records successful locked installs, formattin
 The actual implementation state is:
 
 - The pnpm workspace contains `apps/desktop`, `packages/shared`, and `packages/epub` with one committed JavaScript lockfile.
-- `@voxleaf/shared` is a private composite TypeScript package. Its public entry point exports nothing, and its only test proves package resolution.
-- `@voxleaf/epub` is a separate private composite TypeScript package. It exports nothing, has no dependency on `@voxleaf/shared`, and implements no archive, document, locator, or fixture behavior.
+- `@voxleaf/shared` is a private composite TypeScript package with versioned public contracts, deterministic test support, canonical schemas, and generated wire DTOs.
+- `@voxleaf/epub` is a separate private composite TypeScript package. It has an empty public API and a one-way `@voxleaf/shared` workspace dependency used only by a synthetic book/locator boundary smoke proof; it implements no archive, document, or locator behavior.
 - `apps/desktop` is an accessible React development shell. It contains no reader, persistence, TTS client, scheduler, audio, or shared-contract consumer.
-- `services/tts` is a dependency-free Python runtime package with only a version function and smoke test. It defines no protocol model, service transport, model adapter, or audio behavior.
+- `services/tts` has no runtime dependencies or service behavior. Its development-only conformance test validates shared synthetic fixtures without defining a protocol model, transport, model adapter, or audio behavior.
 - The Tauri shell has no registered command, plugin, frontend API dependency, or IPC capability.
 - Vitest, pytest, mypy, ESLint, Prettier, Ruff, Cargo checks, root aggregate commands, and deterministic Windows/Ubuntu CI exist and are validated.
 - No contract, schema, serialization decoder, deterministic clock, fake EPUB/document source, fake TTS source, fake audio source, or synthetic document fixture exists.
@@ -727,7 +727,14 @@ pnpm.cmd --filter @voxleaf/epub test
 pnpm.cmd --filter @voxleaf/epub build
 ```
 
-**Status:** Not started.
+**Status:** Complete.
+
+**Validation results (2026-07-21):**
+
+- `pnpm.cmd install --frozen-lockfile` passed with the `@voxleaf/shared` `workspace:*` dependency recorded in the root lockfile.
+- `pnpm.cmd --filter @voxleaf/epub typecheck` passed for both the production package and the no-emit test configuration that compiles the public-boundary smoke proof.
+- `pnpm.cmd --filter @voxleaf/epub test` passed 2 tests, including synthetic book and locator decoding imported through `@voxleaf/shared` rather than a source-relative path.
+- `pnpm.cmd --filter @voxleaf/epub build` passed. The EPUB package still exports no speculative API and adds no parser, archive, DOM, sanitizer, renderer, CFI, filesystem, logging, or production locator behavior.
 
 ### Task 6.2: Complete contract, fixture, test, and documentation validation
 
@@ -886,6 +893,7 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - 2026-07-21: Completed Task 5.3. Added a test-only scripted TTS source controlled exclusively by the manual clock. It accepts narration segments but emits only identity-preserving frame metadata or closed operational errors; it exposes pending, cancellation-requested, cancelled, and completed states. Cancellation can be acknowledged immediately or deliberately allowed to complete later so consumers can deterministically exercise stale-generation rejection. Focused typecheck, 169 tests, build, formatting, and lint validation passed; no model, payload, process, network, or hardware behavior was introduced.
 - 2026-07-21: Completed Task 5.4. Added test-only manually timed metadata source and sink fakes. The source releases frames only when the manual clock advances; the sink can consume immediately or on that clock and reports accepted, stale-session, stale-generation, duplicate, out-of-order, sequence-gap, post-end, and end-of-stream outcomes. Only accepted active frames add to its diagnostic duration total. Focused typecheck, 173 tests, build, formatting, and lint validation passed; no audio payload, device, buffer, player, underrun, startup-gate, or playback-speed behavior was introduced.
 - 2026-07-21: Completed Task 5.5. Added one manifest-driven corpus of 17 synthetic serialized fixtures consumed directly by TypeScript and Python against the same offline canonical Draft 2020-12 schemas. Added test-only Python schema validation and Node filesystem declarations, documented both dependencies, and verified strict no-coercion, optional-field, unknown-field, numeric-bound, supported-version, and unsupported-version behavior across all ten root contract families. Focused TypeScript and Python tests and typechecks passed; no production protocol, runtime service, Rust binding, model, audio, network, or hardware behavior was introduced.
+- 2026-07-21: Completed Task 6.1. Declared the one-way local `@voxleaf/epub` to `@voxleaf/shared` workspace dependency and added a typechecked, runtime-tested synthetic book/locator consumer proof using only the public shared package specifier. The EPUB package remains an empty public API with no parsing, archive, DOM, sanitizer, renderer, CFI, filesystem, logging, or locator-resolution behavior.
 
 ## Discoveries and decisions
 
@@ -918,6 +926,7 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - The fake TTS source is a test-only adapter over existing narration, audio-frame, operational-error, and manual-clock contracts. A response script always carries a delay and cancellation behavior. Immediate cancellation resolves to the closed `operation-cancelled` error; a `complete` behavior intentionally retains the original session, generation, and segment identities until its scheduled metadata-only result arrives. The consumer, rather than the fake, classifies that result as stale against its active reading session.
 - The fake audio source schedules already-built frame metadata from its construction instant and only releases it after manual-clock advancement. The sink tracks continuity per segment and records only lightweight metadata outcomes. It rejects stale session/generation work before continuity checks, so stale frames cannot contaminate active frame identity, ordering, end-of-stream state, or diagnostic duration. Its duration total is explicitly a test observation, not a bounded production queue or playback calculation.
 - Cross-language conformance uses one checked-in manifest rather than language-specific fixture lists, so adding or changing a case changes both consumers together. Both validators register only checked-in Draft 2020-12 schemas and disable or avoid coercion and default insertion. Python's validator and typing support are test-only dependencies; future Rust consumption remains required by ADR-0006 to use this same canonical source rather than handwritten authority.
+- The EPUB test configuration sets a no-emit common `packages/` root only for test compilation, allowing the public `@voxleaf/shared` specifier to be typechecked against source in a clean workspace. The production EPUB build keeps its narrower `src/` root and no dependency on shared implementation paths.
 
 ## Final validation requirements
 

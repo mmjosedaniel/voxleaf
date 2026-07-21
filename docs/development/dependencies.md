@@ -26,7 +26,7 @@ These are the only direct libraries that can participate in the foundation appli
 | `ajv` | `8.20.0` | Validates untrusted shared-contract input against the canonical JSON Schema Draft 2020-12 documents before semantic domain construction. It performs no network access and does not log rejected input. | Handwritten structural validation could drift from the canonical schemas. Zod and TypeBox would make a TypeScript representation authoritative, contrary to ADR-0006. Ajv was selected because its dedicated 2020 export supports the repository's declared dialect and offline schema registration. |
 | `tauri` Rust crate | `2.11.5` | Creates the native Windows application and embeds the local webview. The current shell registers no commands or plugins and grants no capabilities. | Electron was rejected for its expected runtime footprint; browser-only deployment cannot satisfy future local process requirements; a fully native UI would increase implementation cost. ADR-0001 records the decision. |
 
-The Python package and framework-independent `@voxleaf/epub` package have no runtime dependencies. `@voxleaf/shared` has only the validator listed above. No EPUB parser, renderer, TTS engine, model runtime, server, audio library, or persistence library is installed.
+The Python package has no runtime dependencies. `@voxleaf/epub` has one local workspace dependency, `@voxleaf/shared`, so it can consume the public book and locator contract boundary without a source-relative import or a reverse dependency. `@voxleaf/shared` has only the validator listed above. No EPUB parser, renderer, TTS engine, model runtime, server, audio library, or persistence library is installed.
 
 ## JavaScript and TypeScript development dependencies
 

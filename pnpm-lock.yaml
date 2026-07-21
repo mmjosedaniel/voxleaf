@@ -79,7 +79,11 @@ importers:
         specifier: 8.1.5
         version: 8.1.5(@types/node@26.1.1)
 
-  packages/epub: {}
+  packages/epub:
+    dependencies:
+      '@voxleaf/shared':
+        specifier: workspace:*
+        version: link:../shared
 
   packages/shared:
     dependencies:
