@@ -2,7 +2,7 @@
 
 ## Current status
 
-The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, and minimal Tauri 2 native shell are initialized. The version and desktop commands in this document have been run successfully in Windows PowerShell. The Python service, aggregate root quality commands, and continuous integration are not initialized yet.
+The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, minimal Tauri 2 native shell, and isolated Python service foundation are initialized. The version, desktop, and focused Python commands in this document have been run successfully in Windows PowerShell. Aggregate root quality commands and continuous integration are not initialized yet.
 
 ## Prerequisite version matrix
 
@@ -16,6 +16,7 @@ The selected versions establish a reproducible foundation without selecting EPUB
 | Rust compiler | Rust `1.97.1`, MSVC host, pinned in `rust-toolchain.toml` | `1.77.2`, the Tauri 2 baseline | `rustc 1.97.1` |
 | Cargo | Cargo bundled with pinned Rust `1.97.1` | Cargo bundled with Rust `1.77.2` | `cargo 1.97.1` |
 | Python | CPython `3.12.10`, pinned in `.python-version` | Python `3.12`; use the pinned patch release | `Python 3.12.10` |
+| Python project manager | uv `0.11.29`, pinned in setup and future CI configuration | Exactly `0.11.29` for reproducible lock and environment behavior | `uv 0.11.29` |
 | C++ build tools | Visual Studio Build Tools 2022 `17.14.36`, Desktop development with C++ workload | Visual Studio Build Tools 2022 with x64/x86 MSVC and a Windows SDK | MSVC `14.44.35207`; Windows SDK `10.0.26100.0` |
 | WebView | Automatically updated Evergreen WebView2 Runtime; do not pin a runtime patch | WebView2 Runtime `86.0.616.0` | Evergreen `150.0.4078.83` |
 
@@ -41,9 +42,18 @@ pnpm.cmd --version
 rustc --version
 cargo --version
 python --version
+uv --version
 ```
 
-Expected selected versions are `v24.18.0`, `11.15.1`, `rustc 1.97.1`, `cargo 1.97.1`, and `Python 3.12.10`. Rust must report the `x86_64-pc-windows-msvc` toolchain when running `rustup show active-toolchain`.
+Expected selected versions are `v24.18.0`, `11.15.1`, `rustc 1.97.1`, `cargo 1.97.1`, `Python 3.12.10`, and `uv 0.11.29`. Rust must report the `x86_64-pc-windows-msvc` toolchain when running `rustup show active-toolchain`.
+
+Install the selected uv release with its official version-specific installer, then open a new PowerShell terminal so the updated user `PATH` is available:
+
+```powershell
+powershell -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/0.11.29/install.ps1 | iex"
+```
+
+The repository-root `.python-version` selects CPython `3.12.10`. uv creates `services/tts/.venv` from that declaration; the environment is ignored and must not be shared with WSL. The committed `services/tts/uv.lock` is the reproducible dependency source. Do not install project tools globally or add a parallel requirements file.
 
 WebView2 Evergreen, Visual Studio Build Tools, MSVC, and the Windows SDK are native prerequisites rather than repository-managed dependencies. Their observed versions belong in the matrix, but automatic security and servicing updates may advance them. Re-run native validation after such updates.
 
@@ -124,6 +134,12 @@ cargo fmt --check --manifest-path apps/desktop/src-tauri/Cargo.toml
 cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
 pnpm.cmd --filter @voxleaf/desktop tauri build
+uv sync --project services/tts --locked
+uv run --project services/tts --locked ruff format --check services/tts
+uv run --project services/tts --locked ruff check services/tts
+uv run --directory services/tts --locked mypy .
+uv run --project services/tts --locked pytest services/tts
+uv build services/tts
 ```
 
-The Tauri command builds the React frontend and a release-mode Windows executable. Installer bundling is intentionally disabled during foundation validation. Aggregate formatting, linting, type-checking, testing, and build commands remain planned work for Task 5.1.
+The Tauri command builds the React frontend and a release-mode Windows executable. Installer bundling is intentionally disabled during foundation validation. The Python commands create only an isolated development environment, validate the dependency-free service package, and build source and wheel distributions under the ignored `services/tts/dist` directory. They do not load a model or start a server. Aggregate formatting, linting, type-checking, testing, and build commands remain planned work for Task 5.1.

@@ -394,9 +394,9 @@ uv run --project services/tts --locked pytest services/tts
 uv build services/tts
 ```
 
-These remain planned commands until Task 4.1 installs the pinned uv release, creates the project and lockfile, and verifies the exact invocations.
+These exact commands passed in the canonical Windows environment on 2026-07-20 with uv `0.11.29` and CPython `3.12.10`.
 
-**Status:** Not started.
+**Status:** Complete. `services/tts` is an isolated, dependency-free runtime package with a deterministic version function, one smoke test, committed uv lock data, and development-only formatting, linting, type-checking, testing, and build tools.
 
 ## Implementation milestone 5: Unify deterministic checks and continuous integration
 
@@ -572,6 +572,7 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - 2026-07-20: Completed Task 2.3. Added dependency-free `@voxleaf/epub` as a composite TypeScript project, registered it in the root project-reference graph, and verified type-checking, public-package resolution from clean build output, and declaration/JavaScript builds. No archive, DOM, sanitizer, renderer, CFI, book-text, or logging behavior was introduced.
 - 2026-07-20: Completed Task 3.1. Added the `@voxleaf/desktop` React and TypeScript web shell, registered it in the TypeScript project-reference graph, and verified type-checking, one semantic rendering smoke test, and a Vite production build. The shell clearly reports that EPUB reading and narration are not implemented and contains no Tauri, file, persistence, TTS, audio, model, or network behavior.
 - 2026-07-20: Completed Task 3.2. Added the pinned Tauri CLI, runtime, build crate, Rust manifest and lockfile, minimal Windows entry point, strict local configuration, and required Windows icon. Rust formatting, Clippy with warnings denied, zero-behavior native tests, the Tauri release build, and a bounded executable launch passed; ADR-0001 now confirms Tauri adoption.
+- 2026-07-20: Completed Task 4.1. Installed and pinned uv `0.11.29`; added the isolated `voxleaf-tts` pure-Python package, lockfile, deterministic version smoke test, and development-only Ruff, mypy, pytest, and `uv_build`; verified the locked environment, formatting, linting, strict typing, test, and distribution build without model, server, network, audio, or hardware behavior.
 
 ## Discoveries and decisions
 
@@ -593,6 +594,7 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - Tauri `2.11.5`, Tauri CLI `2.11.4`, and `tauri-build` `2.6.3` are verified with the pinned Rust `1.97.1` MSVC toolchain. Installer bundling remains disabled because packaging and signing are outside the foundation milestone.
 - The main webview has an explicit empty capability list and no frontend Tauri API dependency. It cannot call native IPC until a later task adds a narrowly scoped command and permission with its behavior and security tests.
 - Enforced Windows Verified-and-Reputable Application Control blocked Cargo-generated unsigned build scripts and procedural macro libraries with error `4551`. Relocating Cargo output did not help; native validation succeeded after the user disabled Smart App Control. Managed development environments must instead use an administrator-approved policy or signing approach.
+- uv `0.11.29` discovers the repository-root Python `3.12.10` declaration and creates the isolated environment at `services/tts/.venv`. The Python project has no runtime dependencies; its lock data contains only the local package and development quality tools with their transitive dependencies. The compatible `uv_build` range is declared separately as the build-system requirement.
 
 ## Final validation requirements
 
@@ -613,4 +615,4 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Not run for the complete plan. Tasks 1.1 through 1.3 are complete, but the application workspace and project validation commands do not exist yet; all later tasks and the final validation requirements remain outstanding.
+Not run for the complete plan. Tasks 1.1 through 4.1 are complete and their focused validation commands pass. Tasks 5.1 through 5.3, continuous-integration evidence, and the complete-plan final validation requirements remain outstanding.
