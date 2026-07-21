@@ -451,7 +451,7 @@ pnpm.cmd build
 
 After pushing the implementation branch, record the exact GitHub Actions check names and successful run URL in the progress log.
 
-**Status:** Not started.
+**Status:** In progress. The pinned workflow and distinct Windows and Ubuntu command surfaces are implemented and pass locally; remote GitHub Actions evidence is pending.
 
 ### Task 5.3: Complete setup, testing, and dependency documentation
 
@@ -574,6 +574,7 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - 2026-07-20: Completed Task 3.2. Added the pinned Tauri CLI, runtime, build crate, Rust manifest and lockfile, minimal Windows entry point, strict local configuration, and required Windows icon. Rust formatting, Clippy with warnings denied, zero-behavior native tests, the Tauri release build, and a bounded executable launch passed; ADR-0001 now confirms Tauri adoption.
 - 2026-07-20: Completed Task 4.1. Installed and pinned uv `0.11.29`; added the isolated `voxleaf-tts` pure-Python package, lockfile, deterministic version smoke test, and development-only Ruff, mypy, pytest, and `uv_build`; verified the locked environment, formatting, linting, strict typing, test, and distribution build without model, server, network, audio, or hardware behavior.
 - 2026-07-20: Completed Task 5.1. Added the root cross-language format, lint, type-check, test, build, and aggregate check surface; introduced the selected ESLint flat configuration and Prettier; and verified every root command on Windows. A temporary unformatted fixture made `format:check` return nonzero and was removed, confirming failure propagation. TypeScript was adjusted from `7.0.2` to supported stable `6.0.3` because `typescript-eslint` `8.64.0` supports TypeScript only below `6.1.0`.
+- 2026-07-20: Implemented Task 5.2 locally. Added the pinned `Foundation checks` workflow with `Windows native foundation` as the authoritative job and `Ubuntu portable foundation` as the intentionally limited TypeScript/Python job. Remote GitHub Actions evidence remains pending until the workflow commit is pushed.
 
 ## Discoveries and decisions
 
@@ -598,6 +599,7 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - uv `0.11.29` discovers the repository-root Python `3.12.10` declaration and creates the isolated environment at `services/tts/.venv`. The Python project has no runtime dependencies; its lock data contains only the local package and development quality tools with their transitive dependencies. The compatible `uv_build` range is declared separately as the build-system requirement.
 - TypeScript `7.0.2` was initially validated before lint tooling existed, but it falls outside `typescript-eslint` `8.64.0`'s supported range. Task 5.1 therefore pins TypeScript `6.0.3`, the latest stable release accepted by that parser, and revalidates every TypeScript package rather than relying on an unsupported peer combination. The quality-tool version is old enough for the workspace release-age policy, so no supply-chain exception is required.
 - Root scripts use package-manager command chaining that works in both Windows command execution and POSIX shells. Each aggregate stage delegates to named ecosystem-specific scripts, preserves the first failing exit code, and does not require an additional monorepo task runner.
+- CI uses supported explicit `windows-2025` and `ubuntu-24.04` runner labels. Checkout `6.0.2`, setup-node `6.4.0`, setup-python `6.2.0`, and setup-uv `8.1.0` are pinned to full release commit SHAs; pnpm `11.15.1`, uv `0.11.29`, and the repository toolchain declarations remain the executable version authorities.
 
 ## Final validation requirements
 

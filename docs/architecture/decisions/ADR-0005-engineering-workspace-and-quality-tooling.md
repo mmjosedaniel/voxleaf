@@ -4,7 +4,7 @@
 
 Accepted.
 
-This decision selects the foundation tooling. The workspace, language-specific tooling, lockfiles, and root command surface are implemented and validated; continuous integration remains deferred to its corresponding foundation task.
+This decision selects the foundation tooling. The workspace, language-specific tooling, lockfiles, root command surface, and deterministic Windows and Ubuntu continuous integration are implemented and validated.
 
 ## Context
 
@@ -92,6 +92,8 @@ The root commands must call the same focused checks rather than define weaker du
 - Pin GitHub Actions to full commit SHAs and tool versions to exact releases. Choose explicit [supported runner labels](https://docs.github.com/en/actions/concepts/runners/github-hosted-runners) when implementing the workflow and review runner-image changes separately from dependency upgrades.
 - Key caches by operating system and the applicable lockfiles. Never restore `node_modules`, `.venv`, Rust `target`, or native build outputs across operating systems.
 - Do not require a GPU, model weights, private data, external services, performance benchmarks, or generated audio in deterministic pull-request CI.
+
+Task 5.2 implements this strategy in `foundation-checks.yml`. It uses the explicit supported runner labels `windows-2025` and `ubuntu-24.04`; reads Node.js, Python, and Rust versions from the repository declarations; pins pnpm and uv exactly; and pins every action to a full commit SHA. Only uv's dependency-download cache is enabled, with an operating-system-specific suffix. The portable job deliberately excludes Rust and Tauri and runs `check:portable`; the authoritative Windows job runs the complete `check` command.
 
 ## Dependency impact
 

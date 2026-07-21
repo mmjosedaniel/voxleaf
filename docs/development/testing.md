@@ -8,6 +8,14 @@
 - Never require proprietary EPUBs or committed model weights.
 - Separate correctness tests from hardware-dependent performance benchmarks.
 
+## Deterministic foundation checks
+
+Run `pnpm.cmd check` from native Windows after the locked JavaScript and Python environments are installed. It is the authoritative local foundation check and covers formatting, linting, type checking, smoke tests, framework-independent package builds, the React production build, the native Tauri release executable, and the Python source and wheel distributions.
+
+GitHub Actions runs the same authoritative check in the `Windows native foundation` job on `windows-2025`. The separate `Ubuntu portable foundation` job runs `pnpm check:portable` on `ubuntu-24.04`, covering TypeScript and Python validation plus the browser-only desktop build without installing Rust or Linux desktop dependencies. A portable success does not replace native Windows validation.
+
+Both jobs install from committed lockfiles. They do not use repository secrets, model weights, GPU hardware, books, generated audio, network services, or performance benchmarks. Network access is limited to tool and dependency installation before the deterministic checks execute.
+
 ## Test levels
 
 ### Unit
