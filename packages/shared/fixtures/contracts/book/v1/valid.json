@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "identity": {
+    "scheme": "synthetic-test",
+    "schemeVersion": 1,
+    "value": "book-test-001"
+  },
+  "metadata": {
+    "title": "Synthetic Contract Book",
+    "authors": ["VoxLeaf Test Suite"]
+  },
+  "resources": [
+    {
+      "path": "text/chapter-1.xhtml",
+      "mediaType": "application/xhtml+xml",
+      "role": "content-document"
+    }
+  ],
+  "spine": [
+    {
+      "id": "spine:chapter-1",
+      "index": 0,
+      "resourcePath": "text/chapter-1.xhtml"
+    }
+  ],
+  "navigation": [
+    {
+      "label": "Chapter One",
+      "targetSpineItemId": "spine:chapter-1"
+    }
+  ]
+}

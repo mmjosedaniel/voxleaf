@@ -1,0 +1,107 @@
+{
+  "cases": [
+    {
+      "id": "book-v1-valid",
+      "fixture": "book/v1/valid.json",
+      "schemaId": "urn:voxleaf:schema:book:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "locator-v1-valid-without-progression",
+      "fixture": "locator/v1/valid-without-progression.json",
+      "schemaId": "urn:voxleaf:schema:locator:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "locator-v1-rejects-unknown-field",
+      "fixture": "locator/v1/invalid-unknown-field.json",
+      "schemaId": "urn:voxleaf:schema:locator:v1",
+      "expected": "invalid"
+    },
+    {
+      "id": "locator-v1-rejects-numeric-string",
+      "fixture": "locator/v1/invalid-numeric-string.json",
+      "schemaId": "urn:voxleaf:schema:locator:v1",
+      "expected": "invalid"
+    },
+    {
+      "id": "locator-range-v1-valid",
+      "fixture": "locator-range/v1/valid.json",
+      "schemaId": "urn:voxleaf:schema:locator-range:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "persisted-reading-state-v1-valid-with-preferences",
+      "fixture": "persisted-reading-state/v1/valid-with-preferences.json",
+      "schemaId": "urn:voxleaf:schema:persisted-reading-state:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "persisted-reading-state-v1-rejects-nonpositive-rate",
+      "fixture": "persisted-reading-state/v1/invalid-nonpositive-rate.json",
+      "schemaId": "urn:voxleaf:schema:persisted-reading-state:v1",
+      "expected": "invalid"
+    },
+    {
+      "id": "reading-session-v1-rejects-unsupported-version",
+      "fixture": "reading-session/v1/invalid-unsupported-version.json",
+      "schemaId": "urn:voxleaf:schema:reading-session:v1",
+      "expected": "invalid"
+    },
+    {
+      "id": "narration-segment-v1-sensitive-valid",
+      "fixture": "narration-segment/v1/sensitive-valid.json",
+      "schemaId": "urn:voxleaf:schema:narration-segment:v1",
+      "expected": "valid",
+      "containsSensitiveNarrationText": true
+    },
+    {
+      "id": "operational-error-v1-valid",
+      "fixture": "operational-error/v1/valid.json",
+      "schemaId": "urn:voxleaf:schema:operational-error:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "operational-error-v1-rejects-details",
+      "fixture": "operational-error/v1/invalid-unknown-field.json",
+      "schemaId": "urn:voxleaf:schema:operational-error:v1",
+      "expected": "invalid"
+    },
+    {
+      "id": "capability-report-v1-valid",
+      "fixture": "capability-report/v1/valid.json",
+      "schemaId": "urn:voxleaf:schema:capability-report:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "capability-report-v1-rejects-unknown-status",
+      "fixture": "capability-report/v1/invalid-unknown-status.json",
+      "schemaId": "urn:voxleaf:schema:capability-report:v1",
+      "expected": "invalid"
+    },
+    {
+      "id": "audio-frame-v1-valid",
+      "fixture": "audio-frame/v1/valid.json",
+      "schemaId": "urn:voxleaf:schema:audio-frame:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "audio-frame-v1-rejects-zero-samples",
+      "fixture": "audio-frame/v1/invalid-zero-samples.json",
+      "schemaId": "urn:voxleaf:schema:audio-frame:v1",
+      "expected": "invalid"
+    },
+    {
+      "id": "buffer-status-v1-valid",
+      "fixture": "buffer-status/v1/valid.json",
+      "schemaId": "urn:voxleaf:schema:buffer-status:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "buffer-status-v1-rejects-unsupported-version",
+      "fixture": "buffer-status/v1/invalid-unsupported-version.json",
+      "schemaId": "urn:voxleaf:schema:buffer-status:v1",
+      "expected": "invalid"
+    }
+  ]
+}
