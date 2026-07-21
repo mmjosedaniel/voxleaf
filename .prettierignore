@@ -1,0 +1,13 @@
+**/coverage/
+**/dist/
+**/.mypy_cache/
+**/node_modules/
+**/.pytest_cache/
+**/.ruff_cache/
+**/src-tauri/gen/
+**/target/
+**/__pycache__/
+services/tts/.venv/
+**/Cargo.lock
+pnpm-lock.yaml
+services/tts/uv.lock

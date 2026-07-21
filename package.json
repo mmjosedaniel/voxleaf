@@ -1,0 +1,49 @@
+{
+  "name": "voxleaf",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.15.1",
+  "engines": {
+    "node": "^22.12.0 || ^24.0.0",
+    "pnpm": "11.15.1"
+  },
+  "scripts": {
+    "build": "pnpm run build:packages && pnpm run build:desktop && pnpm run build:python",
+    "build:desktop": "pnpm --filter @voxleaf/desktop tauri build",
+    "build:packages": "pnpm --filter @voxleaf/epub --filter @voxleaf/shared build",
+    "build:portable": "pnpm run build:packages && pnpm --filter @voxleaf/desktop build && pnpm run build:python",
+    "build:python": "uv build services/tts",
+    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build",
+    "check:portable": "pnpm run format:check:typescript && pnpm run format:check:python && pnpm run lint:typescript && pnpm run lint:python && pnpm run typecheck && pnpm run test:typescript && pnpm run test:python && pnpm run build:portable",
+    "format": "pnpm run format:typescript && pnpm run format:rust && pnpm run format:python",
+    "format:check": "pnpm run format:check:typescript && pnpm run format:check:rust && pnpm run format:check:python",
+    "format:check:python": "uv run --project services/tts --locked ruff format --check services/tts",
+    "format:check:rust": "cargo fmt --check --manifest-path apps/desktop/src-tauri/Cargo.toml",
+    "format:check:typescript": "prettier --check \"**/*.{css,js,json,ts,tsx,yaml,yml}\"",
+    "format:python": "uv run --project services/tts --locked ruff format services/tts",
+    "format:rust": "cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml",
+    "format:typescript": "prettier --write \"**/*.{css,js,json,ts,tsx,yaml,yml}\"",
+    "lint": "pnpm run lint:typescript && pnpm run lint:rust && pnpm run lint:python",
+    "lint:python": "uv run --project services/tts --locked ruff check services/tts",
+    "lint:rust": "cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets -- -D warnings",
+    "lint:typescript": "eslint .",
+    "test": "pnpm run test:typescript && pnpm run test:rust && pnpm run test:python",
+    "test:python": "uv run --project services/tts --locked pytest services/tts",
+    "test:rust": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml",
+    "test:typescript": "pnpm --recursive --if-present test",
+    "typecheck": "pnpm run typecheck:typescript && pnpm run typecheck:python",
+    "typecheck:python": "uv run --directory services/tts --locked mypy .",
+    "typecheck:typescript": "pnpm --recursive --if-present typecheck"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.7.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.3",
+    "globals": "17.7.0",
+    "prettier": "3.9.5",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.64.0",
+    "vitest": "4.1.10"
+  }
+}

@@ -119,15 +119,15 @@ Implementation must not begin with blind framework generators. The environment b
 - The initial desktop and service code expose only deterministic smoke behavior. No local socket, WebSocket, sidecar launch, model adapter, or public protocol is introduced.
 - CI validates deterministic foundation behavior. Hardware and performance jobs are deferred.
 
-### Decisions that must be resolved before dependent tasks start
+### Decision status before dependent tasks start
 
-1. Select the JavaScript package manager and workspace mechanism. `pnpm` is the provisional default because it is already available to the user and supports workspaces, but it must be confirmed and pinned before Task 3.
-2. Select supported Node.js, Rust, and Python versions from versions supported by the chosen frameworks and future TTS evaluation. The currently installed Node.js version is evidence about the machine, not an automatic project decision.
-3. Select the version-pinning mechanism for Windows and WSL and document how contributors verify it.
-4. Select TypeScript formatting, linting, unit-testing, and type-checking tools with the smallest justified dependency set.
-5. Select Python environment, lockfile, formatting, linting, type-checking, testing, and build tools.
-6. Define whether deterministic CI runs on Windows only or uses a Windows job for native validation plus a separate portable job. Native Windows validation is mandatory before completing this milestone.
-7. Validate Tauri 2 against the native Windows prerequisites and a production build. Update ADR-0001 or create a superseding decision if validation changes the candidate direction.
+1. Resolved by Task 1.2 and ADR-0005: use the pinned pnpm release and its native workspace with one root JavaScript lockfile.
+2. Resolved by Task 1.2: the supported and selected Node.js, Rust, Cargo, and Python versions are pinned and documented. Future TTS evaluation may require a documented Python revision.
+3. Resolved by Tasks 1.1 and 1.2: repository declarations pin the runtimes, Windows is canonical, and Windows/WSL artifacts remain isolated.
+4. Resolved by ADR-0005: use TypeScript, ESLint with `typescript-eslint`, Prettier, and Vitest as development-only TypeScript quality tools.
+5. Resolved by ADR-0005: use a uv-managed Python project and lockfile with Ruff, mypy, pytest, and `uv_build`.
+6. Resolved by ADR-0005: require authoritative Windows CI and add a separate Ubuntu job for portable TypeScript and Python checks.
+7. Completed Task 3.2: validated Tauri 2 against the native Windows prerequisites and a production build, and updated ADR-0001 to adopt the candidate direction.
 
 ### Decisions explicitly deferred
 
@@ -191,7 +191,7 @@ git diff --check
 git diff -- docs/development/setup.md
 ```
 
-**Status:** Not started.
+**Status:** Complete. The Windows/WSL boundary is recorded in `docs/development/setup.md`; the task's documentation validation passed on 2026-07-20.
 
 ### Task 1.2: Capture and satisfy the prerequisite version matrix
 
@@ -202,7 +202,7 @@ git diff -- docs/development/setup.md
 - Each selected version is justified by official support from the chosen stack rather than only the current machine state.
 - Required tools can be discovered from a new shell in the canonical Windows environment.
 - Missing Rust/Cargo and usable Python prerequisites are installed or documented as an explicit blocker before scaffolding proceeds.
-- Version declarations are committed in the conventional project files selected by Task 1.3.
+- Version declarations are recorded in conventional project files. Task 1.3 must preserve them or explicitly document and validate any revision while deciding the wider workspace and quality-tool strategy.
 
 **Validation commands:**
 
@@ -217,7 +217,7 @@ git diff --check
 
 If a different package-manager or Python command is selected, update this task with the exact verified command before marking it complete.
 
-**Status:** Not started.
+**Status:** Complete. Supported and selected prerequisites are documented and pinned; the canonical Windows host discovers every required command after its environment is refreshed, and the native C++ and WebView prerequisites are installed and verified.
 
 ### Task 1.3: Decide the workspace and quality-tool strategy
 
@@ -237,7 +237,7 @@ git diff --check
 git status --short
 ```
 
-**Status:** Not started.
+**Status:** Complete. ADR-0005 selects pnpm workspace and lock ownership, runtime declarations, TypeScript and Python quality tools, cross-language root and focused command surfaces, and Windows-authoritative plus Ubuntu-portable CI.
 
 ## Implementation milestone 2: Initialize the TypeScript workspace and framework-independent packages
 
@@ -261,9 +261,9 @@ pnpm.cmd install --frozen-lockfile
 git diff --check
 ```
 
-These are planned commands based on the provisional `pnpm` decision. Replace them if Task 1.3 selects another tool.
+These exact commands were verified on the canonical Windows environment on 2026-07-20. The frozen installation was run after removing the generated root `node_modules` directory. The root manifest has no lifecycle or product scripts, and its only dependency is the pinned TypeScript development toolchain.
 
-**Status:** Not started.
+**Status:** Complete. The root pnpm workspace is limited to the three intended TypeScript areas, pnpm and TypeScript are pinned, the generated lockfile reproduces a clean installation, and the shared strict TypeScript configuration is accepted by the pinned compiler.
 
 ### Task 2.2: Add the minimal shared TypeScript package
 
@@ -284,9 +284,11 @@ pnpm.cmd --filter @voxleaf/shared test
 pnpm.cmd --filter @voxleaf/shared build
 ```
 
-The exact package name and scripts must be established by Task 2.1 and updated here before execution.
+Task 2.2 must create and verify this package name and these scripts before it is marked complete.
 
-**Status:** Not started.
+The exact commands above were verified on the canonical Windows environment on 2026-07-20. The test was also verified after deleting `packages/shared/dist`; its `pretest` lifecycle rebuilt the package before Vitest imported `@voxleaf/shared` through the declared public entry point.
+
+**Status:** Complete. `@voxleaf/shared` is a private, composite TypeScript package with an empty public module, no runtime dependencies or product contracts, and independently verified type-check, test, and build commands.
 
 ### Task 2.3: Add the minimal EPUB TypeScript package
 
@@ -307,9 +309,11 @@ pnpm.cmd --filter @voxleaf/epub test
 pnpm.cmd --filter @voxleaf/epub build
 ```
 
-The exact package name and scripts must be established by Task 2.1 and updated here before execution.
+Task 2.3 must create and verify this package name and these scripts before it is marked complete.
 
-**Status:** Not started.
+The exact commands above were verified on the canonical Windows environment on 2026-07-20. The test was also verified after deleting `packages/epub/dist`; its `pretest` lifecycle rebuilt the package before Vitest imported `@voxleaf/epub` through the declared public entry point.
+
+**Status:** Complete. `@voxleaf/epub` is a private, composite TypeScript package with an empty public module, no runtime dependencies or product behavior, and independently verified type-check, test, and build commands.
 
 ## Implementation milestone 3: Validate the desktop candidate stack
 
@@ -333,9 +337,11 @@ pnpm.cmd --filter @voxleaf/desktop test
 pnpm.cmd --filter @voxleaf/desktop build
 ```
 
-The exact package name and scripts must be established by Task 2.1 and updated here before execution.
+Task 3.1 must create and verify this package name and these scripts before it is marked complete.
 
-**Status:** Not started.
+The exact commands above were verified on the canonical Windows environment on 2026-07-20. The deterministic jsdom smoke test locates the semantic main landmark and the `VoxLeaf development shell` level-one heading without importing or mocking any Tauri API.
+
+**Status:** Complete. `@voxleaf/desktop` provides a minimal React `19.2.7` and Vite `8.1.5` web shell, an accessible static development-state page, a DOM rendering test, and a successful production build. Native Tauri validation was completed separately in Task 3.2.
 
 ### Task 3.2: Validate the Tauri 2 native shell
 
@@ -358,9 +364,9 @@ cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
 pnpm.cmd --filter @voxleaf/desktop tauri build
 ```
 
-The exact Tauri command must match the generated workspace configuration and be updated before execution.
+These exact commands passed in the canonical Windows environment on 2026-07-20. The release executable was also launched in a bounded smoke check, remained running, exposed the configured `VoxLeaf development shell` window title, and was then stopped.
 
-**Status:** Not started.
+**Status:** Complete. Tauri 2 is adopted in ADR-0001; the React shell builds and launches as a native Windows executable with no plugins, registered commands, frontend Tauri API, or IPC capabilities.
 
 ## Implementation milestone 4: Initialize the Python TTS service project
 
@@ -378,19 +384,19 @@ The exact Tauri command must match the generated workspace configuration and be 
 
 **Validation commands:**
 
-Run from the documented activated environment using the exact selected Python command:
+Run from the repository root using the uv project and lock selected by ADR-0005:
 
 ```powershell
-python -m ruff format --check services/tts
-python -m ruff check services/tts
-python -m pyright services/tts
-python -m pytest services/tts
-python -m build services/tts
+uv run --project services/tts --locked ruff format --check services/tts
+uv run --project services/tts --locked ruff check services/tts
+uv run --directory services/tts --locked mypy .
+uv run --project services/tts --locked pytest services/tts
+uv build services/tts
 ```
 
-If Task 1.3 selects different tools or invocation, replace these planned commands with the verified repository commands before execution.
+These exact commands passed in the canonical Windows environment on 2026-07-20 with uv `0.11.29` and CPython `3.12.10`.
 
-**Status:** Not started.
+**Status:** Complete. `services/tts` is an isolated, dependency-free runtime package with a deterministic version function, one smoke test, committed uv lock data, and development-only formatting, linting, type-checking, testing, and build tools.
 
 ## Implementation milestone 5: Unify deterministic checks and continuous integration
 
@@ -416,9 +422,9 @@ pnpm.cmd test
 pnpm.cmd build
 ```
 
-These planned root commands must be updated to the exact selected command names before execution.
+These exact root commands passed in the canonical Windows environment on 2026-07-20. `pnpm.cmd check` also passed as the deterministic aggregate of formatting validation, linting, type checking, tests, and builds.
 
-**Status:** Not started.
+**Status:** Complete. The root package exposes documented cross-language `format`, `format:check`, `lint`, `typecheck`, `test`, `build`, and `check` commands while retaining direct TypeScript, Rust, and Python subcommands for focused diagnosis.
 
 ### Task 5.2: Add deterministic continuous integration
 
@@ -426,7 +432,7 @@ These planned root commands must be updated to the exact selected command names 
 
 **Acceptance criteria:**
 
-- CI uses lockfiles and pinned or intentionally ranged action/tool versions.
+- CI uses lockfiles, exact tool versions, and GitHub Actions pinned to full commit SHAs, as required by ADR-0005.
 - A Windows job validates the native desktop shell.
 - Any portable job has a distinct purpose and does not duplicate work without justification.
 - CI does not use secrets, proprietary fixtures, model weights, CUDA, a GPU, generated audio, or network services at test runtime beyond dependency installation.
@@ -445,7 +451,7 @@ pnpm.cmd build
 
 After pushing the implementation branch, record the exact GitHub Actions check names and successful run URL in the progress log.
 
-**Status:** Not started.
+**Status:** Complete. The pinned workflow passed on the implementation branch in GitHub Actions run [29800516177](https://github.com/mmjosedaniel/voxleaf/actions/runs/29800516177). The exact successful job names were `Windows native foundation` and `Ubuntu portable foundation`.
 
 ### Task 5.3: Complete setup, testing, and dependency documentation
 
@@ -471,7 +477,7 @@ pnpm.cmd test
 pnpm.cmd build
 ```
 
-**Status:** Not started.
+**Status:** Complete. The root README and development documentation now contain the verified Windows installation, browser-development, focused validation, aggregate check, and production-build commands. Current smoke coverage and deferred product tests are explicit, every direct dependency has a purpose and classification, production alternatives are recorded, and transitive graphs remain controlled by the committed lockfiles.
 
 ## Acceptance criteria for Milestone 1
 
@@ -558,6 +564,19 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - 2026-07-20: Verified Node.js and Git are visible; found `pnpm.cmd` but could not verify it within the restricted inspection process; Rust/Cargo and a usable Python interpreter were not verified.
 - 2026-07-20: Confirmed Milestone 1 is ready to begin once its environment and tool decisions are resolved in sequence.
 - 2026-07-20: Created this ExecPlan. No implementation tasks have started.
+- 2026-07-20: Completed Task 1.1 by documenting Windows as the canonical native Tauri environment, defining WSL's optional role, and isolating paths, line endings, dependency directories, Python environments, Rust targets, and generated artifacts. `git diff --check` passed and the scoped diff was reviewed; no application files were created.
+- 2026-07-20: Completed Task 1.2. Installed and verified Node.js `24.18.0`, pnpm `11.15.1`, rustup `1.29.0`, Rust/Cargo `1.97.1`, Python `3.12.10`, Visual Studio Build Tools 2022 `17.14.36` with MSVC `14.44.35207` and Windows SDK `10.0.26100.0`; confirmed WebView2 Evergreen `150.0.4078.83`; added conventional version declarations and the prerequisite matrix.
+- 2026-07-20: Completed Task 1.3 by accepting ADR-0005. Selected the pnpm workspace, per-ecosystem lock ownership, cross-language root command contract, TypeScript and Python quality stacks, focused Rust/Python checks, and Windows-authoritative plus Ubuntu-portable CI strategy. No dependencies or application code were added.
+- 2026-07-20: Completed Task 2.1. Added an explicit pnpm workspace for `apps/desktop`, `packages/shared`, and `packages/epub`; pinned TypeScript `7.0.2`; generated the pnpm lockfile; added shared strict compiler defaults; and verified both normal and clean frozen-lockfile installations with pnpm `11.15.1`.
+- 2026-07-20: Completed Task 2.2. Added `@voxleaf/shared` as a composite TypeScript project with an empty public entry point, pinned Vitest `4.1.10`, and verified type-checking, public-package resolution in a smoke test, and declaration/JavaScript builds. No runtime dependency or product contract was introduced.
+- 2026-07-20: Completed Task 2.3. Added dependency-free `@voxleaf/epub` as a composite TypeScript project, registered it in the root project-reference graph, and verified type-checking, public-package resolution from clean build output, and declaration/JavaScript builds. No archive, DOM, sanitizer, renderer, CFI, book-text, or logging behavior was introduced.
+- 2026-07-20: Completed Task 3.1. Added the `@voxleaf/desktop` React and TypeScript web shell, registered it in the TypeScript project-reference graph, and verified type-checking, one semantic rendering smoke test, and a Vite production build. The shell clearly reports that EPUB reading and narration are not implemented and contains no Tauri, file, persistence, TTS, audio, model, or network behavior.
+- 2026-07-20: Completed Task 3.2. Added the pinned Tauri CLI, runtime, build crate, Rust manifest and lockfile, minimal Windows entry point, strict local configuration, and required Windows icon. Rust formatting, Clippy with warnings denied, zero-behavior native tests, the Tauri release build, and a bounded executable launch passed; ADR-0001 now confirms Tauri adoption.
+- 2026-07-20: Completed Task 4.1. Installed and pinned uv `0.11.29`; added the isolated `voxleaf-tts` pure-Python package, lockfile, deterministic version smoke test, and development-only Ruff, mypy, pytest, and `uv_build`; verified the locked environment, formatting, linting, strict typing, test, and distribution build without model, server, network, audio, or hardware behavior.
+- 2026-07-20: Completed Task 5.1. Added the root cross-language format, lint, type-check, test, build, and aggregate check surface; introduced the selected ESLint flat configuration and Prettier; and verified every root command on Windows. A temporary unformatted fixture made `format:check` return nonzero and was removed, confirming failure propagation. TypeScript was adjusted from `7.0.2` to supported stable `6.0.3` because `typescript-eslint` `8.64.0` supports TypeScript only below `6.1.0`.
+- 2026-07-20: Implemented Task 5.2 locally. Added the pinned `Foundation checks` workflow with `Windows native foundation` as the authoritative job and `Ubuntu portable foundation` as the intentionally limited TypeScript/Python job.
+- 2026-07-21: Completed Task 5.2. The first remote run exposed a Windows checkout line-ending mismatch before native compilation, so `.gitattributes` now enforces LF for repository text while preserving the icon as binary. GitHub Actions run [29800516177](https://github.com/mmjosedaniel/voxleaf/actions/runs/29800516177) then passed with the exact job names `Windows native foundation` and `Ubuntu portable foundation`.
+- 2026-07-21: Completed Task 5.3. Replaced stale setup claims, added a contributor quick start, verified the browser development server with a local HTTP response, documented the implemented smoke tests and deferred product coverage, and added a complete direct-dependency inventory with production alternatives and transitive-lock review rules. `git diff --check`, both locked installs, and the separate root format, lint, type-check, test, and production-build commands passed in native Windows PowerShell.
 
 ## Discoveries and decisions
 
@@ -565,7 +584,28 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - The existing `synchronized-reader-and-startup-buffer.md` plan spans later roadmap milestones and must not pull shared contracts or product behavior into this foundation plan.
 - Exact project validation commands cannot be truthfully reported as existing until the tasks above create and run them. Planned commands in this document are explicit targets and must be corrected to match verified configuration.
 - Native Windows validation is required. WSL remains useful, but sharing generated artifacts between Windows and Linux is outside the supported foundation workflow.
+- Node.js 20 was present but is end-of-life as of this task, so the project selects Node.js 24 LTS while retaining Node.js 22.12 or newer within the maintained Node 22 line as the minimum supported frontend runtime.
+- Task 1.2 now owns the minimal runtime version declarations needed to make its prerequisite matrix reproducible. Task 1.3 owns the broader workspace and quality-tool decision and must preserve or explicitly revise these pins.
+- The root pnpm command surface will orchestrate checks, but JavaScript, Python, and Rust retain separate lock ownership and direct focused commands. This avoids pretending pnpm owns Python or Cargo dependencies.
+- Native Windows CI is authoritative. The additional Ubuntu job is limited to portable TypeScript and Python checks and cannot satisfy native desktop acceptance.
 - No TTS model, EPUB implementation, local process protocol, or audio dependency is justified during this milestone.
+- The root workspace declares exact future package paths instead of broad glob patterns, so adding unrelated directories under `apps` or `packages` will not silently make them workspace members.
+- The root TypeScript configuration contains only environment-independent strict defaults. Package-specific libraries, output settings, project references, and scripts remain owned by Tasks 2.2, 2.3, and 3.1 when those projects exist.
+- The shared package intentionally exports no values yet. Its smoke test imports the package by name and asserts the empty namespace, proving the runner and declared public entry resolve without creating a placeholder domain API.
+- The EPUB package mirrors the shared package's foundation structure but does not depend on it yet. This preserves isolation until a real shared contract justifies a `workspace:` dependency.
+- React `19.2.7`, React DOM `19.2.7`, Vite `8.1.5`, and the official React plugin `6.0.3` are verified for the web shell on the selected Node.js runtime. That result initially validated only the web portion of the desktop candidate; Task 3.2 subsequently confirmed Tauri adoption.
+- Testing Library and jsdom are scoped to the desktop package because its first real DOM rendering test now justifies them. `@testing-library/jest-dom` remains on mature release `6.9.1`; the newly published `7.0.0` would have required a pnpm release-age policy exception that this task did not justify.
+- Tauri `2.11.5`, Tauri CLI `2.11.4`, and `tauri-build` `2.6.3` are verified with the pinned Rust `1.97.1` MSVC toolchain. Installer bundling remains disabled because packaging and signing are outside the foundation milestone.
+- The main webview has an explicit empty capability list and no frontend Tauri API dependency. It cannot call native IPC until a later task adds a narrowly scoped command and permission with its behavior and security tests.
+- Enforced Windows Verified-and-Reputable Application Control blocked Cargo-generated unsigned build scripts and procedural macro libraries with error `4551`. Relocating Cargo output did not help; native validation succeeded after the user disabled Smart App Control. Managed development environments must instead use an administrator-approved policy or signing approach.
+- uv `0.11.29` discovers the repository-root Python `3.12.10` declaration and creates the isolated environment at `services/tts/.venv`. The Python project has no runtime dependencies; its lock data contains only the local package and development quality tools with their transitive dependencies. The compatible `uv_build` range is declared separately as the build-system requirement.
+- TypeScript `7.0.2` was initially validated before lint tooling existed, but it falls outside `typescript-eslint` `8.64.0`'s supported range. Task 5.1 therefore pins TypeScript `6.0.3`, the latest stable release accepted by that parser, and revalidates every TypeScript package rather than relying on an unsupported peer combination. The quality-tool version is old enough for the workspace release-age policy, so no supply-chain exception is required.
+- Root scripts use package-manager command chaining that works in both Windows command execution and POSIX shells. Each aggregate stage delegates to named ecosystem-specific scripts, preserves the first failing exit code, and does not require an additional monorepo task runner.
+- CI uses supported explicit `windows-2025` and `ubuntu-24.04` runner labels. Checkout `6.0.2`, setup-node `6.4.0`, setup-python `6.2.0`, and setup-uv `8.1.0` are pinned to full release commit SHAs; pnpm `11.15.1`, uv `0.11.29`, and the repository toolchain declarations remain the executable version authorities.
+- Repository text is normalized to LF through `.gitattributes`, preventing operating-system checkout behavior from changing the input to deterministic format checks. Binary icon data is explicitly excluded from text normalization.
+- The maintainer has a WSL Ubuntu environment, but the Codex Windows execution context could not enumerate that registered distribution during final validation. Ubuntu 24.04 CI is therefore the recorded portable Linux evidence, while the documentation makes no claim that milestone commands were locally validated in the maintainer's WSL environment.
+- The verified focused development command is the browser-only Vite server. A bounded native hot-reload attempt was inconclusive and is not milestone evidence; native shell acceptance continues to use the successful authoritative production build and earlier bounded executable launch.
+- The only direct shipped foundation libraries are React, React DOM, and the Tauri Rust crate. The Python, shared, and EPUB packages have no runtime dependencies, and no future product dependency was introduced by the documentation task.
 
 ## Final validation requirements
 
@@ -586,4 +626,15 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Not run. This plan defines future work only. The repository still has no implementation toolchain or project validation commands, and no milestone task has been implemented.
+Completed on 2026-07-21.
+
+- Tasks 1.1 through 5.3 are complete.
+- `git diff --check` passed.
+- `pnpm.cmd install --frozen-lockfile` and `uv sync --project services/tts --locked` passed from committed lock data. Clean hosted installations also passed in GitHub Actions.
+- `pnpm.cmd format:check`, `pnpm.cmd lint`, `pnpm.cmd typecheck`, `pnpm.cmd test`, and `pnpm.cmd build` passed separately in native Windows PowerShell.
+- The TypeScript smoke tests passed: one shared-package resolution test, one EPUB-package isolation test, and one accessible React-shell render test.
+- Cargo test and the native Tauri production build passed; the minimal Rust shell intentionally has no domain unit tests, broad capabilities, commands, plugins, or installer bundling.
+- The Python version smoke test, strict typing, linting, formatting, and source and wheel distribution builds passed without runtime dependencies.
+- GitHub Actions run [29801109249](https://github.com/mmjosedaniel/voxleaf/actions/runs/29801109249) passed at the final Task 5.2 branch head with `Windows native foundation` and `Ubuntu portable foundation`; Task 5.3 changes only documentation.
+- The dependency, permissions, logs, ignored artifacts, and changed-file scope were reviewed. No EPUB, book, TTS model, audio, persistence, hardware, installer, secret, private data, content-bearing log, or unrelated application behavior was added.
+- Milestone 1 is complete. The next roadmap work is Milestone 2, which requires a just-in-time ExecPlan before public contracts or multi-component behavior are implemented.

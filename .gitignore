@@ -33,6 +33,7 @@ htmlcov/
 # Rust and Tauri
 target/
 src-tauri/target/
+**/src-tauri/gen/
 
 # Models and machine-learning artifacts
 models/

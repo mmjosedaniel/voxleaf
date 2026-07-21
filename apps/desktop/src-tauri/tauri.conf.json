@@ -1,0 +1,32 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "VoxLeaf",
+  "version": "0.0.0",
+  "identifier": "com.voxleaf.desktop",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://127.0.0.1:5173",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "VoxLeaf development shell",
+        "width": 960,
+        "height": 720,
+        "minWidth": 320,
+        "minHeight": 480,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "capabilities": [],
+      "csp": "default-src 'self'; style-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": false
+  }
+}

@@ -17,15 +17,16 @@ Documentation is organized by purpose so contributors and Codex can load only th
 
 ## Development
 
-- [`development/setup.md`](development/setup.md): bootstrap order and setup principles.
+- [`development/setup.md`](development/setup.md): pinned prerequisites, reproducible setup, environment boundaries, and verified commands.
 - [`development/testing.md`](development/testing.md): test strategy.
+- [`development/dependencies.md`](development/dependencies.md): dependency ownership, purpose, alternatives, and review policy.
 - [`development/git-workflow.md`](development/git-workflow.md): branches, commits, and pull requests.
 
 ## Plans
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): work currently being implemented.
-- [`plans/active/establish-engineering-foundation.md`](plans/active/establish-engineering-foundation.md): detailed ExecPlan for the first roadmap milestone and current implementation priority.
+- [`plans/completed/establish-engineering-foundation.md`](plans/completed/establish-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): planned visual reader, position restoration, read-along synchronization, and startup audio lead.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">VoxLeaf foundation icon</title>
+  <rect width="512" height="512" rx="112" fill="#183d2a" />
+  <path
+    d="M144 134c48 0 86 13 112 39 26-26 64-39 112-39v242c-48 0-86 13-112 39-26-26-64-39-112-39V134Z"
+    fill="#fdfefb"
+  />
+  <path d="M256 173v242" fill="none" stroke="#b9d2bf" stroke-width="20" />
+  <path
+    d="M286 244c43-50 91-48 112-42-5 41-34 91-112 98 4-21 4-38 0-56Z"
+    fill="#7ca689"
+  />
+</svg>
