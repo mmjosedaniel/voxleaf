@@ -422,9 +422,9 @@ pnpm.cmd test
 pnpm.cmd build
 ```
 
-These planned root commands must be updated to the exact selected command names before execution.
+These exact root commands passed in the canonical Windows environment on 2026-07-20. `pnpm.cmd check` also passed as the deterministic aggregate of formatting validation, linting, type checking, tests, and builds.
 
-**Status:** Not started.
+**Status:** Complete. The root package exposes documented cross-language `format`, `format:check`, `lint`, `typecheck`, `test`, `build`, and `check` commands while retaining direct TypeScript, Rust, and Python subcommands for focused diagnosis.
 
 ### Task 5.2: Add deterministic continuous integration
 
@@ -573,6 +573,7 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - 2026-07-20: Completed Task 3.1. Added the `@voxleaf/desktop` React and TypeScript web shell, registered it in the TypeScript project-reference graph, and verified type-checking, one semantic rendering smoke test, and a Vite production build. The shell clearly reports that EPUB reading and narration are not implemented and contains no Tauri, file, persistence, TTS, audio, model, or network behavior.
 - 2026-07-20: Completed Task 3.2. Added the pinned Tauri CLI, runtime, build crate, Rust manifest and lockfile, minimal Windows entry point, strict local configuration, and required Windows icon. Rust formatting, Clippy with warnings denied, zero-behavior native tests, the Tauri release build, and a bounded executable launch passed; ADR-0001 now confirms Tauri adoption.
 - 2026-07-20: Completed Task 4.1. Installed and pinned uv `0.11.29`; added the isolated `voxleaf-tts` pure-Python package, lockfile, deterministic version smoke test, and development-only Ruff, mypy, pytest, and `uv_build`; verified the locked environment, formatting, linting, strict typing, test, and distribution build without model, server, network, audio, or hardware behavior.
+- 2026-07-20: Completed Task 5.1. Added the root cross-language format, lint, type-check, test, build, and aggregate check surface; introduced the selected ESLint flat configuration and Prettier; and verified every root command on Windows. A temporary unformatted fixture made `format:check` return nonzero and was removed, confirming failure propagation. TypeScript was adjusted from `7.0.2` to supported stable `6.0.3` because `typescript-eslint` `8.64.0` supports TypeScript only below `6.1.0`.
 
 ## Discoveries and decisions
 
@@ -595,6 +596,8 @@ Foundation tasks should be committed independently. If a stack validation fails,
 - The main webview has an explicit empty capability list and no frontend Tauri API dependency. It cannot call native IPC until a later task adds a narrowly scoped command and permission with its behavior and security tests.
 - Enforced Windows Verified-and-Reputable Application Control blocked Cargo-generated unsigned build scripts and procedural macro libraries with error `4551`. Relocating Cargo output did not help; native validation succeeded after the user disabled Smart App Control. Managed development environments must instead use an administrator-approved policy or signing approach.
 - uv `0.11.29` discovers the repository-root Python `3.12.10` declaration and creates the isolated environment at `services/tts/.venv`. The Python project has no runtime dependencies; its lock data contains only the local package and development quality tools with their transitive dependencies. The compatible `uv_build` range is declared separately as the build-system requirement.
+- TypeScript `7.0.2` was initially validated before lint tooling existed, but it falls outside `typescript-eslint` `8.64.0`'s supported range. Task 5.1 therefore pins TypeScript `6.0.3`, the latest stable release accepted by that parser, and revalidates every TypeScript package rather than relying on an unsupported peer combination. The quality-tool version is old enough for the workspace release-age policy, so no supply-chain exception is required.
+- Root scripts use package-manager command chaining that works in both Windows command execution and POSIX shells. Each aggregate stage delegates to named ecosystem-specific scripts, preserves the first failing exit code, and does not require an additional monorepo task runner.
 
 ## Final validation requirements
 
@@ -615,4 +618,4 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Not run for the complete plan. Tasks 1.1 through 4.1 are complete and their focused validation commands pass. Tasks 5.1 through 5.3, continuous-integration evidence, and the complete-plan final validation requirements remain outstanding.
+Not run for the complete plan. Tasks 1.1 through 5.1 are complete and their focused and aggregate validation commands pass. Tasks 5.2 and 5.3, continuous-integration evidence, and the complete-plan final validation requirements remain outstanding.

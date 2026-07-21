@@ -4,7 +4,7 @@
 
 Accepted.
 
-This decision selects the foundation tooling. The tools and commands remain unimplemented until the corresponding ExecPlan tasks add configuration, generate lockfiles, and validate every command.
+This decision selects the foundation tooling. The workspace, language-specific tooling, lockfiles, and root command surface are implemented and validated; continuous integration remains deferred to its corresponding foundation task.
 
 ## Context
 
@@ -65,7 +65,7 @@ The Python lockfile is intentionally separate from `pnpm-lock.yaml`: each lockfi
 
 ### Root and focused command surfaces
 
-The root `package.json` will provide these cross-language commands after their implementation tasks validate them:
+The root `package.json` provides these validated cross-language commands:
 
 - `format` for intentional formatting changes.
 - `format:check` for non-mutating formatting validation.
@@ -75,7 +75,7 @@ The root `package.json` will provide these cross-language commands after their i
 - `build` for TypeScript packages, the desktop production build, the Rust shell, and the Python distribution.
 - `check` as the deterministic aggregate used before review and in CI.
 
-These names are planned, not currently working commands. Implement them with portable package scripts and explicit working directories; do not depend on PowerShell-only or Bash-only syntax.
+Task 5.1 implemented these names with portable package scripts and explicit working directories. The scripts use command chaining supported by both Windows and POSIX package-script execution and preserve the first failing exit code.
 
 Focused commands remain first-class:
 

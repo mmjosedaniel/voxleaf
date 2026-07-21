@@ -2,7 +2,7 @@
 
 ## Current status
 
-The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, minimal Tauri 2 native shell, and isolated Python service foundation are initialized. The version, desktop, and focused Python commands in this document have been run successfully in Windows PowerShell. Aggregate root quality commands and continuous integration are not initialized yet.
+The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, minimal Tauri 2 native shell, isolated Python service foundation, and aggregate root quality commands are initialized. The version, focused, and root commands in this document have been run successfully in Windows PowerShell. Continuous integration is not initialized yet.
 
 ## Prerequisite version matrix
 
@@ -142,4 +142,18 @@ uv run --project services/tts --locked pytest services/tts
 uv build services/tts
 ```
 
-The Tauri command builds the React frontend and a release-mode Windows executable. Installer bundling is intentionally disabled during foundation validation. The Python commands create only an isolated development environment, validate the dependency-free service package, and build source and wheel distributions under the ignored `services/tts/dist` directory. They do not load a model or start a server. Aggregate formatting, linting, type-checking, testing, and build commands remain planned work for Task 5.1.
+After the locked JavaScript and Python environments are installed, use the verified root quality surface:
+
+```powershell
+pnpm.cmd format
+pnpm.cmd format:check
+pnpm.cmd lint
+pnpm.cmd typecheck
+pnpm.cmd test
+pnpm.cmd build
+pnpm.cmd check
+```
+
+`format` intentionally rewrites supported TypeScript, JavaScript, JSON, CSS, YAML, Rust, and Python files. The other commands are suitable for validation: `format:check`, `lint`, `typecheck`, and `test` do not intentionally modify tracked source; `build` writes only ignored build output. `check` runs those five validation stages in order and stops on the first failure. Each aggregate command delegates to the same focused pnpm, Cargo, and uv commands documented above, so focused commands remain available for diagnosis.
+
+The Tauri build produces the React frontend and a release-mode Windows executable. Installer bundling is intentionally disabled during foundation validation. The Python commands create only an isolated development environment, validate the dependency-free service package, and build source and wheel distributions under the ignored `services/tts/dist` directory. None of the root commands starts a development server, downloads models, reads books, requires GPU hardware, or persists generated audio.
