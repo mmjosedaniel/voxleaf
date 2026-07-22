@@ -184,6 +184,20 @@ describe("EPUB processing budget", () => {
     expect(budget.getSnapshot().compressedReadBytes).toBe(0);
   });
 
+  it("allows the exact decoded text maximum and rejects the next byte", () => {
+    const budget = createEpubProcessingBudget({
+      policy: { maxDecodedPublicationTextBytes: 4 },
+    });
+
+    budget.observeDecodedPublicationText(4);
+
+    expect(budget.getSnapshot().decodedPublicationTextBytes).toBe(4);
+    expect(() => budget.observeDecodedPublicationText(1)).toThrowError(
+      expect.objectContaining({ code: "resource-limit-exceeded" }),
+    );
+    expect(budget.getSnapshot().decodedPublicationTextBytes).toBe(4);
+  });
+
   it("allows the exact deadline and cancels at deadline plus one", () => {
     let nowMs = 100;
     const budget = createEpubProcessingBudget({
@@ -275,6 +289,7 @@ describe("EPUB processing budget", () => {
       declaredUncompressedBytes: 0,
       observedUncompressedBytes: 0,
       compressedReadBytes: 0,
+      decodedPublicationTextBytes: 0,
     });
     expect(Object.isFrozen(snapshot)).toBe(true);
   });
