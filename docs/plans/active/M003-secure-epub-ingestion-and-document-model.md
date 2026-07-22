@@ -352,7 +352,7 @@ Do not claim a new script exists until it is added and executed.
 
 **Validation:** `pnpm.cmd install --frozen-lockfile`; `pnpm.cmd --filter @voxleaf/epub typecheck`; `pnpm.cmd --filter @voxleaf/epub test`; `pnpm.cmd --filter @voxleaf/epub build`; `git diff --check`.
 
-**Status:** Not started.
+**Status:** Complete. Exact production dependencies `@zip.js/zip.js@2.8.30` and `saxes@6.0.0` are locked and documented. Package-internal executable probes prove strict ESM/TypeScript integration, in-memory compressed ZIP reads with canonical archive, signature, and order-independent overlap checks, namespace-aware XML with every `DOCTYPE` and custom entity rejected, cancellation checkpoints, content-free error mapping, and no worker or network invocation. The selected zip.js core variant is pure JavaScript and no probe is part of the public package API. All listed validation commands passed on 2026-07-21; repository formatting and lint also passed.
 
 ## Milestone 2: Establish archive/XML trust boundaries
 
@@ -677,6 +677,7 @@ Rollback is task-by-task. No user data exists to migrate. Published shared versi
 - 2026-07-21: Reviewed current W3C EPUB 3.3/Reading Systems requirements and candidate ZIP/XML documentation to inform recommendations without accepting them silently.
 - 2026-07-21: Created this ExecPlan; no implementation task started.
 - 2026-07-21: Completed Task 1.1 on `docs/m3-secure-ingestion-adr` from `main` at `c8a1c77`. Accepted ADR-0007 for the EPUB 3 reflowable support profile, exact security budgets, content matrix, SHA-256 identity, shared/internal model ownership, locator and error policy, and deferred cases. Updated the architecture overview and centralized exact limits in the ADR; no dependency or application code was added. `git diff --check` and `pnpm.cmd format:check` passed.
+- 2026-07-21: Completed Task 1.2 on `feat/m3-archive-xml-dependencies`. Selected and exactly pinned `@zip.js/zip.js@2.8.30` plus `saxes@6.0.0`; added package-internal executable probes for strict ZIP controls, DTD/custom-entity rejection, cancellation, safe error mapping, namespace behavior, and worker/network absence; and documented licenses, alternatives, transitive graph, release-age choice, and installed/bundle impact. The locked install, EPUB typecheck/test/build, formatting, lint, and diff checks passed.
 
 ## Decision log
 
@@ -687,6 +688,8 @@ Rollback is task-by-task. No user data exists to migrate. Published shared versi
 - ADR-0007 accepts counters as primary defenses plus abort and an injected deadline.
 - ADR-0007 accepts SHA-256 byte identity and deterministic text-free anchors; later tasks must prove their implementations.
 - ADR-0007 accepts the EPUB 3 reflowable baseline and defers EPUB 2/NCX.
+- Task 1.2 selects `@zip.js/zip.js@2.8.30` through the pure-JavaScript `lib/zip-core-native.js` subpath with strict archive interpretation enabled and workers, native compression streams, and stream transfer disabled. It is the first version with the required bounded canonical archive selection and had crossed the seven-day supply-chain gate; versions `2.8.31` through `2.8.33` had not.
+- Task 1.2 selects `saxes@6.0.0` with namespace processing and forced XML 1.0. VoxLeaf registers no resolver and rejects every `DOCTYPE`; the only production transitive is `xmlchars@2.2.0`.
 
 ## Discoveries and decisions
 
@@ -698,6 +701,9 @@ Rollback is task-by-task. No user data exists to migrate. Published shared versi
 - EPUB permits scripting/remote resources that VoxLeaf can explicitly decline for privacy/security.
 - Library strict checks are not necessarily defaults and must be enabled/tested.
 - Dropping CSS prevents full computed visibility; this limitation must remain explicit.
+- zip.js' `native` entry name denotes its bundled pure-JavaScript codec, not a native addon. The default package entry configures optional WASM/worker support, so VoxLeaf imports the narrower native core and disables workers explicitly.
+- The initially considered mature zip.js `2.8.26` pin was rejected after upstream history review showed that `2.8.28` fixed order-dependent overlap detection and `2.8.30` added strict canonical end-of-central-directory selection plus bounded ambiguity probes.
+- saxes does not fetch or expand DTD-defined entities by default, but it exposes a `doctype` event and a mutable entity table. The adapter must reject the event and never add resolver/entity behavior.
 
 ## Final validation requirements
 
@@ -719,4 +725,6 @@ Rollback is task-by-task. No user data exists to migrate. Published shared versi
 
 ## Final validation results
 
-Task 1.1 documentation validation passed on 2026-07-21 with `git diff --check` and `pnpm.cmd format:check`. No dependency or application code was added. Milestone-wide implementation and final validation have not run; Task 1.2 is next.
+Task 1.1 documentation validation passed on 2026-07-21 with `git diff --check` and `pnpm.cmd format:check`. No dependency or application code was added.
+
+Task 1.2 validation passed on 2026-07-21 with `pnpm.cmd install --frozen-lockfile`, `pnpm.cmd --filter @voxleaf/epub typecheck`, `pnpm.cmd --filter @voxleaf/epub test` (3 files and 12 tests), `pnpm.cmd --filter @voxleaf/epub build`, `pnpm.cmd format:check`, `pnpm.cmd lint`, and `git diff --check`. Milestone-wide implementation and final validation have not run; Task 2.1 is next.
