@@ -17,4 +17,5 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
+- [`M003-secure-epub-ingestion-and-document-model.md`](M003-secure-epub-ingestion-and-document-model.md): build bounded secure EPUB ingestion, a safe semantic document model, local resource access, and stable locator resolution for roadmap Milestone 3.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): implement the reflowable reader, shared position restoration, narration synchronization, and duration-based startup gate.
