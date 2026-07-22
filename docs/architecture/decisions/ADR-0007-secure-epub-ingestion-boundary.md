@@ -169,6 +169,10 @@ The initial closed EPUB detail codes are `invalid-container`, `unsafe-entry`, `m
 
 No error includes a filename, path, metadata value, URL, markup, prose, bytes, dependency message, parser message, stack, or raw rejected value. Presentation layers map fixed codes to safe user-facing text.
 
+The Task 6.1 implementation exposes one runtime entry point, `openEpubPublication(bytes, { signal? })`. It executes the complete bounded ingestion pipeline and catches every stage before returning either `{ ok: true, publication }` or `{ ok: false, detail, error }`. `detail` is one of the closed EPUB codes above and `error` is created by the existing `OperationalErrorV1` factory. Unknown exceptions become `internal-failure`; neither dependency exceptions nor their message, stack, cause, or rejected input are retained. If any stage fails after the archive opens, the archive is closed before the failure value is returned, so no partial publication or resource handle escapes.
+
+Successful publications expose immutable manifest-order semantic documents and detailed navigation, path-free lazy raster descriptors, deterministic start locators for every addressable spine block, structural exact/recovery resolution, and explicit close. Locator resolution uses a fresh bounded operation budget so a long-lived opened publication does not inherit the ingestion deadline. This adds no serialized shared-contract field and no filesystem, network, worker, renderer, persistence, or logging capability.
+
 ### Dependency decision boundary
 
 This ADR selects no ZIP or XML package. Task 1.2 must evaluate narrowly wrapped `@zip.js/zip.js` and `saxes` candidates against this policy, including ESM/build behavior, strict ZIP controls, external-entity behavior, cancellation, error mapping, runtime network/filesystem/worker behavior, license, transitive graph, and bundle impact.

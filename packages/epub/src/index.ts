@@ -1,7 +1,12 @@
 export type {
   ContentDocumentId,
+  ExactPublicationLocatorResolution,
   NonSpineDocumentLocation,
   OpenedPublication,
+  PublicationLocatedBlock,
+  PublicationLocatorRecoveryReason,
+  PublicationLocatorResolution,
+  PublicationLocatorResolveOptions,
   PublicationNavigationGroup,
   PublicationNavigationLink,
   PublicationNavigationNode,
@@ -9,6 +14,7 @@ export type {
   RasterImageMediaType,
   RasterImageResource,
   RasterImageResourceId,
+  RecoveredPublicationLocatorResolution,
   SemanticBlock,
   SemanticBlockQuoteBlock,
   SemanticCodeInline,
@@ -32,3 +38,13 @@ export type {
   SourceFragment,
   SpineDocumentLocation,
 } from "./document/document-model.js";
+
+export { openEpubPublication } from "./public/open-epub-publication.js";
+
+export type {
+  EpubFailure,
+  EpubFailureDetail,
+  OpenEpubPublicationOptions,
+  OpenEpubPublicationResult,
+  OpenEpubPublicationSuccess,
+} from "./public/epub-result.js";
