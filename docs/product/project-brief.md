@@ -77,7 +77,7 @@ The user should be able to select a chapter or paragraph, move forward or backwa
 
 The initial reader should extract metadata, navigation, ordered readable XHTML content, stable chapter and paragraph identifiers, and meaningful paragraph boundaries. It should ignore scripts, hidden content, navigation noise, and unsafe external references. Images may appear in the visual reader but are not narrated in the MVP.
 
-EPUB content should be presented as a normal reflowable ereader, with readable typography, images, scrolling or pagination, and chapter navigation. A displayed page number is not a stable position because it changes with the viewport, font size, and line spacing. VoxLeaf should persist a logical locator—such as a spine item plus an EPUB CFI or equivalent content anchor and offset—and use it to reconstruct the correct visible page.
+EPUB content should be presented as a normal reflowable ereader, with readable typography, images, continuous scrolling, and chapter navigation. [ADR-0008](../architecture/decisions/ADR-0008-visual-reader-architecture.md) selects continuous vertical scrolling as the sole initial mode and defers pagination. A displayed page number is not a stable position because visible layout changes with the viewport, font size, and line spacing. VoxLeaf should persist a logical locator—such as a spine item plus an EPUB CFI or equivalent content anchor and offset—and use it to reconstruct the correct visible passage.
 
 ### Narration text
 

@@ -4,7 +4,7 @@
 
 This is the canonical high-level map of VoxLeaf's implemented and approved architecture. It shows major repository components, process and trust boundaries, dependencies between those components, and the intended EPUB-to-audio flow. It is an orientation aid; the architecture overview, accepted ADRs, roadmap, and active ExecPlans remain authoritative for detailed rules and decisions.
 
-The diagrams intentionally omit classes, functions, exhaustive imports, exact schemas, security-budget values, UI layout, deployment packaging, and implementation choices that have not passed their roadmap decision gate. In particular, they do not select a renderer, persistence engine, TTS engine, process transport, audio format, or playback API.
+The diagrams intentionally omit classes, functions, exhaustive imports, exact schemas, security-budget values, UI layout, deployment packaging, and implementation choices that have not passed their roadmap decision gate. The visual-reader boundary is selected by ADR-0008, while the diagrams do not select a persistence engine, raster decoder, TTS engine, process transport, audio format, or playback API.
 
 ## Implementation-status legend
 
@@ -37,7 +37,7 @@ flowchart LR
       nativeShell["Tauri 2 native shell<br/>no commands, plugins, or capabilities"]:::partial
       webShell["React/Vite foundation UI<br/>no reader behavior"]:::partial
       fileBoundary["Native file-selection<br/>and bounded byte-read boundary"]:::planned
-      reader["Reader UI, session coordination,<br/>rendering, restoration"]:::planned
+      reader["Semantic DOM reader,<br/>coordination and restoration"]:::planned
       player["Bounded scheduling<br/>and audio playback"]:::planned
       nativeShell -->|embeds built web assets| webShell
       webShell -. planned reader integration .-> reader
@@ -90,7 +90,7 @@ flowchart LR
   semantics["BookV1 and SHA-256 identity<br/>immutable safe semantics"]:::implemented
   publication["Opened publication<br/>lazy raster reads and locators"]:::implemented
   contracts["@voxleaf/shared<br/>book, locator, error validation"]:::implemented
-  visualReader["Reflowable reader<br/>and position restoration"]:::planned
+  visualReader["Semantic scrolling reader<br/>and position restoration"]:::planned
   textPrep["Narration normalization<br/>and locator-linked chunks"]:::planned
   synthesis["Local TTS process<br/>engine and protocol undecided"]:::planned
   buffering["Bounded in-memory<br/>audio queue and startup gate"]:::planned
@@ -118,7 +118,7 @@ The solid middle section is implemented as an in-memory package flow and can be 
 | Shared contracts | [`packages/shared`](../../packages/shared/) owns canonical JSON Schemas, generated TypeScript wire types, runtime decoders, branded domain values, and a separate testing export. [ADR-0006](decisions/ADR-0006-json-schema-contract-authority.md) defines this authority; the completed [Milestone 2 plan](../plans/completed/M002-shared-contracts-and-test-harness.md) records validation. Contracts for persistence, sessions, narration, audio frames, and buffer state do not implement those systems. |
 | EPUB package | [`packages/epub`](../../packages/epub/) exposes [`openEpubPublication`](../../packages/epub/src/public/open-epub-publication.ts), immutable semantic/publication types, bounded lazy raster reads, and deterministic locator creation and resolution. [ADR-0007](decisions/ADR-0007-secure-epub-ingestion-boundary.md) owns the security/support boundary; the completed [Milestone 3 plan](../plans/completed/M003-secure-epub-ingestion-and-document-model.md) records validation. It accepts bytes only and has no filesystem, network, DOM, renderer, persistence, TTS, or audio capability. |
 | ZIP and XML primitives | `@voxleaf/epub` internally wraps exactly pinned `@zip.js/zip.js` and `saxes`. They are implementation details behind the archive/XML boundaries, not application services or public APIs. Selection and capability restrictions are recorded in [ADR-0007](decisions/ADR-0007-secure-epub-ingestion-boundary.md) and the [dependency inventory](../development/dependencies.md). |
-| Reader, native file boundary, coordinator, and persistence | Approved but unimplemented application responsibilities from [Roadmap Milestone 4](../plans/roadmap.md#milestone-4-deliver-the-reflowable-visual-reader-and-position-restoration), [ADR-0003](decisions/ADR-0003-stable-reading-locators.md), and the [active synchronized-reader plan](../plans/active/synchronized-reader-and-startup-buffer.md). The shared persisted-state decoder and EPUB locator resolver are supporting pieces; no storage adapter, renderer, native file access, or application coordinator exists. File paths and native permissions must stop at the future desktop boundary because `@voxleaf/epub` accepts bytes only. |
+| Reader, native file boundary, coordinator, and persistence | Approved but unimplemented application responsibilities from [Roadmap Milestone 4](../plans/roadmap.md#milestone-4-deliver-the-reflowable-visual-reader-and-position-restoration), [ADR-0003](decisions/ADR-0003-stable-reading-locators.md), [ADR-0008](decisions/ADR-0008-visual-reader-architecture.md), and the [active Milestone 4 plan](../plans/active/M004-reflowable-visual-reader-and-position-restoration.md). ADR-0008 selects direct React rendering of closed semantic values in the application DOM, continuous scrolling, a package-owned target resolver, structural locator/code-point visible-position sampling, and application-owned focus/history behavior. The shared persisted-state decoder and existing EPUB locator resolver are supporting pieces; no storage adapter, semantic target resolver, renderer, native file access, or application coordinator exists yet. File paths and native permissions must stop at the future desktop boundary because `@voxleaf/epub` accepts bytes only. |
 | Narration preparation | Approved but unimplemented normalization and semantic chunking from [Roadmap Milestone 5](../plans/roadmap.md#milestone-5-prepare-text-for-natural-narration) and the [active synchronized-reader plan](../plans/active/synchronized-reader-and-startup-buffer.md). It must preserve locator ranges and keep displayed source text separate from narration text. No package module currently performs this work. |
 | TTS service | [`services/tts`](../../services/tts/) is a dependency-free Python package with version smoke behavior and cross-language test conformance only. [Roadmap Milestone 6](../plans/roadmap.md#milestone-6-prove-local-tts-feasibility-and-select-engine-profiles) owns engine evaluation, while [Milestone 7](../plans/roadmap.md#milestone-7-implement-the-local-tts-service-and-process-protocol) owns process lifecycle, protocol, streaming, and cancellation. No engine, server, model, transport, or hardware profile has been selected or implemented. |
 | Audio scheduling and playback | [ADR-0002](decisions/ADR-0002-in-memory-audio.md) and [ADR-0004](decisions/ADR-0004-start-after-audio-lead.md) approve bounded memory and duration-gated startup. Shared audio/buffer contracts and fakes exist, but [Roadmap Milestone 8](../plans/roadmap.md#milestone-8-build-bounded-audio-playback-and-scheduling) owns the real queue, player, backpressure, underrun measurement, and startup gate. |
@@ -128,7 +128,7 @@ The solid middle section is implemented as an in-memory package flow and can be 
 
 The roadmap deliberately leaves these matters unresolved until evidence exists:
 
-- Milestone 4: native file-selection permission, renderer isolation, raster decode limits, persistence technology, save lifecycle, and migration behavior.
+- Milestone 4: native file-selection permission, raster decode limits/CSP, persistence technology, save lifecycle/migration, real-browser tooling, and measured large-chapter/reader performance limits. ADR-0008 has resolved renderer isolation, initial scrolling mode, target-resolution ownership, active visual-position sampling, focus, and browser-history behavior.
 - Milestone 6: measured balanced and CPU-compatible TTS engine profiles, model distribution, licensing, and supported hardware.
 - Milestone 7: local process transport, framing, backpressure, exposure, and recovery.
 - Milestone 8: internal audio format, playback mechanism, speed control, and benchmark-tuned buffer thresholds.
