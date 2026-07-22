@@ -21,6 +21,7 @@ ADR-0002-short-description.md
 - [`ADR-0008-visual-reader-architecture.md`](ADR-0008-visual-reader-architecture.md): direct semantic DOM reader, scrolling, target resolution, and active visual locator.
 - [`ADR-0009-capability-free-local-file-ingress.md`](ADR-0009-capability-free-local-file-ingress.md): capability-free WebView file selection with bounded cancellable in-memory reads.
 - [`ADR-0010-bounded-raster-image-decode.md`](ADR-0010-bounded-raster-image-decode.md): predecode metadata limits, static-only browser decoding, and bounded object-URL lifetime.
+- [`ADR-0011-bounded-web-storage-reader-state.md`](ADR-0011-bounded-web-storage-reader-state.md): bounded Web Storage envelopes, display-preference ownership, save lifecycle, and explicit migration.
 
 ## Template
 
