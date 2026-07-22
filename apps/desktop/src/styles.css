@@ -66,6 +66,36 @@ h1 {
   line-height: 1.7;
 }
 
+.file-picker {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  color: #183d2a;
+  font-weight: 700;
+}
+
+.file-picker input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #8da194;
+  border-radius: 0.75rem;
+  color: #263c30;
+  background: #f4f7f2;
+  font: inherit;
+}
+
+.file-picker input:focus-visible {
+  outline: 0.2rem solid #1d6b43;
+  outline-offset: 0.2rem;
+}
+
+.probe-status {
+  min-height: 1.5rem;
+  margin: 1.25rem 0 0;
+  color: #405047;
+  line-height: 1.5;
+}
+
 @media (max-width: 32rem) {
   .app-shell {
     align-items: stretch;

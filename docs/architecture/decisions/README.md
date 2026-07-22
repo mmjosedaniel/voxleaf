@@ -19,6 +19,7 @@ ADR-0002-short-description.md
 - [`ADR-0006-json-schema-contract-authority.md`](ADR-0006-json-schema-contract-authority.md): versioned JSON Schema contract authority.
 - [`ADR-0007-secure-epub-ingestion-boundary.md`](ADR-0007-secure-epub-ingestion-boundary.md): bounded secure EPUB ingestion and semantic model.
 - [`ADR-0008-visual-reader-architecture.md`](ADR-0008-visual-reader-architecture.md): direct semantic DOM reader, scrolling, target resolution, and active visual locator.
+- [`ADR-0009-capability-free-local-file-ingress.md`](ADR-0009-capability-free-local-file-ingress.md): capability-free WebView file selection with bounded cancellable in-memory reads.
 
 ## Template
 

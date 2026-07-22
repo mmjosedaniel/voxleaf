@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop and Python areas are foundations only; desktop file selection, rendering, persistence, narration preparation, TTS integration, buffering, and playback remain approved planned work and require their own implementation evidence.
+Mixed implementation status. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop has a validated capability-free local-file selection/read probe but does not yet open a publication. Rendering, persistence, narration preparation, TTS integration, buffering, and playback remain approved planned work and require their own implementation evidence; the Python area remains a foundation only.
 
 [`system-diagram.md`](system-diagram.md) is the canonical visual map and status legend. This overview owns the accompanying architectural rationale, invariants, and detailed implemented-boundary notes.
 
@@ -14,7 +14,7 @@ VoxLeaf must read EPUB files and synthesize speech locally while beginning playb
 
 ```text
 Desktop application
-├── Book library and file selection
+├── Capability-free local file selection/read [prototype implemented]
 ├── Semantic React reader and navigation
 ├── Reading-session coordinator
 ├── Audio player and bounded playback buffer
@@ -42,7 +42,7 @@ Local TTS service
 
 The visual position is a normalized `ReadingLocatorV1` sampled at an application-owned reading line. A browser caret/range supplies the Unicode-code-point offset when safe, with deterministic block-start fallback. Explicit navigation may move focus to a destination heading/reader region, while passive scrolling, reflow, and initial restoration do not steal focus.
 
-File ingress, raster decoding, persistence, real-browser tooling, and measured large-chapter/performance limits remain separate Milestone 4 gates. Synchronization with the active narrated segment remains a later milestone.
+Raster decoding, persistence, real-browser tooling, and measured large-chapter/performance limits remain separate Milestone 4 gates. File ingress is resolved by ADR-0009, while integration with publication-session ownership remains later Milestone 4 work. Synchronization with the active narrated segment remains a later milestone.
 
 The desktop application and TTS inference should run in separate local processes.
 
@@ -57,7 +57,7 @@ The protocol may use Tauri IPC, standard input/output, a local socket, or loopba
 
 ## Core data flow
 
-The public EPUB package currently implements the in-memory validation, parsing, semantic projection, resource-descriptor, and locator portions of this flow. No desktop caller supplies the bytes or consumes the opened publication yet. Saved-position restoration, visual rendering, narration preparation, synthesis, buffering, playback, and persistence remain planned; the system diagram marks the implemented cutoff explicitly.
+The public EPUB package currently implements the in-memory validation, parsing, semantic projection, resource-descriptor, and locator portions of this flow. The desktop separately implements a bounded local-file selection/read probe, but it releases those bytes rather than calling the package. No desktop caller consumes an opened publication yet. Saved-position restoration, visual rendering, narration preparation, synthesis, buffering, playback, and persistence remain planned; the system diagram marks both implemented islands and the missing integration explicitly.
 
 1. Validate the selected EPUB as an untrusted archive.
 2. Parse metadata, navigation, and spine order.
@@ -106,7 +106,13 @@ The public EPUB package currently implements the in-memory validation, parsing, 
 - Explicit navigation has a predictable focus destination, while passive scroll/reflow/restoration does not move focus.
 - Reader navigation remains application state rather than browser routes/history.
 
-This boundary does not make the reader implemented. `apps/desktop` still contains only the foundation shell, and the approved `resolveTarget` operation, renderer, coordinator, locator/DOM mapper, and navigation behavior require later tasks and tests. File ingress, raster decoding, persistence, browser testing, and performance limits remain unresolved.
+This boundary does not make the reader implemented. `apps/desktop` contains the foundation shell and local-file probe, while the approved `resolveTarget` operation, publication coordinator, renderer, locator/DOM mapper, and navigation behavior require later tasks and tests. Raster decoding, persistence, browser testing, and performance limits remain unresolved.
+
+## Local file-ingress boundary
+
+[ADR-0009](decisions/ADR-0009-capability-free-local-file-ingress.md) accepts the implemented Task 1.2 WebView boundary. An application-owned file input reads at most 100 MiB through abortable `FileReader` into transient in-memory bytes. A replacement selection or unmount aborts the active read, request identity rejects stale completion, a post-read length check defends the preflight assumption, and the input is cleared for same-file reselection. Fixed UI states contain no filename, path, bytes, MIME claim, or raw browser error.
+
+The release probe passed in native Windows WebView2 while the Tauri shell retained zero commands, plugins, and capabilities and unchanged CSP. The current probe intentionally releases successful bytes. Tasks 2.2 and 2.3 still own publication-session lifecycle and the call to `openEpubPublication`; this decision is not evidence that the desktop can open a book.
 
 ## Secure EPUB ingestion boundary
 
@@ -118,7 +124,7 @@ The initial profile accepts EPUB 3 reflowable XHTML with EPUB navigation and sup
 
 The public `@voxleaf/epub` root exposes `openEpubPublication` plus the framework-independent publication/result types. The opener accepts only in-memory bytes and an optional abort signal, runs the validated archive, package, navigation, semantic, resource-catalog, and locator-index stages, and returns a frozen discriminated result instead of throwing an expected ingestion failure. Success retains the archive only behind an explicit opened-publication lifecycle and exposes immutable semantic documents, detailed navigation, lazy path-free raster descriptors, deterministic block locators, structural locator resolution, and idempotent close. Failure contains only one closed EPUB detail code and its canonical `OperationalErrorV1`; it has no message, stack, cause, path, URL, markup, prose, bytes, or raw rejected value. The package performs no logging.
 
-The closed block, inline, navigation, and raster-resource values contain no publisher HTML, DOM objects, paths, URLs, or eager resource bytes. The locator index preserves only shared-v1-valid unique source IDs, generates deterministic collision-free replacements, binds every start locator to exact book identity and spine identity, and counts legal text offsets by Unicode code point. The resolver requires full identity for exact results, rejects another book, and recovers through matching-spine anchor/offset adjustment, nearest non-empty spine, or book start with fixed content-free reasons. Saved-position persistence, desktop file selection, rendering, and application restoration do not work yet.
+The closed block, inline, navigation, and raster-resource values contain no publisher HTML, DOM objects, paths, URLs, or eager resource bytes. The locator index preserves only shared-v1-valid unique source IDs, generates deterministic collision-free replacements, binds every start locator to exact book identity and spine identity, and counts legal text offsets by Unicode code point. The resolver requires full identity for exact results, rejects another book, and recovers through matching-spine anchor/offset adjustment, nearest non-empty spine, or book start with fixed content-free reasons. The desktop selection/read probe is implemented separately, but package integration, saved-position persistence, rendering, and application restoration do not work yet.
 
 The implemented boundary uses exactly pinned `@zip.js/zip.js@2.8.30` and `saxes@6.0.0` behind package-internal adapters. The ZIP adapter imports the pure-JavaScript core, disables workers and native compression streams, and uses only in-memory readers/writers. The XML adapter emits bounded namespace-aware events without a DOM or resolver. Neither dependency is part of the public EPUB API, and no renderer-oriented EPUB framework has been added. Selection evidence, licenses, alternatives, and transitive impact are recorded in [`development/dependencies.md`](../development/dependencies.md).
 

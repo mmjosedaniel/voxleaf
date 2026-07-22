@@ -31,7 +31,7 @@ Implemented prerequisites are:
 
 Not implemented are:
 
-- local file selection and transfer of file bytes into `@voxleaf/epub`;
+- transfer of the implemented local-file probe's successful bytes into `@voxleaf/epub` and ownership of the resulting publication session;
 - ownership of an opened publication in the desktop application;
 - visual semantic rendering, raster decoding, chapter navigation, reader preferences, and large-chapter rendering policy;
 - an authoritative visible-position tracker or DOM-to-locator mapping;
@@ -54,7 +54,7 @@ It is not ready to begin production reader rendering until the approval gates in
 | Stable position contract | Ready | ADR-0003, `ReadingLocatorV1`, located blocks, and exact/nearest resolution are implemented. |
 | Deterministic EPUB fixtures | Ready | The Milestone 3 in-memory fixture builder and public ingestion matrix exist. |
 | Rendering/isolation policy | Approved, not implemented | ADR-0008 selects direct React rendering of closed semantic values in the application DOM and prohibits raw publisher markup. |
-| File-ingress boundary | Prototype and approval required | Prove whether webview file input is sufficient before adding Tauri filesystem/dialog capability. |
+| File-ingress boundary | Approved; probe implemented | ADR-0009 accepts the native-validated WebView file input and abortable bounded browser read with no Tauri command/plugin/capability. Tasks 2.2-2.3 still own publication integration. |
 | Raster decode safety | Prototype and approval required | Byte signatures are validated, but pixel dimensions, frame/animation behavior, decode memory, object URLs, and CSP are unresolved. |
 | Navigation-target resolution | Approved, not implemented | ADR-0008 assigns source-fragment matching to a new closed `@voxleaf/epub` target resolver; Task 2.1 must implement it. |
 | Persistence and migration | Approval required | Select a local backend, versioned envelope, failure behavior, and display-preference ownership. |
@@ -219,7 +219,7 @@ Options:
 
 Decision: option 1. ADR-0008 requires exhaustive application-owned React elements in the application DOM, prohibits raw/reconstructed publisher HTML and publisher-controlled DOM attributes/URLs, and keeps raster rendering blocked on M4-D4. A sandboxed iframe is rejected because executable publisher markup does not cross ADR-0007's semantic boundary and the extra document would add focus/accessibility/messaging complexity.
 
-#### M4-D2: Local file ingress — Prototype and approval required
+#### M4-D2: Local file ingress — Accepted by ADR-0009
 
 Options:
 
@@ -227,7 +227,7 @@ Options:
 2. Add official Tauri dialog/filesystem plugins and narrowly scoped capabilities.
 3. Add repository-owned Rust dialog/read commands.
 
-Recommendation: prototype option 1 first because it adds no native path contract, plugin, Rust command, or filesystem capability. Accept it only after native WebView2 proves file selection, cancellation, repeated opens, the 100 MiB ingestion boundary, and release-build behavior. If it fails a demonstrated requirement, compare options 2 and 3 and approve the smallest capability surface. Do not persist the `File` object or host path.
+Decision: option 1, using `FileReader.readAsArrayBuffer` rather than the uncancellable `File.arrayBuffer()` promise. ADR-0009 accepts the application-owned file input after native WebView2 proved selection, cancellation, same-file reselection, exactly 100 MiB, maximum plus one, fixed content-free states, cleared input, and no rendered filename. Replacement or unmount aborts the active browser read and request identity rejects stale completion. No Tauri path contract, plugin, Rust command, filesystem capability, dependency, CSP change, or persistence is added. Tasks 2.2-2.3 own publication-session and opener integration.
 
 #### M4-D3: Initial reading mode — Accepted by ADR-0008
 
@@ -291,7 +291,7 @@ No approved numeric reader latency budget exists. Measure file-selection-to-read
 
 ## Reader architecture
 
-The planned desktop areas are responsibilities, not required filenames. ADR-0008 accepts the visual renderer/coordinator/navigation/locator boundaries; file ingress, images, and persistence remain later gates:
+The planned desktop areas are responsibilities, not required filenames. ADR-0008 accepts the visual renderer/coordinator/navigation/locator boundaries, and ADR-0009 accepts the implemented file-ingress probe; publication integration, images, and persistence remain later work or gates:
 
 - **File-open boundary:** obtains one local `File` or approved native result, reads bounded bytes, starts/cancels opening, and never exposes a path to the EPUB package.
 - **Publication session owner:** owns `idle -> opening -> ready | failed -> closing` state, one `AbortController`, one `OpenedPublication`, replacement ordering, cleanup, and privacy-safe errors.
@@ -667,7 +667,7 @@ Do not change `services/tts`, audio contracts/implementation, narration contract
 
 **Validation:** `pnpm.cmd --filter @voxleaf/desktop typecheck`; `pnpm.cmd --filter @voxleaf/desktop test`; `pnpm.cmd --filter @voxleaf/desktop build`; `pnpm.cmd --filter @voxleaf/desktop tauri build`; documented native manual probe.
 
-**Status:** Not started.
+**Status:** Complete on 2026-07-22. ADR-0009 accepts the capability-free WebView file input and abortable bounded `FileReader` transfer. Twelve desktop tests and a native release WebView2 probe cover select/cancel/reselect, exact 100 MiB/max-plus-one, active abort/stale completion, cleanup, fixed failures, cleared input, and filename privacy. Focused typecheck, test, build, lint, and Tauri release build passed. No dependency, manifest, lockfile, Rust source, Tauri command/plugin/capability, or CSP change was added.
 
 ### Task 1.3: Prove and accept raster decode safety limits
 
@@ -1133,6 +1133,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 - 2026-07-22: Identified that `PersistedReadingStateV1` intentionally omits display preferences and storage selection; recommended a separate app-local versioned preference envelope and prohibited silent shared-v1 expansion.
 - 2026-07-22: Created this plan only. No application, test, package, manifest, lockfile, native capability, or production dependency was changed.
 - 2026-07-22: Completed Task 1.1. Accepted ADR-0008 for direct rendering of closed semantic values in the application DOM, one continuous-scrolling mode, package-owned target resolution, locator/code-point visible-position sampling, focus and browser-history behavior, and the Milestone 4 boundary from narration/audio. Reconciled architecture, product, roadmap, diagram, and this plan without changing application code or dependencies.
+- 2026-07-22: Completed Task 1.2. Implemented a capability-free local-file probe with a browser file input, exact 100-MiB preflight, abortable `FileReader`, post-read length validation, stale-result rejection, same-file reselection, fixed statuses, and no filename/path exposure. Twelve desktop tests passed. A native release WebView2 probe passed small selection, same-file reselection, cancellation, exact maximum, maximum plus one, cleared input, and filename omission. Accepted ADR-0009; retained an empty Tauri capability list and unchanged manifests, locks, Rust shell, and CSP.
 
 ## Decision log
 
@@ -1143,7 +1144,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 | 2026-07-22 | Do not use publisher HTML/CSS/scripts/URLs or activate external links. | Already approved by ADR-0007. |
 | 2026-07-22 | Render closed semantic values as exhaustive application-owned React elements in the application DOM; do not reconstruct publisher markup or use an iframe. | Accepted by ADR-0008; implementation remains Task 2.2. |
 | 2026-07-22 | Use continuous vertical scrolling as the sole initial reading mode; defer pagination and mode migration. | Accepted by ADR-0008; implementation remains Task 3.4. |
-| 2026-07-22 | Prototype webview file input before any Tauri filesystem/dialog capability. | Proposed; prototype/approval required. |
+| 2026-07-22 | Use the application-owned WebView file input plus abortable bounded `FileReader`; add no Tauri filesystem/dialog command, plugin, capability, or host-path contract. | Accepted by ADR-0009; opener/session integration remains Tasks 2.2-2.3. |
 | 2026-07-22 | Add a closed package-owned semantic-target resolver rather than matching fragments in the desktop; unresolved fragments recover only within the target spine document, while invalid/non-spine/empty targets are unavailable. | Accepted by ADR-0008; implementation remains Task 2.1. |
 | 2026-07-22 | Use structural locator plus code-point offset at an application-owned reading line with deterministic block-start fallback. | Accepted by ADR-0008; implementation remains Tasks 3.1-3.3. |
 | 2026-07-22 | Keep reader navigation out of browser routes/history; explicit navigation moves focus predictably while passive scrolling, reflow, and initial restoration do not. | Accepted by ADR-0008; implementation remains Tasks 3.3-3.5. |
@@ -1180,7 +1181,7 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Production-reader validation has not started. Task 1.1 is complete as a decision-only task; all application implementation tasks remain `Not started`.
+Production-reader validation has not started. Tasks 1.1 and 1.2 are complete; publication-session, renderer, persistence, restoration, and later application implementation tasks remain `Not started`.
 
 Task 1.1 documentation validation completed on 2026-07-22:
 
@@ -1189,6 +1190,17 @@ Task 1.1 documentation validation completed on 2026-07-22:
 - Both Mermaid blocks in `docs/architecture/system-diagram.md` were reviewed manually. The repository has no Mermaid validation command, and Task 1.1 did not add a dependency solely for diagram validation.
 - `pnpm.cmd format:check` passed in native Windows PowerShell: Prettier, Rustfmt, and Ruff reported no formatting changes required. Markdown is not covered by the configured formatter.
 - Final scope review found documentation changes only: one ADR plus focused architecture, product, roadmap, and active-plan reconciliation. No application/test code, manifest, lockfile, generated file, native capability, or dependency changed.
+
+Task 1.2 validation completed on 2026-07-22:
+
+- `pnpm.cmd --filter @voxleaf/desktop typecheck` passed.
+- `pnpm.cmd --filter @voxleaf/desktop test` passed: 2 files and 12 tests.
+- `pnpm.cmd --filter @voxleaf/desktop build` passed with 17 transformed modules.
+- `pnpm.cmd run lint:typescript` passed.
+- `pnpm.cmd --filter @voxleaf/desktop tauri build` passed and produced the Windows release executable.
+- The authoritative native Windows `pnpm.cmd check` passed formatting, TypeScript/Rust/Python linting and type checks, 547 TypeScript tests, Rust and Python tests, package builds, the Tauri release build, and Python distribution builds.
+- The bounded native release WebView2 probe passed small selection, same-file reselection, exactly 104,857,600 bytes, rejection at 104,857,601 bytes, cancellation, cleared input, and absence of all disposable filenames from rendered UI. The disposable files and one-off probe harness were deleted after the run.
+- Manifest, lockfile, Rust source, Tauri configuration/capabilities, and CSP diffs are empty. The desktop still does not import `@voxleaf/epub` or claim publication opening.
 
 Plan-creation validation completed on 2026-07-22:
 
