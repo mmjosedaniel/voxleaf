@@ -19,6 +19,8 @@
     "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.test.json"
   },
   "dependencies": {
-    "@voxleaf/shared": "workspace:*"
+    "@voxleaf/shared": "workspace:*",
+    "@zip.js/zip.js": "2.8.30",
+    "saxes": "6.0.0"
   }
 }
