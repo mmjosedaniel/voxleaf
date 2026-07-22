@@ -17,4 +17,5 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): implement the reflowable reader, shared position restoration, narration synchronization, and duration-based startup gate.
+- [`M004-reflowable-visual-reader-and-position-restoration.md`](M004-reflowable-visual-reader-and-position-restoration.md): implementation authority for roadmap Milestone 4, including the visual reader, reader security decisions, logical-position ownership, persistence, and restoration.
+- [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): broader context spanning reader, narration synchronization, and audio startup; use the milestone-specific M004 plan for current reader work and retain this plan for later-roadmap context.

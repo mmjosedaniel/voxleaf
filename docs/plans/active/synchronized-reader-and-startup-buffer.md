@@ -1,5 +1,9 @@
 # Synchronized visual reader, position restoration, and startup audio lead
 
+## Relationship to the roadmap and Milestone 4 plan
+
+This broad plan predates the milestone-specific implementation plans and intentionally spans visual reading, narration synchronization, and audio startup work. Use [`M004-reflowable-visual-reader-and-position-restoration.md`](M004-reflowable-visual-reader-and-position-restoration.md) as the implementation authority for roadmap Milestone 4. Retain this document as context for later roadmap Milestones 8 and 9; it does not authorize bringing narration or audio work into Milestone 4.
+
 ## Goal
 
 Implement a normal reflowable EPUB reading surface that shares one stable reading position with narration, restores the user's last visible passage, and starts playback immediately after approximately 15 seconds of playable audio—not 15 seconds of wall-clock waiting—has accumulated in bounded memory.

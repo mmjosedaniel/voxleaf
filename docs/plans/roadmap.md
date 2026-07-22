@@ -340,9 +340,11 @@ Durable decisions belong in architecture decision records. Temporary implementat
 
 ## Relationship to existing plans
 
-[`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains detailed planning relevant to shared contracts, the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or authorize implementing all of those areas at once.
+[`active/M004-reflowable-visual-reader-and-position-restoration.md`](active/M004-reflowable-visual-reader-and-position-restoration.md) is the implementation authority for Milestone 4. It records the reader's decision gates, small implementation tasks, persistence/restoration strategy, and validation requirements without authorizing narration or audio work.
 
-Milestones 1 through 3 are complete, with their evidence retained in [`completed/M001-engineering-foundation.md`](completed/M001-engineering-foundation.md), [`completed/M002-shared-contracts-and-test-harness.md`](completed/M002-shared-contracts-and-test-harness.md), and [`completed/M003-secure-epub-ingestion-and-document-model.md`](completed/M003-secure-epub-ingestion-and-document-model.md). Milestone 4 is the next implementation priority. Use the existing synchronized-reader plan only for context relevant to the current roadmap milestone, and refine or split it when practical experience makes that useful.
+[`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or the milestone-specific M004 plan and does not authorize implementing all of those areas at once.
+
+Milestones 1 through 3 are complete, with their evidence retained in [`completed/M001-engineering-foundation.md`](completed/M001-engineering-foundation.md), [`completed/M002-shared-contracts-and-test-harness.md`](completed/M002-shared-contracts-and-test-harness.md), and [`completed/M003-secure-epub-ingestion-and-document-model.md`](completed/M003-secure-epub-ingestion-and-document-model.md). Milestone 4 is the next implementation priority. Use the M004 plan for that work and the synchronized-reader plan only as later-milestone context.
 
 ## MVP completion boundary
 
