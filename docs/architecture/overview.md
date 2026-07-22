@@ -93,6 +93,8 @@ The initial profile accepts EPUB 3 reflowable XHTML with EPUB navigation and sup
 
 `@voxleaf/shared` continues to own serialized book, locator, and operational-error contracts. `@voxleaf/epub` owns package relationships, immutable semantic nodes, detailed navigation, bounded resource handles, locator indexes, and fixed EPUB detail codes. Exact EPUB bytes define the book's `sha256` identity; source-derived or generated structural anchors contain no prose or host path. Expected failures and diagnostics remain content-free, and the EPUB package performs no logging.
 
+The public `@voxleaf/epub` root currently exposes only the type-level semantic document and opened-publication boundary. Its closed block, inline, navigation, and raster-resource values contain no publisher HTML, DOM objects, paths, URLs, or eager resource bytes. The runtime package export remains empty until later ingestion tasks can construct fully validated, deeply immutable values and enforce the documented close/read lifecycle; the existence of these types is not a claim that public EPUB opening or rendering already works.
+
 The ADR deliberately does not select archive or XML libraries. Low-level candidates must prove they can enforce the accepted boundary before becoming production dependencies.
 
 ## Shared contract authority
