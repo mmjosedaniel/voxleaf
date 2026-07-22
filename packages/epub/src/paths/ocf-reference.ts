@@ -1,8 +1,9 @@
 import { hasEncodedPathHazard, parseArchiveEntryPath } from "./archive-path.js";
 import type { ArchiveFilePath } from "./archive-path.js";
 import { EpubPathError } from "./path-error.js";
+import { DEFAULT_EPUB_INGESTION_POLICY } from "../security/ingestion-policy.js";
+import type { EpubIngestionPolicy } from "../security/ingestion-policy.js";
 
-const MAX_REFERENCE_PATH_BYTES = 2_048;
 const utf8Encoder = new TextEncoder();
 
 declare const ocfReferenceBrand: unique symbol;
@@ -77,7 +78,10 @@ function decodeReferencePart(value: string): string {
   return decoded;
 }
 
-export function parseOcfReference(input: string): OcfReference {
+export function parseOcfReference(
+  input: string,
+  policy: EpubIngestionPolicy = DEFAULT_EPUB_INGESTION_POLICY,
+): OcfReference {
   if (
     !isWellFormedUnicode(input) ||
     hasControlCodePoint(input) ||
@@ -96,7 +100,7 @@ export function parseOcfReference(input: string): OcfReference {
       ? undefined
       : input.slice(fragmentSeparatorIndex + 1);
 
-  if (utf8Encoder.encode(pathPart).byteLength > MAX_REFERENCE_PATH_BYTES) {
+  if (utf8Encoder.encode(pathPart).byteLength > policy.maxArchivePathBytes) {
     return resourceLimitExceeded();
   }
 
@@ -149,6 +153,7 @@ export function parseOcfReference(input: string): OcfReference {
 export function resolveOcfReference(
   baseDocument: ArchiveFilePath,
   reference: OcfReference,
+  policy: EpubIngestionPolicy = DEFAULT_EPUB_INGESTION_POLICY,
 ): ResolvedOcfReference {
   let resolvedPath: ArchiveFilePath;
 
@@ -182,6 +187,7 @@ export function resolveOcfReference(
       resolvedPath = parseArchiveEntryPath(
         resolvedComponents.join("/"),
         "file",
+        policy,
       );
     } catch (error: unknown) {
       if (

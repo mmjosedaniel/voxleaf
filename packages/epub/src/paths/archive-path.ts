@@ -1,8 +1,6 @@
 import { EpubPathError } from "./path-error.js";
-
-const MAX_ARCHIVE_PATH_BYTES = 2_048;
-const MAX_ARCHIVE_PATH_COMPONENT_BYTES = 255;
-const MAX_ARCHIVE_PATH_COMPONENTS = 32;
+import { DEFAULT_EPUB_INGESTION_POLICY } from "../security/ingestion-policy.js";
+import type { EpubIngestionPolicy } from "../security/ingestion-policy.js";
 
 const utf8Encoder = new TextEncoder();
 const utf8Decoder = new TextDecoder("utf-8", {
@@ -124,12 +122,13 @@ function validateArchiveEntryPath(
   input: string,
   kind: ArchiveEntryKind,
   encodedByteLength: number,
+  policy: EpubIngestionPolicy,
 ): string {
   if (kind !== "directory" && kind !== "file") {
     return unsafeEntry();
   }
 
-  if (encodedByteLength > MAX_ARCHIVE_PATH_BYTES) {
+  if (encodedByteLength > policy.maxArchivePathBytes) {
     return resourceLimitExceeded();
   }
 
@@ -155,7 +154,7 @@ function validateArchiveEntryPath(
   }
 
   const components = canonicalPath.split("/");
-  if (components.length > MAX_ARCHIVE_PATH_COMPONENTS) {
+  if (components.length > policy.maxArchivePathComponents) {
     return resourceLimitExceeded();
   }
 
@@ -169,7 +168,7 @@ function validateArchiveEntryPath(
       return unsafeEntry();
     }
 
-    if (utf8ByteLength(component) > MAX_ARCHIVE_PATH_COMPONENT_BYTES) {
+    if (utf8ByteLength(component) > policy.maxArchivePathComponentBytes) {
       return resourceLimitExceeded();
     }
   }
@@ -180,23 +179,28 @@ function validateArchiveEntryPath(
 export function parseArchiveEntryPath(
   input: string,
   kind: "file",
+  policy?: EpubIngestionPolicy,
 ): ArchiveFilePath;
 export function parseArchiveEntryPath(
   input: string,
   kind: "directory",
+  policy?: EpubIngestionPolicy,
 ): ArchiveDirectoryPath;
 export function parseArchiveEntryPath(
   input: string,
   kind: ArchiveEntryKind,
+  policy?: EpubIngestionPolicy,
 ): ArchiveEntryPath;
 export function parseArchiveEntryPath(
   input: string,
   kind: ArchiveEntryKind,
+  policy: EpubIngestionPolicy = DEFAULT_EPUB_INGESTION_POLICY,
 ): ArchiveEntryPath {
   const canonicalPath = validateArchiveEntryPath(
     input,
     kind,
     utf8ByteLength(input),
+    policy,
   );
 
   return canonicalPath as ArchiveEntryPath;
@@ -205,20 +209,24 @@ export function parseArchiveEntryPath(
 export function decodeArchiveEntryPath(
   input: Uint8Array,
   kind: "file",
+  policy?: EpubIngestionPolicy,
 ): ArchiveFilePath;
 export function decodeArchiveEntryPath(
   input: Uint8Array,
   kind: "directory",
+  policy?: EpubIngestionPolicy,
 ): ArchiveDirectoryPath;
 export function decodeArchiveEntryPath(
   input: Uint8Array,
   kind: ArchiveEntryKind,
+  policy?: EpubIngestionPolicy,
 ): ArchiveEntryPath;
 export function decodeArchiveEntryPath(
   input: Uint8Array,
   kind: ArchiveEntryKind,
+  policy: EpubIngestionPolicy = DEFAULT_EPUB_INGESTION_POLICY,
 ): ArchiveEntryPath {
-  if (input.byteLength > MAX_ARCHIVE_PATH_BYTES) {
+  if (input.byteLength > policy.maxArchivePathBytes) {
     return resourceLimitExceeded();
   }
 
@@ -233,6 +241,7 @@ export function decodeArchiveEntryPath(
     decoded,
     kind,
     input.byteLength,
+    policy,
   ) as ArchiveEntryPath;
 }
 
