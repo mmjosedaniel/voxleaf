@@ -28,7 +28,7 @@ Documentation is organized by purpose so contributors and Codex can load only th
 - [`plans/active/`](plans/active/): work currently being implemented.
 - [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.
 - [`plans/completed/M002-shared-contracts-and-test-harness.md`](plans/completed/M002-shared-contracts-and-test-harness.md): completed ExecPlan and validation evidence for roadmap Milestone 2.
-- [`plans/active/M003-secure-epub-ingestion-and-document-model.md`](plans/active/M003-secure-epub-ingestion-and-document-model.md): active ExecPlan for secure EPUB ingestion and the framework-independent document model in roadmap Milestone 3.
+- [`plans/completed/M003-secure-epub-ingestion-and-document-model.md`](plans/completed/M003-secure-epub-ingestion-and-document-model.md): completed ExecPlan and validation evidence for secure EPUB ingestion and the framework-independent document model in roadmap Milestone 3.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): planned visual reader, position restoration, read-along synchronization, and startup audio lead.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 
