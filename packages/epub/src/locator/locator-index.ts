@@ -4,9 +4,11 @@ import {
   LocatorContractError,
 } from "@voxleaf/shared";
 import type {
+  BookIdentityV1,
   BookV1,
   Index,
   ReadingLocatorV1,
+  SpineItemId,
   SpineItemV1,
 } from "@voxleaf/shared";
 
@@ -33,7 +35,15 @@ export interface LocatedSemanticBlock {
   readonly textLengthCodePoints: Index;
 }
 
+export interface LocatedSpineItem {
+  readonly spineItemId: SpineItemId;
+  readonly spineItemIndex: Index;
+  readonly blocks: readonly LocatedSemanticBlock[];
+}
+
 export interface PublicationLocatorIndex {
+  readonly bookIdentity: BookIdentityV1;
+  readonly spines: readonly LocatedSpineItem[];
   readonly blocks: readonly LocatedSemanticBlock[];
 }
 
@@ -327,16 +337,29 @@ export function createPublicationLocatorIndex(
   }
 
   const located: LocatedSemanticBlock[] = [];
+  const locatedSpines: LocatedSpineItem[] = [];
   for (const spineItem of book.spine) {
     budget.checkpoint();
     const projection = projectionsBySpineIndex.get(spineItem.index);
     if (projection === undefined) {
       return fail("internal-failure");
     }
-    located.push(...locateDocumentBlocks(book, spineItem, projection, budget));
+    const blocks = locateDocumentBlocks(book, spineItem, projection, budget);
+    locatedSpines.push(
+      Object.freeze({
+        spineItemId: spineItem.id,
+        spineItemIndex: spineItem.index,
+        blocks,
+      }),
+    );
+    located.push(...blocks);
   }
 
-  return Object.freeze({ blocks: Object.freeze(located) });
+  return Object.freeze({
+    bookIdentity: book.identity,
+    spines: Object.freeze(locatedSpines),
+    blocks: Object.freeze(located),
+  });
 }
 
 export function createBlockLocatorAtOffset(
