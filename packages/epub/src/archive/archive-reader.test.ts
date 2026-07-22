@@ -53,6 +53,7 @@ describe("bounded EPUB archive reads", () => {
         observedUncompressedBytes: 29,
         compressedReadBytes: 20 + contentEntry.compressedSize,
         decodedPublicationTextBytes: 0,
+        semanticBlockCount: 0,
       });
       expect(worker).not.toHaveBeenCalled();
       expect(fetch).not.toHaveBeenCalled();
