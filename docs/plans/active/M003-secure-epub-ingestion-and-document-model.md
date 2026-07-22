@@ -14,7 +14,7 @@ There is no complete reader yet. Contributors gain a tested EPUB package that ca
 
 - Milestone 1 established the reproducible pnpm/TypeScript/Python/Rust/Tauri workspace, root quality commands, and Windows/Ubuntu CI.
 - Milestone 2 established versioned BookV1, ReadingLocatorV1, LocatorRangeV1, OperationalErrorV1, deterministic fakes, shared fixtures, and cross-language conformance.
-- The inspected branch is agent/m2-complete-validation at 0672ed6. PR #18 merged into main as 86db4c4 on 2026-07-22 UTC; local main/origin-main references in this worktree have not yet been refreshed.
+- The implementation base is `main` at `c8a1c77`, which contains PR #18 merge commit `86db4c4` and the accepted Milestone 3 plan. Task 1.1 is completed on the focused `docs/m3-secure-ingestion-adr` branch.
 - Milestone 2 validation passed 175 shared tests, 2 EPUB tests, 1 desktop test, 3 Python tests, the Rust harness, builds, and both CI jobs.
 - @voxleaf/epub has an empty production export and one public-boundary test using @voxleaf/shared. It has no archive/XML/DOM/sanitizer/hash/locator implementation.
 - The synthetic document fixture models multiple spine items, headings, paragraphs, dialogue, a scene boundary, navigation, and local image metadata, but never opens an archive.
@@ -36,13 +36,7 @@ It prepares Milestone 4 rendering/restoration and Milestone 5 narration preparat
 
 ## Readiness assessment
 
-Milestone 3 is ready to begin at the repository level because PR #18 is merged and no unresolved Milestone 1 or 2 prerequisite remains. This worktree is not an appropriate implementation base until:
-
-1. Local main is refreshed to include merge commit 86db4c4.
-2. A Milestone 3 branch is created from that updated main.
-3. Task 1.1 accepts the support/security decision before a production EPUB dependency or public API is committed.
-
-These are branch preparation and the first planned decision gate, not evidence that ingestion implementation already exists.
+Milestone 3 is ready at the repository level because PR #18 is merged and no unresolved Milestone 1 or 2 prerequisite remains. The branch is based on updated `main`, and Task 1.1 accepts the support/security boundary in ADR-0007. Task 1.2 is the next task and must prove archive/XML candidates before any production dependency or ingestion API is adopted. No ingestion implementation exists yet.
 
 ## Scope
 
@@ -101,7 +95,7 @@ Completed prerequisites:
 - Synthetic document/fake-source support.
 - One-way @voxleaf/epub to @voxleaf/shared dependency.
 
-PR #18 is merged. Before implementation, refresh local main, verify it contains 86db4c4, and create a new Milestone 3 branch. Do not place Milestone 3 implementation commits on agent/m2-complete-validation.
+PR #18 merge commit `86db4c4` is in the implementation branch history. Task 1.1 was completed from `main` at `c8a1c77`; subsequent tasks must continue on focused branches based on an updated main and must not use a Milestone 2 branch.
 
 Task ordering:
 
@@ -121,7 +115,7 @@ Task ordering:
 - completed Milestone 1 and Milestone 2 ExecPlans
 - active synchronized-reader-and-startup-buffer plan
 - docs/product/vision.md, project-brief.md, mvp.md, and glossary.md
-- docs/architecture/overview.md, performance-budget.md, ADR-0003, ADR-0005, and ADR-0006
+- docs/architecture/overview.md, performance-budget.md, ADR-0003, ADR-0005, ADR-0006, and ADR-0007
 - docs/development/setup.md, testing.md, dependencies.md, and git-workflow.md
 - packages/epub manifest, source, tests, and TypeScript configuration
 - shared book, locator, error, schema, and synthetic-document areas
@@ -139,25 +133,11 @@ Task ordering:
 - Windows is authoritative; Ubuntu CI validates portable TypeScript behavior.
 - New dependencies require purpose, alternatives, classification, lock update, and documentation.
 
-## Decisions still required
+## Accepted Task 1.1 decisions
 
-Task 1.1 records the final choices. These are recommendations, not already accepted decisions:
+[ADR-0007](../../architecture/decisions/ADR-0007-secure-epub-ingestion-boundary.md) is the authority for the support profile, security budgets, content matrix, identity, model ownership, locator policy, error boundary, and deferred cases. It accepts the recommended EPUB 3 reflowable baseline, bytes-only local ingestion, closed semantic projection, SHA-256 byte identity, shared/internal model split, deterministic content-free locators and errors, counters plus cancellation/deadline, and no network/filesystem execution boundary.
 
-1. **Versions:** require EPUB 3 reflowable XHTML/navigation. Defer EPUB 2/NCX unless a bounded spike proves it shares the same safe pipeline. Reject fixed-layout-only and foreign spine content without supported XHTML fallback.
-2. **ZIP library:** evaluate @zip.js/zip.js behind an internal adapter because current APIs expose Uint8Array input, sizes, strict ambiguity/overlap/signature checks, ZIP64 metadata, and AbortSignal. Adoption requires tests, license/release review, and explicit strict options.
-3. **XML parser:** evaluate saxes as a namespace-aware streaming parser. Reject every DOCTYPE/entity declaration and enforce depth/attribute/node/text budgets. Browser DOMParser is not the security boundary.
-4. **EPUB frameworks:** do not use renderer-oriented epub.js in the ingestion core; its DOM/URL/resource concerns blur this boundary.
-5. **Sanitization:** construct a closed semantic model. Never clean and return publisher HTML as trusted.
-6. **Styling:** drop style elements/attributes, stylesheets, and fonts. Remove explicit hidden/aria-hidden content; record CSS-derived visibility as a Milestone 4 limitation.
-7. **SVG/media:** never return executable SVG. Use inert placeholders or unsupported outcomes. Permit only ADR-approved bounded raster formats; ignore/reject audio/video/forms/iframe/object/embed according to whether readable content depends on them.
-8. **Remote data:** never fetch. Omit nonessential remote resources and fail unsupported-input when required. Keep external-link labels inert.
-9. **Identity:** SHA-256 of exact input bytes, scheme sha256, schemeVersion 1, lowercase hexadecimal value. OPF identifiers are metadata, not identity.
-10. **Input:** one bounded Uint8Array. Streaming/random access can be introduced later without changing document semantics.
-11. **Errors:** discriminated success/failure with stable EPUB detail code plus OperationalErrorV1; no raw paths/content/dependency messages.
-12. **Ownership:** BookV1/locators/errors stay shared; semantic nodes, detailed navigation, relationships, resource handles, and resolver indexes stay in @voxleaf/epub.
-13. **Deadline:** counters are primary; a 30,000 ms deadline and AbortSignal are secondary, checked through an injectable monotonic clock.
-
-Any replacement recommendation must be documented before dependent work.
+EPUB 2/NCX, fixed layout, active/remote/protected content, renderer frameworks, publisher HTML, and permissive caller-controlled limits are explicitly unsupported or deferred with rationale. ZIP and XML package selection remains intentionally deferred to Task 1.2, which must prove candidate behavior against ADR-0007 before adding a production dependency.
 
 ## Security model and trust boundaries
 
@@ -183,50 +163,13 @@ Archive rules:
 - Keep paths virtual and case-sensitive; allow only directories and regular files.
 - Never recursively open an archive resource; nesting depth is zero.
 
-### Provisional default limits
+### Authoritative limits
 
-Task 1.1 must accept or replace these. Values live in one immutable policy; callers/tests may only make them stricter.
-
-| Budget | Recommended maximum |
-| --- | ---: |
-| Compressed input | 100 MiB |
-| Entries | 4,096 |
-| Total declared/observed uncompressed bytes | 512 MiB |
-| Any entry | 64 MiB |
-| container.xml or OPF | 2 MiB |
-| Navigation/XHTML document | 8 MiB |
-| Raster image | 32 MiB |
-| Compression ratio | 100:1 after first 1 MiB |
-| Archive path | 2,048 UTF-8 bytes |
-| Filename component | 255 UTF-8 bytes |
-| Path components | 32 |
-| XML depth | 128 |
-| Attributes per element | 256 |
-| Nodes per content document | 250,000 |
-| Semantic blocks per publication | 200,000 |
-| Decoded text | 64 MiB UTF-8 equivalent |
-| Processing deadline | 30,000 ms |
-
-Absolute and ratio limits both apply. Declared metadata is not trusted. Stop at the first observed excess and discard partial output. Never materialize the full uncompressed archive or all images together.
+ADR-0007 is the single authority for every exact Milestone 3 byte, count, ratio, path, graph, XML, navigation, semantic, and processing-time maximum. Implementations and tests may only use the accepted policy or a stricter override. Declared metadata is not trusted; stop at the first observed excess, discard partial output, and never materialize the full uncompressed archive or all images together.
 
 ### Content handling
 
-| Category | Default |
-| --- | --- |
-| Scripts/event handlers | remove, never execute |
-| Forms/iframe/object/embed/canvas | remove; inert text/placeholder only if needed |
-| Remote resources/images | never fetch; omit or unsupported if essential |
-| External links | inert label only |
-| Internal links | resolve only to validated local targets |
-| data/file/javascript/blob/custom schemes | reject from resource loading |
-| CSS/styles/fonts | drop |
-| hidden/aria-hidden | omit |
-| SVG markup/spine | no executable output; placeholder or unsupported |
-| Audio/video/media overlays | ignore if nonessential; unsupported if essential |
-| Raster images | local, declared, bounded, signature/type consistent only |
-| DTD/entities | reject DOCTYPE; never resolve |
-| ZIP/protected content | reject; never decrypt |
-| Obfuscated fonts | ignore because fonts are not loaded |
+ADR-0007's closed content matrix governs projection and unsupported outcomes. In summary: scripts never execute, network resources never load, publisher CSS/fonts and executable SVG never cross the boundary, only validated local bounded raster formats are exposed lazily, DTD/entity/XInclude input is rejected, protected content is never decrypted, and publisher XHTML is rebuilt as immutable semantic values rather than returned as trusted markup.
 
 ## EPUB ingestion strategy
 
@@ -395,7 +338,7 @@ Do not claim a new script exists until it is added and executed.
 
 **Validation:** `git diff --check`; `pnpm.cmd format:check`.
 
-**Status:** Not started; repository prerequisites are complete, but implementation must begin from an updated-main branch.
+**Status:** Complete. ADR-0007 accepts or explicitly defers every listed decision, centralizes all exact limits, and adds no dependency or application code. `git diff --check` and `pnpm.cmd format:check` passed on 2026-07-21.
 
 ### Task 1.2: Prove and select archive/XML dependencies
 
@@ -519,7 +462,7 @@ Do not claim a new script exists until it is added and executed.
 
 **Dependencies:** Tasks 3.2-3.3.
 
-**Areas:** EPUB 3 navigation modules/tests and, only if Task 1.1 accepts EPUB 2 support, NCX modules/tests.
+**Areas:** EPUB 3 navigation modules/tests. EPUB 2/NCX remains deferred by ADR-0007.
 
 **Acceptance:** Nested labels/fragments resolve; broken/remote/excessive/nonspine targets follow policy; detailed nav stays internal.
 
@@ -733,16 +676,17 @@ Rollback is task-by-task. No user data exists to migrate. Published shared versi
 - 2026-07-21: Confirmed Milestone 2 technical completion at 0672ed6, then verified PR #18 merged into main as 86db4c4; the local branch references remain stale.
 - 2026-07-21: Reviewed current W3C EPUB 3.3/Reading Systems requirements and candidate ZIP/XML documentation to inform recommendations without accepting them silently.
 - 2026-07-21: Created this ExecPlan; no implementation task started.
+- 2026-07-21: Completed Task 1.1 on `docs/m3-secure-ingestion-adr` from `main` at `c8a1c77`. Accepted ADR-0007 for the EPUB 3 reflowable support profile, exact security budgets, content matrix, SHA-256 identity, shared/internal model ownership, locator and error policy, and deferred cases. Updated the architecture overview and centralized exact limits in the ADR; no dependency or application code was added. `git diff --check` and `pnpm.cmd format:check` passed.
 
 ## Decision log
 
 - Filename is M003-secure-epub-ingestion-and-document-model.md because one plan covers roadmap Milestone 3; no second sequence is needed.
 - Shared contract versions remain the expected boundary; internal document/nav/resource structures belong to @voxleaf/epub absent contrary evidence.
-- Recommended low-level ZIP/XML adapters plus semantic allowlist rather than renderer framework; Tasks 1.1-1.2 decide.
-- Recommended bytes-only/no-native-permission scope.
-- Recommended counters as primary defenses plus abort/deadline.
-- Recommended SHA-256 byte identity and deterministic text-free anchors, pending acceptance/tests.
-- Recommended EPUB 3 reflowable baseline; EPUB 2/NCX remains explicit decision.
+- ADR-0007 accepts a semantic allowlist instead of a renderer framework; Task 1.2 still owns low-level ZIP/XML selection and must prove it against the ADR.
+- ADR-0007 accepts the bytes-only/no-native-permission scope.
+- ADR-0007 accepts counters as primary defenses plus abort and an injected deadline.
+- ADR-0007 accepts SHA-256 byte identity and deterministic text-free anchors; later tasks must prove their implementations.
+- ADR-0007 accepts the EPUB 3 reflowable baseline and defers EPUB 2/NCX.
 
 ## Discoveries and decisions
 
@@ -775,4 +719,4 @@ Rollback is task-by-task. No user data exists to migrate. Published shared versi
 
 ## Final validation results
 
-Not run. This turn creates planning documentation only. Repository prerequisites are complete; implementation must start on a new branch from refreshed main and begin with Task 1.1's secure-ingestion decision gate.
+Task 1.1 documentation validation passed on 2026-07-21 with `git diff --check` and `pnpm.cmd format:check`. No dependency or application code was added. Milestone-wide implementation and final validation have not run; Task 1.2 is next.

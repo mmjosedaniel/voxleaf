@@ -85,6 +85,16 @@ The protocol may use Tauri IPC, standard input/output, a local socket, or loopba
 - Shared protocol types must not depend on either process implementation.
 - TTS model adapters implement an internal interface so benchmarking does not leak model-specific details through the application.
 
+## Secure EPUB ingestion boundary
+
+[ADR-0007](decisions/ADR-0007-secure-epub-ingestion-boundary.md) establishes the accepted Milestone 3 support profile and the single authority for archive, XML, graph, content, resource, and processing limits. Ingestion accepts bounded in-memory EPUB bytes, validates the ZIP/OCF structure before interpreting publication data, resolves only case-sensitive virtual in-container paths, and never extracts to disk or performs network access.
+
+The initial profile accepts EPUB 3 reflowable XHTML with EPUB navigation and supported local raster resources. EPUB 2/NCX-only, fixed-layout-only, protected, remotely dependent, active, SVG-dependent, and media-dependent publications remain explicit unsupported inputs unless safe supported fallbacks preserve the required reading path. XHTML is projected into immutable allowlisted semantic values; publisher HTML, live DOM nodes, CSS, executable SVG, and scripts never cross the ingestion boundary.
+
+`@voxleaf/shared` continues to own serialized book, locator, and operational-error contracts. `@voxleaf/epub` owns package relationships, immutable semantic nodes, detailed navigation, bounded resource handles, locator indexes, and fixed EPUB detail codes. Exact EPUB bytes define the book's `sha256` identity; source-derived or generated structural anchors contain no prose or host path. Expected failures and diagnostics remain content-free, and the EPUB package performs no logging.
+
+The ADR deliberately does not select archive or XML libraries. Low-level candidates must prove they can enforce the accepted boundary before becoming production dependencies.
+
 ## Shared contract authority
 
 [ADR-0006](decisions/ADR-0006-json-schema-contract-authority.md) establishes checked-in JSON Schema Draft 2020-12 documents under `packages/shared` as the authority for serialized contract families. TypeScript wire DTOs are generated from those schemas, while Python and any future Rust consumer must validate or derive from the same schemas rather than maintain an independent authoritative model.
