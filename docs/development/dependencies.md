@@ -30,6 +30,10 @@ These are the only direct libraries that can participate in the foundation appli
 
 The Python package has no runtime dependencies. `@voxleaf/epub` depends on the local `@voxleaf/shared` contract boundary plus the two low-level ingestion libraries above. `@voxleaf/shared` has only the validator listed above. No EPUB renderer, TTS engine, model runtime, server, audio library, or persistence library is installed.
 
+### Browser platform APIs
+
+Milestone 4 Task 1.2 uses the WebView's built-in HTML file input, `FileReader`, `AbortController`, `ArrayBuffer`, and `Uint8Array` APIs for the local-file ingress probe accepted by ADR-0009. These are platform APIs, not package dependencies. The accepted boundary adds no JavaScript or Rust dependency, Tauri plugin/command/capability, host-path contract, CSP allowance, manifest change, or lockfile change. Official Tauri dialog/filesystem plugins and repository-owned Rust file commands remain rejected alternatives unless a future demonstrated requirement cannot be satisfied by the WebView boundary.
+
 ### EPUB archive/XML selection evidence
 
 The package-internal executable probes are intentionally not exported from `@voxleaf/epub`; Tasks 2.2 through 2.4 built the production archive and XML security adapters over these proven primitives. The probes, production adapters, and complete public ingestion matrix establish the following behavior with synthetic in-memory input:

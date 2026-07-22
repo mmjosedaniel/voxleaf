@@ -2,7 +2,7 @@
 
 ## Current status
 
-The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, minimal Tauri 2 native shell, isolated Python service foundation, aggregate root quality commands, and deterministic continuous integration are initialized. The version, focused, development-server, and root commands identified as Windows commands in this document have been run successfully in Windows PowerShell. Secure in-memory EPUB 3 ingestion, immutable semantic documents, bounded local raster reads, and deterministic locator resolution are implemented in `@voxleaf/epub`. Desktop file selection and rendering, narration preparation, TTS inference, audio, persistence, hardware detection, installers, and product-level integration are not implemented.
+The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, minimal Tauri 2 native shell, isolated Python service foundation, aggregate root quality commands, and deterministic continuous integration are initialized. The version, focused, development-server, and root commands identified as Windows commands in this document have been run successfully in Windows PowerShell. Secure in-memory EPUB 3 ingestion, immutable semantic documents, bounded local raster reads, and deterministic locator resolution are implemented in `@voxleaf/epub`. The desktop has a capability-free local-file selection/read probe but does not yet pass those bytes to the EPUB package. Rendering, narration preparation, TTS inference, audio, persistence, hardware detection, installers, and product-level integration are not implemented.
 
 ## Prerequisite version matrix
 
@@ -147,6 +147,8 @@ uv build services/tts
 ```
 
 `pnpm.cmd --filter @voxleaf/desktop dev` starts the browser-only Vite development server on `http://127.0.0.1:5173`; it was verified with a successful local HTTP response. Stop it with `Ctrl+C`. It does not exercise the native Tauri runtime. Native shell acceptance uses `pnpm.cmd --filter @voxleaf/desktop tauri build`, which produces the Windows executable and previously passed a bounded launch check.
+
+For the ADR-0009 native file-ingress matrix, launch the built release executable and follow the disposable synthetic-file procedure in [`testing.md`](testing.md#native-local-file-ingress-probe). The probe must run natively on Windows, must not use a private book, and must not leave its synthetic files behind. It does not require or authorize a Tauri plugin, command, capability, or permanent automation dependency.
 
 After the locked JavaScript and Python environments are installed, use the verified root quality surface:
 
