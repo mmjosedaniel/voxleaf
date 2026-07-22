@@ -16,6 +16,9 @@
     "build": "tsc --build tsconfig.json",
     "pretest": "pnpm run build",
     "test": "vitest run",
-    "typecheck": "tsc --project tsconfig.json --noEmit"
+    "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.test.json"
+  },
+  "dependencies": {
+    "@voxleaf/shared": "workspace:*"
   }
 }

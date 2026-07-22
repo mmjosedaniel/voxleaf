@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "rootDir": "..",
+    "paths": {
+      "@voxleaf/epub": ["./src/index.ts"],
+      "@voxleaf/shared": ["../shared/src/index.ts"]
+    },
+    "tsBuildInfoFile": null
+  },
+  "include": ["src/**/*.test.ts"],
+  "exclude": []
+}

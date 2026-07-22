@@ -80,6 +80,7 @@ The protocol may use Tauri IPC, standard input/output, a local socket, or loopba
 
 - UI components depend on application-level reading APIs, not directly on EPUB or TTS implementations.
 - EPUB parsing must not depend on the desktop framework.
+- `@voxleaf/epub` consumes shared book and locator contracts only through the public `@voxleaf/shared` workspace package boundary; `@voxleaf/shared` has no reverse EPUB dependency.
 - Pagination belongs to the renderer, while logical locator creation and resolution remain framework-independent.
 - Shared protocol types must not depend on either process implementation.
 - TTS model adapters implement an internal interface so benchmarking does not leak model-specific details through the application.
