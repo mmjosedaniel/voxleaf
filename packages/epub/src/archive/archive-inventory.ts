@@ -1,6 +1,5 @@
 import {
   Uint8ArrayReader,
-  Uint8ArrayWriter,
   ZipReader,
 } from "@zip.js/zip.js/lib/zip-core-native.js";
 import type { Entry } from "@zip.js/zip.js/lib/zip-core-native.js";
@@ -12,15 +11,19 @@ import {
 import type {
   ArchiveEntryKind,
   ArchiveEntryPath,
+  ArchiveFilePath,
 } from "../paths/archive-path.js";
 import { EpubPathError } from "../paths/path-error.js";
+import {
+  createEpubProcessingBudget,
+  EpubProcessingBudget,
+} from "../security/processing-budget.js";
+import type {
+  ArchiveEntryReadBudget,
+  EpubProcessingBudgetOptions,
+} from "../security/processing-budget.js";
 import { EpubArchiveError } from "./archive-error.js";
 import type { EpubArchiveErrorCode } from "./archive-error.js";
-
-const MAX_COMPRESSED_EPUB_BYTES = 100 * 1_048_576;
-const MAX_ARCHIVE_ENTRIES = 4_096;
-const MAX_ENTRY_UNCOMPRESSED_BYTES = 64 * 1_048_576;
-const MAX_TOTAL_UNCOMPRESSED_BYTES = 512 * 1_048_576;
 
 const COMPRESSION_METHOD_STORE = 0;
 const COMPRESSION_METHOD_DEFLATE = 8;
@@ -46,12 +49,6 @@ const ZIP_READER_OPTIONS = Object.freeze({
   useWebWorkers: false,
 });
 
-const ZIP_STRUCTURE_CHECK_OPTIONS = Object.freeze({
-  ...ZIP_READER_OPTIONS,
-  checkOverlappingEntryOnly: true,
-  passThrough: true,
-});
-
 export type ArchiveCompressionMethod = "deflate" | "stored";
 
 export interface ArchiveInventoryEntry {
@@ -73,6 +70,10 @@ export interface ArchiveInventory {
   readonly totalDeclaredUncompressedBytes: number;
 }
 
+export interface ArchiveEntryReadOptions {
+  readonly maximumBytes?: number;
+}
+
 interface CandidateEntry {
   readonly inventoryEntry: ArchiveInventoryEntry;
   readonly source: Entry;
@@ -80,8 +81,8 @@ interface CandidateEntry {
 
 interface StructurallyCheckableEntry {
   getData(
-    writer: Uint8ArrayWriter,
-    options: typeof ZIP_STRUCTURE_CHECK_OPTIONS,
+    writer: WritableStream<Uint8Array>,
+    options: ReturnType<typeof createStructureCheckOptions>,
   ): Promise<unknown>;
 }
 
@@ -137,6 +138,7 @@ function readCompressionMethod(method: number): ArchiveCompressionMethod {
 function createCandidateEntry(
   entry: Entry,
   archiveByteLength: number,
+  budget: EpubProcessingBudget,
 ): CandidateEntry {
   assertSafeNonnegativeInteger(entry.offset);
   assertSafeNonnegativeInteger(entry.compressedSize);
@@ -147,16 +149,12 @@ function createCandidateEntry(
     return fail("invalid-container");
   }
 
-  if (entry.uncompressedSize > MAX_ENTRY_UNCOMPRESSED_BYTES) {
-    return fail("resource-limit-exceeded");
-  }
-
   if (entry.encrypted) {
     return fail("unsupported-protection");
   }
 
   const kind = readEntryKind(entry);
-  const path = decodeArchiveEntryPath(entry.rawFilename, kind);
+  const path = decodeArchiveEntryPath(entry.rawFilename, kind, budget.policy);
   const expectedDecodedFilename =
     kind === "directory" ? `${String(path)}/` : String(path);
 
@@ -190,8 +188,30 @@ function createCandidateEntry(
   });
 }
 
-async function validateLocalStructure(entries: readonly CandidateEntry[]) {
+function createRuntimeOptions(budget: EpubProcessingBudget) {
+  return {
+    ...ZIP_READER_OPTIONS,
+    ...(budget.signal === undefined ? {} : { signal: budget.signal }),
+    onstart: () => budget.checkpoint(),
+    onprogress: () => budget.checkpoint(),
+    onend: () => budget.checkpoint(),
+  };
+}
+
+function createStructureCheckOptions(budget: EpubProcessingBudget) {
+  return {
+    ...createRuntimeOptions(budget),
+    checkOverlappingEntryOnly: true,
+    passThrough: true,
+  };
+}
+
+async function validateLocalStructure(
+  entries: readonly CandidateEntry[],
+  budget: EpubProcessingBudget,
+): Promise<void> {
   for (const { source } of entries) {
+    budget.checkpoint();
     const checkableEntry = source as unknown as StructurallyCheckableEntry;
 
     if (typeof checkableEntry.getData !== "function") {
@@ -199,9 +219,10 @@ async function validateLocalStructure(entries: readonly CandidateEntry[]) {
     }
 
     await checkableEntry.getData(
-      new Uint8ArrayWriter(),
-      ZIP_STRUCTURE_CHECK_OPTIONS,
+      new WritableStream<Uint8Array>(),
+      createStructureCheckOptions(budget),
     );
+    budget.checkpoint();
   }
 }
 
@@ -253,9 +274,121 @@ function assertMimetypeLocalHeader(
   }
 }
 
+class BoundedArchiveEntryWriter {
+  public readonly writable: WritableStream<Uint8Array>;
+
+  readonly #expectedSize: number;
+  readonly #budget: ArchiveEntryReadBudget;
+  #data: Uint8Array | undefined;
+  #offset = 0;
+  #complete = false;
+  #failure: EpubArchiveError | undefined;
+
+  public constructor(expectedSize: number, budget: ArchiveEntryReadBudget) {
+    this.#expectedSize = expectedSize;
+    this.#budget = budget;
+    this.#data = new Uint8Array(expectedSize);
+    this.writable = new WritableStream<Uint8Array>({
+      start: () => this.captureFailure(() => this.#budget.checkpoint()),
+      write: (chunk) => this.captureFailure(() => this.write(chunk)),
+      close: () => this.captureFailure(() => this.complete()),
+      abort: () => this.discard(),
+    });
+  }
+
+  public get failure(): EpubArchiveError | undefined {
+    return this.#failure;
+  }
+
+  public takeData(): Uint8Array {
+    if (!this.#complete || this.#data === undefined) {
+      return fail("internal-failure");
+    }
+
+    const data = this.#data;
+    this.#data = undefined;
+    return data;
+  }
+
+  public discard(): void {
+    this.#data = undefined;
+    this.#offset = 0;
+    this.#complete = false;
+  }
+
+  private write(chunk: Uint8Array): void {
+    if (!(chunk instanceof Uint8Array) || this.#data === undefined) {
+      return fail("invalid-container");
+    }
+
+    this.#budget.observe(chunk.byteLength);
+    if (chunk.byteLength > this.#expectedSize - this.#offset) {
+      this.discard();
+      return fail("invalid-container");
+    }
+
+    this.#data.set(chunk, this.#offset);
+    this.#offset += chunk.byteLength;
+  }
+
+  private complete(): void {
+    this.#budget.checkpoint();
+    if (this.#data === undefined || this.#offset !== this.#expectedSize) {
+      this.discard();
+      return fail("invalid-container");
+    }
+
+    this.#complete = true;
+  }
+
+  private captureFailure(action: () => void): void {
+    try {
+      action();
+    } catch (error: unknown) {
+      if (error instanceof EpubArchiveError) {
+        this.#failure = error;
+      }
+
+      throw error;
+    }
+  }
+}
+
+async function readCandidateData(
+  candidate: CandidateEntry,
+  budget: EpubProcessingBudget,
+  maximumBytes = budget.policy.maxEntryUncompressedBytes,
+): Promise<Uint8Array> {
+  const { inventoryEntry, source } = candidate;
+  if (source.directory || inventoryEntry.kind !== "file") {
+    return fail("invalid-container");
+  }
+
+  const readBudget = budget.beginArchiveEntryRead(
+    inventoryEntry.compressedSize,
+    inventoryEntry.uncompressedSize,
+    maximumBytes,
+  );
+  const writer = new BoundedArchiveEntryWriter(
+    inventoryEntry.uncompressedSize,
+    readBudget,
+  );
+
+  try {
+    await source.getData(writer, createRuntimeOptions(budget));
+    readBudget.complete();
+    return writer.takeData();
+  } catch (error: unknown) {
+    const writerFailure = writer.failure;
+    writer.discard();
+    throw writerFailure ?? error;
+  }
+}
+
 async function validateMimetype(
   archiveBytes: Uint8Array,
   orderedEntries: readonly CandidateEntry[],
+  budget: EpubProcessingBudget,
 ): Promise<void> {
   const firstEntry = orderedEntries[0];
   if (firstEntry === undefined) {
@@ -269,18 +402,14 @@ async function validateMimetype(
     inventoryEntry.compressionMethod !== "stored" ||
     inventoryEntry.compressedSize !== MIMETYPE_BYTES.byteLength ||
     inventoryEntry.uncompressedSize !== MIMETYPE_BYTES.byteLength ||
-    inventoryEntry.zip64
+    inventoryEntry.zip64 ||
+    source.directory
   ) {
     return fail("invalid-container");
   }
 
   assertMimetypeLocalHeader(archiveBytes, inventoryEntry);
-
-  if (source.directory) {
-    return fail("invalid-container");
-  }
-
-  const data = await source.getData(new Uint8ArrayWriter(), ZIP_READER_OPTIONS);
+  const data = await readCandidateData(firstEntry, budget);
 
   if (
     data.byteLength !== MIMETYPE_BYTES.byteLength ||
@@ -290,7 +419,10 @@ async function validateMimetype(
   }
 }
 
-function mapArchiveError(error: unknown): EpubArchiveError {
+function mapArchiveError(
+  error: unknown,
+  budget?: EpubProcessingBudget,
+): EpubArchiveError {
   if (error instanceof EpubArchiveError) {
     return error;
   }
@@ -303,16 +435,96 @@ function mapArchiveError(error: unknown): EpubArchiveError {
     );
   }
 
+  if (budget !== undefined) {
+    try {
+      budget.checkpoint();
+    } catch (checkpointError: unknown) {
+      if (checkpointError instanceof EpubArchiveError) {
+        return checkpointError;
+      }
+    }
+  }
+
   return new EpubArchiveError("invalid-container");
 }
 
-export async function inventoryEpubArchive(
-  archiveBytes: Uint8Array,
-): Promise<ArchiveInventory> {
-  if (archiveBytes.byteLength > MAX_COMPRESSED_EPUB_BYTES) {
-    return fail("resource-limit-exceeded");
+export interface OpenedEpubArchive {
+  readonly inventory: ArchiveInventory;
+  readonly budget: EpubProcessingBudget;
+  readEntry(
+    path: ArchiveFilePath,
+    options?: ArchiveEntryReadOptions,
+  ): Promise<Uint8Array>;
+  close(): Promise<void>;
+}
+
+class OpenedEpubArchiveHandle implements OpenedEpubArchive {
+  public readonly inventory: ArchiveInventory;
+  public readonly budget: EpubProcessingBudget;
+
+  readonly #reader: ZipReader<Uint8Array>;
+  readonly #entriesByPath: ReadonlyMap<string, CandidateEntry>;
+  #closed = false;
+  #readInProgress = false;
+
+  public constructor(
+    reader: ZipReader<Uint8Array>,
+    inventory: ArchiveInventory,
+    entries: readonly CandidateEntry[],
+    budget: EpubProcessingBudget,
+  ) {
+    this.#reader = reader;
+    this.inventory = inventory;
+    this.budget = budget;
+    this.#entriesByPath = new Map(
+      entries.map((entry) => [String(entry.inventoryEntry.path), entry]),
+    );
   }
 
+  public async readEntry(
+    path: ArchiveFilePath,
+    options: ArchiveEntryReadOptions = {},
+  ): Promise<Uint8Array> {
+    if (this.#closed || this.#readInProgress) {
+      return fail("internal-failure");
+    }
+
+    this.#readInProgress = true;
+    try {
+      this.budget.checkpoint();
+      const candidate = this.#entriesByPath.get(String(path));
+      if (candidate === undefined || candidate.inventoryEntry.kind !== "file") {
+        return fail("invalid-container");
+      }
+
+      return await readCandidateData(
+        candidate,
+        this.budget,
+        options.maximumBytes,
+      );
+    } catch (error: unknown) {
+      throw mapArchiveError(error, this.budget);
+    } finally {
+      this.#readInProgress = false;
+    }
+  }
+
+  public async close(): Promise<void> {
+    if (this.#closed) {
+      return;
+    }
+
+    this.#closed = true;
+    await this.#reader.close().catch(() => undefined);
+  }
+}
+
+export async function openEpubArchive(
+  archiveBytes: Uint8Array,
+  options: EpubProcessingBudgetOptions = {},
+): Promise<OpenedEpubArchive> {
+  const budget = createEpubProcessingBudget(options);
+  budget.registerArchiveInput(archiveBytes.byteLength);
   const reader = new ZipReader(
     new Uint8ArrayReader(archiveBytes),
     ZIP_READER_OPTIONS,
@@ -320,24 +532,20 @@ export async function inventoryEpubArchive(
 
   try {
     const candidates: CandidateEntry[] = [];
-    let totalDeclaredUncompressedBytes = 0;
 
-    for await (const entry of reader.getEntriesGenerator()) {
-      if (candidates.length >= MAX_ARCHIVE_ENTRIES) {
-        return fail("resource-limit-exceeded");
-      }
-
-      const candidate = createCandidateEntry(entry, archiveBytes.byteLength);
-      const { uncompressedSize } = candidate.inventoryEntry;
-
-      if (
-        totalDeclaredUncompressedBytes >
-        MAX_TOTAL_UNCOMPRESSED_BYTES - uncompressedSize
-      ) {
-        return fail("resource-limit-exceeded");
-      }
-
-      totalDeclaredUncompressedBytes += uncompressedSize;
+    for await (const entry of reader.getEntriesGenerator({
+      onprogress: () => budget.checkpoint(),
+    })) {
+      budget.checkpoint();
+      const candidate = createCandidateEntry(
+        entry,
+        archiveBytes.byteLength,
+        budget,
+      );
+      budget.registerArchiveEntryDeclaration(
+        candidate.inventoryEntry.compressedSize,
+        candidate.inventoryEntry.uncompressedSize,
+      );
       candidates.push(candidate);
     }
 
@@ -351,9 +559,9 @@ export async function inventoryEpubArchive(
         right.inventoryEntry.localHeaderOffset,
     );
 
-    await validateLocalStructure(orderedCandidates);
-
-    await validateMimetype(archiveBytes, orderedCandidates);
+    await validateLocalStructure(orderedCandidates, budget);
+    await validateMimetype(archiveBytes, orderedCandidates, budget);
+    budget.checkpoint();
 
     const entries = Object.freeze(
       orderedCandidates.map(({ inventoryEntry }) => inventoryEntry),
@@ -361,17 +569,35 @@ export async function inventoryEpubArchive(
     const directoryCount = entries.filter(
       ({ kind }) => kind === "directory",
     ).length;
-
-    return Object.freeze({
+    const inventory = Object.freeze({
       entries,
       entryCount: entries.length,
       fileCount: entries.length - directoryCount,
       directoryCount,
-      totalDeclaredUncompressedBytes,
+      totalDeclaredUncompressedBytes:
+        budget.getSnapshot().declaredUncompressedBytes,
     });
+
+    return new OpenedEpubArchiveHandle(
+      reader,
+      inventory,
+      orderedCandidates,
+      budget,
+    );
   } catch (error: unknown) {
-    throw mapArchiveError(error);
-  } finally {
     await reader.close().catch(() => undefined);
+    throw mapArchiveError(error, budget);
+  }
+}
+
+export async function inventoryEpubArchive(
+  archiveBytes: Uint8Array,
+  options: EpubProcessingBudgetOptions = {},
+): Promise<ArchiveInventory> {
+  const archive = await openEpubArchive(archiveBytes, options);
+  try {
+    return archive.inventory;
+  } finally {
+    await archive.close();
   }
 }

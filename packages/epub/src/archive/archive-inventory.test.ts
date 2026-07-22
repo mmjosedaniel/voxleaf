@@ -14,7 +14,6 @@ const END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06054b50;
 
 const MAX_ARCHIVE_ENTRIES = 4_096;
 const MAX_ENTRY_UNCOMPRESSED_BYTES = 64 * 1_048_576;
-const MAX_TOTAL_UNCOMPRESSED_BYTES = 512 * 1_048_576;
 
 const ZIP_WRITER_OPTIONS = Object.freeze({
   dataDescriptor: false,
@@ -369,7 +368,7 @@ describe("ZIP structure and entry policy", () => {
     await expectArchiveError(oversized, "resource-limit-exceeded");
   });
 
-  it("allows the aggregate declared-size maximum and rejects the next byte", async () => {
+  it("rejects an aggregate declared compression bomb before decompression", async () => {
     const entryNames = Array.from(
       { length: 8 },
       (_, index) => `EPUB/chapter-${index}.xhtml`,
@@ -390,16 +389,7 @@ describe("ZIP structure and entry policy", () => {
       );
     }
 
-    await expect(inventoryEpubArchive(atLimit)).resolves.toMatchObject({
-      totalDeclaredUncompressedBytes: MAX_TOTAL_UNCOMPRESSED_BYTES,
-    });
-
-    const aboveLimit = setEntryUncompressedSize(
-      atLimit,
-      entryNames[0]!,
-      MAX_ENTRY_UNCOMPRESSED_BYTES - 19,
-    );
-    await expectArchiveError(aboveLimit, "resource-limit-exceeded");
+    await expectArchiveError(atLimit, "resource-limit-exceeded");
   });
 
   it("rejects the first entry above the archive entry-count maximum", async () => {

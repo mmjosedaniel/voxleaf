@@ -1,5 +1,7 @@
 export type EpubArchiveErrorCode =
+  | "cancelled"
   | "invalid-container"
+  | "internal-failure"
   | "resource-limit-exceeded"
   | "unsafe-entry"
   | "unsupported-protection";
