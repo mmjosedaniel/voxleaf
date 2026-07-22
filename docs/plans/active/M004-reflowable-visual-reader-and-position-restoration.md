@@ -233,7 +233,7 @@ Decision: option 1, using `FileReader.readAsArrayBuffer` rather than the uncance
 
 Decision: continuous vertical scrolling only over one active spine document. It preserves native keyboard/assistive-technology behavior and avoids making unstable page geometry authoritative. Pagination, multiple columns, stable page numbers, and mode migration are deferred.
 
-#### M4-D4: Raster decode and object-URL safety — Prototype and approval required
+#### M4-D4: Raster decode and object-URL safety — Accepted by ADR-0010
 
 Options:
 
@@ -241,7 +241,7 @@ Options:
 2. Add a narrow metadata parser that rejects dimensions, decoded pixels, animation/frame counts, and formats beyond accepted limits before browser decode.
 3. Decode first with browser APIs and reject after observing dimensions.
 
-Recommendation: prove option 2 or retain option 1. Post-decode checks alone can allocate attacker-controlled pixel memory before rejection. The decision must establish exact dimension, pixel, frame/animation, concurrent-decode, lifetime, and failure limits; supported GIF/WebP animation policy; object-URL creation/revocation; and the minimum CSP change, likely an explicit local `img-src` allowance without network origins. No image bytes may be persisted or logged.
+Decision: option 2. ADR-0010 accepts a dependency-free desktop metadata gate for GIF, JPEG, PNG/APNG, and WebP followed by application-created Blob URL decode. The immutable maxima are 8,192 pixels on either axis, 16,777,216 decoded pixels, one static frame, one concurrent decode, eight live sources, and 16,777,216 aggregate live pixels. Animation is placeholder-only. Browser-observed dimensions must match preflight metadata; fixed failure/cancellation/capacity outcomes revoke rejected URLs, while ready URLs are released idempotently by handle or manager close. CSP adds only `img-src 'self' blob:` and no network origin. Task 3.3 owns publication-image integration and accessible fallback presentation.
 
 #### M4-D5: Navigation target to locator — Accepted by ADR-0008
 
@@ -681,7 +681,7 @@ Do not change `services/tts`, audio contracts/implementation, narration contract
 
 **Validation:** `pnpm.cmd --filter @voxleaf/desktop typecheck`; `pnpm.cmd --filter @voxleaf/desktop test`; `pnpm.cmd --filter @voxleaf/desktop build`; `pnpm.cmd --filter @voxleaf/desktop tauri build`; `git diff --check`.
 
-**Status:** Not started.
+**Status:** Complete on 2026-07-22. ADR-0010 accepts the narrow static-image policy and lifecycle boundary. The desktop now preflights all four admitted raster media types, rejects malformed metadata structures/oversize declarations/animation before URL creation, maps later payload decode failures to a fixed local result, confirms dimensions after browser decode, bounds concurrent/live work, aborts and awaits close, and revokes every rejected/released source. Thirty-one desktop tests pass; the release WebView2 shell decoded and released the fixed synthetic PNG twice under the narrowed CSP. No package/lock dependency, EPUB public contract, native command/plugin/capability, persistence, publication integration, or semantic image rendering was added.
 
 ### Task 1.4: Accept persistence, preference, and migration ownership
 
@@ -1077,7 +1077,7 @@ Milestone 4 is complete only when:
 
 **Risk:** A signature-valid compressed image may have enormous dimensions or animation frames before post-decode checks.
 
-**Mitigation:** Block image rendering until predecode limits are proven; use placeholder-only fallback if no safe narrow implementation exists; bound concurrent reads/decodes; revoke/discard promptly.
+**Mitigation:** ADR-0010 requires predecode dimension/pixel/animation checks, one concurrent decode, bounded live sources/pixels, postdecode dimension agreement, exact URL release, static-only support, and placeholder fallback. Task 3.3 must consume that manager rather than create another image path or cache.
 
 ### Public navigation targets cannot map to locators
 
@@ -1134,6 +1134,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 - 2026-07-22: Created this plan only. No application, test, package, manifest, lockfile, native capability, or production dependency was changed.
 - 2026-07-22: Completed Task 1.1. Accepted ADR-0008 for direct rendering of closed semantic values in the application DOM, one continuous-scrolling mode, package-owned target resolution, locator/code-point visible-position sampling, focus and browser-history behavior, and the Milestone 4 boundary from narration/audio. Reconciled architecture, product, roadmap, diagram, and this plan without changing application code or dependencies.
 - 2026-07-22: Completed Task 1.2. Implemented a capability-free local-file probe with a browser file input, exact 100-MiB preflight, abortable `FileReader`, post-read length validation, stale-result rejection, same-file reselection, fixed statuses, and no filename/path exposure. Twelve desktop tests passed. A native release WebView2 probe passed small selection, same-file reselection, cancellation, exact maximum, maximum plus one, cleared input, and filename omission. Accepted ADR-0009; retained an empty Tauri capability list and unchanged manifests, locks, Rust shell, and CSP.
+- 2026-07-22: Completed Task 1.3. Added dependency-free static GIF/JPEG/PNG/WebP metadata preflight, immutable dimension/pixel/frame/concurrency/live-lifetime limits, postdecode dimension agreement, fixed cancellation/failure/capacity outcomes, and an idempotent object-URL manager. Added the minimum Blob image CSP allowance and a fixed synthetic release-shell probe. Thirty-one desktop tests and repeated native WebView2 decoding passed; accepted ADR-0010. Publication image rendering remains Task 3.3.
 
 ## Decision log
 
@@ -1151,7 +1152,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 | 2026-07-22 | Milestone 4 owns the visual active locator only and does not implement narration, TTS, audio, highlighting, or synchronization. | Accepted by ADR-0008; later roadmap milestones retain ownership. |
 | 2026-07-22 | Use a versioned repository over Web Storage if native proof passes; keep display preferences in a separate app-local v1 envelope. | Proposed; persistence ADR approval required. |
 | 2026-07-22 | Use a trailing 500 ms passive-save debounce plus immediate coalesced explicit/lifecycle saves. | Proposed; product approval/evidence required. |
-| 2026-07-22 | Block raster display until predecode limits are proven; placeholder-only is the safe fallback. | Proposed; security ADR approval required. |
+| 2026-07-22 | Preflight GIF/JPEG/PNG/WebP dimensions and animation; permit only bounded static Blob URL decode with one concurrent operation and lifecycle-owned release; use placeholders for every rejected image. | Accepted by ADR-0010; semantic image integration remains Task 3.3. |
 | 2026-07-22 | Use real-browser layout tests plus native Windows smoke; Playwright is the recommended candidate. | Proposed; dependency approval required. |
 | 2026-07-22 | Select large-chapter and reader latency bounds from synthetic measurements, not arbitrary plan values. | Required evidence; unresolved. |
 
@@ -1181,7 +1182,7 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Production-reader validation has not started. Tasks 1.1 and 1.2 are complete; publication-session, renderer, persistence, restoration, and later application implementation tasks remain `Not started`.
+Production-reader validation has not started. Tasks 1.1 through 1.3 are complete; publication-session, renderer, persistence, restoration, and later application implementation tasks remain `Not started`.
 
 Task 1.1 documentation validation completed on 2026-07-22:
 
@@ -1201,6 +1202,17 @@ Task 1.2 validation completed on 2026-07-22:
 - The authoritative native Windows `pnpm.cmd check` passed formatting, TypeScript/Rust/Python linting and type checks, 547 TypeScript tests, Rust and Python tests, package builds, the Tauri release build, and Python distribution builds.
 - The bounded native release WebView2 probe passed small selection, same-file reselection, exactly 104,857,600 bytes, rejection at 104,857,601 bytes, cancellation, cleared input, and absence of all disposable filenames from rendered UI. The disposable files and one-off probe harness were deleted after the run.
 - Manifest, lockfile, Rust source, Tauri configuration/capabilities, and CSP diffs are empty. The desktop still does not import `@voxleaf/epub` or claim publication opening.
+
+Task 1.3 validation completed on 2026-07-22:
+
+- `pnpm.cmd --filter @voxleaf/desktop typecheck` passed.
+- `pnpm.cmd --filter @voxleaf/desktop test` passed: 4 files and 31 tests.
+- `pnpm.cmd --filter @voxleaf/desktop build` passed with 20 transformed modules.
+- `pnpm.cmd run lint:typescript` passed.
+- `pnpm.cmd --filter @voxleaf/desktop tauri build` passed and produced the Windows release executable.
+- The authoritative native Windows `pnpm.cmd check` passed formatting, TypeScript/Rust/Python linting and type checks, 566 TypeScript tests, Rust and Python tests, package builds, the Tauri release build, and Python distribution builds.
+- The native release WebView2 probe decoded and released the repository-authored 68-byte static PNG twice and showed only the fixed “Bounded local raster decoding is available” status. The application retained zero Tauri commands/plugins/capabilities; the temporary screenshot and automation harness were removed.
+- The only Tauri configuration change is `img-src 'self' blob:`. No package manifest, lockfile, Rust source, shared/EPUB contract, native permission, persistence, network origin, publication integration, or semantic image renderer changed.
 
 Plan-creation validation completed on 2026-07-22:
 

@@ -141,7 +141,7 @@ Milestone 3 provides sanitized content and stable locators. Milestone 2 provides
 
 - Implement and prove ADR-0008's direct semantic DOM boundary without reintroducing publisher markup, styles, URLs, or DOM identifiers.
 - Implement the approved package-owned semantic-target resolver and prove locator/code-point sampling across real browser reflow.
-- Preserve ADR-0009's capability-free file ingress while resolving raster decode safety, real-browser tooling, and measured large-chapter limits before claiming the complete reader boundary works.
+- Preserve ADR-0009's capability-free file ingress and ADR-0010's bounded static-raster decode/object-URL policy while resolving real-browser tooling and measured large-chapter limits before claiming the complete reader boundary works.
 - Define save frequency, lifecycle saves, recovery, and persistence migration.
 - Keep manual navigation during active narration deferred to the Milestone 9 interaction gate.
 
