@@ -1,11 +1,16 @@
 export type EpubArchiveErrorCode =
+  | "broken-reference"
   | "cancelled"
   | "invalid-container"
   | "internal-failure"
+  | "malformed-package"
   | "malformed-xml"
   | "resource-limit-exceeded"
   | "unsafe-entry"
-  | "unsupported-protection";
+  | "unsupported-layout"
+  | "unsupported-protection"
+  | "unsupported-resource"
+  | "unsupported-version";
 
 export class EpubArchiveError extends Error {
   public readonly code: EpubArchiveErrorCode;
