@@ -8,9 +8,13 @@ import type {
   PackageManifestItem,
   ParsedPackageDocument,
 } from "../package/package-document.js";
+import type { ParsedNavigationDocument } from "../navigation/navigation-document.js";
 import { projectBookV1 } from "./book-v1-projection.js";
 
 const encoder = new TextEncoder();
+const EMPTY_NAVIGATION_DOCUMENT: ParsedNavigationDocument = Object.freeze({
+  roots: Object.freeze([]),
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -21,7 +25,11 @@ describe("BookV1 projection", () => {
     const backing = encoder.encode("ignoredabctrailing");
     const exactView = backing.subarray(7, 10);
 
-    const book = await projectBookV1(exactView, createPackageDocument());
+    const book = await projectBookV1(
+      exactView,
+      createPackageDocument(),
+      EMPTY_NAVIGATION_DOCUMENT,
+    );
 
     expect(book.identity).toEqual({
       scheme: "sha256",
@@ -38,9 +46,21 @@ describe("BookV1 projection", () => {
     const lastIndex = changed.length - 1;
     changed[lastIndex] = changed[lastIndex]! ^ 0x01;
 
-    const first = await projectBookV1(original, createPackageDocument());
-    const second = await projectBookV1(identical, createPackageDocument());
-    const third = await projectBookV1(changed, createPackageDocument());
+    const first = await projectBookV1(
+      original,
+      createPackageDocument(),
+      EMPTY_NAVIGATION_DOCUMENT,
+    );
+    const second = await projectBookV1(
+      identical,
+      createPackageDocument(),
+      EMPTY_NAVIGATION_DOCUMENT,
+    );
+    const third = await projectBookV1(
+      changed,
+      createPackageDocument(),
+      EMPTY_NAVIGATION_DOCUMENT,
+    );
 
     expect(second.identity).toEqual(first.identity);
     expect(third.identity).not.toEqual(first.identity);
@@ -59,6 +79,7 @@ describe("BookV1 projection", () => {
     const book = await projectBookV1(
       encoder.encode("synthetic package bytes"),
       createPackageDocument(),
+      EMPTY_NAVIGATION_DOCUMENT,
     );
 
     expect(book).toMatchObject({
@@ -110,6 +131,84 @@ describe("BookV1 projection", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it("flattens spine targets in hierarchy order and omits groups and non-spine targets", async () => {
+    const navigationDocument: ParsedNavigationDocument = Object.freeze({
+      roots: Object.freeze([
+        Object.freeze({
+          label: "Part One",
+          children: Object.freeze([
+            Object.freeze({
+              label: "Chapter One",
+              target: Object.freeze({
+                kind: "spine" as const,
+                path: filePath("EPUB/text/chapter.xhtml"),
+                spineItemIndex: 0,
+                fragment: "start",
+              }),
+              children: Object.freeze([]),
+            }),
+            Object.freeze({
+              label: "Notes",
+              target: Object.freeze({
+                kind: "non-spine" as const,
+                path: filePath("EPUB/nav.xhtml"),
+              }),
+              children: Object.freeze([]),
+            }),
+          ]),
+        }),
+        Object.freeze({
+          label: "Contents",
+          target: Object.freeze({
+            kind: "spine" as const,
+            path: filePath("EPUB/nav.xhtml"),
+            spineItemIndex: 1,
+          }),
+          children: Object.freeze([]),
+        }),
+      ]),
+    });
+
+    const book = await projectBookV1(
+      encoder.encode("navigation projection"),
+      createPackageDocument(),
+      navigationDocument,
+    );
+
+    expect(book.navigation).toEqual([
+      { label: "Chapter One", targetSpineItemId: "spine:0" },
+      { label: "Contents", targetSpineItemId: "spine:1" },
+    ]);
+    expect(JSON.stringify(book.navigation)).not.toContain("start");
+    expect(Object.isFrozen(book.navigation)).toBe(true);
+  });
+
+  it("rejects a navigation target that does not match its claimed spine item", async () => {
+    const navigationDocument: ParsedNavigationDocument = Object.freeze({
+      roots: Object.freeze([
+        Object.freeze({
+          label: "Private canary label",
+          target: Object.freeze({
+            kind: "spine" as const,
+            path: filePath("EPUB/nav.xhtml"),
+            spineItemIndex: 0,
+          }),
+          children: Object.freeze([]),
+        }),
+      ]),
+    });
+
+    await expectProjectionError(
+      () =>
+        projectBookV1(
+          encoder.encode("invalid navigation"),
+          createPackageDocument(),
+          navigationDocument,
+        ),
+      "malformed-package",
+    );
+  });
+
   it("does not derive identity from a path, package metadata, or publisher identifiers", async () => {
     const exactBytes = encoder.encode("same exact bytes");
     const firstPackage = createPackageDocument();
@@ -124,8 +223,16 @@ describe("BookV1 projection", () => {
       },
     });
 
-    const first = await projectBookV1(exactBytes, firstPackage);
-    const second = await projectBookV1(exactBytes, secondPackage);
+    const first = await projectBookV1(
+      exactBytes,
+      firstPackage,
+      EMPTY_NAVIGATION_DOCUMENT,
+    );
+    const second = await projectBookV1(
+      exactBytes,
+      secondPackage,
+      EMPTY_NAVIGATION_DOCUMENT,
+    );
 
     expect(second.identity).toEqual(first.identity);
     expect(second.metadata).not.toEqual(first.metadata);
@@ -137,6 +244,7 @@ describe("BookV1 projection", () => {
     const book = await projectBookV1(
       encoder.encode("resource filtering"),
       createPackageDocument(),
+      EMPTY_NAVIGATION_DOCUMENT,
     );
     const serialized = JSON.stringify(book);
 
@@ -167,7 +275,11 @@ describe("BookV1 projection", () => {
 
     await expectProjectionError(
       () =>
-        projectBookV1(encoder.encode("invalid relationship"), packageDocument),
+        projectBookV1(
+          encoder.encode("invalid relationship"),
+          packageDocument,
+          EMPTY_NAVIGATION_DOCUMENT,
+        ),
       "malformed-package",
     );
   });
@@ -182,7 +294,12 @@ describe("BookV1 projection", () => {
     });
 
     await expectProjectionError(
-      () => projectBookV1(encoder.encode("invalid metadata"), packageDocument),
+      () =>
+        projectBookV1(
+          encoder.encode("invalid metadata"),
+          packageDocument,
+          EMPTY_NAVIGATION_DOCUMENT,
+        ),
       "malformed-package",
     );
   });
@@ -201,6 +318,7 @@ describe("BookV1 projection", () => {
         projectBookV1(
           encoder.encode("digest failure"),
           createPackageDocument(),
+          EMPTY_NAVIGATION_DOCUMENT,
         ),
       "internal-failure",
     );

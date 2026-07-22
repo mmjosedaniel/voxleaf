@@ -6,6 +6,10 @@ import type {
   PackageManifestItem,
   ParsedPackageDocument,
 } from "../package/package-document.js";
+import type {
+  ParsedNavigationDocument,
+  ParsedNavigationNode,
+} from "../navigation/navigation-document.js";
 
 const SHA256_BYTE_LENGTH = 32;
 const ACTIVE_RESOURCE_PROPERTIES = new Set(["remote-resources", "scripted"]);
@@ -54,9 +58,46 @@ function uniqueInOrder(values: readonly string[]): readonly string[] {
   return [...new Set(values)];
 }
 
+function projectNavigation(
+  navigationDocument: ParsedNavigationDocument,
+  packageDocument: ParsedPackageDocument,
+): readonly { readonly label: string; readonly targetSpineItemId: string }[] {
+  const navigation: {
+    readonly label: string;
+    readonly targetSpineItemId: string;
+  }[] = [];
+
+  function visit(nodes: readonly ParsedNavigationNode[]): void {
+    for (const node of nodes) {
+      const target = node.target;
+      if (target?.kind === "spine") {
+        const spineItem = packageDocument.spine[target.spineItemIndex];
+        if (
+          spineItem === undefined ||
+          spineItem.index !== target.spineItemIndex ||
+          spineItem.path !== target.path
+        ) {
+          return fail("malformed-package");
+        }
+
+        navigation.push({
+          label: node.label,
+          targetSpineItemId: `spine:${target.spineItemIndex}`,
+        });
+      }
+
+      visit(node.children);
+    }
+  }
+
+  visit(navigationDocument.roots);
+  return navigation;
+}
+
 export async function projectBookV1(
   exactEpubBytes: Uint8Array,
   packageDocument: ParsedPackageDocument,
+  navigationDocument: ParsedNavigationDocument,
 ): Promise<BookV1> {
   const identityValue = await computeSha256(exactEpubBytes);
   const resources = packageDocument.manifest
@@ -80,6 +121,7 @@ export async function projectBookV1(
     index: item.index,
     resourcePath: String(item.path),
   }));
+  const navigation = projectNavigation(navigationDocument, packageDocument);
 
   try {
     return decodeBookV1({
@@ -95,7 +137,7 @@ export async function projectBookV1(
       },
       resources,
       spine,
-      navigation: [],
+      navigation,
     });
   } catch (error: unknown) {
     if (error instanceof BookContractError) {
