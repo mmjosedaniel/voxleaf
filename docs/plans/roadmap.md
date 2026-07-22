@@ -142,7 +142,7 @@ Milestone 3 provides sanitized content and stable locators. Milestone 2 provides
 - Implement and prove ADR-0008's direct semantic DOM boundary without reintroducing publisher markup, styles, URLs, or DOM identifiers.
 - Implement the approved package-owned semantic-target resolver and prove locator/code-point sampling across real browser reflow.
 - Preserve ADR-0009's capability-free file ingress and ADR-0010's bounded static-raster decode/object-URL policy while resolving real-browser tooling and measured large-chapter limits before claiming the complete reader boundary works.
-- Define save frequency, lifecycle saves, recovery, and persistence migration.
+- Implement and validate ADR-0011's bounded Web Storage envelopes, 500 ms passive-save debounce, lifecycle saves, exact/recovered restoration, and explicit migration boundary.
 - Keep manual navigation during active narration deferred to the Milestone 9 interaction gate.
 
 ## Milestone 5: Prepare text for natural narration
@@ -330,7 +330,7 @@ The following decisions should be made when evidence is available, not assumed s
 
 1. **Desktop stack gate:** validate and adopt the desktop framework, workspace, package manager, and supported development environments during Milestone 1.
 2. **EPUB gate:** validate archive limits, sanitization, rendering isolation, locator round-tripping, and dependency licensing before completing Milestone 3.
-3. **Persistence gate:** select local storage and versioned locator migration before completing Milestone 4.
+3. **Persistence gate:** ADR-0011 selects bounded WebView `localStorage`, separate versioned position/preference envelopes, save lifecycle, and desktop-owned migration; implement and validate that boundary before completing Milestone 4.
 4. **TTS gate:** select balanced and compatibility profiles only after reproducible quality, latency, memory, cancellation, license, and packaging evaluation in Milestone 6.
 5. **Protocol gate:** record transport, framing, backpressure, and local exposure decisions before completing Milestone 7.
 6. **Audio gate:** record internal audio format, playback mechanism, speed-control behavior, and the short-range startup rule before completing Milestone 8.

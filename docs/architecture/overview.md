@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop has a validated capability-free local-file selection/read probe plus a bounded static-raster predecode/decode source boundary, but it does not yet open a publication or render an image. Rendering, persistence, narration preparation, TTS integration, buffering, and playback remain approved planned work and require their own implementation evidence; the Python area remains a foundation only.
+Mixed implementation status. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop has a validated capability-free local-file selection/read probe plus a bounded static-raster predecode/decode source boundary, but it does not yet open a publication, render an image, or persist reader state. Rendering and the ADR-0011-approved persistence repository remain planned implementation work; narration preparation, TTS integration, buffering, and playback also require their own implementation evidence. The Python area remains a foundation only.
 
 [`system-diagram.md`](system-diagram.md) is the canonical visual map and status legend. This overview owns the accompanying architectural rationale, invariants, and detailed implemented-boundary notes.
 
@@ -16,6 +16,7 @@ VoxLeaf must read EPUB files and synthesize speech locally while beginning playb
 Desktop application
 ├── Capability-free local file selection/read [prototype implemented]
 ├── Bounded static-raster preflight/source lifecycle [implemented]
+├── Versioned bounded Web Storage repository [approved, unimplemented]
 ├── Semantic React reader and navigation
 ├── Reading-session coordinator
 ├── Audio player and bounded playback buffer
@@ -43,7 +44,7 @@ Local TTS service
 
 The visual position is a normalized `ReadingLocatorV1` sampled at an application-owned reading line. A browser caret/range supplies the Unicode-code-point offset when safe, with deterministic block-start fallback. Explicit navigation may move focus to a destination heading/reader region, while passive scrolling, reflow, and initial restoration do not steal focus.
 
-File ingress is resolved by ADR-0009, and ADR-0010 resolves the predecode/decode/object-URL safety boundary for static raster images. Publication-session integration, semantic image rendering, persistence, real-browser tooling, and measured large-chapter/performance limits remain later Milestone 4 work. Synchronization with the active narrated segment remains a later milestone.
+File ingress is resolved by ADR-0009, ADR-0010 resolves the predecode/decode/object-URL safety boundary for static raster images, and ADR-0011 resolves the bounded Web Storage, display-preference, save-lifecycle, failure, and migration policy. Publication-session integration, semantic image rendering, the persistence repository and coordinator, real-browser tooling, and measured large-chapter/performance limits remain later Milestone 4 work. Synchronization with the active narrated segment remains a later milestone.
 
 The desktop application and TTS inference should run in separate local processes.
 
@@ -107,7 +108,7 @@ The public EPUB package currently implements the in-memory validation, parsing, 
 - Explicit navigation has a predictable focus destination, while passive scroll/reflow/restoration does not move focus.
 - Reader navigation remains application state rather than browser routes/history.
 
-This boundary does not make the reader implemented. `apps/desktop` contains the foundation shell, local-file probe, and ADR-0010 raster metadata/source-lifecycle implementation, while the approved `resolveTarget` operation, publication coordinator, semantic renderer, image component integration, locator/DOM mapper, and navigation behavior require later tasks and tests. Persistence, browser-test tooling, and reader performance limits remain unresolved.
+This boundary does not make the reader implemented. `apps/desktop` contains the foundation shell, local-file probe, and ADR-0010 raster metadata/source-lifecycle implementation, while the approved `resolveTarget` operation, publication coordinator, semantic renderer, image component integration, locator/DOM mapper, navigation behavior, and ADR-0011 persistence modules require later tasks and tests. Browser-test tooling and reader performance limits remain unresolved.
 
 ## Local file-ingress boundary
 
@@ -120,6 +121,16 @@ The Task 1.2 release probe passed in native Windows WebView2 while the Tauri she
 [ADR-0010](decisions/ADR-0010-bounded-raster-image-decode.md) accepts a desktop-owned predecode parser and object-URL source manager for the four static raster types already admitted by ADR-0007. Before browser decode, it enforces 8,192-pixel width/height limits, 16,777,216 decoded pixels, one static frame, and fixed malformed/over-limit outcomes. One manager permits one concurrent decode, eight live sources, and 16,777,216 aggregate live pixels.
 
 Only a preflighted application-created Blob may become a `blob:` URL. Browser-observed dimensions must match preflight metadata. Release/close revokes URLs exactly once; close aborts and awaits active work. The committed CSP permits only `'self'` and `blob:` for images and adds no network origin. The implementation does not read a publication, render an `img`, cache a resource, or change the `@voxleaf/epub` public contract; Task 3.3 owns those integrations and their accessible placeholders.
+
+## Reading-state persistence boundary
+
+[ADR-0011](decisions/ADR-0011-bounded-web-storage-reader-state.md) accepts the packaged WebView's `window.localStorage` behind a replaceable asynchronous desktop repository. Exactly two fixed `voxleaf.reader.` keys hold one positions envelope and one global display-preference envelope. The positions value is bounded to 128 exact-byte book identities and 262,144 UTF-16 code units with deterministic most-recent eviction; the preferences value is bounded to 1,024 code units and contains only closed text-scale, line-spacing, content-width, and theme tokens.
+
+The desktop owns outer-envelope decoding, storage access, migration dispatch, and save scheduling. `@voxleaf/shared` continues to own strict decoding of nested `PersistedReadingStateV1`; `@voxleaf/epub` owns locator resolution; the reader coordinator owns the active normalized locator and restoration sequence. Leaf components do not access storage. Display preferences remain app-local and do not change shared v1.
+
+Passive position updates use a trailing 500 ms debounce, while explicit navigation, settled preference reflow, book replacement/close, hidden-document, and `pagehide` lifecycles request coalesced immediate saves of the latest validated locator. Failures are content-free and nonfatal. Unsupported envelope versions are preserved without coercion, overwrite, eviction, or deletion; future migrations are explicit validate-transform-validate replacements. Exact-byte identity allows restoration after app restart and exact-file reselection, while a byte-modified EPUB starts fresh.
+
+The current release-shell probe proved one fixed marker survived a complete Windows WebView2 application restart and was then removed. No persistence implementation remains in production source: Task 4.4 owns the repository and decoders, Task 4.5 owns save coordination, and Task 4.6 owns restoration integration.
 
 ## Secure EPUB ingestion boundary
 
@@ -145,7 +156,7 @@ The implemented book v1 boundary validates raw input against its canonical Draft
 
 The implemented locator v1 boundary identifies an opaque book, spine item, versioned `element-id` anchor, structural anchor index, and Unicode-code-point text offset. Optional progression is recovery metadata rather than the position authority. Locator ranges order positions by spine index, anchor index, and text offset and reject cross-book ranges. The package-internal EPUB resolver now validates these fields against sanitized semantic content and returns a canonical index-derived locator; persistence and application-level restoration remain later responsibilities.
 
-The implemented persisted-reading-state v1 boundary stores one opaque book identity, its authoritative logical locator, and a closed minimal preferences object. The decoder requires the root and locator book identities to match. Preferences may retain an opaque local voice identifier and a positive requested playback-rate multiplier; later capability and reader layers decide which values are available. The contract contains no storage path, book prose, generated audio, model data, rendered page authority, display settings, timestamps, or persistence-engine behavior.
+The implemented persisted-reading-state v1 boundary stores one opaque book identity, its authoritative logical locator, and a closed minimal preferences object. The decoder requires the root and locator book identities to match. Preferences may retain an opaque local voice identifier and a positive requested playback-rate multiplier; later capability and reader layers decide which values are available. The contract contains no storage path, book prose, generated audio, model data, rendered page authority, display settings, timestamps, or persistence-engine behavior. ADR-0011 keeps display preferences in a separate app-local envelope and assigns storage/migration ownership to the desktop without changing this shared contract.
 
 The implemented reading-session v1 boundary binds a book identity to one opaque session ID and its active opaque generation ID. Future work envelopes carry that session/generation identity and use a pure classifier to accept only the active pair; a replaced or absent session yields `stale-session`, while an earlier generation in the same session yields `stale-generation`. A cancellation intent identifies the generation to request cancellation for, but does not itself accept or reject late work: replacing the active pair remains the deterministic stale-result safeguard.
 

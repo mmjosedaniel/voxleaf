@@ -57,7 +57,7 @@ It is not ready to begin production reader rendering until the approval gates in
 | File-ingress boundary | Approved; probe implemented | ADR-0009 accepts the native-validated WebView file input and abortable bounded browser read with no Tauri command/plugin/capability. Tasks 2.2-2.3 still own publication integration. |
 | Raster decode safety | Prototype and approval required | Byte signatures are validated, but pixel dimensions, frame/animation behavior, decode memory, object URLs, and CSP are unresolved. |
 | Navigation-target resolution | Approved, not implemented | ADR-0008 assigns source-fragment matching to a new closed `@voxleaf/epub` target resolver; Task 2.1 must implement it. |
-| Persistence and migration | Approval required | Select a local backend, versioned envelope, failure behavior, and display-preference ownership. |
+| Persistence and migration | Approved, not implemented | ADR-0011 selects two bounded Web Storage envelopes, app-local display preferences, a 500 ms passive-save debounce, content-free failures, exact-identity restoration, and desktop-owned migration. |
 | Layout/end-to-end testing | Dependency decision required | jsdom cannot prove scrolling, browser geometry, reflow, or restoration across viewports. |
 | Large-chapter policy and reader latency budgets | Measurement required | Ingestion allows far more blocks than the desktop should put in the DOM without a measured bound. |
 
@@ -259,21 +259,21 @@ Decision: option 1. ADR-0008 approves an `OpenedPublication.resolveTarget(input,
 
 Decision: use the existing structural locator plus a Unicode-code-point offset at an application-owned reading line at the start edge of the content viewport. Prefer the first visible addressable leaf block crossing the line, use safe caret geometry to refine its offset, fall back to block start, and normalize through `resolveLocator`. Pixel geometry, scroll offsets, rendered pages, percentages, DOM paths, and text quotations are never position authority. Passive sampling/reflow/restoration does not move focus.
 
-#### M4-D7: Persistence backend, envelope, and migration — Approval required
+#### M4-D7: Persistence backend, envelope, and migration — Accepted by ADR-0011
 
-Options are Web Storage, IndexedDB, an official Tauri store/plugin, or a repository-owned native file store. Recommend a small asynchronous repository interface backed initially by namespaced Web Storage if packaged WebView2 proves durable behavior and predictable failure handling. Records are tiny and content-free, and this avoids native permissions and a production dependency. IndexedDB is the fallback if transactional/asynchronous behavior is necessary; a Tauri/native store is justified only by demonstrated lifecycle or durability requirements.
+Options were Web Storage, IndexedDB, an official Tauri store/plugin, or a repository-owned native file store. ADR-0011 accepts a small asynchronous desktop repository backed initially by packaged-WebView `localStorage`. Native release evidence proved a fixed marker survived a full process restart. The boundary adds no native command, capability, dependency, or path contract; IndexedDB/native storage remains a future option only after a measured requirement exceeds the small bounded dataset.
 
-The decision must define key naming, size/count bounds, decoder use, unsupported-version behavior, write failure behavior, and future migration. It must also decide whether display preferences use a separate app-local versioned record (recommended) or require a new shared contract. Silently adding display fields to `PersistedReadingStateV1` is prohibited.
+The accepted `voxleaf.reader.` namespace has exactly two fixed keys. The positions envelope holds at most 128 unique exact-byte states and 262,144 UTF-16 code units in deterministic most-recent order; the preferences envelope is limited to 1,024 code units. Unsupported envelope versions are preserved and write-disabled for the older application. Future migrations are explicit decode-transform-validate atomic replacements owned by the desktop, while nested shared contracts remain `@voxleaf/shared`'s authority.
 
-#### M4-D8: Save lifecycle — Product approval required
+#### M4-D8: Save lifecycle — Accepted by ADR-0011
 
-Recommend a trailing 500 ms debounce for passive scroll-derived locator changes, with immediate coalesced saves after table-of-contents, internal-link, chapter, direct-locator, and preference-reflow stabilization. Flush the last validated locator on book replacement/close and supported application lifecycle events. Never delay navigation on a failed write. If the selected backend cannot safely flush at shutdown, document that limitation and retain the most recent completed debounced write.
+Use a trailing 500 ms debounce for passive scroll-derived locator changes, with immediate coalesced saves after table-of-contents, internal-link, chapter, direct-locator, and settled preference-reflow navigation. Attempt to flush the last validated locator on book replacement/close, hidden-document transition, and `pagehide`; do not rely on asynchronous `beforeunload`. A failed write never delays navigation or publication closure and never changes the active in-memory locator.
 
-The exact debounce may be changed by measured evidence, but one named bounded value and deterministic fake-clock tests are required before implementation acceptance.
+Task 4.5 must prove the exact 499/500 ms boundary, supersession, coalescing, lifecycle flush, and no per-scroll-event write with deterministic fake clocks.
 
-#### M4-D9: Reader preference ownership — Product approval required
+#### M4-D9: Reader preference ownership — Accepted by ADR-0011
 
-Recommend global display preferences in a separate app-local `ReaderPreferencesV1` envelope: bounded text scale, line spacing, content-width preset, and light/dark/system theme. Keep per-book position in `PersistedReadingStateV1`; do not overload its existing voice/playback fields. Typeface switching, custom colors/fonts, margins, alignment, hyphenation, and pagination are deferred unless product approval replaces this scope.
+Global display preferences use a separate closed app-local `ReaderPreferencesV1` envelope with four bounded tokens: text scale, line spacing, content width, and light/dark/system theme. Per-book position remains nested `PersistedReadingStateV1`; its existing voice/playback fields are unchanged. Typeface switching, custom colors/fonts, margins, alignment, hyphenation, pagination, per-book style profiles, narration settings, and model settings are deferred.
 
 #### M4-D10: Large-chapter rendering — Measurement and approval required
 
@@ -393,20 +393,20 @@ Viewport changes outside application control use the same capture/restore coordi
 
 ### Records and association
 
-- Store one `PersistedReadingStateV1` per exact `BookIdentityV1` in a namespaced, bounded local keyspace.
-- The storage key may contain only the identity scheme/version/digest and an application record version; it must contain no title, author, path, or prose.
-- Validate JSON structure through `decodePersistedReadingStateV1`, then require equality among the key identity, record identity, locator identity, and currently opened publication identity.
-- Store display preferences separately under the approved app-local versioned preference envelope. Preferences are proposed to be global, while position remains per book.
+- Use ADR-0011's exactly two fixed keys: `voxleaf.reader.positions` and `voxleaf.reader.preferences`.
+- Store at most 128 unique exact-identity `PersistedReadingStateV1` entries inside the positions envelope in most-recently-saved order, bounded to 262,144 UTF-16 code units. The ordering replaces timestamps and supplies deterministic oldest-entry eviction.
+- Validate the outer envelope and every nested state through `decodePersistedReadingStateV1`, then require equality among the record identity, locator identity, lookup identity, and currently opened publication identity.
+- Store global display preferences separately in the closed app-local `ReaderPreferencesV1` envelope, bounded to 1,024 code units. Its only fields are schema version, text scale, line spacing, content width, and theme.
 - Do not persist EPUB bytes, resource bytes, Blob URLs, extracted text, navigation labels, metadata, DOM snapshots, pixel offsets, or scroll percentages.
 
 ### Save behavior
 
 - Only a locator already normalized by the open publication may enter the repository.
-- Passive scroll changes use the approved trailing debounce; explicit navigation and settled preference reflow request an immediate coalesced save.
+- Passive scroll changes use a trailing 500 ms debounce; explicit navigation and settled preference reflow request an immediate coalesced save.
 - A later locator supersedes an earlier pending write for the same book.
-- Book close/replacement flushes the most recent validated locator when the selected backend/lifecycle supports it, then closes the publication regardless of write success.
+- Book close/replacement, hidden-document transition, and `pagehide` attempt to flush the most recent validated locator; no asynchronous `beforeunload` contract is assumed. The publication closes regardless of write success.
 - Storage failures are nonfatal and visible through a content-free status; they never block reading or corrupt the last in-memory locator.
-- Writes are bounded by one record per known exact book identity plus one global preference record. If record-count cleanup is needed, it requires a documented content-free eviction policy; do not create an unbounded library silently.
+- Position writes move the exact identity to the front and evict oldest entries until both count and serialized-size limits hold. Unsupported outer versions are never overwritten or evicted by an older application.
 
 ### Restore behavior
 
@@ -424,7 +424,7 @@ Restoration is required across component remounts/book reopenings in the current
 
 ### Migration
 
-Version 1 has no predecessor migration. The repository must distinguish missing, valid v1, malformed v1, and unsupported future versions. Future changes add explicit version readers/migrators and fixture tests; they do not reinterpret v1 in place. A display-preference schema change follows the same rule independently of the shared persisted-state contract.
+Version 1 has no predecessor migration. The repository must distinguish missing, valid v1, malformed v1, over-limit, unavailable, and unsupported future versions. A malformed current-version value may be replaced only by a later validated user-generated save; an unsupported version is ignored, preserved byte-for-byte, and write-disabled for the older application. Future changes add explicit source decoders and pure migrators, validate the complete target, enforce target bounds, and atomically replace one key only after success. Position and preference envelopes migrate independently, and a nested shared-state version change also requires a new outer positions-envelope version.
 
 ## Navigation and interaction model
 
@@ -441,14 +441,14 @@ Version 1 has no predecessor migration. The repository must distinguish missing,
 
 ## Reader preferences and layout
 
-Proposed Milestone 4 preferences, subject to M4-D9 approval:
+ADR-0011 accepts these global Milestone 4 preference tokens:
 
-- bounded text-size steps;
-- bounded line-spacing steps;
-- narrow/standard/wide content-width presets; and
+- small/standard/large/extra-large text scale;
+- compact/comfortable/spacious line spacing;
+- narrow/standard/wide content width; and
 - light/dark/system theme.
 
-All values are closed enums or bounded numbers mapped to application-owned CSS custom properties. They must not accept CSS strings. Preferences apply to the visual reader only and must preserve the active locator through the reflow sequence.
+All values are closed enums mapped to application-owned CSS custom properties. They must not accept CSS strings. Preferences apply to the visual reader only and must preserve the active locator through the reflow sequence.
 
 Deferred customization includes custom fonts/files, arbitrary font family, arbitrary colors, margins, paragraph spacing, text alignment, hyphenation, publisher CSS, multi-column/page mode, animation, and per-book style profiles.
 
@@ -695,7 +695,7 @@ Do not change `services/tts`, audio contracts/implementation, narration contract
 
 **Validation:** `git diff --check`; manual changed-link review; `pnpm.cmd format:check`.
 
-**Status:** Not started.
+**Status:** Complete on 2026-07-22. ADR-0011 accepts packaged WebView `localStorage` behind an asynchronous replaceable desktop repository; exactly two fixed bounded versioned envelopes; a separate global app-local display-preference contract; deterministic most-recent position eviction; a trailing 500 ms passive-save debounce plus coalesced explicit/lifecycle saves; exact-byte restore and package-owned nearest-valid recovery; fixed nonfatal failures; and explicit validate-transform-validate migration that preserves unsupported versions. The current release shell seeded one fixed marker, restored it after a full process restart, and cleared it. The temporary probe was removed. No application/test source, dependency, manifest, lockfile, shared contract, native command/plugin/capability, or production storage implementation was added.
 
 ### Task 1.5: Select and establish real-browser reader test tooling
 
@@ -1135,6 +1135,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 - 2026-07-22: Completed Task 1.1. Accepted ADR-0008 for direct rendering of closed semantic values in the application DOM, one continuous-scrolling mode, package-owned target resolution, locator/code-point visible-position sampling, focus and browser-history behavior, and the Milestone 4 boundary from narration/audio. Reconciled architecture, product, roadmap, diagram, and this plan without changing application code or dependencies.
 - 2026-07-22: Completed Task 1.2. Implemented a capability-free local-file probe with a browser file input, exact 100-MiB preflight, abortable `FileReader`, post-read length validation, stale-result rejection, same-file reselection, fixed statuses, and no filename/path exposure. Twelve desktop tests passed. A native release WebView2 probe passed small selection, same-file reselection, cancellation, exact maximum, maximum plus one, cleared input, and filename omission. Accepted ADR-0009; retained an empty Tauri capability list and unchanged manifests, locks, Rust shell, and CSP.
 - 2026-07-22: Completed Task 1.3. Added dependency-free static GIF/JPEG/PNG/WebP metadata preflight, immutable dimension/pixel/frame/concurrency/live-lifetime limits, postdecode dimension agreement, fixed cancellation/failure/capacity outcomes, and an idempotent object-URL manager. Added the minimum Blob image CSP allowance and a fixed synthetic release-shell probe. Thirty-one desktop tests and repeated native WebView2 decoding passed; accepted ADR-0010. Publication image rendering remains Task 3.3.
+- 2026-07-22: Completed Task 1.4. Accepted ADR-0011 for the packaged WebView `localStorage` backend, two fixed bounded envelopes, global app-local display preferences, 500 ms passive-save debounce, lifecycle flushes, exact-byte restoration, fixed nonfatal failures, unsupported-version preservation, and desktop-owned migration. A temporary release-shell marker survived a full process restart and was removed on restore; all temporary source/automation was removed. Persistence implementation remains Tasks 4.4-4.6.
 
 ## Decision log
 
@@ -1150,8 +1151,9 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 | 2026-07-22 | Use structural locator plus code-point offset at an application-owned reading line with deterministic block-start fallback. | Accepted by ADR-0008; implementation remains Tasks 3.1-3.3. |
 | 2026-07-22 | Keep reader navigation out of browser routes/history; explicit navigation moves focus predictably while passive scrolling, reflow, and initial restoration do not. | Accepted by ADR-0008; implementation remains Tasks 3.3-3.5. |
 | 2026-07-22 | Milestone 4 owns the visual active locator only and does not implement narration, TTS, audio, highlighting, or synchronization. | Accepted by ADR-0008; later roadmap milestones retain ownership. |
-| 2026-07-22 | Use a versioned repository over Web Storage if native proof passes; keep display preferences in a separate app-local v1 envelope. | Proposed; persistence ADR approval required. |
-| 2026-07-22 | Use a trailing 500 ms passive-save debounce plus immediate coalesced explicit/lifecycle saves. | Proposed; product approval/evidence required. |
+| 2026-07-22 | Use packaged WebView `localStorage` behind a replaceable asynchronous desktop repository; keep at most 128 exact-book states and one global display-preference record in two fixed size-bounded v1 envelopes. | Accepted by ADR-0011; implementation remains Task 4.4. |
+| 2026-07-22 | Preserve unsupported envelopes, migrate only through explicit validated atomic replacement, and never map state across exact-byte identities. | Accepted by ADR-0011; implementation remains Tasks 4.4 and 4.6. |
+| 2026-07-22 | Use a trailing 500 ms passive-save debounce plus immediate coalesced explicit/reflow/lifecycle saves that never block navigation or publication closure. | Accepted by ADR-0011; implementation remains Task 4.5. |
 | 2026-07-22 | Preflight GIF/JPEG/PNG/WebP dimensions and animation; permit only bounded static Blob URL decode with one concurrent operation and lifecycle-owned release; use placeholders for every rejected image. | Accepted by ADR-0010; semantic image integration remains Task 3.3. |
 | 2026-07-22 | Use real-browser layout tests plus native Windows smoke; Playwright is the recommended candidate. | Proposed; dependency approval required. |
 | 2026-07-22 | Select large-chapter and reader latency bounds from synthetic measurements, not arbitrary plan values. | Required evidence; unresolved. |
@@ -1182,7 +1184,7 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Production-reader validation has not started. Tasks 1.1 through 1.3 are complete; publication-session, renderer, persistence, restoration, and later application implementation tasks remain `Not started`.
+Production-reader validation has not started. Tasks 1.1 through 1.4 are complete; real-browser tooling, performance gates, publication-session, renderer, persistence, restoration, and later application implementation tasks remain `Not started`.
 
 Task 1.1 documentation validation completed on 2026-07-22:
 
@@ -1213,6 +1215,14 @@ Task 1.3 validation completed on 2026-07-22:
 - The authoritative native Windows `pnpm.cmd check` passed formatting, TypeScript/Rust/Python linting and type checks, 566 TypeScript tests, Rust and Python tests, package builds, the Tauri release build, and Python distribution builds.
 - The native release WebView2 probe decoded and released the repository-authored 68-byte static PNG twice and showed only the fixed “Bounded local raster decoding is available” status. The application retained zero Tauri commands/plugins/capabilities; the temporary screenshot and automation harness were removed.
 - The only Tauri configuration change is `img-src 'self' blob:`. No package manifest, lockfile, Rust source, shared/EPUB contract, native permission, persistence, network origin, publication integration, or semantic image renderer changed.
+
+Task 1.4 validation completed on 2026-07-22:
+
+- `pnpm.cmd --filter @voxleaf/desktop tauri build` passed for the temporary content-free release-shell probe with 20 transformed frontend modules and a successful optimized Rust build.
+- The first clean launch displayed “Persistence probe seeded.”; after complete process closure, the second launch displayed “Persistence probe restored and cleared.” The probe used one fixed marker and retained no book, path, user, or publication data.
+- The temporary probe source and one-off Windows UI-automation harness were removed before the documentation diff. `apps/desktop`, package manifests, lockfiles, generated files, Tauri configuration, Rust source, commands, plugins, and capabilities have no Task 1.4 diff.
+- `git diff --check`, manual changed-link review, and `pnpm.cmd format:check` passed for the final documentation-only change.
+- The final scope review found ADR-0011 plus focused architecture, roadmap, and active-plan reconciliation only. No persistence behavior is claimed implemented; Tasks 4.4-4.6 retain repository, save, and restoration ownership.
 
 Plan-creation validation completed on 2026-07-22:
 
