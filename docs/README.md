@@ -11,7 +11,8 @@ Documentation is organized by purpose so contributors and Codex can load only th
 
 ## Architecture
 
-- [`architecture/overview.md`](architecture/overview.md): planned component boundaries and data flow.
+- [`architecture/system-diagram.md`](architecture/system-diagram.md): canonical implemented/approved component map, EPUB-to-audio flow, status legend, and maintenance conditions.
+- [`architecture/overview.md`](architecture/overview.md): detailed component boundaries, invariants, and implemented EPUB/shared-contract behavior.
 - [`architecture/performance-budget.md`](architecture/performance-budget.md): latency, buffering, memory, and measurement targets.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 

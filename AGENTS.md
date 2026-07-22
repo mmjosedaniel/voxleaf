@@ -4,7 +4,7 @@
 
 VoxLeaf is a privacy-first desktop EPUB reader that generates speech locally and streams bounded audio from memory during playback.
 
-The repository is in the foundation stage. Never claim that planned components, commands, tests, or features already work unless they exist and have been validated.
+The repository is pre-alpha. Use the roadmap and canonical system diagram for current implementation status. Never claim that planned components, commands, tests, or features already work unless they exist and have been validated.
 
 ## Product constraints
 
@@ -32,7 +32,7 @@ Before changing code or architecture:
 
 1. Read `docs/README.md`.
 2. Read the relevant product requirements under `docs/product/`.
-3. Read `docs/architecture/overview.md` and applicable ADRs.
+3. Read `docs/architecture/system-diagram.md`, `docs/architecture/overview.md`, and applicable ADRs.
 4. Inspect existing code, tests, and scripts before proposing commands or implementation patterns.
 5. Create an ExecPlan following `.agents/PLANS.md` for multi-component features, model integration, significant refactors, or public contract changes.
 
@@ -87,3 +87,5 @@ Update documentation when changing:
 - Developer setup, commands, or testing strategy.
 
 Use ADRs under `docs/architecture/decisions/` for durable choices. Keep temporary implementation work in `docs/plans/active/` and move completed plans to `docs/plans/completed/`.
+
+Review `docs/architecture/system-diagram.md` when a task changes major components; package, module, process, or architectural boundaries; dependencies between major components; important runtime or data flows; persistence responsibility; external-system interactions; or deployment/runtime topology. Update it only when the documented architecture actually changes, not for internal refactors that preserve the model. Before completing a relevant task, verify that the diagram still matches the implementation and approved plans.

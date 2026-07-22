@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is in the foundation stage. This roadmap defines the intended implementation sequence from documentation-only repository to validated MVP. It describes outcomes and dependencies without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 3 are complete, and Milestone 4 is the next implementation priority. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 

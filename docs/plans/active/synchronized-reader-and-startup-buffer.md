@@ -15,7 +15,9 @@ Implement a normal reflowable EPUB reading surface that shares one stable readin
 
 ## Current state
 
-The repository is in the documentation-only foundation stage. There are no desktop, EPUB, shared-contract, persistence, TTS, playback, test, or packaging implementations and no executable project commands. Product requirements and the durable locator and startup-gate decisions are documented, but none of the requested behavior can yet be validated in a running application.
+Roadmap Milestones 1 through 3 are complete. The repository now has a reproducible cross-language workspace and CI, canonical shared schemas and runtime decoders, deterministic test fakes, a minimal React/Tauri desktop shell, a dependency-free Python service scaffold, and an implemented framework-independent `@voxleaf/epub` boundary for bounded in-memory ingestion, immutable semantic documents, lazy raster reads, and deterministic locator creation/resolution.
+
+The desktop still has no file-selection capability or dependency on the EPUB/shared packages and cannot render or restore a book. There is no persistence adapter, narration normalization/chunking pipeline, TTS engine or process protocol, runtime generation queue, audio buffer/player, hardware detection, or installer. The shared persisted-state/session/narration/audio contracts and test fakes are supporting contracts, not implementations of those systems. The package-level EPUB behavior can be validated, but none of this plan's complete reader-to-playback user flow works in the application.
 
 ## Scope and non-goals
 
@@ -46,13 +48,14 @@ The repository is in the documentation-only foundation stage. There are no deskt
 - `docs/product/mvp.md`
 - `docs/product/glossary.md`
 - `docs/architecture/overview.md`
+- `docs/architecture/system-diagram.md`
 - `docs/architecture/performance-budget.md`
 - `docs/architecture/decisions/ADR-0002-in-memory-audio.md`
 - `docs/architecture/decisions/ADR-0003-stable-reading-locators.md`
 - `docs/architecture/decisions/ADR-0004-start-after-audio-lead.md`
 - `docs/development/setup.md`
 - `docs/development/testing.md`
-- Intended implementation areas: `apps/desktop`, `packages/epub`, `packages/shared`, and `services/tts`
+- Implementation areas: `apps/desktop`, `packages/epub`, `packages/shared`, and `services/tts`
 
 ## Architecture and constraints
 
@@ -75,13 +78,13 @@ The initial gate starts playback when contiguous valid audio reaches approximate
 
 ### Validation
 
-- Commands: record installation, formatting, linting, type-checking, and unit-test commands only after repository configuration defines them.
+- Commands: the implemented root and focused command surfaces are documented in `docs/development/setup.md`, `docs/development/testing.md`, and the completed M001/M002 ExecPlans.
 - Expected result: contracts compile, serialization round-trips, invalid locators fail safely, and no serialized fixture contains book prose.
-- Actual result: not run; no toolchain exists yet.
+- Actual result: complete through roadmap Milestones 1 and 2. The validated toolchain, shared contracts, deterministic fakes, and exact commands are recorded in the completed M001 and M002 ExecPlans.
 
 ### Status
 
-Not started
+Complete
 
 ## Milestone 2: Render EPUB content and resolve reading locations
 
@@ -98,11 +101,11 @@ Not started
 - Unit tests for locator creation, resolution, fallback, and reflow invariants.
 - Integration tests using a small synthetic EPUB with multiple chapters, images, headings, and paragraphs.
 - Accessibility checks for keyboard navigation, focus, reading order, and semantic controls.
-- Actual result: not run; implementation does not exist.
+- Actual result: partially complete at the framework-independent package boundary. `@voxleaf/epub` validates synthetic in-memory EPUBs, projects safe semantic content and raster descriptors, and creates/resolves stable locators. Desktop file access, raster decoding, renderer isolation, reflow, and accessibility behavior are not implemented.
 
 ### Status
 
-Not started
+Partially satisfied by completed roadmap Milestone 3; application work not started
 
 ## Milestone 3: Persist and restore one reading position
 
@@ -120,7 +123,7 @@ Not started
 - Integration test proving rendered content and narration chunks share locator ranges.
 - End-to-end test: navigate to a later passage, close the book, reopen it, and verify that the same passage is visible.
 - End-to-end test: start narration and verify that the visible highlighted paragraph follows segment boundaries.
-- Actual result: not run; implementation does not exist.
+- Actual result: the shared persisted-state contract and EPUB locator resolver exist. No desktop reading-position owner, storage adapter, lifecycle save, restoration flow, narration start, highlighting, or page-following behavior exists.
 
 ### Status
 
@@ -143,7 +146,7 @@ Not started
 - Integration test proving stale-session frames do not increase active buffer depth.
 - End-to-end test proving playback begins immediately when the threshold is reached.
 - Performance measurement of cold/warm startup latency, playable depth at start, gate-to-audible delay, RTF, underruns, memory, and cancellation latency.
-- Actual result: not run; implementation does not exist.
+- Actual result: shared session, audio-frame, and buffer-status contracts plus deterministic fakes exist. No runtime queue, in-memory audio buffer, startup gate, player, or underrun instrumentation exists.
 
 ### Status
 
@@ -161,9 +164,9 @@ Not started
 
 ### Validation
 
-- Commands: to be populated from repository configuration when implementation exists.
+- Commands: run the existing root quality surface and add exact integration, end-to-end, accessibility, and benchmark commands only when repository configuration defines them.
 - Expected result: all deterministic checks pass; hardware-specific results are reported separately; stale audio played is zero; generated audio persistence is zero.
-- Actual result: not run; implementation does not exist.
+- Actual result: repository-wide deterministic checks and CI exist, but the reader, persistence, TTS, audio, accessibility, performance, and product integration coverage required by this milestone cannot run because those behaviors are not implemented.
 
 ### Status
 
@@ -183,7 +186,7 @@ Hardware benchmarks should report model and device configuration alongside cold 
 - A 15-second lead may be too expensive on slow hardware or unnecessary on fast hardware. Measure it, retain explicit bounds, and use a later documented decision for adaptive tuning.
 - Frequent persistence writes may affect responsiveness or storage. Debounce safely without losing lifecycle saves.
 
-Documentation-only changes can be rolled back independently. Once persisted locator contracts ship, changes require versioned migration rather than destructive reset.
+Documentation-only changes can be rolled back independently. Persisted locator contracts now exist as versioned shared contracts; future serialized shape changes require a new contract-family version and an explicit migration rather than destructive reset.
 
 ## Progress log
 
@@ -191,6 +194,7 @@ Documentation-only changes can be rolled back independently. Once persisted loca
 - 2026-07-20: Added accepted decisions for stable logical locators and duration-based startup gating.
 - 2026-07-20: Confirmed that no implementation or executable validation commands currently exist.
 - 2026-07-20: Verified local Markdown links, whitespace, character encoding, required plan sections, and removal of the obsolete 15-second wall-clock allowance.
+- 2026-07-22: Reconciled this plan's current-state and milestone evidence with completed roadmap Milestones 1 through 3. Reader, persistence, narration, TTS, audio, and integrated feature work remain incomplete.
 
 ## Discoveries and decisions
 
@@ -201,7 +205,7 @@ Documentation-only changes can be rolled back independently. Once persisted loca
 
 ## Final validation results
 
-Documentation validation completed on 2026-07-20:
+Initial documentation validation completed on 2026-07-20:
 
 - All local Markdown links resolve.
 - No Markdown files contain trailing whitespace or mojibake markers.
@@ -209,4 +213,4 @@ Documentation validation completed on 2026-07-20:
 - No documentation retains the obsolete allowance of a fixed or maximum 15-second startup wait.
 - `git diff --check` passed for tracked changes, with only informational line-ending warnings.
 
-Feature validation cannot begin until the repository has an implementation toolchain and the milestones above are completed. Do not move this plan to `docs/plans/completed/` or claim the feature works before then.
+The implementation toolchain, shared contracts, and secure EPUB package now exist, but feature validation remains incomplete because the desktop reader, persistence, narration, TTS, audio, and integrated behavior have not been implemented. Do not move this plan to `docs/plans/completed/` or claim the feature works before those remaining milestones pass their validation.

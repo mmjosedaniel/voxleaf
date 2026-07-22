@@ -1,5 +1,7 @@
 # VoxLeaf initial scaffold
 
+> **Historical record:** This manifest describes the original documentation-only bootstrap package. It is not a current repository inventory or setup guide; use [`README.md`](README.md) and [`docs/README.md`](docs/README.md) for current documentation.
+
 Extract this package over the root of `mmjosedaniel/voxleaf`.
 
 The existing `LICENSE` file is intentionally not included or replaced.

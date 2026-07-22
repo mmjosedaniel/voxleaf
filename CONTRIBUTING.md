@@ -1,6 +1,6 @@
 # Contributing to VoxLeaf
 
-VoxLeaf is currently a portfolio project in its foundation stage. Contributions should remain small, reviewable, and aligned with the local-first privacy constraints.
+VoxLeaf is a pre-alpha portfolio project. The [system architecture diagram](docs/architecture/system-diagram.md) and [roadmap](docs/plans/roadmap.md) record current implementation status and approved next work. Contributions should remain small, reviewable, and aligned with the local-first privacy constraints.
 
 ## Before starting
 
