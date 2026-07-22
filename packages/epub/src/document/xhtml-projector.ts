@@ -120,6 +120,7 @@ interface BlockCollector {
   readonly context: TextContext;
   readonly blocks: SemanticBlock[];
   readonly pendingInlines: RawInline[];
+  pendingSourceElementId: string | undefined;
 }
 
 interface InlineCollector {
@@ -139,12 +140,17 @@ type SemanticDestination = BlockCollector | InlineCollector | ListCollector;
 
 type CloseAction =
   | { readonly kind: "block-boundary" }
-  | { readonly collector: BlockCollector; readonly kind: "block-quote" }
+  | {
+      readonly collector: BlockCollector;
+      readonly kind: "block-quote";
+      readonly sourceElementId?: string;
+    }
   | { readonly collector: BlockCollector; readonly kind: "body" }
   | {
       readonly collector: InlineCollector;
       readonly kind: "heading";
       readonly level: 1 | 2 | 3 | 4 | 5 | 6;
+      readonly sourceElementId?: string;
     }
   | {
       readonly collector: InlineCollector;
@@ -153,15 +159,35 @@ type CloseAction =
         "code" | "emphasis" | "internal-link" | "strong" | "transparent";
       readonly target?: SemanticDocumentTarget;
     }
-  | { readonly collector: ListCollector; readonly kind: "list" }
+  | {
+      readonly collector: ListCollector;
+      readonly kind: "list";
+      readonly sourceElementId?: string;
+    }
   | { readonly collector: BlockCollector; readonly kind: "list-item" }
-  | { readonly collector: InlineCollector; readonly kind: "paragraph" };
+  | {
+      readonly collector: InlineCollector;
+      readonly kind: "paragraph";
+      readonly sourceElementId?: string;
+    };
 
 interface ElementFrame {
   readonly name: XmlExpandedName;
   readonly context: TextContext;
   readonly omitted: boolean;
   readonly closeAction?: CloseAction;
+  readonly paragraphSourceBoundary?: boolean;
+  readonly paragraphSourceElementId?: string;
+}
+
+export interface ProjectedAddressableBlock {
+  readonly block: SemanticBlock;
+  readonly sourceElementId?: string;
+}
+
+export interface XhtmlDocumentProjection {
+  readonly document: SemanticDocument;
+  readonly addressableBlocks: readonly ProjectedAddressableBlock[];
 }
 
 interface WhitespaceState {
@@ -192,6 +218,51 @@ function attribute(
       candidate.namespaceUri === namespaceUri &&
       candidate.localName === localName,
   )?.value;
+}
+
+interface SourceElementIdentity {
+  readonly candidate?: string;
+  readonly observed: readonly string[];
+}
+
+function sourceElementIdentity(
+  event: XmlStartElementEvent,
+): SourceElementIdentity {
+  const xhtmlId = attribute(event, "", "id");
+  const xmlId = attribute(event, XML_NAMESPACE, "id");
+  const observed = Object.freeze(
+    xhtmlId === undefined
+      ? xmlId === undefined
+        ? []
+        : [xmlId]
+      : xmlId === undefined || xmlId === xhtmlId
+        ? [xhtmlId]
+        : [xhtmlId, xmlId],
+  );
+  const candidate =
+    xhtmlId !== undefined && xmlId !== undefined && xhtmlId !== xmlId
+      ? undefined
+      : (xhtmlId ?? xmlId);
+  return Object.freeze({
+    observed,
+    ...(candidate === undefined ? {} : { candidate }),
+  });
+}
+
+function collectAddressableBlocks(
+  blocks: readonly SemanticBlock[],
+  output: SemanticBlock[],
+): void {
+  for (const block of blocks) {
+    output.push(block);
+    if (block.kind === "block-quote") {
+      collectAddressableBlocks(block.children, output);
+    } else if (block.kind === "list") {
+      for (const item of block.items) {
+        collectAddressableBlocks(item.children, output);
+      }
+    }
+  }
 }
 
 function hasUnqualifiedAttribute(
@@ -509,6 +580,8 @@ class XhtmlProjector {
   readonly #resourcesByPath = new Map<string, RasterImageResourceId>();
   readonly #elements: ElementFrame[] = [];
   readonly #destinations: SemanticDestination[] = [];
+  readonly #sourceElementIdCounts = new Map<string, number>();
+  readonly #sourceElementIdsByBlock = new Map<SemanticBlock, string>();
   #documentId: ContentDocumentId | undefined;
   #documentContext: TextContext = Object.freeze({});
   #documentLocation: SemanticDocumentLocation | undefined;
@@ -574,7 +647,7 @@ class XhtmlProjector {
     }
   }
 
-  public complete(): SemanticDocument {
+  public complete(): XhtmlDocumentProjection {
     this.#archive.budget.checkpoint();
     if (
       !this.#sawRoot ||
@@ -589,11 +662,39 @@ class XhtmlProjector {
       return fail("malformed-package");
     }
 
-    return Object.freeze({
+    const document = Object.freeze({
       id: this.#documentId,
       location: this.#documentLocation,
       blocks: this.#blocks,
       ...contextProperties(this.#documentContext),
+    });
+    const blocks: SemanticBlock[] = [];
+    collectAddressableBlocks(document.blocks, blocks);
+    const candidateCounts = new Map<string, number>();
+    for (const block of blocks) {
+      const candidate = this.#sourceElementIdsByBlock.get(block);
+      if (candidate !== undefined) {
+        candidateCounts.set(
+          candidate,
+          (candidateCounts.get(candidate) ?? 0) + 1,
+        );
+      }
+    }
+    const addressableBlocks = blocks.map((block) => {
+      const candidate = this.#sourceElementIdsByBlock.get(block);
+      const sourceIsUnique =
+        candidate !== undefined &&
+        this.#sourceElementIdCounts.get(candidate) === 1 &&
+        candidateCounts.get(candidate) === 1;
+      return Object.freeze({
+        block,
+        ...(sourceIsUnique ? { sourceElementId: candidate } : {}),
+      });
+    });
+
+    return Object.freeze({
+      document,
+      addressableBlocks: Object.freeze(addressableBlocks),
     });
   }
 
@@ -601,6 +702,14 @@ class XhtmlProjector {
     const depth = this.#elements.length + 1;
     const inherited = this.#elements.at(-1)?.context ?? Object.freeze({});
     const context = deriveContext(event, inherited);
+    const identity = sourceElementIdentity(event);
+    for (const observedId of identity.observed) {
+      this.#sourceElementIdCounts.set(
+        observedId,
+        (this.#sourceElementIdCounts.get(observedId) ?? 0) + 1,
+      );
+    }
+    const elementId = identity.candidate;
 
     if (depth === 1) {
       if (
@@ -631,7 +740,7 @@ class XhtmlProjector {
     }
 
     if (depth === 2) {
-      this.consumeRootChild(event, context);
+      this.consumeRootChild(event, context, elementId);
       return;
     }
 
@@ -648,12 +757,13 @@ class XhtmlProjector {
       return;
     }
 
-    this.consumeBodyElement(event, context);
+    this.consumeBodyElement(event, context, elementId);
   }
 
   private consumeRootChild(
     event: XmlStartElementEvent,
     context: TextContext,
+    elementId: string | undefined,
   ): void {
     if (event.name.namespaceUri !== XHTML_NAMESPACE) {
       return fail("malformed-package");
@@ -674,6 +784,7 @@ class XhtmlProjector {
       context,
       blocks: [],
       pendingInlines: [],
+      pendingSourceElementId: undefined,
     };
     this.#destinations.push(collector);
     this.#elements.push({
@@ -681,12 +792,17 @@ class XhtmlProjector {
       context,
       omitted: isExplicitlyHidden(event),
       closeAction: { kind: "body", collector },
+      paragraphSourceBoundary: true,
+      ...(elementId === undefined
+        ? {}
+        : { paragraphSourceElementId: elementId }),
     });
   }
 
   private consumeBodyElement(
     event: XmlStartElementEvent,
     context: TextContext,
+    elementId: string | undefined,
   ): void {
     const name = event.name.localName;
     if (name === "body" || name === "head" || name === "html") {
@@ -697,23 +813,24 @@ class XhtmlProjector {
         event,
         context,
         Number(name[1]) as 1 | 2 | 3 | 4 | 5 | 6,
+        elementId,
       );
       return;
     }
 
     switch (name) {
       case "p":
-        this.beginInlineBlock(event, context);
+        this.beginInlineBlock(event, context, undefined, elementId);
         return;
       case "blockquote":
-        this.beginBlockQuote(event, context);
+        this.beginBlockQuote(event, context, elementId);
         return;
       case "ol":
       case "ul":
-        this.beginList(event, context, name === "ol");
+        this.beginList(event, context, name === "ol", elementId);
         return;
       case "li":
-        this.beginListItem(event, context);
+        this.beginListItem(event, context, elementId);
         return;
       case "em":
       case "i":
@@ -749,6 +866,10 @@ class XhtmlProjector {
             context,
             omitted: false,
             closeAction: { kind: "block-boundary" },
+            paragraphSourceBoundary: true,
+            ...(elementId === undefined
+              ? {}
+              : { paragraphSourceElementId: elementId }),
           });
         } else {
           this.#elements.push({ name: event.name, context, omitted: false });
@@ -803,6 +924,10 @@ class XhtmlProjector {
       destination.kind === "blocks"
         ? destination.pendingInlines
         : destination.inlines;
+    if (destination.kind === "blocks" && inlines.length === 0) {
+      destination.pendingSourceElementId =
+        this.currentParagraphSourceElementId();
+    }
     inlines.push(
       Object.freeze({
         kind: "text",
@@ -816,6 +941,7 @@ class XhtmlProjector {
     event: XmlStartElementEvent,
     context: TextContext,
     level?: 1 | 2 | 3 | 4 | 5 | 6,
+    elementId?: string,
   ): void {
     const parent = this.requireBlockDestination();
     this.flushPendingParagraph(parent);
@@ -831,14 +957,28 @@ class XhtmlProjector {
       omitted: false,
       closeAction:
         level === undefined
-          ? { kind: "paragraph", collector }
-          : { kind: "heading", collector, level },
+          ? {
+              kind: "paragraph",
+              collector,
+              ...(elementId === undefined
+                ? {}
+                : { sourceElementId: elementId }),
+            }
+          : {
+              kind: "heading",
+              collector,
+              level,
+              ...(elementId === undefined
+                ? {}
+                : { sourceElementId: elementId }),
+            },
     });
   }
 
   private beginBlockQuote(
     event: XmlStartElementEvent,
     context: TextContext,
+    elementId: string | undefined,
   ): void {
     const parent = this.requireBlockDestination();
     this.flushPendingParagraph(parent);
@@ -847,13 +987,19 @@ class XhtmlProjector {
       context,
       blocks: [],
       pendingInlines: [],
+      pendingSourceElementId: undefined,
     };
     this.#destinations.push(collector);
     this.#elements.push({
       name: event.name,
       context,
       omitted: false,
-      closeAction: { kind: "block-quote", collector },
+      paragraphSourceBoundary: true,
+      closeAction: {
+        kind: "block-quote",
+        collector,
+        ...(elementId === undefined ? {} : { sourceElementId: elementId }),
+      },
     });
   }
 
@@ -861,6 +1007,7 @@ class XhtmlProjector {
     event: XmlStartElementEvent,
     context: TextContext,
     ordered: boolean,
+    elementId: string | undefined,
   ): void {
     const parent = this.requireBlockDestination();
     this.flushPendingParagraph(parent);
@@ -875,13 +1022,18 @@ class XhtmlProjector {
       name: event.name,
       context,
       omitted: false,
-      closeAction: { kind: "list", collector },
+      closeAction: {
+        kind: "list",
+        collector,
+        ...(elementId === undefined ? {} : { sourceElementId: elementId }),
+      },
     });
   }
 
   private beginListItem(
     event: XmlStartElementEvent,
     context: TextContext,
+    elementId: string | undefined,
   ): void {
     const parent = this.currentDestination();
     if (parent.kind !== "list") {
@@ -892,6 +1044,7 @@ class XhtmlProjector {
       context,
       blocks: [],
       pendingInlines: [],
+      pendingSourceElementId: undefined,
     };
     this.#destinations.push(collector);
     this.#elements.push({
@@ -899,6 +1052,10 @@ class XhtmlProjector {
       context,
       omitted: false,
       closeAction: { kind: "list-item", collector },
+      paragraphSourceBoundary: true,
+      ...(elementId === undefined
+        ? {}
+        : { paragraphSourceElementId: elementId }),
     });
   }
 
@@ -1000,7 +1157,7 @@ class XhtmlProjector {
         }
         const parent = this.requireBlockDestination();
         this.observeBlock();
-        parent.blocks.push(
+        const block =
           action.kind === "paragraph"
             ? Object.freeze({
                 kind: "paragraph",
@@ -1012,8 +1169,8 @@ class XhtmlProjector {
                 level: action.level,
                 children,
                 ...contextProperties(context),
-              }),
-        );
+              });
+        this.appendBlock(parent, block, action.sourceElementId);
         return;
       }
       case "block-quote": {
@@ -1024,12 +1181,14 @@ class XhtmlProjector {
         }
         const parent = this.requireBlockDestination();
         this.observeBlock();
-        parent.blocks.push(
+        this.appendBlock(
+          parent,
           Object.freeze({
             kind: "block-quote",
             children: Object.freeze([...action.collector.blocks]),
             ...contextProperties(context),
           }),
+          action.sourceElementId,
         );
         return;
       }
@@ -1057,13 +1216,15 @@ class XhtmlProjector {
         }
         const parent = this.requireBlockDestination();
         this.observeBlock();
-        parent.blocks.push(
+        this.appendBlock(
+          parent,
           Object.freeze({
             kind: "list",
             ordered: action.collector.ordered,
             items: Object.freeze([...action.collector.items]),
             ...contextProperties(context),
           }),
+          action.sourceElementId,
         );
         return;
       }
@@ -1094,18 +1255,22 @@ class XhtmlProjector {
   }
 
   private flushPendingParagraph(collector: BlockCollector): void {
+    const sourceId = collector.pendingSourceElementId;
     const children = freezeRawInlines(collector.pendingInlines);
     collector.pendingInlines.length = 0;
+    collector.pendingSourceElementId = undefined;
     if (children.length === 0) {
       return;
     }
     this.observeBlock();
-    collector.blocks.push(
+    this.appendBlock(
+      collector,
       Object.freeze({
         kind: "paragraph",
         children,
         ...contextProperties(collector.context),
       }),
+      sourceId,
     );
   }
 
@@ -1203,10 +1368,36 @@ class XhtmlProjector {
     if (destination.kind === "list") {
       return fail("malformed-package");
     }
-    (destination.kind === "blocks"
-      ? destination.pendingInlines
-      : destination.inlines
-    ).push(inline);
+    if (destination.kind === "blocks") {
+      if (destination.pendingInlines.length === 0) {
+        destination.pendingSourceElementId =
+          this.currentParagraphSourceElementId();
+      }
+      destination.pendingInlines.push(inline);
+    } else {
+      destination.inlines.push(inline);
+    }
+  }
+
+  private appendBlock(
+    destination: BlockCollector,
+    block: SemanticBlock,
+    elementId?: string,
+  ): void {
+    destination.blocks.push(block);
+    if (elementId !== undefined) {
+      this.#sourceElementIdsByBlock.set(block, elementId);
+    }
+  }
+
+  private currentParagraphSourceElementId(): string | undefined {
+    for (let index = this.#elements.length - 1; index >= 0; index -= 1) {
+      const frame = this.#elements[index];
+      if (frame?.paragraphSourceBoundary === true) {
+        return frame.paragraphSourceElementId;
+      }
+    }
+    return undefined;
   }
 
   private popDestination(expected: SemanticDestination): void {
@@ -1230,11 +1421,11 @@ function mapProjectionError(error: unknown): EpubArchiveError {
   return new EpubArchiveError("internal-failure");
 }
 
-export async function projectXhtmlDocument(
+export async function projectXhtmlDocumentProjection(
   archive: OpenedEpubArchive,
   packageDocument: ParsedPackageDocument,
   path: ArchiveFilePath,
-): Promise<SemanticDocument> {
+): Promise<XhtmlDocumentProjection> {
   try {
     archive.budget.checkpoint();
     const projector = new XhtmlProjector(archive, packageDocument, path);
@@ -1247,4 +1438,13 @@ export async function projectXhtmlDocument(
   } catch (error: unknown) {
     throw mapProjectionError(error);
   }
+}
+
+export async function projectXhtmlDocument(
+  archive: OpenedEpubArchive,
+  packageDocument: ParsedPackageDocument,
+  path: ArchiveFilePath,
+): Promise<SemanticDocument> {
+  return (await projectXhtmlDocumentProjection(archive, packageDocument, path))
+    .document;
 }
