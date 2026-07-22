@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed. Component choices must be confirmed through implementation and benchmarks.
+Proposed overall. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. Desktop file selection, rendering, persistence, narration preparation, TTS integration, buffering, and playback remain proposed and require their own implementation evidence.
 
 ## Context
 
@@ -19,12 +19,12 @@ Desktop application
 └── Local TTS process client
 
 EPUB package
-├── Archive validation
-├── Metadata and table-of-contents extraction
-├── Spine traversal
-├── Content sanitization
-├── Text normalization
-└── Semantic chunking
+├── Archive/package/navigation validation [implemented]
+├── Immutable semantic projection [implemented]
+├── Lazy bounded raster access [implemented]
+├── Deterministic locator creation/resolution [implemented]
+├── Narration text normalization [deferred]
+└── Semantic chunking [deferred]
 
 Local TTS service
 ├── Model lifecycle
@@ -97,7 +97,7 @@ The public `@voxleaf/epub` root exposes `openEpubPublication` plus the framework
 
 The closed block, inline, navigation, and raster-resource values contain no publisher HTML, DOM objects, paths, URLs, or eager resource bytes. The locator index preserves only shared-v1-valid unique source IDs, generates deterministic collision-free replacements, binds every start locator to exact book identity and spine identity, and counts legal text offsets by Unicode code point. The resolver requires full identity for exact results, rejects another book, and recovers through matching-spine anchor/offset adjustment, nearest non-empty spine, or book start with fixed content-free reasons. Saved-position persistence, desktop file selection, rendering, and application restoration do not work yet.
 
-The ADR deliberately does not select archive or XML libraries. Low-level candidates must prove they can enforce the accepted boundary before becoming production dependencies.
+The implemented boundary uses exactly pinned `@zip.js/zip.js@2.8.30` and `saxes@6.0.0` behind package-internal adapters. The ZIP adapter imports the pure-JavaScript core, disables workers and native compression streams, and uses only in-memory readers/writers. The XML adapter emits bounded namespace-aware events without a DOM or resolver. Neither dependency is part of the public EPUB API, and no renderer-oriented EPUB framework has been added. Selection evidence, licenses, alternatives, and transitive impact are recorded in [`development/dependencies.md`](../development/dependencies.md).
 
 ## Shared contract authority
 

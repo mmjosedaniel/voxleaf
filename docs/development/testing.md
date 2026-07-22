@@ -16,9 +16,9 @@ GitHub Actions runs the same authoritative check in the `Windows native foundati
 
 Both jobs install from committed lockfiles. They do not use repository secrets, model weights, GPU hardware, books, generated audio, network services, or performance benchmarks. Network access is limited to tool and dependency installation before the deterministic checks execute.
 
-### Implemented foundation tests
+### Implemented deterministic tests
 
-The current deterministic tests are deliberately small:
+The current tests are deterministic and layered by ownership:
 
 - `packages/shared/src/index.test.ts` proves that the shared production and test-support subpaths resolve independently and that fixed test identifiers are not exposed from the production root.
 - `packages/shared/src/primitives/*.test.ts` verify opaque identifier separation, numeric-unit separation, JSON-compatible bounds, and supported schema-version handling without private input in errors.

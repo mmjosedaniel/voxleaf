@@ -68,7 +68,7 @@ None beyond the existing product and architecture foundation.
 
 ## Milestone 2: Define shared contracts and a deterministic test harness
 
-**Status:** Complete as of 2026-07-21. Milestone 3 is the next implementation priority.
+**Status:** Complete as of 2026-07-21.
 
 ### Goal
 
@@ -93,6 +93,8 @@ Milestone 1 provides the workspace, test runners, and language boundaries.
 - Decide how contracts evolve without silently breaking persisted state or the local protocol.
 
 ## Milestone 3: Build secure EPUB ingestion and the document model
+
+**Status:** Implementation and documentation complete as of 2026-07-22. Final focused, root, CI, privacy, and scope validation remains before the milestone plan is closed.
 
 ### Goal
 
