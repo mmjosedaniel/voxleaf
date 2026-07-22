@@ -200,6 +200,27 @@ describe("bounded EPUB archive reads", () => {
     }
   });
 
+  it("supports a read-scoped abort signal without cancelling the archive", async () => {
+    const controller = new AbortController();
+    const archiveBytes = await createArchive("private-canary");
+    const archive = await openEpubArchive(archiveBytes);
+    const path = parseArchiveEntryPath("EPUB/chapter.xhtml", "file");
+    controller.abort("private-canary");
+
+    try {
+      const error = await captureArchiveReadError(() =>
+        archive.readEntry(path, { signal: controller.signal }),
+      );
+
+      expect(error).toMatchObject({ code: "cancelled", message: "cancelled" });
+      expect(error.message).not.toContain("private-canary");
+      expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(20);
+      await expect(archive.readEntry(path)).resolves.toHaveLength(14);
+    } finally {
+      await archive.close();
+    }
+  });
+
   it("allows work at the exact deadline and cancels at deadline plus one", async () => {
     let nowMs = 100;
     const archiveBytes = await createArchive("chapter", 0);
