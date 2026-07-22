@@ -1,27 +1,12 @@
-import {
-  Uint8ArrayReader,
-  Uint8ArrayWriter,
-  ZipReader,
-  ZipWriter,
-} from "@zip.js/zip.js/lib/zip-core-native.js";
+import { ZipReader } from "@zip.js/zip.js/lib/zip-core-native.js";
 import { decodeOperationalErrorV1 } from "@voxleaf/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { buildMinimalEpubFixture } from "../../test-support/epub-fixture.js";
 import { EpubArchiveError } from "../archive/archive-error.js";
 import type { EpubArchiveErrorCode } from "../archive/archive-error.js";
 import { mapEpubFailure } from "./epub-result.js";
 import { openEpubPublication } from "./open-epub-publication.js";
-
-const encoder = new TextEncoder();
-const ZIP_WRITER_OPTIONS = Object.freeze({
-  dataDescriptor: false,
-  extendedTimestamp: false,
-  keepOrder: true,
-  lastModDate: new Date("2000-01-01T00:00:00.000Z"),
-  transferStreams: false,
-  useCompressionStream: false,
-  useWebWorkers: false,
-});
 
 const EXPECTED_OPERATIONAL_CODE = Object.freeze({
   "broken-reference": "invalid-input",
@@ -119,7 +104,9 @@ describe("public privacy-safe EPUB opening", () => {
   it("releases archive state and returns no publication after a later-stage failure", async () => {
     const close = vi.spyOn(ZipReader.prototype, "close");
     const result = await openEpubPublication(
-      await createMinimalEpub(`<html xmlns="http://www.w3.org/1999/xhtml">`),
+      await buildMinimalEpubFixture({
+        chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml">`,
+      }),
     );
 
     expect(result).toEqual({
@@ -146,7 +133,7 @@ describe("public privacy-safe EPUB opening", () => {
     vi.stubGlobal("Worker", worker);
     vi.stubGlobal("fetch", fetch);
 
-    const result = await openEpubPublication(await createMinimalEpub());
+    const result = await openEpubPublication(await buildMinimalEpubFixture());
     expect(result.ok).toBe(true);
     if (!result.ok) {
       throw new Error(`unexpected fixed failure: ${result.detail}`);
@@ -189,40 +176,3 @@ describe("public privacy-safe EPUB opening", () => {
     expect(publication.closed).toBe(true);
   });
 });
-
-async function createMinimalEpub(
-  chapter = chapterDocument(),
-): Promise<Uint8Array> {
-  const writer = new ZipWriter(new Uint8ArrayWriter(), ZIP_WRITER_OPTIONS);
-  const entries = [
-    ["mimetype", "application/epub+zip", 0],
-    [
-      "META-INF/container.xml",
-      `<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0"><rootfiles><rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>`,
-      0,
-    ],
-    ["EPUB/package.opf", packageDocument(), 0],
-    ["EPUB/nav.xhtml", navigationDocument(), 0],
-    ["EPUB/text/chapter.xhtml", chapter, 0],
-  ] as const;
-
-  for (const [path, content, level] of entries) {
-    await writer.add(path, new Uint8ArrayReader(encoder.encode(content)), {
-      ...ZIP_WRITER_OPTIONS,
-      level,
-    });
-  }
-  return writer.close();
-}
-
-function packageDocument(): string {
-  return `<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:public-boundary</dc:identifier><dc:title>Synthetic public boundary</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">2026-07-22T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="chapter"/></spine></package>`;
-}
-
-function navigationDocument(): string {
-  return `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><h2>Contents</h2><ol><li><a href="text/chapter.xhtml#chapter-one">Chapter One</a></li></ol></nav></body></html>`;
-}
-
-function chapterDocument(): string {
-  return `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Chapter One</title></head><body><h1 id="chapter-one">Chapter One</h1><p>Repository-authored synthetic prose.</p></body></html>`;
-}
