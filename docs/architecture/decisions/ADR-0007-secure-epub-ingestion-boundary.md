@@ -108,6 +108,12 @@ XHTML is projected into a new immutable semantic model through a closed allowlis
 
 This milestone validates and exposes bounded raster bytes lazily but does not decode or render them. Pixel, animation, and renderer-specific safety limits must be resolved before Milestone 4 decodes those resources.
 
+The semantic projector reads one bounded XHTML document through the namespace-aware event stream and publishes a document only after the complete XML input succeeds. The XHTML `html`/`body` grammar and semantic block nesting must be valid. Direct safe inline runs inside inert block containers become paragraphs; empty semantic blocks are omitted. Each emitted heading, paragraph, block quote, or list consumes the publication-wide semantic-block budget.
+
+`xml:lang` and XHTML `lang` are inherited as opaque language context and must agree when both occur on one element. `dir` is inherited from the closed `auto`, `ltr`, or `rtl` set. Ordinary ASCII XML whitespace is collapsed to one separator across inline boundaries and trimmed at block edges. Code text retains its exact XML character data; adjacent ordinary whitespace is not duplicated when that code text already supplies boundary whitespace. CSS `white-space`, generated content, and CSS-derived visibility are not evaluated because publisher CSS never crosses the ingestion boundary.
+
+Local content and raster references become deterministic opaque IDs derived from validated manifest order. Internal link fragments remain branded publisher-controlled matching data, not renderer DOM IDs. External or unsafe links retain only projected descendants, remote images are omitted, and neither publisher paths nor URLs appear in semantic output.
+
 ### Identity, document-model ownership, and privacy
 
 Book identity is SHA-256 over the exact input bytes before decompression:

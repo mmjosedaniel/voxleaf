@@ -22,6 +22,7 @@ export interface EpubProcessingBudgetSnapshot {
   readonly observedUncompressedBytes: number;
   readonly compressedReadBytes: number;
   readonly decodedPublicationTextBytes: number;
+  readonly semanticBlockCount: number;
 }
 
 const SYSTEM_MONOTONIC_CLOCK: MonotonicClock = Object.freeze({
@@ -104,6 +105,7 @@ export class EpubProcessingBudget {
   #observedUncompressedBytes = 0;
   #compressedReadBytes = 0;
   #decodedPublicationTextBytes = 0;
+  #semanticBlockCount = 0;
 
   public constructor(options: EpubProcessingBudgetOptions = {}) {
     this.policy = createEpubIngestionPolicy(options.policy);
@@ -277,6 +279,17 @@ export class EpubProcessingBudget {
     this.#decodedPublicationTextBytes = nextDecodedBytes;
   }
 
+  public observeSemanticBlock(): void {
+    this.checkpoint();
+
+    const nextBlockCount = addWithinSafeInteger(this.#semanticBlockCount, 1);
+    if (nextBlockCount > this.policy.maxSemanticBlocks) {
+      return fail("resource-limit-exceeded");
+    }
+
+    this.#semanticBlockCount = nextBlockCount;
+  }
+
   public getSnapshot(): EpubProcessingBudgetSnapshot {
     return Object.freeze({
       archiveEntryCount: this.#archiveEntryCount,
@@ -285,6 +298,7 @@ export class EpubProcessingBudget {
       observedUncompressedBytes: this.#observedUncompressedBytes,
       compressedReadBytes: this.#compressedReadBytes,
       decodedPublicationTextBytes: this.#decodedPublicationTextBytes,
+      semanticBlockCount: this.#semanticBlockCount,
     });
   }
 
