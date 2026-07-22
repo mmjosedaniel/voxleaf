@@ -293,6 +293,27 @@ describe("safe XHTML semantic projection", () => {
     );
   });
 
+  it("allows the exact content-document byte limit and rejects the next byte", async () => {
+    const chapter = xhtml(`<h:p>Exact content bytes</h:p>`);
+    const maximumBytes = encoder.encode(chapter).byteLength;
+
+    await withArchive(
+      chapter,
+      { policy: { maxContentDocumentBytes: maximumBytes } },
+      async (archive) => {
+        await expect(
+          projectXhtmlDocument(archive, createPackageDocument(), CHAPTER_PATH),
+        ).resolves.toMatchObject({ blocks: [{ kind: "paragraph" }] });
+      },
+    );
+
+    await expectProjectionError(
+      chapter,
+      { policy: { maxContentDocumentBytes: maximumBytes - 1 } },
+      "resource-limit-exceeded",
+    );
+  });
+
   it("honors cancellation before reading content bytes", async () => {
     const controller = new AbortController();
     await withArchive(
