@@ -2,11 +2,11 @@
 
 ## Current status
 
-The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, minimal Tauri 2 native shell, isolated Python service foundation, aggregate root quality commands, and deterministic continuous integration are initialized. The version, focused, development-server, and root commands identified as Windows commands in this document have been run successfully in Windows PowerShell. EPUB reading, TTS inference, audio, persistence, hardware detection, installers, and product-level integration are not implemented.
+The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, minimal Tauri 2 native shell, isolated Python service foundation, aggregate root quality commands, and deterministic continuous integration are initialized. The version, focused, development-server, and root commands identified as Windows commands in this document have been run successfully in Windows PowerShell. Secure in-memory EPUB 3 ingestion, immutable semantic documents, bounded local raster reads, and deterministic locator resolution are implemented in `@voxleaf/epub`. Desktop file selection and rendering, narration preparation, TTS inference, audio, persistence, hardware detection, installers, and product-level integration are not implemented.
 
 ## Prerequisite version matrix
 
-The selected versions establish a reproducible foundation without selecting EPUB, audio, transport, or TTS-model dependencies.
+The selected versions establish a reproducible foundation with the reviewed low-level EPUB ZIP/XML dependencies, but without selecting renderer, audio, transport, or TTS-model dependencies.
 
 | Prerequisite | Selected version or policy | Minimum supported version | Verified Windows state |
 | --- | --- | --- | --- |
