@@ -146,6 +146,10 @@ Exact resolution requires matching book identity, spine ID and index, anchor ID 
 
 The concrete generated-anchor spelling and recovery reason enum remain internal implementation details, but they must follow this policy and be deterministic before publication.
 
+The Task 5.1 implementation defines every final `SemanticBlock` as addressable and orders nested structures by source-start preorder: a block quote or list precedes its addressable descendants. The XHTML projector retains source IDs only in a package-internal sidecar; an `id` or `xml:id` is eligible only when it identifies exactly one source element and one resulting block, and conflicting values on one element fall back without rejecting the document. The shared v1 locator decoder is the grammar and length authority. Ineligible IDs receive `voxleaf-s<spine-index>-a<anchor-index>` replacements with deterministic numeric collision suffixes, while the locator itself carries the exact-byte book identity plus spine ID/index.
+
+Every block start has offset zero. Heading and paragraph offsets count the final semantic inline representation by Unicode code point: nested inline containers contribute their children, line breaks contribute one newline position, and raster images contribute one object-replacement position rather than alternative-text length. Structural block quotes and lists expose only offset zero because their child blocks own descendant text offsets. Optional progression is omitted at this stage; it remains non-authoritative recovery/display metadata. Assignment and validation run under the ingestion processing budget, publish no partial index on failure, and do not expose a runtime API or implement Task 5.2 resolution.
+
 ### Error boundary
 
 Expected ingestion failures use a discriminated result containing a closed EPUB detail code and the existing `OperationalErrorV1` value:

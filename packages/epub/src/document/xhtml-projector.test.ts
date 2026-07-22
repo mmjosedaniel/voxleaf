@@ -21,7 +21,10 @@ import type {
   MonotonicClock,
 } from "../security/processing-budget.js";
 import type { SemanticBlock, SemanticInline } from "./document-model.js";
-import { projectXhtmlDocument } from "./xhtml-projector.js";
+import {
+  projectXhtmlDocument,
+  projectXhtmlDocumentProjection,
+} from "./xhtml-projector.js";
 
 const encoder = new TextEncoder();
 const CHAPTER_PATH = filePath("EPUB/text/chapter.xhtml");
@@ -143,6 +146,46 @@ describe("safe XHTML semantic projection", () => {
           },
           { kind: "text", text: "after", language: "en" },
         ]);
+      },
+    );
+  });
+
+  it("retains only unique source IDs in an internal source-order block sidecar", async () => {
+    await withArchive(
+      xhtml(`
+        <h:section id="section.anchor">Section text</h:section>
+        <h:blockquote id="quote.anchor"><h:p id="nested.anchor">Nested</h:p></h:blockquote>
+        <h:ul id="list.anchor"><h:li id="item.anchor">Item</h:li></h:ul>
+        <h:p xml:id="xml.anchor">XML ID</h:p>
+        <h:p id="public-id" xml:id="other-id">Conflicting IDs</h:p>
+        <h:p id="duplicate.anchor">Visible duplicate</h:p>
+        <h:span id="duplicate.anchor" hidden="hidden">Ignored duplicate</h:span>`),
+      {},
+      async (archive) => {
+        const projection = await projectXhtmlDocumentProjection(
+          archive,
+          createPackageDocument(),
+          CHAPTER_PATH,
+        );
+
+        expect(
+          projection.addressableBlocks.map(({ block, sourceElementId }) => ({
+            kind: block.kind,
+            sourceElementId,
+          })),
+        ).toEqual([
+          { kind: "paragraph", sourceElementId: "section.anchor" },
+          { kind: "block-quote", sourceElementId: "quote.anchor" },
+          { kind: "paragraph", sourceElementId: "nested.anchor" },
+          { kind: "list", sourceElementId: "list.anchor" },
+          { kind: "paragraph", sourceElementId: "item.anchor" },
+          { kind: "paragraph", sourceElementId: "xml.anchor" },
+          { kind: "paragraph", sourceElementId: undefined },
+          { kind: "paragraph", sourceElementId: undefined },
+        ]);
+        expect(Object.isFrozen(projection)).toBe(true);
+        expect(Object.isFrozen(projection.addressableBlocks)).toBe(true);
+        expect(JSON.stringify(projection.document)).not.toContain("anchor");
       },
     );
   });
