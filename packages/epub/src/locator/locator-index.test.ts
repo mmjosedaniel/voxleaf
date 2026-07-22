@@ -100,6 +100,13 @@ describe("deterministic publication locators", () => {
     }
     expect(Object.isFrozen(index)).toBe(true);
     expect(Object.isFrozen(index.blocks)).toBe(true);
+    expect(index.bookIdentity).toBe(book.identity);
+    expect(Object.isFrozen(index.spines)).toBe(true);
+    expect(index.spines).toHaveLength(2);
+    for (const spine of index.spines) {
+      expect(Object.isFrozen(spine)).toBe(true);
+      expect(Object.isFrozen(spine.blocks)).toBe(true);
+    }
 
     const repeated = createPublicationLocatorIndex(
       book,
