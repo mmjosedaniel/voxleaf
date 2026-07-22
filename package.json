@@ -33,7 +33,7 @@
     "test:typescript": "pnpm --recursive --if-present test",
     "typecheck": "pnpm run typecheck:typescript && pnpm run typecheck:python",
     "typecheck:python": "uv run --directory services/tts --locked mypy .",
-    "typecheck:typescript": "pnpm --recursive --if-present typecheck"
+    "typecheck:typescript": "pnpm run build:packages && pnpm --recursive --if-present typecheck"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
