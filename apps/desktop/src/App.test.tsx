@@ -125,4 +125,26 @@ describe("desktop local-file ingress probe", () => {
 
     expect(signal?.aborted).toBe(true);
   });
+
+  it("runs the content-free synthetic raster decode probe", async () => {
+    const runRasterProbe = vi.fn(async () => ({
+      status: "accepted" as const,
+    }));
+    render(<App runRasterProbe={runRasterProbe} />);
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Run synthetic raster safety probe",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Bounded local raster decoding is available."),
+      ).toBeInTheDocument(),
+    );
+    expect(runRasterProbe).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
+    });
+  });
 });

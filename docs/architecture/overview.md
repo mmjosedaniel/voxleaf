@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop has a validated capability-free local-file selection/read probe but does not yet open a publication. Rendering, persistence, narration preparation, TTS integration, buffering, and playback remain approved planned work and require their own implementation evidence; the Python area remains a foundation only.
+Mixed implementation status. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop has a validated capability-free local-file selection/read probe plus a bounded static-raster predecode/decode source boundary, but it does not yet open a publication or render an image. Rendering, persistence, narration preparation, TTS integration, buffering, and playback remain approved planned work and require their own implementation evidence; the Python area remains a foundation only.
 
 [`system-diagram.md`](system-diagram.md) is the canonical visual map and status legend. This overview owns the accompanying architectural rationale, invariants, and detailed implemented-boundary notes.
 
@@ -15,6 +15,7 @@ VoxLeaf must read EPUB files and synthesize speech locally while beginning playb
 ```text
 Desktop application
 ├── Capability-free local file selection/read [prototype implemented]
+├── Bounded static-raster preflight/source lifecycle [implemented]
 ├── Semantic React reader and navigation
 ├── Reading-session coordinator
 ├── Audio player and bounded playback buffer
@@ -42,7 +43,7 @@ Local TTS service
 
 The visual position is a normalized `ReadingLocatorV1` sampled at an application-owned reading line. A browser caret/range supplies the Unicode-code-point offset when safe, with deterministic block-start fallback. Explicit navigation may move focus to a destination heading/reader region, while passive scrolling, reflow, and initial restoration do not steal focus.
 
-Raster decoding, persistence, real-browser tooling, and measured large-chapter/performance limits remain separate Milestone 4 gates. File ingress is resolved by ADR-0009, while integration with publication-session ownership remains later Milestone 4 work. Synchronization with the active narrated segment remains a later milestone.
+File ingress is resolved by ADR-0009, and ADR-0010 resolves the predecode/decode/object-URL safety boundary for static raster images. Publication-session integration, semantic image rendering, persistence, real-browser tooling, and measured large-chapter/performance limits remain later Milestone 4 work. Synchronization with the active narrated segment remains a later milestone.
 
 The desktop application and TTS inference should run in separate local processes.
 
@@ -106,13 +107,19 @@ The public EPUB package currently implements the in-memory validation, parsing, 
 - Explicit navigation has a predictable focus destination, while passive scroll/reflow/restoration does not move focus.
 - Reader navigation remains application state rather than browser routes/history.
 
-This boundary does not make the reader implemented. `apps/desktop` contains the foundation shell and local-file probe, while the approved `resolveTarget` operation, publication coordinator, renderer, locator/DOM mapper, and navigation behavior require later tasks and tests. Raster decoding, persistence, browser testing, and performance limits remain unresolved.
+This boundary does not make the reader implemented. `apps/desktop` contains the foundation shell, local-file probe, and ADR-0010 raster metadata/source-lifecycle implementation, while the approved `resolveTarget` operation, publication coordinator, semantic renderer, image component integration, locator/DOM mapper, and navigation behavior require later tasks and tests. Persistence, browser-test tooling, and reader performance limits remain unresolved.
 
 ## Local file-ingress boundary
 
 [ADR-0009](decisions/ADR-0009-capability-free-local-file-ingress.md) accepts the implemented Task 1.2 WebView boundary. An application-owned file input reads at most 100 MiB through abortable `FileReader` into transient in-memory bytes. A replacement selection or unmount aborts the active read, request identity rejects stale completion, a post-read length check defends the preflight assumption, and the input is cleared for same-file reselection. Fixed UI states contain no filename, path, bytes, MIME claim, or raw browser error.
 
-The release probe passed in native Windows WebView2 while the Tauri shell retained zero commands, plugins, and capabilities and unchanged CSP. The current probe intentionally releases successful bytes. Tasks 2.2 and 2.3 still own publication-session lifecycle and the call to `openEpubPublication`; this decision is not evidence that the desktop can open a book.
+The Task 1.2 release probe passed in native Windows WebView2 while the Tauri shell retained zero commands, plugins, and capabilities and the then-current CSP. The current file probe intentionally releases successful bytes. ADR-0010 later added only the image-specific Blob allowance described below. Tasks 2.2 and 2.3 still own publication-session lifecycle and the call to `openEpubPublication`; this decision is not evidence that the desktop can open a book.
+
+## Raster image decode boundary
+
+[ADR-0010](decisions/ADR-0010-bounded-raster-image-decode.md) accepts a desktop-owned predecode parser and object-URL source manager for the four static raster types already admitted by ADR-0007. Before browser decode, it enforces 8,192-pixel width/height limits, 16,777,216 decoded pixels, one static frame, and fixed malformed/over-limit outcomes. One manager permits one concurrent decode, eight live sources, and 16,777,216 aggregate live pixels.
+
+Only a preflighted application-created Blob may become a `blob:` URL. Browser-observed dimensions must match preflight metadata. Release/close revokes URLs exactly once; close aborts and awaits active work. The committed CSP permits only `'self'` and `blob:` for images and adds no network origin. The implementation does not read a publication, render an `img`, cache a resource, or change the `@voxleaf/epub` public contract; Task 3.3 owns those integrations and their accessible placeholders.
 
 ## Secure EPUB ingestion boundary
 

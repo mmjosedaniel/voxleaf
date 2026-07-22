@@ -23,7 +23,7 @@
     ],
     "security": {
       "capabilities": [],
-      "csp": "default-src 'self'; style-src 'self'"
+      "csp": "default-src 'self'; style-src 'self'; img-src 'self' blob:"
     }
   },
   "bundle": {

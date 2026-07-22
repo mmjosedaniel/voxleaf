@@ -32,7 +32,7 @@ The Python package has no runtime dependencies. `@voxleaf/epub` depends on the l
 
 ### Browser platform APIs
 
-Milestone 4 Task 1.2 uses the WebView's built-in HTML file input, `FileReader`, `AbortController`, `ArrayBuffer`, and `Uint8Array` APIs for the local-file ingress probe accepted by ADR-0009. These are platform APIs, not package dependencies. The accepted boundary adds no JavaScript or Rust dependency, Tauri plugin/command/capability, host-path contract, CSP allowance, manifest change, or lockfile change. Official Tauri dialog/filesystem plugins and repository-owned Rust file commands remain rejected alternatives unless a future demonstrated requirement cannot be satisfied by the WebView boundary.
+Milestone 4 Task 1.2 uses the WebView's built-in HTML file input, `FileReader`, `AbortController`, `ArrayBuffer`, and `Uint8Array` APIs for the local-file ingress probe accepted by ADR-0009. Task 1.3 uses `Blob`, object URLs, `HTMLImageElement.decode()`, and the same cancellation primitive behind the preflight/lifecycle policy accepted by ADR-0010. These are platform APIs, not package dependencies. The raster boundary adds only `img-src 'self' blob:` to CSP; neither task adds a JavaScript or Rust dependency, Tauri plugin/command/capability, host-path contract, manifest change, or lockfile change. Official Tauri dialog/filesystem plugins, repository-owned Rust file/image commands, and third-party raster decoders remain rejected alternatives unless a future demonstrated requirement cannot be satisfied by the WebView boundary.
 
 ### EPUB archive/XML selection evidence
 
