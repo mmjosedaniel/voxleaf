@@ -340,7 +340,7 @@ Durable decisions belong in architecture decision records. Temporary implementat
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains detailed planning relevant to shared contracts, the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or authorize implementing all of those areas at once.
 
-Milestones 1 and 2 are complete, with their evidence retained in [`completed/M001-engineering-foundation.md`](completed/M001-engineering-foundation.md) and [`completed/M002-shared-contracts-and-test-harness.md`](completed/M002-shared-contracts-and-test-harness.md). Milestone 3 is the next implementation priority. Use the existing synchronized-reader plan only for context relevant to the current roadmap milestone, and refine or split it when practical experience makes that useful.
+Milestones 1 and 2 are complete, with their evidence retained in [`completed/M001-engineering-foundation.md`](completed/M001-engineering-foundation.md) and [`completed/M002-shared-contracts-and-test-harness.md`](completed/M002-shared-contracts-and-test-harness.md). Milestone 3 is the next implementation priority, with its just-in-time ExecPlan in [`active/M003-secure-epub-ingestion-and-document-model.md`](active/M003-secure-epub-ingestion-and-document-model.md). Use the existing synchronized-reader plan only for context relevant to the current roadmap milestone, and refine or split it when practical experience makes that useful.
 
 ## MVP completion boundary
 
