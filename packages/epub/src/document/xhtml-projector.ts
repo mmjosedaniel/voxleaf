@@ -13,6 +13,7 @@ import {
   resolveOcfReference,
 } from "../paths/ocf-reference.js";
 import { EpubPathError } from "../paths/path-error.js";
+import { rasterImageResourceIdForManifestItem } from "../resource/raster-resource-catalog.js";
 import { createXmlEventReader } from "../xml/xml-event-reader.js";
 import type {
   XmlEndElementEvent,
@@ -278,22 +279,8 @@ function isSupportedContentDocument(item: PackageManifestItem): boolean {
   );
 }
 
-function isSupportedRasterImage(item: PackageManifestItem): boolean {
-  return (
-    item.location.kind === "local" &&
-    item.kind === "raster-image" &&
-    !item.properties.some((property) =>
-      ACTIVE_RESOURCE_PROPERTIES.has(property),
-    )
-  );
-}
-
 function documentId(index: number): ContentDocumentId {
   return `document:${String(index)}` as ContentDocumentId;
-}
-
-function resourceId(index: number): RasterImageResourceId {
-  return `resource:${String(index)}` as RasterImageResourceId;
 }
 
 function normalizeAlternativeText(value: string): string | undefined {
@@ -546,14 +533,11 @@ class XhtmlProjector {
         if (String(item.location.path) === String(path)) {
           this.#documentId = id;
         }
-      } else if (
-        isSupportedRasterImage(item) &&
-        item.location.kind === "local"
-      ) {
-        this.#resourcesByPath.set(
-          String(item.location.path),
-          resourceId(index),
-        );
+      } else {
+        const id = rasterImageResourceIdForManifestItem(item, index);
+        if (id !== undefined && item.location.kind === "local") {
+          this.#resourcesByPath.set(String(item.location.path), id);
+        }
       }
     }
 

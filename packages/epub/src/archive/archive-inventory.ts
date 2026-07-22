@@ -72,6 +72,7 @@ export interface ArchiveInventory {
 
 export interface ArchiveEntryReadOptions {
   readonly maximumBytes?: number;
+  readonly signal?: AbortSignal;
 }
 
 interface CandidateEntry {
@@ -188,13 +189,28 @@ function createCandidateEntry(
   });
 }
 
-function createRuntimeOptions(budget: EpubProcessingBudget) {
+function checkpointOperation(
+  budget: EpubProcessingBudget,
+  signal?: AbortSignal,
+): void {
+  if (signal?.aborted === true) {
+    return fail("cancelled");
+  }
+
+  budget.checkpoint();
+}
+
+function createRuntimeOptions(
+  budget: EpubProcessingBudget,
+  signal?: AbortSignal,
+) {
+  const runtimeSignal = signal ?? budget.signal;
   return {
     ...ZIP_READER_OPTIONS,
-    ...(budget.signal === undefined ? {} : { signal: budget.signal }),
-    onstart: () => budget.checkpoint(),
-    onprogress: () => budget.checkpoint(),
-    onend: () => budget.checkpoint(),
+    ...(runtimeSignal === undefined ? {} : { signal: runtimeSignal }),
+    onstart: () => checkpointOperation(budget, signal),
+    onprogress: () => checkpointOperation(budget, signal),
+    onend: () => checkpointOperation(budget, signal),
   };
 }
 
@@ -358,6 +374,7 @@ async function readCandidateData(
   candidate: CandidateEntry,
   budget: EpubProcessingBudget,
   maximumBytes = budget.policy.maxEntryUncompressedBytes,
+  signal?: AbortSignal,
 ): Promise<Uint8Array> {
   const { inventoryEntry, source } = candidate;
   if (source.directory || inventoryEntry.kind !== "file") {
@@ -375,7 +392,7 @@ async function readCandidateData(
   );
 
   try {
-    await source.getData(writer, createRuntimeOptions(budget));
+    await source.getData(writer, createRuntimeOptions(budget, signal));
     readBudget.complete();
     return writer.takeData();
   } catch (error: unknown) {
@@ -422,7 +439,12 @@ async function validateMimetype(
 function mapArchiveError(
   error: unknown,
   budget?: EpubProcessingBudget,
+  signal?: AbortSignal,
 ): EpubArchiveError {
+  if (signal?.aborted === true) {
+    return new EpubArchiveError("cancelled");
+  }
+
   if (error instanceof EpubArchiveError) {
     return error;
   }
@@ -491,7 +513,7 @@ class OpenedEpubArchiveHandle implements OpenedEpubArchive {
 
     this.#readInProgress = true;
     try {
-      this.budget.checkpoint();
+      checkpointOperation(this.budget, options.signal);
       const candidate = this.#entriesByPath.get(String(path));
       if (candidate === undefined || candidate.inventoryEntry.kind !== "file") {
         return fail("invalid-container");
@@ -501,9 +523,10 @@ class OpenedEpubArchiveHandle implements OpenedEpubArchive {
         candidate,
         this.budget,
         options.maximumBytes,
+        options.signal,
       );
     } catch (error: unknown) {
-      throw mapArchiveError(error, this.budget);
+      throw mapArchiveError(error, this.budget, options.signal);
     } finally {
       this.#readInProgress = false;
     }
