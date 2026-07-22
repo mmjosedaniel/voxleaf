@@ -768,7 +768,15 @@ pnpm.cmd check
 
 After pushing the implementation branch, record the exact successful GitHub Actions job names and run URL in the progress log.
 
-**Status:** Not started.
+**Status:** Complete.
+
+**Validation results (2026-07-21):**
+
+- `git diff --check`, `pnpm.cmd install --frozen-lockfile`, and `uv sync --project services/tts --locked` passed from merged `main`.
+- `pnpm.cmd format:check`, `pnpm.cmd lint`, `pnpm.cmd typecheck`, `pnpm.cmd test`, `pnpm.cmd build`, and the aggregate `pnpm.cmd check` all passed in native Windows PowerShell. The full test surface passed 175 shared tests, 2 EPUB package-boundary tests, 1 desktop-shell test, 3 Python tests (including the shared serialized-fixture conformance suite), and the native Rust harness.
+- The audit confirms all ten Milestone 2 contract families are exported through `@voxleaf/shared`; the TypeScript and Python conformance tests consume the same manifest and offline canonical schemas; test fakes use only scripted data and the manual clock; and the fixture, dependency, testing, and architecture documentation reflects the implementation.
+- The merged Task 6.1 implementation branch passed GitHub Actions [`Foundation checks` run 29878713754](https://github.com/mmjosedaniel/voxleaf/actions/runs/29878713754): `Ubuntu portable foundation` and `Windows native foundation` both succeeded.
+- Final scope review found no EPUB ingestion, reader, persistence backend, narration normalization, model, process transport, production audio, scheduler, hardware, packaging behavior, or broad native permission introduced by Milestone 2.
 
 ## Acceptance criteria for Milestone 2
 
@@ -894,6 +902,7 @@ Before Milestone 2 merges, tasks should be committed independently and can be re
 - 2026-07-21: Completed Task 5.4. Added test-only manually timed metadata source and sink fakes. The source releases frames only when the manual clock advances; the sink can consume immediately or on that clock and reports accepted, stale-session, stale-generation, duplicate, out-of-order, sequence-gap, post-end, and end-of-stream outcomes. Only accepted active frames add to its diagnostic duration total. Focused typecheck, 173 tests, build, formatting, and lint validation passed; no audio payload, device, buffer, player, underrun, startup-gate, or playback-speed behavior was introduced.
 - 2026-07-21: Completed Task 5.5. Added one manifest-driven corpus of 17 synthetic serialized fixtures consumed directly by TypeScript and Python against the same offline canonical Draft 2020-12 schemas. Added test-only Python schema validation and Node filesystem declarations, documented both dependencies, and verified strict no-coercion, optional-field, unknown-field, numeric-bound, supported-version, and unsupported-version behavior across all ten root contract families. Focused TypeScript and Python tests and typechecks passed; no production protocol, runtime service, Rust binding, model, audio, network, or hardware behavior was introduced.
 - 2026-07-21: Completed Task 6.1. Declared the one-way local `@voxleaf/epub` to `@voxleaf/shared` workspace dependency and added a typechecked, runtime-tested synthetic book/locator consumer proof using only the public shared package specifier. The EPUB package remains an empty public API with no parsing, archive, DOM, sanitizer, renderer, CFI, filesystem, logging, or locator-resolution behavior.
+- 2026-07-21: Completed Task 6.2 and Milestone 2 closeout from merged `main`. `git diff --check`, locked JavaScript and Python dependency synchronization, all separate root quality commands, root tests, builds, and aggregate `pnpm.cmd check` passed in native Windows PowerShell. The aggregate run passed 175 shared tests, 2 EPUB tests, 1 desktop test, 3 Python tests, and the Rust harness. PR #17's [`Foundation checks` run 29878713754](https://github.com/mmjosedaniel/voxleaf/actions/runs/29878713754) passed both `Ubuntu portable foundation` and `Windows native foundation`; no later-milestone implementation or broad native permission was found in the final review.
 
 ## Discoveries and decisions
 
@@ -950,4 +959,4 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Milestone-level final validation has not run. Task 1.1 decision and dependency validation and focused implementation validation for Tasks 1.2 through 5.5 are recorded above; Tasks 6.1 and 6.2 have not started.
+Milestone 2 final validation completed on 2026-07-21 from merged `main` at `0e19148` (PR #17). Every task is complete and its focused evidence is recorded above. The final diff, locked-install, formatting, lint, typecheck, test, build, and aggregate-check commands passed. The root test run passed 175 shared tests, 2 EPUB tests, 1 desktop test, 3 Python tests, and the Rust harness; the TypeScript and Python conformance tests validated the same 17-case manifest against the offline canonical schemas. GitHub Actions [`Foundation checks` run 29878713754](https://github.com/mmjosedaniel/voxleaf/actions/runs/29878713754) passed `Ubuntu portable foundation` and `Windows native foundation` for the final implementation branch. The reviewed result stays within Milestone 2: no real EPUB ingestion, reader, storage backend, TTS model, transport, production audio, scheduler, hardware probing, packaging behavior, copyrighted content, generated audio, or native permission expansion was added.
