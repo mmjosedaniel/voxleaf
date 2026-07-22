@@ -15,7 +15,7 @@ VoxLeaf must read EPUB files and synthesize speech locally while beginning playb
 ```text
 Desktop application
 ├── Book library and file selection
-├── Reader UI and navigation
+├── Semantic React reader and navigation
 ├── Reading-session coordinator
 ├── Audio player and bounded playback buffer
 └── Local TTS process client
@@ -36,9 +36,13 @@ Local TTS service
 └── Performance metrics
 ```
 
-## Candidate process model
+## Approved desktop reader and candidate process model
 
-The desktop reader boundary includes a sanitized reflowable EPUB renderer, navigation, logical reading-location persistence, restoration, and synchronization with the active narrated segment. Pagination is derived from the current viewport and typography; it is not the durable source of position.
+[ADR-0008](decisions/ADR-0008-visual-reader-architecture.md) accepts a direct application-DOM reader built from the closed `@voxleaf/epub` semantic model. The initial mode is continuous vertical scrolling over one active spine document. A desktop reader coordinator will own document navigation, the active logical locator, reflow capture/restoration, and later persistence scheduling; leaf presentation components do not own publication lifecycle or storage. Publisher HTML/CSS/scripts/URLs do not cross into the renderer, and no iframe or browser route/history integration is part of the initial reader.
+
+The visual position is a normalized `ReadingLocatorV1` sampled at an application-owned reading line. A browser caret/range supplies the Unicode-code-point offset when safe, with deterministic block-start fallback. Explicit navigation may move focus to a destination heading/reader region, while passive scrolling, reflow, and initial restoration do not steal focus.
+
+File ingress, raster decoding, persistence, real-browser tooling, and measured large-chapter/performance limits remain separate Milestone 4 gates. Synchronization with the active narrated segment remains a later milestone.
 
 The desktop application and TTS inference should run in separate local processes.
 
@@ -58,8 +62,8 @@ The public EPUB package currently implements the in-memory validation, parsing, 
 1. Validate the selected EPUB as an untrusted archive.
 2. Parse metadata, navigation, and spine order.
 3. Resolve the saved logical reading locator, or use the beginning of a new book.
-4. Extract and sanitize the selected spine content for safe visual rendering.
-5. Reconstruct the visible page from the locator and current layout.
+4. Select the already-sanitized semantic spine document for application-owned rendering.
+5. Reconstruct the visible passage from the locator and current scrolling layout.
 6. Derive narration text from the same logical location while retaining paragraph and dialogue boundaries.
 7. Create bounded chunks tagged with their source locators.
 8. Attach chunks to a unique reading session.
@@ -85,9 +89,24 @@ The public EPUB package currently implements the in-memory validation, parsing, 
 - UI components depend on application-level reading APIs, not directly on EPUB or TTS implementations.
 - EPUB parsing must not depend on the desktop framework.
 - `@voxleaf/epub` consumes shared book and locator contracts only through the public `@voxleaf/shared` workspace package boundary; `@voxleaf/shared` has no reverse EPUB dependency.
-- Pagination belongs to the renderer, while logical locator creation and resolution remain framework-independent.
+- Scrolling layout and semantic-to-DOM position mapping belong to the desktop reader. Logical locator creation and resolution are framework-independent in `@voxleaf/epub`, and the approved target resolver will remain there when implemented.
 - Shared protocol types must not depend on either process implementation.
 - TTS model adapters implement an internal interface so benchmarking does not leak model-specific details through the application.
+
+## Visual reader boundary
+
+[ADR-0008](decisions/ADR-0008-visual-reader-architecture.md) establishes the approved but unimplemented visual-reader boundary:
+
+- React constructs repository-owned semantic HTML directly in the application DOM from closed immutable semantic values.
+- The desktop does not reconstruct publisher HTML, use raw-HTML APIs, expose publisher fragments as DOM IDs/browser URLs, or activate external links.
+- One coordinator owns active document/locator state and routes table-of-contents, internal-link, previous/next, and direct-locator navigation.
+- `@voxleaf/epub` will own semantic target-to-locator matching through a closed public resolution operation; non-spine/empty/invalid targets remain unavailable rather than receiving fabricated locators.
+- The initial reader uses continuous vertical scrolling and persists no rendered page, pixel, percentage, DOM path, or text quotation as position authority.
+- A structural locator plus Unicode-code-point offset represents the active passage; browser caret geometry may refine the offset, with deterministic block-start fallback.
+- Explicit navigation has a predictable focus destination, while passive scroll/reflow/restoration does not move focus.
+- Reader navigation remains application state rather than browser routes/history.
+
+This boundary does not make the reader implemented. `apps/desktop` still contains only the foundation shell, and the approved `resolveTarget` operation, renderer, coordinator, locator/DOM mapper, and navigation behavior require later tasks and tests. File ingress, raster decoding, persistence, browser testing, and performance limits remain unresolved.
 
 ## Secure EPUB ingestion boundary
 

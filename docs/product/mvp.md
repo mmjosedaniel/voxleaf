@@ -18,7 +18,7 @@
 - Open an EPUB from local storage.
 - Extract ordered readable content and table of contents.
 - Render title, author, chapter navigation, text, and images as a normal reflowable EPUB reader.
-- Reconstruct the displayed page from a stable content locator when layout or typography changes.
+- Reconstruct the visible scrolling passage from a stable content locator when layout or typography changes.
 - Open a previously read book at its last saved visible passage.
 - Select a chapter or paragraph as the narration starting point.
 - Generate speech through one supported local TTS model.
@@ -52,7 +52,7 @@
 - Narration starts from the current visual reading location.
 - Playback begins when the initial playable-audio threshold is met rather than after a fixed timer.
 - The initial threshold is measured in playable audio seconds and targets approximately 15 seconds.
-- The visible page follows narration across page or chapter boundaries without losing the logical reading position.
+- The visible reading passage follows narration across layout or chapter boundaries without losing the logical reading position.
 - Pausing does not create uncontrolled generation work.
 - Seeking invalidates stale queued audio.
 - Changing chapters cannot play audio from the previous chapter.
@@ -77,7 +77,7 @@
 
 - Unsupported or malformed EPUBs produce a recoverable error.
 - A saved reading locator that no longer resolves falls back to the nearest valid location and reports the recovery without exposing book text.
-- Reflowing after viewport or typography changes preserves the logical reading location even when the displayed page number changes.
+- Reflowing after viewport or typography changes preserves the logical reading location even when the visible layout changes.
 - Closing a book releases its reading and generation resources.
 - Model-loading failure does not corrupt saved reading progress.
 - Unsupported acceleration falls back safely or produces an actionable compatibility message.

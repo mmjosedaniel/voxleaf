@@ -53,15 +53,15 @@ It is not ready to begin production reader rendering until the approval gates in
 | Safe semantic content | Ready | `@voxleaf/epub` returns a closed immutable semantic model rather than publisher markup. |
 | Stable position contract | Ready | ADR-0003, `ReadingLocatorV1`, located blocks, and exact/nearest resolution are implemented. |
 | Deterministic EPUB fixtures | Ready | The Milestone 3 in-memory fixture builder and public ingestion matrix exist. |
-| Rendering/isolation policy | Approval required | Decide direct application DOM versus iframe/another boundary and record the security invariants. |
+| Rendering/isolation policy | Approved, not implemented | ADR-0008 selects direct React rendering of closed semantic values in the application DOM and prohibits raw publisher markup. |
 | File-ingress boundary | Prototype and approval required | Prove whether webview file input is sufficient before adding Tauri filesystem/dialog capability. |
 | Raster decode safety | Prototype and approval required | Byte signatures are validated, but pixel dimensions, frame/animation behavior, decode memory, object URLs, and CSP are unresolved. |
-| Navigation-target resolution | Public API decision required | Navigation/internal links expose document/fragment targets, but no public target-to-locator operation exists. |
+| Navigation-target resolution | Approved, not implemented | ADR-0008 assigns source-fragment matching to a new closed `@voxleaf/epub` target resolver; Task 2.1 must implement it. |
 | Persistence and migration | Approval required | Select a local backend, versioned envelope, failure behavior, and display-preference ownership. |
 | Layout/end-to-end testing | Dependency decision required | jsdom cannot prove scrolling, browser geometry, reflow, or restoration across viewports. |
 | Large-chapter policy and reader latency budgets | Measurement required | Ingestion allows far more blocks than the desktop should put in the DOM without a measured bound. |
 
-No task after Milestone 1 below may start by assuming one of these unresolved choices. The responsible gate task must record approval, alternatives, evidence, and any ADR or dependency change first.
+No task may assume one of the remaining unresolved choices. The responsible gate task must record approval, alternatives, evidence, and any ADR or dependency change first. Decisions accepted by ADR-0008 may be implemented only by their assigned later tasks and are not evidence that reader behavior works.
 
 ## Scope
 
@@ -203,12 +203,13 @@ The following invariants apply regardless of the selected implementation details
 | External links expose only inert labels | ADR-0007 | No external-link activation or URL persistence is possible in this milestone. |
 | Exact-byte SHA-256 identifies a book | ADR-0007 | A byte change creates a different persistence key and never silently inherits prior state. |
 | Raster bytes are lazy, bounded, and signature checked but not decode-safe | ADR-0007 | Image display remains blocked until a renderer-specific decision is accepted. |
+| Direct semantic DOM rendering, continuous scrolling, target resolution, and active visual locator behavior | ADR-0008 | Implement the accepted visual-reader boundary without treating it as current application behavior. |
 
-### Unresolved decisions and explicit approval gates
+### Decision status and explicit approval gates
 
-Every item marked **Approval required** must be accepted in the responsible gate task before dependent production work begins.
+Items accepted by ADR-0008 are implementation inputs, not completed features. Every item still marked **Approval required** must be accepted in the responsible gate task before dependent production work begins.
 
-#### M4-D1: Rendering and isolation boundary — Approval required
+#### M4-D1: Rendering and isolation boundary — Accepted by ADR-0008
 
 Options:
 
@@ -216,9 +217,7 @@ Options:
 2. Serialize application-owned markup into a sandboxed iframe.
 3. Reintroduce sanitized publisher HTML into an iframe or application DOM.
 
-Recommendation: option 1. The ingestion boundary already removes publisher markup, scripts, CSS, URLs, and event handlers. Direct semantic rendering gives the strongest semantic-HTML, focus, screen-reader, reflow, and testability behavior without creating an iframe bridge or a second HTML sanitizer boundary. The renderer must be exhaustive over the closed unions and must not use raw HTML APIs. Option 2 adds focus, sizing, CSP, messaging, and accessibility complexity without isolating publisher code because no publisher code crosses the boundary. Option 3 conflicts with ADR-0007 and requires a new security architecture decision; it is not recommended.
-
-Record the accepted choice and its invariants in a new visual-reader ADR before Task 2.2.
+Decision: option 1. ADR-0008 requires exhaustive application-owned React elements in the application DOM, prohibits raw/reconstructed publisher HTML and publisher-controlled DOM attributes/URLs, and keeps raster rendering blocked on M4-D4. A sandboxed iframe is rejected because executable publisher markup does not cross ADR-0007's semantic boundary and the extra document would add focus/accessibility/messaging complexity.
 
 #### M4-D2: Local file ingress — Prototype and approval required
 
@@ -230,9 +229,9 @@ Options:
 
 Recommendation: prototype option 1 first because it adds no native path contract, plugin, Rust command, or filesystem capability. Accept it only after native WebView2 proves file selection, cancellation, repeated opens, the 100 MiB ingestion boundary, and release-build behavior. If it fails a demonstrated requirement, compare options 2 and 3 and approve the smallest capability surface. Do not persist the `File` object or host path.
 
-#### M4-D3: Initial reading mode — Product approval required
+#### M4-D3: Initial reading mode — Accepted by ADR-0008
 
-Options are continuous vertical scrolling, viewport pagination, or both. Recommend continuous vertical scrolling only. It follows native keyboard/assistive-technology behavior, avoids making unstable page geometry authoritative, and is substantially easier to make robust at narrow widths and zoom. Pagination and multiple-mode preference migration are deferred.
+Decision: continuous vertical scrolling only over one active spine document. It preserves native keyboard/assistive-technology behavior and avoids making unstable page geometry authoritative. Pagination, multiple columns, stable page numbers, and mode migration are deferred.
 
 #### M4-D4: Raster decode and object-URL safety — Prototype and approval required
 
@@ -244,7 +243,7 @@ Options:
 
 Recommendation: prove option 2 or retain option 1. Post-decode checks alone can allocate attacker-controlled pixel memory before rejection. The decision must establish exact dimension, pixel, frame/animation, concurrent-decode, lifetime, and failure limits; supported GIF/WebP animation policy; object-URL creation/revocation; and the minimum CSP change, likely an explicit local `img-src` allowance without network origins. No image bytes may be persisted or logged.
 
-#### M4-D5: Navigation target to locator — Public API approval required
+#### M4-D5: Navigation target to locator — Accepted by ADR-0008
 
 The public model exposes `SemanticDocumentTarget { documentId, fragment? }`, while `OpenedPublication` exposes only locator-to-block resolution. Application code cannot safely match a source fragment itself because fragments are not DOM IDs and package-internal source-ID sidecars are not public.
 
@@ -254,13 +253,11 @@ Options:
 2. Replace each public target with a locator during ingestion.
 3. Let the desktop infer targets from documents and located blocks.
 
-Recommendation: option 1. It preserves the existing semantic target model, keeps publisher-controlled matching in `@voxleaf/epub`, avoids a shared-schema change, and provides one safe operation for table-of-contents and inline links. Fragmentless spine targets should resolve to the document's first addressable block; matching fragments should resolve to their addressed block; missing fragments may recover to document start with an explicit reason. Non-spine targets cannot become `ReadingLocatorV1` without changing the shared contract and should be returned as unavailable/inert in this milestone. The exact result union and lifecycle/cancellation behavior require approval before Task 2.1.
+Decision: option 1. ADR-0008 approves an `OpenedPublication.resolveTarget(input, options?)` operation with closed exact/recovered/unavailable outcomes. Unique addressable fragments and fragmentless spine targets resolve exactly; unresolved fragments recover only to the same document start; invalid, unknown, non-spine, and empty targets are unavailable. The operation returns no publisher fragment/path/URL/prose and does not change a shared schema. Task 2.1 owns exact TypeScript names and implementation while preserving the ADR semantics.
 
-#### M4-D6: Authoritative visible-location sampling — Product/architecture approval required
+#### M4-D6: Authoritative visible-location sampling — Accepted by ADR-0008
 
-Options are block-start only, viewport progress, DOM pixel offsets, or structural locator plus code-point offset. Recommend the existing structural locator plus a code-point offset at the approved reading line, with deterministic block-start fallback when the browser cannot produce a caret. Persist neither pixel geometry nor chapter-relative progress as authority.
-
-The selected algorithm must prefer the first visible addressable leaf block crossing the reading line, map DOM text/line-break/image positions to the semantic code-point convention, normalize through `resolveLocator`, and avoid focus changes during passive scrolling.
+Decision: use the existing structural locator plus a Unicode-code-point offset at an application-owned reading line at the start edge of the content viewport. Prefer the first visible addressable leaf block crossing the line, use safe caret geometry to refine its offset, fall back to block start, and normalize through `resolveLocator`. Pixel geometry, scroll offsets, rendered pages, percentages, DOM paths, and text quotations are never position authority. Passive sampling/reflow/restoration does not move focus.
 
 #### M4-D7: Persistence backend, envelope, and migration — Approval required
 
@@ -294,7 +291,7 @@ No approved numeric reader latency budget exists. Measure file-selection-to-read
 
 ## Reader architecture
 
-The proposed desktop areas are responsibilities, not required filenames:
+The planned desktop areas are responsibilities, not required filenames. ADR-0008 accepts the visual renderer/coordinator/navigation/locator boundaries; file ingress, images, and persistence remain later gates:
 
 - **File-open boundary:** obtains one local `File` or approved native result, reads bounded bytes, starts/cancels opening, and never exposes a path to the EPUB package.
 - **Publication session owner:** owns `idle -> opening -> ready | failed -> closing` state, one `AbortController`, one `OpenedPublication`, replacement ordering, cleanup, and privacy-safe errors.
@@ -312,7 +309,7 @@ No application router exists. Milestone 4 navigation remains internal coordinato
 
 ## Content-rendering and security boundaries
 
-If M4-D1 is approved as recommended, the renderer maps semantic values as follows:
+Under ADR-0008, the renderer maps semantic values as follows:
 
 | Semantic input | Application-owned visual representation |
 | --- | --- |
@@ -368,7 +365,7 @@ EPUB CFI, rendered pages, pixel offsets, `scrollTop`, element geometry, and chap
 
 The renderer should create a content-free mapping from each rendered addressable block element to its `PublicationLocatedBlock`. For headings/paragraphs, the mapper must translate between semantic code-point positions and DOM Ranges using the same rules as Milestone 3: text contributes Unicode code points, line breaks contribute one newline position, and raster images contribute one object-replacement position rather than alternative-text length. Structural block quotes and lists use offset zero; their addressable descendants own text offsets.
 
-The proposed active-position algorithm is:
+The ADR-0008 active-position algorithm is:
 
 1. Observe only the active document's addressable block elements.
 2. At a scroll/layout sample, select the first visible addressable leaf block crossing the approved reading line; if none crosses, select the nearest visible addressable block in reading order.
@@ -377,7 +374,7 @@ The proposed active-position algorithm is:
 5. Pass the candidate through `OpenedPublication.resolveLocator` and publish only the canonical exact/recovered locator.
 6. Coalesce unchanged locator values; passive sampling never moves focus.
 
-The exact reading-line geometry and browser APIs remain under M4-D6/M4-D11 approval. Pure mapping logic must be independent of browser geometry so it can be tested deterministically.
+The application-owned reading line is fixed at the start edge of the content viewport after persistent reader chrome. Its exact layout inset, browser geometry adapter, and browser APIs remain implementation/evidence details under M4-D11. Pure mapping logic must be independent of browser geometry so it can be tested deterministically.
 
 ### Reflow behavior
 
@@ -656,7 +653,7 @@ Do not change `services/tts`, audio contracts/implementation, narration contract
 
 **Validation:** `git diff --check`; manually resolve changed Markdown links because no Markdown-link checker exists; `pnpm.cmd format:check` for repository-configured formats.
 
-**Status:** Not started.
+**Status:** Complete on 2026-07-22. ADR-0008 accepts direct semantic DOM rendering, continuous vertical scrolling, package-owned semantic-target resolution, structural locator/code-point visible-position sampling, application-owned focus/history behavior, and separation from narration/audio. Architecture, product, roadmap, diagram, and plan references were reconciled; no application code or dependency was added. `git diff --check`, manual changed-link and Mermaid review, and `pnpm.cmd format:check` passed.
 
 ### Task 1.2: Prove and select the local file-ingress boundary
 
@@ -1135,6 +1132,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 - 2026-07-22: Identified that detailed navigation/internal links expose `SemanticDocumentTarget` but no public operation resolves that target to `ReadingLocatorV1`; recorded an explicit public API gate rather than assigning fragment matching to the desktop.
 - 2026-07-22: Identified that `PersistedReadingStateV1` intentionally omits display preferences and storage selection; recommended a separate app-local versioned preference envelope and prohibited silent shared-v1 expansion.
 - 2026-07-22: Created this plan only. No application, test, package, manifest, lockfile, native capability, or production dependency was changed.
+- 2026-07-22: Completed Task 1.1. Accepted ADR-0008 for direct rendering of closed semantic values in the application DOM, one continuous-scrolling mode, package-owned target resolution, locator/code-point visible-position sampling, focus and browser-history behavior, and the Milestone 4 boundary from narration/audio. Reconciled architecture, product, roadmap, diagram, and this plan without changing application code or dependencies.
 
 ## Decision log
 
@@ -1143,11 +1141,13 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 | 2026-07-22 | Roadmap Milestone 4 is the only implementation scope; the older synchronized-reader plan is context for later milestones. | Plan authority established. |
 | 2026-07-22 | Reuse exact-byte `BookIdentityV1`, `ReadingLocatorV1`, `PersistedReadingStateV1`, semantic documents, lazy resources, and package locator resolution. | Already approved/implemented. |
 | 2026-07-22 | Do not use publisher HTML/CSS/scripts/URLs or activate external links. | Already approved by ADR-0007. |
-| 2026-07-22 | Direct React rendering from semantic values is the recommended isolation boundary. | Proposed; explicit ADR approval required. |
-| 2026-07-22 | Continuous vertical scrolling is the recommended sole initial reading mode. | Proposed; product approval required. |
+| 2026-07-22 | Render closed semantic values as exhaustive application-owned React elements in the application DOM; do not reconstruct publisher markup or use an iframe. | Accepted by ADR-0008; implementation remains Task 2.2. |
+| 2026-07-22 | Use continuous vertical scrolling as the sole initial reading mode; defer pagination and mode migration. | Accepted by ADR-0008; implementation remains Task 3.4. |
 | 2026-07-22 | Prototype webview file input before any Tauri filesystem/dialog capability. | Proposed; prototype/approval required. |
-| 2026-07-22 | Add a package-owned semantic-target resolver rather than matching fragments in the desktop. | Proposed; public API approval required. |
-| 2026-07-22 | Use structural locator plus code-point offset at a reading line with block-start fallback. | Proposed; product/architecture approval required. |
+| 2026-07-22 | Add a closed package-owned semantic-target resolver rather than matching fragments in the desktop; unresolved fragments recover only within the target spine document, while invalid/non-spine/empty targets are unavailable. | Accepted by ADR-0008; implementation remains Task 2.1. |
+| 2026-07-22 | Use structural locator plus code-point offset at an application-owned reading line with deterministic block-start fallback. | Accepted by ADR-0008; implementation remains Tasks 3.1-3.3. |
+| 2026-07-22 | Keep reader navigation out of browser routes/history; explicit navigation moves focus predictably while passive scrolling, reflow, and initial restoration do not. | Accepted by ADR-0008; implementation remains Tasks 3.3-3.5. |
+| 2026-07-22 | Milestone 4 owns the visual active locator only and does not implement narration, TTS, audio, highlighting, or synchronization. | Accepted by ADR-0008; later roadmap milestones retain ownership. |
 | 2026-07-22 | Use a versioned repository over Web Storage if native proof passes; keep display preferences in a separate app-local v1 envelope. | Proposed; persistence ADR approval required. |
 | 2026-07-22 | Use a trailing 500 ms passive-save debounce plus immediate coalesced explicit/lifecycle saves. | Proposed; product approval/evidence required. |
 | 2026-07-22 | Block raster display until predecode limits are proven; placeholder-only is the safe fallback. | Proposed; security ADR approval required. |
@@ -1180,7 +1180,15 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Implementation validation has not started. This ExecPlan is plan-only and all implementation tasks are `Not started`.
+Production-reader validation has not started. Task 1.1 is complete as a decision-only task; all application implementation tasks remain `Not started`.
+
+Task 1.1 documentation validation completed on 2026-07-22:
+
+- `git diff --check` passed.
+- A manual relative-link check confirmed that every relative Markdown target in the changed documentation exists; the roadmap heading link was also reviewed against its target heading.
+- Both Mermaid blocks in `docs/architecture/system-diagram.md` were reviewed manually. The repository has no Mermaid validation command, and Task 1.1 did not add a dependency solely for diagram validation.
+- `pnpm.cmd format:check` passed in native Windows PowerShell: Prettier, Rustfmt, and Ruff reported no formatting changes required. Markdown is not covered by the configured formatter.
+- Final scope review found documentation changes only: one ADR plus focused architecture, product, roadmap, and active-plan reconciliation. No application/test code, manifest, lockfile, generated file, native capability, or dependency changed.
 
 Plan-creation validation completed on 2026-07-22:
 

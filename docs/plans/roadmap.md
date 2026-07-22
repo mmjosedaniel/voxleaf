@@ -128,21 +128,22 @@ Provide a useful visual ereader before adding real speech generation.
 ### Expected outcome
 
 - A user can open a valid EPUB, see title and author, navigate its table of contents, and read formatted reflowable text and local images.
-- Typography, theme, viewport changes, scrolling or pagination, keyboard navigation, and visible focus support comfortable reading.
+- Typography, theme, viewport changes, continuous scrolling, keyboard navigation, and visible focus support comfortable reading. Pagination remains deferred by ADR-0008.
 - The logical reading position survives reflow and is saved locally without storing book prose.
 - Reopening a known book restores the same passage or the nearest valid location.
 - Invalid files and restoration failures produce understandable recoverable states.
 
 ### Dependencies
 
-Milestone 3 provides sanitized content and stable locators. Milestone 2 provides persistence contracts and deterministic test support.
+Milestone 3 provides sanitized content and stable locators. Milestone 2 provides persistence contracts and deterministic test support. [ADR-0008](../architecture/decisions/ADR-0008-visual-reader-architecture.md) defines the approved visual-rendering, navigation, and active-position boundary.
 
 ### Major risks and unknowns
 
-- Choose a rendering approach that isolates publisher content while preserving useful formatting and accessibility.
-- Define which visible location becomes authoritative during scrolling or pagination.
+- Implement and prove ADR-0008's direct semantic DOM boundary without reintroducing publisher markup, styles, URLs, or DOM identifiers.
+- Implement the approved package-owned semantic-target resolver and prove locator/code-point sampling across real browser reflow.
+- Resolve raster decode safety, file ingress, real-browser tooling, and measured large-chapter limits before claiming the reader boundary works.
 - Define save frequency, lifecycle saves, recovery, and persistence migration.
-- Decide how manual navigation behaves later when narration is active.
+- Keep manual navigation during active narration deferred to the Milestone 9 interaction gate.
 
 ## Milestone 5: Prepare text for natural narration
 

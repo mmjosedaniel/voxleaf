@@ -9,6 +9,17 @@ ADR-0001-short-description.md
 ADR-0002-short-description.md
 ```
 
+## Accepted decisions
+
+- [`ADR-0001-local-first-desktop.md`](ADR-0001-local-first-desktop.md): local-first Tauri desktop with React and TypeScript.
+- [`ADR-0002-in-memory-audio.md`](ADR-0002-in-memory-audio.md): bounded in-memory generated audio.
+- [`ADR-0003-stable-reading-locators.md`](ADR-0003-stable-reading-locators.md): logical locators as reading-position authority.
+- [`ADR-0004-start-after-audio-lead.md`](ADR-0004-start-after-audio-lead.md): playback startup based on playable audio duration.
+- [`ADR-0005-engineering-workspace-and-quality-tooling.md`](ADR-0005-engineering-workspace-and-quality-tooling.md): pnpm/uv workspace and root validation surface.
+- [`ADR-0006-json-schema-contract-authority.md`](ADR-0006-json-schema-contract-authority.md): versioned JSON Schema contract authority.
+- [`ADR-0007-secure-epub-ingestion-boundary.md`](ADR-0007-secure-epub-ingestion-boundary.md): bounded secure EPUB ingestion and semantic model.
+- [`ADR-0008-visual-reader-architecture.md`](ADR-0008-visual-reader-architecture.md): direct semantic DOM reader, scrolling, target resolution, and active visual locator.
+
 ## Template
 
 ```markdown
