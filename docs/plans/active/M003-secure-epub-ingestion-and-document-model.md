@@ -368,7 +368,7 @@ Do not claim a new script exists until it is added and executed.
 
 **Validation:** `pnpm.cmd --filter @voxleaf/epub typecheck`; `pnpm.cmd --filter @voxleaf/epub test`; `pnpm.cmd --filter @voxleaf/epub build`.
 
-**Status:** Not started.
+**Status:** Complete. Package-internal branded archive file, archive directory, and OCF reference types keep entry names separate from document references. Strict UTF-8 decoding, canonical directory keys, exact path/component limits, special-kind rejection, case/Unicode collision checks, and fixed content-free errors enforce the ADR boundary. Relative references resolve only against validated file bases, reject local escape and URL/host syntax before and after percent decoding, preserve case, and exclude fragments from lookup keys. No filesystem, network, or public package API was added.
 
 ### Task 2.2: Validate ZIP inventory and mimetype
 
@@ -678,6 +678,7 @@ Rollback is task-by-task. No user data exists to migrate. Published shared versi
 - 2026-07-21: Created this ExecPlan; no implementation task started.
 - 2026-07-21: Completed Task 1.1 on `docs/m3-secure-ingestion-adr` from `main` at `c8a1c77`. Accepted ADR-0007 for the EPUB 3 reflowable support profile, exact security budgets, content matrix, SHA-256 identity, shared/internal model ownership, locator and error policy, and deferred cases. Updated the architecture overview and centralized exact limits in the ADR; no dependency or application code was added. `git diff --check` and `pnpm.cmd format:check` passed.
 - 2026-07-21: Completed Task 1.2 on `feat/m3-archive-xml-dependencies`. Selected and exactly pinned `@zip.js/zip.js@2.8.30` plus `saxes@6.0.0`; added package-internal executable probes for strict ZIP controls, DTD/custom-entity rejection, cancellation, safe error mapping, namespace behavior, and worker/network absence; and documented licenses, alternatives, transitive graph, release-age choice, and installed/bundle impact. The locked install, EPUB typecheck/test/build, formatting, lint, and diff checks passed.
+- 2026-07-21: Completed Task 2.1 on `feat/m3-virtual-paths-ocf-references`, stacked on the clean Task 1.2 branch while its changes remain the required dependency. Added package-internal pure path/reference logic and adversarial tests for exact and over-limit values, malformed UTF-8, traversal and separator encodings, special entry kinds, Unicode/case collisions, schemes/hosts/queries/drives, root escape, case preservation, and fragment-free lookup keys. No dependency, filesystem/network capability, or public export was added.
 
 ## Decision log
 
@@ -690,6 +691,9 @@ Rollback is task-by-task. No user data exists to migrate. Published shared versi
 - ADR-0007 accepts the EPUB 3 reflowable baseline and defers EPUB 2/NCX.
 - Task 1.2 selects `@zip.js/zip.js@2.8.30` through the pure-JavaScript `lib/zip-core-native.js` subpath with strict archive interpretation enabled and workers, native compression streams, and stream transfer disabled. It is the first version with the required bounded canonical archive selection and had crossed the seven-day supply-chain gate; versions `2.8.31` through `2.8.33` had not.
 - Task 1.2 selects `saxes@6.0.0` with namespace processing and forced XML 1.0. VoxLeaf registers no resolver and rejects every `DOCTYPE`; the only production transitive is `xmlchars@2.2.0`.
+- Task 2.1 keeps archive file paths, canonical archive directory paths, and OCF references as distinct branded internal types. Directory input must carry one trailing marker, but the marker is removed from its collision key so a file and directory cannot claim the same virtual location.
+- Task 2.1 preserves exact case for lookup while rejecting exact, NFC-normalized, and locale-independent compatibility case-fold collisions. Reference components are percent-decoded without URL construction; literal dot segments may resolve only inside the container, while encoded or multiply encoded traversal/separators always fail.
+- Task 2.1 leaves these internal modules out of `@voxleaf/epub` exports. The later public document-model task owns any supported ingestion API rather than exposing security primitives prematurely.
 
 ## Discoveries and decisions
 
@@ -704,6 +708,8 @@ Rollback is task-by-task. No user data exists to migrate. Published shared versi
 - zip.js' `native` entry name denotes its bundled pure-JavaScript codec, not a native addon. The default package entry configures optional WASM/worker support, so VoxLeaf imports the narrower native core and disables workers explicitly.
 - The initially considered mature zip.js `2.8.26` pin was rejected after upstream history review showed that `2.8.28` fixed order-dependent overlap detection and `2.8.30` added strict canonical end-of-central-directory selection plus bounded ambiguity probes.
 - saxes does not fetch or expand DTD-defined entities by default, but it exposes a `doctype` event and a mutable entity table. The adapter must reject the event and never add resolver/entity behavior.
+- OCF scheme/drive checks must run after percent decoding the first reference component as well as before decoding; otherwise an encoded colon can disguise URL or Windows-drive syntax.
+- ZIP directory markers and archive lookup keys need different representations. Validating the marker and then removing it from the canonical key makes file/directory collisions deterministic without creating a host path.
 
 ## Final validation requirements
 
@@ -728,3 +734,5 @@ Rollback is task-by-task. No user data exists to migrate. Published shared versi
 Task 1.1 documentation validation passed on 2026-07-21 with `git diff --check` and `pnpm.cmd format:check`. No dependency or application code was added.
 
 Task 1.2 validation passed on 2026-07-21 with `pnpm.cmd install --frozen-lockfile`, `pnpm.cmd --filter @voxleaf/epub typecheck`, `pnpm.cmd --filter @voxleaf/epub test` (3 files and 12 tests), `pnpm.cmd --filter @voxleaf/epub build`, `pnpm.cmd format:check`, `pnpm.cmd lint`, and `git diff --check`. Milestone-wide implementation and final validation have not run; Task 2.1 is next.
+
+Task 2.1 validation passed on 2026-07-21 with `pnpm.cmd --filter @voxleaf/epub typecheck`, `pnpm.cmd --filter @voxleaf/epub test` (5 files and 80 tests), `pnpm.cmd --filter @voxleaf/epub build`, `pnpm.cmd format:check`, `pnpm.cmd lint`, and `git diff --check`. The implementation remains package-internal and adds no dependency, filesystem/network capability, or public export. Milestone-wide implementation and final validation have not run; Task 2.2 is next.
