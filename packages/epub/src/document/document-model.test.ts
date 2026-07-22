@@ -5,6 +5,7 @@ import type { BookV1 } from "@voxleaf/shared";
 import type {
   ContentDocumentId,
   OpenedPublication,
+  PublicationLocatorResolution,
   PublicationNavigationNode,
   RasterImageResource,
   RasterImageResourceId,
@@ -140,6 +141,9 @@ describe("public EPUB document model", () => {
       expectTypeOf(publication.readResource(imageResourceId)).toEqualTypeOf<
         Promise<Uint8Array>
       >();
+      expectTypeOf(
+        publication.resolveLocator({}),
+      ).toEqualTypeOf<PublicationLocatorResolution>();
       expectTypeOf(publication.close()).toEqualTypeOf<Promise<void>>();
 
       // @ts-expect-error Public semantic collections are readonly.

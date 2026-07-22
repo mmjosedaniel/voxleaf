@@ -4,8 +4,9 @@ import * as epubPackage from "@voxleaf/epub";
 import { decodeBookV1, decodeReadingLocatorV1 } from "@voxleaf/shared";
 
 describe("@voxleaf/epub", () => {
-  it("resolves as an isolated package without speculative exports", () => {
-    expect(Object.keys(epubPackage)).toEqual([]);
+  it("exports only the validated public runtime opener", () => {
+    expect(Object.keys(epubPackage)).toEqual(["openEpubPublication"]);
+    expect(typeof epubPackage.openEpubPublication).toBe("function");
   });
 
   it("consumes synthetic book and locator contracts through the public shared boundary", () => {

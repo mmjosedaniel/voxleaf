@@ -339,7 +339,7 @@ function isExplicitlyHidden(event: XmlStartElementEvent): boolean {
   );
 }
 
-function isSupportedContentDocument(item: PackageManifestItem): boolean {
+export function isSupportedContentDocument(item: PackageManifestItem): boolean {
   return (
     item.location.kind === "local" &&
     item.kind === "content-document" &&
@@ -350,7 +350,9 @@ function isSupportedContentDocument(item: PackageManifestItem): boolean {
   );
 }
 
-function documentId(index: number): ContentDocumentId {
+export function contentDocumentIdForManifestIndex(
+  index: number,
+): ContentDocumentId {
   return `document:${String(index)}` as ContentDocumentId;
 }
 
@@ -601,7 +603,7 @@ class XhtmlProjector {
     for (const [index, item] of packageDocument.manifest.entries()) {
       archive.budget.checkpoint();
       if (isSupportedContentDocument(item) && item.location.kind === "local") {
-        const id = documentId(index);
+        const id = contentDocumentIdForManifestIndex(index);
         this.#documentsByPath.set(String(item.location.path), id);
         if (String(item.location.path) === String(path)) {
           this.#documentId = id;

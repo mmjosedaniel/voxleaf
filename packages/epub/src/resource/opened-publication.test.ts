@@ -429,33 +429,50 @@ function createSingleImagePackage(
 }
 
 function publicationValues() {
-  return Object.freeze({
-    book: decodeBookV1({
-      schemaVersion: 1,
-      identity: {
-        scheme: "synthetic-test",
-        schemeVersion: 1,
-        value: "book-resource-test",
+  const book = decodeBookV1({
+    schemaVersion: 1,
+    identity: {
+      scheme: "synthetic-test",
+      schemeVersion: 1,
+      value: "book-resource-test",
+    },
+    metadata: { title: "Synthetic resources", authors: [] },
+    resources: [
+      {
+        path: "EPUB/chapter.xhtml",
+        mediaType: "application/xhtml+xml",
+        role: "content-document",
       },
-      metadata: { title: "Synthetic resources", authors: [] },
-      resources: [
-        {
-          path: "EPUB/chapter.xhtml",
-          mediaType: "application/xhtml+xml",
-          role: "content-document",
-        },
-      ],
-      spine: [
-        {
-          id: "spine:0",
-          index: 0,
-          resourcePath: "EPUB/chapter.xhtml",
-        },
-      ],
-      navigation: [],
-    }),
+    ],
+    spine: [
+      {
+        id: "spine:0",
+        index: 0,
+        resourcePath: "EPUB/chapter.xhtml",
+      },
+    ],
+    navigation: [],
+  });
+  const spine = book.spine[0];
+  if (spine === undefined) {
+    throw new Error("synthetic resource publication requires one spine");
+  }
+
+  return Object.freeze({
+    book,
     documents: Object.freeze([]),
     navigation: Object.freeze([]),
+    locatorIndex: Object.freeze({
+      bookIdentity: book.identity,
+      spines: Object.freeze([
+        Object.freeze({
+          spineItemId: spine.id,
+          spineItemIndex: spine.index,
+          blocks: Object.freeze([]),
+        }),
+      ]),
+      blocks: Object.freeze([]),
+    }),
   });
 }
 

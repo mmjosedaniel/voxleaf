@@ -1,4 +1,9 @@
-import type { BookV1, Index, SpineItemId } from "@voxleaf/shared";
+import type {
+  BookV1,
+  Index,
+  ReadingLocatorV1,
+  SpineItemId,
+} from "@voxleaf/shared";
 
 declare const contentDocumentIdBrand: unique symbol;
 declare const rasterImageResourceIdBrand: unique symbol;
@@ -176,6 +181,38 @@ export interface PublicationResourceReadOptions {
   readonly signal?: AbortSignal;
 }
 
+export interface PublicationLocatorResolveOptions {
+  readonly signal?: AbortSignal;
+}
+
+/** One semantic block and its deterministic structural start locator. */
+export interface PublicationLocatedBlock {
+  readonly documentId: ContentDocumentId;
+  readonly block: SemanticBlock;
+  readonly startLocator: ReadingLocatorV1;
+  readonly textLengthCodePoints: Index;
+}
+
+export type PublicationLocatorRecoveryReason =
+  "book-start" | "nearest-anchor" | "nearest-offset" | "nearest-spine";
+
+export interface ExactPublicationLocatorResolution {
+  readonly status: "exact";
+  readonly reason: "exact";
+  readonly locator: ReadingLocatorV1;
+  readonly locatedBlock: PublicationLocatedBlock;
+}
+
+export interface RecoveredPublicationLocatorResolution {
+  readonly status: "recovered";
+  readonly reason: PublicationLocatorRecoveryReason;
+  readonly locator: ReadingLocatorV1;
+  readonly locatedBlock: PublicationLocatedBlock;
+}
+
+export type PublicationLocatorResolution =
+  ExactPublicationLocatorResolution | RecoveredPublicationLocatorResolution;
+
 /**
  * Framework-independent handle for one opened publication.
  *
@@ -187,6 +224,7 @@ export interface PublicationResourceReadOptions {
 export interface OpenedPublication {
   readonly book: BookV1;
   readonly documents: readonly SemanticDocument[];
+  readonly locators: readonly PublicationLocatedBlock[];
   readonly navigation: readonly PublicationNavigationNode[];
   readonly resources: readonly RasterImageResource[];
   readonly closed: boolean;
@@ -194,5 +232,9 @@ export interface OpenedPublication {
     resourceId: RasterImageResourceId,
     options?: PublicationResourceReadOptions,
   ): Promise<Uint8Array>;
+  resolveLocator(
+    input: unknown,
+    options?: PublicationLocatorResolveOptions,
+  ): PublicationLocatorResolution;
   close(): Promise<void>;
 }

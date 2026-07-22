@@ -5,12 +5,18 @@ import type { OpenedEpubArchive } from "../archive/archive-inventory.js";
 import type { ParsedPackageDocument } from "../package/package-document.js";
 import type {
   OpenedPublication,
+  PublicationLocatedBlock,
+  PublicationLocatorResolution,
+  PublicationLocatorResolveOptions,
   PublicationNavigationNode,
   PublicationResourceReadOptions,
   RasterImageResource,
   RasterImageResourceId,
   SemanticDocument,
 } from "../document/document-model.js";
+import type { PublicationLocatorIndex } from "../locator/locator-index.js";
+import { resolvePublicationLocator } from "../locator/locator-resolver.js";
+import { createEpubProcessingBudget } from "../security/processing-budget.js";
 import { assertRasterImageSignature } from "./raster-image-signature.js";
 import {
   createRasterImageResourceCatalog,
@@ -21,6 +27,7 @@ export interface OpenedPublicationValues {
   readonly book: BookV1;
   readonly documents: readonly SemanticDocument[];
   readonly navigation: readonly PublicationNavigationNode[];
+  readonly locatorIndex: PublicationLocatorIndex;
 }
 
 interface LinkedAbortSignal {
@@ -73,11 +80,13 @@ function mapUnexpectedCloseError(error: unknown): never {
 class OpenedPublicationHandle implements OpenedPublication {
   public readonly book: BookV1;
   public readonly documents: readonly SemanticDocument[];
+  public readonly locators: readonly PublicationLocatedBlock[];
   public readonly navigation: readonly PublicationNavigationNode[];
   public readonly resources: readonly RasterImageResource[];
 
   readonly #archive: OpenedEpubArchive;
   readonly #bindingsById: ReadonlyMap<string, RasterImageResourceBinding>;
+  readonly #locatorIndex: PublicationLocatorIndex;
   readonly #closeController = new AbortController();
   #activeRead: Promise<void> | undefined;
   #closePromise: Promise<void> | undefined;
@@ -91,6 +100,8 @@ class OpenedPublicationHandle implements OpenedPublication {
     this.#archive = archive;
     this.book = values.book;
     this.documents = Object.freeze([...values.documents]);
+    this.#locatorIndex = values.locatorIndex;
+    this.locators = Object.freeze([...values.locatorIndex.blocks]);
     this.navigation = Object.freeze([...values.navigation]);
     this.resources = Object.freeze(
       bindings.map(({ descriptor }) => descriptor),
@@ -139,6 +150,23 @@ class OpenedPublicationHandle implements OpenedPublication {
       linkedSignal.dispose();
       this.#activeRead = undefined;
     }
+  }
+
+  public resolveLocator(
+    input: unknown,
+    options: PublicationLocatorResolveOptions = {},
+  ): PublicationLocatorResolution {
+    if (this.#closed) {
+      return fail("internal-failure");
+    }
+
+    return resolvePublicationLocator(
+      this.#locatorIndex,
+      input,
+      createEpubProcessingBudget({
+        ...(options.signal === undefined ? {} : { signal: options.signal }),
+      }),
+    );
   }
 
   public close(): Promise<void> {
