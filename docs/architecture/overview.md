@@ -2,13 +2,15 @@
 
 ## Status
 
-Proposed overall. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. Desktop file selection, rendering, persistence, narration preparation, TTS integration, buffering, and playback remain proposed and require their own implementation evidence.
+Mixed implementation status. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop and Python areas are foundations only; desktop file selection, rendering, persistence, narration preparation, TTS integration, buffering, and playback remain approved planned work and require their own implementation evidence.
+
+[`system-diagram.md`](system-diagram.md) is the canonical visual map and status legend. This overview owns the accompanying architectural rationale, invariants, and detailed implemented-boundary notes.
 
 ## Context
 
 VoxLeaf must read EPUB files and synthesize speech locally while beginning playback before an entire chapter is generated. The application therefore needs explicit boundaries between document processing, scheduling, inference, buffering, and playback.
 
-## Planned components
+## Component boundaries
 
 ```text
 Desktop application
@@ -50,6 +52,8 @@ Reasons:
 The protocol may use Tauri IPC, standard input/output, a local socket, or loopback WebSocket. The final choice requires an ADR after a small prototype.
 
 ## Core data flow
+
+The public EPUB package currently implements the in-memory validation, parsing, semantic projection, resource-descriptor, and locator portions of this flow. No desktop caller supplies the bytes or consumes the opened publication yet. Saved-position restoration, visual rendering, narration preparation, synthesis, buffering, playback, and persistence remain planned; the system diagram marks the implemented cutoff explicitly.
 
 1. Validate the selected EPUB as an untrusted archive.
 2. Parse metadata, navigation, and spine order.

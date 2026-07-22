@@ -2,7 +2,7 @@
 
 A privacy-first desktop EPUB reader with on-device neural text-to-speech and in-memory audio streaming.
 
-> **Status:** foundation / pre-alpha. The repository contains a reproducible development workspace and a minimal desktop shell, but no EPUB reading, narration, audio, persistence, hardware-detection, or installer behavior. The application is not yet usable as an ebook reader.
+> **Status:** pre-alpha. The repository contains a reproducible workspace, shared contracts, validated in-memory EPUB ingestion/document-model support, and a minimal desktop shell. The desktop does not yet select or render books, persist reading state, narrate, play audio, detect hardware, or build an installer, so the application is not usable as an ebook reader.
 
 ## Goal
 
@@ -28,42 +28,11 @@ The MVP is allowed to:
 - Show model-loading and buffering status.
 - Measure startup latency, real-time factor, underruns, and memory use.
 
-## Candidate architecture
+## Architecture
 
-```text
-EPUB file
-    |
-    v
-EPUB extraction
-    |
-    v
-Sanitized reflowable reader and stable reading locator
-    |
-    v
-Text normalization and semantic chunking
-    |
-    v
-Bounded generation queue
-    |
-    v
-Local TTS inference
-    |
-    v
-In-memory audio buffer
-    |
-    v
-Desktop audio playback
-```
+The canonical [system architecture diagram](docs/architecture/system-diagram.md) distinguishes implemented components from partial foundations and approved planned work. The current framework-independent `@voxleaf/epub` package validates in-memory EPUB bytes and exposes safe semantic documents, bounded resources, and deterministic locators; no desktop caller is wired to it yet.
 
-The initial technical direction is:
-
-- **Desktop:** Tauri, React, and TypeScript.
-- **TTS service:** Python with a local process boundary.
-- **Communication:** typed local IPC or WebSocket protocol.
-- **TTS candidates:** Qwen3-TTS first, with alternatives benchmarked before a durable model decision.
-- **Audio:** bounded in-memory streaming; no persistent generated audio by default.
-
-These are candidate choices and may change through documented architecture decisions.
+Tauri, React, and TypeScript are accepted for the desktop foundation. A separate local Python TTS process and bounded in-memory audio are approved directions, but the TTS engine, process transport, audio format, playback API, renderer, and persistence technology remain undecided until their roadmap gates. Candidate model names are evaluation inputs, not selected architecture.
 
 ## Privacy principles
 
@@ -83,7 +52,8 @@ Important files:
 - [`AGENTS.md`](AGENTS.md): durable instructions for Codex and contributors.
 - [`docs/product/project-brief.md`](docs/product/project-brief.md): detailed product context and candidate technical direction.
 - [`docs/product/mvp.md`](docs/product/mvp.md): MVP scope and acceptance criteria.
-- [`docs/architecture/overview.md`](docs/architecture/overview.md): planned component boundaries and data flow.
+- [`docs/architecture/system-diagram.md`](docs/architecture/system-diagram.md): canonical current/approved components, boundaries, data flows, status, and maintenance rules.
+- [`docs/architecture/overview.md`](docs/architecture/overview.md): detailed component boundaries, invariants, and implemented EPUB/shared-contract behavior.
 - [`docs/plans/roadmap.md`](docs/plans/roadmap.md): high-level implementation sequence and technical decision gates.
 - [`.agents/PLANS.md`](.agents/PLANS.md): format for longer implementation plans.
 - [`.agents/skills/`](.agents/skills/): repeatable Codex workflows.
