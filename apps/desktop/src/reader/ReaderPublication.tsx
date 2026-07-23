@@ -9,11 +9,18 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
   useSyncExternalStore,
 } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { PublicationRasterImageLoader } from "./publication-raster-image-loader";
+import {
+  DEFAULT_READER_PREFERENCES,
+  type ReaderPreferenceName,
+  type ReaderPreferencesV1,
+} from "./reader-preferences";
+import { ReaderPreferencesControls } from "./ReaderPreferences";
 import { SemanticDocumentContent } from "./SemanticDocument";
 import {
   ReaderNavigationCoordinator,
@@ -100,14 +107,20 @@ function NavigationNodeElement({
 
 export interface ReaderPublicationContentProps {
   readonly publication: OpenedPublication;
+  readonly initialPreferences?: ReaderPreferencesV1;
+  readonly onPreferencesChange?: (preferences: ReaderPreferencesV1) => void;
 }
 
 export function ReaderPublicationContent({
   publication,
+  initialPreferences = DEFAULT_READER_PREFERENCES,
+  onPreferencesChange,
 }: ReaderPublicationContentProps): ReactElement {
-  const coordinator = useMemo(
-    () => new ReaderNavigationCoordinator(publication),
-    [publication],
+  const [coordinator] = useState(
+    () =>
+      new ReaderNavigationCoordinator(publication, {
+        preferences: initialPreferences,
+      }),
   );
   const rasterImageLoader = useMemo(
     () => new PublicationRasterImageLoader(publication),
@@ -133,6 +146,15 @@ export function ReaderPublicationContent({
     (target: SemanticDocumentTarget) => coordinator.navigateToTarget(target),
     [coordinator],
   );
+  const updatePreference = useCallback(
+    (preference: ReaderPreferenceName, value: string): void => {
+      const intent = coordinator.setPreference(preference, value);
+      if (intent !== undefined) {
+        onPreferencesChange?.(intent.next);
+      }
+    },
+    [coordinator, onPreferencesChange],
+  );
 
   useEffect(
     () => () => {
@@ -156,51 +178,73 @@ export function ReaderPublicationContent({
   }, [state.destinationBlock, state.navigationRevision]);
 
   return (
-    <div className="semantic-reader">
-      <nav className="reader-toc" aria-label="Table of contents">
-        <h3>Table of contents</h3>
-        {publication.navigation.length === 0 ? (
-          <p className="reader-toc-empty">No table of contents is available.</p>
-        ) : (
-          <NavigationTree
-            nodes={publication.navigation}
-            coordinator={coordinator}
-          />
-        )}
-      </nav>
-      <div className="reader-chapter-controls" aria-label="Chapter navigation">
-        <button
-          type="button"
-          disabled={!state.canGoPrevious}
-          onClick={() => coordinator.goPrevious()}
-        >
-          Previous chapter
-        </button>
-        <button
-          type="button"
-          disabled={!state.canGoNext}
-          onClick={() => coordinator.goNext()}
-        >
-          Next chapter
-        </button>
-      </div>
-      <p
-        className="reader-navigation-status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {state.message}
-      </p>
-      <SemanticDocumentContent
-        key={state.activeLocator.spineItemIndex}
-        document={state.activeDocument}
-        targetAvailability={targetAvailability}
-        onActivateTarget={activateTarget}
-        destinationBlock={state.destinationBlock}
-        destinationRef={setDestinationRef}
-        readerRef={readerRef}
-        rasterImageLoader={rasterImageLoader}
+    <div
+      className="semantic-reader"
+      data-reader-mode="continuous"
+      data-reader-text-scale={state.preferences.textScale}
+      data-reader-line-spacing={state.preferences.lineSpacing}
+      data-reader-content-width={state.preferences.contentWidth}
+      data-reader-theme={state.preferences.theme}
+    >
+      <ReaderPreferencesControls
+        preferences={state.preferences}
+        onChange={updatePreference}
       />
+      <div className="reader-layout">
+        <nav className="reader-toc" aria-label="Table of contents">
+          <h3>Table of contents</h3>
+          {publication.navigation.length === 0 ? (
+            <p className="reader-toc-empty">
+              No table of contents is available.
+            </p>
+          ) : (
+            <NavigationTree
+              nodes={publication.navigation}
+              coordinator={coordinator}
+            />
+          )}
+        </nav>
+        <div className="reader-reading-pane">
+          <div
+            className="reader-chapter-controls"
+            aria-label="Chapter navigation"
+          >
+            <button
+              type="button"
+              disabled={!state.canGoPrevious}
+              onClick={() => coordinator.goPrevious()}
+            >
+              Previous chapter
+            </button>
+            <button
+              type="button"
+              disabled={!state.canGoNext}
+              onClick={() => coordinator.goNext()}
+            >
+              Next chapter
+            </button>
+          </div>
+          <p
+            className="reader-navigation-status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {state.message}
+          </p>
+          <div className="reader-content">
+            <SemanticDocumentContent
+              key={state.activeLocator.spineItemIndex}
+              document={state.activeDocument}
+              targetAvailability={targetAvailability}
+              onActivateTarget={activateTarget}
+              destinationBlock={state.destinationBlock}
+              destinationRef={setDestinationRef}
+              readerRef={readerRef}
+              rasterImageLoader={rasterImageLoader}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

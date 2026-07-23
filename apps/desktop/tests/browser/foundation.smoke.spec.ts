@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const TEST_STORAGE_KEY = "voxleaf.browser-smoke";
+const READER_PREFERENCES_STORAGE_KEY = "voxleaf.reader.preferences";
 
 async function buildNavigationFixture(): Promise<Uint8Array> {
   const fixtureModuleUrl = new URL(
@@ -31,8 +32,12 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     await route.abort("blockedbyclient");
   });
   await page.addInitScript(
-    (key) => localStorage.removeItem(key),
-    TEST_STORAGE_KEY,
+    (keys) => {
+      for (const key of keys) {
+        localStorage.removeItem(key);
+      }
+    },
+    [TEST_STORAGE_KEY, READER_PREFERENCES_STORAGE_KEY],
   );
   await page.addInitScript(() => {
     const originalRevoke = URL.revokeObjectURL.bind(URL);
@@ -93,6 +98,76 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     await expect(page.getByRole("status")).toHaveText(
       "The EPUB opened successfully.",
     );
+
+    const reader = page.locator(".semantic-reader");
+    const appearance = page.getByRole("group", {
+      name: "Reader appearance",
+    });
+    await expect(appearance).toBeVisible();
+    await expect(page.getByLabel("Text size")).toHaveValue("standard");
+    await expect(page.getByLabel("Line spacing")).toHaveValue("comfortable");
+    await expect(page.getByLabel("Content width")).toHaveValue("standard");
+    await expect(page.getByLabel("Theme")).toHaveValue("system");
+    await expect(reader).toHaveAttribute("data-reader-mode", "continuous");
+
+    await page.getByLabel("Text size").selectOption("extra-large");
+    await page.getByLabel("Line spacing").selectOption("spacious");
+    await page.getByLabel("Content width").selectOption("wide");
+    await page.getByLabel("Theme").selectOption("dark");
+    await expect(reader).toHaveAttribute(
+      "data-reader-text-scale",
+      "extra-large",
+    );
+    await expect(reader).toHaveAttribute(
+      "data-reader-line-spacing",
+      "spacious",
+    );
+    await expect(reader).toHaveAttribute("data-reader-content-width", "wide");
+    await expect(reader).toHaveAttribute("data-reader-theme", "dark");
+    expect(
+      await reader.evaluate((element) => ({
+        colorScheme: getComputedStyle(element).colorScheme,
+        inlineStyle: element.getAttribute("style"),
+      })),
+    ).toEqual({ colorScheme: "dark", inlineStyle: null });
+
+    await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+    await page.getByLabel("Theme").selectOption("system");
+    expect(
+      await reader.evaluate((element) => ({
+        colorScheme: getComputedStyle(element).colorScheme,
+        transitionDuration: getComputedStyle(element).transitionDuration,
+      })),
+    ).toEqual({ colorScheme: "dark", transitionDuration: "0s" });
+    await page.getByLabel("Theme").selectOption("light");
+    await expect
+      .poll(() =>
+        reader.evaluate((element) => getComputedStyle(element).colorScheme),
+      )
+      .toBe("light");
+
+    await page.emulateMedia({ forcedColors: "active" });
+    await page.getByLabel("Text size").focus();
+    const forcedColorFocus = await page
+      .getByLabel("Text size")
+      .evaluate((element) => ({
+        forcedColors: matchMedia("(forced-colors: active)").matches,
+        outlineStyle: getComputedStyle(element).outlineStyle,
+        outlineWidth: Number.parseFloat(getComputedStyle(element).outlineWidth),
+      }));
+    expect(forcedColorFocus.forcedColors).toBe(true);
+    expect(forcedColorFocus.outlineStyle).not.toBe("none");
+    expect(forcedColorFocus.outlineWidth).toBeGreaterThan(0);
+    await page.emulateMedia({ forcedColors: "none" });
+
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (key) => localStorage.getItem(key),
+          READER_PREFERENCES_STORAGE_KEY,
+        ),
+      )
+      .toBeNull();
 
     const toc = page.getByRole("navigation", { name: "Table of contents" });
     await expect(toc.getByText("Part One", { exact: true })).toBeVisible();
@@ -166,6 +241,13 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     await expect(page.getByText("private-navigation-smoke.epub")).toHaveCount(
       0,
     );
+    await page.getByRole("button", { name: "Previous chapter" }).click();
+    await expect(continuationHeading).toBeFocused();
+    await expect(
+      page.locator(".semantic-document code", {
+        hasText: "synthetic_unbroken_code_token_",
+      }),
+    ).toBeVisible();
 
     await expect
       .poll(() =>
@@ -184,23 +266,58 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
 
     for (const viewport of [
       { width: 1_280, height: 720 },
+      { width: 768, height: 720 },
+      { width: 320, height: 640 },
       { width: 360, height: 640 },
     ]) {
       await page.setViewportSize(viewport);
       const layout = await shell.evaluate((element) => {
         const bounds = element.getBoundingClientRect();
+        const reader = document.querySelector(".semantic-reader");
+        const article = document.querySelector(".semantic-document");
+        const controls = document.querySelector(".reader-preferences");
+        const longCode = document.querySelector(".semantic-document code");
+        const targetBounds = [reader, article, controls, longCode].flatMap(
+          (target) => (target === null ? [] : [target.getBoundingClientRect()]),
+        );
         return {
           left: bounds.left,
           right: bounds.right,
           documentWidth: document.documentElement.scrollWidth,
           viewportWidth: window.innerWidth,
+          targetsWithinViewport: targetBounds.every(
+            (target) =>
+              target.left >= -0.5 && target.right <= window.innerWidth + 0.5,
+          ),
         };
       });
 
       expect(layout.left).toBeGreaterThanOrEqual(-0.5);
       expect(layout.right).toBeLessThanOrEqual(layout.viewportWidth + 0.5);
       expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth);
+      expect(layout.targetsWithinViewport).toBe(true);
     }
+
+    await page.setViewportSize({ width: 640, height: 720 });
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "200%";
+    });
+    const zoomedLayout = await page.evaluate(() => ({
+      documentWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+      articleRight:
+        document.querySelector(".semantic-document")?.getBoundingClientRect()
+          .right ?? Number.POSITIVE_INFINITY,
+    }));
+    expect(zoomedLayout.documentWidth).toBeLessThanOrEqual(
+      zoomedLayout.viewportWidth,
+    );
+    expect(zoomedLayout.articleRight).toBeLessThanOrEqual(
+      zoomedLayout.viewportWidth + 0.5,
+    );
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "";
+    });
 
     await page.evaluate(
       (key) => localStorage.removeItem(key),
