@@ -49,7 +49,7 @@ Track model memory separately from text queues and audio buffers.
 
 ## Visual-reader reference limits
 
-Task 1.6 establishes implementation acceptance gates for the planned visual reader from a synthetic Chromium prototype. These are not claims that the reader is implemented, universal end-user guarantees, or minimum-hardware requirements. The real React renderer and native WebView2 flow must be remeasured against the same gates when Tasks 3.6 and 5.3 exist.
+Task 1.6 established implementation acceptance gates for the visual reader from a synthetic Chromium prototype. These are not universal end-user guarantees or minimum-hardware requirements. Task 3.6 now remeasures the production React renderer on the same Chromium/reference-host boundary; Task 5.3 retains the broader native WebView2 and restoration matrix.
 
 The accepted large-chapter policy is one active spine document rendered incrementally in batches of at most 250 semantic blocks, yielding to the browser between batches. Before rendering, the desktop must reject a chapter that contains more than 10,000 semantic blocks or projects to more than 80,000 live DOM nodes. Exact limits are accepted; 10,001 blocks or 80,001 projected nodes produce the recoverable `chapter-too-large` state without a partial chapter and preserve the last valid locator. General window virtualization is deferred because the measured bounded strategy is sufficient and does not create a new accessibility, focus, find-in-page, or restoration boundary.
 
@@ -71,6 +71,8 @@ ADR-0010's static-raster safety limits remain the reader image limits: one concu
 
 The reference host was native Windows 11 Home Single Language version `10.0.26200`, build `26200`, with an Intel Core Ultra 7 255HX (20 logical processors), 33,752,997,888 bytes of RAM, NVIDIA GeForce RTX 5060 Laptop GPU plus Intel Graphics, Node.js `24.18.0`, pnpm `11.15.1`, Playwright `1.61.1`, and Chrome for Testing `149.0.7827.55` / Chromium revision `1228`. The benchmark does not claim which display adapter Chromium used.
 
+Task 3.6's production React case opens a repository-authored exact-limit EPUB, holds the scheduler after its synchronous first 250-block commit, then observes all 39 remaining callback-to-DOM commits. On the same reference boundary, the final accepted run measured 7.2 ms maximum batch work, 795.1 ms deep-target readiness, 761.2 ms incremental append, 101.3 ms preference reflow, 50,167 additional Chromium DOM-counter nodes, 127.5 MiB post-first-batch incremental renderer working-set growth, and 160.6 MiB full open-publication/application growth. The incremental measurement remains below the 144-MiB DOM-work ceiling, while the complete application delta remains below the 208-MiB reader-wide envelope. File selection to first content measured 128.5 ms but includes browser file transfer, identity hashing, EPUB ingestion, capacity preflight, render-plan creation, and the first React commit; it is recorded rather than compared with the 50-ms renderer-only prototype gate. No title, prose, identifier, path, URL, bytes, or source fragment enters the report.
+
 Run the hardware-specific benchmark from native Windows PowerShell after the explicit Playwright browser installation:
 
 ```powershell
@@ -78,7 +80,7 @@ pnpm.cmd test:browser:install
 pnpm.cmd benchmark:reader
 ```
 
-The command is intentionally outside `pnpm.cmd check` and CI. It launches a fresh browser for each fixture, uses only fixed synthetic text and generated local PNGs, records counts/timings/heap and Chromium working-set values, disables traces/screenshots/video, and logs no publication content, paths, URLs, bytes, or private data. File-selection-to-open, opened-publication-to-first-content, real React commit, real locator restoration, and native WebView2 timings remain unmeasurable until their implementation tasks exist; Task 5.3 must record them rather than treating this test-only DOM prototype as end-to-end evidence.
+The command is intentionally outside `pnpm.cmd check` and CI. It builds the shared/EPUB packages, starts the production Vite application for the React case, launches a fresh browser for each standalone synthetic fixture, uses only repository-authored synthetic text and generated local PNGs, records counts/timings/heap and Chromium working-set values, disables traces/screenshots/video, and logs no publication content, paths, URLs, bytes, or private data. Task 3.6 records selection-to-first-content and production commit/target/append/reflow/memory evidence. Real locator restoration and native WebView2 timings remain owned by Task 5.3; this hardware-specific Chromium command is not a universal end-to-end guarantee.
 
 ## Initial buffering policy
 

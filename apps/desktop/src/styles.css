@@ -386,6 +386,13 @@ h1 {
   margin-inline: auto;
 }
 
+.reader-rendering-status {
+  margin: 0 0 0.75rem;
+  color: var(--reader-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .semantic-document {
   max-width: 100%;
   color: var(--reader-text);
@@ -394,6 +401,17 @@ h1 {
   line-height: var(--reader-line-height);
   overflow-wrap: anywhere;
   word-break: normal;
+}
+
+.reader-chapter-too-large {
+  padding: 1rem 1.25rem;
+  border: 0.1rem solid var(--reader-border);
+  border-radius: 0.5rem;
+  background: var(--reader-surface-muted);
+}
+
+.reader-chapter-too-large p:last-child {
+  margin-bottom: 0;
 }
 
 .semantic-document h1,
@@ -543,6 +561,7 @@ button.semantic-internal-link {
   border-style: dashed;
 }
 
+.semantic-document:focus,
 .semantic-document [tabindex="-1"]:focus {
   outline: 0.2rem solid var(--reader-focus);
   outline-offset: 0.25rem;
@@ -666,6 +685,7 @@ button.semantic-internal-link {
   .reader-toc-link:focus-visible,
   .reader-chapter-controls button:focus-visible,
   .semantic-internal-link:focus-visible,
+  .semantic-document:focus,
   .semantic-document [tabindex="-1"]:focus {
     outline-color: Highlight;
   }

@@ -62,6 +62,44 @@ interface ImageMeasurement {
   readonly totalDecodeMs: number;
 }
 
+interface ProductionRenderInstrumentation {
+  active: boolean;
+  paused: boolean;
+  selectionStartedAt: number;
+  resumeStartedAt: number;
+  firstContentAt: number;
+  completeAt: number;
+  callbackDurations: number[];
+  pendingBatchStartedAt: number;
+  batchCommitDurations: number[];
+}
+
+async function buildProductionLimitFixture(): Promise<Uint8Array> {
+  const fixtureModuleUrl = new URL(
+    "../../../../packages/epub/test-support/epub-fixture.ts",
+    import.meta.url,
+  );
+  const fixtureModule = (await import(fixtureModuleUrl.href)) as {
+    buildMinimalEpubFixture(options: {
+      readonly chapterDocument: string;
+      readonly navigationDocument: string;
+    }): Promise<Uint8Array>;
+  };
+  const beforeTarget = "<p>Synthetic production benchmark block.</p>".repeat(
+    8_998,
+  );
+  const afterTarget = "<p>Synthetic production benchmark block.</p>".repeat(
+    1_000,
+  );
+  const chapterDocument = `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Limit</title></head><body><h1 id="chapter-one">Limit section</h1>${beforeTarget}<h2 id="deep-target">Deep target</h2>${afterTarget}</body></html>`;
+  const navigationDocument =
+    '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><h2>Contents</h2><ol><li><a href="text/chapter.xhtml#chapter-one">Limit section</a></li><li><a href="text/chapter.xhtml#deep-target">Deep target</a></li></ol></nav></body></html>';
+  return fixtureModule.buildMinimalEpubFixture({
+    chapterDocument,
+    navigationDocument,
+  });
+}
+
 function executeText(file: string, args: readonly string[]): Promise<string> {
   return new Promise((resolve, reject) => {
     execFile(file, args, { encoding: "utf8" }, (error, stdout) => {
@@ -607,6 +645,279 @@ test("measures the combined selected reader capacity", async () => {
       memoryDelta: delta,
     })}`,
   );
+});
+
+test("measures the production React renderer at the accepted chapter limit", async ({
+  browser,
+  context,
+  page,
+}) => {
+  test.skip(platform !== "win32", "The accepted benchmark host is Windows.");
+  test.setTimeout(180_000);
+
+  let unexpectedRequestCount = 0;
+  await context.route("**/*", async (route) => {
+    const requestUrl = new URL(route.request().url());
+    if (requestUrl.origin === "http://127.0.0.1:4174") {
+      await route.continue();
+      return;
+    }
+    unexpectedRequestCount += 1;
+    await route.abort("blockedbyclient");
+  });
+  await page.addInitScript(() => {
+    const instrumentation: ProductionRenderInstrumentation = {
+      active: false,
+      paused: true,
+      selectionStartedAt: 0,
+      resumeStartedAt: 0,
+      firstContentAt: 0,
+      completeAt: 0,
+      callbackDurations: [],
+      pendingBatchStartedAt: 0,
+      batchCommitDurations: [],
+    };
+    Object.defineProperty(
+      globalThis,
+      "__voxleafProductionRenderInstrumentation",
+      {
+        configurable: false,
+        value: instrumentation,
+      },
+    );
+    const originalRequestAnimationFrame =
+      globalThis.requestAnimationFrame.bind(globalThis);
+    const originalCancelAnimationFrame =
+      globalThis.cancelAnimationFrame.bind(globalThis);
+    const pendingCallbacks = new Map<number, FrameRequestCallback>();
+    let pendingHandle = -1;
+    const invoke = (callback: FrameRequestCallback) => (timestamp: number) => {
+      const startedAt = performance.now();
+      if (instrumentation.active) {
+        instrumentation.pendingBatchStartedAt = startedAt;
+      }
+      callback(timestamp);
+      if (instrumentation.active) {
+        instrumentation.callbackDurations.push(performance.now() - startedAt);
+      }
+    };
+    globalThis.requestAnimationFrame = (callback): number => {
+      if (instrumentation.active && instrumentation.paused) {
+        const handle = pendingHandle;
+        pendingHandle -= 1;
+        pendingCallbacks.set(handle, callback);
+        return handle;
+      }
+      return originalRequestAnimationFrame(invoke(callback));
+    };
+    globalThis.cancelAnimationFrame = (handle): void => {
+      if (!pendingCallbacks.delete(handle)) {
+        originalCancelAnimationFrame(handle);
+      }
+    };
+    Object.defineProperty(globalThis, "__voxleafReleaseReaderBenchmarkFrames", {
+      configurable: false,
+      value: () => {
+        instrumentation.paused = false;
+        instrumentation.resumeStartedAt = performance.now();
+        const callbacks = [...pendingCallbacks.values()];
+        pendingCallbacks.clear();
+        for (const callback of callbacks) {
+          originalRequestAnimationFrame(invoke(callback));
+        }
+      },
+    });
+  });
+
+  try {
+    await page.goto("/");
+    const baseline = await pageMemorySnapshot(browser, page);
+    const fixture = await buildProductionLimitFixture();
+    await page.evaluate(() => {
+      const instrument = (
+        globalThis as typeof globalThis & {
+          __voxleafProductionRenderInstrumentation: ProductionRenderInstrumentation;
+        }
+      ).__voxleafProductionRenderInstrumentation;
+      instrument.active = true;
+      instrument.paused = true;
+      instrument.selectionStartedAt = performance.now();
+      let previousRenderedBlocks = 0;
+      const observeProgress = (): void => {
+        const article = document.querySelector(".semantic-document");
+        const renderedBlocks = article?.children.length ?? 0;
+        if (renderedBlocks > 0 && instrument.firstContentAt === 0) {
+          instrument.firstContentAt = performance.now();
+        }
+        if (
+          renderedBlocks === 10_000 &&
+          document.querySelector(".reader-rendering-status") === null
+        ) {
+          instrument.completeAt = performance.now();
+        }
+        if (
+          renderedBlocks > previousRenderedBlocks &&
+          previousRenderedBlocks > 0 &&
+          instrument.pendingBatchStartedAt > 0
+        ) {
+          instrument.batchCommitDurations.push(
+            performance.now() - instrument.pendingBatchStartedAt,
+          );
+          instrument.pendingBatchStartedAt = 0;
+        }
+        previousRenderedBlocks = renderedBlocks;
+      };
+      const observer = new MutationObserver(observeProgress);
+      observer.observe(document.body, { childList: true, subtree: true });
+      Object.defineProperty(globalThis, "__voxleafProductionRenderObserver", {
+        configurable: true,
+        value: observer,
+      });
+    });
+
+    await page.getByLabel("Open a local EPUB").setInputFiles({
+      name: "private-production-limit.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(fixture),
+    });
+    const article = page.getByRole("article", {
+      name: "Current reading section",
+    });
+    await expect
+      .poll(() => article.locator(":scope > *").count())
+      .toBe(BATCH_SIZE_BLOCKS);
+    const firstBatch = await pageMemorySnapshot(browser, page);
+    await page.evaluate(() => {
+      (
+        globalThis as typeof globalThis & {
+          __voxleafReleaseReaderBenchmarkFrames: () => void;
+        }
+      ).__voxleafReleaseReaderBenchmarkFrames();
+    });
+
+    const targetStartedAt = await page.evaluate(() => performance.now());
+    await page
+      .getByRole("navigation", { name: "Table of contents" })
+      .getByRole("button", { name: "Deep target" })
+      .click();
+    const deepTarget = page.getByRole("heading", {
+      level: 2,
+      name: "Deep target",
+    });
+    await expect(deepTarget).toBeFocused({ timeout: 1_000 });
+    const targetReadyMs =
+      (await page.evaluate(() => performance.now())) - targetStartedAt;
+
+    await expect
+      .poll(() => article.locator(":scope > *").count(), {
+        timeout: 2_000,
+      })
+      .toBe(10_000);
+    await expect(page.locator(".reader-rendering-status")).toHaveCount(0);
+    const instrumentation = await page.evaluate(() => {
+      const instrument = (
+        globalThis as typeof globalThis & {
+          __voxleafProductionRenderInstrumentation: ProductionRenderInstrumentation;
+          __voxleafProductionRenderObserver?: MutationObserver;
+        }
+      ).__voxleafProductionRenderInstrumentation;
+      instrument.active = false;
+      (
+        globalThis as typeof globalThis & {
+          __voxleafProductionRenderObserver?: MutationObserver;
+        }
+      ).__voxleafProductionRenderObserver?.disconnect();
+      return {
+        selectionStartedAt: instrument.selectionStartedAt,
+        resumeStartedAt: instrument.resumeStartedAt,
+        firstContentAt: instrument.firstContentAt,
+        completeAt: instrument.completeAt,
+        callbackDurations: [...instrument.callbackDurations],
+        batchCommitDurations: [...instrument.batchCommitDurations],
+      };
+    });
+    const final = await pageMemorySnapshot(browser, page);
+    const fullDelta = memoryDelta(baseline, final);
+    const incrementalDelta = memoryDelta(firstBatch, final);
+    const maximumBatchScriptMs = Math.max(
+      0,
+      ...instrumentation.batchCommitDurations,
+    );
+    const maximumSchedulerCallbackMs = Math.max(
+      0,
+      ...instrumentation.callbackDurations,
+    );
+    const selectionToFirstContentMs =
+      instrumentation.firstContentAt - instrumentation.selectionStartedAt;
+    const incrementalAppendMs =
+      instrumentation.completeAt - instrumentation.resumeStartedAt;
+
+    const preferenceReflowMs = await page.evaluate(
+      () =>
+        new Promise<number>((resolve, reject) => {
+          const select = document.querySelector<HTMLSelectElement>(
+            'select[name="textScale"]',
+          );
+          if (select === null) {
+            reject(new Error("reader-benchmark-preference-unavailable"));
+            return;
+          }
+          const startedAt = performance.now();
+          select.value = "large";
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => resolve(performance.now() - startedAt)),
+          );
+        }),
+    );
+
+    expect(instrumentation.firstContentAt).toBeGreaterThan(0);
+    expect(instrumentation.completeAt).toBeGreaterThan(
+      instrumentation.firstContentAt,
+    );
+    expect(instrumentation.batchCommitDurations).toHaveLength(
+      SELECTED_LIVE_BLOCK_LIMIT / BATCH_SIZE_BLOCKS - 1,
+    );
+    expect(maximumBatchScriptMs).toBeLessThanOrEqual(
+      SELECTED_BATCH_SCRIPT_LIMIT_MS,
+    );
+    expect(targetReadyMs).toBeLessThanOrEqual(SELECTED_TARGET_READY_LIMIT_MS);
+    expect(incrementalAppendMs).toBeLessThanOrEqual(
+      SELECTED_TOTAL_RENDER_LIMIT_MS,
+    );
+    expect(preferenceReflowMs).toBeLessThanOrEqual(SELECTED_REFLOW_LIMIT_MS);
+    expect(fullDelta.domNodes).toBeLessThanOrEqual(
+      SELECTED_LIVE_DOM_NODE_LIMIT,
+    );
+    expect(incrementalDelta.workingSetBytes).toBeLessThanOrEqual(
+      SELECTED_DOM_WORKING_SET_LIMIT_BYTES,
+    );
+    expect(fullDelta.workingSetBytes).toBeLessThanOrEqual(
+      SELECTED_COMBINED_WORKING_SET_LIMIT_BYTES,
+    );
+    await expect(page.locator(".semantic-document [id]")).toHaveCount(0);
+    await expect(page.getByText("private-production-limit.epub")).toHaveCount(
+      0,
+    );
+    expect(unexpectedRequestCount).toBe(0);
+
+    console.info(
+      `READER_PRODUCTION_BENCHMARK ${JSON.stringify({
+        blockCount: SELECTED_LIVE_BLOCK_LIMIT,
+        batchSizeBlocks: BATCH_SIZE_BLOCKS,
+        selectionToFirstContentMs: rounded(selectionToFirstContentMs),
+        maximumSchedulerCallbackMs: rounded(maximumSchedulerCallbackMs),
+        maximumBatchScriptMs: rounded(maximumBatchScriptMs),
+        targetReadyMs: rounded(targetReadyMs),
+        incrementalAppendMs: rounded(incrementalAppendMs),
+        preferenceReflowMs: rounded(preferenceReflowMs),
+        incrementalMemoryDelta: incrementalDelta,
+        fullApplicationMemoryDelta: fullDelta,
+      })}`,
+    );
+  } finally {
+    await context.unroute("**/*");
+  }
 });
 
 test("records exact selected reader-side capacity boundaries", () => {

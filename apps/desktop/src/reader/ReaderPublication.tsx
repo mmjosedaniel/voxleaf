@@ -21,7 +21,10 @@ import {
   type ReaderPreferencesV1,
 } from "./reader-preferences";
 import { ReaderPreferencesControls } from "./ReaderPreferences";
-import { SemanticDocumentContent } from "./SemanticDocument";
+import {
+  ChapterTooLargeContent,
+  SemanticDocumentContent,
+} from "./SemanticDocument";
 import {
   ReaderNavigationCoordinator,
   type ReaderTargetAvailability,
@@ -134,9 +137,32 @@ export function ReaderPublicationContent({
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const readerRef = useRef<HTMLElement | null>(null);
   const destinationRef = useRef<HTMLElement | null>(null);
-  const setDestinationRef = useCallback((element: HTMLElement | null) => {
-    destinationRef.current = element;
-  }, []);
+  const handledNavigationRevision = useRef(0);
+  const focusDestination = useCallback(
+    (destination: HTMLElement): void => {
+      destination.scrollIntoView?.({ block: "start" });
+      if (state.destinationBlock.kind === "heading") {
+        destination.focus({ preventScroll: true });
+        return;
+      }
+      readerRef.current?.focus({ preventScroll: true });
+    },
+    [state.destinationBlock.kind],
+  );
+  const setDestinationRef = useCallback(
+    (element: HTMLElement | null) => {
+      destinationRef.current = element;
+      if (
+        element !== null &&
+        state.navigationRevision > 0 &&
+        handledNavigationRevision.current !== state.navigationRevision
+      ) {
+        handledNavigationRevision.current = state.navigationRevision;
+        focusDestination(element);
+      }
+    },
+    [focusDestination, state.navigationRevision],
+  );
   const targetAvailability = useCallback(
     (target: SemanticDocumentTarget): ReaderTargetAvailability =>
       coordinator.targetAvailability(target),
@@ -164,18 +190,25 @@ export function ReaderPublicationContent({
   );
 
   useLayoutEffect(() => {
-    if (state.navigationRevision === 0) {
+    if (
+      state.navigationRevision === 0 ||
+      handledNavigationRevision.current === state.navigationRevision
+    ) {
+      return;
+    }
+
+    if (state.contentStatus === "chapter-too-large") {
+      handledNavigationRevision.current = state.navigationRevision;
+      readerRef.current?.focus({ preventScroll: true });
       return;
     }
 
     const destination = destinationRef.current;
-    destination?.scrollIntoView?.({ block: "start" });
-    if (state.destinationBlock.kind === "heading" && destination !== null) {
-      destination.focus({ preventScroll: true });
-      return;
+    if (destination !== null) {
+      handledNavigationRevision.current = state.navigationRevision;
+      focusDestination(destination);
     }
-    readerRef.current?.focus({ preventScroll: true });
-  }, [state.destinationBlock, state.navigationRevision]);
+  }, [focusDestination, state.contentStatus, state.navigationRevision]);
 
   return (
     <div
@@ -232,16 +265,20 @@ export function ReaderPublicationContent({
             {state.message}
           </p>
           <div className="reader-content">
-            <SemanticDocumentContent
-              key={state.activeLocator.spineItemIndex}
-              document={state.activeDocument}
-              targetAvailability={targetAvailability}
-              onActivateTarget={activateTarget}
-              destinationBlock={state.destinationBlock}
-              destinationRef={setDestinationRef}
-              readerRef={readerRef}
-              rasterImageLoader={rasterImageLoader}
-            />
+            {state.contentStatus === "chapter-too-large" ? (
+              <ChapterTooLargeContent readerRef={readerRef} />
+            ) : (
+              <SemanticDocumentContent
+                key={state.activeLocator.spineItemIndex}
+                document={state.activeDocument}
+                targetAvailability={targetAvailability}
+                onActivateTarget={activateTarget}
+                destinationBlock={state.destinationBlock}
+                destinationRef={setDestinationRef}
+                readerRef={readerRef}
+                rasterImageLoader={rasterImageLoader}
+              />
+            )}
           </div>
         </div>
       </div>

@@ -10,6 +10,7 @@ import type {
 } from "@voxleaf/epub";
 import type { ReadingLocatorV1 } from "@voxleaf/shared";
 
+import { assessSemanticDocumentRendering } from "./large-chapter-rendering";
 import {
   DEFAULT_READER_PREFERENCES,
   updateReaderPreference,
@@ -38,6 +39,8 @@ export interface ReaderNavigationState {
   readonly activeDocument: SemanticDocument;
   readonly activeLocator: ReadingLocatorV1;
   readonly destinationBlock: SemanticBlock;
+  readonly contentStatus: "render" | "chapter-too-large";
+  readonly presentedChapterIndex: number;
   readonly navigationRevision: number;
   readonly message: string;
   readonly canGoPrevious: boolean;
@@ -56,6 +59,8 @@ const NAVIGATION_FAILURE_MESSAGE = "Navigation could not be completed.";
 const EXACT_NAVIGATION_MESSAGE = "Moved to the requested reading location.";
 const RECOVERED_NAVIGATION_MESSAGE =
   "The requested location was unavailable. Moved to the start of its reading section.";
+export const CHAPTER_TOO_LARGE_MESSAGE =
+  "This reading section is too large to display safely. Choose another section.";
 
 function unavailableExplanation(
   reason: PublicationTargetUnavailableReason,
@@ -179,12 +184,15 @@ export class ReaderNavigationCoordinator {
     this.#publication = publication;
     this.#preferences = options.preferences ?? DEFAULT_READER_PREFERENCES;
     this.#chapterStarts = readableChapterStarts(publication);
+    const initialContentStatus =
+      assessSemanticDocumentRendering(activeDocument).status;
     this.#state = this.createState(
       activeDocument,
       firstLocatedBlock.startLocator,
       firstLocatedBlock.block,
       0,
-      "",
+      initialContentStatus === "accepted" ? "" : CHAPTER_TOO_LARGE_MESSAGE,
+      initialContentStatus === "accepted" ? "render" : "chapter-too-large",
     );
   }
 
@@ -266,7 +274,7 @@ export class ReaderNavigationCoordinator {
   }
 
   private navigateByChapter(delta: -1 | 1): void {
-    const currentIndex = this.chapterIndex(this.#state.activeLocator);
+    const currentIndex = this.#state.presentedChapterIndex;
     const chapter = this.#chapterStarts[currentIndex + delta];
     if (currentIndex < 0 || chapter === undefined) {
       return;
@@ -299,6 +307,28 @@ export class ReaderNavigationCoordinator {
       return;
     }
 
+    const chapterIndex = this.chapterIndex(resolution.locator);
+    if (chapterIndex < 0) {
+      this.announce(NAVIGATION_FAILURE_MESSAGE);
+      return;
+    }
+    if (
+      assessSemanticDocumentRendering(activeDocument).status ===
+      "chapter-too-large"
+    ) {
+      this.#state = Object.freeze({
+        ...this.#state,
+        contentStatus: "chapter-too-large",
+        presentedChapterIndex: chapterIndex,
+        navigationRevision: this.#state.navigationRevision + 1,
+        message: CHAPTER_TOO_LARGE_MESSAGE,
+        canGoPrevious: chapterIndex > 0,
+        canGoNext: chapterIndex < this.#chapterStarts.length - 1,
+      });
+      this.emit();
+      return;
+    }
+
     this.#state = this.createState(
       activeDocument,
       resolution.locator,
@@ -307,6 +337,7 @@ export class ReaderNavigationCoordinator {
       resolution.status === "recovered"
         ? RECOVERED_NAVIGATION_MESSAGE
         : EXACT_NAVIGATION_MESSAGE,
+      "render",
     );
     this.emit();
   }
@@ -325,12 +356,15 @@ export class ReaderNavigationCoordinator {
     destinationBlock: SemanticBlock,
     navigationRevision: number,
     message: string,
+    contentStatus: "render" | "chapter-too-large",
   ): ReaderNavigationState {
     const chapterIndex = this.chapterIndex(activeLocator);
     return Object.freeze({
       activeDocument,
       activeLocator,
       destinationBlock,
+      contentStatus,
+      presentedChapterIndex: chapterIndex,
       navigationRevision,
       message,
       canGoPrevious: chapterIndex > 0,
