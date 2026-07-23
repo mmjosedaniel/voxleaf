@@ -3,6 +3,7 @@ import type {
   PublicationNavigationNode,
   SemanticDocumentTarget,
 } from "@voxleaf/epub";
+import type { ReadingLocatorV1 } from "@voxleaf/shared";
 import {
   useCallback,
   useEffect,
@@ -14,6 +15,10 @@ import {
 } from "react";
 import type { ReactElement, ReactNode } from "react";
 
+import {
+  ActiveVisualLocatorTracker,
+  type ActiveVisualLocatorEnvironment,
+} from "./active-visual-locator";
 import { PublicationRasterImageLoader } from "./publication-raster-image-loader";
 import {
   DEFAULT_READER_PREFERENCES,
@@ -39,11 +44,13 @@ function unreachable(value: never): never {
 interface NavigationTreeProps {
   readonly nodes: readonly PublicationNavigationNode[];
   readonly coordinator: ReaderNavigationCoordinator;
+  readonly onNavigateTarget: (target: SemanticDocumentTarget) => void;
 }
 
 function NavigationTree({
   nodes,
   coordinator,
+  onNavigateTarget,
 }: NavigationTreeProps): ReactElement {
   return (
     <ol className="reader-toc-list">
@@ -52,6 +59,7 @@ function NavigationTree({
           key={index}
           node={node}
           coordinator={coordinator}
+          onNavigateTarget={onNavigateTarget}
         />
       ))}
     </ol>
@@ -61,11 +69,13 @@ function NavigationTree({
 interface NavigationNodeElementProps {
   readonly node: PublicationNavigationNode;
   readonly coordinator: ReaderNavigationCoordinator;
+  readonly onNavigateTarget: (target: SemanticDocumentTarget) => void;
 }
 
 function NavigationNodeElement({
   node,
   coordinator,
+  onNavigateTarget,
 }: NavigationNodeElementProps): ReactElement {
   let label: ReactNode;
 
@@ -80,7 +90,7 @@ function NavigationNodeElement({
           <button
             type="button"
             className="reader-toc-link"
-            onClick={() => coordinator.navigateToTarget(node.target)}
+            onClick={() => onNavigateTarget(node.target)}
           >
             {node.label}
           </button>
@@ -103,7 +113,11 @@ function NavigationNodeElement({
     <li>
       {label}
       {node.children.length > 0 ? (
-        <NavigationTree nodes={node.children} coordinator={coordinator} />
+        <NavigationTree
+          nodes={node.children}
+          coordinator={coordinator}
+          onNavigateTarget={onNavigateTarget}
+        />
       ) : null}
     </li>
   );
@@ -113,14 +127,18 @@ export interface ReaderPublicationContentProps {
   readonly publication: OpenedPublication;
   readonly initialPreferences?: ReaderPreferencesV1;
   readonly onPreferencesChange?: (preferences: ReaderPreferencesV1) => void;
+  readonly onActiveLocatorChange?: (locator: ReadingLocatorV1) => void;
   readonly domRangeMapper?: SemanticDomRangeMapper;
+  readonly visualLocatorEnvironment?: ActiveVisualLocatorEnvironment;
 }
 
 export function ReaderPublicationContent({
   publication,
   initialPreferences = DEFAULT_READER_PREFERENCES,
   onPreferencesChange,
+  onActiveLocatorChange,
   domRangeMapper,
+  visualLocatorEnvironment,
 }: ReaderPublicationContentProps): ReactElement {
   const [coordinator] = useState(
     () =>
@@ -134,6 +152,20 @@ export function ReaderPublicationContent({
   );
   const [ownedDomRangeMapper] = useState(() => new SemanticDomRangeMapper());
   const activeDomRangeMapper = domRangeMapper ?? ownedDomRangeMapper;
+  const [visualLocatorTracker] = useState(
+    () =>
+      new ActiveVisualLocatorTracker(publication, activeDomRangeMapper, {
+        ...(visualLocatorEnvironment === undefined
+          ? {}
+          : { environment: visualLocatorEnvironment }),
+        initialLocator: coordinator.state.activeLocator,
+        onLocator: (locator) => {
+          if (coordinator.updateActiveVisualLocator(locator)) {
+            onActiveLocatorChange?.(locator);
+          }
+        },
+      }),
+  );
   const subscribe = useCallback(
     (listener: () => void) => coordinator.subscribe(listener),
     [coordinator],
@@ -150,6 +182,22 @@ export function ReaderPublicationContent({
   const readerRef = useRef<HTMLElement | null>(null);
   const destinationRef = useRef<HTMLElement | null>(null);
   const handledNavigationRevision = useRef(0);
+  const resumeProgrammaticNavigationRef = useRef<(() => void) | undefined>(
+    undefined,
+  );
+  const setReaderRef = useCallback(
+    (element: HTMLElement | null): void => {
+      readerRef.current = element;
+      visualLocatorTracker.setRoot(element);
+    },
+    [visualLocatorTracker],
+  );
+  const finishProgrammaticNavigation = useCallback((): void => {
+    visualLocatorTracker.setCurrentLocator(coordinator.state.activeLocator);
+    const resume = resumeProgrammaticNavigationRef.current;
+    resumeProgrammaticNavigationRef.current = undefined;
+    resume?.();
+  }, [coordinator, visualLocatorTracker]);
   const focusDestination = useCallback(
     (destination: HTMLElement): void => {
       destination.scrollIntoView?.({ block: "start" });
@@ -171,18 +219,33 @@ export function ReaderPublicationContent({
       ) {
         handledNavigationRevision.current = state.navigationRevision;
         focusDestination(element);
+        finishProgrammaticNavigation();
       }
     },
-    [focusDestination, state.navigationRevision],
+    [finishProgrammaticNavigation, focusDestination, state.navigationRevision],
   );
   const targetAvailability = useCallback(
     (target: SemanticDocumentTarget): ReaderTargetAvailability =>
       coordinator.targetAvailability(target),
     [coordinator],
   );
+  const runProgrammaticNavigation = useCallback(
+    (navigate: () => void): void => {
+      resumeProgrammaticNavigationRef.current?.();
+      const resume = visualLocatorTracker.suspend();
+      resumeProgrammaticNavigationRef.current = resume;
+      const revision = coordinator.state.navigationRevision;
+      navigate();
+      if (coordinator.state.navigationRevision === revision) {
+        finishProgrammaticNavigation();
+      }
+    },
+    [coordinator, finishProgrammaticNavigation, visualLocatorTracker],
+  );
   const activateTarget = useCallback(
-    (target: SemanticDocumentTarget) => coordinator.navigateToTarget(target),
-    [coordinator],
+    (target: SemanticDocumentTarget) =>
+      runProgrammaticNavigation(() => coordinator.navigateToTarget(target)),
+    [coordinator, runProgrammaticNavigation],
   );
   const updatePreference = useCallback(
     (preference: ReaderPreferenceName, value: string): void => {
@@ -199,6 +262,14 @@ export function ReaderPublicationContent({
       void rasterImageLoader.close();
     },
     [rasterImageLoader],
+  );
+  useEffect(
+    () => () => {
+      resumeProgrammaticNavigationRef.current?.();
+      resumeProgrammaticNavigationRef.current = undefined;
+      visualLocatorTracker.close();
+    },
+    [visualLocatorTracker],
   );
   useEffect(
     () => () => {
@@ -220,6 +291,7 @@ export function ReaderPublicationContent({
     if (state.contentStatus === "chapter-too-large") {
       handledNavigationRevision.current = state.navigationRevision;
       readerRef.current?.focus({ preventScroll: true });
+      finishProgrammaticNavigation();
       return;
     }
 
@@ -227,8 +299,14 @@ export function ReaderPublicationContent({
     if (destination !== null) {
       handledNavigationRevision.current = state.navigationRevision;
       focusDestination(destination);
+      finishProgrammaticNavigation();
     }
-  }, [focusDestination, state.contentStatus, state.navigationRevision]);
+  }, [
+    finishProgrammaticNavigation,
+    focusDestination,
+    state.contentStatus,
+    state.navigationRevision,
+  ]);
 
   return (
     <div
@@ -254,6 +332,7 @@ export function ReaderPublicationContent({
             <NavigationTree
               nodes={publication.navigation}
               coordinator={coordinator}
+              onNavigateTarget={activateTarget}
             />
           )}
         </nav>
@@ -265,14 +344,18 @@ export function ReaderPublicationContent({
             <button
               type="button"
               disabled={!state.canGoPrevious}
-              onClick={() => coordinator.goPrevious()}
+              onClick={() =>
+                runProgrammaticNavigation(() => coordinator.goPrevious())
+              }
             >
               Previous chapter
             </button>
             <button
               type="button"
               disabled={!state.canGoNext}
-              onClick={() => coordinator.goNext()}
+              onClick={() =>
+                runProgrammaticNavigation(() => coordinator.goNext())
+              }
             >
               Next chapter
             </button>
@@ -286,7 +369,7 @@ export function ReaderPublicationContent({
           </p>
           <div className="reader-content">
             {state.contentStatus === "chapter-too-large" ? (
-              <ChapterTooLargeContent readerRef={readerRef} />
+              <ChapterTooLargeContent readerRef={setReaderRef} />
             ) : (
               <SemanticDocumentContent
                 key={state.activeLocator.spineItemIndex}
@@ -295,9 +378,10 @@ export function ReaderPublicationContent({
                 onActivateTarget={activateTarget}
                 destinationBlock={state.destinationBlock}
                 destinationRef={setDestinationRef}
-                readerRef={readerRef}
+                readerRef={setReaderRef}
                 rasterImageLoader={rasterImageLoader}
                 domRangeMapper={activeDomRangeMapper}
+                visualLocatorTracker={visualLocatorTracker}
                 locatedBlocks={activeLocatedBlocks}
               />
             )}

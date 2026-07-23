@@ -9,9 +9,14 @@ import type {
   SensitivePublicationText,
   SourceFragment,
 } from "@voxleaf/epub";
-import { createIndex } from "@voxleaf/shared";
+import {
+  createIndex,
+  decodeReadingLocatorV1,
+  type ReadingLocatorV1,
+} from "@voxleaf/shared";
 import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -20,6 +25,10 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type {
+  ActiveVisualLocatorEnvironment,
+  VisualLocatorRect,
+} from "./active-visual-locator";
 import { ReaderPublicationContent } from "./ReaderPublication";
 import { ReaderNavigationCoordinator } from "./reader-navigation";
 import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
@@ -28,6 +37,59 @@ const OPENING_DOCUMENT_ID = "document:opening" as ContentDocumentId;
 const CONTINUATION_DOCUMENT_ID = "document:continuation" as ContentDocumentId;
 const SUPPLEMENT_DOCUMENT_ID = "document:supplement" as ContentDocumentId;
 const CONTINUATION_FRAGMENT = "private-continuation-fragment" as SourceFragment;
+
+class ManualVisualLocatorEnvironment implements ActiveVisualLocatorEnvironment {
+  readonly rects = new Map<string, VisualLocatorRect>();
+  range: Range | undefined;
+  scheduleCount = 0;
+  #pending: (() => void) | undefined;
+  #changeCallback: (() => void) | undefined;
+
+  viewportRect(): VisualLocatorRect {
+    return { top: 0, right: 240, bottom: 100, left: 0 };
+  }
+
+  blockRect(element: HTMLElement): VisualLocatorRect | undefined {
+    return this.rects.get(element.textContent ?? "");
+  }
+
+  textDirection(): "ltr" {
+    return "ltr";
+  }
+
+  rangeAtPoint(): Range | undefined {
+    return this.range;
+  }
+
+  schedule(_root: HTMLElement, callback: () => void): () => void {
+    this.scheduleCount += 1;
+    this.#pending = callback;
+    return () => {
+      if (this.#pending === callback) {
+        this.#pending = undefined;
+      }
+    };
+  }
+
+  observe(_root: HTMLElement, callback: () => void): () => void {
+    this.#changeCallback = callback;
+    return () => {
+      if (this.#changeCallback === callback) {
+        this.#changeCallback = undefined;
+      }
+    };
+  }
+
+  notify(): void {
+    this.#changeCallback?.();
+  }
+
+  flush(): void {
+    const callback = this.#pending;
+    this.#pending = undefined;
+    callback?.();
+  }
+}
 
 const OPENING_TARGET = Object.freeze({
   documentId: OPENING_DOCUMENT_ID,
@@ -324,6 +386,33 @@ describe("reader navigation coordinator", () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
+  it("updates only canonical visual locators within the active spine", () => {
+    const coordinator = new ReaderNavigationCoordinator(createPublication());
+    const listener = vi.fn();
+    coordinator.subscribe(listener);
+    const activeVisualLocator = decodeReadingLocatorV1({
+      ...OPENING_LOCATED_BLOCK.startLocator,
+      textOffsetCodePoints: 4,
+    });
+
+    expect(coordinator.updateActiveVisualLocator(activeVisualLocator)).toBe(
+      true,
+    );
+    expect(coordinator.state.activeLocator).toBe(activeVisualLocator);
+    expect(coordinator.state.destinationBlock).toBe(OPENING_HEADING);
+    expect(coordinator.state.navigationRevision).toBe(0);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(coordinator.updateActiveVisualLocator(activeVisualLocator)).toBe(
+      false,
+    );
+    expect(
+      coordinator.updateActiveVisualLocator(
+        CONTINUATION_LOCATED_BLOCK.startLocator,
+      ),
+    ).toBe(false);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
   it("presents an oversized destination without replacing the last valid locator", () => {
     const oversizedParagraph = Object.freeze({
       kind: "paragraph",
@@ -455,6 +544,80 @@ describe("navigable publication reader", () => {
 
     rendered.unmount();
     expect(mapper.registrationCount).toBe(0);
+  });
+
+  it("publishes passive canonical positions without focus or storage side effects", () => {
+    const mapper = new SemanticDomRangeMapper();
+    const environment = new ManualVisualLocatorEnvironment();
+    const activeLocators: ReadingLocatorV1[] = [];
+    const onActiveLocatorChange = vi.fn((locator: ReadingLocatorV1): void => {
+      activeLocators.push(locator);
+    });
+    const storageWrite = vi.spyOn(Storage.prototype, "setItem");
+    const publication = createPublication();
+    publication.resolveLocator = vi.fn((input: unknown) => {
+      const locator = decodeReadingLocatorV1(input);
+      const locatedBlock =
+        locator.spineItemIndex ===
+        CONTINUATION_LOCATED_BLOCK.startLocator.spineItemIndex
+          ? CONTINUATION_LOCATED_BLOCK
+          : OPENING_LOCATED_BLOCK;
+      return Object.freeze({
+        status: "exact",
+        reason: "exact",
+        locator,
+        locatedBlock,
+      });
+    });
+    environment.rects.set("Opening", {
+      top: 10,
+      right: 210,
+      bottom: 50,
+      left: 10,
+    });
+    environment.rects.set("Move to Continue", {
+      top: 60,
+      right: 210,
+      bottom: 90,
+      left: 10,
+    });
+
+    render(
+      <ReaderPublicationContent
+        publication={publication}
+        domRangeMapper={mapper}
+        visualLocatorEnvironment={environment}
+        onActiveLocatorChange={onActiveLocatorChange}
+      />,
+    );
+    const continuationControl = screen.getByRole("button", {
+      name: "Continuation",
+    });
+    continuationControl.focus();
+    environment.range = mapper.rangeFor(OPENING_LOCATED_BLOCK, 4);
+    act(() => environment.flush());
+
+    expect(onActiveLocatorChange).toHaveBeenCalledTimes(1);
+    expect(activeLocators[0]?.textOffsetCodePoints).toBe(4);
+    expect(continuationControl).toHaveFocus();
+    expect(storageWrite).not.toHaveBeenCalled();
+
+    act(() => {
+      environment.notify();
+      environment.notify();
+      environment.notify();
+    });
+    expect(environment.scheduleCount).toBe(2);
+    act(() => environment.flush());
+    expect(onActiveLocatorChange).toHaveBeenCalledTimes(1);
+
+    scrollIntoView.mockImplementation(() => environment.notify());
+    fireEvent.click(continuationControl);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Continuation" }),
+    ).toHaveFocus();
+    expect(environment.scheduleCount).toBe(3);
+    expect(storageWrite).not.toHaveBeenCalled();
   });
 
   it("keeps package targets out of DOM identifiers, links, and browser history", () => {
