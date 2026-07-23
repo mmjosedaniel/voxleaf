@@ -11,7 +11,7 @@ import {
 
 import type { LocalPublicationOpenFlow } from "./publication/local-publication-open";
 import { ReaderErrorBoundary } from "./reader/ReaderErrorBoundary";
-import { SemanticPublicationContent } from "./reader/SemanticDocument";
+import { ReaderPublicationContent } from "./reader/ReaderPublication";
 import {
   createReaderLifecycle,
   type ReaderFailureReason,
@@ -84,7 +84,7 @@ function rasterStatusForResult(
 
 export function App({
   openFlow: suppliedOpenFlow,
-  ReadyPublicationContent = SemanticPublicationContent,
+  ReadyPublicationContent = ReaderPublicationContent,
   runRasterProbe = runRasterImageSafetyProbe,
 }: AppProps) {
   const [readerLifecycle] = useState(() =>
