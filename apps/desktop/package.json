@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "benchmark:reader": "playwright test --config playwright.benchmark.config.ts",
     "build": "vite build",
     "dev": "vite",
     "tauri": "tauri",

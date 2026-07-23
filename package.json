@@ -8,6 +8,7 @@
     "pnpm": "11.15.1"
   },
   "scripts": {
+    "benchmark:reader": "pnpm --filter @voxleaf/desktop benchmark:reader",
     "build": "pnpm run build:packages && pnpm run build:desktop && pnpm run build:python",
     "build:desktop": "pnpm --filter @voxleaf/desktop tauri build",
     "build:packages": "pnpm --filter @voxleaf/epub --filter @voxleaf/shared build",

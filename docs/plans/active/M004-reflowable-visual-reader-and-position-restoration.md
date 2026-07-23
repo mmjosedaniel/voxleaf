@@ -43,9 +43,7 @@ The older [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-
 
 ## Readiness assessment
 
-Milestone 4 is ready to begin its decision and prototype phase. Milestone 3 provides the required safe document model, resource handle, stable locators, and deterministic fixtures, and no incomplete earlier milestone blocks planning or prototypes.
-
-It is not ready to begin production reader rendering until the approval gates in this plan are closed. In particular:
+Milestone 4's six decision/evidence tasks are complete. Milestone 3 provides the safe document model, resource handle, stable locators, and deterministic fixtures, and Tasks 1.1-1.6 resolve the rendering, ingress, raster, persistence, browser-tooling, large-chapter, and reference-performance gates. Production work may proceed only in the implementation order below; an accepted boundary or test-only benchmark is not evidence that reader behavior exists.
 
 | Prerequisite | State | Evidence or required action |
 | --- | --- | --- |
@@ -55,13 +53,13 @@ It is not ready to begin production reader rendering until the approval gates in
 | Deterministic EPUB fixtures | Ready | The Milestone 3 in-memory fixture builder and public ingestion matrix exist. |
 | Rendering/isolation policy | Approved, not implemented | ADR-0008 selects direct React rendering of closed semantic values in the application DOM and prohibits raw publisher markup. |
 | File-ingress boundary | Approved; probe implemented | ADR-0009 accepts the native-validated WebView file input and abortable bounded browser read with no Tauri command/plugin/capability. Tasks 2.2-2.3 still own publication integration. |
-| Raster decode safety | Prototype and approval required | Byte signatures are validated, but pixel dimensions, frame/animation behavior, decode memory, object URLs, and CSP are unresolved. |
+| Raster decode safety | Approved; boundary implemented | ADR-0010 and Task 1.3 implement static-only preflight, bounded decode/live-source ownership, CSP, cancellation, and exact release. Semantic image integration remains Task 3.3. |
 | Navigation-target resolution | Approved, not implemented | ADR-0008 assigns source-fragment matching to a new closed `@voxleaf/epub` target resolver; Task 2.1 must implement it. |
 | Persistence and migration | Approved, not implemented | ADR-0011 selects two bounded Web Storage envelopes, app-local display preferences, a 500 ms passive-save debounce, content-free failures, exact-identity restoration, and desktop-owned migration. |
-| Layout/end-to-end testing | Dependency decision required | jsdom cannot prove scrolling, browser geometry, reflow, or restoration across viewports. |
-| Large-chapter policy and reader latency budgets | Measurement required | Ingestion allows far more blocks than the desktop should put in the DOM without a measured bound. |
+| Layout/end-to-end testing | Established | Task 1.5 pins Playwright/Chromium, separates explicit acquisition from offline execution, and retains native WebView2 evidence for target-runtime behavior. |
+| Large-chapter policy and reader latency budgets | Approved, not implemented | Task 1.6 accepts 250-block incremental batches, a 10,000-block/80,000-node ceiling, fixed fallback, and measured reference latency/memory gates. Tasks 3.6 and 5.3 must implement and revalidate them. |
 
-No task may assume one of the remaining unresolved choices. The responsible gate task must record approval, alternatives, evidence, and any ADR or dependency change first. Decisions accepted by ADR-0008 may be implemented only by their assigned later tasks and are not evidence that reader behavior works.
+Implementation tasks must preserve these accepted choices and may not treat them as evidence that reader behavior already works. Any material change to a gate requires new evidence and an explicit ADR/plan amendment before implementation.
 
 ## Scope
 
@@ -69,7 +67,7 @@ No task may assume one of the remaining unresolved choices. The responsible gate
 - Own one active `OpenedPublication`, including cancellation, replacement, and close.
 - Present title, authors, table of contents, chapter controls, and supported semantic content.
 - Render only repository-owned React elements from the semantic model through an approved isolation boundary.
-- Decode and display local raster images only after renderer-specific limits and lifecycle behavior are approved and tested.
+- Decode and display local raster images only through ADR-0010's approved source manager, limits, lifecycle, and tested placeholder fallback.
 - Provide one initial reflowable reading mode and a bounded initial set of reader preferences.
 - Represent the visible position with `ReadingLocatorV1`, including a Unicode-code-point offset when the browser can determine it safely and a deterministic block-start fallback.
 - Preserve the locator while the viewport and typography reflow.
@@ -275,19 +273,19 @@ Task 4.5 must prove the exact 499/500 ms boundary, supersession, coalescing, lif
 
 Global display preferences use a separate closed app-local `ReaderPreferencesV1` envelope with four bounded tokens: text scale, line spacing, content width, and light/dark/system theme. Per-book position remains nested `PersistedReadingStateV1`; its existing voice/playback fields are unchanged. Typeface switching, custom colors/fonts, margins, alignment, hyphenation, pagination, per-book style profiles, narration settings, and model settings are deferred.
 
-#### M4-D10: Large-chapter rendering — Measurement and approval required
+#### M4-D10: Large-chapter rendering — Accepted by Task 1.6
 
-Options are rendering a complete chapter, incremental batches with an explicit reader-side ceiling, or window virtualization. Recommend one spine document at a time, incremental rendering to first useful/target content, and an evidence-based hard live-DOM/semantic-block ceiling with a recoverable `chapter-too-large` presentation. General virtualization is deferred unless the prototype proves it is required and accessibility, find-in-page, focus, target restoration, and screen-reader continuity can be preserved.
-
-No arbitrary production ceiling may be selected from this plan. Task 1.6 must measure synthetic small/representative/long chapters and record the accepted count, node, latency, and memory bounds.
+Render one active spine document incrementally in batches of at most 250 semantic blocks, yielding to the browser between batches. Preflight both semantic-block count and projected DOM-node count. Admit at most 10,000 semantic blocks and 80,000 projected live DOM nodes; 10,001 blocks or 80,001 nodes returns the recoverable `chapter-too-large` presentation before partial rendering and preserves the last valid locator. General virtualization is deferred because the bounded incremental prototype met the accepted reference gates without introducing accessibility, find-in-page, focus, target-restoration, or screen-reader discontinuities. Complete synchronous rendering is rejected because the exact 10,000-block fixture occupied 124.3 ms in one script operation.
 
 #### M4-D11: Real-browser and native test tooling — Accepted by Task 1.5
 
 Use exact `@playwright/test` `1.61.1` against the built Vite application for deterministic Chromium layout/reflow evidence plus the focused native Windows WebView smoke matrix for target-runtime behavior. jsdom remains appropriate for pure/component behavior but cannot prove geometry. Playwright selects Chrome for Testing `149.0.7827.55` / revision `1228` on Windows. Browser acquisition is the explicit networked `pnpm.cmd test:browser:install` command; ordinary `pnpm.cmd test:browser` runs offline against the default per-user cache and never downloads or updates browsers. The authoritative Windows CI job performs the explicit matching install and smoke without restoring a browser cache; Ubuntu portable CI does not install a browser. The dependency and browser binaries are test-only and do not enter the desktop production bundle. Vitest browser mode remains an unused alternative; Tauri/WebDriver is reserved for native behavior not proved by Chromium.
 
-#### M4-D12: Reader performance thresholds — Product/architecture approval required
+#### M4-D12: Reader performance thresholds — Accepted as reference implementation gates by Task 1.6
 
-No approved numeric reader latency budget exists. Measure file-selection-to-ready, chapter-navigation-to-content, restoration-to-settled-position, preference-change reflow, long-chapter batch latency, live DOM nodes, and peak memory on documented Windows hardware. Task 1.6 must recommend and obtain approval for explicit thresholds before final performance acceptance; the plan must not convert provisional measurements into product claims.
+On the documented Task 1.6 Windows host, the exact-limit incremental prototype must produce first useful content within 50 ms, keep each batch's script work within 16 ms, make a deep target ready within 1,000 ms, complete append within 1,000 ms, and settle preference reflow within 250 ms. DOM-only Chromium working-set growth is capped at 144 MiB; the near-cap eight-image fixture is capped at 150 ms and 112 MiB; the combined exact block/image fixture is capped at 208 MiB. ADR-0010's one concurrent decode, eight live sources, and 16,777,216 live pixels remain hard image limits.
+
+These are test-host implementation gates, not universal product or minimum-hardware claims. File-selection-to-open, opened-publication-to-content, real React commit/restoration, and native WebView2 measurements remain unmeasurable until later implementation tasks. Task 5.3 must record them and may propose an explicit evidence-backed amendment rather than silently weakening this gate.
 
 ## Reader architecture
 
@@ -486,7 +484,7 @@ Required strategy:
 - Defer image reads until their document/view needs them, bound concurrent reads/decodes according to M4-D4, and release bytes/object URLs promptly.
 - Separate pure locator mapping from geometry sampling so scroll work does not rebuild semantic content.
 - Coalesce scroll/resize/observer callbacks through animation-frame or another approved scheduler; do not write storage on every event.
-- Use incremental chapter rendering and a measured live-DOM ceiling if M4-D10 is approved. Never render an ingestion-maximum chapter in one unmeasured synchronous React commit.
+- Use M4-D10's accepted 250-block incremental batches and 10,000-block/80,000-node ceiling. Never render an ingestion-maximum chapter or replace the fixed fallback with partial content.
 - Show a loading/progress state for work that cannot complete within one responsive interaction interval, without fabricating progress percentages.
 
 Record, without content, at least:
@@ -499,7 +497,7 @@ Record, without content, at least:
 - long-chapter batch time, live DOM node/block count, and peak process memory; and
 - image read/decode duration and peak concurrent decoded pixels.
 
-Exact pass/fail thresholds are intentionally unresolved under M4-D12. Task 1.6 must establish them from documented hardware before the final performance task can pass.
+The exact M4-D12 prototype gates are recorded above and in the performance budget. Later implementation must measure every end-to-end interval that Task 1.6 could not truthfully exercise and must not treat the prototype as production-reader evidence.
 
 ## Error and fallback behavior
 
@@ -585,9 +583,7 @@ Extend the existing test-only EPUB fixture builder with independent, determinist
 
 Keep fixtures repository-authored, synthetic, in-memory, deterministic, and test-only. Do not commit copyrighted books or opaque EPUB binaries. Expected positions must be authored independently of the code under test.
 
-### Existing validation commands
-
-These commands exist at plan creation:
+### Current validation commands
 
 ```powershell
 git diff --check
@@ -596,6 +592,7 @@ pnpm.cmd --filter @voxleaf/desktop typecheck
 pnpm.cmd --filter @voxleaf/desktop test
 pnpm.cmd test:browser:install
 pnpm.cmd test:browser
+pnpm.cmd benchmark:reader
 pnpm.cmd --filter @voxleaf/desktop build
 pnpm.cmd --filter @voxleaf/desktop tauri build
 pnpm.cmd --filter @voxleaf/epub typecheck
@@ -612,7 +609,7 @@ pnpm.cmd build
 pnpm.cmd check
 ```
 
-Task 1.5 added `pnpm.cmd test:browser` for deterministic Chromium evidence after one explicit `pnpm.cmd test:browser:install`. The fixed foundation smoke proves the harness, viewport/storage control, real focus, role/name semantics, responsive geometry, cleanup, and absence of non-loopback requests; it is not evidence for unimplemented reader behavior or a complete accessibility audit. Later tasks may extend this command only with repository-authored synthetic inputs and must retain native Windows WebView validation where the target runtime matters.
+Task 1.5 added `pnpm.cmd test:browser` for deterministic Chromium evidence after one explicit `pnpm.cmd test:browser:install`. The fixed foundation smoke proves the harness, viewport/storage control, real focus, role/name semantics, responsive geometry, cleanup, and absence of non-loopback requests; it is not evidence for unimplemented reader behavior or a complete accessibility audit. Task 1.6 added the separate native-Windows `pnpm.cmd benchmark:reader`; it is intentionally absent from CI and root checks. Later tasks may extend these commands only with repository-authored synthetic inputs and must retain native Windows WebView validation where the target runtime matters.
 
 ## Expected files or areas affected
 
@@ -723,9 +720,9 @@ Do not change `services/tts`, audio contracts/implementation, narration contract
 
 **Acceptance:** Small/representative/long/excess cases run on documented Windows hardware; no content is logged; exact limits and fallback are accepted; thresholds distinguish measured evidence from product claims; no production renderer is implemented in this task.
 
-**Validation:** The browser command established by Task 1.5; `pnpm.cmd --filter @voxleaf/desktop test`; `git diff --check`. Record hardware and actual command/result in the progress log.
+**Validation:** `pnpm.cmd benchmark:reader`; the browser command established by Task 1.5; `pnpm.cmd --filter @voxleaf/desktop typecheck`, `test`, and `build`; root `format:check`/`lint`; `git diff --check`. Record hardware and actual command/result in the progress log.
 
-**Status:** Not started.
+**Status:** Complete on 2026-07-22. A separate native-Windows Playwright benchmark measures complete/incremental synthetic chapters at 250, 2,000, 10,000, 20,000, and 50,000 blocks; deep target and preference reflow; one/eight generated PNGs; Chromium DOM/heap/working set; and the combined exact-limit envelope. The accepted policy is 250-block yielded batches, 10,000 semantic blocks, 80,000 projected DOM nodes, `chapter-too-large` before partial rendering, no general virtualization, and the M4-D12 latency/memory gates. Four benchmark tests, the ordinary browser smoke, 31 desktop tests, typecheck/build, format/lint, and diff checks passed. No production renderer, public contract, dependency, native capability, persistence, selected EPUB, network, narration, TTS, or audio behavior was added.
 
 ## Milestone 2: Establish publication session and navigation boundaries
 
@@ -1139,6 +1136,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 - 2026-07-22: Completed Task 1.3. Added dependency-free static GIF/JPEG/PNG/WebP metadata preflight, immutable dimension/pixel/frame/concurrency/live-lifetime limits, postdecode dimension agreement, fixed cancellation/failure/capacity outcomes, and an idempotent object-URL manager. Added the minimum Blob image CSP allowance and a fixed synthetic release-shell probe. Thirty-one desktop tests and repeated native WebView2 decoding passed; accepted ADR-0010. Publication image rendering remains Task 3.3.
 - 2026-07-22: Completed Task 1.4. Accepted ADR-0011 for the packaged WebView `localStorage` backend, two fixed bounded envelopes, global app-local display preferences, 500 ms passive-save debounce, lifecycle flushes, exact-byte restoration, fixed nonfatal failures, unsupported-version preservation, and desktop-owned migration. A temporary release-shell marker survived a full process restart and was removed on restore; all temporary source/automation was removed. Persistence implementation remains Tasks 4.4-4.6.
 - 2026-07-22: Completed Task 1.5. Selected exact `@playwright/test` `1.61.1` with Chrome for Testing `149.0.7827.55` / revision `1228`, explicit browser acquisition, offline ordinary execution, one-worker fixed-environment configuration, loopback-only production preview, and Windows CI ownership. The first validation found that Vitest also discovered the Playwright spec and that reduced-motion emulation belongs under Playwright context options; separating the test globs and correcting that typed option restored all existing checks. The final Chromium smoke, 31 desktop tests, desktop typecheck/build, root format/lint, and diff checks passed.
+- 2026-07-22: Completed Task 1.6. Added an explicit, non-CI `pnpm.cmd benchmark:reader` command and synthetic Playwright harness that runs on native Windows, launches fresh Chromium processes, and records content-free timing/DOM/heap/working-set/image metrics. The first run exposed that `powershell.exe -Command` did not pass trailing process IDs through `$args` as expected; embedding the CDP-returned, integer-validated ID list in the fixed query resolved the issue without broad process inspection. Three accepted runs then established the 250-block batch, 10,000-block/80,000-node, `chapter-too-large`, reference latency, raster, and memory gates. The final thresholded run passed four tests in 27.0 seconds on the documented host. No production reader or new dependency was added.
 
 ## Decision log
 
@@ -1159,7 +1157,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 | 2026-07-22 | Use a trailing 500 ms passive-save debounce plus immediate coalesced explicit/reflow/lifecycle saves that never block navigation or publication closure. | Accepted by ADR-0011; implementation remains Task 4.5. |
 | 2026-07-22 | Preflight GIF/JPEG/PNG/WebP dimensions and animation; permit only bounded static Blob URL decode with one concurrent operation and lifecycle-owned release; use placeholders for every rejected image. | Accepted by ADR-0010; semantic image integration remains Task 3.3. |
 | 2026-07-22 | Use exact Playwright Test `1.61.1` with its version-coupled Chromium for deterministic layout/browser evidence; acquire browsers only through the explicit setup command, run it in Windows CI, retain jsdom for component tests, and retain native WebView smoke for target-runtime behavior. | Accepted and established by Task 1.5. |
-| 2026-07-22 | Select large-chapter and reader latency bounds from synthetic measurements, not arbitrary plan values. | Required evidence; unresolved. |
+| 2026-07-22 | Use yielded batches of at most 250 semantic blocks; reject above 10,000 semantic blocks or 80,000 projected DOM nodes with `chapter-too-large`; defer virtualization; enforce the documented 50/16/1,000/1,000/250 ms and 144/112/208 MiB reference gates while retaining ADR-0010 image caps. | Accepted by the ADR-0008 Task 1.6 amendment; implementation/revalidation remain Tasks 3.6 and 5.3. |
 
 ## Final validation requirements
 
@@ -1187,7 +1185,7 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Production-reader validation has not started. Tasks 1.1 through 1.5 are complete; performance gates, publication-session, renderer, persistence, restoration, and later application implementation tasks remain `Not started`.
+Production-reader validation has not started. Tasks 1.1 through 1.6 are complete; publication-session, renderer, persistence, restoration, and later application implementation tasks remain `Not started`.
 
 Task 1.1 documentation validation completed on 2026-07-22:
 
@@ -1236,6 +1234,15 @@ Task 1.5 validation completed on 2026-07-22:
 - `pnpm.cmd --filter @voxleaf/desktop build` passed with 20 transformed modules.
 - `pnpm.cmd format:check` and `pnpm.cmd lint` passed, including Prettier, Rustfmt, Ruff format/check, ESLint, and Clippy.
 - `git diff --check` passed. The dependency is development-only; no application behavior, production dependency/bundle, EPUB/shared contract, Tauri command/plugin/capability, CSP, private input, book fixture, or native-WebView behavior changed.
+
+Task 1.6 validation completed on 2026-07-22:
+
+- Reference host: Windows 11 Home Single Language `10.0.26200` build `26200`; Intel Core Ultra 7 255HX with 20 logical processors; 33,752,997,888 bytes RAM; NVIDIA GeForce RTX 5060 Laptop GPU plus Intel Graphics; Node.js `24.18.0`; pnpm `11.15.1`; Playwright `1.61.1`; Chrome for Testing `149.0.7827.55` / revision `1228`. The benchmark does not claim which display adapter Chromium used.
+- `pnpm.cmd benchmark:reader` passed the final thresholded run: 4 tests in 27.0 seconds. The 10,000-block incremental case observed 9.7 ms first useful content, 12.8 ms maximum batch work, 587.8 ms deep-target readiness, 654.3 ms total append, 132.5 ms preference reflow, 78,123 DOM nodes, and 111.8 MiB working-set growth. The combined exact block/eight-image case observed 78,132 DOM nodes and 174.8 MiB growth.
+- The 20,000-block stress case exceeded the accepted boundaries with 156,251 DOM nodes, 20.7 ms maximum batch work, 1,213.4 ms target readiness, 263.8 ms reflow, and 182.7 MiB growth. The 50,000-block sample reached 390,623 DOM nodes and 425.9 MiB growth. Complete 10,000-block rendering consumed 124.3 ms of uninterrupted script work, supporting incremental selection.
+- `pnpm.cmd test:browser` passed: the benchmark specs remained excluded and the fixed foundation smoke passed.
+- `pnpm.cmd --filter @voxleaf/desktop typecheck`, `pnpm.cmd --filter @voxleaf/desktop test`, `pnpm.cmd --filter @voxleaf/desktop build`, `pnpm.cmd format:check`, `pnpm.cmd lint`, and `git diff --check` passed.
+- Final scope/privacy review found test configuration, one synthetic benchmark harness, root/desktop commands, and focused architecture/development/plan documentation only. No dependency/lockfile, production application behavior, EPUB/shared contract, Tauri command/plugin/capability/CSP, persistence, selected book, external request, narration, TTS, audio, or generated/private artifact was added.
 
 Plan-creation validation completed on 2026-07-22:
 
