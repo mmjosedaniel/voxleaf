@@ -411,7 +411,8 @@ function comprehensiveFirstChapter(): string {
 }
 
 function comprehensiveSecondChapter(): string {
-  return `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Continuation</title></head><body><h1 id="continuation">Continuation</h1><blockquote><p id="duplicate">A synthetic quotation.</p></blockquote><ol><li><p id="duplicate">First item</p></li><li>Second <code>item()</code></li></ol></body></html>`;
+  const longCode = "synthetic_unbroken_code_token_".repeat(16);
+  return `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Continuation</title></head><body><h1 id="continuation">Continuation</h1><blockquote><p id="duplicate">A synthetic quotation.</p></blockquote><ol><li><p id="duplicate">First item</p></li><li>Second <code>item()</code></li></ol><p><code>${longCode}</code></p></body></html>`;
 }
 
 function comprehensiveAppendix(): string {

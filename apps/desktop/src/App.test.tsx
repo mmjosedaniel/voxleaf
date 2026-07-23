@@ -273,6 +273,10 @@ describe("desktop reader lifecycle surface", () => {
     render(<App openFlow={flow} />);
     selectEpub("first.epub");
     await screen.findByRole("heading", { name: "First private title" });
+    fireEvent.change(screen.getByLabelText("Text size"), {
+      target: { value: "large" },
+    });
+    expect(screen.getByLabelText("Text size")).toHaveValue("large");
 
     fireEvent.click(screen.getByRole("button", { name: "Close EPUB" }));
 
@@ -297,6 +301,7 @@ describe("desktop reader lifecycle surface", () => {
     expect(
       await screen.findByRole("heading", { name: "Second safe title" }),
     ).toBeInTheDocument();
+    expect(screen.getByLabelText("Text size")).toHaveValue("large");
   });
 
   it("shows a fixed terminal state when publication cleanup fails", async () => {

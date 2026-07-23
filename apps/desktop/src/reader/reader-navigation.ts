@@ -10,6 +10,14 @@ import type {
 } from "@voxleaf/epub";
 import type { ReadingLocatorV1 } from "@voxleaf/shared";
 
+import {
+  DEFAULT_READER_PREFERENCES,
+  updateReaderPreference,
+  type ReaderPreferenceName,
+  type ReaderPreferenceReflowIntent,
+  type ReaderPreferencesV1,
+} from "./reader-preferences";
+
 export interface AvailableReaderTarget {
   readonly status: "available";
 }
@@ -22,6 +30,10 @@ export interface UnavailableReaderTarget {
 export type ReaderTargetAvailability =
   AvailableReaderTarget | UnavailableReaderTarget;
 
+export interface ReaderNavigationCoordinatorOptions {
+  readonly preferences?: ReaderPreferencesV1;
+}
+
 export interface ReaderNavigationState {
   readonly activeDocument: SemanticDocument;
   readonly activeLocator: ReadingLocatorV1;
@@ -30,6 +42,8 @@ export interface ReaderNavigationState {
   readonly message: string;
   readonly canGoPrevious: boolean;
   readonly canGoNext: boolean;
+  readonly preferences: ReaderPreferencesV1;
+  readonly preferenceReflow: ReaderPreferenceReflowIntent | undefined;
 }
 
 interface TargetRecord {
@@ -141,9 +155,15 @@ export class ReaderNavigationCoordinator {
   readonly #chapterStarts: readonly PublicationLocatedBlock[];
   readonly #targetRecords = new WeakMap<SemanticDocumentTarget, TargetRecord>();
   readonly #listeners = new Set<() => void>();
+  #preferences: ReaderPreferencesV1;
+  #preferenceReflow: ReaderPreferenceReflowIntent | undefined;
+  #preferenceReflowRevision = 0;
   #state: ReaderNavigationState;
 
-  public constructor(publication: OpenedPublication) {
+  public constructor(
+    publication: OpenedPublication,
+    options: ReaderNavigationCoordinatorOptions = {},
+  ) {
     const firstLocatedBlock = publication.locators[0];
     if (firstLocatedBlock === undefined) {
       throw new Error("Readable spine document is unavailable.");
@@ -157,6 +177,7 @@ export class ReaderNavigationCoordinator {
     }
 
     this.#publication = publication;
+    this.#preferences = options.preferences ?? DEFAULT_READER_PREFERENCES;
     this.#chapterStarts = readableChapterStarts(publication);
     this.#state = this.createState(
       activeDocument,
@@ -203,6 +224,35 @@ export class ReaderNavigationCoordinator {
 
   public goNext(): void {
     this.navigateByChapter(1);
+  }
+
+  public setPreference(
+    preference: ReaderPreferenceName,
+    value: unknown,
+  ): ReaderPreferenceReflowIntent | undefined {
+    const next = updateReaderPreference(this.#preferences, preference, value);
+    if (next === undefined || next === this.#preferences) {
+      return undefined;
+    }
+
+    const previous = this.#preferences;
+    this.#preferences = next;
+    this.#preferenceReflowRevision += 1;
+    this.#preferenceReflow = Object.freeze({
+      kind: "reader-preference-reflow",
+      revision: this.#preferenceReflowRevision,
+      preference,
+      locator: this.#state.activeLocator,
+      previous,
+      next,
+    });
+    this.#state = Object.freeze({
+      ...this.#state,
+      preferences: this.#preferences,
+      preferenceReflow: this.#preferenceReflow,
+    });
+    this.emit();
+    return this.#preferenceReflow;
   }
 
   private getTargetRecord(target: SemanticDocumentTarget): TargetRecord {
@@ -286,6 +336,8 @@ export class ReaderNavigationCoordinator {
       canGoPrevious: chapterIndex > 0,
       canGoNext:
         chapterIndex >= 0 && chapterIndex < this.#chapterStarts.length - 1,
+      preferences: this.#preferences,
+      preferenceReflow: this.#preferenceReflow,
     });
   }
 

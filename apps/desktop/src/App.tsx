@@ -18,6 +18,10 @@ import {
   type ReaderLifecycleState,
 } from "./reader/reader-lifecycle";
 import {
+  DEFAULT_READER_PREFERENCES,
+  type ReaderPreferencesV1,
+} from "./reader/reader-preferences";
+import {
   runRasterImageSafetyProbe,
   type RasterImageProbeResult,
 } from "./reader/raster-image-probe";
@@ -27,6 +31,8 @@ type RasterImageProbeStatus =
 
 export interface ReadyPublicationContentProps {
   readonly publication: OpenedPublication;
+  readonly initialPreferences?: ReaderPreferencesV1;
+  readonly onPreferencesChange?: (preferences: ReaderPreferencesV1) => void;
 }
 
 export interface AppProps {
@@ -102,6 +108,8 @@ export function App({
   );
   const viewState = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const activeRasterProbe = useRef<AbortController | undefined>(undefined);
+  const [readerPreferences, setReaderPreferences] =
+    useState<ReaderPreferencesV1>(DEFAULT_READER_PREFERENCES);
   const [rasterStatus, setRasterStatus] =
     useState<RasterImageProbeStatus>("idle");
 
@@ -146,6 +154,12 @@ export function App({
 
     void readerLifecycle.open(file);
   };
+  const handleReaderPreferencesChange = useCallback(
+    (preferences: ReaderPreferencesV1): void => {
+      setReaderPreferences(preferences);
+    },
+    [],
+  );
 
   const isBusy =
     viewState.status === "closing" || viewState.status === "opening";
@@ -160,7 +174,11 @@ export function App({
   return (
     <main className="app-shell">
       <section
-        className="shell-card"
+        className={
+          viewState.status === "ready"
+            ? "shell-card shell-card-reader"
+            : "shell-card"
+        }
         aria-labelledby="shell-title"
         aria-busy={isBusy}
       >
@@ -204,7 +222,11 @@ export function App({
                   ? "Author not provided"
                   : `By ${viewState.summary.authors.join(", ")}`}
               </p>
-              <ReadyPublicationContent publication={viewState.publication} />
+              <ReadyPublicationContent
+                publication={viewState.publication}
+                initialPreferences={readerPreferences}
+                onPreferencesChange={handleReaderPreferencesChange}
+              />
               <button
                 type="button"
                 className="close-publication"

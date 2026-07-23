@@ -225,7 +225,10 @@ function createPublication(): OpenedPublication {
   };
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe("reader navigation coordinator", () => {
   it("routes targets and chapter steps through canonical package locators", () => {
@@ -272,6 +275,48 @@ describe("reader navigation coordinator", () => {
     coordinator.navigateToTarget(SUPPLEMENT_TARGET);
     expect(coordinator.state.navigationRevision).toBe(revision);
     expect(coordinator.state.activeLocator.spineItemIndex).toBe(1);
+  });
+
+  it("emits one content-free reflow intent for each validated preference change", () => {
+    const coordinator = new ReaderNavigationCoordinator(createPublication());
+    const listener = vi.fn();
+    coordinator.subscribe(listener);
+
+    coordinator.setPreference("textScale", "large");
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(coordinator.state.preferences).toEqual({
+      schemaVersion: 1,
+      textScale: "large",
+      lineSpacing: "comfortable",
+      contentWidth: "standard",
+      theme: "system",
+    });
+    expect(coordinator.state.preferenceReflow).toEqual({
+      kind: "reader-preference-reflow",
+      revision: 1,
+      preference: "textScale",
+      locator: OPENING_LOCATED_BLOCK.startLocator,
+      previous: {
+        schemaVersion: 1,
+        textScale: "standard",
+        lineSpacing: "comfortable",
+        contentWidth: "standard",
+        theme: "system",
+      },
+      next: {
+        schemaVersion: 1,
+        textScale: "large",
+        lineSpacing: "comfortable",
+        contentWidth: "standard",
+        theme: "system",
+      },
+    });
+    expect(Object.isFrozen(coordinator.state.preferenceReflow)).toBe(true);
+
+    coordinator.setPreference("textScale", "large");
+    coordinator.setPreference("textScale", "calc(100vw)");
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -363,5 +408,46 @@ describe("navigable publication reader", () => {
     expect(container.querySelector("[id]")).toBeNull();
     expect(container.innerHTML).not.toContain(CONTINUATION_FRAGMENT);
     expect(window.location.href).toBe(initialUrl);
+  });
+
+  it("exposes only approved appearance controls and applies closed layout tokens without persistence", () => {
+    const storageWrite = vi.spyOn(Storage.prototype, "setItem");
+    const { container } = render(
+      <ReaderPublicationContent publication={createPublication()} />,
+    );
+    const reader = container.querySelector(".semantic-reader");
+
+    expect(
+      screen.getByRole("group", { name: "Reader appearance" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Text size")).toHaveValue("standard");
+    expect(screen.getByLabelText("Line spacing")).toHaveValue("comfortable");
+    expect(screen.getByLabelText("Content width")).toHaveValue("standard");
+    expect(screen.getByLabelText("Theme")).toHaveValue("system");
+    expect(reader).toHaveAttribute("data-reader-mode", "continuous");
+    expect(reader).toHaveAttribute("data-reader-text-scale", "standard");
+    expect(reader).toHaveAttribute("data-reader-line-spacing", "comfortable");
+    expect(reader).toHaveAttribute("data-reader-content-width", "standard");
+    expect(reader).toHaveAttribute("data-reader-theme", "system");
+
+    fireEvent.change(screen.getByLabelText("Text size"), {
+      target: { value: "extra-large" },
+    });
+    fireEvent.change(screen.getByLabelText("Line spacing"), {
+      target: { value: "spacious" },
+    });
+    fireEvent.change(screen.getByLabelText("Content width"), {
+      target: { value: "wide" },
+    });
+    fireEvent.change(screen.getByLabelText("Theme"), {
+      target: { value: "dark" },
+    });
+
+    expect(reader).toHaveAttribute("data-reader-text-scale", "extra-large");
+    expect(reader).toHaveAttribute("data-reader-line-spacing", "spacious");
+    expect(reader).toHaveAttribute("data-reader-content-width", "wide");
+    expect(reader).toHaveAttribute("data-reader-theme", "dark");
+    expect(reader).not.toHaveAttribute("style");
+    expect(storageWrite).not.toHaveBeenCalled();
   });
 });
