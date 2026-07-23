@@ -7,8 +7,14 @@ import type {
   SensitivePublicationText,
   SourceFragment,
 } from "@voxleaf/epub";
-import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SemanticDocumentContent } from "./SemanticDocument";
 
@@ -267,5 +273,64 @@ describe("semantic document rendering", () => {
     expect(container.innerHTML).not.toContain("private-publisher-class");
     expect(container.innerHTML).not.toContain("private-publisher-url");
     expect(container.innerHTML).not.toContain("Private raster alternative");
+  });
+
+  it("activates only available internal targets and explains inert destinations", () => {
+    const availableTarget = Object.freeze({
+      documentId: "document:available" as ContentDocumentId,
+      fragment: "private-available-fragment" as SourceFragment,
+    });
+    const unavailableTarget = Object.freeze({
+      documentId: "document:unavailable" as ContentDocumentId,
+      fragment: "private-unavailable-fragment" as SourceFragment,
+    });
+    const activateTarget = vi.fn();
+    const document = documentWith([
+      Object.freeze({
+        kind: "paragraph",
+        children: Object.freeze([
+          Object.freeze({
+            kind: "internal-link",
+            target: availableTarget,
+            children: Object.freeze([text("Available destination")]),
+          }),
+          text(" "),
+          Object.freeze({
+            kind: "internal-link",
+            target: unavailableTarget,
+            children: Object.freeze([text("Unavailable destination")]),
+          }),
+        ]),
+      }),
+    ]);
+
+    const { container } = render(
+      <SemanticDocumentContent
+        document={document}
+        targetAvailability={(target) =>
+          target === availableTarget
+            ? { status: "available" }
+            : {
+                status: "unavailable",
+                explanation: "This destination is unavailable.",
+              }
+        }
+        onActivateTarget={activateTarget}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Available destination" }),
+    );
+    expect(activateTarget).toHaveBeenCalledWith(availableTarget);
+    expect(
+      screen.getByRole("link", {
+        name: /Unavailable destination.*This destination is unavailable\./u,
+      }),
+    ).toHaveAttribute("aria-disabled", "true");
+    expect(container.querySelector("a")).toBeNull();
+    expect(container.querySelector("[href]")).toBeNull();
+    expect(container.innerHTML).not.toContain("private-available-fragment");
+    expect(container.innerHTML).not.toContain("private-unavailable-fragment");
   });
 });

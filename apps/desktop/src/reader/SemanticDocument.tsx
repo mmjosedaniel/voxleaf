@@ -1,13 +1,15 @@
 import type {
-  OpenedPublication,
   SemanticBlock,
   SemanticDocument,
+  SemanticDocumentTarget,
   SemanticHeadingBlock,
   SemanticInline,
   SemanticTextContext,
   SemanticTextDirection,
 } from "@voxleaf/epub";
-import type { ReactElement, ReactNode } from "react";
+import type { MouseEventHandler, ReactElement, ReactNode, Ref } from "react";
+
+import type { ReaderTargetAvailability } from "./reader-navigation";
 
 interface EffectiveTextContext {
   readonly language?: string;
@@ -20,6 +22,23 @@ interface TextContextAttributes {
 }
 
 const EMPTY_TEXT_CONTEXT: EffectiveTextContext = Object.freeze({});
+const DEFAULT_TARGET_EXPLANATION = "Internal navigation is unavailable.";
+const DEFAULT_TARGET_AVAILABILITY: ReaderTargetAvailability = Object.freeze({
+  status: "unavailable",
+  explanation: DEFAULT_TARGET_EXPLANATION,
+});
+
+interface SemanticNavigation {
+  readonly targetAvailability:
+    ((target: SemanticDocumentTarget) => ReaderTargetAvailability) | undefined;
+  readonly onActivateTarget:
+    ((target: SemanticDocumentTarget) => void) | undefined;
+}
+
+interface SemanticDestination {
+  readonly block: SemanticBlock | undefined;
+  readonly ref: ((element: HTMLElement | null) => void) | undefined;
+}
 
 function unreachable(value: never): never {
   void value;
@@ -63,27 +82,35 @@ function textContextAttributes(
 function renderInlineChildren(
   children: readonly SemanticInline[],
   inherited: EffectiveTextContext,
+  navigation: SemanticNavigation,
 ): ReactNode {
   return children.map((inline, index) => (
-    <SemanticInlineElement key={index} inline={inline} inherited={inherited} />
+    <SemanticInlineElement
+      key={index}
+      inline={inline}
+      inherited={inherited}
+      navigation={navigation}
+    />
   ));
 }
 
 interface SemanticInlineElementProps {
   readonly inline: SemanticInline;
   readonly inherited: EffectiveTextContext;
+  readonly navigation: SemanticNavigation;
 }
 
 function SemanticInlineElement({
   inline,
   inherited,
+  navigation,
 }: SemanticInlineElementProps): ReactNode {
   switch (inline.kind) {
     case "code": {
       const current = effectiveTextContext(inline, inherited);
       return (
         <code {...textContextAttributes(current, inherited)}>
-          {renderInlineChildren(inline.children, current)}
+          {renderInlineChildren(inline.children, current, navigation)}
         </code>
       );
     }
@@ -91,18 +118,51 @@ function SemanticInlineElement({
       const current = effectiveTextContext(inline, inherited);
       return (
         <em {...textContextAttributes(current, inherited)}>
-          {renderInlineChildren(inline.children, current)}
+          {renderInlineChildren(inline.children, current, navigation)}
         </em>
       );
     }
     case "internal-link": {
       const current = effectiveTextContext(inline, inherited);
+      const availability =
+        navigation.targetAvailability?.(inline.target) ??
+        DEFAULT_TARGET_AVAILABILITY;
+      const children = renderInlineChildren(
+        inline.children,
+        current,
+        navigation,
+      );
+      if (
+        availability.status === "available" &&
+        navigation.onActivateTarget !== undefined
+      ) {
+        const activate: MouseEventHandler<HTMLButtonElement> = () =>
+          navigation.onActivateTarget?.(inline.target);
+        return (
+          <button
+            type="button"
+            className="semantic-internal-link"
+            {...textContextAttributes(current, inherited)}
+            onClick={activate}
+          >
+            {children}
+          </button>
+        );
+      }
       return (
         <span
           className="semantic-internal-link"
+          role="link"
+          aria-disabled="true"
           {...textContextAttributes(current, inherited)}
         >
-          {renderInlineChildren(inline.children, current)}
+          <span>{children}</span>
+          <span className="visually-hidden">
+            {" "}
+            {availability.status === "unavailable"
+              ? availability.explanation
+              : DEFAULT_TARGET_EXPLANATION}
+          </span>
         </span>
       );
     }
@@ -123,7 +183,7 @@ function SemanticInlineElement({
       const current = effectiveTextContext(inline, inherited);
       return (
         <strong {...textContextAttributes(current, inherited)}>
-          {renderInlineChildren(inline.children, current)}
+          {renderInlineChildren(inline.children, current, navigation)}
         </strong>
       );
     }
@@ -143,24 +203,54 @@ function SemanticInlineElement({
 function renderHeading(
   block: SemanticHeadingBlock,
   inherited: EffectiveTextContext,
+  navigation: SemanticNavigation,
+  destinationRef?: (element: HTMLElement | null) => void,
 ): ReactElement {
   const current = effectiveTextContext(block, inherited);
   const attributes = textContextAttributes(current, inherited);
-  const children = renderInlineChildren(block.children, current);
+  const children = renderInlineChildren(block.children, current, navigation);
+  const destinationAttributes =
+    destinationRef === undefined
+      ? {}
+      : { ref: destinationRef, tabIndex: -1 as const };
 
   switch (block.level) {
     case 1:
-      return <h1 {...attributes}>{children}</h1>;
+      return (
+        <h1 {...attributes} {...destinationAttributes}>
+          {children}
+        </h1>
+      );
     case 2:
-      return <h2 {...attributes}>{children}</h2>;
+      return (
+        <h2 {...attributes} {...destinationAttributes}>
+          {children}
+        </h2>
+      );
     case 3:
-      return <h3 {...attributes}>{children}</h3>;
+      return (
+        <h3 {...attributes} {...destinationAttributes}>
+          {children}
+        </h3>
+      );
     case 4:
-      return <h4 {...attributes}>{children}</h4>;
+      return (
+        <h4 {...attributes} {...destinationAttributes}>
+          {children}
+        </h4>
+      );
     case 5:
-      return <h5 {...attributes}>{children}</h5>;
+      return (
+        <h5 {...attributes} {...destinationAttributes}>
+          {children}
+        </h5>
+      );
     case 6:
-      return <h6 {...attributes}>{children}</h6>;
+      return (
+        <h6 {...attributes} {...destinationAttributes}>
+          {children}
+        </h6>
+      );
     default:
       return unreachable(block.level);
   }
@@ -169,49 +259,77 @@ function renderHeading(
 function renderBlockChildren(
   children: readonly SemanticBlock[],
   inherited: EffectiveTextContext,
+  navigation: SemanticNavigation,
+  destination: SemanticDestination,
 ): ReactNode {
   return children.map((block, index) => (
-    <SemanticBlockElement key={index} block={block} inherited={inherited} />
+    <SemanticBlockElement
+      key={index}
+      block={block}
+      inherited={inherited}
+      navigation={navigation}
+      destination={destination}
+    />
   ));
 }
 
 interface SemanticBlockElementProps {
   readonly block: SemanticBlock;
   readonly inherited: EffectiveTextContext;
+  readonly navigation: SemanticNavigation;
+  readonly destination: SemanticDestination;
 }
 
 function SemanticBlockElement({
   block,
   inherited,
+  navigation,
+  destination,
 }: SemanticBlockElementProps): ReactElement {
+  const destinationRef =
+    block === destination.block ? destination.ref : undefined;
   switch (block.kind) {
     case "block-quote": {
       const current = effectiveTextContext(block, inherited);
       return (
-        <blockquote {...textContextAttributes(current, inherited)}>
-          {renderBlockChildren(block.children, current)}
+        <blockquote
+          ref={destinationRef}
+          {...textContextAttributes(current, inherited)}
+        >
+          {renderBlockChildren(
+            block.children,
+            current,
+            navigation,
+            destination,
+          )}
         </blockquote>
       );
     }
     case "heading":
-      return renderHeading(block, inherited);
+      return renderHeading(block, inherited, navigation, destinationRef);
     case "list": {
       const current = effectiveTextContext(block, inherited);
       const attributes = textContextAttributes(current, inherited);
       const items = block.items.map((item, index) => (
-        <li key={index}>{renderBlockChildren(item.children, current)}</li>
+        <li key={index}>
+          {renderBlockChildren(item.children, current, navigation, destination)}
+        </li>
       ));
       return block.ordered ? (
-        <ol {...attributes}>{items}</ol>
+        <ol ref={destinationRef} {...attributes}>
+          {items}
+        </ol>
       ) : (
-        <ul {...attributes}>{items}</ul>
+        <ul ref={destinationRef} {...attributes}>
+          {items}
+        </ul>
       );
     }
     case "paragraph": {
       const current = effectiveTextContext(block, inherited);
       return (
-        <p {...textContextAttributes(current, inherited)}>
-          {renderInlineChildren(block.children, current)}
+        <p ref={destinationRef} {...textContextAttributes(current, inherited)}>
+          {renderInlineChildren(block.children, current, navigation)}
         </p>
       );
     }
@@ -222,50 +340,35 @@ function SemanticBlockElement({
 
 export interface SemanticDocumentContentProps {
   readonly document: SemanticDocument;
+  readonly targetAvailability?: (
+    target: SemanticDocumentTarget,
+  ) => ReaderTargetAvailability;
+  readonly onActivateTarget?: (target: SemanticDocumentTarget) => void;
+  readonly destinationBlock?: SemanticBlock;
+  readonly destinationRef?: (element: HTMLElement | null) => void;
+  readonly readerRef?: Ref<HTMLElement>;
 }
 
 export function SemanticDocumentContent({
   document,
+  targetAvailability,
+  onActivateTarget,
+  destinationBlock,
+  destinationRef,
+  readerRef,
 }: SemanticDocumentContentProps): ReactElement {
   const current = effectiveTextContext(document, EMPTY_TEXT_CONTEXT);
+  const navigation = { targetAvailability, onActivateTarget };
+  const destination = { block: destinationBlock, ref: destinationRef };
   return (
     <article
+      ref={readerRef}
+      tabIndex={-1}
       className="semantic-document"
       aria-label="Current reading section"
       {...textContextAttributes(current, EMPTY_TEXT_CONTEXT)}
     >
-      {renderBlockChildren(document.blocks, current)}
+      {renderBlockChildren(document.blocks, current, navigation, destination)}
     </article>
-  );
-}
-
-function startingSpineDocument(
-  publication: OpenedPublication,
-): SemanticDocument {
-  const firstLocatedBlock = publication.locators[0];
-  if (firstLocatedBlock === undefined) {
-    throw new Error("Readable spine document is unavailable.");
-  }
-
-  const document = publication.documents.find(
-    (candidate) => candidate.id === firstLocatedBlock.documentId,
-  );
-  if (document === undefined || document.location.kind !== "spine") {
-    throw new Error("Readable spine document is unavailable.");
-  }
-  return document;
-}
-
-export interface SemanticPublicationContentProps {
-  readonly publication: OpenedPublication;
-}
-
-export function SemanticPublicationContent({
-  publication,
-}: SemanticPublicationContentProps): ReactElement {
-  return (
-    <div className="semantic-reader">
-      <SemanticDocumentContent document={startingSpineDocument(publication)} />
-    </div>
   );
 }

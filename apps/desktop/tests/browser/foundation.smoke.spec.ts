@@ -3,6 +3,17 @@ import { expect, test } from "@playwright/test";
 const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const TEST_STORAGE_KEY = "voxleaf.browser-smoke";
 
+async function buildNavigationFixture(): Promise<Uint8Array> {
+  const fixtureModuleUrl = new URL(
+    "../../../../packages/epub/test-support/epub-fixture.ts",
+    import.meta.url,
+  );
+  const fixtureModule = (await import(fixtureModuleUrl.href)) as {
+    buildComprehensiveEpubFixture(): Promise<Uint8Array>;
+  };
+  return fixtureModule.buildComprehensiveEpubFixture();
+}
+
 test("controls the browser boundary and exposes the local EPUB open shell", async ({
   context,
   page,
@@ -61,6 +72,48 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     await expect(fileInput).toHaveValue("");
     await expect(page.getByText("private-browser-smoke.epub")).toHaveCount(0);
 
+    const publicationBytes = await buildNavigationFixture();
+    await fileInput.setInputFiles({
+      name: "private-navigation-smoke.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(publicationBytes),
+    });
+    await expect(page.getByRole("status")).toHaveText(
+      "The EPUB opened successfully.",
+    );
+
+    const toc = page.getByRole("navigation", { name: "Table of contents" });
+    await expect(toc.getByText("Part One", { exact: true })).toBeVisible();
+    await expect(toc.getByRole("button", { name: "Part One" })).toHaveCount(0);
+    await toc.getByRole("button", { name: "Continuation" }).click();
+    const continuationHeading = page.getByRole("heading", {
+      level: 1,
+      name: "Continuation",
+    });
+    await expect(continuationHeading).toBeVisible();
+    await expect(continuationHeading).toBeFocused();
+    await expect(page).toHaveURL(`${LOCAL_ORIGIN}/`);
+
+    await page.getByRole("button", { name: "Previous chapter" }).click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Opening" }),
+    ).toBeFocused();
+    await page.getByRole("button", { name: "Continue" }).click();
+    await expect(continuationHeading).toBeFocused();
+
+    await page.getByRole("button", { name: "Next chapter" }).click();
+    await expect(
+      page.getByRole("heading", { level: 2, name: "Appendix" }),
+    ).toBeFocused();
+    await expect(
+      page.getByRole("button", { name: "Next chapter" }),
+    ).toBeDisabled();
+    await expect(page.locator(".semantic-reader a")).toHaveCount(0);
+    await expect(page.locator(".semantic-reader [href]")).toHaveCount(0);
+    await expect(page.getByText("private-navigation-smoke.epub")).toHaveCount(
+      0,
+    );
+
     await expect
       .poll(() =>
         page.evaluate((key) => localStorage.getItem(key), TEST_STORAGE_KEY),
@@ -105,6 +158,8 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
         page.evaluate((key) => localStorage.getItem(key), TEST_STORAGE_KEY),
       )
       .toBeNull();
+    await page.getByRole("button", { name: "Close EPUB" }).click();
+    await expect(page.getByRole("status")).toHaveText("No local EPUB is open.");
     expect(unexpectedRequestCount).toBe(0);
   } finally {
     if (!page.isClosed() && page.url().startsWith(LOCAL_ORIGIN)) {
