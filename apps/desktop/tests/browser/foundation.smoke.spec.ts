@@ -100,6 +100,9 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     );
 
     const reader = page.locator(".semantic-reader");
+    const readingArticle = page.getByRole("article", {
+      name: "Current reading section",
+    });
     const appearance = page.getByRole("group", {
       name: "Reader appearance",
     });
@@ -108,12 +111,74 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     await expect(page.getByLabel("Line spacing")).toHaveValue("comfortable");
     await expect(page.getByLabel("Content width")).toHaveValue("standard");
     await expect(page.getByLabel("Theme")).toHaveValue("system");
+
+    const skipLink = page.getByRole("link", {
+      name: "Skip to reading content",
+    });
+    await skipLink.focus();
+    await expect(skipLink).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(readingArticle).toBeFocused();
+    await expect(page).toHaveURL(`${LOCAL_ORIGIN}/`);
+
+    await skipLink.focus();
+    await page.keyboard.press("Tab");
+    await expect(fileInput).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.getByLabel("Text size")).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(fileInput).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(skipLink).toBeFocused();
+    expect(
+      await page
+        .locator("[tabindex]")
+        .evaluateAll((elements) =>
+          elements
+            .map((element) =>
+              Number.parseInt(element.getAttribute("tabindex") ?? "0", 10),
+            )
+            .filter((value) => value > 0),
+        ),
+    ).toEqual([]);
+
+    await readingArticle.focus();
+    await page.evaluate(() => {
+      window.addEventListener(
+        "keydown",
+        (event) => {
+          Object.defineProperty(
+            window,
+            "__voxleafReaderScrollingKeyPrevented",
+            {
+              configurable: true,
+              value: event.defaultPrevented,
+            },
+          );
+        },
+        { once: true },
+      );
+    });
+    await page.keyboard.press("End");
+    await expect(readingArticle).toBeFocused();
+    expect(
+      await page.evaluate(
+        () =>
+          (
+            window as typeof window & {
+              __voxleafReaderScrollingKeyPrevented?: boolean;
+            }
+          ).__voxleafReaderScrollingKeyPrevented,
+      ),
+    ).toBe(false);
     await expect(reader).toHaveAttribute("data-reader-mode", "continuous");
 
     await page.getByLabel("Text size").selectOption("extra-large");
     await page.getByLabel("Line spacing").selectOption("spacious");
     await page.getByLabel("Content width").selectOption("wide");
+    await page.getByLabel("Theme").focus();
     await page.getByLabel("Theme").selectOption("dark");
+    await expect(page.getByLabel("Theme")).toBeFocused();
     await expect(reader).toHaveAttribute(
       "data-reader-text-scale",
       "extra-large",
@@ -199,7 +264,8 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
       "images/cover.png",
     );
 
-    await toc.getByRole("button", { name: "Continuation" }).click();
+    await toc.getByRole("button", { name: "Continuation" }).focus();
+    await page.keyboard.press("Enter");
     const continuationHeading = page.getByRole("heading", {
       level: 1,
       name: "Continuation",
@@ -220,16 +286,19 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
       )
       .toBeGreaterThanOrEqual(1);
 
-    await page.getByRole("button", { name: "Previous chapter" }).click();
+    await page.getByRole("button", { name: "Previous chapter" }).focus();
+    await page.keyboard.press("Enter");
     await expect(
       page.getByRole("heading", { level: 1, name: "Opening" }),
     ).toBeFocused();
     await page.locator(".semantic-raster-host").scrollIntoViewIfNeeded();
     await expect(publicationImage).toBeVisible();
-    await page.getByRole("button", { name: "Continue" }).click();
+    await page.getByRole("button", { name: "Continue" }).focus();
+    await page.keyboard.press("Space");
     await expect(continuationHeading).toBeFocused();
 
-    await page.getByRole("button", { name: "Next chapter" }).click();
+    await page.getByRole("button", { name: "Next chapter" }).focus();
+    await page.keyboard.press("Enter");
     await expect(
       page.getByRole("heading", { level: 2, name: "Appendix" }),
     ).toBeFocused();
@@ -241,7 +310,8 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     await expect(page.getByText("private-navigation-smoke.epub")).toHaveCount(
       0,
     );
-    await page.getByRole("button", { name: "Previous chapter" }).click();
+    await page.getByRole("button", { name: "Previous chapter" }).focus();
+    await page.keyboard.press("Enter");
     await expect(continuationHeading).toBeFocused();
     await expect(
       page.locator(".semantic-document code", {
@@ -328,8 +398,10 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
         page.evaluate((key) => localStorage.getItem(key), TEST_STORAGE_KEY),
       )
       .toBeNull();
-    await page.getByRole("button", { name: "Close EPUB" }).click();
+    await page.getByRole("button", { name: "Close EPUB" }).focus();
+    await page.keyboard.press("Enter");
     await expect(page.getByRole("status")).toHaveText("No local EPUB is open.");
+    await expect(fileInput).toBeFocused();
     expect(unexpectedRequestCount).toBe(0);
   } finally {
     if (!page.isClosed() && page.url().startsWith(LOCAL_ORIGIN)) {

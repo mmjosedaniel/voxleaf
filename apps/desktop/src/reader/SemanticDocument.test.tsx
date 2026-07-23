@@ -263,7 +263,11 @@ describe("semantic document rendering", () => {
     expect(container.querySelector("script")).toBeNull();
     expect(container.querySelector("a")).toBeNull();
     expect(container.querySelector("img")).toBeNull();
-    expect(container.querySelector("[id]")).toBeNull();
+    expect(container.querySelector("[id]")).toHaveAttribute(
+      "id",
+      "voxleaf-reader-content",
+    );
+    expect(container.querySelectorAll("[id]")).toHaveLength(1);
     expect(container.querySelector("[href]")).toBeNull();
     expect(container.querySelector("[src]")).toBeNull();
     expect(container.querySelector("[style]")).toBeNull();

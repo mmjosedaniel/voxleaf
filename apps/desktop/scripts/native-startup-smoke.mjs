@@ -283,6 +283,68 @@ async function run() {
         imageObservation.naturalHeight === 1,
       "Native publication raster image did not decode from a local object URL.",
     );
+
+    stage = "keyboard reader operation";
+    const skipLink = page.getByRole("link", {
+      name: "Skip to reading content",
+    });
+    const readingArticle = page.getByRole("article", {
+      name: "Current reading section",
+    });
+    await skipLink.focus();
+    await page.keyboard.press("Enter");
+    assert(
+      await readingArticle.evaluate((element) =>
+        Object.is(globalThis.document.activeElement, element),
+      ),
+      "Native skip link did not focus the current reading section.",
+    );
+    await page.keyboard.press("End");
+    assert(
+      await readingArticle.evaluate((element) =>
+        Object.is(globalThis.document.activeElement, element),
+      ),
+      "Native scrolling key moved focus away from the reading section.",
+    );
+    const continuationControl = page.getByRole("button", {
+      name: "Continuation",
+    });
+    await continuationControl.focus();
+    await page.keyboard.press("Enter");
+    const continuationHeading = page.getByRole("heading", {
+      level: 1,
+      name: "Continuation",
+    });
+    await continuationHeading.waitFor({
+      state: "visible",
+      timeout: STARTUP_TIMEOUT_MS,
+    });
+    assert(
+      await continuationHeading.evaluate((element) =>
+        Object.is(globalThis.document.activeElement, element),
+      ),
+      "Native keyboard navigation did not focus the destination heading.",
+    );
+
+    stage = "native forced-colors focus";
+    await page.emulateMedia({ forcedColors: "active" });
+    const textSize = page.getByLabel("Text size");
+    await textSize.focus();
+    const forcedColorFocus = await textSize.evaluate((element) => ({
+      forcedColors: globalThis.matchMedia("(forced-colors: active)").matches,
+      outlineStyle: globalThis.getComputedStyle(element).outlineStyle,
+      outlineWidth: Number.parseFloat(
+        globalThis.getComputedStyle(element).outlineWidth,
+      ),
+    }));
+    assert(
+      forcedColorFocus.forcedColors &&
+        forcedColorFocus.outlineStyle !== "none" &&
+        forcedColorFocus.outlineWidth > 0,
+      "Native forced-colors mode did not retain a visible focus indicator.",
+    );
+    await page.emulateMedia({ forcedColors: "none" });
+
     stage = "synthetic selection cleanup";
     assert(
       (await fileInput.inputValue()) === "",
@@ -294,13 +356,21 @@ async function run() {
     );
 
     stage = "synthetic publication close";
-    await page.getByRole("button", { name: "Close EPUB" }).click();
+    const closeButton = page.getByRole("button", { name: "Close EPUB" });
+    await closeButton.focus();
+    await page.keyboard.press("Enter");
     await page
       .getByText("No local EPUB is open.", { exact: true })
       .waitFor({ state: "visible", timeout: STARTUP_TIMEOUT_MS });
     assert(
       (await publicationImage.count()) === 0,
       "Native publication raster image remained mounted after close.",
+    );
+    assert(
+      await fileInput.evaluate((element) =>
+        Object.is(globalThis.document.activeElement, element),
+      ),
+      "Native close did not return focus to the local EPUB picker.",
     );
 
     const externalLoadedResourceCount = await page.evaluate(
@@ -338,7 +408,7 @@ async function run() {
     );
 
     console.log(
-      "Native startup smoke passed: root mounted, synthetic EPUB image decoded locally, publication closed, no errors, no external requests.",
+      "Native startup smoke passed: root mounted, keyboard reader flow and forced-colors focus worked, synthetic EPUB image decoded locally, publication closed, no errors, no external requests.",
     );
   } catch {
     console.error(`Native startup smoke failed during ${stage}.`);

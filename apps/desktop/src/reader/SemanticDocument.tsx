@@ -374,6 +374,7 @@ export function SemanticDocumentContent({
   return (
     <article
       ref={readerRef}
+      id="voxleaf-reader-content"
       tabIndex={-1}
       className="semantic-document"
       aria-label="Current reading section"
