@@ -214,7 +214,7 @@ async function run() {
     cwd: desktopRoot,
     env: {
       ...process.env,
-      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${debugPort} --remote-debugging-address=127.0.0.1`,
+      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${debugPort} --remote-debugging-address=127.0.0.1 --enable-features=msEdgeDevToolsWdpRemoteDebugging`,
       WEBVIEW2_USER_DATA_FOLDER: profileDirectory,
     },
     stdio: "ignore",
