@@ -29,7 +29,7 @@
     "lint:rust": "cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets -- -D warnings",
     "lint:typescript": "eslint .",
     "test": "pnpm run test:typescript && pnpm run test:rust && pnpm run test:python",
-    "test:browser": "pnpm --filter @voxleaf/desktop test:browser",
+    "test:browser": "pnpm run build:packages && pnpm --filter @voxleaf/desktop test:browser",
     "test:browser:install": "pnpm --filter @voxleaf/desktop test:browser:install",
     "test:native-startup": "pnpm --filter @voxleaf/desktop test:native-startup",
     "test:python": "uv run --project services/tts --locked pytest services/tts",
