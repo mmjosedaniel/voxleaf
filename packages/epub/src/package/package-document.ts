@@ -121,6 +121,7 @@ type CapturedTextKind =
   | "identifier"
   | "ignored"
   | "language"
+  | "legacy"
   | "layout"
   | "modified"
   | "title";
@@ -594,8 +595,39 @@ class PackageDocumentParser {
     }
 
     if (namesEqual(event.name, OPF_NAMESPACE, "meta")) {
-      const property = requiredAttribute(event, "property");
+      const property = unqualifiedAttribute(event, "property");
       const refines = unqualifiedAttribute(event, "refines");
+      const legacyName = unqualifiedAttribute(event, "name");
+      const legacyContent = unqualifiedAttribute(event, "content");
+
+      if (property === undefined) {
+        if (
+          refines !== undefined ||
+          legacyName === undefined ||
+          legacyName.length === 0 ||
+          legacyContent === undefined ||
+          legacyContent.length === 0
+        ) {
+          return fail("malformed-package");
+        }
+
+        this.#capturedText = {
+          depth,
+          kind: "legacy",
+          ...(id === undefined ? {} : { id }),
+          text: "",
+        };
+        return;
+      }
+
+      if (
+        property.length === 0 ||
+        legacyName !== undefined ||
+        legacyContent !== undefined
+      ) {
+        return fail("malformed-package");
+      }
+
       let kind: CapturedTextKind = "ignored";
       if (refines === undefined && property === MODIFIED_PROPERTY) {
         kind = "modified";
@@ -718,6 +750,13 @@ class PackageDocumentParser {
   }
 
   private finishCapturedText(captured: CapturedText): void {
+    if (captured.kind === "legacy") {
+      if (captured.text.length !== 0) {
+        return fail("malformed-package");
+      }
+      return;
+    }
+
     const value = normalizeMetadataText(captured.text);
     switch (captured.kind) {
       case "creator":

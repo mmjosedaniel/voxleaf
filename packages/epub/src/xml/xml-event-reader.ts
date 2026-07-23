@@ -378,7 +378,14 @@ function readXmlDocument(
       budget.checkpoint();
       validateXmlDeclaration(declaration, encoding);
     });
-    parser.on("doctype", () => fail("malformed-xml"));
+    parser.on("doctype", (doctype) => {
+      budget.checkpoint();
+      if (kind !== "content" || doctype.trim() !== "html") {
+        return fail("malformed-xml");
+      }
+
+      documentBudget.observeIgnoredNode();
+    });
     parser.on("error", () => fail("malformed-xml"));
     parser.on("opentag", (tag) => {
       const attributes = Object.values(tag.attributes);

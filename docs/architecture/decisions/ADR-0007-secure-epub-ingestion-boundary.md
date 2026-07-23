@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted; amended on 2026-07-22 for bounded EPUB 3 legacy-metadata and inert HTML-doctype compatibility.
 
 ## Context
 
@@ -19,6 +19,7 @@ VoxLeaf needs a deterministic document representation for later visual reading a
 Milestone 3 accepts an EPUB only when all content needed for the default reading experience can be represented by the supported profile below:
 
 - The selected package document declares EPUB `version="3.0"` and uses EPUB 3 metadata, manifest, spine, and an EPUB navigation document.
+- An EPUB 3 package may additionally contain legacy EPUB 2 `meta` elements with nonempty `name` and `content` attributes. VoxLeaf validates and ignores these compatibility values; it does not expose them or treat their presence as EPUB 2 package/NCX support. Mixed EPUB 2/EPUB 3 `meta` forms and malformed legacy elements remain invalid.
 - `META-INF/container.xml` is processed in document order. VoxLeaf selects the first rootfile with media type `application/oebps-package+xml` whose well-formed package satisfies this profile. A valid but unsupported rendition may be skipped; malformed, unsafe, cancelled, or over-budget rootfile processing fails instead of falling through. A publication with no supported rootfile is unsupported.
 - EPUB 2 package documents, NCX-only navigation, deprecated EPUB 2 guide semantics, and EPUB 2 compatibility recovery are deferred. They require a separate bounded compatibility spike and an amendment or superseding ADR.
 - The default rendition is reflowable. A missing global `rendition:layout` is treated as reflowable. A fixed-layout-only publication is unsupported.
@@ -45,7 +46,13 @@ The archive is inventoried before package or content interpretation. Implementat
 
 Archive entry paths and document references are separate types. A reference is parsed as a scheme-less in-container URL relative to its validated base document. Query components, credentials, hosts, ports, backslashes, and non-local schemes are rejected. Fragment identifiers may identify structure but are never part of an archive lookup key. Resolution cannot produce a host path or network URL.
 
-XML processing is namespace-aware and non-validating. It rejects every `DOCTYPE`, entity declaration, external identifier, XInclude, and external-resource request. Browser `DOMParser` is not an ingestion security boundary. The implementation uses bounded events and does not expose parser exceptions or source text.
+XML processing is namespace-aware and non-validating. Container and package documents reject every `DOCTYPE`. XHTML content and navigation documents may contain only the inert HTML declaration `<!DOCTYPE html>` with XML-permitted surrounding whitespace; the declaration is counted and discarded. Every other document type name, public or system identifier, internal subset, custom entity declaration/reference, XInclude, and external-resource request remains invalid. The parser registers no resolver, never loads or interprets a DTD, and does not expose the declaration or source text. Browser `DOMParser` is not an ingestion security boundary. The implementation uses bounded events and does not expose parser exceptions or source text.
+
+### 2026-07-22 compatibility amendment
+
+Task 2.3 native-open validation found an otherwise supported EPUB 3 publication produced by common authoring tooling that used two valid backward-compatibility constructs: ignored legacy `meta name/content` values in the package and the inert HTML doctype in each XHTML document. The original implementation rejected both before semantic projection.
+
+The amendment admits only those non-semantic forms. Legacy metadata is validated, ignored, and excluded from the public model. The XML adapter admits the single `html` doctype name only for content documents and still fails before event projection for every external identifier, internal subset, custom entity, non-HTML name, or container/package doctype. No publisher markup, metadata value, URL, resolver, network/filesystem capability, DOM object, or dependency surface is added.
 
 ### Authoritative security budgets
 
@@ -102,7 +109,7 @@ XHTML is projected into a new immutable semantic model through a closed allowlis
 | MathML or other unsupported embedded vocabularies | Use safe alternative text when present; otherwise omit or return unsupported input when essential |
 | Audio, video, and media overlays | Ignore when nonessential; otherwise return unsupported input |
 | Raster images | Accept local `image/gif`, `image/jpeg`, `image/png`, and `image/webp` only when declared type, signature, locality, and byte budgets agree |
-| DTDs, entity declarations, external entities, and XInclude | Reject the XML document |
+| Document types, DTDs, custom entities, external entities, and XInclude | Ignore only the inert HTML doctype in XHTML content/navigation; reject all DTD processing, other doctypes, custom entities, external identifiers, and XInclude |
 | ZIP or EPUB encryption/protection | Reject; never decrypt |
 | Obfuscated fonts | Ignore because fonts are not loaded |
 
@@ -196,6 +203,7 @@ A renderer-oriented EPUB framework remains prohibited in the ingestion core. The
 ## Alternatives considered
 
 - **Support EPUB 2 and NCX immediately:** rejected for the MVP boundary because it adds legacy parsing and fallback behavior before the EPUB 3 path is proven. A bounded later spike may add it explicitly.
+- **Continue rejecting every `DOCTYPE`:** superseded by the 2026-07-22 compatibility amendment for the inert HTML doctype in XHTML content/navigation only. Common EPUB 3 authoring output uses this declaration, while exact-name admission with no resolver and continued rejection of external identifiers, internal subsets, entities, and package/container doctypes preserves the security boundary.
 - **Use a renderer-oriented EPUB framework for ingestion:** rejected because URL creation, DOM ownership, rendering, and resource loading blur the trust boundary and add capabilities this milestone must exclude.
 - **Sanitize and return publisher HTML:** rejected because a sanitizer configuration would become a broad executable-content boundary and could leak active or remotely coupled behavior. Constructing closed semantic values is easier to audit and test.
 - **Extract the archive to a temporary directory:** rejected because host filesystem paths, cleanup, symlinks, races, permissions, and persistent book data would enlarge the attack and privacy surface.
