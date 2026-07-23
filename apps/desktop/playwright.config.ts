@@ -4,6 +4,7 @@ const BASE_URL = "http://127.0.0.1:4173";
 
 export default defineConfig({
   testDir: "./tests/browser",
+  testIgnore: "**/*.benchmark.spec.ts",
   outputDir: "./test-results/browser",
   fullyParallel: false,
   workers: 1,

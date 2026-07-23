@@ -10,7 +10,7 @@ Roadmap Milestone 4 must turn an opened EPUB publication into an accessible refl
 
 The implemented `@voxleaf/epub` package already projects untrusted XHTML into closed immutable semantic values. It returns headings, paragraphs, block quotes, lists, text, emphasis, strong text, code, line breaks, internal document targets, raster descriptors, located blocks, and exact/nearest locator resolution. It does not return publisher HTML, DOM nodes, CSS, scripts, event handlers, paths, activatable external URLs, or eager image bytes. Publisher source fragments are opaque matching data and are explicitly not renderer DOM identifiers.
 
-The desktop is still a React/Vite foundation inside a Tauri shell. It has no EPUB/shared-package dependency, reader, application router, file access, persistence adapter, native command, plugin, or capability. Raster resources are byte/signature validated but not proven safe to decode. Real-browser layout testing and reader performance limits are also unresolved.
+At initial acceptance, the desktop was only a React/Vite foundation inside a Tauri shell, with no EPUB/shared-package dependency, reader, application router, file access, persistence adapter, native command, plugin, or capability. Raster decode, real-browser tooling, and reader performance limits were unresolved. ADR-0009, ADR-0010, ADR-0011, and the Task 1.5/1.6 amendments subsequently resolve those gates without making the production reader implemented.
 
 Before implementing the reader, VoxLeaf must decide:
 
@@ -56,7 +56,7 @@ The first reader will display one active spine document in continuous vertical s
 
 Viewport pagination, columns, stable page numbers, a scrolling/pagination mode switch, and preference migration between modes are deferred. A rendered page remains only the visible portion of the scrolling viewport; it is never persisted or used as position authority.
 
-This decision does not select the large-chapter batching/ceiling policy. Task 1.6 must establish measured rendering and memory bounds before an ingestion-maximum chapter is rendered synchronously.
+The initial decision did not select the large-chapter batching/ceiling policy. The Task 1.6 amendment below now establishes measured rendering and memory bounds; it continues to prohibit synchronously rendering an ingestion-maximum chapter.
 
 ### Resolve semantic document targets inside `@voxleaf/epub`
 
@@ -124,6 +124,21 @@ This decision does not select or approve:
 
 Those choices remain assigned to later tasks in the active Milestone 4 ExecPlan or later roadmap milestones.
 
+### Apply the Task 1.6 measured large-chapter amendment
+
+Task 1.5 subsequently established the Playwright Chromium harness, and Task 1.6 used it on documented native Windows hardware to resolve the reader latency, live-DOM, raster, and memory gate. The accepted implementation policy is:
+
+- render one active spine document incrementally in batches of at most 250 semantic blocks and yield to the browser between batches;
+- preflight both semantic-block count and projected DOM-node count;
+- admit at most 10,000 semantic blocks and 80,000 projected live DOM nodes;
+- return the fixed recoverable `chapter-too-large` presentation before partial rendering at 10,001 blocks or 80,001 projected nodes, preserving the last valid locator;
+- retain ADR-0010's one-concurrent-decode, eight-live-source, and 16,777,216-live-pixel raster limits; and
+- defer general virtualization because the bounded incremental profile met the accepted reference gates without introducing accessibility, focus, find-in-page, or locator-restoration discontinuities.
+
+At the exact block limit, the synthetic incremental profile produced first useful content in 9.7 ms, rendered a deep target in 587.8 ms, completed in 654.3 ms, used at most 12.8 ms of script work per batch, reflowed in 132.5 ms, retained 78,123 DOM nodes, and increased Chromium working set by 111.8 MiB. The combined exact block/eight-image profile increased working set by 174.8 MiB. The accepted reference ceilings are respectively 50 ms, 1,000 ms, 1,000 ms, 16 ms, 250 ms, 80,000 nodes, 144 MiB DOM-only working-set growth, and 208 MiB combined growth. Complete synchronous rendering is rejected because the same 10,000-block fixture occupied 124.3 ms in one script operation. The detailed host, stress cases, image results, command, limitations, and future revalidation ownership are recorded in [`performance-budget.md`](../performance-budget.md#visual-reader-reference-limits).
+
+These are implementation acceptance gates on the documented reference host, not proof of a production reader or a universal hardware guarantee. File-open, real React commit, locator restoration, and native WebView2 timings remain owned by later implementation/performance tasks. Task 1.6 adds only test configuration, a synthetic benchmark harness, commands, and documentation; it adds no production renderer, public contract, runtime dependency, native capability, persistence, network access, or narration/audio behavior.
+
 ## Consequences
 
 - The renderer has a narrow auditable input: closed semantic values rather than publisher markup.
@@ -137,7 +152,7 @@ Those choices remain assigned to later tasks in the active Milestone 4 ExecPlan 
 - Passive scrolling and reflow cannot steal focus; explicit navigation has one predictable focus destination.
 - Browser URLs and history contain no book identity, locator, fragment, or content.
 - No application behavior is implemented by accepting this ADR. The desktop remains a foundation shell until later tasks add and validate the approved boundaries.
-- This decision adds no dependency, shared schema change, generated file, native permission, application code, storage, network, TTS, or audio capability.
+- This decision and its amendments add no dependency, shared schema change, generated file, native permission, production application code, storage, network, TTS, or audio capability.
 
 ## Alternatives considered
 

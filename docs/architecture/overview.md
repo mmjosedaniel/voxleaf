@@ -44,7 +44,7 @@ Local TTS service
 
 The visual position is a normalized `ReadingLocatorV1` sampled at an application-owned reading line. A browser caret/range supplies the Unicode-code-point offset when safe, with deterministic block-start fallback. Explicit navigation may move focus to a destination heading/reader region, while passive scrolling, reflow, and initial restoration do not steal focus.
 
-File ingress is resolved by ADR-0009, ADR-0010 resolves the predecode/decode/object-URL safety boundary for static raster images, and ADR-0011 resolves the bounded Web Storage, display-preference, save-lifecycle, failure, and migration policy. Playwright Chromium tooling now supplies a deterministic real-browser foundation smoke while native WebView2 behavior remains a separate Windows matrix. Publication-session integration, semantic image rendering, the persistence repository and coordinator, reader-specific browser coverage, and measured large-chapter/performance limits remain later Milestone 4 work. Synchronization with the active narrated segment remains a later milestone.
+File ingress is resolved by ADR-0009, ADR-0010 resolves the predecode/decode/object-URL safety boundary for static raster images, and ADR-0011 resolves the bounded Web Storage, display-preference, save-lifecycle, failure, and migration policy. Playwright Chromium tooling supplies the deterministic real-browser foundation and Task 1.6 benchmark harness while native WebView2 behavior remains a separate Windows matrix. The ADR-0008 Task 1.6 amendment accepts incremental batches of at most 250 semantic blocks, a 10,000-block/80,000-DOM-node chapter ceiling, `chapter-too-large` fallback, and documented reference latency/memory gates. Publication-session integration, semantic image rendering, the persistence repository and coordinator, and reader-specific browser/native coverage remain later Milestone 4 work. Synchronization with the active narrated segment remains a later milestone.
 
 The desktop application and TTS inference should run in separate local processes.
 
@@ -107,8 +107,9 @@ The public EPUB package currently implements the in-memory validation, parsing, 
 - A structural locator plus Unicode-code-point offset represents the active passage; browser caret geometry may refine the offset, with deterministic block-start fallback.
 - Explicit navigation has a predictable focus destination, while passive scroll/reflow/restoration does not move focus.
 - Reader navigation remains application state rather than browser routes/history.
+- Chapters render incrementally in browser-yielding batches of at most 250 semantic blocks; more than 10,000 semantic blocks or 80,000 projected live DOM nodes produces `chapter-too-large` before partial rendering.
 
-This boundary does not make the reader implemented. `apps/desktop` contains the foundation shell, local-file probe, and ADR-0010 raster metadata/source-lifecycle implementation, while the approved `resolveTarget` operation, publication coordinator, semantic renderer, image component integration, locator/DOM mapper, navigation behavior, and ADR-0011 persistence modules require later tasks and tests. Browser-test tooling and reader performance limits remain unresolved.
+This boundary does not make the reader implemented. `apps/desktop` contains the foundation shell, local-file probe, ADR-0010 raster metadata/source-lifecycle implementation, Playwright browser smoke, and a Windows-only synthetic benchmark harness. The approved `resolveTarget` operation, publication coordinator, semantic renderer, image component integration, locator/DOM mapper, navigation behavior, large-chapter enforcement, and ADR-0011 persistence modules require later tasks and tests. The reference thresholds must be revalidated against the real React/WebView2 reader; the test-only harness is not end-to-end reader evidence.
 
 ## Local file-ingress boundary
 
