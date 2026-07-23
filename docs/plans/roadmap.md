@@ -140,7 +140,7 @@ Milestone 3 provides sanitized content and stable locators. Milestone 2 provides
 ### Major risks and unknowns
 
 - Implement and prove ADR-0008's direct semantic DOM boundary without reintroducing publisher markup, styles, URLs, or DOM identifiers.
-- Integrate the implemented package-owned semantic-target resolver and prove locator/code-point sampling across real browser reflow.
+- Connect the implemented desktop publication-session owner to file ingress, integrate the implemented package-owned semantic-target resolver, and prove locator/code-point sampling across real browser reflow.
 - Preserve ADR-0009's capability-free file ingress and ADR-0010's bounded static-raster decode/object-URL policy, use Task 1.5's real-browser tooling, and enforce Task 1.6's accepted incremental-rendering, 10,000-block/80,000-node, fallback, latency, and memory limits without claiming the test-only prototype is a complete reader.
 - Implement and validate ADR-0011's bounded Web Storage envelopes, 500 ms passive-save debounce, lifecycle saves, exact/recovered restoration, and explicit migration boundary.
 - Keep manual navigation during active narration deferred to the Milestone 9 interaction gate.

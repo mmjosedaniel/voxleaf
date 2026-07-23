@@ -46,7 +46,9 @@ Raster image nodes remain application placeholders until the separate raster saf
 
 `@voxleaf/epub` remains framework-independent. It owns the implemented archive/content validation, semantic values, resource reads, locator and semantic-target indexes/resolution, and opened-publication lifecycle primitives. It does not acquire React, DOM, browser-storage, routing, Tauri, narration, TTS, or audio dependencies.
 
-The desktop application will own one active publication session and one reader coordinator. The coordinator will own active document/locator state, explicit navigation intents, passive visible-location updates, reflow capture/restoration, and later persistence scheduling. It will call the public publication API and expose application-level state/actions to presentation components. Leaf UI components must not open/close publications, resolve publisher targets, or write persistence directly.
+The desktop application owns one active publication session and will own one reader coordinator. The coordinator will own active document/locator state, explicit navigation intents, passive visible-location updates, reflow capture/restoration, and later persistence scheduling. It will expose application-level state/actions to presentation components. Leaf UI components must not open/close publications, resolve publisher targets, or write persistence directly.
+
+Task 2.2 implements the UI-independent publication-session owner. It calls the public EPUB opener, owns one abortable logical attempt and one opened publication, detaches and closes prior state before replacement, rejects late completions, closes a publication returned by stale work, and maps unexpected throws or close failures to the fixed shared internal-failure contract. File selection/UI integration and reader coordination remain later tasks.
 
 The semantic renderer may consume the public semantic and located-block types through the application reader boundary. It does not interpret archive paths, source markup, or package-internal sidecars.
 
@@ -146,7 +148,7 @@ These are implementation acceptance gates on the documented reference host, not 
 - Direct DOM rendering is safe only while the EPUB semantic model remains closed and the renderer remains exhaustive; adding a new semantic node requires renderer and security review.
 - Publisher styling fidelity remains intentionally limited. The application cannot reproduce CSS-derived layout/visibility that ADR-0007 discards.
 - The initial reader has one interaction model and does not need pagination algorithms or mode migration.
-- `@voxleaf/epub` gains one approved public in-memory operation and remains the sole owner of source-fragment matching. Task 2.1 must implement and test it before target navigation is usable.
+- `@voxleaf/epub` remains the sole owner of source-fragment matching; Task 2.1 implemented and tested its approved public in-memory resolver before target navigation becomes usable.
 - Non-spine documents and unresolved/ambiguous fragments may remain unavailable or recover only to the target spine document's beginning. This is safer than fabricating cross-document navigation but may make some publication notes inaccessible in the MVP.
 - Code-point position reconstruction requires a tested semantic-to-DOM mapping and real-browser geometry adapter. Block-start fallback keeps restoration deterministic when caret APIs differ.
 - Passive scrolling and reflow cannot steal focus; explicit navigation has one predictable focus destination.
