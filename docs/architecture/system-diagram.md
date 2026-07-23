@@ -38,13 +38,16 @@ flowchart LR
       webShell["React/Vite foundation UI<br/>no reader behavior"]:::partial
       fileBoundary["WebView file-selection probe<br/>bounded cancellable byte read"]:::partial
       rasterBoundary["Static raster safety boundary<br/>preflight, decode, URL lifetime"]:::implemented
+      publicationSession["Publication session owner<br/>cancel, replace, close"]:::implemented
       reader["Semantic DOM reader,<br/>coordination and restoration"]:::planned
       player["Bounded scheduling<br/>and audio playback"]:::planned
       nativeShell -->|embeds built web assets| webShell
       webShell -->|hosts probe UI| fileBoundary
       webShell -->|owns browser image boundary| rasterBoundary
+      webShell -. planned open-state integration .-> publicationSession
       webShell -. planned reader integration .-> reader
-      reader -. planned file request .-> fileBoundary
+      fileBoundary -. planned byte handoff .-> publicationSession
+      reader -. planned lifecycle use .-> publicationSession
       reader -. planned image integration .-> rasterBoundary
       reader -. planned playback control .-> player
     end
@@ -65,7 +68,8 @@ flowchart LR
   end
 
   epubFile -->|local selection probe| fileBoundary
-  fileBoundary -. planned in-memory bytes .-> epub
+  publicationSession -->|workspace opener| epub
+  publicationSession -->|safe error contract| shared
   reader -. planned contract use .-> shared
   reader -. planned locator and preferences persistence .-> readingStore
   narration -. planned locator-linked segments .-> shared
@@ -75,7 +79,7 @@ flowchart LR
   player -. planned playback .-> audioDevice
 ```
 
-The desktop now has a capability-free WebView file-selection probe and a bounded static-raster preflight/decode/source-lifetime boundary, but still has no dependency on `@voxleaf/epub` or `@voxleaf/shared`; its Tauri capability list remains empty. ADR-0011 approves bounded WebView `localStorage`, but no storage repository or save/restoration behavior exists yet. The file probe releases successful bytes instead of opening a publication, and no reader calls the raster boundary yet. The solid EPUB-to-shared dependency exists only between the framework-independent packages. No remote runtime service or external network dependency is approved for normal reading; the exact local desktop-to-TTS transport remains undecided.
+The desktop now depends directly on `@voxleaf/epub` and `@voxleaf/shared` through a UI-independent publication-session owner. That owner provides cancellation, replacement, stale-result rejection, and publication cleanup, while the capability-free file probe still releases successful bytes instead of handing them to the session. The bounded static-raster boundary is also implemented but not consumed by a reader; the Tauri capability list remains empty. ADR-0011 approves bounded WebView `localStorage`, but no storage repository or save/restoration behavior exists yet. No remote runtime service or external network dependency is approved for normal reading; the exact local desktop-to-TTS transport remains undecided.
 
 ## Primary EPUB-to-audio data flow
 
@@ -88,6 +92,7 @@ flowchart LR
 
   file["Local EPUB file"]:::external
   selection["Desktop WebView selection<br/>and bounded byte-read probe"]:::partial
+  session["Desktop publication session<br/>cancel, replace, close"]:::implemented
   opener["openEpubPublication<br/>(Uint8Array)"]:::implemented
   archive["ZIP/OCF inventory<br/>paths, limits, cancellation"]:::implemented
   packageData["Container, OPF, spine,<br/>navigation parsing"]:::implemented
@@ -101,28 +106,30 @@ flowchart LR
   playback["Desktop playback<br/>and synchronized highlighting"]:::planned
 
   file -->|implemented probe| selection
-  selection -. planned integration .-> opener
+  selection -. planned byte handoff .-> session
+  session -->|implemented package call| opener
   opener --> archive --> packageData --> semantics --> publication
+  publication -->|owned handle| session
   semantics -->|BookV1| contracts
   publication -->|locators and safe errors| contracts
-  publication -. planned integration .-> visualReader
+  session -. planned presentation integration .-> visualReader
   visualReader -. planned .-> textPrep
   textPrep -. planned .-> synthesis
   synthesis -. planned frames .-> buffering
   buffering -. planned .-> playback
 ```
 
-The capability-free selection/read probe and the solid package flow are separately implemented, but their dashed integration is not. The desktop releases probe bytes and cannot yet call `openEpubPublication`; everything after the opened-publication boundary also remains planned. VoxLeaf therefore cannot currently open, render, narrate, or play a user-selected book.
+The desktop session can call `openEpubPublication` and safely own its result, but the capability-free selection/read probe is not connected to that session. The application therefore still releases selected bytes, and everything after session ownership remains planned. VoxLeaf cannot currently open, render, narrate, or play a user-selected book through its UI.
 
 ## Component notes and evidence
 
 | Component | Responsibility and status evidence |
 | --- | --- |
-| Desktop shell | [`apps/desktop`](../../apps/desktop/) contains the React/Vite foundation UI, Task 1.2 local-file probe, Task 1.3 raster safety boundary, and minimal Tauri shell. [`local-epub-file.ts`](../../apps/desktop/src/file-ingress/local-epub-file.ts) enforces the early byte bound and abortable browser read. [`raster-image-policy.ts`](../../apps/desktop/src/reader/raster-image-policy.ts) preflights static metadata, while [`raster-image-source.ts`](../../apps/desktop/src/reader/raster-image-source.ts) bounds decode and URL ownership. [`main.rs`](../../apps/desktop/src-tauri/src/main.rs) still registers no commands, and [`tauri.conf.json`](../../apps/desktop/src-tauri/tauri.conf.json) grants no capabilities and allows only self/blob image sources. ADR-0009 and [ADR-0010](decisions/ADR-0010-bounded-raster-image-decode.md) accept these supporting boundaries; publication integration and reader behavior remain [Roadmap Milestone 4](../plans/roadmap.md#milestone-4-deliver-the-reflowable-visual-reader-and-position-restoration). |
+| Desktop shell | [`apps/desktop`](../../apps/desktop/) contains the React/Vite foundation UI, Task 1.2 local-file probe, Task 1.3 raster safety boundary, Task 2.2 [`publication-session.ts`](../../apps/desktop/src/publication/publication-session.ts), and minimal Tauri shell. The session is outside presentation components and owns one cancellable/replaced publication lifecycle; the file UI does not consume it yet. [`local-epub-file.ts`](../../apps/desktop/src/file-ingress/local-epub-file.ts) enforces the early byte bound and abortable browser read. [`raster-image-policy.ts`](../../apps/desktop/src/reader/raster-image-policy.ts) preflights static metadata, while [`raster-image-source.ts`](../../apps/desktop/src/reader/raster-image-source.ts) bounds decode and URL ownership. [`main.rs`](../../apps/desktop/src-tauri/src/main.rs) still registers no commands, and [`tauri.conf.json`](../../apps/desktop/src-tauri/tauri.conf.json) grants no capabilities and allows only self/blob image sources. ADR-0008, ADR-0009, and [ADR-0010](decisions/ADR-0010-bounded-raster-image-decode.md) define these boundaries; UI integration and reader behavior remain [Roadmap Milestone 4](../plans/roadmap.md#milestone-4-deliver-the-reflowable-visual-reader-and-position-restoration). |
 | Shared contracts | [`packages/shared`](../../packages/shared/) owns canonical JSON Schemas, generated TypeScript wire types, runtime decoders, branded domain values, and a separate testing export. [ADR-0006](decisions/ADR-0006-json-schema-contract-authority.md) defines this authority; the completed [Milestone 2 plan](../plans/completed/M002-shared-contracts-and-test-harness.md) records validation. Contracts for persistence, sessions, narration, audio frames, and buffer state do not implement those systems. |
 | EPUB package | [`packages/epub`](../../packages/epub/) exposes [`openEpubPublication`](../../packages/epub/src/public/open-epub-publication.ts), immutable semantic/publication types, bounded lazy raster reads, deterministic locators, structural locator resolution, and package-owned semantic-target resolution. [ADR-0007](decisions/ADR-0007-secure-epub-ingestion-boundary.md) owns the security/support boundary; the completed [Milestone 3 plan](../plans/completed/M003-secure-epub-ingestion-and-document-model.md) and active [Milestone 4 plan](../plans/active/M004-reflowable-visual-reader-and-position-restoration.md) record validation and implementation ownership. It accepts bytes only and has no filesystem, network, DOM, renderer, persistence, TTS, or audio capability. |
 | ZIP and XML primitives | `@voxleaf/epub` internally wraps exactly pinned `@zip.js/zip.js` and `saxes`. They are implementation details behind the archive/XML boundaries, not application services or public APIs. Selection and capability restrictions are recorded in [ADR-0007](decisions/ADR-0007-secure-epub-ingestion-boundary.md) and the [dependency inventory](../development/dependencies.md). |
-| Reader, file/raster boundaries, coordinator, and persistence | ADR-0009/Task 1.2 implement the capability-free WebView selection/read boundary. ADR-0010/Task 1.3 implement static-raster metadata, decode, capacity, and object-URL lifecycle guards but no semantic image component. `@voxleaf/epub` implements ADR-0008's semantic-target resolver, but no desktop navigation consumes it yet. [ADR-0011](decisions/ADR-0011-bounded-web-storage-reader-state.md) approves two bounded versioned Web Storage envelopes, app-local display preferences, a 500 ms passive-save debounce, exact-identity restoration, content-free failures, and explicit desktop-owned migration. The ADR-0008 Task 1.6 amendment accepts 250-block incremental rendering, a 10,000-semantic-block/80,000-DOM-node ceiling, fixed recoverable fallback, and reference latency/memory gates measured by the test-only Playwright harness. [Roadmap Milestone 4](../plans/roadmap.md#milestone-4-deliver-the-reflowable-visual-reader-and-position-restoration) and the [active plan](../plans/active/M004-reflowable-visual-reader-and-position-restoration.md) retain implementation ownership. No desktop-to-EPUB integration, storage adapter, renderer, native file access, or application coordinator exists yet. File paths and native permissions remain outside the accepted boundary because `@voxleaf/epub` accepts bytes only. |
+| Reader, file/raster boundaries, coordinator, and persistence | ADR-0009/Task 1.2 implement the capability-free WebView selection/read boundary. Task 2.2 implements the separate desktop-to-EPUB publication-session boundary, but Task 2.3 still owns their UI integration. ADR-0010/Task 1.3 implement static-raster metadata, decode, capacity, and object-URL lifecycle guards but no semantic image component. `@voxleaf/epub` implements ADR-0008's semantic-target resolver, but no desktop navigation consumes it yet. [ADR-0011](decisions/ADR-0011-bounded-web-storage-reader-state.md) approves two bounded versioned Web Storage envelopes, app-local display preferences, a 500 ms passive-save debounce, exact-identity restoration, content-free failures, and explicit desktop-owned migration. The ADR-0008 Task 1.6 amendment accepts 250-block incremental rendering, a 10,000-semantic-block/80,000-DOM-node ceiling, fixed recoverable fallback, and reference latency/memory gates measured by the test-only Playwright harness. [Roadmap Milestone 4](../plans/roadmap.md#milestone-4-deliver-the-reflowable-visual-reader-and-position-restoration) and the [active plan](../plans/active/M004-reflowable-visual-reader-and-position-restoration.md) retain implementation ownership. No storage adapter, renderer, native file access, reader coordinator, or presentation integration exists yet. File paths and native permissions remain outside the accepted boundary because `@voxleaf/epub` accepts bytes only. |
 | Narration preparation | Approved but unimplemented normalization and semantic chunking from [Roadmap Milestone 5](../plans/roadmap.md#milestone-5-prepare-text-for-natural-narration) and the [active synchronized-reader plan](../plans/active/synchronized-reader-and-startup-buffer.md). It must preserve locator ranges and keep displayed source text separate from narration text. No package module currently performs this work. |
 | TTS service | [`services/tts`](../../services/tts/) is a dependency-free Python package with version smoke behavior and cross-language test conformance only. [Roadmap Milestone 6](../plans/roadmap.md#milestone-6-prove-local-tts-feasibility-and-select-engine-profiles) owns engine evaluation, while [Milestone 7](../plans/roadmap.md#milestone-7-implement-the-local-tts-service-and-process-protocol) owns process lifecycle, protocol, streaming, and cancellation. No engine, server, model, transport, or hardware profile has been selected or implemented. |
 | Audio scheduling and playback | [ADR-0002](decisions/ADR-0002-in-memory-audio.md) and [ADR-0004](decisions/ADR-0004-start-after-audio-lead.md) approve bounded memory and duration-gated startup. Shared audio/buffer contracts and fakes exist, but [Roadmap Milestone 8](../plans/roadmap.md#milestone-8-build-bounded-audio-playback-and-scheduling) owns the real queue, player, backpressure, underrun measurement, and startup gate. |

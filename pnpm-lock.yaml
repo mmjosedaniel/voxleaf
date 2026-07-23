@@ -44,6 +44,12 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@voxleaf/epub':
+        specifier: workspace:*
+        version: link:../../packages/epub
+      '@voxleaf/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       react:
         specifier: 19.2.7
         version: 19.2.7

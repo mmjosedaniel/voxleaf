@@ -22,21 +22,19 @@ At plan creation on 2026-07-22, `main` is clean at `c386644` and roadmap Milesto
 
 Implemented prerequisites are:
 
-- `apps/desktop` is a minimal React 19, Vite 8, and Tauri 2 shell with jsdom component testing. It has no reader, router, EPUB dependency, shared-contract dependency, persistence adapter, native commands, plugins, or granted Tauri capabilities.
+- `apps/desktop` is a React 19, Vite 8, and Tauri 2 foundation with jsdom/Playwright testing, local file/raster safety boundaries, direct EPUB/shared workspace dependencies, and a UI-independent publication-session owner. It has no reader, router, persistence adapter, native commands, plugins, or granted Tauri capabilities.
 - `packages/shared` owns versioned `BookV1`, `ReadingLocatorV1`, `LocatorRangeV1`, `PersistedReadingStateV1`, and `OperationalErrorV1` schemas and runtime decoders. `PersistedReadingStateV1` stores a book identity, authoritative locator, and optional voice/playback preferences; it does not select a storage backend or represent display preferences.
 - `packages/epub` implements bounded in-memory EPUB 3 reflowable ingestion through `openEpubPublication(bytes, { signal? })`. A successful `OpenedPublication` exposes immutable metadata, semantic documents, hierarchical navigation, lazy local raster reads, located blocks, exact/nearest locator resolution, and explicit close.
 - The semantic model is a closed union of headings, paragraphs, block quotes, lists, text, emphasis, strong text, code, line breaks, internal links, and raster-image references. It exposes no publisher HTML, CSS, scripts, DOM nodes, paths, or activatable external URLs.
 - Book identity is SHA-256 over the exact input bytes. Every addressable semantic block has a deterministic `ReadingLocatorV1`; text offsets count Unicode code points and are independent of viewport layout.
-- Milestone 3 provides deterministic in-memory EPUB builders and 360 EPUB tests covering public ingestion, semantics, resources, locators, failures, and security boundaries.
+- Milestone 3 provides deterministic in-memory EPUB builders; the current EPUB suite has 366 tests covering public ingestion, semantics, resources, locators, failures, and security boundaries.
 
 Not implemented are:
 
-- transfer of the implemented local-file probe's successful bytes into `@voxleaf/epub` and ownership of the resulting publication session;
-- ownership of an opened publication in the desktop application;
-- visual semantic rendering, raster decoding, chapter navigation, reader preferences, and large-chapter rendering policy;
+- transfer of the implemented local-file probe's successful bytes into the implemented desktop publication-session owner and presentation of its safe state;
+- visual semantic rendering, semantic raster-image integration, chapter navigation, reader preferences, and large-chapter rendering policy;
 - an authoritative visible-position tracker or DOM-to-locator mapping;
 - local storage, save lifecycle, restoration, or persisted-state migration;
-- a real-browser layout/end-to-end test harness;
 - product-level reader accessibility and performance evidence.
 
 The older [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md) intentionally spans several roadmap milestones. This milestone-specific plan is the implementation authority for roadmap Milestone 4. The older plan remains context for later synchronization and audio work and must not broaden this plan's scope.
@@ -752,7 +750,7 @@ Do not change `services/tts`, audio contracts/implementation, narration contract
 
 **Validation:** `pnpm.cmd install --frozen-lockfile`; `pnpm.cmd --filter @voxleaf/desktop typecheck`; `pnpm.cmd --filter @voxleaf/desktop test`; `pnpm.cmd --filter @voxleaf/desktop build`; `pnpm.cmd --filter @voxleaf/epub test`.
 
-**Status:** Not started.
+**Status:** Complete on 2026-07-22. `apps/desktop` now declares direct workspace dependencies on `@voxleaf/epub` and `@voxleaf/shared` and provides a UI-independent `createPublicationSession` owner. One logical open attempt and publication can be active: replacement/close aborts the active signal, detaches and closes prior state, rejects stale completion, and closes any publication returned by late stale work. Concurrent close calls share one promise, known replacement cleanup is included in session close, a later open can reuse a successfully closed owner, and package failures, unexpected throws, and close failures produce only closed content-free results. Ten focused session tests include the real package boundary and lifecycle races; all 5 desktop test files/41 tests and all 23 EPUB test files/366 tests passed. File-selection/UI integration remains Task 2.3; no renderer, persistence, native capability, shared schema, network, narration, TTS, or audio behavior was added.
 
 ### Task 2.3: Implement the approved file selection and open flow
 
@@ -1138,6 +1136,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 - 2026-07-22: Completed Task 1.5. Selected exact `@playwright/test` `1.61.1` with Chrome for Testing `149.0.7827.55` / revision `1228`, explicit browser acquisition, offline ordinary execution, one-worker fixed-environment configuration, loopback-only production preview, and Windows CI ownership. The first validation found that Vitest also discovered the Playwright spec and that reduced-motion emulation belongs under Playwright context options; separating the test globs and correcting that typed option restored all existing checks. The final Chromium smoke, 31 desktop tests, desktop typecheck/build, root format/lint, and diff checks passed.
 - 2026-07-22: Completed Task 1.6. Added an explicit, non-CI `pnpm.cmd benchmark:reader` command and synthetic Playwright harness that runs on native Windows, launches fresh Chromium processes, and records content-free timing/DOM/heap/working-set/image metrics. The first run exposed that `powershell.exe -Command` did not pass trailing process IDs through `$args` as expected; embedding the CDP-returned, integer-validated ID list in the fixed query resolved the issue without broad process inspection. Three accepted runs then established the 250-block batch, 10,000-block/80,000-node, `chapter-too-large`, reference latency, raster, and memory gates. The final thresholded run passed four tests in 27.0 seconds on the documented host. No production reader or new dependency was added.
 - 2026-07-22: Completed Task 2.1. Added the public immutable `PublicationTargetResolution` family and synchronous `OpenedPublication.resolveTarget`, backed by a package-private document/source-ID index joined to canonical located blocks. Exact fragment/document-start, same-document unresolved-fragment recovery, invalid/unknown/non-spine/empty unavailability, hostile input, cancellation, post-close, privacy, and unchanged locator behavior are covered. No shared schema, runtime root export, dependency, desktop code, persistence, renderer, network, filesystem, narration, TTS, or audio capability changed.
+- 2026-07-22: Completed Task 2.2. Added direct desktop workspace dependencies on the EPUB/shared public boundaries and a presentation-independent publication-session owner with one abortable logical attempt/publication, replacement ordering, a shared cleanup barrier, stale-success cleanup, shared concurrent close, reopen support, and fixed content-free failures. The real package boundary and lifecycle races are covered by ten focused tests; the frozen install, desktop typecheck/test/build, EPUB regression suite, root TypeScript typecheck, format, and lint checks passed. File-byte/UI integration remains Task 2.3.
 
 ## Decision log
 
@@ -1146,9 +1145,9 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 | 2026-07-22 | Roadmap Milestone 4 is the only implementation scope; the older synchronized-reader plan is context for later milestones. | Plan authority established. |
 | 2026-07-22 | Reuse exact-byte `BookIdentityV1`, `ReadingLocatorV1`, `PersistedReadingStateV1`, semantic documents, lazy resources, and package locator resolution. | Already approved/implemented. |
 | 2026-07-22 | Do not use publisher HTML/CSS/scripts/URLs or activate external links. | Already approved by ADR-0007. |
-| 2026-07-22 | Render closed semantic values as exhaustive application-owned React elements in the application DOM; do not reconstruct publisher markup or use an iframe. | Accepted by ADR-0008; implementation remains Task 2.2. |
+| 2026-07-22 | Render closed semantic values as exhaustive application-owned React elements in the application DOM; do not reconstruct publisher markup or use an iframe. | Accepted by ADR-0008; implementation remains Task 3.1. |
 | 2026-07-22 | Use continuous vertical scrolling as the sole initial reading mode; defer pagination and mode migration. | Accepted by ADR-0008; implementation remains Task 3.4. |
-| 2026-07-22 | Use the application-owned WebView file input plus abortable bounded `FileReader`; add no Tauri filesystem/dialog command, plugin, capability, or host-path contract. | Accepted by ADR-0009; opener/session integration remains Tasks 2.2-2.3. |
+| 2026-07-22 | Use the application-owned WebView file input plus abortable bounded `FileReader`; add no Tauri filesystem/dialog command, plugin, capability, or host-path contract. | Accepted by ADR-0009; the session owner is implemented and file/UI integration remains Task 2.3. |
 | 2026-07-22 | Add a closed package-owned semantic-target resolver rather than matching fragments in the desktop; unresolved fragments recover only within the target spine document, while invalid/non-spine/empty targets are unavailable. | Accepted by ADR-0008 and implemented by Task 2.1; desktop integration remains Task 3.2. |
 | 2026-07-22 | Use structural locator plus code-point offset at an application-owned reading line with deterministic block-start fallback. | Accepted by ADR-0008; implementation remains Tasks 3.1-3.3. |
 | 2026-07-22 | Keep reader navigation out of browser routes/history; explicit navigation moves focus predictably while passive scrolling, reflow, and initial restoration do not. | Accepted by ADR-0008; implementation remains Tasks 3.3-3.5. |
@@ -1186,7 +1185,7 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Production-reader validation has not started. Tasks 1.1 through 1.6 are complete; publication-session, renderer, persistence, restoration, and later application implementation tasks remain `Not started`.
+Production-reader validation has not started. Tasks 1.1 through 1.6 and 2.1 through 2.2 are complete; file-open UI integration, renderer, persistence, restoration, and later application tasks remain `Not started`.
 
 Task 1.1 documentation validation completed on 2026-07-22:
 
@@ -1244,6 +1243,18 @@ Task 1.6 validation completed on 2026-07-22:
 - `pnpm.cmd test:browser` passed: the benchmark specs remained excluded and the fixed foundation smoke passed.
 - `pnpm.cmd --filter @voxleaf/desktop typecheck`, `pnpm.cmd --filter @voxleaf/desktop test`, `pnpm.cmd --filter @voxleaf/desktop build`, `pnpm.cmd format:check`, `pnpm.cmd lint`, and `git diff --check` passed.
 - Final scope/privacy review found test configuration, one synthetic benchmark harness, root/desktop commands, and focused architecture/development/plan documentation only. No dependency/lockfile, production application behavior, EPUB/shared contract, Tauri command/plugin/capability/CSP, persistence, selected book, external request, narration, TTS, audio, or generated/private artifact was added.
+
+Task 2.2 validation completed on 2026-07-22:
+
+- `pnpm.cmd install --frozen-lockfile` passed for all four workspace projects.
+- `pnpm.cmd --filter @voxleaf/desktop typecheck` passed.
+- `pnpm.cmd --filter @voxleaf/desktop test` passed: 5 files and 41 tests, including 10 publication-session tests.
+- `pnpm.cmd --filter @voxleaf/desktop build` passed with 20 transformed modules.
+- `pnpm.cmd --filter @voxleaf/epub test` passed: 23 files and 366 tests.
+- `pnpm.cmd typecheck:typescript`, `pnpm.cmd format:check:typescript`, and `pnpm.cmd lint:typescript` passed.
+- `git diff --check` passed. The changed links and both status-distinguishing Mermaid diagrams were reviewed manually; the repository has no Mermaid validation command.
+- The dependency inventory, architecture overview, ADR-0008 implementation note, roadmap risk, and canonical system diagram now distinguish the implemented session/package boundary from the still-planned file/UI and reader integration.
+- Final scope/privacy review found no application UI, file-byte retention, renderer, persistence, browser route, Tauri command/plugin/capability/CSP, shared schema, network access, narration, TTS, audio, or private/generated artifact change.
 
 Plan-creation validation completed on 2026-07-22:
 
