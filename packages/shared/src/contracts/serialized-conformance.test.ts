@@ -5,6 +5,19 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
+import {
+  validateAudioFrameV1Wire,
+  validateBookV1Wire,
+  validateBufferStatusV1Wire,
+  validateCapabilityReportV1Wire,
+  validateLocatorRangeV1Wire,
+  validateNarrationSegmentV1Wire,
+  validateOperationalErrorV1Wire,
+  validatePersistedReadingStateV1Wire,
+  validateReadingLocatorV1Wire,
+  validateReadingSessionV1Wire,
+} from "../generated/validators/index.js";
+
 const CONTRACT_ROOT = resolve(
   dirname(fileURLToPath(import.meta.url)),
   "../../fixtures/contracts",
@@ -41,6 +54,24 @@ interface SerializedFixtureCase {
 interface SerializedFixtureManifest {
   readonly cases: readonly SerializedFixtureCase[];
 }
+
+type StandaloneValidator = (input: unknown) => boolean;
+
+const STANDALONE_VALIDATORS_BY_SCHEMA_ID: Readonly<
+  Record<string, StandaloneValidator>
+> = Object.freeze({
+  "urn:voxleaf:schema:audio-frame:v1": validateAudioFrameV1Wire,
+  "urn:voxleaf:schema:book:v1": validateBookV1Wire,
+  "urn:voxleaf:schema:buffer-status:v1": validateBufferStatusV1Wire,
+  "urn:voxleaf:schema:capability-report:v1": validateCapabilityReportV1Wire,
+  "urn:voxleaf:schema:locator-range:v1": validateLocatorRangeV1Wire,
+  "urn:voxleaf:schema:locator:v1": validateReadingLocatorV1Wire,
+  "urn:voxleaf:schema:narration-segment:v1": validateNarrationSegmentV1Wire,
+  "urn:voxleaf:schema:operational-error:v1": validateOperationalErrorV1Wire,
+  "urn:voxleaf:schema:persisted-reading-state:v1":
+    validatePersistedReadingStateV1Wire,
+  "urn:voxleaf:schema:reading-session:v1": validateReadingSessionV1Wire,
+});
 
 function readRecord(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -124,15 +155,25 @@ describe("canonical serialized contract fixtures", () => {
 
     for (const fixtureCase of manifest.cases) {
       const validate = validator.getSchema(fixtureCase.schemaId);
+      const standaloneValidate =
+        STANDALONE_VALIDATORS_BY_SCHEMA_ID[fixtureCase.schemaId];
       const fixture = await readJson(
         resolve(CONTRACT_ROOT, fixtureCase.fixture),
       );
 
       expect(validate, fixtureCase.id).toBeDefined();
+      expect(standaloneValidate, fixtureCase.id).toBeDefined();
+      const canonicalResult = validate!(fixture);
+      const standaloneResult = standaloneValidate!(fixture);
+
       expect(
-        validate!(fixture),
+        canonicalResult,
         `${fixtureCase.id}: ${validator.errorsText(validate!.errors)}`,
       ).toBe(fixtureCase.expected === "valid");
+      expect(
+        standaloneResult,
+        `${fixtureCase.id}: standalone validator drifted from the canonical schema`,
+      ).toBe(canonicalResult);
     }
   });
 

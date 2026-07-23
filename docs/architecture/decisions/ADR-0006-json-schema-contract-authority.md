@@ -46,6 +46,12 @@ pnpm.cmd --filter @voxleaf/shared generate:check
 
 No schema or generated DTO is introduced by this decision task; Task 1.2 owns the first implementation. The generator is pinned now because it is part of the accepted reproducibility strategy. Python and Rust bindings are not generated speculatively. A future consumer may generate bindings from the same canonical schemas, but generated output remains disposable and non-authoritative.
 
+### Standalone TypeScript validator implementation
+
+Milestone 4 Task 2.5 extends the same checked-in generation boundary to `packages/shared/src/generated/validators/`. Ajv remains an exactly pinned development dependency that compiles every registered Draft 2020-12 root schema offline during `generate`/`generate:check`; production decoders import typed generated predicates and perform no runtime schema compilation. The standalone artifact includes deterministic repository-generated equivalents of Ajv's deep-equality and Unicode-code-point-length helpers, so no Ajv module, dynamic `Function`, `eval`, network access, or second schema authority enters the desktop bundle.
+
+The generated validator bytes remain disposable derived output with the same banner and drift policy as wire DTOs. Shared conformance tests compare every serialized fixture against both a freshly compiled canonical-schema validator and the generated predicate, while the desktop production build rejects any Ajv module or runtime code-generation expression. This implementation changes neither schema semantics nor the handwritten cross-field checks that follow structural validation.
+
 ### Runtime-validation boundary
 
 All values entering from an untyped or durable boundary are treated as `unknown` and decoded before they can become domain values:

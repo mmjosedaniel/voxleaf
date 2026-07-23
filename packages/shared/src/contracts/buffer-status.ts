@@ -1,11 +1,5 @@
-import Ajv2020 from "ajv/dist/2020.js";
-
-import bufferStatusV1Schema from "../../schemas/buffer-status/v1.schema.json" with { type: "json" };
-import primitivesV1Schema from "../../schemas/primitives/v1.schema.json" with { type: "json" };
-import type {
-  BufferStateV1Wire,
-  BufferStatusV1Wire,
-} from "../generated/contracts/buffer-status-v1.js";
+import type { BufferStateV1Wire } from "../generated/contracts/buffer-status-v1.js";
+import { validateBufferStatusV1Wire } from "../generated/validators/index.js";
 import {
   createCount,
   createGenerationId,
@@ -23,19 +17,6 @@ import type {
 import type { GenerationWorkIdentityV1 } from "./reading-session.js";
 
 const BUFFER_STATUS_SCHEMA_VERSION_V1 = createSchemaVersion(1);
-
-const validator = new Ajv2020({
-  allErrors: true,
-  coerceTypes: false,
-  removeAdditional: false,
-  strict: true,
-  useDefaults: false,
-});
-
-validator.addSchema(primitivesV1Schema);
-
-const validateBufferStatusV1Wire =
-  validator.compile<BufferStatusV1Wire>(bufferStatusV1Schema);
 
 export type BufferStateV1 = BufferStateV1Wire;
 

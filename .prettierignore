@@ -11,3 +11,4 @@ services/tts/.venv/
 **/Cargo.lock
 pnpm-lock.yaml
 services/tts/uv.lock
+packages/shared/src/generated/validators/standalone.ts

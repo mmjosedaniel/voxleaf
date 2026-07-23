@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:browser": "playwright test",
     "test:browser:install": "playwright install chromium",
+    "test:native-startup": "tauri build && node scripts/native-startup-smoke.mjs",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {

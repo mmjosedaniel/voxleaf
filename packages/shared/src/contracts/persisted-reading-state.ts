@@ -1,10 +1,4 @@
-import Ajv2020 from "ajv/dist/2020.js";
-
-import bookV1Schema from "../../schemas/book/v1.schema.json" with { type: "json" };
-import locatorV1Schema from "../../schemas/locator/v1.schema.json" with { type: "json" };
-import persistedReadingStateV1Schema from "../../schemas/persisted-reading-state/v1.schema.json" with { type: "json" };
-import primitivesV1Schema from "../../schemas/primitives/v1.schema.json" with { type: "json" };
-import type { PersistedReadingStateV1Wire } from "../generated/contracts/persisted-reading-state-v1.js";
+import { validatePersistedReadingStateV1Wire } from "../generated/validators/index.js";
 import { createBookId, createSchemaVersion } from "../primitives/index.js";
 import type { SchemaVersion } from "../primitives/index.js";
 import type { BookIdentityV1 } from "./book.js";
@@ -12,21 +6,6 @@ import { LocatorContractError, decodeReadingLocatorV1 } from "./locator.js";
 import type { ReadingLocatorV1 } from "./locator.js";
 
 const PERSISTED_READING_STATE_SCHEMA_VERSION_V1 = createSchemaVersion(1);
-
-const validator = new Ajv2020({
-  allErrors: true,
-  coerceTypes: false,
-  removeAdditional: false,
-  strict: true,
-  useDefaults: false,
-});
-
-validator.addSchema(primitivesV1Schema);
-validator.addSchema(bookV1Schema);
-validator.addSchema(locatorV1Schema);
-
-const validatePersistedReadingStateV1Wire =
-  validator.compile<PersistedReadingStateV1Wire>(persistedReadingStateV1Schema);
 
 declare const persistedVoiceIdBrand: unique symbol;
 declare const playbackRateBrand: unique symbol;

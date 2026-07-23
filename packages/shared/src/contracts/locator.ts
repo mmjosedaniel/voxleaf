@@ -1,11 +1,8 @@
-import Ajv2020 from "ajv/dist/2020.js";
-
-import bookV1Schema from "../../schemas/book/v1.schema.json" with { type: "json" };
-import locatorRangeV1Schema from "../../schemas/locator-range/v1.schema.json" with { type: "json" };
-import locatorV1Schema from "../../schemas/locator/v1.schema.json" with { type: "json" };
-import primitivesV1Schema from "../../schemas/primitives/v1.schema.json" with { type: "json" };
-import type { LocatorRangeV1Wire } from "../generated/contracts/locator-range-v1.js";
 import type { ReadingLocatorV1Wire } from "../generated/contracts/locator-v1.js";
+import {
+  validateLocatorRangeV1Wire,
+  validateReadingLocatorV1Wire,
+} from "../generated/validators/index.js";
 import {
   createBookId,
   createIndex,
@@ -21,34 +18,9 @@ import type {
 } from "../primitives/index.js";
 import type { BookIdentityV1 } from "./book.js";
 
-const LOCATOR_SCHEMA_ID_V1 = "urn:voxleaf:schema:locator:v1";
 const LOCATOR_SCHEMA_VERSION_V1 = createSchemaVersion(1);
 const LOCATOR_RANGE_SCHEMA_VERSION_V1 = createSchemaVersion(1);
 const ANCHOR_FORMAT_VERSION_V1 = createSchemaVersion(1);
-
-const validator = new Ajv2020({
-  allErrors: true,
-  coerceTypes: false,
-  removeAdditional: false,
-  strict: true,
-  useDefaults: false,
-});
-
-validator.addSchema(primitivesV1Schema);
-validator.addSchema(bookV1Schema);
-validator.addSchema(locatorV1Schema);
-
-const registeredReadingLocatorV1Validator =
-  validator.getSchema<ReadingLocatorV1Wire>(LOCATOR_SCHEMA_ID_V1);
-
-if (registeredReadingLocatorV1Validator === undefined) {
-  throw new Error("Reading locator schema registration failed.");
-}
-
-const validateReadingLocatorV1Wire = registeredReadingLocatorV1Validator;
-
-const validateLocatorRangeV1Wire =
-  validator.compile<LocatorRangeV1Wire>(locatorRangeV1Schema);
 
 declare const structuralAnchorValueBrand: unique symbol;
 
