@@ -20,7 +20,7 @@ concurrency:
 jobs:
   windows-native:
     name: Windows native foundation
-    runs-on: windows-2025
+    runs-on: windows-2022
     timeout-minutes: 45
     defaults:
       run:
@@ -73,11 +73,105 @@ jobs:
       - name: Run real-browser desktop smoke
         run: pnpm.cmd test:browser
 
-      - name: Run authoritative foundation checks
-        run: pnpm.cmd check
+      - name: Ensure WebView2 Runtime
+        run: |
+          $webView2ClientId = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+          $webView2RegistryPaths = @(
+            "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\$webView2ClientId",
+            "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\EdgeUpdate\Clients\$webView2ClientId",
+            "Registry::HKEY_CURRENT_USER\Software\WOW6432Node\Microsoft\EdgeUpdate\Clients\$webView2ClientId",
+            "Registry::HKEY_CURRENT_USER\Software\Microsoft\EdgeUpdate\Clients\$webView2ClientId"
+          )
+
+          function Get-WebView2RuntimeVersion {
+            foreach ($registryPath in $webView2RegistryPaths) {
+              $runtime = Get-ItemProperty -LiteralPath $registryPath -Name "pv" -ErrorAction SilentlyContinue
+              if (
+                $null -ne $runtime -and
+                -not [string]::IsNullOrWhiteSpace($runtime.pv) -and
+                $runtime.pv -ne "0.0.0.0"
+              ) {
+                return $runtime.pv
+              }
+            }
+            return $null
+          }
+
+          $runtimeVersion = Get-WebView2RuntimeVersion
+          if ($null -eq $runtimeVersion) {
+            $installerPath = Join-Path $env:RUNNER_TEMP "MicrosoftEdgeWebview2Setup.exe"
+            Invoke-WebRequest `
+              -Uri "https://go.microsoft.com/fwlink/p/?LinkId=2124703" `
+              -OutFile $installerPath
+            $signature = Get-AuthenticodeSignature -FilePath $installerPath
+            if (
+              $signature.Status -ne "Valid" -or
+              $signature.SignerCertificate.Subject -notlike "*O=Microsoft Corporation*"
+            ) {
+              throw "WebView2 Runtime installer signature validation failed."
+            }
+            $installer = Start-Process `
+              -FilePath $installerPath `
+              -ArgumentList "/silent", "/install" `
+              -Wait `
+              -PassThru
+            if ($installer.ExitCode -ne 0) {
+              throw "WebView2 Runtime installation failed with exit code $($installer.ExitCode)."
+            }
+            $runtimeVersion = Get-WebView2RuntimeVersion
+          }
+
+          if ($null -eq $runtimeVersion) {
+            throw "WebView2 Runtime is unavailable after installation."
+          }
+          Write-Output "WebView2 Runtime $runtimeVersion is available."
+
+      - name: Install pinned Tauri WebDriver tooling
+        run: |
+          cargo install tauri-driver --version 2.0.6 --locked
+          cargo install `
+            --git https://github.com/chippers/msedgedriver-tool.git `
+            --rev 8c4b34f51b45f5cf08013366d703de464ab871d1 `
+            --locked
+
+          $toolDirectory = Join-Path $env:USERPROFILE ".cargo\bin"
+          $driverDirectory = Join-Path $env:RUNNER_TEMP "voxleaf-native-webdriver"
+          New-Item -ItemType Directory -Path $driverDirectory -Force | Out-Null
+          Push-Location $driverDirectory
+          try {
+            & (Join-Path $toolDirectory "msedgedriver-tool.exe")
+          } finally {
+            Pop-Location
+          }
+
+          $tauriDriverPath = Join-Path $toolDirectory "tauri-driver.exe"
+          $edgeDriverPath = Join-Path $driverDirectory "msedgedriver.exe"
+          if (
+            -not (Test-Path -LiteralPath $tauriDriverPath -PathType Leaf) -or
+            -not (Test-Path -LiteralPath $edgeDriverPath -PathType Leaf)
+          ) {
+            throw "Pinned native WebDriver tooling is unavailable."
+          }
+          $signature = Get-AuthenticodeSignature -FilePath $edgeDriverPath
+          if (
+            $signature.Status -ne "Valid" -or
+            $signature.SignerCertificate.Subject -notlike "*O=Microsoft Corporation*"
+          ) {
+            throw "Microsoft EdgeDriver signature validation failed."
+          }
+
+          Add-Content `
+            -LiteralPath $env:GITHUB_ENV `
+            -Value "VOXLEAF_TAURI_DRIVER_PATH=$tauriDriverPath"
+          Add-Content `
+            -LiteralPath $env:GITHUB_ENV `
+            -Value "VOXLEAF_EDGE_DRIVER_PATH=$edgeDriverPath"
 
       - name: Run packaged WebView2 startup smoke
         run: pnpm.cmd test:native-startup
+
+      - name: Run authoritative foundation checks
+        run: pnpm.cmd check
 
   ubuntu-portable:
     name: Ubuntu portable foundation

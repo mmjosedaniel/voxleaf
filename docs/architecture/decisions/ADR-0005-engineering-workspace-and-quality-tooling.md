@@ -93,7 +93,19 @@ The root commands must call the same focused checks rather than define weaker du
 - Key caches by operating system and the applicable lockfiles. Never restore `node_modules`, `.venv`, Rust `target`, or native build outputs across operating systems.
 - Do not require a GPU, model weights, private data, external services, performance benchmarks, or generated audio in deterministic pull-request CI.
 
-Task 5.2 implements this strategy in `foundation-checks.yml`. It uses the explicit supported runner labels `windows-2025` and `ubuntu-24.04`; reads Node.js, Python, and Rust versions from the repository declarations; pins pnpm and uv exactly; and pins every action to a full commit SHA. Only uv's dependency-download cache is enabled, with an operating-system-specific suffix. The portable job deliberately excludes Rust and Tauri and runs `check:portable`; the authoritative Windows job runs the complete `check` command.
+Task 5.2 implements this strategy in `foundation-checks.yml`. It uses the explicit supported runner labels `windows-2022` and `ubuntu-24.04`; reads Node.js, Python, and Rust versions from the repository declarations; pins pnpm and uv exactly; and pins every action to a full commit SHA. Only uv's dependency-download cache is enabled, with an operating-system-specific suffix. The portable job deliberately excludes Rust and Tauri and runs `check:portable`; the authoritative Windows job runs the complete `check` command.
+
+The native job moved from `windows-2025` to the still-supported explicit
+`windows-2022` label when packaged WebView2 automation was introduced.
+Repeated `windows-2025` runs with WebView2 `150.0.4078.65` built and launched
+the host but never created EdgeDriver's `DevToolsActivePort`, including with a
+runtime-matched, Microsoft-signed driver and Tauri's supported WebDriver bridge.
+The `windows-2022` run used WebView2 `131.0.2903.86` and passed. Because the
+runner image and WebView2 major version changed together, the evidence
+establishes a known-good hosted image/runtime pair but does not isolate an
+operating-system defect from a WebView2 150 or image/runtime interaction.
+Server 2022 retains the same pinned repository toolchains and complete `check`
+ownership.
 
 ## Dependency impact
 
