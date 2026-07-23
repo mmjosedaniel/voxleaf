@@ -130,7 +130,7 @@ Complete
 
 #### Status
 
-In progress
+Complete
 
 ## Testing and benchmark strategy
 
@@ -194,6 +194,10 @@ It does not require production migration or data conversion.
   EdgeDriver's `DevToolsActivePort`. Selected the explicit supported
   `windows-2022` image for the authoritative native-GUI job and retained the
   same exact toolchains, drivers, checks, and Ubuntu portable coverage.
+- 2026-07-23: Server 2022 run `30039591462` passed the runtime check,
+  runtime-matched signed driver installation, packaged WebView2 smoke, complete
+  authoritative Windows check, and Ubuntu portable check. Moved this plan to
+  completed.
 
 ## Discoveries and decisions
 
@@ -235,5 +239,8 @@ It does not require production migration or data conversion.
   session creation before the profile-ownership correction. Rerun attempt 2 of
   `30037544251` passed every prerequisite and failed at the same session boundary
   after the correction. Run `30038826480` classified the failure as a missing
-  automation marker. Windows Server 2022 replacement validation remains
-  pending.
+  automation marker.
+- Server 2022 run `30039591462` passed the packaged WebView2 smoke and the full
+  Windows job. Ubuntu portable also passed.
+- The implementation is complete; no benchmark or production architecture
+  change was required.
