@@ -20,6 +20,7 @@ import {
   minimalContainerDocument,
   minimalNavigationDocument,
   minimalPackageDocument,
+  syntheticStaticPngBytes,
 } from "../../test-support/epub-fixture.js";
 import type { EpubArchiveError } from "../archive/archive-error.js";
 import {
@@ -29,7 +30,7 @@ import {
 
 const PRIVATE_CANARY =
   "private-title/private/path.xhtml?secret=repository-authored-prose";
-const PNG = Uint8Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a);
+const PNG = syntheticStaticPngBytes();
 
 const OPERATIONAL_CODE_BY_DETAIL = Object.freeze({
   "broken-reference": "invalid-input",

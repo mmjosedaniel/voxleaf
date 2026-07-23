@@ -9,7 +9,12 @@ import type {
 } from "@voxleaf/epub";
 import type { MouseEventHandler, ReactElement, ReactNode, Ref } from "react";
 
+import type { PublicationRasterImageLoadPort } from "./publication-raster-image-loader";
 import type { ReaderTargetAvailability } from "./reader-navigation";
+import {
+  SemanticRasterImageElement,
+  type ObserveRasterImageVisibility,
+} from "./SemanticRasterImage";
 
 interface EffectiveTextContext {
   readonly language?: string;
@@ -28,11 +33,14 @@ const DEFAULT_TARGET_AVAILABILITY: ReaderTargetAvailability = Object.freeze({
   explanation: DEFAULT_TARGET_EXPLANATION,
 });
 
-interface SemanticNavigation {
+interface SemanticRenderServices {
   readonly targetAvailability:
     ((target: SemanticDocumentTarget) => ReaderTargetAvailability) | undefined;
   readonly onActivateTarget:
     ((target: SemanticDocumentTarget) => void) | undefined;
+  readonly rasterImageLoader: PublicationRasterImageLoadPort | undefined;
+  readonly observeRasterImageVisibility:
+    ObserveRasterImageVisibility | undefined;
 }
 
 interface SemanticDestination {
@@ -82,14 +90,14 @@ function textContextAttributes(
 function renderInlineChildren(
   children: readonly SemanticInline[],
   inherited: EffectiveTextContext,
-  navigation: SemanticNavigation,
+  services: SemanticRenderServices,
 ): ReactNode {
   return children.map((inline, index) => (
     <SemanticInlineElement
       key={index}
       inline={inline}
       inherited={inherited}
-      navigation={navigation}
+      services={services}
     />
   ));
 }
@@ -97,20 +105,20 @@ function renderInlineChildren(
 interface SemanticInlineElementProps {
   readonly inline: SemanticInline;
   readonly inherited: EffectiveTextContext;
-  readonly navigation: SemanticNavigation;
+  readonly services: SemanticRenderServices;
 }
 
 function SemanticInlineElement({
   inline,
   inherited,
-  navigation,
+  services,
 }: SemanticInlineElementProps): ReactNode {
   switch (inline.kind) {
     case "code": {
       const current = effectiveTextContext(inline, inherited);
       return (
         <code {...textContextAttributes(current, inherited)}>
-          {renderInlineChildren(inline.children, current, navigation)}
+          {renderInlineChildren(inline.children, current, services)}
         </code>
       );
     }
@@ -118,26 +126,22 @@ function SemanticInlineElement({
       const current = effectiveTextContext(inline, inherited);
       return (
         <em {...textContextAttributes(current, inherited)}>
-          {renderInlineChildren(inline.children, current, navigation)}
+          {renderInlineChildren(inline.children, current, services)}
         </em>
       );
     }
     case "internal-link": {
       const current = effectiveTextContext(inline, inherited);
       const availability =
-        navigation.targetAvailability?.(inline.target) ??
+        services.targetAvailability?.(inline.target) ??
         DEFAULT_TARGET_AVAILABILITY;
-      const children = renderInlineChildren(
-        inline.children,
-        current,
-        navigation,
-      );
+      const children = renderInlineChildren(inline.children, current, services);
       if (
         availability.status === "available" &&
-        navigation.onActivateTarget !== undefined
+        services.onActivateTarget !== undefined
       ) {
         const activate: MouseEventHandler<HTMLButtonElement> = () =>
-          navigation.onActivateTarget?.(inline.target);
+          services.onActivateTarget?.(inline.target);
         return (
           <button
             type="button"
@@ -170,12 +174,15 @@ function SemanticInlineElement({
       return <br />;
     case "raster-image": {
       const current = effectiveTextContext(inline, inherited);
+      const attributes = textContextAttributes(current, inherited);
       return (
-        <span
-          className="semantic-raster-placeholder"
-          role="img"
-          aria-label="Publication image placeholder"
-          {...textContextAttributes(current, inherited)}
+        <SemanticRasterImageElement
+          resourceId={inline.resourceId}
+          alternativeText={inline.alternativeText}
+          loader={services.rasterImageLoader}
+          observeVisibility={services.observeRasterImageVisibility}
+          language={attributes.lang}
+          direction={attributes.dir}
         />
       );
     }
@@ -183,7 +190,7 @@ function SemanticInlineElement({
       const current = effectiveTextContext(inline, inherited);
       return (
         <strong {...textContextAttributes(current, inherited)}>
-          {renderInlineChildren(inline.children, current, navigation)}
+          {renderInlineChildren(inline.children, current, services)}
         </strong>
       );
     }
@@ -203,12 +210,12 @@ function SemanticInlineElement({
 function renderHeading(
   block: SemanticHeadingBlock,
   inherited: EffectiveTextContext,
-  navigation: SemanticNavigation,
+  services: SemanticRenderServices,
   destinationRef?: (element: HTMLElement | null) => void,
 ): ReactElement {
   const current = effectiveTextContext(block, inherited);
   const attributes = textContextAttributes(current, inherited);
-  const children = renderInlineChildren(block.children, current, navigation);
+  const children = renderInlineChildren(block.children, current, services);
   const destinationAttributes =
     destinationRef === undefined
       ? {}
@@ -259,7 +266,7 @@ function renderHeading(
 function renderBlockChildren(
   children: readonly SemanticBlock[],
   inherited: EffectiveTextContext,
-  navigation: SemanticNavigation,
+  services: SemanticRenderServices,
   destination: SemanticDestination,
 ): ReactNode {
   return children.map((block, index) => (
@@ -267,7 +274,7 @@ function renderBlockChildren(
       key={index}
       block={block}
       inherited={inherited}
-      navigation={navigation}
+      services={services}
       destination={destination}
     />
   ));
@@ -276,14 +283,14 @@ function renderBlockChildren(
 interface SemanticBlockElementProps {
   readonly block: SemanticBlock;
   readonly inherited: EffectiveTextContext;
-  readonly navigation: SemanticNavigation;
+  readonly services: SemanticRenderServices;
   readonly destination: SemanticDestination;
 }
 
 function SemanticBlockElement({
   block,
   inherited,
-  navigation,
+  services,
   destination,
 }: SemanticBlockElementProps): ReactElement {
   const destinationRef =
@@ -296,23 +303,18 @@ function SemanticBlockElement({
           ref={destinationRef}
           {...textContextAttributes(current, inherited)}
         >
-          {renderBlockChildren(
-            block.children,
-            current,
-            navigation,
-            destination,
-          )}
+          {renderBlockChildren(block.children, current, services, destination)}
         </blockquote>
       );
     }
     case "heading":
-      return renderHeading(block, inherited, navigation, destinationRef);
+      return renderHeading(block, inherited, services, destinationRef);
     case "list": {
       const current = effectiveTextContext(block, inherited);
       const attributes = textContextAttributes(current, inherited);
       const items = block.items.map((item, index) => (
         <li key={index}>
-          {renderBlockChildren(item.children, current, navigation, destination)}
+          {renderBlockChildren(item.children, current, services, destination)}
         </li>
       ));
       return block.ordered ? (
@@ -329,7 +331,7 @@ function SemanticBlockElement({
       const current = effectiveTextContext(block, inherited);
       return (
         <p ref={destinationRef} {...textContextAttributes(current, inherited)}>
-          {renderInlineChildren(block.children, current, navigation)}
+          {renderInlineChildren(block.children, current, services)}
         </p>
       );
     }
@@ -347,6 +349,8 @@ export interface SemanticDocumentContentProps {
   readonly destinationBlock?: SemanticBlock;
   readonly destinationRef?: (element: HTMLElement | null) => void;
   readonly readerRef?: Ref<HTMLElement>;
+  readonly rasterImageLoader?: PublicationRasterImageLoadPort;
+  readonly observeRasterImageVisibility?: ObserveRasterImageVisibility;
 }
 
 export function SemanticDocumentContent({
@@ -356,9 +360,16 @@ export function SemanticDocumentContent({
   destinationBlock,
   destinationRef,
   readerRef,
+  rasterImageLoader,
+  observeRasterImageVisibility,
 }: SemanticDocumentContentProps): ReactElement {
   const current = effectiveTextContext(document, EMPTY_TEXT_CONTEXT);
-  const navigation = { targetAvailability, onActivateTarget };
+  const services = {
+    targetAvailability,
+    onActivateTarget,
+    rasterImageLoader,
+    observeRasterImageVisibility,
+  };
   const destination = { block: destinationBlock, ref: destinationRef };
   return (
     <article
@@ -368,7 +379,7 @@ export function SemanticDocumentContent({
       aria-label="Current reading section"
       {...textContextAttributes(current, EMPTY_TEXT_CONTEXT)}
     >
-      {renderBlockChildren(document.blocks, current, navigation, destination)}
+      {renderBlockChildren(document.blocks, current, services, destination)}
     </article>
   );
 }

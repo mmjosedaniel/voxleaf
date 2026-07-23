@@ -34,6 +34,18 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     (key) => localStorage.removeItem(key),
     TEST_STORAGE_KEY,
   );
+  await page.addInitScript(() => {
+    const originalRevoke = URL.revokeObjectURL.bind(URL);
+    let revokedObjectUrlCount = 0;
+    Object.defineProperty(globalThis, "__voxleafRevokedObjectUrlCount", {
+      configurable: false,
+      get: () => revokedObjectUrlCount,
+    });
+    URL.revokeObjectURL = (objectUrl: string): void => {
+      revokedObjectUrlCount += 1;
+      originalRevoke(objectUrl);
+    };
+  });
 
   try {
     expect(page.viewportSize()).toEqual({ width: 1_280, height: 720 });
@@ -85,6 +97,33 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     const toc = page.getByRole("navigation", { name: "Table of contents" });
     await expect(toc.getByText("Part One", { exact: true })).toBeVisible();
     await expect(toc.getByRole("button", { name: "Part One" })).toHaveCount(0);
+    await page.locator(".semantic-raster-host").scrollIntoViewIfNeeded();
+    const publicationImage = page.getByRole("img", {
+      name: "Synthetic cover",
+      exact: true,
+    });
+    await expect(publicationImage).toBeVisible();
+    await expect(publicationImage).toHaveAttribute("src", /^blob:/u);
+    expect(
+      await publicationImage.evaluate((image: HTMLImageElement) => ({
+        naturalWidth: image.naturalWidth,
+        naturalHeight: image.naturalHeight,
+      })),
+    ).toEqual({ naturalWidth: 1, naturalHeight: 1 });
+    expect(
+      await page.evaluate(
+        () =>
+          (
+            globalThis as typeof globalThis & {
+              __voxleafRevokedObjectUrlCount: number;
+            }
+          ).__voxleafRevokedObjectUrlCount,
+      ),
+    ).toBe(0);
+    await expect(page.locator(".semantic-reader")).not.toContainText(
+      "images/cover.png",
+    );
+
     await toc.getByRole("button", { name: "Continuation" }).click();
     const continuationHeading = page.getByRole("heading", {
       level: 1,
@@ -93,11 +132,25 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     await expect(continuationHeading).toBeVisible();
     await expect(continuationHeading).toBeFocused();
     await expect(page).toHaveURL(`${LOCAL_ORIGIN}/`);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (
+              globalThis as typeof globalThis & {
+                __voxleafRevokedObjectUrlCount: number;
+              }
+            ).__voxleafRevokedObjectUrlCount,
+        ),
+      )
+      .toBeGreaterThanOrEqual(1);
 
     await page.getByRole("button", { name: "Previous chapter" }).click();
     await expect(
       page.getByRole("heading", { level: 1, name: "Opening" }),
     ).toBeFocused();
+    await page.locator(".semantic-raster-host").scrollIntoViewIfNeeded();
+    await expect(publicationImage).toBeVisible();
     await page.getByRole("button", { name: "Continue" }).click();
     await expect(continuationHeading).toBeFocused();
 

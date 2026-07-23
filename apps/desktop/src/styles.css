@@ -352,15 +352,38 @@ button.semantic-internal-link {
   border: 0;
 }
 
-.semantic-raster-placeholder {
+.semantic-raster-host {
   display: inline-block;
-  width: 1em;
-  height: 1em;
-  margin-inline: 0.1em;
+  max-width: 100%;
+  margin: 0.35em 0.1em;
+  vertical-align: middle;
+}
+
+.semantic-raster-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.3rem;
+}
+
+.semantic-raster-placeholder {
+  display: inline-flex;
+  width: min(12rem, 100%);
+  min-height: 6rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
   border: 1px solid #8da194;
-  border-radius: 0.15em;
-  vertical-align: -0.1em;
+  border-radius: 0.3rem;
+  box-sizing: border-box;
+  color: #405047;
   background: #edf2ec;
+  font-size: 0.9em;
+  text-align: center;
+}
+
+.semantic-raster-unavailable {
+  border-style: dashed;
 }
 
 .empty-publication,

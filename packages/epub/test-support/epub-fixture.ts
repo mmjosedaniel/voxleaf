@@ -26,6 +26,16 @@ const FIXED_ZIP_OPTIONS = Object.freeze({
 export type EpubFixtureContent = string | Uint8Array;
 export type EpubFixtureCompression = "deflate" | "stored";
 
+/** Returns caller-owned bytes for one repository-authored static 1x1 PNG. */
+export function syntheticStaticPngBytes(): Uint8Array {
+  return Uint8Array.from([
+    137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0,
+    0, 0, 1, 8, 4, 0, 0, 0, 181, 28, 12, 2, 0, 0, 0, 11, 73, 68, 65, 84, 120,
+    218, 99, 100, 248, 15, 0, 1, 5, 1, 1, 39, 24, 227, 102, 0, 0, 0, 0, 73, 69,
+    78, 68, 174, 66, 96, 130,
+  ]);
+}
+
 export interface EpubFixtureExtraField {
   readonly id: number;
   readonly data: Uint8Array;
@@ -366,7 +376,7 @@ export async function buildComprehensiveEpubFixture(): Promise<Uint8Array> {
     }),
     Object.freeze({
       name: "EPUB/images/cover.png",
-      content: Uint8Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a),
+      content: syntheticStaticPngBytes(),
       compression: "stored",
     }),
   ]);
