@@ -97,12 +97,15 @@ Task 5.2 implements this strategy in `foundation-checks.yml`. It uses the explic
 
 The native job moved from `windows-2025` to the still-supported explicit
 `windows-2022` label when packaged WebView2 automation was introduced.
-Repeated Server 2025 runs built and launched the host but never created
-EdgeDriver's `DevToolsActivePort`, including with a runtime-matched,
-Microsoft-signed driver and Tauri's supported WebDriver bridge. Server 2022
-retains the same pinned repository toolchains and complete `check` ownership;
-the label change is limited to obtaining a functional hosted native-GUI test
-environment.
+Repeated `windows-2025` runs with WebView2 `150.0.4078.65` built and launched
+the host but never created EdgeDriver's `DevToolsActivePort`, including with a
+runtime-matched, Microsoft-signed driver and Tauri's supported WebDriver bridge.
+The `windows-2022` run used WebView2 `131.0.2903.86` and passed. Because the
+runner image and WebView2 major version changed together, the evidence
+establishes a known-good hosted image/runtime pair but does not isolate an
+operating-system defect from a WebView2 150 or image/runtime interaction.
+Server 2022 retains the same pinned repository toolchains and complete `check`
+ownership.
 
 ## Dependency impact
 

@@ -18,10 +18,11 @@ change.
 
 `apps/desktop/scripts/native-startup-smoke.mjs` launches the release executable
 with WebView2 remote-debugging flags, polls `/json/version`, and attaches
-Playwright over CDP. This passes locally but GitHub's `windows-2025` runner never
-exposes that endpoint, even with an installed runtime, explicit loopback binding,
-the automation feature flag, and a 90-second deadline. The application process
-remains alive, so increasing the timeout cannot repair the transport mismatch.
+Playwright over CDP. This passes locally but the hosted
+`windows-2025`/WebView2 `150.0.4078.65` combination never exposes that endpoint,
+even with an installed runtime, explicit loopback binding, the automation
+feature flag, and a 90-second deadline. The application process remains alive,
+so increasing the timeout cannot repair the observed transport mismatch.
 
 ## Scope and non-goals
 
@@ -190,14 +191,18 @@ It does not require production migration or data conversion.
   profile, automation-marker, WebView-environment, timeout, and resource failure
   families without exposing the driver's message.
 - 2026-07-23: Classified run `30038826480` identified
-  `webdriver-automation-marker-missing`: the Server 2025 host never created
+  `webdriver-automation-marker-missing`: the hosted
+  `windows-2025`/WebView2 `150.0.4078.65` combination never created
   EdgeDriver's `DevToolsActivePort`. Selected the explicit supported
-  `windows-2022` image for the authoritative native-GUI job and retained the
-  same exact toolchains, drivers, checks, and Ubuntu portable coverage.
-- 2026-07-23: Server 2022 run `30039591462` passed the runtime check,
-  runtime-matched signed driver installation, packaged WebView2 smoke, complete
-  authoritative Windows check, and Ubuntu portable check. Moved this plan to
-  completed.
+  `windows-2022` image as the known-good hosted native-GUI environment while
+  retaining the pinned repository toolchains, checks, and Ubuntu portable
+  coverage.
+- 2026-07-23: Server 2022 run `30039591462`, using WebView2
+  `131.0.2903.86` and its matching signed driver, passed the runtime check,
+  packaged WebView2 smoke, complete authoritative Windows check, and Ubuntu
+  portable check. Because the image and runtime changed together, the evidence
+  does not isolate an operating-system defect from a WebView2 150 or
+  image/runtime interaction. Moved this plan to completed.
 
 ## Discoveries and decisions
 
@@ -214,25 +219,27 @@ It does not require production migration or data conversion.
   `tauri:options.webviewOptions.userDataFolder`. This keeps its startup marker
   and the application's actual profile synchronized.
 - Hosted native-GUI evidence requires a runner image on which WebView2 can
-  create EdgeDriver's automation marker. `windows-2022` is pinned for that role;
-  `windows-2025` remains unsuitable after direct CDP and supported WebDriver
-  both failed at the same marker boundary.
+  create EdgeDriver's automation marker. `windows-2022` with WebView2
+  `131.0.2903.86` is pinned as the known-good pair for that role. The observed
+  `windows-2025`/WebView2 `150.0.4078.65` pair remains unsuitable after direct
+  CDP and supported WebDriver both failed at the same marker boundary; the
+  available runs do not isolate which member of that pair causes the failure.
 - `docs/architecture/system-diagram.md` and `docs/architecture/overview.md` were
   reviewed. No diagram change is required because the WebDriver bridge is
   test-only and does not change the production component or runtime data flow.
 
 ## Final validation results
 
-- `pnpm.cmd --filter @voxleaf/desktop test:native-driver-client` passed three
+- `pnpm.cmd --filter @voxleaf/desktop test:native-driver-client` passed four
   protocol tests.
 - `pnpm.cmd --filter @voxleaf/desktop test` passed 13 Vitest files/116 tests
-  plus the three Node protocol tests.
+  plus the four Node protocol tests.
 - `pnpm.cmd test:native-startup` rebuilt the release executable and passed the
   packaged WebView2 open/decode/close/error/network assertions.
 - A direct post-cleanup `node apps/desktop/scripts/native-startup-smoke.mjs`
   rerun passed with the exact pinned local drivers.
 - `pnpm.cmd check` passed formatting, lint, type checks, 18 shared files/175
-  tests, 23 EPUB files/376 tests, 13 desktop files/116 tests, three Node protocol
+  tests, 23 EPUB files/376 tests, 13 desktop files/116 tests, four Node protocol
   tests, Rust/Python tests, and all production builds.
 - `git diff --check` passed.
 - Hosted run `30036278090` passed runtime/tool installation and failed during
