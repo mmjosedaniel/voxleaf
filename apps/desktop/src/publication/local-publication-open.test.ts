@@ -83,7 +83,7 @@ describe("local publication open flow", () => {
     await expect(
       flow.open(new File([new Uint8Array()], "private-invalid.epub")),
     ).resolves.toEqual({ status: "rejected", reason: "invalid-epub" });
-    await flow.close();
+    await expect(flow.close()).resolves.toEqual({ status: "closed" });
   });
 
   it("closes prior state before passing bounded bytes to the session", async () => {
@@ -268,7 +268,7 @@ describe("local publication open flow", () => {
     });
     const opening = flow.open(new File(["book"], "private.epub"));
 
-    await flow.close();
+    await expect(flow.close()).resolves.toEqual({ status: "closed" });
 
     expect(signal?.aborted).toBe(true);
     expect(session.close).toHaveBeenCalledTimes(2);
@@ -310,6 +310,9 @@ describe("local publication open flow", () => {
     await expect(
       flow.open(new File(["book"], "private.epub")),
     ).resolves.toEqual({ status: "rejected", reason: "internal-failure" });
-    await expect(flow.close()).resolves.toBeUndefined();
+    await expect(flow.close()).resolves.toEqual({
+      status: "rejected",
+      reason: "internal-failure",
+    });
   });
 });

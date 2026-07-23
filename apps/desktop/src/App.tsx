@@ -1,52 +1,53 @@
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
-
+import type { OpenedPublication } from "@voxleaf/epub";
 import {
-  createLocalPublicationOpenFlow,
-  type LocalPublicationOpenFailureReason,
-  type LocalPublicationOpenFlow,
-  type LocalPublicationOpenResult,
-} from "./publication/local-publication-open";
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ChangeEvent,
+  type ComponentType,
+} from "react";
+
+import type { LocalPublicationOpenFlow } from "./publication/local-publication-open";
+import { ReaderErrorBoundary } from "./reader/ReaderErrorBoundary";
+import {
+  createReaderLifecycle,
+  type ReaderFailureReason,
+  type ReaderLifecycleState,
+} from "./reader/reader-lifecycle";
 import {
   runRasterImageSafetyProbe,
   type RasterImageProbeResult,
 } from "./reader/raster-image-probe";
 
-interface PublicationSummary {
-  readonly title: string;
-  readonly authors: readonly string[];
-}
-
-type PublicationOpenViewState =
-  | { readonly status: "idle" }
-  | { readonly status: "opening" }
-  | {
-      readonly status: "ready";
-      readonly summary: PublicationSummary;
-    }
-  | {
-      readonly status: "rejected";
-      readonly reason: LocalPublicationOpenFailureReason;
-    };
-
 type RasterImageProbeStatus =
   "accepted" | "cancelled" | "idle" | "rejected" | "running";
 
+export interface ReadyPublicationContentProps {
+  readonly publication: OpenedPublication;
+}
+
 export interface AppProps {
   readonly openFlow?: LocalPublicationOpenFlow;
+  readonly ReadyPublicationContent?: ComponentType<ReadyPublicationContentProps>;
   readonly runRasterProbe?: typeof runRasterImageSafetyProbe;
 }
 
-const FAILURE_MESSAGE: Readonly<
-  Record<LocalPublicationOpenFailureReason, string>
-> = Object.freeze({
-  "file-read-failed": "VoxLeaf could not read that local file.",
-  "file-too-large": "That file is larger than the 100 MiB EPUB limit.",
-  "internal-failure":
-    "VoxLeaf could not open that EPUB because of an internal failure.",
-  "invalid-epub": "That file is not a valid supported EPUB.",
-  "resource-exhausted": "That EPUB exceeds VoxLeaf's safe processing limits.",
-  "unsupported-epub": "That EPUB uses features VoxLeaf does not support yet.",
-});
+const FAILURE_MESSAGE: Readonly<Record<ReaderFailureReason, string>> =
+  Object.freeze({
+    "close-failed":
+      "VoxLeaf could not finish closing the EPUB. Restart VoxLeaf before opening another EPUB.",
+    "file-read-failed": "VoxLeaf could not read that local file.",
+    "file-too-large": "That file is larger than the 100 MiB EPUB limit.",
+    "internal-failure":
+      "VoxLeaf could not open that EPUB because of an internal failure.",
+    "invalid-epub": "That file is not a valid supported EPUB.",
+    "rendering-failed":
+      "VoxLeaf could not display that EPUB. Reopen it or choose another local EPUB.",
+    "resource-exhausted": "That EPUB exceeds VoxLeaf's safe processing limits.",
+    "unsupported-epub": "That EPUB uses features VoxLeaf does not support yet.",
+  });
 
 const RASTER_STATUS_MESSAGE: Readonly<Record<RasterImageProbeStatus, string>> =
   Object.freeze({
@@ -57,35 +58,20 @@ const RASTER_STATUS_MESSAGE: Readonly<Record<RasterImageProbeStatus, string>> =
     running: "Testing bounded local raster decoding.",
   });
 
-function stateForResult(
-  result: LocalPublicationOpenResult,
-): PublicationOpenViewState {
-  switch (result.status) {
-    case "cancelled":
-      return Object.freeze({ status: "idle" });
-    case "rejected":
-      return Object.freeze({ status: "rejected", reason: result.reason });
-    case "ready":
-      return Object.freeze({
-        status: "ready",
-        summary: Object.freeze({
-          title: result.publication.book.metadata.title,
-          authors: Object.freeze([...result.publication.book.metadata.authors]),
-        }),
-      });
-  }
-}
-
-function statusMessage(state: PublicationOpenViewState): string {
+function statusMessage(state: ReaderLifecycleState): string {
   switch (state.status) {
+    case "closing":
+      return "Closing the current EPUB.";
+    case "empty":
+      return "This EPUB has no supported readable content.";
+    case "failure":
+      return FAILURE_MESSAGE[state.reason];
     case "idle":
       return "No local EPUB is open.";
     case "opening":
       return "Validating and opening the selected EPUB.";
     case "ready":
       return "The EPUB opened successfully.";
-    case "rejected":
-      return FAILURE_MESSAGE[state.reason];
   }
 }
 
@@ -95,29 +81,40 @@ function rasterStatusForResult(
   return result.status;
 }
 
+function EmptyReadyPublicationContent(): null {
+  return null;
+}
+
 export function App({
   openFlow: suppliedOpenFlow,
+  ReadyPublicationContent = EmptyReadyPublicationContent,
   runRasterProbe = runRasterImageSafetyProbe,
 }: AppProps) {
-  const [openFlow] = useState(
-    () => suppliedOpenFlow ?? createLocalPublicationOpenFlow(),
+  const [readerLifecycle] = useState(() =>
+    createReaderLifecycle({
+      ...(suppliedOpenFlow === undefined ? {} : { openFlow: suppliedOpenFlow }),
+    }),
   );
-  const requestSequence = useRef(0);
+  const subscribe = useCallback(
+    (listener: () => void) => readerLifecycle.subscribe(listener),
+    [readerLifecycle],
+  );
+  const getSnapshot = useCallback(
+    () => readerLifecycle.state,
+    [readerLifecycle],
+  );
+  const viewState = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const activeRasterProbe = useRef<AbortController | undefined>(undefined);
-  const [viewState, setViewState] = useState<PublicationOpenViewState>({
-    status: "idle",
-  });
   const [rasterStatus, setRasterStatus] =
     useState<RasterImageProbeStatus>("idle");
 
   useEffect(
     () => () => {
-      requestSequence.current += 1;
       activeRasterProbe.current?.abort();
       activeRasterProbe.current = undefined;
-      void openFlow.close();
+      void readerLifecycle.cleanup();
     },
-    [openFlow],
+    [readerLifecycle],
   );
 
   const handleRasterProbe = async (): Promise<void> => {
@@ -139,9 +136,7 @@ export function App({
     setRasterStatus(rasterStatusForResult(result));
   };
 
-  const handleSelection = async (
-    event: ChangeEvent<HTMLInputElement>,
-  ): Promise<void> => {
+  const handleSelection = (event: ChangeEvent<HTMLInputElement>): void => {
     const input = event.currentTarget;
     const file = input.files?.[0];
     input.value = "";
@@ -152,27 +147,16 @@ export function App({
       return;
     }
 
-    const requestId = ++requestSequence.current;
-    setViewState({ status: "opening" });
-
-    let result: LocalPublicationOpenResult;
-    try {
-      result = await openFlow.open(file);
-    } catch {
-      result = Object.freeze({
-        status: "rejected",
-        reason: "internal-failure",
-      });
-    }
-    if (requestId !== requestSequence.current) {
-      return;
-    }
-    setViewState(stateForResult(result));
+    void readerLifecycle.open(file);
   };
 
-  const isOpening = viewState.status === "opening";
+  const isBusy =
+    viewState.status === "closing" || viewState.status === "opening";
+  const openDisabled =
+    viewState.status === "closing" ||
+    (viewState.status === "failure" && viewState.reason === "close-failed");
   const statusClassName =
-    viewState.status === "rejected"
+    viewState.status === "failure"
       ? "open-status open-status-error"
       : "open-status";
 
@@ -181,7 +165,7 @@ export function App({
       <section
         className="shell-card"
         aria-labelledby="shell-title"
-        aria-busy={isOpening}
+        aria-busy={isBusy}
       >
         <p className="shell-label">Private local EPUB reader</p>
         <h1 id="shell-title">VoxLeaf</h1>
@@ -195,7 +179,8 @@ export function App({
             type="file"
             accept=".epub,application/epub+zip"
             aria-describedby="open-status"
-            onChange={(event) => void handleSelection(event)}
+            disabled={openDisabled}
+            onChange={handleSelection}
           />
         </label>
         <p
@@ -207,17 +192,49 @@ export function App({
           {statusMessage(viewState)}
         </p>
         {viewState.status === "ready" ? (
-          <section
-            className="publication-summary"
-            aria-labelledby="publication-title"
+          <ReaderErrorBoundary
+            key={viewState.publicationSequence}
+            onFailure={() => readerLifecycle.failRendering()}
           >
-            <p className="publication-summary-label">Opened publication</p>
-            <h2 id="publication-title">{viewState.summary.title}</h2>
-            <p className="publication-authors">
-              {viewState.summary.authors.length === 0
-                ? "Author not provided"
-                : `By ${viewState.summary.authors.join(", ")}`}
+            <section
+              className="publication-summary"
+              aria-labelledby="publication-title"
+            >
+              <p className="publication-summary-label">Opened publication</p>
+              <h2 id="publication-title">{viewState.summary.title}</h2>
+              <p className="publication-authors">
+                {viewState.summary.authors.length === 0
+                  ? "Author not provided"
+                  : `By ${viewState.summary.authors.join(", ")}`}
+              </p>
+              <ReadyPublicationContent publication={viewState.publication} />
+              <button
+                type="button"
+                className="close-publication"
+                onClick={() => void readerLifecycle.close()}
+              >
+                Close EPUB
+              </button>
+            </section>
+          </ReaderErrorBoundary>
+        ) : null}
+        {viewState.status === "empty" ? (
+          <section
+            className="empty-publication"
+            aria-labelledby="empty-publication-title"
+          >
+            <h2 id="empty-publication-title">No readable content</h2>
+            <p>
+              VoxLeaf could not find a supported readable passage. Close this
+              EPUB or choose another local EPUB.
             </p>
+            <button
+              type="button"
+              className="close-publication"
+              onClick={() => void readerLifecycle.close()}
+            >
+              Close EPUB
+            </button>
           </section>
         ) : null}
         <div className="raster-probe">

@@ -40,6 +40,18 @@ export type LocalPublicationOpenResult =
   | ReadyLocalPublicationOpenResult
   | RejectedLocalPublicationOpenResult;
 
+export interface ClosedLocalPublicationResult {
+  readonly status: "closed";
+}
+
+export interface RejectedLocalPublicationCloseResult {
+  readonly status: "rejected";
+  readonly reason: "internal-failure";
+}
+
+export type LocalPublicationCloseResult =
+  ClosedLocalPublicationResult | RejectedLocalPublicationCloseResult;
+
 export interface LocalPublicationOpenFlowOptions {
   readonly readFile?: typeof readLocalEpubFile;
   readonly session?: PublicationSession;
@@ -52,12 +64,23 @@ export interface LocalPublicationOpenFlowOptions {
 export interface LocalPublicationOpenFlow {
   readonly publication: OpenedPublication | undefined;
   open(file: File): Promise<LocalPublicationOpenResult>;
-  close(): Promise<void>;
+  close(): Promise<LocalPublicationCloseResult>;
 }
 
 const CANCELLED_RESULT: CancelledLocalPublicationOpenResult = Object.freeze({
   status: "cancelled",
 });
+
+const CLOSED_RESULT: ClosedLocalPublicationResult = Object.freeze({
+  status: "closed",
+});
+
+const CLOSE_FAILURE_RESULT: RejectedLocalPublicationCloseResult = Object.freeze(
+  {
+    status: "rejected",
+    reason: "internal-failure",
+  },
+);
 
 function rejected(
   reason: LocalPublicationOpenFailureReason,
@@ -206,10 +229,11 @@ class DesktopLocalPublicationOpenFlow implements LocalPublicationOpenFlow {
     return mapSessionOpen(openResult);
   }
 
-  public async close(): Promise<void> {
+  public async close(): Promise<LocalPublicationCloseResult> {
     this.#intentVersion += 1;
     this.cancelActiveRead();
-    await closeSessionSafely(this.#session);
+    const result = await closeSessionSafely(this.#session);
+    return result?.status === "closed" ? CLOSED_RESULT : CLOSE_FAILURE_RESULT;
   }
 
   private cancelActiveRead(): void {

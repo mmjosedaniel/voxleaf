@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop now connects its capability-free local-file selection/read boundary to a UI-independent publication-session owner, presents validated title/authors or fixed safe failures, and retains the bounded static-raster predecode/decode source boundary. A user can open a supported publication but cannot render or read its content yet. Rendering and the ADR-0011-approved persistence repository remain planned implementation work; narration preparation, TTS integration, buffering, and playback also require their own implementation evidence. The Python area remains a foundation only.
+Mixed implementation status. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop now connects its capability-free local-file selection/read boundary to a UI-independent publication-session owner, presents one accessible idle/opening/ready/empty/failure/closing lifecycle surface, contains presentation failures, and retains the bounded static-raster predecode/decode source boundary. A user can open and explicitly close a supported publication but cannot render or read its semantic content yet. Rendering and the ADR-0011-approved persistence repository remain planned implementation work; narration preparation, TTS integration, buffering, and playback also require their own implementation evidence. The Python area remains a foundation only.
 
 [`system-diagram.md`](system-diagram.md) is the canonical visual map and status legend. This overview owns the accompanying architectural rationale, invariants, and detailed implemented-boundary notes.
 
@@ -17,6 +17,7 @@ Desktop application
 ├── Capability-free local file selection/read/open [implemented]
 ├── Bounded static-raster preflight/source lifecycle [implemented]
 ├── Cancellable publication-session lifecycle [implemented]
+├── Accessible reader lifecycle state/error containment [implemented]
 ├── Versioned bounded Web Storage repository [approved, unimplemented]
 ├── Semantic React reader and navigation
 ├── Reading-session coordinator
@@ -45,7 +46,7 @@ Local TTS service
 
 The visual position is a normalized `ReadingLocatorV1` sampled at an application-owned reading line. A browser caret/range supplies the Unicode-code-point offset when safe, with deterministic block-start fallback. Explicit navigation may move focus to a destination heading/reader region, while passive scrolling, reflow, and initial restoration do not steal focus.
 
-File ingress is resolved by ADR-0009, ADR-0010 resolves the predecode/decode/object-URL safety boundary for static raster images, and ADR-0011 resolves the bounded Web Storage, display-preference, save-lifecycle, failure, and migration policy. Playwright Chromium tooling supplies the deterministic real-browser foundation and Task 1.6 benchmark harness while native WebView2 behavior remains a separate Windows matrix. The ADR-0008 Task 1.6 amendment accepts incremental batches of at most 250 semantic blocks, a 10,000-block/80,000-DOM-node chapter ceiling, `chapter-too-large` fallback, and documented reference latency/memory gates. The desktop publication-session owner and file-selection/open integration are implemented; semantic image rendering, the reader/persistence coordinators, and reader-specific browser/native coverage remain later Milestone 4 work. Synchronization with the active narrated segment remains a later milestone.
+File ingress is resolved by ADR-0009, ADR-0010 resolves the predecode/decode/object-URL safety boundary for static raster images, and ADR-0011 resolves the bounded Web Storage, display-preference, save-lifecycle, failure, and migration policy. Playwright Chromium tooling supplies the deterministic real-browser foundation and Task 1.6 benchmark harness while native WebView2 behavior remains a separate Windows matrix. The ADR-0008 Task 1.6 amendment accepts incremental batches of at most 250 semantic blocks, a 10,000-block/80,000-DOM-node chapter ceiling, `chapter-too-large` fallback, and documented reference latency/memory gates. The desktop publication-session owner, file-selection/open integration, closed lifecycle state controller, accessible status/close surface, and fixed render-error boundary are implemented. Semantic image rendering, the reader/persistence coordinators, and reader-specific browser/native coverage remain later Milestone 4 work. Synchronization with the active narrated segment remains a later milestone.
 
 The desktop application and TTS inference should run in separate local processes.
 
@@ -60,7 +61,7 @@ The protocol may use Tauri IPC, standard input/output, a local socket, or loopba
 
 ## Core data flow
 
-The public EPUB package currently implements the in-memory validation, parsing, semantic projection, resource-descriptor, and locator portions of this flow. The desktop file-open coordinator passes one bounded local-file read to the publication-session module, which owns cancellation, replacement, late-result rejection, and publication cleanup. The application presents only validated title/authors or fixed safe open outcomes; no presentation component consumes semantic publication content yet. Saved-position restoration, visual rendering, narration preparation, synthesis, buffering, playback, and persistence remain planned.
+The public EPUB package currently implements the in-memory validation, parsing, semantic projection, resource-descriptor, and locator portions of this flow. The desktop file-open coordinator passes one bounded local-file read to the publication-session module, which owns cancellation, replacement, late-result rejection, and publication cleanup. A separate application lifecycle controller exposes only immutable idle/opening/ready/empty/failure/closing states, clears the prior publication reference before non-ready states, and maps zero located blocks to the recoverable empty state. The application presents only validated title/authors or fixed safe outcomes; no production presentation component consumes semantic publication content yet. Saved-position restoration, visual rendering, narration preparation, synthesis, buffering, playback, and persistence remain planned.
 
 1. Validate the selected EPUB as an untrusted archive.
 2. Parse metadata, navigation, and spine order.
@@ -99,7 +100,7 @@ The public EPUB package currently implements the in-memory validation, parsing, 
 
 ## Visual reader boundary
 
-[ADR-0008](decisions/ADR-0008-visual-reader-architecture.md) establishes the approved but unimplemented visual-reader boundary:
+[ADR-0008](decisions/ADR-0008-visual-reader-architecture.md) establishes the approved semantic-renderer boundary. Task 2.4 implements its surrounding lifecycle state and presentation-error containment, but not semantic rendering:
 
 - React constructs repository-owned semantic HTML directly in the application DOM from closed immutable semantic values.
 - The desktop does not reconstruct publisher HTML, use raw-HTML APIs, expose publisher fragments as DOM IDs/browser URLs, or activate external links.
@@ -111,13 +112,13 @@ The public EPUB package currently implements the in-memory validation, parsing, 
 - Reader navigation remains application state rather than browser routes/history.
 - Chapters render incrementally in browser-yielding batches of at most 250 semantic blocks; more than 10,000 semantic blocks or 80,000 projected live DOM nodes produces `chapter-too-large` before partial rendering.
 
-This boundary does not make the reader implemented. `apps/desktop` contains the local-file open UI/coordinator, ADR-0010 raster metadata/source-lifecycle implementation, publication-session owner, Playwright browser smoke, and a Windows-only synthetic benchmark harness. The package-owned `resolveTarget` operation, desktop publication lifecycle, and safe metadata presentation are implemented, while the reader coordinator, semantic renderer, image component integration, locator/DOM mapper, navigation behavior, large-chapter enforcement, and ADR-0011 persistence modules require later tasks and tests. The reference thresholds must be revalidated against the real React/WebView2 reader; the test-only harness is not end-to-end reader evidence.
+This boundary does not make the semantic reader implemented. `apps/desktop` contains the local-file open UI/coordinator, ADR-0010 raster metadata/source-lifecycle implementation, publication-session owner, immutable six-state reader lifecycle controller, fixed React presentation-error boundary, Playwright browser smoke, and a Windows-only synthetic benchmark harness. Ready state is the only state that exposes the active `OpenedPublication`; opening, empty, failure, closing, and unmount cleanup drop it before presentation. The package-owned `resolveTarget` operation, desktop publication lifecycle, safe metadata presentation, empty-state recovery, and explicit close/reopen behavior are implemented, while the reader coordinator, semantic renderer, image component integration, locator/DOM mapper, navigation behavior, large-chapter enforcement, and ADR-0011 persistence modules require later tasks and tests. The reference thresholds must be revalidated against the real React/WebView2 reader; the test-only harness is not end-to-end reader evidence.
 
 ## Local file-ingress boundary
 
 [ADR-0009](decisions/ADR-0009-capability-free-local-file-ingress.md) accepts the implemented Task 1.2 WebView boundary. An application-owned file input reads at most 100 MiB through abortable `FileReader` into transient in-memory bytes. A replacement selection or unmount aborts the active read, request identity rejects stale completion, a post-read length check defends the preflight assumption, and the input is cleared for same-file reselection. Fixed UI states contain no filename, path, bytes, MIME claim, or raw browser error.
 
-The Task 1.2 release probe passed in native Windows WebView2 while the Tauri shell retained zero commands, plugins, and capabilities and the then-current CSP. ADR-0010 later added only the image-specific Blob allowance described below. Tasks 2.2-2.3 now connect successful bounded bytes to the publication session and `openEpubPublication`; a replacement selection invalidates prior work immediately, picker cancellation preserves the prior ready/idle view, validated title/authors appear only after success, and fixed states cover read, invalid, unsupported, exhausted, cancelled, and internal outcomes. The implementation still retains no path or MIME claim and adds no native capability. Native release interaction must be repeated for the integrated flow before its task evidence is complete.
+The Task 1.2 release probe passed in native Windows WebView2 while the Tauri shell retained zero commands, plugins, and capabilities and the then-current CSP. ADR-0010 later added only the image-specific Blob allowance described below. Tasks 2.2-2.3 now connect successful bounded bytes to the publication session and `openEpubPublication`; a replacement selection invalidates prior work immediately, picker cancellation preserves the prior ready/idle view, validated title/authors appear only after success, and fixed states cover read, invalid, unsupported, exhausted, cancelled, and internal outcomes. Task 2.4 layers the closed accessible lifecycle surface, zero-locator empty recovery, explicit close, stale-view clearing, and fixed renderer-failure containment over that boundary. The implementation still retains no path or MIME claim and adds no native capability. Native release interaction must be repeated for the integrated flow before Task 2.3's evidence is complete.
 
 ## Raster image decode boundary
 
