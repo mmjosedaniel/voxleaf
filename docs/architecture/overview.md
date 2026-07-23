@@ -44,7 +44,7 @@ Local TTS service
 
 The visual position is a normalized `ReadingLocatorV1` sampled at an application-owned reading line. A browser caret/range supplies the Unicode-code-point offset when safe, with deterministic block-start fallback. Explicit navigation may move focus to a destination heading/reader region, while passive scrolling, reflow, and initial restoration do not steal focus.
 
-File ingress is resolved by ADR-0009, ADR-0010 resolves the predecode/decode/object-URL safety boundary for static raster images, and ADR-0011 resolves the bounded Web Storage, display-preference, save-lifecycle, failure, and migration policy. Publication-session integration, semantic image rendering, the persistence repository and coordinator, real-browser tooling, and measured large-chapter/performance limits remain later Milestone 4 work. Synchronization with the active narrated segment remains a later milestone.
+File ingress is resolved by ADR-0009, ADR-0010 resolves the predecode/decode/object-URL safety boundary for static raster images, and ADR-0011 resolves the bounded Web Storage, display-preference, save-lifecycle, failure, and migration policy. Playwright Chromium tooling now supplies a deterministic real-browser foundation smoke while native WebView2 behavior remains a separate Windows matrix. Publication-session integration, semantic image rendering, the persistence repository and coordinator, reader-specific browser coverage, and measured large-chapter/performance limits remain later Milestone 4 work. Synchronization with the active narrated segment remains a later milestone.
 
 The desktop application and TTS inference should run in separate local processes.
 

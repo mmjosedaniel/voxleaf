@@ -67,6 +67,7 @@ The package-internal executable probes are intentionally not exported from `@vox
 | `typescript-eslint` | `8.64.0` | Parses TypeScript for ESLint and supplies TypeScript-aware rules. |
 | `vitest` | `4.1.10` | Runs deterministic package and React smoke tests. |
 | `@tauri-apps/cli` | `2.11.4` | Drives native Tauri development and production builds. |
+| `@playwright/test` | `1.61.1` | Runs deterministic Chromium layout and browser-boundary smoke tests against the built Vite application. |
 | `@testing-library/dom` | `10.4.1` | Supplies DOM queries centered on observable accessible behavior. |
 | `@testing-library/jest-dom` | `6.9.1` | Adds readable DOM assertions to Vitest. |
 | `@testing-library/react` | `16.3.2` | Renders React components for the shell smoke test. |
@@ -77,7 +78,9 @@ The package-internal executable probes are intentionally not exported from `@vox
 | `jsdom` | `29.1.1` | Supplies an in-process browser-like DOM for component tests. |
 | `vite` | `8.1.5` | Runs the focused browser development server and builds webview assets. |
 
-These packages are development-only. ESLint with `typescript-eslint`, Prettier, Vitest, Testing Library, and jsdom were selected as a compact stack aligned with React and Vite. Biome could combine formatting and linting, Jest could replace Vitest, and browser-driven component tests could replace jsdom; the selected tools require less custom integration for the current Vite shell. A monorepo task runner such as Nx or Turborepo remains unjustified for three TypeScript projects.
+These packages are development-only. ESLint with `typescript-eslint`, Prettier, Vitest, Testing Library, jsdom, and Playwright were selected as a compact stack aligned with React and Vite. Biome could combine formatting and linting, Jest could replace Vitest, and Vitest browser mode was a credible alternative to Playwright; Playwright was selected because it supplies a direct, version-coupled Chromium runner and first-class viewport, storage, focus, accessibility-role, network, and trace controls without replacing the fast jsdom component layer. A Tauri/WebDriver harness remains reserved for native WebView behavior that Chromium cannot prove. A monorepo task runner such as Nx or Turborepo remains unjustified for three TypeScript projects.
+
+Playwright `1.61.1` selects Chrome for Testing `149.0.7827.55` / Chromium revision `1228` on Windows, plus its matching headless-shell and support binaries. `pnpm.cmd install --frozen-lockfile` installs only the package graph; CI also sets `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` for that step. Browser acquisition is a separate, explicit `pnpm.cmd test:browser:install` operation and is the only documented browser-tooling step that requires network access. Playwright stores the acquired binaries in its default per-user cache and ordinary `pnpm.cmd test:browser` execution neither downloads nor updates them. CI does not restore a browser cache: the authoritative Windows job performs the explicit matching install before the offline smoke test. Playwright and its browser binaries are test-only and are not included in the desktop production bundle.
 
 `json-schema-to-typescript` is preferred over handwritten TypeScript wire DTOs because generated DTOs cannot silently become an independent contract authority. TypeScript-first runtime-schema libraries were rejected because the cross-language schema should not be generated from a language-specific executable source. The generator is development-only. Ajv is recorded separately as a runtime dependency because Task 2.1 introduces the first decoder that must reject malformed and unsupported serialized input before domain construction.
 

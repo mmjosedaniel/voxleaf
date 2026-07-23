@@ -8,6 +8,8 @@
     "dev": "vite",
     "tauri": "tauri",
     "test": "vitest run",
+    "test:browser": "playwright test",
+    "test:browser:install": "playwright install chromium",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -15,6 +17,7 @@
     "react-dom": "19.2.7"
   },
   "devDependencies": {
+    "@playwright/test": "1.61.1",
     "@tauri-apps/cli": "2.11.4",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.9.1",
