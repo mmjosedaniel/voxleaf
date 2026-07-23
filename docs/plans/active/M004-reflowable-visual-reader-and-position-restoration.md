@@ -764,7 +764,7 @@ Do not change `services/tts`, audio contracts/implementation, narration contract
 
 **Validation:** `pnpm.cmd --filter @voxleaf/desktop typecheck`; `pnpm.cmd --filter @voxleaf/desktop test`; `pnpm.cmd --filter @voxleaf/desktop build`; `pnpm.cmd --filter @voxleaf/desktop tauri build`; native selection smoke.
 
-**Status:** Not started.
+**Status:** Implementation complete on 2026-07-22; native release interaction remains pending. `apps/desktop` now composes the bounded abortable WebView file read with the publication-session owner through a presentation-independent local-open coordinator. Replacement selection invalidates and closes prior work immediately, stale reads/results cannot become visible, picker cancellation preserves the prior ready/idle view, and unmount aborts/cleans both layers. The React shell exposes the accept hint, labelled busy state, validated title/authors after success, and fixed read/invalid/unsupported/exhausted/cancelled/internal outcomes without displaying or retaining filename, path, MIME claim, bytes, package detail, or raw error. Focused adapter/component tests and the pinned-Chromium invalid-file smoke cover the integration; no native capability, dependency, shared contract, renderer, persistence, network, narration, TTS, or audio behavior was added. The release Tauri build and manual WebView2 valid-open/reselection/cancellation/replacement smoke are still required before marking Task 2.3 complete.
 
 ### Task 2.4: Implement reader loading, empty, failure, and close states
 
@@ -1137,6 +1137,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 - 2026-07-22: Completed Task 1.6. Added an explicit, non-CI `pnpm.cmd benchmark:reader` command and synthetic Playwright harness that runs on native Windows, launches fresh Chromium processes, and records content-free timing/DOM/heap/working-set/image metrics. The first run exposed that `powershell.exe -Command` did not pass trailing process IDs through `$args` as expected; embedding the CDP-returned, integer-validated ID list in the fixed query resolved the issue without broad process inspection. Three accepted runs then established the 250-block batch, 10,000-block/80,000-node, `chapter-too-large`, reference latency, raster, and memory gates. The final thresholded run passed four tests in 27.0 seconds on the documented host. No production reader or new dependency was added.
 - 2026-07-22: Completed Task 2.1. Added the public immutable `PublicationTargetResolution` family and synchronous `OpenedPublication.resolveTarget`, backed by a package-private document/source-ID index joined to canonical located blocks. Exact fragment/document-start, same-document unresolved-fragment recovery, invalid/unknown/non-spine/empty unavailability, hostile input, cancellation, post-close, privacy, and unchanged locator behavior are covered. No shared schema, runtime root export, dependency, desktop code, persistence, renderer, network, filesystem, narration, TTS, or audio capability changed.
 - 2026-07-22: Completed Task 2.2. Added direct desktop workspace dependencies on the EPUB/shared public boundaries and a presentation-independent publication-session owner with one abortable logical attempt/publication, replacement ordering, a shared cleanup barrier, stale-success cleanup, shared concurrent close, reopen support, and fixed content-free failures. The real package boundary and lifecycle races are covered by ten focused tests; the frozen install, desktop typecheck/test/build, EPUB regression suite, root TypeScript typecheck, format, and lint checks passed. File-byte/UI integration remains Task 2.3.
+- 2026-07-22: Implemented Task 2.3's bounded local-file-to-publication path and safe open UI. Added a presentation-independent coordinator that closes prior publication state at replacement intent, aborts stale reads, hands only bounded bytes to the session, maps closed operational categories to static application outcomes, and contains unexpected failures. The shell clears the input for reselection, preserves ready/idle state on picker cancellation, shows only validated title/authors after success, and retains the independent raster safety probe. Fourteen coordinator tests, thirteen shell tests, the desktop suite, typecheck, and the pinned-Chromium invalid-file smoke cover the implementation. Native release WebView2 interaction remains pending before the task status can become complete.
 
 ## Decision log
 
@@ -1147,7 +1148,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 | 2026-07-22 | Do not use publisher HTML/CSS/scripts/URLs or activate external links. | Already approved by ADR-0007. |
 | 2026-07-22 | Render closed semantic values as exhaustive application-owned React elements in the application DOM; do not reconstruct publisher markup or use an iframe. | Accepted by ADR-0008; implementation remains Task 3.1. |
 | 2026-07-22 | Use continuous vertical scrolling as the sole initial reading mode; defer pagination and mode migration. | Accepted by ADR-0008; implementation remains Task 3.4. |
-| 2026-07-22 | Use the application-owned WebView file input plus abortable bounded `FileReader`; add no Tauri filesystem/dialog command, plugin, capability, or host-path contract. | Accepted by ADR-0009; the session owner is implemented and file/UI integration remains Task 2.3. |
+| 2026-07-22 | Use the application-owned WebView file input plus abortable bounded `FileReader`; add no Tauri filesystem/dialog command, plugin, capability, or host-path contract. | Accepted by ADR-0009; the session owner and file/UI open integration are implemented, with native integrated-flow smoke pending for Task 2.3. |
 | 2026-07-22 | Add a closed package-owned semantic-target resolver rather than matching fragments in the desktop; unresolved fragments recover only within the target spine document, while invalid/non-spine/empty targets are unavailable. | Accepted by ADR-0008 and implemented by Task 2.1; desktop integration remains Task 3.2. |
 | 2026-07-22 | Use structural locator plus code-point offset at an application-owned reading line with deterministic block-start fallback. | Accepted by ADR-0008; implementation remains Tasks 3.1-3.3. |
 | 2026-07-22 | Keep reader navigation out of browser routes/history; explicit navigation moves focus predictably while passive scrolling, reflow, and initial restoration do not. | Accepted by ADR-0008; implementation remains Tasks 3.3-3.5. |
@@ -1185,7 +1186,18 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Production-reader validation has not started. Tasks 1.1 through 1.6 and 2.1 through 2.2 are complete; file-open UI integration, renderer, persistence, restoration, and later application tasks remain `Not started`.
+Production-reader validation has not started. Tasks 1.1 through 1.6 and 2.1 through 2.2 are complete; Task 2.3 implementation is complete with native release interaction pending. Renderer, persistence, restoration, and later application tasks remain `Not started`.
+
+Task 2.3 implementation validation on 2026-07-22:
+
+- `pnpm.cmd --filter @voxleaf/desktop typecheck` passed.
+- `pnpm.cmd --filter @voxleaf/desktop test` passed: 6 files and 62 tests.
+- `pnpm.cmd --filter @voxleaf/desktop build` passed: 190 modules transformed. Vite reported its existing advisory for the 528.17 kB application chunk; this is not a failed gate and later reader performance work retains bundle/startup ownership.
+- `pnpm.cmd --filter @voxleaf/epub test` passed: 23 files and 366 tests.
+- `pnpm.cmd test:browser` passed the one pinned-Chromium production-build smoke, including private-filename clearing and the fixed invalid-EPUB result with zero non-loopback requests.
+- `pnpm.cmd --filter @voxleaf/desktop tauri build` passed and produced the Windows release executable without a command, plugin, capability, dependency, Rust, or CSP change.
+- `pnpm.cmd run typecheck:typescript`, `pnpm.cmd run format:check:typescript`, `pnpm.cmd run lint:typescript`, and `git diff --check` passed.
+- The native Windows release build passed, but the manual WebView2 valid-open/reselection/cancellation/replacement interaction matrix has not been executed for this integrated flow. Task 2.3 remains implementation-complete rather than fully complete until that evidence is recorded.
 
 Task 1.1 documentation validation completed on 2026-07-22:
 

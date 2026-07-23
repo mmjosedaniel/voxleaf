@@ -48,7 +48,7 @@ Raster image nodes remain application placeholders until the separate raster saf
 
 The desktop application owns one active publication session and will own one reader coordinator. The coordinator will own active document/locator state, explicit navigation intents, passive visible-location updates, reflow capture/restoration, and later persistence scheduling. It will expose application-level state/actions to presentation components. Leaf UI components must not open/close publications, resolve publisher targets, or write persistence directly.
 
-Task 2.2 implements the UI-independent publication-session owner. It calls the public EPUB opener, owns one abortable logical attempt and one opened publication, detaches and closes prior state before replacement, rejects late completions, closes a publication returned by stale work, and maps unexpected throws or close failures to the fixed shared internal-failure contract. File selection/UI integration and reader coordination remain later tasks.
+Task 2.2 implements the UI-independent publication-session owner. It calls the public EPUB opener, owns one abortable logical attempt and one opened publication, detaches and closes prior state before replacement, rejects late completions, closes a publication returned by stale work, and maps unexpected throws or close failures to the fixed shared internal-failure contract. Task 2.3 composes that owner with the capability-free bounded file read and presents only validated metadata or fixed safe outcomes. Reader coordination remains later work.
 
 The semantic renderer may consume the public semantic and located-block types through the application reader boundary. It does not interpret archive paths, source markup, or package-internal sidecars.
 

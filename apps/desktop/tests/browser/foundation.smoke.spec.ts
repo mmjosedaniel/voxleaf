@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const TEST_STORAGE_KEY = "voxleaf.browser-smoke";
 
-test("controls the browser boundary and exposes an accessible responsive shell", async ({
+test("controls the browser boundary and exposes the local EPUB open shell", async ({
   context,
   page,
 }) => {
@@ -30,28 +30,36 @@ test("controls the browser boundary and exposes an accessible responsive shell",
 
     const main = page.getByRole("main");
     const shell = page.getByRole("region", {
-      name: "VoxLeaf development shell",
+      name: "VoxLeaf",
     });
     const heading = page.getByRole("heading", {
       level: 1,
-      name: "VoxLeaf development shell",
+      name: "VoxLeaf",
     });
-    const rasterProbe = page.getByRole("button", {
-      name: "Run synthetic raster safety probe",
-    });
+    const fileInput = page.getByLabel("Open a local EPUB");
 
     await expect(main).toBeVisible();
     await expect(shell).toBeVisible();
     await expect(heading).toBeVisible();
-    await expect(page.getByRole("status")).toHaveText(
-      "No local EPUB is selected.",
-    );
-    await expect(rasterProbe).toHaveAccessibleName(
-      "Run synthetic raster safety probe",
+    await expect(page.getByRole("status")).toHaveText("No local EPUB is open.");
+    await expect(fileInput).toHaveAttribute(
+      "accept",
+      ".epub,application/epub+zip",
     );
 
-    await rasterProbe.focus();
-    await expect(rasterProbe).toBeFocused();
+    await fileInput.focus();
+    await expect(fileInput).toBeFocused();
+
+    await fileInput.setInputFiles({
+      name: "private-browser-smoke.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from("not-an-epub"),
+    });
+    await expect(page.getByRole("status")).toHaveText(
+      "That file is not a valid supported EPUB.",
+    );
+    await expect(fileInput).toHaveValue("");
+    await expect(page.getByText("private-browser-smoke.epub")).toHaveCount(0);
 
     await expect
       .poll(() =>

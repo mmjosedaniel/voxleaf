@@ -1,3 +1,5 @@
+import type { OpenedPublication } from "@voxleaf/epub";
+import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
 import {
   act,
   cleanup,
@@ -10,127 +12,241 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "./App";
 import type {
-  LocalEpubFileReadOptions,
-  LocalEpubFileReadResult,
-} from "./file-ingress/local-epub-file";
+  LocalPublicationOpenFailureReason,
+  LocalPublicationOpenFlow,
+  LocalPublicationOpenResult,
+} from "./publication/local-publication-open";
 
 afterEach(cleanup);
 
-describe("desktop local-file ingress probe", () => {
-  it("renders an accessible file input without native capabilities", () => {
-    render(<App />);
+function createTestPublication(
+  title = "Synthetic Reader Book",
+  authors: readonly string[] = ["Test Author"],
+): OpenedPublication {
+  return {
+    book: Object.freeze({
+      ...VALID_SYNTHETIC_DOCUMENT_FIXTURE.book,
+      metadata: Object.freeze({
+        title,
+        authors: Object.freeze([...authors]),
+      }),
+    }),
+    documents: Object.freeze([]),
+    locators: Object.freeze([]),
+    navigation: Object.freeze([]),
+    resources: Object.freeze([]),
+    closed: false,
+    readResource: vi.fn(),
+    resolveLocator: vi.fn(),
+    resolveTarget: vi.fn(),
+    close: vi.fn(() => Promise.resolve()),
+  };
+}
+
+function createTestFlow(
+  open: LocalPublicationOpenFlow["open"],
+): LocalPublicationOpenFlow {
+  return {
+    publication: undefined,
+    open: vi.fn(open),
+    close: vi.fn(() => Promise.resolve()),
+  };
+}
+
+describe("desktop local EPUB open flow", () => {
+  it("renders an accessible capability-free file input", () => {
+    const flow = createTestFlow(() => Promise.resolve({ status: "cancelled" }));
+    render(<App openFlow={flow} />);
 
     expect(screen.getByRole("main")).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", {
-        level: 1,
-        name: "VoxLeaf development shell",
-      }),
+      screen.getByRole("heading", { level: 1, name: "VoxLeaf" }),
     ).toBeInTheDocument();
-    const input = screen.getByLabelText("Choose a local EPUB");
+    const input = screen.getByLabelText("Open a local EPUB");
     expect(input).toHaveAttribute("accept", ".epub,application/epub+zip");
+    expect(input).toHaveAccessibleDescription("No local EPUB is open.");
     expect(screen.getByRole("status")).toHaveTextContent(
-      "No local EPUB is selected.",
+      "No local EPUB is open.",
     );
   });
 
-  it("reads a selected file without displaying its private name", async () => {
-    render(<App />);
-
-    const input = screen.getByLabelText("Choose a local EPUB");
+  it("shows validated metadata without displaying the private filename", async () => {
+    const publication = createTestPublication("Repository-authored title", [
+      "First Author",
+      "Second Author",
+    ]);
+    const flow = createTestFlow(() =>
+      Promise.resolve({ status: "ready", publication }),
+    );
+    render(<App openFlow={flow} />);
+    const input = screen.getByLabelText("Open a local EPUB");
     const file = new File([new Uint8Array([1, 2, 3])], "private-title.epub", {
       type: "application/epub+zip",
     });
+
     fireEvent.change(input, { target: { files: [file] } });
 
     await waitFor(() =>
       expect(screen.getByRole("status")).toHaveTextContent(
-        "Local EPUB bytes are ready",
+        "The EPUB opened successfully.",
       ),
     );
+    expect(flow.open).toHaveBeenCalledWith(file);
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Repository-authored title",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("By First Author, Second Author"),
+    ).toBeInTheDocument();
     expect(screen.queryByText("private-title.epub")).not.toBeInTheDocument();
     expect(input).toHaveValue("");
   });
 
-  it("treats cancelling the browser picker as a non-error", () => {
-    render(<App />);
-
-    fireEvent(
-      screen.getByLabelText("Choose a local EPUB"),
-      new Event("cancel", { bubbles: true }),
-    );
-
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "File selection was cancelled.",
-    );
-  });
-
-  it("aborts and ignores stale reads when another file is selected", async () => {
-    interface PendingRead {
-      readonly signal: AbortSignal | undefined;
-      readonly resolve: (result: LocalEpubFileReadResult) => void;
-    }
-
-    const pending: PendingRead[] = [];
-    const readFile = vi.fn(
-      (_file: File, options: LocalEpubFileReadOptions = {}) =>
-        new Promise<LocalEpubFileReadResult>((resolve) => {
-          pending.push({ signal: options.signal, resolve });
+  it("exposes a labelled busy state while validation is pending", async () => {
+    let resolveOpen: ((result: LocalPublicationOpenResult) => void) | undefined;
+    const flow = createTestFlow(
+      () =>
+        new Promise((resolve) => {
+          resolveOpen = resolve;
         }),
     );
-    render(<App readFile={readFile} />);
-    const input = screen.getByLabelText("Choose a local EPUB");
+    render(<App openFlow={flow} />);
 
-    fireEvent.change(input, {
-      target: { files: [new File(["first"], "first.epub")] },
-    });
-    fireEvent.change(input, {
-      target: { files: [new File(["second"], "second.epub")] },
+    fireEvent.change(screen.getByLabelText("Open a local EPUB"), {
+      target: { files: [new File(["book"], "private.epub")] },
     });
 
-    expect(pending).toHaveLength(2);
-    expect(pending[0]?.signal?.aborted).toBe(true);
+    expect(screen.getByRole("region", { name: "VoxLeaf" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Validating and opening the selected EPUB.",
+    );
+
     await act(async () => {
-      pending[1]?.resolve({
+      resolveOpen?.({ status: "cancelled" });
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "No local EPUB is open.",
+    );
+  });
+
+  it.each<{
+    expectedMessage: string;
+    reason: LocalPublicationOpenFailureReason;
+  }>([
+    {
+      reason: "file-too-large",
+      expectedMessage: "That file is larger than the 100 MiB EPUB limit.",
+    },
+    {
+      reason: "file-read-failed",
+      expectedMessage: "VoxLeaf could not read that local file.",
+    },
+    {
+      reason: "invalid-epub",
+      expectedMessage: "That file is not a valid supported EPUB.",
+    },
+    {
+      reason: "unsupported-epub",
+      expectedMessage: "That EPUB uses features VoxLeaf does not support yet.",
+    },
+    {
+      reason: "resource-exhausted",
+      expectedMessage: "That EPUB exceeds VoxLeaf's safe processing limits.",
+    },
+    {
+      reason: "internal-failure",
+      expectedMessage:
+        "VoxLeaf could not open that EPUB because of an internal failure.",
+    },
+  ])("renders the fixed $reason state", async ({ expectedMessage, reason }) => {
+    const flow = createTestFlow(() =>
+      Promise.resolve({ status: "rejected", reason }),
+    );
+    render(<App openFlow={flow} />);
+
+    fireEvent.change(screen.getByLabelText("Open a local EPUB"), {
+      target: { files: [new File(["book"], "private.epub")] },
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(expectedMessage),
+    );
+    expect(document.body).not.toHaveTextContent("private.epub");
+  });
+
+  it("keeps the current ready state when the picker is cancelled", async () => {
+    const publication = createTestPublication();
+    const flow = createTestFlow(() =>
+      Promise.resolve({ status: "ready", publication }),
+    );
+    render(<App openFlow={flow} />);
+    const input = screen.getByLabelText("Open a local EPUB");
+    fireEvent.change(input, {
+      target: { files: [new File(["book"], "private.epub")] },
+    });
+    await screen.findByRole("heading", {
+      level: 2,
+      name: "Synthetic Reader Book",
+    });
+
+    fireEvent(input, new Event("cancel", { bubbles: true }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "The EPUB opened successfully.",
+    );
+    expect(flow.open).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not let an obsolete completion replace newer metadata", async () => {
+    const pending: Array<(result: LocalPublicationOpenResult) => void> = [];
+    const flow = createTestFlow(
+      () =>
+        new Promise((resolve) => {
+          pending.push(resolve);
+        }),
+    );
+    render(<App openFlow={flow} />);
+    const input = screen.getByLabelText("Open a local EPUB");
+    fireEvent.change(input, {
+      target: { files: [new File(["first"], "private-first.epub")] },
+    });
+    fireEvent.change(input, {
+      target: { files: [new File(["second"], "private-second.epub")] },
+    });
+
+    await act(async () => {
+      pending[1]?.({
         status: "ready",
-        bytes: new Uint8Array([2]),
+        publication: createTestPublication("Current publication"),
       });
     });
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Local EPUB bytes are ready",
-    );
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Current publication" }),
+    ).toBeInTheDocument();
 
     await act(async () => {
-      pending[0]?.resolve({ status: "rejected", reason: "read-failed" });
+      pending[0]?.({ status: "rejected", reason: "invalid-epub" });
     });
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Current publication" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Local EPUB bytes are ready",
+      "The EPUB opened successfully.",
     );
   });
 
-  it("aborts the active read when the probe unmounts", () => {
-    let signal: AbortSignal | undefined;
-    const readFile = vi.fn(
-      (_file: File, options: LocalEpubFileReadOptions = {}) => {
-        signal = options.signal;
-        return new Promise<LocalEpubFileReadResult>(() => undefined);
-      },
-    );
-    const { unmount } = render(<App readFile={readFile} />);
-
-    fireEvent.change(screen.getByLabelText("Choose a local EPUB"), {
-      target: { files: [new File(["book"], "book.epub")] },
-    });
-    unmount();
-
-    expect(signal?.aborted).toBe(true);
-  });
-
-  it("runs the content-free synthetic raster decode probe", async () => {
+  it("retains the independent content-free raster safety probe", async () => {
+    const flow = createTestFlow(() => Promise.resolve({ status: "cancelled" }));
     const runRasterProbe = vi.fn(async () => ({
       status: "accepted" as const,
     }));
-    render(<App runRasterProbe={runRasterProbe} />);
+    render(<App openFlow={flow} runRasterProbe={runRasterProbe} />);
 
     fireEvent.click(
       screen.getByRole("button", {
@@ -146,5 +262,14 @@ describe("desktop local-file ingress probe", () => {
     expect(runRasterProbe).toHaveBeenCalledWith({
       signal: expect.any(AbortSignal),
     });
+  });
+
+  it("closes publication ownership when the application unmounts", () => {
+    const flow = createTestFlow(() => Promise.resolve({ status: "cancelled" }));
+    const { unmount } = render(<App openFlow={flow} />);
+
+    unmount();
+
+    expect(flow.close).toHaveBeenCalledTimes(1);
   });
 });
