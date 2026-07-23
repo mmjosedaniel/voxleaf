@@ -89,9 +89,42 @@ h1 {
   outline-offset: 0.2rem;
 }
 
-.probe-status {
+.open-status {
   min-height: 1.5rem;
   margin: 1.25rem 0 0;
+  color: #405047;
+  line-height: 1.5;
+}
+
+.open-status-error {
+  color: #8a2f24;
+}
+
+.publication-summary {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #d7dfd7;
+}
+
+.publication-summary-label {
+  margin: 0 0 0.5rem;
+  color: #466151;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.publication-summary h2 {
+  margin: 0;
+  color: #183d2a;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.5rem, 5vw, 2.25rem);
+  line-height: 1.15;
+}
+
+.publication-authors {
+  margin: 0.75rem 0 0;
   color: #405047;
   line-height: 1.5;
 }

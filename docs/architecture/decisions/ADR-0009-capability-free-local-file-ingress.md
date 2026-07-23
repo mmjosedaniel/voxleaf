@@ -33,7 +33,7 @@ The desktop boundary must:
 - treat picker cancellation as a normal content-free state; and
 - never return, display, persist, or log the `File`, filename, host path, MIME claim, raw browser error, bytes, or rejected value.
 
-The current Task 1.2 probe stops after proving that bounded bytes are ready. It deliberately does not add a desktop dependency on `@voxleaf/epub`, open a publication, retain bytes, or claim that a user can read a book. Task 2.2 owns publication-session cancellation/replacement, and Task 2.3 will pass the successful bytes to `openEpubPublication` and map its safe result.
+Task 1.2 initially stopped after proving that bounded bytes were ready. Tasks 2.2-2.3 now pass those bytes through a presentation-independent local-open coordinator to the publication session and `openEpubPublication`. Replacement intent aborts an active read and closes prior session state, stale results cannot become visible, picker cancellation preserves the prior ready/idle state, and only validated title/authors or a closed static outcome reaches the application UI.
 
 ### Evidence
 
@@ -54,8 +54,8 @@ pnpm.cmd run lint:typescript
 ## Consequences
 
 - Local selection remains inside the packaged WebView and does not widen the native IPC or filesystem permission surface.
-- Browser file bytes are transient and bounded to one 100-MiB read owned by the probe. Successful probe bytes are released rather than retained.
-- The desktop repeats ADR-0007's compressed-input ceiling as an early resource guard; `@voxleaf/epub` remains the security authority and must validate the bytes again after Task 2.3 integrates it.
+- Browser file bytes are transient and bounded to one 100-MiB read owned by the open flow. After handoff, the UI and coordinator retain no separate byte reference; the opened publication owns only the package state required for its explicit lifecycle.
+- The desktop repeats ADR-0007's compressed-input ceiling as an early resource guard; `@voxleaf/epub` remains the security authority and validates the bytes again during every open.
 - Filename extension and MIME type remain untrusted. A renamed or malformed file reaches EPUB validation only after the size gate.
 - An automatically updated WebView2 runtime remains part of the platform matrix. The native selection probe must be repeated after material WebView/Tauri changes or if file selection regresses.
 - A future requirement such as retained file handles, automatic reopening, or a demonstrated WebView limitation would require a new decision before adding native file capabilities.

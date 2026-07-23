@@ -1,59 +1,92 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-} from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
 import {
-  readLocalEpubFile,
-  type LocalEpubFileReadResult,
-} from "./file-ingress/local-epub-file";
+  createLocalPublicationOpenFlow,
+  type LocalPublicationOpenFailureReason,
+  type LocalPublicationOpenFlow,
+  type LocalPublicationOpenResult,
+} from "./publication/local-publication-open";
 import {
   runRasterImageSafetyProbe,
   type RasterImageProbeResult,
 } from "./reader/raster-image-probe";
 
-type FileIngressProbeStatus =
-  "accepted" | "cancelled" | "idle" | "reading" | "rejected" | "too-large";
+interface PublicationSummary {
+  readonly title: string;
+  readonly authors: readonly string[];
+}
+
+type PublicationOpenViewState =
+  | { readonly status: "idle" }
+  | { readonly status: "opening" }
+  | {
+      readonly status: "ready";
+      readonly summary: PublicationSummary;
+    }
+  | {
+      readonly status: "rejected";
+      readonly reason: LocalPublicationOpenFailureReason;
+    };
 
 type RasterImageProbeStatus =
   "accepted" | "cancelled" | "idle" | "rejected" | "running";
 
 export interface AppProps {
-  readonly readFile?: typeof readLocalEpubFile;
+  readonly openFlow?: LocalPublicationOpenFlow;
   readonly runRasterProbe?: typeof runRasterImageSafetyProbe;
 }
 
-const STATUS_MESSAGE: Readonly<Record<FileIngressProbeStatus, string>> = {
-  accepted: "Local EPUB bytes are ready for the future publication opener.",
-  cancelled: "File selection was cancelled.",
-  idle: "No local EPUB is selected.",
-  reading: "Reading the selected EPUB into bounded memory.",
-  rejected: "VoxLeaf could not read that local file.",
-  "too-large": "That file is larger than the 100 MiB EPUB limit.",
-};
+const FAILURE_MESSAGE: Readonly<
+  Record<LocalPublicationOpenFailureReason, string>
+> = Object.freeze({
+  "file-read-failed": "VoxLeaf could not read that local file.",
+  "file-too-large": "That file is larger than the 100 MiB EPUB limit.",
+  "internal-failure":
+    "VoxLeaf could not open that EPUB because of an internal failure.",
+  "invalid-epub": "That file is not a valid supported EPUB.",
+  "resource-exhausted": "That EPUB exceeds VoxLeaf's safe processing limits.",
+  "unsupported-epub": "That EPUB uses features VoxLeaf does not support yet.",
+});
 
 const RASTER_STATUS_MESSAGE: Readonly<Record<RasterImageProbeStatus, string>> =
-  {
+  Object.freeze({
     accepted: "Bounded local raster decoding is available.",
     cancelled: "Raster safety probe was cancelled.",
     idle: "Raster safety probe has not run.",
     rejected: "Bounded local raster decoding is unavailable.",
     running: "Testing bounded local raster decoding.",
-  };
+  });
 
-function statusForResult(
-  result: LocalEpubFileReadResult,
-): FileIngressProbeStatus {
-  if (result.status === "ready") {
-    return "accepted";
+function stateForResult(
+  result: LocalPublicationOpenResult,
+): PublicationOpenViewState {
+  switch (result.status) {
+    case "cancelled":
+      return Object.freeze({ status: "idle" });
+    case "rejected":
+      return Object.freeze({ status: "rejected", reason: result.reason });
+    case "ready":
+      return Object.freeze({
+        status: "ready",
+        summary: Object.freeze({
+          title: result.publication.book.metadata.title,
+          authors: Object.freeze([...result.publication.book.metadata.authors]),
+        }),
+      });
   }
-  if (result.status === "cancelled") {
-    return "cancelled";
+}
+
+function statusMessage(state: PublicationOpenViewState): string {
+  switch (state.status) {
+    case "idle":
+      return "No local EPUB is open.";
+    case "opening":
+      return "Validating and opening the selected EPUB.";
+    case "ready":
+      return "The EPUB opened successfully.";
+    case "rejected":
+      return FAILURE_MESSAGE[state.reason];
   }
-  return result.reason === "too-large" ? "too-large" : "rejected";
 }
 
 function rasterStatusForResult(
@@ -63,50 +96,42 @@ function rasterStatusForResult(
 }
 
 export function App({
-  readFile = readLocalEpubFile,
+  openFlow: suppliedOpenFlow,
   runRasterProbe = runRasterImageSafetyProbe,
 }: AppProps) {
-  const activeRead = useRef<AbortController | undefined>(undefined);
-  const activeRasterProbe = useRef<AbortController | undefined>(undefined);
-  const fileInput = useRef<HTMLInputElement | null>(null);
+  const [openFlow] = useState(
+    () => suppliedOpenFlow ?? createLocalPublicationOpenFlow(),
+  );
   const requestSequence = useRef(0);
-  const [status, setStatus] = useState<FileIngressProbeStatus>("idle");
+  const activeRasterProbe = useRef<AbortController | undefined>(undefined);
+  const [viewState, setViewState] = useState<PublicationOpenViewState>({
+    status: "idle",
+  });
   const [rasterStatus, setRasterStatus] =
     useState<RasterImageProbeStatus>("idle");
 
-  const cancelActiveRead = useCallback((): void => {
-    requestSequence.current += 1;
-    activeRead.current?.abort();
-    activeRead.current = undefined;
-  }, []);
-
-  const cancelActiveRasterProbe = useCallback((): void => {
-    activeRasterProbe.current?.abort();
-    activeRasterProbe.current = undefined;
-  }, []);
-
-  useEffect(() => {
-    const input = fileInput.current;
-    const handleCancel = (): void => {
-      cancelActiveRead();
-      setStatus("cancelled");
-    };
-    input?.addEventListener("cancel", handleCancel);
-
-    return () => {
-      input?.removeEventListener("cancel", handleCancel);
-      cancelActiveRead();
-      cancelActiveRasterProbe();
-    };
-  }, [cancelActiveRasterProbe, cancelActiveRead]);
+  useEffect(
+    () => () => {
+      requestSequence.current += 1;
+      activeRasterProbe.current?.abort();
+      activeRasterProbe.current = undefined;
+      void openFlow.close();
+    },
+    [openFlow],
+  );
 
   const handleRasterProbe = async (): Promise<void> => {
-    cancelActiveRasterProbe();
+    activeRasterProbe.current?.abort();
     const controller = new AbortController();
     activeRasterProbe.current = controller;
     setRasterStatus("running");
 
-    const result = await runRasterProbe({ signal: controller.signal });
+    let result: RasterImageProbeResult;
+    try {
+      result = await runRasterProbe({ signal: controller.signal });
+    } catch {
+      result = Object.freeze({ status: "rejected" });
+    }
     if (activeRasterProbe.current !== controller) {
       return;
     }
@@ -121,51 +146,80 @@ export function App({
     const file = input.files?.[0];
     input.value = "";
 
-    cancelActiveRead();
+    // Browser picker cancellation is not an error and does not replace the
+    // current publication or its visible state.
     if (file === null || file === undefined) {
-      setStatus("cancelled");
       return;
     }
 
-    const requestId = requestSequence.current;
-    const controller = new AbortController();
-    activeRead.current = controller;
-    setStatus("reading");
+    const requestId = ++requestSequence.current;
+    setViewState({ status: "opening" });
 
-    const result = await readFile(file, { signal: controller.signal });
-    if (
-      requestId !== requestSequence.current ||
-      activeRead.current !== controller
-    ) {
+    let result: LocalPublicationOpenResult;
+    try {
+      result = await openFlow.open(file);
+    } catch {
+      result = Object.freeze({
+        status: "rejected",
+        reason: "internal-failure",
+      });
+    }
+    if (requestId !== requestSequence.current) {
       return;
     }
-
-    activeRead.current = undefined;
-    setStatus(statusForResult(result));
+    setViewState(stateForResult(result));
   };
+
+  const isOpening = viewState.status === "opening";
+  const statusClassName =
+    viewState.status === "rejected"
+      ? "open-status open-status-error"
+      : "open-status";
 
   return (
     <main className="app-shell">
-      <section className="shell-card" aria-labelledby="shell-title">
-        <p className="shell-label">Local file ingress probe</p>
-        <h1 id="shell-title">VoxLeaf development shell</h1>
+      <section
+        className="shell-card"
+        aria-labelledby="shell-title"
+        aria-busy={isOpening}
+      >
+        <p className="shell-label">Private local EPUB reader</p>
+        <h1 id="shell-title">VoxLeaf</h1>
         <p className="shell-description">
-          Choose an EPUB to verify the capability-free WebView file boundary.
-          The probe reads bounded bytes in memory but does not open or persist
-          the book.
+          Choose a local EPUB to validate and open it entirely on this device.
+          VoxLeaf does not retain a filesystem path or upload the book.
         </p>
         <label className="file-picker">
-          <span>Choose a local EPUB</span>
+          <span>Open a local EPUB</span>
           <input
-            ref={fileInput}
             type="file"
             accept=".epub,application/epub+zip"
+            aria-describedby="open-status"
             onChange={(event) => void handleSelection(event)}
           />
         </label>
-        <p className="probe-status" role="status" aria-live="polite">
-          {STATUS_MESSAGE[status]}
+        <p
+          id="open-status"
+          className={statusClassName}
+          role="status"
+          aria-live="polite"
+        >
+          {statusMessage(viewState)}
         </p>
+        {viewState.status === "ready" ? (
+          <section
+            className="publication-summary"
+            aria-labelledby="publication-title"
+          >
+            <p className="publication-summary-label">Opened publication</p>
+            <h2 id="publication-title">{viewState.summary.title}</h2>
+            <p className="publication-authors">
+              {viewState.summary.authors.length === 0
+                ? "Author not provided"
+                : `By ${viewState.summary.authors.join(", ")}`}
+            </p>
+          </section>
+        ) : null}
         <div className="raster-probe">
           <button
             type="button"
