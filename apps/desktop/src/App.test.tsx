@@ -1,4 +1,10 @@
-import type { OpenedPublication } from "@voxleaf/epub";
+import type {
+  ContentDocumentId,
+  OpenedPublication,
+  PublicationLocatedBlock,
+  SemanticBlock,
+  SemanticDocument,
+} from "@voxleaf/epub";
 import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
 import {
   act,
@@ -12,17 +18,45 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "./App";
 import type {
+  LocalPublicationCloseResult,
   LocalPublicationOpenFailureReason,
   LocalPublicationOpenFlow,
   LocalPublicationOpenResult,
 } from "./publication/local-publication-open";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
+
+const TEST_DOCUMENT_ID = "document:test" as ContentDocumentId;
+const TEST_BLOCK: SemanticBlock = Object.freeze({
+  kind: "paragraph",
+  children: Object.freeze([]),
+});
+const TEST_DOCUMENT: SemanticDocument = Object.freeze({
+  id: TEST_DOCUMENT_ID,
+  location: Object.freeze({
+    kind: "spine",
+    spineItemId: VALID_SYNTHETIC_DOCUMENT_FIXTURE.book.spine[0]!.id,
+    spineItemIndex: VALID_SYNTHETIC_DOCUMENT_FIXTURE.book.spine[0]!.index,
+  }),
+  blocks: Object.freeze([TEST_BLOCK]),
+});
+const TEST_LOCATED_BLOCK: PublicationLocatedBlock = Object.freeze({
+  documentId: TEST_DOCUMENT_ID,
+  block: TEST_BLOCK,
+  startLocator:
+    VALID_SYNTHETIC_DOCUMENT_FIXTURE.spineDocuments[0]!.blocks[0]!.locator,
+  textLengthCodePoints: VALID_SYNTHETIC_DOCUMENT_FIXTURE.book.spine[0]!.index,
+});
 
 function createTestPublication(
   title = "Synthetic Reader Book",
   authors: readonly string[] = ["Test Author"],
+  options: { readonly empty?: boolean } = {},
 ): OpenedPublication {
+  const empty = options.empty ?? false;
   return {
     book: Object.freeze({
       ...VALID_SYNTHETIC_DOCUMENT_FIXTURE.book,
@@ -31,8 +65,8 @@ function createTestPublication(
         authors: Object.freeze([...authors]),
       }),
     }),
-    documents: Object.freeze([]),
-    locators: Object.freeze([]),
+    documents: empty ? Object.freeze([]) : Object.freeze([TEST_DOCUMENT]),
+    locators: empty ? Object.freeze([]) : Object.freeze([TEST_LOCATED_BLOCK]),
     navigation: Object.freeze([]),
     resources: Object.freeze([]),
     closed: false,
@@ -45,16 +79,24 @@ function createTestPublication(
 
 function createTestFlow(
   open: LocalPublicationOpenFlow["open"],
+  close: LocalPublicationOpenFlow["close"] = () =>
+    Promise.resolve({ status: "closed" }),
 ): LocalPublicationOpenFlow {
   return {
     publication: undefined,
     open: vi.fn(open),
-    close: vi.fn(() => Promise.resolve()),
+    close: vi.fn(close),
   };
 }
 
-describe("desktop local EPUB open flow", () => {
-  it("renders an accessible capability-free file input", () => {
+function selectEpub(name = "private.epub"): void {
+  fireEvent.change(screen.getByLabelText("Open a local EPUB"), {
+    target: { files: [new File(["book"], name)] },
+  });
+}
+
+describe("desktop reader lifecycle surface", () => {
+  it("renders an accessible capability-free idle state", () => {
     const flow = createTestFlow(() => Promise.resolve({ status: "cancelled" }));
     render(<App openFlow={flow} />);
 
@@ -70,7 +112,7 @@ describe("desktop local EPUB open flow", () => {
     );
   });
 
-  it("shows validated metadata without displaying the private filename", async () => {
+  it("shows validated ready metadata without displaying the private filename", async () => {
     const publication = createTestPublication("Repository-authored title", [
       "First Author",
       "Second Author",
@@ -79,19 +121,14 @@ describe("desktop local EPUB open flow", () => {
       Promise.resolve({ status: "ready", publication }),
     );
     render(<App openFlow={flow} />);
-    const input = screen.getByLabelText("Open a local EPUB");
-    const file = new File([new Uint8Array([1, 2, 3])], "private-title.epub", {
-      type: "application/epub+zip",
-    });
 
-    fireEvent.change(input, { target: { files: [file] } });
+    selectEpub("private-title.epub");
 
     await waitFor(() =>
       expect(screen.getByRole("status")).toHaveTextContent(
         "The EPUB opened successfully.",
       ),
     );
-    expect(flow.open).toHaveBeenCalledWith(file);
     expect(
       screen.getByRole("heading", {
         level: 2,
@@ -101,11 +138,12 @@ describe("desktop local EPUB open flow", () => {
     expect(
       screen.getByText("By First Author, Second Author"),
     ).toBeInTheDocument();
-    expect(screen.queryByText("private-title.epub")).not.toBeInTheDocument();
-    expect(input).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Close EPUB" })).toBeEnabled();
+    expect(document.body).not.toHaveTextContent("private-title.epub");
+    expect(screen.getByLabelText("Open a local EPUB")).toHaveValue("");
   });
 
-  it("exposes a labelled busy state while validation is pending", async () => {
+  it("shows a labelled busy state while validation is pending", async () => {
     let resolveOpen: ((result: LocalPublicationOpenResult) => void) | undefined;
     const flow = createTestFlow(
       () =>
@@ -115,9 +153,7 @@ describe("desktop local EPUB open flow", () => {
     );
     render(<App openFlow={flow} />);
 
-    fireEvent.change(screen.getByLabelText("Open a local EPUB"), {
-      target: { files: [new File(["book"], "private.epub")] },
-    });
+    selectEpub();
 
     expect(screen.getByRole("region", { name: "VoxLeaf" })).toHaveAttribute(
       "aria-busy",
@@ -126,6 +162,7 @@ describe("desktop local EPUB open flow", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "Validating and opening the selected EPUB.",
     );
+    expect(screen.getByLabelText("Open a local EPUB")).toBeEnabled();
 
     await act(async () => {
       resolveOpen?.({ status: "cancelled" });
@@ -170,14 +207,127 @@ describe("desktop local EPUB open flow", () => {
     );
     render(<App openFlow={flow} />);
 
-    fireEvent.change(screen.getByLabelText("Open a local EPUB"), {
-      target: { files: [new File(["book"], "private.epub")] },
-    });
+    selectEpub();
 
     await waitFor(() =>
       expect(screen.getByRole("status")).toHaveTextContent(expectedMessage),
     );
     expect(document.body).not.toHaveTextContent("private.epub");
+    expect(screen.getByLabelText("Open a local EPUB")).toBeEnabled();
+  });
+
+  it("provides a recoverable empty-content state", async () => {
+    const publication = createTestPublication("Private empty title", [], {
+      empty: true,
+    });
+    const flow = createTestFlow(() =>
+      Promise.resolve({ status: "ready", publication }),
+    );
+    render(<App openFlow={flow} />);
+
+    selectEpub();
+
+    expect(
+      await screen.findByRole("heading", { name: "No readable content" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "This EPUB has no supported readable content.",
+    );
+    expect(document.body).not.toHaveTextContent("Private empty title");
+    expect(screen.getByLabelText("Open a local EPUB")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Close EPUB" })).toBeEnabled();
+  });
+
+  it("hides publication data while closing and can reopen afterward", async () => {
+    let finishClose:
+      ((result: LocalPublicationCloseResult) => void) | undefined;
+    const first = createTestPublication("First private title");
+    const second = createTestPublication("Second safe title");
+    const open = vi
+      .fn<LocalPublicationOpenFlow["open"]>()
+      .mockResolvedValueOnce({ status: "ready", publication: first })
+      .mockResolvedValueOnce({ status: "ready", publication: second });
+    const close = vi
+      .fn<LocalPublicationOpenFlow["close"]>()
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishClose = resolve;
+          }),
+      )
+      .mockResolvedValue({ status: "closed" });
+    const flow = createTestFlow(open, close);
+    render(<App openFlow={flow} />);
+    selectEpub("first.epub");
+    await screen.findByRole("heading", { name: "First private title" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Close EPUB" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Closing the current EPUB.",
+    );
+    expect(screen.getByRole("region", { name: "VoxLeaf" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+    expect(screen.queryByText("First private title")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Open a local EPUB")).toBeDisabled();
+
+    await act(async () => {
+      finishClose?.({ status: "closed" });
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "No local EPUB is open.",
+    );
+
+    selectEpub("second.epub");
+    expect(
+      await screen.findByRole("heading", { name: "Second safe title" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a fixed terminal state when publication cleanup fails", async () => {
+    const publication = createTestPublication();
+    const flow = createTestFlow(
+      () => Promise.resolve({ status: "ready", publication }),
+      () => Promise.resolve({ status: "rejected", reason: "internal-failure" }),
+    );
+    render(<App openFlow={flow} />);
+    selectEpub();
+    await screen.findByRole("button", { name: "Close EPUB" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Close EPUB" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "VoxLeaf could not finish closing the EPUB.",
+      ),
+    );
+    expect(screen.getByLabelText("Open a local EPUB")).toBeDisabled();
+    expect(document.body).not.toHaveTextContent("Synthetic Reader Book");
+  });
+
+  it("contains renderer failures, clears publication data, and starts cleanup", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const publication = createTestPublication("Private renderer title");
+    const flow = createTestFlow(() =>
+      Promise.resolve({ status: "ready", publication }),
+    );
+    function ThrowingReader(): never {
+      throw new Error("private renderer prose and path");
+    }
+    render(<App openFlow={flow} ReadyPublicationContent={ThrowingReader} />);
+
+    selectEpub();
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "VoxLeaf could not display that EPUB.",
+      ),
+    );
+    expect(flow.close).toHaveBeenCalled();
+    expect(document.body).not.toHaveTextContent("Private renderer title");
+    expect(document.body).not.toHaveTextContent("private renderer prose");
   });
 
   it("keeps the current ready state when the picker is cancelled", async () => {
@@ -186,16 +336,13 @@ describe("desktop local EPUB open flow", () => {
       Promise.resolve({ status: "ready", publication }),
     );
     render(<App openFlow={flow} />);
-    const input = screen.getByLabelText("Open a local EPUB");
-    fireEvent.change(input, {
-      target: { files: [new File(["book"], "private.epub")] },
-    });
-    await screen.findByRole("heading", {
-      level: 2,
-      name: "Synthetic Reader Book",
-    });
+    selectEpub();
+    await screen.findByRole("heading", { name: "Synthetic Reader Book" });
 
-    fireEvent(input, new Event("cancel", { bubbles: true }));
+    fireEvent(
+      screen.getByLabelText("Open a local EPUB"),
+      new Event("cancel", { bubbles: true }),
+    );
 
     expect(screen.getByRole("status")).toHaveTextContent(
       "The EPUB opened successfully.",
@@ -203,42 +350,47 @@ describe("desktop local EPUB open flow", () => {
     expect(flow.open).toHaveBeenCalledTimes(1);
   });
 
-  it("does not let an obsolete completion replace newer metadata", async () => {
+  it("drops prior metadata immediately and rejects obsolete completions", async () => {
     const pending: Array<(result: LocalPublicationOpenResult) => void> = [];
+    const current = createTestPublication("Current publication");
     const flow = createTestFlow(
-      () =>
-        new Promise((resolve) => {
-          pending.push(resolve);
-        }),
+      vi
+        .fn<LocalPublicationOpenFlow["open"]>()
+        .mockResolvedValueOnce({
+          status: "ready",
+          publication: createTestPublication("Prior private publication"),
+        })
+        .mockImplementation(
+          () =>
+            new Promise((resolve) => {
+              pending.push(resolve);
+            }),
+        ),
     );
     render(<App openFlow={flow} />);
-    const input = screen.getByLabelText("Open a local EPUB");
-    fireEvent.change(input, {
-      target: { files: [new File(["first"], "private-first.epub")] },
-    });
-    fireEvent.change(input, {
-      target: { files: [new File(["second"], "private-second.epub")] },
-    });
+    selectEpub("prior.epub");
+    await screen.findByRole("heading", { name: "Prior private publication" });
+
+    selectEpub("obsolete.epub");
+    expect(
+      screen.queryByText("Prior private publication"),
+    ).not.toBeInTheDocument();
+    selectEpub("current.epub");
 
     await act(async () => {
-      pending[1]?.({
-        status: "ready",
-        publication: createTestPublication("Current publication"),
-      });
+      pending[1]?.({ status: "ready", publication: current });
     });
     expect(
-      screen.getByRole("heading", { level: 2, name: "Current publication" }),
+      screen.getByRole("heading", { name: "Current publication" }),
     ).toBeInTheDocument();
 
     await act(async () => {
       pending[0]?.({ status: "rejected", reason: "invalid-epub" });
     });
     expect(
-      screen.getByRole("heading", { level: 2, name: "Current publication" }),
+      screen.getByRole("heading", { name: "Current publication" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "The EPUB opened successfully.",
-    );
+    expect(document.body).not.toHaveTextContent("Prior private publication");
   });
 
   it("retains the independent content-free raster safety probe", async () => {
@@ -264,7 +416,7 @@ describe("desktop local EPUB open flow", () => {
     });
   });
 
-  it("closes publication ownership when the application unmounts", () => {
+  it("cleans publication ownership when the application unmounts", () => {
     const flow = createTestFlow(() => Promise.resolve({ status: "cancelled" }));
     const { unmount } = render(<App openFlow={flow} />);
 

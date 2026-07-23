@@ -789,7 +789,7 @@ Do not change `services/tts`, audio contracts/implementation, narration contract
 
 **Validation:** `pnpm.cmd --filter @voxleaf/desktop typecheck`; `pnpm.cmd --filter @voxleaf/desktop test`; `pnpm.cmd --filter @voxleaf/desktop build`.
 
-**Status:** Not started.
+**Status:** Complete on 2026-07-22. Added a presentation-independent immutable lifecycle with exactly `idle`, `opening`, `ready`, `empty`, `failure`, and `closing` states over the existing local-open flow. Only `ready` exposes the active publication and validated metadata; every other transition clears prior publication data immediately, zero located blocks produce the recoverable empty state, stale completions cannot replace current state, and explicit close is coalesced before idle/reopen. The local-open boundary now returns a closed content-free close outcome so cleanup failure becomes a fixed terminal state. A React error boundary contains ready-surface failures, starts publication cleanup without inspecting/logging the thrown value, and the production React root disables its raw caught-error console reporter. The accessible shell supplies polite status/busy semantics, enabled replacement while opening, disabled ingress while closing or after failed cleanup, empty recovery, and explicit close. Seven desktop test files/73 tests, typecheck, production build, TypeScript format/lint, the pinned-Chromium smoke, and diff checks pass. No semantic renderer, reader coordinator, navigation, persistence, new dependency, native capability, network, narration, TTS, or audio behavior was added.
 
 ### Task 2.5: Generate standalone contract validators and remove runtime eval
 
@@ -1165,6 +1165,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 - 2026-07-22: Implemented Task 2.3's bounded local-file-to-publication path and safe open UI. Added a presentation-independent coordinator that closes prior publication state at replacement intent, aborts stale reads, hands only bounded bytes to the session, maps closed operational categories to static application outcomes, and contains unexpected failures. The shell clears the input for reselection, preserves ready/idle state on picker cancellation, shows only validated title/authors after success, and retains the independent raster safety probe. Fourteen coordinator tests, thirteen shell tests, the desktop suite, typecheck, and the pinned-Chromium invalid-file smoke cover the implementation. Native release WebView2 interaction remains pending before the task status can become complete.
 - 2026-07-22: Fixed a native release-shell startup defect found during WebView2 manual validation. The shared Ajv-backed contract decoders compile local validators during module initialization; the prior Tauri CSP blocked `unsafe-eval` before React mounted, leaving an empty root and white window. The CSP now permits `unsafe-eval` only alongside self-only scripts, self/blob images, and no network origins; the reason and residual boundary are documented in the architecture/dependency notes. Isolated WebView2 CDP inspection confirmed the root cause and the native release smoke must be rerun after the rebuild.
 - 2026-07-22: Documented the native startup follow-up without implementing it. A checked-in packaged-WebView root/error/network regression is required before Task 2.3 can close. Future Task 2.5 owns standalone validator generation and removal of the temporary broad `unsafe-eval` permission and must complete before Task 3.1 begins; retaining the permission instead requires explicit ADR-backed security approval. No command, validator, test harness, CSP, application code, dependency, or contract changed in this documentation step.
+- 2026-07-22: Completed Task 2.4. Added a UI-independent six-state reader lifecycle over the existing local-open flow, zero-locator empty recovery, content-free close outcomes, immediate prior-publication clearing, coalesced close/reopen, fixed close/render failures, and a React presentation-error boundary that starts cleanup without logging the thrown value. The shell now exposes accessible opening/closing busy states and explicit close while keeping semantic rendering deferred. Seven desktop test files/73 tests and the pinned-Chromium smoke pass; no dependency, native capability, semantic renderer, persistence, network, narration, TTS, or audio behavior was added.
 
 ## Decision log
 
@@ -1188,6 +1189,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 | 2026-07-22 | Use yielded batches of at most 250 semantic blocks; reject above 10,000 semantic blocks or 80,000 projected DOM nodes with `chapter-too-large`; defer virtualization; enforce the documented 50/16/1,000/1,000/250 ms and 144/112/208 MiB reference gates while retaining ADR-0010 image caps. | Accepted by the ADR-0008 Task 1.6 amendment; implementation/revalidation remain Tasks 3.6 and 5.3. |
 | 2026-07-22 | In otherwise supported EPUB 3 packages, validate and ignore legacy `meta name/content` compatibility values and admit only the inert HTML doctype in XHTML content/navigation; retain no DTD/entity processing or external resolution. | Accepted by the ADR-0007 compatibility amendment and implemented by the Task 2.3 hotfix. |
 | 2026-07-22 | Treat the current broad `unsafe-eval` CSP allowance as a temporary compatibility exception; add packaged-startup regression coverage before closing Task 2.3, then complete Task 2.5 and remove the allowance before beginning Task 3.1. | Future implementation gate only. Retention at the Task 3.1 gate requires explicit ADR-backed security approval. |
+| 2026-07-22 | Publish one immutable desktop lifecycle union for idle/opening/ready/empty/failure/closing; expose publication data only in ready, classify empty by zero package-located blocks, and contain render failures with fixed cleanup-driven presentation. | Implemented by Task 2.4 without changing the semantic-renderer or persistence boundary. |
 
 ## Final validation requirements
 
@@ -1216,7 +1218,7 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Production-reader validation has not started. Tasks 1.1 through 1.6 and 2.1 through 2.2 are complete; Task 2.3 implementation is complete, but a checked-in packaged-startup regression and the native interaction matrix are still required before it can close. Task 2.5 is a future prerequisite that must remove runtime eval before Task 3.1 begins. Renderer, persistence, restoration, and later application tasks remain `Not started`.
+Production semantic-reader validation has not started. Tasks 1.1 through 1.6, 2.1 through 2.2, and 2.4 are complete; Task 2.3 implementation is complete, but a checked-in packaged-startup regression and the native interaction matrix are still required before it can close. Task 2.5 is a future prerequisite that must remove runtime eval before Task 3.1 begins. Semantic rendering, navigation, persistence, restoration, and later application tasks remain `Not started`.
 
 Task 2.3 implementation validation on 2026-07-22:
 
@@ -1237,6 +1239,16 @@ Task 2.3 EPUB compatibility hotfix validation on 2026-07-22:
 - `pnpm.cmd check` passed on native Windows: formatting, ESLint/Clippy/Ruff, TypeScript/Python type checks, 613 TypeScript tests, Rust tests, 3 Python tests, package builds, the Tauri release build, and Python source/wheel builds all passed. The release executable was rebuilt at the documented target path.
 - `pnpm.cmd test:browser` passed the one pinned-Chromium production-build smoke in 3.0 seconds. Vite retained its existing advisory for the approximately 529 kB application chunk; no gate failed.
 - No dependency, lockfile, shared/public schema, desktop UI, Tauri command/plugin/capability/CSP, filesystem/network resolver, persistence, renderer, narration, TTS, or audio behavior changed. The system diagram was reviewed and remains accurate because the component boundary and data flow did not change. Rebuilt native WebView2 interaction remains the final Task 2.3 evidence gap.
+
+Task 2.4 validation completed on 2026-07-22:
+
+- `pnpm.cmd --filter @voxleaf/desktop typecheck` passed.
+- `pnpm.cmd --filter @voxleaf/desktop test` passed: 7 files and 73 tests, including 7 lifecycle-controller tests and 17 shell-state tests.
+- `pnpm.cmd --filter @voxleaf/desktop build` passed with 192 transformed modules. Vite reported the existing advisory for the 531.80 kB application chunk; no configured gate failed.
+- `pnpm.cmd test:browser` passed the one pinned-Chromium production-build smoke in 3.1 seconds with zero non-loopback requests.
+- `pnpm.cmd run format:check:typescript`, `pnpm.cmd run lint:typescript`, and `git diff --check` passed.
+- Focused tests cover immutable six-state transitions, zero-locator empty recovery, accessible busy/status/close behavior, prior-publication clearing, stale completions, close sharing/reopen, close/render failures, cleanup invalidation, private filename/metadata/error omission, and unchanged raster-probe behavior. Source review confirms the production React root replaces the default raw caught-error reporter with the fixed reader boundary path.
+- No manifest, lockfile, dependency, shared/EPUB public contract, Tauri command/plugin/capability/CSP, semantic renderer, navigation, persistence, network access, narration, TTS, audio, private fixture, or generated artifact changed. The system diagram keeps the semantic reader planned while recording the implemented desktop lifecycle surface.
 
 Task 1.1 documentation validation completed on 2026-07-22:
 
