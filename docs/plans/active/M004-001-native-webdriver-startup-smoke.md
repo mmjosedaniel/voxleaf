@@ -189,6 +189,11 @@ It does not require production migration or data conversion.
   60-second internal deadline. Added a closed classifier for documented launch,
   profile, automation-marker, WebView-environment, timeout, and resource failure
   families without exposing the driver's message.
+- 2026-07-23: Classified run `30038826480` identified
+  `webdriver-automation-marker-missing`: the Server 2025 host never created
+  EdgeDriver's `DevToolsActivePort`. Selected the explicit supported
+  `windows-2022` image for the authoritative native-GUI job and retained the
+  same exact toolchains, drivers, checks, and Ubuntu portable coverage.
 
 ## Discoveries and decisions
 
@@ -204,6 +209,10 @@ It does not require production migration or data conversion.
   disposable WebView2 user-data folder through
   `tauri:options.webviewOptions.userDataFolder`. This keeps its startup marker
   and the application's actual profile synchronized.
+- Hosted native-GUI evidence requires a runner image on which WebView2 can
+  create EdgeDriver's automation marker. `windows-2022` is pinned for that role;
+  `windows-2025` remains unsuitable after direct CDP and supported WebDriver
+  both failed at the same marker boundary.
 - `docs/architecture/system-diagram.md` and `docs/architecture/overview.md` were
   reviewed. No diagram change is required because the WebDriver bridge is
   test-only and does not change the production component or runtime data flow.
@@ -225,4 +234,6 @@ It does not require production migration or data conversion.
 - Hosted run `30036278090` passed runtime/tool installation and failed during
   session creation before the profile-ownership correction. Rerun attempt 2 of
   `30037544251` passed every prerequisite and failed at the same session boundary
-  after the correction. Classified replacement validation remains pending.
+  after the correction. Run `30038826480` classified the failure as a missing
+  automation marker. Windows Server 2022 replacement validation remains
+  pending.

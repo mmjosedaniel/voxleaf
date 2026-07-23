@@ -20,7 +20,7 @@ concurrency:
 jobs:
   windows-native:
     name: Windows native foundation
-    runs-on: windows-2025
+    runs-on: windows-2022
     timeout-minutes: 45
     defaults:
       run:
