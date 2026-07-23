@@ -129,6 +129,113 @@ h1 {
   line-height: 1.5;
 }
 
+.semantic-reader {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #d7dfd7;
+}
+
+.semantic-document {
+  color: #263c30;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.semantic-document h1,
+.semantic-document h2,
+.semantic-document h3,
+.semantic-document h4,
+.semantic-document h5,
+.semantic-document h6 {
+  margin: 1.75em 0 0.65em;
+  color: #183d2a;
+  font-family: inherit;
+  font-weight: 650;
+  letter-spacing: normal;
+  line-height: 1.2;
+}
+
+.semantic-document h1:first-child,
+.semantic-document h2:first-child,
+.semantic-document h3:first-child,
+.semantic-document h4:first-child,
+.semantic-document h5:first-child,
+.semantic-document h6:first-child {
+  margin-top: 0;
+}
+
+.semantic-document h1 {
+  font-size: 2rem;
+}
+
+.semantic-document h2 {
+  font-size: 1.7rem;
+}
+
+.semantic-document h3 {
+  font-size: 1.45rem;
+}
+
+.semantic-document h4 {
+  font-size: 1.25rem;
+}
+
+.semantic-document h5 {
+  font-size: 1.1rem;
+}
+
+.semantic-document h6 {
+  font-size: 1rem;
+}
+
+.semantic-document p {
+  margin: 0 0 1em;
+}
+
+.semantic-document blockquote {
+  margin: 1.25em 0;
+  padding-inline-start: 1.25em;
+  border-inline-start: 0.2rem solid #8da194;
+  color: #405047;
+}
+
+.semantic-document ol,
+.semantic-document ul {
+  margin: 1em 0;
+  padding-inline-start: 2em;
+}
+
+.semantic-document li + li {
+  margin-top: 0.5em;
+}
+
+.semantic-document code {
+  padding: 0.08em 0.25em;
+  border-radius: 0.25em;
+  background: #edf2ec;
+  font-family:
+    "Cascadia Mono", "Segoe UI Mono", Consolas, ui-monospace, monospace;
+  font-size: 0.9em;
+  white-space: pre-wrap;
+}
+
+.semantic-internal-link {
+  color: inherit;
+}
+
+.semantic-raster-placeholder {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-inline: 0.1em;
+  border: 1px solid #8da194;
+  border-radius: 0.15em;
+  vertical-align: -0.1em;
+  background: #edf2ec;
+}
+
 .empty-publication,
 .reader-failure {
   margin-top: 1.5rem;

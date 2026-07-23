@@ -4,6 +4,7 @@ import type {
   PublicationLocatedBlock,
   SemanticBlock,
   SemanticDocument,
+  SensitivePublicationText,
 } from "@voxleaf/epub";
 import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
 import {
@@ -30,9 +31,15 @@ afterEach(() => {
 });
 
 const TEST_DOCUMENT_ID = "document:test" as ContentDocumentId;
+const TEST_TEXT = "Visible semantic passage" as SensitivePublicationText;
 const TEST_BLOCK: SemanticBlock = Object.freeze({
   kind: "paragraph",
-  children: Object.freeze([]),
+  children: Object.freeze([
+    Object.freeze({
+      kind: "text",
+      text: TEST_TEXT,
+    }),
+  ]),
 });
 const TEST_DOCUMENT: SemanticDocument = Object.freeze({
   id: TEST_DOCUMENT_ID,
@@ -138,6 +145,12 @@ describe("desktop reader lifecycle surface", () => {
     expect(
       screen.getByText("By First Author, Second Author"),
     ).toBeInTheDocument();
+    expect(screen.getByText(TEST_TEXT)).toBeInTheDocument();
+    expect(
+      screen.getByRole("article", { name: "Current reading section" }),
+    ).toBeInTheDocument();
+    expect(publication.readResource).not.toHaveBeenCalled();
+    expect(publication.resolveTarget).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Close EPUB" })).toBeEnabled();
     expect(document.body).not.toHaveTextContent("private-title.epub");
     expect(screen.getByLabelText("Open a local EPUB")).toHaveValue("");
