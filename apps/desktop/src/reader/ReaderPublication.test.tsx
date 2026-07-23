@@ -22,6 +22,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ReaderPublicationContent } from "./ReaderPublication";
 import { ReaderNavigationCoordinator } from "./reader-navigation";
+import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
 
 const OPENING_DOCUMENT_ID = "document:opening" as ContentDocumentId;
 const CONTINUATION_DOCUMENT_ID = "document:continuation" as ContentDocumentId;
@@ -431,6 +432,29 @@ describe("navigable publication reader", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Continuation" }),
     ).toHaveFocus();
+  });
+
+  it("replaces and cleans active-document DOM locator registrations", () => {
+    const mapper = new SemanticDomRangeMapper();
+    const rendered = render(
+      <ReaderPublicationContent
+        publication={createPublication()}
+        domRangeMapper={mapper}
+      />,
+    );
+
+    expect(mapper.registrationCount).toBe(1);
+    expect(mapper.rangeFor(OPENING_LOCATED_BLOCK, 7)).toBeDefined();
+    expect(mapper.rangeFor(CONTINUATION_LOCATED_BLOCK, 0)).toBeUndefined();
+
+    fireEvent.click(screen.getByRole("button", { name: "Continuation" }));
+
+    expect(mapper.registrationCount).toBe(1);
+    expect(mapper.rangeFor(OPENING_LOCATED_BLOCK, 0)).toBeUndefined();
+    expect(mapper.rangeFor(CONTINUATION_LOCATED_BLOCK, 12)).toBeDefined();
+
+    rendered.unmount();
+    expect(mapper.registrationCount).toBe(0);
   });
 
   it("keeps package targets out of DOM identifiers, links, and browser history", () => {

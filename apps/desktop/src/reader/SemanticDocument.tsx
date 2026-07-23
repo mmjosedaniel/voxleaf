@@ -1,14 +1,20 @@
 import type {
+  PublicationLocatedBlock,
   SemanticBlock,
   SemanticDocument,
   SemanticDocumentTarget,
-  SemanticHeadingBlock,
   SemanticInline,
   SemanticTextContext,
   SemanticTextDirection,
 } from "@voxleaf/epub";
-import { memo, useMemo, useSyncExternalStore } from "react";
-import type { MouseEventHandler, ReactElement, ReactNode, Ref } from "react";
+import { memo, useCallback, useMemo, useSyncExternalStore } from "react";
+import type {
+  MouseEventHandler,
+  ReactElement,
+  ReactNode,
+  Ref,
+  RefCallback,
+} from "react";
 
 import {
   assessSemanticDocumentRendering,
@@ -18,6 +24,7 @@ import {
 } from "./large-chapter-rendering";
 import type { PublicationRasterImageLoadPort } from "./publication-raster-image-loader";
 import type { ReaderTargetAvailability } from "./reader-navigation";
+import type { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
 import {
   SemanticRasterImageElement,
   type ObserveRasterImageVisibility,
@@ -48,6 +55,9 @@ interface SemanticRenderServices {
   readonly rasterImageLoader: PublicationRasterImageLoadPort | undefined;
   readonly observeRasterImageVisibility:
     ObserveRasterImageVisibility | undefined;
+  readonly domRangeMapper: SemanticDomRangeMapper | undefined;
+  readonly locatedBlocksByBlock:
+    WeakMap<SemanticBlock, PublicationLocatedBlock> | undefined;
 }
 
 interface SemanticDestination {
@@ -248,62 +258,6 @@ function SemanticInlineElement({
     }
     default:
       return unreachable(inline);
-  }
-}
-
-function renderHeading(
-  block: SemanticHeadingBlock,
-  inherited: EffectiveTextContext,
-  services: SemanticRenderServices,
-  destinationRef?: (element: HTMLElement | null) => void,
-): ReactElement {
-  const current = effectiveTextContext(block, inherited);
-  const attributes = textContextAttributes(current, inherited);
-  const children = renderInlineChildren(block.children, current, services);
-  const destinationAttributes =
-    destinationRef === undefined
-      ? {}
-      : { ref: destinationRef, tabIndex: -1 as const };
-
-  switch (block.level) {
-    case 1:
-      return (
-        <h1 {...attributes} {...destinationAttributes}>
-          {children}
-        </h1>
-      );
-    case 2:
-      return (
-        <h2 {...attributes} {...destinationAttributes}>
-          {children}
-        </h2>
-      );
-    case 3:
-      return (
-        <h3 {...attributes} {...destinationAttributes}>
-          {children}
-        </h3>
-      );
-    case 4:
-      return (
-        <h4 {...attributes} {...destinationAttributes}>
-          {children}
-        </h4>
-      );
-    case 5:
-      return (
-        <h5 {...attributes} {...destinationAttributes}>
-          {children}
-        </h5>
-      );
-    case 6:
-      return (
-        <h6 {...attributes} {...destinationAttributes}>
-          {children}
-        </h6>
-      );
-    default:
-      return unreachable(block.level);
   }
 }
 
@@ -656,6 +610,36 @@ interface SemanticBlockElementProps {
   readonly destination: SemanticDestination;
 }
 
+function useSemanticBlockElementRef(
+  destinationRef: ((element: HTMLElement | null) => void) | undefined,
+  domRangeMapper: SemanticDomRangeMapper | undefined,
+  locatedBlock: PublicationLocatedBlock | undefined,
+): RefCallback<HTMLElement> | undefined {
+  const elementRef = useCallback(
+    (element: HTMLElement | null) => {
+      if (element === null) {
+        destinationRef?.(null);
+        return;
+      }
+      destinationRef?.(element);
+      const unregister =
+        domRangeMapper === undefined || locatedBlock === undefined
+          ? undefined
+          : domRangeMapper.registerBlock(element, locatedBlock);
+      return () => {
+        unregister?.();
+        destinationRef?.(null);
+      };
+    },
+    [destinationRef, domRangeMapper, locatedBlock],
+  );
+
+  return destinationRef === undefined &&
+    (domRangeMapper === undefined || locatedBlock === undefined)
+    ? undefined
+    : elementRef;
+}
+
 function SemanticBlockElement({
   plan,
   renderedBlockCount,
@@ -666,6 +650,12 @@ function SemanticBlockElement({
   const { block } = plan;
   const destinationRef =
     block === destination.block ? destination.ref : undefined;
+  const locatedBlock = services.locatedBlocksByBlock?.get(block);
+  const elementRef = useSemanticBlockElementRef(
+    destinationRef,
+    services.domRangeMapper,
+    locatedBlock,
+  );
   switch (block.kind) {
     case "block-quote": {
       const current = effectiveTextContext(block, inherited);
@@ -674,7 +664,7 @@ function SemanticBlockElement({
       }
       return (
         <blockquote
-          ref={destinationRef}
+          ref={elementRef}
           {...textContextAttributes(current, inherited)}
         >
           {renderBlockSequence(
@@ -687,8 +677,53 @@ function SemanticBlockElement({
         </blockquote>
       );
     }
-    case "heading":
-      return renderHeading(block, inherited, services, destinationRef);
+    case "heading": {
+      const current = effectiveTextContext(block, inherited);
+      const attributes = textContextAttributes(current, inherited);
+      const children = renderInlineChildren(block.children, current, services);
+      const destinationAttributes =
+        destinationRef === undefined ? {} : { tabIndex: -1 as const };
+      switch (block.level) {
+        case 1:
+          return (
+            <h1 ref={elementRef} {...attributes} {...destinationAttributes}>
+              {children}
+            </h1>
+          );
+        case 2:
+          return (
+            <h2 ref={elementRef} {...attributes} {...destinationAttributes}>
+              {children}
+            </h2>
+          );
+        case 3:
+          return (
+            <h3 ref={elementRef} {...attributes} {...destinationAttributes}>
+              {children}
+            </h3>
+          );
+        case 4:
+          return (
+            <h4 ref={elementRef} {...attributes} {...destinationAttributes}>
+              {children}
+            </h4>
+          );
+        case 5:
+          return (
+            <h5 ref={elementRef} {...attributes} {...destinationAttributes}>
+              {children}
+            </h5>
+          );
+        case 6:
+          return (
+            <h6 ref={elementRef} {...attributes} {...destinationAttributes}>
+              {children}
+            </h6>
+          );
+        default:
+          return unreachable(block.level);
+      }
+    }
     case "list": {
       const current = effectiveTextContext(block, inherited);
       const attributes = textContextAttributes(current, inherited);
@@ -703,11 +738,11 @@ function SemanticBlockElement({
         destination,
       );
       return block.ordered ? (
-        <ol ref={destinationRef} {...attributes}>
+        <ol ref={elementRef} {...attributes}>
           {items}
         </ol>
       ) : (
-        <ul ref={destinationRef} {...attributes}>
+        <ul ref={elementRef} {...attributes}>
           {items}
         </ul>
       );
@@ -715,7 +750,7 @@ function SemanticBlockElement({
     case "paragraph": {
       const current = effectiveTextContext(block, inherited);
       return (
-        <p ref={destinationRef} {...textContextAttributes(current, inherited)}>
+        <p ref={elementRef} {...textContextAttributes(current, inherited)}>
           {renderInlineChildren(block.children, current, services)}
         </p>
       );
@@ -737,6 +772,8 @@ export interface SemanticDocumentContentProps {
   readonly rasterImageLoader?: PublicationRasterImageLoadPort;
   readonly observeRasterImageVisibility?: ObserveRasterImageVisibility;
   readonly scheduleRenderYield?: ScheduleLargeChapterYield;
+  readonly domRangeMapper?: SemanticDomRangeMapper;
+  readonly locatedBlocks?: readonly PublicationLocatedBlock[];
 }
 
 interface AcceptedSemanticDocumentContentProps extends SemanticDocumentContentProps {
@@ -753,6 +790,8 @@ function AcceptedSemanticDocumentContent({
   rasterImageLoader,
   observeRasterImageVisibility,
   scheduleRenderYield,
+  domRangeMapper,
+  locatedBlocks,
   semanticBlockCount,
 }: AcceptedSemanticDocumentContentProps): ReactElement {
   const plan = useMemo(() => buildDocumentRenderPlan(document), [document]);
@@ -773,14 +812,33 @@ function AcceptedSemanticDocumentContent({
     () => effectiveTextContext(document, EMPTY_TEXT_CONTEXT),
     [document],
   );
+  const locatedBlocksByBlock = useMemo(() => {
+    if (domRangeMapper === undefined || locatedBlocks === undefined) {
+      return undefined;
+    }
+    const result = new WeakMap<SemanticBlock, PublicationLocatedBlock>();
+    for (const locatedBlock of locatedBlocks) {
+      if (
+        locatedBlock.documentId === document.id &&
+        plan.blockIndexes.has(locatedBlock.block)
+      ) {
+        result.set(locatedBlock.block, locatedBlock);
+      }
+    }
+    return result;
+  }, [document.id, domRangeMapper, locatedBlocks, plan.blockIndexes]);
   const services = useMemo(
     () => ({
       targetAvailability,
       onActivateTarget,
       rasterImageLoader,
       observeRasterImageVisibility,
+      domRangeMapper,
+      locatedBlocksByBlock,
     }),
     [
+      domRangeMapper,
+      locatedBlocksByBlock,
       onActivateTarget,
       observeRasterImageVisibility,
       rasterImageLoader,
