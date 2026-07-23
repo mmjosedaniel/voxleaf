@@ -23,7 +23,7 @@
     ],
     "security": {
       "capabilities": [],
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self'; img-src 'self' blob:"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:"
     }
   },
   "bundle": {

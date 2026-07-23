@@ -1,28 +1,9 @@
-import Ajv2020 from "ajv/dist/2020.js";
-
-import capabilityReportV1Schema from "../../schemas/capability-report/v1.schema.json" with { type: "json" };
-import primitivesV1Schema from "../../schemas/primitives/v1.schema.json" with { type: "json" };
-import type {
-  CapabilityReportV1Wire,
-  CapabilityStatusV1Wire,
-} from "../generated/contracts/capability-report-v1.js";
+import type { CapabilityStatusV1Wire } from "../generated/contracts/capability-report-v1.js";
+import { validateCapabilityReportV1Wire } from "../generated/validators/index.js";
 import { createSchemaVersion } from "../primitives/index.js";
 import type { SchemaVersion } from "../primitives/index.js";
 
 const CAPABILITY_REPORT_SCHEMA_VERSION_V1 = createSchemaVersion(1);
-
-const validator = new Ajv2020({
-  allErrors: true,
-  coerceTypes: false,
-  removeAdditional: false,
-  strict: true,
-  useDefaults: false,
-});
-
-validator.addSchema(primitivesV1Schema);
-
-const validateCapabilityReportV1Wire =
-  validator.compile<CapabilityReportV1Wire>(capabilityReportV1Schema);
 
 export type CapabilityStatusV1 = CapabilityStatusV1Wire;
 

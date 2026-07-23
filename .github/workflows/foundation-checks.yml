@@ -76,6 +76,9 @@ jobs:
       - name: Run authoritative foundation checks
         run: pnpm.cmd check
 
+      - name: Run packaged WebView2 startup smoke
+        run: pnpm.cmd test:native-startup
+
   ubuntu-portable:
     name: Ubuntu portable foundation
     runs-on: ubuntu-24.04

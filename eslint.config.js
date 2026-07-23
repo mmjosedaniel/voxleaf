@@ -10,6 +10,7 @@ export default tseslint.config(
       "**/coverage/**",
       "**/dist/**",
       "**/node_modules/**",
+      "**/src/generated/validators/standalone.ts",
       "**/src-tauri/gen/**",
       "**/target/**",
     ],

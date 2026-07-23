@@ -1,8 +1,5 @@
-import Ajv2020 from "ajv/dist/2020.js";
-
-import bookV1Schema from "../../schemas/book/v1.schema.json" with { type: "json" };
-import primitivesV1Schema from "../../schemas/primitives/v1.schema.json" with { type: "json" };
 import type { BookV1Wire } from "../generated/contracts/book-v1.js";
+import { validateBookV1Wire } from "../generated/validators/index.js";
 import {
   createBookId,
   createIndex,
@@ -17,17 +14,6 @@ import type {
 } from "../primitives/index.js";
 
 const BOOK_SCHEMA_VERSION_V1 = createSchemaVersion(1);
-
-const validator = new Ajv2020({
-  allErrors: true,
-  coerceTypes: false,
-  removeAdditional: false,
-  strict: true,
-  useDefaults: false,
-});
-
-validator.addSchema(primitivesV1Schema);
-const validateBookV1Wire = validator.compile<BookV1Wire>(bookV1Schema);
 
 declare const localResourcePathBrand: unique symbol;
 
