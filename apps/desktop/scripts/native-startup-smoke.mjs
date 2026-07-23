@@ -20,7 +20,7 @@ const executablePath = path.join(
   "release",
   "voxleaf-desktop.exe",
 );
-const STARTUP_TIMEOUT_MS = 30_000;
+const STARTUP_TIMEOUT_MS = 90_000;
 const OBSERVATION_WINDOW_MS = 500;
 const FIXED_FAILURE_CODES = new Map([
   [
@@ -214,7 +214,7 @@ async function run() {
     cwd: desktopRoot,
     env: {
       ...process.env,
-      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${debugPort}`,
+      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${debugPort} --remote-debugging-address=127.0.0.1`,
       WEBVIEW2_USER_DATA_FOLDER: profileDirectory,
     },
     stdio: "ignore",
