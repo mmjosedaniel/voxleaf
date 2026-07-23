@@ -81,6 +81,8 @@ jobs:
           $webView2ClientId = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
           $webView2RegistryPaths = @(
             "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\$webView2ClientId",
+            "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\EdgeUpdate\Clients\$webView2ClientId",
+            "Registry::HKEY_CURRENT_USER\Software\WOW6432Node\Microsoft\EdgeUpdate\Clients\$webView2ClientId",
             "Registry::HKEY_CURRENT_USER\Software\Microsoft\EdgeUpdate\Clients\$webView2ClientId"
           )
 
@@ -126,6 +128,47 @@ jobs:
             throw "WebView2 Runtime is unavailable after installation."
           }
           Write-Output "WebView2 Runtime $runtimeVersion is available."
+
+      - name: Install pinned Tauri WebDriver tooling
+        run: |
+          cargo install tauri-driver --version 2.0.6 --locked
+          cargo install `
+            --git https://github.com/chippers/msedgedriver-tool.git `
+            --rev 8c4b34f51b45f5cf08013366d703de464ab871d1 `
+            --locked
+
+          $toolDirectory = Join-Path $env:USERPROFILE ".cargo\bin"
+          $driverDirectory = Join-Path $env:RUNNER_TEMP "voxleaf-native-webdriver"
+          New-Item -ItemType Directory -Path $driverDirectory -Force | Out-Null
+          Push-Location $driverDirectory
+          try {
+            & (Join-Path $toolDirectory "msedgedriver-tool.exe")
+          } finally {
+            Pop-Location
+          }
+
+          $tauriDriverPath = Join-Path $toolDirectory "tauri-driver.exe"
+          $edgeDriverPath = Join-Path $driverDirectory "msedgedriver.exe"
+          if (
+            -not (Test-Path -LiteralPath $tauriDriverPath -PathType Leaf) -or
+            -not (Test-Path -LiteralPath $edgeDriverPath -PathType Leaf)
+          ) {
+            throw "Pinned native WebDriver tooling is unavailable."
+          }
+          $signature = Get-AuthenticodeSignature -FilePath $edgeDriverPath
+          if (
+            $signature.Status -ne "Valid" -or
+            $signature.SignerCertificate.Subject -notlike "*O=Microsoft Corporation*"
+          ) {
+            throw "Microsoft EdgeDriver signature validation failed."
+          }
+
+          Add-Content `
+            -LiteralPath $env:GITHUB_ENV `
+            -Value "VOXLEAF_TAURI_DRIVER_PATH=$tauriDriverPath"
+          Add-Content `
+            -LiteralPath $env:GITHUB_ENV `
+            -Value "VOXLEAF_EDGE_DRIVER_PATH=$edgeDriverPath"
 
       - name: Run packaged WebView2 startup smoke
         run: pnpm.cmd test:native-startup
