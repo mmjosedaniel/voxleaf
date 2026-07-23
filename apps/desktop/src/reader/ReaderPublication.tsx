@@ -29,6 +29,7 @@ import {
   ReaderNavigationCoordinator,
   type ReaderTargetAvailability,
 } from "./reader-navigation";
+import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
 
 function unreachable(value: never): never {
   void value;
@@ -112,12 +113,14 @@ export interface ReaderPublicationContentProps {
   readonly publication: OpenedPublication;
   readonly initialPreferences?: ReaderPreferencesV1;
   readonly onPreferencesChange?: (preferences: ReaderPreferencesV1) => void;
+  readonly domRangeMapper?: SemanticDomRangeMapper;
 }
 
 export function ReaderPublicationContent({
   publication,
   initialPreferences = DEFAULT_READER_PREFERENCES,
   onPreferencesChange,
+  domRangeMapper,
 }: ReaderPublicationContentProps): ReactElement {
   const [coordinator] = useState(
     () =>
@@ -129,12 +132,21 @@ export function ReaderPublicationContent({
     () => new PublicationRasterImageLoader(publication),
     [publication],
   );
+  const [ownedDomRangeMapper] = useState(() => new SemanticDomRangeMapper());
+  const activeDomRangeMapper = domRangeMapper ?? ownedDomRangeMapper;
   const subscribe = useCallback(
     (listener: () => void) => coordinator.subscribe(listener),
     [coordinator],
   );
   const getSnapshot = useCallback(() => coordinator.state, [coordinator]);
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const activeLocatedBlocks = useMemo(
+    () =>
+      publication.locators.filter(
+        (locatedBlock) => locatedBlock.documentId === state.activeDocument.id,
+      ),
+    [publication.locators, state.activeDocument.id],
+  );
   const readerRef = useRef<HTMLElement | null>(null);
   const destinationRef = useRef<HTMLElement | null>(null);
   const handledNavigationRevision = useRef(0);
@@ -187,6 +199,14 @@ export function ReaderPublicationContent({
       void rasterImageLoader.close();
     },
     [rasterImageLoader],
+  );
+  useEffect(
+    () => () => {
+      if (domRangeMapper === undefined) {
+        ownedDomRangeMapper.close();
+      }
+    },
+    [domRangeMapper, ownedDomRangeMapper],
   );
 
   useLayoutEffect(() => {
@@ -277,6 +297,8 @@ export function ReaderPublicationContent({
                 destinationRef={setDestinationRef}
                 readerRef={readerRef}
                 rasterImageLoader={rasterImageLoader}
+                domRangeMapper={activeDomRangeMapper}
+                locatedBlocks={activeLocatedBlocks}
               />
             )}
           </div>
