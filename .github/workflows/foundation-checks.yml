@@ -73,9 +73,6 @@ jobs:
       - name: Run real-browser desktop smoke
         run: pnpm.cmd test:browser
 
-      - name: Run authoritative foundation checks
-        run: pnpm.cmd check
-
       - name: Ensure WebView2 Runtime
         run: |
           $webView2ClientId = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
@@ -172,6 +169,9 @@ jobs:
 
       - name: Run packaged WebView2 startup smoke
         run: pnpm.cmd test:native-startup
+
+      - name: Run authoritative foundation checks
+        run: pnpm.cmd check
 
   ubuntu-portable:
     name: Ubuntu portable foundation

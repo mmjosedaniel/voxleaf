@@ -184,6 +184,11 @@ It does not require production migration or data conversion.
   Replaced the independent `WEBVIEW2_USER_DATA_FOLDER` override with that
   capability so EdgeDriver and the application observe the same disposable
   profile and automation marker.
+- 2026-07-23: Rerun attempt 2 of `30037544251` reached the corrected native
+  session and still returned the generic command failure after EdgeDriver's
+  60-second internal deadline. Added a closed classifier for documented launch,
+  profile, automation-marker, WebView-environment, timeout, and resource failure
+  families without exposing the driver's message.
 
 ## Discoveries and decisions
 
@@ -218,5 +223,6 @@ It does not require production migration or data conversion.
   tests, Rust/Python tests, and all production builds.
 - `git diff --check` passed.
 - Hosted run `30036278090` passed runtime/tool installation and failed during
-  session creation before the profile-ownership correction. Replacement hosted
-  validation remains pending.
+  session creation before the profile-ownership correction. Rerun attempt 2 of
+  `30037544251` passed every prerequisite and failed at the same session boundary
+  after the correction. Classified replacement validation remains pending.

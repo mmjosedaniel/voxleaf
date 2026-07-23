@@ -130,7 +130,36 @@ test("contains transport and protocol details behind fixed error codes", async (
       ),
       (error) =>
         error instanceof WebDriverClientError &&
-        error.message === "webdriver-command-failed" &&
+        error.message === "webdriver-unknown-error" &&
+        !error.message.includes("private"),
+    );
+  } finally {
+    await fake.stop();
+  }
+});
+
+test("classifies known session failures without exposing driver messages", async () => {
+  const fake = await startServer(() => ({
+    body: {
+      value: {
+        error: "session not created",
+        message:
+          "session not created: DevToolsActivePort file does not exist at C:\\private",
+      },
+    },
+    status: 500,
+  }));
+  const client = new WebDriverClient(fake.endpoint);
+
+  try {
+    await assert.rejects(
+      client.createSession(
+        "C:\\private\\book-name.exe",
+        "C:\\private\\profile",
+      ),
+      (error) =>
+        error instanceof WebDriverClientError &&
+        error.code === "webdriver-automation-marker-missing" &&
         !error.message.includes("private"),
     );
   } finally {

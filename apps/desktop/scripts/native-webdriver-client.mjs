@@ -1,4 +1,23 @@
 const W3C_ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
+const PROTOCOL_FAILURE_PATTERNS = Object.freeze([
+  ["devtoolsactiveport", "webdriver-automation-marker-missing"],
+  ["unable to discover open pages", "webdriver-page-discovery-failed"],
+  ["user data directory is already in use", "webdriver-profile-in-use"],
+  ["failed to create webview2", "webdriver-webview-environment-failed"],
+  ["webview2 runtime is not installed", "webdriver-runtime-unavailable"],
+  ["microsoft edge failed to start", "webdriver-edge-start-failed"],
+  ["failed to start: crashed", "webdriver-edge-start-failed"],
+  ["timed out", "webdriver-session-timeout"],
+  ["timeout", "webdriver-session-timeout"],
+  ["0x80070005", "webdriver-profile-access-denied"],
+  ["0x80070002", "webdriver-runtime-unavailable"],
+  ["0x800705aa", "webdriver-insufficient-resources"],
+]);
+const PROTOCOL_FAILURE_CODES = new Map([
+  ["invalid argument", "webdriver-capability-invalid"],
+  ["session not created", "webdriver-session-not-created"],
+  ["unknown error", "webdriver-unknown-error"],
+]);
 
 export class WebDriverClientError extends Error {
   constructor(code) {
@@ -178,9 +197,27 @@ export class WebDriverClient {
     }
 
     if (!response.ok || payload?.value?.error !== undefined) {
-      throw new WebDriverClientError("webdriver-command-failed");
+      throw new WebDriverClientError(protocolFailureCode(payload));
     }
 
     return payload?.value;
   }
+}
+
+function protocolFailureCode(payload) {
+  const message =
+    typeof payload?.value?.message === "string"
+      ? payload.value.message.toLowerCase()
+      : "";
+
+  for (const [pattern, code] of PROTOCOL_FAILURE_PATTERNS) {
+    if (message.includes(pattern)) {
+      return code;
+    }
+  }
+
+  return (
+    PROTOCOL_FAILURE_CODES.get(payload?.value?.error) ??
+    "webdriver-command-failed"
+  );
 }
