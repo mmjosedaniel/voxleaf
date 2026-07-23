@@ -16,6 +16,7 @@ import {
 } from "../document/xhtml-projector.js";
 import type { XhtmlDocumentProjection } from "../document/xhtml-projector.js";
 import { createPublicationLocatorIndex } from "../locator/locator-index.js";
+import { createPublicationTargetIndex } from "../locator/target-resolver.js";
 import { parseNavigationDocument } from "../navigation/navigation-document.js";
 import type {
   ParsedNavigationDocument,
@@ -123,6 +124,11 @@ export async function openEpubPublication(
       projections,
       archive.budget,
     );
+    const targetIndex = createPublicationTargetIndex(
+      projections,
+      locatorIndex,
+      archive.budget,
+    );
     const documentsByPath = new Map<string, ContentDocumentId>();
     for (const [index, item] of packageDocument.manifest.entries()) {
       archive.budget.checkpoint();
@@ -140,6 +146,7 @@ export async function openEpubPublication(
       ),
       navigation: projectNavigation(parsedNavigation, documentsByPath),
       locatorIndex,
+      targetIndex,
     });
     archive = undefined;
     return epubOpenSuccess(publication);

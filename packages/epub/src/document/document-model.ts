@@ -185,6 +185,10 @@ export interface PublicationLocatorResolveOptions {
   readonly signal?: AbortSignal;
 }
 
+export interface PublicationTargetResolveOptions {
+  readonly signal?: AbortSignal;
+}
+
 /** One semantic block and its deterministic structural start locator. */
 export interface PublicationLocatedBlock {
   readonly documentId: ContentDocumentId;
@@ -213,6 +217,36 @@ export interface RecoveredPublicationLocatorResolution {
 export type PublicationLocatorResolution =
   ExactPublicationLocatorResolution | RecoveredPublicationLocatorResolution;
 
+export interface ExactPublicationTargetResolution {
+  readonly status: "exact";
+  readonly reason: "document-start" | "fragment";
+  readonly locator: ReadingLocatorV1;
+  readonly locatedBlock: PublicationLocatedBlock;
+}
+
+export interface RecoveredPublicationTargetResolution {
+  readonly status: "recovered";
+  readonly reason: "fragment-unresolved";
+  readonly locator: ReadingLocatorV1;
+  readonly locatedBlock: PublicationLocatedBlock;
+}
+
+export type PublicationTargetUnavailableReason =
+  | "empty-document"
+  | "invalid-target"
+  | "non-spine-document"
+  | "unknown-document";
+
+export interface UnavailablePublicationTargetResolution {
+  readonly status: "unavailable";
+  readonly reason: PublicationTargetUnavailableReason;
+}
+
+export type PublicationTargetResolution =
+  | ExactPublicationTargetResolution
+  | RecoveredPublicationTargetResolution
+  | UnavailablePublicationTargetResolution;
+
 /**
  * Framework-independent handle for one opened publication.
  *
@@ -236,5 +270,9 @@ export interface OpenedPublication {
     input: unknown,
     options?: PublicationLocatorResolveOptions,
   ): PublicationLocatorResolution;
+  resolveTarget(
+    input: unknown,
+    options?: PublicationTargetResolveOptions,
+  ): PublicationTargetResolution;
   close(): Promise<void>;
 }

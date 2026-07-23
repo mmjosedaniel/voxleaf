@@ -168,11 +168,96 @@ describe("public privacy-safe EPUB opening", () => {
         locator: first.startLocator,
         locatedBlock: first,
       });
+      const navigationLink = publication.navigation[0];
+      if (navigationLink?.kind !== "link") {
+        throw new Error("expected one navigation link");
+      }
+      expect(publication.resolveTarget(navigationLink.target)).toEqual({
+        status: "exact",
+        reason: "fragment",
+        locator: first.startLocator,
+        locatedBlock: first,
+      });
+      expect(publication.resolveTarget({ documentId: "document:1" })).toEqual({
+        status: "exact",
+        reason: "document-start",
+        locator: first.startLocator,
+        locatedBlock: first,
+      });
+      expect(
+        publication.resolveTarget({
+          documentId: "document:1",
+          fragment: "missing-private-fragment",
+        }),
+      ).toEqual({
+        status: "recovered",
+        reason: "fragment-unresolved",
+        locator: first.startLocator,
+        locatedBlock: first,
+      });
+      expect(publication.resolveTarget({ documentId: "document:0" })).toEqual({
+        status: "unavailable",
+        reason: "non-spine-document",
+      });
+      expect(
+        publication.resolveTarget({ documentId: "document:unknown" }),
+      ).toEqual({
+        status: "unavailable",
+        reason: "unknown-document",
+      });
+      const controller = new AbortController();
+      controller.abort("private-cancellation-reason");
+      expect(() =>
+        publication.resolveTarget(
+          { documentId: "document:1" },
+          { signal: controller.signal },
+        ),
+      ).toThrowError(expect.objectContaining({ code: "cancelled" }));
       expect(worker).not.toHaveBeenCalled();
       expect(fetch).not.toHaveBeenCalled();
     } finally {
       await publication.close();
     }
     expect(publication.closed).toBe(true);
+    expect(() =>
+      publication.resolveTarget({ documentId: "document:1" }),
+    ).toThrowError(expect.objectContaining({ code: "internal-failure" }));
+  });
+
+  it("recovers duplicate and non-addressable fragments to the same document start", async () => {
+    const result = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        navigationDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><body><nav epub:type="toc"><ol><li><a href="text/chapter.xhtml#duplicate">Duplicate</a></li><li><a href="text/chapter.xhtml#inline-target">Inline</a></li></ol></nav></body></html>',
+        chapterDocument:
+          '<html xmlns="http://www.w3.org/1999/xhtml"><body><h1 id="start">Start</h1><p id="duplicate">First duplicate</p><p id="duplicate">Second duplicate</p><p>Before <span id="inline-target">inside</span></p></body></html>',
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error(`unexpected fixed failure: ${result.detail}`);
+    }
+
+    const { publication } = result;
+    try {
+      const first = publication.locators[0];
+      if (first === undefined) {
+        throw new Error("expected a document-start locator");
+      }
+      expect(publication.navigation).toHaveLength(2);
+      for (const node of publication.navigation) {
+        if (node.kind !== "link") {
+          throw new Error("expected navigation links");
+        }
+        expect(publication.resolveTarget(node.target)).toEqual({
+          status: "recovered",
+          reason: "fragment-unresolved",
+          locator: first.startLocator,
+          locatedBlock: first,
+        });
+      }
+    } finally {
+      await publication.close();
+    }
   });
 });
