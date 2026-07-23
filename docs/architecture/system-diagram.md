@@ -132,7 +132,7 @@ The capability-free selection/read probe and the solid package flow are separate
 
 The roadmap deliberately leaves these matters unresolved until evidence exists:
 
-- Milestone 4: real-browser tooling and measured large-chapter/reader performance limits. ADR-0008 resolved the visual-reader boundaries, ADR-0009 resolved local file ingress without native permissions, ADR-0010 resolved bounded static-raster decode/CSP/lifetime behavior, and ADR-0011 resolved reader-state storage/save/migration ownership. Their dependent reader and persistence implementation remains planned.
+- Milestone 4: measured large-chapter/reader performance limits. ADR-0008 resolved the visual-reader boundaries, ADR-0009 resolved local file ingress without native permissions, ADR-0010 resolved bounded static-raster decode/CSP/lifetime behavior, and ADR-0011 resolved reader-state storage/save/migration ownership. Playwright Chromium now supplies the selected real-browser harness and fixed foundation smoke; reader-specific coverage and the native Windows WebView matrix remain later tasks. The dependent reader and persistence implementation remains planned.
 - Milestone 6: measured balanced and CPU-compatible TTS engine profiles, model distribution, licensing, and supported hardware.
 - Milestone 7: local process transport, framing, backpressure, exposure, and recovery.
 - Milestone 8: internal audio format, playback mechanism, speed control, and benchmark-tuned buffer thresholds.

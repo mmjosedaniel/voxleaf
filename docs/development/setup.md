@@ -2,7 +2,7 @@
 
 ## Current status
 
-The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, minimal Tauri 2 native shell, isolated Python service foundation, aggregate root quality commands, and deterministic continuous integration are initialized. The version, focused, development-server, and root commands identified as Windows commands in this document have been run successfully in Windows PowerShell. Secure in-memory EPUB 3 ingestion, immutable semantic documents, bounded local raster reads, and deterministic locator resolution are implemented in `@voxleaf/epub`. The desktop has a capability-free local-file selection/read probe and an unused bounded static-raster predecode/decode source boundary, but does not yet pass selected bytes to the EPUB package or render publication images. Rendering, narration preparation, TTS inference, audio, persistence, hardware detection, installers, and product-level integration are not implemented.
+The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, minimal Tauri 2 native shell, isolated Python service foundation, aggregate root quality commands, deterministic Playwright Chromium smoke, and continuous integration are initialized. The version, focused, development-server, and root commands identified as Windows commands in this document have been run successfully in Windows PowerShell. Secure in-memory EPUB 3 ingestion, immutable semantic documents, bounded local raster reads, and deterministic locator resolution are implemented in `@voxleaf/epub`. The desktop has a capability-free local-file selection/read probe and an unused bounded static-raster predecode/decode source boundary, but does not yet pass selected bytes to the EPUB package or render publication images. Rendering, narration preparation, TTS inference, audio, persistence, hardware detection, installers, and product-level integration are not implemented.
 
 ## Prerequisite version matrix
 
@@ -110,8 +110,15 @@ When project commands are introduced, record the required shell, working directo
    uv sync --project services/tts --locked
    ```
 
-5. Run `pnpm.cmd check` before review. It is the same aggregate command used by authoritative Windows CI.
-6. Use the focused commands below when diagnosing one ecosystem.
+5. Install the Playwright-managed Chromium once from a networked terminal, then run its separate smoke test:
+
+   ```powershell
+   pnpm.cmd test:browser:install
+   pnpm.cmd test:browser
+   ```
+
+6. Run `pnpm.cmd check` before review. It is the same aggregate command used by authoritative Windows CI.
+7. Use the focused commands below when diagnosing one ecosystem.
 
 Cargo resolves the native shell from its committed `apps/desktop/src-tauri/Cargo.lock` during the relevant root command; it does not need a separate install command.
 
@@ -134,6 +141,8 @@ uv sync --project services/tts --locked
 pnpm.cmd --filter @voxleaf/desktop dev
 pnpm.cmd --filter @voxleaf/desktop typecheck
 pnpm.cmd --filter @voxleaf/desktop test
+pnpm.cmd test:browser:install
+pnpm.cmd test:browser
 pnpm.cmd --filter @voxleaf/desktop build
 cargo fmt --check --manifest-path apps/desktop/src-tauri/Cargo.toml
 cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets -- -D warnings
@@ -147,6 +156,8 @@ uv build services/tts
 ```
 
 `pnpm.cmd --filter @voxleaf/desktop dev` starts the browser-only Vite development server on `http://127.0.0.1:5173`; it was verified with a successful local HTTP response. Stop it with `Ctrl+C`. It does not exercise the native Tauri runtime. Native shell acceptance uses `pnpm.cmd --filter @voxleaf/desktop tauri build`, which produces the Windows executable and previously passed a bounded launch check.
+
+`pnpm.cmd test:browser:install` is the explicit networked setup step for the Chromium revision coupled to the pinned Playwright package. It installs to Playwright's per-user cache and may also acquire matching headless-shell/support binaries. `pnpm.cmd test:browser` builds the Vite application, starts a loopback-only preview server on `http://127.0.0.1:4173`, runs the fixed Chromium smoke, and shuts the server and isolated browser context down. Once installation succeeds, the test command is offline and never downloads a browser. If the matching browser is absent, it fails with setup guidance rather than acquiring it implicitly. Browser reports, traces, screenshots, and test results are ignored generated artifacts and must use only repository-authored synthetic content.
 
 For the ADR-0009 native file-ingress matrix, launch the built release executable and follow the disposable synthetic-file procedure in [`testing.md`](testing.md#native-local-file-ingress-probe). The probe must run natively on Windows, must not use a private book, and must not leave its synthetic files behind. It does not require or authorize a Tauri plugin, command, capability, or permanent automation dependency.
 
@@ -172,6 +183,6 @@ The root `check` command does not start the development server. The development 
 
 ## Continuous integration
 
-The `Foundation checks` workflow runs on pushes to `main` and `agent/**`, pull requests targeting `main`, and manual dispatches. `Windows native foundation` is authoritative and runs `pnpm.cmd check`; `Ubuntu portable foundation` runs the deliberately narrower `pnpm check:portable`. Both install from committed lockfiles. See [`testing.md`](testing.md) for the exact coverage distinction.
+The `Foundation checks` workflow runs on pushes to `main` and `agent/**`, pull requests targeting `main`, and manual dispatches. `Windows native foundation` explicitly installs the pinned Playwright Chromium, runs `pnpm.cmd test:browser`, and then runs authoritative `pnpm.cmd check`; `Ubuntu portable foundation` runs the deliberately narrower `pnpm check:portable`. Both install package dependencies from committed lockfiles. The Windows job does not restore a browser cache, so browser network activity is confined to its named installation step. See [`testing.md`](testing.md) for the exact coverage distinction.
 
 Dependency ownership, direct package purposes, production alternatives, and transitive-lock review rules are documented in [`dependencies.md`](dependencies.md).

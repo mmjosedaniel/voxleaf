@@ -281,9 +281,9 @@ Options are rendering a complete chapter, incremental batches with an explicit r
 
 No arbitrary production ceiling may be selected from this plan. Task 1.6 must measure synthetic small/representative/long chapters and record the accepted count, node, latency, and memory bounds.
 
-#### M4-D11: Real-browser and native test tooling — Dependency approval required
+#### M4-D11: Real-browser and native test tooling — Accepted by Task 1.5
 
-Options include Playwright against the Vite application, Vitest browser mode with an approved provider, or a Tauri/WebDriver harness. Recommend Playwright for deterministic Chromium layout/reflow tests plus a focused native Windows WebView smoke matrix. jsdom remains appropriate for pure/component behavior but cannot prove geometry. If Playwright is selected, its exact version, browser acquisition, cache/network behavior, command surface, CI ownership, and dependency impact must be documented before any plan task cites its command as available.
+Use exact `@playwright/test` `1.61.1` against the built Vite application for deterministic Chromium layout/reflow evidence plus the focused native Windows WebView smoke matrix for target-runtime behavior. jsdom remains appropriate for pure/component behavior but cannot prove geometry. Playwright selects Chrome for Testing `149.0.7827.55` / revision `1228` on Windows. Browser acquisition is the explicit networked `pnpm.cmd test:browser:install` command; ordinary `pnpm.cmd test:browser` runs offline against the default per-user cache and never downloads or updates browsers. The authoritative Windows CI job performs the explicit matching install and smoke without restoring a browser cache; Ubuntu portable CI does not install a browser. The dependency and browser binaries are test-only and do not enter the desktop production bundle. Vitest browser mode remains an unused alternative; Tauri/WebDriver is reserved for native behavior not proved by Chromium.
 
 #### M4-D12: Reader performance thresholds — Product/architecture approval required
 
@@ -549,7 +549,7 @@ Expected EPUB failures should reuse `OperationalErrorV1`/EPUB detail codes where
 
 ### Real-browser layout and end-to-end tests
 
-After M4-D11 defines an actual command, cover:
+Using the `pnpm.cmd test:browser` command established by M4-D11, later reader tasks must cover:
 
 - restore the same structural anchor/code-point passage at multiple viewport widths/heights;
 - restore after each approved text-size, line-spacing, content-width, and theme combination;
@@ -594,6 +594,8 @@ git diff --check
 pnpm.cmd install --frozen-lockfile
 pnpm.cmd --filter @voxleaf/desktop typecheck
 pnpm.cmd --filter @voxleaf/desktop test
+pnpm.cmd test:browser:install
+pnpm.cmd test:browser
 pnpm.cmd --filter @voxleaf/desktop build
 pnpm.cmd --filter @voxleaf/desktop tauri build
 pnpm.cmd --filter @voxleaf/epub typecheck
@@ -610,7 +612,7 @@ pnpm.cmd build
 pnpm.cmd check
 ```
 
-There is no real-browser end-to-end or automated accessibility command at plan creation. Task 1.5 must add and document an exact command before later tasks may claim such validation. Do not copy a provisional command into status/results as if it already exists.
+Task 1.5 added `pnpm.cmd test:browser` for deterministic Chromium evidence after one explicit `pnpm.cmd test:browser:install`. The fixed foundation smoke proves the harness, viewport/storage control, real focus, role/name semantics, responsive geometry, cleanup, and absence of non-loopback requests; it is not evidence for unimplemented reader behavior or a complete accessibility audit. Later tasks may extend this command only with repository-authored synthetic inputs and must retain native Windows WebView validation where the target runtime matters.
 
 ## Expected files or areas affected
 
@@ -709,7 +711,7 @@ Do not change `services/tts`, audio contracts/implementation, narration contract
 
 **Validation:** Existing `pnpm.cmd --filter @voxleaf/desktop typecheck`, `test`, and `build`, plus the exact browser command introduced by this task and root `pnpm.cmd format:check`/`lint`. Update this plan with the actual command before completion.
 
-**Status:** Not started.
+**Status:** Complete on 2026-07-22. Exact `@playwright/test` `1.61.1` and its matching Chromium revision are pinned; explicit acquisition and offline execution have separate root commands; the Vite production-build smoke controls browser preferences, viewport, storage, network, focus, accessibility roles, responsive geometry, and cleanup; Vitest excludes browser specs; Windows CI owns installation and execution. The fixed smoke passed once after installation and again after final configuration. No application behavior, production dependency/bundle, Tauri command/plugin/capability, EPUB contract, book fixture, private data, or native-WebView claim was added.
 
 ### Task 1.6: Establish reader performance and large-chapter limits
 
@@ -1136,6 +1138,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 - 2026-07-22: Completed Task 1.2. Implemented a capability-free local-file probe with a browser file input, exact 100-MiB preflight, abortable `FileReader`, post-read length validation, stale-result rejection, same-file reselection, fixed statuses, and no filename/path exposure. Twelve desktop tests passed. A native release WebView2 probe passed small selection, same-file reselection, cancellation, exact maximum, maximum plus one, cleared input, and filename omission. Accepted ADR-0009; retained an empty Tauri capability list and unchanged manifests, locks, Rust shell, and CSP.
 - 2026-07-22: Completed Task 1.3. Added dependency-free static GIF/JPEG/PNG/WebP metadata preflight, immutable dimension/pixel/frame/concurrency/live-lifetime limits, postdecode dimension agreement, fixed cancellation/failure/capacity outcomes, and an idempotent object-URL manager. Added the minimum Blob image CSP allowance and a fixed synthetic release-shell probe. Thirty-one desktop tests and repeated native WebView2 decoding passed; accepted ADR-0010. Publication image rendering remains Task 3.3.
 - 2026-07-22: Completed Task 1.4. Accepted ADR-0011 for the packaged WebView `localStorage` backend, two fixed bounded envelopes, global app-local display preferences, 500 ms passive-save debounce, lifecycle flushes, exact-byte restoration, fixed nonfatal failures, unsupported-version preservation, and desktop-owned migration. A temporary release-shell marker survived a full process restart and was removed on restore; all temporary source/automation was removed. Persistence implementation remains Tasks 4.4-4.6.
+- 2026-07-22: Completed Task 1.5. Selected exact `@playwright/test` `1.61.1` with Chrome for Testing `149.0.7827.55` / revision `1228`, explicit browser acquisition, offline ordinary execution, one-worker fixed-environment configuration, loopback-only production preview, and Windows CI ownership. The first validation found that Vitest also discovered the Playwright spec and that reduced-motion emulation belongs under Playwright context options; separating the test globs and correcting that typed option restored all existing checks. The final Chromium smoke, 31 desktop tests, desktop typecheck/build, root format/lint, and diff checks passed.
 
 ## Decision log
 
@@ -1155,7 +1158,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 | 2026-07-22 | Preserve unsupported envelopes, migrate only through explicit validated atomic replacement, and never map state across exact-byte identities. | Accepted by ADR-0011; implementation remains Tasks 4.4 and 4.6. |
 | 2026-07-22 | Use a trailing 500 ms passive-save debounce plus immediate coalesced explicit/reflow/lifecycle saves that never block navigation or publication closure. | Accepted by ADR-0011; implementation remains Task 4.5. |
 | 2026-07-22 | Preflight GIF/JPEG/PNG/WebP dimensions and animation; permit only bounded static Blob URL decode with one concurrent operation and lifecycle-owned release; use placeholders for every rejected image. | Accepted by ADR-0010; semantic image integration remains Task 3.3. |
-| 2026-07-22 | Use real-browser layout tests plus native Windows smoke; Playwright is the recommended candidate. | Proposed; dependency approval required. |
+| 2026-07-22 | Use exact Playwright Test `1.61.1` with its version-coupled Chromium for deterministic layout/browser evidence; acquire browsers only through the explicit setup command, run it in Windows CI, retain jsdom for component tests, and retain native WebView smoke for target-runtime behavior. | Accepted and established by Task 1.5. |
 | 2026-07-22 | Select large-chapter and reader latency bounds from synthetic measurements, not arbitrary plan values. | Required evidence; unresolved. |
 
 ## Final validation requirements
@@ -1184,7 +1187,7 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Production-reader validation has not started. Tasks 1.1 through 1.4 are complete; real-browser tooling, performance gates, publication-session, renderer, persistence, restoration, and later application implementation tasks remain `Not started`.
+Production-reader validation has not started. Tasks 1.1 through 1.5 are complete; performance gates, publication-session, renderer, persistence, restoration, and later application implementation tasks remain `Not started`.
 
 Task 1.1 documentation validation completed on 2026-07-22:
 
@@ -1223,6 +1226,16 @@ Task 1.4 validation completed on 2026-07-22:
 - The temporary probe source and one-off Windows UI-automation harness were removed before the documentation diff. `apps/desktop`, package manifests, lockfiles, generated files, Tauri configuration, Rust source, commands, plugins, and capabilities have no Task 1.4 diff.
 - `git diff --check`, manual changed-link review, and `pnpm.cmd format:check` passed for the final documentation-only change.
 - The final scope review found ADR-0011 plus focused architecture, roadmap, and active-plan reconciliation only. No persistence behavior is claimed implemented; Tasks 4.4-4.6 retain repository, save, and restoration ownership.
+
+Task 1.5 validation completed on 2026-07-22:
+
+- `pnpm.cmd test:browser:install` explicitly installed Chrome for Testing `149.0.7827.55` / revision `1228`, matching headless shell, FFmpeg `1011`, and Winldd `1007` into Playwright's default Windows user cache.
+- `pnpm.cmd test:browser` passed after final configuration: 1 fixed Chromium smoke in 3.0 seconds against the production Vite build.
+- `pnpm.cmd --filter @voxleaf/desktop typecheck` passed.
+- `pnpm.cmd --filter @voxleaf/desktop test` passed: 4 files and 31 tests; Vitest does not discover the Playwright spec.
+- `pnpm.cmd --filter @voxleaf/desktop build` passed with 20 transformed modules.
+- `pnpm.cmd format:check` and `pnpm.cmd lint` passed, including Prettier, Rustfmt, Ruff format/check, ESLint, and Clippy.
+- `git diff --check` passed. The dependency is development-only; no application behavior, production dependency/bundle, EPUB/shared contract, Tauri command/plugin/capability, CSP, private input, book fixture, or native-WebView behavior changed.
 
 Plan-creation validation completed on 2026-07-22:
 

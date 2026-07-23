@@ -61,9 +61,17 @@ jobs:
           rustup show active-toolchain
 
       - name: Install locked dependencies
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
         run: |
           pnpm.cmd install --frozen-lockfile
           uv sync --project services/tts --locked
+
+      - name: Install pinned Playwright Chromium
+        run: pnpm.cmd test:browser:install
+
+      - name: Run real-browser desktop smoke
+        run: pnpm.cmd test:browser
 
       - name: Run authoritative foundation checks
         run: pnpm.cmd check
