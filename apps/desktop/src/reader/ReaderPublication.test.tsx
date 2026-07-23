@@ -405,9 +405,33 @@ describe("navigable publication reader", () => {
 
     expect(container.querySelector("a")).toBeNull();
     expect(container.querySelector("[href]")).toBeNull();
-    expect(container.querySelector("[id]")).toBeNull();
+    expect(container.querySelector("[id]")).toHaveAttribute(
+      "id",
+      "voxleaf-reader-content",
+    );
+    expect(container.querySelectorAll("[id]")).toHaveLength(1);
     expect(container.innerHTML).not.toContain(CONTINUATION_FRAGMENT);
     expect(window.location.href).toBe(initialUrl);
+  });
+
+  it("keeps focus on a preference control during passive reflow and exposes named reader landmarks", () => {
+    render(<ReaderPublicationContent publication={createPublication()} />);
+
+    const textSize = screen.getByLabelText("Text size");
+    textSize.focus();
+    fireEvent.change(textSize, { target: { value: "large" } });
+
+    expect(textSize).toHaveFocus();
+    expect(
+      screen.getByRole("navigation", { name: "Chapter navigation" }),
+    ).toBeInTheDocument();
+    expect(document.querySelector(".reader-navigation-status")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
+    expect(
+      screen.getByRole("article", { name: "Current reading section" }),
+    ).toHaveAttribute("tabindex", "-1");
   });
 
   it("exposes only approved appearance controls and applies closed layout tokens without persistence", () => {

@@ -205,7 +205,7 @@ export function ReaderPublicationContent({
           )}
         </nav>
         <div className="reader-reading-pane">
-          <div
+          <nav
             className="reader-chapter-controls"
             aria-label="Chapter navigation"
           >
@@ -223,7 +223,7 @@ export function ReaderPublicationContent({
             >
               Next chapter
             </button>
-          </div>
+          </nav>
           <p
             className="reader-navigation-status"
             aria-live="polite"

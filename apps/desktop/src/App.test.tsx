@@ -156,6 +156,36 @@ describe("desktop reader lifecycle surface", () => {
     expect(screen.getByLabelText("Open a local EPUB")).toHaveValue("");
   });
 
+  it("skips directly to reading content and returns focus to the picker after close", async () => {
+    const publication = createTestPublication();
+    const flow = createTestFlow(() =>
+      Promise.resolve({ status: "ready", publication }),
+    );
+    render(<App openFlow={flow} />);
+
+    selectEpub();
+    await screen.findByRole("button", { name: "Close EPUB" });
+
+    const skipLink = screen.getByRole("link", {
+      name: "Skip to reading content",
+    });
+    expect(skipLink).toHaveAttribute("href", "#voxleaf-reader-content");
+    fireEvent.click(skipLink);
+    expect(
+      screen.getByRole("article", { name: "Current reading section" }),
+    ).toHaveFocus();
+    expect(window.location.hash).toBe("");
+
+    fireEvent.click(screen.getByRole("button", { name: "Close EPUB" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "No local EPUB is open.",
+      ),
+    );
+    expect(screen.getByLabelText("Open a local EPUB")).toHaveFocus();
+  });
+
   it("shows a labelled busy state while validation is pending", async () => {
     let resolveOpen: ((result: LocalPublicationOpenResult) => void) | undefined;
     const flow = createTestFlow(

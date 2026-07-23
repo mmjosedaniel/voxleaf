@@ -2,11 +2,13 @@ import type { OpenedPublication } from "@voxleaf/epub";
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
   type ChangeEvent,
   type ComponentType,
+  type MouseEvent as ReactMouseEvent,
 } from "react";
 
 import type { LocalPublicationOpenFlow } from "./publication/local-publication-open";
@@ -65,6 +67,8 @@ const RASTER_STATUS_MESSAGE: Readonly<Record<RasterImageProbeStatus, string>> =
     running: "Testing bounded local raster decoding.",
   });
 
+const READER_CONTENT_ID = "voxleaf-reader-content";
+
 function statusMessage(state: ReaderLifecycleState): string {
   switch (state.status) {
     case "closing":
@@ -108,6 +112,8 @@ export function App({
   );
   const viewState = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const activeRasterProbe = useRef<AbortController | undefined>(undefined);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const returnFocusToFilePicker = useRef(false);
   const [readerPreferences, setReaderPreferences] =
     useState<ReaderPreferencesV1>(DEFAULT_READER_PREFERENCES);
   const [rasterStatus, setRasterStatus] =
@@ -121,6 +127,17 @@ export function App({
     },
     [readerLifecycle],
   );
+
+  useLayoutEffect(() => {
+    if (!returnFocusToFilePicker.current || viewState.status === "closing") {
+      return;
+    }
+
+    returnFocusToFilePicker.current = false;
+    if (viewState.status === "idle") {
+      fileInputRef.current?.focus();
+    }
+  }, [viewState.status]);
 
   const handleRasterProbe = async (): Promise<void> => {
     activeRasterProbe.current?.abort();
@@ -160,6 +177,16 @@ export function App({
     },
     [],
   );
+  const handleClose = (): void => {
+    returnFocusToFilePicker.current = true;
+    void readerLifecycle.close();
+  };
+  const skipToReader = (event: ReactMouseEvent<HTMLAnchorElement>): void => {
+    event.preventDefault();
+    const reader = document.getElementById(READER_CONTENT_ID);
+    reader?.scrollIntoView?.({ block: "start" });
+    reader?.focus({ preventScroll: true });
+  };
 
   const isBusy =
     viewState.status === "closing" || viewState.status === "opening";
@@ -173,6 +200,15 @@ export function App({
 
   return (
     <main className="app-shell">
+      {viewState.status === "ready" ? (
+        <a
+          className="skip-link"
+          href={`#${READER_CONTENT_ID}`}
+          onClick={skipToReader}
+        >
+          Skip to reading content
+        </a>
+      ) : null}
       <section
         className={
           viewState.status === "ready"
@@ -191,6 +227,7 @@ export function App({
         <label className="file-picker">
           <span>Open a local EPUB</span>
           <input
+            ref={fileInputRef}
             type="file"
             accept=".epub,application/epub+zip"
             aria-describedby="open-status"
@@ -230,7 +267,7 @@ export function App({
               <button
                 type="button"
                 className="close-publication"
-                onClick={() => void readerLifecycle.close()}
+                onClick={handleClose}
               >
                 Close EPUB
               </button>
@@ -250,7 +287,7 @@ export function App({
             <button
               type="button"
               className="close-publication"
-              onClick={() => void readerLifecycle.close()}
+              onClick={handleClose}
             >
               Close EPUB
             </button>
