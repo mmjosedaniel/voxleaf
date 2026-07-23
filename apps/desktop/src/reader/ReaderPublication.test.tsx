@@ -149,7 +149,11 @@ const NAVIGATION = Object.freeze([
   }),
 ]) satisfies readonly PublicationNavigationNode[];
 
-function createPublication(): OpenedPublication {
+function createPublication(
+  options: Readonly<{
+    continuationDocument?: SemanticDocument;
+  }> = {},
+): OpenedPublication {
   const locatedBlocks = Object.freeze([
     OPENING_LOCATED_BLOCK,
     CONTINUATION_LOCATED_BLOCK,
@@ -159,7 +163,7 @@ function createPublication(): OpenedPublication {
     documents: Object.freeze([
       SUPPLEMENT_DOCUMENT,
       OPENING_DOCUMENT,
-      CONTINUATION_DOCUMENT,
+      options.continuationDocument ?? CONTINUATION_DOCUMENT,
     ]),
     locators: locatedBlocks,
     navigation: NAVIGATION,
@@ -318,6 +322,40 @@ describe("reader navigation coordinator", () => {
     coordinator.setPreference("textScale", "calc(100vw)");
     expect(listener).toHaveBeenCalledTimes(1);
   });
+
+  it("presents an oversized destination without replacing the last valid locator", () => {
+    const oversizedParagraph = Object.freeze({
+      kind: "paragraph",
+      children: Object.freeze([text("Synthetic oversized content")]),
+    }) satisfies SemanticBlock;
+    const oversizedContinuation = Object.freeze({
+      ...CONTINUATION_DOCUMENT,
+      blocks: Object.freeze([
+        CONTINUATION_HEADING,
+        ...Array.from({ length: 10_000 }, () => oversizedParagraph),
+      ]),
+    }) satisfies SemanticDocument;
+    const coordinator = new ReaderNavigationCoordinator(
+      createPublication({ continuationDocument: oversizedContinuation }),
+    );
+    const openingLocator = coordinator.state.activeLocator;
+
+    coordinator.navigateToTarget(CONTINUATION_TARGET);
+
+    expect(coordinator.state.contentStatus).toBe("chapter-too-large");
+    expect(coordinator.state.presentedChapterIndex).toBe(1);
+    expect(coordinator.state.activeLocator).toBe(openingLocator);
+    expect(coordinator.state.activeDocument).toBe(OPENING_DOCUMENT);
+    expect(coordinator.state.message).toBe(
+      "This reading section is too large to display safely. Choose another section.",
+    );
+    expect(coordinator.state.canGoPrevious).toBe(true);
+    expect(coordinator.state.canGoNext).toBe(false);
+
+    coordinator.goPrevious();
+    expect(coordinator.state.contentStatus).toBe("render");
+    expect(coordinator.state.activeLocator).toBe(openingLocator);
+  });
 });
 
 describe("navigable publication reader", () => {
@@ -449,5 +487,54 @@ describe("navigable publication reader", () => {
     expect(reader).toHaveAttribute("data-reader-theme", "dark");
     expect(reader).not.toHaveAttribute("style");
     expect(storageWrite).not.toHaveBeenCalled();
+  });
+
+  it("shows a focusable fixed fallback for an oversized chapter and keeps recovery navigation available", () => {
+    const oversizedParagraph = Object.freeze({
+      kind: "paragraph",
+      children: Object.freeze([text("Synthetic oversized content")]),
+    }) satisfies SemanticBlock;
+    const oversizedContinuation = Object.freeze({
+      ...CONTINUATION_DOCUMENT,
+      blocks: Object.freeze([
+        CONTINUATION_HEADING,
+        ...Array.from({ length: 10_000 }, () => oversizedParagraph),
+      ]),
+    }) satisfies SemanticDocument;
+    render(
+      <ReaderPublicationContent
+        publication={createPublication({
+          continuationDocument: oversizedContinuation,
+        })}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Continuation",
+      }),
+    );
+
+    const fallback = screen.getByRole("article", {
+      name: "Current reading section",
+    });
+    expect(fallback).toHaveFocus();
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Reading section unavailable",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Synthetic oversized content"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Previous chapter" }),
+    ).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous chapter" }));
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Opening" }),
+    ).toHaveFocus();
   });
 });

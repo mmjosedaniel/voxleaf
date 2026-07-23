@@ -8,6 +8,7 @@ import type {
   SourceFragment,
 } from "@voxleaf/epub";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -16,6 +17,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { ScheduleLargeChapterYield } from "./large-chapter-rendering";
 import { SemanticDocumentContent } from "./SemanticDocument";
 
 afterEach(cleanup);
@@ -334,5 +336,83 @@ describe("semantic document rendering", () => {
     expect(container.querySelector("[href]")).toBeNull();
     expect(container.innerHTML).not.toContain("private-available-fragment");
     expect(container.innerHTML).not.toContain("private-unavailable-fragment");
+  });
+
+  it("renders accepted content in browser-yielding batches of at most 250 blocks", () => {
+    const pending: Array<{
+      readonly resume: () => void;
+      cancelled: boolean;
+    }> = [];
+    const scheduleRenderYield: ScheduleLargeChapterYield = (resume) => {
+      const entry = { resume, cancelled: false };
+      pending.push(entry);
+      return () => {
+        entry.cancelled = true;
+      };
+    };
+    const blocks = Object.freeze(
+      Array.from(
+        { length: 251 },
+        (_, index) =>
+          Object.freeze({
+            kind: "paragraph",
+            children: Object.freeze([text(`Synthetic block ${index}`)]),
+          }) satisfies SemanticBlock,
+      ),
+    );
+
+    render(
+      <SemanticDocumentContent
+        document={documentWith(blocks)}
+        scheduleRenderYield={scheduleRenderYield}
+      />,
+    );
+
+    const article = screen.getByRole("article", {
+      name: "Current reading section",
+    });
+    expect(article).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByText("Synthetic block 249")).toBeInTheDocument();
+    expect(screen.queryByText("Synthetic block 250")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("status", {
+        name: "",
+      }),
+    ).toHaveTextContent("Loading more of this reading section.");
+    expect(pending).toHaveLength(1);
+
+    act(() => pending[0]!.resume());
+
+    expect(screen.getByText("Synthetic block 250")).toBeInTheDocument();
+    expect(article).not.toHaveAttribute("aria-busy");
+    expect(
+      screen.queryByText("Loading more of this reading section."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("rejects an over-limit chapter before rendering publisher content", () => {
+    const rejectedParagraph = Object.freeze({
+      kind: "paragraph",
+      children: Object.freeze([text("Must never render")]),
+    }) satisfies SemanticBlock;
+    const blocks = Object.freeze(
+      Array.from({ length: 10_001 }, () => rejectedParagraph),
+    );
+
+    render(<SemanticDocumentContent document={documentWith(blocks)} />);
+
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Reading section unavailable",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("This reading section is too large to display safely."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Must never render")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Loading more of this reading section."),
+    ).not.toBeInTheDocument();
   });
 });
