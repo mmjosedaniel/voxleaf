@@ -264,12 +264,12 @@ const FAILURE_SCENARIOS: readonly FailureScenario[] = [
     }),
   },
   {
-    name: "XHTML document with a DTD",
+    name: "XHTML document with an internal DTD",
     detail: "malformed-xml",
     archiveCloseCount: 1,
     build: async () => ({
       bytes: await buildMinimalEpubFixture({
-        chapterDocument: `<!DOCTYPE html>${minimalChapterDocument()}<!--${PRIVATE_CANARY}-->`,
+        chapterDocument: `<!DOCTYPE html [<!ENTITY private-canary "private">]>${minimalChapterDocument()}<!--${PRIVATE_CANARY}-->`,
       }),
     }),
   },

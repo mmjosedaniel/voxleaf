@@ -2,7 +2,12 @@ import { ZipReader } from "@zip.js/zip.js/lib/zip-core-native.js";
 import { decodeOperationalErrorV1 } from "@voxleaf/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { buildMinimalEpubFixture } from "../../test-support/epub-fixture.js";
+import {
+  buildMinimalEpubFixture,
+  minimalChapterDocument,
+  minimalNavigationDocument,
+  minimalPackageDocument,
+} from "../../test-support/epub-fixture.js";
 import { EpubArchiveError } from "../archive/archive-error.js";
 import type { EpubArchiveErrorCode } from "../archive/archive-error.js";
 import { mapEpubFailure } from "./epub-result.js";
@@ -121,6 +126,38 @@ describe("public privacy-safe EPUB opening", () => {
     });
     expect(result).not.toHaveProperty("publication");
     expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens EPUB 3 with legacy metadata and inert HTML doctypes", async () => {
+    const packageDocument = minimalPackageDocument().replace(
+      "</metadata>",
+      '<meta name="generator" content="synthetic-tool"/><meta name="cover" content="synthetic-cover"/></metadata>',
+    );
+    const result = await openEpubPublication(
+      await buildMinimalEpubFixture({
+        packageDocument,
+        navigationDocument: `<!DOCTYPE html>${minimalNavigationDocument()}`,
+        chapterDocument: `<!DOCTYPE html>${minimalChapterDocument()}`,
+      }),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error(`unexpected fixed failure: ${result.detail}`);
+    }
+    try {
+      expect(result.publication.book.metadata.title).toBe(
+        "Synthetic minimal publication",
+      );
+      expect(JSON.stringify(result.publication)).not.toContain(
+        "synthetic-tool",
+      );
+      expect(JSON.stringify(result.publication)).not.toContain(
+        "synthetic-cover",
+      );
+    } finally {
+      await result.publication.close();
+    }
   });
 
   it("assembles immutable semantic, navigation, resource, and locator output", async () => {

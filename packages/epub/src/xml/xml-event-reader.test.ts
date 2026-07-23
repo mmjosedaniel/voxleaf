@@ -92,6 +92,44 @@ describe("bounded namespace-aware XML events", () => {
     expect(domParser).not.toHaveBeenCalled();
   });
 
+  it("accepts only the inert HTML doctype for content documents", () => {
+    const { events, summary } = readXml(
+      '<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"/>',
+    );
+
+    expect(events).toEqual([
+      {
+        type: "start-element",
+        name: {
+          namespaceUri: "http://www.w3.org/1999/xhtml",
+          localName: "html",
+        },
+        attributes: [],
+      },
+      {
+        type: "end-element",
+        name: {
+          namespaceUri: "http://www.w3.org/1999/xhtml",
+          localName: "html",
+        },
+      },
+    ]);
+    expect(summary).toEqual({
+      elementCount: 1,
+      nodeCount: 2,
+      decodedTextBytes: 0,
+    });
+
+    expectXmlError(
+      () =>
+        readXml(
+          '<!DOCTYPE package><package xmlns="http://www.idpf.org/2007/opf"/>',
+          "container-or-package",
+        ),
+      "malformed-xml",
+    );
+  });
+
   it.each([
     [
       "UTF-8 with BOM",
@@ -165,8 +203,10 @@ describe("bounded namespace-aware XML events", () => {
   });
 
   it.each([
+    "<!DOCTYPE package><package/>",
     '<!DOCTYPE root [<!ENTITY private-canary "secret">]><root/>',
     '<!DOCTYPE root SYSTEM "https://private-canary.invalid/root.dtd"><root/>',
+    '<!DOCTYPE html PUBLIC "private-canary" "https://private-canary.invalid/html.dtd"><html/>',
     "<root>&private-canary;</root>",
     '<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="https://private-canary.invalid/chapter.xml"/>',
     '<?xml-stylesheet href="https://private-canary.invalid/style.css"?><root/>',

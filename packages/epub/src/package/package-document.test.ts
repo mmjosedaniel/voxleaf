@@ -121,6 +121,43 @@ describe("EPUB package document parsing", () => {
     });
   });
 
+  it("ignores valid legacy metadata without changing EPUB 3 metadata", async () => {
+    const opf = createPackageDocument({
+      metadata: `${DEFAULT_METADATA}
+        <meta name="generator" content="synthetic-tool"/>
+        <meta content="synthetic-cover" name="cover"/>`,
+    });
+
+    await withArchive(opf, {}, async (archive) => {
+      const parsed = await resolveAndParse(archive);
+
+      expect(parsed.metadata).toEqual({
+        uniqueIdentifier: "urn:synthetic:book",
+        identifiers: ["urn:synthetic:book"],
+        titles: ["Synthetic title"],
+        languages: ["en"],
+        creators: ["First Author", "Second Author"],
+        modified: "2026-07-22T12:34:56Z",
+      });
+      expect(JSON.stringify(parsed)).not.toContain("synthetic-tool");
+      expect(JSON.stringify(parsed)).not.toContain("synthetic-cover");
+    });
+  });
+
+  it.each([
+    '<meta name="generator"/>',
+    '<meta content="synthetic-tool"/>',
+    '<meta name="generator" content="synthetic-tool">text</meta>',
+    '<meta name="generator" content="synthetic-tool"><private/></meta>',
+    '<meta property="custom" name="generator" content="synthetic-tool">value</meta>',
+  ])("rejects malformed or mixed legacy metadata: %s", async (metadata) => {
+    await expectFixtureError(
+      createPackageDocument({ metadata: `${DEFAULT_METADATA}${metadata}` }),
+      {},
+      "malformed-package",
+    );
+  });
+
   it("resolves scripted, foreign, and remote spine resources through finite local XHTML fallbacks", async () => {
     const manifest = `
       <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>

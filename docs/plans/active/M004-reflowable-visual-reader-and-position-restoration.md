@@ -285,6 +285,17 @@ On the documented Task 1.6 Windows host, the exact-limit incremental prototype m
 
 These are test-host implementation gates, not universal product or minimum-hardware claims. File-selection-to-open, opened-publication-to-content, real React commit/restoration, and native WebView2 measurements remain unmeasurable until later implementation tasks. Task 5.3 must record them and may propose an explicit evidence-backed amendment rather than silently weakening this gate.
 
+### Deferred CSP hardening and packaged-startup regression — future implementation
+
+The Task 2.3 native white-window defect exposed two implementation gaps. First, the Tauri CSP currently permits `unsafe-eval` because Ajv compiles canonical schemas during module initialization. That permission applies to every otherwise allowed script context; CSP cannot restrict it technically to Ajv. Second, the existing Chromium production-preview smoke does not exercise the packaged Tauri CSP, so unit, browser, and build success did not detect the empty React root.
+
+These gaps are recorded as future work, not completed behavior:
+
+1. Generate standalone JavaScript validators from the canonical checked-in JSON Schemas during the existing shared-contract generation/build workflow. Generated validators must remain derived artifacts, perform no network access, preserve every current decoder/error/privacy behavior, and pass the shared unit, serialized-conformance, fixture, EPUB, and desktop integration suites. After the packaged desktop consumes those validators, remove `unsafe-eval` and prove the release WebView still mounts and opens supported synthetic EPUBs. Task 2.5 owns this work and must complete before Task 3.1 implementation begins, because that task introduces the production semantic reader. If the team wants to retain `unsafe-eval` instead, implementation must pause at that gate for explicit ADR-backed security approval with alternatives and residual risk; the current hotfix is not that approval.
+2. Add a checked-in Windows packaged-WebView startup regression using an isolated disposable profile. It must verify root mount, visible main landmark, zero page/console errors, and zero external requests without loading or logging publication content. The responsible implementation task must establish the exact repository command rather than documenting an invented command now. This regression and the separate valid-open/reselection/cancellation/replacement matrix must pass before Task 2.3 can be marked complete. Until then, repeat the content-free manual CDP probe after every Tauri CSP or material Ajv/shared-contract bundle change.
+
+Expected areas are `packages/shared` schema generation/runtime decoder packaging and conformance tests; desktop production-build/native test configuration; Tauri CSP; dependency/testing/architecture documentation; and this plan. No shared schema semantics, EPUB validation behavior, native permission, network origin, renderer trust boundary, or private fixture is authorized by this follow-up.
+
 ## Reader architecture
 
 The planned desktop areas are responsibilities, not required filenames. ADR-0008 accepts the visual renderer/coordinator/navigation/locator boundaries, and ADR-0009 accepts the implemented file-ingress probe; publication integration, images, and persistence remain later work or gates:
@@ -764,7 +775,7 @@ Do not change `services/tts`, audio contracts/implementation, narration contract
 
 **Validation:** `pnpm.cmd --filter @voxleaf/desktop typecheck`; `pnpm.cmd --filter @voxleaf/desktop test`; `pnpm.cmd --filter @voxleaf/desktop build`; `pnpm.cmd --filter @voxleaf/desktop tauri build`; native selection smoke.
 
-**Status:** Implementation complete on 2026-07-22; native release interaction remains pending. `apps/desktop` now composes the bounded abortable WebView file read with the publication-session owner through a presentation-independent local-open coordinator. Replacement selection invalidates and closes prior work immediately, stale reads/results cannot become visible, picker cancellation preserves the prior ready/idle view, and unmount aborts/cleans both layers. The React shell exposes the accept hint, labelled busy state, validated title/authors after success, and fixed read/invalid/unsupported/exhausted/cancelled/internal outcomes without displaying or retaining filename, path, MIME claim, bytes, package detail, or raw error. Focused adapter/component tests and the pinned-Chromium invalid-file smoke cover the integration; no native capability, dependency, shared contract, renderer, persistence, network, narration, TTS, or audio behavior was added. The release Tauri build and manual WebView2 valid-open/reselection/cancellation/replacement smoke are still required before marking Task 2.3 complete.
+**Status:** Implementation complete on 2026-07-22; native release interaction remains pending. `apps/desktop` now composes the bounded abortable WebView file read with the publication-session owner through a presentation-independent local-open coordinator. Replacement selection invalidates and closes prior work immediately, stale reads/results cannot become visible, picker cancellation preserves the prior ready/idle view, and unmount aborts/cleans both layers. The React shell exposes the accept hint, labelled busy state, validated title/authors after success, and fixed read/invalid/unsupported/exhausted/cancelled/internal outcomes without displaying or retaining filename, path, MIME claim, bytes, package detail, or raw error. Focused adapter/component tests and the pinned-Chromium invalid-file smoke cover the integration. Manual validation exposed an EPUB-package compatibility defect; the 2026-07-22 ADR-0007 amendment and hotfix now validate/ignore legacy `meta name/content` values and admit only the inert HTML doctype in content documents while retaining all DTD/custom-entity/external-resolution prohibitions. The public opener succeeds against the ignored local input, but the rebuilt WebView2 valid-open/reselection/cancellation/replacement matrix is still required before marking Task 2.3 complete. No native capability, dependency, shared contract, renderer, persistence, network, narration, TTS, or audio behavior was added.
 
 ### Task 2.4: Implement reader loading, empty, failure, and close states
 
@@ -780,13 +791,27 @@ Do not change `services/tts`, audio contracts/implementation, narration contract
 
 **Status:** Not started.
 
+### Task 2.5: Generate standalone contract validators and remove runtime eval
+
+**Outcome:** The packaged desktop consumes validators generated from the canonical shared JSON Schemas without runtime code generation, and the Tauri CSP no longer permits `unsafe-eval`.
+
+**Dependencies:** Task 2.3's checked-in packaged-startup regression; the existing ADR-0006 schema authority, shared contract generator, serialized-conformance fixtures, and runtime decoder behavior.
+
+**Areas:** `packages/shared` generation/runtime validator packaging and conformance tests; generated artifacts only where the established workflow owns them; desktop production bundle/native startup validation; Tauri CSP; dependency, testing, architecture, and plan documentation.
+
+**Acceptance:** Canonical checked-in schemas remain the sole contract authority; generated standalone validators are reproducible derived output and require no runtime `Function`/`eval`; every existing decoder result, version distinction, fixed error, privacy rule, and cross-language fixture remains equivalent; the production desktop bundle contains no Ajv runtime compiler path; `unsafe-eval` is absent from the Tauri CSP; the packaged startup regression and repository-authored synthetic open flow pass with no page/console error or external request; no schema semantics, native capability, network origin, or private fixture is introduced.
+
+**Validation:** Existing shared generation drift check, shared typecheck/test/build and serialized-conformance suites; EPUB and desktop integration suites; desktop production build; the packaged-startup command established by the Task 2.3 follow-up; `pnpm.cmd check`; `git diff --check`. Do not invent or document the packaged-startup command before its implementation defines it.
+
+**Status:** Future implementation; not started. Complete this task before Task 3.1 implementation begins. If standalone generation cannot satisfy the acceptance criteria, stop before Task 3.1 and obtain explicit ADR-backed security approval for any retained `unsafe-eval` exception.
+
 ## Milestone 3: Render and navigate safe reflowable content
 
 ### Task 3.1: Render semantic text structure exhaustively
 
 **Outcome:** Supported documents, headings, paragraphs, block quotes, lists, text, emphasis, strong text, code, and line breaks render as semantic application-owned elements.
 
-**Dependencies:** Tasks 1.1 and 2.4.
+**Dependencies:** Tasks 1.1, 2.4, and 2.5.
 
 **Areas:** desktop semantic renderer/components/styles and focused tests.
 
@@ -1104,7 +1129,7 @@ Milestone 4 is complete only when:
 
 **Risk:** File input, local storage, CSP, focus, zoom, and lifecycle may differ in packaged WebView2.
 
-**Mitigation:** Real-browser deterministic tests plus mandatory native Windows release smoke/restart matrix; do not treat Ubuntu/WSL as native acceptance.
+**Mitigation:** Real-browser deterministic tests plus mandatory native Windows release smoke/restart matrix; do not treat Ubuntu/WSL as native acceptance. Before Task 2.3 closes, check in the content-free packaged-startup regression defined above. Complete Task 2.5 and remove the temporary `unsafe-eval` allowance before Task 3.1 begins, or stop for explicit ADR-backed approval.
 
 ### Accessibility conflicts with virtualization or programmatic focus
 
@@ -1138,6 +1163,8 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 - 2026-07-22: Completed Task 2.1. Added the public immutable `PublicationTargetResolution` family and synchronous `OpenedPublication.resolveTarget`, backed by a package-private document/source-ID index joined to canonical located blocks. Exact fragment/document-start, same-document unresolved-fragment recovery, invalid/unknown/non-spine/empty unavailability, hostile input, cancellation, post-close, privacy, and unchanged locator behavior are covered. No shared schema, runtime root export, dependency, desktop code, persistence, renderer, network, filesystem, narration, TTS, or audio capability changed.
 - 2026-07-22: Completed Task 2.2. Added direct desktop workspace dependencies on the EPUB/shared public boundaries and a presentation-independent publication-session owner with one abortable logical attempt/publication, replacement ordering, a shared cleanup barrier, stale-success cleanup, shared concurrent close, reopen support, and fixed content-free failures. The real package boundary and lifecycle races are covered by ten focused tests; the frozen install, desktop typecheck/test/build, EPUB regression suite, root TypeScript typecheck, format, and lint checks passed. File-byte/UI integration remains Task 2.3.
 - 2026-07-22: Implemented Task 2.3's bounded local-file-to-publication path and safe open UI. Added a presentation-independent coordinator that closes prior publication state at replacement intent, aborts stale reads, hands only bounded bytes to the session, maps closed operational categories to static application outcomes, and contains unexpected failures. The shell clears the input for reselection, preserves ready/idle state on picker cancellation, shows only validated title/authors after success, and retains the independent raster safety probe. Fourteen coordinator tests, thirteen shell tests, the desktop suite, typecheck, and the pinned-Chromium invalid-file smoke cover the implementation. Native release WebView2 interaction remains pending before the task status can become complete.
+- 2026-07-22: Fixed a native release-shell startup defect found during WebView2 manual validation. The shared Ajv-backed contract decoders compile local validators during module initialization; the prior Tauri CSP blocked `unsafe-eval` before React mounted, leaving an empty root and white window. The CSP now permits `unsafe-eval` only alongside self-only scripts, self/blob images, and no network origins; the reason and residual boundary are documented in the architecture/dependency notes. Isolated WebView2 CDP inspection confirmed the root cause and the native release smoke must be rerun after the rebuild.
+- 2026-07-22: Documented the native startup follow-up without implementing it. A checked-in packaged-WebView root/error/network regression is required before Task 2.3 can close. Future Task 2.5 owns standalone validator generation and removal of the temporary broad `unsafe-eval` permission and must complete before Task 3.1 begins; retaining the permission instead requires explicit ADR-backed security approval. No command, validator, test harness, CSP, application code, dependency, or contract changed in this documentation step.
 
 ## Decision log
 
@@ -1159,6 +1186,8 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 | 2026-07-22 | Preflight GIF/JPEG/PNG/WebP dimensions and animation; permit only bounded static Blob URL decode with one concurrent operation and lifecycle-owned release; use placeholders for every rejected image. | Accepted by ADR-0010; semantic image integration remains Task 3.3. |
 | 2026-07-22 | Use exact Playwright Test `1.61.1` with its version-coupled Chromium for deterministic layout/browser evidence; acquire browsers only through the explicit setup command, run it in Windows CI, retain jsdom for component tests, and retain native WebView smoke for target-runtime behavior. | Accepted and established by Task 1.5. |
 | 2026-07-22 | Use yielded batches of at most 250 semantic blocks; reject above 10,000 semantic blocks or 80,000 projected DOM nodes with `chapter-too-large`; defer virtualization; enforce the documented 50/16/1,000/1,000/250 ms and 144/112/208 MiB reference gates while retaining ADR-0010 image caps. | Accepted by the ADR-0008 Task 1.6 amendment; implementation/revalidation remain Tasks 3.6 and 5.3. |
+| 2026-07-22 | In otherwise supported EPUB 3 packages, validate and ignore legacy `meta name/content` compatibility values and admit only the inert HTML doctype in XHTML content/navigation; retain no DTD/entity processing or external resolution. | Accepted by the ADR-0007 compatibility amendment and implemented by the Task 2.3 hotfix. |
+| 2026-07-22 | Treat the current broad `unsafe-eval` CSP allowance as a temporary compatibility exception; add packaged-startup regression coverage before closing Task 2.3, then complete Task 2.5 and remove the allowance before beginning Task 3.1. | Future implementation gate only. Retention at the Task 3.1 gate requires explicit ADR-backed security approval. |
 
 ## Final validation requirements
 
@@ -1167,26 +1196,27 @@ Before moving this plan to `docs/plans/completed/`:
 1. Close every M4-D1 through M4-D12 gate with accepted evidence or explicit deferral/fallback.
 2. Confirm every new direct dependency/version/purpose/alternative/license/capability/bundle impact in the dependency inventory and lock diff.
 3. Verify file selection and publication replacement/close natively on Windows.
-4. Verify no publisher HTML/CSS/script/URL/DOM ID becomes executable UI and CSP makes no remote allowance.
-5. Verify semantic element mapping, internal target resolution, TOC hierarchy, chapter controls, and fallback behavior.
-6. Verify image predecode/decode/concurrency/lifetime exact/max+1 bounds or the accepted placeholder-only policy.
-7. Verify locator DOM/code-point mapping and active reading-line behavior with Unicode, line breaks, images, nested/structural blocks, and stale targets.
-8. Verify exact/nearest/new/missing/malformed/future/wrong-identity restoration and canonical post-recovery save.
-9. Verify restoration across viewport, typography, theme, narrow/zoom layouts, component remount, book reopen, and native app restart after exact-file reselection.
-10. Verify persistence key/value schemas, decoder use, migration dispatch, debounce/lifecycle writes, failure behavior, keyspace bounds, and content-free privacy.
-11. Verify keyboard, focus, landmarks, names/states, status announcements, high contrast/forced colors, reduced motion, and screen-reader behavior.
-12. Verify small/representative/long/excess chapter behavior against approved latency/DOM/memory/image limits without pixel-perfect assertions.
-13. Verify no network request, EPUB/image/audio persistence, raw exception, private path, metadata, prose, markup, URL, bytes, or rejected value enters logs/errors/metrics/storage.
-14. Verify one active publication, cancellation/stale-result rejection, observer cleanup, URL revocation, and idempotent close under repeated open/replace/close.
-15. Verify no narration preparation, TTS, audio, speech highlighting, synchronization, hardware, model, installer, or unrelated refactor entered the diff.
-16. Run focused desktop/EPUB/shared checks, the accepted browser command, native Windows matrix, root `pnpm.cmd check`, and current CI; record exact commands/counts/results/URLs.
-17. Review `docs/architecture/system-diagram.md` and update it only for architecture that actually became implemented/approved.
-18. Review every changed path/link/command, final diff, Git status, ignored/generated artifacts, permissions, manifests, and locks.
-19. Update roadmap status and move this plan to completed only after all acceptance criteria pass and no task remains.
+4. Verify the checked-in packaged-WebView startup regression passes with root mount, visible main landmark, no page/console errors, and no external requests; verify Task 2.5 removed `unsafe-eval` before Task 3.1 began or cite the explicit ADR that approved its retention.
+5. Verify no publisher HTML/CSS/script/URL/DOM ID becomes executable UI and CSP makes no remote allowance.
+6. Verify semantic element mapping, internal target resolution, TOC hierarchy, chapter controls, and fallback behavior.
+7. Verify image predecode/decode/concurrency/lifetime exact/max+1 bounds or the accepted placeholder-only policy.
+8. Verify locator DOM/code-point mapping and active reading-line behavior with Unicode, line breaks, images, nested/structural blocks, and stale targets.
+9. Verify exact/nearest/new/missing/malformed/future/wrong-identity restoration and canonical post-recovery save.
+10. Verify restoration across viewport, typography, theme, narrow/zoom layouts, component remount, book reopen, and native app restart after exact-file reselection.
+11. Verify persistence key/value schemas, decoder use, migration dispatch, debounce/lifecycle writes, failure behavior, keyspace bounds, and content-free privacy.
+12. Verify keyboard, focus, landmarks, names/states, status announcements, high contrast/forced colors, reduced motion, and screen-reader behavior.
+13. Verify small/representative/long/excess chapter behavior against approved latency/DOM/memory/image limits without pixel-perfect assertions.
+14. Verify no network request, EPUB/image/audio persistence, raw exception, private path, metadata, prose, markup, URL, bytes, or rejected value enters logs/errors/metrics/storage.
+15. Verify one active publication, cancellation/stale-result rejection, observer cleanup, URL revocation, and idempotent close under repeated open/replace/close.
+16. Verify no narration preparation, TTS, audio, speech highlighting, synchronization, hardware, model, installer, or unrelated refactor entered the diff.
+17. Run focused desktop/EPUB/shared checks, the accepted browser command, native Windows matrix, root `pnpm.cmd check`, and current CI; record exact commands/counts/results/URLs.
+18. Review `docs/architecture/system-diagram.md` and update it only for architecture that actually became implemented/approved.
+19. Review every changed path/link/command, final diff, Git status, ignored/generated artifacts, permissions, manifests, and locks.
+20. Update roadmap status and move this plan to completed only after all acceptance criteria pass and no task remains.
 
 ## Final validation results
 
-Production-reader validation has not started. Tasks 1.1 through 1.6 and 2.1 through 2.2 are complete; Task 2.3 implementation is complete with native release interaction pending. Renderer, persistence, restoration, and later application tasks remain `Not started`.
+Production-reader validation has not started. Tasks 1.1 through 1.6 and 2.1 through 2.2 are complete; Task 2.3 implementation is complete, but a checked-in packaged-startup regression and the native interaction matrix are still required before it can close. Task 2.5 is a future prerequisite that must remove runtime eval before Task 3.1 begins. Renderer, persistence, restoration, and later application tasks remain `Not started`.
 
 Task 2.3 implementation validation on 2026-07-22:
 
@@ -1198,6 +1228,15 @@ Task 2.3 implementation validation on 2026-07-22:
 - `pnpm.cmd --filter @voxleaf/desktop tauri build` passed and produced the Windows release executable without a command, plugin, capability, dependency, Rust, or CSP change.
 - `pnpm.cmd run typecheck:typescript`, `pnpm.cmd run format:check:typescript`, `pnpm.cmd run lint:typescript`, and `git diff --check` passed.
 - The native Windows release build passed, but the manual WebView2 valid-open/reselection/cancellation/replacement interaction matrix has not been executed for this integrated flow. Task 2.3 remains implementation-complete rather than fully complete until that evidence is recorded.
+
+Task 2.3 EPUB compatibility hotfix validation on 2026-07-22:
+
+- The pre-fix synthetic run failed at the intended boundaries: legacy `meta name/content` was rejected as `malformed-package`, the inert HTML doctype was rejected as `malformed-xml`, and the complete compatibility EPUB could not open.
+- `pnpm.cmd --filter @voxleaf/epub test` passed after the fix: 23 files and 376 tests. New regressions prove accepted legacy metadata is omitted, accepted doctypes are counted/discarded, and malformed/mixed metadata plus package/container, non-HTML, public/system, internal-subset, entity, XInclude, and external-resource cases still fail closed.
+- The production `openEpubPublication` API opened the ignored local EPUB without logging or returning its filename/content: 39 semantic documents, 13 navigation roots, 18 bounded raster descriptors, and 3,691 locators. The publication closed successfully; the copyrighted/private EPUB remains ignored and uncommitted.
+- `pnpm.cmd check` passed on native Windows: formatting, ESLint/Clippy/Ruff, TypeScript/Python type checks, 613 TypeScript tests, Rust tests, 3 Python tests, package builds, the Tauri release build, and Python source/wheel builds all passed. The release executable was rebuilt at the documented target path.
+- `pnpm.cmd test:browser` passed the one pinned-Chromium production-build smoke in 3.0 seconds. Vite retained its existing advisory for the approximately 529 kB application chunk; no gate failed.
+- No dependency, lockfile, shared/public schema, desktop UI, Tauri command/plugin/capability/CSP, filesystem/network resolver, persistence, renderer, narration, TTS, or audio behavior changed. The system diagram was reviewed and remains accurate because the component boundary and data flow did not change. Rebuilt native WebView2 interaction remains the final Task 2.3 evidence gap.
 
 Task 1.1 documentation validation completed on 2026-07-22:
 
