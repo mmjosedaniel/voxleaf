@@ -613,6 +613,15 @@ export class SemanticDomRangeMapper {
       : createRangeAtOffset(registration, textOffsetCodePoints);
   }
 
+  public elementFor(
+    locatedBlock: PublicationLocatedBlock,
+  ): HTMLElement | undefined {
+    const registration = this.#registrationsByBlock.get(locatedBlock);
+    return registration?.active === true && registration.element.isConnected
+      ? registration.element
+      : undefined;
+  }
+
   public positionFor(range: Range): SemanticDomPosition | undefined {
     if (this.#closed || !range.collapsed) {
       return undefined;

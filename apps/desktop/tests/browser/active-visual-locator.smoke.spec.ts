@@ -76,6 +76,18 @@ test("tracks real top, partial, between-block, and document-end geometry without
     );
     await page.getByLabel("Text size").selectOption("extra-large");
     await page.getByLabel("Line spacing").selectOption("spacious");
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => resolve()),
+              ),
+            ),
+          ),
+        ),
+    );
 
     const leaves = page.locator(
       ".semantic-document h1, .semantic-document h2, .semantic-document h3, .semantic-document h4, .semantic-document h5, .semantic-document h6, .semantic-document p",

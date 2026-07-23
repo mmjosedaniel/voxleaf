@@ -30,6 +30,10 @@ export interface ActiveVisualLocatorTrackerOptions {
   readonly onLocator: (locator: ReadingLocatorV1) => void;
 }
 
+export interface ActiveVisualLocatorResumeOptions {
+  readonly requestSample?: boolean;
+}
+
 interface MeasuredVisualBlock {
   readonly element: HTMLElement;
   readonly locatedBlock: PublicationLocatedBlock;
@@ -438,7 +442,7 @@ export class ActiveVisualLocatorTracker {
     });
   }
 
-  public suspend(): () => void {
+  public suspend(): (options?: ActiveVisualLocatorResumeOptions) => void {
     if (this.#closed) {
       return NOOP;
     }
@@ -447,7 +451,7 @@ export class ActiveVisualLocatorTracker {
     this.#cancelScheduledSample?.();
     this.#cancelScheduledSample = undefined;
     let resumed = false;
-    return () => {
+    return (options = {}) => {
       if (resumed) {
         return;
       }
@@ -456,7 +460,7 @@ export class ActiveVisualLocatorTracker {
         return;
       }
       this.#suspensionDepth -= 1;
-      if (this.#suspensionDepth === 0) {
+      if (this.#suspensionDepth === 0 && options.requestSample !== false) {
         this.requestSample();
       }
     };

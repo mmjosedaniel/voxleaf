@@ -495,4 +495,20 @@ describe("active visual locator tracking", () => {
     expect(harness.resolveLocator).toHaveBeenCalledTimes(1);
     harness.close();
   });
+
+  it("can resume completed reflow without immediately replacing its seeded locator", () => {
+    const first = locatedBlock(paragraph("Alpha"), 0, 5);
+    const harness = createHarness([first]);
+    harness.environment.rects.set(harness.elements[0]!, rect(10, 50));
+
+    const resume = harness.tracker.suspend();
+    resume({ requestSample: false });
+
+    expect(harness.tracker.suspended).toBe(false);
+    expect(harness.environment.hasPendingSample).toBe(false);
+
+    harness.tracker.requestSample();
+    expect(harness.environment.hasPendingSample).toBe(true);
+    harness.close();
+  });
 });
