@@ -31,7 +31,7 @@ export class WebDriverClient {
     }
   }
 
-  async createSession(applicationPath) {
+  async createSession(applicationPath, userDataFolder) {
     const response = await this.#request("POST", "/session", {
       capabilities: {
         alwaysMatch: {
@@ -42,6 +42,9 @@ export class WebDriverClient {
           },
           "tauri:options": {
             application: applicationPath,
+            webviewOptions: {
+              userDataFolder,
+            },
           },
         },
       },

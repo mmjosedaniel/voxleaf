@@ -178,6 +178,12 @@ It does not require production migration or data conversion.
 - 2026-07-23: Verified the downloaded local EdgeDriver has a valid Microsoft
   signature. The focused native command, post-cleanup native rerun, and complete
   authoritative repository check passed. Hosted PR validation remains pending.
+- 2026-07-23: Hosted run `30036278090` installed both pinned drivers but failed
+  after 60 seconds during session creation. Microsoft documents
+  `webviewOptions.userDataFolder` as the WebView2 automation profile contract.
+  Replaced the independent `WEBVIEW2_USER_DATA_FOLDER` override with that
+  capability so EdgeDriver and the application observe the same disposable
+  profile and automation marker.
 
 ## Discoveries and decisions
 
@@ -189,6 +195,10 @@ It does not require production migration or data conversion.
 - A small built-in Node HTTP client is preferred over adding Selenium or
   WebdriverIO packages because the smoke needs a narrow protocol subset and the
   repository already owns its assertion flow.
+- EdgeDriver, rather than an independent environment override, owns the
+  disposable WebView2 user-data folder through
+  `tauri:options.webviewOptions.userDataFolder`. This keeps its startup marker
+  and the application's actual profile synchronized.
 - `docs/architecture/system-diagram.md` and `docs/architecture/overview.md` were
   reviewed. No diagram change is required because the WebDriver bridge is
   test-only and does not change the production component or runtime data flow.
@@ -207,4 +217,6 @@ It does not require production migration or data conversion.
   tests, 23 EPUB files/376 tests, 13 desktop files/116 tests, three Node protocol
   tests, Rust/Python tests, and all production builds.
 - `git diff --check` passed.
-- Hosted Windows pull-request validation remains pending.
+- Hosted run `30036278090` passed runtime/tool installation and failed during
+  session creation before the profile-ownership correction. Replacement hosted
+  validation remains pending.

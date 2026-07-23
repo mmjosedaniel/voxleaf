@@ -66,7 +66,10 @@ test("creates a Tauri session and sends bounded WebDriver commands", async () =>
 
   try {
     assert.equal(await client.isReady(), true);
-    await client.createSession("C:\\fixed\\voxleaf-desktop.exe");
+    await client.createSession(
+      "C:\\fixed\\voxleaf-desktop.exe",
+      "C:\\fixed\\profile",
+    );
     assert.equal(client.hasSession, true);
     const element = await client.findElement("#root");
     await client.sendKeys(element, "C:\\fixed\\synthetic.epub");
@@ -85,6 +88,9 @@ test("creates a Tauri session and sends bounded WebDriver commands", async () =>
           },
           "tauri:options": {
             application: "C:\\fixed\\voxleaf-desktop.exe",
+            webviewOptions: {
+              userDataFolder: "C:\\fixed\\profile",
+            },
           },
         },
       },
@@ -118,7 +124,10 @@ test("contains transport and protocol details behind fixed error codes", async (
 
   try {
     await assert.rejects(
-      client.createSession("C:\\private\\book-name.exe"),
+      client.createSession(
+        "C:\\private\\book-name.exe",
+        "C:\\private\\profile",
+      ),
       (error) =>
         error instanceof WebDriverClientError &&
         error.message === "webdriver-command-failed" &&
@@ -137,7 +146,10 @@ test("fails closed when a response does not contain a W3C session", async () => 
 
   try {
     await assert.rejects(
-      client.createSession("C:\\fixed\\voxleaf-desktop.exe"),
+      client.createSession(
+        "C:\\fixed\\voxleaf-desktop.exe",
+        "C:\\fixed\\profile",
+      ),
       (error) =>
         error instanceof WebDriverClientError &&
         error.code === "webdriver-session-invalid",

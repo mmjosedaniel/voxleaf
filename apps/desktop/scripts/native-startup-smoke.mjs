@@ -241,10 +241,7 @@ async function run() {
     ],
     {
       cwd: desktopRoot,
-      env: {
-        ...process.env,
-        WEBVIEW2_USER_DATA_FOLDER: profileDirectory,
-      },
+      env: process.env,
       stdio: "ignore",
       windowsHide: true,
     },
@@ -262,7 +259,7 @@ async function run() {
   try {
     await waitForDriver(endpoint, child, spawnState);
     stage = "native WebView session creation";
-    await driver.createSession(executablePath);
+    await driver.createSession(executablePath, profileDirectory);
     await Promise.all([
       driver.executeCdp("Log.enable"),
       driver.executeCdp("Runtime.enable"),
