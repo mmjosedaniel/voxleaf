@@ -10,12 +10,18 @@ import type {
   PublicationLocatorResolveOptions,
   PublicationNavigationNode,
   PublicationResourceReadOptions,
+  PublicationTargetResolution,
+  PublicationTargetResolveOptions,
   RasterImageResource,
   RasterImageResourceId,
   SemanticDocument,
 } from "../document/document-model.js";
 import type { PublicationLocatorIndex } from "../locator/locator-index.js";
 import { resolvePublicationLocator } from "../locator/locator-resolver.js";
+import {
+  resolvePublicationTarget,
+  type PublicationTargetIndex,
+} from "../locator/target-resolver.js";
 import { createEpubProcessingBudget } from "../security/processing-budget.js";
 import { assertRasterImageSignature } from "./raster-image-signature.js";
 import {
@@ -28,6 +34,7 @@ export interface OpenedPublicationValues {
   readonly documents: readonly SemanticDocument[];
   readonly navigation: readonly PublicationNavigationNode[];
   readonly locatorIndex: PublicationLocatorIndex;
+  readonly targetIndex: PublicationTargetIndex;
 }
 
 interface LinkedAbortSignal {
@@ -87,6 +94,7 @@ class OpenedPublicationHandle implements OpenedPublication {
   readonly #archive: OpenedEpubArchive;
   readonly #bindingsById: ReadonlyMap<string, RasterImageResourceBinding>;
   readonly #locatorIndex: PublicationLocatorIndex;
+  readonly #targetIndex: PublicationTargetIndex;
   readonly #closeController = new AbortController();
   #activeRead: Promise<void> | undefined;
   #closePromise: Promise<void> | undefined;
@@ -101,6 +109,7 @@ class OpenedPublicationHandle implements OpenedPublication {
     this.book = values.book;
     this.documents = Object.freeze([...values.documents]);
     this.#locatorIndex = values.locatorIndex;
+    this.#targetIndex = values.targetIndex;
     this.locators = Object.freeze([...values.locatorIndex.blocks]);
     this.navigation = Object.freeze([...values.navigation]);
     this.resources = Object.freeze(
@@ -162,6 +171,23 @@ class OpenedPublicationHandle implements OpenedPublication {
 
     return resolvePublicationLocator(
       this.#locatorIndex,
+      input,
+      createEpubProcessingBudget({
+        ...(options.signal === undefined ? {} : { signal: options.signal }),
+      }),
+    );
+  }
+
+  public resolveTarget(
+    input: unknown,
+    options: PublicationTargetResolveOptions = {},
+  ): PublicationTargetResolution {
+    if (this.#closed) {
+      return fail("internal-failure");
+    }
+
+    return resolvePublicationTarget(
+      this.#targetIndex,
       input,
       createEpubProcessingBudget({
         ...(options.signal === undefined ? {} : { signal: options.signal }),

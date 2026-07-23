@@ -473,6 +473,7 @@ function publicationValues() {
       ]),
       blocks: Object.freeze([]),
     }),
+    targetIndex: Object.freeze({ findDocument: () => undefined }),
   });
 }
 

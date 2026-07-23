@@ -7,6 +7,7 @@ import type {
   OpenedPublication,
   PublicationLocatorResolution,
   PublicationNavigationNode,
+  PublicationTargetResolution,
   RasterImageResource,
   RasterImageResourceId,
   SemanticBlock,
@@ -144,6 +145,9 @@ describe("public EPUB document model", () => {
       expectTypeOf(
         publication.resolveLocator({}),
       ).toEqualTypeOf<PublicationLocatorResolution>();
+      expectTypeOf(
+        publication.resolveTarget({}),
+      ).toEqualTypeOf<PublicationTargetResolution>();
       expectTypeOf(publication.close()).toEqualTypeOf<Promise<void>>();
 
       // @ts-expect-error Public semantic collections are readonly.

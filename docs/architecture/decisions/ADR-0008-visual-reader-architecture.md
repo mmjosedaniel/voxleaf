@@ -44,7 +44,7 @@ Raster image nodes remain application placeholders until the separate raster saf
 
 ### Keep framework and lifecycle ownership in the desktop application
 
-`@voxleaf/epub` remains framework-independent. It continues to own the implemented archive/content validation, semantic values, resource reads, locator indexes, and opened-publication lifecycle primitives, and it will own the approved but unimplemented detailed target matching. It does not acquire React, DOM, browser-storage, routing, Tauri, narration, TTS, or audio dependencies.
+`@voxleaf/epub` remains framework-independent. It owns the implemented archive/content validation, semantic values, resource reads, locator and semantic-target indexes/resolution, and opened-publication lifecycle primitives. It does not acquire React, DOM, browser-storage, routing, Tauri, narration, TTS, or audio dependencies.
 
 The desktop application will own one active publication session and one reader coordinator. The coordinator will own active document/locator state, explicit navigation intents, passive visible-location updates, reflow capture/restoration, and later persistence scheduling. It will call the public publication API and expose application-level state/actions to presentation components. Leaf UI components must not open/close publications, resolve publisher targets, or write persistence directly.
 
@@ -60,7 +60,7 @@ The initial decision did not select the large-chapter batching/ceiling policy. T
 
 ### Resolve semantic document targets inside `@voxleaf/epub`
 
-The desktop must not match publisher fragments against DOM structure or infer target locators from document/block arrays. `@voxleaf/epub` will add a public, synchronous `resolveTarget(input, options?)` operation on `OpenedPublication`, implemented from the package-private document/source-ID/locator indexes.
+The desktop must not match publisher fragments against DOM structure or infer target locators from document/block arrays. `@voxleaf/epub` provides a public, synchronous `resolveTarget(input, options?)` operation on `OpenedPublication`, implemented from the package-private document/source-ID/locator indexes.
 
 The operation accepts an untrusted target-shaped input and optional `AbortSignal`, checks the publication lifecycle and cancellation at deterministic boundaries, and returns one frozen member of a closed `PublicationTargetResolution` union:
 
@@ -73,7 +73,7 @@ Exact and recovered results carry the canonical `ReadingLocatorV1` and `Publicat
 
 Malformed input, unknown documents, non-spine documents, and empty documents are normal closed unavailable outcomes. Caller cancellation and post-close/invariant failures continue through the package's existing fixed content-free failure boundary; raw exceptions and rejected values are not exposed. The operation adds no shared schema field or serialized contract version because semantic targets and target resolution remain in-memory `@voxleaf/epub` concepts.
 
-Task 2.1 owns the exact TypeScript names, immutable construction, implementation, exports, tests, and any necessary ADR-0007 clarification while preserving these semantics.
+Task 2.1 implemented the exact TypeScript names, immutable construction, exports, and tests while preserving these semantics. The source-ID index remains package-private and the public runtime root still exports only `openEpubPublication`.
 
 ### Represent the active visible passage with a structural locator and code-point offset
 
