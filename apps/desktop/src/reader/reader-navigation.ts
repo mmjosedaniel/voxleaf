@@ -83,6 +83,26 @@ function unreachable(value: never): never {
   throw new Error("Unsupported reader navigation value.");
 }
 
+function locatorsEqual(
+  left: ReadingLocatorV1,
+  right: ReadingLocatorV1,
+): boolean {
+  return (
+    left.schemaVersion === right.schemaVersion &&
+    left.bookIdentity.scheme === right.bookIdentity.scheme &&
+    left.bookIdentity.schemeVersion === right.bookIdentity.schemeVersion &&
+    left.bookIdentity.value === right.bookIdentity.value &&
+    left.spineItemId === right.spineItemId &&
+    left.spineItemIndex === right.spineItemIndex &&
+    left.anchor.kind === right.anchor.kind &&
+    left.anchor.formatVersion === right.anchor.formatVersion &&
+    left.anchor.value === right.anchor.value &&
+    left.anchor.anchorIndex === right.anchor.anchorIndex &&
+    left.textOffsetCodePoints === right.textOffsetCodePoints &&
+    left.progression === right.progression
+  );
+}
+
 function documentForLocatedBlock(
   publication: OpenedPublication,
   locatedBlock: PublicationLocatedBlock,
@@ -232,6 +252,24 @@ export class ReaderNavigationCoordinator {
 
   public goNext(): void {
     this.navigateByChapter(1);
+  }
+
+  public updateActiveVisualLocator(locator: ReadingLocatorV1): boolean {
+    const location = this.#state.activeDocument.location;
+    if (
+      location.kind !== "spine" ||
+      location.spineItemId !== locator.spineItemId ||
+      location.spineItemIndex !== locator.spineItemIndex ||
+      locatorsEqual(this.#state.activeLocator, locator)
+    ) {
+      return false;
+    }
+    this.#state = Object.freeze({
+      ...this.#state,
+      activeLocator: locator,
+    });
+    this.emit();
+    return true;
   }
 
   public setPreference(

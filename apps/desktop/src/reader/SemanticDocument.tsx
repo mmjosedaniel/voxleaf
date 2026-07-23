@@ -22,6 +22,7 @@ import {
   LargeChapterRenderScheduler,
   type ScheduleLargeChapterYield,
 } from "./large-chapter-rendering";
+import type { ActiveVisualLocatorTracker } from "./active-visual-locator";
 import type { PublicationRasterImageLoadPort } from "./publication-raster-image-loader";
 import type { ReaderTargetAvailability } from "./reader-navigation";
 import type { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
@@ -56,6 +57,7 @@ interface SemanticRenderServices {
   readonly observeRasterImageVisibility:
     ObserveRasterImageVisibility | undefined;
   readonly domRangeMapper: SemanticDomRangeMapper | undefined;
+  readonly visualLocatorTracker: ActiveVisualLocatorTracker | undefined;
   readonly locatedBlocksByBlock:
     WeakMap<SemanticBlock, PublicationLocatedBlock> | undefined;
 }
@@ -613,6 +615,7 @@ interface SemanticBlockElementProps {
 function useSemanticBlockElementRef(
   destinationRef: ((element: HTMLElement | null) => void) | undefined,
   domRangeMapper: SemanticDomRangeMapper | undefined,
+  visualLocatorTracker: ActiveVisualLocatorTracker | undefined,
   locatedBlock: PublicationLocatedBlock | undefined,
 ): RefCallback<HTMLElement> | undefined {
   const elementRef = useCallback(
@@ -626,16 +629,22 @@ function useSemanticBlockElementRef(
         domRangeMapper === undefined || locatedBlock === undefined
           ? undefined
           : domRangeMapper.registerBlock(element, locatedBlock);
+      const unregisterVisualLocator =
+        visualLocatorTracker === undefined || locatedBlock === undefined
+          ? undefined
+          : visualLocatorTracker.registerBlock(element, locatedBlock);
       return () => {
+        unregisterVisualLocator?.();
         unregister?.();
         destinationRef?.(null);
       };
     },
-    [destinationRef, domRangeMapper, locatedBlock],
+    [destinationRef, domRangeMapper, locatedBlock, visualLocatorTracker],
   );
 
   return destinationRef === undefined &&
-    (domRangeMapper === undefined || locatedBlock === undefined)
+    (domRangeMapper === undefined || locatedBlock === undefined) &&
+    (visualLocatorTracker === undefined || locatedBlock === undefined)
     ? undefined
     : elementRef;
 }
@@ -654,6 +663,7 @@ function SemanticBlockElement({
   const elementRef = useSemanticBlockElementRef(
     destinationRef,
     services.domRangeMapper,
+    services.visualLocatorTracker,
     locatedBlock,
   );
   switch (block.kind) {
@@ -773,6 +783,7 @@ export interface SemanticDocumentContentProps {
   readonly observeRasterImageVisibility?: ObserveRasterImageVisibility;
   readonly scheduleRenderYield?: ScheduleLargeChapterYield;
   readonly domRangeMapper?: SemanticDomRangeMapper;
+  readonly visualLocatorTracker?: ActiveVisualLocatorTracker;
   readonly locatedBlocks?: readonly PublicationLocatedBlock[];
 }
 
@@ -791,6 +802,7 @@ function AcceptedSemanticDocumentContent({
   observeRasterImageVisibility,
   scheduleRenderYield,
   domRangeMapper,
+  visualLocatorTracker,
   locatedBlocks,
   semanticBlockCount,
 }: AcceptedSemanticDocumentContentProps): ReactElement {
@@ -813,7 +825,10 @@ function AcceptedSemanticDocumentContent({
     [document],
   );
   const locatedBlocksByBlock = useMemo(() => {
-    if (domRangeMapper === undefined || locatedBlocks === undefined) {
+    if (
+      (domRangeMapper === undefined && visualLocatorTracker === undefined) ||
+      locatedBlocks === undefined
+    ) {
       return undefined;
     }
     const result = new WeakMap<SemanticBlock, PublicationLocatedBlock>();
@@ -826,7 +841,13 @@ function AcceptedSemanticDocumentContent({
       }
     }
     return result;
-  }, [document.id, domRangeMapper, locatedBlocks, plan.blockIndexes]);
+  }, [
+    document.id,
+    domRangeMapper,
+    locatedBlocks,
+    plan.blockIndexes,
+    visualLocatorTracker,
+  ]);
   const services = useMemo(
     () => ({
       targetAvailability,
@@ -834,6 +855,7 @@ function AcceptedSemanticDocumentContent({
       rasterImageLoader,
       observeRasterImageVisibility,
       domRangeMapper,
+      visualLocatorTracker,
       locatedBlocksByBlock,
     }),
     [
@@ -843,6 +865,7 @@ function AcceptedSemanticDocumentContent({
       observeRasterImageVisibility,
       rasterImageLoader,
       targetAvailability,
+      visualLocatorTracker,
     ],
   );
   const destination = useMemo(
