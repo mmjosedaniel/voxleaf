@@ -5,6 +5,7 @@ import type {
 } from "@voxleaf/epub";
 import {
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -12,6 +13,7 @@ import {
 } from "react";
 import type { ReactElement, ReactNode } from "react";
 
+import { PublicationRasterImageLoader } from "./publication-raster-image-loader";
 import { SemanticDocumentContent } from "./SemanticDocument";
 import {
   ReaderNavigationCoordinator,
@@ -107,6 +109,10 @@ export function ReaderPublicationContent({
     () => new ReaderNavigationCoordinator(publication),
     [publication],
   );
+  const rasterImageLoader = useMemo(
+    () => new PublicationRasterImageLoader(publication),
+    [publication],
+  );
   const subscribe = useCallback(
     (listener: () => void) => coordinator.subscribe(listener),
     [coordinator],
@@ -126,6 +132,13 @@ export function ReaderPublicationContent({
   const activateTarget = useCallback(
     (target: SemanticDocumentTarget) => coordinator.navigateToTarget(target),
     [coordinator],
+  );
+
+  useEffect(
+    () => () => {
+      void rasterImageLoader.close();
+    },
+    [rasterImageLoader],
   );
 
   useLayoutEffect(() => {
@@ -186,6 +199,7 @@ export function ReaderPublicationContent({
         destinationBlock={state.destinationBlock}
         destinationRef={setDestinationRef}
         readerRef={readerRef}
+        rasterImageLoader={rasterImageLoader}
       />
     </div>
   );

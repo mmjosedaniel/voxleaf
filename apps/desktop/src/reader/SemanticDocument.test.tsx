@@ -256,7 +256,9 @@ describe("semantic document rendering", () => {
     expect(screen.getByText(hostileText)).toBeInTheDocument();
     expect(screen.getByText("Inert link label").tagName).toBe("SPAN");
     expect(
-      screen.getByRole("img", { name: "Publication image placeholder" }),
+      screen.getByRole("img", {
+        name: "Private raster alternative. Image unavailable.",
+      }),
     ).toBeInTheDocument();
     expect(container.querySelector("script")).toBeNull();
     expect(container.querySelector("a")).toBeNull();
@@ -272,7 +274,7 @@ describe("semantic document rendering", () => {
     expect(container.innerHTML).not.toContain("private-publisher-id");
     expect(container.innerHTML).not.toContain("private-publisher-class");
     expect(container.innerHTML).not.toContain("private-publisher-url");
-    expect(container.innerHTML).not.toContain("Private raster alternative");
+    expect(container.innerHTML).toContain("Private raster alternative");
   });
 
   it("activates only available internal targets and explains inert destinations", () => {

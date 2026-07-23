@@ -149,9 +149,11 @@ async function run() {
       "epub-fixture.ts",
     ),
   );
-  const { buildMinimalEpubFixture } = await import(fixtureModuleUrl.href);
+  const { buildComprehensiveEpubFixture } = await import(fixtureModuleUrl.href);
   await mkdir(profileDirectory);
-  await writeFile(fixturePath, await buildMinimalEpubFixture(), { flag: "wx" });
+  await writeFile(fixturePath, await buildComprehensiveEpubFixture(), {
+    flag: "wx",
+  });
   const debugPort = await reserveLoopbackPort();
   const endpoint = `http://127.0.0.1:${debugPort}`;
   const child = spawn(executablePath, [], {
@@ -257,9 +259,30 @@ async function run() {
     await page
       .getByRole("heading", {
         level: 2,
-        name: "Synthetic minimal publication",
+        name: "Synthetic comprehensive publication",
       })
       .waitFor({ state: "visible", timeout: STARTUP_TIMEOUT_MS });
+    stage = "synthetic raster image presentation";
+    await page.locator(".semantic-raster-host").first().scrollIntoViewIfNeeded();
+    const publicationImage = page.getByRole("img", {
+      name: "Synthetic cover",
+      exact: true,
+    });
+    await publicationImage.waitFor({
+      state: "visible",
+      timeout: STARTUP_TIMEOUT_MS,
+    });
+    const imageObservation = await publicationImage.evaluate((image) => ({
+      sourceIsLocalObjectUrl: image.src.startsWith("blob:"),
+      naturalWidth: image.naturalWidth,
+      naturalHeight: image.naturalHeight,
+    }));
+    assert(
+      imageObservation.sourceIsLocalObjectUrl &&
+        imageObservation.naturalWidth === 1 &&
+        imageObservation.naturalHeight === 1,
+      "Native publication raster image did not decode from a local object URL.",
+    );
     stage = "synthetic selection cleanup";
     assert(
       (await fileInput.inputValue()) === "",
@@ -275,6 +298,10 @@ async function run() {
     await page
       .getByText("No local EPUB is open.", { exact: true })
       .waitFor({ state: "visible", timeout: STARTUP_TIMEOUT_MS });
+    assert(
+      (await publicationImage.count()) === 0,
+      "Native publication raster image remained mounted after close.",
+    );
 
     const externalLoadedResourceCount = await page.evaluate(
       () =>
@@ -311,7 +338,7 @@ async function run() {
     );
 
     console.log(
-      "Native startup smoke passed: root mounted, synthetic EPUB opened and closed, no errors, no external requests.",
+      "Native startup smoke passed: root mounted, synthetic EPUB image decoded locally, publication closed, no errors, no external requests.",
     );
   } catch {
     console.error(`Native startup smoke failed during ${stage}.`);
