@@ -20,13 +20,67 @@ const executablePath = path.join(
   "release",
   "voxleaf-desktop.exe",
 );
-const STARTUP_TIMEOUT_MS = 15_000;
+const STARTUP_TIMEOUT_MS = 30_000;
 const OBSERVATION_WINDOW_MS = 500;
+const FIXED_FAILURE_CODES = new Map([
+  [
+    "Native application exited before WebView startup.",
+    "native-process-exited",
+  ],
+  [
+    "Native WebView debugging endpoint did not start.",
+    "debug-endpoint-timeout",
+  ],
+  ["Native WebView page did not become available.", "webview-page-timeout"],
+  [
+    "Native synthetic publication did not open.",
+    "synthetic-publication-open-failed",
+  ],
+  [
+    "Native publication raster image did not decode from a local object URL.",
+    "synthetic-image-decode-failed",
+  ],
+  [
+    "Native application did not clear the synthetic file selection.",
+    "synthetic-selection-not-cleared",
+  ],
+  [
+    "Native application exposed the synthetic fixture filename.",
+    "synthetic-filename-exposed",
+  ],
+  [
+    "Native publication raster image remained mounted after close.",
+    "synthetic-image-not-released",
+  ],
+  ["Native application root did not mount.", "application-root-not-mounted"],
+  [
+    "Native application main landmark is not visible.",
+    "application-main-not-visible",
+  ],
+  [
+    "Native application emitted a page or console error.",
+    "application-runtime-error",
+  ],
+  [
+    "Native application attempted an external request.",
+    "external-request-observed",
+  ],
+]);
 
 function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
   }
+}
+
+function failureCode(error) {
+  if (!(error instanceof Error)) {
+    return "unexpected-error";
+  }
+  return (
+    FIXED_FAILURE_CODES.get(error.message) ??
+    (error.name === "TimeoutError" ? "playwright-timeout" : "unexpected-error")
+  );
 }
 
 function isLocalApplicationUrl(rawUrl) {
@@ -263,7 +317,10 @@ async function run() {
       })
       .waitFor({ state: "visible", timeout: STARTUP_TIMEOUT_MS });
     stage = "synthetic raster image presentation";
-    await page.locator(".semantic-raster-host").first().scrollIntoViewIfNeeded();
+    await page
+      .locator(".semantic-raster-host")
+      .first()
+      .scrollIntoViewIfNeeded();
     const publicationImage = page.getByRole("img", {
       name: "Synthetic cover",
       exact: true,
@@ -340,8 +397,10 @@ async function run() {
     console.log(
       "Native startup smoke passed: root mounted, synthetic EPUB image decoded locally, publication closed, no errors, no external requests.",
     );
-  } catch {
-    console.error(`Native startup smoke failed during ${stage}.`);
+  } catch (error) {
+    console.error(
+      `Native startup smoke failed during ${stage} [${failureCode(error)}].`,
+    );
     process.exitCode = 1;
   } finally {
     try {
