@@ -25,6 +25,10 @@ import {
   type ReaderPreferenceName,
   type ReaderPreferencesV1,
 } from "./reader-preferences";
+import {
+  ReaderReflowRestorer,
+  type ReaderReflowEnvironment,
+} from "./reader-reflow-restoration";
 import { ReaderPreferencesControls } from "./ReaderPreferences";
 import {
   ChapterTooLargeContent,
@@ -130,6 +134,7 @@ export interface ReaderPublicationContentProps {
   readonly onActiveLocatorChange?: (locator: ReadingLocatorV1) => void;
   readonly domRangeMapper?: SemanticDomRangeMapper;
   readonly visualLocatorEnvironment?: ActiveVisualLocatorEnvironment;
+  readonly reflowEnvironment?: ReaderReflowEnvironment;
 }
 
 export function ReaderPublicationContent({
@@ -139,6 +144,7 @@ export function ReaderPublicationContent({
   onActiveLocatorChange,
   domRangeMapper,
   visualLocatorEnvironment,
+  reflowEnvironment,
 }: ReaderPublicationContentProps): ReactElement {
   const [coordinator] = useState(
     () =>
@@ -166,6 +172,20 @@ export function ReaderPublicationContent({
         },
       }),
   );
+  const [reflowRestorer] = useState(
+    () =>
+      new ReaderReflowRestorer(
+        publication,
+        activeDomRangeMapper,
+        visualLocatorTracker,
+        {
+          ...(reflowEnvironment === undefined
+            ? {}
+            : { environment: reflowEnvironment }),
+          currentLocator: () => coordinator.state.activeLocator,
+        },
+      ),
+  );
   const subscribe = useCallback(
     (listener: () => void) => coordinator.subscribe(listener),
     [coordinator],
@@ -189,8 +209,9 @@ export function ReaderPublicationContent({
     (element: HTMLElement | null): void => {
       readerRef.current = element;
       visualLocatorTracker.setRoot(element);
+      reflowRestorer.setRoot(element);
     },
-    [visualLocatorTracker],
+    [reflowRestorer, visualLocatorTracker],
   );
   const finishProgrammaticNavigation = useCallback((): void => {
     visualLocatorTracker.setCurrentLocator(coordinator.state.activeLocator);
@@ -231,6 +252,7 @@ export function ReaderPublicationContent({
   );
   const runProgrammaticNavigation = useCallback(
     (navigate: () => void): void => {
+      reflowRestorer.cancel();
       resumeProgrammaticNavigationRef.current?.();
       const resume = visualLocatorTracker.suspend();
       resumeProgrammaticNavigationRef.current = resume;
@@ -240,7 +262,12 @@ export function ReaderPublicationContent({
         finishProgrammaticNavigation();
       }
     },
-    [coordinator, finishProgrammaticNavigation, visualLocatorTracker],
+    [
+      coordinator,
+      finishProgrammaticNavigation,
+      reflowRestorer,
+      visualLocatorTracker,
+    ],
   );
   const activateTarget = useCallback(
     (target: SemanticDocumentTarget) =>
@@ -251,10 +278,11 @@ export function ReaderPublicationContent({
     (preference: ReaderPreferenceName, value: string): void => {
       const intent = coordinator.setPreference(preference, value);
       if (intent !== undefined) {
+        reflowRestorer.preserve(intent.locator, "preference");
         onPreferencesChange?.(intent.next);
       }
     },
-    [coordinator, onPreferencesChange],
+    [coordinator, onPreferencesChange, reflowRestorer],
   );
 
   useEffect(
@@ -265,11 +293,12 @@ export function ReaderPublicationContent({
   );
   useEffect(
     () => () => {
+      reflowRestorer.close();
       resumeProgrammaticNavigationRef.current?.();
       resumeProgrammaticNavigationRef.current = undefined;
       visualLocatorTracker.close();
     },
-    [visualLocatorTracker],
+    [reflowRestorer, visualLocatorTracker],
   );
   useEffect(
     () => () => {
