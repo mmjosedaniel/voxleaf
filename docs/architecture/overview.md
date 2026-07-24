@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop connects its capability-free local-file selection/read boundary to a UI-independent publication-session owner, presents one accessible idle/opening/ready/empty/failure/closing lifecycle surface, contains presentation failures, and renders the active spine document's supported text plus bounded static raster images through an exhaustive application-owned semantic React reader. Its continuous responsive layout, closed display preferences, bounded incremental large-chapter policy, passive logical-position tracking, viewport/preference reflow preservation, versioned bounded local reader-state repository, lifecycle-aware save coordinator, and exact/nearest-valid open restoration are implemented without publisher styling. A user can open, read, navigate, adjust the visual reader without losing the active logical passage, and explicitly close a supported publication; validated position and preference changes are saved locally on the approved bounded lifecycle and restored after exact-file reselection. Milestone 4 documentation, packaged-native file-open matrix, final validation, and pull-request CI are complete. Narration preparation, TTS integration, buffering, and playback require their own implementation evidence. The Python area remains a foundation only.
+Mixed implementation status. Roadmap Milestones 1 through 4 are complete. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop connects its capability-free local-file selection/read boundary to a UI-independent publication-session owner, presents one accessible idle/opening/ready/empty/failure/closing lifecycle surface, contains presentation failures, and renders the active spine document's supported text plus bounded static raster images through an exhaustive application-owned semantic React reader. Its continuous responsive layout, closed display preferences, bounded incremental large-chapter policy, passive logical-position tracking, viewport/preference reflow preservation, versioned bounded local reader-state repository, lifecycle-aware save coordinator, and exact/nearest-valid open restoration are implemented without publisher styling. A user can open, read, navigate, adjust the visual reader without losing the active logical passage, and explicitly close a supported publication; validated position and preference changes are saved locally on the approved bounded lifecycle and restored after exact-file reselection. Milestone 5 has an approved active ExecPlan, but its production implementation has not started. Narration preparation, TTS integration, buffering, playback, and synchronization require their own implementation evidence. The Python area remains a foundation only.
 
 [`system-diagram.md`](system-diagram.md) is the canonical visual map and status legend. This overview owns the accompanying architectural rationale, invariants, and detailed implemented-boundary notes.
 
@@ -14,30 +14,26 @@ VoxLeaf must read EPUB files and synthesize speech locally while beginning playb
 
 ```text
 Desktop application
-├── Capability-free local file selection/read/open [implemented]
-├── Bounded static-raster preflight/source lifecycle [implemented]
-├── Cancellable publication-session lifecycle [implemented]
-├── Accessible reader lifecycle state/error containment [implemented]
-├── Versioned bounded Web Storage repository [implemented]
-├── Semantic React text/static-raster renderer [implemented]
-├── Reader navigation and in-memory logical-position/reflow coordinator [implemented]
-├── Audio player and bounded playback buffer [planned]
-└── Local TTS process client [planned]
+|-- Capability-free local file selection/read/open [implemented]
+|-- Bounded static-raster preflight/source lifecycle [implemented]
+|-- Cancellable publication-session lifecycle [implemented]
+|-- Accessible visual reader, navigation, reflow, and restoration [implemented]
+|-- Versioned bounded Web Storage repository [implemented]
+|-- Local TTS process client [deferred to Milestone 7]
+`-- Audio scheduling, playback, and synchronization [deferred to Milestones 8-9]
 
 EPUB package
-├── Archive/package/navigation validation [implemented]
-├── Immutable semantic projection [implemented]
-├── Lazy bounded raster access [implemented]
-├── Deterministic locator creation/resolution [implemented]
-├── Narration text normalization [deferred]
-└── Semantic chunking [deferred]
+|-- Archive/package/navigation validation [implemented]
+|-- Immutable safe semantic projection [implemented]
+|-- Lazy bounded raster access [implemented]
+|-- Deterministic locator creation/resolution [implemented]
+`-- Narration source projection, normalization, segmentation,
+    and locator-linked prepared segments [approved planned: Milestone 5]
 
 Local TTS service
-├── Model lifecycle
-├── Inference queue
-├── Cancellation
-├── Audio framing
-└── Performance metrics
+|-- Python package/version scaffold [foundation only]
+`-- Engine, process protocol, inference, cancellation,
+    audio framing, and metrics [deferred to Milestones 6-7]
 ```
 
 ## Approved desktop reader and candidate process model
@@ -63,20 +59,35 @@ The protocol may use Tauri IPC, standard input/output, a local socket, or loopba
 
 ## Core data flow
 
-The public EPUB package currently implements the in-memory validation, parsing, semantic projection, resource-descriptor, locator, and target-resolution portions of this flow. The desktop file-open coordinator passes one bounded local-file read to the publication-session module, which owns cancellation, replacement, late-result rejection, and publication cleanup. A separate application lifecycle controller exposes only immutable idle/opening/ready/empty/failure/closing states, clears the prior publication reference before non-ready states, and maps zero located blocks to the recoverable empty state. In ready state, the restore coordinator first reads validated app-global display preferences and exact-identity position state. The production reader activates the exact/recovered spine document or first canonical located block, lazily renders its admitted local static raster images, materializes and aligns a restored semantic range before settlement, can replace the document through package-resolved TOC, internal-link, and chapter-step navigation, applies validated preferences through application-owned CSS, maintains content-free located-block/DOM-range associations, updates its canonical in-memory locator from settled passive viewport geometry, and restores that locator after viewport or preference reflow. The application save coordinator accepts only locators that resolve exactly back to themselves through the active publication, bounds passive writes with a trailing timer, coalesces immediate position/preference saves, serializes each latest-only write stream, and flushes before close/replacement and on hidden/`pagehide` lifecycle signals without awaiting storage before publication cleanup. The repository atomically replaces validated bounded envelopes; narration preparation, synthesis, buffering, and playback remain planned.
+The public EPUB package currently implements the in-memory validation, parsing, semantic projection, resource-descriptor, locator, and target-resolution portions of this flow. The desktop file-open coordinator passes one bounded local-file read to the publication-session module, which owns cancellation, replacement, late-result rejection, and publication cleanup. A separate application lifecycle controller exposes only immutable idle/opening/ready/empty/failure/closing states, clears the prior publication reference before non-ready states, and maps zero located blocks to the recoverable empty state. In ready state, the restore coordinator first reads validated app-global display preferences and exact-identity position state. The production reader activates the exact/recovered spine document or first canonical located block, lazily renders its admitted local static raster images, materializes and aligns a restored semantic range before settlement, can replace the document through package-resolved TOC, internal-link, and chapter-step navigation, applies validated preferences through application-owned CSS, maintains content-free located-block/DOM-range associations, updates its canonical in-memory locator from settled passive viewport geometry, and restores that locator after viewport or preference reflow. The application save coordinator accepts only locators that resolve exactly back to themselves through the active publication, bounds passive writes with a trailing timer, coalesces immediate position/preference saves, serializes each latest-only write stream, and flushes before close/replacement and on hidden/`pagehide` lifecycle signals without awaiting storage before publication cleanup. The repository atomically replaces validated bounded envelopes. The approved Milestone 5 path branches from the immutable semantic model rather than from rendered DOM or displayed text; narration preparation, synthesis, buffering, and playback remain unimplemented.
 
 1. **Implemented:** Validate the selected EPUB as an untrusted archive.
 2. **Implemented:** Parse metadata, navigation, and spine order.
 3. **Implemented:** Resolve the saved logical reading locator, or use the beginning of a new book.
 4. **Implemented:** Select the already-sanitized semantic spine document for application-owned rendering.
 5. **Implemented:** Reconstruct the visible passage from the locator and current scrolling layout.
-6. **Planned:** Derive narration text from the same logical location while retaining paragraph and dialogue boundaries.
-7. **Planned:** Create bounded chunks tagged with their source locators.
-8. **Planned:** Attach chunks to a unique reading session.
-9. **Planned:** Generate approximately 15 seconds of playable audio, then start playback immediately when that media-duration threshold is met.
-10. **Planned:** Generate later audio while the player consumes buffered frames and the renderer keeps the narrated passage visible.
-11. **Planned:** Discard played frames and stale session work.
+6. **Approved planned — Milestone 5:** Select narratable source spans from the immutable safe semantic model without changing the displayed representation.
+7. **Approved planned — Milestone 5:** Apply deterministic narration-only normalization and semantic segmentation, then emit bounded prepared segments that retain stable locator ranges.
+8. **Deferred — Milestone 7:** Attach prepared text/ranges to session, generation, and TTS-request identity at the later process boundary.
+9. **Deferred — Milestones 6-8:** Select and run a local TTS engine, generate approximately 15 seconds of playable audio, and start playback immediately when that media-duration threshold is met.
+10. **Deferred — Milestones 8-9:** Generate later audio while the player consumes buffered frames and the reader keeps the narrated passage visible.
+11. **Deferred — Milestones 8-9:** Discard played frames and stale session work.
 12. **Implemented for reader state:** Persist the logical reading locator, not a rendered page number or generated audio. Generated-audio persistence remains prohibited future behavior unless a separate product/privacy decision approves it.
+
+## Approved narration-preparation boundary
+
+The [Milestone 5 ExecPlan](../plans/active/M005-narration-text-preparation.md) is the implementation authority for text preparation. At this documentation baseline, every production task remains not started and no narration ADR has been accepted. The approved high-level boundary is:
+
+- derive narration source material only from already-sanitized immutable semantic headings and paragraphs in source order;
+- preserve displayed `SensitivePublicationText` unchanged and create a separate sensitive, ephemeral narration representation;
+- apply deterministic normalization and semantic segmentation with explicit neutral and representative Spanish cases;
+- keep returned work bounded and measurable by content-free counts, with cancellation and publication-close ownership to be finalized by Task 1.1;
+- retain a stable source `LocatorRangeV1` for every nonempty prepared segment so later seeking, highlighting, cancellation, and progress can refer to the same logical publication positions; and
+- keep model-specific preprocessing, TTS requests, inference, audio, timing, highlighting, and synchronized playback outside Milestone 5.
+
+The package-local prepared segment is not yet the session-bound `NarrationSegmentV1`. The existing shared contract proves that sensitive text, source range, sequence, and work identity can be represented, but Milestone 5 must not invent later session/generation identifiers. Exact operation names, result/error unions, profile limits, language input, continuation behavior, and lifecycle concurrency are open Task 1.1 decisions and must not be treated as accepted architecture before the planned ADR is approved.
+
+Narration text is local sensitive data. It must not be persisted, logged, placed in metrics or analytics, copied into snapshots or errors, or used as a locator anchor. Synthetic corpus cases may assert exact strings where text transformation is the behavior under test, but diagnostics and benchmark summaries remain content-free.
 
 ## Required invariants
 
@@ -85,6 +96,7 @@ The public EPUB package currently implements the in-memory validation, parsing, 
 - Reflow does not change the logical reading position.
 - The initial 15-second target represents buffered playable audio, never a fixed startup timer.
 - Book text is never written to logs.
+- Derived narration text is not written to logs, analytics, persisted progress, benchmark summaries, or content-bearing diagnostics.
 - The generation queue and audio buffer are bounded.
 - Network access is not required for normal reading.
 - Cancelled work cannot later re-enter the active playback queue.
@@ -96,6 +108,7 @@ The public EPUB package currently implements the in-memory validation, parsing, 
 - `apps/desktop` declares `@voxleaf/epub` and `@voxleaf/shared` directly. The publication-session module owns the EPUB opener; reader modules consume only public semantic/publication types and package resolution operations; persistence modules consume shared locator/state types and the strict shared persisted-state decoder.
 - EPUB parsing must not depend on the desktop framework.
 - `@voxleaf/epub` consumes shared book and locator contracts only through the public `@voxleaf/shared` workspace package boundary; `@voxleaf/shared` has no reverse EPUB dependency.
+- The approved Milestone 5 plan keeps narration preparation framework-independent beside the semantic/locator owner in `@voxleaf/epub`; its exact public operation remains gated by the planned narration ADR.
 - Scrolling layout and semantic-to-DOM position mapping belong to the desktop reader. Logical locator creation plus locator and semantic-target resolution are implemented framework-independent operations in `@voxleaf/epub`.
 - Shared protocol types must not depend on either process implementation.
 - Future TTS model adapters must implement an internal interface so benchmarking does not leak model-specific details through the application.

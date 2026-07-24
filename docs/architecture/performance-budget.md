@@ -89,6 +89,12 @@ pnpm.cmd benchmark:reader:native
 
 Both commands are intentionally outside `pnpm.cmd check` and CI. The Chromium command builds the shared/EPUB packages, starts the production Vite application, launches fresh browsers for standalone fixtures, and runs production exact-limit and lifecycle cases. The native command builds the release executable and launches it with the same isolated WebView2/driver boundary used by the native startup smoke. They use only repository-authored synthetic text and generated local PNGs, record counts/timings/heap/working-set values, disable browser artifacts, and log no publication content, paths, URLs, bytes, or private data. Task 3.6 records selection-to-first-content and production commit/target/append/reflow/memory evidence. Task 5.3 supplies real locator restoration and native WebView2 interaction evidence; Task 5.4 supplies browser and native lifecycle/resource stress. These hardware-specific commands are not universal end-to-end guarantees.
 
+## Narration-preparation limits
+
+No Milestone 5 text-preparation limit or performance result is accepted yet, and production implementation has not started. The approved [Milestone 5 ExecPlan](../plans/active/M005-narration-text-preparation.md) assigns Task 1.3 to accept a versioned profile for source work, segment size, batch size, parser lookahead, retained intermediate state, and cancellation-checkpoint distance using deterministic synthetic evidence.
+
+Those gates must use explicit Unicode-code-point, UTF-8-byte, segment, sentence, and bounded-work measurements rather than JavaScript UTF-16 length or a hardware-dependent timing claim. Optional wall-clock observations remain informational. The approximately 15-second initial audio lead is an audio-playback policy and must not be converted into a narration-text size target.
+
 ## Initial buffering policy
 
 A starting implementation may use:

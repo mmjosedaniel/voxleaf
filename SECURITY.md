@@ -27,8 +27,11 @@ Relevant risks include:
 - Unsafe native-process invocation.
 - Local service exposure beyond the loopback interface.
 - Logs accidentally containing book contents.
+- Normalization, segmentation, errors, snapshots, or benchmarks exposing derived narration text.
 - Loading untrusted model or checkpoint files.
 
 Security fixes should include regression tests when practical.
 
 The visual reader must render only sanitized local EPUB resources. Restored reading locators are untrusted persisted input and must be validated against the currently opened book before use.
+
+Derived narration text has the same sensitive-content boundary as source book text. It must remain local and ephemeral, must not be persisted or logged, and must be produced only from the already-sanitized semantic model rather than by reopening publisher markup or URLs.

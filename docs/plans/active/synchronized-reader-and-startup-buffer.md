@@ -218,4 +218,4 @@ Initial documentation validation completed on 2026-07-20:
 - No documentation retains the obsolete allowance of a fixed or maximum 15-second startup wait.
 - `git diff --check` passed for tracked changes, with only informational line-ending warnings.
 
-The implementation toolchain, shared contracts, and secure EPUB package now exist, but feature validation remains incomplete because the desktop reader, persistence, narration, TTS, audio, and integrated behavior have not been implemented. Do not move this plan to `docs/plans/completed/` or claim the feature works before those remaining milestones pass their validation.
+The implementation toolchain, shared contracts, secure EPUB package, visual reader, and bounded position persistence/restoration now exist. The approved Milestone 5 narration-preparation work is governed by [`M005-narration-text-preparation.md`](M005-narration-text-preparation.md) and has not started; TTS, audio, spoken highlighting, and integrated synchronization also remain unimplemented. Retain this broad plan as later-milestone context, and do not use it to claim that those remaining systems work.

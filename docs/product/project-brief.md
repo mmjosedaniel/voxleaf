@@ -6,7 +6,7 @@ This brief explains the intended VoxLeaf experience and the motivation behind th
 
 The normative MVP scope is in [`mvp.md`](mvp.md). Accepted technical decisions are recorded under [`../architecture/decisions/`](../architecture/decisions/), and current performance targets are in [`../architecture/performance-budget.md`](../architecture/performance-budget.md).
 
-The implemented product boundary currently stops after private local EPUB ingestion, semantic visual reading/navigation, bounded display preferences, logical-position persistence, and exact/nearest-valid restoration after exact-file reselection. Narration preparation, TTS engines and process integration, generated audio, playback, synchronized highlighting, hardware profiles, and installers remain planned. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
+The implemented product boundary currently stops after private local EPUB ingestion, semantic visual reading/navigation, bounded display preferences, logical-position persistence, and exact/nearest-valid restoration after exact-file reselection. Milestone 5 narration preparation has an approved ExecPlan but implementation has not started. TTS engines and process integration, generated audio, playback, synchronized highlighting, hardware profiles, and installers remain deferred to later milestones. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
 
 ## Summary
 
@@ -16,8 +16,10 @@ The intended narration pipeline will generate progressively instead of convertin
 
 ```text
 Open a local EPUB
-    -> extract and normalize the current text
-    -> generate the next speech segment locally
+    -> validate and project safe structured content
+    -> derive and normalize narration-only text
+    -> map bounded semantic segments to source locator ranges
+    -> generate speech locally in a later TTS stage
     -> hold bounded audio in memory
     -> play while preparing later segments
     -> discard audio after playback
@@ -83,9 +85,9 @@ EPUB content is presented as a normal reflowable ereader, with readable typograp
 
 ### Narration text
 
-Displayed book text should remain faithful to the source whenever possible. A separate narration representation may normalize whitespace, visual line breaks, Unicode punctuation, quotations, ellipses, abbreviations, dates, times, currency, numbers, common symbols, and words hyphenated across line breaks.
+Displayed book text should remain faithful to the safe semantic source and is not rewritten by narration preparation. A separate ephemeral narration representation may normalize whitespace, visual line breaks, Unicode punctuation, quotations, ellipses, abbreviations, dates, times, currency, numbers, common symbols, and words hyphenated across line breaks. Normalization must preserve meaning, and every prepared narration segment must retain a stable locator range back to its source passage.
 
-Spanish deserves explicit early coverage, including opening question and exclamation marks, dialogue punctuation, abbreviations, decimal and thousands separators, dates, years, currency, and foreign names embedded in Spanish prose.
+Spanish deserves explicit early coverage through a reproducible synthetic corpus, including opening question and exclamation marks, dialogue punctuation, abbreviations, decimal and thousands separators, dates, years, currency, and foreign names embedded in Spanish prose. This is a test-coverage requirement, not a claim of complete language support or pronunciation quality.
 
 Segmentation should respect paragraphs, sentences, dialogue, headings, scene breaks, punctuation, abbreviations, decimals, initials, and unusually long sentences. Segment sizing must balance natural prosody, startup latency, seeking responsiveness, and the amount of work discarded after cancellation.
 
@@ -97,7 +99,7 @@ Core interaction should support keyboard navigation, visible focus, semantic con
 
 ### Privacy and local data
 
-Normal reading must not send book text or generated speech to a remote service. Generated audio is ephemeral and must not be persisted by default. Logs and performance measurements must exclude book text and audio.
+Normal reading must not send book text, derived narration text, or generated speech to a remote service. Derived narration text and generated audio are ephemeral and must not be persisted by default. Logs, analytics, snapshots, diagnostics, and performance summaries must exclude book prose, derived narration text, and audio.
 
 The implemented persisted reader state retains only bounded exact-byte identity, a structural content locator and Unicode-code-point offset, and closed display preferences; it does not retain a file reference, EPUB bytes, publisher metadata, prose, rendered geometry, or images. Future milestones may justify selected model/voice, playback speed, and non-content hardware or benchmark data within explicit bounded contracts. Full extracted text and generated narration must not become persistent application state without a separate product and privacy decision.
 
