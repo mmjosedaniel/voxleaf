@@ -21,6 +21,7 @@ import {
   normalizeNarrationSourceTokens,
   type NarrationNormalizedStream,
   type NarrationNormalizedUnit,
+  type NarrationNormalizationBoundaryProtection,
   type NarrationNormalizationLanguage,
 } from "./narration-normalizer.js";
 import { projectNarrationSource } from "./narration-source-projector.js";
@@ -40,8 +41,16 @@ const TASK_3_1_CORPUS = NARRATION_NORMALIZATION_CORPUS.filter(
     category === "hyphenation" ||
     id === "code-whitespace-preserved",
 );
+const TASK_3_2_CORPUS = NARRATION_NORMALIZATION_CORPUS.filter(
+  ({ category, id }) =>
+    category === "punctuation" ||
+    category === "symbol" ||
+    id === "code-punctuation-preserved" ||
+    id === "malformed-unbalanced-quote" ||
+    id === "malformed-unbalanced-opening-question",
+);
 
-describe("narration whitespace and hyphenation normalization", () => {
+describe("narration normalization", () => {
   describe("accepted Task 3.1 corpus", () => {
     for (const corpusCase of TASK_3_1_CORPUS) {
       it(corpusCase.id, () => {
@@ -246,6 +255,205 @@ describe("narration whitespace and hyphenation normalization", () => {
     );
   });
 
+  describe("accepted Task 3.2 punctuation and symbol policy", () => {
+    for (const corpusCase of TASK_3_2_CORPUS) {
+      it(corpusCase.id, () => {
+        const fixture = corpusFixture(corpusCase);
+        const before = JSON.stringify(fixture.block);
+
+        const normalized = normalizeNarrationSourceTokens(
+          fixture.leaf.sourceTokens,
+          corpusCase.defaultLanguage,
+        );
+
+        expect(normalized.text).toBe(corpusCase.expected.narrationText);
+        expect(normalizedBoundaryProtections(normalized)).toEqual(
+          [...corpusCase.expected.boundaryProtections].sort(),
+        );
+        expect(JSON.stringify(fixture.block)).toBe(before);
+        assertSourceMapping(fixture.leaf, normalized);
+        assertDeepFrozen(normalized);
+      });
+    }
+
+    it("is deterministic and idempotent for accepted punctuation and symbols", () => {
+      for (const corpusCase of TASK_3_2_CORPUS) {
+        const fixture = corpusFixture(corpusCase);
+        const first = normalizeNarrationSourceTokens(
+          fixture.leaf.sourceTokens,
+          corpusCase.defaultLanguage,
+        );
+        const repeated = normalizeNarrationSourceTokens(
+          fixture.leaf.sourceTokens,
+          corpusCase.defaultLanguage,
+        );
+        const secondFixture = singleTextFixture(
+          String(first.text),
+          corpusCase.source.every(({ kind }) => kind === "code"),
+        );
+        const second = normalizeNarrationSourceTokens(
+          secondFixture.sourceTokens,
+          corpusCase.defaultLanguage,
+        );
+
+        expect(repeated).toEqual(first);
+        expect(second.text).toBe(first.text);
+      }
+    });
+
+    it("retains quotation, ellipsis, repeated-mark, and dialogue roles", () => {
+      const quotation = resultForTask3_2Case(
+        "punctuation-typographic-quotes",
+      ).normalized;
+      const ellipsis = resultForTask3_2Case(
+        "punctuation-ellipsis-character",
+      ).normalized;
+      const repeated = resultForTask3_2Case(
+        "punctuation-repeated-marks",
+      ).normalized;
+      const dialogue = resultForTask3_2Case(
+        "punctuation-dialogue-dash",
+      ).normalized;
+
+      expect(textRoles(quotation)).toContain("quotation");
+      expect(textRoles(ellipsis)).toContain("ellipsis");
+      expect(textRoles(repeated)).toContain("punctuation");
+      expect(textRoles(dialogue)).toContain("dialogue-dash");
+      expect(normalizedBoundaryProtections(ellipsis)).toContain("ellipsis");
+      expect(normalizedBoundaryProtections(repeated)).toContain("sentence-end");
+      expect(normalizedBoundaryProtections(dialogue)).toContain(
+        "dialogue-turn",
+      );
+    });
+
+    it("preserves paired straight quotes, en dashes, and three-period ellipses", () => {
+      const leaf = leafFor(paragraph([text('"Texto" – pausa... después.')]));
+      const normalized = normalizeNarrationSourceTokens(
+        leaf.sourceTokens,
+        "und",
+      );
+
+      expect(normalized.text).toBe('"Texto" – pausa... después.');
+      expect(
+        textRoles(normalized).filter((role) => role === "quotation"),
+      ).toHaveLength(2);
+      expect(textRoles(normalized)).toContain("dialogue-dash");
+      expect(
+        normalized.units.filter(
+          (unit) => unit.kind === "text" && unit.role === "ellipsis",
+        ),
+      ).toHaveLength(3);
+      assertSourceMapping(leaf, normalized);
+    });
+
+    it("marks unbalanced opening punctuation without changing its text", () => {
+      for (const id of [
+        "malformed-unbalanced-quote",
+        "malformed-unbalanced-opening-question",
+      ]) {
+        const { leaf, normalized } = resultForTask3_2Case(id);
+        expect(normalizedBoundaryProtections(normalized)).toContain(
+          "malformed-punctuation",
+        );
+        expect(normalized.text).toBe(
+          TASK_3_2_CORPUS.find((entry) => entry.id === id)?.expected
+            .narrationText,
+        );
+        assertSourceMapping(leaf, normalized);
+      }
+    });
+
+    it("expands only context-safe Spanish symbol forms", () => {
+      const acceptedAmpersand = resultForTask3_2Case(
+        "symbol-spanish-ampersand",
+      ).normalized;
+      const acceptedCelsius = resultForTask3_2Case(
+        "symbol-spanish-temperature",
+      ).normalized;
+      const neutralAmpersand = normalizeNarrationSourceTokens(
+        leafFor(paragraph([text("Sol & Mar")])).sourceTokens,
+        "und",
+      );
+      const compactAmpersand = normalizeNarrationSourceTokens(
+        leafFor(paragraph([text("R&D", "es")])).sourceTokens,
+        "es",
+      );
+      const neutralOverride = normalizeNarrationSourceTokens(
+        leafFor(paragraph([text("Sol & Mar", "en")])).sourceTokens,
+        "es",
+      );
+      const unsupportedTemperature = normalizeNarrationSourceTokens(
+        leafFor(paragraph([text("21 °C", "es")])).sourceTokens,
+        "es",
+      );
+      const codeSymbols = normalizeNarrationSourceTokens(
+        leafFor(paragraph([code("20 °C &", "es")])).sourceTokens,
+        "es",
+      );
+
+      expect(acceptedAmpersand.text).toBe("Sol y Mar");
+      expect(acceptedCelsius.text).toBe("veinte grados Celsius");
+      expect(
+        acceptedCelsius.units.some(
+          (unit) =>
+            unit.kind === "omission" && unit.reason === "symbol-expansion",
+        ),
+      ).toBe(true);
+      expect(neutralAmpersand.text).toBe("Sol & Mar");
+      expect(compactAmpersand.text).toBe("R&D");
+      expect(neutralOverride.text).toBe("Sol & Mar");
+      expect(unsupportedTemperature.text).toBe("21 °C");
+      expect(codeSymbols.text).toBe("20 °C &");
+    });
+
+    it("handles maximum repeated punctuation and unbalanced quotes", () => {
+      const maximum =
+        NARRATION_V1_SOURCE_WINDOW_POLICY.retainedTokenEntriesHardMaximum;
+      const sourceTokens = boundedSourceTokens(maximum, "?");
+      const normalized = normalizeNarrationSourceTokens(sourceTokens, "es");
+      const unbalancedQuotes = normalizeNarrationSourceTokens(
+        boundedSourceTokens(maximum, "“"),
+        "es",
+      );
+
+      expect(normalized.units).toHaveLength(maximum);
+      expect(Array.from(String(normalized.text))).toHaveLength(maximum);
+      expect(
+        normalized.units.every(
+          (unit) =>
+            unit.kind === "text" &&
+            unit.role === "punctuation" &&
+            unit.boundaryProtections.includes("sentence-end"),
+        ),
+      ).toBe(true);
+      expect(unbalancedQuotes.units).toHaveLength(maximum);
+      expect(
+        unbalancedQuotes.units.every(
+          (unit) =>
+            unit.kind === "text" &&
+            unit.role === "quotation" &&
+            unit.boundaryProtections.includes("malformed-punctuation"),
+        ),
+      ).toBe(true);
+    });
+
+    it("keeps every expansion within the accepted per-source ceiling", () => {
+      for (const corpusCase of TASK_3_2_CORPUS) {
+        const normalized = normalizeNarrationSourceTokens(
+          corpusFixture(corpusCase).leaf.sourceTokens,
+          corpusCase.defaultLanguage,
+        );
+        for (const unit of normalized.units) {
+          if (unit.kind === "text") {
+            expect(Array.from(String(unit.text)).length).toBeLessThanOrEqual(
+              NARRATION_V1_SOURCE_WINDOW_POLICY.normalizationExpansionCodePointsHardMaximum,
+            );
+          }
+        }
+      }
+    });
+  });
+
   it("keeps normalized unit unions closed", () => {
     expectTypeOf<NarrationNormalizedUnit["kind"]>().toEqualTypeOf<
       "omission" | "text"
@@ -408,6 +616,42 @@ function resultForCase(id: string): Readonly<{
   });
 }
 
+function resultForTask3_2Case(id: string): Readonly<{
+  leaf: NarrationSourceTokenLeafEvent;
+  normalized: NarrationNormalizedStream;
+}> {
+  const corpusCase = TASK_3_2_CORPUS.find((entry) => entry.id === id);
+  if (corpusCase === undefined) {
+    throw new Error("expected punctuation normalization corpus case");
+  }
+  const fixture = corpusFixture(corpusCase);
+  return Object.freeze({
+    leaf: fixture.leaf,
+    normalized: normalizeNarrationSourceTokens(
+      fixture.leaf.sourceTokens,
+      corpusCase.defaultLanguage,
+    ),
+  });
+}
+
+function textRoles(normalized: NarrationNormalizedStream): readonly string[] {
+  return normalized.units.flatMap((unit) =>
+    unit.kind === "text" ? [unit.role] : [],
+  );
+}
+
+function normalizedBoundaryProtections(
+  normalized: NarrationNormalizedStream,
+): readonly NarrationNormalizationBoundaryProtection[] {
+  return [
+    ...new Set(
+      normalized.units.flatMap(({ boundaryProtections }) =>
+        Array.from(boundaryProtections),
+      ),
+    ),
+  ].sort();
+}
+
 function assertSourceMapping(
   leaf: NarrationSourceTokenLeafEvent,
   normalized: NarrationNormalizedStream,
@@ -444,6 +688,7 @@ function assertDeepFrozen(normalized: NarrationNormalizedStream): void {
     expect(Object.isFrozen(unit.sourceSpan)).toBe(true);
     expect(Object.isFrozen(unit.textContext)).toBe(true);
     expect(Object.isFrozen(unit.textContext.inlineContainers)).toBe(true);
+    expect(Object.isFrozen(unit.boundaryProtections)).toBe(true);
   }
 }
 
@@ -459,7 +704,10 @@ function expectInternalFailure(action: () => unknown): void {
   expectArchiveFailure(action, "internal-failure");
 }
 
-function boundedSourceTokens(count: number): readonly NarrationSourceToken[] {
+function boundedSourceTokens(
+  count: number,
+  value = "a",
+): readonly NarrationSourceToken[] {
   const textContext = Object.freeze({
     inlineContainers: Object.freeze([]),
   });
@@ -467,7 +715,7 @@ function boundedSourceTokens(count: number): readonly NarrationSourceToken[] {
     Array.from({ length: count }, (_, index) =>
       Object.freeze({
         kind: "text" as const,
-        text: sensitive("a"),
+        text: sensitive(value),
         sourceSpan: Object.freeze({
           startOffsetCodePoints: createIndex(index),
           endOffsetCodePoints: createIndex(index + 1),
