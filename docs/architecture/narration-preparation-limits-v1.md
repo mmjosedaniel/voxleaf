@@ -3,8 +3,8 @@
 ## Status
 
 Accepted by Milestone 5 Task 1.3 as a test-only policy and deterministic
-evidence gate. Task 2.1 now implements exhaustive package-internal semantic
-source traversal, but production profile enforcement, source-span tokens,
+evidence gate. Tasks 2.1-2.2 now implement exhaustive package-internal semantic
+source traversal and source-span tokens, but production profile enforcement,
 normalization, segmentation, and `OpenedPublication.prepareNarration` remain
 unimplemented.
 
