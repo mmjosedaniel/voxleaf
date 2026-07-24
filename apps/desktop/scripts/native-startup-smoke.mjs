@@ -1,7 +1,7 @@
 import console from "node:console";
 import { execFile, spawn } from "node:child_process";
 import { once } from "node:events";
-import { access, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, open, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
@@ -28,6 +28,7 @@ const INTERACTION_TIMEOUT_MS = 15_000;
 const OBSERVATION_WINDOW_MS = 500;
 const READER_PERFORMANCE_MODE = process.argv.includes("--reader-performance");
 const MEBIBYTE = 1_048_576;
+const MAX_LOCAL_EPUB_FILE_BYTES = 100 * MEBIBYTE;
 const NATIVE_BATCH_SCRIPT_LIMIT_MS = 16;
 const NATIVE_TARGET_READY_LIMIT_MS = 1_000;
 const NATIVE_TOTAL_RENDER_LIMIT_MS = 1_000;
@@ -60,6 +61,34 @@ const FIXED_FAILURE_CODES = new Map([
   [
     "Native application exposed the synthetic fixture filename.",
     "synthetic-filename-exposed",
+  ],
+  [
+    "Native application did not preserve the publication after picker cancellation.",
+    "native-picker-cancellation-failed",
+  ],
+  [
+    "Native application did not replace the ready publication.",
+    "native-publication-replacement-failed",
+  ],
+  [
+    "Native application did not reselect the same local file.",
+    "native-same-file-reselection-failed",
+  ],
+  [
+    "Native application did not cancel the stale local file read.",
+    "native-file-read-cancellation-failed",
+  ],
+  [
+    "Native application rejected the exact local file-size boundary before EPUB validation.",
+    "native-exact-file-size-failed",
+  ],
+  [
+    "Native application did not reject the local file-size maximum plus one.",
+    "native-over-limit-file-size-failed",
+  ],
+  [
+    "Native application did not recover after local file-ingress failures.",
+    "native-file-ingress-recovery-failed",
   ],
   [
     "Native publication raster image remained mounted after close.",
@@ -432,6 +461,295 @@ async function waitForCondition(
   }
 
   throw new WebDriverClientError("webdriver-condition-timeout");
+}
+
+async function createSizedDisposableFile(filePath, byteLength) {
+  const handle = await open(filePath, "wx");
+  try {
+    await handle.truncate(byteLength);
+  } finally {
+    await handle.close();
+  }
+}
+
+async function injectNativeFile(driver, filePath) {
+  const fileInput = await driver.findElement('input[type="file"]');
+  await driver.sendKeys(fileInput, filePath);
+}
+
+async function waitForReadyPublication(driver, title) {
+  await waitForCondition(
+    driver,
+    `const title = document.querySelector("#publication-title");
+     const reader = document.querySelector(".semantic-reader");
+     const shell = document.querySelector(".shell-card");
+     const status = document.querySelector('[role="status"]')?.textContent ?? "";
+     return title?.textContent === ${JSON.stringify(title)} &&
+       reader !== null &&
+       reader.getAttribute("aria-busy") !== "true" &&
+       shell?.getAttribute("aria-busy") !== "true" &&
+       status !== "Validating and opening the selected EPUB." &&
+       status !== "Restoring saved reader state.";`,
+  );
+}
+
+async function assertNativeFilePrivacy(driver, disposableNames) {
+  const observation = await driver.execute(
+    `const names = ${JSON.stringify(disposableNames)};
+     const text = document.body.textContent ?? "";
+     return {
+       inputCleared:
+         document.querySelector('input[type="file"]')?.value === "",
+       namesHidden: names.every((name) => !text.includes(name)),
+     };`,
+  );
+  assert(
+    observation?.inputCleared === true,
+    "Native application did not clear the synthetic file selection.",
+  );
+  assert(
+    observation?.namesHidden === true,
+    "Native application exposed the synthetic fixture filename.",
+  );
+}
+
+async function exerciseNativeFileIngressMatrix(driver, fixturePaths, setStage) {
+  setStage("native same-file reselection setup");
+  const originalImageSource = await driver.execute(
+    `return document.querySelector('img[alt="Synthetic cover"]')?.src ?? "";`,
+  );
+  assert(
+    typeof originalImageSource === "string" &&
+      originalImageSource.startsWith("blob:"),
+    "Native application did not reselect the same local file.",
+  );
+  await driver.execute(
+    `const originalRevoke = URL.revokeObjectURL.bind(URL);
+     const state = {
+       originalRevoke,
+       revoked: [],
+     };
+     URL.revokeObjectURL = (source) => {
+       state.revoked.push(String(source));
+       originalRevoke(source);
+     };
+     globalThis.__voxleafNativeReselection = state;
+     return true;`,
+  );
+
+  setStage("native same-file reselection");
+  await injectNativeFile(driver, fixturePaths.primary);
+  await waitForReadyPublication(driver, "Synthetic comprehensive publication");
+  await driver.execute(
+    `document.querySelector(".semantic-raster-host")
+       ?.scrollIntoView({ block: "center" });
+     return true;`,
+  );
+  await waitForCondition(
+    driver,
+    `const image = document.querySelector('img[alt="Synthetic cover"]');
+     return image?.src.startsWith("blob:") === true &&
+       image.src !== ${JSON.stringify(originalImageSource)};`,
+  );
+  const reselectionObservation = await driver.execute(
+    `const state = globalThis.__voxleafNativeReselection;
+     const image = document.querySelector('img[alt="Synthetic cover"]');
+     const observation = {
+       oldSourceRevoked:
+         state?.revoked?.includes(${JSON.stringify(originalImageSource)}) === true,
+       replacementSourceCreated:
+         image?.src.startsWith("blob:") === true &&
+         image.src !== ${JSON.stringify(originalImageSource)},
+     };
+     if (state?.originalRevoke !== undefined) {
+       URL.revokeObjectURL = state.originalRevoke;
+     }
+     delete globalThis.__voxleafNativeReselection;
+     return observation;`,
+  );
+  assert(
+    reselectionObservation?.oldSourceRevoked === true &&
+      reselectionObservation.replacementSourceCreated === true,
+    "Native application did not reselect the same local file.",
+  );
+
+  setStage("native picker cancellation");
+  const beforePickerCancellation = await driver.execute(
+    `return {
+       imageSource:
+         document.querySelector('img[alt="Synthetic cover"]')?.src ?? "",
+       status: document.querySelector('[role="status"]')?.textContent ?? "",
+       title: document.querySelector("#publication-title")?.textContent ?? "",
+     };`,
+  );
+  await driver.execute(
+    `document.querySelector('input[type="file"]')
+       ?.dispatchEvent(new Event("cancel", { bubbles: true }));
+     return true;`,
+  );
+  await delay(100);
+  const afterPickerCancellation = await driver.execute(
+    `return {
+       imageSource:
+         document.querySelector('img[alt="Synthetic cover"]')?.src ?? "",
+       status: document.querySelector('[role="status"]')?.textContent ?? "",
+       title: document.querySelector("#publication-title")?.textContent ?? "",
+     };`,
+  );
+  assert(
+    beforePickerCancellation?.title === "Synthetic comprehensive publication" &&
+      afterPickerCancellation?.title === beforePickerCancellation.title &&
+      afterPickerCancellation.status === beforePickerCancellation.status &&
+      afterPickerCancellation.imageSource ===
+        beforePickerCancellation.imageSource,
+    "Native application did not preserve the publication after picker cancellation.",
+  );
+
+  setStage("native ready publication replacement");
+  await injectNativeFile(driver, fixturePaths.replacement);
+  await waitForReadyPublication(driver, "Synthetic minimal publication");
+  assert(
+    (await driver.execute(
+      `return document.querySelector(".semantic-document h1")
+         ?.textContent === "Reflow fixture" &&
+       document.querySelector('img[alt="Synthetic cover"]') === null;`,
+    )) === true,
+    "Native application did not replace the ready publication.",
+  );
+
+  setStage("native ready publication replacement recovery");
+  await injectNativeFile(driver, fixturePaths.primary);
+  await waitForReadyPublication(driver, "Synthetic comprehensive publication");
+
+  setStage("native active file-read cancellation setup");
+  await driver.execute(
+    `const NativeFileReader = globalThis.FileReader;
+     const state = {
+       abortCount: 0,
+       claimed: false,
+       nativeFileReader: NativeFileReader,
+       reader: undefined,
+       started: false,
+     };
+     class ControlledFileReader {
+       constructor() {
+         if (state.claimed) {
+           return new NativeFileReader();
+         }
+         state.claimed = true;
+         const reader = {
+           onabort: null,
+           onerror: null,
+           onload: null,
+           readyState: NativeFileReader.EMPTY,
+           result: null,
+           abort() {
+             if (this.readyState !== NativeFileReader.LOADING) {
+               return;
+             }
+             state.abortCount += 1;
+             this.readyState = NativeFileReader.DONE;
+             this.onabort?.(new ProgressEvent("abort"));
+           },
+           readAsArrayBuffer() {
+             this.readyState = NativeFileReader.LOADING;
+             state.started = true;
+           },
+         };
+         state.reader = reader;
+         return reader;
+       }
+     }
+     Object.defineProperties(ControlledFileReader, {
+       DONE: { value: NativeFileReader.DONE },
+       EMPTY: { value: NativeFileReader.EMPTY },
+       LOADING: { value: NativeFileReader.LOADING },
+     });
+     globalThis.__voxleafNativeFileReadControl = state;
+     globalThis.FileReader = ControlledFileReader;
+     return true;`,
+  );
+  await injectNativeFile(driver, fixturePaths.replacement);
+  await waitForCondition(
+    driver,
+    `const state = globalThis.__voxleafNativeFileReadControl;
+     return state?.started === true &&
+       document.querySelector('[role="status"]')?.textContent ===
+         "Validating and opening the selected EPUB.";`,
+  );
+
+  setStage("native active file-read replacement");
+  await injectNativeFile(driver, fixturePaths.primary);
+  await waitForReadyPublication(driver, "Synthetic comprehensive publication");
+  const cancellationObservation = await driver.execute(
+    `const state = globalThis.__voxleafNativeFileReadControl;
+     const observation = {
+       abortCount: state?.abortCount ?? 0,
+       handlersCleared:
+         state?.reader?.onabort === null &&
+         state?.reader?.onerror === null &&
+         state?.reader?.onload === null,
+       started: state?.started === true,
+     };
+     if (state?.nativeFileReader !== undefined) {
+       globalThis.FileReader = state.nativeFileReader;
+     }
+     delete globalThis.__voxleafNativeFileReadControl;
+     return observation;`,
+  );
+  assert(
+    cancellationObservation?.started === true &&
+      cancellationObservation.abortCount === 1 &&
+      cancellationObservation.handlersCleared === true,
+    "Native application did not cancel the stale local file read.",
+  );
+
+  setStage("native exact local file-size boundary");
+  await injectNativeFile(driver, fixturePaths.exactLimit);
+  await waitForCondition(
+    driver,
+    `return document.querySelector('[role="status"]')?.textContent ===
+       "That file is not a valid supported EPUB.";`,
+  );
+  assert(
+    (await driver.execute(
+      `return document.querySelector('[role="status"]')?.textContent !==
+       "That file is larger than the 100 MiB EPUB limit.";`,
+    )) === true,
+    "Native application rejected the exact local file-size boundary before EPUB validation.",
+  );
+
+  setStage("native local file-size maximum plus one");
+  await injectNativeFile(driver, fixturePaths.overLimit);
+  await waitForCondition(
+    driver,
+    `return document.querySelector('[role="status"]')?.textContent ===
+       "That file is larger than the 100 MiB EPUB limit.";`,
+  );
+  assert(
+    (await driver.execute(
+      `return document.querySelector('[role="status"]')?.textContent ===
+       "That file is larger than the 100 MiB EPUB limit.";`,
+    )) === true,
+    "Native application did not reject the local file-size maximum plus one.",
+  );
+
+  setStage("native file-ingress failure recovery");
+  await injectNativeFile(driver, fixturePaths.primary);
+  await waitForReadyPublication(driver, "Synthetic comprehensive publication");
+  assert(
+    (await driver.execute(
+      `return document.querySelector("#publication-title")?.textContent ===
+         "Synthetic comprehensive publication" &&
+       document.querySelector(".semantic-reader") !== null;`,
+    )) === true,
+    "Native application did not recover after local file-ingress failures.",
+  );
+
+  await assertNativeFilePrivacy(
+    driver,
+    Object.values(fixturePaths).map((filePath) => path.basename(filePath)),
+  );
 }
 
 async function nativeReaderInteractionObservation(driver) {
@@ -1444,6 +1762,12 @@ async function run() {
   );
   const profileDirectory = path.join(temporaryDirectory, "webview-profile");
   const fixturePath = path.join(temporaryDirectory, "synthetic.epub");
+  const fileIngressFixturePaths = Object.freeze({
+    exactLimit: path.join(temporaryDirectory, "exact-limit.epub"),
+    overLimit: path.join(temporaryDirectory, "over-limit-file.epub"),
+    primary: fixturePath,
+    replacement: path.join(temporaryDirectory, "replacement.epub"),
+  });
   const performanceFixturePaths = Object.freeze({
     exact: path.join(temporaryDirectory, "exact.epub"),
     overLimit: path.join(temporaryDirectory, "over-limit.epub"),
@@ -1463,6 +1787,7 @@ async function run() {
   const {
     buildReaderLongChapterEpubFixture,
     buildReaderNavigationEpubFixture,
+    buildReaderReflowEpubFixture,
   } = await import(fixtureModuleUrl.href);
   await mkdir(profileDirectory);
   if (READER_PERFORMANCE_MODE) {
@@ -1484,9 +1809,27 @@ async function run() {
       }),
     ]);
   } else {
-    await writeFile(fixturePath, await buildReaderNavigationEpubFixture(), {
-      flag: "wx",
-    });
+    const [primaryFixture, replacementFixture] = await Promise.all([
+      buildReaderNavigationEpubFixture(),
+      buildReaderReflowEpubFixture({
+        paragraphCount: 4,
+        preservedPassageIndex: 2,
+      }),
+    ]);
+    await Promise.all([
+      writeFile(fixturePath, primaryFixture, { flag: "wx" }),
+      writeFile(fileIngressFixturePaths.replacement, replacementFixture, {
+        flag: "wx",
+      }),
+      createSizedDisposableFile(
+        fileIngressFixturePaths.exactLimit,
+        MAX_LOCAL_EPUB_FILE_BYTES,
+      ),
+      createSizedDisposableFile(
+        fileIngressFixturePaths.overLimit,
+        MAX_LOCAL_EPUB_FILE_BYTES + 1,
+      ),
+    ]);
   }
 
   const driverPort = await reserveLoopbackPort();
@@ -1640,6 +1983,15 @@ async function run() {
         `return document.body.textContent?.includes("synthetic.epub") ?? false;`,
       )) === false,
       "Native application exposed the synthetic fixture filename.",
+    );
+
+    stage = "native file-ingress lifecycle matrix";
+    await exerciseNativeFileIngressMatrix(
+      driver,
+      fileIngressFixturePaths,
+      (nextStage) => {
+        stage = nextStage;
+      },
     );
 
     stage = "native reader interaction matrix";
@@ -1823,7 +2175,7 @@ async function run() {
     );
 
     console.log(
-      "Native startup smoke passed: root mounted, narrow and accessible keyboard reader matrix passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication closed, no errors, no external requests.",
+      "Native startup smoke passed: root mounted, local file reselection/cancellation/replacement and exact/max-plus-one boundaries passed, narrow and accessible keyboard reader matrix passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication closed, no errors, no external requests.",
     );
   } catch (error) {
     console.error(

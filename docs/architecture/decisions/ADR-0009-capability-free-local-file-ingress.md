@@ -6,7 +6,7 @@ Accepted.
 
 ## Implementation status
 
-Implemented and connected to the production desktop open flow. The WebView input performs the bounded abortable read, the application open coordinator transfers caller-owned bytes to the publication-session owner, and only validated metadata or fixed content-free outcomes reach presentation. The Tauri shell still registers no command or plugin and grants no capability. Deterministic tests and packaged WebView2 startup evidence cover synthetic open/reselection/restoration; the broader native cancellation/replacement/100-MiB matrix remains the final Task 2.3 closeout evidence.
+Implemented and connected to the production desktop open flow. The WebView input performs the bounded abortable read, the application open coordinator transfers caller-owned bytes to the publication-session owner, and only validated metadata or fixed content-free outcomes reach presentation. The Tauri shell still registers no command or plugin and grants no capability. Deterministic tests and the checked-in packaged WebView2 startup matrix cover synthetic open, same-file reselection, picker cancellation, ready replacement, stale active-read abort, exact/max-plus-one size boundaries, recovery, restart restoration, input clearing, and filename privacy.
 
 ## Context
 
@@ -43,7 +43,7 @@ Task 1.2 initially stopped after proving that bounded bytes were ready. Tasks 2.
 
 Deterministic desktop tests cover the file-input accept hint, small reads, exact/max-plus-one size preflight, invalid sizes, byte-length mismatch, fixed failure mapping, active-read abort, picker cancellation, same-owner cleanup, stale-completion rejection, cleared input state, and absence of a private filename from rendered UI.
 
-The native Windows release probe built and launched the Tauri executable in WebView2 with the capability list still empty. Using disposable synthetic files outside the repository, it exercised a small selection, same-file reselection, exactly 104,857,600 bytes, 104,857,601 bytes, and cancellation. The release UI accepted the first three valid-size selections, rejected maximum plus one before reading, cleared the input, and contained none of the temporary filenames. The disposable files and one-off probe harness were removed after validation.
+The checked-in native Windows startup smoke builds and launches the Tauri executable in WebView2 with the capability list still empty. It creates disposable repository-authored valid EPUBs plus sparse files of exactly 104,857,600 and 104,857,601 bytes outside the repository. The matrix proves same-file reselection, picker cancellation, ready-publication replacement, exact-boundary passage to the fixed package-invalid outcome, max-plus-one rejection before reading, valid recovery, cleared input, and absence of every temporary filename. It makes active-read cancellation deterministic by substituting one pending test-controlled `FileReader` inside the packaged WebView, then proves replacement aborts and detaches that reader while the replacement and size cases use WebView2's native implementation. The isolated profile and disposable files are removed after every run; the harness emits only fixed stage/failure codes.
 
 The accepted focused validation was:
 

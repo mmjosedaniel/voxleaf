@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 3 are complete. Milestone 4's reader implementation and task-level evidence are complete except for the broader native file-open matrix retained by Task 2.3; documentation and final milestone-wide validation are in progress. Milestone 5 becomes the next implementation priority only after Milestone 4 closes. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 3 are complete. Milestone 4's reader implementation, broader native file-open matrix, documentation, and local milestone-wide validation are complete; Task 6.2 remains open only for the required pull-request CI evidence and final plan move. Milestone 5 becomes the next implementation priority only after Milestone 4 closes. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -121,7 +121,7 @@ Milestone 2 supplies the book, document, locator, error, and fixture contracts.
 
 ## Milestone 4: Deliver the reflowable visual reader and position restoration
 
-**Status:** Closeout in progress as of 2026-07-24. The visual reader, bounded persistence/restoration, deterministic/browser/native interaction coverage, and browser/native performance-resource evidence are implemented. Task 6.1 documentation is complete; Task 6.2 still owns the broader native Task 2.3 matrix, final repository/CI validation, privacy and scope audit, and plan closure.
+**Status:** Closeout in progress as of 2026-07-24. The visual reader, bounded persistence/restoration, deterministic/browser/native interaction coverage, browser/native performance-resource evidence, broader native Task 2.3 file-open matrix, and local Task 6.2 repository/privacy/scope validation are complete. Pull-request CI evidence and the final plan move remain before closure.
 
 ### Goal
 
@@ -142,8 +142,8 @@ Milestone 3 provides sanitized content and stable locators. Milestone 2 provides
 ### Remaining closeout risks
 
 - Preserve the implemented ADR-0008 direct semantic DOM boundary without reintroducing publisher markup, styles, URLs, DOM identifiers, rendered geometry, or prose in persisted state.
-- Complete Task 2.3's broader packaged native reselection, cancellation, replacement, and size-boundary evidence.
-- Re-run the focused, browser, packaged native, benchmark, root, and CI surfaces required by the active plan; accepted reference-host measurements are not universal hardware guarantees.
+- Confirm the expanded packaged native reselection, picker/active-read cancellation, replacement, and exact/max-plus-one size-boundary matrix passes in pull-request CI as it does locally.
+- Retain successful focused, browser, packaged native, benchmark, root, portable, and CI evidence in the active plan; accepted reference-host measurements are not universal hardware guarantees.
 - Reconfirm that ADR-0009 file ingress, ADR-0010 raster decode/lifetime, ADR-0011 bounded persistence, the 250-block scheduler, and the 10,000-block/80,000-node fallback remain intact.
 - Keep narration preparation, TTS, audio, highlighting, synchronization, and manual-navigation-during-narration policy deferred to their later roadmap milestones.
 
@@ -347,7 +347,7 @@ Durable decisions belong in architecture decision records. Temporary implementat
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or the milestone-specific M004 plan and does not authorize implementing all of those areas at once.
 
-Milestones 1 through 3 are complete, with their evidence retained in [`completed/M001-engineering-foundation.md`](completed/M001-engineering-foundation.md), [`completed/M002-shared-contracts-and-test-harness.md`](completed/M002-shared-contracts-and-test-harness.md), and [`completed/M003-secure-epub-ingestion-and-document-model.md`](completed/M003-secure-epub-ingestion-and-document-model.md). Milestone 4 implementation is complete except for Task 2.3's broader native evidence; its documentation and final validation closeout remain active in the M004 plan. Use the synchronized-reader plan only as later-milestone context. Milestone 5 begins after Milestone 4 closes.
+Milestones 1 through 3 are complete, with their evidence retained in [`completed/M001-engineering-foundation.md`](completed/M001-engineering-foundation.md), [`completed/M002-shared-contracts-and-test-harness.md`](completed/M002-shared-contracts-and-test-harness.md), and [`completed/M003-secure-epub-ingestion-and-document-model.md`](completed/M003-secure-epub-ingestion-and-document-model.md). Milestone 4 implementation and local closeout validation are complete; its M004 plan remains active only until pull-request CI passes and the final tested tree can be moved to completed. Use the synchronized-reader plan only as later-milestone context. Milestone 5 begins after Milestone 4 closes.
 
 ## MVP completion boundary
 
