@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "benchmark:reader": "playwright test --config playwright.benchmark.config.ts",
+    "benchmark:reader:native": "tauri build && node scripts/native-startup-smoke.mjs --reader-performance",
     "build": "vite build",
     "dev": "vite",
     "tauri": "tauri",

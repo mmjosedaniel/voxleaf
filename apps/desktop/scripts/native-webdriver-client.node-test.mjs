@@ -5,6 +5,7 @@ import { createServer } from "node:http";
 import test from "node:test";
 
 import {
+  runWebDriverInteractionWithRetry,
   WebDriverClient,
   WebDriverClientError,
 } from "./native-webdriver-client.mjs";
@@ -196,4 +197,73 @@ test("fails closed when a response does not contain a W3C session", async () => 
   } finally {
     await fake.stop();
   }
+});
+
+test("retries one timed-out interaction once before succeeding", async () => {
+  const attempts = [];
+  const timeouts = [];
+  let actionCount = 0;
+  let conditionCount = 0;
+
+  await runWebDriverInteractionWithRetry({
+    action: async () => {
+      actionCount += 1;
+    },
+    condition: async () => {
+      conditionCount += 1;
+      if (conditionCount === 1) {
+        throw new WebDriverClientError("webdriver-condition-timeout");
+      }
+    },
+    onAttempt: async (attempt, maximumAttempts) => {
+      attempts.push([attempt, maximumAttempts]);
+    },
+    onConditionTimeout: async (attempt, maximumAttempts) => {
+      timeouts.push([attempt, maximumAttempts]);
+    },
+  });
+
+  assert.equal(actionCount, 2);
+  assert.equal(conditionCount, 2);
+  assert.deepEqual(attempts, [
+    [1, 2],
+    [2, 2],
+  ]);
+  assert.deepEqual(timeouts, [[1, 2]]);
+});
+
+test("stops after the second timed-out interaction", async () => {
+  const attempts = [];
+  const timeouts = [];
+  let actionCount = 0;
+
+  await assert.rejects(
+    runWebDriverInteractionWithRetry({
+      action: async () => {
+        actionCount += 1;
+      },
+      condition: async () => {
+        throw new WebDriverClientError("webdriver-condition-timeout");
+      },
+      onAttempt: async (attempt, maximumAttempts) => {
+        attempts.push([attempt, maximumAttempts]);
+      },
+      onConditionTimeout: async (attempt, maximumAttempts) => {
+        timeouts.push([attempt, maximumAttempts]);
+      },
+    }),
+    (error) =>
+      error instanceof WebDriverClientError &&
+      error.code === "webdriver-condition-timeout",
+  );
+
+  assert.equal(actionCount, 2);
+  assert.deepEqual(attempts, [
+    [1, 2],
+    [2, 2],
+  ]);
+  assert.deepEqual(timeouts, [
+    [1, 2],
+    [2, 2],
+  ]);
 });

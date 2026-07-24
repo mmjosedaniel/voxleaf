@@ -145,6 +145,7 @@ pnpm.cmd test:browser:install
 pnpm.cmd test:browser
 pnpm.cmd test:native-startup
 pnpm.cmd benchmark:reader
+pnpm.cmd benchmark:reader:native
 pnpm.cmd --filter @voxleaf/desktop build
 cargo fmt --check --manifest-path apps/desktop/src-tauri/Cargo.toml
 cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets -- -D warnings
@@ -161,7 +162,7 @@ uv build services/tts
 
 `pnpm.cmd test:browser:install` is the explicit networked setup step for the Chromium revision coupled to the pinned Playwright package. It installs to Playwright's per-user cache and may also acquire matching headless-shell/support binaries. `pnpm.cmd test:browser` first builds `@voxleaf/shared` and `@voxleaf/epub`, then builds the Vite application, starts a loopback-only preview server on `http://127.0.0.1:4173`, runs the fixed Chromium smoke, and shuts the server and isolated browser context down. Building the workspace packages inside this root command keeps it valid after a clean frozen install where ignored `dist` outputs do not exist. Once installation succeeds, the test command is offline and never downloads a browser. If the matching browser is absent, it fails with setup guidance rather than acquiring it implicitly. Browser reports, traces, screenshots, and test results are ignored generated artifacts and must use only repository-authored synthetic content.
 
-`pnpm.cmd benchmark:reader` is the native-Windows, hardware-specific Task 1.6 benchmark. It is offline after browser installation and uses only test-generated DOM/text/raster data. It is intentionally excluded from root checks and CI; run it manually when changing reader rendering, batching, reflow/restoration, image lifecycle, browser version, or documented benchmark hardware. See [`testing.md`](testing.md#hardware-specific-visual-reader-benchmark) and the [visual-reader limits](../architecture/performance-budget.md#visual-reader-reference-limits) before interpreting its machine-specific results.
+`pnpm.cmd benchmark:reader` is the native-Windows, hardware-specific Chromium reader benchmark. It is offline after browser installation and uses only test-generated DOM/text/raster data. `pnpm.cmd benchmark:reader:native` builds the release executable and runs the companion packaged-WebView2 timing/resource matrix; it requires the same `tauri-driver` and matching Microsoft EdgeDriver setup as `pnpm.cmd test:native-startup`. Both commands are intentionally excluded from root checks and CI; run them manually when changing reader rendering, batching, reflow/restoration, image lifecycle, browser/WebView version, native driver behavior, or documented benchmark hardware. See [`testing.md`](testing.md#hardware-specific-visual-reader-benchmark) and the [visual-reader limits](../architecture/performance-budget.md#visual-reader-reference-limits) before interpreting their machine-specific results.
 
 For the ADR-0009 native file-ingress matrix, launch the built release executable and follow the disposable synthetic-file procedure in [`testing.md`](testing.md#native-local-file-ingress-probe). The probe must run natively on Windows, must not use a private book, and must not leave its synthetic files behind. It does not require or authorize a Tauri plugin, command, capability, or permanent automation dependency.
 
