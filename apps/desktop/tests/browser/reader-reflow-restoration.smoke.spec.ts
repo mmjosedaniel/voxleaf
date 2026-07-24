@@ -22,18 +22,9 @@ async function buildReflowFixture(): Promise<Uint8Array> {
     import.meta.url,
   );
   const fixtureModule = (await import(fixtureModuleUrl.href)) as {
-    buildMinimalEpubFixture(options?: {
-      readonly chapterDocument?: string;
-    }): Promise<Uint8Array>;
+    buildReaderRestorationEpubFixture(): Promise<Uint8Array>;
   };
-  const paragraphs = Array.from({ length: 36 }, (_, index) =>
-    index === 18
-      ? `<p>Preserved synthetic passage with enough words to wrap across several visual lines while preferences and viewport geometry change.</p>`
-      : `<p>Repository-authored reflow filler ${index + 1} with deterministic local text.</p>`,
-  ).join("");
-  return fixtureModule.buildMinimalEpubFixture({
-    chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Reflow</title></head><body><h1 id="chapter-one">Reflow fixture</h1>${paragraphs}</body></html>`,
-  });
+  return fixtureModule.buildReaderRestorationEpubFixture();
 }
 
 async function passageAtReadingLine(

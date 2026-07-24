@@ -9,12 +9,35 @@ import {
   buildComprehensiveEpubFixture,
   buildDeterministicZipFixture,
   buildMinimalEpubFixture,
+  buildReaderLongChapterEpubFixture,
+  buildReaderNavigationEpubFixture,
+  buildReaderRasterEpubFixture,
+  buildReaderReflowEpubFixture,
+  buildReaderRestorationEpubFixture,
+  READER_FIXTURE_EXPECTED_LOCATORS,
+  READER_SEMANTIC_BLOCK_LIMIT,
+  READER_SEMANTIC_BLOCK_OVER_LIMIT,
 } from "../../test-support/epub-fixture.js";
+import type { RasterImageResourceId } from "../document/document-model.js";
 import { openEpubPublication } from "../public/open-epub-publication.js";
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
+
+async function exactByteIdentity(bytes: Uint8Array) {
+  const digest = await globalThis.crypto.subtle.digest(
+    "SHA-256",
+    new Uint8Array(bytes),
+  );
+  return {
+    scheme: "sha256",
+    schemeVersion: 1,
+    value: Array.from(new Uint8Array(digest), (value) =>
+      value.toString(16).padStart(2, "0"),
+    ).join(""),
+  } as const;
+}
 
 describe("deterministic EPUB fixture support", () => {
   it("repeats byte-identical minimal and comprehensive EPUBs", async () => {
@@ -101,6 +124,175 @@ describe("deterministic EPUB fixture support", () => {
     }
     expect(worker).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("builds deterministic reader navigation, reflow, and restoration scenarios with independently authored locators", async () => {
+    const [navigationFirst, navigationSecond, reflow, restoration] =
+      await Promise.all([
+        buildReaderNavigationEpubFixture(),
+        buildReaderNavigationEpubFixture(),
+        buildReaderReflowEpubFixture(),
+        buildReaderRestorationEpubFixture(),
+      ]);
+
+    expect(navigationFirst).toEqual(navigationSecond);
+    expect(restoration).toEqual(reflow);
+
+    const [navigationResult, reflowResult] = await Promise.all([
+      openEpubPublication(navigationFirst),
+      openEpubPublication(reflow),
+    ]);
+    expect(navigationResult.ok).toBe(true);
+    expect(reflowResult.ok).toBe(true);
+    if (!navigationResult.ok || !reflowResult.ok) {
+      throw new Error("expected reader scenario fixture to open");
+    }
+    try {
+      expect(navigationResult.publication.book.identity).toEqual(
+        await exactByteIdentity(navigationFirst),
+      );
+      expect(reflowResult.publication.book.identity).toEqual(
+        await exactByteIdentity(reflow),
+      );
+      const navigationLocators = navigationResult.publication.locators.map(
+        ({ startLocator }) => ({
+          spineItemId: startLocator.spineItemId,
+          spineItemIndex: startLocator.spineItemIndex,
+          anchorIndex: startLocator.anchor.anchorIndex,
+          anchorValue: startLocator.anchor.value,
+          textOffsetCodePoints: startLocator.textOffsetCodePoints,
+        }),
+      );
+      expect(navigationLocators).toEqual(
+        expect.arrayContaining([
+          ...READER_FIXTURE_EXPECTED_LOCATORS.navigation,
+        ]),
+      );
+
+      const reflowLocator = reflowResult.publication.locators.find(
+        ({ startLocator }) =>
+          startLocator.anchor.value ===
+          READER_FIXTURE_EXPECTED_LOCATORS.reflow.anchorValue,
+      );
+      expect(reflowLocator).toBeDefined();
+      if (reflowLocator === undefined) {
+        throw new Error("expected reflow locator");
+      }
+      expect({
+        spineItemId: reflowLocator.startLocator.spineItemId,
+        spineItemIndex: reflowLocator.startLocator.spineItemIndex,
+        anchorIndex: reflowLocator.startLocator.anchor.anchorIndex,
+        anchorValue: reflowLocator.startLocator.anchor.value,
+        textOffsetCodePoints: reflowLocator.startLocator.textOffsetCodePoints,
+      }).toEqual(READER_FIXTURE_EXPECTED_LOCATORS.reflow);
+    } finally {
+      await navigationResult.publication.close();
+      await reflowResult.publication.close();
+    }
+  });
+
+  it("builds exact and maximum-plus-one reader chapters without changing the requested count", async () => {
+    const [
+      exactBytes,
+      repeatedExactBytes,
+      oversizedBytes,
+      repeatedOversizedBytes,
+    ] = await Promise.all([
+      buildReaderLongChapterEpubFixture({
+        semanticBlockCount: READER_SEMANTIC_BLOCK_LIMIT,
+        deepTargetBlockIndex: 8_999,
+      }),
+      buildReaderLongChapterEpubFixture({
+        semanticBlockCount: READER_SEMANTIC_BLOCK_LIMIT,
+        deepTargetBlockIndex: 8_999,
+      }),
+      buildReaderLongChapterEpubFixture({
+        semanticBlockCount: READER_SEMANTIC_BLOCK_OVER_LIMIT,
+      }),
+      buildReaderLongChapterEpubFixture({
+        semanticBlockCount: READER_SEMANTIC_BLOCK_OVER_LIMIT,
+      }),
+    ]);
+    expect(repeatedExactBytes).toEqual(exactBytes);
+    expect(repeatedOversizedBytes).toEqual(oversizedBytes);
+
+    const [exactResult, oversizedResult] = await Promise.all([
+      openEpubPublication(exactBytes),
+      openEpubPublication(oversizedBytes),
+    ]);
+    expect(exactResult.ok).toBe(true);
+    expect(oversizedResult.ok).toBe(true);
+    if (!exactResult.ok || !oversizedResult.ok) {
+      throw new Error("expected reader chapter fixture to open");
+    }
+    try {
+      expect(exactResult.publication.locators).toHaveLength(
+        READER_SEMANTIC_BLOCK_LIMIT,
+      );
+      expect(oversizedResult.publication.locators).toHaveLength(
+        READER_SEMANTIC_BLOCK_OVER_LIMIT,
+      );
+      expect(
+        exactResult.publication.resolveTarget({
+          documentId: "document:1",
+          fragment: "deep-target",
+        }),
+      ).toMatchObject({ status: "exact", reason: "fragment" });
+    } finally {
+      await exactResult.publication.close();
+      await oversizedResult.publication.close();
+    }
+  });
+
+  it("builds valid, missing-reference, and signature-mismatch local raster cases", async () => {
+    const [
+      validBytes,
+      repeatedValidBytes,
+      missingBytes,
+      repeatedMissingBytes,
+      mismatchBytes,
+      repeatedMismatchBytes,
+    ] = await Promise.all([
+      buildReaderRasterEpubFixture(),
+      buildReaderRasterEpubFixture(),
+      buildReaderRasterEpubFixture({ imageCase: "missing-reference" }),
+      buildReaderRasterEpubFixture({ imageCase: "missing-reference" }),
+      buildReaderRasterEpubFixture({ imageCase: "signature-mismatch" }),
+      buildReaderRasterEpubFixture({ imageCase: "signature-mismatch" }),
+    ]);
+    expect(repeatedValidBytes).toEqual(validBytes);
+    expect(repeatedMissingBytes).toEqual(missingBytes);
+    expect(repeatedMismatchBytes).toEqual(mismatchBytes);
+
+    const [validResult, missingResult, mismatchResult] = await Promise.all([
+      openEpubPublication(validBytes),
+      openEpubPublication(missingBytes),
+      openEpubPublication(mismatchBytes),
+    ]);
+    expect(validResult.ok).toBe(true);
+    expect(missingResult).toMatchObject({
+      ok: false,
+      detail: "broken-reference",
+    });
+    expect(mismatchResult.ok).toBe(true);
+    if (!validResult.ok || !mismatchResult.ok) {
+      throw new Error("expected local raster scenario fixture to open");
+    }
+    try {
+      await expect(
+        validResult.publication.readResource(
+          "resource:2" as RasterImageResourceId,
+        ),
+      ).resolves.toEqual(expect.any(Uint8Array));
+      await expect(
+        mismatchResult.publication.readResource(
+          "resource:2" as RasterImageResourceId,
+        ),
+      ).rejects.toMatchObject({ code: "malformed-package" });
+    } finally {
+      await validResult.publication.close();
+      await mismatchResult.publication.close();
+    }
   });
 
   it("supports explicit omitted and malformed high-level entries", async () => {

@@ -11,9 +11,9 @@ async function buildVisualLocatorFixture(): Promise<Uint8Array> {
     import.meta.url,
   );
   const fixtureModule = (await import(fixtureModuleUrl.href)) as {
-    buildComprehensiveEpubFixture(): Promise<Uint8Array>;
+    buildReaderNavigationEpubFixture(): Promise<Uint8Array>;
   };
-  return fixtureModule.buildComprehensiveEpubFixture();
+  return fixtureModule.buildReaderNavigationEpubFixture();
 }
 
 test("tracks real top, partial, between-block, and document-end geometry without side effects", async ({

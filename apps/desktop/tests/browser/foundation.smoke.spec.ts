@@ -11,9 +11,9 @@ async function buildNavigationFixture(): Promise<Uint8Array> {
     import.meta.url,
   );
   const fixtureModule = (await import(fixtureModuleUrl.href)) as {
-    buildComprehensiveEpubFixture(): Promise<Uint8Array>;
+    buildReaderNavigationEpubFixture(): Promise<Uint8Array>;
   };
-  return fixtureModule.buildComprehensiveEpubFixture();
+  return fixtureModule.buildReaderNavigationEpubFixture();
 }
 
 test("controls the browser boundary and exposes the local EPUB open shell", async ({
