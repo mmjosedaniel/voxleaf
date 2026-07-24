@@ -9,6 +9,7 @@
   },
   "scripts": {
     "benchmark:reader": "pnpm run build:packages && pnpm --filter @voxleaf/desktop benchmark:reader",
+    "benchmark:reader:native": "pnpm run build:packages && pnpm --filter @voxleaf/desktop benchmark:reader:native",
     "build": "pnpm run build:packages && pnpm run build:desktop && pnpm run build:python",
     "build:desktop": "pnpm --filter @voxleaf/desktop tauri build",
     "build:packages": "pnpm --filter @voxleaf/epub --filter @voxleaf/shared build",

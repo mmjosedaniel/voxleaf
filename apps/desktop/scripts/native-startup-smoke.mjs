@@ -1,5 +1,5 @@
 import console from "node:console";
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { once } from "node:events";
 import { access, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -9,6 +9,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL, URL } from "node:url";
 
 import {
+  runWebDriverInteractionWithRetry,
   WebDriverClient,
   WebDriverClientError,
 } from "./native-webdriver-client.mjs";
@@ -23,7 +24,19 @@ const executablePath = path.join(
   "voxleaf-desktop.exe",
 );
 const STARTUP_TIMEOUT_MS = 90_000;
+const INTERACTION_TIMEOUT_MS = 15_000;
 const OBSERVATION_WINDOW_MS = 500;
+const READER_PERFORMANCE_MODE = process.argv.includes("--reader-performance");
+const MEBIBYTE = 1_048_576;
+const NATIVE_BATCH_SCRIPT_LIMIT_MS = 16;
+const NATIVE_TARGET_READY_LIMIT_MS = 1_000;
+const NATIVE_TOTAL_RENDER_LIMIT_MS = 1_000;
+const NATIVE_REFLOW_LIMIT_MS = 250;
+const NATIVE_LIVE_DOM_NODE_LIMIT = 80_000;
+const NATIVE_COMBINED_WORKING_SET_LIMIT_BYTES = 208 * MEBIBYTE;
+const NATIVE_RESOURCE_STRESS_CYCLES = 6;
+const NATIVE_RESOURCE_HEAP_GROWTH_LIMIT_BYTES = 8 * MEBIBYTE;
+const NATIVE_RESOURCE_WORKING_SET_GROWTH_LIMIT_BYTES = 32 * MEBIBYTE;
 const WEBDRIVER_TAB = "\uE004";
 const WEBDRIVER_ENTER = "\uE007";
 const WEBDRIVER_SPACE = "\uE00D";
@@ -104,6 +117,22 @@ const FIXED_FAILURE_CODES = new Map([
     "Native reader preferences were not persisted or restored.",
     "synthetic-preferences-not-restored",
   ],
+  [
+    "Native reader performance metrics were unavailable.",
+    "reader-performance-metrics-unavailable",
+  ],
+  [
+    "Native reader exceeded the approved performance limits.",
+    "reader-performance-limit-exceeded",
+  ],
+  [
+    "Native reader resources remained active after close.",
+    "reader-resource-release-failed",
+  ],
+  [
+    "Native over-limit reader recovery failed.",
+    "reader-over-limit-recovery-failed",
+  ],
   ["Native application root did not mount.", "application-root-not-mounted"],
   [
     "Native application main landmark is not visible.",
@@ -134,6 +163,179 @@ function failureCode(error) {
     return "unexpected-error";
   }
   return FIXED_FAILURE_CODES.get(error.message) ?? "unexpected-error";
+}
+
+function executeText(file, args) {
+  return new Promise((resolve, reject) => {
+    execFile(file, args, { encoding: "utf8" }, (error, stdout) => {
+      if (error !== null) {
+        reject(
+          new Error("Native reader performance metrics were unavailable."),
+        );
+        return;
+      }
+      resolve(stdout);
+    });
+  });
+}
+
+function rounded(value) {
+  return Math.round(value * 100) / 100;
+}
+
+function memoryDelta(baseline, final) {
+  return Object.freeze({
+    domNodes: final.domNodes - baseline.domNodes,
+    jsHeapBytes: Math.max(0, final.jsHeapBytes - baseline.jsHeapBytes),
+    workingSetBytes: Math.max(
+      0,
+      final.workingSetBytes - baseline.workingSetBytes,
+    ),
+  });
+}
+
+async function processWorkingSetBytes(rootProcessId) {
+  assert(
+    Number.isSafeInteger(rootProcessId) && rootProcessId > 0,
+    "Native reader performance metrics were unavailable.",
+  );
+  const measurementQuery = [
+    `$rootProcessId = ${String(rootProcessId)}`,
+    "$processes = Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId",
+    "$processIds = [System.Collections.Generic.HashSet[int]]::new()",
+    "[void]$processIds.Add($rootProcessId)",
+    "do { $added = $false; foreach ($candidate in $processes) { if ($processIds.Contains([int]$candidate.ParentProcessId) -and $processIds.Add([int]$candidate.ProcessId)) { $added = $true } } } while ($added)",
+    "$measurement = Get-Process -Id @($processIds) -ErrorAction SilentlyContinue | Measure-Object -Property WorkingSet64 -Sum",
+    "$sum = $measurement.Sum",
+    "if ($null -eq $sum) { $sum = 0 }",
+    "[Console]::Out.Write([int64]$sum)",
+  ].join("; ");
+  const output = await executeText("powershell.exe", [
+    "-NoProfile",
+    "-NonInteractive",
+    "-Command",
+    measurementQuery,
+  ]);
+  const workingSetBytes = Number(output.trim());
+  assert(
+    Number.isSafeInteger(workingSetBytes) && workingSetBytes > 0,
+    "Native reader performance metrics were unavailable.",
+  );
+  return workingSetBytes;
+}
+
+async function nativeMemorySnapshot(driver, rootProcessId, setStage, label) {
+  setStage(`${label} garbage collection`);
+  await driver.executeCdp("HeapProfiler.collectGarbage");
+  setStage(`${label} performance enablement`);
+  await driver.executeCdp("Performance.enable");
+  setStage(`${label} performance metrics`);
+  const performanceMetrics = await driver.executeCdp("Performance.getMetrics");
+  setStage(`${label} DOM counters`);
+  const domCounters = await driver.executeCdp("Memory.getDOMCounters");
+  const jsHeapBytes = performanceMetrics?.metrics?.find(
+    (metric) => metric.name === "JSHeapUsedSize",
+  )?.value;
+  assert(
+    Number.isFinite(jsHeapBytes) &&
+      Number.isSafeInteger(domCounters?.nodes) &&
+      domCounters.nodes > 0,
+    "Native reader performance metrics were unavailable.",
+  );
+  return Object.freeze({
+    domNodes: domCounters.nodes,
+    jsHeapBytes: Math.round(jsHeapBytes),
+    workingSetBytes: await processWorkingSetBytes(rootProcessId),
+  });
+}
+
+async function installNativeResourceInstrumentation(driver) {
+  const installed = await driver.execute(
+    `if (globalThis.__voxleafNativeResourceInstrumentation !== undefined) {
+       return true;
+     }
+     const activeIntersectionObservers = new Set();
+     const activeObjectUrls = new Set();
+     const activeResizeObservers = new Set();
+     const instrumentation = {
+       activeIntersectionObservers,
+       activeObjectUrls,
+       activeResizeObservers,
+       storageWrites: 0,
+     };
+     Object.defineProperty(
+       globalThis,
+       "__voxleafNativeResourceInstrumentation",
+       { configurable: false, value: instrumentation },
+     );
+     const originalCreateObjectUrl = URL.createObjectURL.bind(URL);
+     const originalRevokeObjectUrl = URL.revokeObjectURL.bind(URL);
+     URL.createObjectURL = (object) => {
+       const objectUrl = originalCreateObjectUrl(object);
+       activeObjectUrls.add(objectUrl);
+       return objectUrl;
+     };
+     URL.revokeObjectURL = (objectUrl) => {
+       activeObjectUrls.delete(objectUrl);
+       originalRevokeObjectUrl(objectUrl);
+     };
+     const OriginalResizeObserver = globalThis.ResizeObserver;
+     globalThis.ResizeObserver = class extends OriginalResizeObserver {
+       constructor(callback) {
+         super(callback);
+         activeResizeObservers.add(this);
+       }
+       disconnect() {
+         activeResizeObservers.delete(this);
+         super.disconnect();
+       }
+     };
+     const OriginalIntersectionObserver = globalThis.IntersectionObserver;
+     globalThis.IntersectionObserver = class extends OriginalIntersectionObserver {
+       constructor(callback, options) {
+         super(callback, options);
+         activeIntersectionObservers.add(this);
+       }
+       disconnect() {
+         activeIntersectionObservers.delete(this);
+         super.disconnect();
+       }
+     };
+     const originalSetItem = Storage.prototype.setItem;
+     Storage.prototype.setItem = function (key, value) {
+       if (key.startsWith("voxleaf.reader.")) {
+         instrumentation.storageWrites += 1;
+       }
+       originalSetItem.call(this, key, value);
+     };
+     return true;`,
+  );
+  assert(
+    installed === true,
+    "Native reader performance metrics were unavailable.",
+  );
+}
+
+async function nativeResourceInstrumentation(driver) {
+  const result = await driver.execute(
+    `const instrumentation =
+       globalThis.__voxleafNativeResourceInstrumentation;
+     if (instrumentation === undefined) {
+       return undefined;
+     }
+     return {
+       activeIntersectionObservers:
+         instrumentation.activeIntersectionObservers.size,
+       activeObjectUrls: instrumentation.activeObjectUrls.size,
+       activeResizeObservers: instrumentation.activeResizeObservers.size,
+       storageWrites: instrumentation.storageWrites,
+     };`,
+  );
+  assert(
+    result !== undefined,
+    "Native reader performance metrics were unavailable.",
+  );
+  return result;
 }
 
 function isLocalApplicationUrl(rawUrl) {
@@ -215,8 +417,12 @@ async function waitForDriver(endpoint, child, spawnState) {
   throw new Error("Tauri WebDriver did not become ready.");
 }
 
-async function waitForCondition(driver, script) {
-  const deadline = Date.now() + STARTUP_TIMEOUT_MS;
+async function waitForCondition(
+  driver,
+  script,
+  timeoutMs = STARTUP_TIMEOUT_MS,
+) {
+  const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
     if ((await driver.execute(script)) === true) {
@@ -226,6 +432,85 @@ async function waitForCondition(driver, script) {
   }
 
   throw new WebDriverClientError("webdriver-condition-timeout");
+}
+
+async function nativeReaderInteractionObservation(driver) {
+  try {
+    return await driver.execute(
+      `const activeElement = document.activeElement;
+       const controls = Object.fromEntries(
+         Array.from(
+           document.querySelectorAll(".reader-preferences select[name]"),
+         ).map((control) => [control.name, control.value]),
+       );
+       let preferencesPersisted = false;
+       try {
+         const serialized = localStorage.getItem(
+           "voxleaf.reader.preferences",
+         );
+         preferencesPersisted =
+           serialized !== null &&
+           JSON.parse(serialized)?.version === 1;
+       } catch {
+         preferencesPersisted = false;
+       }
+       return {
+         activeElement: {
+           className:
+             activeElement instanceof HTMLElement
+               ? activeElement.className
+               : "",
+           name: activeElement?.getAttribute("name") ?? "",
+           tagName: activeElement?.tagName ?? "",
+         },
+         controls,
+         headingCount: document.querySelectorAll("h1, h2").length,
+         preferencesPersisted,
+         readerPresent:
+           document.querySelector(".semantic-reader") !== null,
+         scroll: {
+           maximumY: Math.max(
+             0,
+             document.documentElement.scrollHeight - window.innerHeight,
+           ),
+           y: window.scrollY,
+         },
+         viewport: {
+           height: window.innerHeight,
+           scale: window.visualViewport?.scale ?? 1,
+           width: window.innerWidth,
+         },
+       };`,
+    );
+  } catch {
+    return { observation: "unavailable" };
+  }
+}
+
+async function runNativeReaderInteraction({
+  action,
+  condition,
+  driver,
+  label,
+  setStage,
+}) {
+  await runWebDriverInteractionWithRetry({
+    action,
+    condition: async () => {
+      await waitForCondition(driver, condition, INTERACTION_TIMEOUT_MS);
+    },
+    onAttempt: async (attempt, maximumAttempts) => {
+      setStage(
+        `native reader ${label} (attempt ${String(attempt)} of ${String(maximumAttempts)})`,
+      );
+    },
+    onConditionTimeout: async (attempt, maximumAttempts) => {
+      const observation = await nativeReaderInteractionObservation(driver);
+      console.error(
+        `Native reader condition timed out during ${label} (attempt ${String(attempt)} of ${String(maximumAttempts)}): ${JSON.stringify(observation)}`,
+      );
+    },
+  });
 }
 
 async function observeSavedPositionRestoration(driver) {
@@ -295,12 +580,17 @@ async function observeSavedPositionRestoration(driver) {
   return observation;
 }
 
-async function exerciseNativeReaderInteractionMatrix(driver) {
-  await driver.setWindowRect(320, 640);
-  await waitForCondition(
+async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
+  await runNativeReaderInteraction({
+    action: async () => {
+      await driver.setWindowRect(320, 640);
+    },
+    condition: `return window.innerWidth <= 360 && window.innerHeight <= 680;`,
     driver,
-    `return window.innerWidth <= 360 && window.innerHeight <= 680;`,
-  );
+    label: "narrow viewport settlement",
+    setStage,
+  });
+  setStage("native reader narrow viewport assertion");
   const narrowLayout = await driver.execute(
     `const reader = document.querySelector(".semantic-reader");
      const article = document.querySelector(".semantic-document");
@@ -327,26 +617,36 @@ async function exerciseNativeReaderInteractionMatrix(driver) {
   );
 
   const initialUrl = await driver.execute(`return window.location.href;`);
-  const skipLink = await driver.findElement("a.reader-skip-link");
-  await driver.sendKeys(skipLink, WEBDRIVER_ENTER);
-  await waitForCondition(
-    driver,
-    `return document.activeElement?.matches(
+  await runNativeReaderInteraction({
+    action: async () => {
+      const skipLink = await driver.findElement("a.reader-skip-link");
+      await driver.sendKeys(skipLink, WEBDRIVER_ENTER);
+    },
+    condition: `return document.activeElement?.matches(
        'article.semantic-document[aria-label="Current reading section"]',
      ) === true;`,
-  );
+    driver,
+    label: "skip-link focus transfer",
+    setStage,
+  });
+  setStage("native reader skip-link URL assertion");
   assert(
     (await driver.execute(`return window.location.href;`)) === initialUrl,
     "Native reader skip or return navigation was not keyboard operable.",
   );
 
-  const article = await driver.findElement("article.semantic-document");
   const scrollBefore = await driver.execute(`return window.scrollY;`);
-  await driver.sendKeys(article, WEBDRIVER_PAGE_DOWN);
-  await waitForCondition(
+  await runNativeReaderInteraction({
+    action: async () => {
+      const article = await driver.findElement("article.semantic-document");
+      await driver.sendKeys(article, WEBDRIVER_PAGE_DOWN);
+    },
+    condition: `return window.scrollY > ${Number(scrollBefore)};`,
     driver,
-    `return window.scrollY > ${Number(scrollBefore)};`,
-  );
+    label: "PageDown scrolling",
+    setStage,
+  });
+  setStage("native reader PageDown focus assertion");
   assert(
     (await driver.execute(
       `return document.activeElement?.matches(
@@ -356,33 +656,46 @@ async function exerciseNativeReaderInteractionMatrix(driver) {
     "Native reader did not preserve native scrolling-key behavior.",
   );
 
-  const returnLink = await driver.findElement("a.reader-return-link");
-  await driver.sendKeys(returnLink, WEBDRIVER_ENTER);
-  await waitForCondition(
-    driver,
-    `return document.activeElement?.matches(
+  await runNativeReaderInteraction({
+    action: async () => {
+      const returnLink = await driver.findElement("a.reader-return-link");
+      await driver.sendKeys(returnLink, WEBDRIVER_ENTER);
+    },
+    condition: `return document.activeElement?.matches(
        'nav.reader-toc[aria-label="Table of contents"]',
      ) === true;`,
-  );
+    driver,
+    label: "return-link focus transfer",
+    setStage,
+  });
+  setStage("native reader return-link URL assertion");
   assert(
     (await driver.execute(`return window.location.href;`)) === initialUrl,
     "Native reader skip or return navigation was not keyboard operable.",
   );
 
+  setStage("native reader preference-control keyboard order");
+  const skipLink = await driver.findElement("a.reader-skip-link");
   await driver.sendKeys(skipLink, WEBDRIVER_TAB);
-  const textScaleControl = await driver.findElement('select[name="textScale"]');
+  let textScaleControl = await driver.findElement('select[name="textScale"]');
   assert(
     (await driver.execute(
       `return document.activeElement?.getAttribute("name") === "textScale";`,
     )) === true,
     "Native reader controls did not expose the approved keyboard order.",
   );
-  await driver.sendKeys(textScaleControl, WEBDRIVER_END);
-  await waitForCondition(
-    driver,
-    `return document.querySelector('select[name="textScale"]')?.value ===
+  await runNativeReaderInteraction({
+    action: async () => {
+      textScaleControl = await driver.findElement('select[name="textScale"]');
+      await driver.sendKeys(textScaleControl, WEBDRIVER_END);
+    },
+    condition: `return document.querySelector('select[name="textScale"]')?.value ===
        "extra-large";`,
-  );
+    driver,
+    label: "text-scale keyboard selection",
+    setStage,
+  });
+  setStage("native reader remaining preference-control keyboard order");
   let activeControl = textScaleControl;
   for (const expectedName of ["lineSpacing", "contentWidth", "theme"]) {
     await driver.sendKeys(activeControl, WEBDRIVER_TAB);
@@ -401,51 +714,67 @@ async function exerciseNativeReaderInteractionMatrix(driver) {
     tocLinks.length >= 2,
     "Native reader navigation was not keyboard operable.",
   );
-  await driver.sendKeys(tocLinks[1], WEBDRIVER_ENTER);
-  await waitForCondition(
-    driver,
-    `return Array.from(document.querySelectorAll("h1")).some(
+  await runNativeReaderInteraction({
+    action: async () => {
+      const links = await driver.findElements("button.reader-toc-link");
+      assert(
+        links.length >= 2,
+        "Native reader navigation was not keyboard operable.",
+      );
+      await driver.sendKeys(links[1], WEBDRIVER_ENTER);
+    },
+    condition: `return Array.from(document.querySelectorAll("h1")).some(
        (heading) =>
          heading.textContent === "Continuation" &&
          document.activeElement === heading,
      );`,
-  );
-  const previousChapter = await driver.findElement(
-    ".reader-chapter-controls button:first-child",
-  );
-  await driver.sendKeys(previousChapter, WEBDRIVER_SPACE);
-  await waitForCondition(
     driver,
-    `return Array.from(document.querySelectorAll("h1")).some(
+    label: "table-of-contents destination focus",
+    setStage,
+  });
+  await runNativeReaderInteraction({
+    action: async () => {
+      const previousChapter = await driver.findElement(
+        ".reader-chapter-controls button:first-child",
+      );
+      await driver.sendKeys(previousChapter, WEBDRIVER_SPACE);
+    },
+    condition: `return Array.from(document.querySelectorAll("h1")).some(
        (heading) =>
          heading.textContent === "Opening" &&
          document.activeElement === heading,
      );`,
-  );
-
-  assert(
-    (await driver.execute(
-      `const values = {
-         textScale: "extra-large",
-         lineSpacing: "spacious",
-         contentWidth: "narrow",
-         theme: "system",
-       };
-       for (const [name, value] of Object.entries(values)) {
-         const control = document.querySelector(\`select[name="\${name}"]\`);
-         if (!(control instanceof HTMLSelectElement)) {
-           return false;
-         }
-         control.value = value;
-         control.dispatchEvent(new Event("change", { bubbles: true }));
-       }
-       return true;`,
-    )) === true,
-    "Native reader preferences were not persisted or restored.",
-  );
-  await waitForCondition(
     driver,
-    `const serialized = localStorage.getItem("voxleaf.reader.preferences");
+    label: "previous-chapter destination focus",
+    setStage,
+  });
+
+  await runNativeReaderInteraction({
+    action: async () => {
+      assert(
+        (await driver.execute(
+          `const values = {
+             textScale: "extra-large",
+             lineSpacing: "spacious",
+             contentWidth: "narrow",
+             theme: "system",
+           };
+           for (const [name, value] of Object.entries(values)) {
+             const control = document.querySelector(\`select[name="\${name}"]\`);
+             if (!(control instanceof HTMLSelectElement)) {
+               return false;
+             }
+             control.value = value;
+             control.dispatchEvent(new Event("change", { bubbles: true }));
+           }
+           return true;`,
+        )) === true,
+        "Native reader preferences were not persisted or restored.",
+      );
+    },
+    condition: `const serialized = localStorage.getItem(
+       "voxleaf.reader.preferences",
+     );
      if (serialized === null) {
        return false;
      }
@@ -454,8 +783,12 @@ async function exerciseNativeReaderInteractionMatrix(driver) {
        preferences?.lineSpacing === "spacious" &&
        preferences?.contentWidth === "narrow" &&
        preferences?.theme === "system";`,
-  );
+    driver,
+    label: "preference persistence",
+    setStage,
+  });
 
+  setStage("native reader accessibility media assertion");
   await driver.executeCdp("Emulation.setEmulatedMedia", {
     media: "",
     features: [
@@ -495,6 +828,7 @@ async function exerciseNativeReaderInteractionMatrix(driver) {
       accessibilityMedia.outlineWidth > 0,
     "Native reader accessibility media behavior was unavailable.",
   );
+  setStage("native reader zoom assertion");
   await driver.executeCdp("Emulation.setPageScaleFactor", {
     pageScaleFactor: 1.25,
   });
@@ -528,6 +862,514 @@ async function exerciseNativeReaderInteractionMatrix(driver) {
     features: [],
   });
   await driver.setWindowRect(960, 720);
+}
+
+async function beginNativeRenderInstrumentation(driver) {
+  const startedAt = await driver.execute(
+    `const originalRequestAnimationFrame =
+       globalThis.__voxleafNativeOriginalRequestAnimationFrame ??
+       globalThis.requestAnimationFrame.bind(globalThis);
+     if (globalThis.__voxleafNativeOriginalRequestAnimationFrame === undefined) {
+       Object.defineProperty(
+         globalThis,
+         "__voxleafNativeOriginalRequestAnimationFrame",
+         { configurable: false, value: originalRequestAnimationFrame },
+       );
+       globalThis.requestAnimationFrame = (callback) =>
+         originalRequestAnimationFrame((timestamp) => {
+           const instrumentation =
+             globalThis.__voxleafNativeRenderInstrumentation;
+           const callbackStartedAt = performance.now();
+           if (instrumentation?.active === true) {
+             instrumentation.pendingBatchStartedAt = callbackStartedAt;
+           }
+           callback(timestamp);
+           if (instrumentation?.active === true) {
+             instrumentation.callbackDurations.push(
+               performance.now() - callbackStartedAt,
+             );
+           }
+         });
+     }
+     globalThis.__voxleafNativeRenderObserver?.disconnect();
+     const instrumentation = {
+       active: true,
+       selectionStartedAt: performance.now(),
+       firstContentAt: 0,
+       completeAt: 0,
+       callbackDurations: [],
+       pendingBatchStartedAt: 0,
+       batchCommitDurations: [],
+       previousRenderedBlocks: 0,
+     };
+     Object.defineProperty(
+       globalThis,
+       "__voxleafNativeRenderInstrumentation",
+       { configurable: true, value: instrumentation },
+     );
+     const observeProgress = () => {
+       const article = document.querySelector(".semantic-document");
+       const renderedBlocks = article?.children.length ?? 0;
+       if (renderedBlocks > 0 && instrumentation.firstContentAt === 0) {
+         instrumentation.firstContentAt = performance.now();
+       }
+       if (
+         renderedBlocks === 10000 &&
+         document.querySelector(".reader-rendering-status") === null
+       ) {
+         instrumentation.completeAt = performance.now();
+       }
+       if (
+         renderedBlocks > instrumentation.previousRenderedBlocks &&
+         instrumentation.previousRenderedBlocks > 0 &&
+         instrumentation.pendingBatchStartedAt > 0
+       ) {
+         instrumentation.batchCommitDurations.push(
+           performance.now() - instrumentation.pendingBatchStartedAt,
+         );
+         instrumentation.pendingBatchStartedAt = 0;
+       }
+       instrumentation.previousRenderedBlocks = renderedBlocks;
+     };
+     const observer = new MutationObserver(observeProgress);
+     observer.observe(document.body, { childList: true, subtree: true });
+     Object.defineProperty(
+       globalThis,
+       "__voxleafNativeRenderObserver",
+       { configurable: true, value: observer },
+     );
+     return instrumentation.selectionStartedAt;`,
+  );
+  assert(
+    Number.isFinite(startedAt),
+    "Native reader performance metrics were unavailable.",
+  );
+  return startedAt;
+}
+
+async function finishNativeRenderInstrumentation(driver) {
+  const measurement = await driver.execute(
+    `const instrumentation =
+       globalThis.__voxleafNativeRenderInstrumentation;
+     globalThis.__voxleafNativeRenderObserver?.disconnect();
+     if (instrumentation === undefined) {
+       return undefined;
+     }
+     instrumentation.active = false;
+     return {
+       selectionStartedAt: instrumentation.selectionStartedAt,
+       firstContentAt: instrumentation.firstContentAt,
+       completeAt: instrumentation.completeAt,
+       callbackDurations: [...instrumentation.callbackDurations],
+       batchCommitDurations: [...instrumentation.batchCommitDurations],
+     };`,
+  );
+  assert(
+    measurement !== undefined &&
+      measurement.firstContentAt > measurement.selectionStartedAt &&
+      measurement.completeAt > measurement.firstContentAt,
+    "Native reader performance metrics were unavailable.",
+  );
+  return measurement;
+}
+
+async function closeNativePublication(driver) {
+  assert(
+    (await driver.execute(
+      `const closeButton = document.querySelector("button.close-publication");
+       if (!(closeButton instanceof HTMLButtonElement)) {
+         return false;
+       }
+       closeButton.click();
+       return true;`,
+    )) === true,
+    "Native reader performance metrics were unavailable.",
+  );
+  await waitForCondition(
+    driver,
+    `return document.querySelector('[role="status"]')?.textContent ===
+       "No local EPUB is open.";`,
+  );
+}
+
+async function runNativeReaderPerformanceBenchmark(
+  driver,
+  fixtures,
+  rootProcessId,
+  setStage,
+) {
+  setStage("native reader performance instrumentation");
+  await driver.setWindowRect(1_280, 720);
+  await installNativeResourceInstrumentation(driver);
+  await driver.execute(
+    `localStorage.removeItem("voxleaf.reader.positions");
+     localStorage.removeItem("voxleaf.reader.preferences");
+     return true;`,
+  );
+  setStage("native reader baseline memory measurement");
+  const baseline = await nativeMemorySnapshot(
+    driver,
+    rootProcessId,
+    setStage,
+    "native reader baseline",
+  );
+
+  setStage("native exact-limit render measurement");
+  await beginNativeRenderInstrumentation(driver);
+  const exactInput = await driver.findElement('input[type="file"]');
+  await driver.sendKeys(exactInput, fixtures.exact);
+  await waitForCondition(
+    driver,
+    `const article = document.querySelector(".semantic-document");
+     return article !== null && article.children.length >= 250;`,
+  );
+  const deepTargetLinks = await driver.execute(
+    `return document.querySelectorAll("button.reader-toc-link").length;`,
+  );
+  assert(
+    deepTargetLinks >= 2,
+    "Native reader performance metrics were unavailable.",
+  );
+  const targetStartedAt = await driver.execute(`return performance.now();`);
+  await driver.execute(
+    `document.querySelectorAll("button.reader-toc-link")[1]?.click();
+     return true;`,
+  );
+  await waitForCondition(
+    driver,
+    `return Array.from(document.querySelectorAll("h2")).some(
+       (heading) =>
+         heading.textContent === "Deep target" &&
+         document.activeElement === heading,
+     );`,
+  );
+  const targetReadyMs =
+    (await driver.execute(`return performance.now();`)) - targetStartedAt;
+  await waitForCondition(
+    driver,
+    `const article = document.querySelector(".semantic-document");
+     return article?.children.length === 10000 &&
+       document.querySelector(".reader-rendering-status") === null;`,
+  );
+  const renderInstrumentation = await finishNativeRenderInstrumentation(driver);
+  const exactFinal = await nativeMemorySnapshot(
+    driver,
+    rootProcessId,
+    setStage,
+    "native exact-limit final",
+  );
+  const exactMemoryDelta = memoryDelta(baseline, exactFinal);
+  const maximumBatchScriptMs = Math.max(
+    0,
+    ...renderInstrumentation.batchCommitDurations,
+  );
+  const maximumSchedulerCallbackMs = Math.max(
+    0,
+    ...renderInstrumentation.callbackDurations,
+  );
+  const selectionToFirstContentMs =
+    renderInstrumentation.firstContentAt -
+    renderInstrumentation.selectionStartedAt;
+  const incrementalAppendMs =
+    renderInstrumentation.completeAt - renderInstrumentation.firstContentAt;
+  const preferenceReflowMs = await driver.execute(
+    `return new Promise((resolve, reject) => {
+       const select = document.querySelector('select[name="textScale"]');
+       if (!(select instanceof HTMLSelectElement)) {
+         reject(new Error("reader-preference-unavailable"));
+         return;
+       }
+       const startedAt = performance.now();
+       select.value = "large";
+       select.dispatchEvent(new Event("change", { bubbles: true }));
+       requestAnimationFrame(() =>
+         requestAnimationFrame(() =>
+           requestAnimationFrame(() => resolve(performance.now() - startedAt)),
+         ),
+       );
+     });`,
+  );
+  setStage("native exact-limit assertions");
+  assert(
+    maximumBatchScriptMs <= NATIVE_BATCH_SCRIPT_LIMIT_MS &&
+      targetReadyMs <= NATIVE_TARGET_READY_LIMIT_MS &&
+      incrementalAppendMs <= NATIVE_TOTAL_RENDER_LIMIT_MS &&
+      preferenceReflowMs <= NATIVE_REFLOW_LIMIT_MS &&
+      exactMemoryDelta.domNodes <= NATIVE_LIVE_DOM_NODE_LIMIT &&
+      exactMemoryDelta.workingSetBytes <=
+        NATIVE_COMBINED_WORKING_SET_LIMIT_BYTES,
+    "Native reader exceeded the approved performance limits.",
+  );
+  await closeNativePublication(driver);
+  await delay(OBSERVATION_WINDOW_MS);
+  const exactClosedResources = await nativeResourceInstrumentation(driver);
+  assert(
+    exactClosedResources.activeIntersectionObservers === 0 &&
+      exactClosedResources.activeObjectUrls === 0 &&
+      exactClosedResources.activeResizeObservers === 0,
+    "Native reader resources remained active after close.",
+  );
+
+  const closedSnapshots = [];
+  const cycleReports = [];
+  for (let cycle = 0; cycle < NATIVE_RESOURCE_STRESS_CYCLES; cycle += 1) {
+    setStage(`native reader resource cycle ${String(cycle + 1)}`);
+    const openStartedAt = await driver.execute(`return performance.now();`);
+    const fileInput = await driver.findElement('input[type="file"]');
+    await driver.sendKeys(fileInput, fixtures.representative);
+    await waitForCondition(
+      driver,
+      `return document.querySelector(".semantic-document") !== null &&
+         document.querySelector(".open-status")?.textContent !==
+           "Validating and opening the selected EPUB." &&
+         document.querySelector(".open-status")?.textContent !==
+           "Restoring saved reader state.";`,
+    );
+    const openMs =
+      (await driver.execute(`return performance.now();`)) - openStartedAt;
+    if (cycle > 0) {
+      assert(
+        (await driver.execute(
+          `return document.querySelector(".open-status")?.textContent ===
+             "Reading position restored.";`,
+        )) === true && openMs <= NATIVE_TARGET_READY_LIMIT_MS,
+        "Native reader exceeded the approved performance limits.",
+      );
+    }
+
+    const tocLinks = await driver.execute(
+      `return document.querySelectorAll("button.reader-toc-link").length;`,
+    );
+    assert(
+      tocLinks >= 2,
+      "Native reader performance metrics were unavailable.",
+    );
+    await driver.execute(
+      `document.querySelectorAll("button.reader-toc-link")[0]?.click();
+       return true;`,
+    );
+    await waitForCondition(
+      driver,
+      `return Array.from(document.querySelectorAll("h1")).some(
+         (heading) => heading.textContent === "Opening",
+       );`,
+    );
+    await driver.execute(
+      `document.querySelector(".semantic-raster-host")
+         ?.scrollIntoView({ block: "center" });
+       return true;`,
+    );
+    await waitForCondition(
+      driver,
+      `const image = document.querySelector('img[alt="Synthetic cover"]');
+       return image !== null &&
+         image.src.startsWith("blob:") &&
+         image.getClientRects().length > 0;`,
+    );
+
+    const chapterStartedAt = await driver.execute(`return performance.now();`);
+    await driver.execute(
+      `document.querySelectorAll("button.reader-toc-link")[1]?.click();
+       return true;`,
+    );
+    await waitForCondition(
+      driver,
+      `return Array.from(document.querySelectorAll("h1")).some(
+         (heading) =>
+           heading.textContent === "Continuation" &&
+           document.activeElement === heading,
+       );`,
+    );
+    const chapterMs =
+      (await driver.execute(`return performance.now();`)) - chapterStartedAt;
+    assert(
+      chapterMs <= NATIVE_TARGET_READY_LIMIT_MS,
+      "Native reader exceeded the approved performance limits.",
+    );
+    await waitForCondition(
+      driver,
+      `const serialized = localStorage.getItem("voxleaf.reader.positions");
+       if (serialized === null) {
+         return false;
+       }
+       try {
+         return JSON.parse(serialized)?.states?.[0]?.locator
+           ?.spineItemIndex === 1;
+       } catch {
+         return false;
+       }`,
+    );
+
+    await closeNativePublication(driver);
+    await delay(OBSERVATION_WINDOW_MS);
+    const settledResources = await nativeResourceInstrumentation(driver);
+    assert(
+      settledResources.activeIntersectionObservers === 0 &&
+        settledResources.activeObjectUrls === 0 &&
+        settledResources.activeResizeObservers === 0 &&
+        (await driver.findElements(".semantic-reader")).length === 0,
+      "Native reader resources remained active after close.",
+    );
+    const storageWritesAfterClose = settledResources.storageWrites;
+    await delay(OBSERVATION_WINDOW_MS);
+    assert(
+      (await nativeResourceInstrumentation(driver)).storageWrites ===
+        storageWritesAfterClose,
+      "Native reader resources remained active after close.",
+    );
+    const closedSnapshot = await nativeMemorySnapshot(
+      driver,
+      rootProcessId,
+      setStage,
+      `native reader resource cycle ${String(cycle + 1)} closed`,
+    );
+    setStage(`native reader resource cycle ${String(cycle + 1)} assertions`);
+    closedSnapshots.push(closedSnapshot);
+    assert(
+      closedSnapshot.domNodes <= baseline.domNodes + 256,
+      "Native reader resources remained active after close.",
+    );
+    cycleReports.push({
+      cycle: cycle + 1,
+      openMs: rounded(openMs),
+      restoreMs: cycle === 0 ? null : rounded(openMs),
+      chapterMs: rounded(chapterMs),
+      closedMemoryDelta: memoryDelta(baseline, closedSnapshot),
+      storageWrites: storageWritesAfterClose,
+    });
+  }
+
+  const firstClosed = closedSnapshots[0];
+  const lastClosed = closedSnapshots.at(-1);
+  assert(
+    firstClosed !== undefined &&
+      lastClosed !== undefined &&
+      lastClosed.jsHeapBytes <=
+        firstClosed.jsHeapBytes + NATIVE_RESOURCE_HEAP_GROWTH_LIMIT_BYTES &&
+      lastClosed.workingSetBytes <=
+        firstClosed.workingSetBytes +
+          NATIVE_RESOURCE_WORKING_SET_GROWTH_LIMIT_BYTES,
+    "Native reader resources remained active after close.",
+  );
+
+  setStage("native over-limit recovery measurement");
+  const overLimitInput = await driver.findElement('input[type="file"]');
+  await driver.sendKeys(overLimitInput, fixtures.overLimit);
+  await waitForCondition(
+    driver,
+    `const article = document.querySelector(
+       ".semantic-document.reader-chapter-too-large",
+     );
+     return article?.children.length === 3 &&
+       document.querySelector(".reader-rendering-status") === null;`,
+  );
+  const recoveryInput = await driver.findElement('input[type="file"]');
+  await driver.sendKeys(recoveryInput, fixtures.representative);
+  await waitForCondition(
+    driver,
+    `return document.querySelector(
+       ".semantic-document:not(.reader-chapter-too-large)",
+     ) !== null;`,
+  );
+  await closeNativePublication(driver);
+  await delay(OBSERVATION_WINDOW_MS);
+  const finalResources = await nativeResourceInstrumentation(driver);
+  const storageBounds = await driver.execute(
+    `const positions = localStorage.getItem("voxleaf.reader.positions");
+     const preferences = localStorage.getItem("voxleaf.reader.preferences");
+     let positionCount;
+     try {
+       positionCount =
+         positions === null ? 0 : JSON.parse(positions).states.length;
+     } catch {
+       positionCount = -1;
+     }
+     return {
+       positionsLength: positions?.length ?? 0,
+       preferencesLength: preferences?.length ?? 0,
+       positionCount,
+       unexpectedReaderKeys: Object.keys(localStorage).filter(
+         (key) =>
+           key.startsWith("voxleaf.reader.") &&
+           key !== "voxleaf.reader.positions" &&
+           key !== "voxleaf.reader.preferences",
+       ).length,
+     };`,
+  );
+  assert(
+    finalResources.activeIntersectionObservers === 0 &&
+      finalResources.activeObjectUrls === 0 &&
+      finalResources.activeResizeObservers === 0 &&
+      storageBounds.positionCount >= 0 &&
+      storageBounds.positionCount <= 128 &&
+      storageBounds.positionsLength <= 262_144 &&
+      storageBounds.preferencesLength <= 1_024 &&
+      storageBounds.unexpectedReaderKeys === 0,
+    "Native over-limit reader recovery failed.",
+  );
+
+  const externalLoadedResourceCount = await driver.execute(
+    `return performance.getEntriesByType("resource").filter((entry) => {
+       try {
+         const url = new URL(entry.name);
+         return !(
+           url.protocol === "tauri:" ||
+           url.protocol === "data:" ||
+           url.protocol === "blob:" ||
+           url.hostname === "tauri.localhost"
+         );
+       } catch {
+         return true;
+       }
+     }).length;`,
+  );
+  setStage("native performance privacy assertions");
+  await delay(OBSERVATION_WINDOW_MS);
+  const browserLogs = await driver.getLogs("browser");
+  const performanceLogs = inspectPerformanceLogs(
+    await driver.getLogs("performance"),
+  );
+  assert(
+    browserLogs.every((entry) => entry?.level !== "SEVERE") &&
+      performanceLogs.runtimeErrorCount === 0 &&
+      externalLoadedResourceCount === 0 &&
+      performanceLogs.externalRequestCount === 0,
+    performanceLogs.externalRequestCount > 0 || externalLoadedResourceCount > 0
+      ? "Native application attempted an external request."
+      : "Native application emitted a page or console error.",
+  );
+
+  console.log(
+    `NATIVE_READER_PERFORMANCE_BENCHMARK ${JSON.stringify({
+      exactLimit: {
+        blockCount: 10_000,
+        selectionToFirstContentMs: rounded(selectionToFirstContentMs),
+        maximumSchedulerCallbackMs: rounded(maximumSchedulerCallbackMs),
+        maximumBatchScriptMs: rounded(maximumBatchScriptMs),
+        targetReadyMs: rounded(targetReadyMs),
+        incrementalAppendMs: rounded(incrementalAppendMs),
+        preferenceReflowMs: rounded(preferenceReflowMs),
+        memoryDelta: exactMemoryDelta,
+      },
+      resourceStress: {
+        cycles: NATIVE_RESOURCE_STRESS_CYCLES,
+        cycleReports,
+        firstToLastClosedDelta: {
+          domNodes: lastClosed.domNodes - firstClosed.domNodes,
+          jsHeapBytes: Math.max(
+            0,
+            lastClosed.jsHeapBytes - firstClosed.jsHeapBytes,
+          ),
+          workingSetBytes: Math.max(
+            0,
+            lastClosed.workingSetBytes - firstClosed.workingSetBytes,
+          ),
+        },
+        finalResources,
+        storageBounds,
+      },
+    })}`,
+  );
 }
 
 function inspectPerformanceLogs(logs) {
@@ -579,6 +1421,9 @@ async function stopChild(child) {
 }
 
 async function run() {
+  const runLabel = READER_PERFORMANCE_MODE
+    ? "Native reader performance benchmark"
+    : "Native startup smoke";
   assert(
     process.platform === "win32",
     "Native startup smoke must run on Windows.",
@@ -590,6 +1435,11 @@ async function run() {
   );
   const profileDirectory = path.join(temporaryDirectory, "webview-profile");
   const fixturePath = path.join(temporaryDirectory, "synthetic.epub");
+  const performanceFixturePaths = Object.freeze({
+    exact: path.join(temporaryDirectory, "exact.epub"),
+    overLimit: path.join(temporaryDirectory, "over-limit.epub"),
+    representative: path.join(temporaryDirectory, "representative.epub"),
+  });
   const fixtureModuleUrl = pathToFileURL(
     path.resolve(
       desktopRoot,
@@ -601,13 +1451,34 @@ async function run() {
       "epub-fixture.ts",
     ),
   );
-  const { buildReaderNavigationEpubFixture } = await import(
-    fixtureModuleUrl.href
-  );
+  const {
+    buildReaderLongChapterEpubFixture,
+    buildReaderNavigationEpubFixture,
+  } = await import(fixtureModuleUrl.href);
   await mkdir(profileDirectory);
-  await writeFile(fixturePath, await buildReaderNavigationEpubFixture(), {
-    flag: "wx",
-  });
+  if (READER_PERFORMANCE_MODE) {
+    const [exact, overLimit, representative] = await Promise.all([
+      buildReaderLongChapterEpubFixture({
+        semanticBlockCount: 10_000,
+        deepTargetBlockIndex: 8_999,
+      }),
+      buildReaderLongChapterEpubFixture({
+        semanticBlockCount: 10_001,
+      }),
+      buildReaderNavigationEpubFixture(),
+    ]);
+    await Promise.all([
+      writeFile(performanceFixturePaths.exact, exact, { flag: "wx" }),
+      writeFile(performanceFixturePaths.overLimit, overLimit, { flag: "wx" }),
+      writeFile(performanceFixturePaths.representative, representative, {
+        flag: "wx",
+      }),
+    ]);
+  } else {
+    await writeFile(fixturePath, await buildReaderNavigationEpubFixture(), {
+      flag: "wx",
+    });
+  }
 
   const driverPort = await reserveLoopbackPort();
   const nativeDriverPort = await reserveLoopbackPort();
@@ -669,6 +1540,18 @@ async function run() {
     const rootMounted = await driver.execute(
       `return document.querySelector("#root")?.childElementCount > 0;`,
     );
+    if (READER_PERFORMANCE_MODE) {
+      stage = "native reader performance and resource benchmark";
+      await runNativeReaderPerformanceBenchmark(
+        driver,
+        performanceFixturePaths,
+        child.pid,
+        (nextStage) => {
+          stage = nextStage;
+        },
+      );
+      return;
+    }
 
     stage = "synthetic file injection";
     const fileInput = await driver.findElement('input[type="file"]');
@@ -751,7 +1634,9 @@ async function run() {
     );
 
     stage = "native reader interaction matrix";
-    await exerciseNativeReaderInteractionMatrix(driver);
+    await exerciseNativeReaderInteractionMatrix(driver, (nextStage) => {
+      stage = nextStage;
+    });
 
     stage = "synthetic restoration seed navigation";
     const restorationSeedLinks = await driver.findElements(
@@ -933,7 +1818,7 @@ async function run() {
     );
   } catch (error) {
     console.error(
-      `Native startup smoke failed during ${stage} [${failureCode(error)}].`,
+      `${runLabel} failed during ${stage} [${failureCode(error)}].`,
     );
     process.exitCode = 1;
   } finally {
@@ -961,7 +1846,7 @@ async function run() {
     }
 
     if (cleanupFailed) {
-      console.error("Native startup smoke cleanup failed.");
+      console.error(`${runLabel} cleanup failed.`);
       process.exitCode = 1;
     }
   }

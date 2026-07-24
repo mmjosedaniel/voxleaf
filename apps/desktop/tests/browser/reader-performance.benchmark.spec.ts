@@ -23,6 +23,10 @@ const SELECTED_TOTAL_RENDER_LIMIT_MS = 1_000;
 const SELECTED_REFLOW_LIMIT_MS = 250;
 const SELECTED_RASTER_DECODE_LIMIT_MS = 150;
 const RASTER_DIMENSION_PIXELS = 1_448;
+const OBSERVATION_WINDOW_MS = 500;
+const RESOURCE_STRESS_CYCLES = 6;
+const RESOURCE_STRESS_HEAP_GROWTH_LIMIT_BYTES = 8 * MEBIBYTE;
+const RESOURCE_STRESS_WORKING_SET_GROWTH_LIMIT_BYTES = 32 * MEBIBYTE;
 
 const BLOCK_CASES = Object.freeze([
   Object.freeze({ label: "small", blockCount: 250 }),
@@ -74,6 +78,13 @@ interface ProductionRenderInstrumentation {
   batchCommitDurations: number[];
 }
 
+interface ProductionResourceInstrumentation {
+  readonly activeIntersectionObservers: number;
+  readonly activeObjectUrls: number;
+  readonly activeResizeObservers: number;
+  readonly storageWrites: number;
+}
+
 async function buildProductionLimitFixture(): Promise<Uint8Array> {
   const fixtureModuleUrl = new URL(
     "../../../../packages/epub/test-support/epub-fixture.ts",
@@ -89,6 +100,31 @@ async function buildProductionLimitFixture(): Promise<Uint8Array> {
     semanticBlockCount: 10_000,
     deepTargetBlockIndex: 8_999,
   });
+}
+
+async function buildProductionResourceFixtures(): Promise<
+  Readonly<{
+    representative: Uint8Array;
+    overLimit: Uint8Array;
+  }>
+> {
+  const fixtureModuleUrl = new URL(
+    "../../../../packages/epub/test-support/epub-fixture.ts",
+    import.meta.url,
+  );
+  const fixtureModule = (await import(fixtureModuleUrl.href)) as {
+    buildReaderNavigationEpubFixture(): Promise<Uint8Array>;
+    buildReaderLongChapterEpubFixture(options: {
+      readonly semanticBlockCount: number;
+    }): Promise<Uint8Array>;
+  };
+  const [representative, overLimit] = await Promise.all([
+    fixtureModule.buildReaderNavigationEpubFixture(),
+    fixtureModule.buildReaderLongChapterEpubFixture({
+      semanticBlockCount: SELECTED_LIVE_BLOCK_LIMIT + 1,
+    }),
+  ]);
+  return Object.freeze({ overLimit, representative });
 }
 
 function executeText(file: string, args: readonly string[]): Promise<string> {
@@ -526,6 +562,30 @@ function selectedCapacityFor(
     : "chapter-too-large";
 }
 
+async function productionResourceInstrumentation(
+  page: Page,
+): Promise<ProductionResourceInstrumentation> {
+  return page.evaluate(() => {
+    const instrumentation = (
+      globalThis as typeof globalThis & {
+        __voxleafProductionResourceInstrumentation: {
+          activeIntersectionObservers: Set<IntersectionObserver>;
+          activeObjectUrls: Set<string>;
+          activeResizeObservers: Set<ResizeObserver>;
+          storageWrites: number;
+        };
+      }
+    ).__voxleafProductionResourceInstrumentation;
+    return {
+      activeIntersectionObservers:
+        instrumentation.activeIntersectionObservers.size,
+      activeObjectUrls: instrumentation.activeObjectUrls.size,
+      activeResizeObservers: instrumentation.activeResizeObservers.size,
+      storageWrites: instrumentation.storageWrites,
+    };
+  });
+}
+
 test("measures complete and incremental synthetic reader profiles", async () => {
   test.skip(platform !== "win32", "The accepted benchmark host is Windows.");
 
@@ -904,6 +964,293 @@ test("measures the production React renderer at the accepted chapter limit", asy
         preferenceReflowMs: rounded(preferenceReflowMs),
         incrementalMemoryDelta: incrementalDelta,
         fullApplicationMemoryDelta: fullDelta,
+      })}`,
+    );
+  } finally {
+    await context.unroute("**/*");
+  }
+});
+
+test("proves production reader resources remain bounded across repeated lifecycle stress", async ({
+  browser,
+  context,
+  page,
+}) => {
+  test.skip(platform !== "win32", "The accepted benchmark host is Windows.");
+  test.setTimeout(180_000);
+
+  let unexpectedRequestCount = 0;
+  let pageErrorCount = 0;
+  context.on("page", (openedPage) => {
+    openedPage.on("pageerror", () => {
+      pageErrorCount += 1;
+    });
+  });
+  page.on("pageerror", () => {
+    pageErrorCount += 1;
+  });
+  await context.route("**/*", async (route) => {
+    const requestUrl = new URL(route.request().url());
+    if (requestUrl.origin === "http://127.0.0.1:4174") {
+      await route.continue();
+      return;
+    }
+    unexpectedRequestCount += 1;
+    await route.abort("blockedbyclient");
+  });
+  await page.addInitScript(() => {
+    const activeIntersectionObservers = new Set<IntersectionObserver>();
+    const activeObjectUrls = new Set<string>();
+    const activeResizeObservers = new Set<ResizeObserver>();
+    const instrumentation = {
+      activeIntersectionObservers,
+      activeObjectUrls,
+      activeResizeObservers,
+      storageWrites: 0,
+    };
+    Object.defineProperty(
+      globalThis,
+      "__voxleafProductionResourceInstrumentation",
+      {
+        configurable: false,
+        value: instrumentation,
+      },
+    );
+
+    const originalCreateObjectUrl = URL.createObjectURL.bind(URL);
+    const originalRevokeObjectUrl = URL.revokeObjectURL.bind(URL);
+    URL.createObjectURL = (object): string => {
+      const objectUrl = originalCreateObjectUrl(object);
+      activeObjectUrls.add(objectUrl);
+      return objectUrl;
+    };
+    URL.revokeObjectURL = (objectUrl): void => {
+      activeObjectUrls.delete(objectUrl);
+      originalRevokeObjectUrl(objectUrl);
+    };
+
+    const OriginalResizeObserver = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class extends OriginalResizeObserver {
+      public constructor(callback: ResizeObserverCallback) {
+        super(callback);
+        activeResizeObservers.add(this);
+      }
+
+      public override disconnect(): void {
+        activeResizeObservers.delete(this);
+        super.disconnect();
+      }
+    };
+
+    const OriginalIntersectionObserver = globalThis.IntersectionObserver;
+    globalThis.IntersectionObserver = class extends (
+      OriginalIntersectionObserver
+    ) {
+      public constructor(
+        callback: IntersectionObserverCallback,
+        options?: IntersectionObserverInit,
+      ) {
+        super(callback, options);
+        activeIntersectionObservers.add(this);
+      }
+
+      public override disconnect(): void {
+        activeIntersectionObservers.delete(this);
+        super.disconnect();
+      }
+    };
+
+    const originalSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value): void {
+      if (key.startsWith("voxleaf.reader.")) {
+        instrumentation.storageWrites += 1;
+      }
+      originalSetItem.call(this, key, value);
+    };
+  });
+
+  try {
+    await page.goto("/");
+    await page.evaluate(() => {
+      localStorage.removeItem("voxleaf.reader.positions");
+      localStorage.removeItem("voxleaf.reader.preferences");
+    });
+    const fixtures = await buildProductionResourceFixtures();
+    const baseline = await pageMemorySnapshot(browser, page);
+    const closedSnapshots: BrowserMemorySnapshot[] = [];
+    const cycleReports: unknown[] = [];
+
+    for (let cycle = 0; cycle < RESOURCE_STRESS_CYCLES; cycle += 1) {
+      const openStartedAt = await page.evaluate(() => performance.now());
+      await page.getByLabel("Open a local EPUB").setInputFiles({
+        name: "private-resource-stress.epub",
+        mimeType: "application/epub+zip",
+        buffer: Buffer.from(fixtures.representative),
+      });
+      const article = page.getByRole("article", {
+        name: "Current reading section",
+      });
+      await expect(article).toBeVisible();
+      const openMs =
+        (await page.evaluate(() => performance.now())) - openStartedAt;
+
+      const openingTarget = page
+        .getByRole("navigation", { name: "Table of contents" })
+        .getByRole("button", { name: "Opening" });
+      await openingTarget.click();
+      const imageHost = page.locator(".semantic-raster-host").first();
+      await imageHost.scrollIntoViewIfNeeded();
+      const image = page.getByRole("img", { name: "Synthetic cover" });
+      await expect(image).toBeVisible();
+      await expect(image).toHaveAttribute("src", /^blob:/u);
+
+      const chapterStartedAt = await page.evaluate(() => performance.now());
+      await page
+        .getByRole("navigation", { name: "Table of contents" })
+        .getByRole("button", { name: "Continuation" })
+        .click();
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Continuation" }),
+      ).toBeFocused();
+      const chapterMs =
+        (await page.evaluate(() => performance.now())) - chapterStartedAt;
+      await expect(image).toHaveCount(0);
+      await expect
+        .poll(
+          async () =>
+            (await productionResourceInstrumentation(page)).activeObjectUrls,
+        )
+        .toBe(0);
+
+      await page.getByRole("button", { name: "Close EPUB" }).click();
+      await expect(page.getByRole("status")).toHaveText(
+        "No local EPUB is open.",
+      );
+      await page.waitForTimeout(OBSERVATION_WINDOW_MS);
+      const settledResources = await productionResourceInstrumentation(page);
+      expect(settledResources).toMatchObject({
+        activeIntersectionObservers: 0,
+        activeObjectUrls: 0,
+        activeResizeObservers: 0,
+      });
+      await expect(page.locator(".semantic-reader")).toHaveCount(0);
+      await expect(page.locator(".semantic-document")).toHaveCount(0);
+
+      const storageWritesAfterClose = settledResources.storageWrites;
+      await page.waitForTimeout(OBSERVATION_WINDOW_MS);
+      expect(
+        (await productionResourceInstrumentation(page)).storageWrites,
+      ).toBe(storageWritesAfterClose);
+
+      const closedSnapshot = await pageMemorySnapshot(browser, page);
+      closedSnapshots.push(closedSnapshot);
+      expect(closedSnapshot.domNodes).toBeLessThanOrEqual(
+        baseline.domNodes + 256,
+      );
+      cycleReports.push({
+        cycle: cycle + 1,
+        openMs: rounded(openMs),
+        chapterMs: rounded(chapterMs),
+        closedMemoryDelta: memoryDelta(baseline, closedSnapshot),
+        storageWrites: storageWritesAfterClose,
+      });
+    }
+
+    const firstClosed = closedSnapshots[0];
+    const lastClosed = closedSnapshots.at(-1);
+    expect(firstClosed).toBeDefined();
+    expect(lastClosed).toBeDefined();
+    if (firstClosed === undefined || lastClosed === undefined) {
+      throw new Error("reader-benchmark-resource-snapshots-unavailable");
+    }
+    expect(lastClosed.jsHeapBytes).toBeLessThanOrEqual(
+      firstClosed.jsHeapBytes + RESOURCE_STRESS_HEAP_GROWTH_LIMIT_BYTES,
+    );
+    expect(lastClosed.workingSetBytes).toBeLessThanOrEqual(
+      firstClosed.workingSetBytes +
+        RESOURCE_STRESS_WORKING_SET_GROWTH_LIMIT_BYTES,
+    );
+
+    await page.getByLabel("Open a local EPUB").setInputFiles({
+      name: "private-over-limit.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(fixtures.overLimit),
+    });
+    const rejectedArticle = page.getByRole("article", {
+      name: "Current reading section",
+    });
+    await expect(rejectedArticle).toHaveClass(/reader-chapter-too-large/u);
+    await expect(page.locator(".reader-rendering-status")).toHaveCount(0);
+    await expect(rejectedArticle.locator(":scope > *")).toHaveCount(3);
+
+    await page.getByLabel("Open a local EPUB").setInputFiles({
+      name: "private-recovery.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(fixtures.representative),
+    });
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: /Opening|Continuation/u,
+      }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Close EPUB" }).click();
+    await expect(page.getByRole("status")).toHaveText("No local EPUB is open.");
+    await page.waitForTimeout(OBSERVATION_WINDOW_MS);
+
+    const finalResources = await productionResourceInstrumentation(page);
+    expect(finalResources).toMatchObject({
+      activeIntersectionObservers: 0,
+      activeObjectUrls: 0,
+      activeResizeObservers: 0,
+    });
+    const storageBounds = await page.evaluate(() => {
+      const positions = localStorage.getItem("voxleaf.reader.positions");
+      const preferences = localStorage.getItem("voxleaf.reader.preferences");
+      let positionCount: number;
+      try {
+        positionCount =
+          positions === null ? 0 : JSON.parse(positions).states.length;
+      } catch {
+        positionCount = -1;
+      }
+      return {
+        positionsLength: positions?.length ?? 0,
+        preferencesLength: preferences?.length ?? 0,
+        positionCount,
+        unexpectedReaderKeys: Object.keys(localStorage).filter(
+          (key) =>
+            key.startsWith("voxleaf.reader.") &&
+            key !== "voxleaf.reader.positions" &&
+            key !== "voxleaf.reader.preferences",
+        ).length,
+      };
+    });
+    expect(storageBounds.positionCount).toBeGreaterThanOrEqual(0);
+    expect(storageBounds.positionCount).toBeLessThanOrEqual(128);
+    expect(storageBounds.positionsLength).toBeLessThanOrEqual(262_144);
+    expect(storageBounds.preferencesLength).toBeLessThanOrEqual(1_024);
+    expect(storageBounds.unexpectedReaderKeys).toBe(0);
+    expect(pageErrorCount).toBe(0);
+    expect(unexpectedRequestCount).toBe(0);
+
+    console.info(
+      `READER_RESOURCE_STRESS_BENCHMARK ${JSON.stringify({
+        cycles: RESOURCE_STRESS_CYCLES,
+        cycleReports,
+        firstToLastClosedDelta: {
+          domNodes: lastClosed.domNodes - firstClosed.domNodes,
+          jsHeapBytes: Math.max(
+            0,
+            lastClosed.jsHeapBytes - firstClosed.jsHeapBytes,
+          ),
+          workingSetBytes: Math.max(
+            0,
+            lastClosed.workingSetBytes - firstClosed.workingSetBytes,
+          ),
+        },
+        finalResources,
+        storageBounds,
       })}`,
     );
   } finally {

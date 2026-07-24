@@ -27,6 +27,37 @@ export class WebDriverClientError extends Error {
   }
 }
 
+export async function runWebDriverInteractionWithRetry({
+  action,
+  condition,
+  onAttempt,
+  onConditionTimeout,
+}) {
+  const maximumAttempts = 2;
+
+  for (let attempt = 1; attempt <= maximumAttempts; attempt += 1) {
+    await onAttempt(attempt, maximumAttempts);
+    await action();
+
+    try {
+      await condition();
+      return;
+    } catch (error) {
+      if (
+        !(error instanceof WebDriverClientError) ||
+        error.code !== "webdriver-condition-timeout"
+      ) {
+        throw error;
+      }
+
+      await onConditionTimeout(attempt, maximumAttempts);
+      if (attempt === maximumAttempts) {
+        throw error;
+      }
+    }
+  }
+}
+
 export class WebDriverClient {
   #endpoint;
   #requestTimeoutMs;
