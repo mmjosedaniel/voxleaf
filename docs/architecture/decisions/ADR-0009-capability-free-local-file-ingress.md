@@ -4,6 +4,10 @@
 
 Accepted.
 
+## Implementation status
+
+Implemented and connected to the production desktop open flow. The WebView input performs the bounded abortable read, the application open coordinator transfers caller-owned bytes to the publication-session owner, and only validated metadata or fixed content-free outcomes reach presentation. The Tauri shell still registers no command or plugin and grants no capability. Deterministic tests and packaged WebView2 startup evidence cover synthetic open/reselection/restoration; the broader native cancellation/replacement/100-MiB matrix remains the final Task 2.3 closeout evidence.
+
 ## Context
 
 VoxLeaf needs to let a user select one local EPUB and transfer only its bounded bytes into the framework-independent `@voxleaf/epub` opener. ADR-0007 limits compressed input to 100 MiB and prohibits host paths, filesystem access, extraction, persistence, and network access inside the EPUB package. ADR-0001 requires evidence before the desktop adds a Tauri command, plugin, or capability.

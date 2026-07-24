@@ -6,11 +6,13 @@ This brief explains the intended VoxLeaf experience and the motivation behind th
 
 The normative MVP scope is in [`mvp.md`](mvp.md). Accepted technical decisions are recorded under [`../architecture/decisions/`](../architecture/decisions/), and current performance targets are in [`../architecture/performance-budget.md`](../architecture/performance-budget.md).
 
+The implemented product boundary currently stops after private local EPUB ingestion, semantic visual reading/navigation, bounded display preferences, logical-position persistence, and exact/nearest-valid restoration after exact-file reselection. Narration preparation, TTS engines and process integration, generated audio, playback, synchronized highlighting, hardware profiles, and installers remain planned. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
+
 ## Summary
 
-VoxLeaf is a privacy-first desktop EPUB reader that turns book text into natural-sounding speech entirely on the user's computer. A reader can open a local EPUB, navigate its chapters, read the formatted text, and listen through a locally executed neural text-to-speech engine.
+VoxLeaf is a privacy-first desktop EPUB reader being built to turn book text into natural-sounding speech entirely on the user's computer. A reader can currently open a supported local EPUB, navigate its chapters, read its formatted semantic content, and restore a saved logical passage; listening through a local neural text-to-speech engine remains planned.
 
-VoxLeaf generates narration progressively instead of converting a complete book or chapter into an audiobook. It retains only a bounded amount of audio in memory, plays it while preparing later segments, and discards it after playback.
+The intended narration pipeline will generate progressively instead of converting a complete book or chapter into an audiobook. It will retain only a bounded amount of audio in memory, play it while preparing later segments, and discard it after playback.
 
 ```text
 Open a local EPUB
@@ -75,9 +77,9 @@ The user should be able to select a chapter or paragraph, move forward or backwa
 
 ### EPUB reading
 
-The initial reader should extract metadata, navigation, ordered readable XHTML content, stable chapter and paragraph identifiers, and meaningful paragraph boundaries. It should ignore scripts, hidden content, navigation noise, and unsafe external references. Images may appear in the visual reader but are not narrated in the MVP.
+The implemented EPUB pipeline extracts metadata, navigation, ordered readable XHTML content, stable structural locators, and meaningful block boundaries. It excludes scripts, hidden content, navigation noise, and unsafe external references before values reach the reader. Supported static images may appear in the visual reader but are not narrated in the MVP.
 
-EPUB content should be presented as a normal reflowable ereader, with readable typography, images, continuous scrolling, and chapter navigation. [ADR-0008](../architecture/decisions/ADR-0008-visual-reader-architecture.md) selects continuous vertical scrolling as the sole initial mode and defers pagination. A displayed page number is not a stable position because visible layout changes with the viewport, font size, and line spacing. VoxLeaf should persist a logical locator—such as a spine item plus an EPUB CFI or equivalent content anchor and offset—and use it to reconstruct the correct visible passage.
+EPUB content is presented as a normal reflowable ereader, with readable typography, bounded static images, continuous scrolling, and chapter navigation. [ADR-0008](../architecture/decisions/ADR-0008-visual-reader-architecture.md) selects continuous vertical scrolling as the sole initial mode and defers pagination. A displayed page number is not a stable position because visible layout changes with the viewport, font size, and line spacing. The implemented reader persists its shared structural logical locator and Unicode-code-point offset, rather than a page or quotation, and uses package-owned exact/nearest-valid resolution to reconstruct the visible passage after exact-file reselection.
 
 ### Narration text
 
@@ -89,7 +91,7 @@ Segmentation should respect paragraphs, sentences, dialogue, headings, scene bre
 
 ### Reader interface and accessibility
 
-The reader should expose book and chapter context, readable paginated or scrollable chapter content, progress, current-paragraph highlighting, playback controls, voice selection, playback speed, visible buffer state, and actionable errors. Typography and themes should support comfortable long-form reading. The user must be able to read the same passage being narrated rather than seeing a separate transcript or unrelated location.
+The initial reader exposes book and chapter context, readable continuously scrolling chapter content, bounded typography/theme controls, and actionable reader errors. Current-paragraph highlighting, playback controls, voice selection, playback speed, visible buffer state, and narrated-passage following remain requirements for later synchronized narration. The user must ultimately be able to read the same passage being narrated rather than seeing a separate transcript or unrelated location.
 
 Core interaction should support keyboard navigation, visible focus, semantic controls, assistive-technology labels, high contrast, reduced motion, adjustable text size, and operation without a mouse. The UI must remain responsive while inference runs.
 
@@ -97,7 +99,7 @@ Core interaction should support keyboard navigation, visible focus, semantic con
 
 Normal reading must not send book text or generated speech to a remote service. Generated audio is ephemeral and must not be persisted by default. Logs and performance measurements must exclude book text and audio.
 
-VoxLeaf may retain local metadata, file references, a content locator and offset for reading position, progress, selected model and voice, playback speed, display preferences, and non-content hardware or benchmark data. The saved locator must not contain book prose. Full extracted text and generated narration should not become persistent application state without a separate product and privacy decision.
+The implemented persisted reader state retains only bounded exact-byte identity, a structural content locator and Unicode-code-point offset, and closed display preferences; it does not retain a file reference, EPUB bytes, publisher metadata, prose, rendered geometry, or images. Future milestones may justify selected model/voice, playback speed, and non-content hardware or benchmark data within explicit bounded contracts. Full extracted text and generated narration must not become persistent application state without a separate product and privacy decision.
 
 ## Candidate technical direction
 
@@ -137,7 +139,7 @@ Possible post-MVP work includes more document formats, pronunciation dictionarie
 
 ## Public positioning
 
-Until the application exists and has been validated, describe VoxLeaf prospectively:
+Until narration, audio, hardware, and complete MVP validation exist, describe the complete product prospectively:
 
 > VoxLeaf is a privacy-first desktop EPUB reader in development, designed to generate narration on-device, stream it through bounded memory, and discard it after playback.
 

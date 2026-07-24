@@ -4,6 +4,10 @@
 
 Accepted.
 
+## Implementation status
+
+Implemented and integrated by Milestone 4 Task 3.3. One publication-scoped loader caps active-plus-queued work at eight, serializes resource reads and the manager's one active browser decode, clears caller-owned byte copies, and releases or aborts every source on image/document/publication replacement and close. Semantic images load near the viewport, retain accessible alternative text or fixed fallback text, and expose no resource identity. Deterministic limits plus production Chromium and packaged-WebView2 evidence cover local Blob rendering, CSP, lifecycle release, and zero external requests. No third-party raster decoder, native command/plugin/capability, cache, or network origin was added.
+
 ## Context
 
 ADR-0007 permits an opened publication to expose caller-owned bytes for local GIF, JPEG, PNG, and WebP resources only after archive, declared media type, signature, locality, and a 32 MiB per-resource byte limit agree. That boundary deliberately does not decode images. A signature-valid compressed image can still declare extreme dimensions or animation and cause the WebView to allocate substantially more memory than the source bytes imply.
