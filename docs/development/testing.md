@@ -114,11 +114,11 @@ Both benchmarks are deliberately absent from `pnpm.cmd check`, `pnpm check:porta
 
 ## Planned Milestone 5 narration-preparation validation
 
-The approved [Milestone 5 ExecPlan](../plans/active/M005-narration-text-preparation.md) defines the detailed test sequence. Task 1.2's corpus-integrity tests, Task 1.3's test-only profile/evidence tests, and Task 2.1's production source-projector tests now pass. The projector suite covers every current semantic block/inline member, nested quote/list order, inherited semantic context, empty and unspoken leaves, raster omission, Unicode-code-point parity with the locator index, deep immutability, compile-time union closure, and fixed content-free invariant failures. The accepted [`narration-v1` limits](../architecture/narration-preparation-limits-v1.md) cover 20 independent target/hard dimensions and representative content-free evidence; production enforcement and the remaining preparation behavior are still pending.
+The approved [Milestone 5 ExecPlan](../plans/active/M005-narration-text-preparation.md) defines the detailed test sequence. Task 1.2's corpus-integrity tests, Task 1.3's test-only profile/evidence tests, and Tasks 2.1-2.2's production source-projector/token-mapper tests now pass. The source suites cover every current semantic block/inline member, nested quote/list order, inherited semantic context, empty and unspoken leaves, raster omission, Unicode-code-point parity with the locator index, BMP/astral/combining token spans, one-position line-break/raster placeholders, block-end locator endpoints, source reconstruction, deep immutability, compile-time union closure, and fixed content-free invariant failures. The accepted [`narration-v1` limits](../architecture/narration-preparation-limits-v1.md) cover 20 independent target/hard dimensions and representative content-free evidence; production enforcement and the remaining preparation behavior are still pending.
 
 The implementation must add deterministic package-level tests for:
 
-- Unicode-code-point source spans over the implemented exhaustive safe semantic source traversal;
+- normalization-preserved source spans over the implemented exhaustive safe semantic traversal and code-point token mapping;
 - narration-only whitespace, line-break, hyphenation, punctuation, quotation, ellipsis, abbreviation, initials, numbers, dates, times, currency, symbols, and ambiguous-preservation rules;
 - explicit neutral and representative Spanish cases from short repository-authored synthetic fixtures;
 - sentence, dialogue, scene-break, clause, token, and long-sentence fallback boundaries;

@@ -3,10 +3,10 @@
 ## Status
 
 Accepted by Milestone 5 Task 1.2 as a test-only policy and fixture gate.
-Task 2.1 now implements exhaustive package-internal semantic source traversal,
-but production source-span tokens, normalization, segmentation, and
-`OpenedPublication.prepareNarration` remain unimplemented. Task 1.3 has
-accepted the separate
+Tasks 2.1-2.2 now implement exhaustive package-internal semantic source
+traversal and Unicode-code-point source-span tokens, but normalization,
+segmentation, and `OpenedPublication.prepareNarration` remain unimplemented.
+Task 1.3 has accepted the separate
 [`narration-v1` resource profile](narration-preparation-limits-v1.md), so
 Milestone 1's policy, corpus, and bounds gates are closed before production
 rules begin.
@@ -75,9 +75,10 @@ names, or deliberately print source/expected values on failure.
 
 ## Deferred work
 
-This corpus does not implement an algorithm, define locator/source-span
-projection, select numeric hard limits, select a TTS engine, or establish
-model-specific preprocessing. Later Milestone 5 tasks must implement the table
+This corpus does not implement an algorithm, select numeric hard limits, select
+a TTS engine, or establish model-specific preprocessing. Tasks 2.1-2.2 now
+provide the production semantic traversal and locator-valid source-span tokens;
+later Milestone 5 tasks must implement the table
 without changing displayed publication semantics. Any proposed corpus change
 must update the authoritative fixture, its integrity tests, this summary, and
 the active plan before production expectations change.

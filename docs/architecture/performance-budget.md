@@ -93,10 +93,10 @@ Both commands are intentionally outside `pnpm.cmd check` and CI. The Chromium co
 
 Task 1.3 accepts the model-independent, test-only
 [`narration-v1` preparation profile](narration-preparation-limits-v1.md).
-Task 2.1 implements pure exhaustive source traversal, but it does not yet
-enforce this profile; bounded start/continuation, work accounting,
-cancellation checkpoints, deterministic yields, normalization, and
-segmentation remain pending.
+Tasks 2.1-2.2 implement pure exhaustive source traversal and code-point
+source-span tokens, but they do not yet enforce this profile; bounded
+start/continuation, work accounting, cancellation checkpoints, deterministic
+yields, normalization, and segmentation remain pending.
 
 The profile targets 320 narration code points / 1,024 UTF-8 bytes per segment,
 eight segments per batch, cancellation checks every 512 work units, and a
