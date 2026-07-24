@@ -76,7 +76,7 @@ The public EPUB package currently implements the in-memory validation, parsing, 
 
 ## Approved narration-preparation boundary
 
-The [Milestone 5 ExecPlan](../plans/active/M005-narration-text-preparation.md) is the implementation authority for text preparation, and [ADR-0012](decisions/ADR-0012-bounded-narration-preparation.md) fixes its durable public and lifecycle boundary. Production implementation remains not started. The accepted boundary is:
+The [Milestone 5 ExecPlan](../plans/active/M005-narration-text-preparation.md) is the implementation authority for text preparation, [ADR-0012](decisions/ADR-0012-bounded-narration-preparation.md) fixes its durable public and lifecycle boundary, and the test-only [`narration-v1` corpus policy](narration-normalization-v1.md) fixes the first neutral/Spanish exact examples and preservation decisions. Production implementation remains not started. The accepted boundary is:
 
 - derive narration source material only from already-sanitized immutable semantic headings and paragraphs in source order;
 - preserve displayed `SensitivePublicationText` unchanged and create a separate sensitive, ephemeral narration representation;
@@ -91,7 +91,7 @@ The package-local `PreparedNarrationSegment` contains `SensitiveNarrationTextV1`
 
 The operation structurally normalizes an untrusted start locator and reports exact/recovered resolution plus its relation to stable segmentation. A request inside a segment returns that complete segment first and reports `inside-segment`; a request in an unspoken gap reports `before-next-segment`; a request at a segment start reports `at-segment-start`; and an exhausted source reports `publication-end`. This preserves stable segmentation while leaving Milestone 9 free to use, skip, or otherwise interpret the containing segment for a particular playback interaction. A nonterminal batch continues from the final segment's end locator; changing the requested batch count cannot change segment text or ranges.
 
-Narration text is local sensitive data. It must not be persisted, logged, placed in metrics or analytics, copied into snapshots or errors, or used as a locator anchor. Synthetic corpus cases may assert exact strings where text transformation is the behavior under test, but diagnostics and benchmark summaries remain content-free.
+Narration text is local sensitive data. It must not be persisted, logged, placed in metrics or analytics, copied into snapshots or errors, or used as a locator anchor. The accepted test-only corpus contains frozen synthetic-sensitive source/expected values for whitespace, line breaks, hyphenation, punctuation, abbreviations, numbers, dates, times, currency, percentages, symbols, code, Unicode, effective-language transitions, malformed input, and foreign names. It records exact transforms plus ambiguous/unsupported preservation and protected boundaries without adding a normalizer. Corpus tests may assert short exact strings where text transformation is the behavior under review, but diagnostics and benchmark summaries remain content-free.
 
 ## Required invariants
 

@@ -6,8 +6,10 @@ Accepted.
 
 ## Implementation status
 
-Accepted by Milestone 5 Task 1.1. Production narration preparation has not
-started. Tasks 1.2 and 1.3 must still accept the deterministic corpus and exact
+Accepted by Milestone 5 Task 1.1. Task 1.2 has accepted the deterministic
+test-only neutral/Spanish corpus summarized in
+[`narration-normalization-v1.md`](../narration-normalization-v1.md). Production
+narration preparation has not started. Task 1.3 must still accept exact
 `narration-v1` profile limits before production normalization or segmentation
 begins. This decision adds no runtime operation, dependency, shared schema,
 desktop integration, TTS behavior, audio behavior, persistence, or capability.

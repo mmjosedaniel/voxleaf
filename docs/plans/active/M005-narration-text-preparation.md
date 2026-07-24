@@ -35,7 +35,7 @@ Implemented prerequisites are:
 Important current limitations are:
 
 - no production module traverses semantic EPUB content for narration;
-- no normalization policy, Spanish corpus, sentence scanner, scene-break policy, or chunk-sizing profile is accepted;
+- the deterministic neutral/Spanish normalization corpus is accepted test-only, but no production normalizer, sentence scanner, scene-break policy, or chunk-sizing profile exists;
 - no source-span mapping survives text transformations;
 - no public bounded preparation operation exists on an opened publication;
 - no TTS engine has established model-specific input limits or preprocessing requirements; and
@@ -386,7 +386,7 @@ Implementation tasks are ordered. A task may refine a later task, but production
 - `pnpm.cmd --filter @voxleaf/epub test`.
 - `pnpm.cmd --filter @voxleaf/epub typecheck`.
 
-**Status:** Not started.
+**Status:** Complete. The frozen test-only corpus contains 62 synthetic-sensitive cases across every required category. Each case records source block/units, caller default and effective span language, exact narration text, transform/preserve/remove action, ambiguity policy, and protected boundaries. Content-free integrity tests prove category and edge coverage, unique identities/source signatures, deep source immutability, and redacted closed validation failures. No production normalizer, dependency, schema, capability, or TTS behavior was added.
 
 ### Task 1.3: Accept chunk sizing and preparation resource limits
 
@@ -925,6 +925,7 @@ No migration or user-data rollback should be required because Milestone 5 persis
 - 2026-07-24: Created the Milestone 5 ExecPlan from roadmap, product, architecture, completed Milestones 2-4, current EPUB/shared contracts, locator accounting, opened-publication lifecycle, tests, and repository commands. No implementation, dependency, schema, capability, TTS, audio, UI, or persistence behavior was added.
 - 2026-07-24: Reconciled project status, product terminology, architecture overview, canonical component/data-flow diagrams, dependency guidance, and testing guidance for the start of Milestone 5. The documentation labels narration preparation approved planned and all later TTS/audio/synchronization work deferred; no production or test implementation began.
 - 2026-07-24: Completed Task 1.1. Accepted ADR-0012 for package-owned `OpenedPublication.prepareNarration`, the package-local `narration-v1` request/prepared-segment/closed-result boundary, half-open stable ranges, full containing-segment disclosure, structural continuation, `und`/`es` language input, one active preparation independent of one raster read, close/cancellation/no-partial-result behavior, and no new dependency, capability, or shared schema. Reconciled architecture, system diagram, roadmap, dependency, testing, and this plan. `pnpm.cmd format:check` and `git diff --check` passed; no production or test implementation began.
+- 2026-07-24: Completed Task 1.2. Added the authoritative frozen test-only `narration-v1` table with 62 repository-authored synthetic-sensitive neutral/Spanish cases, exact source/effective-language/output/ambiguity/boundary decisions, and content-free fixture validation. Added focused integrity/privacy tests and reconciled architecture, system diagram, roadmap, testing guidance, ADR implementation status, and this plan. `pnpm.cmd --filter @voxleaf/epub test` passed 24 files/386 tests, `pnpm.cmd --filter @voxleaf/epub typecheck`, `pnpm.cmd format:check`, and `git diff --check` passed; no production normalizer, dependency, schema, capability, TTS, audio, UI, or persistence behavior was added.
 
 ## Discoveries and decisions
 
@@ -940,6 +941,7 @@ No migration or user-data rollback should be required because Milestone 5 persis
 - Stable segmentation must be independent of request batching. The unresolved user-interaction choice for a visual locator inside a stable segment remains explicitly deferred to Milestone 9.
 - ADR-0012 accepts `prepareNarration` as a closed result-returning operation rather than an exception boundary. A request inside a stable segment receives that complete segment plus `inside-segment`, preserving both stable batch-independent segmentation and Milestone 9's later choice to use or skip it.
 - Narration preparation owns a separate active-operation slot from raster reads. This preserves the no-archive-read boundary while allowing one in-memory preparation and one bounded image read to overlap; publication close cancels and awaits both.
+- The Task 1.2 corpus is test-only authority rather than a production lookup table. Neutral behavior is conservative; Spanish lexical expansion is allowlisted; ambiguous/unsupported forms, code spacing, combining sequences, astral code points, malformed punctuation, and foreign names are preserved; validation failures expose only closed content-free codes.
 
 ## Final validation results
 
