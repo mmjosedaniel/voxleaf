@@ -19,6 +19,14 @@ import type {
 import type { PublicationLocatorIndex } from "../locator/locator-index.js";
 import { resolvePublicationLocator } from "../locator/locator-resolver.js";
 import {
+  DEFAULT_NARRATION_YIELD_SCHEDULER,
+  prepareNarrationSourceWindow,
+  type NarrationSourceWindowFailure,
+  type NarrationSourceWindowRequest,
+  type NarrationSourceWindowResult,
+  type NarrationYieldScheduler,
+} from "../narration/narration-source-window.js";
+import {
   resolvePublicationTarget,
   type PublicationTargetIndex,
 } from "../locator/target-resolver.js";
@@ -35,6 +43,7 @@ export interface OpenedPublicationValues {
   readonly navigation: readonly PublicationNavigationNode[];
   readonly locatorIndex: PublicationLocatorIndex;
   readonly targetIndex: PublicationTargetIndex;
+  readonly narrationYieldScheduler?: NarrationYieldScheduler;
 }
 
 interface LinkedAbortSignal {
@@ -94,11 +103,20 @@ class OpenedPublicationHandle implements OpenedPublication {
   readonly #archive: OpenedEpubArchive;
   readonly #bindingsById: ReadonlyMap<string, RasterImageResourceBinding>;
   readonly #locatorIndex: PublicationLocatorIndex;
+  readonly #narrationYieldScheduler: NarrationYieldScheduler;
   readonly #targetIndex: PublicationTargetIndex;
   readonly #closeController = new AbortController();
+  #activeNarrationPreparation: Promise<void> | undefined;
   #activeRead: Promise<void> | undefined;
   #closePromise: Promise<void> | undefined;
   #closed = false;
+
+  public static prepareNarrationSource(
+    publication: OpenedPublicationHandle,
+    request: NarrationSourceWindowRequest,
+  ): Promise<NarrationSourceWindowResult> {
+    return publication.#prepareNarrationSource(request);
+  }
 
   public constructor(
     archive: OpenedEpubArchive,
@@ -109,6 +127,8 @@ class OpenedPublicationHandle implements OpenedPublication {
     this.book = values.book;
     this.documents = Object.freeze([...values.documents]);
     this.#locatorIndex = values.locatorIndex;
+    this.#narrationYieldScheduler =
+      values.narrationYieldScheduler ?? DEFAULT_NARRATION_YIELD_SCHEDULER;
     this.#targetIndex = values.targetIndex;
     this.locators = Object.freeze([...values.locatorIndex.blocks]);
     this.navigation = Object.freeze([...values.navigation]);
@@ -195,6 +215,56 @@ class OpenedPublicationHandle implements OpenedPublication {
     );
   }
 
+  async #prepareNarrationSource(
+    request: NarrationSourceWindowRequest,
+  ): Promise<NarrationSourceWindowResult> {
+    if (this.#closed) {
+      return narrationFailure("internal-failure");
+    }
+    if (this.#activeNarrationPreparation !== undefined) {
+      return narrationFailure("operation-active");
+    }
+
+    const linkedSignal = linkAbortSignals(
+      this.#closeController.signal,
+      request.signal,
+    );
+    if (linkedSignal.signal.aborted) {
+      linkedSignal.dispose();
+      return narrationFailure("cancelled");
+    }
+
+    let settleActive: (() => void) | undefined;
+    const active = new Promise<void>((resolve) => {
+      settleActive = resolve;
+    });
+    this.#activeNarrationPreparation = active;
+
+    try {
+      const result = await prepareNarrationSourceWindow(
+        this.#locatorIndex,
+        Object.freeze({
+          startLocator: request.startLocator,
+          signal: linkedSignal.signal,
+        }),
+        this.#narrationYieldScheduler,
+      );
+      if (
+        (this.#closed || linkedSignal.signal.aborted) &&
+        result.status !== "cancelled"
+      ) {
+        return narrationFailure("cancelled");
+      }
+      return result;
+    } finally {
+      linkedSignal.dispose();
+      if (this.#activeNarrationPreparation === active) {
+        this.#activeNarrationPreparation = undefined;
+      }
+      settleActive?.();
+    }
+  }
+
   public close(): Promise<void> {
     if (this.#closePromise !== undefined) {
       return this.#closePromise;
@@ -202,9 +272,10 @@ class OpenedPublicationHandle implements OpenedPublication {
 
     this.#closed = true;
     this.#closeController.abort();
+    const activeNarrationPreparation = this.#activeNarrationPreparation;
     const activeRead = this.#activeRead;
     this.#closePromise = (async () => {
-      await activeRead;
+      await Promise.all([activeNarrationPreparation, activeRead]);
       try {
         await this.#archive.close();
       } catch (error: unknown) {
@@ -231,6 +302,12 @@ class OpenedPublicationHandle implements OpenedPublication {
   }
 }
 
+function narrationFailure(
+  status: NarrationSourceWindowFailure["status"],
+): NarrationSourceWindowFailure {
+  return Object.freeze({ status });
+}
+
 export function createOpenedPublication(
   archive: OpenedEpubArchive,
   packageDocument: ParsedPackageDocument,
@@ -238,4 +315,18 @@ export function createOpenedPublication(
 ): OpenedPublication {
   const bindings = createRasterImageResourceCatalog(archive, packageDocument);
   return new OpenedPublicationHandle(archive, values, bindings);
+}
+
+/**
+ * Package-internal bridge used until Task 5.1 exposes the closed public
+ * narration-preparation contract on `OpenedPublication`.
+ */
+export function prepareOpenedPublicationNarrationSource(
+  publication: OpenedPublication,
+  request: NarrationSourceWindowRequest,
+): Promise<NarrationSourceWindowResult> {
+  if (!(publication instanceof OpenedPublicationHandle)) {
+    return Promise.resolve(narrationFailure("internal-failure"));
+  }
+  return OpenedPublicationHandle.prepareNarrationSource(publication, request);
 }

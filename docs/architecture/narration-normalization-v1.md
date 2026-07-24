@@ -3,8 +3,9 @@
 ## Status
 
 Accepted by Milestone 5 Task 1.2 as a test-only policy and fixture gate.
-Tasks 2.1-2.2 now implement exhaustive package-internal semantic source
-traversal and Unicode-code-point source-span tokens, but normalization,
+Tasks 2.1-2.3 now implement exhaustive package-internal semantic source
+traversal, Unicode-code-point source-span tokens, and bounded canonical source
+windows with cancellation/continuation, but normalization,
 segmentation, and `OpenedPublication.prepareNarration` remain unimplemented.
 Task 1.3 has accepted the separate
 [`narration-v1` resource profile](narration-preparation-limits-v1.md), so
@@ -38,7 +39,7 @@ runtime schema, and must not be consulted through filesystem or network IO.
 ## Accepted conservative policy
 
 | Category | Accepted behavior | Preserve rather than guess |
-| --- | --- | --- |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Whitespace | Collapse ordinary and nonbreaking spacing; remove approved zero-width formatting marks. | Code-span spacing remains exact. |
 | Semantic line breaks | Convert an in-block line break to one speech boundary while retaining its source position for later mapping. | Paragraph and addressable-block boundaries remain structural, not whitespace. |
 | Hyphenation | Remove explicit soft hyphens and join the accepted Spanish line-end split. | Genuine compounds and ambiguous neutral splits retain the hyphen. |
@@ -76,8 +77,9 @@ names, or deliberately print source/expected values on failure.
 ## Deferred work
 
 This corpus does not implement an algorithm, select numeric hard limits, select
-a TTS engine, or establish model-specific preprocessing. Tasks 2.1-2.2 now
-provide the production semantic traversal and locator-valid source-span tokens;
+a TTS engine, or establish model-specific preprocessing. Tasks 2.1-2.3 now
+provide the production semantic traversal, locator-valid source-span tokens,
+and bounded source-window lifecycle;
 later Milestone 5 tasks must implement the table
 without changing displayed publication semantics. Any proposed corpus change
 must update the authoritative fixture, its integrity tests, this summary, and

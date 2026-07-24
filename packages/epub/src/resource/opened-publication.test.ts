@@ -3,7 +3,11 @@ import {
   Uint8ArrayWriter,
   ZipWriter,
 } from "@zip.js/zip.js/lib/zip-core-native.js";
-import { decodeBookV1 } from "@voxleaf/shared";
+import {
+  createIndex,
+  decodeBookV1,
+  decodeReadingLocatorV1,
+} from "@voxleaf/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { EpubArchiveError } from "../archive/archive-error.js";
@@ -20,11 +24,19 @@ import { parseArchiveEntryPath } from "../paths/archive-path.js";
 import type { ArchiveFilePath } from "../paths/archive-path.js";
 import { createEpubProcessingBudget } from "../security/processing-budget.js";
 import type {
+  ContentDocumentId,
   OpenedPublication,
+  PublicationLocatedBlock,
   RasterImageMediaType,
   RasterImageResourceId,
+  SensitivePublicationText,
 } from "../document/document-model.js";
-import { createOpenedPublication } from "./opened-publication.js";
+import { NARRATION_V1_SOURCE_WINDOW_POLICY } from "../narration/narration-policy.js";
+import type { NarrationYieldScheduler } from "../narration/narration-source-window.js";
+import {
+  createOpenedPublication,
+  prepareOpenedPublicationNarrationSource,
+} from "./opened-publication.js";
 
 const encoder = new TextEncoder();
 const ZIP_WRITER_OPTIONS = Object.freeze({
@@ -273,6 +285,115 @@ describe("bounded local publication resources", () => {
     expect(publication.closed).toBe(true);
     expect(archive.closeCount).toBe(1);
   });
+
+  it("owns one narration operation independently of one raster read", async () => {
+    const archive = await openEpubArchive(await createArchive(IMAGE_ENTRIES));
+    const deferred = createDeferredYieldScheduler();
+    const values = narrationPublicationValues(
+      NARRATION_V1_SOURCE_WINDOW_POLICY.retainedTokenEntriesHardMaximum + 1,
+      deferred.scheduler,
+    );
+    const publication = createOpenedPublication(
+      archive,
+      createPackageDocument(),
+      values,
+    );
+    const start = requiredLocatedBlock(
+      values.locatorIndex.blocks[0],
+    ).startLocator;
+
+    try {
+      const before = archive.budget.getSnapshot().observedUncompressedBytes;
+      const active = prepareOpenedPublicationNarrationSource(publication, {
+        startLocator: start,
+      });
+      await deferred.started;
+
+      await expect(
+        prepareOpenedPublicationNarrationSource(publication, {
+          startLocator: start,
+        }),
+      ).resolves.toEqual({ status: "operation-active" });
+      await expect(publication.readResource(imageId(2))).resolves.toEqual(PNG);
+      expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(
+        before + PNG.byteLength,
+      );
+
+      deferred.release();
+      const result = await active;
+      expect(result.status).toBe("window");
+    } finally {
+      deferred.release();
+      await publication.close();
+    }
+  });
+
+  it("aborts and awaits active narration before idempotent close releases the archive", async () => {
+    const archive = new DeferredArchive();
+    const deferred = createDeferredYieldScheduler();
+    const values = narrationPublicationValues(
+      NARRATION_V1_SOURCE_WINDOW_POLICY.retainedTokenEntriesHardMaximum + 1,
+      deferred.scheduler,
+    );
+    const publication = createOpenedPublication(
+      archive,
+      createSingleImagePackage("image/png", "EPUB/images/deferred.png"),
+      values,
+    );
+    const start = requiredLocatedBlock(
+      values.locatorIndex.blocks[0],
+    ).startLocator;
+    const active = prepareOpenedPublicationNarrationSource(publication, {
+      startLocator: start,
+    });
+    await deferred.started;
+
+    const firstClose = publication.close();
+    const secondClose = publication.close();
+    expect(secondClose).toBe(firstClose);
+    expect(publication.closed).toBe(true);
+    expect(archive.closeCount).toBe(0);
+
+    deferred.release();
+    await expect(active).resolves.toEqual({ status: "cancelled" });
+    await firstClose;
+    expect(archive.closeCount).toBe(1);
+    await expect(
+      prepareOpenedPublicationNarrationSource(publication, {
+        startLocator: start,
+      }),
+    ).resolves.toEqual({ status: "internal-failure" });
+  });
+
+  it("allows retry after caller cancellation without publishing stale source", async () => {
+    const archive = new DeferredArchive();
+    const values = narrationPublicationValues(8, async () => undefined);
+    const publication = createOpenedPublication(
+      archive,
+      createSingleImagePackage("image/png", "EPUB/images/deferred.png"),
+      values,
+    );
+    const start = requiredLocatedBlock(
+      values.locatorIndex.blocks[0],
+    ).startLocator;
+    const controller = new AbortController();
+    controller.abort("private-canary");
+
+    await expect(
+      prepareOpenedPublicationNarrationSource(publication, {
+        startLocator: start,
+        signal: controller.signal,
+      }),
+    ).resolves.toEqual({ status: "cancelled" });
+
+    const retry = await prepareOpenedPublicationNarrationSource(publication, {
+      startLocator: start,
+    });
+    expect(retry.status).toBe("complete");
+    expect(JSON.stringify(retry)).not.toContain("private-canary");
+    await publication.close();
+    expect(archive.closeCount).toBe(1);
+  });
 });
 
 class DeferredArchive implements OpenedEpubArchive {
@@ -475,6 +596,98 @@ function publicationValues() {
     }),
     targetIndex: Object.freeze({ findDocument: () => undefined }),
   });
+}
+
+function narrationPublicationValues(
+  sourceCodePoints: number,
+  narrationYieldScheduler: NarrationYieldScheduler,
+) {
+  const base = publicationValues();
+  const spine = base.book.spine[0];
+  if (spine === undefined) {
+    throw new Error("synthetic narration publication requires one spine");
+  }
+  const block = Object.freeze({
+    kind: "paragraph" as const,
+    children: Object.freeze([
+      Object.freeze({
+        kind: "text" as const,
+        text: "n".repeat(sourceCodePoints) as SensitivePublicationText,
+      }),
+    ]),
+  });
+  const locatedBlock: PublicationLocatedBlock = Object.freeze({
+    documentId: "document:0" as ContentDocumentId,
+    block,
+    startLocator: decodeReadingLocatorV1({
+      schemaVersion: 1,
+      bookIdentity: base.book.identity,
+      spineItemId: spine.id,
+      spineItemIndex: spine.index,
+      anchor: {
+        kind: "element-id",
+        formatVersion: 1,
+        value: "voxleaf-s0-a0",
+        anchorIndex: 0,
+      },
+      textOffsetCodePoints: 0,
+    }),
+    textLengthCodePoints: createIndex(sourceCodePoints),
+  });
+  return Object.freeze({
+    ...base,
+    locatorIndex: Object.freeze({
+      bookIdentity: base.book.identity,
+      spines: Object.freeze([
+        Object.freeze({
+          spineItemId: spine.id,
+          spineItemIndex: spine.index,
+          blocks: Object.freeze([locatedBlock]),
+        }),
+      ]),
+      blocks: Object.freeze([locatedBlock]),
+    }),
+    narrationYieldScheduler,
+  });
+}
+
+function createDeferredYieldScheduler(): Readonly<{
+  scheduler: NarrationYieldScheduler;
+  started: Promise<void>;
+  release(): void;
+}> {
+  let markStarted: (() => void) | undefined;
+  let releaseYield: (() => void) | undefined;
+  let released = false;
+  const started = new Promise<void>((resolve) => {
+    markStarted = resolve;
+  });
+  const scheduler: NarrationYieldScheduler = () => {
+    if (released) {
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve) => {
+      releaseYield = resolve;
+      markStarted?.();
+    });
+  };
+  return Object.freeze({
+    scheduler,
+    started,
+    release: () => {
+      released = true;
+      releaseYield?.();
+    },
+  });
+}
+
+function requiredLocatedBlock(
+  block: PublicationLocatedBlock | undefined,
+): PublicationLocatedBlock {
+  if (block === undefined) {
+    throw new Error("expected narration located block");
+  }
+  return block;
 }
 
 async function createArchive(

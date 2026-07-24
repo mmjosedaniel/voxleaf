@@ -6,7 +6,7 @@ This brief explains the intended VoxLeaf experience and the motivation behind th
 
 The normative MVP scope is in [`mvp.md`](mvp.md). Accepted technical decisions are recorded under [`../architecture/decisions/`](../architecture/decisions/), and current performance targets are in [`../architecture/performance-budget.md`](../architecture/performance-budget.md).
 
-The implemented product boundary currently includes private local EPUB ingestion, semantic visual reading/navigation, bounded display preferences, logical-position persistence, exact/nearest-valid restoration after exact-file reselection, and Tasks 2.1-2.2's package-internal exhaustive narration source projection plus Unicode-code-point source-span tokens. Milestone 5 remains in progress: normalization, segmentation, bounded/public preparation, TTS engines and process integration, generated audio, playback, synchronized highlighting, hardware profiles, and installers remain deferred to later tasks or milestones. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
+The implemented product boundary currently includes private local EPUB ingestion, semantic visual reading/navigation, bounded display preferences, logical-position persistence, exact/nearest-valid restoration after exact-file reselection, and Tasks 2.1-2.3's package-internal exhaustive narration source projection, Unicode-code-point source-span tokens, bounded canonical source windows, continuation, cancellation, and publication-close ownership. Milestone 5 remains in progress: normalization, segmentation, prepared/public narration batches, TTS engines and process integration, generated audio, playback, synchronized highlighting, hardware profiles, and installers remain deferred to later tasks or milestones. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
 
 ## Summary
 
@@ -108,7 +108,7 @@ The implemented persisted reader state retains only bounded exact-byte identity,
 The following ideas guide prototypes but are not accepted merely because they appear in this brief:
 
 | Area | Candidate direction | Required validation |
-| --- | --- | --- |
+| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | Desktop | Tauri 2, React, TypeScript, and Vite | Bootstrap, platform integration, accessibility, and packaging |
 | TTS process | Persistent local Python sidecar | Lifecycle, isolation, cancellation, installation, and recovery |
 | Balanced model | A smaller Qwen3-TTS profile | Spanish quality, startup latency, real-time factor, and memory use |

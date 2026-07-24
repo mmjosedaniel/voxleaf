@@ -3,9 +3,11 @@
 ## Status
 
 Accepted by Milestone 5 Task 1.3 as a test-only policy and deterministic
-evidence gate. Tasks 2.1-2.2 now implement exhaustive package-internal semantic
-source traversal and source-span tokens, but production profile enforcement,
-normalization, segmentation, and `OpenedPublication.prepareNarration` remain
+evidence gate. Tasks 2.1-2.2 implement exhaustive package-internal semantic
+source traversal and source-span tokens. Task 2.3 production-enforces the
+source-window, traversal-depth, retained-token/event, cancellation-checkpoint,
+and deterministic-yield subset while normalization, segmentation, remaining
+output dimensions, and `OpenedPublication.prepareNarration` remain
 unimplemented.
 
 The exact test authority is
@@ -117,6 +119,15 @@ Production implementation must:
 
 These are deterministic structural gates, not claims about milliseconds or a
 particular processor.
+
+Task 2.3 implements these gates in
+[`narration-source-window.ts`](../../packages/epub/src/narration/narration-source-window.ts).
+The operation retains at most 4,096 source tokens and 4,096 source events,
+publishes the final token end as its canonical continuation, charges source
+inspection, scanner/structural transitions, and retained appends separately,
+and discards all partial events on cancellation or failure. The production
+policy constants are package-internal; Task 5.1 still owns the final public
+request/result surface and remaining profile enforcement.
 
 ## Synthetic evidence
 
