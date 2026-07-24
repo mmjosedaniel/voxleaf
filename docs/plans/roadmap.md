@@ -149,7 +149,7 @@ Milestone 3 provides sanitized content and stable locators. Milestone 2 provides
 
 ## Milestone 5: Prepare text for natural narration
 
-**Status:** Planned — next implementation priority. The approved active ExecPlan exists, but production implementation has not started.
+**Status:** Planned — next implementation priority. Task 1.1 is complete with ADR-0012 accepted; Tasks 1.2-1.3 still gate the corpus and exact profile bounds, and production implementation has not started.
 
 **Detailed ExecPlan:** [`active/M005-narration-text-preparation.md`](active/M005-narration-text-preparation.md)
 

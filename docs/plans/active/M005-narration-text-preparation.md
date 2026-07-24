@@ -142,7 +142,9 @@ This plan becomes the implementation authority for roadmap Milestone 5. It must 
 
 ### Expected implementation areas
 
-Exact names may be adjusted by Task 1.1, but the intended ownership is:
+ADR-0012 accepts the public `OpenedPublication.prepareNarration` operation,
+`narration-v1` profile identifier, closed package-local result/types, and the
+following intended implementation ownership:
 
 - `packages/epub/src/narration/narration-policy.ts`
 - `packages/epub/src/narration/narration-source.ts`
@@ -154,7 +156,7 @@ Exact names may be adjusted by Task 1.1, but the intended ownership is:
 - public narration types in `document-model.ts` or a dedicated exported type module
 - opened-publication lifecycle integration in `resource/opened-publication.ts`
 - synthetic narration cases in EPUB test support
-- a new narration-preparation ADR, expected to be `ADR-0012`
+- `docs/architecture/decisions/ADR-0012-bounded-narration-preparation.md`
 
 No `apps/desktop`, `services/tts`, Rust, Tauri capability, browser-storage, or audio implementation change is expected.
 
@@ -162,19 +164,19 @@ No `apps/desktop`, `services/tts`, Rust, Tauri capability, browser-storage, or a
 
 ### Ownership boundary
 
-Narration preparation remains inside `@voxleaf/epub` as a framework-independent stage over the package's immutable semantic documents and locator index. This keeps source traversal, code-point accounting, locator construction, and publication lifecycle under the owner that already defines them.
+Narration preparation remains inside `@voxleaf/epub` as a framework-independent stage over the package's immutable semantic documents and locator index. [ADR-0012](../../architecture/decisions/ADR-0012-bounded-narration-preparation.md) accepts this ownership because it keeps source traversal, code-point accounting, locator construction, and publication lifecycle under the owner that already defines them.
 
-The preferred public shape is a bounded operation on `OpenedPublication`, provisionally named `prepareNarration`. Task 1.1 must finalize the name and closed input/result unions in an accepted ADR before implementation. The operation should:
+The accepted public shape is `OpenedPublication.prepareNarration(request): Promise<NarrationPreparationResult>`. Its closed request uses an untrusted start locator, package-local `narration-v1` profile, `und` or `es` caller default language, positive caller-requested segment count no greater than the Task 1.3 package maximum, and optional `AbortSignal`. The operation:
 
-- accept an untrusted start locator, a closed package-local narration profile, a caller-requested batch size no greater than the package maximum, and an optional `AbortSignal`;
-- normalize the start through package-owned locator resolution;
-- process only a finite source window and never materialize a whole publication by default;
-- return frozen prepared segments, canonical start/continuation locators, and content-free measurements;
-- return no partial batch after cancellation, close, internal failure, or a hard-limit failure;
-- avoid image-resource reads, archive reads, DOM access, storage, network, workers, process APIs, and logging; and
-- participate in `OpenedPublication.close()` so closing a book aborts and awaits active preparation before releasing publication resources.
+- normalizes the start through package-owned locator resolution;
+- processes only a finite source window and never materializes a whole publication by default;
+- returns frozen prepared segments, canonical start/continuation locators, an exact/recovered start status, a stable-segment relation, and content-free measurements;
+- returns only the accepted `batch`, `complete`, `cancelled`, `invalid-request`, `invalid-start`, `operation-active`, `resource-limit-exceeded`, or `internal-failure` outcomes;
+- returns no partial batch after cancellation, close, internal failure, or a hard-limit failure;
+- avoids image-resource reads, archive reads, DOM access, storage, network, workers, process APIs, and logging; and
+- participates in `OpenedPublication.close()` so closing a book aborts and awaits active preparation before releasing publication resources.
 
-At most one narration-preparation operation should be active per publication unless Task 1.1 records evidence for a different bounded policy. This milestone has no need for concurrent preparation of the same immutable publication.
+At most one narration-preparation operation may be active per publication. A second call returns `operation-active` without cancelling or joining the first. Narration has a separate slot from the existing serialized raster-resource read, so one of each may overlap; close aborts and awaits both.
 
 ### Shared contract boundary
 
@@ -206,7 +208,7 @@ The source mapper must never derive positions from publisher fragments, DOM node
 
 ### Range semantics
 
-Task 1.1 should accept the following default:
+ADR-0012 accepts the following range policy:
 
 - prepared ranges are half-open `[start, end)`;
 - a segment remains inside one heading or paragraph, so its start and end share book, spine, and anchor identity;
@@ -218,7 +220,7 @@ Task 1.1 should accept the following default:
 - an inline raster position between spoken text may lie inside the segment's enclosing range but is never narrated; and
 - normalization and segmentation batching must not change source ranges for the same publication and profile.
 
-The accepted ADR must state how a request beginning inside an already segmented sentence relates to that stable segment. Milestone 5 should expose the relation without deciding whether Milestone 9 starts at the containing segment, the next segment, or another interaction-specific target.
+ADR-0012 requires a request beginning inside an already segmented sentence to return the complete containing stable segment first and report `inside-segment`. Starts at a stable boundary report `at-segment-start`, unspoken gaps report `before-next-segment`, and exhaustion reports `publication-end`. Milestone 9 still decides whether a particular play or seek interaction uses the containing segment, the next segment, or another valid target.
 
 ### Separation of displayed and narration text
 
@@ -257,7 +259,7 @@ Normalization must be idempotent for accepted narration input: applying the same
 
 ### Language policy
 
-No language detector is added. Task 1.1 should approve a closed package-local default language input with at least:
+No language detector is added. ADR-0012 approves a closed package-local caller default language input with:
 
 - `und` for neutral behavior; and
 - `es` for the first Spanish profile.
@@ -321,9 +323,9 @@ The narration operation must not reuse the raster read slot or read archive entr
 
 ### Dependency policy
 
-The default implementation adds no production dependency. The semantic model, shared contracts, Unicode-aware JavaScript primitives, and repository-owned deterministic scanners are sufficient for the first bounded profile.
+ADR-0012 approves no production dependency. The semantic model, shared contracts, Unicode-aware JavaScript primitives, and repository-owned deterministic scanners are sufficient for the first bounded profile.
 
-Before adding a dependency, Task 1.1 must document:
+Before adding a dependency, an amendment or superseding ADR must document:
 
 - the exact behavior that repository code cannot safely provide;
 - deterministic Node/WebView behavior and release pinning;
@@ -332,7 +334,7 @@ Before adding a dependency, Task 1.1 must document:
 - alternatives considered; and
 - updates to `docs/development/dependencies.md`, manifests, and lockfiles.
 
-`Intl.Segmenter` must not be used as the segmentation authority because output can vary by runtime data and it does not preserve the required source-transform map. It may be evaluated only as non-authoritative evidence if Task 1.1 records why.
+`Intl.Segmenter` must not be used as the production segmentation authority because output can vary by runtime data and it does not preserve the required source-transform map. ADR-0012 permits it only in a non-authoritative test-only investigation that cannot change production output.
 
 ### Documentation status
 
@@ -363,7 +365,7 @@ Implementation tasks are ordered. A task may refine a later task, but production
 - Run `pnpm.cmd format:check`.
 - Run `git diff --check`.
 
-**Status:** Not started.
+**Status:** Complete. ADR-0012 accepts the package ownership, public request/result and prepared-segment types, half-open ranges, containing-segment relation, `und`/`es` language input, one-active-operation and close behavior, dependency policy, and separation from `NarrationSegmentV1`. The architecture, diagram, roadmap, dependency, testing, and plan documentation is reconciled. `pnpm.cmd format:check` and `git diff --check` passed.
 
 ### Task 1.2: Establish the deterministic normalization and Spanish corpus
 
@@ -922,6 +924,7 @@ No migration or user-data rollback should be required because Milestone 5 persis
 
 - 2026-07-24: Created the Milestone 5 ExecPlan from roadmap, product, architecture, completed Milestones 2-4, current EPUB/shared contracts, locator accounting, opened-publication lifecycle, tests, and repository commands. No implementation, dependency, schema, capability, TTS, audio, UI, or persistence behavior was added.
 - 2026-07-24: Reconciled project status, product terminology, architecture overview, canonical component/data-flow diagrams, dependency guidance, and testing guidance for the start of Milestone 5. The documentation labels narration preparation approved planned and all later TTS/audio/synchronization work deferred; no production or test implementation began.
+- 2026-07-24: Completed Task 1.1. Accepted ADR-0012 for package-owned `OpenedPublication.prepareNarration`, the package-local `narration-v1` request/prepared-segment/closed-result boundary, half-open stable ranges, full containing-segment disclosure, structural continuation, `und`/`es` language input, one active preparation independent of one raster read, close/cancellation/no-partial-result behavior, and no new dependency, capability, or shared schema. Reconciled architecture, system diagram, roadmap, dependency, testing, and this plan. `pnpm.cmd format:check` and `git diff --check` passed; no production or test implementation began.
 
 ## Discoveries and decisions
 
@@ -933,8 +936,10 @@ No migration or user-data rollback should be required because Milestone 5 persis
 - The current opened-publication handle already links caller cancellation with publication close for resource reads and awaits active work before archive release. Narration preparation should follow the lifecycle pattern without using the raster read slot.
 - The current package has no narration dependency or module. This plan proposes repository-owned deterministic scanners and no new production dependency.
 - The broad synchronized-reader plan remains useful for Milestones 8-9 but does not define Milestone 5 normalization or segmentation acceptance.
-- Half-open block-local ranges are the proposed mapping convention because they compose without duplicate boundary code points and remain compatible with the existing ordered `LocatorRangeV1`.
+- Half-open block-local ranges are the accepted mapping convention because they compose without duplicate boundary code points and remain compatible with the existing ordered `LocatorRangeV1`.
 - Stable segmentation must be independent of request batching. The unresolved user-interaction choice for a visual locator inside a stable segment remains explicitly deferred to Milestone 9.
+- ADR-0012 accepts `prepareNarration` as a closed result-returning operation rather than an exception boundary. A request inside a stable segment receives that complete segment plus `inside-segment`, preserving both stable batch-independent segmentation and Milestone 9's later choice to use or skip it.
+- Narration preparation owns a separate active-operation slot from raster reads. This preserves the no-archive-read boundary while allowing one in-memory preparation and one bounded image read to overlap; publication close cancels and awaits both.
 
 ## Final validation results
 

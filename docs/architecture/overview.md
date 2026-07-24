@@ -76,16 +76,20 @@ The public EPUB package currently implements the in-memory validation, parsing, 
 
 ## Approved narration-preparation boundary
 
-The [Milestone 5 ExecPlan](../plans/active/M005-narration-text-preparation.md) is the implementation authority for text preparation. At this documentation baseline, every production task remains not started and no narration ADR has been accepted. The approved high-level boundary is:
+The [Milestone 5 ExecPlan](../plans/active/M005-narration-text-preparation.md) is the implementation authority for text preparation, and [ADR-0012](decisions/ADR-0012-bounded-narration-preparation.md) fixes its durable public and lifecycle boundary. Production implementation remains not started. The accepted boundary is:
 
 - derive narration source material only from already-sanitized immutable semantic headings and paragraphs in source order;
 - preserve displayed `SensitivePublicationText` unchanged and create a separate sensitive, ephemeral narration representation;
 - apply deterministic normalization and semantic segmentation with explicit neutral and representative Spanish cases;
-- keep returned work bounded and measurable by content-free counts, with cancellation and publication-close ownership to be finalized by Task 1.1;
+- expose `OpenedPublication.prepareNarration(request)` with the closed package-local `narration-v1` profile, caller default language `und` or `es`, a positive bounded segment count, and optional caller cancellation;
+- return frozen `batch`, `complete`, `cancelled`, `invalid-request`, `invalid-start`, `operation-active`, `resource-limit-exceeded`, or `internal-failure` outcomes with no partial sensitive result;
+- permit one active narration preparation independently of the existing raster-read slot, while publication close aborts and awaits both before archive release;
 - retain a stable source `LocatorRangeV1` for every nonempty prepared segment so later seeking, highlighting, cancellation, and progress can refer to the same logical publication positions; and
 - keep model-specific preprocessing, TTS requests, inference, audio, timing, highlighting, and synchronized playback outside Milestone 5.
 
-The package-local prepared segment is not yet the session-bound `NarrationSegmentV1`. The existing shared contract proves that sensitive text, source range, sequence, and work identity can be represented, but Milestone 5 must not invent later session/generation identifiers. Exact operation names, result/error unions, profile limits, language input, continuation behavior, and lifecycle concurrency are open Task 1.1 decisions and must not be treated as accepted architecture before the planned ADR is approved.
+The package-local `PreparedNarrationSegment` contains `SensitiveNarrationTextV1`, one block-local half-open `LocatorRangeV1`, a closed boundary reason, and content-free source/narration code-point, UTF-8-byte, and sentence measurements. It has no segment, session, generation, model, voice, timing, or audio identity. Later coordination code attaches the identities needed by `NarrationSegmentV1`; Milestone 5 does not change or duplicate the shared schema.
+
+The operation structurally normalizes an untrusted start locator and reports exact/recovered resolution plus its relation to stable segmentation. A request inside a segment returns that complete segment first and reports `inside-segment`; a request in an unspoken gap reports `before-next-segment`; a request at a segment start reports `at-segment-start`; and an exhausted source reports `publication-end`. This preserves stable segmentation while leaving Milestone 9 free to use, skip, or otherwise interpret the containing segment for a particular playback interaction. A nonterminal batch continues from the final segment's end locator; changing the requested batch count cannot change segment text or ranges.
 
 Narration text is local sensitive data. It must not be persisted, logged, placed in metrics or analytics, copied into snapshots or errors, or used as a locator anchor. Synthetic corpus cases may assert exact strings where text transformation is the behavior under test, but diagnostics and benchmark summaries remain content-free.
 
@@ -108,7 +112,7 @@ Narration text is local sensitive data. It must not be persisted, logged, placed
 - `apps/desktop` declares `@voxleaf/epub` and `@voxleaf/shared` directly. The publication-session module owns the EPUB opener; reader modules consume only public semantic/publication types and package resolution operations; persistence modules consume shared locator/state types and the strict shared persisted-state decoder.
 - EPUB parsing must not depend on the desktop framework.
 - `@voxleaf/epub` consumes shared book and locator contracts only through the public `@voxleaf/shared` workspace package boundary; `@voxleaf/shared` has no reverse EPUB dependency.
-- The approved Milestone 5 plan keeps narration preparation framework-independent beside the semantic/locator owner in `@voxleaf/epub`; its exact public operation remains gated by the planned narration ADR.
+- ADR-0012 keeps narration preparation framework-independent beside the semantic/locator owner in `@voxleaf/epub` and accepts `OpenedPublication.prepareNarration` as the sole public preparation operation.
 - Scrolling layout and semantic-to-DOM position mapping belong to the desktop reader. Logical locator creation plus locator and semantic-target resolution are implemented framework-independent operations in `@voxleaf/epub`.
 - Shared protocol types must not depend on either process implementation.
 - Future TTS model adapters must implement an internal interface so benchmarking does not leak model-specific details through the application.
