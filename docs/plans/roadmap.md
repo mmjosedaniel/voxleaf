@@ -149,6 +149,10 @@ Milestone 3 provides sanitized content and stable locators. Milestone 2 provides
 
 ## Milestone 5: Prepare text for natural narration
 
+**Status:** Planned — next implementation priority. The approved active ExecPlan exists, but production implementation has not started.
+
+**Detailed ExecPlan:** [`active/M005-narration-text-preparation.md`](active/M005-narration-text-preparation.md)
+
 ### Goal
 
 Create a deterministic narration representation and semantic segmentation pipeline without changing the displayed EPUB text.
@@ -163,7 +167,7 @@ Create a deterministic narration representation and semantic segmentation pipeli
 
 ### Dependencies
 
-Milestones 2 and 3 provide contracts and structured readable content. It may proceed alongside late Milestone 4 work once locator mapping is stable.
+Milestones 2 through 4 are complete. They provide the shared locator-range and narration-segment contracts, safe structured readable content, deterministic Unicode-code-point locators, and the visual reading-position boundary. The active ExecPlan is the detailed implementation authority; the older synchronized-reader plan is context only.
 
 ### Major risks and unknowns
 

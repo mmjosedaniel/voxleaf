@@ -111,9 +111,29 @@ Run `pnpm.cmd benchmark:reader:native` from the same native Windows terminal aft
 
 Both benchmarks are deliberately absent from `pnpm.cmd check`, `pnpm check:portable`, and GitHub Actions because their pass/fail latency and memory gates belong to the documented Windows reference host. Task 1.6 results and exact accepted limits are in [`../architecture/performance-budget.md`](../architecture/performance-budget.md#visual-reader-reference-limits). Re-run them after material changes to the semantic renderer, batching, reader styles, locator restoration/reflow, image lifecycle, Chromium/WebView version, native driver boundary, or reference hardware. Task 3.6 supplies production React measurements; Task 5.3 supplies native WebView2 interaction/restoration evidence; Task 5.4 supplies browser and native performance/resource-stress evidence.
 
+## Planned Milestone 5 narration-preparation validation
+
+The approved [Milestone 5 ExecPlan](../plans/active/M005-narration-text-preparation.md) defines the detailed test sequence. No production narration-preparation test exists yet, so this section records required coverage rather than current passing behavior.
+
+The implementation must add deterministic package-level tests for:
+
+- exhaustive safe semantic source traversal and Unicode-code-point source spans;
+- narration-only whitespace, line-break, hyphenation, punctuation, quotation, ellipsis, abbreviation, initials, numbers, dates, times, currency, symbols, and ambiguous-preservation rules;
+- explicit neutral and representative Spanish cases from short repository-authored synthetic fixtures;
+- sentence, dialogue, scene-break, clause, token, and long-sentence fallback boundaries;
+- nonempty bounded prepared segments with legal, ordered, stable locator ranges;
+- source immutability and separation between displayed text and normalized narration text;
+- exact-limit and max-plus-one input, segment, batch, lookahead, and cancellation-checkpoint behavior after Task 1.3 accepts the values;
+- deterministic continuation, cancellation, publication close, no-partial-result, and no-external-capability behavior after Task 1.1 accepts the operation boundary; and
+- privacy canaries proving source/narration text does not enter public errors, metrics, snapshots, persistence, or benchmark summaries.
+
+Use table-driven tests and fixed synthetic fixtures where exact text transformation is the observable behavior. Add fixed-seed randomized or property-style cases only if they materially improve invariant coverage without adding an unapproved dependency. Performance acceptance is based on deterministic counts, bytes, bounded collection sizes, and checkpoint distance; optional wall-clock observations are informational and must make no model, language-quality, latency, or hardware claim.
+
+The smallest planned focused commands are the existing EPUB package test, typecheck, and build commands. Root portable and native validation remain required at milestone close as specified by the ExecPlan. No Markdown or Mermaid-specific validator is currently configured in the repository.
+
 ## Deferred coverage
 
-The secure EPUB ingestion scenario and boundary matrix is implemented with repository-authored synthetic inputs; deterministic desktop tests prove the bounded repository, approved save lifecycle, and exact/recovered open coordination; the real-browser smoke proves preference plus exact/nearest-valid locator restoration through production React reload/reselection; the packaged native smoke proves save/restore across a WebView2 application restart; and the two hardware-specific benchmarks cover accepted prototype, production React, repeated lifecycle, and packaged WebView2 reader limits. No current test starts a TTS model, communicates with a TTS process, generates or plays audio, detects supported inference hardware, builds an installer, or exercises those later end-to-end flows. The examples below are requirements for later roadmap milestones, not claims about current coverage.
+The secure EPUB ingestion scenario and boundary matrix is implemented with repository-authored synthetic inputs; deterministic desktop tests prove the bounded repository, approved save lifecycle, and exact/recovered open coordination; the real-browser smoke proves preference plus exact/nearest-valid locator restoration through production React reload/reselection; the packaged native smoke proves save/restore across a WebView2 application restart; and the two hardware-specific benchmarks cover accepted prototype, production React, repeated lifecycle, and packaged WebView2 reader limits. No current test prepares narration text, starts a TTS model, communicates with a TTS process, generates or plays audio, detects supported inference hardware, builds an installer, or exercises those later end-to-end flows. The examples below are requirements for later roadmap milestones, not claims about current coverage.
 
 ## Test levels
 

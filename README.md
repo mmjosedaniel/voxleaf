@@ -2,7 +2,7 @@
 
 A privacy-first desktop EPUB reader with on-device neural text-to-speech and in-memory audio streaming.
 
-> **Status:** pre-alpha. The repository contains a reproducible workspace, shared contracts, validated in-memory EPUB ingestion/document-model support, and a minimal desktop shell. The desktop does not yet select or render books, persist reading state, narrate, play audio, detect hardware, or build an installer, so the application is not usable as an ebook reader.
+> **Status:** pre-alpha. Roadmap Milestones 1 through 4 are complete: the desktop can open a supported local EPUB, render and navigate its safe reflowable content, apply bounded display preferences, and restore a validated logical reading position after exact-file reselection. Milestone 5 has an approved active ExecPlan but implementation has not started. Narration preparation, TTS, audio, synchronization, hardware profiles, and installer packaging remain planned.
 
 ## Goal
 
@@ -15,7 +15,7 @@ The MVP is allowed to:
 - Keep a bounded amount of generated audio in memory.
 - Discard audio after playback instead of building a permanent audiobook file.
 
-## Planned capabilities
+## MVP capability target
 
 - Import local EPUB files.
 - Render EPUB text as a normal reflowable reader and navigate chapters and reading position.
@@ -30,7 +30,7 @@ The MVP is allowed to:
 
 ## Architecture
 
-The canonical [system architecture diagram](docs/architecture/system-diagram.md) distinguishes implemented components from partial foundations and approved planned work. The current framework-independent `@voxleaf/epub` package validates in-memory EPUB bytes and exposes safe semantic documents, bounded resources, and deterministic locators; no desktop caller is wired to it yet.
+The canonical [system architecture diagram](docs/architecture/system-diagram.md) distinguishes implemented components, work in progress, approved planned work, and deferred systems. The framework-independent `@voxleaf/epub` package validates in-memory EPUB bytes and exposes safe semantic documents, bounded resources, and deterministic locators. The desktop consumes that boundary for visual reading and position restoration. The approved Milestone 5 design derives a separate ephemeral narration representation from the same safe document model; it is not implemented and will not rewrite displayed text.
 
 Tauri, React, and TypeScript are accepted for the desktop foundation. A separate local Python TTS process and bounded in-memory audio are approved directions, but the TTS engine, process transport, audio format, playback API, renderer, and persistence technology remain undecided until their roadmap gates. Candidate model names are evaluation inputs, not selected architecture.
 
@@ -74,7 +74,7 @@ Use the browser shell for focused frontend development:
 pnpm.cmd --filter @voxleaf/desktop dev
 ```
 
-The development server listens only on `http://127.0.0.1:5173`; stop it with `Ctrl+C`. It displays the foundation shell, not a working reader. Build all foundation artifacts, including the native Windows executable, with:
+The development server listens only on `http://127.0.0.1:5173`; stop it with `Ctrl+C`. It hosts the implemented visual reader for supported local EPUBs, but it does not provide narration or audio. Build all current artifacts, including the native Windows executable, with:
 
 ```powershell
 pnpm.cmd build

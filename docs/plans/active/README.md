@@ -1,6 +1,6 @@
 # Active plans
 
-Store ExecPlans currently being implemented in this directory.
+Store current approved ExecPlans in this directory. A plan may be ready for implementation without production work having started; use its task statuses and the roadmap for implementation state.
 
 The high-level milestone order is maintained in [`../roadmap.md`](../roadmap.md). Create or refine detailed ExecPlans just in time for the milestone being implemented rather than planning the entire roadmap at implementation depth.
 
@@ -17,4 +17,5 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): broader context spanning reader, narration synchronization, and audio startup; the visual-reader portion is recorded in the [completed M004 plan](../completed/M004-reflowable-visual-reader-and-position-restoration.md), while this plan remains active for later-roadmap context.
+- [`M005-narration-text-preparation.md`](M005-narration-text-preparation.md): approved implementation authority for roadmap Milestone 5's deterministic, bounded, locator-linked narration normalization and semantic segmentation pipeline; all implementation tasks remain not started.
+- [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): broader context spanning reader, narration synchronization, and audio startup; the visual-reader portion is recorded in the [completed M004 plan](../completed/M004-reflowable-visual-reader-and-position-restoration.md), and the plan is not Milestone 5 implementation authority.

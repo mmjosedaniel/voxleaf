@@ -14,7 +14,11 @@ A moment when playback needs audio but the buffer is empty.
 
 ## Chunk
 
-A semantically selected portion of text submitted as one TTS generation unit.
+A generic bounded work unit. Use the more precise terms **prepared narration segment**, **TTS request**, or **audio frame** when discussing those specific boundaries; they are not interchangeable.
+
+## Displayed text
+
+The immutable safe semantic publication text rendered by the visual reader. Narration preparation does not rewrite or replace it.
 
 ## EPUB spine
 
@@ -22,7 +26,23 @@ The ordered list of publication documents defining the book's default reading or
 
 ## Generation queue
 
-Text chunks waiting for local TTS inference.
+Future bounded TTS requests waiting for local inference. The queue is not implemented.
+
+## Locator range
+
+An ordered pair of logical reading locators identifying a source span without storing a rendered page, quotation, or DOM path.
+
+## Narration source text
+
+Sensitive text selected from the safe structured document model as input to narration-only normalization. It is derived independently of the visual DOM.
+
+## Normalized narration text
+
+A separate sensitive, ephemeral representation prepared for speech by deterministic normalization. It is not displayed text and must not be persisted or logged.
+
+## Prepared narration segment
+
+A bounded nonempty portion of normalized narration text paired with the stable locator range of its source. Milestone 5 prepares this package-local representation; later milestones attach session and generation identity for TTS.
 
 ## Reading session
 
@@ -40,9 +60,17 @@ The currently visible portion of reflowable EPUB content for a particular viewpo
 
 Generation time divided by generated audio duration. A value below 1.0 means generation is faster than playback.
 
-## Semantic chunking
+## Semantic segmentation
 
-Splitting text at meaningful boundaries such as paragraphs, sentences, and dialogue instead of arbitrary character counts.
+Dividing narration text at meaningful structural and lexical boundaries such as headings, paragraphs, dialogue turns, sentences, clauses, and safe token boundaries while enforcing explicit size limits.
+
+## TTS request
+
+A future session- and generation-bound request sent to the local TTS process. It is not the same as a prepared narration segment because process identity and model-specific requirements belong to later milestones.
+
+## Audio frame
+
+A bounded ordered unit of generated audio metadata and payload produced for a narration segment. Shared frame metadata exists; production audio generation and playback do not.
 
 ## Stale audio
 

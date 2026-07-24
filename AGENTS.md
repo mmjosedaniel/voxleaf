@@ -35,6 +35,7 @@ Before changing code or architecture:
 3. Read `docs/architecture/system-diagram.md`, `docs/architecture/overview.md`, and applicable ADRs.
 4. Inspect existing code, tests, and scripts before proposing commands or implementation patterns.
 5. Create an ExecPlan following `.agents/PLANS.md` for multi-component features, model integration, significant refactors, or public contract changes.
+6. For narration-preparation work, read `docs/plans/active/M005-narration-text-preparation.md` and verify its roadmap status before treating planned behavior as implemented.
 
 ## Engineering rules
 
@@ -89,3 +90,5 @@ Update documentation when changing:
 Use ADRs under `docs/architecture/decisions/` for durable choices. Keep temporary implementation work in `docs/plans/active/` and move completed plans to `docs/plans/completed/`.
 
 Review `docs/architecture/system-diagram.md` when a task changes major components; package, module, process, or architectural boundaries; dependencies between major components; important runtime or data flows; persistence responsibility; external-system interactions; or deployment/runtime topology. Update it only when the documented architecture actually changes, not for internal refactors that preserve the model. Before completing a relevant task, verify that the diagram still matches the implementation and approved plans.
+
+Review the active Milestone 5 plan, narration terminology, and canonical system diagram when changing normalization, semantic segmentation, narration contracts, stable locator-range mapping, or the safe-document-to-narration boundary. Update them only when behavior or architecture changes, and never label planned narration, TTS, audio, or synchronization behavior as implemented before its validation passes.
