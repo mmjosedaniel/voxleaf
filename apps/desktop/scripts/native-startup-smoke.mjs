@@ -955,20 +955,43 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
 
   await runNativeReaderInteraction({
     action: async () => {
-      await driver.execute(`window.scrollTo(0, 0);`);
-    },
-    condition: `return window.scrollY === 0;`,
-    driver,
-    label: "PageDown scroll precondition",
-    setStage,
-  });
-  const scrollBefore = await driver.execute(`return window.scrollY;`);
-  await runNativeReaderInteraction({
-    action: async () => {
       const article = await driver.findElement("article.semantic-document");
+      await driver.execute(
+        `const article = document.querySelector("article.semantic-document");
+         if (!(article instanceof HTMLElement)) {
+           return false;
+         }
+         window.scrollTo(0, 0);
+         article.focus({ preventScroll: true });
+         const state = {
+           defaultPrevented: undefined,
+           keyObserved: false,
+           startY: window.scrollY,
+         };
+         globalThis.__voxleafNativePageDownInteraction = state;
+         article.addEventListener(
+           "keydown",
+           (event) => {
+             if (event.key !== "PageDown") {
+               return;
+             }
+             state.keyObserved = true;
+             queueMicrotask(() => {
+               state.defaultPrevented = event.defaultPrevented;
+             });
+           },
+           { once: true },
+         );
+         return state.startY === 0;`,
+      );
       await driver.sendKeys(article, WEBDRIVER_PAGE_DOWN);
     },
-    condition: `return window.scrollY > ${Number(scrollBefore)};`,
+    condition: `const state =
+       globalThis.__voxleafNativePageDownInteraction;
+     return state?.startY === 0 &&
+       state.keyObserved === true &&
+       state.defaultPrevented === false &&
+       window.scrollY > state.startY;`,
     driver,
     label: "PageDown scrolling",
     setStage,
@@ -981,6 +1004,10 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
        ) === true;`,
     )) === true,
     "Native reader did not preserve native scrolling-key behavior.",
+  );
+  await driver.execute(
+    `delete globalThis.__voxleafNativePageDownInteraction;
+     return true;`,
   );
 
   await runNativeReaderInteraction({
