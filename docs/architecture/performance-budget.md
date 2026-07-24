@@ -5,7 +5,7 @@
 The initial MVP budget is intentionally practical rather than real-time at all moments.
 
 | Metric | MVP target |
-|---|---:|
+| -------------------------------------------- | ----------------------------------------------: |
 | Initial playable audio lead | Approximately 15 seconds before playback starts |
 | Artificial wait after initial lead is ready | 0 seconds |
 | Permitted buffering during sustained reading | Up to 5 seconds per minute |
@@ -56,7 +56,7 @@ The accepted large-chapter policy is one active spine document rendered incremen
 On the Task 1.6 reference host, the exact-limit incremental fixture must satisfy:
 
 | Reader metric | Accepted maximum | Observed at 10,000 blocks |
-| --- | ---: | ---: |
+| -------------------------------------- | ---------------: | ------------------------: |
 | First useful 250-block batch | 50 ms | 9.7 ms |
 | Longest batch script work | 16 ms | 12.8 ms |
 | Deep target ready and aligned | 1,000 ms | 587.8 ms |
@@ -94,9 +94,12 @@ Both commands are intentionally outside `pnpm.cmd check` and CI. The Chromium co
 Task 1.3 accepts the model-independent, test-only
 [`narration-v1` preparation profile](narration-preparation-limits-v1.md).
 Tasks 2.1-2.2 implement pure exhaustive source traversal and code-point
-source-span tokens, but they do not yet enforce this profile; bounded
-start/continuation, work accounting, cancellation checkpoints, deterministic
-yields, normalization, and segmentation remain pending.
+source-span tokens. Task 2.3 enforces the source-window subset in production:
+canonical structural start resolution, at most 16,384 inspected source code
+points, at most 4,096 retained token/event entries, depth 128, cancellation
+checks at the 512-work-unit target, and injected deterministic yields at the
+4,096-work-unit target. Normalization, segmentation, prepared-segment output
+limits, and the public operation remain pending.
 
 The profile targets 320 narration code points / 1,024 UTF-8 bytes per segment,
 eight segments per batch, cancellation checks every 512 work units, and a

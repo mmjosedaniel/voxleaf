@@ -46,6 +46,21 @@ export type NarrationSourceToken =
   | NarrationSourceRasterPlaceholderToken
   | NarrationSourceTextToken;
 
+export type NarrationSourceTokenPosition =
+  | Readonly<{
+      kind: "line-break";
+      textContext: NarrationSourceTextContext;
+    }>
+  | Readonly<{
+      kind: "raster-placeholder";
+      textContext: NarrationSourceTextContext;
+    }>
+  | Readonly<{
+      kind: "text";
+      text: SensitivePublicationText;
+      textContext: NarrationSourceTextContext;
+    }>;
+
 interface NarrationSourceTokenLeafEventBase {
   readonly kind: "leaf";
   readonly locatedBlock: PublicationLocatedBlock;
@@ -143,7 +158,7 @@ function sourceSpan(
 
 function tokenFromPosition(
   locatedBlock: PublicationLocatedBlock,
-  unit: NarrationSourceUnit,
+  unit: NarrationSourceTokenPosition | NarrationSourceUnit,
   startOffsetCodePoints: number,
   text?: SensitivePublicationText,
 ): NarrationSourceToken {
@@ -169,6 +184,25 @@ function tokenFromPosition(
     default:
       return unreachable(unit);
   }
+}
+
+/**
+ * Creates one validated token for a lazily visited source position.
+ *
+ * The bounded source-window coordinator uses this entry point so it can stop
+ * before retaining a whole large leaf while preserving Task 2.2 span rules.
+ */
+export function createNarrationSourceTokenAtOffset(
+  locatedBlock: PublicationLocatedBlock,
+  position: NarrationSourceTokenPosition,
+  startOffsetCodePoints: number,
+): NarrationSourceToken {
+  return tokenFromPosition(
+    locatedBlock,
+    position,
+    startOffsetCodePoints,
+    position.kind === "text" ? position.text : undefined,
+  );
 }
 
 function tokenizeLeaf(

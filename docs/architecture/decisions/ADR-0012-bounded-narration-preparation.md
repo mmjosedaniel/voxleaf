@@ -18,11 +18,17 @@ semantic context, verifies Unicode-code-point totals against
 `PublicationLocatedBlock`, and excludes raster alternative text and image
 reads. Task 2.2 maps those units to immutable Unicode-code-point tokens with
 compact monotonic half-open block-local spans and validates reconstructed
-locator endpoints through existing package/shared rules. Normalization,
-segmentation, bounded/public preparation, cancellation/close integration, and
-prepared locator ranges remain unimplemented. No runtime dependency, shared
-schema, desktop integration, TTS behavior, audio behavior, persistence, or
-capability was added.
+locator endpoints through existing package/shared rules. Task 2.3 adds the
+package-internal bounded source-window coordinator: it structurally resolves
+untrusted starts, emits frozen partial-leaf token windows and canonical
+continuations under the accepted source/work/retention limits, checks linked
+cancellation at deterministic intervals around injected yields, permits one
+active narration operation independently of one raster read, and makes close
+abort and await both before archive release. Normalization, segmentation,
+prepared locator ranges, and the public `prepareNarration` result boundary
+remain unimplemented. No runtime dependency, shared schema, desktop
+integration, TTS behavior, audio behavior, persistence, or capability was
+added.
 
 ## Context
 
@@ -263,7 +269,7 @@ canonical locator, rejected value, exception, stack, or dependency message.
 Their operational-error mappings are:
 
 | Detail | `OperationalErrorV1` code |
-| --- | --- |
+| --------------------------------------------- | ------------------------- |
 | `cancelled` | `operation-cancelled` |
 | `invalid-request`, `invalid-start` | `invalid-input` |
 | `operation-active`, `resource-limit-exceeded` | `resource-exhausted` |
