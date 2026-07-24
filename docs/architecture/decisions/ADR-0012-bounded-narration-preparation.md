@@ -26,9 +26,15 @@ cancellation at deterministic intervals around injected yields, permits one
 active narration operation independently of one raster read, and makes close
 abort and await both before archive release. Normalization, segmentation,
 prepared locator ranges, and the public `prepareNarration` result boundary
-remain unimplemented. No runtime dependency, shared schema, desktop
-integration, TTS behavior, audio behavior, persistence, or capability was
-added.
+were still unimplemented at that point. Task 3.1 now adds the first pure
+package-internal normalizer slice: explicit Unicode whitespace collapse,
+source-mapped semantic line breaks, accepted zero-width/soft-hyphen removal,
+and one closed Spanish line-end join while preserving code, genuine compounds,
+neutral ambiguity, and every block-local origin span through nonempty text or
+typed omission units. Later normalization categories, segmentation, prepared
+ranges, and the public result remain unimplemented. No runtime dependency,
+shared schema, desktop integration, TTS behavior, audio behavior, persistence,
+or capability was added.
 
 ## Context
 
@@ -424,9 +430,11 @@ Those decisions remain with roadmap Milestones 6 through 9.
   but future model-specific requirements may require a new explicit protocol or
   shared-contract decision.
 - Task 1.3's accepted limits close the pre-production policy gate. Tasks
-  2.1-2.2 subsequently implement pure source traversal and source-span token
-  mapping, but no normalization, segmentation, limit enforcement, cancellation,
-  or yielding behavior exists yet.
+  2.1-2.3 subsequently implement pure source traversal, source-span token
+  mapping, and bounded source-window lifecycle enforcement. Task 3.1 adds the
+  first deterministic source-mapped normalization slice; remaining
+  normalization, segmentation, prepared-output limits, and public integration
+  still require later tasks.
 
 ## Alternatives considered
 

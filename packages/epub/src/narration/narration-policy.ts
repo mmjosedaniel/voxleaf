@@ -1,5 +1,6 @@
 /**
- * Production limits used by the bounded Task 2.3 narration source window.
+ * Production limits used by the bounded Task 2.3 narration source window and
+ * the size-nonincreasing Task 3.1 normalizer.
  *
  * These values are the relevant subset of the accepted model-independent
  * `narration-v1` profile. Later normalization and segmentation tasks add the

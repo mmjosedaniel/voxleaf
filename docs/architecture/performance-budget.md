@@ -98,7 +98,10 @@ source-span tokens. Task 2.3 enforces the source-window subset in production:
 canonical structural start resolution, at most 16,384 inspected source code
 points, at most 4,096 retained token/event entries, depth 128, cancellation
 checks at the 512-work-unit target, and injected deterministic yields at the
-4,096-work-unit target. Normalization, segmentation, prepared-segment output
+4,096-work-unit target. Task 3.1's pure normalizer is size-nonincreasing: every
+bounded source token produces exactly one nonempty text or typed omission unit,
+and the narration string is built from at most those retained text units.
+Later normalization expansion limits, segmentation, prepared-segment output
 limits, and the public operation remain pending.
 
 The profile targets 320 narration code points / 1,024 UTF-8 bytes per segment,
