@@ -207,6 +207,33 @@ function deferredWrite() {
 }
 
 describe("reader position save coordinator", () => {
+  it("does not flush an unconfirmed restored locator until settlement requests it", async () => {
+    const environment = new ManualSaveEnvironment();
+    const repository = createRepository();
+    const restoredLocator = locatorAt(7);
+    const coordinator = new ReaderPositionSaveCoordinator(
+      createPublication(),
+      repository,
+      {
+        environment,
+        initialLocator: restoredLocator,
+        persistInitialLocatorOnFlush: false,
+      },
+    );
+    coordinator.start();
+
+    await coordinator.flush();
+    expect(repository.writePosition).not.toHaveBeenCalled();
+
+    expect(coordinator.scheduleImmediate(restoredLocator)).toBe(true);
+    environment.advance(0);
+    await coordinator.flush();
+    expect(repository.writePosition).toHaveBeenCalledTimes(1);
+    expect(repository.writePosition.mock.calls[0]?.[0].locator).toEqual(
+      restoredLocator,
+    );
+  });
+
   it("writes once at the exact trailing 500 ms passive boundary", async () => {
     const { coordinator, environment, repository } = createHarness();
     const locator = locatorAt(4);

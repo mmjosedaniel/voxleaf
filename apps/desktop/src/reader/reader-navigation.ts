@@ -32,6 +32,7 @@ export type ReaderTargetAvailability =
   AvailableReaderTarget | UnavailableReaderTarget;
 
 export interface ReaderNavigationCoordinatorOptions {
+  readonly initialLocator?: ReadingLocatorV1;
   readonly preferences?: ReaderPreferencesV1;
 }
 
@@ -193,9 +194,21 @@ export class ReaderNavigationCoordinator {
     if (firstLocatedBlock === undefined) {
       throw new Error("Readable spine document is unavailable.");
     }
+    let initialLocatedBlock = firstLocatedBlock;
+    let initialLocator = firstLocatedBlock.startLocator;
+    if (options.initialLocator !== undefined) {
+      let resolution: PublicationLocatorResolution;
+      try {
+        resolution = publication.resolveLocator(options.initialLocator);
+      } catch {
+        throw new Error("Initial reading locator is unavailable.");
+      }
+      initialLocatedBlock = resolution.locatedBlock;
+      initialLocator = resolution.locator;
+    }
     const activeDocument = documentForLocatedBlock(
       publication,
-      firstLocatedBlock,
+      initialLocatedBlock,
     );
     if (activeDocument === undefined) {
       throw new Error("Readable spine document is unavailable.");
@@ -208,8 +221,8 @@ export class ReaderNavigationCoordinator {
       assessSemanticDocumentRendering(activeDocument).status;
     this.#state = this.createState(
       activeDocument,
-      firstLocatedBlock.startLocator,
-      firstLocatedBlock.block,
+      initialLocator,
+      initialLocatedBlock.block,
       0,
       initialContentStatus === "accepted" ? "" : CHAPTER_TOO_LARGE_MESSAGE,
       initialContentStatus === "accepted" ? "render" : "chapter-too-large",

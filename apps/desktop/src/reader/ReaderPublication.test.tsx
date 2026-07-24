@@ -337,6 +337,24 @@ afterEach(() => {
 });
 
 describe("reader navigation coordinator", () => {
+  it("initializes directly from a package-resolved saved locator", () => {
+    const publication = createPublication();
+    const coordinator = new ReaderNavigationCoordinator(publication, {
+      initialLocator: CONTINUATION_LOCATED_BLOCK.startLocator,
+    });
+
+    expect(coordinator.state.activeDocument).toBe(CONTINUATION_DOCUMENT);
+    expect(coordinator.state.activeLocator).toEqual(
+      CONTINUATION_LOCATED_BLOCK.startLocator,
+    );
+    expect(coordinator.state.destinationBlock).toBe(CONTINUATION_HEADING);
+    expect(coordinator.state.navigationRevision).toBe(0);
+    expect(coordinator.state.message).toBe("");
+    expect(publication.resolveLocator).toHaveBeenCalledWith(
+      CONTINUATION_LOCATED_BLOCK.startLocator,
+    );
+  });
+
   it("routes targets and chapter steps through canonical package locators", () => {
     const coordinator = new ReaderNavigationCoordinator(createPublication());
 
@@ -505,6 +523,42 @@ describe("navigable publication reader", () => {
       configurable: true,
       value: originalScrollIntoView,
     });
+  });
+
+  it("materializes and aligns an initial saved locator without moving focus", () => {
+    const reflowEnvironment = new ManualReaderReflowEnvironment();
+    const onInitialRestorationSettled = vi.fn();
+    const onSettledLocatorChange = vi.fn();
+    render(
+      <>
+        <button type="button">Focus owner</button>
+        <ReaderPublicationContent
+          publication={createPublication()}
+          initialLocator={CONTINUATION_LOCATED_BLOCK.startLocator}
+          restoreInitialLocator
+          reflowEnvironment={reflowEnvironment}
+          onInitialRestorationSettled={onInitialRestorationSettled}
+          onSettledLocatorChange={onSettledLocatorChange}
+        />
+      </>,
+    );
+    const focusOwner = screen.getByRole("button", { name: "Focus owner" });
+    focusOwner.focus();
+
+    expect(
+      screen.getByRole("heading", { name: "Continuation" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Text size")).toBeDisabled();
+
+    act(() => reflowEnvironment.flushAll());
+
+    expect(onInitialRestorationSettled).toHaveBeenCalledWith({
+      status: "settled",
+      locator: CONTINUATION_LOCATED_BLOCK.startLocator,
+    });
+    expect(onSettledLocatorChange).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Text size")).toBeEnabled();
+    expect(focusOwner).toHaveFocus();
   });
 
   it("preserves TOC order, explains unavailable entries, and navigates with one set of controls", () => {

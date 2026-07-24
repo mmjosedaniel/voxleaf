@@ -17,20 +17,24 @@ import {
   type ReaderPositionRepository,
 } from "./persistence/reader-position-repository";
 import {
+  ReaderPositionRestoreCoordinator,
+  type ReadyReaderOpenRestoration,
+} from "./persistence/reader-position-restore-coordinator";
+import {
   ReaderPositionSaveCoordinator,
   type ReaderPositionSaveEnvironment,
 } from "./persistence/reader-position-save-coordinator";
 import { ReaderErrorBoundary } from "./reader/ReaderErrorBoundary";
-import { ReaderPublicationContent } from "./reader/ReaderPublication";
+import {
+  ReaderPublicationContent,
+  type ReaderInitialRestorationSettlement,
+} from "./reader/ReaderPublication";
 import {
   createReaderLifecycle,
   type ReaderFailureReason,
   type ReaderLifecycleState,
 } from "./reader/reader-lifecycle";
-import {
-  DEFAULT_READER_PREFERENCES,
-  type ReaderPreferencesV1,
-} from "./reader/reader-preferences";
+import { type ReaderPreferencesV1 } from "./reader/reader-preferences";
 import {
   runRasterImageSafetyProbe,
   type RasterImageProbeResult,
@@ -42,9 +46,14 @@ type RasterImageProbeStatus =
 export interface ReadyPublicationContentProps {
   readonly publication: OpenedPublication;
   readonly initialPreferences?: ReaderPreferencesV1;
+  readonly initialLocator?: ReadingLocatorV1;
+  readonly restoreInitialLocator?: boolean;
   readonly onPreferencesChange?: (preferences: ReaderPreferencesV1) => void;
   readonly onActiveLocatorChange?: (locator: ReadingLocatorV1) => void;
   readonly onSettledLocatorChange?: (locator: ReadingLocatorV1) => void;
+  readonly onInitialRestorationSettled?: (
+    settlement: ReaderInitialRestorationSettlement,
+  ) => void;
 }
 
 export interface AppProps {
@@ -79,6 +88,25 @@ const RASTER_STATUS_MESSAGE: Readonly<Record<RasterImageProbeStatus, string>> =
     running: "Testing bounded local raster decoding.",
   });
 
+type ReaderRestorationSettlement =
+  "pending" | ReaderInitialRestorationSettlement["status"];
+
+interface LoadingReaderRestoration {
+  readonly status: "loading";
+  readonly publication: OpenedPublication;
+  readonly publicationSequence: number;
+}
+
+interface ReadyReaderRestoration {
+  readonly status: "ready";
+  readonly publication: OpenedPublication;
+  readonly publicationSequence: number;
+  readonly result: ReadyReaderOpenRestoration;
+  readonly settlement: ReaderRestorationSettlement;
+}
+
+type ReaderRestoration = LoadingReaderRestoration | ReadyReaderRestoration;
+
 function statusMessage(state: ReaderLifecycleState): string {
   switch (state.status) {
     case "closing":
@@ -94,6 +122,66 @@ function statusMessage(state: ReaderLifecycleState): string {
     case "ready":
       return "The EPUB opened successfully.";
   }
+}
+
+function readyStatusMessage(
+  restoration: ReaderRestoration | undefined,
+): string {
+  if (
+    restoration === undefined ||
+    restoration.status === "loading" ||
+    restoration.settlement === "pending"
+  ) {
+    return "Restoring saved reader state.";
+  }
+  if (restoration.settlement === "unavailable") {
+    return "The EPUB opened, but its saved reading position could not be aligned.";
+  }
+  if (restoration.settlement === "superseded") {
+    return "The EPUB opened successfully.";
+  }
+
+  const { position } = restoration.result;
+  if (position.mode === "exact") {
+    return "Reading position restored.";
+  }
+  if (position.mode === "recovered") {
+    return "Reading position restored to the nearest available passage.";
+  }
+  if (position.reason === "missing") {
+    return "The EPUB opened successfully.";
+  }
+  if (position.reason === "unavailable") {
+    return "The EPUB opened, but saved reader state is unavailable.";
+  }
+  return "The EPUB opened at the beginning because its saved position could not be used.";
+}
+
+function restorationNotice(
+  restoration: ReadyReaderRestoration,
+): string | undefined {
+  const { position } = restoration.result;
+  if (restoration.settlement === "unavailable") {
+    return "VoxLeaf could not align the saved reading position.";
+  }
+  if (restoration.settlement !== "settled") {
+    return undefined;
+  }
+  if (position.mode === "recovered") {
+    return "The saved reading position was adjusted to the nearest available passage.";
+  }
+  if (position.mode === "book-start" && position.reason !== "missing") {
+    return position.reason === "unavailable"
+      ? "Saved reader state is unavailable. Reading continues from the beginning."
+      : "The saved reading position could not be used. Reading continues from the beginning.";
+  }
+  if (
+    restoration.result.preferenceStatus !== "ready" &&
+    restoration.result.preferenceStatus !== "missing"
+  ) {
+    return "Saved reader appearance settings could not be used. Default settings are active.";
+  }
+  return undefined;
 }
 
 function rasterStatusForResult(
@@ -129,24 +217,118 @@ export function App({
   );
   const viewState = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
   const activeRasterProbe = useRef<AbortController | undefined>(undefined);
-  const [readerPreferences, setReaderPreferences] =
-    useState<ReaderPreferencesV1>(DEFAULT_READER_PREFERENCES);
   const [rasterStatus, setRasterStatus] =
     useState<RasterImageProbeStatus>("idle");
+  const [readerPositionRestoreCoordinator] = useState(
+    () => new ReaderPositionRestoreCoordinator(readerPositionRepository),
+  );
+  const [readerRestoration, setReaderRestoration] = useState<
+    ReaderRestoration | undefined
+  >(undefined);
+  const [dismissedRestorationSequence, setDismissedRestorationSequence] =
+    useState<number | undefined>(undefined);
   const readyPublication =
     viewState.status === "ready" ? viewState.publication : undefined;
+  const readyPublicationSequence =
+    viewState.status === "ready" ? viewState.publicationSequence : undefined;
+  const activeRestoration =
+    readerRestoration !== undefined &&
+    readerRestoration.publication === readyPublication &&
+    readerRestoration.publicationSequence === readyPublicationSequence
+      ? readerRestoration
+      : undefined;
+  const readyRestoration =
+    activeRestoration?.status === "ready" ? activeRestoration : undefined;
+  const readyRestorationResult = readyRestoration?.result;
+
+  useEffect(() => {
+    if (
+      readyPublication === undefined ||
+      readyPublicationSequence === undefined
+    ) {
+      readerPositionRestoreCoordinator.cancel();
+      return;
+    }
+
+    const publication = readyPublication;
+    const publicationSequence = readyPublicationSequence;
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) {
+        return;
+      }
+      setReaderRestoration(
+        Object.freeze({
+          status: "loading",
+          publication,
+          publicationSequence,
+        }),
+      );
+      void readerPositionRestoreCoordinator
+        .restore(publication)
+        .then((result) => {
+          if (result.status !== "ready") {
+            return;
+          }
+          setReaderRestoration((current) =>
+            current?.status === "loading" &&
+            current.publication === publication &&
+            current.publicationSequence === publicationSequence
+              ? Object.freeze({
+                  status: "ready",
+                  publication,
+                  publicationSequence,
+                  result,
+                  settlement:
+                    result.position.mode === "book-start"
+                      ? "settled"
+                      : "pending",
+                })
+              : current,
+          );
+        })
+        .catch(() => {
+          if (
+            readerLifecycle.state.status === "ready" &&
+            readerLifecycle.state.publication === publication
+          ) {
+            readerLifecycle.failRendering();
+          }
+        });
+    });
+    return () => {
+      active = false;
+      readerPositionRestoreCoordinator.cancel();
+    };
+  }, [
+    readerLifecycle,
+    readerPositionRestoreCoordinator,
+    readyPublication,
+    readyPublicationSequence,
+  ]);
+
   const positionSaveCoordinator = useMemo(
     () =>
-      readyPublication === undefined
+      readyPublication === undefined || readyRestorationResult === undefined
         ? undefined
         : new ReaderPositionSaveCoordinator(
             readyPublication,
             readerPositionRepository,
-            readerPositionSaveEnvironment === undefined
-              ? {}
-              : { environment: readerPositionSaveEnvironment },
+            {
+              ...(readerPositionSaveEnvironment === undefined
+                ? {}
+                : { environment: readerPositionSaveEnvironment }),
+              initialLocator: readyRestorationResult.position.locator,
+              persistInitialLocatorOnFlush:
+                readyRestorationResult.position.mode === "book-start",
+            },
           ),
-    [readerPositionRepository, readerPositionSaveEnvironment, readyPublication],
+    [
+      readerPositionRepository,
+      readerPositionSaveEnvironment,
+      readyPublication,
+      readyRestorationResult,
+    ],
   );
   const activePositionSaveCoordinator = useRef<
     ReaderPositionSaveCoordinator | undefined
@@ -171,14 +353,35 @@ export function App({
     };
   }, [positionSaveCoordinator]);
 
+  useEffect(() => {
+    if (
+      positionSaveCoordinator !== undefined &&
+      readyRestorationResult?.position.mode === "recovered" &&
+      readyRestoration?.settlement === "settled"
+    ) {
+      positionSaveCoordinator.scheduleImmediate(
+        readyRestorationResult.position.locator,
+      );
+    }
+  }, [
+    positionSaveCoordinator,
+    readyRestoration?.settlement,
+    readyRestorationResult,
+  ]);
+
   useEffect(
     () => () => {
       activeRasterProbe.current?.abort();
       activeRasterProbe.current = undefined;
+      readerPositionRestoreCoordinator.close();
       closeActivePositionSaveCoordinator();
       void readerLifecycle.cleanup();
     },
-    [closeActivePositionSaveCoordinator, readerLifecycle],
+    [
+      closeActivePositionSaveCoordinator,
+      readerLifecycle,
+      readerPositionRestoreCoordinator,
+    ],
   );
 
   const handleRasterProbe = async (): Promise<void> => {
@@ -212,14 +415,15 @@ export function App({
     }
 
     closeActivePositionSaveCoordinator();
+    readerPositionRestoreCoordinator.cancel();
     void readerLifecycle.open(file);
   };
   const handleReaderPreferencesChange = useCallback(
     (preferences: ReaderPreferencesV1): void => {
+      readerPositionRestoreCoordinator.setPreferences(preferences);
       positionSaveCoordinator?.savePreferences(preferences);
-      setReaderPreferences(preferences);
     },
-    [positionSaveCoordinator],
+    [positionSaveCoordinator, readerPositionRestoreCoordinator],
   );
   const handleActiveLocatorChange = useCallback(
     (locator: ReadingLocatorV1): void => {
@@ -233,17 +437,47 @@ export function App({
     },
     [positionSaveCoordinator],
   );
+  const handleInitialRestorationSettled = useCallback(
+    (settlement: ReaderInitialRestorationSettlement): void => {
+      setReaderRestoration((current) =>
+        current?.status === "ready" &&
+        current.publication === readyPublication &&
+        current.publicationSequence === readyPublicationSequence &&
+        current.settlement === "pending"
+          ? Object.freeze({
+              ...current,
+              settlement: settlement.status,
+            })
+          : current,
+      );
+    },
+    [readyPublication, readyPublicationSequence],
+  );
   const handleClosePublication = useCallback((): void => {
+    readerPositionRestoreCoordinator.cancel();
     closeActivePositionSaveCoordinator();
     void readerLifecycle.close();
-  }, [closeActivePositionSaveCoordinator, readerLifecycle]);
+  }, [
+    closeActivePositionSaveCoordinator,
+    readerLifecycle,
+    readerPositionRestoreCoordinator,
+  ]);
   const handleRenderingFailure = useCallback((): void => {
+    readerPositionRestoreCoordinator.cancel();
     closeActivePositionSaveCoordinator();
     readerLifecycle.failRendering();
-  }, [closeActivePositionSaveCoordinator, readerLifecycle]);
+  }, [
+    closeActivePositionSaveCoordinator,
+    readerLifecycle,
+    readerPositionRestoreCoordinator,
+  ]);
 
   const isBusy =
-    viewState.status === "closing" || viewState.status === "opening";
+    viewState.status === "closing" ||
+    viewState.status === "opening" ||
+    (viewState.status === "ready" &&
+      (readyRestoration === undefined ||
+        readyRestoration.settlement === "pending"));
   const openDisabled =
     viewState.status === "closing" ||
     (viewState.status === "failure" && viewState.reason === "close-failed");
@@ -251,6 +485,13 @@ export function App({
     viewState.status === "failure"
       ? "open-status open-status-error"
       : "open-status";
+  const activeRestorationNotice =
+    readyRestoration === undefined
+      ? undefined
+      : restorationNotice(readyRestoration);
+  const showRestorationNotice =
+    activeRestorationNotice !== undefined &&
+    dismissedRestorationSequence !== readyPublicationSequence;
 
   return (
     <main className="app-shell">
@@ -285,7 +526,9 @@ export function App({
           role="status"
           aria-live="polite"
         >
-          {statusMessage(viewState)}
+          {viewState.status === "ready"
+            ? readyStatusMessage(activeRestoration)
+            : statusMessage(viewState)}
         </p>
         {viewState.status === "ready" ? (
           <ReaderErrorBoundary
@@ -303,13 +546,51 @@ export function App({
                   ? "Author not provided"
                   : `By ${viewState.summary.authors.join(", ")}`}
               </p>
-              <ReadyPublicationContent
-                publication={viewState.publication}
-                initialPreferences={readerPreferences}
-                onPreferencesChange={handleReaderPreferencesChange}
-                onActiveLocatorChange={handleActiveLocatorChange}
-                onSettledLocatorChange={handleSettledLocatorChange}
-              />
+              {readyRestoration === undefined ? (
+                <p className="reader-restoring-state">
+                  Preparing the saved reader state.
+                </p>
+              ) : (
+                <>
+                  {showRestorationNotice ? (
+                    <aside
+                      className="reader-restoration-notice"
+                      aria-label="Reading position recovery"
+                    >
+                      <p>{activeRestorationNotice}</p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDismissedRestorationSequence(
+                            viewState.publicationSequence,
+                          )
+                        }
+                      >
+                        Dismiss restoration notice
+                      </button>
+                    </aside>
+                  ) : null}
+                  <ReadyPublicationContent
+                    publication={viewState.publication}
+                    initialPreferences={readyRestoration.result.preferences}
+                    {...(readyRestoration.result.position.mode === "book-start"
+                      ? {}
+                      : {
+                          initialLocator:
+                            readyRestoration.result.position.locator,
+                        })}
+                    restoreInitialLocator={
+                      readyRestoration.result.position.mode !== "book-start"
+                    }
+                    onPreferencesChange={handleReaderPreferencesChange}
+                    onActiveLocatorChange={handleActiveLocatorChange}
+                    onSettledLocatorChange={handleSettledLocatorChange}
+                    onInitialRestorationSettled={
+                      handleInitialRestorationSettled
+                    }
+                  />
+                </>
+              )}
               <button
                 type="button"
                 className="close-publication"

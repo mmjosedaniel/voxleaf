@@ -26,6 +26,8 @@ export interface ReaderPositionSaveEnvironment {
 
 export interface ReaderPositionSaveCoordinatorOptions {
   readonly environment?: ReaderPositionSaveEnvironment;
+  readonly initialLocator?: ReadingLocatorV1;
+  readonly persistInitialLocatorOnFlush?: boolean;
 }
 
 const EMPTY_READING_PREFERENCES = Object.freeze({});
@@ -138,6 +140,7 @@ export class ReaderPositionSaveCoordinator {
   #positionDrain: Promise<void> | undefined;
   #cancelPositionSchedule: (() => void) | undefined;
   #scheduledPositionKind: ScheduledPositionKind | undefined;
+  #positionSaveRequested: boolean;
   #latestPreferences: ReaderPreferencesV1 | undefined;
   #lastRequestedPreferences: ReaderPreferencesV1 | undefined;
   #lastSavedPreferences: ReaderPreferencesV1 | undefined;
@@ -155,7 +158,8 @@ export class ReaderPositionSaveCoordinator {
     repository: ReaderPositionRepository,
     options: ReaderPositionSaveCoordinatorOptions = {},
   ) {
-    const initialLocator = publication.locators[0]?.startLocator;
+    const initialLocator =
+      options.initialLocator ?? publication.locators[0]?.startLocator;
     if (
       initialLocator === undefined ||
       !identitiesEqual(initialLocator.bookIdentity, publication.book.identity)
@@ -168,6 +172,7 @@ export class ReaderPositionSaveCoordinator {
     this.#environment =
       options.environment ?? BROWSER_READER_POSITION_SAVE_ENVIRONMENT;
     this.#latestLocator = initialLocator;
+    this.#positionSaveRequested = options.persistInitialLocatorOnFlush ?? true;
   }
 
   public start(): void {
@@ -257,6 +262,7 @@ export class ReaderPositionSaveCoordinator {
 
     this.#latestLocator = canonical;
     this.#lastRequestedLocator = canonical;
+    this.#positionSaveRequested = true;
     if (
       this.#writingLocator === undefined &&
       this.#lastSavedLocator !== undefined &&
@@ -309,6 +315,9 @@ export class ReaderPositionSaveCoordinator {
   }
 
   #queueLatestPosition(): void {
+    if (!this.#positionSaveRequested) {
+      return;
+    }
     const locator = this.#latestLocator;
     if (this.#writingLocator !== undefined) {
       this.#queuedLocator = locatorsEqual(this.#writingLocator, locator)

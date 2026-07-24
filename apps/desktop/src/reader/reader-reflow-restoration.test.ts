@@ -360,6 +360,24 @@ describe("reader reflow restoration", () => {
     expect(harness.results[0]?.reason).toBe("viewport");
   });
 
+  it("does not let a resize notification supersede an active restoration transaction", () => {
+    const currentLocator = vi.fn(() => locatorAt(1));
+    const harness = createHarness({ currentLocator });
+    const restoredLocator = locatorAt(5);
+
+    harness.restorer.preserve(restoredLocator, "restoration");
+    harness.environment.notifyViewport();
+    harness.environment.flushAll();
+
+    expect(currentLocator).not.toHaveBeenCalled();
+    expect(harness.visualLocator.currentLocator).toEqual(restoredLocator);
+    expect(harness.results).toHaveLength(1);
+    expect(harness.results[0]).toMatchObject({
+      locator: restoredLocator,
+      reason: "restoration",
+    });
+  });
+
   it("bounds a missing DOM target and always resumes passive tracking", () => {
     const harness = createHarness({ register: false });
 

@@ -6,6 +6,12 @@ import type {
   SemanticDocument,
   SensitivePublicationText,
 } from "@voxleaf/epub";
+import {
+  createSchemaVersion,
+  decodePersistedReadingStateV1,
+  decodeReadingLocatorV1,
+  type ReadingLocatorV1,
+} from "@voxleaf/shared";
 import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
 import {
   act,
@@ -15,9 +21,10 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import { useEffect } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { App } from "./App";
+import { App, type ReadyPublicationContentProps } from "./App";
 import type { ReaderPositionRepository } from "./persistence/reader-position-repository";
 import type {
   LocalPublicationCloseResult,
@@ -28,6 +35,7 @@ import type {
 
 afterEach(() => {
   cleanup();
+  window.localStorage.clear();
   vi.restoreAllMocks();
 });
 
@@ -79,7 +87,14 @@ function createTestPublication(
     resources: Object.freeze([]),
     closed: false,
     readResource: vi.fn(),
-    resolveLocator: vi.fn(),
+    resolveLocator: vi.fn((input: unknown) =>
+      Object.freeze({
+        status: "exact",
+        reason: "exact",
+        locator: input as ReadingLocatorV1,
+        locatedBlock: TEST_LOCATED_BLOCK,
+      }),
+    ),
     resolveTarget: vi.fn(),
     close: vi.fn(() => Promise.resolve()),
   };
@@ -112,6 +127,15 @@ function createTestReaderPositionRepository(): ReaderPositionRepository {
       async () => ({ status: "saved" }),
     ),
   };
+}
+
+function persistedState(locator: ReadingLocatorV1) {
+  return decodePersistedReadingStateV1({
+    schemaVersion: createSchemaVersion(1),
+    bookIdentity: locator.bookIdentity,
+    locator,
+    preferences: {},
+  });
 }
 
 function selectEpub(name = "private.epub"): void {
@@ -172,6 +196,157 @@ describe("desktop reader lifecycle surface", () => {
     expect(screen.getByRole("button", { name: "Close EPUB" })).toBeEnabled();
     expect(document.body).not.toHaveTextContent("private-title.epub");
     expect(screen.getByLabelText("Open a local EPUB")).toHaveValue("");
+  });
+
+  it("loads exact saved position and display preferences before settling the reader", async () => {
+    const publication = createTestPublication("Restored reader book");
+    const repository = createTestReaderPositionRepository();
+    const preferences = Object.freeze({
+      schemaVersion: 1 as const,
+      textScale: "large" as const,
+      lineSpacing: "spacious" as const,
+      contentWidth: "narrow" as const,
+      theme: "dark" as const,
+    });
+    vi.mocked(repository.readPosition).mockResolvedValue({
+      status: "ready",
+      state: persistedState(TEST_LOCATED_BLOCK.startLocator),
+    });
+    vi.mocked(repository.readPreferences).mockResolvedValue({
+      status: "ready",
+      preferences,
+    });
+    let receivedProps: ReadyPublicationContentProps | undefined;
+    function SettlingReader(props: ReadyPublicationContentProps) {
+      receivedProps = props;
+      const { initialLocator, onInitialRestorationSettled } = props;
+      useEffect(() => {
+        if (initialLocator !== undefined) {
+          onInitialRestorationSettled?.({
+            status: "settled",
+            locator: initialLocator,
+          });
+        }
+      }, [initialLocator, onInitialRestorationSettled]);
+      return (
+        <article aria-label="Restored synthetic reader">{TEST_TEXT}</article>
+      );
+    }
+    render(
+      <App
+        openFlow={createTestFlow(() =>
+          Promise.resolve({ status: "ready", publication }),
+        )}
+        readerPositionRepository={repository}
+        ReadyPublicationContent={SettlingReader}
+      />,
+    );
+
+    selectEpub("private-restored.epub");
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Reading position restored.",
+      ),
+    );
+    expect(receivedProps?.initialLocator).toEqual(
+      TEST_LOCATED_BLOCK.startLocator,
+    );
+    expect(receivedProps?.initialPreferences).toEqual(preferences);
+    expect(receivedProps?.restoreInitialLocator).toBe(true);
+    expect(repository.writePosition).not.toHaveBeenCalled();
+    expect(document.body).not.toHaveTextContent("private-restored.epub");
+  });
+
+  it("announces and saves a recovered canonical locator only after visual settlement", async () => {
+    const publication = createTestPublication("Recovered reader book");
+    const staleLocator = decodeReadingLocatorV1({
+      ...TEST_LOCATED_BLOCK.startLocator,
+      textOffsetCodePoints: 99,
+    });
+    const canonicalLocator = TEST_LOCATED_BLOCK.startLocator;
+    vi.mocked(publication.resolveLocator).mockImplementation(
+      (input: unknown) => {
+        const locator = input as ReadingLocatorV1;
+        return locator.textOffsetCodePoints > 0
+          ? Object.freeze({
+              status: "recovered",
+              reason: "nearest-offset",
+              locator: canonicalLocator,
+              locatedBlock: TEST_LOCATED_BLOCK,
+            })
+          : Object.freeze({
+              status: "exact",
+              reason: "exact",
+              locator: canonicalLocator,
+              locatedBlock: TEST_LOCATED_BLOCK,
+            });
+      },
+    );
+    const repository = createTestReaderPositionRepository();
+    vi.mocked(repository.readPosition).mockResolvedValue({
+      status: "ready",
+      state: persistedState(staleLocator),
+    });
+    let settle: (() => void) | undefined;
+    function ControlledReader(props: ReadyPublicationContentProps) {
+      settle = () => {
+        if (props.initialLocator !== undefined) {
+          props.onInitialRestorationSettled?.({
+            status: "settled",
+            locator: props.initialLocator,
+          });
+        }
+      };
+      return (
+        <article aria-label="Recovered synthetic reader">{TEST_TEXT}</article>
+      );
+    }
+    render(
+      <App
+        openFlow={createTestFlow(() =>
+          Promise.resolve({ status: "ready", publication }),
+        )}
+        readerPositionRepository={repository}
+        ReadyPublicationContent={ControlledReader}
+      />,
+    );
+
+    selectEpub("private-recovered.epub");
+    await screen.findByRole("article", {
+      name: "Recovered synthetic reader",
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Restoring saved reader state.",
+    );
+    expect(repository.writePosition).not.toHaveBeenCalled();
+
+    act(() => settle?.());
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "Reading position restored to the nearest available passage.",
+      ),
+    );
+    expect(
+      screen.getByText(
+        "The saved reading position was adjusted to the nearest available passage.",
+      ),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(repository.writePosition).toHaveBeenCalledTimes(1),
+    );
+    expect(
+      vi.mocked(repository.writePosition).mock.calls[0]?.[0].locator,
+    ).toEqual(canonicalLocator);
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Dismiss restoration notice",
+      }),
+    );
+    expect(
+      screen.queryByLabelText("Reading position recovery"),
+    ).not.toBeInTheDocument();
   });
 
   it("shows a labelled busy state while validation is pending", async () => {
@@ -291,10 +466,11 @@ describe("desktop reader lifecycle surface", () => {
     render(<App openFlow={flow} />);
     selectEpub("first.epub");
     await screen.findByRole("heading", { name: "First private title" });
-    fireEvent.change(screen.getByLabelText("Text size"), {
+    const textSize = await screen.findByLabelText("Text size");
+    fireEvent.change(textSize, {
       target: { value: "large" },
     });
-    expect(screen.getByLabelText("Text size")).toHaveValue("large");
+    await waitFor(() => expect(textSize).toHaveValue("large"));
 
     fireEvent.click(screen.getByRole("button", { name: "Close EPUB" }));
 
@@ -319,7 +495,7 @@ describe("desktop reader lifecycle surface", () => {
     expect(
       await screen.findByRole("heading", { name: "Second safe title" }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Text size")).toHaveValue("large");
+    expect(await screen.findByLabelText("Text size")).toHaveValue("large");
   });
 
   it("flushes validated position state before replacement and explicit close", async () => {
@@ -350,6 +526,11 @@ describe("desktop reader lifecycle surface", () => {
     expect(
       await screen.findByRole("heading", { name: "Second position book" }),
     ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "The EPUB opened successfully.",
+      ),
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Close EPUB" }));
     expect(writePosition).toHaveBeenCalledTimes(2);

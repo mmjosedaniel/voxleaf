@@ -33,6 +33,7 @@ const THEME_OPTIONS: readonly ReaderPreferenceOption[] = Object.freeze([
 ]);
 
 export interface ReaderPreferencesControlsProps {
+  readonly disabled?: boolean;
   readonly preferences: ReaderPreferencesV1;
   readonly onChange: (preference: ReaderPreferenceName, value: string) => void;
 }
@@ -71,15 +72,16 @@ function PreferenceSelect({
 }
 
 export function ReaderPreferencesControls({
+  disabled = false,
   preferences,
   onChange,
 }: ReaderPreferencesControlsProps): ReactElement {
   return (
-    <fieldset className="reader-preferences">
+    <fieldset className="reader-preferences" disabled={disabled}>
       <legend>Reader appearance</legend>
       <p>
-        Adjust the current continuous-scrolling view. These settings stay in
-        memory for now.
+        Adjust the current continuous-scrolling view. These settings are saved
+        locally on this device.
       </p>
       <div className="reader-preference-grid">
         <PreferenceSelect

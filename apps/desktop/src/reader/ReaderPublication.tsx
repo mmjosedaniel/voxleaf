@@ -130,20 +130,33 @@ function NavigationNodeElement({
 export interface ReaderPublicationContentProps {
   readonly publication: OpenedPublication;
   readonly initialPreferences?: ReaderPreferencesV1;
+  readonly initialLocator?: ReadingLocatorV1;
+  readonly restoreInitialLocator?: boolean;
   readonly onPreferencesChange?: (preferences: ReaderPreferencesV1) => void;
   readonly onActiveLocatorChange?: (locator: ReadingLocatorV1) => void;
   readonly onSettledLocatorChange?: (locator: ReadingLocatorV1) => void;
+  readonly onInitialRestorationSettled?: (
+    settlement: ReaderInitialRestorationSettlement,
+  ) => void;
   readonly domRangeMapper?: SemanticDomRangeMapper;
   readonly visualLocatorEnvironment?: ActiveVisualLocatorEnvironment;
   readonly reflowEnvironment?: ReaderReflowEnvironment;
 }
 
+export interface ReaderInitialRestorationSettlement {
+  readonly status: "settled" | "superseded" | "unavailable";
+  readonly locator: ReadingLocatorV1;
+}
+
 export function ReaderPublicationContent({
   publication,
   initialPreferences = DEFAULT_READER_PREFERENCES,
+  initialLocator,
+  restoreInitialLocator = false,
   onPreferencesChange,
   onActiveLocatorChange,
   onSettledLocatorChange,
+  onInitialRestorationSettled,
   domRangeMapper,
   visualLocatorEnvironment,
   reflowEnvironment,
@@ -151,6 +164,7 @@ export function ReaderPublicationContent({
   const [coordinator] = useState(
     () =>
       new ReaderNavigationCoordinator(publication, {
+        ...(initialLocator === undefined ? {} : { initialLocator }),
         preferences: initialPreferences,
       }),
   );
@@ -160,6 +174,8 @@ export function ReaderPublicationContent({
   );
   const [ownedDomRangeMapper] = useState(() => new SemanticDomRangeMapper());
   const activeDomRangeMapper = domRangeMapper ?? ownedDomRangeMapper;
+  const initialRestorationRequired =
+    restoreInitialLocator && initialLocator !== undefined;
   const [visualLocatorTracker] = useState(
     () =>
       new ActiveVisualLocatorTracker(publication, activeDomRangeMapper, {
@@ -174,6 +190,34 @@ export function ReaderPublicationContent({
         },
       }),
   );
+  const [initialVisualLocatorResume] = useState(() =>
+    initialRestorationRequired ? visualLocatorTracker.suspend() : undefined,
+  );
+  const initialVisualLocatorResumeRef = useRef(initialVisualLocatorResume);
+  const initialRestorationStatus = useRef<
+    "pending" | ReaderInitialRestorationSettlement["status"]
+  >(initialRestorationRequired ? "pending" : "settled");
+  const initialRestorationStarted = useRef(false);
+  const [initialRestorationPending, setInitialRestorationPending] = useState(
+    initialRestorationRequired,
+  );
+  const completeInitialRestoration = useCallback(
+    (settlement: ReaderInitialRestorationSettlement): void => {
+      if (initialRestorationStatus.current !== "pending") {
+        return;
+      }
+      initialRestorationStatus.current = settlement.status;
+      setInitialRestorationPending(false);
+      const resume = initialVisualLocatorResumeRef.current;
+      initialVisualLocatorResumeRef.current = undefined;
+      resume?.({ requestSample: false });
+      onInitialRestorationSettled?.(settlement);
+    },
+    [onInitialRestorationSettled],
+  );
+  const [pendingInitialSettlement, setPendingInitialSettlement] = useState<
+    ReaderInitialRestorationSettlement | undefined
+  >(undefined);
   const [reflowRestorer] = useState(
     () =>
       new ReaderReflowRestorer(
@@ -188,11 +232,26 @@ export function ReaderPublicationContent({
           onRestored: (result) => {
             if (result.reason === "preference") {
               onSettledLocatorChange?.(result.locator);
+            } else if (result.reason === "restoration") {
+              setPendingInitialSettlement(
+                Object.freeze({
+                  status:
+                    result.placement === "unavailable"
+                      ? "unavailable"
+                      : "settled",
+                  locator: result.locator,
+                }),
+              );
             }
           },
         },
       ),
   );
+  useLayoutEffect(() => {
+    if (pendingInitialSettlement !== undefined) {
+      completeInitialRestoration(pendingInitialSettlement);
+    }
+  }, [completeInitialRestoration, pendingInitialSettlement]);
   const subscribe = useCallback(
     (listener: () => void) => coordinator.subscribe(listener),
     [coordinator],
@@ -213,13 +272,35 @@ export function ReaderPublicationContent({
   const resumeProgrammaticNavigationRef = useRef<(() => void) | undefined>(
     undefined,
   );
+  const attemptInitialRestoration = useCallback((): void => {
+    if (
+      initialRestorationStatus.current !== "pending" ||
+      initialRestorationStarted.current ||
+      readerRef.current === null ||
+      destinationRef.current === null
+    ) {
+      return;
+    }
+    initialRestorationStarted.current = true;
+    if (
+      !reflowRestorer.preserve(coordinator.state.activeLocator, "restoration")
+    ) {
+      completeInitialRestoration(
+        Object.freeze({
+          status: "unavailable",
+          locator: coordinator.state.activeLocator,
+        }),
+      );
+    }
+  }, [completeInitialRestoration, coordinator, reflowRestorer]);
   const setReaderRef = useCallback(
     (element: HTMLElement | null): void => {
       readerRef.current = element;
       visualLocatorTracker.setRoot(element);
       reflowRestorer.setRoot(element);
+      attemptInitialRestoration();
     },
-    [reflowRestorer, visualLocatorTracker],
+    [attemptInitialRestoration, reflowRestorer, visualLocatorTracker],
   );
   const finishProgrammaticNavigation = useCallback((): void => {
     visualLocatorTracker.setCurrentLocator(coordinator.state.activeLocator);
@@ -248,6 +329,7 @@ export function ReaderPublicationContent({
   const setDestinationRef = useCallback(
     (element: HTMLElement | null) => {
       destinationRef.current = element;
+      attemptInitialRestoration();
       if (
         element !== null &&
         state.navigationRevision > 0 &&
@@ -258,7 +340,12 @@ export function ReaderPublicationContent({
         finishProgrammaticNavigation();
       }
     },
-    [finishProgrammaticNavigation, focusDestination, state.navigationRevision],
+    [
+      attemptInitialRestoration,
+      finishProgrammaticNavigation,
+      focusDestination,
+      state.navigationRevision,
+    ],
   );
   const targetAvailability = useCallback(
     (target: SemanticDocumentTarget): ReaderTargetAvailability =>
@@ -268,6 +355,12 @@ export function ReaderPublicationContent({
   const runProgrammaticNavigation = useCallback(
     (navigate: () => void): void => {
       reflowRestorer.cancel();
+      completeInitialRestoration(
+        Object.freeze({
+          status: "superseded",
+          locator: coordinator.state.activeLocator,
+        }),
+      );
       resumeProgrammaticNavigationRef.current?.();
       const resume = visualLocatorTracker.suspend();
       resumeProgrammaticNavigationRef.current = resume;
@@ -284,6 +377,7 @@ export function ReaderPublicationContent({
     },
     [
       coordinator,
+      completeInitialRestoration,
       finishProgrammaticNavigation,
       reflowRestorer,
       visualLocatorTracker,
@@ -296,13 +390,21 @@ export function ReaderPublicationContent({
   );
   const updatePreference = useCallback(
     (preference: ReaderPreferenceName, value: string): void => {
+      if (initialRestorationPending) {
+        return;
+      }
       const intent = coordinator.setPreference(preference, value);
       if (intent !== undefined) {
         reflowRestorer.preserve(intent.locator, "preference");
         onPreferencesChange?.(intent.next);
       }
     },
-    [coordinator, onPreferencesChange, reflowRestorer],
+    [
+      coordinator,
+      initialRestorationPending,
+      onPreferencesChange,
+      reflowRestorer,
+    ],
   );
 
   useEffect(
@@ -314,6 +416,8 @@ export function ReaderPublicationContent({
   useEffect(
     () => () => {
       reflowRestorer.close();
+      initialVisualLocatorResumeRef.current?.({ requestSample: false });
+      initialVisualLocatorResumeRef.current = undefined;
       resumeProgrammaticNavigationRef.current?.();
       resumeProgrammaticNavigationRef.current = undefined;
       visualLocatorTracker.close();
@@ -330,6 +434,18 @@ export function ReaderPublicationContent({
   );
 
   useLayoutEffect(() => {
+    if (
+      initialRestorationStatus.current === "pending" &&
+      state.contentStatus === "chapter-too-large"
+    ) {
+      completeInitialRestoration(
+        Object.freeze({
+          status: "unavailable",
+          locator: state.activeLocator,
+        }),
+      );
+      return;
+    }
     if (
       state.navigationRevision === 0 ||
       handledNavigationRevision.current === state.navigationRevision
@@ -351,9 +467,11 @@ export function ReaderPublicationContent({
       finishProgrammaticNavigation();
     }
   }, [
+    completeInitialRestoration,
     finishProgrammaticNavigation,
     focusDestination,
     state.contentStatus,
+    state.activeLocator,
     state.navigationRevision,
   ]);
 
@@ -365,8 +483,10 @@ export function ReaderPublicationContent({
       data-reader-line-spacing={state.preferences.lineSpacing}
       data-reader-content-width={state.preferences.contentWidth}
       data-reader-theme={state.preferences.theme}
+      aria-busy={initialRestorationPending || undefined}
     >
       <ReaderPreferencesControls
+        disabled={initialRestorationPending}
         preferences={state.preferences}
         onChange={updatePreference}
       />
