@@ -26,16 +26,19 @@ cancellation at deterministic intervals around injected yields, permits one
 active narration operation independently of one raster read, and makes close
 abort and await both before archive release. Normalization, segmentation,
 prepared locator ranges, and the public `prepareNarration` result boundary
-were still unimplemented at that point. Tasks 3.1-3.2 now add the first pure
+were still unimplemented at that point. Tasks 3.1-3.3 now add the first pure
 package-internal normalizer slices: explicit Unicode whitespace collapse,
 source-mapped semantic line breaks, accepted zero-width/soft-hyphen removal,
 one closed Spanish line-end join, punctuation/quotation/ellipsis/dialogue
 protection, malformed-opening preservation, and the closed context-safe
-Spanish ampersand/Celsius expansions. Code, genuine compounds, neutral
-ambiguity, unsupported symbols, and every block-local origin span remain
-preserved through nonempty text or typed omission units. Later Spanish
-lexical/numeric normalization, segmentation, prepared ranges, and the public
-result remain unimplemented. No runtime dependency, shared schema, desktop
+Spanish ampersand/Celsius expansions. Task 3.3 adds the accepted Spanish
+abbreviation/numeric/date/time/currency/percentage forms, period and numeric
+token protections, source-distributed lexical expansions, and the production
+128-code-point parser-lookahead guard. Code, genuine compounds, neutral
+ambiguity, malformed or unsupported numeric forms, and every block-local
+origin span remain preserved through nonempty text or typed omission units.
+Segmentation, prepared ranges, and the public result remain unimplemented. No
+runtime dependency, shared schema, desktop
 integration, TTS behavior, audio behavior, persistence, or capability was
 added.
 
@@ -434,10 +437,10 @@ Those decisions remain with roadmap Milestones 6 through 9.
   shared-contract decision.
 - Task 1.3's accepted limits close the pre-production policy gate. Tasks
   2.1-2.3 subsequently implement pure source traversal, source-span token
-  mapping, and bounded source-window lifecycle enforcement. Tasks 3.1-3.2 add
+  mapping, and bounded source-window lifecycle enforcement. Tasks 3.1-3.3 add
   deterministic source-mapped whitespace/hyphenation and punctuation/symbol
-  normalization slices, including production enforcement of the accepted
-  per-source expansion ceiling; remaining lexical/numeric normalization,
+  plus lexical/numeric normalization slices, including production enforcement
+  of the accepted per-source expansion and parser-lookahead ceilings;
   segmentation, prepared-output limits, and public integration still require
   later tasks.
 

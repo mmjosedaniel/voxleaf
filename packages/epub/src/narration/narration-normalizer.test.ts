@@ -49,6 +49,16 @@ const TASK_3_2_CORPUS = NARRATION_NORMALIZATION_CORPUS.filter(
     id === "malformed-unbalanced-quote" ||
     id === "malformed-unbalanced-opening-question",
 );
+const TASK_3_3_CORPUS = NARRATION_NORMALIZATION_CORPUS.filter(
+  ({ category }) =>
+    category === "abbreviation" ||
+    category === "number" ||
+    category === "date" ||
+    category === "time" ||
+    category === "currency" ||
+    category === "percentage" ||
+    category === "language",
+);
 
 describe("narration normalization", () => {
   describe("accepted Task 3.1 corpus", () => {
@@ -454,6 +464,196 @@ describe("narration normalization", () => {
     });
   });
 
+  describe("accepted Task 3.3 Spanish lexical and numeric policy", () => {
+    for (const corpusCase of TASK_3_3_CORPUS) {
+      it(corpusCase.id, () => {
+        const fixture = corpusFixture(corpusCase);
+        const before = JSON.stringify(fixture.block);
+
+        const normalized = normalizeNarrationSourceTokens(
+          fixture.leaf.sourceTokens,
+          corpusCase.defaultLanguage,
+        );
+
+        expect(normalized.text).toBe(corpusCase.expected.narrationText);
+        expect(normalizedBoundaryProtections(normalized)).toEqual(
+          [...corpusCase.expected.boundaryProtections].sort(),
+        );
+        expect(JSON.stringify(fixture.block)).toBe(before);
+        assertSourceMapping(fixture.leaf, normalized);
+        assertDeepFrozen(normalized);
+      });
+    }
+
+    it("is deterministic and text-idempotent for every accepted form", () => {
+      for (const corpusCase of TASK_3_3_CORPUS) {
+        const fixture = corpusFixture(corpusCase);
+        const first = normalizeNarrationSourceTokens(
+          fixture.leaf.sourceTokens,
+          corpusCase.defaultLanguage,
+        );
+        const repeated = normalizeNarrationSourceTokens(
+          fixture.leaf.sourceTokens,
+          corpusCase.defaultLanguage,
+        );
+        const semanticLanguages = [
+          ...new Set(
+            corpusCase.source.map(({ semanticLanguage }) => semanticLanguage),
+          ),
+        ];
+        const secondLanguage =
+          semanticLanguages.length === 1 ? semanticLanguages[0] : undefined;
+        const second = normalizeNarrationSourceTokens(
+          leafFor(paragraph([text(String(first.text), secondLanguage)]))
+            .sourceTokens,
+          corpusCase.defaultLanguage,
+        );
+
+        expect(repeated).toEqual(first);
+        expect(second.text).toBe(first.text);
+      }
+    });
+
+    it("keeps accepted lexical classes protected for later segmentation", () => {
+      const abbreviation = resultForTask3_3Case(
+        "abbreviation-spanish-honorific",
+      ).normalized;
+      const initials = resultForTask3_3Case("abbreviation-initials").normalized;
+      const decimal = resultForTask3_3Case(
+        "number-spanish-decimal-leading-zero",
+      ).normalized;
+      const date = resultForTask3_3Case("date-spanish-slash").normalized;
+      const time = resultForTask3_3Case(
+        "time-spanish-twenty-four-hour",
+      ).normalized;
+      const currency = resultForTask3_3Case(
+        "currency-spanish-euro-symbol",
+      ).normalized;
+      const percentage = resultForTask3_3Case(
+        "percentage-spanish-decimal",
+      ).normalized;
+
+      expect(textRoles(abbreviation)).toContain("abbreviation");
+      expect(textRoles(decimal)).toContain("number");
+      expect(textRoles(date)).toContain("date");
+      expect(textRoles(time)).toContain("time");
+      expect(textRoles(currency)).toContain("currency");
+      expect(textRoles(percentage)).toContain("percentage");
+      expect(normalizedBoundaryProtections(initials)).toContain(
+        "initial-period",
+      );
+      expect(normalizedBoundaryProtections(decimal)).toContain("decimal-token");
+      expect(normalizedBoundaryProtections(date)).toContain("date-token");
+      expect(normalizedBoundaryProtections(time)).toContain("time-token");
+      expect(normalizedBoundaryProtections(currency)).toContain(
+        "currency-token",
+      );
+      expect(normalizedBoundaryProtections(percentage)).toContain(
+        "percentage-token",
+      );
+    });
+
+    it("preserves neutral, malformed, ambiguous, unsupported, and code forms", () => {
+      for (const id of [
+        "number-neutral-separator-ambiguous",
+        "number-spanish-mixed-separators-unsupported",
+        "date-spanish-invalid",
+        "date-neutral-ambiguous",
+        "time-spanish-invalid",
+        "time-neutral-preserved",
+        "currency-dollar-ambiguous",
+        "language-explicit-unsupported-neutral",
+        "language-malformed-tag-neutral",
+      ]) {
+        const corpusCase = TASK_3_3_CORPUS.find((entry) => entry.id === id);
+        if (corpusCase === undefined) {
+          throw new Error("expected preservation corpus case");
+        }
+        expect(resultForTask3_3Case(id).normalized.text).toBe(
+          corpusCase.expected.narrationText,
+        );
+      }
+
+      const unsupportedMagnitude = normalizeNarrationSourceTokens(
+        leafFor(paragraph([text("999999", "es")])).sourceTokens,
+        "es",
+      );
+      const codeNumeric = normalizeNarrationSourceTokens(
+        leafFor(paragraph([code("24/07/2026 12,50 €", "es")])).sourceTokens,
+        "es",
+      );
+      const attachedUnsupported = [
+        "21 °F",
+        "21°C",
+        "1.234.56",
+        "21 %",
+        "21 EUR",
+        "etc..",
+      ];
+      expect(unsupportedMagnitude.text).toBe("999999");
+      expect(codeNumeric.text).toBe("24/07/2026 12,50 €");
+      for (const source of attachedUnsupported) {
+        expect(
+          normalizeNarrationSourceTokens(
+            leafFor(paragraph([text(source, "es")])).sourceTokens,
+            "es",
+          ).text,
+        ).toBe(source);
+      }
+      expect(
+        codeNumeric.units.every(
+          (unit) => unit.kind !== "text" || unit.role === "code",
+        ),
+      ).toBe(true);
+    });
+
+    it("preserves decimal spelling and leading zeros without numeric conversion", () => {
+      const leadingZero = resultForTask3_3Case(
+        "number-spanish-decimal-leading-zero",
+      );
+      const euro = resultForTask3_3Case("currency-spanish-euro-symbol");
+
+      expect(leadingZero.normalized.text).toBe("tres coma cero cinco");
+      expect(euro.normalized.text).toBe("doce euros con cincuenta céntimos");
+      assertSourceMapping(leadingZero.leaf, leadingZero.normalized);
+      assertSourceMapping(euro.leaf, euro.normalized);
+    });
+
+    it("accepts exact numeric lookahead and rejects max-plus-one", () => {
+      const maximum =
+        NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum;
+      const exact = boundedSourceTokens(maximum, "9");
+      const normalized = normalizeNarrationSourceTokens(exact, "es");
+
+      expect(normalized.text).toBe("9".repeat(maximum));
+      expect(normalized.units).toHaveLength(maximum);
+      expectArchiveFailure(
+        () =>
+          normalizeNarrationSourceTokens(
+            boundedSourceTokens(maximum + 1, "9"),
+            "es",
+          ),
+        "resource-limit-exceeded",
+      );
+    });
+
+    it("keeps every lexical expansion within the per-source ceiling", () => {
+      for (const corpusCase of TASK_3_3_CORPUS) {
+        const normalized = normalizeNarrationSourceTokens(
+          corpusFixture(corpusCase).leaf.sourceTokens,
+          corpusCase.defaultLanguage,
+        );
+        for (const unit of normalized.units) {
+          if (unit.kind === "text") {
+            expect(Array.from(String(unit.text)).length).toBeLessThanOrEqual(
+              NARRATION_V1_SOURCE_WINDOW_POLICY.normalizationExpansionCodePointsHardMaximum,
+            );
+          }
+        }
+      }
+    });
+  });
+
   it("keeps normalized unit unions closed", () => {
     expectTypeOf<NarrationNormalizedUnit["kind"]>().toEqualTypeOf<
       "omission" | "text"
@@ -623,6 +823,24 @@ function resultForTask3_2Case(id: string): Readonly<{
   const corpusCase = TASK_3_2_CORPUS.find((entry) => entry.id === id);
   if (corpusCase === undefined) {
     throw new Error("expected punctuation normalization corpus case");
+  }
+  const fixture = corpusFixture(corpusCase);
+  return Object.freeze({
+    leaf: fixture.leaf,
+    normalized: normalizeNarrationSourceTokens(
+      fixture.leaf.sourceTokens,
+      corpusCase.defaultLanguage,
+    ),
+  });
+}
+
+function resultForTask3_3Case(id: string): Readonly<{
+  leaf: NarrationSourceTokenLeafEvent;
+  normalized: NarrationNormalizedStream;
+}> {
+  const corpusCase = TASK_3_3_CORPUS.find((entry) => entry.id === id);
+  if (corpusCase === undefined) {
+    throw new Error("expected lexical normalization corpus case");
   }
   const fixture = corpusFixture(corpusCase);
   return Object.freeze({

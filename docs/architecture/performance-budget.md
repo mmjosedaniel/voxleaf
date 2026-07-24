@@ -98,12 +98,13 @@ source-span tokens. Task 2.3 enforces the source-window subset in production:
 canonical structural start resolution, at most 16,384 inspected source code
 points, at most 4,096 retained token/event entries, depth 128, cancellation
 checks at the 512-work-unit target, and injected deterministic yields at the
-4,096-work-unit target. Tasks 3.1-3.2 retain exactly one nonempty text or typed
-omission unit per bounded source token. Task 3.2 adds bounded punctuation and
-symbol scanners and enforces the accepted hard maximum of 16 output code
-points per source code point for its closed Spanish expansions. Later
-lexical/numeric expansion, segmentation, prepared-segment output limits, and
-the public operation remain pending.
+4,096-work-unit target. Tasks 3.1-3.3 retain exactly one nonempty text or typed
+omission unit per bounded source token. Tasks 3.2-3.3 add bounded punctuation,
+symbol, abbreviation, and numeric scanners and enforce the accepted hard
+maximum of 16 output code points per source code point for closed Spanish
+expansions. Task 3.3 also admits at most 128 code points of numeric parser
+lookahead before returning the fixed resource-limit failure. Segmentation,
+prepared-segment output limits, and the public operation remain pending.
 
 The profile targets 320 narration code points / 1,024 UTF-8 bytes per segment,
 eight segments per batch, cancellation checks every 512 work units, and a

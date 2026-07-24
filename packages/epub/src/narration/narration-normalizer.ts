@@ -9,6 +9,8 @@ import {
   isAcceptedSpanishLineEndHyphenation,
   SPANISH_AMPERSAND_NARRATION,
   SPANISH_CELSIUS_NORMALIZATION,
+  SPANISH_LEXICAL_NORMALIZATION_FORMS,
+  SPANISH_LEXICAL_PRESERVATION_FORMS,
 } from "./spanish-normalization.js";
 
 export type NarrationNormalizationLanguage = "es" | "und";
@@ -20,32 +22,48 @@ export type SensitiveNormalizedNarrationText = string & {
 };
 
 export type NarrationNormalizedTextRole =
+  | "abbreviation"
   | "code"
+  | "currency"
+  | "date"
   | "dialogue-dash"
   | "ellipsis"
   | "line-end-hyphen"
+  | "number"
   | "preserved"
+  | "percentage"
   | "punctuation"
   | "quotation"
   | "semantic-line-break"
   | "symbol"
+  | "time"
   | "whitespace";
 
 export type NarrationNormalizationBoundaryProtection =
+  | "abbreviation-period"
   | "code-span"
+  | "currency-token"
+  | "date-token"
+  | "decimal-token"
   | "dialogue-turn"
   | "ellipsis"
   | "genuine-compound"
+  | "initial-period"
+  | "language-span"
   | "line-end-hyphen"
   | "malformed-punctuation"
+  | "percentage-token"
   | "semantic-line-break"
   | "sentence-end"
-  | "symbol-token";
+  | "symbol-token"
+  | "thousands-token"
+  | "time-token";
 
 export type NarrationNormalizationOmissionReason =
   | "collapsed-whitespace"
   | "formatting-mark"
   | "line-end-hyphen"
+  | "lexical-expansion"
   | "raster-placeholder"
   | "semantic-line-break"
   | "soft-hyphen"
@@ -114,6 +132,9 @@ const NO_BOUNDARY_PROTECTIONS = Object.freeze(
 );
 const CODE_SPAN_PROTECTION = Object.freeze([
   "code-span",
+] as NarrationNormalizationBoundaryProtection[]);
+const LANGUAGE_SPAN_PROTECTION = Object.freeze([
+  "language-span",
 ] as NarrationNormalizationBoundaryProtection[]);
 const DIALOGUE_TURN_PROTECTION = Object.freeze([
   "dialogue-turn",
@@ -315,6 +336,33 @@ function hasSameLanguage(
   return true;
 }
 
+function mergedBoundaryProtections(
+  ...groups: readonly (readonly NarrationNormalizationBoundaryProtection[])[]
+): readonly NarrationNormalizationBoundaryProtection[] {
+  const merged: NarrationNormalizationBoundaryProtection[] = [];
+  for (const group of groups) {
+    for (const protection of group) {
+      if (!merged.includes(protection)) {
+        merged.push(protection);
+      }
+    }
+  }
+  return merged.length === 0 ? NO_BOUNDARY_PROTECTIONS : Object.freeze(merged);
+}
+
+function languageProtectionsForSpan(
+  tokens: readonly NarrationSourceToken[],
+  startIndex: number,
+  endIndexExclusive: number,
+): readonly NarrationNormalizationBoundaryProtection[] {
+  for (let index = startIndex; index < endIndexExclusive; index += 1) {
+    if (tokens[index]?.textContext.language !== undefined) {
+      return LANGUAGE_SPAN_PROTECTION;
+    }
+  }
+  return NO_BOUNDARY_PROTECTIONS;
+}
+
 function isContextSafeSpanishAmpersand(
   tokens: readonly NarrationSourceToken[],
   index: number,
@@ -414,6 +462,299 @@ function findSymbolReplacements(
         collapsible: false,
         boundaryProtections: SYMBOL_TOKEN_PROTECTION,
       });
+    }
+  }
+
+  return Object.freeze(replacements);
+}
+
+type LexicalRole =
+  "abbreviation" | "currency" | "date" | "number" | "percentage" | "time";
+
+interface LexicalForm {
+  readonly source: string;
+  readonly kind: LexicalRole;
+  readonly boundaryProtections: readonly NarrationNormalizationBoundaryProtection[];
+}
+
+interface LexicalNormalizationForm extends LexicalForm {
+  readonly narration: string;
+}
+
+interface LexicalPreservationForm extends LexicalForm {
+  readonly language: NarrationNormalizationLanguage;
+}
+
+function isLexicalBoundary(value: string | undefined): boolean {
+  return !isWordContextCodePoint(value);
+}
+
+function hasAttachedNumericSyntax(
+  tokens: readonly NarrationSourceToken[],
+  startIndex: number,
+  endIndexExclusive: number,
+): boolean {
+  const before = sourceText(tokens[startIndex - 1]);
+  const after = sourceText(tokens[endIndexExclusive]);
+  if (
+    isNumericLookaheadCodePoint(before) ||
+    isNumericLookaheadCodePoint(after) ||
+    before === "€" ||
+    before === "°" ||
+    after === "€" ||
+    after === "°"
+  ) {
+    return true;
+  }
+  if (!isOrdinaryWhitespace(after ?? "")) {
+    return false;
+  }
+  const suffix = sourceText(tokens[endIndexExclusive + 1]);
+  return (
+    suffix === "%" ||
+    suffix === "€" ||
+    suffix === "°" ||
+    (suffix === "E" &&
+      sourceText(tokens[endIndexExclusive + 2]) === "U" &&
+      sourceText(tokens[endIndexExclusive + 3]) === "R")
+  );
+}
+
+function matchesLexicalForm(
+  tokens: readonly NarrationSourceToken[],
+  languages: readonly NarrationNormalizationLanguage[],
+  replacements: readonly (PlannedReplacement | undefined)[],
+  startIndex: number,
+  form: LexicalForm,
+  requiredLanguage: NarrationNormalizationLanguage,
+): number | undefined {
+  const source = Array.from(form.source);
+  if (
+    source.length === 0 ||
+    source.length >
+      NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum
+  ) {
+    return fail();
+  }
+  const endIndexExclusive = startIndex + source.length;
+  if (
+    endIndexExclusive > tokens.length ||
+    !isLexicalBoundary(sourceText(tokens[startIndex - 1])) ||
+    !isLexicalBoundary(sourceText(tokens[endIndexExclusive])) ||
+    (form.kind === "number" &&
+      hasAttachedNumericSyntax(tokens, startIndex, endIndexExclusive)) ||
+    (form.kind === "abbreviation" &&
+      (sourceText(tokens[startIndex - 1]) === "." ||
+        sourceText(tokens[endIndexExclusive]) === "."))
+  ) {
+    return undefined;
+  }
+
+  for (let offset = 0; offset < source.length; offset += 1) {
+    const index = startIndex + offset;
+    if (
+      replacements[index] !== undefined ||
+      !isProseTextToken(tokens[index]) ||
+      sourceText(tokens[index]) !== source[offset] ||
+      languages[index] !== requiredLanguage
+    ) {
+      return undefined;
+    }
+  }
+  return endIndexExclusive;
+}
+
+function planLexicalSpan(
+  replacements: (PlannedReplacement | undefined)[],
+  tokens: readonly NarrationSourceToken[],
+  startIndex: number,
+  endIndexExclusive: number,
+  role: LexicalRole,
+  boundaryProtections: readonly NarrationNormalizationBoundaryProtection[],
+  narration?: string,
+): void {
+  const protections = mergedBoundaryProtections(
+    boundaryProtections,
+    languageProtectionsForSpan(tokens, startIndex, endIndexExclusive),
+  );
+  if (narration === undefined) {
+    for (let index = startIndex; index < endIndexExclusive; index += 1) {
+      const value = sourceText(tokens[index]);
+      if (value === undefined) {
+        return fail();
+      }
+      replacements[index] = Object.freeze({
+        kind: "text",
+        text: value,
+        role,
+        collapsible: false,
+        boundaryProtections: protections,
+      });
+    }
+    return;
+  }
+
+  const narrationCodePoints = Array.from(narration);
+  const sourceLength = endIndexExclusive - startIndex;
+  const hardMaximum =
+    NARRATION_V1_SOURCE_WINDOW_POLICY.normalizationExpansionCodePointsHardMaximum;
+  if (narrationCodePoints.length > sourceLength * hardMaximum) {
+    return resourceLimitExceeded();
+  }
+
+  let narrationIndex = 0;
+  for (let index = startIndex; index < endIndexExclusive; index += 1) {
+    const remainingSourcePositions = endIndexExclusive - index;
+    const remainingNarration = narrationCodePoints.length - narrationIndex;
+    const chunkLength = Math.min(
+      hardMaximum,
+      Math.ceil(remainingNarration / remainingSourcePositions),
+    );
+    if (chunkLength === 0) {
+      replacements[index] = Object.freeze({
+        kind: "omission",
+        reason: "lexical-expansion",
+        boundaryProtections: protections,
+      });
+      continue;
+    }
+    const text = narrationCodePoints
+      .slice(narrationIndex, narrationIndex + chunkLength)
+      .join("");
+    narrationIndex += chunkLength;
+    replacements[index] = Object.freeze({
+      kind: "text",
+      text,
+      role,
+      collapsible: false,
+      boundaryProtections: protections,
+    });
+  }
+  if (narrationIndex !== narrationCodePoints.length) {
+    return fail();
+  }
+}
+
+function isNumericLookaheadCodePoint(value: string | undefined): boolean {
+  if (value === undefined) {
+    return false;
+  }
+  return (
+    isAsciiDigit(value.charCodeAt(0)) ||
+    value === "." ||
+    value === "," ||
+    value === "/" ||
+    value === ":" ||
+    value === "+" ||
+    value === "-" ||
+    value === "$" ||
+    value === "%" ||
+    value === "º" ||
+    value === "ª"
+  );
+}
+
+function enforceNumericLookahead(
+  tokens: readonly NarrationSourceToken[],
+): void {
+  const maximum =
+    NARRATION_V1_SOURCE_WINDOW_POLICY.parserLookaheadCodePointsHardMaximum;
+  for (let index = 0; index < tokens.length; index += 1) {
+    const value = sourceText(tokens[index]);
+    if (
+      !isProseTextToken(tokens[index]) ||
+      !isNumericLookaheadCodePoint(value) ||
+      (index > 0 && isNumericLookaheadCodePoint(sourceText(tokens[index - 1])))
+    ) {
+      continue;
+    }
+
+    let length = 0;
+    let hasDigit = false;
+    let cursor = index;
+    while (
+      cursor < tokens.length &&
+      isProseTextToken(tokens[cursor]) &&
+      isNumericLookaheadCodePoint(sourceText(tokens[cursor]))
+    ) {
+      const candidate = sourceText(tokens[cursor]);
+      hasDigit ||=
+        candidate !== undefined && isAsciiDigit(candidate.charCodeAt(0));
+      length += 1;
+      cursor += 1;
+    }
+    if (hasDigit && length > maximum) {
+      return resourceLimitExceeded();
+    }
+    index = cursor - 1;
+  }
+}
+
+function findLexicalReplacements(
+  tokens: readonly NarrationSourceToken[],
+  languages: readonly NarrationNormalizationLanguage[],
+  existingReplacements: readonly (PlannedReplacement | undefined)[],
+): readonly (PlannedReplacement | undefined)[] {
+  enforceNumericLookahead(tokens);
+  const replacements = [...existingReplacements];
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    if (replacements[index] !== undefined) {
+      continue;
+    }
+
+    let matched = false;
+    for (const form of SPANISH_LEXICAL_PRESERVATION_FORMS) {
+      const endIndexExclusive = matchesLexicalForm(
+        tokens,
+        languages,
+        replacements,
+        index,
+        form as LexicalPreservationForm,
+        form.language,
+      );
+      if (endIndexExclusive === undefined) {
+        continue;
+      }
+      planLexicalSpan(
+        replacements,
+        tokens,
+        index,
+        endIndexExclusive,
+        form.kind,
+        form.boundaryProtections,
+      );
+      index = endIndexExclusive - 1;
+      matched = true;
+      break;
+    }
+    if (matched) {
+      continue;
+    }
+
+    for (const form of SPANISH_LEXICAL_NORMALIZATION_FORMS) {
+      const endIndexExclusive = matchesLexicalForm(
+        tokens,
+        languages,
+        replacements,
+        index,
+        form as LexicalNormalizationForm,
+        "es",
+      );
+      if (endIndexExclusive === undefined) {
+        continue;
+      }
+      planLexicalSpan(
+        replacements,
+        tokens,
+        index,
+        endIndexExclusive,
+        form.kind,
+        form.boundaryProtections,
+        form.narration,
+      );
+      index = endIndexExclusive - 1;
+      break;
     }
   }
 
@@ -768,7 +1109,7 @@ function provisionalUnit(
   textContext: NarrationSourceTextContext,
   language: NarrationNormalizationLanguage,
   lineEndHyphenation: ReturnType<typeof findLineEndHyphenation>,
-  symbolReplacements: readonly (PlannedReplacement | undefined)[],
+  replacements: readonly (PlannedReplacement | undefined)[],
   punctuationPlan: readonly (PunctuationPlanEntry | undefined)[],
 ): ProvisionalUnit {
   switch (token.kind) {
@@ -829,7 +1170,7 @@ function provisionalUnit(
           GENUINE_COMPOUND_PROTECTION,
         );
       }
-      const replacement = symbolReplacements[index];
+      const replacement = replacements[index];
       if (replacement?.kind === "omission") {
         return omission(
           token,
@@ -857,8 +1198,20 @@ function provisionalUnit(
         return omission(token, textContext, language, "formatting-mark");
       }
       const punctuation = punctuationPlan[index];
+      const languageProtections =
+        token.textContext.language === undefined
+          ? NO_BOUNDARY_PROTECTIONS
+          : LANGUAGE_SPAN_PROTECTION;
       return isOrdinaryWhitespace(value)
-        ? textUnit(token, textContext, language, " ", "whitespace", true)
+        ? textUnit(
+            token,
+            textContext,
+            language,
+            " ",
+            "whitespace",
+            true,
+            languageProtections,
+          )
         : textUnit(
             token,
             textContext,
@@ -866,7 +1219,10 @@ function provisionalUnit(
             value,
             punctuation?.role ?? "preserved",
             false,
-            punctuation?.boundaryProtections ?? NO_BOUNDARY_PROTECTIONS,
+            mergedBoundaryProtections(
+              punctuation?.boundaryProtections ?? NO_BOUNDARY_PROTECTIONS,
+              languageProtections,
+            ),
           );
     }
     default:
@@ -964,7 +1320,7 @@ function validateContiguousSource(
 }
 
 /**
- * Applies the Task 3.1-3.2 normalization slices to one block-local source-token
+ * Applies the Task 3.1-3.3 normalization slices to one block-local source-token
  * stream. Every source position remains represented by either a nonempty text
  * unit or a content-free omission reason, so later segmentation can construct
  * legal ranges without reparsing source text.
@@ -993,6 +1349,11 @@ export function normalizeNarrationSourceTokens(
   );
   const lineEndHyphenation = findLineEndHyphenation(tokens, languages);
   const symbolReplacements = findSymbolReplacements(tokens, languages);
+  const replacements = findLexicalReplacements(
+    tokens,
+    languages,
+    symbolReplacements,
+  );
   const punctuationPlan = findPunctuationPlan(tokens);
   const provisional = tokens.map((token, index) => {
     let textContext = contextCopies.get(token.textContext);
@@ -1010,7 +1371,7 @@ export function normalizeNarrationSourceTokens(
       textContext,
       language,
       lineEndHyphenation,
-      symbolReplacements,
+      replacements,
       punctuationPlan,
     );
   });
