@@ -17,7 +17,7 @@ const ALIGNMENT_TOLERANCE_PX = 0.75;
 const REQUIRED_STABLE_FRAMES = 2;
 export const MAX_REFLOW_SETTLE_FRAMES = 12;
 
-export type ReaderReflowReason = "preference" | "viewport";
+export type ReaderReflowReason = "preference" | "restoration" | "viewport";
 export type ReaderReflowPlacement =
   "block-start" | "exact-range" | "unavailable";
 
@@ -291,14 +291,21 @@ export class ReaderReflowRestorer {
     if (root !== null) {
       this.#cancelViewportObservation = this.#environment.observeViewport(
         root,
-        () => this.preserve(this.#currentLocator(), "viewport"),
+        () => {
+          if (this.#pending === undefined) {
+            this.preserve(this.#currentLocator(), "viewport");
+          }
+        },
       );
     }
   }
 
-  public preserve(locator: ReadingLocatorV1, reason: ReaderReflowReason): void {
+  public preserve(
+    locator: ReadingLocatorV1,
+    reason: ReaderReflowReason,
+  ): boolean {
     if (this.#closed || this.#root === undefined) {
-      return;
+      return false;
     }
 
     let resolution: PublicationLocatorResolution | undefined;
@@ -306,11 +313,11 @@ export class ReaderReflowRestorer {
       resolution = this.#publication.resolveLocator(locator);
     } catch {
       this.cancel();
-      return;
+      return false;
     }
     if (resolution === undefined) {
       this.cancel();
-      return;
+      return false;
     }
 
     this.#revision += 1;
@@ -328,6 +335,7 @@ export class ReaderReflowRestorer {
     this.#cancelScheduledFrame = undefined;
     this.#resumeVisualLocator ??= this.#visualLocator.suspend();
     this.#schedule();
+    return true;
   }
 
   public cancel(): void {

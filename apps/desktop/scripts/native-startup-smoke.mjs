@@ -47,6 +47,26 @@ const FIXED_FAILURE_CODES = new Map([
     "Native publication raster image remained mounted after close.",
     "synthetic-image-not-released",
   ],
+  [
+    "Native application did not persist the synthetic continuation locator.",
+    "synthetic-position-not-persisted",
+  ],
+  [
+    "Native application did not restore the synthetic continuation locator.",
+    "synthetic-position-not-restored",
+  ],
+  [
+    "Native saved-position restoration moved keyboard focus.",
+    "synthetic-restoration-focus-moved",
+  ],
+  [
+    "Native saved-position restoration remained pending.",
+    "synthetic-restoration-pending",
+  ],
+  [
+    "Native saved-position restoration reached an unexpected safe state.",
+    "synthetic-restoration-unexpected-state",
+  ],
   ["Native application root did not mount.", "application-root-not-mounted"],
   [
     "Native application main landmark is not visible.",
@@ -143,6 +163,73 @@ async function waitForCondition(driver, script) {
   }
 
   throw new WebDriverClientError("webdriver-condition-timeout");
+}
+
+async function observeSavedPositionRestoration(driver) {
+  const deadline = Date.now() + STARTUP_TIMEOUT_MS;
+  let observation;
+
+  while (Date.now() < deadline) {
+    observation = await driver.execute(
+      `const statusText =
+         document.querySelector(".open-status")?.textContent ?? "";
+       const serialized = localStorage.getItem("voxleaf.reader.positions");
+       let savedContinuation = false;
+       try {
+         savedContinuation =
+           serialized !== null &&
+           JSON.parse(serialized)?.states?.[0]?.locator?.spineItemIndex === 1;
+       } catch {
+         savedContinuation = false;
+       }
+       const continuationVisible = Array.from(
+         document.querySelectorAll("h1"),
+       ).some(
+         (heading) =>
+           heading.textContent === "Continuation" &&
+           heading.getClientRects().length > 0,
+       );
+       const continuation = Array.from(document.querySelectorAll("h1")).find(
+         (heading) => heading.textContent === "Continuation",
+       );
+       const continuationTop = continuation?.getBoundingClientRect().top;
+       const status =
+         statusText === "Reading position restored."
+           ? "exact"
+           : statusText ===
+               "Reading position restored to the nearest available passage."
+             ? "recovered"
+             : statusText === "" ||
+                 statusText === "Validating and opening the selected EPUB."
+               ? "opening"
+             : statusText === "Restoring saved reader state."
+               ? "pending"
+               : statusText === "The EPUB opened successfully."
+                 ? "book-start"
+                 : "other";
+       return {
+         continuationAligned:
+           typeof continuationTop === "number" &&
+           Math.abs(continuationTop - 24) <= 1,
+         continuationVisible,
+         documentScrolled: window.scrollY > 0,
+         readerBusy:
+           document.querySelector(".semantic-reader")
+             ?.getAttribute("aria-busy") === "true",
+         savedContinuation,
+         status,
+       };`,
+    );
+    if (
+      observation?.status !== "opening" &&
+      observation?.status !== "pending"
+    ) {
+      return observation;
+    }
+    await delay(100);
+  }
+
+  return observation;
 }
 
 function inspectPerformanceLogs(logs) {
@@ -255,6 +342,8 @@ async function run() {
   });
   let stage = "WebDriver startup";
   let cleanupFailed = false;
+  const collectedBrowserLogs = [];
+  const collectedPerformanceLogs = [];
 
   try {
     await waitForDriver(endpoint, child, spawnState);
@@ -359,6 +448,102 @@ async function run() {
       "Native application exposed the synthetic fixture filename.",
     );
 
+    stage = "synthetic restoration seed navigation";
+    assert(
+      (await driver.execute(
+        `const destination = Array.from(document.querySelectorAll("button"))
+           .find((button) => button.textContent === "Continuation");
+         destination?.click();
+         return destination !== undefined;`,
+      )) === true,
+      "Native application did not persist the synthetic continuation locator.",
+    );
+    await waitForCondition(
+      driver,
+      `return Array.from(document.querySelectorAll("h1")).some(
+         (heading) =>
+           heading.textContent === "Continuation" &&
+           heading.getClientRects().length > 0,
+       );`,
+    );
+    await waitForCondition(
+      driver,
+      `const serialized = localStorage.getItem("voxleaf.reader.positions");
+       if (serialized === null) {
+         return false;
+       }
+       const envelope = JSON.parse(serialized);
+       return envelope?.states?.[0]?.locator?.spineItemIndex === 1;`,
+    );
+
+    stage = "native restart preparation";
+    await delay(OBSERVATION_WINDOW_MS);
+    collectedBrowserLogs.push(...(await driver.getLogs("browser")));
+    collectedPerformanceLogs.push(...(await driver.getLogs("performance")));
+    await driver.deleteSession();
+
+    stage = "native restart session creation";
+    await driver.createSession(executablePath, profileDirectory);
+    await Promise.all([
+      driver.executeCdp("Log.enable"),
+      driver.executeCdp("Runtime.enable"),
+      driver.executeCdp("Network.enable"),
+    ]);
+    await waitForCondition(
+      driver,
+      `const root = document.querySelector("#root");
+       const main = document.querySelector("main");
+       return root?.childElementCount > 0 &&
+         main !== null &&
+         main.getClientRects().length > 0;`,
+    );
+    stage = "synthetic restart file injection";
+    const restartFileInput = await driver.findElement('input[type="file"]');
+    await driver.sendKeys(restartFileInput, fixturePath);
+    stage = "synthetic saved-position restoration";
+    const restorationObservation =
+      await observeSavedPositionRestoration(driver);
+    if (restorationObservation?.status === "pending") {
+      stage =
+        restorationObservation.savedContinuation &&
+        restorationObservation.continuationVisible &&
+        restorationObservation.readerBusy
+          ? restorationObservation.continuationAligned
+            ? "synthetic restoration pending after destination alignment"
+            : restorationObservation.documentScrolled
+              ? "synthetic restoration pending after destination adjustment"
+              : "synthetic restoration pending before destination alignment"
+          : "synthetic restoration pending before destination materialization";
+      throw new Error("Native saved-position restoration remained pending.");
+    }
+    if (restorationObservation?.status !== "exact") {
+      stage =
+        restorationObservation?.savedContinuation === true
+          ? "synthetic saved-position restoration result"
+          : "synthetic saved-position persistence result";
+      throw new Error(
+        "Native saved-position restoration reached an unexpected safe state.",
+      );
+    }
+    assert(
+      (await driver.execute(
+        `return Array.from(document.querySelectorAll("h1")).some(
+           (heading) =>
+             heading.textContent === "Continuation" &&
+             heading.getClientRects().length > 0,
+         );`,
+      )) === true,
+      "Native application did not restore the synthetic continuation locator.",
+    );
+    assert(
+      (await driver.execute(
+        `const continuation = Array.from(document.querySelectorAll("h1"))
+           .find((heading) => heading.textContent === "Continuation");
+         return document.activeElement !== continuation;`,
+      )) === true,
+      "Native saved-position restoration moved keyboard focus.",
+    );
+
     stage = "synthetic publication close";
     const closeButton = await driver.findElement("button.close-publication");
     await driver.click(closeButton);
@@ -389,9 +574,10 @@ async function run() {
     );
 
     await delay(OBSERVATION_WINDOW_MS);
-    const browserLogs = await driver.getLogs("browser");
+    collectedBrowserLogs.push(...(await driver.getLogs("browser")));
+    collectedPerformanceLogs.push(...(await driver.getLogs("performance")));
     const performanceLogs = inspectPerformanceLogs(
-      await driver.getLogs("performance"),
+      collectedPerformanceLogs,
     );
 
     stage = "startup assertions";
@@ -403,7 +589,7 @@ async function run() {
       "Native application main landmark is not visible.",
     );
     assert(
-      browserLogs.every((entry) => entry?.level !== "SEVERE") &&
+      collectedBrowserLogs.every((entry) => entry?.level !== "SEVERE") &&
         performanceLogs.runtimeErrorCount === 0,
       "Native application emitted a page or console error.",
     );
@@ -414,7 +600,7 @@ async function run() {
     );
 
     console.log(
-      "Native startup smoke passed: root mounted, synthetic EPUB image decoded locally, publication closed, no errors, no external requests.",
+      "Native startup smoke passed: root mounted, synthetic EPUB image decoded locally, exact position survived restart/reselection, publication closed, no errors, no external requests.",
     );
   } catch (error) {
     console.error(

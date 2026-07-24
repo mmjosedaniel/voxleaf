@@ -125,9 +125,14 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
   });
   await page.addInitScript(
     (keys) => {
+      const marker = "voxleaf-test-reader-state-cleared";
+      if (sessionStorage.getItem(marker) === "true") {
+        return;
+      }
       for (const key of keys) {
         localStorage.removeItem(key);
       }
+      sessionStorage.setItem(marker, "true");
     },
     [POSITION_STORAGE_KEY, PREFERENCE_STORAGE_KEY],
   );
@@ -323,6 +328,81 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
         containsRenderedPassage: false,
         containsPrivateFilename: false,
       });
+
+    await page.reload();
+    const exactRestoreInput = page.getByLabel("Open a local EPUB");
+    await exactRestoreInput.focus();
+    await exactRestoreInput.setInputFiles({
+      name: "private-reflow-smoke.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(publicationBytes),
+    });
+    await expect(page.getByRole("status")).toHaveText(
+      "Reading position restored.",
+    );
+    await expect(page.getByLabel("Text size")).toHaveValue("large");
+    await expect(page.getByLabel("Line spacing")).toHaveValue("compact");
+    await expect(page.getByLabel("Content width")).toHaveValue("narrow");
+    await expect(page.getByLabel("Theme")).toHaveValue("dark");
+    expect((await restoredRangeSample(page)).textOffsetCodePoints).toBe(
+      canonicalOffset,
+    );
+    await expect(exactRestoreInput).toBeFocused();
+
+    await page.evaluate((positionKey) => {
+      const serialized = localStorage.getItem(positionKey);
+      if (serialized === null) {
+        throw new Error("Synthetic position state is unavailable.");
+      }
+      const envelope = JSON.parse(serialized) as {
+        states: Array<{
+          locator: { textOffsetCodePoints: number };
+        }>;
+      };
+      const state = envelope.states[0];
+      if (state === undefined) {
+        throw new Error("Synthetic position entry is unavailable.");
+      }
+      state.locator.textOffsetCodePoints = 999_999;
+      localStorage.setItem(positionKey, JSON.stringify(envelope));
+    }, POSITION_STORAGE_KEY);
+
+    await page.reload();
+    const recoveredRestoreInput = page.getByLabel("Open a local EPUB");
+    await recoveredRestoreInput.focus();
+    await recoveredRestoreInput.setInputFiles({
+      name: "private-reflow-smoke.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(publicationBytes),
+    });
+    await expect(page.getByRole("status")).toHaveText(
+      "Reading position restored to the nearest available passage.",
+    );
+    await expect(
+      page.getByText(
+        "The saved reading position was adjusted to the nearest available passage.",
+      ),
+    ).toBeVisible();
+    const recoveredSample = await restoredRangeSample(page);
+    expect(recoveredSample.textOffsetCodePoints).toBeGreaterThan(0);
+    expect(recoveredSample.textOffsetCodePoints).toBeLessThan(999_999);
+    await expect
+      .poll(() =>
+        page.evaluate((positionKey) => {
+          const serialized = localStorage.getItem(positionKey);
+          if (serialized === null) {
+            return undefined;
+          }
+          const envelope = JSON.parse(serialized) as {
+            states: Array<{
+              locator: { textOffsetCodePoints: number };
+            }>;
+          };
+          return envelope.states[0]?.locator.textOffsetCodePoints;
+        }, POSITION_STORAGE_KEY),
+      )
+      .toBe(recoveredSample.textOffsetCodePoints);
+    await expect(recoveredRestoreInput).toBeFocused();
     await expect(page).toHaveURL(`${LOCAL_ORIGIN}/`);
     expect(pageErrors).toEqual([]);
     expect(unexpectedRequestCount).toBe(0);
