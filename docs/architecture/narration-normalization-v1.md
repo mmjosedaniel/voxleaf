@@ -4,8 +4,11 @@
 
 Accepted by Milestone 5 Task 1.2 as a test-only policy and fixture gate.
 Production narration source projection, normalization, segmentation, and
-`OpenedPublication.prepareNarration` remain unimplemented. Task 1.3 must still
-accept exact resource and chunk limits before production rules begin.
+`OpenedPublication.prepareNarration` remain unimplemented. Task 1.3 has
+accepted the separate
+[`narration-v1` resource profile](narration-preparation-limits-v1.md), so
+Milestone 1's policy, corpus, and bounds gates are closed before production
+rules begin.
 
 The exact authoritative table is
 [`packages/epub/test-support/narration-normalization-corpus.ts`](../../packages/epub/test-support/narration-normalization-corpus.ts).

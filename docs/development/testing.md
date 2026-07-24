@@ -114,7 +114,7 @@ Both benchmarks are deliberately absent from `pnpm.cmd check`, `pnpm check:porta
 
 ## Planned Milestone 5 narration-preparation validation
 
-The approved [Milestone 5 ExecPlan](../plans/active/M005-narration-text-preparation.md) defines the detailed test sequence. Task 1.2's corpus-integrity tests now pass, but no production narration-preparation test exists yet, so the remaining items record required coverage rather than current production behavior.
+The approved [Milestone 5 ExecPlan](../plans/active/M005-narration-text-preparation.md) defines the detailed test sequence. Task 1.2's corpus-integrity tests and Task 1.3's test-only profile/evidence tests now pass, but no production narration-preparation test exists yet, so the remaining items record required coverage rather than current production behavior. The accepted [`narration-v1` limits](../architecture/narration-preparation-limits-v1.md) cover 20 independent target/hard dimensions and representative content-free evidence.
 
 The implementation must add deterministic package-level tests for:
 
@@ -124,7 +124,7 @@ The implementation must add deterministic package-level tests for:
 - sentence, dialogue, scene-break, clause, token, and long-sentence fallback boundaries;
 - nonempty bounded prepared segments with legal, ordered, stable locator ranges;
 - source immutability and separation between displayed text and normalized narration text;
-- exact-limit and max-plus-one input, segment, batch, lookahead, and cancellation-checkpoint behavior after Task 1.3 accepts the values;
+- production enforcement of Task 1.3's accepted exact/max-plus-one input, segment, batch, lookahead, retention, cancellation-checkpoint, and deterministic-yield values;
 - ADR-0012's deterministic continuation, containing-segment relation, one-active-operation, cancellation, publication close, no-partial-result, and no-external-capability behavior; and
 - privacy canaries proving source/narration text does not enter public errors, metrics, snapshots, persistence, or benchmark summaries.
 
@@ -134,7 +134,7 @@ The smallest planned focused commands are the existing EPUB package test, typech
 
 ## Deferred coverage
 
-The secure EPUB ingestion scenario and boundary matrix is implemented with repository-authored synthetic inputs; deterministic desktop tests prove the bounded repository, approved save lifecycle, and exact/recovered open coordination; the real-browser smoke proves preference plus exact/nearest-valid locator restoration through production React reload/reselection; the packaged native smoke proves save/restore across a WebView2 application restart; the two hardware-specific benchmarks cover accepted prototype, production React, repeated lifecycle, and packaged WebView2 reader limits; and the test-only narration corpus now fixes expected neutral/Spanish policy examples. No current test runs a production normalizer or prepares a narration batch, starts a TTS model, communicates with a TTS process, generates or plays audio, detects supported inference hardware, builds an installer, or exercises those later end-to-end flows. The examples below are requirements for later roadmap milestones, not claims about current coverage.
+The secure EPUB ingestion scenario and boundary matrix is implemented with repository-authored synthetic inputs; deterministic desktop tests prove the bounded repository, approved save lifecycle, and exact/recovered open coordination; the real-browser smoke proves preference plus exact/nearest-valid locator restoration through production React reload/reselection; the packaged native smoke proves save/restore across a WebView2 application restart; the two hardware-specific benchmarks cover accepted prototype, production React, repeated lifecycle, and packaged WebView2 reader limits; the test-only narration corpus fixes expected neutral/Spanish policy examples; and the test-only limits suite fixes the first model-independent resource profile with exact/max-plus-one and privacy evidence. No current test runs a production normalizer or prepares a narration batch, starts a TTS model, communicates with a TTS process, generates or plays audio, detects supported inference hardware, builds an installer, or exercises those later end-to-end flows. The examples below are requirements for later roadmap milestones, not claims about current coverage.
 
 ## Test levels
 

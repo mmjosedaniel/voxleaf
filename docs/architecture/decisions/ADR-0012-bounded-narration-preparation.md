@@ -6,13 +6,14 @@ Accepted.
 
 ## Implementation status
 
-Accepted by Milestone 5 Task 1.1. Task 1.2 has accepted the deterministic
+Accepted by Milestone 5 Tasks 1.1-1.3. Task 1.2 accepts the deterministic
 test-only neutral/Spanish corpus summarized in
-[`narration-normalization-v1.md`](../narration-normalization-v1.md). Production
-narration preparation has not started. Task 1.3 must still accept exact
-`narration-v1` profile limits before production normalization or segmentation
-begins. This decision adds no runtime operation, dependency, shared schema,
-desktop integration, TTS behavior, audio behavior, persistence, or capability.
+[`narration-normalization-v1.md`](../narration-normalization-v1.md), and Task
+1.3 accepts the test-only target/hard resource profile summarized in
+[`narration-preparation-limits-v1.md`](../narration-preparation-limits-v1.md).
+Production narration preparation has not started. These decisions add no
+runtime operation, dependency, shared schema, desktop integration, TTS
+behavior, audio behavior, persistence, or capability.
 
 ## Context
 
@@ -97,13 +98,33 @@ interface NarrationPreparationRequest {
 `startLocator` is deliberately untrusted. The package validates and resolves it
 through the same package-owned structural locator boundary used by the reader.
 `maximumSegments` must be a positive safe integer no greater than the
-`narration-v1` per-batch maximum accepted by Task 1.3. It controls only how many
+`narration-v1` per-batch hard maximum of 16. It controls only how many
 already-stable segments are returned; it does not change segmentation.
 
 `narration-v1` identifies one closed package-local normalization, segmentation,
-and resource policy. Task 1.3 owns its exact target and hard numeric limits.
+and resource policy. Its accepted model-independent target and hard numeric
+limits are recorded in
+[`narration-preparation-limits-v1.md`](../narration-preparation-limits-v1.md).
 Callers cannot supply custom rules, regular expressions, model token limits, or
 more-permissive resource overrides.
+
+Targets guide natural-boundary packing and work cadence; exceeding a target is
+allowed up to the corresponding hard maximum. Every exact hard maximum is
+allowed. A max-plus-one observation returns `resource-limit-exceeded` with no
+partial result. Admission independently counts source/narration Unicode code
+points, UTF-8 bytes, segments, sentences, protected-token length, parser
+lookahead, traversal depth, normalization expansion, work, and retained
+intermediate collections. JavaScript UTF-16 `String.length`, wall-clock time,
+model tokens, and estimated audio duration are not admission authorities.
+
+The principal hard ceilings are 16,384 source code points inspected per
+request, 16 returned segments, 768 source code points and 640 narration code
+points or 2,048 UTF-8 bytes per segment, 8,192 narration code points or 24,576
+UTF-8 bytes per batch, 256 protected-token code points, 128 parser-lookahead
+code points, 128 traversal levels, 1,024 work units between cancellation
+checkpoints, and 8,192 work units between deterministic yields. Retained
+sensitive/intermediate state is bounded separately and includes capacity for
+only one additional lookahead segment.
 
 Unknown profile or language values, non-safe or non-positive batch values, and
 batch values above the profile maximum produce the fixed `invalid-request`
@@ -297,8 +318,9 @@ publication.
   resource read and one narration preparation may overlap because preparation
   performs no archive or image read.
 - Caller abort and publication close are linked. Cancellation is checked before
-  work, at Task 1.3's bounded checkpoint intervals, around any deterministic
-  yield, and immediately before result publication.
+  work, at the 512-work-unit checkpoint target and never later than 1,024 work
+  units, around deterministic yields targeted at 4,096 and required by 8,192
+  work units, and immediately before result publication.
 - Pre-abort or abort during work returns `cancelled`.
 - Cancellation, close, hard-limit failure, and internal failure publish no
   partial batch or sensitive text.
@@ -386,8 +408,9 @@ Those decisions remain with roadmap Milestones 6 through 9.
 - Keeping the profile package-local avoids a premature cross-process schema,
   but future model-specific requirements may require a new explicit protocol or
   shared-contract decision.
-- Task 1.3 must still select exact bounds before production behavior can be
-  implemented.
+- Task 1.3's accepted limits close the pre-production policy gate without
+  claiming that any production source traversal, normalization, segmentation,
+  cancellation, or yielding behavior exists yet.
 
 ## Alternatives considered
 

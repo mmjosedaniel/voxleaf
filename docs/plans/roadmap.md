@@ -149,7 +149,7 @@ Milestone 3 provides sanitized content and stable locators. Milestone 2 provides
 
 ## Milestone 5: Prepare text for natural narration
 
-**Status:** Planned — next implementation priority. Tasks 1.1-1.2 are complete with ADR-0012 and the deterministic test-only neutral/Spanish corpus accepted; Task 1.3 still gates exact profile bounds, and production implementation has not started.
+**Status:** Planned — next implementation priority. Milestone 1 Tasks 1.1-1.3 are complete: ADR-0012, the deterministic test-only neutral/Spanish corpus, and the model-independent `narration-v1` chunk/resource profile are accepted. Production implementation has not started.
 
 **Detailed ExecPlan:** [`active/M005-narration-text-preparation.md`](active/M005-narration-text-preparation.md)
 

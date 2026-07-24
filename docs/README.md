@@ -15,6 +15,7 @@ Documentation is organized by purpose so contributors and Codex can load only th
 - [`architecture/overview.md`](architecture/overview.md): detailed component boundaries, invariants, and implemented EPUB, reader, and persistence behavior.
 - [`architecture/performance-budget.md`](architecture/performance-budget.md): latency, buffering, memory, and measurement targets.
 - [`architecture/narration-normalization-v1.md`](architecture/narration-normalization-v1.md): accepted test-only neutral/Spanish normalization corpus policy for Milestone 5.
+- [`architecture/narration-preparation-limits-v1.md`](architecture/narration-preparation-limits-v1.md): accepted test-only `narration-v1` chunk, work, retention, checkpoint, and yield limits.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development
