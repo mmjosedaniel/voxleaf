@@ -5,11 +5,12 @@
 Accepted by Milestone 5 Task 1.2 as a test-only policy and fixture gate.
 Tasks 2.1-2.3 implement exhaustive package-internal semantic source traversal,
 Unicode-code-point source-span tokens, and bounded canonical source windows
-with cancellation/continuation. Tasks 3.1-3.2 now implement the table's
+with cancellation/continuation. Tasks 3.1-3.3 now implement the table's
 whitespace, semantic-line-break, soft-hyphen, conservative line-end
-hyphenation, punctuation, quotation, ellipsis, and allowlisted Spanish symbol
-slices as a pure source-mapped production normalizer. Later Spanish
-lexical/numeric, complete invariant, segmentation, and
+hyphenation, punctuation, quotation, ellipsis, allowlisted Spanish symbol,
+abbreviation, number, date, time, currency, percentage, and language-context
+slices as a pure source-mapped production normalizer. Later complete invariant,
+segmentation, and
 `OpenedPublication.prepareNarration` work remains unimplemented.
 Task 1.3 has accepted the separate
 [`narration-v1` resource profile](narration-preparation-limits-v1.md), so
@@ -79,23 +80,25 @@ behavior under review. They must not use broad snapshots, place prose in test
 names, or deliberately print source/expected values on failure.
 
 [`narration-normalizer.test.ts`](../../packages/epub/src/narration/narration-normalizer.test.ts)
-now drives every Task 3.1-3.2 case through production source projection,
+now drives every Task 3.1-3.3 case through production source projection,
 source tokens, and normalization. It proves exact neutral/Spanish output,
 second-pass text idempotence, one retained origin unit per source token, legal
 locator endpoints after collapse/removal/joining/expansion, code and Unicode
 preservation, source/output immutability, semantic-line-break and punctuation
-boundary metadata, the closed Spanish symbol allowlist, exact retained-token
-and expansion ceilings, bounded maximum repeated punctuation/unbalanced
-quotation handling, and fixed content-free invariant failures.
+boundary metadata, the closed Spanish symbol and lexical/numeric allowlists,
+exact retained-token/parser-lookahead/expansion ceilings, bounded maximum
+repeated punctuation/unbalanced quotation handling, and fixed content-free
+invariant failures.
 
 ## Implementation and deferred work
 
 The corpus remains test-only and does not act as a production lookup table.
 [`narration-normalizer.ts`](../../packages/epub/src/narration/narration-normalizer.ts)
-implements Tasks 3.1-3.2's accepted categories with repository-owned bounded
+implements Tasks 3.1-3.3's accepted categories with repository-owned bounded
 scanners, and
 [`spanish-normalization.ts`](../../packages/epub/src/narration/spanish-normalization.ts)
-contains the closed Spanish line-end and context-safe symbol allowlists.
+contains the closed Spanish line-end, context-safe symbol, abbreviation, and
+numeric-form allowlists.
 Punctuation remains text while frozen roles and content-free boundary
 protections distinguish quotations, dialogue dashes, ellipses, terminal marks,
 malformed openings, code spans, and symbol tokens for the later segmenter.
@@ -103,10 +106,16 @@ Only a whitespace-delimited Spanish ampersand and the exact accepted Spanish
 Celsius form expand; neutral, code, compact ampersand, slash, at-sign, and
 unsupported temperature forms remain unchanged. Every source token remains
 represented by a nonempty normalized text unit or typed omission carrying its
-original block-local span, and no emitted unit exceeds the accepted hard
-maximum of 16 output code points per source code point. The corpus does not
-select a TTS engine or model-specific preprocessing. Later Milestone 5 tasks
-must implement the remaining table without changing displayed publication
-semantics. Any proposed corpus change must update the authoritative fixture,
-its integrity tests, this summary, and the active plan before production
-expectations change.
+original block-local span. Task 3.3 additionally expands only the accepted
+effective-Spanish abbreviations, cardinals, signed values, ordinals,
+decimal/thousands forms, dates, time, currencies, and percentages; it protects
+accepted and preserved token boundaries, leaves neutral, malformed,
+ambiguous, unsupported, code, and foreign-name text unchanged, and never uses
+floating-point conversion. The scanner rejects numeric lookahead above 128
+code points, and no emitted unit exceeds the accepted hard maximum of 16 output
+code points per source code point. The corpus does not select a TTS engine or
+model-specific preprocessing. Later Milestone 5 tasks must complete the
+cross-category invariants and segmentation without changing displayed
+publication semantics. Any proposed corpus change must update the
+authoritative fixture, its integrity tests, this summary, and the active plan
+before production expectations change.

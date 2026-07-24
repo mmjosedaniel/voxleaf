@@ -6,12 +6,12 @@ Accepted by Milestone 5 Task 1.3 as a test-only policy and deterministic
 evidence gate. Tasks 2.1-2.2 implement exhaustive package-internal semantic
 source traversal and source-span tokens. Task 2.3 production-enforces the
 source-window, traversal-depth, retained-token/event, cancellation-checkpoint,
-and deterministic-yield subset. Tasks 3.1-3.2 retain exactly one normalized
-text or omission unit per admitted source token, and Task 3.2 enforces in
+and deterministic-yield subset. Tasks 3.1-3.3 retain exactly one normalized
+text or omission unit per admitted source token. Tasks 3.2-3.3 enforce in
 production the ceiling of 16 output code points per source code point for
-its closed Spanish symbol rules. Later lexical/numeric expansion, segmentation,
-remaining output dimensions, and `OpenedPublication.prepareNarration` remain
-unimplemented.
+closed Spanish symbol and lexical/numeric rules, and Task 3.3 enforces the
+128-code-point parser-lookahead ceiling. Segmentation, remaining output
+dimensions, and `OpenedPublication.prepareNarration` remain unimplemented.
 
 The exact test authority is
 [`packages/epub/test-support/narration-preparation-limits.ts`](../../packages/epub/test-support/narration-preparation-limits.ts).
