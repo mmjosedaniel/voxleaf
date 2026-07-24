@@ -3,10 +3,13 @@
 ## Status
 
 Accepted by Milestone 5 Task 1.2 as a test-only policy and fixture gate.
-Tasks 2.1-2.3 now implement exhaustive package-internal semantic source
-traversal, Unicode-code-point source-span tokens, and bounded canonical source
-windows with cancellation/continuation, but normalization,
-segmentation, and `OpenedPublication.prepareNarration` remain unimplemented.
+Tasks 2.1-2.3 implement exhaustive package-internal semantic source traversal,
+Unicode-code-point source-span tokens, and bounded canonical source windows
+with cancellation/continuation. Task 3.1 now implements the table's whitespace,
+semantic-line-break, soft-hyphen, and conservative line-end-hyphenation slice
+as a pure source-mapped production normalizer. Later punctuation, symbol,
+Spanish lexical/numeric, complete invariant, segmentation, and
+`OpenedPublication.prepareNarration` work remains unimplemented.
 Task 1.3 has accepted the separate
 [`narration-v1` resource profile](narration-preparation-limits-v1.md), so
 Milestone 1's policy, corpus, and bounds gates are closed before production
@@ -74,13 +77,26 @@ Tests may compare the short exact strings because transformation is the
 behavior under review. They must not use broad snapshots, place prose in test
 names, or deliberately print source/expected values on failure.
 
-## Deferred work
+[`narration-normalizer.test.ts`](../../packages/epub/src/narration/narration-normalizer.test.ts)
+now drives every Task 3.1 case through production source projection, source
+tokens, and normalization. It proves exact neutral/Spanish output,
+second-pass text idempotence, one retained origin unit per source token, legal
+locator endpoints after collapse/removal/joining, code and Unicode
+preservation, source/output immutability, semantic-line-break metadata, and
+fixed content-free invariant failures.
 
-This corpus does not implement an algorithm, select numeric hard limits, select
-a TTS engine, or establish model-specific preprocessing. Tasks 2.1-2.3 now
-provide the production semantic traversal, locator-valid source-span tokens,
-and bounded source-window lifecycle;
-later Milestone 5 tasks must implement the table
-without changing displayed publication semantics. Any proposed corpus change
-must update the authoritative fixture, its integrity tests, this summary, and
-the active plan before production expectations change.
+## Implementation and deferred work
+
+The corpus remains test-only and does not act as a production lookup table.
+[`narration-normalizer.ts`](../../packages/epub/src/narration/narration-normalizer.ts)
+implements only Task 3.1's accepted categories with repository-owned scanners,
+and
+[`spanish-normalization.ts`](../../packages/epub/src/narration/spanish-normalization.ts)
+contains the closed Spanish line-end allowlist. Every source token remains
+represented by a nonempty normalized text unit or typed omission carrying its
+original block-local span. The corpus does not select numeric hard limits, a
+TTS engine, or model-specific preprocessing. Later Milestone 5 tasks must
+implement the remaining table without changing displayed publication
+semantics. Any proposed corpus change must update the authoritative fixture,
+its integrity tests, this summary, and the active plan before production
+expectations change.

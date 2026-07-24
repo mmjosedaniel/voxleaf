@@ -6,8 +6,10 @@ Accepted by Milestone 5 Task 1.3 as a test-only policy and deterministic
 evidence gate. Tasks 2.1-2.2 implement exhaustive package-internal semantic
 source traversal and source-span tokens. Task 2.3 production-enforces the
 source-window, traversal-depth, retained-token/event, cancellation-checkpoint,
-and deterministic-yield subset while normalization, segmentation, remaining
-output dimensions, and `OpenedPublication.prepareNarration` remain
+and deterministic-yield subset. Task 3.1's first production normalizer slice
+is size-nonincreasing and retains exactly one normalized text or omission unit
+per admitted source token. Later normalization expansion, segmentation,
+remaining output dimensions, and `OpenedPublication.prepareNarration` remain
 unimplemented.
 
 The exact test authority is
