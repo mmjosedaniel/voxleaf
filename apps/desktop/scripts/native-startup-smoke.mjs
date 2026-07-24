@@ -303,9 +303,11 @@ async function run() {
       "epub-fixture.ts",
     ),
   );
-  const { buildComprehensiveEpubFixture } = await import(fixtureModuleUrl.href);
+  const { buildReaderNavigationEpubFixture } = await import(
+    fixtureModuleUrl.href
+  );
   await mkdir(profileDirectory);
-  await writeFile(fixturePath, await buildComprehensiveEpubFixture(), {
+  await writeFile(fixturePath, await buildReaderNavigationEpubFixture(), {
     flag: "wx",
   });
 
@@ -576,9 +578,7 @@ async function run() {
     await delay(OBSERVATION_WINDOW_MS);
     collectedBrowserLogs.push(...(await driver.getLogs("browser")));
     collectedPerformanceLogs.push(...(await driver.getLogs("performance")));
-    const performanceLogs = inspectPerformanceLogs(
-      collectedPerformanceLogs,
-    );
+    const performanceLogs = inspectPerformanceLogs(collectedPerformanceLogs);
 
     stage = "startup assertions";
     assert(rootMounted === true, "Native application root did not mount.");

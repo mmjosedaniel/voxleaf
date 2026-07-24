@@ -8,15 +8,13 @@ async function buildOversizedChapterFixture(): Promise<Uint8Array> {
     import.meta.url,
   );
   const fixtureModule = (await import(fixtureModuleUrl.href)) as {
-    buildMinimalEpubFixture(options: {
-      readonly chapterDocument: string;
+    buildReaderLongChapterEpubFixture(options: {
+      readonly semanticBlockCount: number;
     }): Promise<Uint8Array>;
+    READER_SEMANTIC_BLOCK_OVER_LIMIT: number;
   };
-  const publicationBlock = "<p>Synthetic oversized browser block.</p>".repeat(
-    10_000,
-  );
-  return fixtureModule.buildMinimalEpubFixture({
-    chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Oversized</title></head><body><h1 id="chapter-one">Oversized section</h1>${publicationBlock}</body></html>`,
+  return fixtureModule.buildReaderLongChapterEpubFixture({
+    semanticBlockCount: fixtureModule.READER_SEMANTIC_BLOCK_OVER_LIMIT,
   });
 }
 
@@ -63,7 +61,7 @@ test("rejects an oversized production chapter before partial rendering", async (
       "This reading section is too large to display safely.",
     );
     await expect(
-      page.getByText("Synthetic oversized browser block."),
+      page.getByText("Synthetic production reader block."),
     ).toHaveCount(0);
     await expect(page.locator(".reader-rendering-status")).toHaveCount(0);
     await expect(page).toHaveURL(`${LOCAL_ORIGIN}/`);

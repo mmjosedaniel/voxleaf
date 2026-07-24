@@ -80,23 +80,14 @@ async function buildProductionLimitFixture(): Promise<Uint8Array> {
     import.meta.url,
   );
   const fixtureModule = (await import(fixtureModuleUrl.href)) as {
-    buildMinimalEpubFixture(options: {
-      readonly chapterDocument: string;
-      readonly navigationDocument: string;
+    buildReaderLongChapterEpubFixture(options: {
+      readonly semanticBlockCount: number;
+      readonly deepTargetBlockIndex: number;
     }): Promise<Uint8Array>;
   };
-  const beforeTarget = "<p>Synthetic production benchmark block.</p>".repeat(
-    8_998,
-  );
-  const afterTarget = "<p>Synthetic production benchmark block.</p>".repeat(
-    1_000,
-  );
-  const chapterDocument = `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Limit</title></head><body><h1 id="chapter-one">Limit section</h1>${beforeTarget}<h2 id="deep-target">Deep target</h2>${afterTarget}</body></html>`;
-  const navigationDocument =
-    '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><h2>Contents</h2><ol><li><a href="text/chapter.xhtml#chapter-one">Limit section</a></li><li><a href="text/chapter.xhtml#deep-target">Deep target</a></li></ol></nav></body></html>';
-  return fixtureModule.buildMinimalEpubFixture({
-    chapterDocument,
-    navigationDocument,
+  return fixtureModule.buildReaderLongChapterEpubFixture({
+    semanticBlockCount: 10_000,
+    deepTargetBlockIndex: 8_999,
   });
 }
 

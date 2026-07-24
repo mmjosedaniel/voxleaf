@@ -26,6 +26,82 @@ const FIXED_ZIP_OPTIONS = Object.freeze({
 export type EpubFixtureContent = string | Uint8Array;
 export type EpubFixtureCompression = "deflate" | "stored";
 
+/** The approved reader semantic-block ceiling from ADR-0008. */
+export const READER_SEMANTIC_BLOCK_LIMIT = 10_000;
+
+/** One reader case immediately above the approved semantic-block ceiling. */
+export const READER_SEMANTIC_BLOCK_OVER_LIMIT = READER_SEMANTIC_BLOCK_LIMIT + 1;
+
+export const READER_REFLOW_PARAGRAPH_COUNT = 36;
+export const READER_REFLOW_PRESERVED_PARAGRAPH_INDEX = 18;
+
+/**
+ * Structural expectations are authored with the fixture, never derived from
+ * an opened publication. Tests combine these values with the independently
+ * calculated exact-byte book identity when they require a complete locator.
+ */
+export interface ReaderFixtureLocatorExpectation {
+  readonly spineItemId: string;
+  readonly spineItemIndex: number;
+  readonly anchorIndex: number;
+  readonly anchorValue: string;
+  readonly textOffsetCodePoints: number;
+}
+
+export const READER_FIXTURE_EXPECTED_LOCATORS = Object.freeze({
+  navigation: Object.freeze([
+    Object.freeze({
+      spineItemId: "spine:0",
+      spineItemIndex: 0,
+      anchorIndex: 0,
+      anchorValue: "opening",
+      textOffsetCodePoints: 0,
+    }),
+    Object.freeze({
+      spineItemId: "spine:1",
+      spineItemIndex: 1,
+      anchorIndex: 0,
+      anchorValue: "continuation",
+      textOffsetCodePoints: 0,
+    }),
+    Object.freeze({
+      spineItemId: "spine:2",
+      spineItemIndex: 2,
+      anchorIndex: 0,
+      anchorValue: "appendix",
+      textOffsetCodePoints: 0,
+    }),
+  ] satisfies readonly ReaderFixtureLocatorExpectation[]),
+  reflow: Object.freeze({
+    spineItemId: "spine:0",
+    spineItemIndex: 0,
+    anchorIndex: READER_REFLOW_PRESERVED_PARAGRAPH_INDEX + 1,
+    anchorValue: "reader-reflow-passage",
+    textOffsetCodePoints: 0,
+  } satisfies ReaderFixtureLocatorExpectation),
+});
+
+export interface ReaderReflowEpubFixtureOptions {
+  /** Total paragraphs after the chapter heading. */
+  readonly paragraphCount?: number;
+  /** Zero-based paragraph that receives the stable restoration anchor. */
+  readonly preservedPassageIndex?: number;
+}
+
+export interface ReaderLongChapterEpubFixtureOptions {
+  /** Includes the chapter heading and every generated paragraph/target heading. */
+  readonly semanticBlockCount: number;
+  /** Optional zero-based block index for a navigable deep target heading. */
+  readonly deepTargetBlockIndex?: number;
+}
+
+export type ReaderRasterFixtureCase =
+  "valid-png" | "missing-reference" | "signature-mismatch";
+
+export interface ReaderRasterEpubFixtureOptions {
+  readonly imageCase?: ReaderRasterFixtureCase;
+}
+
 /** Returns caller-owned bytes for one repository-authored static 1x1 PNG. */
 export function syntheticStaticPngBytes(): Uint8Array {
   return Uint8Array.from([
@@ -108,7 +184,10 @@ export interface MinimalEpubFixtureOptions {
 }
 
 function fail(
-  code: "fixture-entry-invalid" | "fixture-mutation-invalid",
+  code:
+    | "fixture-entry-invalid"
+    | "fixture-mutation-invalid"
+    | "fixture-reader-scenario-invalid",
 ): never {
   throw new Error(code);
 }
@@ -382,6 +461,135 @@ export async function buildComprehensiveEpubFixture(): Promise<Uint8Array> {
   ]);
 }
 
+/**
+ * Builds the multi-spine, nested-TOC, internal-target, and local-raster
+ * fixture used by reader navigation scenarios.
+ */
+export async function buildReaderNavigationEpubFixture(): Promise<Uint8Array> {
+  return buildComprehensiveEpubFixture();
+}
+
+/**
+ * Builds a one-spine reflow case with one stable, independently documented
+ * passage anchor. The displayed text remains repository-authored synthetic
+ * content and no layout measurement is encoded into the EPUB.
+ */
+export async function buildReaderReflowEpubFixture(
+  options: ReaderReflowEpubFixtureOptions = {},
+): Promise<Uint8Array> {
+  const paragraphCount = readerScenarioCount(
+    options.paragraphCount ?? READER_REFLOW_PARAGRAPH_COUNT,
+    1,
+    READER_SEMANTIC_BLOCK_LIMIT - 1,
+  );
+  const preservedPassageIndex = readerScenarioCount(
+    options.preservedPassageIndex ?? READER_REFLOW_PRESERVED_PARAGRAPH_INDEX,
+    0,
+    paragraphCount - 1,
+  );
+  const paragraphs = Array.from({ length: paragraphCount }, (_, index) =>
+    index === preservedPassageIndex
+      ? '<p id="reader-reflow-passage">Preserved synthetic passage with enough words to wrap across several visual lines while preferences and viewport geometry change.</p>'
+      : `<p>Repository-authored reflow filler ${String(index + 1)} with deterministic local text.</p>`,
+  ).join("");
+
+  return buildMinimalEpubFixture({
+    chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Reflow</title></head><body><h1 id="chapter-one">Reflow fixture</h1>${paragraphs}</body></html>`,
+  });
+}
+
+/** The reflow case is also the canonical exact/recovered restoration fixture. */
+export async function buildReaderRestorationEpubFixture(): Promise<Uint8Array> {
+  return buildReaderReflowEpubFixture();
+}
+
+/**
+ * Builds the approved exact-limit or exact-limit-plus-one reader chapter.
+ * A deep target, when requested, replaces one generated paragraph so the
+ * semantic-block count stays exact and navigation remains composable.
+ */
+export async function buildReaderLongChapterEpubFixture(
+  options: ReaderLongChapterEpubFixtureOptions,
+): Promise<Uint8Array> {
+  const semanticBlockCount = readerScenarioCount(
+    options.semanticBlockCount,
+    1,
+    READER_SEMANTIC_BLOCK_OVER_LIMIT,
+  );
+  const deepTargetBlockIndex = options.deepTargetBlockIndex;
+  if (
+    deepTargetBlockIndex !== undefined &&
+    (!Number.isSafeInteger(deepTargetBlockIndex) ||
+      deepTargetBlockIndex < 1 ||
+      deepTargetBlockIndex >= semanticBlockCount)
+  ) {
+    return fail("fixture-reader-scenario-invalid");
+  }
+
+  const blocks: string[] = ['<h1 id="chapter-one">Limit section</h1>'];
+  for (let index = 1; index < semanticBlockCount; index += 1) {
+    blocks.push(
+      index === deepTargetBlockIndex
+        ? '<h2 id="deep-target">Deep target</h2>'
+        : "<p>Synthetic production reader block.</p>",
+    );
+  }
+
+  const navigationDocument =
+    deepTargetBlockIndex === undefined
+      ? minimalNavigationDocument()
+      : '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><h2>Contents</h2><ol><li><a href="text/chapter.xhtml#chapter-one">Limit section</a></li><li><a href="text/chapter.xhtml#deep-target">Deep target</a></li></ol></nav></body></html>';
+
+  return buildMinimalEpubFixture({
+    chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Limit</title></head><body>${blocks.join("")}</body></html>`,
+    navigationDocument,
+  });
+}
+
+/**
+ * Builds local-raster reader cases while keeping the supported, missing, and
+ * signature-mismatch variations explicit and independent of ZIP mutations.
+ */
+export async function buildReaderRasterEpubFixture(
+  options: ReaderRasterEpubFixtureOptions = {},
+): Promise<Uint8Array> {
+  const imageCase = options.imageCase ?? "valid-png";
+  if (
+    imageCase !== "valid-png" &&
+    imageCase !== "missing-reference" &&
+    imageCase !== "signature-mismatch"
+  ) {
+    return fail("fixture-reader-scenario-invalid");
+  }
+
+  const imageSource =
+    imageCase === "missing-reference"
+      ? "../images/missing.png"
+      : "../images/cover.png";
+  const packageDocument = readerRasterPackageDocument(
+    imageCase !== "missing-reference",
+  );
+  const additionalEntries =
+    imageCase === "missing-reference"
+      ? []
+      : [
+          Object.freeze({
+            name: "EPUB/images/cover.png",
+            content:
+              imageCase === "valid-png"
+                ? syntheticStaticPngBytes()
+                : Uint8Array.of(0x00, 0x01, 0x02, 0x03),
+            compression: "stored" as const,
+          }),
+        ];
+
+  return buildMinimalEpubFixture({
+    packageDocument,
+    chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Raster</title></head><body><h1 id="reader-raster">Raster fixture</h1><p><img src="${imageSource}" alt="Synthetic reader image"/></p></body></html>`,
+    additionalEntries,
+  });
+}
+
 export function minimalContainerDocument(): string {
   return `<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0"><rootfiles><rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>`;
 }
@@ -396,6 +604,24 @@ export function minimalNavigationDocument(): string {
 
 export function minimalChapterDocument(): string {
   return `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Chapter One</title></head><body><h1 id="chapter-one">Chapter One</h1><p>Repository-authored synthetic prose.</p></body></html>`;
+}
+
+function readerScenarioCount(
+  value: number,
+  minimum: number,
+  maximum: number,
+): number {
+  if (!Number.isSafeInteger(value) || value < minimum || value > maximum) {
+    return fail("fixture-reader-scenario-invalid");
+  }
+  return value;
+}
+
+function readerRasterPackageDocument(includeCover: boolean): string {
+  const cover = includeCover
+    ? '<item id="cover" href="images/cover.png" media-type="image/png"/>'
+    : "";
+  return `<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:reader-raster</dc:identifier><dc:title>Synthetic reader raster</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">2026-07-22T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/>${cover}</manifest><spine><itemref idref="chapter"/></spine></package>`;
 }
 
 function comprehensivePackageDocument(): string {

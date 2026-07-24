@@ -995,7 +995,7 @@ Do not change `services/tts`, audio contracts/implementation, narration contract
 
 **Validation:** `pnpm.cmd --filter @voxleaf/epub typecheck`; `pnpm.cmd --filter @voxleaf/epub test`; `pnpm.cmd --filter @voxleaf/epub build`; `pnpm.cmd --filter @voxleaf/desktop test`.
 
-**Status:** Not started.
+**Status:** Complete on 2026-07-23. Extended the package-private test-support builder with named deterministic reader navigation, reflow/restoration, exact-limit/maximum-plus-one long-chapter, and valid/missing/signature-mismatch local-raster scenarios. The long-chapter target option replaces a generated paragraph so its requested semantic-block count remains exact. Independently authored structural locator expectations cover multi-spine navigation and the reflow/restoration passage; fixture tests combine them only with the opened publication's exact-byte identity. Browser, benchmark, and native-smoke helpers now request those named scenarios instead of constructing duplicate EPUB XHTML. The fixture module remains outside production exports and performs no filesystem, network, or generated-binary work.
 
 ### Task 5.2: Prove the package-to-reader integration matrix
 
