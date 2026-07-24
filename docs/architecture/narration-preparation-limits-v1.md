@@ -3,8 +3,10 @@
 ## Status
 
 Accepted by Milestone 5 Task 1.3 as a test-only policy and deterministic
-evidence gate. Production narration source projection, normalization,
-segmentation, and `OpenedPublication.prepareNarration` remain unimplemented.
+evidence gate. Task 2.1 now implements exhaustive package-internal semantic
+source traversal, but production profile enforcement, source-span tokens,
+normalization, segmentation, and `OpenedPublication.prepareNarration` remain
+unimplemented.
 
 The exact test authority is
 [`packages/epub/test-support/narration-preparation-limits.ts`](../../packages/epub/test-support/narration-preparation-limits.ts).

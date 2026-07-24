@@ -305,7 +305,8 @@ export function evaluateNarrationPreparationLimit(
 
 function codePointCount(value: string): number {
   let count = 0;
-  for (const _codePoint of value) {
+  for (const codePoint of value) {
+    void codePoint;
     count += 1;
   }
   return count;

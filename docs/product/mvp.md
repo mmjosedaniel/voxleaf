@@ -2,7 +2,7 @@
 
 ## Implementation status
 
-The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestone 5 narration preparation is approved and next, but implementation has not started. TTS inference, audio buffering/playback, synchronized highlighting, hardware profiles, and packaging remain later roadmap work. The capability and acceptance lists below describe the complete MVP target, not a claim that every item is currently implemented.
+The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestone 5 narration preparation is in progress: Task 2.1 implements package-internal exhaustive semantic source projection, but no public preparation operation, normalized segment, TTS inference, audio buffering/playback, synchronized highlighting, hardware profile, or packaging behavior exists yet. The capability and acceptance lists below describe the complete MVP target, not a claim that every item is currently implemented.
 
 ## Primary user flow
 

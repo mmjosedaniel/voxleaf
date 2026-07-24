@@ -6,7 +6,7 @@ This brief explains the intended VoxLeaf experience and the motivation behind th
 
 The normative MVP scope is in [`mvp.md`](mvp.md). Accepted technical decisions are recorded under [`../architecture/decisions/`](../architecture/decisions/), and current performance targets are in [`../architecture/performance-budget.md`](../architecture/performance-budget.md).
 
-The implemented product boundary currently stops after private local EPUB ingestion, semantic visual reading/navigation, bounded display preferences, logical-position persistence, and exact/nearest-valid restoration after exact-file reselection. Milestone 5 narration preparation has an approved ExecPlan but implementation has not started. TTS engines and process integration, generated audio, playback, synchronized highlighting, hardware profiles, and installers remain deferred to later milestones. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
+The implemented product boundary currently includes private local EPUB ingestion, semantic visual reading/navigation, bounded display preferences, logical-position persistence, exact/nearest-valid restoration after exact-file reselection, and Task 2.1's package-internal exhaustive narration source projection. Milestone 5 remains in progress: source spans, normalization, segmentation, public preparation, TTS engines and process integration, generated audio, playback, synchronized highlighting, hardware profiles, and installers remain deferred to later tasks or milestones. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
 
 ## Summary
 

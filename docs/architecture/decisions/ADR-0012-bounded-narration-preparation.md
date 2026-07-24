@@ -11,9 +11,15 @@ test-only neutral/Spanish corpus summarized in
 [`narration-normalization-v1.md`](../narration-normalization-v1.md), and Task
 1.3 accepts the test-only target/hard resource profile summarized in
 [`narration-preparation-limits-v1.md`](../narration-preparation-limits-v1.md).
-Production narration preparation has not started. These decisions add no
-runtime operation, dependency, shared schema, desktop integration, TTS
-behavior, audio behavior, persistence, or capability.
+Task 2.1 implements the pure package-internal exhaustive source projector over
+the current closed semantic block and inline unions. It emits immutable leaf
+units and quote/list boundary events in locator order, preserves inherited
+semantic context, verifies Unicode-code-point totals against
+`PublicationLocatedBlock`, and excludes raster alternative text and image
+reads. Source spans, normalization, segmentation, bounded/public preparation,
+cancellation/close integration, and prepared locator ranges remain
+unimplemented. No runtime dependency, shared schema, desktop integration, TTS
+behavior, audio behavior, persistence, or capability was added.
 
 ## Context
 
@@ -408,9 +414,10 @@ Those decisions remain with roadmap Milestones 6 through 9.
 - Keeping the profile package-local avoids a premature cross-process schema,
   but future model-specific requirements may require a new explicit protocol or
   shared-contract decision.
-- Task 1.3's accepted limits close the pre-production policy gate without
-  claiming that any production source traversal, normalization, segmentation,
-  cancellation, or yielding behavior exists yet.
+- Task 1.3's accepted limits close the pre-production policy gate. Task 2.1
+  subsequently implements pure source traversal, but no production source-span
+  mapping, normalization, segmentation, limit enforcement, cancellation, or
+  yielding behavior exists yet.
 
 ## Alternatives considered
 
