@@ -35,7 +35,7 @@ Implemented prerequisites are:
 Important current limitations are:
 
 - no production module traverses semantic EPUB content for narration;
-- the deterministic neutral/Spanish normalization corpus is accepted test-only, but no production normalizer, sentence scanner, scene-break policy, or chunk-sizing profile exists;
+- the deterministic neutral/Spanish normalization corpus and model-independent `narration-v1` limits profile are accepted test-only, but no production normalizer, sentence scanner, scene-break policy, or profile enforcement exists;
 - no source-span mapping survives text transformations;
 - no public bounded preparation operation exists on an opened publication;
 - no TTS engine has established model-specific input limits or preprocessing requirements; and
@@ -156,7 +156,12 @@ following intended implementation ownership:
 - public narration types in `document-model.ts` or a dedicated exported type module
 - opened-publication lifecycle integration in `resource/opened-publication.ts`
 - synthetic narration cases in EPUB test support
+- `packages/epub/test-support/narration-normalization-corpus.ts`
+- `packages/epub/test-support/narration-preparation-limits.ts`
+- focused test-only corpus and limit evidence under `packages/epub/src/testing/`
 - `docs/architecture/decisions/ADR-0012-bounded-narration-preparation.md`
+- `docs/architecture/narration-normalization-v1.md`
+- `docs/architecture/narration-preparation-limits-v1.md`
 
 No `apps/desktop`, `services/tts`, Rust, Tauri capability, browser-storage, or audio implementation change is expected.
 
@@ -166,7 +171,7 @@ No `apps/desktop`, `services/tts`, Rust, Tauri capability, browser-storage, or a
 
 Narration preparation remains inside `@voxleaf/epub` as a framework-independent stage over the package's immutable semantic documents and locator index. [ADR-0012](../../architecture/decisions/ADR-0012-bounded-narration-preparation.md) accepts this ownership because it keeps source traversal, code-point accounting, locator construction, and publication lifecycle under the owner that already defines them.
 
-The accepted public shape is `OpenedPublication.prepareNarration(request): Promise<NarrationPreparationResult>`. Its closed request uses an untrusted start locator, package-local `narration-v1` profile, `und` or `es` caller default language, positive caller-requested segment count no greater than the Task 1.3 package maximum, and optional `AbortSignal`. The operation:
+The accepted public shape is `OpenedPublication.prepareNarration(request): Promise<NarrationPreparationResult>`. Its closed request uses an untrusted start locator, package-local `narration-v1` profile, `und` or `es` caller default language, positive caller-requested segment count no greater than the accepted package maximum of 16, and optional `AbortSignal`. The operation:
 
 - normalizes the start through package-owned locator resolution;
 - processes only a finite source window and never materializes a whole publication by default;
@@ -290,7 +295,7 @@ Packing must use multiple recorded dimensions rather than one arbitrary JavaScri
 - sentence count; and
 - semantic boundary strength.
 
-Task 1.3 must accept a versioned target and hard-maximum profile using synthetic evidence. JavaScript UTF-16 `.length` is never the sole size authority. Model-specific limits remain deferred; later profiles may be versioned without changing source-range semantics.
+Task 1.3 accepts the versioned target and hard-maximum profile in [`narration-preparation-limits-v1.md`](../../architecture/narration-preparation-limits-v1.md), backed by test-only synthetic evidence. Its primary segment targets are 320 narration code points and 1,024 UTF-8 bytes; hard maxima are 640 code points and 2,048 bytes. A batch targets eight and permits at most 16 segments, with independent 8,192-code-point and 24,576-byte hard totals. JavaScript UTF-16 `.length` is never the sole size authority. Model-specific limits remain deferred; later profiles may be versioned without changing source-range semantics.
 
 ### Bounded work, cancellation, and lifecycle
 
@@ -298,16 +303,18 @@ The pipeline must have explicit maxima for:
 
 - source code points inspected per public request;
 - output segments per batch;
-- narration code points and UTF-8 bytes per segment;
-- total narration code points and UTF-8 bytes returned per batch;
+- source/narration code points, UTF-8 bytes, and sentences per segment;
+- total narration code points, UTF-8 bytes, and sentences returned per batch;
 - protected-token length;
 - abbreviation/number/date parser lookahead;
-- nesting or recursion introduced by narration traversal; and
-- work between cancellation checkpoints.
+- nesting or recursion introduced by narration traversal;
+- normalization expansion;
+- work between cancellation checkpoints and deterministic yields; and
+- retained source, narration, segment, and token collections, including only one lookahead segment.
 
 Exact maxima pass and max-plus-one cases produce a fixed content-free outcome. The implementation must avoid recursive descent proportional to attacker-controlled text length, catastrophic-backtracking regular expressions, whole-publication copies, and unbounded token arrays.
 
-If a preparation call can occupy the event loop long enough to be user-visible, it must use an injected, testable framework-independent yield scheduler at deterministic work intervals. Caller abort and publication close are checked before work, at bounded intervals, before and after yields, and before publication of the frozen result. Cancellation returns no partial segment text.
+Production preparation must use an injected, testable framework-independent yield scheduler at the accepted 4,096-work-unit target and before the 8,192-unit hard interval. Caller abort and publication close are checked before work, at the 512-unit cancellation target and before 1,024 units, before and after yields, and before publication of the frozen result. Cancellation returns no partial segment text. These structural intervals make no wall-clock or hardware claim.
 
 The narration operation must not reuse the raster read slot or read archive entries. It may read only immutable in-memory semantics and locator indexes already owned by the opened publication.
 
@@ -407,7 +414,7 @@ Implementation tasks are ordered. A task may refine a later task, but production
 - Tests prove no single JavaScript UTF-16 length controls admission.
 - `pnpm.cmd --filter @voxleaf/epub test`.
 
-**Status:** Not started.
+**Status:** Complete. The frozen test-only `narration-v1` profile accepts 20 independent target/hard dimensions for source inspection, segment and batch code points/UTF-8 bytes/sentences, protected tokens, parser lookahead, traversal depth, normalization expansion, cancellation checkpoints, deterministic yields, and retained intermediate collections. Content-free evidence covers every required representative shape plus Unicode byte pressure. Focused tests prove profile consistency and deep immutability, exact-target/exact-hard acceptance, fixed max-plus-one rejection for every dimension, internally verified deterministic narration bytes/source ranges, malformed-measurement non-coercion, and separation from UTF-16 length. No production preparation module, public operation, dependency, schema, capability, TTS, audio, UI, persistence, or telemetry was added.
 
 ## Milestone 2: Build locator-aware narration source projection
 
@@ -463,7 +470,7 @@ Implementation tasks are ordered. A task may refine a later task, but production
 - Normalize the untrusted start locator through package ownership.
 - Find the stable segment relation without text search.
 - Apply finite per-request source and output bounds.
-- Add deterministic cancellation checkpoints and an injected yield scheduler if Task 1.3 requires it.
+- Add deterministic cancellation checkpoints and the injected yield scheduler required by Task 1.3.
 - Integrate one active preparation operation with idempotent publication close.
 - Publish no partial sensitive result after failure or cancellation.
 
@@ -926,6 +933,7 @@ No migration or user-data rollback should be required because Milestone 5 persis
 - 2026-07-24: Reconciled project status, product terminology, architecture overview, canonical component/data-flow diagrams, dependency guidance, and testing guidance for the start of Milestone 5. The documentation labels narration preparation approved planned and all later TTS/audio/synchronization work deferred; no production or test implementation began.
 - 2026-07-24: Completed Task 1.1. Accepted ADR-0012 for package-owned `OpenedPublication.prepareNarration`, the package-local `narration-v1` request/prepared-segment/closed-result boundary, half-open stable ranges, full containing-segment disclosure, structural continuation, `und`/`es` language input, one active preparation independent of one raster read, close/cancellation/no-partial-result behavior, and no new dependency, capability, or shared schema. Reconciled architecture, system diagram, roadmap, dependency, testing, and this plan. `pnpm.cmd format:check` and `git diff --check` passed; no production or test implementation began.
 - 2026-07-24: Completed Task 1.2. Added the authoritative frozen test-only `narration-v1` table with 62 repository-authored synthetic-sensitive neutral/Spanish cases, exact source/effective-language/output/ambiguity/boundary decisions, and content-free fixture validation. Added focused integrity/privacy tests and reconciled architecture, system diagram, roadmap, testing guidance, ADR implementation status, and this plan. `pnpm.cmd --filter @voxleaf/epub test` passed 24 files/386 tests, `pnpm.cmd --filter @voxleaf/epub typecheck`, `pnpm.cmd format:check`, and `git diff --check` passed; no production normalizer, dependency, schema, capability, TTS, audio, UI, or persistence behavior was added.
+- 2026-07-24: Completed Task 1.3. Accepted the test-only `narration-v1` target/hard profile across 20 independent size, work, checkpoint, yield, and retention dimensions. Added content-free deterministic evidence for headings, paragraphs, dialogue, punctuation-heavy Spanish, long-sentence/token pressure, exact/max-plus-one batches, and multibyte Unicode; every exact hard maximum passes and every max-plus-one observation returns the same frozen failure. Reconciled ADR-0012, architecture, system diagram, performance budget, roadmap, testing guidance, and this plan. `pnpm.cmd --filter @voxleaf/epub test` passed 25 files/396 tests, `pnpm.cmd --filter @voxleaf/epub typecheck`, `pnpm.cmd format:check`, and `git diff --check` passed. No production preparation behavior or external capability was added.
 
 ## Discoveries and decisions
 
@@ -942,6 +950,7 @@ No migration or user-data rollback should be required because Milestone 5 persis
 - ADR-0012 accepts `prepareNarration` as a closed result-returning operation rather than an exception boundary. A request inside a stable segment receives that complete segment plus `inside-segment`, preserving both stable batch-independent segmentation and Milestone 9's later choice to use or skip it.
 - Narration preparation owns a separate active-operation slot from raster reads. This preserves the no-archive-read boundary while allowing one in-memory preparation and one bounded image read to overlap; publication close cancels and awaits both.
 - The Task 1.2 corpus is test-only authority rather than a production lookup table. Neutral behavior is conservative; Spanish lexical expansion is allowlisted; ambiguous/unsupported forms, code spacing, combining sequences, astral code points, malformed punctuation, and foreign names are preserved; validation failures expose only closed content-free codes.
+- The Task 1.3 profile independently limits code points and UTF-8 bytes because neither bounds the other tightly for Unicode input. Batch totals are lower than the product of every per-segment maximum, retained state permits only one additional lookahead segment, and deterministic cancellation/yield intervals are expressed in work units rather than hardware time. The 300-code-point astral fixture has 600 UTF-16 code units and 1,200 UTF-8 bytes, proving JavaScript `.length` cannot control admission.
 
 ## Final validation results
 

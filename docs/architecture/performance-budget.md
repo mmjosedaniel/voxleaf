@@ -91,9 +91,26 @@ Both commands are intentionally outside `pnpm.cmd check` and CI. The Chromium co
 
 ## Narration-preparation limits
 
-No Milestone 5 text-preparation limit or performance result is accepted yet, and production implementation has not started. The approved [Milestone 5 ExecPlan](../plans/active/M005-narration-text-preparation.md) assigns Task 1.3 to accept a versioned profile for source work, segment size, batch size, parser lookahead, retained intermediate state, and cancellation-checkpoint distance using deterministic synthetic evidence.
+Task 1.3 accepts the model-independent, test-only
+[`narration-v1` preparation profile](narration-preparation-limits-v1.md).
+Production narration implementation has not started.
 
-Those gates must use explicit Unicode-code-point, UTF-8-byte, segment, sentence, and bounded-work measurements rather than JavaScript UTF-16 length or a hardware-dependent timing claim. Optional wall-clock observations remain informational. The approximately 15-second initial audio lead is an audio-playback policy and must not be converted into a narration-text size target.
+The profile targets 320 narration code points / 1,024 UTF-8 bytes per segment,
+eight segments per batch, cancellation checks every 512 work units, and a
+deterministic yield every 4,096 work units. Its corresponding hard ceilings are
+640 code points / 2,048 bytes per segment, 16 segments, 8,192 code points /
+24,576 bytes per batch, 1,024 work units between checks, and 8,192 work units
+between yields. Source inspection, sentence counts, parser lookahead, traversal
+depth, protected tokens, normalization expansion, and retained intermediate
+state have separate target and hard ceilings in the authoritative profile.
+
+Focused tests use explicit Unicode-code-point, UTF-8-byte, segment, sentence,
+retention, and bounded-work measurements. Exact maxima pass and max-plus-one
+values produce one fixed content-free result. A 300-code-point astral sample
+contains 600 JavaScript UTF-16 code units and 1,200 UTF-8 bytes, proving UTF-16
+length is not the admission authority. Optional wall-clock observations remain
+informational. The approximately 15-second initial audio lead is an
+audio-playback policy and is not a narration-text size target.
 
 ## Initial buffering policy
 
