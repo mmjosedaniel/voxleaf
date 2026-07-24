@@ -3,7 +3,8 @@
 ## Status
 
 Accepted by Milestone 5 Task 1.2 as a test-only policy and fixture gate.
-Production narration source projection, normalization, segmentation, and
+Task 2.1 now implements exhaustive package-internal semantic source traversal,
+but production source-span tokens, normalization, segmentation, and
 `OpenedPublication.prepareNarration` remain unimplemented. Task 1.3 has
 accepted the separate
 [`narration-v1` resource profile](narration-preparation-limits-v1.md), so
