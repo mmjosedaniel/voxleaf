@@ -5,7 +5,11 @@ import type {
 } from "./narration-source.js";
 import type { NarrationSourceTextContext } from "./narration-source-projector.js";
 import { NARRATION_V1_SOURCE_WINDOW_POLICY } from "./narration-policy.js";
-import { isAcceptedSpanishLineEndHyphenation } from "./spanish-normalization.js";
+import {
+  isAcceptedSpanishLineEndHyphenation,
+  SPANISH_AMPERSAND_NARRATION,
+  SPANISH_CELSIUS_NORMALIZATION,
+} from "./spanish-normalization.js";
 
 export type NarrationNormalizationLanguage = "es" | "und";
 
@@ -17,10 +21,26 @@ export type SensitiveNormalizedNarrationText = string & {
 
 export type NarrationNormalizedTextRole =
   | "code"
+  | "dialogue-dash"
+  | "ellipsis"
   | "line-end-hyphen"
   | "preserved"
+  | "punctuation"
+  | "quotation"
   | "semantic-line-break"
+  | "symbol"
   | "whitespace";
+
+export type NarrationNormalizationBoundaryProtection =
+  | "code-span"
+  | "dialogue-turn"
+  | "ellipsis"
+  | "genuine-compound"
+  | "line-end-hyphen"
+  | "malformed-punctuation"
+  | "semantic-line-break"
+  | "sentence-end"
+  | "symbol-token";
 
 export type NarrationNormalizationOmissionReason =
   | "collapsed-whitespace"
@@ -28,12 +48,14 @@ export type NarrationNormalizationOmissionReason =
   | "line-end-hyphen"
   | "raster-placeholder"
   | "semantic-line-break"
-  | "soft-hyphen";
+  | "soft-hyphen"
+  | "symbol-expansion";
 
 interface NarrationNormalizedUnitBase {
   readonly sourceSpan: NarrationSourceSpan;
   readonly textContext: NarrationSourceTextContext;
   readonly effectiveLanguage: NarrationNormalizationLanguage;
+  readonly boundaryProtections: readonly NarrationNormalizationBoundaryProtection[];
 }
 
 export interface NarrationNormalizedTextUnit extends NarrationNormalizedUnitBase {
@@ -63,9 +85,61 @@ interface ProvisionalTextUnit extends NarrationNormalizedTextUnit {
 
 type ProvisionalUnit = NarrationNormalizationOmission | ProvisionalTextUnit;
 
+interface PlannedTextReplacement {
+  readonly kind: "text";
+  readonly text: string;
+  readonly role: NarrationNormalizedTextRole;
+  readonly collapsible: boolean;
+  readonly boundaryProtections: readonly NarrationNormalizationBoundaryProtection[];
+}
+
+interface PlannedOmissionReplacement {
+  readonly kind: "omission";
+  readonly reason: NarrationNormalizationOmissionReason;
+  readonly boundaryProtections: readonly NarrationNormalizationBoundaryProtection[];
+}
+
+type PlannedReplacement = PlannedOmissionReplacement | PlannedTextReplacement;
+
+interface PunctuationPlanEntry {
+  readonly role: NarrationNormalizedTextRole;
+  readonly boundaryProtections: readonly NarrationNormalizationBoundaryProtection[];
+}
+
 const SOFT_HYPHEN = "\u00ad";
 const ZERO_WIDTH_SPACE = "\u200b";
 const WORD_JOINER = "\u2060";
+const NO_BOUNDARY_PROTECTIONS = Object.freeze(
+  [] as NarrationNormalizationBoundaryProtection[],
+);
+const CODE_SPAN_PROTECTION = Object.freeze([
+  "code-span",
+] as NarrationNormalizationBoundaryProtection[]);
+const DIALOGUE_TURN_PROTECTION = Object.freeze([
+  "dialogue-turn",
+] as NarrationNormalizationBoundaryProtection[]);
+const ELLIPSIS_PROTECTION = Object.freeze([
+  "ellipsis",
+] as NarrationNormalizationBoundaryProtection[]);
+const GENUINE_COMPOUND_PROTECTION = Object.freeze([
+  "genuine-compound",
+  "line-end-hyphen",
+] as NarrationNormalizationBoundaryProtection[]);
+const LINE_END_HYPHEN_PROTECTION = Object.freeze([
+  "line-end-hyphen",
+] as NarrationNormalizationBoundaryProtection[]);
+const MALFORMED_PUNCTUATION_PROTECTION = Object.freeze([
+  "malformed-punctuation",
+] as NarrationNormalizationBoundaryProtection[]);
+const SEMANTIC_LINE_BREAK_PROTECTION = Object.freeze([
+  "semantic-line-break",
+] as NarrationNormalizationBoundaryProtection[]);
+const SENTENCE_END_PROTECTION = Object.freeze([
+  "sentence-end",
+] as NarrationNormalizationBoundaryProtection[]);
+const SYMBOL_TOKEN_PROTECTION = Object.freeze([
+  "symbol-token",
+] as NarrationNormalizationBoundaryProtection[]);
 const SPANISH_WORD_CODE_POINTS = new Set(
   Array.from(
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzÁÉÍÓÚÜÑáéíóúüñ",
@@ -215,6 +289,327 @@ function sourceText(
   return token?.kind === "text" ? String(token.text) : undefined;
 }
 
+function isProseTextToken(token: NarrationSourceToken | undefined): boolean {
+  return token?.kind === "text" && !isCodeContext(token.textContext);
+}
+
+function isWordContextCodePoint(value: string | undefined): boolean {
+  if (value === undefined) {
+    return false;
+  }
+  const code = value.charCodeAt(0);
+  return isSpanishWordCodePoint(value) || isAsciiDigit(code);
+}
+
+function hasSameLanguage(
+  languages: readonly NarrationNormalizationLanguage[],
+  startIndex: number,
+  endIndexInclusive: number,
+  requiredLanguage: NarrationNormalizationLanguage,
+): boolean {
+  for (let index = startIndex; index <= endIndexInclusive; index += 1) {
+    if (languages[index] !== requiredLanguage) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isContextSafeSpanishAmpersand(
+  tokens: readonly NarrationSourceToken[],
+  index: number,
+  languages: readonly NarrationNormalizationLanguage[],
+): boolean {
+  const token = tokens[index];
+  const leftSpace = tokens[index - 1];
+  const rightSpace = tokens[index + 1];
+  const leftWord = tokens[index - 2];
+  const rightWord = tokens[index + 2];
+  return (
+    sourceText(token) === "&" &&
+    isProseTextToken(token) &&
+    isProseTextToken(leftSpace) &&
+    isOrdinaryWhitespace(sourceText(leftSpace) ?? "") &&
+    isProseTextToken(rightSpace) &&
+    isOrdinaryWhitespace(sourceText(rightSpace) ?? "") &&
+    isProseTextToken(leftWord) &&
+    isWordContextCodePoint(sourceText(leftWord)) &&
+    isProseTextToken(rightWord) &&
+    isWordContextCodePoint(sourceText(rightWord)) &&
+    hasSameLanguage(languages, index - 2, index + 2, "es")
+  );
+}
+
+function isExactSpanishCelsiusForm(
+  tokens: readonly NarrationSourceToken[],
+  startIndex: number,
+  languages: readonly NarrationNormalizationLanguage[],
+): boolean {
+  for (
+    let offset = 0;
+    offset < SPANISH_CELSIUS_NORMALIZATION.length;
+    offset += 1
+  ) {
+    const token = tokens[startIndex + offset];
+    if (
+      !isProseTextToken(token) ||
+      sourceText(token) !== SPANISH_CELSIUS_NORMALIZATION[offset]?.source
+    ) {
+      return false;
+    }
+  }
+  const endIndex = startIndex + SPANISH_CELSIUS_NORMALIZATION.length - 1;
+  if (!hasSameLanguage(languages, startIndex, endIndex, "es")) {
+    return false;
+  }
+
+  const before = sourceText(tokens[startIndex - 1]);
+  const after = sourceText(
+    tokens[startIndex + SPANISH_CELSIUS_NORMALIZATION.length],
+  );
+  return !isWordContextCodePoint(before) && !isWordContextCodePoint(after);
+}
+
+function findSymbolReplacements(
+  tokens: readonly NarrationSourceToken[],
+  languages: readonly NarrationNormalizationLanguage[],
+): readonly (PlannedReplacement | undefined)[] {
+  const replacements = new Array<PlannedReplacement | undefined>(tokens.length);
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    if (isExactSpanishCelsiusForm(tokens, index, languages)) {
+      for (
+        let offset = 0;
+        offset < SPANISH_CELSIUS_NORMALIZATION.length;
+        offset += 1
+      ) {
+        const normalization = SPANISH_CELSIUS_NORMALIZATION[offset];
+        if (normalization === undefined) {
+          return fail();
+        }
+        replacements[index + offset] =
+          normalization.narration === undefined
+            ? Object.freeze({
+                kind: "omission",
+                reason: "symbol-expansion",
+                boundaryProtections: SYMBOL_TOKEN_PROTECTION,
+              })
+            : Object.freeze({
+                kind: "text",
+                text: normalization.narration,
+                role: normalization.source === " " ? "whitespace" : "symbol",
+                collapsible: normalization.source === " ",
+                boundaryProtections: SYMBOL_TOKEN_PROTECTION,
+              });
+      }
+      index += SPANISH_CELSIUS_NORMALIZATION.length - 1;
+      continue;
+    }
+
+    if (isContextSafeSpanishAmpersand(tokens, index, languages)) {
+      replacements[index] = Object.freeze({
+        kind: "text",
+        text: SPANISH_AMPERSAND_NARRATION,
+        role: "symbol",
+        collapsible: false,
+        boundaryProtections: SYMBOL_TOKEN_PROTECTION,
+      });
+    }
+  }
+
+  return Object.freeze(replacements);
+}
+
+function punctuationEntry(
+  role: NarrationNormalizedTextRole,
+  boundaryProtections: readonly NarrationNormalizationBoundaryProtection[] = NO_BOUNDARY_PROTECTIONS,
+): PunctuationPlanEntry {
+  return Object.freeze({ role, boundaryProtections });
+}
+
+function isApostropheContext(
+  tokens: readonly NarrationSourceToken[],
+  index: number,
+): boolean {
+  return (
+    isWordContextCodePoint(sourceText(tokens[index - 1])) &&
+    isWordContextCodePoint(sourceText(tokens[index + 1]))
+  );
+}
+
+function findFirstSignificantProseToken(
+  tokens: readonly NarrationSourceToken[],
+): number | undefined {
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    const value = sourceText(token);
+    if (!isProseTextToken(token) || value === undefined) {
+      return index;
+    }
+    if (
+      !isOrdinaryWhitespace(value) &&
+      value !== SOFT_HYPHEN &&
+      value !== ZERO_WIDTH_SPACE &&
+      value !== WORD_JOINER
+    ) {
+      return index;
+    }
+  }
+  return undefined;
+}
+
+function findPunctuationPlan(
+  tokens: readonly NarrationSourceToken[],
+): readonly (PunctuationPlanEntry | undefined)[] {
+  const plan = new Array<PunctuationPlanEntry | undefined>(tokens.length);
+  const unmatchedOpenings = new Map<string, number[]>();
+  let straightDoubleQuoteOpening: number | undefined;
+  const firstSignificant = findFirstSignificantProseToken(tokens);
+
+  const pushOpening = (closing: string, index: number): void => {
+    const openings = unmatchedOpenings.get(closing);
+    if (openings === undefined) {
+      unmatchedOpenings.set(closing, [index]);
+      return;
+    }
+    openings.push(index);
+  };
+  const closeOpening = (closing: string): boolean => {
+    const openings = unmatchedOpenings.get(closing);
+    if (openings === undefined || openings.length === 0) {
+      return false;
+    }
+    openings.pop();
+    return true;
+  };
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    const value = sourceText(token);
+    if (!isProseTextToken(token) || value === undefined) {
+      continue;
+    }
+
+    if (value === ".") {
+      let end = index + 1;
+      while (
+        end < tokens.length &&
+        isProseTextToken(tokens[end]) &&
+        sourceText(tokens[end]) === "."
+      ) {
+        end += 1;
+      }
+      const entry =
+        end - index >= 3
+          ? punctuationEntry("ellipsis", ELLIPSIS_PROTECTION)
+          : punctuationEntry("punctuation", SENTENCE_END_PROTECTION);
+      for (let periodIndex = index; periodIndex < end; periodIndex += 1) {
+        plan[periodIndex] = entry;
+      }
+      index = end - 1;
+      continue;
+    }
+
+    if (value === "…") {
+      plan[index] = punctuationEntry("ellipsis", ELLIPSIS_PROTECTION);
+      continue;
+    }
+    if (value === "?" || value === "!") {
+      plan[index] = punctuationEntry("punctuation", SENTENCE_END_PROTECTION);
+      closeOpening(value);
+      continue;
+    }
+    if (value === "¿" || value === "¡") {
+      plan[index] = punctuationEntry("punctuation");
+      pushOpening(value === "¿" ? "?" : "!", index);
+      continue;
+    }
+    if (value === "—" || value === "–") {
+      plan[index] = punctuationEntry(
+        "dialogue-dash",
+        value === "—" && index === firstSignificant
+          ? DIALOGUE_TURN_PROTECTION
+          : NO_BOUNDARY_PROTECTIONS,
+      );
+      continue;
+    }
+    if (value === '"') {
+      plan[index] = punctuationEntry("quotation");
+      if (straightDoubleQuoteOpening === undefined) {
+        straightDoubleQuoteOpening = index;
+      } else {
+        straightDoubleQuoteOpening = undefined;
+      }
+      continue;
+    }
+
+    const closingForOpening =
+      value === "“"
+        ? "”"
+        : value === "‘"
+          ? "’"
+          : value === "«"
+            ? "»"
+            : value === "‹"
+              ? "›"
+              : undefined;
+    if (closingForOpening !== undefined) {
+      plan[index] = punctuationEntry("quotation");
+      pushOpening(closingForOpening, index);
+      continue;
+    }
+    if (
+      value === "”" ||
+      value === "»" ||
+      value === "›" ||
+      (value === "’" && !isApostropheContext(tokens, index))
+    ) {
+      plan[index] = punctuationEntry(
+        "quotation",
+        closeOpening(value)
+          ? NO_BOUNDARY_PROTECTIONS
+          : MALFORMED_PUNCTUATION_PROTECTION,
+      );
+      continue;
+    }
+    if (
+      value === "," ||
+      value === ";" ||
+      value === ":" ||
+      value === "(" ||
+      value === ")" ||
+      value === "[" ||
+      value === "]" ||
+      value === "{" ||
+      value === "}"
+    ) {
+      plan[index] = punctuationEntry("punctuation");
+      continue;
+    }
+    if (value === "&" || value === "°" || value === "/" || value === "@") {
+      plan[index] = punctuationEntry("symbol", SYMBOL_TOKEN_PROTECTION);
+    }
+  }
+
+  if (straightDoubleQuoteOpening !== undefined) {
+    plan[straightDoubleQuoteOpening] = punctuationEntry(
+      "quotation",
+      MALFORMED_PUNCTUATION_PROTECTION,
+    );
+  }
+  for (const openings of unmatchedOpenings.values()) {
+    for (const index of openings) {
+      const entry = plan[index];
+      plan[index] = punctuationEntry(
+        entry?.role ?? "punctuation",
+        MALFORMED_PUNCTUATION_PROTECTION,
+      );
+    }
+  }
+
+  return Object.freeze(plan);
+}
+
 function collectLeftWordFragment(
   tokens: readonly NarrationSourceToken[],
   hyphenIndex: number,
@@ -327,9 +722,16 @@ function textUnit(
   text: string,
   role: NarrationNormalizedTextRole,
   collapsible = false,
+  boundaryProtections: readonly NarrationNormalizationBoundaryProtection[] = NO_BOUNDARY_PROTECTIONS,
 ): ProvisionalTextUnit {
   if (text.length === 0) {
     return fail();
+  }
+  if (
+    Array.from(text).length >
+    NARRATION_V1_SOURCE_WINDOW_POLICY.normalizationExpansionCodePointsHardMaximum
+  ) {
+    return resourceLimitExceeded();
   }
   return {
     kind: "text",
@@ -338,6 +740,7 @@ function textUnit(
     sourceSpan: copySourceSpan(token.sourceSpan),
     textContext,
     effectiveLanguage: language,
+    boundaryProtections,
     collapsible,
   };
 }
@@ -347,6 +750,7 @@ function omission(
   textContext: NarrationSourceTextContext,
   language: NarrationNormalizationLanguage,
   reason: NarrationNormalizationOmissionReason,
+  boundaryProtections: readonly NarrationNormalizationBoundaryProtection[] = NO_BOUNDARY_PROTECTIONS,
 ): NarrationNormalizationOmission {
   return {
     kind: "omission",
@@ -354,6 +758,7 @@ function omission(
     sourceSpan: copySourceSpan(token.sourceSpan),
     textContext,
     effectiveLanguage: language,
+    boundaryProtections,
   };
 }
 
@@ -363,11 +768,19 @@ function provisionalUnit(
   textContext: NarrationSourceTextContext,
   language: NarrationNormalizationLanguage,
   lineEndHyphenation: ReturnType<typeof findLineEndHyphenation>,
+  symbolReplacements: readonly (PlannedReplacement | undefined)[],
+  punctuationPlan: readonly (PunctuationPlanEntry | undefined)[],
 ): ProvisionalUnit {
   switch (token.kind) {
     case "line-break":
       return lineEndHyphenation.byLineBreak.has(index)
-        ? omission(token, textContext, language, "semantic-line-break")
+        ? omission(
+            token,
+            textContext,
+            language,
+            "semantic-line-break",
+            SEMANTIC_LINE_BREAK_PROTECTION,
+          )
         : textUnit(
             token,
             textContext,
@@ -375,6 +788,7 @@ function provisionalUnit(
             " ",
             "semantic-line-break",
             true,
+            SEMANTIC_LINE_BREAK_PROTECTION,
           );
     case "raster-placeholder":
       return omission(token, textContext, language, "raster-placeholder");
@@ -384,14 +798,57 @@ function provisionalUnit(
         return fail();
       }
       if (isCodeContext(token.textContext)) {
-        return textUnit(token, textContext, language, value, "code");
+        return textUnit(
+          token,
+          textContext,
+          language,
+          value,
+          "code",
+          false,
+          CODE_SPAN_PROTECTION,
+        );
       }
       const hyphenation = lineEndHyphenation.byHyphen.get(index);
       if (hyphenation === "joined") {
-        return omission(token, textContext, language, "line-end-hyphen");
+        return omission(
+          token,
+          textContext,
+          language,
+          "line-end-hyphen",
+          LINE_END_HYPHEN_PROTECTION,
+        );
       }
       if (hyphenation === "preserved") {
-        return textUnit(token, textContext, language, value, "line-end-hyphen");
+        return textUnit(
+          token,
+          textContext,
+          language,
+          value,
+          "line-end-hyphen",
+          false,
+          GENUINE_COMPOUND_PROTECTION,
+        );
+      }
+      const replacement = symbolReplacements[index];
+      if (replacement?.kind === "omission") {
+        return omission(
+          token,
+          textContext,
+          language,
+          replacement.reason,
+          replacement.boundaryProtections,
+        );
+      }
+      if (replacement?.kind === "text") {
+        return textUnit(
+          token,
+          textContext,
+          language,
+          replacement.text,
+          replacement.role,
+          replacement.collapsible,
+          replacement.boundaryProtections,
+        );
       }
       if (value === SOFT_HYPHEN) {
         return omission(token, textContext, language, "soft-hyphen");
@@ -399,9 +856,18 @@ function provisionalUnit(
       if (value === ZERO_WIDTH_SPACE || value === WORD_JOINER) {
         return omission(token, textContext, language, "formatting-mark");
       }
+      const punctuation = punctuationPlan[index];
       return isOrdinaryWhitespace(value)
         ? textUnit(token, textContext, language, " ", "whitespace", true)
-        : textUnit(token, textContext, language, value, "preserved");
+        : textUnit(
+            token,
+            textContext,
+            language,
+            value,
+            punctuation?.role ?? "preserved",
+            false,
+            punctuation?.boundaryProtections ?? NO_BOUNDARY_PROTECTIONS,
+          );
     }
     default:
       return unreachable(token);
@@ -420,6 +886,7 @@ function omissionFromCollapsed(
     sourceSpan: unit.sourceSpan,
     textContext: unit.textContext,
     effectiveLanguage: unit.effectiveLanguage,
+    boundaryProtections: unit.boundaryProtections,
   };
 }
 
@@ -497,7 +964,7 @@ function validateContiguousSource(
 }
 
 /**
- * Applies the Task 3.1 normalization slice to one block-local source-token
+ * Applies the Task 3.1-3.2 normalization slices to one block-local source-token
  * stream. Every source position remains represented by either a nonempty text
  * unit or a content-free omission reason, so later segmentation can construct
  * legal ranges without reparsing source text.
@@ -525,6 +992,8 @@ export function normalizeNarrationSourceTokens(
     effectiveLanguage(token.textContext, defaultLanguage),
   );
   const lineEndHyphenation = findLineEndHyphenation(tokens, languages);
+  const symbolReplacements = findSymbolReplacements(tokens, languages);
+  const punctuationPlan = findPunctuationPlan(tokens);
   const provisional = tokens.map((token, index) => {
     let textContext = contextCopies.get(token.textContext);
     if (textContext === undefined) {
@@ -541,6 +1010,8 @@ export function normalizeNarrationSourceTokens(
       textContext,
       language,
       lineEndHyphenation,
+      symbolReplacements,
+      punctuationPlan,
     );
   });
   const units = collapseWhitespace(provisional);
