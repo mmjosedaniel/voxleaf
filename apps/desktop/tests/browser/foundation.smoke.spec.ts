@@ -247,8 +247,18 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     await expect(
       page.getByRole("button", { name: "Next chapter" }),
     ).toBeDisabled();
-    await expect(page.locator(".semantic-reader a")).toHaveCount(0);
-    await expect(page.locator(".semantic-reader [href]")).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Skip to reader content" }),
+    ).toHaveAttribute("href", /^#_r_/u);
+    await expect(
+      page.getByRole("link", { name: "Back to table of contents" }),
+    ).toHaveAttribute("href", /^#_r_/u);
+    await expect(page.locator(".semantic-reader a")).toHaveCount(2);
+    await expect(
+      page.locator(
+        '.semantic-reader a[href*="opening"], .semantic-reader a[href*="continuation"], .semantic-reader a[href*="appendix"]',
+      ),
+    ).toHaveCount(0);
     await expect(page.getByText("private-navigation-smoke.epub")).toHaveCount(
       0,
     );

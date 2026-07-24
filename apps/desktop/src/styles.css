@@ -170,6 +170,7 @@ h1 {
   --reader-border: #c4d0c5;
   --reader-focus: #1d6b43;
   color-scheme: light;
+  position: relative;
   margin-top: 1.5rem;
   padding: clamp(0.75rem, 2vw, 1.5rem);
   border: 1px solid var(--reader-border);
@@ -177,6 +178,39 @@ h1 {
   color: var(--reader-text);
   background: var(--reader-surface);
   scroll-behavior: auto;
+}
+
+.reader-skip-link {
+  position: absolute;
+  z-index: 1;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.65rem 0.8rem;
+  border: 0.15rem solid var(--reader-focus);
+  border-radius: 0.5rem;
+  color: var(--reader-link);
+  background: var(--reader-surface);
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.reader-skip-link:focus {
+  clip-path: none;
+  overflow: visible;
+}
+
+.reader-return-link {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: var(--reader-link);
+}
+
+.reader-skip-link:focus-visible,
+.reader-return-link:focus-visible,
+.reader-toc:focus {
+  outline: 0.2rem solid var(--reader-focus);
+  outline-offset: 0.2rem;
 }
 
 .semantic-reader[data-reader-text-scale="small"] {
@@ -704,6 +738,9 @@ button.semantic-internal-link {
   }
 
   .reader-preference select:focus-visible,
+  .reader-skip-link:focus-visible,
+  .reader-return-link:focus-visible,
+  .reader-toc:focus,
   .reader-toc-link:focus-visible,
   .reader-chapter-controls button:focus-visible,
   .semantic-internal-link:focus-visible,

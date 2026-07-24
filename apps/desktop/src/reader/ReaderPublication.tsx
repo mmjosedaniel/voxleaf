@@ -7,13 +7,18 @@ import type { ReadingLocatorV1 } from "@voxleaf/shared";
 import {
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
   useSyncExternalStore,
 } from "react";
-import type { ReactElement, ReactNode } from "react";
+import type {
+  MouseEvent as ReactMouseEvent,
+  ReactElement,
+  ReactNode,
+} from "react";
 
 import {
   ActiveVisualLocatorTracker,
@@ -258,6 +263,8 @@ export function ReaderPublicationContent({
   );
   const getSnapshot = useCallback(() => coordinator.state, [coordinator]);
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const navigationId = useId();
+  const contentId = useId();
   const activeLocatedBlocks = useMemo(
     () =>
       publication.locators.filter(
@@ -266,6 +273,7 @@ export function ReaderPublicationContent({
     [publication.locators, state.activeDocument.id],
   );
   const readerRef = useRef<HTMLElement | null>(null);
+  const navigationRef = useRef<HTMLElement | null>(null);
   const destinationRef = useRef<HTMLElement | null>(null);
   const handledNavigationRevision = useRef(0);
   const pendingPositionSaveRevision = useRef<number | undefined>(undefined);
@@ -406,6 +414,20 @@ export function ReaderPublicationContent({
       reflowRestorer,
     ],
   );
+  const focusReaderContent = useCallback(
+    (event: ReactMouseEvent<HTMLAnchorElement>): void => {
+      event.preventDefault();
+      readerRef.current?.focus({ preventScroll: true });
+    },
+    [],
+  );
+  const focusTableOfContents = useCallback(
+    (event: ReactMouseEvent<HTMLAnchorElement>): void => {
+      event.preventDefault();
+      navigationRef.current?.focus({ preventScroll: true });
+    },
+    [],
+  );
 
   useEffect(
     () => () => {
@@ -485,13 +507,26 @@ export function ReaderPublicationContent({
       data-reader-theme={state.preferences.theme}
       aria-busy={initialRestorationPending || undefined}
     >
+      <a
+        className="reader-skip-link"
+        href={`#${contentId}`}
+        onClick={focusReaderContent}
+      >
+        Skip to reader content
+      </a>
       <ReaderPreferencesControls
         disabled={initialRestorationPending}
         preferences={state.preferences}
         onChange={updatePreference}
       />
       <div className="reader-layout">
-        <nav className="reader-toc" aria-label="Table of contents">
+        <nav
+          ref={navigationRef}
+          id={navigationId}
+          className="reader-toc"
+          aria-label="Table of contents"
+          tabIndex={-1}
+        >
           <h3>Table of contents</h3>
           {publication.navigation.length === 0 ? (
             <p className="reader-toc-empty">
@@ -536,7 +571,14 @@ export function ReaderPublicationContent({
           >
             {state.message}
           </p>
-          <div className="reader-content">
+          <a
+            className="reader-return-link"
+            href={`#${navigationId}`}
+            onClick={focusTableOfContents}
+          >
+            Back to table of contents
+          </a>
+          <div id={contentId} className="reader-content">
             {state.contentStatus === "chapter-too-large" ? (
               <ChapterTooLargeContent readerRef={setReaderRef} />
             ) : (

@@ -27,6 +27,17 @@ async function buildReflowFixture(): Promise<Uint8Array> {
   return fixtureModule.buildReaderRestorationEpubFixture();
 }
 
+async function buildNavigationFixture(): Promise<Uint8Array> {
+  const fixtureModuleUrl = new URL(
+    "../../../../packages/epub/test-support/epub-fixture.ts",
+    import.meta.url,
+  );
+  const fixtureModule = (await import(fixtureModuleUrl.href)) as {
+    buildReaderNavigationEpubFixture(): Promise<Uint8Array>;
+  };
+  return fixtureModule.buildReaderNavigationEpubFixture();
+}
+
 async function passageAtReadingLine(
   page: Page,
 ): Promise<PassageSignature | undefined> {
@@ -205,9 +216,18 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
 
     let canonicalOffset: number | undefined;
     for (const [label, value] of [
+      ["Text size", "small"],
+      ["Text size", "standard"],
+      ["Text size", "large"],
       ["Text size", "extra-large"],
+      ["Line spacing", "compact"],
+      ["Line spacing", "comfortable"],
       ["Line spacing", "spacious"],
+      ["Content width", "wide"],
+      ["Content width", "standard"],
       ["Content width", "narrow"],
+      ["Theme", "light"],
+      ["Theme", "system"],
       ["Theme", "dark"],
     ] as const) {
       const control = page.getByLabel(label);
@@ -253,13 +273,28 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
     await expect(page.getByLabel("Text size")).toHaveValue("large");
     await expect(page.getByLabel("Line spacing")).toHaveValue("compact");
 
-    await clearReflowRangeSamples(page);
-    await page.setViewportSize({ width: 680, height: 420 });
-    expect((await restoredRangeSample(page)).textOffsetCodePoints).toBe(
-      canonicalOffset,
-    );
-    await expect(focusOwner).toBeFocused();
+    for (const viewport of [
+      { width: 1_280, height: 720 },
+      { width: 768, height: 600 },
+      { width: 360, height: 640 },
+      { width: 320, height: 640 },
+    ]) {
+      await clearReflowRangeSamples(page);
+      await page.setViewportSize(viewport);
+      expect((await restoredRangeSample(page)).textOffsetCodePoints).toBe(
+        canonicalOffset,
+      );
+      await expect(focusOwner).toBeFocused();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      ).toBe(true);
+    }
 
+    await clearReflowRangeSamples(page);
+    await page.setViewportSize({ width: 640, height: 720 });
+    await restoredRangeSample(page);
     await clearReflowRangeSamples(page);
     await page.evaluate(() => {
       document.documentElement.style.zoom = "125%";
@@ -269,6 +304,37 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
       canonicalOffset,
     );
     await expect(focusOwner).toBeFocused();
+
+    await page.emulateMedia({
+      colorScheme: "dark",
+      forcedColors: "active",
+      reducedMotion: "reduce",
+    });
+    await focusOwner.focus();
+    const accessibleMediaState = await page
+      .locator(".semantic-reader")
+      .evaluate((reader) => ({
+        forcedColors: matchMedia("(forced-colors: active)").matches,
+        reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+        colorScheme: getComputedStyle(reader).colorScheme,
+        scrollBehavior: getComputedStyle(reader).scrollBehavior,
+        transitionDuration: getComputedStyle(reader).transitionDuration,
+        focusOutlineStyle: getComputedStyle(document.activeElement as Element)
+          .outlineStyle,
+        focusOutlineWidth: Number.parseFloat(
+          getComputedStyle(document.activeElement as Element).outlineWidth,
+        ),
+      }));
+    expect(accessibleMediaState).toMatchObject({
+      forcedColors: true,
+      reducedMotion: true,
+      scrollBehavior: "auto",
+      transitionDuration: "0s",
+    });
+    expect(accessibleMediaState.colorScheme).toContain("dark");
+    expect(accessibleMediaState.focusOutlineStyle).not.toBe("none");
+    expect(accessibleMediaState.focusOutlineWidth).toBeGreaterThan(0);
+    await page.emulateMedia({ forcedColors: "none" });
 
     await expect
       .poll(() =>
@@ -395,6 +461,166 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
       .toBe(recoveredSample.textOffsetCodePoints);
     await expect(recoveredRestoreInput).toBeFocused();
     await expect(page).toHaveURL(`${LOCAL_ORIGIN}/`);
+    expect(pageErrors).toEqual([]);
+    expect(unexpectedRequestCount).toBe(0);
+  } finally {
+    if (!page.isClosed() && page.url().startsWith(LOCAL_ORIGIN)) {
+      await page.evaluate(
+        (keys) => {
+          for (const key of keys) {
+            localStorage.removeItem(key);
+          }
+        },
+        [POSITION_STORAGE_KEY, PREFERENCE_STORAGE_KEY],
+      );
+    }
+    await context.unroute("**/*");
+  }
+});
+
+test("operates reader landmarks, skip links, preferences, and navigation by keyboard at the narrow viewport", async ({
+  context,
+  page,
+}) => {
+  let unexpectedRequestCount = 0;
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.name));
+  await context.route("**/*", async (route) => {
+    const requestUrl = new URL(route.request().url());
+    if (requestUrl.origin === LOCAL_ORIGIN) {
+      await route.continue();
+      return;
+    }
+    unexpectedRequestCount += 1;
+    await route.abort("blockedbyclient");
+  });
+  await page.addInitScript(
+    (keys) => {
+      for (const key of keys) {
+        localStorage.removeItem(key);
+      }
+    },
+    [POSITION_STORAGE_KEY, PREFERENCE_STORAGE_KEY],
+  );
+
+  try {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto("/");
+    const publicationBytes = await buildNavigationFixture();
+    await page.getByLabel("Open a local EPUB").setInputFiles({
+      name: "private-keyboard-smoke.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(publicationBytes),
+    });
+    await expect(page.getByRole("status")).toHaveText(
+      "The EPUB opened successfully.",
+    );
+
+    const initialUrl = page.url();
+    const skipLink = page.getByRole("link", {
+      name: "Skip to reader content",
+    });
+    await skipLink.focus();
+    await expect(skipLink).toBeVisible();
+    await page.keyboard.press("Enter");
+    const readerArticle = page.getByRole("article", {
+      name: "Current reading section",
+    });
+    await expect(readerArticle).toBeFocused();
+    await expect(page).toHaveURL(initialUrl);
+
+    const initialScrollY = await page.evaluate(() => window.scrollY);
+    await page.keyboard.press("PageDown");
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBeGreaterThan(initialScrollY);
+    await expect(readerArticle).toBeFocused();
+
+    const returnLink = page.getByRole("link", {
+      name: "Back to table of contents",
+    });
+    await returnLink.focus();
+    await page.keyboard.press("Enter");
+    const toc = page.getByRole("navigation", { name: "Table of contents" });
+    await expect(toc).toBeFocused();
+    await expect(page).toHaveURL(initialUrl);
+
+    await skipLink.focus();
+    await page.keyboard.press("Tab");
+    await expect(page.getByLabel("Text size")).toBeFocused();
+    await page.keyboard.press("End");
+    await expect(page.getByLabel("Text size")).toHaveValue("extra-large");
+    await page.keyboard.press("Tab");
+    await expect(page.getByLabel("Line spacing")).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.getByLabel("Content width")).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.getByLabel("Theme")).toBeFocused();
+
+    const continuation = toc.getByRole("button", { name: "Continuation" });
+    await continuation.focus();
+    await page.keyboard.press("Enter");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Continuation" }),
+    ).toBeFocused();
+    await expect(page.locator(".reader-navigation-status")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
+    await expect(page.locator(".reader-navigation-status")).toHaveAttribute(
+      "aria-atomic",
+      "true",
+    );
+
+    const previous = page.getByRole("button", { name: "Previous chapter" });
+    await previous.focus();
+    await page.keyboard.press("Space");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Opening" }),
+    ).toBeFocused();
+
+    await page.emulateMedia({
+      colorScheme: "dark",
+      forcedColors: "active",
+      reducedMotion: "reduce",
+    });
+    await returnLink.focus();
+    const narrowAccessibleState = await page.evaluate(() => {
+      const focused = document.activeElement;
+      const article = document.querySelector(".semantic-document");
+      const reader = document.querySelector(".semantic-reader");
+      if (
+        !(focused instanceof HTMLElement) ||
+        !(article instanceof HTMLElement) ||
+        !(reader instanceof HTMLElement)
+      ) {
+        return undefined;
+      }
+      const focusStyle = getComputedStyle(focused);
+      return {
+        documentFitsViewport:
+          document.documentElement.scrollWidth <= window.innerWidth,
+        articleFitsViewport:
+          article.getBoundingClientRect().right <= window.innerWidth + 0.5,
+        forcedColors: matchMedia("(forced-colors: active)").matches,
+        reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+        colorScheme: getComputedStyle(reader).colorScheme,
+        transitionDuration: getComputedStyle(reader).transitionDuration,
+        outlineStyle: focusStyle.outlineStyle,
+        outlineWidth: Number.parseFloat(focusStyle.outlineWidth),
+      };
+    });
+    expect(narrowAccessibleState).toMatchObject({
+      documentFitsViewport: true,
+      articleFitsViewport: true,
+      forcedColors: true,
+      reducedMotion: true,
+      transitionDuration: "0s",
+    });
+    expect(narrowAccessibleState?.colorScheme).toContain("dark");
+    expect(narrowAccessibleState?.outlineStyle).not.toBe("none");
+    expect(narrowAccessibleState?.outlineWidth).toBeGreaterThan(0);
+
     expect(pageErrors).toEqual([]);
     expect(unexpectedRequestCount).toBe(0);
   } finally {
