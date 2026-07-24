@@ -132,6 +132,7 @@ export interface ReaderPublicationContentProps {
   readonly initialPreferences?: ReaderPreferencesV1;
   readonly onPreferencesChange?: (preferences: ReaderPreferencesV1) => void;
   readonly onActiveLocatorChange?: (locator: ReadingLocatorV1) => void;
+  readonly onSettledLocatorChange?: (locator: ReadingLocatorV1) => void;
   readonly domRangeMapper?: SemanticDomRangeMapper;
   readonly visualLocatorEnvironment?: ActiveVisualLocatorEnvironment;
   readonly reflowEnvironment?: ReaderReflowEnvironment;
@@ -142,6 +143,7 @@ export function ReaderPublicationContent({
   initialPreferences = DEFAULT_READER_PREFERENCES,
   onPreferencesChange,
   onActiveLocatorChange,
+  onSettledLocatorChange,
   domRangeMapper,
   visualLocatorEnvironment,
   reflowEnvironment,
@@ -183,6 +185,11 @@ export function ReaderPublicationContent({
             ? {}
             : { environment: reflowEnvironment }),
           currentLocator: () => coordinator.state.activeLocator,
+          onRestored: (result) => {
+            if (result.reason === "preference") {
+              onSettledLocatorChange?.(result.locator);
+            }
+          },
         },
       ),
   );
@@ -202,6 +209,7 @@ export function ReaderPublicationContent({
   const readerRef = useRef<HTMLElement | null>(null);
   const destinationRef = useRef<HTMLElement | null>(null);
   const handledNavigationRevision = useRef(0);
+  const pendingPositionSaveRevision = useRef<number | undefined>(undefined);
   const resumeProgrammaticNavigationRef = useRef<(() => void) | undefined>(
     undefined,
   );
@@ -215,10 +223,17 @@ export function ReaderPublicationContent({
   );
   const finishProgrammaticNavigation = useCallback((): void => {
     visualLocatorTracker.setCurrentLocator(coordinator.state.activeLocator);
+    if (
+      pendingPositionSaveRevision.current ===
+      coordinator.state.navigationRevision
+    ) {
+      pendingPositionSaveRevision.current = undefined;
+      onSettledLocatorChange?.(coordinator.state.activeLocator);
+    }
     const resume = resumeProgrammaticNavigationRef.current;
     resumeProgrammaticNavigationRef.current = undefined;
     resume?.();
-  }, [coordinator, visualLocatorTracker]);
+  }, [coordinator, onSettledLocatorChange, visualLocatorTracker]);
   const focusDestination = useCallback(
     (destination: HTMLElement): void => {
       destination.scrollIntoView?.({ block: "start" });
@@ -257,9 +272,14 @@ export function ReaderPublicationContent({
       const resume = visualLocatorTracker.suspend();
       resumeProgrammaticNavigationRef.current = resume;
       const revision = coordinator.state.navigationRevision;
+      pendingPositionSaveRevision.current = revision + 1;
       navigate();
-      if (coordinator.state.navigationRevision === revision) {
+      const nextRevision = coordinator.state.navigationRevision;
+      if (nextRevision === revision) {
+        pendingPositionSaveRevision.current = undefined;
         finishProgrammaticNavigation();
+      } else if (handledNavigationRevision.current !== nextRevision) {
+        pendingPositionSaveRevision.current = nextRevision;
       }
     },
     [

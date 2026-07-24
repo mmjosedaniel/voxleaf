@@ -274,12 +274,55 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
     );
     await expect(focusOwner).toBeFocused();
 
-    expect(
-      await page.evaluate(
-        (keys) => keys.map((key) => localStorage.getItem(key)),
-        [POSITION_STORAGE_KEY, PREFERENCE_STORAGE_KEY],
-      ),
-    ).toEqual([null, null]);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          ([positionKey, preferenceKey]) => {
+            const serializedPosition = localStorage.getItem(positionKey);
+            const serializedPreferences = localStorage.getItem(preferenceKey);
+            if (serializedPosition === null || serializedPreferences === null) {
+              return null;
+            }
+            const positions = JSON.parse(serializedPosition) as {
+              schemaVersion: number;
+              states: Array<{
+                locator: { textOffsetCodePoints: number };
+                preferences: Record<string, unknown>;
+              }>;
+            };
+            return {
+              positionSchemaVersion: positions.schemaVersion,
+              stateCount: positions.states.length,
+              textOffsetCodePoints:
+                positions.states[0]?.locator.textOffsetCodePoints,
+              readingPreferences: positions.states[0]?.preferences,
+              displayPreferences: JSON.parse(serializedPreferences),
+              containsRenderedPassage: serializedPosition.includes(
+                "Preserved synthetic passage",
+              ),
+              containsPrivateFilename: serializedPosition.includes(
+                "private-reflow-smoke.epub",
+              ),
+            };
+          },
+          [POSITION_STORAGE_KEY, PREFERENCE_STORAGE_KEY] as const,
+        ),
+      )
+      .toEqual({
+        positionSchemaVersion: 1,
+        stateCount: 1,
+        textOffsetCodePoints: canonicalOffset,
+        readingPreferences: {},
+        displayPreferences: {
+          schemaVersion: 1,
+          textScale: "large",
+          lineSpacing: "compact",
+          contentWidth: "narrow",
+          theme: "dark",
+        },
+        containsRenderedPassage: false,
+        containsPrivateFilename: false,
+      });
     await expect(page).toHaveURL(`${LOCAL_ORIGIN}/`);
     expect(pageErrors).toEqual([]);
     expect(unexpectedRequestCount).toBe(0);

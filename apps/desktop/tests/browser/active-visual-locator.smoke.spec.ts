@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import { ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX } from "../../src/reader/active-visual-locator";
 
 const LOCAL_ORIGIN = "http://127.0.0.1:4173";
-const READER_POSITION_STORAGE_KEY = "voxleaf.reader.position";
+const READER_POSITION_STORAGE_KEY = "voxleaf.reader.positions";
 
 async function buildVisualLocatorFixture(): Promise<Uint8Array> {
   const fixtureModuleUrl = new URL(
@@ -244,12 +244,34 @@ test("tracks real top, partial, between-block, and document-end geometry without
 
     await expect
       .poll(() =>
-        page.evaluate(
-          (storageKey) => localStorage.getItem(storageKey),
-          READER_POSITION_STORAGE_KEY,
-        ),
+        page.evaluate((storageKey) => {
+          const serialized = localStorage.getItem(storageKey);
+          if (serialized === null) {
+            return null;
+          }
+          const envelope = JSON.parse(serialized) as {
+            schemaVersion?: unknown;
+            states?: Array<Record<string, unknown>>;
+          };
+          const state = envelope.states?.[0];
+          return {
+            schemaVersion: envelope.schemaVersion,
+            stateCount: envelope.states?.length,
+            stateKeys: state === undefined ? [] : Object.keys(state).sort(),
+            containsPrivateFilename: serialized.includes(
+              "private-visual-locator-smoke.epub",
+            ),
+            containsRenderedText: serialized.includes("Repository-authored"),
+          };
+        }, READER_POSITION_STORAGE_KEY),
       )
-      .toBeNull();
+      .toEqual({
+        schemaVersion: 1,
+        stateCount: 1,
+        stateKeys: ["bookIdentity", "locator", "preferences", "schemaVersion"],
+        containsPrivateFilename: false,
+        containsRenderedText: false,
+      });
     await expect(page).toHaveURL(`${LOCAL_ORIGIN}/`);
     expect(pageErrors).toEqual([]);
     expect(unexpectedRequestCount).toBe(0);

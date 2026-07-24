@@ -18,6 +18,7 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "./App";
+import type { ReaderPositionRepository } from "./persistence/reader-position-repository";
 import type {
   LocalPublicationCloseResult,
   LocalPublicationOpenFailureReason,
@@ -93,6 +94,23 @@ function createTestFlow(
     publication: undefined,
     open: vi.fn(open),
     close: vi.fn(close),
+  };
+}
+
+function createTestReaderPositionRepository(): ReaderPositionRepository {
+  return {
+    readPosition: vi.fn<ReaderPositionRepository["readPosition"]>(async () => ({
+      status: "missing",
+    })),
+    writePosition: vi.fn<ReaderPositionRepository["writePosition"]>(
+      async () => ({ status: "saved" }),
+    ),
+    readPreferences: vi.fn<ReaderPositionRepository["readPreferences"]>(
+      async () => ({ status: "missing" }),
+    ),
+    writePreferences: vi.fn<ReaderPositionRepository["writePreferences"]>(
+      async () => ({ status: "saved" }),
+    ),
   };
 }
 
@@ -302,6 +320,47 @@ describe("desktop reader lifecycle surface", () => {
       await screen.findByRole("heading", { name: "Second safe title" }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Text size")).toHaveValue("large");
+  });
+
+  it("flushes validated position state before replacement and explicit close", async () => {
+    const first = createTestPublication("First position book");
+    const second = createTestPublication("Second position book");
+    const open = vi
+      .fn<LocalPublicationOpenFlow["open"]>()
+      .mockResolvedValueOnce({ status: "ready", publication: first })
+      .mockResolvedValueOnce({ status: "ready", publication: second });
+    const flow = createTestFlow(open);
+    const repository = createTestReaderPositionRepository();
+    const writePosition = vi.mocked(repository.writePosition);
+    const writePreferences = vi.mocked(repository.writePreferences);
+    render(<App openFlow={flow} readerPositionRepository={repository} />);
+
+    selectEpub("first.epub");
+    await screen.findByRole("heading", { name: "First position book" });
+    fireEvent.change(screen.getByLabelText("Text size"), {
+      target: { value: "large" },
+    });
+    await waitFor(() => expect(writePreferences).toHaveBeenCalledTimes(1));
+
+    selectEpub("second.epub");
+    expect(writePosition).toHaveBeenCalledTimes(1);
+    expect(writePosition.mock.invocationCallOrder[0]).toBeLessThan(
+      open.mock.invocationCallOrder[1]!,
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Second position book" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close EPUB" }));
+    expect(writePosition).toHaveBeenCalledTimes(2);
+    expect(writePosition.mock.invocationCallOrder[1]).toBeLessThan(
+      vi.mocked(flow.close).mock.invocationCallOrder[0]!,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "No local EPUB is open.",
+      ),
+    );
   });
 
   it("shows a fixed terminal state when publication cleanup fails", async () => {
