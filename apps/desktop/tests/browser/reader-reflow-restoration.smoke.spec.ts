@@ -529,6 +529,8 @@ test("operates reader landmarks, skip links, preferences, and navigation by keyb
     await expect(readerArticle).toBeFocused();
     await expect(page).toHaveURL(initialUrl);
 
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
     const initialScrollY = await page.evaluate(() => window.scrollY);
     await page.keyboard.press("PageDown");
     await expect

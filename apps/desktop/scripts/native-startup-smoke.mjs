@@ -635,6 +635,15 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
     "Native reader skip or return navigation was not keyboard operable.",
   );
 
+  await runNativeReaderInteraction({
+    action: async () => {
+      await driver.execute(`window.scrollTo(0, 0);`);
+    },
+    condition: `return window.scrollY === 0;`,
+    driver,
+    label: "PageDown scroll precondition",
+    setStage,
+  });
   const scrollBefore = await driver.execute(`return window.scrollY;`);
   await runNativeReaderInteraction({
     action: async () => {
