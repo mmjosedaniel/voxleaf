@@ -2,7 +2,7 @@
 
 ## Relationship to the roadmap and Milestone 4 plan
 
-This broad plan predates the milestone-specific implementation plans and intentionally spans visual reading, narration synchronization, and audio startup work. Use [`M004-reflowable-visual-reader-and-position-restoration.md`](M004-reflowable-visual-reader-and-position-restoration.md) as the implementation authority for roadmap Milestone 4. Retain this document as context for later roadmap Milestones 8 and 9; it does not authorize bringing narration or audio work into Milestone 4.
+This broad plan predates the milestone-specific implementation plans and intentionally spans visual reading, narration synchronization, and audio startup work. The completed [`M004-reflowable-visual-reader-and-position-restoration.md`](../completed/M004-reflowable-visual-reader-and-position-restoration.md) records the implementation authority and evidence for roadmap Milestone 4. Retain this document as context for later roadmap Milestones 8 and 9; it does not retroactively bring narration or audio work into Milestone 4.
 
 ## Goal
 
@@ -19,7 +19,7 @@ Implement a normal reflowable EPUB reading surface that shares one stable readin
 
 ## Current state
 
-Roadmap Milestones 1 through 3 are complete, and Milestone 4 is in final closeout. The repository now has a reproducible cross-language workspace and CI, canonical shared schemas and runtime decoders, deterministic test fakes, a React/Tauri desktop application, a dependency-free Python service scaffold, and an implemented framework-independent `@voxleaf/epub` boundary for bounded in-memory ingestion, immutable semantic documents, lazy raster reads, and deterministic locator creation/resolution.
+Roadmap Milestones 1 through 4 are complete. The repository now has a reproducible cross-language workspace and CI, canonical shared schemas and runtime decoders, deterministic test fakes, a React/Tauri desktop application, a dependency-free Python service scaffold, and an implemented framework-independent `@voxleaf/epub` boundary for bounded in-memory ingestion, immutable semantic documents, lazy raster reads, and deterministic locator creation/resolution.
 
 The desktop implements capability-free local EPUB selection, publication lifecycle, safe semantic text/static-image rendering, TOC/internal/chapter navigation, continuous reflowable layout and closed preferences, keyboard/focus behavior, bounded large-chapter rendering, semantic code-point/DOM mapping, passive visual-locator tracking, reflow preservation, bounded Web Storage persistence, and exact/nearest-valid restoration after exact-file reselection. There is no narration normalization/chunking pipeline, TTS engine or process protocol, runtime generation queue, audio buffer/player, speech highlighting/following, hardware detection, or installer. The shared session/narration/audio contracts and test fakes remain supporting contracts, not implementations of those systems. The visual reader and saved-position portion of this broad plan works; the reader-to-playback flow does not.
 
@@ -109,7 +109,7 @@ Complete
 
 ### Status
 
-Satisfied by roadmap Milestones 3 and 4; final Milestone 4 closeout remains active
+Satisfied by completed roadmap Milestones 3 and 4
 
 ## Milestone 3: Persist and restore one reading position
 
