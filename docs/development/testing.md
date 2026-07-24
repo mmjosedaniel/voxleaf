@@ -124,7 +124,7 @@ The implementation must add deterministic package-level tests for:
 - nonempty bounded prepared segments with legal, ordered, stable locator ranges;
 - source immutability and separation between displayed text and normalized narration text;
 - exact-limit and max-plus-one input, segment, batch, lookahead, and cancellation-checkpoint behavior after Task 1.3 accepts the values;
-- deterministic continuation, cancellation, publication close, no-partial-result, and no-external-capability behavior after Task 1.1 accepts the operation boundary; and
+- ADR-0012's deterministic continuation, containing-segment relation, one-active-operation, cancellation, publication close, no-partial-result, and no-external-capability behavior; and
 - privacy canaries proving source/narration text does not enter public errors, metrics, snapshots, persistence, or benchmark summaries.
 
 Use table-driven tests and fixed synthetic fixtures where exact text transformation is the observable behavior. Add fixed-seed randomized or property-style cases only if they materially improve invariant coverage without adding an unapproved dependency. Performance acceptance is based on deterministic counts, bytes, bounded collection sizes, and checkpoint distance; optional wall-clock observations are informational and must make no model, language-quality, latency, or hardware claim.
