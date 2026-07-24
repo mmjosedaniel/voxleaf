@@ -9,7 +9,7 @@ This plan covers only visual reading, local file ingress, reader preferences, lo
 ## User-visible outcome
 
 - A user can select a supported local EPUB, see its title and authors, browse its hierarchical table of contents, and read its supported text structure and safely decoded local raster images.
-- The initial reader uses one approved reflowable reading mode. The proposed default is continuous vertical scrolling; pagination is not implemented unless the decision gate below replaces that recommendation.
+- The initial reader uses the approved continuous vertical-scrolling reflowable mode; pagination is not implemented.
 - The user can adjust a bounded initial set of typography and theme preferences without losing the logical reading passage.
 - Keyboard and assistive-technology users can operate the open, table-of-contents, chapter, and reader-preference controls with visible focus and meaningful names.
 - VoxLeaf saves a content-free `ReadingLocatorV1` locally and, after the user reselects the same exact-byte-identical book, restores that passage across book reopenings and application restarts.
@@ -49,15 +49,15 @@ Milestone 4's six decision/evidence tasks are complete. Milestone 3 provides the
 | Safe semantic content | Ready | `@voxleaf/epub` returns a closed immutable semantic model rather than publisher markup. |
 | Stable position contract | Ready | ADR-0003, `ReadingLocatorV1`, located blocks, and exact/nearest resolution are implemented. |
 | Deterministic EPUB fixtures | Ready | The Milestone 3 in-memory fixture builder and public ingestion matrix exist. |
-| Rendering/isolation policy | Approved, not implemented | ADR-0008 selects direct React rendering of closed semantic values in the application DOM and prohibits raw publisher markup. |
-| File-ingress boundary | Approved; probe implemented | ADR-0009 accepts the native-validated WebView file input and abortable bounded browser read with no Tauri command/plugin/capability. Tasks 2.2-2.3 still own publication integration. |
+| Rendering/isolation policy | Implemented and validated | ADR-0008's exhaustive direct React renderer, navigation/focus boundary, semantic range mapping, passive locator tracking, reflow preservation, and bounded large-chapter policy are implemented with deterministic, Chromium, and packaged-WebView2 evidence. |
+| File-ingress boundary | Implemented; final native evidence pending | ADR-0009's WebView file input and abortable bounded browser read feed the publication session without a Tauri command/plugin/capability. Task 2.3's checked-in synthetic packaged open/reselection path passes; its broader native cancellation/replacement/size-boundary matrix remains closeout work. |
 | Raster decode safety | Implemented and integrated | ADR-0010/Task 1.3 implement static-only preflight, bounded decode/live-source ownership, CSP, cancellation, and exact release. Task 3.3 consumes that boundary through lazy serialized publication reads, accessible image/fallback presentation, stale-result rejection, byte clearing, and document/book lifecycle release. |
-| Navigation-target resolution | Implemented | Task 2.1 adds closed package-owned source-fragment matching and exact/recovered/unavailable `OpenedPublication.resolveTarget` outcomes without changing shared schemas. Desktop navigation integration remains Task 3.2. |
+| Navigation-target resolution | Implemented and integrated | Task 2.1 adds closed package-owned source-fragment matching and exact/recovered/unavailable `OpenedPublication.resolveTarget` outcomes without changing shared schemas; Task 3.2 routes TOC, internal-link, and chapter navigation through that operation. |
 | Persistence and migration | Implemented | ADR-0011's two bounded Web Storage envelopes, strict app-local display-preference adapter, exact-identity lookup, content-free failures, unsupported-version preservation, desktop-owned migration dispatch, 500 ms passive debounce, immediate settled saves, lifecycle flushes, and exact/nearest-valid open restoration are implemented by Tasks 4.4-4.6. |
 | Layout/end-to-end testing | Established | Task 1.5 pins Playwright/Chromium, separates explicit acquisition from offline execution, and retains native WebView2 evidence for target-runtime behavior. |
 | Large-chapter policy and reader latency budgets | Implemented and validated | Task 3.6 implements the Task 1.6 policy with 250-block yielded batches, a 10,000-block/80,000-node ceiling, fixed no-partial-content fallback, and production React revalidation. Task 5.3 supplies native interaction/restoration evidence; Task 5.4 supplies native performance/resource evidence. |
 
-Implementation tasks must preserve these accepted choices and may not treat them as evidence that reader behavior already works. Any material change to a gate requires new evidence and an explicit ADR/plan amendment before implementation.
+Final closeout must preserve these accepted choices and their implementation evidence. Any material change to a gate requires new evidence and an explicit ADR/plan amendment before implementation.
 
 ## Scope
 
@@ -1053,7 +1053,7 @@ Do not change `services/tts`, audio contracts/implementation, narration contract
 
 **Validation:** `git diff --check`; manual internal-link/path review; `pnpm.cmd format:check`.
 
-**Status:** Not started.
+**Status:** Complete on 2026-07-24. Reconciled product, architecture, ADR, dependency, roadmap, index, and cross-milestone plan documentation with the implemented reader. The documentation now distinguishes current visual reading/persistence from deferred narration/TTS/audio work; records the direct package and browser-platform dependency boundaries; preserves the accepted file, raster, rendering, storage, privacy, and performance limits; lists only repository-defined validation commands; and retains Task 2.3's broader native matrix plus Task 6.2 as open closeout work. The system diagram's nodes, dependency arrows, data-flow statuses, and remaining gates were reviewed against production manifests/source and updated without changing code, dependencies, permissions, contracts, or historical completed plans.
 
 ### Task 6.2: Complete focused, root, native, privacy, and scope validation
 
@@ -1188,6 +1188,7 @@ Keep tasks independently reviewable. Reader UI/session/persistence modules shoul
 - 2026-07-23: Completed Tasks 5.1 and 5.2. The package-private deterministic reader fixtures now supply named navigation, reflow/restoration, long-chapter, and raster scenarios; the desktop public-boundary matrix proves the complete real-byte open/render/navigate/save/close/reopen/restore/recovery/fallback/privacy lifecycle without production exports or private package-runtime imports.
 - 2026-07-23: Completed Task 5.3. Expanded production Chromium evidence to every closed preference token, four viewport widths, zoom, native keyboard order/activation, focus, dark/high-contrast/reduced-motion behavior, exact and recovered restoration, and no remote requests. Expanded packaged WebView2 evidence to the 320-pixel layout, W3C/CDP keyboard/zoom/media behavior, complete process restart, exact-file reselection, exact position/preference restoration without focus theft, local image decode, and cleanup. Focused tests, all five browser smokes, the native startup matrix, and the complete root check pass.
 - 2026-07-24: Completed Task 5.4. Added production Chromium and packaged-WebView2 exact-limit and repeated resource-lifecycle evidence without adding production hooks. EdgeDriver rejected page-scoped `SystemInfo.getProcessInfo`, so the native benchmark retains CDP DOM/heap collection and measures working set only through the known driver process tree's numeric PID relationships. An initial native sample appeared to retain the 10,000-block DOM because EdgeDriver's element registry held a transient deep-target handle; benchmark-only in-page activation removed that harness-owned reference and every six-cycle close then retained zero reader DOM nodes. Both benchmark commands, the ordinary browser/native matrices, focused tests, and the authoritative root check pass with content-free reports and recoverable over-limit behavior.
+- 2026-07-24: Completed Task 6.1. Reconciled the product/MVP status, architecture overview and system diagram, ADR implementation notes, dependency inventory, roadmap, documentation index, and older cross-milestone plan with the implemented visual reader and bounded persistence/restoration boundary. Current reader capabilities, direct package dependencies, browser-platform APIs, limits, commands, evidence, final Task 2.3 native gap, and deferred narration/TTS/audio behavior are now explicit without rewriting completed historical plans or changing runtime behavior.
 
 ## Decision log
 
@@ -1240,7 +1241,14 @@ Before moving this plan to `docs/plans/completed/`:
 
 ## Final validation results
 
-Task 3.1 semantic text rendering, Task 3.2 explicit navigation, Task 3.3 bounded semantic images, Task 3.4 reader layout/preferences, Task 3.5 keyboard/focus behavior, Task 3.6 large-chapter enforcement, Task 4.1 semantic code-point/DOM range mapping, Task 4.2 passive normalized visual-position tracking, Task 4.3 reflow preservation, Task 4.4's versioned local repository, Task 4.5's validated save lifecycle, Task 4.6's exact/nearest-valid open restoration, Task 5.1's deterministic reader fixtures, Task 5.2's package-to-reader integration matrix, Task 5.3's viewport/typography/keyboard/restart matrix, and Task 5.4's browser/native performance/resource matrix are implemented and validated at their approved deterministic, production-Chromium, and packaged-WebView2 levels. Tasks 1.1 through 1.6, 2.1 through 2.2, 2.4 through 2.5, 3.1 through 3.6, 4.1 through 4.6, and 5.1 through 5.4 are complete. Task 2.3 implementation and its checked-in packaged-startup/synthetic-open regression are complete, but the broader native reselection/cancellation/replacement matrix is still required before that task can close. Milestone 6 closeout remains `Not started`.
+Task 3.1 semantic text rendering, Task 3.2 explicit navigation, Task 3.3 bounded semantic images, Task 3.4 reader layout/preferences, Task 3.5 keyboard/focus behavior, Task 3.6 large-chapter enforcement, Task 4.1 semantic code-point/DOM range mapping, Task 4.2 passive normalized visual-position tracking, Task 4.3 reflow preservation, Task 4.4's versioned local repository, Task 4.5's validated save lifecycle, Task 4.6's exact/nearest-valid open restoration, Task 5.1's deterministic reader fixtures, Task 5.2's package-to-reader integration matrix, Task 5.3's viewport/typography/keyboard/restart matrix, Task 5.4's browser/native performance/resource matrix, and Task 6.1's documentation reconciliation are complete. Tasks 1.1 through 1.6, 2.1 through 2.2, 2.4 through 2.5, 3.1 through 3.6, 4.1 through 4.6, 5.1 through 5.4, and 6.1 are complete. Task 2.3 implementation and its checked-in packaged-startup/synthetic-open regression are complete, but the broader native reselection/cancellation/replacement matrix is still required before that task can close. Task 6.2 final validation and milestone closeout remain `Not started`.
+
+Task 6.1 validation completed on 2026-07-24:
+
+- `pnpm.cmd format:check` passed TypeScript/Prettier, Rustfmt, and Python/Ruff formatting checks. The first managed-sandbox run reached a clean Prettier result but could not traverse the existing protected `services/tts/.pytest_cache`; the unchanged command passed outside the sandbox.
+- `git diff --check` passed.
+- A read-only local Markdown audit resolved all 89 relative link targets across the changed documentation. Repository manifests/source confirmed every referenced command, production dependency, browser-platform boundary, and reader/persistence path.
+- The system diagram's implementation-status nodes, arrows, flows, evidence links, and remaining gates were reviewed against the current package manifests and desktop source. No production code, manifest, lockfile, dependency, shared/EPUB public contract, generated artifact, Tauri command/plugin/capability/CSP, storage shape, path contract, network origin, narration, TTS, audio, private input, or completed historical plan changed.
 
 Task 5.4 validation completed on 2026-07-24:
 

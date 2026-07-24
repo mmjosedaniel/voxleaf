@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop connects its capability-free local-file selection/read boundary to a UI-independent publication-session owner, presents one accessible idle/opening/ready/empty/failure/closing lifecycle surface, contains presentation failures, and renders the active spine document's supported text plus bounded static raster images through an exhaustive application-owned semantic React reader. Its continuous responsive layout, closed display preferences, bounded incremental large-chapter policy, passive logical-position tracking, viewport/preference reflow preservation, versioned bounded local reader-state repository, lifecycle-aware save coordinator, and exact/nearest-valid open restoration are implemented without publisher styling. A user can open, read, navigate, adjust the visual reader without losing the active logical passage, and explicitly close a supported publication; validated position and preference changes are saved locally on the approved bounded lifecycle and restored after exact-file reselection. Narration preparation, TTS integration, buffering, and playback require their own implementation evidence. The Python area remains a foundation only.
+Mixed implementation status. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop connects its capability-free local-file selection/read boundary to a UI-independent publication-session owner, presents one accessible idle/opening/ready/empty/failure/closing lifecycle surface, contains presentation failures, and renders the active spine document's supported text plus bounded static raster images through an exhaustive application-owned semantic React reader. Its continuous responsive layout, closed display preferences, bounded incremental large-chapter policy, passive logical-position tracking, viewport/preference reflow preservation, versioned bounded local reader-state repository, lifecycle-aware save coordinator, and exact/nearest-valid open restoration are implemented without publisher styling. A user can open, read, navigate, adjust the visual reader without losing the active logical passage, and explicitly close a supported publication; validated position and preference changes are saved locally on the approved bounded lifecycle and restored after exact-file reselection. Milestone 4 documentation is complete, while its final validation/closeout and Task 2.3's broader packaged-native file-open matrix remain active. Narration preparation, TTS integration, buffering, and playback require their own implementation evidence. The Python area remains a foundation only.
 
 [`system-diagram.md`](system-diagram.md) is the canonical visual map and status legend. This overview owns the accompanying architectural rationale, invariants, and detailed implemented-boundary notes.
 
@@ -21,8 +21,8 @@ Desktop application
 ├── Versioned bounded Web Storage repository [implemented]
 ├── Semantic React text/static-raster renderer [implemented]
 ├── Reader navigation and in-memory logical-position/reflow coordinator [implemented]
-├── Audio player and bounded playback buffer
-└── Local TTS process client
+├── Audio player and bounded playback buffer [planned]
+└── Local TTS process client [planned]
 
 EPUB package
 ├── Archive/package/navigation validation [implemented]
@@ -65,18 +65,18 @@ The protocol may use Tauri IPC, standard input/output, a local socket, or loopba
 
 The public EPUB package currently implements the in-memory validation, parsing, semantic projection, resource-descriptor, locator, and target-resolution portions of this flow. The desktop file-open coordinator passes one bounded local-file read to the publication-session module, which owns cancellation, replacement, late-result rejection, and publication cleanup. A separate application lifecycle controller exposes only immutable idle/opening/ready/empty/failure/closing states, clears the prior publication reference before non-ready states, and maps zero located blocks to the recoverable empty state. In ready state, the restore coordinator first reads validated app-global display preferences and exact-identity position state. The production reader activates the exact/recovered spine document or first canonical located block, lazily renders its admitted local static raster images, materializes and aligns a restored semantic range before settlement, can replace the document through package-resolved TOC, internal-link, and chapter-step navigation, applies validated preferences through application-owned CSS, maintains content-free located-block/DOM-range associations, updates its canonical in-memory locator from settled passive viewport geometry, and restores that locator after viewport or preference reflow. The application save coordinator accepts only locators that resolve exactly back to themselves through the active publication, bounds passive writes with a trailing timer, coalesces immediate position/preference saves, serializes each latest-only write stream, and flushes before close/replacement and on hidden/`pagehide` lifecycle signals without awaiting storage before publication cleanup. The repository atomically replaces validated bounded envelopes; narration preparation, synthesis, buffering, and playback remain planned.
 
-1. Validate the selected EPUB as an untrusted archive.
-2. Parse metadata, navigation, and spine order.
-3. Resolve the saved logical reading locator, or use the beginning of a new book.
-4. Select the already-sanitized semantic spine document for application-owned rendering.
-5. Reconstruct the visible passage from the locator and current scrolling layout.
-6. Derive narration text from the same logical location while retaining paragraph and dialogue boundaries.
-7. Create bounded chunks tagged with their source locators.
-8. Attach chunks to a unique reading session.
-9. Generate approximately 15 seconds of playable audio, then start playback immediately when that media-duration threshold is met.
-10. Generate later audio while the player consumes buffered frames and the renderer keeps the narrated passage visible.
-11. Discard played frames and stale session work.
-12. Persist the logical reading locator, not a rendered page number or generated audio.
+1. **Implemented:** Validate the selected EPUB as an untrusted archive.
+2. **Implemented:** Parse metadata, navigation, and spine order.
+3. **Implemented:** Resolve the saved logical reading locator, or use the beginning of a new book.
+4. **Implemented:** Select the already-sanitized semantic spine document for application-owned rendering.
+5. **Implemented:** Reconstruct the visible passage from the locator and current scrolling layout.
+6. **Planned:** Derive narration text from the same logical location while retaining paragraph and dialogue boundaries.
+7. **Planned:** Create bounded chunks tagged with their source locators.
+8. **Planned:** Attach chunks to a unique reading session.
+9. **Planned:** Generate approximately 15 seconds of playable audio, then start playback immediately when that media-duration threshold is met.
+10. **Planned:** Generate later audio while the player consumes buffered frames and the renderer keeps the narrated passage visible.
+11. **Planned:** Discard played frames and stale session work.
+12. **Implemented for reader state:** Persist the logical reading locator, not a rendered page number or generated audio. Generated-audio persistence remains prohibited future behavior unless a separate product/privacy decision approves it.
 
 ## Required invariants
 
@@ -93,12 +93,12 @@ The public EPUB package currently implements the in-memory validation, parsing, 
 ## Dependency direction
 
 - UI components depend on application-level reading APIs, not directly on EPUB or TTS implementations.
-- `apps/desktop` declares `@voxleaf/epub` and `@voxleaf/shared` directly; its publication-session domain module is the only current desktop caller of the EPUB opener and shared safe-error constructor.
+- `apps/desktop` declares `@voxleaf/epub` and `@voxleaf/shared` directly. The publication-session module owns the EPUB opener; reader modules consume only public semantic/publication types and package resolution operations; persistence modules consume shared locator/state types and the strict shared persisted-state decoder.
 - EPUB parsing must not depend on the desktop framework.
 - `@voxleaf/epub` consumes shared book and locator contracts only through the public `@voxleaf/shared` workspace package boundary; `@voxleaf/shared` has no reverse EPUB dependency.
 - Scrolling layout and semantic-to-DOM position mapping belong to the desktop reader. Logical locator creation plus locator and semantic-target resolution are implemented framework-independent operations in `@voxleaf/epub`.
 - Shared protocol types must not depend on either process implementation.
-- TTS model adapters implement an internal interface so benchmarking does not leak model-specific details through the application.
+- Future TTS model adapters must implement an internal interface so benchmarking does not leak model-specific details through the application.
 
 ## Visual reader boundary
 
@@ -148,7 +148,7 @@ The initial profile accepts EPUB 3 reflowable XHTML with EPUB navigation and sup
 
 The public `@voxleaf/epub` root exposes `openEpubPublication` plus the framework-independent publication/result types. The opener accepts only in-memory bytes and an optional abort signal, runs the validated archive, package, navigation, semantic, resource-catalog, locator-index, and target-index stages, and returns a frozen discriminated result instead of throwing an expected ingestion failure. Success retains the archive only behind an explicit opened-publication lifecycle and exposes immutable semantic documents, detailed navigation, lazy path-free raster descriptors, deterministic block locators, structural locator resolution, semantic-target resolution, and idempotent close. Failure contains only one closed EPUB detail code and its canonical `OperationalErrorV1`; it has no message, stack, cause, path, URL, markup, prose, bytes, or raw rejected value. The package performs no logging.
 
-The closed block, inline, navigation, and raster-resource values contain no publisher HTML, DOM objects, paths, URLs, or eager resource bytes. The locator index preserves only shared-v1-valid unique source IDs, generates deterministic collision-free replacements, binds every start locator to exact book identity and spine identity, and counts legal text offsets by Unicode code point. The locator resolver requires full identity for exact results, rejects another book, and recovers through matching-spine anchor/offset adjustment, nearest non-empty spine, or book start with fixed content-free reasons. The separate package-private target index retains unique addressable source-fragment matches without exposing them in results; unresolved fragments recover only to the same spine document start, while invalid, unknown, non-spine, and empty targets remain unavailable. The desktop connects the selection/read boundary to its package-level publication session and consumes these values for safe metadata, semantic text/static-image rendering, explicit navigation, and validated content-free position saves. Reading and applying saved state during application open do not work yet.
+The closed block, inline, navigation, and raster-resource values contain no publisher HTML, DOM objects, paths, URLs, or eager resource bytes. The locator index preserves only shared-v1-valid unique source IDs, generates deterministic collision-free replacements, binds every start locator to exact book identity and spine identity, and counts legal text offsets by Unicode code point. The locator resolver requires full identity for exact results, rejects another book, and recovers through matching-spine anchor/offset adjustment, nearest non-empty spine, or book start with fixed content-free reasons. The separate package-private target index retains unique addressable source-fragment matches without exposing them in results; unresolved fragments recover only to the same spine document start, while invalid, unknown, non-spine, and empty targets remain unavailable. The desktop connects the selection/read boundary to its package-level publication session and consumes these values for safe metadata, semantic text/static-image rendering, explicit navigation, validated content-free position saves, and exact/nearest-valid restoration before the ready reader settles.
 
 The implemented boundary uses exactly pinned `@zip.js/zip.js@2.8.30` and `saxes@6.0.0` behind package-internal adapters. The ZIP adapter imports the pure-JavaScript core, disables workers and native compression streams, and uses only in-memory readers/writers. The XML adapter emits bounded namespace-aware events without a DOM or resolver. Neither dependency is part of the public EPUB API, and no renderer-oriented EPUB framework has been added. Selection evidence, licenses, alternatives, and transitive impact are recorded in [`development/dependencies.md`](../development/dependencies.md).
 

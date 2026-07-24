@@ -4,13 +4,17 @@
 
 Accepted.
 
+## Implementation status
+
+Implemented by roadmap Milestone 4. The desktop now renders the closed semantic model through exhaustive application-owned React elements in one continuous vertical-scrolling document; integrates package-owned target resolution, bounded static raster images, closed preferences, keyboard/focus behavior, and the measured 250-block/10,000-block/80,000-node policy; maps semantic Unicode-code-point positions to DOM ranges; tracks and preserves a package-normalized visual locator across reflow; and restores exact/nearest-valid saved state without moving focus or mutating browser history. Deterministic, production-Chromium, and packaged-WebView2 matrices cover the boundary. Narration preparation, TTS, audio, spoken highlighting, and visual/audio synchronization remain outside this ADR and unimplemented.
+
 ## Context
 
 Roadmap Milestone 4 must turn an opened EPUB publication into an accessible reflowable reader while preserving one stable logical reading position. The decision must not weaken the security and privacy boundary established by [ADR-0007](ADR-0007-secure-epub-ingestion-boundary.md) or replace the locator authority established by [ADR-0003](ADR-0003-stable-reading-locators.md).
 
 The implemented `@voxleaf/epub` package already projects untrusted XHTML into closed immutable semantic values. It returns headings, paragraphs, block quotes, lists, text, emphasis, strong text, code, line breaks, internal document targets, raster descriptors, located blocks, and exact/nearest locator resolution. It does not return publisher HTML, DOM nodes, CSS, scripts, event handlers, paths, activatable external URLs, or eager image bytes. Publisher source fragments are opaque matching data and are explicitly not renderer DOM identifiers.
 
-At initial acceptance, the desktop was only a React/Vite foundation inside a Tauri shell, with no EPUB/shared-package dependency, reader, application router, file access, persistence adapter, native command, plugin, or capability. Raster decode, real-browser tooling, and reader performance limits were unresolved. ADR-0009, ADR-0010, ADR-0011, and the Task 1.5/1.6 amendments subsequently resolve those gates without making the production reader implemented.
+At initial acceptance, the desktop was only a React/Vite foundation inside a Tauri shell, with no EPUB/shared-package dependency, reader, application router, file access, persistence adapter, native command, plugin, or capability. Raster decode, real-browser tooling, and reader performance limits were unresolved. ADR-0009, ADR-0010, ADR-0011, and the Task 1.5/1.6 amendments subsequently resolved those gates before the production reader work recorded above.
 
 Before implementing the reader, VoxLeaf must decide:
 
@@ -48,7 +52,7 @@ Raster image nodes remain application placeholders until the separate raster saf
 
 The desktop application owns one active publication session and will own one reader coordinator. The coordinator will own active document/locator state, explicit navigation intents, passive visible-location updates, reflow capture/restoration, and later persistence scheduling. It will expose application-level state/actions to presentation components. Leaf UI components must not open/close publications, resolve publisher targets, or write persistence directly.
 
-Task 2.2 implements the UI-independent publication-session owner. It calls the public EPUB opener, owns one abortable logical attempt and one opened publication, detaches and closes prior state before replacement, rejects late completions, closes a publication returned by stale work, and maps unexpected throws or close failures to the fixed shared internal-failure contract. Task 2.3 composes that owner with the capability-free bounded file read and presents only validated metadata or fixed safe outcomes. Reader coordination remains later work.
+Task 2.2 implements the UI-independent publication-session owner. It calls the public EPUB opener, owns one abortable logical attempt and one opened publication, detaches and closes prior state before replacement, rejects late completions, closes a publication returned by stale work, and maps unexpected throws or close failures to the fixed shared internal-failure contract. Task 2.3 composes that owner with the capability-free bounded file read and presents only validated metadata or fixed safe outcomes. At that implementation stage, reader coordination remained later work.
 
 The semantic renderer may consume the public semantic and located-block types through the application reader boundary. It does not interpret archive paths, source markup, or package-internal sidecars.
 
@@ -124,7 +128,7 @@ This decision does not select or approve:
 - reader latency, DOM-node, memory, image, or large-chapter thresholds; or
 - narration, TTS, audio, highlighting, synchronization, or related dependencies.
 
-Those choices remain assigned to later tasks in the active Milestone 4 ExecPlan or later roadmap milestones.
+At acceptance, those choices were assigned to later tasks in the active Milestone 4 ExecPlan or later roadmap milestones. ADR-0009, ADR-0010, ADR-0011, and Tasks 1.5-1.6 subsequently resolved the remaining Milestone 4 gates; narration, TTS, audio, highlighting, and synchronization remain later-roadmap decisions.
 
 ### Apply the Task 1.6 measured large-chapter amendment
 
@@ -139,7 +143,7 @@ Task 1.5 subsequently established the Playwright Chromium harness, and Task 1.6 
 
 At the exact block limit, the synthetic incremental profile produced first useful content in 9.7 ms, rendered a deep target in 587.8 ms, completed in 654.3 ms, used at most 12.8 ms of script work per batch, reflowed in 132.5 ms, retained 78,123 DOM nodes, and increased Chromium working set by 111.8 MiB. The combined exact block/eight-image profile increased working set by 174.8 MiB. The accepted reference ceilings are respectively 50 ms, 1,000 ms, 1,000 ms, 16 ms, 250 ms, 80,000 nodes, 144 MiB DOM-only working-set growth, and 208 MiB combined growth. Complete synchronous rendering is rejected because the same 10,000-block fixture occupied 124.3 ms in one script operation. The detailed host, stress cases, image results, command, limitations, and future revalidation ownership are recorded in [`performance-budget.md`](../performance-budget.md#visual-reader-reference-limits).
 
-These are implementation acceptance gates on the documented reference host, not proof of a production reader or a universal hardware guarantee. File-open, real React commit, locator restoration, and native WebView2 timings remain owned by later implementation/performance tasks. Task 1.6 adds only test configuration, a synthetic benchmark harness, commands, and documentation; it adds no production renderer, public contract, runtime dependency, native capability, persistence, network access, or narration/audio behavior.
+These are implementation acceptance gates on the documented reference host, not a universal hardware guarantee. At Task 1.6 completion, file-open, real React commit, locator restoration, and native WebView2 timings remained owned by later implementation/performance tasks; Tasks 3.6 and 5.3-5.4 subsequently supplied that production evidence. Task 1.6 itself added only test configuration, a synthetic benchmark harness, commands, and documentation; it added no production renderer, public contract, runtime dependency, native capability, persistence, network access, or narration/audio behavior.
 
 ## Consequences
 
@@ -148,12 +152,12 @@ These are implementation acceptance gates on the documented reference host, not 
 - Direct DOM rendering is safe only while the EPUB semantic model remains closed and the renderer remains exhaustive; adding a new semantic node requires renderer and security review.
 - Publisher styling fidelity remains intentionally limited. The application cannot reproduce CSS-derived layout/visibility that ADR-0007 discards.
 - The initial reader has one interaction model and does not need pagination algorithms or mode migration.
-- `@voxleaf/epub` remains the sole owner of source-fragment matching; Task 2.1 implemented and tested its approved public in-memory resolver before target navigation becomes usable.
+- `@voxleaf/epub` remains the sole owner of source-fragment matching; Task 2.1 implemented and tested its approved public in-memory resolver before Task 3.2 integrated target navigation.
 - Non-spine documents and unresolved/ambiguous fragments may remain unavailable or recover only to the target spine document's beginning. This is safer than fabricating cross-document navigation but may make some publication notes inaccessible in the MVP.
 - Code-point position reconstruction requires a tested semantic-to-DOM mapping and real-browser geometry adapter. Block-start fallback keeps restoration deterministic when caret APIs differ.
 - Passive scrolling and reflow cannot steal focus; explicit navigation has one predictable focus destination.
 - Browser URLs and history contain no book identity, locator, fragment, or content.
-- No application behavior is implemented by accepting this ADR. The desktop remains a foundation shell until later tasks add and validate the approved boundaries.
+- Accepting this ADR did not itself implement application behavior; the implementation-status section records the later tasks that added and validated the approved boundaries.
 - This decision and its amendments add no dependency, shared schema change, generated file, native permission, production application code, storage, network, TTS, or audio capability.
 
 ## Alternatives considered

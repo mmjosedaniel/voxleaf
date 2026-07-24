@@ -4,6 +4,10 @@
 
 Accepted.
 
+## Implementation status
+
+Implemented by Milestone 4 Tasks 4.4-4.6. The asynchronous desktop repository strictly decodes and bounds the two fixed Web Storage envelopes; the save coordinator enforces canonical-locator admission, 500 ms passive debounce, immediate settled saves, lifecycle flushes, supersession, and serialized latest-only writes; and the restore coordinator reads global preferences plus exact-identity state before the reader settles, delegates exact/nearest-valid resolution to `@voxleaf/epub`, and delays recovered-state rewriting until visual alignment. Deterministic, production-Chromium, and packaged-WebView2 restart/reselection evidence covers the boundary. No persistence dependency, shared-schema change, native command/plugin/capability, host-path contract, publisher content, or rendered geometry was added.
+
 ## Context
 
 VoxLeaf must restore the logical passage for an exact EPUB after the user reselects it, including after an application restart, without persisting book prose, rendered geometry, EPUB bytes, private paths, or publisher metadata. ADR-0003 makes `ReadingLocatorV1` the position authority, ADR-0006 requires strict versioned decoding at persistence boundaries, ADR-0007 defines exact EPUB bytes as book identity, and ADR-0008 assigns save scheduling and restoration coordination to the desktop application rather than leaf UI components or `@voxleaf/epub`.
@@ -146,7 +150,7 @@ The native Windows release probe built the current Tauri shell, wrote one fixed 
 - Unsupported future data is preserved at the cost of disabling writes for that key in an older application.
 - Local WebView data is not cloud sync, backup, guaranteed archival storage, or proof that a file can be reopened automatically.
 - IndexedDB or native storage remains available as a future replacement only after measured dataset, responsiveness, transaction, multi-process, durability, or packaging requirements exceed this boundary.
-- Task 1.4 accepts ownership and policy only. No persistence repository, preference control, save coordinator, restoration behavior, application dependency, or shared contract is implemented by this ADR.
+- Task 1.4 accepted ownership and policy only; accepting this ADR did not itself add a persistence repository, preference control, save coordinator, restoration behavior, application dependency, or shared contract. The implementation-status section records the later tasks that implemented the decision.
 
 ## Alternatives considered
 

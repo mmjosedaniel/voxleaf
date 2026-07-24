@@ -12,7 +12,7 @@ Documentation is organized by purpose so contributors and Codex can load only th
 ## Architecture
 
 - [`architecture/system-diagram.md`](architecture/system-diagram.md): canonical implemented/approved component map, EPUB-to-audio flow, status legend, and maintenance conditions.
-- [`architecture/overview.md`](architecture/overview.md): detailed component boundaries, invariants, and implemented EPUB/shared-contract behavior.
+- [`architecture/overview.md`](architecture/overview.md): detailed component boundaries, invariants, and implemented EPUB, reader, and persistence behavior.
 - [`architecture/performance-budget.md`](architecture/performance-budget.md): latency, buffering, memory, and measurement targets.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
@@ -30,8 +30,8 @@ Documentation is organized by purpose so contributors and Codex can load only th
 - [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.
 - [`plans/completed/M002-shared-contracts-and-test-harness.md`](plans/completed/M002-shared-contracts-and-test-harness.md): completed ExecPlan and validation evidence for roadmap Milestone 2.
 - [`plans/completed/M003-secure-epub-ingestion-and-document-model.md`](plans/completed/M003-secure-epub-ingestion-and-document-model.md): completed ExecPlan and validation evidence for secure EPUB ingestion and the framework-independent document model in roadmap Milestone 3.
-- [`plans/active/M004-reflowable-visual-reader-and-position-restoration.md`](plans/active/M004-reflowable-visual-reader-and-position-restoration.md): active implementation plan for roadmap Milestone 4's visual reader, logical position, persistence, and restoration.
-- [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broader plan retained as context for later reader/narration/audio integration; it is not the Milestone 4 implementation authority.
+- [`plans/active/M004-reflowable-visual-reader-and-position-restoration.md`](plans/active/M004-reflowable-visual-reader-and-position-restoration.md): active closeout plan for roadmap Milestone 4's implemented visual reader, logical position, persistence, and restoration.
+- [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broader plan retained as historical reader context and for later narration/audio integration; it is not the Milestone 4 implementation authority.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 
 For complex work, follow [`.agents/PLANS.md`](../.agents/PLANS.md).

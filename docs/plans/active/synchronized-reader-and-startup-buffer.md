@@ -19,9 +19,9 @@ Implement a normal reflowable EPUB reading surface that shares one stable readin
 
 ## Current state
 
-Roadmap Milestones 1 through 3 are complete. The repository now has a reproducible cross-language workspace and CI, canonical shared schemas and runtime decoders, deterministic test fakes, a minimal React/Tauri desktop shell, a dependency-free Python service scaffold, and an implemented framework-independent `@voxleaf/epub` boundary for bounded in-memory ingestion, immutable semantic documents, lazy raster reads, and deterministic locator creation/resolution.
+Roadmap Milestones 1 through 3 are complete, and Milestone 4 is in final closeout. The repository now has a reproducible cross-language workspace and CI, canonical shared schemas and runtime decoders, deterministic test fakes, a React/Tauri desktop application, a dependency-free Python service scaffold, and an implemented framework-independent `@voxleaf/epub` boundary for bounded in-memory ingestion, immutable semantic documents, lazy raster reads, and deterministic locator creation/resolution.
 
-The desktop still has no file-selection capability or dependency on the EPUB/shared packages and cannot render or restore a book. There is no persistence adapter, narration normalization/chunking pipeline, TTS engine or process protocol, runtime generation queue, audio buffer/player, hardware detection, or installer. The shared persisted-state/session/narration/audio contracts and test fakes are supporting contracts, not implementations of those systems. The package-level EPUB behavior can be validated, but none of this plan's complete reader-to-playback user flow works in the application.
+The desktop implements capability-free local EPUB selection, publication lifecycle, safe semantic text/static-image rendering, TOC/internal/chapter navigation, continuous reflowable layout and closed preferences, keyboard/focus behavior, bounded large-chapter rendering, semantic code-point/DOM mapping, passive visual-locator tracking, reflow preservation, bounded Web Storage persistence, and exact/nearest-valid restoration after exact-file reselection. There is no narration normalization/chunking pipeline, TTS engine or process protocol, runtime generation queue, audio buffer/player, speech highlighting/following, hardware detection, or installer. The shared session/narration/audio contracts and test fakes remain supporting contracts, not implementations of those systems. The visual reader and saved-position portion of this broad plan works; the reader-to-playback flow does not.
 
 ## Scope and non-goals
 
@@ -105,11 +105,11 @@ Complete
 - Unit tests for locator creation, resolution, fallback, and reflow invariants.
 - Integration tests using a small synthetic EPUB with multiple chapters, images, headings, and paragraphs.
 - Accessibility checks for keyboard navigation, focus, reading order, and semantic controls.
-- Actual result: partially complete at the framework-independent package boundary. `@voxleaf/epub` validates synthetic in-memory EPUBs, projects safe semantic content and raster descriptors, and creates/resolves stable locators. Desktop file access, raster decoding, renderer isolation, reflow, and accessibility behavior are not implemented.
+- Actual result: satisfied by roadmap Milestones 3 and 4. `@voxleaf/epub` validates bounded in-memory EPUBs, projects safe semantic content and raster descriptors, and creates/resolves stable locators. The desktop implements capability-free file access, bounded raster decoding, direct semantic rendering, navigation, reflow preservation, and the approved keyboard/focus/accessibility matrix.
 
 ### Status
 
-Partially satisfied by completed roadmap Milestone 3; application work not started
+Satisfied by roadmap Milestones 3 and 4; final Milestone 4 closeout remains active
 
 ## Milestone 3: Persist and restore one reading position
 
@@ -127,11 +127,11 @@ Partially satisfied by completed roadmap Milestone 3; application work not start
 - Integration test proving rendered content and narration chunks share locator ranges.
 - End-to-end test: navigate to a later passage, close the book, reopen it, and verify that the same passage is visible.
 - End-to-end test: start narration and verify that the visible highlighted paragraph follows segment boundaries.
-- Actual result: the shared persisted-state contract and EPUB locator resolver exist. No desktop reading-position owner, storage adapter, lifecycle save, restoration flow, narration start, highlighting, or page-following behavior exists.
+- Actual result: the desktop visual-position owner, semantic range mapper, bounded storage adapter, lifecycle save coordinator, and exact/nearest-valid restoration flow are implemented and validated. Narration start, narration-segment mapping, speech highlighting, and playback following remain unimplemented later-milestone work.
 
 ### Status
 
-Not started
+Partially satisfied: visual position/persistence/restoration complete; narration synchronization not started
 
 ## Milestone 4: Gate startup on playable audio duration
 
@@ -170,7 +170,7 @@ Not started
 
 - Commands: run the existing root quality surface and add exact integration, end-to-end, accessibility, and benchmark commands only when repository configuration defines them.
 - Expected result: all deterministic checks pass; hardware-specific results are reported separately; stale audio played is zero; generated audio persistence is zero.
-- Actual result: repository-wide deterministic checks and CI exist, but the reader, persistence, TTS, audio, accessibility, performance, and product integration coverage required by this milestone cannot run because those behaviors are not implemented.
+- Actual result: reader, persistence, accessibility, browser/native interaction, and reader performance/resource coverage exist and pass their Milestone 4 matrices. TTS, audio, synchronization, hardware, packaging, and the complete product journey remain unimplemented, so this broad final milestone cannot close.
 
 ### Status
 
@@ -199,6 +199,7 @@ Documentation-only changes can be rolled back independently. Persisted locator c
 - 2026-07-20: Confirmed that no implementation or executable validation commands currently exist.
 - 2026-07-20: Verified local Markdown links, whitespace, character encoding, required plan sections, and removal of the obsolete 15-second wall-clock allowance.
 - 2026-07-22: Reconciled this plan's current-state and milestone evidence with completed roadmap Milestones 1 through 3. Reader, persistence, narration, TTS, audio, and integrated feature work remain incomplete.
+- 2026-07-24: Reconciled current state with Milestone 4 implementation. Visual reading, navigation, bounded persistence, exact/nearest restoration, accessibility interaction, and reader performance/resource evidence are implemented; narration, TTS, audio, synchronization, hardware, and packaging remain deferred.
 
 ## Discoveries and decisions
 
