@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const TEST_STORAGE_KEY = "voxleaf.browser-smoke";
+const READER_POSITIONS_STORAGE_KEY = "voxleaf.reader.positions";
 const READER_PREFERENCES_STORAGE_KEY = "voxleaf.reader.preferences";
 
 async function buildNavigationFixture(): Promise<Uint8Array> {
@@ -37,7 +38,11 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
         localStorage.removeItem(key);
       }
     },
-    [TEST_STORAGE_KEY, READER_PREFERENCES_STORAGE_KEY],
+    [
+      TEST_STORAGE_KEY,
+      READER_POSITIONS_STORAGE_KEY,
+      READER_PREFERENCES_STORAGE_KEY,
+    ],
   );
   await page.addInitScript(() => {
     const originalRevoke = URL.revokeObjectURL.bind(URL);
@@ -162,12 +167,18 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
 
     await expect
       .poll(() =>
-        page.evaluate(
-          (key) => localStorage.getItem(key),
-          READER_PREFERENCES_STORAGE_KEY,
-        ),
+        page.evaluate((key) => {
+          const serialized = localStorage.getItem(key);
+          return serialized === null ? null : JSON.parse(serialized);
+        }, READER_PREFERENCES_STORAGE_KEY),
       )
-      .toBeNull();
+      .toEqual({
+        schemaVersion: 1,
+        textScale: "extra-large",
+        lineSpacing: "spacious",
+        contentWidth: "wide",
+        theme: "light",
+      });
 
     const toc = page.getByRole("navigation", { name: "Table of contents" });
     await expect(toc.getByText("Part One", { exact: true })).toBeVisible();
@@ -334,8 +345,16 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
   } finally {
     if (!page.isClosed() && page.url().startsWith(LOCAL_ORIGIN)) {
       await page.evaluate(
-        (key) => localStorage.removeItem(key),
-        TEST_STORAGE_KEY,
+        (keys) => {
+          for (const key of keys) {
+            localStorage.removeItem(key);
+          }
+        },
+        [
+          TEST_STORAGE_KEY,
+          READER_POSITIONS_STORAGE_KEY,
+          READER_PREFERENCES_STORAGE_KEY,
+        ],
       );
     }
     await context.unroute("**/*");

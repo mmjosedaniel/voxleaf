@@ -1,7 +1,9 @@
 import type { OpenedPublication } from "@voxleaf/epub";
+import type { ReadingLocatorV1 } from "@voxleaf/shared";
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -10,6 +12,14 @@ import {
 } from "react";
 
 import type { LocalPublicationOpenFlow } from "./publication/local-publication-open";
+import {
+  createWebStorageReaderPositionRepository,
+  type ReaderPositionRepository,
+} from "./persistence/reader-position-repository";
+import {
+  ReaderPositionSaveCoordinator,
+  type ReaderPositionSaveEnvironment,
+} from "./persistence/reader-position-save-coordinator";
 import { ReaderErrorBoundary } from "./reader/ReaderErrorBoundary";
 import { ReaderPublicationContent } from "./reader/ReaderPublication";
 import {
@@ -33,10 +43,14 @@ export interface ReadyPublicationContentProps {
   readonly publication: OpenedPublication;
   readonly initialPreferences?: ReaderPreferencesV1;
   readonly onPreferencesChange?: (preferences: ReaderPreferencesV1) => void;
+  readonly onActiveLocatorChange?: (locator: ReadingLocatorV1) => void;
+  readonly onSettledLocatorChange?: (locator: ReadingLocatorV1) => void;
 }
 
 export interface AppProps {
   readonly openFlow?: LocalPublicationOpenFlow;
+  readonly readerPositionRepository?: ReaderPositionRepository;
+  readonly readerPositionSaveEnvironment?: ReaderPositionSaveEnvironment;
   readonly ReadyPublicationContent?: ComponentType<ReadyPublicationContentProps>;
   readonly runRasterProbe?: typeof runRasterImageSafetyProbe;
 }
@@ -90,6 +104,8 @@ function rasterStatusForResult(
 
 export function App({
   openFlow: suppliedOpenFlow,
+  readerPositionRepository: suppliedReaderPositionRepository,
+  readerPositionSaveEnvironment,
   ReadyPublicationContent = ReaderPublicationContent,
   runRasterProbe = runRasterImageSafetyProbe,
 }: AppProps) {
@@ -97,6 +113,11 @@ export function App({
     createReaderLifecycle({
       ...(suppliedOpenFlow === undefined ? {} : { openFlow: suppliedOpenFlow }),
     }),
+  );
+  const [readerPositionRepository] = useState(
+    () =>
+      suppliedReaderPositionRepository ??
+      createWebStorageReaderPositionRepository(),
   );
   const subscribe = useCallback(
     (listener: () => void) => readerLifecycle.subscribe(listener),
@@ -112,14 +133,52 @@ export function App({
     useState<ReaderPreferencesV1>(DEFAULT_READER_PREFERENCES);
   const [rasterStatus, setRasterStatus] =
     useState<RasterImageProbeStatus>("idle");
+  const readyPublication =
+    viewState.status === "ready" ? viewState.publication : undefined;
+  const positionSaveCoordinator = useMemo(
+    () =>
+      readyPublication === undefined
+        ? undefined
+        : new ReaderPositionSaveCoordinator(
+            readyPublication,
+            readerPositionRepository,
+            readerPositionSaveEnvironment === undefined
+              ? {}
+              : { environment: readerPositionSaveEnvironment },
+          ),
+    [readerPositionRepository, readerPositionSaveEnvironment, readyPublication],
+  );
+  const activePositionSaveCoordinator = useRef<
+    ReaderPositionSaveCoordinator | undefined
+  >(undefined);
+  const closeActivePositionSaveCoordinator = useCallback((): void => {
+    const coordinator = activePositionSaveCoordinator.current;
+    activePositionSaveCoordinator.current = undefined;
+    void coordinator?.close();
+  }, []);
+
+  useEffect(() => {
+    if (positionSaveCoordinator === undefined) {
+      return;
+    }
+    activePositionSaveCoordinator.current = positionSaveCoordinator;
+    positionSaveCoordinator.start();
+    return () => {
+      if (activePositionSaveCoordinator.current === positionSaveCoordinator) {
+        activePositionSaveCoordinator.current = undefined;
+      }
+      void positionSaveCoordinator.close();
+    };
+  }, [positionSaveCoordinator]);
 
   useEffect(
     () => () => {
       activeRasterProbe.current?.abort();
       activeRasterProbe.current = undefined;
+      closeActivePositionSaveCoordinator();
       void readerLifecycle.cleanup();
     },
-    [readerLifecycle],
+    [closeActivePositionSaveCoordinator, readerLifecycle],
   );
 
   const handleRasterProbe = async (): Promise<void> => {
@@ -152,14 +211,36 @@ export function App({
       return;
     }
 
+    closeActivePositionSaveCoordinator();
     void readerLifecycle.open(file);
   };
   const handleReaderPreferencesChange = useCallback(
     (preferences: ReaderPreferencesV1): void => {
+      positionSaveCoordinator?.savePreferences(preferences);
       setReaderPreferences(preferences);
     },
-    [],
+    [positionSaveCoordinator],
   );
+  const handleActiveLocatorChange = useCallback(
+    (locator: ReadingLocatorV1): void => {
+      positionSaveCoordinator?.schedulePassive(locator);
+    },
+    [positionSaveCoordinator],
+  );
+  const handleSettledLocatorChange = useCallback(
+    (locator: ReadingLocatorV1): void => {
+      positionSaveCoordinator?.scheduleImmediate(locator);
+    },
+    [positionSaveCoordinator],
+  );
+  const handleClosePublication = useCallback((): void => {
+    closeActivePositionSaveCoordinator();
+    void readerLifecycle.close();
+  }, [closeActivePositionSaveCoordinator, readerLifecycle]);
+  const handleRenderingFailure = useCallback((): void => {
+    closeActivePositionSaveCoordinator();
+    readerLifecycle.failRendering();
+  }, [closeActivePositionSaveCoordinator, readerLifecycle]);
 
   const isBusy =
     viewState.status === "closing" || viewState.status === "opening";
@@ -209,7 +290,7 @@ export function App({
         {viewState.status === "ready" ? (
           <ReaderErrorBoundary
             key={viewState.publicationSequence}
-            onFailure={() => readerLifecycle.failRendering()}
+            onFailure={handleRenderingFailure}
           >
             <section
               className="publication-summary"
@@ -226,11 +307,13 @@ export function App({
                 publication={viewState.publication}
                 initialPreferences={readerPreferences}
                 onPreferencesChange={handleReaderPreferencesChange}
+                onActiveLocatorChange={handleActiveLocatorChange}
+                onSettledLocatorChange={handleSettledLocatorChange}
               />
               <button
                 type="button"
                 className="close-publication"
-                onClick={() => void readerLifecycle.close()}
+                onClick={handleClosePublication}
               >
                 Close EPUB
               </button>
@@ -250,7 +333,7 @@ export function App({
             <button
               type="button"
               className="close-publication"
-              onClick={() => void readerLifecycle.close()}
+              onClick={handleClosePublication}
             >
               Close EPUB
             </button>

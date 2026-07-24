@@ -29,6 +29,7 @@ import type {
   ActiveVisualLocatorEnvironment,
   VisualLocatorRect,
 } from "./active-visual-locator";
+import type { ReaderReflowEnvironment } from "./reader-reflow-restoration";
 import { ReaderPublicationContent } from "./ReaderPublication";
 import { ReaderNavigationCoordinator } from "./reader-navigation";
 import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
@@ -88,6 +89,44 @@ class ManualVisualLocatorEnvironment implements ActiveVisualLocatorEnvironment {
     const callback = this.#pending;
     this.#pending = undefined;
     callback?.();
+  }
+}
+
+class ManualReaderReflowEnvironment implements ReaderReflowEnvironment {
+  #scheduled: Array<() => void> = [];
+
+  viewportRect(): VisualLocatorRect {
+    return { top: 0, right: 240, bottom: 100, left: 0 };
+  }
+
+  rangeRect(): VisualLocatorRect {
+    return { top: 24, right: 120, bottom: 40, left: 10 };
+  }
+
+  elementRect(): VisualLocatorRect {
+    return { top: 24, right: 120, bottom: 40, left: 10 };
+  }
+
+  scrollBy(): void {}
+
+  schedule(_root: HTMLElement, callback: () => void): () => void {
+    this.#scheduled.push(callback);
+    return () => {
+      const index = this.#scheduled.indexOf(callback);
+      if (index >= 0) {
+        this.#scheduled.splice(index, 1);
+      }
+    };
+  }
+
+  observeViewport(): () => void {
+    return () => undefined;
+  }
+
+  flushAll(): void {
+    while (this.#scheduled.length > 0) {
+      this.#scheduled.shift()?.();
+    }
   }
 }
 
@@ -553,6 +592,7 @@ describe("navigable publication reader", () => {
     const onActiveLocatorChange = vi.fn((locator: ReadingLocatorV1): void => {
       activeLocators.push(locator);
     });
+    const onSettledLocatorChange = vi.fn();
     const storageWrite = vi.spyOn(Storage.prototype, "setItem");
     const publication = createPublication();
     publication.resolveLocator = vi.fn((input: unknown) => {
@@ -588,6 +628,7 @@ describe("navigable publication reader", () => {
         domRangeMapper={mapper}
         visualLocatorEnvironment={environment}
         onActiveLocatorChange={onActiveLocatorChange}
+        onSettledLocatorChange={onSettledLocatorChange}
       />,
     );
     const continuationControl = screen.getByRole("button", {
@@ -617,7 +658,35 @@ describe("navigable publication reader", () => {
       screen.getByRole("heading", { level: 1, name: "Continuation" }),
     ).toHaveFocus();
     expect(environment.scheduleCount).toBe(3);
+    expect(onSettledLocatorChange).toHaveBeenCalledTimes(1);
+    expect(onSettledLocatorChange).toHaveBeenCalledWith(
+      CONTINUATION_LOCATED_BLOCK.startLocator,
+    );
     expect(storageWrite).not.toHaveBeenCalled();
+  });
+
+  it("publishes the canonical locator only after preference reflow settles", () => {
+    const reflowEnvironment = new ManualReaderReflowEnvironment();
+    const onSettledLocatorChange = vi.fn();
+
+    render(
+      <ReaderPublicationContent
+        publication={createPublication()}
+        reflowEnvironment={reflowEnvironment}
+        onSettledLocatorChange={onSettledLocatorChange}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Text size"), {
+      target: { value: "large" },
+    });
+    expect(onSettledLocatorChange).not.toHaveBeenCalled();
+
+    act(() => reflowEnvironment.flushAll());
+
+    expect(onSettledLocatorChange).toHaveBeenCalledTimes(1);
+    expect(onSettledLocatorChange).toHaveBeenCalledWith(
+      OPENING_LOCATED_BLOCK.startLocator,
+    );
   });
 
   it("keeps package targets out of DOM identifiers, links, and browser history", () => {
