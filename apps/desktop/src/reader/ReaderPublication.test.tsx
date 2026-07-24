@@ -616,6 +616,27 @@ describe("navigable publication reader", () => {
     ).toHaveFocus();
   });
 
+  it("provides content-free keyboard skip and return links without changing browser history", () => {
+    const initialUrl = window.location.href;
+    render(<ReaderPublicationContent publication={createPublication()} />);
+
+    fireEvent.click(
+      screen.getByRole("link", { name: "Skip to reader content" }),
+    );
+    expect(
+      screen.getByRole("article", { name: "Current reading section" }),
+    ).toHaveFocus();
+    expect(window.location.href).toBe(initialUrl);
+
+    fireEvent.click(
+      screen.getByRole("link", { name: "Back to table of contents" }),
+    );
+    expect(
+      screen.getByRole("navigation", { name: "Table of contents" }),
+    ).toHaveFocus();
+    expect(window.location.href).toBe(initialUrl);
+  });
+
   it("replaces and cleans active-document DOM locator registrations", () => {
     const mapper = new SemanticDomRangeMapper();
     const rendered = render(
@@ -743,7 +764,7 @@ describe("navigable publication reader", () => {
     );
   });
 
-  it("keeps package targets out of DOM identifiers, links, and browser history", () => {
+  it("keeps package targets out of application-owned skip identifiers and browser history", () => {
     const initialUrl = window.location.href;
     const { container } = render(
       <ReaderPublicationContent publication={createPublication()} />,
@@ -751,9 +772,21 @@ describe("navigable publication reader", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Continuation" }));
 
-    expect(container.querySelector("a")).toBeNull();
-    expect(container.querySelector("[href]")).toBeNull();
-    expect(container.querySelector("[id]")).toBeNull();
+    expect(
+      Array.from(container.querySelectorAll("a")).map((link) =>
+        link.textContent?.trim(),
+      ),
+    ).toEqual(["Skip to reader content", "Back to table of contents"]);
+    expect(
+      Array.from(container.querySelectorAll("a")).every((link) =>
+        link.getAttribute("href")?.startsWith("#"),
+      ),
+    ).toBe(true);
+    expect(
+      Array.from(container.querySelectorAll("[id]")).every(
+        (element) => element.id !== CONTINUATION_FRAGMENT,
+      ),
+    ).toBe(true);
     expect(container.innerHTML).not.toContain(CONTINUATION_FRAGMENT);
     expect(window.location.href).toBe(initialUrl);
   });

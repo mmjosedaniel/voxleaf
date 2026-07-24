@@ -24,6 +24,11 @@ const executablePath = path.join(
 );
 const STARTUP_TIMEOUT_MS = 90_000;
 const OBSERVATION_WINDOW_MS = 500;
+const WEBDRIVER_TAB = "\uE004";
+const WEBDRIVER_ENTER = "\uE007";
+const WEBDRIVER_SPACE = "\uE00D";
+const WEBDRIVER_PAGE_DOWN = "\uE00F";
+const WEBDRIVER_END = "\uE010";
 const FIXED_FAILURE_CODES = new Map([
   ["Tauri WebDriver exited before startup.", "tauri-driver-exited"],
   ["Tauri WebDriver did not become ready.", "tauri-driver-timeout"],
@@ -66,6 +71,38 @@ const FIXED_FAILURE_CODES = new Map([
   [
     "Native saved-position restoration reached an unexpected safe state.",
     "synthetic-restoration-unexpected-state",
+  ],
+  [
+    "Native reader did not fit the approved narrow viewport.",
+    "synthetic-narrow-layout-failed",
+  ],
+  [
+    "Native reader skip or return navigation was not keyboard operable.",
+    "synthetic-keyboard-skip-failed",
+  ],
+  [
+    "Native reader did not preserve native scrolling-key behavior.",
+    "synthetic-native-scroll-key-failed",
+  ],
+  [
+    "Native reader navigation was not keyboard operable.",
+    "synthetic-keyboard-navigation-failed",
+  ],
+  [
+    "Native reader controls did not expose the approved keyboard order.",
+    "synthetic-keyboard-order-failed",
+  ],
+  [
+    "Native reader accessibility media behavior was unavailable.",
+    "synthetic-accessibility-media-failed",
+  ],
+  [
+    "Native reader zoom behavior was unavailable.",
+    "synthetic-zoom-layout-failed",
+  ],
+  [
+    "Native reader preferences were not persisted or restored.",
+    "synthetic-preferences-not-restored",
   ],
   ["Native application root did not mount.", "application-root-not-mounted"],
   [
@@ -129,6 +166,32 @@ async function reserveLoopbackPort() {
   server.close();
   await once(server, "close");
   return port;
+}
+
+async function resolveExecutablePath(executable) {
+  if (path.isAbsolute(executable)) {
+    return executable;
+  }
+
+  const searchDirectories = [
+    desktopRoot,
+    ...(process.env.PATH ?? "")
+      .split(path.delimiter)
+      .map((directory) => directory.replace(/^"|"$/gu, ""))
+      .filter((directory) => directory.length > 0),
+  ];
+
+  for (const directory of searchDirectories) {
+    const candidate = path.resolve(directory, executable);
+    try {
+      await access(candidate);
+      return candidate;
+    } catch {
+      // Continue through the bounded PATH entries.
+    }
+  }
+
+  return executable;
 }
 
 async function waitForDriver(endpoint, child, spawnState) {
@@ -232,6 +295,241 @@ async function observeSavedPositionRestoration(driver) {
   return observation;
 }
 
+async function exerciseNativeReaderInteractionMatrix(driver) {
+  await driver.setWindowRect(320, 640);
+  await waitForCondition(
+    driver,
+    `return window.innerWidth <= 360 && window.innerHeight <= 680;`,
+  );
+  const narrowLayout = await driver.execute(
+    `const reader = document.querySelector(".semantic-reader");
+     const article = document.querySelector(".semantic-document");
+     const controls = document.querySelector(".reader-preferences");
+     const bounds = [reader, article, controls].map((element) =>
+       element?.getBoundingClientRect(),
+     );
+     return {
+       innerWidth: window.innerWidth,
+       fits:
+         window.innerWidth >= 300 &&
+         document.documentElement.scrollWidth <= window.innerWidth &&
+         bounds.every(
+           (rect) =>
+             rect !== undefined &&
+             rect.left >= -0.5 &&
+             rect.right <= window.innerWidth + 0.5,
+         ),
+     };`,
+  );
+  assert(
+    narrowLayout?.fits === true,
+    "Native reader did not fit the approved narrow viewport.",
+  );
+
+  const initialUrl = await driver.execute(`return window.location.href;`);
+  const skipLink = await driver.findElement("a.reader-skip-link");
+  await driver.sendKeys(skipLink, WEBDRIVER_ENTER);
+  await waitForCondition(
+    driver,
+    `return document.activeElement?.matches(
+       'article.semantic-document[aria-label="Current reading section"]',
+     ) === true;`,
+  );
+  assert(
+    (await driver.execute(`return window.location.href;`)) === initialUrl,
+    "Native reader skip or return navigation was not keyboard operable.",
+  );
+
+  const article = await driver.findElement("article.semantic-document");
+  const scrollBefore = await driver.execute(`return window.scrollY;`);
+  await driver.sendKeys(article, WEBDRIVER_PAGE_DOWN);
+  await waitForCondition(
+    driver,
+    `return window.scrollY > ${Number(scrollBefore)};`,
+  );
+  assert(
+    (await driver.execute(
+      `return document.activeElement?.matches(
+         'article.semantic-document[aria-label="Current reading section"]',
+       ) === true;`,
+    )) === true,
+    "Native reader did not preserve native scrolling-key behavior.",
+  );
+
+  const returnLink = await driver.findElement("a.reader-return-link");
+  await driver.sendKeys(returnLink, WEBDRIVER_ENTER);
+  await waitForCondition(
+    driver,
+    `return document.activeElement?.matches(
+       'nav.reader-toc[aria-label="Table of contents"]',
+     ) === true;`,
+  );
+  assert(
+    (await driver.execute(`return window.location.href;`)) === initialUrl,
+    "Native reader skip or return navigation was not keyboard operable.",
+  );
+
+  await driver.sendKeys(skipLink, WEBDRIVER_TAB);
+  const textScaleControl = await driver.findElement('select[name="textScale"]');
+  assert(
+    (await driver.execute(
+      `return document.activeElement?.getAttribute("name") === "textScale";`,
+    )) === true,
+    "Native reader controls did not expose the approved keyboard order.",
+  );
+  await driver.sendKeys(textScaleControl, WEBDRIVER_END);
+  await waitForCondition(
+    driver,
+    `return document.querySelector('select[name="textScale"]')?.value ===
+       "extra-large";`,
+  );
+  let activeControl = textScaleControl;
+  for (const expectedName of ["lineSpacing", "contentWidth", "theme"]) {
+    await driver.sendKeys(activeControl, WEBDRIVER_TAB);
+    assert(
+      (await driver.execute(
+        `return document.activeElement?.getAttribute("name") ===
+           ${JSON.stringify(expectedName)};`,
+      )) === true,
+      "Native reader controls did not expose the approved keyboard order.",
+    );
+    activeControl = await driver.findElement(`select[name="${expectedName}"]`);
+  }
+
+  const tocLinks = await driver.findElements("button.reader-toc-link");
+  assert(
+    tocLinks.length >= 2,
+    "Native reader navigation was not keyboard operable.",
+  );
+  await driver.sendKeys(tocLinks[1], WEBDRIVER_ENTER);
+  await waitForCondition(
+    driver,
+    `return Array.from(document.querySelectorAll("h1")).some(
+       (heading) =>
+         heading.textContent === "Continuation" &&
+         document.activeElement === heading,
+     );`,
+  );
+  const previousChapter = await driver.findElement(
+    ".reader-chapter-controls button:first-child",
+  );
+  await driver.sendKeys(previousChapter, WEBDRIVER_SPACE);
+  await waitForCondition(
+    driver,
+    `return Array.from(document.querySelectorAll("h1")).some(
+       (heading) =>
+         heading.textContent === "Opening" &&
+         document.activeElement === heading,
+     );`,
+  );
+
+  assert(
+    (await driver.execute(
+      `const values = {
+         textScale: "extra-large",
+         lineSpacing: "spacious",
+         contentWidth: "narrow",
+         theme: "system",
+       };
+       for (const [name, value] of Object.entries(values)) {
+         const control = document.querySelector(\`select[name="\${name}"]\`);
+         if (!(control instanceof HTMLSelectElement)) {
+           return false;
+         }
+         control.value = value;
+         control.dispatchEvent(new Event("change", { bubbles: true }));
+       }
+       return true;`,
+    )) === true,
+    "Native reader preferences were not persisted or restored.",
+  );
+  await waitForCondition(
+    driver,
+    `const serialized = localStorage.getItem("voxleaf.reader.preferences");
+     if (serialized === null) {
+       return false;
+     }
+     const preferences = JSON.parse(serialized);
+     return preferences?.textScale === "extra-large" &&
+       preferences?.lineSpacing === "spacious" &&
+       preferences?.contentWidth === "narrow" &&
+       preferences?.theme === "system";`,
+  );
+
+  await driver.executeCdp("Emulation.setEmulatedMedia", {
+    media: "",
+    features: [
+      { name: "prefers-color-scheme", value: "dark" },
+      { name: "prefers-reduced-motion", value: "reduce" },
+      { name: "forced-colors", value: "active" },
+    ],
+  });
+  const accessibilityMedia = await driver.execute(
+    `const reader = document.querySelector(".semantic-reader");
+     const navigation = document.querySelector(".reader-toc");
+     if (!(reader instanceof HTMLElement) ||
+         !(navigation instanceof HTMLElement)) {
+       return undefined;
+     }
+     navigation.focus({ preventScroll: true });
+     const focusStyle = getComputedStyle(navigation);
+     return {
+       dark: matchMedia("(prefers-color-scheme: dark)").matches,
+       forcedColors: matchMedia("(forced-colors: active)").matches,
+       reducedMotion: matchMedia(
+         "(prefers-reduced-motion: reduce)",
+       ).matches,
+       colorScheme: getComputedStyle(reader).colorScheme,
+       transitionDuration: getComputedStyle(reader).transitionDuration,
+       outlineStyle: focusStyle.outlineStyle,
+       outlineWidth: Number.parseFloat(focusStyle.outlineWidth),
+     };`,
+  );
+  assert(
+    accessibilityMedia?.dark === true &&
+      accessibilityMedia.forcedColors === true &&
+      accessibilityMedia.reducedMotion === true &&
+      accessibilityMedia.colorScheme.includes("dark") &&
+      accessibilityMedia.transitionDuration === "0s" &&
+      accessibilityMedia.outlineStyle !== "none" &&
+      accessibilityMedia.outlineWidth > 0,
+    "Native reader accessibility media behavior was unavailable.",
+  );
+  await driver.executeCdp("Emulation.setPageScaleFactor", {
+    pageScaleFactor: 1.25,
+  });
+  const zoomedLayout = await driver.execute(
+    `const article = document.querySelector(".semantic-document");
+     return {
+       articleFits:
+         article instanceof HTMLElement &&
+         article.getBoundingClientRect().right <= window.innerWidth + 0.5,
+       documentFits:
+         document.documentElement.scrollWidth <= window.innerWidth,
+       focusPreserved:
+         document.activeElement?.matches(
+           'nav.reader-toc[aria-label="Table of contents"]',
+         ) === true,
+       scale: window.visualViewport?.scale ?? 1,
+     };`,
+  );
+  assert(
+    zoomedLayout?.articleFits === true &&
+      zoomedLayout.documentFits === true &&
+      zoomedLayout.focusPreserved === true &&
+      zoomedLayout.scale >= 1.24,
+    "Native reader zoom behavior was unavailable.",
+  );
+  await driver.executeCdp("Emulation.setPageScaleFactor", {
+    pageScaleFactor: 1,
+  });
+  await driver.executeCdp("Emulation.setEmulatedMedia", {
+    media: "",
+    features: [],
+  });
+  await driver.setWindowRect(960, 720);
+}
+
 function inspectPerformanceLogs(logs) {
   let externalRequestCount = 0;
   let runtimeErrorCount = 0;
@@ -314,10 +612,12 @@ async function run() {
   const driverPort = await reserveLoopbackPort();
   const nativeDriverPort = await reserveLoopbackPort();
   const endpoint = `http://127.0.0.1:${driverPort}`;
-  const tauriDriverPath =
-    process.env.VOXLEAF_TAURI_DRIVER_PATH ?? "tauri-driver.exe";
-  const edgeDriverPath =
-    process.env.VOXLEAF_EDGE_DRIVER_PATH ?? "msedgedriver.exe";
+  const tauriDriverPath = await resolveExecutablePath(
+    process.env.VOXLEAF_TAURI_DRIVER_PATH ?? "tauri-driver.exe",
+  );
+  const edgeDriverPath = await resolveExecutablePath(
+    process.env.VOXLEAF_EDGE_DRIVER_PATH ?? "msedgedriver.exe",
+  );
   const child = spawn(
     tauriDriverPath,
     [
@@ -450,16 +750,18 @@ async function run() {
       "Native application exposed the synthetic fixture filename.",
     );
 
+    stage = "native reader interaction matrix";
+    await exerciseNativeReaderInteractionMatrix(driver);
+
     stage = "synthetic restoration seed navigation";
+    const restorationSeedLinks = await driver.findElements(
+      "button.reader-toc-link",
+    );
     assert(
-      (await driver.execute(
-        `const destination = Array.from(document.querySelectorAll("button"))
-           .find((button) => button.textContent === "Continuation");
-         destination?.click();
-         return destination !== undefined;`,
-      )) === true,
+      restorationSeedLinks.length >= 2,
       "Native application did not persist the synthetic continuation locator.",
     );
+    await driver.sendKeys(restorationSeedLinks[1], WEBDRIVER_ENTER);
     await waitForCondition(
       driver,
       `return Array.from(document.querySelectorAll("h1")).some(
@@ -491,6 +793,7 @@ async function run() {
       driver.executeCdp("Runtime.enable"),
       driver.executeCdp("Network.enable"),
     ]);
+    await driver.setWindowRect(320, 640);
     await waitForCondition(
       driver,
       `const root = document.querySelector("#root");
@@ -501,6 +804,11 @@ async function run() {
     );
     stage = "synthetic restart file injection";
     const restartFileInput = await driver.findElement('input[type="file"]');
+    await driver.execute(
+      `document.querySelector('input[type="file"]')
+         ?.focus({ preventScroll: true });
+       return true;`,
+    );
     await driver.sendKeys(restartFileInput, fixturePath);
     stage = "synthetic saved-position restoration";
     const restorationObservation =
@@ -539,11 +847,32 @@ async function run() {
     );
     assert(
       (await driver.execute(
-        `const continuation = Array.from(document.querySelectorAll("h1"))
-           .find((heading) => heading.textContent === "Continuation");
-         return document.activeElement !== continuation;`,
+        `return document.activeElement ===
+           document.querySelector('input[type="file"]');`,
       )) === true,
       "Native saved-position restoration moved keyboard focus.",
+    );
+    assert(
+      (await driver.execute(
+        `const reader = document.querySelector(".semantic-reader");
+         const serialized = localStorage.getItem(
+           "voxleaf.reader.preferences",
+         );
+         if (!(reader instanceof HTMLElement) || serialized === null) {
+           return false;
+         }
+         const preferences = JSON.parse(serialized);
+         return preferences?.textScale === "extra-large" &&
+           preferences?.lineSpacing === "spacious" &&
+           preferences?.contentWidth === "narrow" &&
+           preferences?.theme === "system" &&
+           reader.dataset.readerTextScale === "extra-large" &&
+           reader.dataset.readerLineSpacing === "spacious" &&
+           reader.dataset.readerContentWidth === "narrow" &&
+           reader.dataset.readerTheme === "system" &&
+           document.documentElement.scrollWidth <= window.innerWidth;`,
+      )) === true,
+      "Native reader preferences were not persisted or restored.",
     );
 
     stage = "synthetic publication close";
@@ -600,7 +929,7 @@ async function run() {
     );
 
     console.log(
-      "Native startup smoke passed: root mounted, synthetic EPUB image decoded locally, exact position survived restart/reselection, publication closed, no errors, no external requests.",
+      "Native startup smoke passed: root mounted, narrow and accessible keyboard reader matrix passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication closed, no errors, no external requests.",
     );
   } catch (error) {
     console.error(

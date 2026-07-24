@@ -74,6 +74,7 @@ test("creates a Tauri session and sends bounded WebDriver commands", async () =>
     const element = await client.findElement("#root");
     await client.sendKeys(element, "C:\\fixed\\synthetic.epub");
     await client.execute("return true;");
+    await client.setWindowRect(320, 640);
     await client.executeCdp("Network.enable");
     await client.deleteSession();
     assert.equal(client.hasSession, false);
@@ -99,6 +100,15 @@ test("creates a Tauri session and sends bounded WebDriver commands", async () =>
       text: "C:\\fixed\\synthetic.epub",
       value: Array.from("C:\\fixed\\synthetic.epub"),
     });
+    assert.equal(
+      fake.requests.some(
+        ({ body, path }) =>
+          path === "/session/fixed-session/window/rect" &&
+          body?.width === 320 &&
+          body?.height === 640,
+      ),
+      true,
+    );
     assert.equal(
       fake.requests.some(
         ({ path }) => path === "/session/fixed-session/ms/cdp/execute",

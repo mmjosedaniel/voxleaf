@@ -119,6 +119,13 @@ export class WebDriverClient {
     });
   }
 
+  async setWindowRect(width, height) {
+    await this.#sessionRequest("POST", "/window/rect", {
+      width,
+      height,
+    });
+  }
+
   async execute(script, args = []) {
     return await this.#sessionRequest("POST", "/execute/sync", {
       args,
