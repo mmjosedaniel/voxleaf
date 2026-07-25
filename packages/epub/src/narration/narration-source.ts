@@ -1,4 +1,4 @@
-import { decodeLocatorRangeV1 } from "@voxleaf/shared";
+import { createIndex, decodeLocatorRangeV1 } from "@voxleaf/shared";
 import type { Index, LocatorRangeV1 } from "@voxleaf/shared";
 
 import { EpubArchiveError } from "../archive/archive-error.js";
@@ -17,6 +17,7 @@ import type {
 } from "./narration-source-projector.js";
 
 const LOCATOR_RANGE_SCHEMA_VERSION = 1;
+const ZERO_INDEX = createIndex(0);
 
 export interface NarrationSourceSpan {
   readonly startOffsetCodePoints: Index;
@@ -64,6 +65,8 @@ export type NarrationSourceTokenPosition =
 interface NarrationSourceTokenLeafEventBase {
   readonly kind: "leaf";
   readonly locatedBlock: PublicationLocatedBlock;
+  readonly sourceStartOffsetCodePoints: Index;
+  readonly sourceEndOffsetCodePoints: Index;
   readonly sourceCodePoints: Index;
   readonly sourceTokens: readonly NarrationSourceToken[];
   readonly structuralContext: NarrationSourceStructuralContext;
@@ -256,6 +259,8 @@ function tokenizeLeaf(
   const common = {
     kind: "leaf" as const,
     locatedBlock: event.locatedBlock,
+    sourceStartOffsetCodePoints: ZERO_INDEX,
+    sourceEndOffsetCodePoints: event.sourceCodePoints,
     sourceCodePoints: event.sourceCodePoints,
     sourceTokens: Object.freeze(sourceTokens),
     structuralContext: event.structuralContext,

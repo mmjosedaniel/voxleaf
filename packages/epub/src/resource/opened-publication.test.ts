@@ -6,6 +6,7 @@ import {
 import {
   createIndex,
   decodeBookV1,
+  decodeOperationalErrorV1,
   decodeReadingLocatorV1,
 } from "@voxleaf/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -394,6 +395,303 @@ describe("bounded local publication resources", () => {
     await publication.close();
     expect(archive.closeCount).toBe(1);
   });
+
+  it("publishes frozen prepared batches through the public opened handle and continues without repetition", async () => {
+    const archive = await openEpubArchive(await createArchive({}));
+    const values = narrationTextPublicationValues(
+      ["Primera frase.", "Segunda frase.", "Tercera frase."],
+      async () => undefined,
+    );
+    const publication = createOpenedPublication(
+      archive,
+      createPackageDocument([]),
+      values,
+    );
+    const firstStart = requiredLocatedBlock(
+      values.locatorIndex.blocks[0],
+    ).startLocator;
+
+    try {
+      const first = await publication.prepareNarration({
+        startLocator: firstStart,
+        profile: "narration-v1",
+        defaultLanguage: "es",
+        maximumSegments: 1,
+      });
+      expect(first.status).toBe("batch");
+      if (first.status !== "batch") {
+        throw new Error("expected first public narration batch");
+      }
+      expect(first.segments).toHaveLength(1);
+      expect(first.start.segmentRelation).toBe("at-segment-start");
+      expect(first.continuation).toEqual(first.segments[0]?.sourceRange.end);
+      expect(Object.isFrozen(first)).toBe(true);
+      expect(Object.isFrozen(first.start)).toBe(true);
+      expect(Object.isFrozen(first.segments)).toBe(true);
+      expect(Object.isFrozen(first.measurements)).toBe(true);
+
+      const second = await publication.prepareNarration({
+        startLocator: first.continuation,
+        profile: "narration-v1",
+        defaultLanguage: "es",
+        maximumSegments: 1,
+      });
+      expect(second.status).toBe("batch");
+      if (second.status !== "batch") {
+        throw new Error("expected second public narration batch");
+      }
+      expect(second.segments[0]?.sourceRange).not.toEqual(
+        first.segments[0]?.sourceRange,
+      );
+
+      const final = await publication.prepareNarration({
+        startLocator: second.continuation,
+        profile: "narration-v1",
+        defaultLanguage: "es",
+        maximumSegments: 1,
+      });
+      expect(final.status).toBe("complete");
+      if (final.status !== "complete") {
+        throw new Error("expected final public narration batch");
+      }
+      expect(final.segments).toHaveLength(1);
+      expect(final).not.toHaveProperty("continuation");
+    } finally {
+      await publication.close();
+    }
+  });
+
+  it("returns the complete stable containing segment for an interior start", async () => {
+    const archive = await openEpubArchive(await createArchive({}));
+    const values = narrationTextPublicationValues(
+      ["Primera frase sintética. Segunda frase sintética."],
+      async () => undefined,
+    );
+    const publication = createOpenedPublication(
+      archive,
+      createPackageDocument([]),
+      values,
+    );
+    const block = requiredLocatedBlock(values.locatorIndex.blocks[0]);
+    const interior = decodeReadingLocatorV1({
+      ...block.startLocator,
+      textOffsetCodePoints: 12,
+    });
+
+    try {
+      const result = await publication.prepareNarration({
+        startLocator: interior,
+        profile: "narration-v1",
+        defaultLanguage: "es",
+        maximumSegments: 16,
+      });
+      expect(result.status).toBe("complete");
+      if (result.status !== "complete") {
+        throw new Error("expected complete containing segment");
+      }
+      expect(result.start).toMatchObject({
+        canonicalLocator: interior,
+        resolutionStatus: "exact",
+        resolutionReason: "exact",
+        segmentRelation: "inside-segment",
+      });
+      expect(result.segments[0]?.sourceRange.start).toEqual(block.startLocator);
+      expect(result.segments[0]?.sourceRange.end.textOffsetCodePoints).toBe(
+        block.textLengthCodePoints,
+      );
+    } finally {
+      await publication.close();
+    }
+  });
+
+  it("reconstructs a stable interior segment across bounded source windows", async () => {
+    const archive = await openEpubArchive(await createArchive({}));
+    const text = "a. ".repeat(2_000);
+    const values = narrationTextPublicationValues(
+      [text],
+      async () => undefined,
+    );
+    const publication = createOpenedPublication(
+      archive,
+      createPackageDocument([]),
+      values,
+    );
+    const block = requiredLocatedBlock(values.locatorIndex.blocks[0]);
+    const interiorOffset = 4_501;
+    const interior = decodeReadingLocatorV1({
+      ...block.startLocator,
+      textOffsetCodePoints: interiorOffset,
+    });
+
+    try {
+      const result = await publication.prepareNarration({
+        startLocator: interior,
+        profile: "narration-v1",
+        defaultLanguage: "und",
+        maximumSegments: 1,
+      });
+      expect(result.status).toBe("batch");
+      if (result.status !== "batch") {
+        throw new Error("expected bounded interior narration batch");
+      }
+      const segment = result.segments[0];
+      if (segment === undefined) {
+        throw new Error("expected stable interior segment");
+      }
+      expect(
+        segment.sourceRange.start.textOffsetCodePoints,
+      ).toBeLessThanOrEqual(interiorOffset);
+      expect(segment.sourceRange.end.textOffsetCodePoints).toBeGreaterThan(
+        interiorOffset,
+      );
+      expect(result.start.segmentRelation).toBe("inside-segment");
+      expect(result.measurements.sourceCodePointsInspected).toBeLessThanOrEqual(
+        NARRATION_V1_SOURCE_WINDOW_POLICY.sourceCodePointsInspectedHardMaximum,
+      );
+    } finally {
+      await publication.close();
+    }
+  });
+
+  it("returns closed content-free failures for invalid requests, cancellation, and post-close calls", async () => {
+    const archive = await openEpubArchive(await createArchive({}));
+    const values = narrationTextPublicationValues(
+      ["Canario sintético privado."],
+      async () => undefined,
+    );
+    const publication = createOpenedPublication(
+      archive,
+      createPackageDocument([]),
+      values,
+    );
+    const start = requiredLocatedBlock(
+      values.locatorIndex.blocks[0],
+    ).startLocator;
+
+    const invalid = await publication.prepareNarration({
+      startLocator: start,
+      profile: "narration-v1",
+      defaultLanguage: "es",
+      maximumSegments: 17,
+    });
+    expect(invalid.status).toBe("invalid-request");
+    if (invalid.status !== "invalid-request") {
+      throw new Error("expected invalid narration request");
+    }
+    expect(decodeOperationalErrorV1(invalid.error)).toEqual(invalid.error);
+    expect(invalid.error.code).toBe("invalid-input");
+    expect(Object.isFrozen(invalid)).toBe(true);
+    expect(JSON.stringify(invalid)).not.toContain("Canario");
+
+    const invalidSignal = await publication.prepareNarration({
+      startLocator: start,
+      profile: "narration-v1",
+      defaultLanguage: "es",
+      maximumSegments: 1,
+      signal: {
+        aborted: false,
+        addEventListener: () => {
+          throw new Error("private-canary");
+        },
+        removeEventListener: () => undefined,
+      } as unknown as AbortSignal,
+    });
+    expect(invalidSignal.status).toBe("invalid-request");
+    expect(JSON.stringify(invalidSignal)).not.toContain("private-canary");
+
+    const invalidStart = await publication.prepareNarration({
+      startLocator: { privateCanary: "Canario sintético privado." },
+      profile: "narration-v1",
+      defaultLanguage: "es",
+      maximumSegments: 1,
+    });
+    expect(invalidStart.status).toBe("invalid-start");
+    if (invalidStart.status !== "invalid-start") {
+      throw new Error("expected invalid narration start");
+    }
+    expect(invalidStart.error.code).toBe("invalid-input");
+    expect(JSON.stringify(invalidStart)).not.toContain("Canario");
+
+    const controller = new AbortController();
+    controller.abort("private-canary");
+    const cancelled = await publication.prepareNarration({
+      startLocator: start,
+      profile: "narration-v1",
+      defaultLanguage: "es",
+      maximumSegments: 1,
+      signal: controller.signal,
+    });
+    expect(cancelled.status).toBe("cancelled");
+    if (cancelled.status !== "cancelled") {
+      throw new Error("expected cancelled narration request");
+    }
+    expect(cancelled.error.code).toBe("operation-cancelled");
+    expect(JSON.stringify(cancelled)).not.toContain("private-canary");
+
+    const retry = await publication.prepareNarration({
+      startLocator: start,
+      profile: "narration-v1",
+      defaultLanguage: "es",
+      maximumSegments: 1,
+    });
+    expect(retry.status).toBe("complete");
+
+    await publication.close();
+    const closed = await publication.prepareNarration({
+      startLocator: start,
+      profile: "narration-v1",
+      defaultLanguage: "es",
+      maximumSegments: 1,
+    });
+    expect(closed.status).toBe("internal-failure");
+    if (closed.status !== "internal-failure") {
+      throw new Error("expected post-close narration failure");
+    }
+    expect(closed.error.code).toBe("internal-failure");
+  });
+
+  it("shares one public narration slot, overlaps raster reads, and close cancels stale preparation", async () => {
+    const archive = new DeferredArchive();
+    const deferred = createDeferredYieldScheduler();
+    const values = narrationPublicationValues(
+      NARRATION_V1_SOURCE_WINDOW_POLICY.retainedTokenEntriesHardMaximum + 1,
+      deferred.scheduler,
+    );
+    const publication = createOpenedPublication(
+      archive,
+      createSingleImagePackage("image/png", "EPUB/images/deferred.png"),
+      values,
+    );
+    const start = requiredLocatedBlock(
+      values.locatorIndex.blocks[0],
+    ).startLocator;
+    const request = {
+      startLocator: start,
+      profile: "narration-v1" as const,
+      defaultLanguage: "und" as const,
+      maximumSegments: 1,
+    };
+    const active = publication.prepareNarration(request);
+    await deferred.started;
+
+    const concurrent = await publication.prepareNarration(request);
+    expect(concurrent.status).toBe("operation-active");
+    if (concurrent.status !== "operation-active") {
+      throw new Error("expected active narration failure");
+    }
+    expect(concurrent.error.code).toBe("resource-exhausted");
+
+    const read = publication.readResource(imageId(2));
+    const close = publication.close();
+    expect(publication.closed).toBe(true);
+    expect(archive.closeCount).toBe(0);
+
+    deferred.release();
+    await expect(active).resolves.toMatchObject({ status: "cancelled" });
+    await expectResourcePromiseError(read, "cancelled");
+    await close;
+    expect(archive.closeCount).toBe(1);
+  });
 });
 
 class DeferredArchive implements OpenedEpubArchive {
@@ -602,38 +900,52 @@ function narrationPublicationValues(
   sourceCodePoints: number,
   narrationYieldScheduler: NarrationYieldScheduler,
 ) {
+  return narrationTextPublicationValues(
+    ["n".repeat(sourceCodePoints)],
+    narrationYieldScheduler,
+  );
+}
+
+function narrationTextPublicationValues(
+  texts: readonly string[],
+  narrationYieldScheduler: NarrationYieldScheduler,
+) {
   const base = publicationValues();
   const spine = base.book.spine[0];
   if (spine === undefined) {
     throw new Error("synthetic narration publication requires one spine");
   }
-  const block = Object.freeze({
-    kind: "paragraph" as const,
-    children: Object.freeze([
-      Object.freeze({
-        kind: "text" as const,
-        text: "n".repeat(sourceCodePoints) as SensitivePublicationText,
-      }),
-    ]),
-  });
-  const locatedBlock: PublicationLocatedBlock = Object.freeze({
-    documentId: "document:0" as ContentDocumentId,
-    block,
-    startLocator: decodeReadingLocatorV1({
-      schemaVersion: 1,
-      bookIdentity: base.book.identity,
-      spineItemId: spine.id,
-      spineItemIndex: spine.index,
-      anchor: {
-        kind: "element-id",
-        formatVersion: 1,
-        value: "voxleaf-s0-a0",
-        anchorIndex: 0,
-      },
-      textOffsetCodePoints: 0,
+  const locatedBlocks = Object.freeze(
+    texts.map((text, index) => {
+      const block = Object.freeze({
+        kind: "paragraph" as const,
+        children: Object.freeze([
+          Object.freeze({
+            kind: "text" as const,
+            text: text as SensitivePublicationText,
+          }),
+        ]),
+      });
+      return Object.freeze({
+        documentId: "document:0" as ContentDocumentId,
+        block,
+        startLocator: decodeReadingLocatorV1({
+          schemaVersion: 1,
+          bookIdentity: base.book.identity,
+          spineItemId: spine.id,
+          spineItemIndex: spine.index,
+          anchor: {
+            kind: "element-id",
+            formatVersion: 1,
+            value: `voxleaf-s0-a${String(index)}`,
+            anchorIndex: index,
+          },
+          textOffsetCodePoints: 0,
+        }),
+        textLengthCodePoints: createIndex(Array.from(text).length),
+      } satisfies PublicationLocatedBlock);
     }),
-    textLengthCodePoints: createIndex(sourceCodePoints),
-  });
+  );
   return Object.freeze({
     ...base,
     locatorIndex: Object.freeze({
@@ -642,10 +954,10 @@ function narrationPublicationValues(
         Object.freeze({
           spineItemId: spine.id,
           spineItemIndex: spine.index,
-          blocks: Object.freeze([locatedBlock]),
+          blocks: locatedBlocks,
         }),
       ]),
-      blocks: Object.freeze([locatedBlock]),
+      blocks: locatedBlocks,
     }),
     narrationYieldScheduler,
   });

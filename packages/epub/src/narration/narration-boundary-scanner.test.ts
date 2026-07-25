@@ -222,13 +222,19 @@ describe("narration boundary scanner", () => {
     expect(headingScan.block).toEqual({
       blockKind: "heading",
       headingLevel: 2,
+      blockSourceCodePoints: codePointLength("Capítulo"),
       sourceCodePoints: codePointLength("Capítulo"),
+      sourceEndOffsetCodePoints: codePointLength("Capítulo"),
+      sourceStartOffsetCodePoints: 0,
       structuralContext: { quoteDepth: 0, listPath: [] },
       textContext: { inlineContainers: [] },
     });
     expect(nestedScan.block).toEqual({
       blockKind: "paragraph",
+      blockSourceCodePoints: codePointLength("—Respuesta sintética."),
       sourceCodePoints: codePointLength("—Respuesta sintética."),
+      sourceEndOffsetCodePoints: codePointLength("—Respuesta sintética."),
+      sourceStartOffsetCodePoints: 0,
       structuralContext: {
         quoteDepth: 1,
         listPath: [{ ordered: true, itemIndex: 0 }],

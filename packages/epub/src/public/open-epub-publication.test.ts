@@ -205,6 +205,20 @@ describe("public privacy-safe EPUB opening", () => {
         locator: first.startLocator,
         locatedBlock: first,
       });
+      const narration = await publication.prepareNarration({
+        startLocator: first.startLocator,
+        profile: "narration-v1",
+        defaultLanguage: "und",
+        maximumSegments: 16,
+      });
+      expect(narration.status).toBe("complete");
+      if (narration.status !== "complete") {
+        throw new Error("expected public narration preparation to complete");
+      }
+      expect(narration.segments.length).toBeGreaterThan(0);
+      expect(narration.segments[0]?.sourceRange.start).toEqual(
+        first.startLocator,
+      );
       const navigationLink = publication.navigation[0];
       if (navigationLink?.kind !== "link") {
         throw new Error("expected one navigation link");

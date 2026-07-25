@@ -41,3 +41,18 @@ export const NARRATION_V1_SEGMENT_POLICY = Object.freeze({
   retainedNarrationCodePointsHardMaximum: 8_832,
   retainedNarrationUtf8BytesHardMaximum: 26_624,
 });
+
+/**
+ * Public batch targets and hard ceilings. Requested batch size affects only
+ * how many already-stable segments are returned.
+ */
+export const NARRATION_V1_BATCH_POLICY = Object.freeze({
+  segmentsTarget: 8,
+  segmentsHardMaximum: 16,
+  narrationCodePointsTarget: 2_560,
+  narrationCodePointsHardMaximum: 8_192,
+  narrationUtf8BytesTarget: 8_192,
+  narrationUtf8BytesHardMaximum: 24_576,
+  sentencesTarget: 24,
+  sentencesHardMaximum: 64,
+});

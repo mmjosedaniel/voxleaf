@@ -32,6 +32,7 @@ function createTestPublication(): OpenedPublication {
     readResource: vi.fn(),
     resolveLocator: vi.fn(),
     resolveTarget: vi.fn(),
+    prepareNarration: vi.fn<OpenedPublication["prepareNarration"]>(),
     close: vi.fn(() => Promise.resolve()),
   };
 }

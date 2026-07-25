@@ -57,10 +57,21 @@ canonical half-open `LocatorRangeV1` values, the closed boundary reason,
 content-free size measurements, completion, and an exact source continuation.
 Every endpoint is constructed through the existing package locator owner and
 shared decoder; test-only work identities prove `NarrationSegmentV1`
-compatibility without production identity generation or a schema change. The
-public `prepareNarration` result remains unimplemented. No runtime dependency,
-shared schema, desktop integration, TTS behavior, audio behavior, persistence,
-or capability was added.
+compatibility without production identity generation or a schema change. Task
+5.1 adds the public package-local request, prepared-segment, batch, and closed
+result types; exports them without adding another root-level runtime opener;
+and exposes `OpenedPublication.prepareNarration`. The coordinator validates the
+closed `narration-v1` request, reconstructs stable segmentation when a start is
+inside a bounded source window, returns the complete containing segment,
+publishes continuation at the final returned segment end, and enforces the
+independent 16-segment, 8,192-code-point, 24,576-byte, and 64-sentence batch
+ceilings while retaining at most one lookahead segment. Invalid input,
+cancellation, concurrent use, resource exhaustion, close, and unexpected
+failure return frozen content-free outcomes under the existing publication
+lifecycle. No runtime dependency, shared schema, desktop integration, TTS
+behavior, audio behavior, persistence, network access, or capability was added.
+Tasks 5.2-5.3 still own the broader synthetic integration matrix and
+deterministic resource proof.
 
 ## Context
 
@@ -476,7 +487,10 @@ Those decisions remain with roadmap Milestones 6 through 9.
   cancellation before result publication. Task 4.4 adds canonical block-local
   prepared ranges, exact source continuation, deep immutability, and
   compatibility evidence for the unchanged shared narration-segment contract;
-  public integration still requires later tasks.
+  Task 5.1 adds the accepted public operation, containing-segment relation,
+  final batch continuation, independent batch ceilings, closed result mapping,
+  and publication-owned cancellation/concurrency/close integration. The
+  broader integration and exact-bound proof remain Tasks 5.2-5.3.
 
 ## Alternatives considered
 

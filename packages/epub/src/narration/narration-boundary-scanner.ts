@@ -66,6 +66,9 @@ export interface NarrationProtectedToken {
 export interface NarrationBoundaryBlockMetadata {
   readonly blockKind: "heading" | "paragraph";
   readonly headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
+  readonly blockSourceCodePoints: Index;
+  readonly sourceStartOffsetCodePoints: Index;
+  readonly sourceEndOffsetCodePoints: Index;
   readonly sourceCodePoints: Index;
   readonly structuralContext: NarrationSourceStructuralContext;
   readonly textContext: NarrationSourceTextContext;
@@ -224,8 +227,26 @@ function copyStructuralContext(
 function copyBlockMetadata(
   source: NarrationSourceTokenLeafEvent,
 ): NarrationBoundaryBlockMetadata {
+  const sourceStartOffsetCodePoints = source.sourceStartOffsetCodePoints;
+  const sourceEndOffsetCodePoints = source.sourceEndOffsetCodePoints;
+  const sourceCodePoints = source.sourceCodePoints;
+  if (
+    !Number.isSafeInteger(sourceStartOffsetCodePoints) ||
+    !Number.isSafeInteger(sourceEndOffsetCodePoints) ||
+    !Number.isSafeInteger(sourceCodePoints) ||
+    sourceStartOffsetCodePoints < 0 ||
+    sourceEndOffsetCodePoints < sourceStartOffsetCodePoints ||
+    sourceCodePoints !==
+      sourceEndOffsetCodePoints - sourceStartOffsetCodePoints ||
+    sourceEndOffsetCodePoints > source.locatedBlock.textLengthCodePoints
+  ) {
+    return fail();
+  }
   const common = {
-    sourceCodePoints: indexFrom(source.sourceCodePoints),
+    blockSourceCodePoints: indexFrom(source.locatedBlock.textLengthCodePoints),
+    sourceStartOffsetCodePoints: indexFrom(sourceStartOffsetCodePoints),
+    sourceEndOffsetCodePoints: indexFrom(sourceEndOffsetCodePoints),
+    sourceCodePoints: indexFrom(sourceCodePoints),
     structuralContext: copyStructuralContext(source.structuralContext),
     textContext: copyTextContext(source.textContext),
   };
@@ -304,7 +325,7 @@ function collectProtectedTokens(
   const protectedTokens: NarrationProtectedToken[] = [];
   const textParts: string[] = [];
   let current: MutableProtectedToken | undefined;
-  let expectedSourceOffset = 0;
+  let expectedSourceOffset = source.sourceStartOffsetCodePoints;
 
   for (let unitIndex = 0; unitIndex < units.length; unitIndex += 1) {
     const sourceToken = source.sourceTokens[unitIndex];
@@ -368,7 +389,7 @@ function collectProtectedTokens(
 
   finishProtectedToken(current, protectedTokens);
   if (
-    expectedSourceOffset !== source.sourceCodePoints ||
+    expectedSourceOffset !== source.sourceEndOffsetCodePoints ||
     textParts.join("") !== normalized.text
   ) {
     return fail();

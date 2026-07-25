@@ -17,7 +17,8 @@ scanned block into immutable cancellable bounded source-offset segments,
 consume the accepted top-level scene-break forms without speech, and harden
 oversized-token/indivisible-sequence behavior. Task 4.4 validates the complete
 packed block and emits immutable canonical locator-linked prepared segments.
-`OpenedPublication.prepareNarration` remains unimplemented.
+Task 5.1 now exposes the bounded pipeline through
+`OpenedPublication.prepareNarration`.
 Task 1.3 has accepted the separate
 [`narration-v1` resource profile](narration-preparation-limits-v1.md), so
 Milestone 1's policy, corpus, and bounds gates are closed before production
@@ -131,7 +132,7 @@ without consulting this test-only table at runtime. Task 4.4 maps packed
 source offsets through the existing package/shared locator authority and
 revalidates text and aggregate measurements before publishing frozen prepared
 output. The corpus does not select a TTS engine or model-specific
-preprocessing. Later Milestone 5 tasks must expose bounded public batches
-without changing displayed publication semantics. Any proposed corpus change must update the
+preprocessing. Task 5.1 exposes bounded public batches without changing
+displayed publication semantics. Any proposed corpus change must update the
 authoritative fixture, its integrity tests, this summary, and the active plan
 before production expectations change.

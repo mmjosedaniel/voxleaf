@@ -661,6 +661,8 @@ async function isRecognizedSceneBreak(
 ): Promise<boolean> {
   if (
     scan.block.blockKind !== "paragraph" ||
+    scan.block.sourceStartOffsetCodePoints !== 0 ||
+    scan.block.sourceEndOffsetCodePoints !== scan.block.blockSourceCodePoints ||
     scan.block.structuralContext.quoteDepth !== 0 ||
     scan.block.structuralContext.listPath.length !== 0
   ) {
@@ -701,6 +703,19 @@ async function validateScan(
   if (
     scan === null ||
     typeof scan !== "object" ||
+    scan.block === null ||
+    typeof scan.block !== "object" ||
+    !Number.isSafeInteger(scan.block.blockSourceCodePoints) ||
+    !Number.isSafeInteger(scan.block.sourceStartOffsetCodePoints) ||
+    !Number.isSafeInteger(scan.block.sourceEndOffsetCodePoints) ||
+    !Number.isSafeInteger(scan.block.sourceCodePoints) ||
+    scan.block.sourceStartOffsetCodePoints < 0 ||
+    scan.block.sourceEndOffsetCodePoints <
+      scan.block.sourceStartOffsetCodePoints ||
+    scan.block.sourceEndOffsetCodePoints > scan.block.blockSourceCodePoints ||
+    scan.block.sourceCodePoints !==
+      scan.block.sourceEndOffsetCodePoints -
+        scan.block.sourceStartOffsetCodePoints ||
     !Array.isArray(scan.normalized?.units) ||
     typeof scan.normalized.text !== "string" ||
     !Array.isArray(scan.boundaries) ||
@@ -718,7 +733,7 @@ async function validateScan(
   ) {
     return resourceLimitExceeded();
   }
-  let expectedSourceOffset = 0;
+  let expectedSourceOffset = scan.block.sourceStartOffsetCodePoints;
   let retainedNarrationCodePoints = 0;
   let retainedNarrationUtf8Bytes = 0;
   const textParts: string[] = [];
@@ -765,7 +780,7 @@ async function validateScan(
     }
   }
   if (
-    expectedSourceOffset !== scan.block.sourceCodePoints ||
+    expectedSourceOffset !== scan.block.sourceEndOffsetCodePoints ||
     textParts.join("") !== scan.normalized.text
   ) {
     return fail();
@@ -921,7 +936,8 @@ async function packNarrationBoundaryScanInternal(
       sourceCodePointsConsumed: indexFrom(
         complete
           ? scan.block.sourceCodePoints
-          : sourceOffsetAt(scan.normalized.units, startUnitIndex),
+          : sourceOffsetAt(scan.normalized.units, startUnitIndex) -
+              scan.block.sourceStartOffsetCodePoints,
       ),
       narrationCodePoints: indexFrom(totalNarrationCodePoints),
       narrationUtf8Bytes: indexFrom(totalNarrationUtf8Bytes),

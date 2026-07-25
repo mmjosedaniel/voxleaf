@@ -127,6 +127,7 @@ function createPublication(): OpenedPublication {
           });
     }),
     resolveTarget: vi.fn(),
+    prepareNarration: vi.fn<OpenedPublication["prepareNarration"]>(),
     close: vi.fn(async () => undefined),
   };
 }

@@ -16,8 +16,17 @@ import type {
   RasterImageResourceId,
   SemanticDocument,
 } from "../document/document-model.js";
+import type {
+  NarrationPreparationRequest,
+  NarrationPreparationResult,
+} from "../document/narration-model.js";
 import type { PublicationLocatorIndex } from "../locator/locator-index.js";
 import { resolvePublicationLocator } from "../locator/locator-resolver.js";
+import {
+  narrationPreparationFailure,
+  prepareNarrationBatch,
+  validateNarrationPreparationRequest,
+} from "../narration/narration-preparation.js";
 import {
   DEFAULT_NARRATION_YIELD_SCHEDULER,
   prepareNarrationSourceWindow,
@@ -83,6 +92,15 @@ function linkAbortSignals(
       callerSignal.removeEventListener("abort", abort);
     },
   });
+}
+
+function disposeLinkedAbortSignal(linkedSignal: LinkedAbortSignal): void {
+  try {
+    linkedSignal.dispose();
+  } catch {
+    // A caller-supplied signal is untrusted at runtime. Cleanup failure must
+    // not escape the closed public narration result boundary.
+  }
 }
 
 function mapUnexpectedCloseError(error: unknown): never {
@@ -213,6 +231,65 @@ class OpenedPublicationHandle implements OpenedPublication {
         ...(options.signal === undefined ? {} : { signal: options.signal }),
       }),
     );
+  }
+
+  public async prepareNarration(
+    request: NarrationPreparationRequest,
+  ): Promise<NarrationPreparationResult> {
+    if (this.#closed) {
+      return narrationPreparationFailure("internal-failure");
+    }
+    if (this.#activeNarrationPreparation !== undefined) {
+      return narrationPreparationFailure("operation-active");
+    }
+    const validated = validateNarrationPreparationRequest(request);
+    if ("status" in validated) {
+      return validated;
+    }
+
+    let linkedSignal: LinkedAbortSignal;
+    try {
+      linkedSignal = linkAbortSignals(
+        this.#closeController.signal,
+        validated.signal,
+      );
+    } catch {
+      return narrationPreparationFailure("invalid-request");
+    }
+    if (linkedSignal.signal.aborted) {
+      disposeLinkedAbortSignal(linkedSignal);
+      return narrationPreparationFailure("cancelled");
+    }
+
+    let settleActive: (() => void) | undefined;
+    const active = new Promise<void>((resolve) => {
+      settleActive = resolve;
+    });
+    this.#activeNarrationPreparation = active;
+
+    try {
+      const result = await prepareNarrationBatch(
+        this.#locatorIndex,
+        Object.freeze({
+          ...validated,
+          signal: linkedSignal.signal,
+        }),
+        this.#narrationYieldScheduler,
+      );
+      if (
+        (this.#closed || linkedSignal.signal.aborted) &&
+        result.status !== "cancelled"
+      ) {
+        return narrationPreparationFailure("cancelled");
+      }
+      return result;
+    } finally {
+      disposeLinkedAbortSignal(linkedSignal);
+      if (this.#activeNarrationPreparation === active) {
+        this.#activeNarrationPreparation = undefined;
+      }
+      settleActive?.();
+    }
   }
 
   async #prepareNarrationSource(

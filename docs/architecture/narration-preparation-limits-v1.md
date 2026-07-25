@@ -19,9 +19,11 @@ plus the 17-entry retained-segment, 8,832-code-point retained narration,
 26,624-byte retained narration, 4,096-unit temporary-index, work-checkpoint,
 yield, and cancellation ceilings through a package-internal block-local
 packer. Task 4.4 converts the already-bounded retained output into at most 17
-canonical locator-linked prepared segments plus one exact source continuation
-only after all ranges and aggregate measurements validate. Batch totals and
-`OpenedPublication.prepareNarration` remain unimplemented.
+  canonical locator-linked prepared segments plus one exact source continuation
+  only after all ranges and aggregate measurements validate. Task 5.1
+  production-enforces the public 1-16 segment request, 8,192-code-point,
+  24,576-byte, and 64-sentence batch ceilings and exposes only frozen closed
+  results through `OpenedPublication.prepareNarration`.
 
 The exact test authority is
 [`packages/epub/test-support/narration-preparation-limits.ts`](../../packages/epub/test-support/narration-preparation-limits.ts).
@@ -174,9 +176,9 @@ same controller while validating scans, building bounded prefix/safety indexes,
 selecting fallbacks, and copying retained narration text; cancellation before
 or after an injected yield publishes no packed block. Task 4.4 finalizes that
 bounded output synchronously and publishes no partial prepared result when any
-source identity, range, measurement, or aggregate invariant fails. The
-production policy constants are package-internal; Task 5.1 still owns the
-final public request/result surface and remaining profile enforcement.
+  source identity, range, measurement, or aggregate invariant fails. Task 5.1
+  retains the production policy constants package-internally while enforcing
+  the final public request/result and batch profile boundary.
 
 ## Synthetic evidence
 
