@@ -229,6 +229,13 @@ def test_supertonic_adapter_forces_local_cpu_profile_and_discards_waveform(
 
         def __init__(self, **kwargs: object) -> None:
             calls["load"] = kwargs
+            session = SimpleNamespace(get_providers=lambda: ["CPUExecutionProvider"])
+            self.model = SimpleNamespace(
+                dp_ort=session,
+                text_enc_ort=session,
+                vector_est_ort=session,
+                vocoder_ort=session,
+            )
 
         def get_voice_style(self, voice_id: str) -> object:
             calls["voice"] = voice_id
@@ -290,6 +297,76 @@ def test_supertonic_adapter_forces_local_cpu_profile_and_discards_waveform(
     assert calls["text"] == "Texto privado de prueba."
     assert adapter.cancel("request-1").acknowledged is False
     adapter.close()
+
+
+def test_supertonic_adapter_rejects_a_non_cpu_loaded_session(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+    artifacts = (
+        _artifact(tmp_path, "onnx/duration_predictor.onnx", b"duration"),
+        _artifact(tmp_path, "onnx/text_encoder.onnx", b"text"),
+        _artifact(tmp_path, "onnx/vector_estimator.onnx", b"vector"),
+        _artifact(tmp_path, "onnx/vocoder.onnx", b"vocoder"),
+        _artifact(tmp_path, "voice_styles/F1.json", b"voice"),
+    )
+
+    class Engine:
+        sample_rate = 44_100
+
+        def __init__(self, **kwargs: object) -> None:
+            del kwargs
+            cpu = SimpleNamespace(get_providers=lambda: ["CPUExecutionProvider"])
+            cuda = SimpleNamespace(
+                get_providers=lambda: ["CUDAExecutionProvider", "CPUExecutionProvider"]
+            )
+            self.model = SimpleNamespace(
+                dp_ort=cpu,
+                text_enc_ort=cpu,
+                vector_est_ort=cuda,
+                vocoder_ort=cpu,
+            )
+
+        def get_voice_style(self, voice_id: str) -> object:
+            del voice_id
+            return object()
+
+    onnxruntime = ModuleType("onnxruntime")
+    onnxruntime.__dict__["get_device"] = lambda: "CPU"
+    onnxruntime.__dict__["get_available_providers"] = lambda: [
+        "CUDAExecutionProvider",
+        "CPUExecutionProvider",
+    ]
+    supertonic = ModuleType("supertonic")
+    supertonic.__dict__["TTS"] = Engine
+
+    def importer(name: str) -> ModuleType:
+        return {"onnxruntime": onnxruntime, "supertonic": supertonic}[name]
+
+    profile = CandidateProfile(
+        candidate_id=SUPERTONIC_CANDIDATE_ID,
+        role="compatibility",
+        distribution="supertonic",
+        engine_version="1.3.1",
+        model_revision="revision",
+        voice_id="F1",
+        provider="onnxruntime-cpu",
+        precision="float32",
+        artifacts=artifacts,
+        output_sample_rate_hz=44_100,
+    )
+    adapter = Supertonic3Adapter(
+        profile,
+        _configuration(profile, tmp_path),
+        importer=importer,
+        version_reader={"supertonic": "1.3.1", "onnxruntime": "1.27.0"}.__getitem__,
+    )
+    with pytest.raises(
+        AdapterConfigurationError,
+        match=r"^tts-benchmark-adapter:provider-selected$",
+    ):
+        adapter.load()
 
 
 def test_profile_offline_provider_and_hash_mismatches_are_content_free(

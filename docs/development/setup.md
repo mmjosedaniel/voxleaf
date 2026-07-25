@@ -235,6 +235,23 @@ $preflight = @{
 $preflight | pnpm.cmd benchmark:tts:preflight
 ```
 
+After a passing preflight, use the same closed payload with `purpose = "pilot"`
+for one disposable load/generation/cleanup smoke:
+
+```powershell
+$preflight | pnpm.cmd benchmark:tts:measure
+```
+
+The pilot emits no comparable measurements and creates no raw session. Change
+the purpose to `official` only from a clean committed revision after the pilot
+passes. The official command repeats preflight in both the root supervisor and
+the exact candidate interpreter, runs the frozen protocol, and writes one
+bounded content-free raw journal below the ignored
+`benchmarks/results/raw/<candidate-id>/<session-id>/` directory. It never
+writes waveform samples. The returned session ID is content-free; the raw
+journal remains non-promotable until the later quality and audit fields are
+complete and the allowlisted summary passes validation.
+
 The command fails closed on a dirty or different revision, wrong platform or
 Python, missing environment, wrong artifact hash, missing offline controls,
 missing firewall rule, battery power, insufficient RAM/VRAM/disk, or

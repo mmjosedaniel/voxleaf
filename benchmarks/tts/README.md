@@ -83,9 +83,16 @@ benchmark records this honestly and rejects an end-of-output frame as evidence
 of a mid-generation cancellation boundary. Worker termination is benchmark
 feasibility evidence only, not a production cancellation design.
 
-There is intentionally no root TTS benchmark command yet. Milestone 2 supplies
-the bounded execution boundary, but artifact acquisition, host preflight,
-offline network enforcement, hardware measurement, and official result
-promotion belong to later tasks in the active plan. Adding a runnable command
-before those pieces exist would create an incomplete and non-authoritative
-measurement path.
+Milestone 3 adds two explicit root commands. `benchmark:tts:preflight` verifies
+the clean revision, exact artifacts, host headroom, offline controls, and exact
+candidate-interpreter firewall rule without loading a model.
+`benchmark:tts:measure` repeats that preflight, launches the exact candidate
+interpreter, and either runs one disposable non-comparable pilot or the frozen
+official protocol. Private paths enter only through bounded standard input.
+
+Official execution records bounded content-free nanosecond/sample/resource
+observations under the ignored raw session directory. It does not retain
+waveform samples. A raw session is not a reviewable summary and is never
+eligible for selection until the quality, audit, schema, arithmetic, privacy,
+and gate promotion steps pass. The balanced role additionally fails closed
+until reliable process-attributed VRAM sampling is available.

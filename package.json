@@ -8,6 +8,7 @@
     "pnpm": "11.15.1"
   },
   "scripts": {
+    "benchmark:tts:measure": "uv run --directory services/tts --locked python -m benchmarks.cli measure",
     "benchmark:tts:preflight": "uv run --directory services/tts --locked python -m benchmarks.cli preflight",
     "benchmark:reader": "pnpm run build:packages && pnpm --filter @voxleaf/desktop benchmark:reader",
     "benchmark:reader:native": "pnpm run build:packages && pnpm --filter @voxleaf/desktop benchmark:reader:native",

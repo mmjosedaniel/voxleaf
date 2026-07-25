@@ -158,6 +158,29 @@ def test_exact_metric_arithmetic_and_nearest_rank_are_stable() -> None:
     assert distribution((5.0, 1.0, 3.0, 2.0, 4.0)).maximum == 5
 
 
+def test_pilot_exercises_one_generation_without_producing_comparable_results() -> None:
+    corpus = load_corpus(CORPUS_PATH)
+    clock = FakeNanosecondClock()
+    adapter: DeterministicFakeAdapter | None = None
+
+    def factory() -> DeterministicFakeAdapter:
+        nonlocal adapter
+        adapter = DeterministicFakeAdapter(clock)
+        return adapter
+
+    failure = BenchmarkHarness(
+        clock=clock,
+        memory_probe=FakeMemoryProbe(),
+    ).run_pilot(
+        adapter_factory=factory,
+        corpus=corpus,
+    )
+    assert failure is None
+    assert adapter is not None
+    assert adapter.closed is True
+    assert adapter.active_request_ids == set()
+
+
 def test_fake_runs_complete_frozen_protocol_and_promotes_content_free_summary() -> None:
     result, _, adapter = run_fake_protocol()
     assert result.failure is None

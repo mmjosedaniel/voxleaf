@@ -835,11 +835,36 @@ The repository contains comparable content-free evidence, not anecdotal console 
 
 #### Actual result
 
-Pending.
+In progress on 2026-07-25.
+
+- Added the closed `benchmark:tts:measure` supervisor. It repeats preflight,
+  launches only the exact candidate interpreter, repeats preflight inside that
+  interpreter, and accepts private paths only through bounded standard input.
+- Added the disposable non-comparable pilot path and official protocol
+  dispatch. Pilot execution retains no raw session. Official execution writes
+  one UUID-named ignored journal containing only fixed IDs, integer
+  nanoseconds, sample metadata, numeric resource observations, and fixed
+  failures; waveform samples and candidate diagnostics are discarded.
+- Added a dependency-free native Windows process-tree sampler that enumerates
+  only numeric PID/parent-PID relationships, samples descendant working sets
+  every 50 milliseconds, subtracts the pre-load baseline, and reports no
+  process names, command lines, paths, or unrelated processes. CPU runs record
+  VRAM as unavailable and zero GPU allocations. Balanced execution currently
+  fails closed until its required process-attributed VRAM sampler is added.
+- The harness now enforces the frozen 900-second sustained-phase timeout,
+  journals each completed observation before later phases, runs all five
+  cancellation trials even when one fails, and retains a bounded failed-run
+  journal rather than erasing earlier valid numeric evidence.
+- Supertonic now verifies that all four loaded ONNX sessions select exactly
+  `CPUExecutionProvider`; provider availability alone is no longer accepted.
+- Model-free focused validation covers the command output allowlist,
+  interpreter binding, pilot lifecycle, raw bounds/privacy, memory baseline
+  arithmetic, native PID-tree smoke, exact provider selection, continued
+  cancellation behavior, and the existing protocol.
 
 #### Status
 
-Not started.
+In progress.
 
 ### Task 3.3: Run the blinded Spanish quality evaluation
 
@@ -1290,6 +1315,12 @@ A profile is selectable only when its performance, quality, capability, license,
   verified and its official compatibility preflight passed from clean commit
   `64e8324f9426c381dcac1d013264ba9fcb833065`. No model loaded. Qwen still
   requires its exact rule and the frozen 12 GiB free-RAM headroom.
+- 2026-07-25: Started Task 3.2 implementation before model execution. The
+  exact-interpreter supervisor, disposable pilot, bounded raw journal,
+  50-millisecond PID-tree RAM probe, sustained-phase timeout, all-trial
+  cancellation journaling, and exact Supertonic loaded-provider verification
+  pass model-free checks. Balanced process-attributed VRAM measurement remains
+  fail-closed and no pilot or official generation has run yet.
 - 2026-07-25: Completed Task 1.3 and Milestone 1. The pre-result measurement procedure, numeric gates, listening rubric, invalidation/rerun rules, private summary schema, synthetic valid fixture, and semantic mutation tests are frozen and linked from the performance and architecture authorities. No engine was executed and no official result exists.
 - 2026-07-25: Corrected the recorded sustained-sequence total from 3,144
   to the verified 3,139 code points and froze that exact aggregate in the

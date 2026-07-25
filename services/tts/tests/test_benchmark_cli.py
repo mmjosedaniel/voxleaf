@@ -7,7 +7,13 @@ from typing import cast
 
 import pytest
 
-from benchmarks.cli import CommandError, _receipt_payload, parse_preflight_request
+from benchmarks.cli import (
+    CommandError,
+    _receipt_payload,
+    _validated_worker_receipt,
+    parse_preflight_request,
+)
+from benchmarks.execution import run_measurement_worker
 from benchmarks.preflight import HostSnapshot, PreflightReceipt
 
 
@@ -109,3 +115,51 @@ def test_receipt_output_is_allowlisted_and_contains_no_private_paths(tmp_path: P
         "totalVramBytes",
         "freeVramBytes",
     }
+
+
+def test_measurement_worker_receipt_is_closed_and_non_promotable(tmp_path: Path) -> None:
+    request = parse_preflight_request(valid_payload(tmp_path))
+    receipt = {
+        "status": "fail",
+        "purpose": "official",
+        "candidateId": request.profile.candidate_id,
+        "sessionId": "b" * 32,
+        "failureCode": "cancellation-failed",
+        "counts": {
+            "coldLoads": 5,
+            "warmGenerations": 24,
+            "sustainedGenerations": 12,
+            "cancellationTrials": 5,
+        },
+        "eligibleForPromotion": False,
+    }
+    assert _validated_worker_receipt(receipt, request) == receipt
+
+    receipt["privatePath"] = str(tmp_path)
+    with pytest.raises(
+        CommandError,
+        match=r"^tts-benchmark-command:invalid-worker-output$",
+    ):
+        _validated_worker_receipt(receipt, request)
+
+
+def test_measurement_worker_rejects_a_different_interpreter_without_loading(
+    tmp_path: Path,
+) -> None:
+    request = parse_preflight_request(valid_payload(tmp_path))
+    receipt = run_measurement_worker(request)
+    assert receipt == {
+        "status": "fail",
+        "purpose": "official",
+        "candidateId": request.profile.candidate_id,
+        "sessionId": None,
+        "failureCode": "invalid-request",
+        "counts": {
+            "coldLoads": 0,
+            "warmGenerations": 0,
+            "sustainedGenerations": 0,
+            "cancellationTrials": 0,
+        },
+        "eligibleForPromotion": False,
+    }
+    assert str(tmp_path) not in repr(receipt)

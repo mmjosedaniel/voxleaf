@@ -38,8 +38,20 @@ class _Waveform(Protocol):
     shape: tuple[int, int]
 
 
+class _OnnxSession(Protocol):
+    def get_providers(self) -> list[str]: ...
+
+
+class _SupertonicCore(Protocol):
+    dp_ort: _OnnxSession
+    text_enc_ort: _OnnxSession
+    vector_est_ort: _OnnxSession
+    vocoder_ort: _OnnxSession
+
+
 class _SupertonicEngine(Protocol):
     sample_rate: int
+    model: _SupertonicCore
 
     def get_voice_style(self, voice_id: str) -> object: ...
 
@@ -115,6 +127,14 @@ class Supertonic3Adapter:
                 model_dir=str(root),
                 auto_download=False,
             )
+            sessions = (
+                engine.model.dp_ort,
+                engine.model.text_enc_ort,
+                engine.model.vector_est_ort,
+                engine.model.vocoder_ort,
+            )
+            if any(session.get_providers() != ["CPUExecutionProvider"] for session in sessions):
+                raise AdapterConfigurationError("provider-selected")
             if engine.sample_rate != self._profile.output_sample_rate_hz:
                 raise AdapterConfigurationError("invalid-output")
             voice_style = engine.get_voice_style(self._profile.voice_id)

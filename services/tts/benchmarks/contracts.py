@@ -200,10 +200,30 @@ class BenchmarkRun:
 
 @dataclass(frozen=True)
 class BenchmarkRunResult:
-    """Closed result for one complete deterministic protocol run."""
+    """Closed result; a valid failed run may retain its completed observations."""
 
     run: BenchmarkRun | None
     failure: BenchmarkFailure | None
+
+
+class BenchmarkObservationSink(Protocol):
+    """Bounded content-free observation journal used by manual hardware runs."""
+
+    def record_load(self, observation: LoadObservation) -> None: ...
+
+    def record_generation(self, observation: GenerationObservation) -> None: ...
+
+    def record_cancellation(self, observation: CancellationObservation) -> None: ...
+
+    def record_cancellation_failure(
+        self,
+        trial_id: CancellationTrialId,
+        failure: BenchmarkFailure,
+    ) -> None: ...
+
+    def record_memory(self, observation: MemoryObservation) -> None: ...
+
+    def record_failure(self, failure: BenchmarkFailure) -> None: ...
 
 
 class MemoryProbe(Protocol):
