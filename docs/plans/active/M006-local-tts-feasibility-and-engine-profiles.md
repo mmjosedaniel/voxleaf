@@ -395,11 +395,35 @@ The same immutable corpus can be consumed by every candidate adapter without mod
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- `benchmarks/tts/corpus-v1.json` freezes 12 repository-authored synthetic
+  Spanish cases in one candidate-independent order. It covers punctuation and
+  dialogue, abbreviations and initials, cardinals and ordinals, decimals and
+  thousands, dates and times, currency and percentages, code spans, a
+  decomposed combining sequence, an astral character, and an embedded foreign
+  name.
+- Stable short, 308-code-point target, and 637-code-point near-hard cases stay
+  within the implemented `narration-v1` 320/640 code-point and 1,024/2,048-byte
+  boundaries. The 12-entry sustained sequence is fixed and totals 3,144 code
+  points, below the 8,192-code-point batch ceiling.
+- Provenance, CC0 dedication, Spanish language policy, exact code-point/UTF-8
+  counts, size classes, tags, case IDs, performance order, and metadata-only
+  privacy canaries are checked in with the text.
+- The corpus SHA-256 is frozen in the Python integrity test. The test also
+  proves canonical UTF-8/LF bytes, count accuracy, case/canary uniqueness,
+  category/Unicode coverage, order and sustained-sequence validity, ignored
+  raw output, forbidden tracked suffixes, and absence of corpus text, canaries,
+  or private paths from reviewable benchmark artifacts.
+- Failure evidence is restricted to `tts-corpus-authority:<fixed-code>:<case-id>`.
+  Focused Ruff formatting/lint, strict mypy, and all three corpus tests pass.
+- `benchmarks/tts/README.md` now defines the ignored per-session raw layout and
+  path-verified cleanup policy for completion, rejection, timeout,
+  cancellation, or interrupted setup.
 
 #### Status
 
-Not started.
+Complete.
 
 ### Task 1.3: Accept the feasibility profile and selection rubric
 
@@ -1067,6 +1091,7 @@ A profile is selectable only when its performance, quality, capability, license,
 - 2026-07-25: Confirmed that shared capability/audio/error contracts exist but no dedicated measurement contract does; this plan keeps benchmark reports private to the benchmark unless a real runtime consumer later justifies a public contract.
 - 2026-07-25: Marked all implementation tasks not started. Creating this plan does not advance the canonical TTS feasibility node beyond **Approved planned**.
 - 2026-07-25: Completed Task 1.1 candidate intake. Two role-specific candidates now have stable IDs, immutable upstream artifact identities, independent uv projects/locks, and explicit offline/acquisition/license risks without changing the production dependency graph.
+- 2026-07-25: Completed Task 1.2. The byte-frozen synthetic Spanish corpus, deterministic performance/sustained orders, Milestone 5 size boundary checks, privacy canaries, ignored raw layout, cleanup policy, and repository artifact audits are now enforced by model-free Python tests.
 
 ## Discoveries and decisions
 
