@@ -37,7 +37,7 @@ Important current limitations are:
 - the bounded source-window coordinator, normalizer, scanner, packer, and prepared-segment finalizer remain package-internal behind the public `OpenedPublication.prepareNarration` coordinator;
 - the deterministic neutral/Spanish normalization corpus and model-independent `narration-v1` limits profile are accepted test-only; Tasks 3.1-3.4 implement whitespace, line-break, hyphenation, punctuation, quotation, ellipsis, malformed-preservation, the closed Spanish ampersand/Celsius rules, accepted Spanish abbreviation, numeric, date/time, currency, percentage, and language-context rules, plus composed-stream invariants and privacy canaries;
 - transformed, collapsed, removed, joined, expanded, raster, punctuation, and semantic-line-break positions retain block-local origin spans through normalization and segmentation; Task 4.4 now constructs canonical prepared locator ranges only after the complete packed block validates;
-- the public bounded preparation operation, broader synthetic integration matrix, and deterministic exact-bound/resource proof exist, while Milestone 6 still owns documentation and final close validation;
+- the public bounded preparation operation, broader synthetic integration matrix, deterministic exact-bound/resource proof, documentation reconciliation, and final validation now exist;
 - no TTS engine has established model-specific input limits or preprocessing requirements; and
 - the broad `synchronized-reader-and-startup-buffer.md` plan is historical context, not the implementation authority for Milestone 5.
 
@@ -345,7 +345,7 @@ Before adding a dependency, an amendment or superseding ADR must document:
 
 ### Documentation status
 
-Creating this ExecPlan changes no implemented architecture status. The system diagram's narration node remains planned until production code, tests, documentation, and final validation pass. The roadmap must not mark Milestone 5 complete before Task 6.2 records successful evidence and this plan moves to `docs/plans/completed/`.
+Creating this ExecPlan changed no implemented architecture status by itself. Production code, tests, documentation, local validation, and exact-head pull-request CI subsequently passed, so the system diagram records narration preparation as implemented and the roadmap marks Milestone 5 complete.
 
 ## Milestones
 
@@ -817,7 +817,7 @@ Task 5.1.
 - `pnpm.cmd format:check`.
 - `git diff --check`.
 
-**Status:** Not started.
+**Status:** Complete on 2026-07-25. Reconciled the documentation index, product/MVP status, architecture overview and canonical system diagram, ADR-0012 implementation notes, deterministic performance limits, dependency inventory, testing strategy, roadmap, and this plan with the implemented package-owned narration-preparation boundary. The documentation now records the public `OpenedPublication.prepareNarration` flow, stable half-open locator ranges, `und`/`es` language policy, accepted algorithmic limits, conservative ambiguity/unsupported-form preservation, cancellation/concurrency/close lifecycle, deterministic corpus/resource evidence, and the absence of a new dependency, schema, capability, persistence, network, TTS, or audio behavior. Narration preparation is marked implemented while audible narration and final Task 6.2 close validation remain explicitly deferred. All changed relative Markdown targets resolve; `pnpm.cmd format:check` and `git diff --check` pass.
 
 ### Task 6.2: Complete focused, root, CI, privacy, and scope validation
 
@@ -849,7 +849,7 @@ git status --short
 
 The shared commands are mandatory if shared implementation/schema/generated files change and are retained as regression checks for final closeout even when no shared change is expected. Browser/native reader interaction tests are not a Milestone 5-specific gate when the desktop remains untouched; the established pull-request workflow still runs its complete Windows browser/native foundation matrix.
 
-**Status:** Not started.
+**Status:** Complete on 2026-07-25. Focused EPUB typecheck, 34 files/555 tests, and build passed; shared 18 files/175 tests and 13 generated-contract checks passed; the 24.6-second portable aggregate and 73.1-second authoritative native Windows aggregate passed; and `git diff --check`, Markdown-link, privacy, dependency, schema, capability, artifact, binary, and later-milestone scope audits passed. Pull request [#91](https://github.com/mmjosedaniel/voxleaf/pull/91) ran Foundation checks on exact implementation-and-evidence head `25d0f77714f0520f0a0012240093f6a16de42f4b`; [run 30161853712](https://github.com/mmjosedaniel/voxleaf/actions/runs/30161853712) passed both Ubuntu portable foundation and Windows native foundation. The existing Vite chunk-size advisory remained informational. The roadmap now marks Milestone 5 complete and this plan is retained under `docs/plans/completed/`.
 
 ## Testing and benchmark strategy
 
@@ -1030,6 +1030,9 @@ No migration or user-data rollback should be required because Milestone 5 persis
 - 2026-07-25: Completed Task 5.1. Added package-local public narration request/result types and exports, `OpenedPublication.prepareNarration`, and a bounded coordinator that composes source windows through canonical prepared segments into frozen closed batches. It validates the exact `narration-v1` request, structurally reconstructs the complete stable containing segment for interior starts even across source-window boundaries, returns continuation at the final emitted segment end, enforces independent batch totals with one lookahead, and converts cancellation, invalid input/start, concurrency, limits, close, and unexpected failure into fixed content-free outcomes. Focused tests cover public typing/runtime exports, a real public-opener smoke, batch/continue/complete behavior, interior starts, large-window reconstruction, abort/retry, raster overlap, close/stale suppression, post-close behavior, deep immutability, and privacy. Desktop test fixtures were updated only to satisfy the expanded public interface; production desktop behavior remains unchanged. `pnpm.cmd --filter @voxleaf/epub typecheck`, `pnpm.cmd --filter @voxleaf/epub test` (32 files/547 tests), `pnpm.cmd --filter @voxleaf/epub build`, `pnpm.cmd --filter @voxleaf/desktop typecheck`, and `pnpm.cmd check:portable` pass. No dependency, shared schema, desktop production behavior, TTS, audio, persistence, network, or external capability was added.
 - 2026-07-25: Completed Task 5.2. Added a dedicated provenance-labeled, repository-authored synthetic three-spine EPUB and a root-public-API integration matrix across representative neutral/Spanish semantics, normalization forms, long-sentence segmentation, stable locator ranges, exact/recovered starts, one-segment continuation, structural scene/image gaps, spine transition, and publication completion. The matrix proves deep displayed-source equality, deterministic complete segment shapes across one- and four-segment batching, exact range resolution, unchanged `NarrationSegmentV1` wrapping with test-only work identities, no raster read, and zero network/worker/WebSocket/file-picker/DOM/storage/TTS/audio capability use. `pnpm.cmd --filter @voxleaf/epub typecheck`, `pnpm.cmd --filter @voxleaf/epub test` (33 files/550 tests), `pnpm.cmd --filter @voxleaf/epub build`, and `pnpm.cmd check:portable` pass. No production code, dependency, shared schema, desktop behavior, TTS, audio, persistence, network, or external capability changed.
 - 2026-07-25: Completed Task 5.3. Hardened the public coordinator so caller count and independent batch code-point/UTF-8-byte/sentence totals stop at one stable lookahead, while each internal pack is capped by the remaining accepted aggregate retention capacity. Added package-internal numeric-only resource snapshots and five deterministic tests for production/profile hard-limit alignment, exact checkpoint/yield cadence, exact batch-plus-lookahead code-point/byte ceilings, 96-paragraph repeated bounded continuation, caller cancellation/retry, publication close, and no retained stale result. `pnpm.cmd --filter @voxleaf/epub typecheck` and the complete EPUB suite (34 files/555 tests) pass; `pnpm.cmd check:portable` passed on the final Task 5.3 tree. No dependency, public root export, shared schema, desktop behavior, TTS, audio, persistence, network, wall-clock gate, or external capability was added.
+- 2026-07-25: Completed Task 6.1. Reconciled 11 current documentation files with the implemented narration boundary: product status no longer implies audible output; the system diagram marks the package-owned source projection/normalization/segmentation/public-batch stage implemented; architecture records ownership, flow, half-open ranges, `und`/`es`, limits, lifecycle, privacy, and later TTS separation; the dependency inventory confirms no manifest/lockfile/capability change; testing records the 62-case synthetic corpus, 34-file/555-test EPUB evidence, focused commands, public integration matrix, and deterministic resource proof; the performance budget now records public batch and one-lookahead enforcement; and the roadmap leaves only Task 6.2 closeout pending. A read-only audit resolved every relative Markdown target in all 11 changed files. `pnpm.cmd format:check` passed outside the managed sandbox after the first run could not traverse the existing protected `services/tts/.pytest_cache`; `git diff --check` passed. No production/test source, dependency, schema, generated artifact, capability, desktop behavior, persistence, network, TTS, audio, book, model, or private data changed.
+- 2026-07-25: Began Task 6.2 local closeout on clean commit `6e3b6122339987f9bf7c4cfbb953244b97662eb2`. Focused EPUB typecheck and build passed; the EPUB suite passed 34 files/555 tests; the shared suite passed 18 files/175 tests; and all 13 generated shared contracts matched. `pnpm.cmd check:portable` passed in 24.6 seconds with TypeScript/Python formatting and lint, all workspace typechecks, 175 shared tests, 555 EPUB tests, 204 desktop tests plus six native-driver client tests, three Python tests, package/desktop portable builds, and both Python distributions. `pnpm.cmd check` passed in 73.1 seconds with the same checks plus Rust formatting, Clippy, zero Rust unit-test failures, and the Tauri release executable; the existing Vite chunk-size advisory remained informational. The exact `main...HEAD` delta contains 11 documentation files, no added or binary path, and no manifest, lock, schema, generated contract, runtime source, capability, workflow, book, audio, model, archive, secret, or private-path change. `git diff --check` passed and the worktree remained clean after generated/ignored build outputs. GitHub returned no pull request for `agent/milestone-6-close-milestone-5`, so exact-head CI, final roadmap completion, and moving this plan remain pending.
+- 2026-07-25: Completed Task 6.2. Pull request [#91](https://github.com/mmjosedaniel/voxleaf/pull/91) published the documentation-only Milestone 6 closeout branch. Foundation [run 30161853712](https://github.com/mmjosedaniel/voxleaf/actions/runs/30161853712) tested exact implementation-and-evidence head `25d0f77714f0520f0a0012240093f6a16de42f4b` and passed both the Ubuntu portable and Windows native jobs, including the real-browser desktop smoke, packaged WebView2 startup smoke, portable aggregate, and authoritative native aggregate. The roadmap marks Milestone 5 complete, all stale active-plan references now target the completed evidence, and this plan moved to `docs/plans/completed/`. The final closure-only documentation commit remains subject to the same required PR checks before handoff.
 
 ## Discoveries and decisions
 
@@ -1039,9 +1042,9 @@ No migration or user-data rollback should be required because Milestone 5 persis
 - JavaScript `for...of` yields the required Unicode-code-point units without exposing UTF-16 indices as locator offsets; combining marks remain distinct code points while later segmentation remains responsible for not splitting protected combining sequences.
 - Structural block quotes and lists own only offset zero; their descendant headings/paragraphs own narratable offsets. Prepared segments should therefore remain within leaf blocks.
 - `NarrationSegmentV1` is already sufficient to carry sensitive text and a locator range once a later coordinator attaches work identity. Its schema intentionally excludes normalization and chunk-profile policy.
-- The system diagram already models narration normalization/chunking as a framework-independent planned stage downstream of EPUB semantics. The architecture overview places the deferred work under the EPUB package boundary.
+- The system diagram now models narration normalization/chunking and bounded public batches as an implemented framework-independent stage downstream of EPUB semantics. The architecture overview assigns the implemented preparation boundary to `@voxleaf/epub` while keeping TTS/audio integration deferred.
 - The current opened-publication handle already links caller cancellation with publication close for resource reads and awaits active work before archive release. Narration preparation should follow the lifecycle pattern without using the raster read slot.
-- The current package has no narration dependency or module. This plan proposes repository-owned deterministic scanners and no new production dependency.
+- The package implements narration preparation with repository-owned deterministic TypeScript modules and adds no production or test dependency, manifest/lockfile edge, install script, or runtime capability.
 - The broad synchronized-reader plan remains useful for Milestones 8-9 but does not define Milestone 5 normalization or segmentation acceptance.
 - Half-open block-local ranges are the accepted mapping convention because they compose without duplicate boundary code points and remain compatible with the existing ordered `LocatorRangeV1`.
 - Stable segmentation must be independent of request batching. The unresolved user-interaction choice for a visual locator inside a stable segment remains explicitly deferred to Milestone 9.
@@ -1068,16 +1071,63 @@ No migration or user-data rollback should be required because Milestone 5 persis
 
 ## Final validation results
 
-Not yet available. This file currently records the implementation plan only.
+Task 6.2 completed on 2026-07-25. Local validation began against commit
+`6e3b6122339987f9bf7c4cfbb953244b97662eb2`, and the resulting evidence was
+published in pull request [#91](https://github.com/mmjosedaniel/voxleaf/pull/91).
+Foundation [run 30161853712](https://github.com/mmjosedaniel/voxleaf/actions/runs/30161853712)
+tested exact implementation-and-evidence head
+`25d0f77714f0520f0a0012240093f6a16de42f4b` and passed both required jobs:
+Ubuntu portable foundation in approximately one minute and Windows native
+foundation in approximately thirteen minutes.
 
-Before completion, replace this section with:
+Accepted authorities remain:
 
-- accepted ADR and profile versions;
-- exact focused and root commands with outcomes;
-- test counts and deterministic bound evidence;
-- CI run and exact tested commit;
-- dependency/schema/capability status;
-- privacy and artifact audit results;
-- known normalization/segmentation limitations;
-- final changed-file scope; and
-- confirmation that the plan moved to `docs/plans/completed/` and roadmap Milestone 5 is marked complete.
+- [ADR-0012](../../architecture/decisions/ADR-0012-bounded-narration-preparation.md);
+- the test-only [`narration-v1` normalization corpus](../../architecture/narration-normalization-v1.md); and
+- the test-only [`narration-v1` resource profile](../../architecture/narration-preparation-limits-v1.md).
+
+Focused validation passed:
+
+- `pnpm.cmd --filter @voxleaf/epub typecheck`;
+- `pnpm.cmd --filter @voxleaf/epub test`: 34 files/555 tests;
+- `pnpm.cmd --filter @voxleaf/epub build`;
+- `pnpm.cmd --filter @voxleaf/shared test`: 18 files/175 tests; and
+- `pnpm.cmd --filter @voxleaf/shared generate:check`: 13 generated contract
+  files verified.
+
+Aggregate validation passed:
+
+- `pnpm.cmd check:portable` in 24.6 seconds, covering TypeScript/Python
+  formatting and lint, all workspace typechecks, 175 shared tests, 555 EPUB
+  tests, 204 desktop tests, six native-driver client tests, three Python tests,
+  package/desktop portable builds, and Python source/wheel distributions; and
+- `pnpm.cmd check` in 73.1 seconds, covering the same repository checks plus
+  Rust formatting, Clippy with warnings denied, zero Rust unit-test failures,
+  and the native Tauri release executable. The existing Vite chunk-size
+  advisory remained informational and both builds exited successfully.
+
+The exact `main...HEAD` audit found 11 changed documentation files and no path
+outside `docs/`. It found no manifest, lockfile, shared schema/generated
+contract, runtime source, Tauri capability/permission, workflow, added file,
+binary delta, book, audio, model, archive, secret, or private-path change.
+`git diff --check main...HEAD` passed and `git status --short` was clean after
+the ignored build outputs settled. No shared implementation/schema change
+occurred; the shared commands above were retained as final regression checks.
+No TTS engine, model profile, process protocol, audio behavior, highlighting,
+synchronization, persistence, network access, hardware claim, or later-roadmap
+implementation entered the branch.
+
+Known normalization and segmentation limits remain those already accepted by
+the corpus, profile, and ADR: neutral behavior is conservative; Spanish
+transformations are allowlisted; ambiguous, malformed, unsupported, code, and
+foreign-name forms are preserved; raster alternative text is not narrated;
+prepared segments remain block-local; and model-specific preprocessing,
+pronunciation quality, and audible behavior remain deferred.
+
+Pull request CI additionally covered the real-browser desktop smoke and
+packaged WebView2 startup smoke before the authoritative Windows aggregate.
+The cancelled duplicate workflow run is not acceptance evidence; successful
+run 30161853712 is the retained authority. The final closure-only documentation
+commit moves and indexes this completed plan and updates no runtime behavior;
+the same required PR checks remain the authority for its latest head before
+handoff.

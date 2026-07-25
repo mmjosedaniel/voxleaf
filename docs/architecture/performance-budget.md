@@ -115,8 +115,14 @@ oversized unprotected token at a legal Unicode-safe hard boundary or fails
 content-free when an indivisible unit cannot fit. Task 4.4 validates a complete
 packed block before publishing at most 17 deeply frozen locator-linked
 segments and constructs one canonical source continuation without widening
-the accepted retention bounds. Batch-total enforcement and the public
-operation remain pending.
+the accepted retention bounds. Task 5.1 exposes the production
+`OpenedPublication.prepareNarration` operation, enforces a caller request of
+1-16 segments plus independent 8,192-code-point, 24,576-byte, and 64-sentence
+batch ceilings, and retains at most one non-returnable stable lookahead.
+Task 5.3 additionally caps each internal pack by the remaining aggregate
+17-entry, 8,832-code-point, and 26,624-byte retained capacity and proves
+numeric-only high-water bounds across repeated requests, cancellation, and
+publication close.
 
 The profile targets 320 narration code points / 1,024 UTF-8 bytes per segment,
 eight segments per batch, cancellation checks every 512 work units, and a
@@ -134,6 +140,12 @@ contains 600 JavaScript UTF-16 code units and 1,200 UTF-8 bytes, proving UTF-16
 length is not the admission authority. Optional wall-clock observations remain
 informational. The approximately 15-second initial audio lead is an
 audio-playback policy and is not a narration-text size target.
+
+These are deterministic algorithmic preparation limits, not model throughput,
+speech-quality, wall-clock latency, heap-size, or hardware claims. A later
+model-specific profile requires explicit local TTS evidence and a new
+versioned decision; it must not silently change `narration-v1`, source-range
+semantics, or privacy rules.
 
 ## Initial buffering policy
 
