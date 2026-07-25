@@ -1048,11 +1048,16 @@ The selection includes reproducible bounded human quality evidence rather than s
 
 #### Actual result
 
-Pending.
+Blocked before audio generation on 2026-07-25. The frozen rubric requires at
+least three fluent Spanish evaluators, but no complete three-person panel is
+confirmed. Creating a disposable listening session now would retain generated
+audio while waiting for external participation, so no listening audio,
+randomization key, scorecard, or partial quality result was created.
 
 #### Status
 
-Not started.
+Blocked — confirm three fluent Spanish evaluators before creating the bounded
+ignored listening session.
 
 ### Task 3.4: Audit licensing, offline behavior, and packaging risk
 
@@ -1552,6 +1557,11 @@ A profile is selectable only when its performance, quality, capability, license,
   latency and fails cancellation at the same three unavailable
   complete-waveform boundaries. Task 3.2 is complete; neither candidate passes
   its assigned role.
+- 2026-07-25: Post-run cleanup removed the exact temporary firewall rule,
+  restored the 45-minute AC sleep timeout, and verified a clean tree at
+  `7ab924a520f6a5c964e8b7d3fa92dff9377eb311`. Task 3.3 is blocked before
+  audio generation because the required three-person fluent-Spanish panel is
+  not yet confirmed.
 
 ## Discoveries and decisions
 
@@ -1681,7 +1691,9 @@ cancellation gates; its peak RAM and dual-signal VRAM observations pass their
 ceilings. The complete Supertonic `v2` matrix is also valid and fails
 compatibility first-audio, zero-failure, and cancellation gates while passing
 its other numeric gates. The sequential quality and audit tasks have not
-started. No generated audio was retained, no summary was promoted, and no
-profile was selected.
+completed: quality execution is blocked before audio generation on the
+required three-person panel, and the audit has not started. No generated audio
+was retained, the temporary firewall rule is absent, AC sleep is restored to
+45 minutes, no summary was promoted, and no profile was selected.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.
