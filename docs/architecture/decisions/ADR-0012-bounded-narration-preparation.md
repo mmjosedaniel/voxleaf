@@ -78,6 +78,10 @@ omission/read isolation, and zero external capability use. Task 5.3 proves the
 accepted exact deterministic work cadence, independent batch totals,
 one-lookahead aggregate retention, repeated bounded continuation, and
 no-result cancellation/close behavior through numeric-only package evidence.
+Task 6.1 reconciles the implemented ownership, public flow, ranges, language
+policy, limits, lifecycle, dependencies, tests, and deferred TTS/audio boundary
+across current product, architecture, development, roadmap, and plan
+documentation. Final Milestone 5 close validation remains Task 6.2 work.
 
 ## Context
 
@@ -499,7 +503,9 @@ Those decisions remain with roadmap Milestones 6 through 9.
   Task 5.2 adds the broader public integration matrix. Task 5.3 caps internal
   prepared output by remaining aggregate retention capacity and adds
   numeric-only exact-bound, repeated-batch, cancellation, close, and privacy
-  evidence without a wall-clock or hardware gate.
+  evidence without a wall-clock or hardware gate. Task 6.1 reconciles this
+  implemented boundary across current documentation while preserving later
+  TTS, audio, highlighting, and synchronization ownership.
 
 ## Alternatives considered
 
