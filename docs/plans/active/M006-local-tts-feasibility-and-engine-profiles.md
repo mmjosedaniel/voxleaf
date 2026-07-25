@@ -134,7 +134,11 @@ The exact candidate identifiers and dependency layout are frozen by Milestone 1 
 - `services/tts/tests/`: deterministic corpus, metric, report, redaction, cancellation, and fake-adapter tests.
 - Candidate-specific benchmark project and lock files under a reviewed path below `services/tts/benchmarks/`, isolated from the production dependency group.
 - `package.json`: explicit benchmark setup and execution commands added during implementation; no benchmark command is claimed to exist before that task completes.
-- `docs/architecture/tts-feasibility-profile-v1.md`: the frozen pre-result benchmark protocol, numeric gates, scoring rubric, and report field policy.
+- `docs/architecture/tts-feasibility-profile-v1.md`: the original frozen
+  pre-result benchmark protocol, retained as superseded historical authority.
+- `docs/architecture/tts-feasibility-profile-v2.md`: the approved rerun
+  authority that replaces unavailable WDDM NVML process attribution with a
+  Windows/PyTorch cross-checked measurement.
 - `docs/architecture/decisions/ADR-0013-local-tts-engine-profiles.md`: the final profile selection or explicit no-viable-profile decision, provided `ADR-0013` remains the next free identifier when the decision is written.
 - Product, architecture, development, dependency, testing, roadmap, and plan documentation named above.
 
@@ -810,11 +814,17 @@ In progress on 2026-07-25.
   forbids substituting zero or whole-device usage. Therefore an official Qwen
   preflight/run cannot become valid on this host even if its firewall rule and
   free-RAM conditions are changed.
+- On 2026-07-25 the maintainer approved a new `v2` authority rather than
+  requiring unavailable replacement hardware. The replacement measurement
+  must use PyTorch's allocator high-water mark for transient CUDA allocations
+  and the host's PID-tagged WDDM dedicated-memory counter as an independent
+  process-attribution cross-check. The old result is not comparable to `v2`;
+  every candidate must rerun.
 
 #### Status
 
-In progress — compatibility preflight complete; balanced evidence blocked by
-unavailable required hardware attribution.
+In progress — compatibility `v1` preflight complete; `v2` authority and
+Windows-compatible measurement implementation approved and pending validation.
 
 ### Task 3.2: Run cold, warm, sustained, cancellation, and failure matrices
 
@@ -922,7 +932,8 @@ In progress on 2026-07-25.
 
 #### Status
 
-In progress — blocked on unavailable balanced-role VRAM attribution.
+In progress — prior `v1` CPU evidence retained as historical only; both
+candidates require complete `v2` reruns.
 
 ### Task 3.3: Run the blinded Spanish quality evaluation
 
@@ -1413,6 +1424,12 @@ A profile is selectable only when its performance, quality, capability, license,
   restored to 45 minutes, and the feature branch is clean. The Qwen run remains
   blocked independently by unavailable process-attributed NVML VRAM under
   WDDM.
+- 2026-07-25: The maintainer approved replacing the blocked `v1` memory rule
+  with a versioned authority instead of buying new hardware. Local inspection
+  confirmed PID-tagged `GPU Process Memory` dedicated/shared counters on the
+  measured WDDM host. `v2` will pair the one-second Windows process counter
+  with PyTorch's in-worker allocator peak, preserve the six-GiB gate and
+  privacy boundary, and require complete reruns of both admitted candidates.
 
 ## Discoveries and decisions
 
@@ -1447,6 +1464,14 @@ A profile is selectable only when its performance, quality, capability, license,
 - The Qwen candidate uses SDPA rather than optional FlashAttention so admission
   does not add an unproven native build. This is a benchmark profile choice, not
   a production runtime decision.
+- Windows WDDM exposes PID-tagged dedicated GPU-memory counters even when NVML
+  process memory is unavailable. Microsoft documents these as VidMm-owned
+  process observations that include CUDA workloads, but also states that
+  Windows performance counters are not appropriate above one sample per
+  second. `v2` therefore cannot merely swap the old 50-millisecond NVML sample
+  for a 50-millisecond WDDM sample: it combines the one-second WDDM
+  process-attribution cross-check with PyTorch's exact caching-allocator
+  high-water mark and fails if either signal is unavailable or inconsistent.
 
 ## Final validation results
 
@@ -1527,8 +1552,9 @@ Completed before the hardware-attribution blocker on 2026-07-25:
   temporary Supertonic firewall rule and a native query confirmed that no
   matching rule remains.
 
-Milestone 3 is not complete. Qwen performance evidence is blocked by
-unavailable mandatory process-attributed NVML VRAM under WDDM, and the
+Milestone 3 is not complete. The maintainer approved a versioned replacement
+for unavailable NVML process attribution, but the `v2` authority,
+implementation, and complete candidate reruns are still pending. The
 sequential quality and audit tasks have not started. No summary was promoted
 and no profile was selected.
 
