@@ -1319,13 +1319,65 @@ function validateContiguousSource(
   }
 }
 
+function validateNormalizedStream(
+  tokens: readonly NarrationSourceToken[],
+  units: readonly NarrationNormalizedUnit[],
+  text: SensitiveNormalizedNarrationText,
+): void {
+  if (units.length !== tokens.length || !Object.isFrozen(units)) {
+    return fail();
+  }
+
+  const textParts: string[] = [];
+  const expansionMaximum =
+    NARRATION_V1_SOURCE_WINDOW_POLICY.normalizationExpansionCodePointsHardMaximum;
+
+  for (let index = 0; index < units.length; index += 1) {
+    const unit = units[index];
+    const token = tokens[index];
+    if (
+      unit === undefined ||
+      token === undefined ||
+      !Object.isFrozen(unit) ||
+      !Object.isFrozen(unit.sourceSpan) ||
+      !Object.isFrozen(unit.textContext) ||
+      !Object.isFrozen(unit.textContext.inlineContainers) ||
+      !Object.isFrozen(unit.boundaryProtections) ||
+      unit.sourceSpan.startOffsetCodePoints !==
+        token.sourceSpan.startOffsetCodePoints ||
+      unit.sourceSpan.endOffsetCodePoints !==
+        token.sourceSpan.endOffsetCodePoints ||
+      (unit.effectiveLanguage !== "es" && unit.effectiveLanguage !== "und")
+    ) {
+      return fail();
+    }
+
+    if (unit.kind === "text") {
+      const codePoints = Array.from(String(unit.text));
+      if (codePoints.length === 0 || codePoints.length > expansionMaximum) {
+        return fail();
+      }
+      textParts.push(String(unit.text));
+      continue;
+    }
+
+    if (unit.kind !== "omission") {
+      return unreachable(unit);
+    }
+  }
+
+  if (textParts.join("") !== text) {
+    return fail();
+  }
+}
+
 /**
- * Applies the Task 3.1-3.3 normalization slices to one block-local source-token
+ * Applies the Task 3.1-3.4 normalization slices to one block-local source-token
  * stream. Every source position remains represented by either a nonempty text
  * unit or a content-free omission reason, so later segmentation can construct
  * legal ranges without reparsing source text.
  */
-export function normalizeNarrationSourceTokens(
+function normalizeNarrationSourceTokensInternal(
   tokens: readonly NarrationSourceToken[],
   defaultLanguage: NarrationNormalizationLanguage,
 ): NarrationNormalizedStream {
@@ -1383,8 +1435,29 @@ export function normalizeNarrationSourceTokens(
     }
   }
 
+  const text = textParts.join("") as SensitiveNormalizedNarrationText;
+  validateNormalizedStream(tokens, units, text);
+
   return Object.freeze({
-    text: textParts.join("") as SensitiveNormalizedNarrationText,
+    text,
     units,
   });
+}
+
+/**
+ * Normalizes one bounded source-token stream without allowing unexpected
+ * implementation exceptions or their metadata to cross the package boundary.
+ */
+export function normalizeNarrationSourceTokens(
+  tokens: readonly NarrationSourceToken[],
+  defaultLanguage: NarrationNormalizationLanguage,
+): NarrationNormalizedStream {
+  try {
+    return normalizeNarrationSourceTokensInternal(tokens, defaultLanguage);
+  } catch (error: unknown) {
+    if (error instanceof EpubArchiveError) {
+      throw error;
+    }
+    throw new EpubArchiveError("internal-failure");
+  }
 }

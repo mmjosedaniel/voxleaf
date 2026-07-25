@@ -114,7 +114,7 @@ flowchart TB
   sourceSelection["Exhaustive narration source projection<br/>from located semantic blocks<br/>[Implemented: M5 Task 2.1]"]:::implemented
   sourceMapping["Unicode-code-point source tokens<br/>with block-local half-open spans<br/>[Implemented: M5 Task 2.2]"]:::implemented
   sourceWindow["Bounded canonical source windows<br/>continuation, cancellation and close<br/>[Implemented: M5 Task 2.3]"]:::implemented
-  normalization["Deterministic narration-only normalization<br/>neutral plus explicit Spanish cases<br/>[In progress: M5 Tasks 3.1-3.3 implemented]"]:::inprogress
+  normalization["Deterministic narration-only normalization<br/>neutral plus explicit Spanish cases<br/>[Implemented: M5 Tasks 3.1-3.4]"]:::implemented
   segmentation["Semantic sentence/dialogue segmentation<br/>and bounded packing<br/>[Approved planned: M5]"]:::planned
   boundedSegments["Bounded prepared narration segments<br/>sensitive and ephemeral<br/>[Approved planned: M5]"]:::planned
   mappedSegments["Each prepared segment retains<br/>a stable LocatorRangeV1<br/>[Approved planned: M5]"]:::planned
