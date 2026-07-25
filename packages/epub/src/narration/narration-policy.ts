@@ -1,6 +1,6 @@
 /**
  * Production limits used by the bounded Task 2.3 narration source window and
- * the Task 3.1-3.3 normalizer.
+ * the Task 3.1-3.4 normalizer, and the Task 4.1 boundary scanner.
  *
  * These values are the relevant subset of the accepted model-independent
  * `narration-v1` profile. Later normalization and segmentation tasks add the
@@ -16,6 +16,7 @@ export const NARRATION_V1_SOURCE_WINDOW_POLICY = Object.freeze({
   workUnitsBetweenYieldsHardMaximum: 8_192,
   traversalDepthHardMaximum: 128,
   parserLookaheadCodePointsHardMaximum: 128,
+  protectedTokenCodePointsHardMaximum: 256,
   normalizationExpansionCodePointsHardMaximum: 16,
   retainedTokenEntriesHardMaximum: 4_096,
   retainedEventEntriesHardMaximum: 4_096,
