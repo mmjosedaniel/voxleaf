@@ -111,8 +111,8 @@ Accepted implementation choices and still-unselected candidates are separated be
 | ------------------- | ------------------ | ------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | Desktop             | Implemented        | Tauri 2, React, TypeScript, and Vite                                      | Installer, signing, and release-platform validation remain Milestone 11    |
 | TTS process         | Deferred candidate | Persistent local Python sidecar                                           | Lifecycle, isolation, cancellation, installation, and recovery             |
-| Balanced model      | Unselected         | A smaller Qwen3-TTS profile                                               | Spanish quality, startup latency, real-time factor, licensing, and memory  |
-| Compatibility model | Unselected         | Kokoro through ONNX Runtime or another lightweight engine                 | CPU performance, quality, licensing, packaging, and provider support      |
+| Balanced model      | Admitted for evaluation | Qwen3-TTS 0.6B CustomVoice, Aiden, CUDA bfloat16/SDPA                 | Frozen Spanish quality, latency, RTF, cancellation, licensing, and memory gates |
+| Compatibility model | Admitted for evaluation | Supertonic 3, F1, Spanish mode, ONNX Runtime CPU                      | Frozen CPU quality, latency, RTF, cancellation, licensing, packaging, and memory gates |
 | Process transport   | Unselected         | Typed local IPC, standard streams, local socket, or loopback WebSocket    | Security, binary streaming, cancellation, and operational simplicity      |
 | Internal audio      | Unselected         | Streamed PCM with a bounded ring buffer                                   | Browser and platform support, memory, playback quality, and speed control |
 | Playback mechanism  | Unselected         | AudioWorklet or an equivalent low-level mechanism                         | Stable streaming, underrun observability, packaging, and testability      |

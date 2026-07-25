@@ -9,7 +9,8 @@ Dependency declarations and resolved versions have one owner per ecosystem:
 | Ecosystem | Direct declarations | Resolved transitive graph |
 | --- | --- | --- |
 | JavaScript and TypeScript | Root and package `package.json` files | Root `pnpm-lock.yaml` |
-| Python | `services/tts/pyproject.toml` | `services/tts/uv.lock` |
+| Python production foundation | `services/tts/pyproject.toml` | `services/tts/uv.lock` |
+| Python TTS benchmarks | One project per admitted candidate under `services/tts/benchmarks/candidates/` | The `uv.lock` beside that candidate project |
 | Rust | `apps/desktop/src-tauri/Cargo.toml` | `apps/desktop/src-tauri/Cargo.lock` |
 | GitHub Actions | `.github/workflows/foundation-checks.yml` | Full commit SHA on each `uses` entry |
 
@@ -29,7 +30,35 @@ These are the only direct libraries that can participate in the current applicat
 | `saxes` | `6.0.0` | Supplies strict, namespace-aware, non-validating streaming XML events without creating a DOM. The wrapper registers no resolver, accepts only the inert HTML doctype in XHTML content/navigation, rejects every other doctype and all DTD/entity processing, accepts only XML 1.0, and maps parser failures to fixed content-free codes. | Browser `DOMParser` is not an ingestion security boundary. Object-building parsers such as fast-xml-parser would add an eager intermediate representation, while the older `sax` package offers a less precise namespace/type surface. `saxes` keeps XML policy in a narrow event adapter. |
 | `tauri` Rust crate | `2.11.5` | Creates the native Windows application and embeds the local webview. The current shell registers no commands or plugins and grants no capabilities. | Electron was rejected for its expected runtime footprint; browser-only deployment cannot satisfy future local process requirements; a fully native UI would increase implementation cost. ADR-0001 records the decision. |
 
-The Python package has no runtime dependencies. `apps/desktop` depends directly on the two local workspace packages for publication lifecycle and shared contracts. `@voxleaf/epub` depends on the local `@voxleaf/shared` contract boundary plus the two low-level ingestion libraries above. `@voxleaf/shared` has no third-party production dependency: its schema validators are committed self-contained generated code. No EPUB renderer, TTS engine, model runtime, server, audio library, or persistence library is installed.
+The production Python package has no runtime dependencies. `apps/desktop` depends directly on the two local workspace packages for publication lifecycle and shared contracts. `@voxleaf/epub` depends on the local `@voxleaf/shared` contract boundary plus the two low-level ingestion libraries above. `@voxleaf/shared` has no third-party production dependency: its schema validators are committed self-contained generated code. No EPUB renderer, TTS engine, model runtime, server, audio library, or persistence library participates in the application runtime.
+
+### Milestone 6 benchmark-only candidate environments
+
+The [candidate manifest](../../benchmarks/tts/candidates-v1.json) admits two
+evaluation profiles without selecting either one:
+
+| Candidate project | Direct benchmark dependencies | Role and isolation |
+| --- | --- | --- |
+| `services/tts/benchmarks/candidates/qwen3_0_6b_cuda` | `qwen-tts==0.1.1`, `torch==2.9.1+cu128`, `torchaudio==2.9.1+cu128` | Accelerated balanced-role candidate. Its PyTorch wheels come only from the explicit official `cu128` index. FlashAttention is not admitted. |
+| `services/tts/benchmarks/candidates/supertonic3_cpu` | `supertonic==1.3.1` | CPU compatibility-role candidate. It uses the lock-selected ONNX Runtime CPU provider, immutable Supertonic 3 model assets, Spanish mode, and the fixed F1 voice style. Server and playback extras are excluded. |
+
+Each candidate owns a separate uv lock and environment. Candidate setup is
+never part of `pnpm.cmd install`, `pnpm.cmd check`, `pnpm check:portable`,
+default `uv sync --project services/tts --locked`, or CI. Model and voice
+acquisition is a later explicit networked command and targets only the ignored
+`benchmarks/results/raw/` tree. Official runs must use verified local artifacts
+with network access disabled.
+
+The candidate locks are evaluation inputs, not production approvals. Delete a
+rejected candidate's directory under `services/tts/benchmarks/candidates/` to
+remove its packages and environment; remove its uv environment/cache with
+ordinary uv cache management outside the repository. Retain only its
+content-free manifest/report rationale. A selected engine must still pass the
+Task 3.4 license, security, offline, native-binary, install-hook, artifact-size,
+and packaging audit before Milestone 7 may propose a production dependency.
+Both projects set uv's `exclude-newer` cutoff to `2026-07-18T00:00:00Z`, seven
+days before the intake review, so regenerating either lock cannot silently
+admit a just-published dependency.
 
 ### Milestone 5 dependency gate
 

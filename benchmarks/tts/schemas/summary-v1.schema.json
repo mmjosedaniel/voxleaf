@@ -1,0 +1,682 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:benchmark:tts-feasibility-summary:v1",
+  "title": "VoxLeaf local TTS feasibility summary v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "protocolVersion",
+    "corpusVersion",
+    "candidateManifestVersion",
+    "reportPurpose",
+    "candidateId",
+    "role",
+    "source",
+    "host",
+    "runtime",
+    "artifacts",
+    "output",
+    "counts",
+    "loadObservations",
+    "generationObservations",
+    "aggregates",
+    "memory",
+    "cancellation",
+    "quality",
+    "audits",
+    "gateEvaluation",
+    "notes"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "tts-feasibility-summary-v1"
+    },
+    "protocolVersion": {
+      "const": "tts-feasibility-profile-v1"
+    },
+    "corpusVersion": {
+      "const": "tts-synthetic-corpus-v1"
+    },
+    "candidateManifestVersion": {
+      "const": "tts-candidate-manifest-v1"
+    },
+    "reportPurpose": {
+      "enum": ["official-summary", "schema-validation-fixture"]
+    },
+    "candidateId": {
+      "$ref": "#/$defs/stableId"
+    },
+    "role": {
+      "enum": ["balanced", "compatibility"]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commitSha", "treeState"],
+      "properties": {
+        "commitSha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "treeState": {
+          "const": "clean"
+        }
+      }
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operatingSystem",
+        "osVersion",
+        "architecture",
+        "pythonVersion",
+        "cpuModel",
+        "logicalProcessors",
+        "totalRamBytes",
+        "gpuModel",
+        "driverVersion"
+      ],
+      "properties": {
+        "operatingSystem": {
+          "const": "Windows"
+        },
+        "osVersion": {
+          "$ref": "#/$defs/safeLabel"
+        },
+        "architecture": {
+          "const": "x86_64"
+        },
+        "pythonVersion": {
+          "type": "string",
+          "pattern": "^3\\.12\\.[0-9]+$"
+        },
+        "cpuModel": {
+          "$ref": "#/$defs/safeLabel"
+        },
+        "logicalProcessors": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1024
+        },
+        "totalRamBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "gpuModel": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/safeLabel"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "driverVersion": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/safeLabel"
+            },
+            {
+              "const": "unavailable"
+            }
+          ]
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "engineVersion",
+        "modelRevision",
+        "voiceId",
+        "provider",
+        "precision",
+        "offlineMode",
+        "streamingGranularity"
+      ],
+      "properties": {
+        "engineVersion": {
+          "$ref": "#/$defs/safeLabel"
+        },
+        "modelRevision": {
+          "$ref": "#/$defs/safeLabel"
+        },
+        "voiceId": {
+          "$ref": "#/$defs/stableId"
+        },
+        "provider": {
+          "enum": ["pytorch-cuda", "onnxruntime-cpu"]
+        },
+        "precision": {
+          "enum": ["bfloat16", "float32"]
+        },
+        "offlineMode": {
+          "const": true
+        },
+        "streamingGranularity": {
+          "enum": ["sample-chunks", "complete-waveform"]
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["artifactId", "revision", "sha256", "sizeBytes"],
+        "properties": {
+          "artifactId": {
+            "$ref": "#/$defs/stableId"
+          },
+          "revision": {
+            "$ref": "#/$defs/safeLabel"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sampleRateHz", "channels", "sampleFormat"],
+      "properties": {
+        "sampleRateHz": {
+          "type": "integer",
+          "minimum": 8000,
+          "maximum": 192000
+        },
+        "channels": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "sampleFormat": {
+          "enum": ["float32", "signed-int16"]
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coldLoads",
+        "warmGenerations",
+        "sustainedGenerations",
+        "cancellationTrials",
+        "failedObservations"
+      ],
+      "properties": {
+        "coldLoads": {
+          "const": 5
+        },
+        "warmGenerations": {
+          "const": 24
+        },
+        "sustainedGenerations": {
+          "type": "integer",
+          "minimum": 12
+        },
+        "cancellationTrials": {
+          "const": 5
+        },
+        "failedObservations": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "loadObservations": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["observationIndex", "loadSeconds", "cleanupSeconds"],
+        "properties": {
+          "observationIndex": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "loadSeconds": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "cleanupSeconds": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "generationObservations": {
+      "type": "array",
+      "minItems": 36,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "caseId",
+          "phase",
+          "sampleCount",
+          "sampleRateHz",
+          "generatedDurationSeconds",
+          "wallSeconds",
+          "firstAudioSeconds",
+          "timeTo15SecondsMedia",
+          "rtf"
+        ],
+        "properties": {
+          "caseId": {
+            "$ref": "#/$defs/stableId"
+          },
+          "phase": {
+            "enum": ["warm", "sustained"]
+          },
+          "sampleCount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sampleRateHz": {
+            "type": "integer",
+            "minimum": 8000,
+            "maximum": 192000
+          },
+          "generatedDurationSeconds": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "wallSeconds": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "firstAudioSeconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "timeTo15SecondsMedia": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "const": "shorter-complete"
+              }
+            ]
+          },
+          "rtf": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "aggregates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coldLoadSeconds",
+        "warmFirstAudioSeconds",
+        "warmTimeTo15SecondsMediaSeconds",
+        "warmShorterCompleteSeconds",
+        "warmRtf",
+        "sustainedRtf",
+        "totalSustainedRtf",
+        "sustainedGeneratedDurationSeconds"
+      ],
+      "properties": {
+        "coldLoadSeconds": {
+          "$ref": "#/$defs/distribution"
+        },
+        "warmFirstAudioSeconds": {
+          "$ref": "#/$defs/distribution"
+        },
+        "warmTimeTo15SecondsMediaSeconds": {
+          "$ref": "#/$defs/optionalDistribution"
+        },
+        "warmShorterCompleteSeconds": {
+          "$ref": "#/$defs/optionalDistribution"
+        },
+        "warmRtf": {
+          "$ref": "#/$defs/distribution"
+        },
+        "sustainedRtf": {
+          "$ref": "#/$defs/distribution"
+        },
+        "totalSustainedRtf": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sustainedGeneratedDurationSeconds": {
+          "type": "number",
+          "minimum": 180
+        }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "samplingIntervalMilliseconds",
+        "peakProcessTreeRamBytes",
+        "peakVramBytes",
+        "gpuProviderAllocations"
+      ],
+      "properties": {
+        "samplingIntervalMilliseconds": {
+          "const": 50
+        },
+        "peakProcessTreeRamBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "peakVramBytes": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "const": "unavailable"
+            }
+          ]
+        },
+        "gpuProviderAllocations": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "cancellation": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "trialId",
+          "stopMode",
+          "stopSeconds",
+          "cleanupSeconds",
+          "staleFrames",
+          "rawSessionRemoved"
+        ],
+        "properties": {
+          "trialId": {
+            "enum": [
+              "before-dispatch",
+              "accepted-before-audio",
+              "after-first-audio",
+              "after-five-media-seconds",
+              "near-hard-mid-generation"
+            ]
+          },
+          "stopMode": {
+            "enum": ["cooperative", "worker-termination"]
+          },
+          "stopSeconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "cleanupSeconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "staleFrames": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rawSessionRemoved": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evaluatorCount",
+        "blindOrder",
+        "scale",
+        "overallMean",
+        "dimensions",
+        "meaningChangingDefects",
+        "limitations"
+      ],
+      "properties": {
+        "evaluatorCount": {
+          "type": "integer",
+          "minimum": 3
+        },
+        "blindOrder": {
+          "const": true
+        },
+        "scale": {
+          "const": "1-5"
+        },
+        "overallMean": {
+          "$ref": "#/$defs/qualityScore"
+        },
+        "dimensions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "intelligibility",
+            "spanishPronunciation",
+            "punctuationDialogue",
+            "numericExpressions",
+            "foreignNames",
+            "naturalness",
+            "artifactFreedom"
+          ],
+          "properties": {
+            "intelligibility": {
+              "$ref": "#/$defs/qualityScore"
+            },
+            "spanishPronunciation": {
+              "$ref": "#/$defs/qualityScore"
+            },
+            "punctuationDialogue": {
+              "$ref": "#/$defs/qualityScore"
+            },
+            "numericExpressions": {
+              "$ref": "#/$defs/qualityScore"
+            },
+            "foreignNames": {
+              "$ref": "#/$defs/qualityScore"
+            },
+            "naturalness": {
+              "$ref": "#/$defs/qualityScore"
+            },
+            "artifactFreedom": {
+              "$ref": "#/$defs/qualityScore"
+            }
+          }
+        },
+        "meaningChangingDefects": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "limitations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "small-panel",
+              "spanish-only",
+              "fixed-voices-only",
+              "synthetic-corpus-only",
+              "not-accessibility-certification"
+            ]
+          }
+        }
+      }
+    },
+    "audits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["offline", "privacy", "artifacts", "license"],
+      "properties": {
+        "offline": {
+          "$ref": "#/$defs/audit"
+        },
+        "privacy": {
+          "$ref": "#/$defs/audit"
+        },
+        "artifacts": {
+          "$ref": "#/$defs/audit"
+        },
+        "license": {
+          "$ref": "#/$defs/licenseAudit"
+        }
+      }
+    },
+    "gateEvaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "failedGates"],
+      "properties": {
+        "outcome": {
+          "enum": ["pass", "fail", "invalid"]
+        },
+        "failedGates": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/gateCode"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "complete-waveform-only",
+          "worker-termination-cancellation",
+          "vram-unavailable-cpu-role",
+          "schema-validation-fixture-only"
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9][a-z0-9._:-]*$"
+    },
+    "safeLabel": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+():-]*$"
+    },
+    "distribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count", "p50", "p95", "maximum"],
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "p50": {
+          "type": "number",
+          "minimum": 0
+        },
+        "p95": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maximum": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "optionalDistribution": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/distribution"
+        },
+        {
+          "const": "unavailable"
+        }
+      ]
+    },
+    "qualityScore": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "violations"],
+      "properties": {
+        "status": {
+          "enum": ["pass", "fail"]
+        },
+        "violations": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "licenseAudit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reviewId"],
+      "properties": {
+        "status": {
+          "enum": ["pass", "fail", "needs-review"]
+        },
+        "reviewId": {
+          "$ref": "#/$defs/stableId"
+        }
+      }
+    },
+    "gateCode": {
+      "enum": [
+        "cold-load",
+        "first-audio",
+        "fifteen-seconds-media",
+        "shorter-complete",
+        "warm-rtf",
+        "sustained-rtf",
+        "ram",
+        "vram",
+        "gpu-provider",
+        "cancellation",
+        "cleanup",
+        "quality",
+        "meaning-changing-defect",
+        "offline",
+        "privacy",
+        "artifact",
+        "license",
+        "observation-failure"
+      ]
+    }
+  }
+}

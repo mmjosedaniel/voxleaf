@@ -1,0 +1,172 @@
+{
+  "corpusVersion": "tts-synthetic-corpus-v1",
+  "provenance": {
+    "author": "VoxLeaf contributors",
+    "createdAt": "2026-07-25",
+    "kind": "repository-authored-synthetic",
+    "license": "CC0-1.0",
+    "sourceMaterial": "none"
+  },
+  "languagePolicy": {
+    "defaultLanguage": "es",
+    "acceptedLanguages": ["es"],
+    "embeddedForeignNamesRemainUntranslated": true,
+    "textIsPreparedNarrationInput": true
+  },
+  "narrationV1Boundary": {
+    "targetCodePoints": 320,
+    "hardMaximumCodePoints": 640,
+    "targetUtf8Bytes": 1024,
+    "hardMaximumUtf8Bytes": 2048
+  },
+  "performanceOrder": [
+    "es-punctuation-dialogue-short",
+    "es-abbreviations-initials-short",
+    "es-cardinals-ordinals-short",
+    "es-decimals-thousands-short",
+    "es-date-time-short",
+    "es-currency-percent-short",
+    "es-code-span-short",
+    "es-combining-sequence-short",
+    "es-astral-character-short",
+    "es-foreign-name-short",
+    "es-narrative-target",
+    "es-narrative-near-hard"
+  ],
+  "sustainedSequence": [
+    "es-narrative-target",
+    "es-punctuation-dialogue-short",
+    "es-narrative-near-hard",
+    "es-date-time-short",
+    "es-narrative-target",
+    "es-currency-percent-short",
+    "es-narrative-near-hard",
+    "es-combining-sequence-short",
+    "es-narrative-target",
+    "es-foreign-name-short",
+    "es-narrative-near-hard",
+    "es-astral-character-short"
+  ],
+  "cases": [
+    {
+      "caseId": "es-punctuation-dialogue-short",
+      "language": "es",
+      "sizeClass": "short",
+      "tags": ["punctuation", "dialogue"],
+      "text": "—¿Vienes hoy? —Sí; llegaré pronto.",
+      "codePointCount": 34,
+      "utf8ByteCount": 41,
+      "privacyCanary": "tts-corpus-canary-01-punctuation"
+    },
+    {
+      "caseId": "es-abbreviations-initials-short",
+      "language": "es",
+      "sizeClass": "short",
+      "tags": ["abbreviations", "initials"],
+      "text": "La Dra. Vega habló con J. R. Luna antes del ensayo.",
+      "codePointCount": 51,
+      "utf8ByteCount": 52,
+      "privacyCanary": "tts-corpus-canary-02-abbreviations"
+    },
+    {
+      "caseId": "es-cardinals-ordinals-short",
+      "language": "es",
+      "sizeClass": "short",
+      "tags": ["cardinals", "ordinals"],
+      "text": "El 1.er turno reunió a 27 personas; el 2.º, a 31.",
+      "codePointCount": 49,
+      "utf8ByteCount": 51,
+      "privacyCanary": "tts-corpus-canary-03-numbers"
+    },
+    {
+      "caseId": "es-decimals-thousands-short",
+      "language": "es",
+      "sizeClass": "short",
+      "tags": ["decimals", "thousands"],
+      "text": "El sensor marcó 12,5 grados y el contador llegó a 1.250 unidades.",
+      "codePointCount": 65,
+      "utf8ByteCount": 67,
+      "privacyCanary": "tts-corpus-canary-04-decimals"
+    },
+    {
+      "caseId": "es-date-time-short",
+      "language": "es",
+      "sizeClass": "short",
+      "tags": ["dates", "times"],
+      "text": "La revisión será el 25/07/2026 a las 08:05.",
+      "codePointCount": 43,
+      "utf8ByteCount": 45,
+      "privacyCanary": "tts-corpus-canary-05-datetime"
+    },
+    {
+      "caseId": "es-currency-percent-short",
+      "language": "es",
+      "sizeClass": "short",
+      "tags": ["currency", "percent"],
+      "text": "El presupuesto quedó en 1.250 € y avanzó un 7,5 %.",
+      "codePointCount": 50,
+      "utf8ByteCount": 54,
+      "privacyCanary": "tts-corpus-canary-06-currency"
+    },
+    {
+      "caseId": "es-code-span-short",
+      "language": "es",
+      "sizeClass": "short",
+      "tags": ["code"],
+      "text": "En el bloque `saldo_total = 42`, el nombre y el número permanecen literales.",
+      "codePointCount": 76,
+      "utf8ByteCount": 77,
+      "privacyCanary": "tts-corpus-canary-07-code"
+    },
+    {
+      "caseId": "es-combining-sequence-short",
+      "language": "es",
+      "sizeClass": "short",
+      "tags": ["combining-sequence", "unicode"],
+      "text": "La etiqueta Café conserva una e seguida por un acento combinante.",
+      "codePointCount": 66,
+      "utf8ByteCount": 67,
+      "privacyCanary": "tts-corpus-canary-08-combining"
+    },
+    {
+      "caseId": "es-astral-character-short",
+      "language": "es",
+      "sizeClass": "short",
+      "tags": ["astral-character", "unicode"],
+      "text": "La señal 🛰 llegó y el equipo celebró con calma.",
+      "codePointCount": 47,
+      "utf8ByteCount": 53,
+      "privacyCanary": "tts-corpus-canary-09-astral"
+    },
+    {
+      "caseId": "es-foreign-name-short",
+      "language": "es",
+      "sizeClass": "short",
+      "tags": ["embedded-foreign-name"],
+      "text": "La investigadora Siobhán O'Connor presentó el informe en Bogotá.",
+      "codePointCount": 64,
+      "utf8ByteCount": 67,
+      "privacyCanary": "tts-corpus-canary-10-foreign"
+    },
+    {
+      "caseId": "es-narrative-target",
+      "language": "es",
+      "sizeClass": "target",
+      "tags": ["narrative", "dialogue", "target-boundary"],
+      "text": "La sala quedó en silencio cuando Ada abrió la caja azul. Dentro había tres tarjetas, una brújula pequeña y una nota sin firma. —No parece una entrega normal —dijo Tomás. Ada miró el reloj, guardó la brújula y respondió: —Entonces iremos por la ruta larga; allí podremos comprobar cada señal antes de avanzar.",
+      "codePointCount": 308,
+      "utf8ByteCount": 326,
+      "privacyCanary": "tts-corpus-canary-11-target"
+    },
+    {
+      "caseId": "es-narrative-near-hard",
+      "language": "es",
+      "sizeClass": "near-hard",
+      "tags": ["narrative", "punctuation", "near-hard-boundary"],
+      "text": "Al amanecer, el equipo revisó la estación costera y anotó cada detalle en una hoja nueva. La puerta norte cerraba bien; la ventana del taller dejaba pasar una corriente; el generador mantenía un ritmo estable. —Falta comprobar la antena —recordó Inés—, y también debemos medir la reserva de agua. Mateo subió la escalera, ajustó dos conectores y leyó los valores en voz alta para que nadie tuviera que adivinarlos. Abajo, Nora comparó las cifras, corrigió una unidad y marcó la tarea como terminada. Antes de partir, todos repitieron el plan: caminar juntos, avisar cualquier cambio y regresar antes de que la niebla cubriera el sendero.",
+      "codePointCount": 637,
+      "utf8ByteCount": 656,
+      "privacyCanary": "tts-corpus-canary-12-near-hard"
+    }
+  ]
+}

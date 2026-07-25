@@ -331,11 +331,42 @@ At least one credible candidate is admitted for each role, or the plan records a
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- `benchmarks/tts/candidates-v1.json` admits
+  `qwen3-tts-0-6b-customvoice-cuda-bf16-v1` for the balanced role and
+  `supertonic-3-onnx-cpu-f1-es-v1` for the compatibility role without
+  selecting a winner.
+- The manifest pins engine distributions, model revisions, model/voice
+  checksums when published, roles, providers, precision, offline controls,
+  licenses, redistribution posture, install boundaries, and known risks.
+- Qwen uses the official `qwen-tts==0.1.1` package, immutable
+  `Qwen3-TTS-12Hz-0.6B-CustomVoice` revision, embedded `Aiden` voice, and
+  PyTorch `2.9.1+cu128` with SDPA. Optional FlashAttention is excluded.
+- Supertonic uses the official `supertonic==1.3.1` package, immutable
+  `Supertone/supertonic-3` revision, checksum-pinned F1 voice, Spanish mode, and
+  ONNX Runtime CPU execution. Its OpenRAIL-M obligations remain explicit for
+  the Task 3.4 packaging audit.
+- Both locks apply a seven-day release-age cutoff. Kokoro's default Python
+  profile, `kokoro-onnx` release assets, hosted Qwen APIs, XTTS v2, and an
+  unspecified Piper profile are recorded as not admitted with fixed reasons.
+- Candidate projects and locks live below
+  `services/tts/benchmarks/candidates/`; the production service manifest and
+  lock remain dependency-free and unchanged.
+- `docs/development/dependencies.md` records setup isolation, removal, and the
+  remaining Task 3.4 audit.
+- `uv lock --check` passes for both candidate projects. The resolved direct
+  graphs are `qwen-tts 0.1.1` with PyTorch/Torchaudio `2.9.1+cu128`, and
+  `supertonic 1.3.1` with ONNX Runtime `1.27.0`; neither lock contains a
+  Git/editable source or install-hook marker.
+- Default `services/tts` sync and its three existing tests pass, and import
+  probes confirm that neither candidate package is present in that default
+  environment. `pnpm.cmd format:check`, JSON parsing, and `git diff --check`
+  also pass at this checkpoint.
 
 #### Status
 
-Not started.
+Complete.
 
 ### Task 1.2: Create the synthetic corpus and privacy policy
 
@@ -364,11 +395,35 @@ The same immutable corpus can be consumed by every candidate adapter without mod
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- `benchmarks/tts/corpus-v1.json` freezes 12 repository-authored synthetic
+  Spanish cases in one candidate-independent order. It covers punctuation and
+  dialogue, abbreviations and initials, cardinals and ordinals, decimals and
+  thousands, dates and times, currency and percentages, code spans, a
+  decomposed combining sequence, an astral character, and an embedded foreign
+  name.
+- Stable short, 308-code-point target, and 637-code-point near-hard cases stay
+  within the implemented `narration-v1` 320/640 code-point and 1,024/2,048-byte
+  boundaries. The 12-entry sustained sequence is fixed and totals 3,139 code
+  points, below the 8,192-code-point batch ceiling.
+- Provenance, CC0 dedication, Spanish language policy, exact code-point/UTF-8
+  counts, size classes, tags, case IDs, performance order, and metadata-only
+  privacy canaries are checked in with the text.
+- The corpus SHA-256 is frozen in the Python integrity test. The test also
+  proves canonical UTF-8/LF bytes, count accuracy, case/canary uniqueness,
+  category/Unicode coverage, order and sustained-sequence validity, ignored
+  raw output, forbidden tracked suffixes, and absence of corpus text, canaries,
+  or private paths from reviewable benchmark artifacts.
+- Failure evidence is restricted to `tts-corpus-authority:<fixed-code>:<case-id>`.
+  Focused Ruff formatting/lint, strict mypy, and all three corpus tests pass.
+- `benchmarks/tts/README.md` now defines the ignored per-session raw layout and
+  path-verified cleanup policy for completion, rejection, timeout,
+  cancellation, or interrupted setup.
 
 #### Status
 
-Not started.
+Complete.
 
 ### Task 1.3: Accept the feasibility profile and selection rubric
 
@@ -401,11 +456,46 @@ Official runs have one stable authority and cannot be tuned after seeing candida
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- [`tts-feasibility-profile-v1.md`](../../architecture/tts-feasibility-profile-v1.md)
+  was frozen before any engine execution or official result. It fixes five
+  process-cold loads, one excluded warm-up, 24 warm generations, at least 180
+  seconds of sustained media, five ordered cancellation trials, monotonic
+  timing boundaries, sample-derived media/RTF arithmetic, nearest-rank p50/p95,
+  50 ms memory sampling, explicit `unavailable` semantics, timeouts, cleanup,
+  invalidation, and all-candidate rerun rules.
+- The approximately 15-second value is measured only as produced media frames.
+  The protocol adds no sleep, timer, padding, playback, or fixed wall-clock
+  wait, and records shorter complete output separately.
+- Balanced CUDA and compatibility CPU roles have separate conjunctive latency,
+  RTF, RAM/VRAM/provider, cancellation, offline, privacy, artifact, license,
+  cleanup, and Spanish quality gates. Missing measurements and failed official
+  observations cannot be averaged away.
+- The blind rubric requires at least three fluent Spanish evaluators, a fixed
+  1-5 scale, independently randomized candidate labels, seven dimensions,
+  median-per-case aggregation, explicit limitations, and zero
+  meaning-changing repeat/skip/truncation defects.
+- `benchmarks/tts/schemas/summary-v1.schema.json` is an allowlist-only private
+  Draft 2020-12 report schema. It has no text, audio, path, URL, environment,
+  exception, log, prompt, or free-form note field and rejects unknown fields at
+  every object boundary.
+- The checked-in valid report fixture is explicitly a synthetic schema fixture,
+  not a candidate result. Schema and semantic tests recompute durations, RTF,
+  sustained totals, nearest-rank distributions, counts/order, cancellation,
+  and role-specific RAM/VRAM behavior.
+- Mutation tests reject sensitive text, unknown fields, negative values,
+  unsupported versions, inconsistent duration/RTF arithmetic, and invalid
+  percentiles. Focused Ruff, strict mypy, and all six benchmark-authority tests
+  pass.
+- The performance budget, documentation index, testing strategy, roadmap, and
+  canonical system diagram now identify Milestone 6 as in progress with only
+  its evaluation authority implemented. No model result, selection, runtime
+  dependency, playback behavior, or hardware claim is documented.
 
 #### Status
 
-Not started.
+Complete.
 
 ## Milestone 2: Build the bounded candidate-neutral benchmark
 
@@ -1035,19 +1125,44 @@ A profile is selectable only when its performance, quality, capability, license,
 - 2026-07-25: Confirmed that no TTS engine, model dependency, benchmark command, model adapter, hardware probe, generated-audio path, process transport, or production service exists.
 - 2026-07-25: Confirmed that shared capability/audio/error contracts exist but no dedicated measurement contract does; this plan keeps benchmark reports private to the benchmark unless a real runtime consumer later justifies a public contract.
 - 2026-07-25: Marked all implementation tasks not started. Creating this plan does not advance the canonical TTS feasibility node beyond **Approved planned**.
+- 2026-07-25: Completed Task 1.1 candidate intake. Two role-specific candidates now have stable IDs, immutable upstream artifact identities, independent uv projects/locks, and explicit offline/acquisition/license risks without changing the production dependency graph.
+- 2026-07-25: Completed Task 1.2. The byte-frozen synthetic Spanish corpus, deterministic performance/sustained orders, Milestone 5 size boundary checks, privacy canaries, ignored raw layout, cleanup policy, and repository artifact audits are now enforced by model-free Python tests.
+- 2026-07-25: Completed Task 1.3 and Milestone 1. The pre-result measurement procedure, numeric gates, listening rubric, invalidation/rerun rules, private summary schema, synthetic valid fixture, and semantic mutation tests are frozen and linked from the performance and architecture authorities. No engine was executed and no official result exists.
+- 2026-07-25: Corrected the recorded sustained-sequence total from 3,144
+  to the verified 3,139 code points and froze that exact aggregate in the
+  corpus authority test.
 
 ## Discoveries and decisions
 
 - Milestone 5 is complete and provides bounded prepared narration text, but feasibility measurements should use a fixed checked-in synthetic prepared-text corpus so every candidate sees identical input and EPUB/preparation time does not contaminate inference measurements.
 - The roadmap previously described Milestone 2 as supplying measurement contracts. Repository inspection found capability, audio-frame, buffer, error, primitive, and fake-test support but no dedicated measurement schema. Milestone 6 will use a benchmark-local report schema rather than silently adding model/hardware fields to `CapabilityReportV1`.
 - `CapabilityReportV1` is deliberately model- and hardware-independent. Actual engine/model/voice/hardware evidence belongs in versioned benchmark reports and the selection ADR, not in that v1 runtime contract.
-- Candidate names in the project brief remain hypotheses. This plan does not preselect Qwen3-TTS, Kokoro, ONNX Runtime, PyTorch, a voice, a precision, or a provider.
+- Candidate names began as hypotheses. Task 1.1 admits exact Qwen3-TTS/CUDA and
+  Supertonic/ONNX CPU profiles to the frozen evaluation only; admission does
+  not select either profile or authorize a production dependency.
 - Official model execution must be offline after explicit acquisition. A local loopback server is not required for feasibility and would prematurely couple the work to Milestone 7.
 - First produced audio, complete generated output, media duration, and audible playback are different measurements. Milestone 6 can measure the first three but does not implement or claim the fourth.
 - A benchmark worker process may be used for isolation and termination measurement without selecting the production process transport.
 - The approximately 15-second value remains a future playable-audio lead. The feasibility harness measures the time needed to produce that amount of media; it never sleeps for 15 seconds to satisfy the rule.
 - Default root checks and CI must remain model-free and hardware-independent. Official benchmarks and manual listening remain explicit, separate commands.
 - Rejected-candidate evidence is valuable and remains in content-free summaries; rejected dependencies, weights, audio, and raw output do not remain in the production dependency graph or repository.
+- The reviewed Kokoro Python lock pulled `espeakng-loader`, whose published
+  package metadata did not declare a license while bundling native eSpeak
+  assets. The profile was rejected before measurement. The separate
+  `kokoro-onnx` v1.0 release bundle also does not establish the current Spanish
+  voice in one immutable bundle.
+- Supertonic 3 replaces Kokoro as the CPU intake because the exact Spanish
+  ONNX/voice profile is reproducible and its MIT/OpenRAIL-M terms are explicit.
+  This is admission to evaluation, not a production license approval.
+- Process-cold is deliberately defined as a fresh worker rather than a purged
+  operating-system disk cache. This makes the five observations repeatable
+  without claiming physical cold-storage behavior or mutating host caches.
+- Complete-waveform APIs record first produced audio at completion and declare
+  that capability. They do not receive an invented streaming advantage, but
+  they may still qualify if every frozen role and cancellation gate passes.
+- The Qwen candidate uses SDPA rather than optional FlashAttention so admission
+  does not add an unproven native build. This is a benchmark profile choice, not
+  a production runtime decision.
 
 ## Final validation results
 
@@ -1063,6 +1178,45 @@ Completed on 2026-07-25:
 
 ### Milestone implementation validation
 
-Not run. All Milestone 6 implementation, model acquisition, hardware benchmark, quality evaluation, profile selection, ADR, and closeout tasks remain not started.
+Milestone 1 completed on 2026-07-25 on
+`feat/m006-evaluation-authority`:
+
+- `uv lock --check --project
+  services/tts/benchmarks/candidates/qwen3_0_6b_cuda` passed, and
+  `uv tree ... --locked --depth 1` reported `qwen-tts 0.1.1`, PyTorch
+  `2.9.1+cu128`, and Torchaudio `2.9.1+cu128`.
+- `uv lock --check --project
+  services/tts/benchmarks/candidates/supertonic3_cpu` passed, and
+  `uv tree ... --locked --depth 2` reported `supertonic 1.3.1` with
+  Hugging Face Hub `1.24.0`, NumPy `2.5.1`, ONNX Runtime `1.27.0`, and
+  SoundFile `0.14.0`.
+- The default-service import probe passed: neither `qwen_tts` nor `supertonic`
+  is present. `git diff origin/main -- services/tts/pyproject.toml
+  services/tts/uv.lock` is empty, so the production service dependency
+  baseline remains unchanged.
+- `uv run --project services/tts --locked ruff check services/tts` passed.
+  `uv run --project services/tts --locked mypy services/tts/src
+  services/tts/tests` passed for five source files. `uv run --project
+  services/tts --locked pytest -p no:cacheprovider services/tts` passed all
+  nine tests, including all six benchmark-authority tests.
+- `pnpm.cmd format:check` and `git diff --cached --check` passed.
+- `pnpm.cmd check:portable` passed: generated contracts, formatting, lint,
+  TypeScript/Python type checks, 18 shared files/175 tests, 34 EPUB files/555
+  tests, 20 desktop files/204 tests, six native WebDriver-client tests, nine
+  Python tests, package/desktop portable builds, and Python sdist/wheel builds.
+- The authoritative native `pnpm.cmd check` passed the same deterministic
+  suites plus Rustfmt, Clippy with warnings denied, Cargo tests, the release
+  Tauri executable build, and Python distributions. The existing Vite
+  chunk-size advisory remained informational.
+- The tracked-artifact privacy test used `git check-ignore` and `git ls-files`
+  against the staged checkpoint and passed. No model, book, generated audio,
+  raw result, cache, private path, corpus text, or privacy canary entered a
+  reviewable summary.
+
+No model was downloaded or executed, no generated audio or official result was
+created, and no GPU/hardware claim was made. Milestones 2-5 of this ExecPlan,
+including model acquisition, hardware measurement, listening evaluation,
+profile selection, ADR acceptance, and full Milestone 6 closeout, remain not
+started.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.
