@@ -867,6 +867,11 @@ In progress on 2026-07-25.
   installed Supertonic 1.3.1 returns `(waveform, duration)`. The adapter and
   regression fake now match the installed public API; no gate, corpus, or
   result was changed.
+- The corrected pilot passed from clean commit
+  `56bd9894fd582375dd1b45e384155705f14f07cb`: the exact CPU profile loaded,
+  one frozen Spanish case generated locally, the waveform was discarded, the
+  worker closed, and no raw session was retained. This pilot is explicitly
+  non-comparable and cannot enter a summary.
 
 #### Status
 
@@ -1332,6 +1337,10 @@ A profile is selectable only when its performance, quality, capability, license,
   wrong installed return shape. It retained no raw session. The pre-result
   fix unpacks the actual `(waveform, duration)` pair and discards both values
   after extracting bounded sample metadata.
+- 2026-07-25: The corrected Supertonic pilot passed from clean commit
+  `56bd9894fd582375dd1b45e384155705f14f07cb` with no retained raw session.
+  The frozen gates and corpus were unchanged, so the official CPU matrix may
+  proceed from the next clean documentation checkpoint.
 - 2026-07-25: Completed Task 1.3 and Milestone 1. The pre-result measurement procedure, numeric gates, listening rubric, invalidation/rerun rules, private summary schema, synthetic valid fixture, and semantic mutation tests are frozen and linked from the performance and architecture authorities. No engine was executed and no official result exists.
 - 2026-07-25: Corrected the recorded sustained-sequence total from 3,144
   to the verified 3,139 code points and froze that exact aggregate in the
