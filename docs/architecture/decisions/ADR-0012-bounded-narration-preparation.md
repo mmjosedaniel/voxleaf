@@ -39,8 +39,10 @@ ambiguity, malformed or unsupported numeric forms, and every block-local
 origin span remain preserved through nonempty text or typed omission units.
 Task 3.4 adds the composed-stream postcondition, deterministic/idempotent
 cross-category tests, deep immutability checks, and content-free privacy
-canaries. Segmentation, prepared ranges, and the public result remain unimplemented. No
-runtime dependency, shared schema, desktop
+canaries. Task 4.1 adds a package-internal two-pass source-offset sentence,
+dialogue-turn, clause, and protected-token scanner and enforces the accepted
+256-code-point protected-token ceiling. Semantic-unit packing, prepared ranges,
+and the public result remain unimplemented. No runtime dependency, shared schema, desktop
 integration, TTS behavior, audio behavior, persistence, or capability was
 added.
 
@@ -442,9 +444,10 @@ Those decisions remain with roadmap Milestones 6 through 9.
   mapping, and bounded source-window lifecycle enforcement. Tasks 3.1-3.4 add
   deterministic source-mapped whitespace/hyphenation and punctuation/symbol
   plus lexical/numeric normalization slices, including production enforcement
-  of the accepted per-source expansion and parser-lookahead ceilings;
-  segmentation, prepared-output limits, and public integration still require
-  later tasks.
+  of the accepted per-source expansion and parser-lookahead ceilings. Task 4.1
+  adds deterministic source-offset sentence/dialogue/clause/protected-token
+  scanning and the protected-token ceiling; packing, prepared-output limits,
+  and public integration still require later tasks.
 
 ## Alternatives considered
 

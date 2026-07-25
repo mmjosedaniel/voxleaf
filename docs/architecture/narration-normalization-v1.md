@@ -10,8 +10,10 @@ whitespace, semantic-line-break, soft-hyphen, conservative line-end
 hyphenation, punctuation, quotation, ellipsis, allowlisted Spanish symbol,
 abbreviation, number, date, time, currency, percentage, and language-context
 slices as a pure source-mapped production normalizer. Task 3.4 additionally
-enforces the composed-stream invariant and privacy gate. Later segmentation and
-`OpenedPublication.prepareNarration` work remains unimplemented.
+enforces the composed-stream invariant and privacy gate. Task 4.1 consumes
+those normalized units through a deterministic source-offset sentence,
+dialogue-turn, clause, and protected-token scanner. Packing, prepared ranges,
+and `OpenedPublication.prepareNarration` remain unimplemented.
 Task 1.3 has accepted the separate
 [`narration-v1` resource profile](narration-preparation-limits-v1.md), so
 Milestone 1's policy, corpus, and bounds gates are closed before production
@@ -102,7 +104,8 @@ contains the closed Spanish line-end, context-safe symbol, abbreviation, and
 numeric-form allowlists.
 Punctuation remains text while frozen roles and content-free boundary
 protections distinguish quotations, dialogue dashes, ellipses, terminal marks,
-malformed openings, code spans, and symbol tokens for the later segmenter.
+malformed openings, code spans, and symbol tokens for
+[`narration-boundary-scanner.ts`](../../packages/epub/src/narration/narration-boundary-scanner.ts).
 Only a whitespace-delimited Spanish ampersand and the exact accepted Spanish
 Celsius form expand; neutral, code, compact ampersand, slash, at-sign, and
 unsupported temperature forms remain unchanged. Every source token remains
@@ -114,9 +117,12 @@ accepted and preserved token boundaries, leaves neutral, malformed,
 ambiguous, unsupported, code, and foreign-name text unchanged, and never uses
 floating-point conversion. The scanner rejects numeric lookahead above 128
 code points, and no emitted unit exceeds the accepted hard maximum of 16 output
-code points per source code point. The corpus does not select a TTS engine or
-model-specific preprocessing. Later Milestone 5 tasks must complete
-segmentation without changing displayed
+code points per source code point. Task 4.1 records immutable source-offset
+boundaries, collapses repeated terminal marks, carries sentence endings through
+closing punctuation, applies deterministic block-final fallback, and protects
+accepted lexical/code/ellipsis spans without reparsing an untracked string.
+The corpus does not select a TTS engine or model-specific preprocessing. Later
+Milestone 5 tasks must pack and map those boundaries without changing displayed
 publication semantics. Any proposed corpus change must update the
 authoritative fixture, its integrity tests, this summary, and the active plan
 before production expectations change.

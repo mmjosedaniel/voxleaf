@@ -11,8 +11,10 @@ text or omission unit per admitted source token. Tasks 3.2-3.3 enforce in
 production the ceiling of 16 output code points per source code point for
 closed Spanish symbol and lexical/numeric rules, and Task 3.3 enforces the
 128-code-point parser-lookahead ceiling, and Task 3.4 validates the composed
-normalized stream and content-free failures. Segmentation, remaining output
-dimensions, and `OpenedPublication.prepareNarration` remain unimplemented.
+normalized stream and content-free failures. Task 4.1 production-enforces the
+256-narration-code-point protected-token ceiling through a two-pass,
+4,096-unit-bounded scanner. Segment packing, remaining output dimensions, and
+`OpenedPublication.prepareNarration` remain unimplemented.
 
 The exact test authority is
 [`packages/epub/test-support/narration-preparation-limits.ts`](../../packages/epub/test-support/narration-preparation-limits.ts).
@@ -96,6 +98,12 @@ accepted abbreviation, number, date, time, currency, percentage, and symbol
 forms while containing adversarial uninterrupted tokens and malformed
 punctuation. A 16× expansion ceiling permits accepted lexical expansions but
 cannot bypass per-segment or per-batch output limits.
+
+Task 4.1 enforces the protected-token ceiling over contiguous normalized output
+carrying the same non-splittable protection set. Exact 256-code-point code
+content passes; 257 produces the fixed content-free resource-limit failure.
+Boundary scanning visits each normalized unit exactly twice and retains no
+unbounded lookup or locale-derived state.
 
 The 16,384-code-point source ceiling is deliberately much smaller than the
 64-MiB publication text budget. One request therefore cannot copy or prepare a

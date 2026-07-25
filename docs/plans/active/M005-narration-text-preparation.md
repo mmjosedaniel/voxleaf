@@ -588,7 +588,26 @@ Implementation tasks are ordered. A task may refine a later task, but production
 - Boundary output remains deterministic across batching and repeated runs.
 - `pnpm.cmd --filter @voxleaf/epub test`.
 
-**Status:** Not started.
+**Status:** Complete. Added the package-internal two-pass
+`narration-boundary-scanner.ts` over normalized source-mapped units. It emits
+immutable source-offset sentence, dialogue-turn, and clause split points plus
+non-splittable protected-token spans; collapses repeated terminal marks;
+carries sentence endings through closing punctuation; closes unterminated
+spoken text at the block boundary; preserves heading/paragraph, quote/list,
+language, and dialogue metadata; and never calls `Intl.Segmenter` or reparses
+an untracked string. Each admitted unit is visited exactly twice, and the
+accepted 256-narration-code-point protected-token hard maximum is now enforced
+in production. The complete 62-case normalization corpus plus focused Spanish
+punctuation, closing quotation, dialogue, clause, malformed-input,
+language/line-break, structural metadata, exact/max-plus-one, immutability, and
+privacy tests pass. The current semantic source projection exposes no
+scene-break union to preserve, so this task does not invent an ingestion or
+public semantic contract; Task 4.2 retains the planned recognized-scene-break
+packing behavior. `pnpm.cmd --filter @voxleaf/epub typecheck`,
+`pnpm.cmd --filter @voxleaf/epub test` (30 files/516 tests), and the complete
+`pnpm.cmd check:portable` repository gate pass. No public operation, prepared
+segment/range, dependency, shared schema, desktop, TTS, audio, persistence,
+network, or capability behavior was added.
 
 ### Task 4.2: Pack semantic units using the accepted profile
 
@@ -943,6 +962,7 @@ No migration or user-data rollback should be required because Milestone 5 persis
 - 2026-07-24: Completed Task 3.3. Added closed longest-first Spanish lexical normalization and preservation tables plus bounded source-order recognition for accepted abbreviations, initials, cardinals, signs, ordinals, decimal/thousands forms, years, dates, times, euro/explicit US-dollar currency, percentages, and explicit language context. Every expansion is split across original one-code-point source units under the 16-code-point per-source ceiling; unused origins become typed lexical omissions, and frozen roles/protections retain segmentation evidence without widening spans. Neutral, malformed, ambiguous, unsupported, out-of-allowlist, code, and foreign-name forms remain unchanged. The production numeric lookahead guard admits exactly 128 candidate code points and rejects 129 with the fixed content-free resource-limit outcome; no floating-point conversion, locale API, regex backtracking, dependency, schema, desktop behavior, persistence, network, TTS, audio, or capability was added. `pnpm.cmd --filter @voxleaf/epub typecheck`, `pnpm.cmd --filter @voxleaf/epub test` (29 files/497 tests), `pnpm.cmd lint:typescript`, `pnpm.cmd check:portable`, and `git diff --check` passed.
 
 - 2026-07-24: Completed Task 3.4. Added a production postcondition that validates normalized-unit cardinality, source-span parity, deep-freeze state, effective-language values, nonempty per-source output, expansion ceilings, and reconstructed narration text before returning the stream. Added composed mixed-language/code/symbol/line-break/punctuation/numeric cases, full-corpus repeated-run and second-pass stability, source immutability, output-unit and expansion-bound assertions, and canary checks over fixed internal/resource-limit failures. `pnpm.cmd --filter @voxleaf/epub typecheck`, `pnpm.cmd --filter @voxleaf/epub test` (29 files/502 tests), and `git diff --check` passed; portable validation remains the milestone check. No public operation, segmentation, shared schema, dependency, desktop, TTS, audio, persistence, network, or capability behavior was added.
+- 2026-07-24: Completed Task 4.1. Added a package-internal deterministic boundary scanner over normalized source-mapped units with immutable source-offset sentence/dialogue-turn/clause points, explicit non-splittable protected-token spans, repeated-terminal clustering, closing-punctuation carry, block-final malformed/unterminated fallback, semantic line-break and language-transition clauses, and preserved heading/paragraph/quote/list/dialogue metadata. The scanner visits each admitted unit exactly twice, uses no locale authority or untracked-string parse, and production-enforces the accepted 256-code-point protected-token ceiling with fixed content-free max-plus-one failure. Fourteen focused tests drive the complete normalization corpus and explicit boundary/privacy/bound cases; `pnpm.cmd --filter @voxleaf/epub typecheck`, `pnpm.cmd --filter @voxleaf/epub test` (30 files/516 tests), `pnpm.cmd check:portable`, and `git diff --check` pass. The current source projection has no scene-break union, so no ingestion/public semantic contract was invented; recognized scene-break packing remains Task 4.2 work. No public operation, prepared segment/range, dependency, shared schema, desktop, TTS, audio, persistence, network, or capability behavior was added.
 
 ## Discoveries and decisions
 
@@ -958,6 +978,7 @@ No migration or user-data rollback should be required because Milestone 5 persis
 - The broad synchronized-reader plan remains useful for Milestones 8-9 but does not define Milestone 5 normalization or segmentation acceptance.
 - Half-open block-local ranges are the accepted mapping convention because they compose without duplicate boundary code points and remain compatible with the existing ordered `LocatorRangeV1`.
 - Stable segmentation must be independent of request batching. The unresolved user-interaction choice for a visual locator inside a stable segment remains explicitly deferred to Milestone 9.
+- The current safe semantic model and narration source projection expose headings, paragraphs, block quotes, and list boundaries but no scene-break leaf/event. Task 4.1 preserves every available source metadata field and does not widen the ingestion/public semantic contract; Task 4.2 must either recognize a scene-break-only admitted block under an explicit deterministic rule or record a plan/ADR amendment before claiming that behavior.
 - ADR-0012 accepts `prepareNarration` as a closed result-returning operation rather than an exception boundary. A request inside a stable segment receives that complete segment plus `inside-segment`, preserving both stable batch-independent segmentation and Milestone 9's later choice to use or skip it.
 - Narration preparation owns a separate active-operation slot from raster reads. This preserves the no-archive-read boundary while allowing one in-memory preparation and one bounded image read to overlap; publication close cancels and awaits both.
 - The Task 1.2 corpus is test-only authority rather than a production lookup table. Neutral behavior is conservative; Spanish lexical expansion is allowlisted; ambiguous/unsupported forms, code spacing, combining sequences, astral code points, malformed punctuation, and foreign names are preserved; validation failures expose only closed content-free codes.
