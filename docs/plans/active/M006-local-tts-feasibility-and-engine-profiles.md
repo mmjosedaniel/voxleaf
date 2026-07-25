@@ -1478,6 +1478,16 @@ A profile is selectable only when its performance, quality, capability, license,
   is not administrator-elevated. AC sleep was restored to 45 minutes and no
   candidate execution began. The next action requires administrator
   authorization to create that one temporary rule.
+- 2026-07-25: Administrator authorization succeeded. Two temporary duplicate
+  Qwen rules left by the elevation retries were replaced with one exact
+  interpreter-scoped outbound block, and native verification found exactly one
+  matching rule. The clean official `v2` preflight passed every other check but
+  failed the frozen 12-GiB balanced-role RAM-headroom gate: free RAM was
+  11,785,637,888 bytes. Free VRAM was 8,189,378,560 bytes and the WDDM process
+  counter was available. No model loaded, no raw session or result was created,
+  and AC sleep was restored to 45 minutes. Closing active user applications is
+  a required operator decision because automated termination could discard
+  work or terminate the benchmark session.
 
 ## Discoveries and decisions
 
@@ -1601,10 +1611,11 @@ Completed before the hardware-attribution blocker on 2026-07-25:
   matching rule remains.
 
 Milestone 3 is not complete. The `v2` authority and Windows/PyTorch
-implementation pass full repository validation, but the first Qwen preflight
-is blocked on administrator authorization for its exact temporary outbound
-firewall rule. Both complete candidate reruns remain pending. The sequential
-quality and audit tasks have not started. No summary was promoted and no
-profile was selected.
+implementation pass full repository validation, and the exact temporary Qwen
+firewall rule is active. The first clean Qwen preflight is now blocked only by
+the frozen 12-GiB free-RAM headroom gate: the observed 11,785,637,888 bytes
+were 1,099,264,000 bytes short. Both complete candidate reruns remain pending.
+The sequential quality and audit tasks have not started. No model loaded, no
+summary was promoted, and no profile was selected.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.
