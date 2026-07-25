@@ -773,15 +773,31 @@ In progress on 2026-07-25.
   255HX with 20 logical processors, 32 GB RAM, an NVIDIA GeForce RTX 5060
   Laptop GPU with 8,151 MiB VRAM and driver 577.05, ample disk, and AC power.
   This is setup evidence only, not an official candidate result.
-- Official preflight remains blocked at this checkpoint because candidate
-  environments and verified model artifacts have not been acquired, offline
-  controls and the administrator-created firewall rule are absent, and the
-  currently free RAM is below the balanced role's conservative 12-GiB
-  pre-load headroom. No pilot or model run has occurred.
+- Both candidate environments now install from their exact locks. The Qwen
+  environment occupies 5,165,928,540 bytes and reports `qwen-tts 0.1.1`,
+  `torch 2.9.1+cu128`, available CUDA/bfloat16, and the expected RTX 5060.
+  The Supertonic environment occupies 111,602,972 bytes and reports
+  `supertonic 1.3.1`, `onnxruntime 1.27.0`, CPU device, and the package's
+  source-confirmed `CPUExecutionProvider` default.
+- The immutable Qwen and Supertonic snapshots were acquired into ignored
+  local model storage. Their measured snapshot sizes are 2,498,444,461 and
+  414,741,773 bytes respectively. Every manifest SHA-256 matches, including
+  Qwen's 1,811,626,576-byte primary model, all four Supertonic ONNX files, and
+  the 292,046-byte `F1` voice style. Git ignore checks cover both environments
+  and both model roots.
+- The prior 45-minute AC sleep setting was observed, temporarily changed to
+  disabled for setup, and restored after Windows rejected creation of the
+  exact application-scoped outbound firewall rule with access denied. No rule
+  was created and no model or pilot ran.
+- Official preflight is therefore genuinely blocked on administrator
+  authorization to create the documented temporary firewall rule. The
+  offline environment controls must then be set and preflight rerun from a
+  clean revision; the balanced run also requires at least 12 GiB free RAM at
+  preflight.
 
 #### Status
 
-In progress.
+In progress — blocked on required administrator authorization.
 
 ### Task 3.2: Run cold, warm, sustained, cancellation, and failure matrices
 
@@ -1264,6 +1280,7 @@ A profile is selectable only when its performance, quality, capability, license,
 - 2026-07-25: Completed Task 2.2. Thin Qwen and Supertonic adapters now validate the frozen profile, offline controls, local artifact hashes, runtime/provider/precision/voice identity, native complete-waveform behavior, and fixed-code failure boundary in deterministic model-free tests.
 - 2026-07-25: Completed Task 2.3. Spawn-isolated execution now bounds metadata and diagnostics, hard-stops worker process trees, rejects stale or falsely mid-generation complete-waveform output, restarts cleanly between forced-cancellation trials, and leaves real candidate limitations explicit for official measurement.
 - 2026-07-25: Started Task 3.1 on a new branch from merged Milestone 2. The closed preflight command, privacy-safe host/artifact receipt, role headroom gates, non-promotable pilot state, and exact Windows Firewall network-isolation proof pass deterministic tests; official eligibility awaits candidate acquisition, offline controls, firewall authorization, and sufficient free balanced-role RAM.
+- 2026-07-25: Completed the networked acquisition portion of Task 3.1. Both exact candidate locks installed, both immutable snapshots downloaded into ignored storage, and every manifest checksum/provider import matched. Windows denied creation of the required outbound firewall rule because the shell is not elevated; the prior AC sleep timeout was restored and no inference began.
 - 2026-07-25: Completed Task 1.3 and Milestone 1. The pre-result measurement procedure, numeric gates, listening rubric, invalidation/rerun rules, private summary schema, synthetic valid fixture, and semantic mutation tests are frozen and linked from the performance and architecture authorities. No engine was executed and no official result exists.
 - 2026-07-25: Corrected the recorded sustained-sequence total from 3,144
   to the verified 3,139 code points and froze that exact aggregate in the
@@ -1284,6 +1301,7 @@ A profile is selectable only when its performance, quality, capability, license,
   Supertonic/ONNX CPU profiles to the frozen evaluation only; admission does
   not select either profile or authorize a production dependency.
 - Official model execution must be offline after explicit acquisition. A local loopback server is not required for feasibility and would prematurely couple the work to Milestone 7.
+- The exact application-scoped Windows Firewall rule requires an administrator PowerShell session. Ordinary repository/tool sandbox escalation does not grant that operating-system authorization; an access-denied attempt created no rule and is a hard preflight blocker rather than permission to weaken the offline gate.
 - Milestone 2 intentionally adds no root TTS benchmark command. The candidate dispatch and isolation boundary now exist, but acquisition, host/resource preflight, network-disable proof, raw-session ownership, measurement probes, and official promotion are Task 3 work; exposing a partial command would create a non-authoritative result path.
 - First produced audio, complete generated output, media duration, and audible playback are different measurements. Milestone 6 can measure the first three but does not implement or claim the fourth.
 - A benchmark worker process may be used for isolation and termination measurement without selecting the production process transport.
