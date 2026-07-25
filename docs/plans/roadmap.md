@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 4 are complete. Milestone 5's narration-preparation implementation and documentation are complete; final focused, root, CI, privacy, and scope validation is the current closeout priority. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 5 are complete. Milestone 6, local TTS feasibility and engine-profile selection, is the next roadmap priority. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -149,9 +149,9 @@ Milestone 3 provides sanitized content and stable locators. Milestone 2 provides
 
 ## Milestone 5: Prepare text for natural narration
 
-**Status:** In progress; implementation and documentation complete, final close validation pending. Milestone 1 Tasks 1.1-1.3 accept ADR-0012, the deterministic test-only neutral/Spanish corpus, and the model-independent `narration-v1` chunk/resource profile. Milestone 2 Tasks 2.1-2.3 implement exhaustive package-internal semantic source projection, Unicode-code-point source-span tokens, bounded canonical source windows, deterministic continuation/checkpoint/yield behavior, one-active-operation ownership, and close-linked cancellation. Milestone 3 Tasks 3.1-3.4 implement deterministic source-mapped neutral/Spanish normalization, cross-category invariants, and privacy canaries while preserving code and ambiguous or unsupported forms. Milestone 4 Tasks 4.1-4.4 implement deterministic source-offset sentence/dialogue-turn/clause/protected-token scanning, cancellable block-local semantic packing under the accepted per-segment, retained-output, and work limits with fixed oversized-token behavior, and immutable canonical locator-linked prepared segments compatible with the unchanged shared narration contract. Milestone 5 Task 5.1 exposes frozen bounded batches and closed content-free outcomes through `OpenedPublication.prepareNarration`; Task 5.2 proves the repository-authored public EPUB-to-segment neutral/Spanish integration matrix, source immutability, stable ranges, continuation, structural gaps, and capability isolation; and Task 5.3 proves exact deterministic work, batch, lookahead, retained-state, repeated-batch, cancellation, close, and privacy bounds without a hardware claim. Task 6.1 reconciles product, architecture, dependency, testing, roadmap, and plan documentation without claiming audible narration. Task 6.2 still owns final focused, root, CI, privacy, artifact, and scope validation before the milestone may be marked complete.
+**Status:** Complete. Tasks 1.1-1.3 accept ADR-0012, the deterministic test-only neutral/Spanish corpus, and the model-independent `narration-v1` chunk/resource profile. Tasks 2.1-2.3 implement exhaustive package-internal semantic source projection, Unicode-code-point source-span tokens, bounded canonical source windows, deterministic continuation/checkpoint/yield behavior, one-active-operation ownership, and close-linked cancellation. Tasks 3.1-3.4 implement deterministic source-mapped neutral/Spanish normalization, cross-category invariants, and privacy canaries while preserving code and ambiguous or unsupported forms. Tasks 4.1-4.4 implement deterministic source-offset sentence/dialogue-turn/clause/protected-token scanning, cancellable block-local semantic packing under the accepted per-segment, retained-output, and work limits with fixed oversized-token behavior, and immutable canonical locator-linked prepared segments compatible with the unchanged shared narration contract. Task 5.1 exposes frozen bounded batches and closed content-free outcomes through `OpenedPublication.prepareNarration`; Task 5.2 proves the repository-authored public EPUB-to-segment neutral/Spanish integration matrix, source immutability, stable ranges, continuation, structural gaps, and capability isolation; and Task 5.3 proves exact deterministic work, batch, lookahead, retained-state, repeated-batch, cancellation, close, and privacy bounds without a hardware claim. Tasks 6.1-6.2 reconcile the documentation and complete focused, root, CI, privacy, artifact, and scope validation. Pull request #91 Foundation run 30161853712 passed both Ubuntu portable and Windows native jobs on exact implementation-and-evidence head `25d0f77714f0520f0a0012240093f6a16de42f4b`.
 
-**Detailed ExecPlan:** [`active/M005-narration-text-preparation.md`](active/M005-narration-text-preparation.md)
+**Detailed ExecPlan:** [`completed/M005-narration-text-preparation.md`](completed/M005-narration-text-preparation.md)
 
 ### Goal
 
@@ -167,7 +167,7 @@ Create a deterministic narration representation and semantic segmentation pipeli
 
 ### Dependencies
 
-Milestones 2 through 4 are complete. They provide the shared locator-range and narration-segment contracts, safe structured readable content, deterministic Unicode-code-point locators, and the visual reading-position boundary. The active ExecPlan is the detailed implementation authority; the older synchronized-reader plan is context only.
+Milestones 2 through 4 provide the shared locator-range and narration-segment contracts, safe structured readable content, deterministic Unicode-code-point locators, and the visual reading-position boundary. The completed ExecPlan retains Milestone 5's implementation and validation authority; the older synchronized-reader plan is context only.
 
 ### Major risks and unknowns
 
@@ -351,7 +351,7 @@ Durable decisions belong in architecture decision records. Temporary implementat
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or the milestone-specific M004 plan and does not authorize implementing all of those areas at once.
 
-Milestones 1 through 4 are complete, with their evidence retained in [`completed/M001-engineering-foundation.md`](completed/M001-engineering-foundation.md), [`completed/M002-shared-contracts-and-test-harness.md`](completed/M002-shared-contracts-and-test-harness.md), [`completed/M003-secure-epub-ingestion-and-document-model.md`](completed/M003-secure-epub-ingestion-and-document-model.md), and [`completed/M004-reflowable-visual-reader-and-position-restoration.md`](completed/M004-reflowable-visual-reader-and-position-restoration.md). Use the synchronized-reader plan only as later-milestone context. Milestone 5 implementation and documentation are complete; its active plan remains in place until Task 6.2 records final validation and moves it to `completed/`.
+Milestones 1 through 5 are complete, with their evidence retained under [`completed/`](completed/). Use the synchronized-reader plan only as later-milestone context; it does not supersede any completed milestone authority.
 
 ## MVP completion boundary
 

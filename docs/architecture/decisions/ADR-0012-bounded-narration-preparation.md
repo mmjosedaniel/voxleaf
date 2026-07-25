@@ -81,7 +81,8 @@ no-result cancellation/close behavior through numeric-only package evidence.
 Task 6.1 reconciles the implemented ownership, public flow, ranges, language
 policy, limits, lifecycle, dependencies, tests, and deferred TTS/audio boundary
 across current product, architecture, development, roadmap, and plan
-documentation. Final Milestone 5 close validation remains Task 6.2 work.
+documentation. Task 6.2 completes focused, root, CI, privacy, artifact, and
+scope validation.
 
 ## Context
 

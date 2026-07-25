@@ -17,5 +17,4 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`M005-narration-text-preparation.md`](M005-narration-text-preparation.md): approved implementation authority for roadmap Milestone 5's deterministic, bounded, locator-linked narration normalization and semantic segmentation pipeline; all implementation tasks remain not started.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): broader context spanning reader, narration synchronization, and audio startup; the visual-reader portion is recorded in the [completed M004 plan](../completed/M004-reflowable-visual-reader-and-position-restoration.md), and the plan is not Milestone 5 implementation authority.
