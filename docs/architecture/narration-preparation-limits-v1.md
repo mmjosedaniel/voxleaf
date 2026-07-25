@@ -13,12 +13,13 @@ closed Spanish symbol and lexical/numeric rules, and Task 3.3 enforces the
 128-code-point parser-lookahead ceiling, and Task 3.4 validates the composed
 normalized stream and content-free failures. Task 4.1 production-enforces the
 256-narration-code-point protected-token ceiling through a two-pass,
-4,096-unit-bounded scanner. Task 4.2 production-enforces the per-segment
+4,096-unit-bounded scanner. Tasks 4.2-4.3 production-enforce the per-segment
 source-code-point, narration-code-point, UTF-8-byte, and sentence dimensions
-plus the 17-entry retained-segment ceiling through a package-internal
-block-local packer. Batch totals, prepared locator ranges,
-oversized-single-token hardening, and `OpenedPublication.prepareNarration`
-remain unimplemented.
+plus the 17-entry retained-segment, 8,832-code-point retained narration,
+26,624-byte retained narration, 4,096-unit temporary-index, work-checkpoint,
+yield, and cancellation ceilings through a package-internal block-local
+packer. Batch totals, prepared locator ranges, and
+`OpenedPublication.prepareNarration` remain unimplemented.
 
 The exact test authority is
 [`packages/epub/test-support/narration-preparation-limits.ts`](../../packages/epub/test-support/narration-preparation-limits.ts).
@@ -116,6 +117,15 @@ maximum, and never uses UTF-16 string length as a size authority. A top-level
 `***` or U+2042 paragraph is the only recognized scene-break form and emits no
 spoken output.
 
+Task 4.3 bounds normalized-unit, boundary, protected-token, prefix, safe-boundary,
+segment, retained-code-point, and retained-byte collections before or while
+building them. An unprotected token that exceeds a segment maximum is split at
+the latest legal source-mapped Unicode boundary admitted by every independent
+hard dimension. A protected token already fails at 257 code points; a
+combining sequence or one source-mapped expansion that cannot fit without an
+illegal interior split produces the same fixed content-free resource-limit
+outcome. No empty or reversed range is published.
+
 The 16,384-code-point source ceiling is deliberately much smaller than the
 64-MiB publication text budget. One request therefore cannot copy or prepare a
 whole large publication, while continuation can process it through repeated
@@ -143,13 +153,17 @@ Production implementation must:
 These are deterministic structural gates, not claims about milliseconds or a
 particular processor.
 
-Task 2.3 implements these gates in
+Tasks 2.3 and 4.3 implement these gates through the shared package-internal
+`narration-work-controller.ts`. Task 2.3 uses it in
 [`narration-source-window.ts`](../../packages/epub/src/narration/narration-source-window.ts).
 The operation retains at most 4,096 source tokens and 4,096 source events,
 publishes the final token end as its canonical continuation, charges source
 inspection, scanner/structural transitions, and retained appends separately,
-and discards all partial events on cancellation or failure. The production
-policy constants are package-internal; Task 5.1 still owns the final public
+and discards all partial events on cancellation or failure. Task 4.3 uses the
+same controller while validating scans, building bounded prefix/safety indexes,
+selecting fallbacks, and copying retained narration text; cancellation before
+or after an injected yield publishes no packed block. The production policy
+constants are package-internal; Task 5.1 still owns the final public
 request/result surface and remaining profile enforcement.
 
 ## Synthetic evidence

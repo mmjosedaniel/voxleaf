@@ -45,10 +45,15 @@ dialogue-turn, clause, and protected-token scanner and enforces the accepted
 block-local semantic-unit packer, production-enforces every accepted
 per-segment source/code-point/UTF-8-byte/sentence target and hard maximum,
 retains at most 17 stable segments, and records immutable source offsets,
-closed boundary reasons, completion, and content-free measurements. Prepared
-locator ranges and the public result remain unimplemented. No runtime
-dependency, shared schema, desktop integration, TTS behavior, audio behavior,
-persistence, or capability was added.
+closed boundary reasons, completion, and content-free measurements. Task 4.3
+makes packing cooperatively asynchronous through the same deterministic work
+controller as source-window preparation, bounds normalized scan and temporary
+index retention, enforces the accepted 8,832-code-point/26,624-byte retained
+narration ceilings, splits an oversized unprotected token only at a legal
+Unicode-safe hard boundary, and fails content-free when one indivisible unit
+cannot fit. Prepared locator ranges and the public result remain unimplemented.
+No runtime dependency, shared schema, desktop integration, TTS behavior, audio
+behavior, persistence, or capability was added.
 
 ## Context
 
@@ -459,8 +464,10 @@ Those decisions remain with roadmap Milestones 6 through 9.
   adds deterministic source-offset sentence/dialogue/clause/protected-token
   scanning and the protected-token ceiling. Task 4.2 adds stable block-local
   semantic packing, per-segment output enforcement, and the 17-entry retained
-  lookahead ceiling; oversized-token hardening, prepared locator ranges, and
-  public integration still require later tasks.
+  lookahead ceiling. Task 4.3 adds fixed oversized-token behavior, retained
+  scan/text ceilings, deterministic work measurements, cooperative yields, and
+  cancellation before result publication; prepared locator ranges and public
+  integration still require later tasks.
 
 ## Alternatives considered
 

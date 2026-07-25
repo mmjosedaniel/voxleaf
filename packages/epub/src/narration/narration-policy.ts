@@ -1,7 +1,7 @@
 /**
  * Production limits used by the bounded Task 2.3 narration source window,
- * the Task 3.1-3.4 normalizer, the Task 4.1 boundary scanner, and the Task 4.2
- * semantic-unit packer.
+ * the Task 3.1-3.4 normalizer, the Task 4.1 boundary scanner, and the Task
+ * 4.2-4.3 semantic-unit packer.
  *
  * These values are the implemented subset of the accepted model-independent
  * `narration-v1` profile. Later preparation tasks add batch totals and public
@@ -38,4 +38,6 @@ export const NARRATION_V1_SEGMENT_POLICY = Object.freeze({
   sentencesTarget: 3,
   sentencesHardMaximum: 8,
   retainedSegmentEntriesHardMaximum: 17,
+  retainedNarrationCodePointsHardMaximum: 8_832,
+  retainedNarrationUtf8BytesHardMaximum: 26_624,
 });
