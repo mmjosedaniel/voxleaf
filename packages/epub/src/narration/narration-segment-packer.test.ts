@@ -42,7 +42,7 @@ const DOCUMENT_ID = "document:segment-packer" as ContentDocumentId;
 const IMAGE_ID = "resource:packing-image" as RasterImageResourceId;
 
 describe("narration segment packer", () => {
-  it("keeps short headings and paragraphs in separate block-local segments", () => {
+  it("keeps short headings and paragraphs in separate block-local segments", async () => {
     const leaves = tokenLeavesFor([
       heading([text("Synthetic heading")]),
       paragraph([text("Synthetic paragraph.")]),
@@ -53,8 +53,8 @@ describe("narration segment packer", () => {
       throw new Error("expected synthetic packing leaves");
     }
 
-    const packedHeading = packLeaf(headingLeaf, "und");
-    const packedParagraph = packLeaf(paragraphLeaf, "und");
+    const packedHeading = await packLeaf(headingLeaf, "und");
+    const packedParagraph = await packLeaf(paragraphLeaf, "und");
 
     expect(packedHeading.segments).toHaveLength(1);
     expect(packedHeading.segments[0]?.boundaryReason).toBe("heading");
@@ -70,10 +70,10 @@ describe("narration segment packer", () => {
     });
   });
 
-  it("consumes only accepted top-level scene-break paragraphs without speech", () => {
-    const accepted = packBlock(paragraph([text("* * *")]), "und");
-    const asterism = packBlock(paragraph([text("\u2042")]), "und");
-    const rasterBearing = packBlock(
+  it("consumes only accepted top-level scene-break paragraphs without speech", async () => {
+    const accepted = await packBlock(paragraph([text("* * *")]), "und");
+    const asterism = await packBlock(paragraph([text("\u2042")]), "und");
+    const rasterBearing = await packBlock(
       paragraph([
         text("* * *"),
         Object.freeze({
@@ -97,7 +97,7 @@ describe("narration segment packer", () => {
     if (nestedLeaf === undefined) {
       throw new Error("expected synthetic nested packing leaf");
     }
-    const nested = packLeaf(nestedLeaf, "und");
+    const nested = await packLeaf(nestedLeaf, "und");
 
     for (const packed of [accepted, asterism]) {
       expect(packed.disposition).toBe("scene-break");
@@ -113,13 +113,13 @@ describe("narration segment packer", () => {
     expect(rasterBearing.segments).toHaveLength(1);
   });
 
-  it("prefers the latest complete sentence within every target dimension", () => {
+  it("prefers the latest complete sentence within every target dimension", async () => {
     const sentences = Array.from(
       { length: 4 },
       (_, index) => `${String.fromCharCode(97 + index).repeat(99)}.`,
     );
     const source = sentences.join(" ");
-    const packed = packBlock(paragraph([text(source)]), "und");
+    const packed = await packBlock(paragraph([text(source)]), "und");
 
     expect(packed.segments).toHaveLength(2);
     expect(packed.segments[0]?.boundaryReason).toBe("sentence");
@@ -132,9 +132,9 @@ describe("narration segment packer", () => {
     expect(joinedText(packed)).toBe(source);
   });
 
-  it("keeps one over-target sentence intact when every hard maximum admits it", () => {
+  it("keeps one over-target sentence intact when every hard maximum admits it", async () => {
     const source = `${"x".repeat(499)}.`;
-    const packed = packBlock(paragraph([text(source)]), "und");
+    const packed = await packBlock(paragraph([text(source)]), "und");
     const segment = packed.segments[0];
 
     expect(packed.segments).toHaveLength(1);
@@ -143,13 +143,16 @@ describe("narration segment packer", () => {
     expect(segment?.boundaryReason).toBe("paragraph");
   });
 
-  it("falls back from an oversized sentence to clause then whitespace boundaries", () => {
+  it("falls back from an oversized sentence to clause then whitespace boundaries", async () => {
     const clauseSource = `${"a".repeat(250)}, ${"b".repeat(250)}, ${"c".repeat(250)}.`;
     const whitespaceSource = Array.from({ length: 180 }, () => "word").join(
       " ",
     );
-    const clausePacked = packBlock(paragraph([text(clauseSource)]), "und");
-    const whitespacePacked = packBlock(
+    const clausePacked = await packBlock(
+      paragraph([text(clauseSource)]),
+      "und",
+    );
+    const whitespacePacked = await packBlock(
       paragraph([text(whitespaceSource)]),
       "und",
     );
@@ -162,9 +165,9 @@ describe("narration segment packer", () => {
     expect(joinedText(whitespacePacked)).toBe(whitespaceSource);
   });
 
-  it("uses a Unicode-safe hard split without separating a combining sequence", () => {
+  it("uses a Unicode-safe hard split without separating a combining sequence", async () => {
     const source = `${"x".repeat(639)}e\u0301${"z".repeat(100)}`;
-    const packed = packBlock(paragraph([text(source)]), "und");
+    const packed = await packBlock(paragraph([text(source)]), "und");
     const first = packed.segments[0];
     const second = packed.segments[1];
 
@@ -174,11 +177,57 @@ describe("narration segment packer", () => {
     expect(joinedText(packed)).toBe(source);
   });
 
-  it("enforces independent code-point, UTF-8-byte, source-span, and sentence ceilings", () => {
+  it("splits one unprotected max-plus-one token at the latest legal hard boundary", async () => {
+    const maximum = NARRATION_V1_SEGMENT_POLICY.narrationCodePointsHardMaximum;
+    const exactSource = "x".repeat(maximum);
+    const oversizedSource = "x".repeat(maximum + 1);
+    const exact = await packBlock(paragraph([text(exactSource)]), "und");
+    const oversized = await packBlock(
+      paragraph([text(oversizedSource)]),
+      "und",
+    );
+
+    expect(exact.segments).toHaveLength(1);
+    expect(exact.segments[0]?.measurements.narrationCodePoints).toBe(maximum);
+    expect(oversized.segments).toHaveLength(2);
+    expect(oversized.segments[0]?.boundaryReason).toBe("hard-limit");
+    expect(oversized.segments[0]?.sourceSpan).toEqual({
+      startOffsetCodePoints: 0,
+      endOffsetCodePoints: maximum,
+    });
+    expect(oversized.segments[1]?.sourceSpan).toEqual({
+      startOffsetCodePoints: maximum,
+      endOffsetCodePoints: maximum + 1,
+    });
+    expect(joinedText(oversized)).toBe(oversizedSource);
+  });
+
+  it("returns a fixed limit when one combining sequence cannot fit legally", async () => {
+    const maximum = NARRATION_V1_SEGMENT_POLICY.narrationCodePointsHardMaximum;
+    const exactSource = `e${"\u0301".repeat(maximum - 1)}`;
+    const canary = `e${"\u0301".repeat(maximum)}`;
+    const exact = await packBlock(paragraph([text(exactSource)]), "und");
+
+    expect(exact.segments).toHaveLength(1);
+    expect(exact.segments[0]?.measurements.narrationCodePoints).toBe(maximum);
+    await expectContentFreeFailure(
+      () => packBlock(paragraph([text(canary)]), "und"),
+      "resource-limit-exceeded",
+      canary,
+    );
+  });
+
+  it("enforces independent code-point, UTF-8-byte, source-span, and sentence ceilings", async () => {
     const exactSourceSpan = `${"\u200b".repeat(128)}${"x".repeat(639)}.`;
     const exactUtf8Bytes = "\u{1f642}".repeat(512);
-    const sourcePacked = packBlock(paragraph([text(exactSourceSpan)]), "und");
-    const bytePacked = packBlock(paragraph([text(exactUtf8Bytes)]), "und");
+    const sourcePacked = await packBlock(
+      paragraph([text(exactSourceSpan)]),
+      "und",
+    );
+    const bytePacked = await packBlock(
+      paragraph([text(exactUtf8Bytes)]),
+      "und",
+    );
 
     expect(sourcePacked.segments).toHaveLength(1);
     expect(sourcePacked.segments[0]?.measurements).toEqual({
@@ -198,7 +247,128 @@ describe("narration segment packer", () => {
     assertSegmentBounds(bytePacked);
   });
 
-  it("never splits a protected token and keeps source-mapped output stable", () => {
+  it("enforces exact and max-plus-one retained narration limits", async () => {
+    const codePointUnitCount =
+      NARRATION_V1_SEGMENT_POLICY.retainedNarrationCodePointsHardMaximum /
+      NARRATION_V1_SOURCE_WINDOW_POLICY.normalizationExpansionCodePointsHardMaximum;
+    const exactCodePoints = expandedScan("x".repeat(codePointUnitCount), () =>
+      "a".repeat(
+        NARRATION_V1_SOURCE_WINDOW_POLICY.normalizationExpansionCodePointsHardMaximum,
+      ),
+    );
+    const maxPlusOneCodePoints = expandedScan(
+      "x".repeat(codePointUnitCount + 1),
+      () =>
+        "a".repeat(
+          NARRATION_V1_SOURCE_WINDOW_POLICY.normalizationExpansionCodePointsHardMaximum,
+        ),
+    );
+    const utf8Unit = "\u{1f642}".repeat(
+      NARRATION_V1_SOURCE_WINDOW_POLICY.normalizationExpansionCodePointsHardMaximum,
+    );
+    const utf8UnitBytes = new TextEncoder().encode(utf8Unit).byteLength;
+    const byteUnitCount =
+      NARRATION_V1_SEGMENT_POLICY.retainedNarrationUtf8BytesHardMaximum /
+      utf8UnitBytes;
+    const exactBytes = expandedScan("x".repeat(byteUnitCount), () => utf8Unit);
+    const maxPlusOneBytes = expandedScan(
+      "x".repeat(byteUnitCount + 1),
+      (index) => (index < byteUnitCount ? utf8Unit : "\u{1f642}"),
+    );
+
+    const codePointPacked = await packNarrationBoundaryScan(exactCodePoints);
+    const bytePacked = await packNarrationBoundaryScan(exactBytes);
+
+    expect(codePointPacked.complete).toBe(true);
+    expect(bytePacked.complete).toBe(true);
+    expect(codePointPacked.measurements.narrationCodePoints).toBe(
+      NARRATION_V1_SEGMENT_POLICY.retainedNarrationCodePointsHardMaximum,
+    );
+    expect(bytePacked.measurements.narrationUtf8Bytes).toBe(
+      NARRATION_V1_SEGMENT_POLICY.retainedNarrationUtf8BytesHardMaximum,
+    );
+    await expectContentFreeFailure(
+      () => packNarrationBoundaryScan(maxPlusOneCodePoints),
+      "resource-limit-exceeded",
+      String(maxPlusOneCodePoints.normalized.text),
+    );
+    await expectContentFreeFailure(
+      () => packNarrationBoundaryScan(maxPlusOneBytes),
+      "resource-limit-exceeded",
+      String(maxPlusOneBytes.normalized.text),
+    );
+  });
+
+  it("rejects max-plus-one retained source units before temporary indexing", async () => {
+    const canary = "private-retained-unit-canary";
+    const scan = scanLeaf(leafFor(paragraph([text("x")])), "und");
+    const unit = scan.normalized.units[0];
+    if (unit === undefined) {
+      throw new Error("expected synthetic normalized unit");
+    }
+    const malformed = Object.freeze({
+      ...scan,
+      normalized: Object.freeze({
+        ...scan.normalized,
+        text: canary,
+        units: Object.freeze(
+          Array.from(
+            {
+              length:
+                NARRATION_V1_SOURCE_WINDOW_POLICY.retainedTokenEntriesHardMaximum +
+                1,
+            },
+            () => unit,
+          ),
+        ),
+      }),
+    }) as NarrationBoundaryScan;
+
+    await expectContentFreeFailure(
+      () => packNarrationBoundaryScan(malformed),
+      "resource-limit-exceeded",
+      canary,
+    );
+  });
+
+  it("observes cancellation during worst-case bounded packing and allows retry", async () => {
+    const canaryPrefix = "privatecancellationcanary";
+    const source = `${canaryPrefix}${"x".repeat(
+      NARRATION_V1_SOURCE_WINDOW_POLICY.retainedTokenEntriesHardMaximum -
+        codePointLength(canaryPrefix),
+    )}`;
+    const scan = scanLeaf(leafFor(paragraph([text(source)])), "und");
+    const controller = new AbortController();
+    let cancellationYieldCount = 0;
+
+    await expectContentFreeFailure(
+      () =>
+        packNarrationBoundaryScan(scan, {
+          signal: controller.signal,
+          scheduler: async () => {
+            cancellationYieldCount += 1;
+            controller.abort();
+          },
+        }),
+      "cancelled",
+      canaryPrefix,
+    );
+    expect(cancellationYieldCount).toBe(1);
+
+    const retry = await packNarrationBoundaryScan(scan, {
+      scheduler: async () => Promise.resolve(),
+    });
+    expect(retry.complete).toBe(true);
+    expect(retry.measurements.checkpointCount).toBeGreaterThan(0);
+    expect(retry.measurements.yieldCount).toBeGreaterThan(0);
+    expect(retry.measurements.workUnitCount).toBeGreaterThan(
+      retry.measurements.yieldCount,
+    );
+    expect(joinedText(retry)).toBe(source);
+    assertSegmentBounds(retry);
+  });
+
+  it("never splits a protected token and keeps source-mapped output stable", async () => {
     const protectedLength =
       NARRATION_V1_SOURCE_WINDOW_POLICY.protectedTokenCodePointsHardMaximum;
     const block = paragraph([
@@ -206,7 +376,7 @@ describe("narration segment packer", () => {
       text("x".repeat(500)),
     ]);
     const scan = scanLeaf(leafFor(block), "und");
-    const packed = packNarrationBoundaryScan(scan);
+    const packed = await packNarrationBoundaryScan(scan);
 
     for (const segment of packed.segments) {
       for (const token of scan.protectedTokens) {
@@ -221,9 +391,9 @@ describe("narration segment packer", () => {
     expect(joinedText(packed)).toBe(scan.normalized.text);
   });
 
-  it("caps retained output at one lookahead beyond the batch maximum", () => {
+  it("caps retained output at one lookahead beyond the batch maximum", async () => {
     const source = Array.from({ length: 60 }, () => "a.").join(" ");
-    const packed = packBlock(paragraph([text(source)]), "und");
+    const packed = await packBlock(paragraph([text(source)]), "und");
 
     expect(packed.segments).toHaveLength(
       NARRATION_V1_SEGMENT_POLICY.retainedSegmentEntriesHardMaximum,
@@ -234,12 +404,12 @@ describe("narration segment packer", () => {
     );
   });
 
-  it("makes stable segmentation independent of later batch slicing", () => {
+  it("makes stable segmentation independent of later batch slicing", async () => {
     const source = Array.from(
       { length: 10 },
       (_, index) => `${String.fromCharCode(97 + index).repeat(99)}.`,
     ).join(" ");
-    const packed = packBlock(paragraph([text(source)]), "und");
+    const packed = await packBlock(paragraph([text(source)]), "und");
     const oneAtATime = groupSegments(packed, 1).flat();
     const threeAtATime = groupSegments(packed, 3).flat();
 
@@ -248,12 +418,12 @@ describe("narration segment packer", () => {
     expect(oneAtATime).toEqual(threeAtATime);
   });
 
-  it("packs the accepted corpus deterministically with frozen bounded output", () => {
+  it("packs the accepted corpus deterministically with frozen bounded output", async () => {
     for (const corpusCase of NARRATION_NORMALIZATION_CORPUS) {
       const fixture = corpusFixture(corpusCase);
       const scan = scanLeaf(fixture.leaf, corpusCase.defaultLanguage);
-      const first = packNarrationBoundaryScan(scan);
-      const repeated = packNarrationBoundaryScan(scan);
+      const first = await packNarrationBoundaryScan(scan);
+      const repeated = await packNarrationBoundaryScan(scan);
 
       expect(repeated).toEqual(first);
       expect(first.complete).toBe(true);
@@ -266,9 +436,9 @@ describe("narration segment packer", () => {
     }
   });
 
-  it("consumes empty and omission-only blocks without spoken output", () => {
-    const empty = packBlock(paragraph([]), "und");
-    const lineBreak = packBlock(
+  it("consumes empty and omission-only blocks without spoken output", async () => {
+    const empty = await packBlock(paragraph([]), "und");
+    const lineBreak = await packBlock(
       paragraph([Object.freeze({ kind: "line-break" as const })]),
       "und",
     );
@@ -280,7 +450,7 @@ describe("narration segment packer", () => {
     }
   });
 
-  it("maps malformed scans to a fixed content-free failure", () => {
+  it("maps malformed scans to a fixed content-free failure", async () => {
     const canary = "private-segment-packer-canary";
     const scan = scanLeaf(
       leafFor(paragraph([text("Synthetic sentence.")])),
@@ -294,7 +464,7 @@ describe("narration segment packer", () => {
       }),
     }) as NarrationBoundaryScan;
 
-    expectContentFreeFailure(
+    await expectContentFreeFailure(
       () => packNarrationBoundaryScan(malformed),
       "internal-failure",
       canary,
@@ -494,18 +664,45 @@ function scanLeaf(
   );
 }
 
-function packLeaf(
-  leaf: NarrationSourceTokenLeafEvent,
-  defaultLanguage: "es" | "und",
-): NarrationPackedBlock {
-  return packNarrationBoundaryScan(scanLeaf(leaf, defaultLanguage));
+function expandedScan(
+  source: string,
+  expansion: (unitIndex: number) => string,
+): NarrationBoundaryScan {
+  const scan = scanLeaf(leafFor(paragraph([text(source)])), "und");
+  const units = Object.freeze(
+    scan.normalized.units.map((unit, unitIndex) =>
+      unit.kind === "text"
+        ? Object.freeze({
+            ...unit,
+            text: expansion(unitIndex),
+          })
+        : unit,
+    ),
+  );
+  return Object.freeze({
+    ...scan,
+    normalized: Object.freeze({
+      ...scan.normalized,
+      units,
+      text: units
+        .map((unit) => (unit.kind === "text" ? String(unit.text) : ""))
+        .join(""),
+    }),
+  }) as NarrationBoundaryScan;
 }
 
-function packBlock(
+async function packLeaf(
+  leaf: NarrationSourceTokenLeafEvent,
+  defaultLanguage: "es" | "und",
+): Promise<NarrationPackedBlock> {
+  return await packNarrationBoundaryScan(scanLeaf(leaf, defaultLanguage));
+}
+
+async function packBlock(
   block: SemanticBlock,
   defaultLanguage: "es" | "und",
-): NarrationPackedBlock {
-  return packLeaf(leafFor(block), defaultLanguage);
+): Promise<NarrationPackedBlock> {
+  return await packLeaf(leafFor(block), defaultLanguage);
 }
 
 function joinedText(packed: NarrationPackedBlock): string {
@@ -528,6 +725,7 @@ function groupSegments(
 }
 
 function assertSegmentBounds(packed: NarrationPackedBlock): void {
+  let previousEnd = 0;
   for (const segment of packed.segments) {
     expect(segment.measurements.sourceCodePoints).toBeLessThanOrEqual(
       NARRATION_V1_SEGMENT_POLICY.sourceCodePointsHardMaximum,
@@ -544,6 +742,10 @@ function assertSegmentBounds(packed: NarrationPackedBlock): void {
     expect(segment.sourceSpan.endOffsetCodePoints).toBeGreaterThan(
       segment.sourceSpan.startOffsetCodePoints,
     );
+    expect(segment.sourceSpan.startOffsetCodePoints).toBeGreaterThanOrEqual(
+      previousEnd,
+    );
+    previousEnd = segment.sourceSpan.endOffsetCodePoints;
   }
   expect(packed.segments.length).toBeLessThanOrEqual(
     NARRATION_V1_SEGMENT_POLICY.retainedSegmentEntriesHardMaximum,
@@ -562,13 +764,13 @@ function assertDeepFrozen(packed: NarrationPackedBlock): void {
   }
 }
 
-function expectContentFreeFailure(
-  action: () => unknown,
-  code: "internal-failure" | "resource-limit-exceeded",
+async function expectContentFreeFailure(
+  action: () => Promise<unknown>,
+  code: "cancelled" | "internal-failure" | "resource-limit-exceeded",
   canary: string,
-): void {
+): Promise<void> {
   try {
-    action();
+    await action();
   } catch (error: unknown) {
     expect(error).toBeInstanceOf(EpubArchiveError);
     expect((error as EpubArchiveError).code).toBe(code);

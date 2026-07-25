@@ -28,8 +28,16 @@ import {
   createNarrationSourceTokenAtOffset,
   type NarrationSourceToken,
 } from "./narration-source.js";
+import {
+  DEFAULT_NARRATION_YIELD_SCHEDULER,
+  NarrationWorkController,
+  type NarrationYieldScheduler,
+} from "./narration-work-controller.js";
 
-export type NarrationYieldScheduler = () => Promise<void>;
+export {
+  DEFAULT_NARRATION_YIELD_SCHEDULER,
+  type NarrationYieldScheduler,
+} from "./narration-work-controller.js";
 
 export interface NarrationSourceWindowRequest {
   readonly startLocator: unknown;
@@ -175,11 +183,6 @@ const RESOURCE_LIMIT_EXCEEDED: NarrationSourceWindowFailure = Object.freeze({
   status: "resource-limit-exceeded",
 });
 
-export const DEFAULT_NARRATION_YIELD_SCHEDULER: NarrationYieldScheduler = () =>
-  new Promise((resolve) => {
-    globalThis.setTimeout(resolve, 0);
-  });
-
 function fail(code: "internal-failure" | "resource-limit-exceeded"): never {
   throw new EpubArchiveError(code);
 }
@@ -280,81 +283,6 @@ function assertDepth(depth: number): void {
     depth > NARRATION_V1_SOURCE_WINDOW_POLICY.traversalDepthHardMaximum
   ) {
     return fail("resource-limit-exceeded");
-  }
-}
-
-class NarrationWorkController {
-  readonly #scheduler: NarrationYieldScheduler;
-  readonly #signal: AbortSignal;
-  #checkpointCount = 0;
-  #sinceCheckpoint = 0;
-  #sinceYield = 0;
-  #workUnitCount = 0;
-  #yieldCount = 0;
-
-  public constructor(signal: AbortSignal, scheduler: NarrationYieldScheduler) {
-    this.#signal = signal;
-    this.#scheduler = scheduler;
-    this.assertActive();
-  }
-
-  public get checkpointCount(): number {
-    return this.#checkpointCount;
-  }
-
-  public get workUnitCount(): number {
-    return this.#workUnitCount;
-  }
-
-  public get yieldCount(): number {
-    return this.#yieldCount;
-  }
-
-  public async observe(): Promise<void> {
-    this.#workUnitCount = addSafe(this.#workUnitCount, 1);
-    this.#sinceCheckpoint = addSafe(this.#sinceCheckpoint, 1);
-    this.#sinceYield = addSafe(this.#sinceYield, 1);
-
-    if (
-      this.#sinceCheckpoint >=
-      NARRATION_V1_SOURCE_WINDOW_POLICY.workUnitsBetweenCheckpointsTarget
-    ) {
-      this.assertActive();
-      this.#checkpointCount = addSafe(this.#checkpointCount, 1);
-      this.#sinceCheckpoint = 0;
-    }
-
-    if (
-      this.#sinceYield >=
-      NARRATION_V1_SOURCE_WINDOW_POLICY.workUnitsBetweenYieldsTarget
-    ) {
-      this.assertActive();
-      await this.#scheduler();
-      this.#yieldCount = addSafe(this.#yieldCount, 1);
-      this.#sinceYield = 0;
-      this.assertActive();
-    }
-
-    if (
-      this.#sinceCheckpoint >
-        NARRATION_V1_SOURCE_WINDOW_POLICY.workUnitsBetweenCheckpointsHardMaximum ||
-      this.#sinceYield >
-        NARRATION_V1_SOURCE_WINDOW_POLICY.workUnitsBetweenYieldsHardMaximum
-    ) {
-      return fail("internal-failure");
-    }
-  }
-
-  public beforePublication(): void {
-    this.assertActive();
-    this.#checkpointCount = addSafe(this.#checkpointCount, 1);
-    this.#sinceCheckpoint = 0;
-  }
-
-  private assertActive(): void {
-    if (this.#signal.aborted) {
-      throw new EpubArchiveError("cancelled");
-    }
   }
 }
 

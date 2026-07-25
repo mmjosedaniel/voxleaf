@@ -16,6 +16,11 @@ import {
   NARRATION_V1_SOURCE_WINDOW_POLICY,
 } from "./narration-policy.js";
 import type { NarrationSourceSpan } from "./narration-source.js";
+import {
+  DEFAULT_NARRATION_YIELD_SCHEDULER,
+  NarrationWorkController,
+  type NarrationYieldScheduler,
+} from "./narration-work-controller.js";
 
 export type NarrationPackingBoundaryReason =
   | "clause"
@@ -49,6 +54,9 @@ export interface NarrationPackedBlockMeasurements {
   readonly narrationUtf8Bytes: Index;
   readonly sentenceCount: Index;
   readonly segmentCount: Index;
+  readonly workUnitCount: Index;
+  readonly checkpointCount: Index;
+  readonly yieldCount: Index;
 }
 
 export interface NarrationPackedBlock {
@@ -59,11 +67,21 @@ export interface NarrationPackedBlock {
   readonly measurements: NarrationPackedBlockMeasurements;
 }
 
+export interface NarrationPackingOptions {
+  readonly signal?: AbortSignal;
+  readonly scheduler?: NarrationYieldScheduler;
+}
+
 interface PrefixMeasurements {
   readonly narrationCodePoints: readonly number[];
   readonly narrationUtf8Bytes: readonly number[];
   readonly sentenceCount: readonly number[];
   readonly substantiveUnitCount: readonly number[];
+}
+
+interface ValidatedScanMeasurements {
+  readonly unitNarrationCodePoints: readonly number[];
+  readonly unitNarrationUtf8Bytes: readonly number[];
 }
 
 interface PackingContext {
@@ -117,11 +135,21 @@ function addSafe(left: number, right: number): number {
   return Number.isSafeInteger(result) ? result : fail();
 }
 
-function codePointLength(value: string): number {
+async function measureTextCodePoints(
+  value: string,
+  work: NarrationWorkController,
+): Promise<number> {
   let count = 0;
   for (const codePoint of value) {
     void codePoint;
     count = addSafe(count, 1);
+    await work.observe();
+    if (
+      count >
+      NARRATION_V1_SOURCE_WINDOW_POLICY.normalizationExpansionCodePointsHardMaximum
+    ) {
+      return fail();
+    }
   }
   return count;
 }
@@ -182,7 +210,11 @@ function isSubstantive(unit: NarrationNormalizedUnit): boolean {
   );
 }
 
-function prefixMeasurements(scan: NarrationBoundaryScan): PrefixMeasurements {
+async function prefixMeasurements(
+  scan: NarrationBoundaryScan,
+  validated: ValidatedScanMeasurements,
+  work: NarrationWorkController,
+): Promise<PrefixMeasurements> {
   const { units } = scan.normalized;
   const narrationCodePoints = [0];
   const narrationUtf8Bytes = [0];
@@ -194,6 +226,7 @@ function prefixMeasurements(scan: NarrationBoundaryScan): PrefixMeasurements {
   const substantiveUnitCount = [0];
 
   for (const boundary of scan.boundaries) {
+    await work.observe();
     if (boundary.kind === "sentence") {
       const position = Number(boundary.unitIndexExclusive);
       const current = sentenceBoundaryCounts[position];
@@ -204,19 +237,23 @@ function prefixMeasurements(scan: NarrationBoundaryScan): PrefixMeasurements {
     }
   }
 
-  for (const unit of units) {
+  for (let unitIndex = 0; unitIndex < units.length; unitIndex += 1) {
+    await work.observe();
+    const unit = units[unitIndex];
+    if (unit === undefined) {
+      return fail();
+    }
     const unitIndexExclusive = narrationCodePoints.length;
-    const text = unit.kind === "text" ? String(unit.text) : "";
     narrationCodePoints.push(
       addSafe(
         narrationCodePoints[narrationCodePoints.length - 1] ?? fail(),
-        codePointLength(text),
+        validated.unitNarrationCodePoints[unitIndex] ?? fail(),
       ),
     );
     narrationUtf8Bytes.push(
       addSafe(
         narrationUtf8Bytes[narrationUtf8Bytes.length - 1] ?? fail(),
-        utf8ByteLength(text),
+        validated.unitNarrationUtf8Bytes[unitIndex] ?? fail(),
       ),
     );
     sentenceCount.push(
@@ -347,7 +384,11 @@ function boundaryReason(
   return fail();
 }
 
-function packingContext(scan: NarrationBoundaryScan): PackingContext {
+async function packingContext(
+  scan: NarrationBoundaryScan,
+  validated: ValidatedScanMeasurements,
+  work: NarrationWorkController,
+): Promise<PackingContext> {
   const unitCount = scan.normalized.units.length;
   const recordedBoundaryKinds: (NarrationScannedBoundaryKind | undefined)[] =
     Array.from({ length: unitCount + 1 }, () => undefined);
@@ -355,6 +396,7 @@ function packingContext(scan: NarrationBoundaryScan): PackingContext {
 
   let previousBoundaryPosition = -1;
   for (const boundary of scan.boundaries) {
+    await work.observe();
     const position = Number(boundary.unitIndexExclusive);
     if (
       position < 0 ||
@@ -371,6 +413,7 @@ function packingContext(scan: NarrationBoundaryScan): PackingContext {
   }
   let previousProtectedEnd = 0;
   for (const token of scan.protectedTokens) {
+    await work.observe();
     const start = Number(token.startUnitIndex);
     const end = Number(token.endUnitIndexExclusive);
     if (
@@ -389,20 +432,23 @@ function packingContext(scan: NarrationBoundaryScan): PackingContext {
       return fail();
     }
     for (let position = start + 1; position < end; position += 1) {
+      await work.observe();
       protectedInteriors[position] = true;
     }
     previousProtectedEnd = end;
   }
 
-  const safeBoundaries = Array.from(
-    { length: unitCount + 1 },
-    (_, position) =>
+  const safeBoundaries: boolean[] = [];
+  for (let position = 0; position <= unitCount; position += 1) {
+    await work.observe();
+    safeBoundaries.push(
       position > 0 &&
-      !protectedInteriors[position] &&
-      !startsWithCombiningMark(scan.normalized.units[position]),
-  );
+        !protectedInteriors[position] &&
+        !startsWithCombiningMark(scan.normalized.units[position]),
+    );
+  }
   return Object.freeze({
-    prefix: prefixMeasurements(scan),
+    prefix: await prefixMeasurements(scan, validated, work),
     recordedBoundaryKinds: Object.freeze(recordedBoundaryKinds),
     safeBoundaries: Object.freeze(safeBoundaries),
   });
@@ -423,11 +469,12 @@ function preferFirstHard(
   return current ?? candidate;
 }
 
-function selectCandidate(
+async function selectCandidate(
   scan: NarrationBoundaryScan,
   context: PackingContext,
   startUnitIndex: number,
-): CandidateBoundary {
+  work: NarrationWorkController,
+): Promise<CandidateBoundary> {
   const { prefix, recordedBoundaryKinds, safeBoundaries } = context;
   const blockEnd = scan.normalized.units.length;
   let targetSentence: CandidateBoundary | undefined;
@@ -445,6 +492,7 @@ function selectCandidate(
     unitIndexExclusive <= blockEnd;
     unitIndexExclusive += 1
   ) {
+    await work.observe();
     const measurements = measurementsBetween(
       scan,
       prefix,
@@ -547,6 +595,7 @@ function selectCandidate(
   }
   let extendedUnitIndexExclusive = candidate.unitIndexExclusive;
   while (extendedUnitIndexExclusive < blockEnd) {
+    await work.observe();
     const next = scan.normalized.units[extendedUnitIndexExclusive];
     const nextPosition = extendedUnitIndexExclusive + 1;
     if (
@@ -578,11 +627,12 @@ function selectCandidate(
       });
 }
 
-function segmentText(
+async function segmentText(
   units: readonly NarrationNormalizedUnit[],
   startUnitIndex: number,
   endUnitIndexExclusive: number,
-): SensitiveNormalizedNarrationText {
+  work: NarrationWorkController,
+): Promise<SensitiveNormalizedNarrationText> {
   const parts: string[] = [];
   for (
     let unitIndex = startUnitIndex;
@@ -594,13 +644,21 @@ function segmentText(
       return fail();
     }
     if (unit.kind === "text") {
-      parts.push(String(unit.text));
+      const text = String(unit.text);
+      for (const codePoint of text) {
+        void codePoint;
+        await work.observe();
+      }
+      parts.push(text);
     }
   }
   return parts.join("") as SensitiveNormalizedNarrationText;
 }
 
-function isRecognizedSceneBreak(scan: NarrationBoundaryScan): boolean {
+async function isRecognizedSceneBreak(
+  scan: NarrationBoundaryScan,
+  work: NarrationWorkController,
+): Promise<boolean> {
   if (
     scan.block.blockKind !== "paragraph" ||
     scan.block.structuralContext.quoteDepth !== 0 ||
@@ -611,6 +669,7 @@ function isRecognizedSceneBreak(scan: NarrationBoundaryScan): boolean {
   const parts: string[] = [];
   let nonWhitespaceCodePoints = 0;
   for (const unit of scan.normalized.units) {
+    await work.observe();
     if (unit.kind === "omission" && unit.reason === "raster-placeholder") {
       return false;
     }
@@ -624,7 +683,7 @@ function isRecognizedSceneBreak(scan: NarrationBoundaryScan): boolean {
     const text = String(unit.text);
     nonWhitespaceCodePoints = addSafe(
       nonWhitespaceCodePoints,
-      codePointLength(text),
+      await measureTextCodePoints(text, work),
     );
     if (nonWhitespaceCodePoints > 3) {
       return false;
@@ -635,19 +694,41 @@ function isRecognizedSceneBreak(scan: NarrationBoundaryScan): boolean {
   return nonWhitespace === "***" || nonWhitespace === SCENE_BREAK_ASTERISM;
 }
 
-function validateScan(scan: NarrationBoundaryScan): void {
+async function validateScan(
+  scan: NarrationBoundaryScan,
+  work: NarrationWorkController,
+): Promise<ValidatedScanMeasurements> {
   if (
     scan === null ||
     typeof scan !== "object" ||
     !Array.isArray(scan.normalized?.units) ||
+    typeof scan.normalized.text !== "string" ||
     !Array.isArray(scan.boundaries) ||
     !Array.isArray(scan.protectedTokens)
   ) {
     return fail();
   }
+  if (
+    scan.normalized.units.length >
+      NARRATION_V1_SOURCE_WINDOW_POLICY.retainedTokenEntriesHardMaximum ||
+    scan.boundaries.length >
+      NARRATION_V1_SOURCE_WINDOW_POLICY.retainedEventEntriesHardMaximum ||
+    scan.protectedTokens.length >
+      NARRATION_V1_SOURCE_WINDOW_POLICY.retainedEventEntriesHardMaximum
+  ) {
+    return resourceLimitExceeded();
+  }
   let expectedSourceOffset = 0;
+  let retainedNarrationCodePoints = 0;
+  let retainedNarrationUtf8Bytes = 0;
   const textParts: string[] = [];
+  const unitNarrationCodePoints: number[] = [];
+  const unitNarrationUtf8Bytes: number[] = [];
   for (const unit of scan.normalized.units) {
+    await work.observe();
+    if (unit === undefined) {
+      return fail();
+    }
     if (
       unit.sourceSpan.startOffsetCodePoints !== expectedSourceOffset ||
       unit.sourceSpan.endOffsetCodePoints !== expectedSourceOffset + 1
@@ -656,7 +737,31 @@ function validateScan(scan: NarrationBoundaryScan): void {
     }
     expectedSourceOffset = unit.sourceSpan.endOffsetCodePoints;
     if (unit.kind === "text") {
-      textParts.push(String(unit.text));
+      const text = String(unit.text);
+      const narrationCodePoints = await measureTextCodePoints(text, work);
+      const narrationUtf8Bytes = utf8ByteLength(text);
+      retainedNarrationCodePoints = addSafe(
+        retainedNarrationCodePoints,
+        narrationCodePoints,
+      );
+      retainedNarrationUtf8Bytes = addSafe(
+        retainedNarrationUtf8Bytes,
+        narrationUtf8Bytes,
+      );
+      if (
+        retainedNarrationCodePoints >
+          NARRATION_V1_SEGMENT_POLICY.retainedNarrationCodePointsHardMaximum ||
+        retainedNarrationUtf8Bytes >
+          NARRATION_V1_SEGMENT_POLICY.retainedNarrationUtf8BytesHardMaximum
+      ) {
+        return resourceLimitExceeded();
+      }
+      textParts.push(text);
+      unitNarrationCodePoints.push(narrationCodePoints);
+      unitNarrationUtf8Bytes.push(narrationUtf8Bytes);
+    } else {
+      unitNarrationCodePoints.push(0);
+      unitNarrationUtf8Bytes.push(0);
     }
   }
   if (
@@ -665,11 +770,16 @@ function validateScan(scan: NarrationBoundaryScan): void {
   ) {
     return fail();
   }
+  return Object.freeze({
+    unitNarrationCodePoints: Object.freeze(unitNarrationCodePoints),
+    unitNarrationUtf8Bytes: Object.freeze(unitNarrationUtf8Bytes),
+  });
 }
 
 function emptyPackedBlock(
   scan: NarrationBoundaryScan,
   disposition: "scene-break" | "unspoken",
+  work: NarrationWorkController,
 ): NarrationPackedBlock {
   return Object.freeze({
     block: scan.block,
@@ -682,24 +792,33 @@ function emptyPackedBlock(
       narrationUtf8Bytes: indexFrom(0),
       sentenceCount: indexFrom(0),
       segmentCount: indexFrom(0),
+      workUnitCount: indexFrom(work.workUnitCount),
+      checkpointCount: indexFrom(work.checkpointCount),
+      yieldCount: indexFrom(work.yieldCount),
     }),
   });
 }
 
-function packNarrationBoundaryScanInternal(
+async function packNarrationBoundaryScanInternal(
   scan: NarrationBoundaryScan,
-): NarrationPackedBlock {
-  validateScan(scan);
-  const context = packingContext(scan);
+  options: NarrationPackingOptions,
+): Promise<NarrationPackedBlock> {
+  const signal = options.signal ?? new AbortController().signal;
+  const scheduler = options.scheduler ?? DEFAULT_NARRATION_YIELD_SCHEDULER;
+  const work = new NarrationWorkController(signal, scheduler);
+  const validated = await validateScan(scan, work);
+  const context = await packingContext(scan, validated, work);
   const { prefix } = context;
   const substantiveUnitCount =
     prefix.substantiveUnitCount[prefix.substantiveUnitCount.length - 1] ??
     fail();
-  if (isRecognizedSceneBreak(scan)) {
-    return emptyPackedBlock(scan, "scene-break");
+  if (await isRecognizedSceneBreak(scan, work)) {
+    work.beforePublication();
+    return emptyPackedBlock(scan, "scene-break", work);
   }
   if (substantiveUnitCount === 0) {
-    return emptyPackedBlock(scan, "unspoken");
+    work.beforePublication();
+    return emptyPackedBlock(scan, "unspoken", work);
   }
 
   const segments: NarrationPackedSegment[] = [];
@@ -709,6 +828,7 @@ function packNarrationBoundaryScanInternal(
   let totalSentenceCount = 0;
 
   while (startUnitIndex < scan.normalized.units.length) {
+    await work.observe();
     if (
       segments.length >=
       NARRATION_V1_SEGMENT_POLICY.retainedSegmentEntriesHardMaximum
@@ -723,7 +843,12 @@ function packNarrationBoundaryScanInternal(
     if (remainingSubstantive === 0) {
       break;
     }
-    const candidate = selectCandidate(scan, context, startUnitIndex);
+    const candidate = await selectCandidate(
+      scan,
+      context,
+      startUnitIndex,
+      work,
+    );
     if (candidate.unitIndexExclusive <= startUnitIndex) {
       return fail();
     }
@@ -739,14 +864,16 @@ function packNarrationBoundaryScanInternal(
     ) {
       return resourceLimitExceeded();
     }
-    const text = segmentText(
+    const text = await segmentText(
       scan.normalized.units,
       startUnitIndex,
       candidate.unitIndexExclusive,
+      work,
     );
     if (text.length === 0) {
       return fail();
     }
+    await work.observe();
     segments.push(
       Object.freeze({
         text,
@@ -784,6 +911,7 @@ function packNarrationBoundaryScanInternal(
       startUnitIndex,
       scan.normalized.units.length,
     ) === 0;
+  work.beforePublication();
   return Object.freeze({
     block: scan.block,
     complete,
@@ -799,6 +927,9 @@ function packNarrationBoundaryScanInternal(
       narrationUtf8Bytes: indexFrom(totalNarrationUtf8Bytes),
       sentenceCount: indexFrom(totalSentenceCount),
       segmentCount: indexFrom(segments.length),
+      workUnitCount: indexFrom(work.workUnitCount),
+      checkpointCount: indexFrom(work.checkpointCount),
+      yieldCount: indexFrom(work.yieldCount),
     }),
   });
 }
@@ -808,11 +939,12 @@ function packNarrationBoundaryScanInternal(
  * makes cross-addressable-block joins impossible, and no requested batch size
  * participates in segmentation.
  */
-export function packNarrationBoundaryScan(
+export async function packNarrationBoundaryScan(
   scan: NarrationBoundaryScan,
-): NarrationPackedBlock {
+  options: NarrationPackingOptions = {},
+): Promise<NarrationPackedBlock> {
   try {
-    return packNarrationBoundaryScanInternal(scan);
+    return await packNarrationBoundaryScanInternal(scan, options);
   } catch (error: unknown) {
     if (error instanceof EpubArchiveError) {
       throw error;
