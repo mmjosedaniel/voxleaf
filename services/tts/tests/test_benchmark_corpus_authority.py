@@ -16,6 +16,7 @@ REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v1.json"
 BENCHMARK_ROOT: Final = REPOSITORY_ROOT / "benchmarks" / "tts"
 EXPECTED_CORPUS_SHA256: Final = "7727e0ea0b2763690e3cffbd72074fd907d8bf3ca2a10addd028ba9072df96bb"
+EXPECTED_SUSTAINED_CODE_POINTS: Final = 3_139
 REQUIRED_TAGS: Final = frozenset(
     {
         "punctuation",
@@ -195,7 +196,10 @@ def test_corpus_bytes_order_counts_boundaries_and_coverage_are_frozen() -> None:
         fail("sustained-length")
     if any(case_id not in case_code_points for case_id in sustained_sequence):
         fail("sustained-reference")
-    if sum(case_code_points[case_id] for case_id in sustained_sequence) > 8192:
+    sustained_code_points = sum(case_code_points[case_id] for case_id in sustained_sequence)
+    if sustained_code_points != EXPECTED_SUSTAINED_CODE_POINTS:
+        fail("sustained-total")
+    if sustained_code_points > 8192:
         fail("sustained-batch-limit")
 
 

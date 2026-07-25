@@ -405,7 +405,7 @@ Completed on 2026-07-25.
   name.
 - Stable short, 308-code-point target, and 637-code-point near-hard cases stay
   within the implemented `narration-v1` 320/640 code-point and 1,024/2,048-byte
-  boundaries. The 12-entry sustained sequence is fixed and totals 3,144 code
+  boundaries. The 12-entry sustained sequence is fixed and totals 3,139 code
   points, below the 8,192-code-point batch ceiling.
 - Provenance, CC0 dedication, Spanish language policy, exact code-point/UTF-8
   counts, size classes, tags, case IDs, performance order, and metadata-only
@@ -1128,6 +1128,9 @@ A profile is selectable only when its performance, quality, capability, license,
 - 2026-07-25: Completed Task 1.1 candidate intake. Two role-specific candidates now have stable IDs, immutable upstream artifact identities, independent uv projects/locks, and explicit offline/acquisition/license risks without changing the production dependency graph.
 - 2026-07-25: Completed Task 1.2. The byte-frozen synthetic Spanish corpus, deterministic performance/sustained orders, Milestone 5 size boundary checks, privacy canaries, ignored raw layout, cleanup policy, and repository artifact audits are now enforced by model-free Python tests.
 - 2026-07-25: Completed Task 1.3 and Milestone 1. The pre-result measurement procedure, numeric gates, listening rubric, invalidation/rerun rules, private summary schema, synthetic valid fixture, and semantic mutation tests are frozen and linked from the performance and architecture authorities. No engine was executed and no official result exists.
+- 2026-07-25: Corrected the recorded sustained-sequence total from 3,144
+  to the verified 3,139 code points and froze that exact aggregate in the
+  corpus authority test.
 
 ## Discoveries and decisions
 
