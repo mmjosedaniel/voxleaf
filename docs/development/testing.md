@@ -140,7 +140,7 @@ pnpm.cmd --filter @voxleaf/epub test
 pnpm.cmd --filter @voxleaf/epub build
 ```
 
-The final Task 5.3 tree passed all three commands, including 34 EPUB test files / 555 tests, and passed `pnpm.cmd check:portable`. Root portable and native validation remain required at milestone close as specified by Task 6.2. No Markdown or Mermaid-specific validator is currently configured in the repository.
+The final Milestone 5 tree passed all three commands, including 34 EPUB test files / 555 tests. Task 6.2 also passed `pnpm.cmd check:portable`, the authoritative native `pnpm.cmd check`, and both required pull-request jobs; the retained exact results are in the completed plan. No Markdown or Mermaid-specific validator is currently configured in the repository.
 
 ## Deferred coverage
 
@@ -168,7 +168,7 @@ Examples:
 Examples:
 
 - EPUB navigation and spine extraction from a small safe fixture.
-- Mapping between sanitized rendered content, semantic chunks, and stable reading locators.
+- Mapping between sanitized rendered content, prepared narration segments, and stable reading locators.
 - Desktop-to-TTS protocol.
 - TTS service lifecycle.
 - Cancellation across the process boundary.

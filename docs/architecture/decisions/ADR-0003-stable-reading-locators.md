@@ -10,7 +10,7 @@ VoxLeaf must behave as a visual ereader, reopen a book at the passage the user w
 
 An EPUB does not have durable screen page numbers. The visible page changes when the window, font, line spacing, theme, renderer, or device changes. Persisting a number such as "page 31" can therefore reopen at the wrong text.
 
-The visual renderer, narration chunks, highlighting, and saved progress need a shared position that survives reflow without persisting book prose.
+The visual renderer, prepared narration segments, highlighting, and saved progress need a shared position that survives reflow without persisting book prose.
 
 ## Decision
 

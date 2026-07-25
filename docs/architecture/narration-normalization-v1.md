@@ -134,5 +134,6 @@ revalidates text and aggregate measurements before publishing frozen prepared
 output. The corpus does not select a TTS engine or model-specific
 preprocessing. Task 5.1 exposes bounded public batches without changing
 displayed publication semantics. Any proposed corpus change must update the
-authoritative fixture, its integrity tests, this summary, and the active plan
-before production expectations change.
+authoritative fixture, its integrity tests, this summary, and the completed
+Milestone 5 authority or a new active plan before production expectations
+change.

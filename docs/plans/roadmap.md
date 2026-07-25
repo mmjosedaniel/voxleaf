@@ -39,7 +39,7 @@ Some prototypes may inform later milestones before their full implementation beg
 
 ## Milestone 1: Establish the engineering foundation
 
-**Status:** Complete as of 2026-07-21. Milestones 2 through 4 are also complete.
+**Status:** Complete as of 2026-07-21. Milestones 2 through 5 are also complete.
 
 ### Goal
 
@@ -178,6 +178,8 @@ Milestones 2 through 4 provide the shared locator-range and narration-segment co
 
 ## Milestone 6: Prove local TTS feasibility and select engine profiles
 
+**Status:** Approved planned and next in sequence. The [Milestone 6 ExecPlan](active/M006-local-tts-feasibility-and-engine-profiles.md) is approved; implementation has not started, and no engine, model profile, benchmark result, runtime dependency, or hardware-support claim exists yet.
+
 ### Goal
 
 Use reproducible benchmarks to determine whether candidate local TTS engines can satisfy the MVP on documented hardware.
@@ -192,7 +194,7 @@ Use reproducible benchmarks to determine whether candidate local TTS engines can
 
 ### Dependencies
 
-Milestone 1 supplies isolated Python and benchmark environments. Milestone 2 supplies capability, audio, error, and measurement contracts. Milestone 5 provides representative normalized text and segments, although an earlier standalone spike may use fixed synthetic text.
+Milestone 1 supplies the isolated Python foundation. Milestone 2 supplies capability, audio, error, primitive, and deterministic fake-test support; it does not define a dedicated benchmark-report schema. Milestone 5 provides representative normalization policy and bounded prepared segments. The Milestone 6 plan defines its own fixed synthetic prepared-text corpus and private benchmark-report authority so inference measurements remain comparable without changing public runtime contracts.
 
 ### Major risks and unknowns
 
@@ -203,6 +205,8 @@ Milestone 1 supplies isolated Python and benchmark environments. Milestone 2 sup
 - The project still needs a measurable wall-clock startup target in addition to the accepted 15-second playable-audio lead.
 
 ## Milestone 7: Implement the local TTS service and process protocol
+
+**Status:** Deferred until Milestone 6 selects viable engine profiles and a focused protocol plan resolves the process boundary.
 
 ### Goal
 
@@ -228,6 +232,8 @@ Milestone 2 defines shared contracts. Milestone 6 selects viable engines and cap
 - Python sidecar and model packaging may be one of the largest installer and support risks.
 
 ## Milestone 8: Build bounded audio playback and scheduling
+
+**Status:** Deferred. Shared audio/buffer contracts and deterministic fakes exist, but no production queue, audio payload, player, startup gate, or underrun instrumentation does.
 
 ### Goal
 
@@ -255,6 +261,8 @@ Milestone 2 provides audio and session contracts. Milestone 7 provides the produ
 
 ## Milestone 9: Integrate synchronized reading and narration
 
+**Status:** Deferred. The visual reader and locator-linked prepared segments exist independently; no desktop narration caller, spoken timing, highlighting, following, or shared playback position is implemented.
+
 ### Goal
 
 Join the visual reader, narration pipeline, TTS service, and player into the core VoxLeaf experience.
@@ -281,6 +289,8 @@ Milestones 4, 5, 7, and 8 provide the visual reader, locator-linked segments, pr
 
 ## Milestone 10: Add hardware profiles, fallback, and operational resilience
 
+**Status:** Deferred. Capability contracts exist, but production hardware detection, measured profiles, CPU fallback, model recovery, and support claims do not.
+
 ### Goal
 
 Make the integrated reader usable across documented supported hardware and recover gracefully when acceleration or models are unavailable.
@@ -305,6 +315,8 @@ Milestone 6 defines supported engine profiles. Milestones 7 through 9 provide th
 - The accepted buffer policy may require tuning by hardware profile without becoming unbounded or hiding poor sustained RTF.
 
 ## Milestone 11: Package, validate, and release the MVP
+
+**Status:** Deferred. The repository can build a release executable for validation, but installer bundling, signing, model/runtime distribution, updater policy, and complete-MVP validation are not implemented.
 
 ### Goal
 

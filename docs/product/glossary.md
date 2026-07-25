@@ -2,11 +2,11 @@
 
 ## Audio buffer
 
-A bounded in-memory queue of generated audio waiting to be played.
+A future bounded in-memory queue of generated audio waiting to be played. Shared buffer metadata and fakes exist; the production queue does not.
 
 ## Initial audio lead
 
-The duration of playable narration held in memory before playback begins. The MVP target is approximately 15 seconds of audio; it is not a 15-second wall-clock timer.
+The future duration of playable narration held in memory before playback begins. The MVP target is approximately 15 seconds of audio; it is not a 15-second wall-clock timer.
 
 ## Buffer underrun
 
@@ -36,6 +36,10 @@ An ordered pair of logical reading locators identifying a source span without st
 
 Sensitive text selected from the safe structured document model as input to narration-only normalization. It is derived independently of the visual DOM.
 
+## Narration preparation
+
+The implemented `@voxleaf/epub` transformation that derives bounded, ephemeral normalized text and prepared narration segments from safe semantic content. It does not perform TTS inference, generate audio, or change the displayed text.
+
 ## Normalized narration text
 
 A separate sensitive, ephemeral representation prepared for speech by deterministic normalization. It is not displayed text and must not be persisted or logged.
@@ -46,7 +50,7 @@ A bounded nonempty portion of normalized narration text paired with the stable l
 
 ## Reading session
 
-The active combination of book, chapter, position, voice, speed, and generation state. Every session should have a unique identifier so stale work can be discarded.
+The future runtime combination of book, chapter, position, voice, speed, and generation state. Shared identity contracts exist, but no production TTS/playback session coordinator does. Every runtime session must have a unique identifier so stale work can be discarded.
 
 ## Reading locator
 

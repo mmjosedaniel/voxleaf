@@ -1,0 +1,1068 @@
+# Milestone 6: Prove local TTS feasibility and select engine profiles
+
+## Goal
+
+Complete roadmap Milestone 6 by evaluating local text-to-speech candidates with one reproducible, privacy-safe protocol and either:
+
+1. select a measured balanced profile and a measured CPU-compatible profile through an accepted architecture decision; or
+2. record that one or both roles have no viable candidate, identify the failed gates, and revise the roadmap before any production TTS integration begins.
+
+This milestone produces benchmark evidence and durable selection decisions. It does not implement the production TTS service, desktop/process transport, audio queue, playback, or synchronized narration.
+
+## User-visible outcome
+
+There is no new user-visible speech or playback behavior in this milestone.
+
+When the milestone is complete, contributors can state only that named engine/model/voice profiles were measured on explicitly documented hardware under a reproducible local benchmark. The selected profiles, if any, give Milestone 7 a justified integration target and give later milestones evidence for resource, cancellation, offline, licensing, packaging, and capability decisions.
+
+The desktop must remain a visual reader. It must not expose a play button, voice picker, model picker, loading state, hardware recommendation, or support claim based solely on this benchmark work.
+
+## Current state
+
+At plan creation on 2026-07-25, `main` points to `096306d`, and roadmap Milestones 1 through 5 are complete. The working tree also contains an in-progress documentation reconciliation; future implementation must preserve and review those changes rather than treating this baseline as a clean implementation branch.
+
+Repository evidence establishes the following boundary:
+
+- `services/tts/pyproject.toml` has no production dependencies.
+- `services/tts/src/voxleaf_tts/__init__.py` exposes only `service_version()`.
+- The Python tests validate the dependency-free version function and cross-language conformance against checked-in shared schemas.
+- No Python module loads a model, produces audio, starts a server, detects hardware, handles cancellation, or reports benchmark measurements.
+- No TTS or model benchmark command exists in the root `package.json`.
+- `@voxleaf/shared` implements versioned reading-session, narration-segment, audio-frame metadata, buffer-status, capability-report, and operational-error contracts plus deterministic TTS/audio fakes.
+- There is no dedicated shared measurement or benchmark-report schema. `CapabilityReportV1` intentionally excludes model identity, hardware identity, benchmark results, and hardware-profile claims.
+- `@voxleaf/epub` implements bounded, locator-linked `OpenedPublication.prepareNarration`, but no production desktop module calls it.
+- The Milestone 5 corpus and preparation limits are test-only authorities for normalization and segmentation. They do not select a model or provide a model tokenizer.
+- `.gitignore` excludes model caches, weights, generated audio, raw benchmark results, profiling artifacts, logs, books, and private user data.
+- The existing `pnpm.cmd check` and `pnpm check:portable` surfaces do not download weights, require a GPU, execute a model, or run hardware benchmarks.
+- The candidate names in the project brief, including Qwen3-TTS and Kokoro, are evaluation inputs only. No engine, model, voice, runtime provider, output format, or hardware profile is approved.
+- The reader benchmark's existing reference-host results are not TTS measurements and cannot be reused as model-support evidence.
+
+## Scope and non-goals
+
+### Scope
+
+- Freeze a model-independent TTS feasibility protocol before official candidate results are observed.
+- Create one repository-authored synthetic Spanish-focused benchmark corpus used unchanged across candidates.
+- Cover short, target-sized, hard-sized, dialogue, punctuation, abbreviation, number, date, time, currency, percentage, code, Unicode, and embedded foreign-name cases relevant to the accepted narration policy.
+- Inventory candidate engine, model, voice, runtime, license, redistribution, download, offline, platform, artifact-size, and dependency constraints from authoritative sources.
+- Evaluate at least one credible accelerated/balanced candidate and at least one credible CPU-compatible candidate. One candidate may qualify for both roles only if both modes are measured independently.
+- Isolate candidate-specific dependencies and locks from the dependency-free service foundation until a profile is selected.
+- Build a candidate-neutral benchmark harness with deterministic fake-adapter tests.
+- Measure cold model load, warm-up, time to first produced audio, time to approximately 15 seconds of produced playable audio or a complete shorter sample, generated duration, real-time factor, RAM, VRAM when reliably available, output capabilities, errors, and cancellation behavior.
+- Measure both short-request responsiveness and sustained sequential generation.
+- Evaluate Spanish intelligibility, pronunciation, punctuation/dialogue behavior, number/date/currency handling, naturalness, and audible artifacts with a frozen scoring rubric.
+- Prove official benchmark execution is local and offline after an explicit model-acquisition step.
+- Produce allowlisted, content-free machine-readable summaries and human-readable reports.
+- Select profiles through an ADR only after the frozen gates and reports are complete.
+- Update the roadmap, canonical system diagram, performance guidance, dependency inventory, setup, testing guidance, and product claims to the evidence actually obtained.
+
+### Non-goals
+
+- Implementing the persistent local TTS service or its lifecycle.
+- Selecting or implementing the desktop-to-TTS process transport.
+- Defining production request framing, process health messages, or binary audio framing.
+- Wiring `OpenedPublication.prepareNarration` into the desktop.
+- Adding narration, model, voice, or playback controls to React.
+- Implementing an audio queue, ring buffer, playback API, AudioWorklet, resampler, time stretcher, or OS audio integration.
+- Persisting generated audio, narration text, model output, benchmark prompts, or private paths.
+- Automatically detecting hardware or recommending a profile to end users.
+- Claiming support for an unmeasured device, driver, operating system, provider, precision, or model variant.
+- Packaging Python, model weights, GPU runtimes, or an installer.
+- Changing displayed EPUB text, `narration-v1`, locator semantics, prepared-segment ranges, or the Milestone 5 normalization corpus to accommodate a model.
+- Adding model-specific tokens or preprocessing to shared contracts.
+- Running model or hardware benchmarks in required pull-request CI.
+- Treating waveform generation as playback or calling the first produced sample audible output.
+- Selecting the final production audio format or transport based only on what a benchmark adapter happens to return.
+
+## Relevant files and documentation
+
+### Current authority
+
+- `AGENTS.md`
+- `.agents/PLANS.md`
+- `README.md`
+- `docs/README.md`
+- `docs/product/project-brief.md`
+- `docs/product/mvp.md`
+- `docs/product/glossary.md`
+- `docs/architecture/system-diagram.md`
+- `docs/architecture/overview.md`
+- `docs/architecture/performance-budget.md`
+- `docs/architecture/narration-normalization-v1.md`
+- `docs/architecture/narration-preparation-limits-v1.md`
+- `docs/architecture/decisions/ADR-0001-local-first-desktop.md`
+- `docs/architecture/decisions/ADR-0002-in-memory-audio.md`
+- `docs/architecture/decisions/ADR-0004-start-after-audio-lead.md`
+- `docs/architecture/decisions/ADR-0005-engineering-workspace-and-quality-tooling.md`
+- `docs/architecture/decisions/ADR-0006-json-schema-contract-authority.md`
+- `docs/architecture/decisions/ADR-0012-bounded-narration-preparation.md`
+- `docs/development/setup.md`
+- `docs/development/testing.md`
+- `docs/development/dependencies.md`
+- `docs/plans/roadmap.md`
+- `docs/plans/completed/M001-engineering-foundation.md`
+- `docs/plans/completed/M002-shared-contracts-and-test-harness.md`
+- `docs/plans/completed/M005-narration-text-preparation.md`
+- `docs/plans/active/synchronized-reader-and-startup-buffer.md`
+
+### Current code and configuration
+
+- `package.json`
+- `.gitignore`
+- `.python-version`
+- `.github/workflows/foundation-checks.yml`
+- `services/tts/pyproject.toml`
+- `services/tts/uv.lock`
+- `services/tts/src/voxleaf_tts/__init__.py`
+- `services/tts/tests/test_health.py`
+- `services/tts/tests/test_contract_conformance.py`
+- `packages/shared/schemas/capability-report/v1.schema.json`
+- `packages/shared/schemas/narration-segment/v1.schema.json`
+- `packages/shared/schemas/audio-frame/v1.schema.json`
+- `packages/shared/schemas/operational-error/v1.schema.json`
+- `packages/shared/src/testing/fake-tts-source.ts`
+- `packages/epub/test-support/narration-normalization-corpus.ts`
+- `packages/epub/test-support/narration-preparation-limits.ts`
+
+### Expected implementation areas
+
+The exact candidate identifiers and dependency layout are frozen by Milestone 1 of this plan before candidate packages are added. The implementation is expected to add or update:
+
+- `benchmarks/tts/`: corpus manifests, candidate manifests, the frozen feasibility profile, and sanitized summary reports.
+- `benchmarks/results/raw/`: ignored raw measurements, temporary listener-session metadata, and other non-reviewable run output.
+- `services/tts/benchmarks/`: candidate-neutral harness code and thin candidate adapters that are not part of the production service API.
+- `services/tts/tests/`: deterministic corpus, metric, report, redaction, cancellation, and fake-adapter tests.
+- Candidate-specific benchmark project and lock files under a reviewed path below `services/tts/benchmarks/`, isolated from the production dependency group.
+- `package.json`: explicit benchmark setup and execution commands added during implementation; no benchmark command is claimed to exist before that task completes.
+- `docs/architecture/tts-feasibility-profile-v1.md`: the frozen pre-result benchmark protocol, numeric gates, scoring rubric, and report field policy.
+- `docs/architecture/decisions/ADR-0013-local-tts-engine-profiles.md`: the final profile selection or explicit no-viable-profile decision, provided `ADR-0013` remains the next free identifier when the decision is written.
+- Product, architecture, development, dependency, testing, roadmap, and plan documentation named above.
+
+Do not create a shared public benchmark schema unless a real cross-process or cross-language runtime consumer is identified. A benchmark-local schema and allowlisted serializer are sufficient for Milestone 6.
+
+## Architecture and constraints
+
+### Benchmark-only data flow
+
+```text
+checked-in synthetic corpus
+    -> candidate-neutral bounded harness
+    -> one local candidate adapter
+    -> one local engine/model/voice profile
+    -> bounded in-memory audio observer
+    -> ignored raw measurements
+    -> allowlisted content-free summary
+    -> profile selection evidence
+```
+
+This is a benchmark topology, not the Milestone 7 production process topology. A benchmark may isolate an engine in a child process to contain crashes, enforce a timeout, or measure termination, but that does not select standard streams, sockets, WebSockets, Tauri IPC, or another product transport.
+
+### Trust and privacy boundary
+
+- Official execution occurs on the local device after an explicit networked acquisition step.
+- The benchmark run must succeed with external network access unavailable. A library that silently fetches configuration, code, telemetry, voices, or weights during an official run fails the offline gate.
+- Inputs are original repository-authored synthetic narration. No EPUB, copyrighted text, clipboard content, user document, or private path is admitted.
+- Input text is sensitive even though it is synthetic. It may enter the local engine call but must not enter filenames, process arguments, environment variables, stdout, stderr, exceptions, reports, snapshots, analytics, or committed artifacts.
+- Candidate libraries may log prompts or paths by default. The adapter must capture and bound their output, prove a canary never escapes, and publish only fixed codes. Merely asking contributors not to read a log is insufficient.
+- Reports may contain stable corpus case identifiers and numeric aggregates, but never source or normalized text.
+- Reports may record CPU/GPU model, total memory, operating-system version, runtime versions, and driver versions needed to reproduce results. They must exclude hostname, username, serial numbers, device UUIDs, account identifiers, absolute paths, command lines, unrelated processes, and environment dumps.
+- Model weights, caches, generated audio, raw traces, and raw dependency diagnostics remain ignored and uncommitted.
+
+### Persistence and generated audio
+
+- Performance runs consume produced audio into duration, shape, and bounded-resource counters and then release it.
+- The default benchmark path writes no audio file.
+- A manual quality session may materialize audio only after explicit opt-in, inside an ignored disposable directory, with fixed content-free filenames.
+- The quality workflow must delete disposable audio on normal completion and document cleanup after interruption. Generated audio is never a report attachment or Git artifact.
+- No benchmark code may reuse the desktop reader-state repository or create an application persistence path.
+
+### Bounds and cancellation
+
+- Load one candidate profile at a time.
+- Admit one bounded corpus item at a time unless a candidate's actual streaming API requires a separately documented bounded input contract.
+- Place explicit timeouts on acquisition verification, model load, warm-up, inference, cancellation observation, and shutdown.
+- Consume streaming output incrementally without retaining an unbounded waveform.
+- When an API returns a complete waveform, record that capability honestly and bound each input so the returned allocation has a measured maximum.
+- Measure cooperative engine cancellation separately from benchmark-worker termination. A process kill is not evidence that the engine supports cancellation.
+- If work cannot stop promptly, retain its original benchmark identity, discard its output, measure completion or termination separately, and record `generationCancellation` as unsupported or unknown rather than supported.
+- A timed-out, cancelled, crashed, or resource-exhausted case yields one fixed content-free outcome and no partial summary that could be mistaken for a successful measurement.
+- The harness must restore the machine to no loaded benchmark child/model process after every case and after interruption.
+
+### Candidate and dependency isolation
+
+- Candidate intake assigns stable content-free candidate IDs before implementation.
+- Each candidate manifest records exact engine library, model artifact, voice artifact, runtime/provider, precision, and relevant configuration.
+- Exact library and transitive dependency versions are locked per candidate evaluation environment.
+- Model and voice artifacts are identified by immutable revision and checksum when the upstream distribution permits it.
+- Candidate-specific libraries do not enter `services/tts` production dependencies merely because they are benchmarked.
+- The normal root install and root checks remain model-free, GPU-free, and free of candidate package installation.
+- Candidate install scripts, native binaries, licenses, transitive packages, runtime capabilities, and known security advisories receive the same review required by `docs/development/dependencies.md`.
+- Setup and model acquisition are explicit commands. Neither import nor test collection may download a model.
+- Removal of a rejected candidate must be possible by deleting its isolated adapter/project/lock while retaining its content-free report and decision rationale.
+
+### Corpus policy
+
+The benchmark corpus is separate from the Milestone 5 normalization corpus:
+
+- Milestone 5 remains the authority for exact text transformation and locator mapping.
+- The TTS corpus consumes already-prepared synthetic text and does not test normalization correctness.
+- Each case records only a stable case ID, language policy, category tags, size tier, and the synthetic text supplied to the engine.
+- All candidates receive byte-for-byte equivalent text in the same performance order.
+- Listener presentation order is separately randomized and blinded so candidate identity does not influence scoring.
+- Size tiers include a short interactive request, representative `narration-v1` target-sized segments, admitted near-hard-sized segments, and a bounded sustained sequence.
+- The corpus includes Spanish punctuation and dialogue, abbreviations and initials, cardinals/ordinals, decimal and thousands separators, valid dates and times, currencies and percentages, code, combining sequences, astral characters, and an embedded foreign name.
+- Corpus integrity tests prove provenance, uniqueness, immutability, UTF-8/code-point measurements, category coverage, and absence of private/copyrighted fixtures.
+- Changing a corpus text, order, scoring tag, or size tier after official candidate runs begins creates a new corpus version and invalidates direct comparison with the old version.
+
+### Measurements and report policy
+
+The pre-result `tts-feasibility-profile-v1` document must freeze:
+
+- official corpus version and order;
+- candidate manifest version;
+- cold-start and warm-run counts;
+- warm-up policy;
+- sustained-run duration or generated-audio target;
+- timing clock and timing boundaries;
+- percentile method;
+- memory/VRAM sampling method and unavailable-value behavior;
+- cancellation checkpoints and timeout policy;
+- quality rubric and aggregation method;
+- numeric feasibility gates;
+- report schema version; and
+- invalid-run and rerun rules.
+
+At minimum, official reports record:
+
+- source revision and whether the tree was clean;
+- benchmark protocol/corpus/candidate versions;
+- operating system, Python, engine, runtime/provider, model, voice, and driver versions;
+- CPU model and logical processor count;
+- total system RAM;
+- GPU model and total VRAM when relevant and reliably queryable;
+- model/voice artifact sizes and immutable revisions/checksums when available;
+- cold model-load duration;
+- warm-up duration;
+- time to first produced audio;
+- time to approximately 15 seconds of contiguous produced audio, or completion time for a shorter complete case;
+- generated media duration computed from samples and sample rate;
+- wall-clock generation duration;
+- per-case and aggregate real-time factor;
+- p50 and p95 for the frozen latency and throughput dimensions;
+- peak process-tree RAM and, when reliable, peak VRAM;
+- native output sample rate, channel count, sample representation, streaming granularity, and whether output is complete-waveform only;
+- cooperative-cancellation behavior, cancellation-request-to-stop latency, late completion, and worker-termination behavior as separate fields;
+- success, timeout, cancellation, resource, and internal-failure counts;
+- offline-run outcome;
+- bounded quality scores and evaluator limitations;
+- license identifier, redistribution status, and packaging/download constraints; and
+- fixed notes for unavailable measurements or deviations.
+
+The report serializer uses an allowlist. Arbitrary adapter dictionaries, exception strings, model objects, environment values, or library diagnostics cannot be merged into a summary.
+
+### Feasibility and selection gates
+
+Numeric latency, throughput, memory, cancellation, and quality thresholds are not yet accepted repository facts. Milestone 1 freezes them before official candidate execution, records their rationale, and prohibits post-result adjustment without a new protocol version and complete rerun.
+
+Every viable selected profile must also pass these non-negotiable gates:
+
+- local execution after explicit setup;
+- offline official benchmark execution;
+- no sensitive text or generated audio in committed or diagnostic output;
+- exact version/artifact identity sufficient for reproduction;
+- license and terms compatible with the intended use, with redistribution status explicit;
+- Windows compatibility on the measured configuration;
+- bounded input and output handling;
+- no silent network, telemetry, or unbounded cache behavior;
+- measured errors and cleanup;
+- output metadata sufficient for a later audio integration decision without selecting that decision now; and
+- no hardware claim beyond configurations actually measured.
+
+The balanced role prioritizes acceptable Spanish quality while meeting the frozen responsiveness, sustained-throughput, memory, and cancellation gates on a declared accelerated configuration.
+
+The compatibility role must be measured with acceleration disabled on a declared CPU configuration. It may use a different engine/model/voice, but it must meet its own frozen quality, throughput, memory, and operational gates. A GPU-capable candidate is not a CPU fallback merely because it can technically initialize on a CPU.
+
+If no candidate passes a role, record no viable selection. Do not lower the gate after seeing results, label an unsupported capability as supported, or continue to Milestone 7 as though the role were solved.
+
+### Relationship to later milestones
+
+- Milestone 6 may produce benchmark adapters and profile evidence, not the production service.
+- Milestone 7 owns the selected production engine adapter, service lifecycle, transport, runtime protocol, and cancellation/stale-result boundary.
+- Milestone 8 owns the audio payload format, bounded queue, playback API, playable-duration startup gate, and underrun instrumentation.
+- Milestone 9 owns desktop narration start, highlighting, following, seek, and shared reading position.
+- Milestone 10 owns product hardware detection, end-user profile selection/fallback, and support policy.
+- Milestone 11 owns model/runtime distribution, installer size, signing, updater policy, and complete product validation.
+
+## Milestones
+
+## Milestone 1: Freeze the evaluation authority before results
+
+### Task 1.1: Inventory candidates and isolate benchmark dependencies
+
+**Specific outcome:** A reviewed candidate matrix identifies the exact engine/model/voice/runtime combinations entering the evaluation and the uv-supported isolation layout used for each candidate without changing production dependencies.
+
+#### Work
+
+- Review current official documentation, release artifacts, licenses, model cards, and security/maintenance state for the project-brief candidates and credible alternatives.
+- Assign stable candidate IDs and one or more intended roles without declaring a winner.
+- Record exact library versions, model/voice revisions, supported providers, Python/platform requirements, artifact sizes, download sources, checksums when available, licenses, redistribution terms, offline controls, and install hooks.
+- Reject candidates that require remote inference, upload text, lack a usable license, cannot be pinned sufficiently for reproduction, or cannot run locally on the Windows/Python boundary.
+- Prototype the smallest uv-supported candidate isolation layout.
+- Prove candidate installation does not alter the default `services/tts` production dependency set or require candidate packages in root CI.
+- Update `docs/development/dependencies.md` with benchmark-only classification and removal instructions before accepting a candidate lock.
+
+#### Validation
+
+- Current command before candidate work:
+
+  ```powershell
+  uv sync --project services/tts --locked
+  uv run --project services/tts --locked pytest services/tts
+  ```
+
+- Task-added candidate commands must use exact checked-in project paths and `--locked`.
+- A clean default environment imports and tests `voxleaf_tts` without any candidate engine installed.
+- Candidate installation and acquisition are separate, explicit steps.
+- Lockfile review shows no unrecorded source, editable external checkout, floating Git branch, or runtime network dependency.
+
+#### Expected result
+
+At least one credible candidate is admitted for each role, or the plan records an early no-candidate blocker with evidence. Admission is not selection.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+### Task 1.2: Create the synthetic corpus and privacy policy
+
+**Specific outcome:** One versioned repository-authored corpus and its integrity tests provide identical safe prepared text to every candidate.
+
+#### Work
+
+- Create the benchmark corpus below `benchmarks/tts/`.
+- Record provenance, category tags, language policy, size tier, and stable case IDs.
+- Derive category coverage and size boundaries from the accepted Milestone 5 policy without importing its test-only TypeScript table at Python runtime.
+- Add privacy canaries distinct from report-safe identifiers.
+- Add an ignored raw-output layout and a deterministic cleanup policy.
+- Add tests proving the corpus and reports never contain a private path, book fixture, or generated audio.
+
+#### Validation
+
+- Corpus integrity tests pass under the existing Python test command.
+- Exact corpus code-point and UTF-8 measurements are deterministic.
+- Repeated corpus loads are byte-for-byte stable.
+- Test failure messages identify only case IDs and fixed codes.
+- `git ls-files` contains no model, audio, book, cache, raw report, or private data.
+
+#### Expected result
+
+The same immutable corpus can be consumed by every candidate adapter without model-specific rewriting.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+### Task 1.3: Accept the feasibility profile and selection rubric
+
+**Specific outcome:** `docs/architecture/tts-feasibility-profile-v1.md` freezes the benchmark procedure and numeric gates before official measurements.
+
+#### Work
+
+- Define timing boundaries for load, warm-up, first produced audio, 15 seconds of produced audio, shorter-complete output, and sustained generation.
+- Define generated-duration and real-time-factor arithmetic from actual sample metadata.
+- Define at least five independent cold-load observations and at least twenty warm generation observations per candidate/hardware profile unless a pre-result pilot justifies a stricter protocol.
+- Define the sustained sequence length, cancellation trials, timeout values, and cleanup observations.
+- Define p50/p95 calculation and minimum sample requirements.
+- Define RAM/VRAM collection and explicit `unavailable` semantics.
+- Define balanced and compatibility numeric gates.
+- Define the blinded listening rubric, evaluator instructions, scoring scale, and limitations.
+- Define which deviations invalidate a run and when every candidate must be rerun.
+- Define the benchmark-local summary schema and privacy allowlist.
+- Review the approximately 15-second lead correctly: the benchmark measures how quickly that media duration is produced; it does not add a fixed timer or implement playback.
+
+#### Validation
+
+- The profile is linked from this plan and the performance budget.
+- A schema/fixture test rejects sensitive text, unknown fields, negative values, inconsistent media-duration arithmetic, unsupported versions, and invalid percentiles.
+- The gates are committed before the first official candidate result.
+- Review confirms no gate is copied from an observed winner.
+
+#### Expected result
+
+Official runs have one stable authority and cannot be tuned after seeing candidate rankings.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+## Milestone 2: Build the bounded candidate-neutral benchmark
+
+### Task 2.1: Implement the harness, report sanitizer, and fake adapter
+
+**Specific outcome:** A benchmark-neutral Python harness can drive a deterministic fake engine and produce a versioned content-free report without real models or hardware.
+
+#### Work
+
+- Define a narrow benchmark-only adapter interface for load, warm-up, generate, cancel, close, and capability observation.
+- Keep the interface independent of the future process transport and shared runtime protocol.
+- Use monotonic high-resolution timing.
+- Compute media duration from sample count and sample rate, never from file size or wall clock.
+- Add bounded observation for streaming chunks and complete waveforms.
+- Add fixed timeout, cancellation, crash, resource, unavailable-measurement, and cleanup outcomes.
+- Capture candidate stdout/stderr in a bounded redaction boundary and publish only fixed codes.
+- Implement the report allowlist and raw-to-summary promotion gate.
+- Add a deterministic fake adapter for exact timing, output, cancellation, late completion, failure, memory-sample, and cleanup tests.
+- Add explicit root benchmark scripts only when their command, environment, offline behavior, and candidate dispatch are implemented. Keep them outside `pnpm.cmd check` and CI.
+
+#### Validation
+
+- Existing focused commands:
+
+  ```powershell
+  uv run --project services/tts --locked ruff format --check services/tts
+  uv run --project services/tts --locked ruff check services/tts
+  uv run --directory services/tts --locked mypy .
+  uv run --project services/tts --locked pytest services/tts
+  ```
+
+- Deterministic tests use no real sleep, engine, model, audio device, network, GPU, or private data.
+- Exact timing and arithmetic fixtures produce stable summaries.
+- Unknown adapter fields and exception messages cannot cross the report serializer.
+- Privacy canaries never appear in stdout, stderr, report JSON, report Markdown, filenames, or test snapshots.
+- Cancellation and timeout leave zero fake work pending.
+
+#### Expected result
+
+The harness and sanitizer are trustworthy before a large third-party model stack is admitted.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+### Task 2.2: Implement thin adapters for every admitted candidate
+
+**Specific outcome:** Each candidate runs behind the same harness while retaining an isolated, exact dependency and artifact identity.
+
+#### Work
+
+- Implement only the minimum adapter code required for the frozen benchmark.
+- Keep model-specific tokenization and preprocessing inside the adapter.
+- Do not change `narration-v1` or shared narration contracts to fit a candidate.
+- Map native output to benchmark-local sample metadata without selecting the production audio format.
+- Report native streaming, complete-waveform, sample-rate, channel, precision, and cancellation behavior honestly.
+- Suppress or contain content-bearing third-party diagnostics.
+- Fail closed when an artifact revision, provider, precision, voice, or offline mode does not match the candidate manifest.
+- Add deterministic adapter tests using mocked candidate libraries where practical.
+
+#### Validation
+
+- Each candidate project installs from its own checked-in exact lock.
+- Import and manifest tests run without loading weights.
+- An unavailable model/provider returns a fixed result without downloading.
+- An official candidate run with network access unavailable reaches only local artifact paths.
+- No model-specific package becomes a production dependency or default root-CI dependency.
+- Adapter output contains no input text, raw audio, private path, or arbitrary library error.
+
+#### Expected result
+
+Every admitted candidate can run through the identical measurement boundary without widening product architecture.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+### Task 2.3: Prove bounds, cancellation observation, and cleanup on real adapters
+
+**Specific outcome:** Candidate adapters cannot leave unbounded output, stale results, or loaded child/model processes after success, cancellation, timeout, or failure.
+
+#### Work
+
+- Exercise short, target-sized, near-hard-sized, timeout, and cancellation cases.
+- Distinguish native cooperative cancellation from worker termination.
+- Track late output by benchmark request identity and discard it.
+- Bound retained audio and captured diagnostics.
+- Verify sequential operation does not grow model/process count.
+- Verify model close and benchmark interruption release resources to the extent supported.
+- Record unsupported cleanup or cancellation as a feasibility risk rather than hiding it.
+
+#### Validation
+
+- Exact bound tests pass and max-plus-one harness values fail content-free.
+- Repeated cases retain one active candidate/model profile.
+- Timeout and interruption leave no benchmark child process.
+- Late output cannot enter the next case or summary.
+- Raw output remains ignored and disposable.
+
+#### Expected result
+
+The benchmark can safely proceed to official hardware runs.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+## Milestone 3: Execute reproducible performance and quality evaluation
+
+### Task 3.1: Record the official hardware and run preflight
+
+**Specific outcome:** Every official run is tied to a minimal reproducible hardware/software description and a clean, offline-capable benchmark setup.
+
+#### Work
+
+- Record the exact source revision and require a clean tree for official results.
+- Record only approved non-private hardware/software fields.
+- Record power source/mode, provider, precision, driver, and acceleration state where they materially affect inference.
+- Verify candidate artifacts and checksums.
+- Verify free RAM, VRAM, and disk headroom before loading.
+- Verify the benchmark succeeds after network access is unavailable.
+- Run a non-comparable pilot only to find harness defects, not to tune selection gates.
+- Delete pilot raw output before official runs.
+
+#### Validation
+
+- Preflight rejects dirty revisions, wrong artifacts, insufficient declared resources, unexpected network access, unsupported provider/precision, and missing offline controls.
+- Summary hardware fields contain no hostname, serial, UUID, username, account, absolute path, or unrelated process information.
+- The pilot is labeled non-official and cannot enter the selection matrix.
+
+#### Expected result
+
+Official measurements are attributable to a known, privacy-safe local configuration.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+### Task 3.2: Run cold, warm, sustained, cancellation, and failure matrices
+
+**Specific outcome:** Every admitted candidate has complete numeric evidence for each hardware mode and intended role.
+
+#### Work
+
+- Run the frozen cold-load repetitions.
+- Run the frozen warm short/target/hard corpus sequence.
+- Run the sustained sequential-generation sequence.
+- Run cancellation trials at the frozen checkpoints.
+- Run missing-artifact, unsupported-provider, timeout, and resource-failure cases.
+- Capture ignored raw results first.
+- Promote a summary only after schema, arithmetic, privacy, completeness, and reproducibility validation passes.
+- Repeat invalid or materially deviating runs for every candidate under the protocol's rerun rule.
+
+#### Validation
+
+- Every candidate summary has the same required case and metric set.
+- Percentiles meet the frozen minimum sample counts.
+- Generated duration equals sample count divided by sample rate within the profile's exact arithmetic rule.
+- First-audio and 15-second-production measurements retain distinct meanings.
+- Streaming unsupported candidates do not claim a pre-completion first chunk.
+- CPU-compatible runs have acceleration disabled and verified.
+- Reports contain no text or audio.
+
+#### Expected result
+
+The repository contains comparable content-free evidence, not anecdotal console output.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+### Task 3.3: Run the blinded Spanish quality evaluation
+
+**Specific outcome:** Candidate quality is scored against the frozen rubric without committing or retaining generated audio.
+
+#### Work
+
+- Generate the frozen listener subset under exact candidate configurations.
+- Randomize presentation behind content-free sample IDs.
+- Use explicit temporary-audio opt-in and ignored disposable storage.
+- Score intelligibility, pronunciation, dialogue/punctuation, numbers/dates/currency, naturalness, and artifacts.
+- Record aggregate scores and evaluator count/limitations only.
+- Delete disposable audio and the randomization key after the summary is validated.
+- Treat a single-evaluator result as limited evidence and state that limitation.
+
+#### Validation
+
+- Candidate identity is hidden during scoring.
+- Every candidate receives the same texts and listening conversion, if any.
+- No score report contains text, audio, filenames derived from text, or private paths.
+- Cleanup proves zero generated-audio files remain in tracked or benchmark-temporary locations.
+- A failed or interrupted listening session is not partially promoted.
+
+#### Expected result
+
+The selection includes reproducible bounded human quality evidence rather than speed alone.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+### Task 3.4: Audit licensing, offline behavior, and packaging risk
+
+**Specific outcome:** Each candidate's non-performance constraints are complete enough for a selection decision.
+
+#### Work
+
+- Reconfirm code, model, and voice licenses from authoritative sources.
+- Record redistribution, commercial-use, attribution, notice, and modification constraints.
+- Record download/acquisition terms and whether users may need a separate acceptance step.
+- Record installed/cache sizes and required native runtimes.
+- Record offline behavior after setup and any unavoidable network or telemetry behavior.
+- Record Windows, CPU, GPU/provider, precision, and Python compatibility.
+- Identify installer/runtime risks without implementing packaging.
+
+#### Validation
+
+- Every selection-matrix row has authoritative citations and retrieval dates.
+- No report claims redistribution rights when they remain ambiguous.
+- Artifact size is measured without committing the artifact.
+- A candidate with unresolved license or mandatory remote behavior cannot be selected.
+
+#### Expected result
+
+Performance cannot conceal an unacceptable license, download, privacy, or packaging boundary.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+## Milestone 4: Select profiles and record durable decisions
+
+### Task 4.1: Apply the frozen selection matrix
+
+**Specific outcome:** Balanced and compatibility roles are selected only from candidates that pass every applicable frozen gate.
+
+#### Work
+
+- Compare numeric results, quality scores, capabilities, license, artifact size, offline behavior, cancellation, cleanup, and packaging risks.
+- Keep per-hardware results separate; do not average incompatible configurations.
+- Document tradeoffs and rejected candidates.
+- Do not convert unavailable values into zeros or favorable scores.
+- If a role has no viable candidate, state that result and propose a roadmap response instead of selecting the least-bad failure.
+
+#### Validation
+
+- Selection can be recomputed from checked-in summaries and the frozen rubric.
+- Every selected capability has direct evidence.
+- Every rejected candidate has one or more fixed failed gates.
+- Hardware claims name only measured configurations.
+
+#### Expected result
+
+The outcome is reproducible whether it selects profiles or blocks the next milestone.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+### Task 4.2: Accept the engine-profile ADR
+
+**Specific outcome:** The next available ADR records the selected balanced and CPU-compatible profiles, or records that a viable selection could not be made.
+
+#### Work
+
+- Record exact engine/library/model/voice/runtime/provider/precision identities.
+- Record the measured configuration and report references.
+- Record supported, unsupported, and unknown capabilities.
+- Record license, artifact acquisition, offline, storage, and packaging consequences.
+- Record model-specific preprocessing ownership inside the future service adapter.
+- Record cancellation limitations and required Milestone 7 containment.
+- Explicitly defer process transport, production audio format, playback, hardware auto-detection, and installer topology.
+- If no profile is viable, record the failed gates and required follow-up decision.
+
+#### Validation
+
+- ADR claims link to checked-in reports.
+- The ADR does not claim audible narration, desktop integration, universal hardware support, or completed packaging.
+- Candidate dependency status in `docs/development/dependencies.md` matches the decision.
+- No unselected candidate library remains a production dependency.
+
+#### Expected result
+
+Milestone 7 has an explicit integration input or an explicit blocker.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+### Task 4.3: Reconcile architecture, product, roadmap, and development documentation
+
+**Specific outcome:** Documentation distinguishes implemented benchmark evidence, selected profiles, and still-deferred runtime behavior.
+
+#### Work
+
+- Update the canonical system diagram's status snapshot and future flow.
+- Keep the Python TTS runtime foundation/deferred unless Milestone 7 implements it.
+- Mark only the feasibility harness and profile decision implemented.
+- Update the roadmap and this plan with the exact selection or blocker.
+- Update the project brief's candidate table.
+- Update performance-budget evidence and wall-clock targets only with accepted measurements.
+- Update setup with explicit candidate acquisition and offline benchmark commands.
+- Update testing with deterministic versus hardware/manual boundaries.
+- Update dependency inventory with exact selected/rejected package status.
+- Update glossary terms only if evidence introduces a durable new term.
+- Preserve the approximately 15-second playable-audio-lead rule as a future playback policy.
+
+#### Validation
+
+- Relative Markdown links resolve.
+- Mermaid nodes, arrows, prose, and statuses agree.
+- Search finds no claim that TTS service, desktop integration, audio buffering, playback, synchronization, hardware detection, or packaging is implemented.
+- Reports and docs contain no corpus text, audio, private paths, or unsupported hardware claims.
+
+#### Expected result
+
+The repository communicates exactly what Milestone 6 proved and nothing more.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+## Milestone 5: Close deterministic, hardware, privacy, and repository validation
+
+### Task 5.1: Complete deterministic validation
+
+**Specific outcome:** All model-free harness, corpus, schema, arithmetic, redaction, adapter, cleanup, and existing repository checks pass without weights or GPU hardware.
+
+#### Validation
+
+Run the exact focused and aggregate commands available after the task-added benchmark surface is committed. The current authoritative commands are:
+
+```powershell
+uv run --project services/tts --locked ruff format --check services/tts
+uv run --project services/tts --locked ruff check services/tts
+uv run --directory services/tts --locked mypy .
+uv run --project services/tts --locked pytest services/tts
+uv build services/tts
+pnpm.cmd check:portable
+pnpm.cmd check
+git diff --check
+```
+
+If candidate benchmark projects have separate locks, run their exact checked-in `uv sync --project ... --locked` and import/manifest tests without loading weights. Record every exact path and outcome in this plan.
+
+#### Expected result
+
+Default validation remains offline at test runtime, model-free, hardware-independent, and green.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+### Task 5.2: Complete official benchmark and quality evidence
+
+**Specific outcome:** Every selection claim is supported by complete official reports from the frozen protocol.
+
+#### Validation
+
+- Run the exact task-added acquisition command in a networked terminal.
+- Disconnect or block external network access.
+- Run each exact task-added candidate/profile benchmark command.
+- Run the explicit quality-session command and cleanup.
+- Validate and promote summaries.
+- Repeat the official comparison from a clean source revision according to the frozen rerun rule.
+- Record exact commands, run IDs, hardware descriptions, and outcomes here without recording private paths or corpus text.
+
+#### Expected result
+
+Selected profiles pass their gates; failed candidates and unavailable measurements remain visible.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+### Task 5.3: Complete CI, privacy, artifact, and scope closeout
+
+**Specific outcome:** The final branch preserves the model-free CI boundary, contains only approved source/docs/summaries, and has successful required pull-request checks.
+
+#### Validation
+
+- Review `git diff --stat`, `git diff --name-only`, and `git diff --check`.
+- Confirm no model, weight, generated audio, raw result, profile trace, log, book, secret, private path, cache, environment, or large binary is tracked.
+- Confirm default CI does not acquire or run models and requires no GPU or secret.
+- Confirm model benchmark commands remain explicit hardware-specific commands outside `pnpm.cmd check`.
+- Confirm no Tauri command, capability, plugin, CSP, desktop behavior, process transport, audio player, persistence contract, or EPUB/narration public contract changed without separate authority.
+- Run the authoritative Windows and portable checks.
+- Require the existing pull-request CI jobs to pass on the exact final implementation head.
+- Move this plan to `docs/plans/completed/` only after every task, report, ADR, documentation update, and validation result is complete.
+
+#### Expected result
+
+Milestone 6 is complete without pretending that the production TTS or audio path exists.
+
+#### Actual result
+
+Pending.
+
+#### Status
+
+Not started.
+
+## Testing and benchmark strategy
+
+### Deterministic CI tests
+
+These tests run with the normal dependency-free service environment and remain part of the existing Python/root checks:
+
+- corpus version, provenance, category, size, and immutability checks;
+- benchmark-local report schema valid/invalid fixtures;
+- code-point, UTF-8, sample-duration, latency, and RTF arithmetic;
+- percentile calculation with exact minimum-sample and ordering behavior;
+- fake cold-load, warm-up, streaming, complete-waveform, timeout, cancellation, late-completion, crash, resource, and unavailable-metric outcomes;
+- bounded output and diagnostic capture;
+- allowlisted summary serialization;
+- privacy canaries across stdout, stderr, errors, JSON, Markdown, and filenames;
+- raw-to-summary promotion rejection for incomplete, dirty, invalid, sensitive, or inconsistent runs;
+- cleanup after success, cancellation, timeout, and interruption;
+- candidate manifest parsing without importing or loading a real engine;
+- default-environment proof that no candidate package, model, GPU, network, or audio device is required; and
+- regression coverage for the existing Python health and shared-contract conformance tests.
+
+Tests use injected clocks/samplers/adapters rather than real sleep or hardware. Wall-clock assertions are forbidden in deterministic suites.
+
+### Candidate import and offline smoke tests
+
+Each isolated candidate environment receives a narrow smoke test:
+
+- exact lock installs;
+- engine import succeeds;
+- exact artifact identity validates;
+- missing artifacts fail without downloading;
+- provider/precision mismatch fails closed;
+- one synthetic short request produces structurally valid local audio metadata;
+- adapter diagnostics remain content-free;
+- close releases the model/worker;
+- offline execution succeeds after acquisition; and
+- no product service, port, socket, desktop, or audio device is started.
+
+These are environment-specific checks and do not join portable root CI unless they can run without candidate dependencies and weights.
+
+### Hardware-specific performance benchmarks
+
+Official performance runs are manual and native to the measured environment. They:
+
+- use a clean source revision;
+- use checked-in exact locks and verified local artifacts;
+- run the frozen corpus and order;
+- load one profile at a time;
+- record cold and warm distributions separately;
+- measure first produced audio separately from complete output;
+- measure production of 15 seconds of media without waiting a fixed 15 seconds;
+- compute generated duration from samples;
+- measure sustained RTF and memory;
+- exercise cancellation and failure;
+- run offline;
+- emit ignored raw data first; and
+- promote only sanitized summaries.
+
+CI never supplies the hardware evidence needed for a support claim.
+
+### Manual quality evaluation
+
+Quality evaluation is an explicit local manual procedure, not a unit test:
+
+- candidate order is blinded;
+- the same corpus/listening conversion is used;
+- scores follow the frozen rubric;
+- evaluator count and limitations are reported;
+- audio uses disposable ignored storage only when explicitly requested;
+- no audio or input text enters a report; and
+- an interrupted session is discarded rather than partially scored.
+
+### Selection evidence
+
+A profile is selectable only when its performance, quality, capability, license, offline, resource, cancellation, cleanup, and packaging-risk fields are complete. A fast incomplete candidate does not outrank a complete viable one.
+
+## Risks and rollback
+
+### Large or conflicting candidate dependency graphs
+
+**Risk:** Candidate packages may conflict, add unsigned/native code, execute install hooks, or make the default environment enormous.
+
+**Mitigation:** Isolate exact candidate projects/locks, review transitive graphs and install behavior, and keep production/default dependencies model-free.
+
+**Rollback:** Remove the rejected candidate project, adapter, and lock. Retain only its content-free report and rejection rationale.
+
+### Model and voice licensing ambiguity
+
+**Risk:** Code, model, and voice artifacts may have different terms or unclear redistribution rights.
+
+**Mitigation:** Treat each artifact separately, cite authoritative terms, and block selection on ambiguity.
+
+**Rollback:** Mark the candidate ineligible and remove local artifacts. Do not rewrite evidence to imply permission.
+
+### Silent network or telemetry behavior
+
+**Risk:** A library may fetch models/configuration or send telemetry during inference.
+
+**Mitigation:** Separate acquisition, use exact local artifacts and offline controls, run official benchmarks without external network access, and fail closed on attempted access.
+
+**Rollback:** Reject the candidate or revise the adapter only after a new protocol-version review.
+
+### Sensitive text in third-party logs
+
+**Risk:** Engines may log prompts, tokenized text, paths, or raw exceptions.
+
+**Mitigation:** Bound and intercept diagnostics, use canaries, publish fixed codes only, and disqualify unsafe adapters.
+
+**Rollback:** Delete raw output, remove the adapter, and retain only a content-free privacy-failure record.
+
+### Unbounded memory or generated audio
+
+**Risk:** Complete-waveform APIs, long cases, model caches, or retained listener files may exhaust memory/disk or violate ephemeral-audio rules.
+
+**Mitigation:** Bound input tiers, one active profile/case, incremental discard, explicit timeouts, ignored raw paths, and mandatory cleanup.
+
+**Rollback:** Terminate the benchmark worker, delete disposable output, and record a resource failure without partial success.
+
+### Misleading cancellation evidence
+
+**Risk:** Killing a benchmark process may be mistaken for cooperative engine cancellation.
+
+**Mitigation:** Report engine cancel, late completion, stale-result discard, and worker termination separately.
+
+**Rollback:** Downgrade capability to unsupported/unknown and carry the containment requirement into Milestone 7.
+
+### Benchmark overfitting or gate movement
+
+**Risk:** Thresholds, corpus, or run rules may be changed after observing a preferred result.
+
+**Mitigation:** Commit a versioned pre-result profile and require complete reruns after any material change.
+
+**Rollback:** Invalidate incomparable reports; never merge mixed-protocol rankings.
+
+### Subjective quality bias
+
+**Risk:** A single evaluator or known candidate identity may distort quality selection.
+
+**Mitigation:** Blind candidate order, freeze the rubric, report evaluator limitations, and avoid broad quality claims.
+
+**Rollback:** Mark quality evidence insufficient and defer selection rather than invent confidence.
+
+### Hardware-specific conclusions
+
+**Risk:** One fast machine may produce unsupported universal claims.
+
+**Mitigation:** Bind each result and profile to exact measured configurations and reserve end-user detection/support policy for Milestone 10.
+
+**Rollback:** Correct docs and ADR claims to measured scope; do not delete historical measurements.
+
+### Model-specific preprocessing leaks into narration authority
+
+**Risk:** A candidate may pressure the project to change displayed text, locator ranges, or general normalization.
+
+**Mitigation:** Keep candidate preprocessing inside the benchmark/service adapter and require separate evidence plus an ADR for any future general change.
+
+**Rollback:** Remove the adapter-specific transformation. Do not alter completed Milestone 5 evidence.
+
+### Benchmark scaffolding becomes accidental production architecture
+
+**Risk:** A child-process runner, temporary waveform representation, or report shape could be mistaken for the product protocol/audio format.
+
+**Mitigation:** Keep benchmark types private, label topology explicitly, and defer runtime contracts to Milestones 7 and 8.
+
+**Rollback:** Delete or replace benchmark-only plumbing without a public migration.
+
+### Existing documentation worktree
+
+**Risk:** Implementation could overwrite or misattribute the documentation reconciliation already present when this plan was created.
+
+**Mitigation:** Inspect `git status` and overlapping diffs before every edit; preserve unrelated/user-owned changes and review the final scope.
+
+**Rollback:** Reapply only the plan's focused changes through reviewed patches. Do not use destructive Git commands.
+
+## Progress log
+
+- 2026-07-25: Created the milestone-specific ExecPlan from the roadmap, current canonical architecture, product constraints, completed Milestones 1–5, Python scaffold, shared contracts/fakes, root commands, CI, ignore policy, and current source/test evidence.
+- 2026-07-25: Confirmed that no TTS engine, model dependency, benchmark command, model adapter, hardware probe, generated-audio path, process transport, or production service exists.
+- 2026-07-25: Confirmed that shared capability/audio/error contracts exist but no dedicated measurement contract does; this plan keeps benchmark reports private to the benchmark unless a real runtime consumer later justifies a public contract.
+- 2026-07-25: Marked all implementation tasks not started. Creating this plan does not advance the canonical TTS feasibility node beyond **Approved planned**.
+
+## Discoveries and decisions
+
+- Milestone 5 is complete and provides bounded prepared narration text, but feasibility measurements should use a fixed checked-in synthetic prepared-text corpus so every candidate sees identical input and EPUB/preparation time does not contaminate inference measurements.
+- The roadmap previously described Milestone 2 as supplying measurement contracts. Repository inspection found capability, audio-frame, buffer, error, primitive, and fake-test support but no dedicated measurement schema. Milestone 6 will use a benchmark-local report schema rather than silently adding model/hardware fields to `CapabilityReportV1`.
+- `CapabilityReportV1` is deliberately model- and hardware-independent. Actual engine/model/voice/hardware evidence belongs in versioned benchmark reports and the selection ADR, not in that v1 runtime contract.
+- Candidate names in the project brief remain hypotheses. This plan does not preselect Qwen3-TTS, Kokoro, ONNX Runtime, PyTorch, a voice, a precision, or a provider.
+- Official model execution must be offline after explicit acquisition. A local loopback server is not required for feasibility and would prematurely couple the work to Milestone 7.
+- First produced audio, complete generated output, media duration, and audible playback are different measurements. Milestone 6 can measure the first three but does not implement or claim the fourth.
+- A benchmark worker process may be used for isolation and termination measurement without selecting the production process transport.
+- The approximately 15-second value remains a future playable-audio lead. The feasibility harness measures the time needed to produce that amount of media; it never sleeps for 15 seconds to satisfy the rule.
+- Default root checks and CI must remain model-free and hardware-independent. Official benchmarks and manual listening remain explicit, separate commands.
+- Rejected-candidate evidence is valuable and remains in content-free summaries; rejected dependencies, weights, audio, and raw output do not remain in the production dependency graph or repository.
+
+## Final validation results
+
+### Plan-authoring validation
+
+Completed on 2026-07-25:
+
+- A read-only audit enumerated all Markdown files under `docs/` plus the root `README.md` and `AGENTS.md`; all relative targets in 40 files resolve.
+- `pnpm.cmd format:check` passed outside the managed sandbox after the sandboxed attempt could not traverse the existing protected `services/tts/.pytest_cache`.
+- `git diff --check` passed for tracked changes.
+- `git diff --no-index --check -- NUL docs/plans/active/M006-local-tts-feasibility-and-engine-profiles.md` and a direct trailing-whitespace scan passed for this new untracked plan file.
+- The plan-creation scope adds this ExecPlan and updates only the documentation index, active-plan index, roadmap authority, and canonical system-diagram status. It adds no runtime source, manifest, lockfile, dependency, schema, model, weight, generated audio, benchmark result, hardware claim, transport, native capability, or production behavior.
+
+### Milestone implementation validation
+
+Not run. All Milestone 6 implementation, model acquisition, hardware benchmark, quality evaluation, profile selection, ADR, and closeout tasks remain not started.
+
+This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.
