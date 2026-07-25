@@ -539,11 +539,38 @@ The harness and sanitizer are trustworthy before a large third-party model stack
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- Added a private `services/tts/benchmarks` package with a typed synchronous
+  adapter protocol for capability observation, load, warm-up, payload-free
+  generation metadata, cancellation, and close. The package is included in
+  strict mypy checks but remains outside the built `voxleaf_tts` production
+  package and root export.
+- The harness retains integer monotonic nanoseconds until serialization,
+  derives media duration only from per-channel sample frames and sample rate,
+  enforces one 640-code-point request plus explicit chunk/sample/rate/channel
+  bounds, and never accepts or retains waveform payload.
+- Candidate stdout and stderr are redirected into a 65,536-byte transient
+  boundary. It records only counts/truncation/sensitive-value presence,
+  discards captured bytes, and converts adapter exceptions to fixed codes.
+- The allowlisted builder constructs every summary field explicitly. Promotion
+  validates the checked-in schema, recomputes counts, order, duration, RTF,
+  nearest-rank distributions, sustained totals, cancellation gates, and role
+  memory constraints, rejects private paths and corpus canaries, and emits
+  canonical JSON plus content-free Markdown without writing a file.
+- A manual-clock fake executes all five cold observations, the excluded
+  warm-up, 24 warm requests, a 180-second sustained round, and all five
+  cancellation trials without sleeping, networking, hardware, candidate
+  packages, models, audio devices, files, or waveform allocation.
+- Focused Ruff, strict mypy over 13 source files, and the complete Python suite
+  pass 14 tests. Exact/max-plus-one input and output bounds, timing arithmetic,
+  diagnostic truncation, sensitive stdout/stderr, raw exception redaction,
+  unknown summary fields, arithmetic drift, private paths, filename canaries,
+  cancellation cleanup, and schema-valid promotion are covered.
 
 #### Status
 
-Not started.
+Complete.
 
 ### Task 2.2: Implement thin adapters for every admitted candidate
 
@@ -575,11 +602,42 @@ Every admitted candidate can run through the identical measurement boundary with
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- Added one benchmark-only adapter for each admitted profile. Neither adapter
+  imports its candidate package at module import or test-collection time, and
+  neither candidate dependency entered the production TTS project or root
+  dependency graph.
+- A fail-closed manifest loader admits only the frozen Qwen and Supertonic
+  candidate IDs and maps only their exact roles, distributions, versions,
+  model revisions, voices, providers, precisions, output rate, and allowlisted
+  artifact checksums into typed adapter configuration.
+- Local artifact verification resolves every allowlisted relative path beneath
+  an absolute local root, streams SHA-256 calculation in one-MiB reads, and
+  rejects missing, unreadable, escaping, or mismatched files before importing
+  a candidate package. Failures contain only fixed codes.
+- The Qwen adapter requires the frozen CUDA/bfloat16/SDPA profile, CUDA and
+  bfloat16 availability, `HF_HUB_OFFLINE=1`,
+  `TRANSFORMERS_OFFLINE=1`, and `local_files_only=True`; it invokes the frozen
+  Spanish `Aiden` CustomVoice API from the verified local model directory.
+- The Supertonic adapter requires the frozen ONNX Runtime CPU/float32 profile,
+  CPU execution availability, `HF_HUB_OFFLINE=1`, and
+  `TTS(auto_download=False, model_dir=<verified-local-root>)`; its internal
+  300-code-point behavior and Spanish `F1` settings remain adapter-local.
+- Both selected public APIs are reported as complete-waveform/float32 and
+  yield only sample count, sample rate, channel count, request identity, and
+  end-of-output metadata after releasing the waveform reference. Neither
+  engine exposes cooperative cancellation through the selected API, so both
+  report worker termination instead of overstating native capability.
+- Five model-free adapter tests cover exact manifest loading, no-import
+  missing-artifact failure, local-path-only calls, provider/runtime/profile
+  matching, checksum failure redaction, candidate-specific generation
+  settings, complete-waveform metadata, cleanup, and honest cancellation.
+  Focused Ruff, strict mypy over 18 source files, and 10 focused tests pass.
 
 #### Status
 
-Not started.
+Complete.
 
 ### Task 2.3: Prove bounds, cancellation observation, and cleanup on real adapters
 
@@ -609,11 +667,57 @@ The benchmark can safely proceed to official hardware runs.
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- Added a spawn-isolated candidate-neutral worker wrapper. Sensitive requests
+  cross only a private multiprocessing pipe, never OS command-line arguments or
+  environment variables, and the child returns one bounded `AudioChunk`
+  metadata record at a time with pipe backpressure. Waveform payload never
+  crosses the boundary.
+- Child stdout and stderr are captured by the same 65,536-byte discard
+  boundary, including request text as a privacy canary. Child exceptions and
+  malformed responses collapse to the frozen failure taxonomy; arbitrary
+  messages, tracebacks, paths, environment values, and adapter objects do not
+  cross IPC.
+- Worker-side chunk and sample-frame totals use the same 4,096-chunk and
+  115,200,000-frame hard limits as the harness. The parent enforces the frozen
+  load/request/termination/cleanup timeouts and converts timeout, crash,
+  resource, privacy, and cleanup outcomes into fixed harness failures.
+- Forced cancellation closes the pipe, terminates the exact Windows process
+  tree (or POSIX process group), waits for exit, rejects every later frame by
+  request identity, and automatically starts a newly loaded worker for a later
+  trial. Success and close also leave no worker.
+- The harness now understands fixed adapter-operation outcomes and rejects an
+  end-of-output frame as evidence for `after-first-audio`,
+  `after-five-media-seconds`, or `near-hard-mid-generation` cancellation. This
+  prevents the admitted complete-waveform APIs from receiving false
+  mid-generation cancellation credit.
+- Exact candidate dispatch is spawn-safe and observes capabilities without
+  importing Qwen, Supertonic, PyTorch, or ONNX Runtime in the parent. Direct
+  candidate adapters retain at most one model reference and release it on
+  close; Qwen additionally releases the CUDA cache through its frozen runtime.
+- Four isolation tests cover worker replacement, one active profile,
+  timeout, max-plus-one output, hard process cleanup, late-output isolation,
+  complete-output cancellation rejection, and private-value-free
+  representation. Together with the adapter and harness suites, focused Ruff,
+  strict mypy over 22 source files, and 16 focused tests pass.
+- No hardware/model run was performed or required for this milestone.
+  Unsupported real-engine cancellation or cleanup remains a measurable
+  feasibility risk for the official hardware phase rather than an
+  implementation claim.
+- The canonical system diagram was reviewed. This private benchmark worker
+  does not change the documented production component, process, persistence,
+  or runtime data-flow boundaries, so no diagram change was warranted.
+- Final validation passed the complete 25-test Python suite, both exact
+  candidate lock checks and install dry runs, the production sdist/wheel build
+  with no benchmark or candidate code packaged, and the authoritative native
+  Windows `pnpm.cmd check` including formatting, lint, TypeScript/Python type
+  checks, 940 JavaScript/TypeScript/Node tests, 25 Python tests, Rust checks,
+  and the release Tauri and Python builds.
 
 #### Status
 
-Not started.
+Complete.
 
 ## Milestone 3: Execute reproducible performance and quality evaluation
 
@@ -1127,10 +1231,19 @@ A profile is selectable only when its performance, quality, capability, license,
 - 2026-07-25: Marked all implementation tasks not started. Creating this plan does not advance the canonical TTS feasibility node beyond **Approved planned**.
 - 2026-07-25: Completed Task 1.1 candidate intake. Two role-specific candidates now have stable IDs, immutable upstream artifact identities, independent uv projects/locks, and explicit offline/acquisition/license risks without changing the production dependency graph.
 - 2026-07-25: Completed Task 1.2. The byte-frozen synthetic Spanish corpus, deterministic performance/sustained orders, Milestone 5 size boundary checks, privacy canaries, ignored raw layout, cleanup policy, and repository artifact audits are now enforced by model-free Python tests.
+- 2026-07-25: Completed Task 2.1. The private candidate-neutral harness, bounded diagnostic capture, allowlisted summary promotion, deterministic fake adapter, exact arithmetic, protocol ordering, and input/output/privacy/cancellation bounds pass all focused checks without candidate packages or hardware.
+- 2026-07-25: Completed Task 2.2. Thin Qwen and Supertonic adapters now validate the frozen profile, offline controls, local artifact hashes, runtime/provider/precision/voice identity, native complete-waveform behavior, and fixed-code failure boundary in deterministic model-free tests.
+- 2026-07-25: Completed Task 2.3. Spawn-isolated execution now bounds metadata and diagnostics, hard-stops worker process trees, rejects stale or falsely mid-generation complete-waveform output, restarts cleanly between forced-cancellation trials, and leaves real candidate limitations explicit for official measurement.
 - 2026-07-25: Completed Task 1.3 and Milestone 1. The pre-result measurement procedure, numeric gates, listening rubric, invalidation/rerun rules, private summary schema, synthetic valid fixture, and semantic mutation tests are frozen and linked from the performance and architecture authorities. No engine was executed and no official result exists.
 - 2026-07-25: Corrected the recorded sustained-sequence total from 3,144
   to the verified 3,139 code points and froze that exact aggregate in the
   corpus authority test.
+- 2026-07-25: Completed Task 2.1. The benchmark-only typed harness, exact
+  sample/timing arithmetic, bounded diagnostic redaction, allowlisted
+  schema/semantic promotion gate, and full-protocol deterministic fake now
+  pass the 14-test Python suite plus Ruff and strict mypy. No candidate
+  dependency, model, audio payload, hardware access, production service API,
+  root benchmark command, or official result was added.
 
 ## Discoveries and decisions
 
@@ -1141,6 +1254,7 @@ A profile is selectable only when its performance, quality, capability, license,
   Supertonic/ONNX CPU profiles to the frozen evaluation only; admission does
   not select either profile or authorize a production dependency.
 - Official model execution must be offline after explicit acquisition. A local loopback server is not required for feasibility and would prematurely couple the work to Milestone 7.
+- Milestone 2 intentionally adds no root TTS benchmark command. The candidate dispatch and isolation boundary now exist, but acquisition, host/resource preflight, network-disable proof, raw-session ownership, measurement probes, and official promotion are Task 3 work; exposing a partial command would create a non-authoritative result path.
 - First produced audio, complete generated output, media duration, and audible playback are different measurements. Milestone 6 can measure the first three but does not implement or claim the fourth.
 - A benchmark worker process may be used for isolation and termination measurement without selecting the production process transport.
 - The approximately 15-second value remains a future playable-audio lead. The feasibility harness measures the time needed to produce that amount of media; it never sleeps for 15 seconds to satisfy the rule.
