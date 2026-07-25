@@ -59,7 +59,7 @@ class _SupertonicEngine(Protocol):
         self,
         text: str,
         **kwargs: object,
-    ) -> _Waveform: ...
+    ) -> tuple[_Waveform, object]: ...
 
 
 class _EngineFactory(Protocol):
@@ -155,7 +155,7 @@ class Supertonic3Adapter:
         if engine is None or voice_style is None:
             raise AdapterConfigurationError("not-loaded")
         try:
-            waveform = engine.synthesize(
+            waveform, duration = engine.synthesize(
                 request.text,
                 voice_style=voice_style,
                 lang="es",
@@ -165,6 +165,7 @@ class Supertonic3Adapter:
                 silence_duration=0.3,
                 verbose=False,
             )
+            del duration
             shape = waveform.shape
             if not isinstance(shape, tuple) or len(shape) != 2 or shape[0] != 1:
                 raise AdapterConfigurationError("invalid-output")

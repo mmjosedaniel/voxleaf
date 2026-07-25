@@ -241,10 +241,10 @@ def test_supertonic_adapter_forces_local_cpu_profile_and_discards_waveform(
             calls["voice"] = voice_id
             return object()
 
-        def synthesize(self, text: str, **kwargs: object) -> Waveform:
+        def synthesize(self, text: str, **kwargs: object) -> tuple[Waveform, object]:
             calls["text"] = text
             calls["generate"] = kwargs
-            return Waveform()
+            return Waveform(), object()
 
     onnxruntime = ModuleType("onnxruntime")
     onnxruntime.__dict__["get_device"] = lambda: "CPU"

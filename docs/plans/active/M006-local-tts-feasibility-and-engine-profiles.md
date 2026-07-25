@@ -861,6 +861,12 @@ In progress on 2026-07-25.
   interpreter binding, pilot lifecycle, raw bounds/privacy, memory baseline
   arithmetic, native PID-tree smoke, exact provider selection, continued
   cancellation behavior, and the existing protocol.
+- The first disposable Supertonic pilot failed with the fixed
+  `generation-failed` code and retained no session. Investigation found that
+  the mock had modeled `TTS.synthesize` as returning a bare waveform although
+  installed Supertonic 1.3.1 returns `(waveform, duration)`. The adapter and
+  regression fake now match the installed public API; no gate, corpus, or
+  result was changed.
 
 #### Status
 
@@ -1320,7 +1326,12 @@ A profile is selectable only when its performance, quality, capability, license,
   50-millisecond PID-tree RAM probe, sustained-phase timeout, all-trial
   cancellation journaling, and exact Supertonic loaded-provider verification
   pass model-free checks. Balanced process-attributed VRAM measurement remains
-  fail-closed and no pilot or official generation has run yet.
+  fail-closed; at that checkpoint no pilot or official generation had run.
+- 2026-07-25: The first non-comparable Supertonic pilot loaded the verified
+  local CPU profile but failed generation because the adapter mock had the
+  wrong installed return shape. It retained no raw session. The pre-result
+  fix unpacks the actual `(waveform, duration)` pair and discards both values
+  after extracting bounded sample metadata.
 - 2026-07-25: Completed Task 1.3 and Milestone 1. The pre-result measurement procedure, numeric gates, listening rubric, invalidation/rerun rules, private summary schema, synthetic valid fixture, and semantic mutation tests are frozen and linked from the performance and architecture authorities. No engine was executed and no official result exists.
 - 2026-07-25: Corrected the recorded sustained-sequence total from 3,144
   to the verified 3,139 code points and froze that exact aggregate in the
