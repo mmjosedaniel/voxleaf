@@ -96,6 +96,7 @@ function createTestPublication(
       }),
     ),
     resolveTarget: vi.fn(),
+    prepareNarration: vi.fn<OpenedPublication["prepareNarration"]>(),
     close: vi.fn(() => Promise.resolve()),
   };
 }

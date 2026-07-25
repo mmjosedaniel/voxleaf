@@ -5,6 +5,11 @@ import type {
   SpineItemId,
 } from "@voxleaf/shared";
 
+import type {
+  NarrationPreparationRequest,
+  NarrationPreparationResult,
+} from "./narration-model.js";
+
 declare const contentDocumentIdBrand: unique symbol;
 declare const rasterImageResourceIdBrand: unique symbol;
 declare const sensitivePublicationTextBrand: unique symbol;
@@ -274,5 +279,8 @@ export interface OpenedPublication {
     input: unknown,
     options?: PublicationTargetResolveOptions,
   ): PublicationTargetResolution;
+  prepareNarration(
+    request: NarrationPreparationRequest,
+  ): Promise<NarrationPreparationResult>;
   close(): Promise<void>;
 }

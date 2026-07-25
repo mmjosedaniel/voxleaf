@@ -9,6 +9,16 @@ import {
 
 import { EpubArchiveError } from "../archive/archive-error.js";
 import type { PublicationLocatedBlock } from "../document/document-model.js";
+import type {
+  NarrationBoundaryReason,
+  PreparedNarrationMeasurements,
+  PreparedNarrationSegment,
+} from "../document/narration-model.js";
+export type {
+  NarrationBoundaryReason,
+  PreparedNarrationMeasurements,
+  PreparedNarrationSegment,
+} from "../document/narration-model.js";
 import { createBlockLocatorAtOffset } from "../locator/locator-index.js";
 import {
   packNarrationBoundaryScan,
@@ -17,7 +27,6 @@ import {
   type NarrationPackedBlockMeasurements,
   type NarrationPackedSegment,
   type NarrationPackingOptions,
-  type NarrationPackingBoundaryReason,
 } from "./narration-segment-packer.js";
 import {
   normalizeNarrationSourceTokens,
@@ -28,23 +37,6 @@ import {
   createNarrationSourceTokenRange,
   type NarrationSourceTokenLeafEvent,
 } from "./narration-source.js";
-
-export type NarrationBoundaryReason =
-  NarrationPackingBoundaryReason | "scene-break";
-
-export interface PreparedNarrationMeasurements {
-  readonly sourceCodePoints: Index;
-  readonly narrationCodePoints: Index;
-  readonly narrationUtf8Bytes: Index;
-  readonly sentenceCount: Index;
-}
-
-export interface PreparedNarrationSegment {
-  readonly text: SensitiveNarrationTextV1;
-  readonly sourceRange: LocatorRangeV1;
-  readonly boundaryReason: NarrationBoundaryReason;
-  readonly measurements: PreparedNarrationMeasurements;
-}
 
 export interface PreparedNarrationBlock {
   readonly complete: boolean;
@@ -100,7 +92,14 @@ function validateLocatedBlock(
     typeof packed !== "object" ||
     !Array.isArray(packed.segments) ||
     typeof packed.complete !== "boolean" ||
-    packed.block.sourceCodePoints !== locatedBlock.textLengthCodePoints ||
+    packed.block.sourceStartOffsetCodePoints < 0 ||
+    packed.block.sourceEndOffsetCodePoints >
+      locatedBlock.textLengthCodePoints ||
+    packed.block.sourceEndOffsetCodePoints <
+      packed.block.sourceStartOffsetCodePoints ||
+    packed.block.sourceCodePoints !==
+      packed.block.sourceEndOffsetCodePoints -
+        packed.block.sourceStartOffsetCodePoints ||
     packed.block.blockKind !== locatedBlock.block.kind ||
     (packed.block.blockKind === "heading" &&
       locatedBlock.block.kind === "heading" &&
@@ -200,7 +199,8 @@ function emitPreparedNarrationBlockInternal(
   validateLocatedBlock(locatedBlock, packed);
 
   const stagedSegments: StagedPreparedNarrationSegment[] = [];
-  let previousEndOffset = 0;
+  const sourceStartOffsetCodePoints = packed.block.sourceStartOffsetCodePoints;
+  let previousEndOffset = sourceStartOffsetCodePoints;
   let totalNarrationCodePoints = 0;
   let totalNarrationUtf8Bytes = 0;
   let totalSentenceCount = 0;
@@ -233,20 +233,24 @@ function emitPreparedNarrationBlockInternal(
   }
 
   const sourceCodePointsConsumed = packed.measurements.sourceCodePointsConsumed;
+  const continuationOffsetCodePoints = addSafe(
+    sourceStartOffsetCodePoints,
+    sourceCodePointsConsumed,
+  );
   if (
     packed.measurements.segmentCount !== stagedSegments.length ||
     packed.measurements.narrationCodePoints !== totalNarrationCodePoints ||
     packed.measurements.narrationUtf8Bytes !== totalNarrationUtf8Bytes ||
     packed.measurements.sentenceCount !== totalSentenceCount ||
     sourceCodePointsConsumed < 0 ||
-    sourceCodePointsConsumed > locatedBlock.textLengthCodePoints ||
+    sourceCodePointsConsumed > packed.block.sourceCodePoints ||
     (packed.complete &&
-      sourceCodePointsConsumed !== locatedBlock.textLengthCodePoints) ||
+      sourceCodePointsConsumed !== packed.block.sourceCodePoints) ||
     (!packed.complete &&
-      (sourceCodePointsConsumed >= locatedBlock.textLengthCodePoints ||
+      (sourceCodePointsConsumed >= packed.block.sourceCodePoints ||
         stagedSegments.length === 0)) ||
     (stagedSegments.length > 0 &&
-      previousEndOffset !== sourceCodePointsConsumed) ||
+      previousEndOffset !== continuationOffsetCodePoints) ||
     (packed.disposition === "spoken" && stagedSegments.length === 0) ||
     (packed.disposition !== "spoken" &&
       (!packed.complete || stagedSegments.length !== 0))
@@ -256,7 +260,7 @@ function emitPreparedNarrationBlockInternal(
 
   const continuation = canonicalContinuation(
     locatedBlock,
-    sourceCodePointsConsumed,
+    continuationOffsetCodePoints,
   );
   const segments = Object.freeze(
     stagedSegments.map((segment) =>

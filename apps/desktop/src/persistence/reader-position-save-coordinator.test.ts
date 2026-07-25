@@ -148,6 +148,7 @@ function createPublication(): OpenedPublication {
     resolveTarget: vi.fn(() => {
       throw new Error("Synthetic target resolution is unavailable.");
     }),
+    prepareNarration: vi.fn<OpenedPublication["prepareNarration"]>(),
     close: vi.fn(() => Promise.resolve()),
   };
 }

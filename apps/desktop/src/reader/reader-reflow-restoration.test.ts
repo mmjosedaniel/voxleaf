@@ -89,6 +89,7 @@ function createPublication(
         reason: "unknown-document",
       }),
     ),
+    prepareNarration: vi.fn<OpenedPublication["prepareNarration"]>(),
     close: vi.fn(() => Promise.resolve()),
   };
 }

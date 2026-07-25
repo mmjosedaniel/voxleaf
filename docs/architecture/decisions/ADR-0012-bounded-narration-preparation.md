@@ -57,10 +57,27 @@ canonical half-open `LocatorRangeV1` values, the closed boundary reason,
 content-free size measurements, completion, and an exact source continuation.
 Every endpoint is constructed through the existing package locator owner and
 shared decoder; test-only work identities prove `NarrationSegmentV1`
-compatibility without production identity generation or a schema change. The
-public `prepareNarration` result remains unimplemented. No runtime dependency,
-shared schema, desktop integration, TTS behavior, audio behavior, persistence,
-or capability was added.
+compatibility without production identity generation or a schema change. Task
+5.1 adds the public package-local request, prepared-segment, batch, and closed
+result types; exports them without adding another root-level runtime opener;
+and exposes `OpenedPublication.prepareNarration`. The coordinator validates the
+closed `narration-v1` request, reconstructs stable segmentation when a start is
+inside a bounded source window, returns the complete containing segment,
+publishes continuation at the final returned segment end, and enforces the
+independent 16-segment, 8,192-code-point, 24,576-byte, and 64-sentence batch
+ceilings while retaining at most one lookahead segment. Invalid input,
+cancellation, concurrent use, resource exhaustion, close, and unexpected
+failure return frozen content-free outcomes under the existing publication
+lifecycle. No runtime dependency, shared schema, desktop integration, TTS
+behavior, audio behavior, persistence, network access, or capability was added.
+Task 5.2 adds a dedicated provenance-labeled, repository-authored three-spine
+neutral/Spanish EPUB and proves the public root opener-to-segment matrix across
+representative semantics, exact/recovered starts, continuation, structural
+gaps, spine transitions, source immutability, shared-contract wrapping, image
+omission/read isolation, and zero external capability use. Task 5.3 proves the
+accepted exact deterministic work cadence, independent batch totals,
+one-lookahead aggregate retention, repeated bounded continuation, and
+no-result cancellation/close behavior through numeric-only package evidence.
 
 ## Context
 
@@ -300,12 +317,12 @@ Failure results contain no segment, narration text, partial measurements,
 canonical locator, rejected value, exception, stack, or dependency message.
 Their operational-error mappings are:
 
-| Detail | `OperationalErrorV1` code |
+| Detail                                        | `OperationalErrorV1` code |
 | --------------------------------------------- | ------------------------- |
-| `cancelled` | `operation-cancelled` |
-| `invalid-request`, `invalid-start` | `invalid-input` |
-| `operation-active`, `resource-limit-exceeded` | `resource-exhausted` |
-| `internal-failure` | `internal-failure` |
+| `cancelled`                                   | `operation-cancelled`     |
+| `invalid-request`, `invalid-start`            | `invalid-input`           |
+| `operation-active`, `resource-limit-exceeded` | `resource-exhausted`      |
+| `internal-failure`                            | `internal-failure`        |
 
 A malformed locator, wrong-book locator, or publication without an addressable
 source position is `invalid-start`. Structurally recoverable spine, anchor, or
@@ -476,7 +493,13 @@ Those decisions remain with roadmap Milestones 6 through 9.
   cancellation before result publication. Task 4.4 adds canonical block-local
   prepared ranges, exact source continuation, deep immutability, and
   compatibility evidence for the unchanged shared narration-segment contract;
-  public integration still requires later tasks.
+  Task 5.1 adds the accepted public operation, containing-segment relation,
+  final batch continuation, independent batch ceilings, closed result mapping,
+  and publication-owned cancellation/concurrency/close integration. The
+  Task 5.2 adds the broader public integration matrix. Task 5.3 caps internal
+  prepared output by remaining aggregate retention capacity and adds
+  numeric-only exact-bound, repeated-batch, cancellation, close, and privacy
+  evidence without a wall-clock or hardware gate.
 
 ## Alternatives considered
 

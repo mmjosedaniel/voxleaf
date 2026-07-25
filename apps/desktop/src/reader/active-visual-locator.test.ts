@@ -220,6 +220,7 @@ function createPublication(
           reason: "invalid-target",
         }),
       ),
+      prepareNarration: vi.fn<OpenedPublication["prepareNarration"]>(),
       close: vi.fn(async () => undefined),
     },
   };

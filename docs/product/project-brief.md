@@ -6,7 +6,7 @@ This brief explains the intended VoxLeaf experience and the motivation behind th
 
 The normative MVP scope is in [`mvp.md`](mvp.md). Accepted technical decisions are recorded under [`../architecture/decisions/`](../architecture/decisions/), and current performance targets are in [`../architecture/performance-budget.md`](../architecture/performance-budget.md).
 
-The implemented product boundary currently includes private local EPUB ingestion, semantic visual reading/navigation, bounded display preferences, logical-position persistence, exact/nearest-valid restoration after exact-file reselection, and Tasks 2.1-4.4's package-internal exhaustive narration source projection, Unicode-code-point source-span tokens, bounded canonical source windows/lifecycle, deterministic source-mapped neutral/Spanish normalization, composed invariants/privacy tests, sentence/dialogue/clause/protected-token boundary scanning, cancellable profile-bounded block-local semantic packing with unusually oversized-token hardening, and immutable canonical locator-linked prepared segments. Milestone 5 remains in progress: public narration batches, TTS engines and process integration, generated audio, playback, synchronized highlighting, hardware profiles, and installers remain deferred to later tasks or milestones. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
+The implemented product boundary currently includes private local EPUB ingestion, semantic visual reading/navigation, bounded display preferences, logical-position persistence, exact/nearest-valid restoration after exact-file reselection, and Tasks 2.1-5.3's exhaustive narration source projection, Unicode-code-point source-span tokens, bounded canonical source windows/lifecycle, deterministic source-mapped neutral/Spanish normalization, composed invariants/privacy tests, sentence/dialogue/clause/protected-token boundary scanning, cancellable profile-bounded block-local semantic packing with unusually oversized-token hardening, immutable canonical locator-linked prepared segments, frozen closed public narration batches through `OpenedPublication`, repository-authored public EPUB-to-segment integration evidence, and deterministic exact-bound/resource evidence. Milestone 5 remains in progress while documentation and final validation are pending; TTS engines and process integration, generated audio, playback, synchronized highlighting, hardware profiles, and installers remain deferred to later milestones. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
 
 ## Summary
 
@@ -107,15 +107,15 @@ The implemented persisted reader state retains only bounded exact-byte identity,
 
 The following ideas guide prototypes but are not accepted merely because they appear in this brief:
 
-| Area | Candidate direction | Required validation |
+| Area                | Candidate direction                                                    | Required validation                                                       |
 | ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Desktop | Tauri 2, React, TypeScript, and Vite | Bootstrap, platform integration, accessibility, and packaging |
-| TTS process | Persistent local Python sidecar | Lifecycle, isolation, cancellation, installation, and recovery |
-| Balanced model | A smaller Qwen3-TTS profile | Spanish quality, startup latency, real-time factor, and memory use |
-| Compatibility model | Kokoro through ONNX Runtime or another lightweight engine | CPU performance, quality, packaging, and provider support |
-| Process transport | Typed local IPC, standard streams, local socket, or loopback WebSocket | Security, binary streaming, cancellation, and operational simplicity |
-| Internal audio | Streamed PCM with a bounded ring buffer | Browser and platform support, memory, playback quality, and speed control |
-| Playback mechanism | AudioWorklet or an equivalent low-level mechanism | Stable streaming, underrun observability, packaging, and testability |
+| Desktop             | Tauri 2, React, TypeScript, and Vite                                   | Bootstrap, platform integration, accessibility, and packaging             |
+| TTS process         | Persistent local Python sidecar                                        | Lifecycle, isolation, cancellation, installation, and recovery            |
+| Balanced model      | A smaller Qwen3-TTS profile                                            | Spanish quality, startup latency, real-time factor, and memory use        |
+| Compatibility model | Kokoro through ONNX Runtime or another lightweight engine              | CPU performance, quality, packaging, and provider support                 |
+| Process transport   | Typed local IPC, standard streams, local socket, or loopback WebSocket | Security, binary streaming, cancellation, and operational simplicity      |
+| Internal audio      | Streamed PCM with a bounded ring buffer                                | Browser and platform support, memory, playback quality, and speed control |
+| Playback mechanism  | AudioWorklet or an equivalent low-level mechanism                      | Stable streaming, underrun observability, packaging, and testability      |
 
 Model names, audio encoding, transport, process ownership, and buffer thresholds require prototypes, benchmarks, and—where durable—an architecture decision record. Current buffer and latency targets come from [`../architecture/performance-budget.md`](../architecture/performance-budget.md), not from this brief.
 

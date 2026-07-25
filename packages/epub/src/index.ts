@@ -45,6 +45,23 @@ export type {
   UnavailablePublicationTargetResolution,
 } from "./document/document-model.js";
 
+export type {
+  NarrationBoundaryReason,
+  NarrationPreparationBatch,
+  NarrationPreparationBatchMeasurements,
+  NarrationPreparationComplete,
+  NarrationPreparationFailure,
+  NarrationPreparationFailureDetail,
+  NarrationPreparationLanguage,
+  NarrationPreparationProfileId,
+  NarrationPreparationRequest,
+  NarrationPreparationResult,
+  NarrationPreparationStart,
+  NarrationPreparationStartRelation,
+  PreparedNarrationMeasurements,
+  PreparedNarrationSegment,
+} from "./document/narration-model.js";
+
 export { openEpubPublication } from "./public/open-epub-publication.js";
 
 export type {
