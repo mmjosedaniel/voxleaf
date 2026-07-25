@@ -785,15 +785,20 @@ In progress on 2026-07-25.
   Qwen's 1,811,626,576-byte primary model, all four Supertonic ONNX files, and
   the 292,046-byte `F1` voice style. Git ignore checks cover both environments
   and both model roots.
-- The prior 45-minute AC sleep setting was observed, temporarily changed to
-  disabled for setup, and restored after Windows rejected creation of the
-  exact application-scoped outbound firewall rule with access denied. No rule
-  was created and no model or pilot ran.
-- Official preflight is therefore genuinely blocked on administrator
-  authorization to create the documented temporary firewall rule. The
-  offline environment controls must then be set and preflight rerun from a
-  clean revision; the balanced run also requires at least 12 GiB free RAM at
-  preflight.
+- The prior 45-minute AC sleep setting was observed and retained for
+  restoration. An administrator created the exact application-scoped
+  outbound firewall rule for the Supertonic interpreter, and AC sleep was
+  disabled for the official session.
+- The Supertonic compatibility-profile preflight passed from clean commit
+  `64e8324f9426c381dcac1d013264ba9fcb833065`. It verified the exact five
+  artifacts, offline control, interpreter-specific firewall isolation, AC
+  power, balanced power mode, 11,009,933,312 free RAM bytes, 8,151 MiB total
+  VRAM, 7,810 MiB free VRAM, and 665,578,512,384 bytes free disk. The receipt
+  contained only allowlisted content-free host and artifact fields.
+- No model or pilot ran. The balanced Qwen preflight still requires replacing
+  the temporary rule with one for its exact interpreter and restoring at
+  least 12 GiB free RAM; the observed 11,009,933,312 free bytes do not meet
+  that frozen headroom gate.
 
 #### Status
 
@@ -1281,6 +1286,10 @@ A profile is selectable only when its performance, quality, capability, license,
 - 2026-07-25: Completed Task 2.3. Spawn-isolated execution now bounds metadata and diagnostics, hard-stops worker process trees, rejects stale or falsely mid-generation complete-waveform output, restarts cleanly between forced-cancellation trials, and leaves real candidate limitations explicit for official measurement.
 - 2026-07-25: Started Task 3.1 on a new branch from merged Milestone 2. The closed preflight command, privacy-safe host/artifact receipt, role headroom gates, non-promotable pilot state, and exact Windows Firewall network-isolation proof pass deterministic tests; official eligibility awaits candidate acquisition, offline controls, firewall authorization, and sufficient free balanced-role RAM.
 - 2026-07-25: Completed the networked acquisition portion of Task 3.1. Both exact candidate locks installed, both immutable snapshots downloaded into ignored storage, and every manifest checksum/provider import matched. Windows denied creation of the required outbound firewall rule because the shell is not elevated; the prior AC sleep timeout was restored and no inference began.
+- 2026-07-25: The administrator-created Supertonic application rule was
+  verified and its official compatibility preflight passed from clean commit
+  `64e8324f9426c381dcac1d013264ba9fcb833065`. No model loaded. Qwen still
+  requires its exact rule and the frozen 12 GiB free-RAM headroom.
 - 2026-07-25: Completed Task 1.3 and Milestone 1. The pre-result measurement procedure, numeric gates, listening rubric, invalidation/rerun rules, private summary schema, synthetic valid fixture, and semantic mutation tests are frozen and linked from the performance and architecture authorities. No engine was executed and no official result exists.
 - 2026-07-25: Corrected the recorded sustained-sequence total from 3,144
   to the verified 3,139 code points and froze that exact aggregate in the
