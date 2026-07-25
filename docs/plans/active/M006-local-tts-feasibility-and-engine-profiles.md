@@ -752,7 +752,7 @@ Official measurements are attributable to a known, privacy-safe local configurat
 
 #### Actual result
 
-In progress on 2026-07-25.
+Completed on 2026-07-25.
 
 - Added a deterministic, fail-closed preflight boundary and a private-stdin
   root command. It binds an official request to one exact clean commit,
@@ -820,11 +820,23 @@ In progress on 2026-07-25.
   and the host's PID-tagged WDDM dedicated-memory counter as an independent
   process-attribution cross-check. The old result is not comparable to `v2`;
   every candidate must rerun.
+- The approved `v2` path passed deterministic tests and a native disposable
+  CUDA attribution probe. Qwen's official preflight and pilot then passed from
+  clean commit `76f27d1ff41b4d4ea1e20341b9a4cd9d86b3f8ff` after the maintainer
+  closed Chrome to restore the frozen RAM headroom. Supertonic's official
+  preflight and pilot passed from clean commit
+  `a0640fe7ff1c3bde4ceb68ba8e89cb57150adaac`. Both exact artifact sets,
+  interpreters, offline controls, application-scoped firewall blocks, power
+  conditions, and role-specific resource headroom were therefore proven
+  before their comparable matrices.
+- Final cleanup restored AC sleep to 45 minutes and removed every temporary
+  benchmark firewall rule.
 
 #### Status
 
-In progress — `v2` authority and Windows-compatible measurement implementation
-pass focused validation; clean official candidate preflights and reruns remain.
+Complete — both admitted `v2` profiles passed clean, exact, offline-capable
+official preflight and disposable pilot validation before their complete
+matrices, and host controls were restored afterward.
 
 ### Task 3.2: Run cold, warm, sustained, cancellation, and failure matrices
 
@@ -857,7 +869,7 @@ The repository contains comparable content-free evidence, not anecdotal console 
 
 #### Actual result
 
-In progress on 2026-07-25.
+Completed on 2026-07-25.
 
 - Added the closed `benchmark:tts:measure` supervisor. It repeats preflight,
   launches only the exact candidate interpreter, repeats preflight inside that
@@ -1048,7 +1060,7 @@ The selection includes reproducible bounded human quality evidence rather than s
 
 #### Actual result
 
-In progress on 2026-07-25.
+Completed on 2026-07-25.
 
 - The maintainer confirmed fluent Spanish comprehension and approved proceeding
   as the only available evaluator. The frozen schema still requires at least
@@ -1778,9 +1790,9 @@ At that Milestone 1 checkpoint, no model was downloaded or executed, no
 generated audio or official result was created, and no GPU/hardware claim was
 made. The later entries above supersede that historical execution status.
 
-### Milestone 3 partial validation
+### Milestone 3 validation
 
-Completed before the hardware-attribution blocker on 2026-07-25:
+Completed on 2026-07-25:
 
 - Focused model-free validation passed Ruff, strict mypy, the native
   process-tree smoke, and all 43 Python tests.
@@ -1803,20 +1815,41 @@ Completed before the hardware-attribution blocker on 2026-07-25:
   non-administrator removal attempt was denied, the administrator removed the
   temporary Supertonic firewall rule and a native query confirmed that no
   matching rule remains.
+- The `v2` Windows/PyTorch authority, native WDDM attribution, private worker
+  peak, preflight integration, and fail-closed dual-signal semantics pass
+  deterministic coverage. A disposable exact-environment CUDA allocation
+  attributed 372,781,056 dedicated bytes to the allocating process.
+- Both official `v2` matrices contain the frozen five cold loads, 24 warm
+  generations, 12 sustained generations, and five cancellation trials. Their
+  raw journals passed count/order, arithmetic, duration, text/canary,
+  absolute-path, memory, cancellation, and privacy audits.
+- The bounded quality session generated the same 12 cases for both candidates,
+  blinded and independently randomized all 24 samples, accepted only the
+  complete scorecard, marked the one-evaluator aggregate non-promotable, and
+  deleted the session, randomization key, scorecard copy, and every WAV.
+- The license/offline/packaging matrix uses revision-pinned model materials,
+  exact PyPI releases, upstream licenses, installed-lock inspection, and
+  direct local size measurements retrieved on 2026-07-25.
+- The authoritative final `pnpm.cmd check` passed on implementation commit
+  `7a523f518ff964ad399599f4d4fe75183c49e1a9`: Prettier, Rustfmt, Ruff,
+  ESLint, Clippy with warnings denied, TypeScript and strict Python type
+  checks, 18 shared files/175 tests, 34 EPUB files/555 tests, 20 desktop
+  files/204 tests, six native WebDriver-client tests, all 49 Python tests,
+  Cargo tests, package/desktop release builds, and Python distributions. The
+  existing Vite chunk-size advisory remained informational.
+- Final cleanup verification found zero generated WAV files, no quality
+  session or downloaded scorecard, no benchmark firewall rule, and the
+  restored 45-minute AC sleep value.
 
-Milestone 3 is not complete. The `v2` authority and Windows/PyTorch
-implementation pass full repository validation. The complete Qwen `v2` matrix
-is valid but fails balanced-role startup, throughput, zero-failure, and
-cancellation gates; its peak RAM and dual-signal VRAM observations pass their
-ceilings. The complete Supertonic `v2` matrix is also valid and fails
-compatibility first-audio, zero-failure, and cancellation gates while passing
-its other numeric gates. Task 3.3 is complete: the bounded one-evaluator
-quality result favors Qwen but is limited and non-promotable under the frozen
-three-evaluator schema, and both candidates had meaning-changing defects.
-Required cleanup left zero generated audio, no scorecard copy, no session, and
-no temporary firewall rule. The licensing, offline, and packaging audit is
-complete with authoritative sources and local size/runtime measurements; AC
-sleep is restored to 45 minutes, no summary was promoted, and no profile was
-selected.
+Milestone 3 is complete. The Qwen `v2` matrix is valid but fails balanced-role
+startup, throughput, zero-failure, and cancellation gates; its peak RAM and
+dual-signal VRAM observations pass their ceilings. The Supertonic `v2` matrix
+is valid but fails compatibility first-audio, zero-failure, and cancellation
+gates while passing its other numeric gates. Limited blinded quality favors
+Qwen but cannot establish a passing gate, and both candidates had
+meaning-changing defects. Licensing and offline operation are sufficiently
+resolved for selection, with high Qwen and moderate Supertonic packaging risk.
+No summary was promoted and no profile was selected; those decisions belong to
+Milestone 4.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.
