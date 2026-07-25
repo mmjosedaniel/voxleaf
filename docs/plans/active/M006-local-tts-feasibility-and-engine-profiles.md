@@ -795,14 +795,26 @@ In progress on 2026-07-25.
   power, balanced power mode, 11,009,933,312 free RAM bytes, 8,151 MiB total
   VRAM, 7,810 MiB free VRAM, and 665,578,512,384 bytes free disk. The receipt
   contained only allowlisted content-free host and artifact fields.
-- No model or pilot ran. The balanced Qwen preflight still requires replacing
-  the temporary rule with one for its exact interpreter and restoring at
-  least 12 GiB free RAM; the observed 11,009,933,312 free bytes do not meet
-  that frozen headroom gate.
+- At this preflight checkpoint, no model or pilot had run. The balanced Qwen
+  preflight still required replacing the temporary rule with one for its exact
+  interpreter and restoring at least 12 GiB free RAM; the observed
+  11,009,933,312 free bytes did not meet that frozen headroom gate.
+- A later bounded CUDA allocation probe established a more fundamental
+  balanced-role blocker before the Qwen model loaded. This RTX 5060 uses WDDM,
+  and `nvidia-smi --query-compute-apps=pid,used_gpu_memory` returned `[N/A]`
+  for the exact allocating PID. NVIDIA documents that NVML process
+  `usedGpuMemory` is always unavailable under WDDM because Windows KMD owns
+  memory management
+  ([NVML process-info reference, retrieved 2026-07-25](https://docs.nvidia.com/deploy/nvml-api/structnvmlProcessInfo__v1__t.html)).
+  The frozen profile requires reliable process-attributed NVML VRAM and
+  forbids substituting zero or whole-device usage. Therefore an official Qwen
+  preflight/run cannot become valid on this host even if its firewall rule and
+  free-RAM conditions are changed.
 
 #### Status
 
-In progress — blocked on required administrator authorization.
+In progress — compatibility preflight complete; balanced evidence blocked by
+unavailable required hardware attribution.
 
 ### Task 3.2: Run cold, warm, sustained, cancellation, and failure matrices
 
@@ -849,8 +861,8 @@ In progress on 2026-07-25.
   only numeric PID/parent-PID relationships, samples descendant working sets
   every 50 milliseconds, subtracts the pre-load baseline, and reports no
   process names, command lines, paths, or unrelated processes. CPU runs record
-  VRAM as unavailable and zero GPU allocations. Balanced execution currently
-  fails closed until its required process-attributed VRAM sampler is added.
+  VRAM as unavailable and zero GPU allocations. Balanced execution fails
+  closed when the host cannot supply its required process-attributed VRAM.
 - The harness now enforces the frozen 900-second sustained-phase timeout,
   journals each completed observation before later phases, runs all five
   cancellation trials even when one fails, and retains a bounded failed-run
@@ -872,10 +884,46 @@ In progress on 2026-07-25.
   one frozen Spanish case generated locally, the waveform was discarded, the
   worker closed, and no raw session was retained. This pilot is explicitly
   non-comparable and cannot enter a summary.
+- The official Supertonic matrix ran from clean commit
+  `532e2c740f463ff09ebfce9581a68462307ae7ab`. Its ignored 10,159-byte raw
+  journal contains five cold loads, 24 warm generations, 12 sustained
+  generations, five cancellation trials, one numeric memory observation, and
+  fixed failure codes. A corpus-text/canary scan and absolute-path scan both
+  returned zero findings; the directory contains no audio.
+- Content-free CPU results were: cold-load p95 `1.7466072` seconds; warm
+  first-produced-audio p95 `12.1117541` seconds; warm 15-seconds-of-media p95
+  `13.5122745` seconds over four reaching outputs; warm shorter-complete p95
+  `2.8935058` seconds over 20 shorter outputs; warm RTF p95
+  `0.53917248046875`; sustained request RTF p95 `0.632854423828125`; total
+  sustained RTF `0.30936313618694034` over `233.62244897959187` generated
+  seconds; peak descendant RAM above baseline `668860416` bytes; unavailable
+  CPU-role VRAM; and zero GPU allocations.
+- The compatibility profile passes cold load, 15-second production,
+  shorter-complete, warm RTF, sustained RTF, total sustained RTF, RAM, and
+  zero-GPU gates. It fails warm first-audio (`12.1117541 > 5` seconds) and
+  cancellation. `before-dispatch` and `accepted-before-audio` passed by worker
+  termination; `after-first-audio`, `after-five-media-seconds`, and
+  `near-hard-mid-generation` failed because the complete-waveform API exposed
+  no valid mid-generation boundary.
+- The balanced Qwen matrix did not start and no Qwen model loaded. The host's
+  WDDM driver cannot supply the protocol's mandatory process-attributed NVML
+  VRAM value, so substituting another metric would invalidate the frozen
+  authority. The existing Supertonic firewall rule remains candidate-specific
+  and was not weakened.
+- The prior 45-minute AC sleep timeout was restored after measurement. Removal
+  of the exact temporary Supertonic firewall rule was attempted and Windows
+  returned access denied; an administrator must run the documented removal
+  command. The rule remains enabled only for the ignored candidate
+  interpreter.
+- The first authoritative root check after candidate installation exposed
+  that ESLint did not recursively ignore nested `.venv` directories and
+  attempted to lint third-party candidate bundles. The root lint ignore now
+  excludes every `.venv` recursively; candidate code remains isolated and
+  unreviewed vendor files no longer enter repository lint scope.
 
 #### Status
 
-In progress.
+In progress — blocked on unavailable balanced-role VRAM attribution.
 
 ### Task 3.3: Run the blinded Spanish quality evaluation
 
@@ -1341,6 +1389,16 @@ A profile is selectable only when its performance, quality, capability, license,
   `56bd9894fd582375dd1b45e384155705f14f07cb` with no retained raw session.
   The frozen gates and corpus were unchanged, so the official CPU matrix may
   proceed from the next clean documentation checkpoint.
+- 2026-07-25: The official Supertonic matrix completed from clean commit
+  `532e2c740f463ff09ebfce9581a68462307ae7ab`. All numeric phases completed
+  and the raw journal passed content/path scans. The profile failed the
+  first-audio and cancellation gates; no summary was promoted while quality
+  and audit fields remain incomplete.
+- 2026-07-25: A disposable 256 MiB CUDA allocation proved that this host's
+  WDDM driver reports process VRAM as `[N/A]`, matching NVIDIA's documented
+  NVML limitation. Because balanced process-attributed VRAM is mandatory, the
+  Qwen matrix is blocked before model load; total-device or zero substitution
+  is prohibited.
 - 2026-07-25: Completed Task 1.3 and Milestone 1. The pre-result measurement procedure, numeric gates, listening rubric, invalidation/rerun rules, private summary schema, synthetic valid fixture, and semantic mutation tests are frozen and linked from the performance and architecture authorities. No engine was executed and no official result exists.
 - 2026-07-25: Corrected the recorded sustained-sequence total from 3,144
   to the verified 3,139 code points and froze that exact aggregate in the
@@ -1435,10 +1493,38 @@ Milestone 1 completed on 2026-07-25 on
   raw result, cache, private path, corpus text, or privacy canary entered a
   reviewable summary.
 
-No model was downloaded or executed, no generated audio or official result was
-created, and no GPU/hardware claim was made. Milestones 2-5 of this ExecPlan,
-including model acquisition, hardware measurement, listening evaluation,
-profile selection, ADR acceptance, and full Milestone 6 closeout, remain not
-started.
+At that Milestone 1 checkpoint, no model was downloaded or executed, no
+generated audio or official result was created, and no GPU/hardware claim was
+made. The later entries above supersede that historical execution status.
+
+### Milestone 3 partial validation
+
+Completed before the hardware-attribution blocker on 2026-07-25:
+
+- Focused model-free validation passed Ruff, strict mypy, the native
+  process-tree smoke, and all 43 Python tests.
+- The corrected non-comparable Supertonic pilot passed and retained no raw
+  session.
+- The official Supertonic matrix completed every numeric phase from clean
+  commit `532e2c740f463ff09ebfce9581a68462307ae7ab`; its ignored raw journal
+  passed exact count/order, corpus-text/canary, absolute-path, sample-duration,
+  RTF, percentile, sustained-total, memory, and cancellation inspection.
+- The first `pnpm.cmd check` reached TypeScript lint and failed because ESLint
+  traversed the newly installed ignored candidate `.venv`. After adding the
+  recursive ignore, the authoritative native `pnpm.cmd check` passed
+  formatting, ESLint, Rustfmt, Ruff, Clippy with warnings denied, TypeScript
+  and strict Python type checks, 18 shared files/175 tests, 34 EPUB files/555
+  tests, 20 desktop files/204 tests, six native WebDriver-client tests, all 43
+  Python tests, Cargo tests, package/desktop release builds, and Python
+  distributions. The existing Vite chunk-size advisory remained
+  informational.
+- AC sleep was restored to its prior 45-minute value. The temporary
+  Supertonic firewall rule remains because non-administrator removal was
+  denied; the exact administrator cleanup command is documented.
+
+Milestone 3 is not complete. Qwen performance evidence is blocked by
+unavailable mandatory process-attributed NVML VRAM under WDDM, and the
+sequential quality and audit tasks have not started. No summary was promoted
+and no profile was selected.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.

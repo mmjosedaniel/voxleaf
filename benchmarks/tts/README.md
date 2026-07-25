@@ -95,4 +95,6 @@ observations under the ignored raw session directory. It does not retain
 waveform samples. A raw session is not a reviewable summary and is never
 eligible for selection until the quality, audit, schema, arithmetic, privacy,
 and gate promotion steps pass. The balanced role additionally fails closed
-until reliable process-attributed VRAM sampling is available.
+unless the measured host exposes reliable process-attributed NVML VRAM.
+NVIDIA's Windows WDDM mode reports that value as unavailable, so whole-device
+usage or zero cannot be substituted.
