@@ -748,11 +748,40 @@ Official measurements are attributable to a known, privacy-safe local configurat
 
 #### Actual result
 
-Pending.
+In progress on 2026-07-25.
+
+- Added a deterministic, fail-closed preflight boundary and a private-stdin
+  root command. It binds an official request to one exact clean commit,
+  admitted manifest profile, verified local artifact set, candidate
+  interpreter, Windows x86-64/Python 3.12 host, AC power, recorded power mode,
+  operator-confirmed sleep/background/thermal conditions, and role-specific
+  RAM/VRAM/disk headroom.
+- Offline proof is not a caller assertion. The production probe requires one
+  enabled outbound-block Windows Firewall rule for the exact candidate Python
+  interpreter in addition to the frozen Hugging Face/Transformers offline
+  controls. Private model/interpreter paths enter only through bounded stdin
+  and never enter the allowlisted receipt.
+- Artifact SHA-256 verification now also returns only stable artifact ID, hash,
+  and measured byte size. Pilot receipts can pass setup but are structurally
+  ineligible for official execution or promotion.
+- Eight focused preflight/command tests cover exact pass, non-promotable pilot,
+  dirty/mismatched revision, wrong or missing artifact, offline/network
+  failure, resource/power/sleep/operator gates, platform/profile rejection,
+  closed input, and private-path exclusion. Focused Ruff and strict mypy over
+  26 source files pass.
+- The observed native host has Windows build 26200, an Intel Core Ultra 7
+  255HX with 20 logical processors, 32 GB RAM, an NVIDIA GeForce RTX 5060
+  Laptop GPU with 8,151 MiB VRAM and driver 577.05, ample disk, and AC power.
+  This is setup evidence only, not an official candidate result.
+- Official preflight remains blocked at this checkpoint because candidate
+  environments and verified model artifacts have not been acquired, offline
+  controls and the administrator-created firewall rule are absent, and the
+  currently free RAM is below the balanced role's conservative 12-GiB
+  pre-load headroom. No pilot or model run has occurred.
 
 #### Status
 
-Not started.
+In progress.
 
 ### Task 3.2: Run cold, warm, sustained, cancellation, and failure matrices
 
@@ -1234,6 +1263,7 @@ A profile is selectable only when its performance, quality, capability, license,
 - 2026-07-25: Completed Task 2.1. The private candidate-neutral harness, bounded diagnostic capture, allowlisted summary promotion, deterministic fake adapter, exact arithmetic, protocol ordering, and input/output/privacy/cancellation bounds pass all focused checks without candidate packages or hardware.
 - 2026-07-25: Completed Task 2.2. Thin Qwen and Supertonic adapters now validate the frozen profile, offline controls, local artifact hashes, runtime/provider/precision/voice identity, native complete-waveform behavior, and fixed-code failure boundary in deterministic model-free tests.
 - 2026-07-25: Completed Task 2.3. Spawn-isolated execution now bounds metadata and diagnostics, hard-stops worker process trees, rejects stale or falsely mid-generation complete-waveform output, restarts cleanly between forced-cancellation trials, and leaves real candidate limitations explicit for official measurement.
+- 2026-07-25: Started Task 3.1 on a new branch from merged Milestone 2. The closed preflight command, privacy-safe host/artifact receipt, role headroom gates, non-promotable pilot state, and exact Windows Firewall network-isolation proof pass deterministic tests; official eligibility awaits candidate acquisition, offline controls, firewall authorization, and sufficient free balanced-role RAM.
 - 2026-07-25: Completed Task 1.3 and Milestone 1. The pre-result measurement procedure, numeric gates, listening rubric, invalidation/rerun rules, private summary schema, synthetic valid fixture, and semantic mutation tests are frozen and linked from the performance and architecture authorities. No engine was executed and no official result exists.
 - 2026-07-25: Corrected the recorded sustained-sequence total from 3,144
   to the verified 3,139 code points and froze that exact aggregate in the

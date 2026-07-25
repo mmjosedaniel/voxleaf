@@ -186,6 +186,63 @@ The Tauri build produces the React frontend and a release-mode Windows executabl
 
 The root `check` command does not start the development server. The development server runs only when explicitly requested with the focused `dev` command above.
 
+## Local TTS feasibility preflight
+
+Milestone 6's hardware benchmark is explicit, manual, native-Windows work. It
+is excluded from root checks and CI and does not make either candidate a
+production dependency. First create the selected candidate environment from
+its checked-in lock and acquire the exact manifest revision into an ignored
+local model directory. Acquisition is a separate networked operation.
+
+The official measurement worker must have outbound networking blocked at the
+operating-system boundary. From an administrator PowerShell terminal, create
+one application-scoped rule for the exact candidate interpreter:
+
+```powershell
+$candidatePython = (Resolve-Path "services/tts/benchmarks/candidates/<candidate>/.venv/Scripts/python.exe").Path
+New-NetFirewallRule -DisplayName "VoxLeaf TTS Benchmark Offline" -Direction Outbound -Action Block -Program $candidatePython -Profile Any
+```
+
+The preflight queries that exact enabled rule. An offline environment variable
+or a caller-supplied boolean is not accepted as network-isolation proof.
+Remove the rule after all official work with:
+
+```powershell
+Remove-NetFirewallRule -DisplayName "VoxLeaf TTS Benchmark Offline"
+```
+
+Pass private local paths through standard input, never command-line arguments,
+environment values, or a tracked configuration file. The closed input also
+requires the manifest's exact candidate, revision, voice, provider, and
+precision:
+
+```powershell
+$preflight = @{
+  candidateId = "<manifest-candidate-id>"
+  artifactRoot = "<absolute-verified-local-artifact-root>"
+  candidatePython = $candidatePython
+  modelRevision = "<manifest-model-revision>"
+  voiceId = "<manifest-voice-id>"
+  provider = "<pytorch-cuda-or-onnxruntime-cpu>"
+  precision = "<bfloat16-or-float32>"
+  offline = $true
+  expectedCommitSha = (git rev-parse HEAD)
+  purpose = "official"
+  sleepDisabled = $true
+  backgroundLoadAcceptable = $true
+  thermalStateAcceptable = $true
+} | ConvertTo-Json -Compress
+$preflight | pnpm.cmd benchmark:tts:preflight
+```
+
+The command fails closed on a dirty or different revision, wrong platform or
+Python, missing environment, wrong artifact hash, missing offline controls,
+missing firewall rule, battery power, insufficient RAM/VRAM/disk, or
+unconfirmed sleep/background/thermal conditions. Its JSON output is
+content-free and contains no hostname, account, serial, UUID, private path,
+environment value, process command line, text, or audio. A `pilot` purpose may
+exercise setup but is never eligible for official promotion.
+
 ## Continuous integration
 
 The `Foundation checks` workflow runs on pushes to `main` and `agent/**`, pull requests targeting `main`, and manual dispatches. `Windows native foundation` explicitly installs the pinned Playwright Chromium, runs `pnpm.cmd test:browser`, runs authoritative `pnpm.cmd check`, and then runs `pnpm.cmd test:native-startup` against packaged WebView2; `Ubuntu portable foundation` runs the deliberately narrower `pnpm check:portable`. Both install package dependencies from committed lockfiles. The Windows job does not restore a browser cache, so browser network activity is confined to its named installation step. See [`testing.md`](testing.md) for the exact coverage distinction.
