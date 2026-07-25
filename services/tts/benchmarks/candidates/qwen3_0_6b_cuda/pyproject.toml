@@ -1,0 +1,22 @@
+[project]
+name = "voxleaf-benchmark-qwen3-0-6b-cuda"
+version = "0.0.0"
+description = "Isolated benchmark environment for the admitted Qwen3-TTS CUDA candidate"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "qwen-tts==0.1.1",
+    "torch==2.9.1",
+    "torchaudio==2.9.1",
+]
+
+[tool.uv]
+exclude-newer = "2026-07-18T00:00:00Z"
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+torchaudio = { index = "pytorch-cu128" }

@@ -331,11 +331,42 @@ At least one credible candidate is admitted for each role, or the plan records a
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- `benchmarks/tts/candidates-v1.json` admits
+  `qwen3-tts-0-6b-customvoice-cuda-bf16-v1` for the balanced role and
+  `supertonic-3-onnx-cpu-f1-es-v1` for the compatibility role without
+  selecting a winner.
+- The manifest pins engine distributions, model revisions, model/voice
+  checksums when published, roles, providers, precision, offline controls,
+  licenses, redistribution posture, install boundaries, and known risks.
+- Qwen uses the official `qwen-tts==0.1.1` package, immutable
+  `Qwen3-TTS-12Hz-0.6B-CustomVoice` revision, embedded `Aiden` voice, and
+  PyTorch `2.9.1+cu128` with SDPA. Optional FlashAttention is excluded.
+- Supertonic uses the official `supertonic==1.3.1` package, immutable
+  `Supertone/supertonic-3` revision, checksum-pinned F1 voice, Spanish mode, and
+  ONNX Runtime CPU execution. Its OpenRAIL-M obligations remain explicit for
+  the Task 3.4 packaging audit.
+- Both locks apply a seven-day release-age cutoff. Kokoro's default Python
+  profile, `kokoro-onnx` release assets, hosted Qwen APIs, XTTS v2, and an
+  unspecified Piper profile are recorded as not admitted with fixed reasons.
+- Candidate projects and locks live below
+  `services/tts/benchmarks/candidates/`; the production service manifest and
+  lock remain dependency-free and unchanged.
+- `docs/development/dependencies.md` records setup isolation, removal, and the
+  remaining Task 3.4 audit.
+- `uv lock --check` passes for both candidate projects. The resolved direct
+  graphs are `qwen-tts 0.1.1` with PyTorch/Torchaudio `2.9.1+cu128`, and
+  `supertonic 1.3.1` with ONNX Runtime `1.27.0`; neither lock contains a
+  Git/editable source or install-hook marker.
+- Default `services/tts` sync and its three existing tests pass, and import
+  probes confirm that neither candidate package is present in that default
+  environment. `pnpm.cmd format:check`, JSON parsing, and `git diff --check`
+  also pass at this checkpoint.
 
 #### Status
 
-Not started.
+Complete.
 
 ### Task 1.2: Create the synthetic corpus and privacy policy
 
@@ -1035,6 +1066,7 @@ A profile is selectable only when its performance, quality, capability, license,
 - 2026-07-25: Confirmed that no TTS engine, model dependency, benchmark command, model adapter, hardware probe, generated-audio path, process transport, or production service exists.
 - 2026-07-25: Confirmed that shared capability/audio/error contracts exist but no dedicated measurement contract does; this plan keeps benchmark reports private to the benchmark unless a real runtime consumer later justifies a public contract.
 - 2026-07-25: Marked all implementation tasks not started. Creating this plan does not advance the canonical TTS feasibility node beyond **Approved planned**.
+- 2026-07-25: Completed Task 1.1 candidate intake. Two role-specific candidates now have stable IDs, immutable upstream artifact identities, independent uv projects/locks, and explicit offline/acquisition/license risks without changing the production dependency graph.
 
 ## Discoveries and decisions
 
@@ -1048,6 +1080,17 @@ A profile is selectable only when its performance, quality, capability, license,
 - The approximately 15-second value remains a future playable-audio lead. The feasibility harness measures the time needed to produce that amount of media; it never sleeps for 15 seconds to satisfy the rule.
 - Default root checks and CI must remain model-free and hardware-independent. Official benchmarks and manual listening remain explicit, separate commands.
 - Rejected-candidate evidence is valuable and remains in content-free summaries; rejected dependencies, weights, audio, and raw output do not remain in the production dependency graph or repository.
+- The reviewed Kokoro Python lock pulled `espeakng-loader`, whose published
+  package metadata did not declare a license while bundling native eSpeak
+  assets. The profile was rejected before measurement. The separate
+  `kokoro-onnx` v1.0 release bundle also does not establish the current Spanish
+  voice in one immutable bundle.
+- Supertonic 3 replaces Kokoro as the CPU intake because the exact Spanish
+  ONNX/voice profile is reproducible and its MIT/OpenRAIL-M terms are explicit.
+  This is admission to evaluation, not a production license approval.
+- The Qwen candidate uses SDPA rather than optional FlashAttention so admission
+  does not add an unproven native build. This is a benchmark profile choice, not
+  a production runtime decision.
 
 ## Final validation results
 
