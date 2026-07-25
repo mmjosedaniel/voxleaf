@@ -628,7 +628,28 @@ network, or capability behavior was added.
 - Changing batch size changes only grouping into returned batches, not segment text/ranges.
 - `pnpm.cmd --filter @voxleaf/epub test`.
 
-**Status:** Not started.
+**Status:** Complete. Added the package-internal
+`narration-segment-packer.ts`, which consumes one Task 4.1 block scan and
+produces immutable nonempty source-offset segments without accepting a batch
+size or joining addressable blocks. It keeps short headings/paragraphs whole,
+prefers dialogue and complete-sentence boundaries, falls back through clause,
+whitespace/token, and Unicode-safe hard boundaries, never splits protected
+tokens or the accepted combining-mark ranges, and independently enforces the
+384/768 source-code-point, 320/640 narration-code-point, 1,024/2,048 UTF-8-byte,
+and 3/8-sentence target/hard dimensions. Output retention stops at the accepted
+17-entry ceiling (16 returnable plus one lookahead) and records a content-free
+completion state. A closed top-level paragraph rule recognizes only `***`
+(with optional normalized spacing) and `⁂` as scene breaks; list/quote and
+raster-bearing blocks remain ordinary content. Fourteen focused tests cover
+short/target/long/mixed input, headings, scene breaks, sentence/clause/token/
+hard priority, exact hard dimensions, multibyte Unicode, combining sequences,
+protected tokens, retention, batch-slicing independence, the complete
+normalization corpus, empty/unspoken blocks, immutability, union closure, and
+content-free failures. Locator-range construction, unusually oversized
+single-token policy hardening, public batching, and `prepareNarration` remain
+Tasks 4.3-5.1. `pnpm.cmd --filter @voxleaf/epub typecheck`,
+`pnpm.cmd --filter @voxleaf/epub test` (31 files/530 tests), and the complete
+`pnpm.cmd check:portable` repository gate pass.
 
 ### Task 4.3: Handle unusually long sentences and tokens safely
 
@@ -963,6 +984,7 @@ No migration or user-data rollback should be required because Milestone 5 persis
 
 - 2026-07-24: Completed Task 3.4. Added a production postcondition that validates normalized-unit cardinality, source-span parity, deep-freeze state, effective-language values, nonempty per-source output, expansion ceilings, and reconstructed narration text before returning the stream. Added composed mixed-language/code/symbol/line-break/punctuation/numeric cases, full-corpus repeated-run and second-pass stability, source immutability, output-unit and expansion-bound assertions, and canary checks over fixed internal/resource-limit failures. `pnpm.cmd --filter @voxleaf/epub typecheck`, `pnpm.cmd --filter @voxleaf/epub test` (29 files/502 tests), and `git diff --check` passed; portable validation remains the milestone check. No public operation, segmentation, shared schema, dependency, desktop, TTS, audio, persistence, network, or capability behavior was added.
 - 2026-07-24: Completed Task 4.1. Added a package-internal deterministic boundary scanner over normalized source-mapped units with immutable source-offset sentence/dialogue-turn/clause points, explicit non-splittable protected-token spans, repeated-terminal clustering, closing-punctuation carry, block-final malformed/unterminated fallback, semantic line-break and language-transition clauses, and preserved heading/paragraph/quote/list/dialogue metadata. The scanner visits each admitted unit exactly twice, uses no locale authority or untracked-string parse, and production-enforces the accepted 256-code-point protected-token ceiling with fixed content-free max-plus-one failure. Fourteen focused tests drive the complete normalization corpus and explicit boundary/privacy/bound cases; `pnpm.cmd --filter @voxleaf/epub typecheck`, `pnpm.cmd --filter @voxleaf/epub test` (30 files/516 tests), `pnpm.cmd check:portable`, and `git diff --check` pass. The current source projection has no scene-break union, so no ingestion/public semantic contract was invented; recognized scene-break packing remains Task 4.2 work. No public operation, prepared segment/range, dependency, shared schema, desktop, TTS, audio, persistence, network, or capability behavior was added.
+- 2026-07-24: Completed Task 4.2. Added the package-internal block-local semantic-unit packer and production segment target/hard constants. It emits immutable source-offset segments with closed boundary reasons and content-free measurements; preserves headings, complete sentences, dialogue turns, protected tokens, and accepted combining sequences; uses clause, whitespace/token, then hard fallback; recognizes only top-level `***`/`⁂` scene-break paragraphs; and retains at most 17 stable entries independently of later batch slicing. Fourteen focused tests cover the complete corpus plus short/target/long/mixed packing, exact 768-source/640-narration/2,048-byte maxima, multibyte pressure, fallback priority, scene-break exclusions, retention, immutability, and privacy. Package typecheck, the complete EPUB suite (31 files/530 tests), and `pnpm.cmd check:portable` pass. No locator range, public operation/export, shared schema, dependency, desktop, TTS, audio, persistence, network, or external capability was added.
 
 ## Discoveries and decisions
 
@@ -978,7 +1000,7 @@ No migration or user-data rollback should be required because Milestone 5 persis
 - The broad synchronized-reader plan remains useful for Milestones 8-9 but does not define Milestone 5 normalization or segmentation acceptance.
 - Half-open block-local ranges are the accepted mapping convention because they compose without duplicate boundary code points and remain compatible with the existing ordered `LocatorRangeV1`.
 - Stable segmentation must be independent of request batching. The unresolved user-interaction choice for a visual locator inside a stable segment remains explicitly deferred to Milestone 9.
-- The current safe semantic model and narration source projection expose headings, paragraphs, block quotes, and list boundaries but no scene-break leaf/event. Task 4.1 preserves every available source metadata field and does not widen the ingestion/public semantic contract; Task 4.2 must either recognize a scene-break-only admitted block under an explicit deterministic rule or record a plan/ADR amendment before claiming that behavior.
+- The current safe semantic model and narration source projection expose headings, paragraphs, block quotes, and list boundaries but no scene-break leaf/event. Task 4.2 therefore recognizes a scene break only when a top-level paragraph outside lists/quotes contains exactly three asterisks (normalized spacing permitted) or one U+2042 asterism and no raster placeholder. It consumes that block without speech and does not widen the ingestion/public semantic contract; every other ornamental or ambiguous form remains ordinary content.
 - ADR-0012 accepts `prepareNarration` as a closed result-returning operation rather than an exception boundary. A request inside a stable segment receives that complete segment plus `inside-segment`, preserving both stable batch-independent segmentation and Milestone 9's later choice to use or skip it.
 - Narration preparation owns a separate active-operation slot from raster reads. This preserves the no-archive-read boundary while allowing one in-memory preparation and one bounded image read to overlap; publication close cancels and awaits both.
 - The Task 1.2 corpus is test-only authority rather than a production lookup table. Neutral behavior is conservative; Spanish lexical expansion is allowlisted; ambiguous/unsupported forms, code spacing, combining sequences, astral code points, malformed punctuation, and foreign names are preserved; validation failures expose only closed content-free codes.

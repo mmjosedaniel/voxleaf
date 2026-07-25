@@ -13,8 +13,12 @@ closed Spanish symbol and lexical/numeric rules, and Task 3.3 enforces the
 128-code-point parser-lookahead ceiling, and Task 3.4 validates the composed
 normalized stream and content-free failures. Task 4.1 production-enforces the
 256-narration-code-point protected-token ceiling through a two-pass,
-4,096-unit-bounded scanner. Segment packing, remaining output dimensions, and
-`OpenedPublication.prepareNarration` remain unimplemented.
+4,096-unit-bounded scanner. Task 4.2 production-enforces the per-segment
+source-code-point, narration-code-point, UTF-8-byte, and sentence dimensions
+plus the 17-entry retained-segment ceiling through a package-internal
+block-local packer. Batch totals, prepared locator ranges,
+oversized-single-token hardening, and `OpenedPublication.prepareNarration`
+remain unimplemented.
 
 The exact test authority is
 [`packages/epub/test-support/narration-preparation-limits.ts`](../../packages/epub/test-support/narration-preparation-limits.ts).
@@ -104,6 +108,13 @@ carrying the same non-splittable protection set. Exact 256-code-point code
 content passes; 257 produces the fixed content-free resource-limit failure.
 Boundary scanning visits each normalized unit exactly twice and retains no
 unbounded lookup or locale-derived state.
+
+Task 4.2 uses independent prefix counts for source code points, narration code
+points, UTF-8 bytes, and sentence endings. It chooses boundaries in documented
+semantic order, retains at most 17 segments, admits each exact per-segment hard
+maximum, and never uses UTF-16 string length as a size authority. A top-level
+`***` or U+2042 paragraph is the only recognized scene-break form and emits no
+spoken output.
 
 The 16,384-code-point source ceiling is deliberately much smaller than the
 64-MiB publication text budget. One request therefore cannot copy or prepare a
