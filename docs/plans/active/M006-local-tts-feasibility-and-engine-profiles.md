@@ -602,11 +602,42 @@ Every admitted candidate can run through the identical measurement boundary with
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- Added one benchmark-only adapter for each admitted profile. Neither adapter
+  imports its candidate package at module import or test-collection time, and
+  neither candidate dependency entered the production TTS project or root
+  dependency graph.
+- A fail-closed manifest loader admits only the frozen Qwen and Supertonic
+  candidate IDs and maps only their exact roles, distributions, versions,
+  model revisions, voices, providers, precisions, output rate, and allowlisted
+  artifact checksums into typed adapter configuration.
+- Local artifact verification resolves every allowlisted relative path beneath
+  an absolute local root, streams SHA-256 calculation in one-MiB reads, and
+  rejects missing, unreadable, escaping, or mismatched files before importing
+  a candidate package. Failures contain only fixed codes.
+- The Qwen adapter requires the frozen CUDA/bfloat16/SDPA profile, CUDA and
+  bfloat16 availability, `HF_HUB_OFFLINE=1`,
+  `TRANSFORMERS_OFFLINE=1`, and `local_files_only=True`; it invokes the frozen
+  Spanish `Aiden` CustomVoice API from the verified local model directory.
+- The Supertonic adapter requires the frozen ONNX Runtime CPU/float32 profile,
+  CPU execution availability, `HF_HUB_OFFLINE=1`, and
+  `TTS(auto_download=False, model_dir=<verified-local-root>)`; its internal
+  300-code-point behavior and Spanish `F1` settings remain adapter-local.
+- Both selected public APIs are reported as complete-waveform/float32 and
+  yield only sample count, sample rate, channel count, request identity, and
+  end-of-output metadata after releasing the waveform reference. Neither
+  engine exposes cooperative cancellation through the selected API, so both
+  report worker termination instead of overstating native capability.
+- Five model-free adapter tests cover exact manifest loading, no-import
+  missing-artifact failure, local-path-only calls, provider/runtime/profile
+  matching, checksum failure redaction, candidate-specific generation
+  settings, complete-waveform metadata, cleanup, and honest cancellation.
+  Focused Ruff, strict mypy over 18 source files, and 10 focused tests pass.
 
 #### Status
 
-Not started.
+Complete.
 
 ### Task 2.3: Prove bounds, cancellation observation, and cleanup on real adapters
 
@@ -1154,6 +1185,8 @@ A profile is selectable only when its performance, quality, capability, license,
 - 2026-07-25: Marked all implementation tasks not started. Creating this plan does not advance the canonical TTS feasibility node beyond **Approved planned**.
 - 2026-07-25: Completed Task 1.1 candidate intake. Two role-specific candidates now have stable IDs, immutable upstream artifact identities, independent uv projects/locks, and explicit offline/acquisition/license risks without changing the production dependency graph.
 - 2026-07-25: Completed Task 1.2. The byte-frozen synthetic Spanish corpus, deterministic performance/sustained orders, Milestone 5 size boundary checks, privacy canaries, ignored raw layout, cleanup policy, and repository artifact audits are now enforced by model-free Python tests.
+- 2026-07-25: Completed Task 2.1. The private candidate-neutral harness, bounded diagnostic capture, allowlisted summary promotion, deterministic fake adapter, exact arithmetic, protocol ordering, and input/output/privacy/cancellation bounds pass all focused checks without candidate packages or hardware.
+- 2026-07-25: Completed Task 2.2. Thin Qwen and Supertonic adapters now validate the frozen profile, offline controls, local artifact hashes, runtime/provider/precision/voice identity, native complete-waveform behavior, and fixed-code failure boundary in deterministic model-free tests.
 - 2026-07-25: Completed Task 1.3 and Milestone 1. The pre-result measurement procedure, numeric gates, listening rubric, invalidation/rerun rules, private summary schema, synthetic valid fixture, and semantic mutation tests are frozen and linked from the performance and architecture authorities. No engine was executed and no official result exists.
 - 2026-07-25: Corrected the recorded sustained-sequence total from 3,144
   to the verified 3,139 code points and froze that exact aggregate in the
