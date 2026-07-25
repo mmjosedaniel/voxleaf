@@ -32,8 +32,8 @@ EPUB package
 |-- Bounded source windows, continuation, cancellation, and close
 |   [implemented: Milestone 5 Task 2.3]
 |-- Whitespace, punctuation, symbol, and Spanish lexical/numeric normalization
-|   [implemented: Milestone 5 Tasks 3.1-3.3]
-`-- Remaining normalization invariants, segmentation, public preparation, and
+|   [implemented: Milestone 5 Tasks 3.1-3.4]
+`-- Remaining segmentation, public preparation, and
     locator-linked prepared segments [planned: Milestone 5]
 
 Local TTS service

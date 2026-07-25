@@ -116,9 +116,12 @@ Both benchmarks are deliberately absent from `pnpm.cmd check`, `pnpm check:porta
 
 The approved [Milestone 5 ExecPlan](../plans/active/M005-narration-text-preparation.md) defines the detailed test sequence. Task 1.2's corpus-integrity tests, Task 1.3's test-only profile/evidence tests, Tasks 2.1-2.3's production source-projector/token-mapper/bounded-window/publication-lifecycle tests, and Tasks 3.1-3.3's production normalizer tests now pass. The source suites cover every current semantic block/inline member, nested quote/list order, inherited semantic context, empty and unspoken leaves, raster omission, Unicode-code-point parity with the locator index, BMP/astral/combining token spans, one-position line-break/raster placeholders, block-end locator endpoints, source reconstruction, exact/recovered/malformed/wrong-book/interior/end starts, continuation without token repetition, deterministic checkpoint/yield cancellation, one-active-operation behavior, raster-read overlap, retry, stale completion, idempotent close, deep immutability, compile-time union closure, and fixed content-free failures. The normalizer suite adds table-driven exact whitespace/line-break/hyphenation/punctuation/symbol/abbreviation/numeric/code output, deterministic second-pass text, one mapped unit per source token, legal deletion/join/expansion spans, explicit effective-language behavior, paired/unpaired quotation and lexical protections, maximum repeated-punctuation/unbalanced-quote handling, closed Spanish symbol and lexical expansions plus negative forms, source immutability, and exact parser-lookahead/per-source-expansion ceilings. The accepted [`narration-v1` limits](../architecture/narration-preparation-limits-v1.md) cover 20 independent target/hard dimensions; Task 2.3 production-enforces the applicable source/work/depth/retention subset and Tasks 3.2-3.3 enforce the applicable normalization-expansion and parser-lookahead ceilings while segmentation, prepared-output bounds, and the public operation remain pending.
 
-The remaining implementation must add deterministic package-level tests for:
+Task 3.4 now covers the composed normalization invariants, repeated-run and
+second-pass stability, source immutability, bounded output units, and
+content-free failure canaries. The remaining implementation must add
+deterministic package-level tests for:
 
-- complete cross-category source-span preservation over the implemented exhaustive safe semantic traversal, code-point token mapping, and Tasks 3.1-3.3 normalizer;
+- cross-category source-span preservation through the future semantic segmenter and prepared-range mapper;
 - narration-only abbreviation, initials, numbers, dates, times, currency, percentage, and remaining ambiguous-preservation rules;
 - explicit neutral and representative Spanish cases from short repository-authored synthetic fixtures;
 - sentence, dialogue, scene-break, clause, token, and long-sentence fallback boundaries;

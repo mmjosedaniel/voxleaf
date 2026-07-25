@@ -654,6 +654,140 @@ describe("narration normalization", () => {
     });
   });
 
+  describe("Task 3.4 composed invariants and privacy", () => {
+    const composedCases = [
+      {
+        id: "mixed-spanish-lexical-symbol",
+        block: paragraph([text("Dr. 21 & Mar.", "es")]),
+        defaultLanguage: "es" as const,
+        expected: "doctor veintiuno y Mar.",
+        reparseAsCode: false,
+      },
+      {
+        id: "mixed-language-code-boundary",
+        block: paragraph([
+          text("Dr. 21", "es"),
+          text(" meets ", "en"),
+          text("14:30.", "es"),
+          code(" 1.20", "es"),
+        ]),
+        defaultLanguage: "und" as const,
+        expected: "doctor veintiuno meets las catorce treinta. 1.20",
+        reparseAsCode: false,
+      },
+      {
+        id: "mixed-line-break-punctuation-number",
+        block: paragraph(
+          [
+            text("narra-", "es"),
+            Object.freeze({ kind: "line-break" as const }),
+            text("ción. 12,5 %", "es"),
+          ],
+          "es",
+        ),
+        defaultLanguage: "und" as const,
+        expected: "narración. doce coma cinco por ciento",
+        reparseAsCode: false,
+      },
+    ] as const;
+
+    for (const composedCase of composedCases) {
+      it(composedCase.id, () => {
+        const fixture = Object.freeze({
+          block: composedCase.block,
+          leaf: leafFor(composedCase.block),
+        });
+        const before = JSON.stringify(fixture.block);
+        const first = normalizeNarrationSourceTokens(
+          fixture.leaf.sourceTokens,
+          composedCase.defaultLanguage,
+        );
+        const repeated = normalizeNarrationSourceTokens(
+          fixture.leaf.sourceTokens,
+          composedCase.defaultLanguage,
+        );
+        const reparsed = normalizeNarrationSourceTokens(
+          singleTextFixture(String(first.text), composedCase.reparseAsCode)
+            .sourceTokens,
+          composedCase.defaultLanguage,
+        );
+
+        expect(first.text).toBe(composedCase.expected);
+        expect(repeated).toEqual(first);
+        expect(reparsed.text).toBe(first.text);
+        expect(JSON.stringify(fixture.block)).toBe(before);
+        assertSourceMapping(fixture.leaf, first);
+        assertDeepFrozen(first);
+        assertNormalizedTextMatchesUnits(first);
+        assertNormalizedExpansionBound(first);
+      });
+    }
+
+    it("covers every corpus category with one deterministic invariant gate", () => {
+      for (const corpusCase of NARRATION_NORMALIZATION_CORPUS) {
+        const fixture = corpusFixture(corpusCase);
+        const before = JSON.stringify(fixture.block);
+        const first = normalizeNarrationSourceTokens(
+          fixture.leaf.sourceTokens,
+          corpusCase.defaultLanguage,
+        );
+        const repeated = normalizeNarrationSourceTokens(
+          fixture.leaf.sourceTokens,
+          corpusCase.defaultLanguage,
+        );
+
+        expect(repeated).toEqual(first);
+        expect(first.text).toBe(corpusCase.expected.narrationText);
+        expect(JSON.stringify(fixture.block)).toBe(before);
+        assertSourceMapping(fixture.leaf, first);
+        assertDeepFrozen(first);
+        assertNormalizedTextMatchesUnits(first);
+        assertNormalizedExpansionBound(first);
+      }
+    });
+
+    it("keeps invalid and over-limit failures content-free", () => {
+      const canary = "private-canary-task-3-4";
+      const leaf = leafFor(paragraph([text(canary)]));
+      const first = leaf.sourceTokens[0];
+      if (first === undefined) {
+        throw new Error("expected source token");
+      }
+      const malformed = Object.freeze({
+        ...first,
+        text: sensitive(canary),
+      });
+      const malformedContext = Object.freeze({
+        ...first,
+        textContext: undefined,
+      }) as unknown as NarrationSourceToken;
+
+      expectContentFreeFailure(
+        () => normalizeNarrationSourceTokens([malformed], "und"),
+        "internal-failure",
+        canary,
+      );
+      expectContentFreeFailure(
+        () => normalizeNarrationSourceTokens([malformedContext], "und"),
+        "internal-failure",
+        canary,
+      );
+      expectContentFreeFailure(
+        () =>
+          normalizeNarrationSourceTokens(
+            boundedSourceTokens(
+              NARRATION_V1_SOURCE_WINDOW_POLICY.retainedTokenEntriesHardMaximum +
+                1,
+              "9",
+            ),
+            "es",
+          ),
+        "resource-limit-exceeded",
+        canary,
+      );
+    });
+  });
+
   it("keeps normalized unit unions closed", () => {
     expectTypeOf<NarrationNormalizedUnit["kind"]>().toEqualTypeOf<
       "omission" | "text"
@@ -910,6 +1044,31 @@ function assertDeepFrozen(normalized: NarrationNormalizedStream): void {
   }
 }
 
+function assertNormalizedTextMatchesUnits(
+  normalized: NarrationNormalizedStream,
+): void {
+  const textParts: string[] = [];
+  for (const unit of normalized.units) {
+    if (unit.kind === "text") {
+      expect(Array.from(String(unit.text)).length).toBeGreaterThan(0);
+      textParts.push(String(unit.text));
+    }
+  }
+  expect(textParts.join("")).toBe(normalized.text);
+}
+
+function assertNormalizedExpansionBound(
+  normalized: NarrationNormalizedStream,
+): void {
+  const maximum =
+    NARRATION_V1_SOURCE_WINDOW_POLICY.normalizationExpansionCodePointsHardMaximum;
+  for (const unit of normalized.units) {
+    if (unit.kind === "text") {
+      expect(Array.from(String(unit.text)).length).toBeLessThanOrEqual(maximum);
+    }
+  }
+}
+
 function lineEndHyphenRoles(
   units: readonly NarrationNormalizedUnit[],
 ): readonly string[] {
@@ -961,4 +1120,32 @@ function expectArchiveFailure(
   });
   expect(captured).not.toHaveProperty("cause");
   expect(JSON.stringify(captured).includes("private-canary")).toBe(false);
+}
+
+function expectContentFreeFailure(
+  action: () => unknown,
+  code: "internal-failure" | "resource-limit-exceeded",
+  canary: string,
+): void {
+  let captured: unknown;
+  try {
+    action();
+  } catch (error: unknown) {
+    captured = error;
+  }
+
+  expect(captured).toBeInstanceOf(EpubArchiveError);
+  expect(captured).toMatchObject({
+    code,
+    message: code,
+    name: "EpubArchiveError",
+  });
+  expect(captured).not.toHaveProperty("cause");
+  expect(Object.keys(captured as object)).toHaveLength(2);
+  expect(Object.keys(captured as object)).toEqual(
+    expect.arrayContaining(["code", "name"]),
+  );
+  expect(String(captured)).not.toContain(canary);
+  expect(JSON.stringify(captured)).not.toContain(canary);
+  expect(String((captured as Error).stack)).not.toContain(canary);
 }

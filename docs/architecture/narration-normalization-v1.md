@@ -5,12 +5,12 @@
 Accepted by Milestone 5 Task 1.2 as a test-only policy and fixture gate.
 Tasks 2.1-2.3 implement exhaustive package-internal semantic source traversal,
 Unicode-code-point source-span tokens, and bounded canonical source windows
-with cancellation/continuation. Tasks 3.1-3.3 now implement the table's
+with cancellation/continuation. Tasks 3.1-3.4 now implement the table's
 whitespace, semantic-line-break, soft-hyphen, conservative line-end
 hyphenation, punctuation, quotation, ellipsis, allowlisted Spanish symbol,
 abbreviation, number, date, time, currency, percentage, and language-context
-slices as a pure source-mapped production normalizer. Later complete invariant,
-segmentation, and
+slices as a pure source-mapped production normalizer. Task 3.4 additionally
+enforces the composed-stream invariant and privacy gate. Later segmentation and
 `OpenedPublication.prepareNarration` work remains unimplemented.
 Task 1.3 has accepted the separate
 [`narration-v1` resource profile](narration-preparation-limits-v1.md), so
@@ -94,7 +94,8 @@ invariant failures.
 
 The corpus remains test-only and does not act as a production lookup table.
 [`narration-normalizer.ts`](../../packages/epub/src/narration/narration-normalizer.ts)
-implements Tasks 3.1-3.3's accepted categories with repository-owned bounded
+implements Tasks 3.1-3.4's accepted categories and composed-stream postcondition
+with repository-owned bounded
 scanners, and
 [`spanish-normalization.ts`](../../packages/epub/src/narration/spanish-normalization.ts)
 contains the closed Spanish line-end, context-safe symbol, abbreviation, and
@@ -114,8 +115,8 @@ ambiguous, unsupported, code, and foreign-name text unchanged, and never uses
 floating-point conversion. The scanner rejects numeric lookahead above 128
 code points, and no emitted unit exceeds the accepted hard maximum of 16 output
 code points per source code point. The corpus does not select a TTS engine or
-model-specific preprocessing. Later Milestone 5 tasks must complete the
-cross-category invariants and segmentation without changing displayed
+model-specific preprocessing. Later Milestone 5 tasks must complete
+segmentation without changing displayed
 publication semantics. Any proposed corpus change must update the
 authoritative fixture, its integrity tests, this summary, and the active plan
 before production expectations change.
