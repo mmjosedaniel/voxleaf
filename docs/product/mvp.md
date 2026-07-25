@@ -4,44 +4,56 @@
 
 The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestone 5 narration preparation is implemented, documented, and fully validated: `@voxleaf/epub` exhaustively projects semantic source positions, retains Unicode-code-point source spans, applies deterministic source-mapped neutral/Spanish normalization, scans sentence/dialogue/clause/protected-token boundaries, packs bounded block-local semantic units, and exposes immutable canonical locator-linked batches through `OpenedPublication.prepareNarration`. Repository-authored public integration and deterministic exact-bound/resource tests cover continuation, structural gaps, cancellation, close, privacy, and source immutability. This prepares ephemeral sensitive text only; TTS inference, audio buffering/playback, synchronized highlighting, hardware profiles, and packaging behavior remain pending. The capability and acceptance lists below describe the complete MVP target, not a claim that every item is currently implemented.
 
-## Primary user flow
+## Current implemented flow
 
 1. The user opens VoxLeaf.
 2. The user selects a local EPUB.
 3. VoxLeaf validates and loads the book.
 4. VoxLeaf opens at the user's last saved passage, or the beginning for a new book.
-5. The user reads the EPUB in a normal reflowable reader and chooses a chapter and available local voice.
-6. VoxLeaf prepares approximately 15 seconds of playable audio from the visible reading position.
-7. Playback starts immediately when that audio lead is ready; there is no fixed 15-second timer.
-8. The user reads the visible, highlighted passage while later chunks are generated.
-9. The user can pause, resume, seek, or change chapters.
-10. VoxLeaf saves the shared visual and narration position.
+5. The user reads and navigates the EPUB in a continuous reflowable reader, adjusts closed display preferences, and can close or replace the publication.
+6. VoxLeaf saves the canonical logical reading locator and display preferences on the approved bounded lifecycle.
 
-## MVP capabilities
+Separately, `@voxleaf/epub` callers can prepare bounded, locator-linked narration-text batches from a publication. The desktop does not call this operation, so it is not yet a user-visible narration flow.
 
-- Open an EPUB from local storage.
-- Extract ordered readable content and table of contents.
-- Render title, author, chapter navigation, text, and images as a normal reflowable EPUB reader.
-- Reconstruct the visible scrolling passage from a stable content locator when layout or typography changes.
-- Open a previously read book at its last saved visible passage.
-- Select a chapter or paragraph as the narration starting point.
-- Generate speech through one supported local TTS model.
-- Select at least one supported local voice.
-- Buffer generated audio in memory.
-- Start playback as soon as approximately 15 seconds of playable audio is buffered, without adding a fixed wall-clock delay.
-- Continue generation while valid buffered audio is playing.
-- Pause, resume, and move forward or backward through the reading position.
-- Highlight the current paragraph during narration.
-- Keep the active narrated paragraph on screen so the user can read along.
-- Cancel stale generation after seeking or changing chapter.
-- Persist reading position and basic preferences.
-- Detect available acceleration and report relevant hardware capabilities.
-- Provide a documented CPU-compatible fallback for systems without supported GPU acceleration.
-- Display actionable loading, buffering, and error states.
-- Collect non-content performance metrics.
-- Provide a documented local setup and, when packaging is introduced, a simple desktop installation path.
+## Remaining target user flow
 
-## Acceptance criteria
+1. The user selects an available local voice and starts narration from the active visual locator.
+2. VoxLeaf requests local TTS for prepared segments and builds a bounded audio lead in memory.
+3. Playback starts immediately when approximately 15 seconds of playable audio is ready, or when a complete shorter remaining range is ready; there is no fixed timer.
+4. Later valid audio is generated while playback consumes the buffer, and the visible passage follows the narration.
+5. Pause, resume, seek, chapter, voice, model, book, and session changes cancel or supersede obsolete work.
+6. VoxLeaf persists the shared logical position without persisting narration text or generated audio.
+
+## MVP capability status
+
+Implemented and validated:
+
+- Open a bounded supported EPUB from local storage without retaining a path.
+- Extract ordered safe semantic content, table of contents, and supported local raster images.
+- Render title, author, chapter navigation, text, and images as a continuous reflowable reader.
+- Reconstruct the visible passage from a stable logical locator across viewport or typography changes.
+- Restore an exact or nearest-valid passage after the user reselects the same exact EPUB bytes.
+- Persist bounded logical reading state and closed display preferences.
+- Prepare deterministic bounded narration text and locator-linked segments through the package API.
+- Display actionable reader loading, opening, restoration, and error states.
+- Provide documented local setup plus deterministic reader/package validation.
+
+Remaining:
+
+- Select a chapter or paragraph as a narration starting point in a desktop playback flow.
+- Generate speech through a selected supported local TTS engine and voice.
+- Buffer and play generated audio in bounded memory.
+- Apply the approximately 15-second playable-audio startup gate without a fixed wall-clock delay.
+- Continue generation under backpressure while valid buffered audio plays.
+- Pause, resume, seek, and move through a shared visual/playback position.
+- Highlight and keep the active narrated passage on screen.
+- Cancel or reject stale TTS/audio work across process, queue, and playback boundaries.
+- Detect relevant acceleration, publish measured hardware profiles, and provide a validated CPU-compatible fallback.
+- Display model-loading, generation, buffering, playback, and TTS failure states.
+- Collect the complete non-content TTS/audio performance metrics.
+- Provide installer packaging and a validated end-user installation path.
+
+## Target acceptance criteria
 
 ### Privacy
 

@@ -1,8 +1,8 @@
 # VoxLeaf
 
-A privacy-first desktop EPUB reader with on-device neural text-to-speech and in-memory audio streaming.
+A privacy-first desktop EPUB reader in development, designed for on-device neural text-to-speech and in-memory audio streaming.
 
-> **Status:** pre-alpha. Roadmap Milestones 1 through 4 are complete: the desktop can open a supported local EPUB, render and navigate its safe reflowable content, apply bounded display preferences, and restore a validated logical reading position after exact-file reselection. Milestone 5 has an approved active ExecPlan but implementation has not started. Narration preparation, TTS, audio, synchronization, hardware profiles, and installer packaging remain planned.
+> **Status:** pre-alpha. Roadmap Milestones 1 through 5 are complete. The desktop can open a supported local EPUB, render and navigate its safe reflowable content, apply bounded display preferences, and restore a validated logical reading position after exact-file reselection. The EPUB package also exposes deterministic, bounded, locator-linked narration preparation. The desktop does not call that operation, and no TTS engine, process protocol, generated audio, playback, synchronization, hardware profile, or installer is implemented.
 
 ## Goal
 
@@ -30,16 +30,16 @@ The MVP is allowed to:
 
 ## Architecture
 
-The canonical [system architecture diagram](docs/architecture/system-diagram.md) distinguishes implemented components, work in progress, approved planned work, and deferred systems. The framework-independent `@voxleaf/epub` package validates in-memory EPUB bytes and exposes safe semantic documents, bounded resources, and deterministic locators. The desktop consumes that boundary for visual reading and position restoration. The approved Milestone 5 design derives a separate ephemeral narration representation from the same safe document model; it is not implemented and will not rewrite displayed text.
+The canonical [system architecture diagram](docs/architecture/system-diagram.md) distinguishes implemented components, work in progress, approved planned work, and deferred systems. The framework-independent `@voxleaf/epub` package validates in-memory EPUB bytes and exposes safe semantic documents, bounded resources, deterministic locators, and `OpenedPublication.prepareNarration`. That implemented operation derives separate ephemeral narration text and locator-linked prepared segments without changing displayed text. The desktop consumes the publication boundary for visual reading and position restoration but does not yet connect prepared segments to TTS or playback.
 
-Tauri, React, and TypeScript are accepted for the desktop foundation. A separate local Python TTS process and bounded in-memory audio are approved directions, but the TTS engine, process transport, audio format, playback API, renderer, and persistence technology remain undecided until their roadmap gates. Candidate model names are evaluation inputs, not selected architecture.
+Tauri, React, TypeScript, the direct semantic DOM reader, and bounded WebView `localStorage` persistence are accepted and implemented within their documented limits. A separate local Python TTS process and bounded in-memory audio remain later-roadmap directions, but the TTS engine, process transport, audio format, and playback API are undecided. Candidate model names are evaluation inputs, not selected architecture.
 
 ## Privacy principles
 
 - Book contents remain on the device.
 - TTS inference runs locally.
 - Generated audio is not persisted by default.
-- Logs must never contain book text.
+- Logs and reports must never contain book text, derived narration text, generated audio, secrets, or private user data.
 - Test fixtures must be original, public-domain, or synthetic.
 - Model weights, copyrighted books, generated audio, and secrets must not be committed.
 

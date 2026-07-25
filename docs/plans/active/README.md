@@ -17,4 +17,5 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): broader context spanning reader, narration synchronization, and audio startup; the visual-reader portion is recorded in the [completed M004 plan](../completed/M004-reflowable-visual-reader-and-position-restoration.md), and the plan is not Milestone 5 implementation authority.
+- [`M006-local-tts-feasibility-and-engine-profiles.md`](M006-local-tts-feasibility-and-engine-profiles.md): approved implementation authority for roadmap Milestone 6's privacy-safe candidate evaluation, benchmark evidence, and engine-profile selection. Implementation has not started.
+- [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): retained broader context spanning the completed reader work and later narration synchronization/audio startup. It is not the implementation authority for completed Milestones 4 or 5 and does not authorize Milestone 6 work.

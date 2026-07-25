@@ -6,7 +6,7 @@ Accepted.
 
 ## Implementation status
 
-Implemented by roadmap Milestone 4. The desktop now renders the closed semantic model through exhaustive application-owned React elements in one continuous vertical-scrolling document; integrates package-owned target resolution, bounded static raster images, closed preferences, keyboard/focus behavior, and the measured 250-block/10,000-block/80,000-node policy; maps semantic Unicode-code-point positions to DOM ranges; tracks and preserves a package-normalized visual locator across reflow; and restores exact/nearest-valid saved state without moving focus or mutating browser history. Deterministic, production-Chromium, and packaged-WebView2 matrices cover the boundary. Narration preparation, TTS, audio, spoken highlighting, and visual/audio synchronization remain outside this ADR and unimplemented.
+Implemented by roadmap Milestone 4. The desktop now renders the closed semantic model through exhaustive application-owned React elements in one continuous vertical-scrolling document; integrates package-owned target resolution, bounded static raster images, closed preferences, keyboard/focus behavior, and the measured 250-block/10,000-block/80,000-node policy; maps semantic Unicode-code-point positions to DOM ranges; tracks and preserves a package-normalized visual locator across reflow; and restores exact/nearest-valid saved state without moving focus or mutating browser history. Deterministic, production-Chromium, and packaged-WebView2 matrices cover the boundary. Package-owned narration preparation was implemented later under ADR-0012 and remains outside this reader decision. TTS, audio, spoken highlighting, and visual/audio synchronization are still unimplemented.
 
 ## Context
 

@@ -85,7 +85,7 @@ EPUB content is presented as a normal reflowable ereader, with readable typograp
 
 ### Narration text
 
-Displayed book text should remain faithful to the safe semantic source and is not rewritten by narration preparation. A separate ephemeral narration representation may normalize whitespace, visual line breaks, Unicode punctuation, quotations, ellipses, abbreviations, dates, times, currency, numbers, common symbols, and words hyphenated across line breaks. Normalization must preserve meaning, and every prepared narration segment must retain a stable locator range back to its source passage.
+Displayed book text remains faithful to the safe semantic source and is not rewritten by narration preparation. The implemented package-local `narration-v1` representation applies the accepted conservative whitespace, semantic-line-break, punctuation, quotation, ellipsis, Spanish abbreviation/numeric/date/time/currency/percentage/symbol, and line-end rules while preserving ambiguous, malformed, unsupported, code, and foreign-name forms. Every prepared narration segment retains a stable locator range back to its source passage. The exact accepted behavior is summarized in [`../architecture/narration-normalization-v1.md`](../architecture/narration-normalization-v1.md).
 
 Spanish deserves explicit early coverage through a reproducible synthetic corpus, including opening question and exclamation marks, dialogue punctuation, abbreviations, decimal and thousands separators, dates, years, currency, and foreign names embedded in Spanish prose. This is a test-coverage requirement, not a claim of complete language support or pronunciation quality.
 
@@ -103,19 +103,19 @@ Normal reading must not send book text, derived narration text, or generated spe
 
 The implemented persisted reader state retains only bounded exact-byte identity, a structural content locator and Unicode-code-point offset, and closed display preferences; it does not retain a file reference, EPUB bytes, publisher metadata, prose, rendered geometry, or images. Future milestones may justify selected model/voice, playback speed, and non-content hardware or benchmark data within explicit bounded contracts. Full extracted text and generated narration must not become persistent application state without a separate product and privacy decision.
 
-## Candidate technical direction
+## Current and candidate technical direction
 
-The following ideas guide prototypes but are not accepted merely because they appear in this brief:
+Accepted implementation choices and still-unselected candidates are separated below:
 
-| Area                | Candidate direction                                                    | Required validation                                                       |
-| ------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Desktop             | Tauri 2, React, TypeScript, and Vite                                   | Bootstrap, platform integration, accessibility, and packaging             |
-| TTS process         | Persistent local Python sidecar                                        | Lifecycle, isolation, cancellation, installation, and recovery            |
-| Balanced model      | A smaller Qwen3-TTS profile                                            | Spanish quality, startup latency, real-time factor, and memory use        |
-| Compatibility model | Kokoro through ONNX Runtime or another lightweight engine              | CPU performance, quality, packaging, and provider support                 |
-| Process transport   | Typed local IPC, standard streams, local socket, or loopback WebSocket | Security, binary streaming, cancellation, and operational simplicity      |
-| Internal audio      | Streamed PCM with a bounded ring buffer                                | Browser and platform support, memory, playback quality, and speed control |
-| Playback mechanism  | AudioWorklet or an equivalent low-level mechanism                      | Stable streaming, underrun observability, packaging, and testability      |
+| Area                | Status             | Direction or candidate                                                    | Remaining validation                                                       |
+| ------------------- | ------------------ | ------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Desktop             | Implemented        | Tauri 2, React, TypeScript, and Vite                                      | Installer, signing, and release-platform validation remain Milestone 11    |
+| TTS process         | Deferred candidate | Persistent local Python sidecar                                           | Lifecycle, isolation, cancellation, installation, and recovery             |
+| Balanced model      | Unselected         | A smaller Qwen3-TTS profile                                               | Spanish quality, startup latency, real-time factor, licensing, and memory  |
+| Compatibility model | Unselected         | Kokoro through ONNX Runtime or another lightweight engine                 | CPU performance, quality, licensing, packaging, and provider support      |
+| Process transport   | Unselected         | Typed local IPC, standard streams, local socket, or loopback WebSocket    | Security, binary streaming, cancellation, and operational simplicity      |
+| Internal audio      | Unselected         | Streamed PCM with a bounded ring buffer                                   | Browser and platform support, memory, playback quality, and speed control |
+| Playback mechanism  | Unselected         | AudioWorklet or an equivalent low-level mechanism                         | Stable streaming, underrun observability, packaging, and testability      |
 
 Model names, audio encoding, transport, process ownership, and buffer thresholds require prototypes, benchmarks, and—where durable—an architecture decision record. Current buffer and latency targets come from [`../architecture/performance-budget.md`](../architecture/performance-budget.md), not from this brief.
 
