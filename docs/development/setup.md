@@ -261,6 +261,68 @@ content-free and contains no hostname, account, serial, UUID, private path,
 environment value, process command line, text, or audio. A `pilot` purpose may
 exercise setup but is never eligible for official promotion.
 
+### Disposable TTS listening session
+
+The manual quality workflow is also excluded from CI. It is the only Milestone
+6 command allowed to persist generated audio, requires explicit
+`qualityOptIn = $true`, and writes only to a caller-known ignored session. Use
+the same 32-character session ID for both candidates:
+
+```powershell
+$sessionId = [Guid]::NewGuid().ToString("N")
+$qualityPayload = $candidatePreflight | ConvertFrom-Json
+$qualityPayload | Add-Member -NotePropertyName qualityOptIn -NotePropertyValue $true
+$qualityPayload | Add-Member -NotePropertyName sessionId -NotePropertyValue $sessionId
+$qualityPayload | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:quality:generate
+```
+
+`$candidatePreflight` is the passing `purpose = "official"` payload above.
+Run generation once per candidate, switching the exact firewall rule between
+interpreters while retaining the same session ID. Generation removes the
+whole session on failure. When both commands report
+`readyForFinalization: true`, create the blinded pages:
+
+```powershell
+@{
+  qualityOptIn = $true
+  sessionId = $sessionId
+  evaluatorCount = 1
+} | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:quality:finalize
+```
+
+Open the generated `evaluator-01.html` below the ignored session, complete
+every score, and use its export button. Submit the downloaded JSON as a nested
+object, then aggregate:
+
+```powershell
+$scorecard = Get-Content -Raw "<downloaded-scorecard>" | ConvertFrom-Json
+@{
+  qualityOptIn = $true
+  sessionId = $sessionId
+  scorecard = $scorecard
+} | ConvertTo-Json -Depth 20 -Compress | pnpm.cmd benchmark:tts:quality:submit
+
+@{
+  qualityOptIn = $true
+  sessionId = $sessionId
+} | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:quality:aggregate
+```
+
+One evaluator produces explicitly limited evidence and remains ineligible for
+the frozen summary schema, which requires at least three independently
+randomized fluent-Spanish evaluators. After recording the content-free
+aggregate, remove the exact session and every generated WAV:
+
+```powershell
+@{
+  qualityOptIn = $true
+  sessionId = $sessionId
+} | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:quality:cleanup
+```
+
+The detailed storage, blinding, bounds, and privacy rules are documented in
+the [benchmark README](../../benchmarks/tts/README.md#disposable-blinded-quality-session).
+
 ## Continuous integration
 
 The `Foundation checks` workflow runs on pushes to `main` and `agent/**`, pull requests targeting `main`, and manual dispatches. `Windows native foundation` explicitly installs the pinned Playwright Chromium, runs `pnpm.cmd test:browser`, runs authoritative `pnpm.cmd check`, and then runs `pnpm.cmd test:native-startup` against packaged WebView2; `Ubuntu portable foundation` runs the deliberately narrower `pnpm check:portable`. Both install package dependencies from committed lockfiles. The Windows job does not restore a browser cache, so browser network activity is confined to its named installation step. See [`testing.md`](testing.md) for the exact coverage distinction.

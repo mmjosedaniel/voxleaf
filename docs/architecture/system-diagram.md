@@ -29,7 +29,7 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 | Shared contracts and fakes | **Implemented** | Versioned contracts, runtime decoders, conformance fixtures, and deterministic fakes exist; they do not implement TTS, queues, playback, or synchronization. |
 | Tauri native shell | **Foundation only** | The shell starts the React application; no commands, plugins, filesystem capabilities, or process transport are configured. |
 | Python TTS area | **Foundation only** | A package/version scaffold and schema conformance tests exist; there is no engine, server, model integration, inference, cancellation, or audio output. |
-| TTS feasibility | **In progress** | The `v2` rerun authority and bounded harness use PID-tagged WDDM dedicated memory plus PyTorch allocator high-water measurement. Both official matrices are complete and fail their assigned role gates; quality and audit work remains. No profile, production dependency, or general hardware claim exists. |
+| TTS feasibility | **In progress** | The `v2` rerun authority and bounded harness use PID-tagged WDDM dedicated memory plus PyTorch allocator high-water measurement. Both official matrices are complete and fail their assigned role gates. The disposable blinded quality workflow is implemented; limited listening and audit work remains. No profile, production dependency, or general hardware claim exists. |
 | TTS runtime through release packaging | **Deferred** | Milestones 7–11 cover runtime integration, audio, synchronization, hardware profiles, and packaging after feasibility evidence. |
 
 ## Component and trust-boundary map
@@ -65,7 +65,7 @@ flowchart LR
 
         subgraph TTSAREA["services/tts and later local runtime"]
             PYTHON["Python package/version scaffold<br/>Foundation only"]:::foundation
-            FEASIBILITY["TTS feasibility and profiling<br/>In progress: both v2 matrices failed;<br/>quality and audit pending"]:::progress
+            FEASIBILITY["TTS feasibility and profiling<br/>In progress: both v2 matrices failed;<br/>quality workflow ready; audit pending"]:::progress
             TTS["Local TTS runtime + transport<br/>Deferred: M7; choices unresolved"]:::deferred
         end
     end
@@ -146,7 +146,7 @@ The current user-visible flow ends at `VISUAL`. `PREP` is usable by package call
 | Native Windows startup evidence | [Milestone 4 native smoke closeout](../plans/completed/M004-001-native-webdriver-startup-smoke.md) |
 | Narration preparation | [Milestone 5 completed plan](../plans/completed/M005-narration-text-preparation.md), [ADR-0012](decisions/ADR-0012-bounded-narration-preparation.md), [narration normalization](narration-normalization-v1.md) |
 | Playable-audio startup rule | [ADR-0004](decisions/ADR-0004-start-after-audio-lead.md); target only until Milestone 8 |
-| Local TTS feasibility authority | [Milestone 6 active plan](../plans/active/M006-local-tts-feasibility-and-engine-profiles.md), [current v2 feasibility profile](tts-feasibility-profile-v2.md); Windows/PyTorch memory proof implemented, both official matrices complete and failed, quality and audit pending, no selection yet |
+| Local TTS feasibility authority | [Milestone 6 active plan](../plans/active/M006-local-tts-feasibility-and-engine-profiles.md), [current v2 feasibility profile](tts-feasibility-profile-v2.md); Windows/PyTorch memory proof implemented, both official matrices complete and failed, disposable quality workflow implemented, limited listening and audit pending, no selection yet |
 | Local-first desktop and future local process direction | [ADR-0001](decisions/ADR-0001-local-first-desktop.md); transport and engine remain unresolved |
 | Roadmap status | [Roadmap](../plans/roadmap.md) |
 

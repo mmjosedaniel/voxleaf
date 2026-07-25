@@ -39,6 +39,14 @@ The current tests are deterministic and layered by ownership:
 - `services/tts/tests/test_benchmark_corpus_authority.py` freezes the Milestone 6 synthetic Spanish corpus bytes, code-point/UTF-8 counts, order, category/Unicode coverage, Milestone 5 size boundaries, privacy canaries, ignored raw layout, and tracked-artifact exclusions. `services/tts/tests/test_benchmark_summary_authority.py` validates the private allowlist-only summary schema plus sample-derived duration/RTF, fixed observation counts/order, nearest-rank distributions, sustained totals, cancellation cleanup, and explicit RAM/VRAM role semantics. Mutation tests reject sensitive text, unknown fields, negative values, unsupported versions, arithmetic drift, and invalid percentiles. These default tests load no candidate dependency, model, audio, or hardware.
 - `services/tts/tests/test_benchmark_harness.py`, `test_benchmark_candidate_adapters.py`, and `test_benchmark_isolation.py` prove the candidate-neutral protocol, exact arithmetic and bounds, bounded diagnostic redaction, allowlisted promotion, frozen-manifest dispatch, local hash/offline/provider/profile checks, complete-waveform metadata mapping, spawned-worker timeout/termination, stale-frame rejection, and cleanup. Candidate libraries are mocked and process tests use only a repository fake; default checks do not load weights or require candidate environments or hardware.
 - `services/tts/tests/test_benchmark_preflight.py` and `test_benchmark_cli.py` prove the closed private-stdin command, clean-revision binding, exact artifact measurement, offline controls, exact Windows firewall rule, approved host projection, AC/sleep/operator conditions, role-specific RAM/VRAM/disk headroom, non-promotable pilots, and fixed content-free failures. Production host probing is manual and hardware-specific; deterministic tests inject repository, host, and network probes.
+- `services/tts/tests/test_benchmark_quality.py` proves the explicit-opt-in
+  disposable listening boundary with mocked candidates: fixed corpus parity,
+  whole-session cleanup on failure, opaque filenames, candidate/text/canary
+  exclusion from evaluator pages, independently shuffled scorecards, exact
+  sample matching, closed 1-5/`not-applicable` inputs, aggregate arithmetic,
+  single-evaluator non-promotion, and path-confined cleanup. It writes only
+  temporary fake bytes and loads no candidate library, model, NumPy runtime, or
+  audio device.
 - `services/tts/tests/test_benchmark_memory.py` and
   `test_benchmark_raw.py` prove transitive PID-only process-tree accounting,
   exact 50-millisecond RAM and one-second WDDM baseline semantics, PID-tagged
@@ -123,6 +131,17 @@ that PID-tagged WDDM value no faster than once per second while retaining
 50-millisecond process-tree RAM samples and the isolated PyTorch allocator
 peak. A missing/zero component is a measurement failure, not permission to
 substitute total-device VRAM.
+
+The `benchmark:tts:quality:*` commands are a separate explicit manual path.
+Generation repeats official preflight and is the only benchmark command that
+retains waveform data. It requires `qualityOptIn: true`, uses one known ignored
+session, applies identical mono PCM16 conversion and hard file/session bounds,
+and removes the complete session on generation failure. Finalization replaces
+identity-bearing staging names with opaque random IDs before an evaluator sees
+the files. Aggregation is promotable only with at least three complete
+independently randomized scorecards; one evaluator is retained solely as
+limited evidence. Cleanup must delete every generated WAV after the aggregate
+is recorded.
 
 The browser command requires one prior networked `pnpm.cmd test:browser:install`. Ordinary execution does not download browsers and can run offline after that setup. It uses a fresh isolated context, blocks and counts non-loopback requests, removes its fixed synthetic and reader-state storage keys, and lets Playwright stop the loopback preview server. Failure-only traces and screenshots are ignored artifacts and may contain only repository-authored synthetic test content. The native-startup command requires `tauri-driver` and a Microsoft EdgeDriver matching the installed WebView2 runtime; it uses the standard WebDriver launch path plus proxied CDP logging and creates no browser artifact. Chromium and WebView2 evidence remain complementary.
 

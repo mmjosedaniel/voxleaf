@@ -60,6 +60,14 @@ Both projects set uv's `exclude-newer` cutoff to `2026-07-18T00:00:00Z`, seven
 days before the intake review, so regenerating either lock cannot silently
 admit a just-published dependency.
 
+The disposable quality workflow adds no manifest or lockfile edge. It uses the
+Python standard library for WAV/container, randomization, JSON, HTML, and
+cleanup work, and uses the NumPy runtime already locked transitively inside
+each isolated candidate environment solely to apply one identical bounded
+float-to-PCM16 conversion. NumPy is not imported by the production service or
+default model-free tests, and the temporary PCM format is benchmark evidence,
+not a selected product audio dependency or contract.
+
 ### Milestone 5 dependency gate
 
 The implemented [Milestone 5 narration-preparation boundary](../plans/completed/M005-narration-text-preparation.md) and [ADR-0012](../architecture/decisions/ADR-0012-bounded-narration-preparation.md) add no dependency, manifest entry, lockfile edge, install script, or runtime capability. Repository-owned TypeScript modules perform exhaustive semantic projection, Unicode-code-point source mapping, deterministic neutral/Spanish normalization, boundary scanning, bounded packing, canonical locator-range construction, public batch coordination, and numeric-only resource observation over the existing safe semantic model, locator index, and shared decoders. The test-only corpus, EPUB fixture, integration matrix, and resource-bound suite also use existing repository tooling. Any proposed production dependency requires an amended or superseding ADR documenting a concrete unmet requirement, deterministic Node/WebView behavior, source-range support, Spanish evidence, exact version/release pinning, license, package size, transitive graph, install scripts, runtime capabilities, maintenance, alternatives, manifest/lock changes, and this inventory update. `Intl.Segmenter` is not a production segmentation authority and may appear only in a non-authoritative test-only investigation. No segmentation library, language detector, model tokenizer, pronunciation package, or model-specific preprocessor is selected or approved.

@@ -134,7 +134,9 @@ class Qwen3TtsAdapter:
         for _ in self.generate(request):
             pass
 
-    def generate(self, request: GenerationRequest) -> Iterator[AudioChunk]:
+    def synthesize_for_quality(self, request: GenerationRequest) -> tuple[Sized, int]:
+        """Return one waveform only for the explicit disposable listening workflow."""
+
         model = self._model
         if model is None:
             raise AdapterConfigurationError("not-loaded")
@@ -157,7 +159,12 @@ class Qwen3TtsAdapter:
             raise
         except Exception:
             raise AdapterConfigurationError("generation-failed") from None
-        del waveforms
+        return waveforms[0], sample_rate
+
+    def generate(self, request: GenerationRequest) -> Iterator[AudioChunk]:
+        waveform, sample_rate = self.synthesize_for_quality(request)
+        sample_count = len(waveform)
+        del waveform
         yield AudioChunk(
             request_id=request.request_id,
             sequence=0,

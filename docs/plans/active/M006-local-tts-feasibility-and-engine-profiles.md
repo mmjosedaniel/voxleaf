@@ -1048,16 +1048,47 @@ The selection includes reproducible bounded human quality evidence rather than s
 
 #### Actual result
 
-Blocked before audio generation on 2026-07-25. The frozen rubric requires at
-least three fluent Spanish evaluators, but no complete three-person panel is
-confirmed. Creating a disposable listening session now would retain generated
-audio while waiting for external participation, so no listening audio,
-randomization key, scorecard, or partial quality result was created.
+In progress on 2026-07-25.
+
+- The maintainer confirmed fluent Spanish comprehension and approved proceeding
+  as the only available evaluator. The frozen schema still requires at least
+  three evaluators, so this session is limited evidence, remains ineligible for
+  summary promotion, and cannot establish a passing quality gate.
+- Added closed `benchmark:tts:quality:generate`, `finalize`, `submit`,
+  `aggregate`, and `cleanup` commands. Generation requires explicit
+  `qualityOptIn: true`, repeats official preflight in the exact candidate
+  interpreter, uses one caller-known ignored session, and removes the whole
+  session on failure.
+- Both benchmark adapters now expose their exact waveform only to the private
+  quality boundary; the performance path still discards it. The quality
+  boundary applies one identical mono PCM16 conversion, caps every sample at
+  120 seconds and the complete session at 512 MiB, and adds no dependency or
+  product audio contract.
+- Finalization requires the same 12 cases from both candidates, replaces
+  identity-bearing staging names with opaque random IDs, independently shuffles
+  each evaluator order, emits a local scoring page containing only case IDs and
+  the frozen rubric, and removes staging before evaluation.
+- Submission rejects partial, reordered, unknown, out-of-range, or incomplete
+  scorecards. Aggregation applies per-case medians and dimension means, marks a
+  panel below three evaluators non-promotable, and cleanup deletes the exact
+  path-confined session.
+- Model-free validation passes Ruff, strict mypy over 34 source files, and all
+  49 Python tests. The four new quality tests cover bounded two-candidate
+  creation, blinding/privacy, score validation, limited aggregation, failure
+  cleanup, closed input, and final cleanup without candidate packages, models,
+  NumPy, or audio devices.
+- The authoritative native `pnpm.cmd check` passes with the quality workflow:
+  formatting, ESLint, Rustfmt, Ruff, Clippy with warnings denied, TypeScript
+  and strict Python type checks, 18 shared files/175 tests, 34 EPUB files/555
+  tests, 20 desktop files/204 tests, six native WebDriver-client tests, all 49
+  Python tests, Cargo tests, package/desktop release builds, and Python
+  distributions. The existing Vite chunk-size advisory remains informational.
 
 #### Status
 
-Blocked — confirm three fluent Spanish evaluators before creating the bounded
-ignored listening session.
+In progress — implementation and deterministic validation are complete; create
+the one-evaluator limited session from a clean commit, collect the blinded
+scorecard, record the aggregate limitation, and delete every generated WAV.
 
 ### Task 3.4: Audit licensing, offline behavior, and packaging risk
 
@@ -1562,6 +1593,12 @@ A profile is selectable only when its performance, quality, capability, license,
   `7ab924a520f6a5c964e8b7d3fa92dff9377eb311`. Task 3.3 is blocked before
   audio generation because the required three-person fluent-Spanish panel is
   not yet confirmed.
+- 2026-07-25: The maintainer approved proceeding as the only fluent-Spanish
+  evaluator. This does not change the frozen three-evaluator gate: the resulting
+  score remains limited and non-promotable. The bounded explicit-opt-in
+  generation, blinding, scoring, aggregation, and cleanup workflow now passes
+  49 model-free Python tests, Ruff, strict mypy, and the complete native root
+  check; no listening audio has yet been generated.
 
 ## Discoveries and decisions
 
@@ -1691,9 +1728,10 @@ cancellation gates; its peak RAM and dual-signal VRAM observations pass their
 ceilings. The complete Supertonic `v2` matrix is also valid and fails
 compatibility first-audio, zero-failure, and cancellation gates while passing
 its other numeric gates. The sequential quality and audit tasks have not
-completed: quality execution is blocked before audio generation on the
-required three-person panel, and the audit has not started. No generated audio
-was retained, the temporary firewall rule is absent, AC sleep is restored to
-45 minutes, no summary was promoted, and no profile was selected.
+completed: the explicit quality workflow is implemented but its approved
+single-evaluator run remains limited and non-promotable under the frozen
+three-evaluator schema, and the audit has not started. No generated audio is
+currently retained, the temporary firewall rule is absent, AC sleep is
+restored to 45 minutes, no summary was promoted, and no profile was selected.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.

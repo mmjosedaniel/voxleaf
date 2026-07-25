@@ -149,7 +149,9 @@ class Supertonic3Adapter:
         for _ in self.generate(request):
             pass
 
-    def generate(self, request: GenerationRequest) -> Iterator[AudioChunk]:
+    def synthesize_for_quality(self, request: GenerationRequest) -> tuple[_Waveform, int]:
+        """Return one waveform only for the explicit disposable listening workflow."""
+
         engine = self._engine
         voice_style = self._voice_style
         if engine is None or voice_style is None:
@@ -179,6 +181,11 @@ class Supertonic3Adapter:
             raise
         except Exception:
             raise AdapterConfigurationError("generation-failed") from None
+        return waveform, sample_rate
+
+    def generate(self, request: GenerationRequest) -> Iterator[AudioChunk]:
+        waveform, sample_rate = self.synthesize_for_quality(request)
+        sample_count = waveform.shape[1]
         del waveform
         yield AudioChunk(
             request_id=request.request_id,
