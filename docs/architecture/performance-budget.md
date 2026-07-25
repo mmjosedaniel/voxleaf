@@ -112,8 +112,11 @@ to enforce the 768-source-code-point, 640-narration-code-point, 2,048-byte, and
 and 4,096-unit retained ceilings. Packing uses the same deterministic
 checkpoint/yield controller as source-window preparation and either splits an
 oversized unprotected token at a legal Unicode-safe hard boundary or fails
-content-free when an indivisible unit cannot fit. Batch-total enforcement,
-prepared locator ranges, and the public operation remain pending.
+content-free when an indivisible unit cannot fit. Task 4.4 validates a complete
+packed block before publishing at most 17 deeply frozen locator-linked
+segments and constructs one canonical source continuation without widening
+the accepted retention bounds. Batch-total enforcement and the public
+operation remain pending.
 
 The profile targets 320 narration code points / 1,024 UTF-8 bytes per segment,
 eight segments per batch, cancellation checks every 512 work units, and a
