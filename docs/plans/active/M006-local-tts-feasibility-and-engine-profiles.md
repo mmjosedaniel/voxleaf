@@ -908,13 +908,12 @@ In progress on 2026-07-25.
 - The balanced Qwen matrix did not start and no Qwen model loaded. The host's
   WDDM driver cannot supply the protocol's mandatory process-attributed NVML
   VRAM value, so substituting another metric would invalidate the frozen
-  authority. The existing Supertonic firewall rule remains candidate-specific
-  and was not weakened.
-- The prior 45-minute AC sleep timeout was restored after measurement. Removal
-  of the exact temporary Supertonic firewall rule was attempted and Windows
-  returned access denied; an administrator must run the documented removal
-  command. The rule remains enabled only for the ignored candidate
-  interpreter.
+  authority.
+- The prior 45-minute AC sleep timeout was restored after measurement.
+  Non-administrator removal of the exact temporary Supertonic firewall rule
+  initially returned access denied. The administrator subsequently removed
+  it, and `netsh advfirewall firewall show rule` confirmed that no matching
+  rule remains.
 - The first authoritative root check after candidate installation exposed
   that ESLint did not recursively ignore nested `.venv` directories and
   attempted to lint third-party candidate bundles. The root lint ignore now
@@ -1409,6 +1408,11 @@ A profile is selectable only when its performance, quality, capability, license,
   pass the 14-test Python suite plus Ruff and strict mypy. No candidate
   dependency, model, audio payload, hardware access, production service API,
   root benchmark command, or official result was added.
+- 2026-07-25: Verified post-run cleanup after administrator action. The exact
+  temporary Supertonic outbound firewall rule no longer exists, AC sleep is
+  restored to 45 minutes, and the feature branch is clean. The Qwen run remains
+  blocked independently by unavailable process-attributed NVML VRAM under
+  WDDM.
 
 ## Discoveries and decisions
 
@@ -1518,9 +1522,10 @@ Completed before the hardware-attribution blocker on 2026-07-25:
   Python tests, Cargo tests, package/desktop release builds, and Python
   distributions. The existing Vite chunk-size advisory remained
   informational.
-- AC sleep was restored to its prior 45-minute value. The temporary
-  Supertonic firewall rule remains because non-administrator removal was
-  denied; the exact administrator cleanup command is documented.
+- AC sleep was restored to its prior 45-minute value. After the initial
+  non-administrator removal attempt was denied, the administrator removed the
+  temporary Supertonic firewall rule and a native query confirmed that no
+  matching rule remains.
 
 Milestone 3 is not complete. Qwen performance evidence is blocked by
 unavailable mandatory process-attributed NVML VRAM under WDDM, and the
