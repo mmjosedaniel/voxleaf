@@ -990,11 +990,35 @@ In progress on 2026-07-25.
   `0.2840815` seconds. The three mid-generation trials failed because the
   complete-waveform API exposed no valid cancellation boundary. AC sleep was
   restored to 45 minutes after the matrix.
+- The exact firewall rule was then switched to the Supertonic interpreter.
+  Its clean official preflight and disposable pilot passed from commit
+  `a0640fe7ff1c3bde4ceb68ba8e89cb57150adaac`.
+- The official Supertonic `v2` rerun completed from that same clean commit.
+  Its ignored 10,361-byte journal contains five cold loads, 24 warm
+  generations, 12 sustained generations, five cancellation trials, CPU-role
+  unavailable VRAM, zero GPU allocations, and one fixed failure. It contains
+  zero corpus-text, privacy-canary, private-path, and generated-audio findings.
+- Content-free compatibility results were: cold-load p95 `1.7851637` seconds;
+  warm first-produced-audio p95 `12.1658585` seconds; warm
+  15-seconds-of-media p95 `12.952202` seconds over four reaching outputs; warm
+  shorter-complete p95 `2.6426412` seconds over 20 shorter outputs; warm RTF
+  p95 `0.531674546833444`; sustained request RTF p95 `0.640149345703125`;
+  total sustained RTF `0.307939984424547` over `233.622448979592` generated
+  seconds; and peak process-tree RAM `667,475,968` bytes.
+- Supertonic passes cold load, 15-seconds-of-media production,
+  shorter-complete latency, warm and sustained RTF, total sustained RTF, RAM,
+  zero-GPU, and sustained-duration completeness. It fails warm first audio,
+  zero-failure, and cancellation. `before-dispatch` and
+  `accepted-before-audio` passed by worker termination in `0.203811` and
+  `1.4079207` seconds. The three mid-generation trials failed because the
+  complete-waveform API exposed no valid cancellation boundary. AC sleep was
+  restored to 45 minutes after the matrix.
 
 #### Status
 
-In progress — the Qwen `v2` matrix is complete and fails the balanced-role
-gates; the complete Supertonic `v2` rerun remains.
+Complete — both admitted candidates have complete comparable `v2` performance,
+memory, cancellation, cleanup, and privacy evidence. Both fail their assigned
+role gates; no performance result is promotable as a selected profile.
 
 ### Task 3.3: Run the blinded Spanish quality evaluation
 
@@ -1521,6 +1545,13 @@ A profile is selectable only when its performance, quality, capability, license,
   then produced valid content-free `v2` evidence and failed the balanced role
   on startup, throughput, zero-failure, and cancellation gates while remaining
   below the frozen RAM and VRAM ceilings. No generated audio was retained.
+- 2026-07-25: The exact firewall rule was switched to Supertonic. Its clean
+  `v2` preflight, disposable pilot, and complete official matrix passed setup
+  from commit `a0640fe7ff1c3bde4ceb68ba8e89cb57150adaac`. The valid content-free
+  CPU evidence passes every numeric compatibility gate except first-audio
+  latency and fails cancellation at the same three unavailable
+  complete-waveform boundaries. Task 3.2 is complete; neither candidate passes
+  its assigned role.
 
 ## Discoveries and decisions
 
@@ -1647,8 +1678,10 @@ Milestone 3 is not complete. The `v2` authority and Windows/PyTorch
 implementation pass full repository validation. The complete Qwen `v2` matrix
 is valid but fails balanced-role startup, throughput, zero-failure, and
 cancellation gates; its peak RAM and dual-signal VRAM observations pass their
-ceilings. The complete Supertonic `v2` rerun remains pending. The sequential
-quality and audit tasks have not started. No generated audio was retained, no
-summary was promoted, and no profile was selected.
+ceilings. The complete Supertonic `v2` matrix is also valid and fails
+compatibility first-audio, zero-failure, and cancellation gates while passing
+its other numeric gates. The sequential quality and audit tasks have not
+started. No generated audio was retained, no summary was promoted, and no
+profile was selected.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.
