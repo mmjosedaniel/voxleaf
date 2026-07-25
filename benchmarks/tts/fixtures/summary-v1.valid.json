@@ -1,0 +1,611 @@
+{
+  "schemaVersion": "tts-feasibility-summary-v1",
+  "protocolVersion": "tts-feasibility-profile-v1",
+  "corpusVersion": "tts-synthetic-corpus-v1",
+  "candidateManifestVersion": "tts-candidate-manifest-v1",
+  "reportPurpose": "schema-validation-fixture",
+  "candidateId": "fixture-candidate-v1",
+  "role": "compatibility",
+  "source": {
+    "commitSha": "0000000000000000000000000000000000000000",
+    "treeState": "clean"
+  },
+  "host": {
+    "operatingSystem": "Windows",
+    "osVersion": "fixture-1.0",
+    "architecture": "x86_64",
+    "pythonVersion": "3.12.10",
+    "cpuModel": "Synthetic CPU",
+    "logicalProcessors": 8,
+    "totalRamBytes": 17179869184,
+    "gpuModel": null,
+    "driverVersion": "unavailable"
+  },
+  "runtime": {
+    "engineVersion": "fixture-1.0",
+    "modelRevision": "fixture-revision",
+    "voiceId": "fixture-voice",
+    "provider": "onnxruntime-cpu",
+    "precision": "float32",
+    "offlineMode": true,
+    "streamingGranularity": "complete-waveform"
+  },
+  "artifacts": [
+    {
+      "artifactId": "fixture-model",
+      "revision": "fixture-revision",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "sizeBytes": 1024
+    }
+  ],
+  "output": {
+    "sampleRateHz": 44100,
+    "channels": 1,
+    "sampleFormat": "float32"
+  },
+  "counts": {
+    "coldLoads": 5,
+    "warmGenerations": 24,
+    "sustainedGenerations": 12,
+    "cancellationTrials": 5,
+    "failedObservations": 0
+  },
+  "loadObservations": [
+    {
+      "observationIndex": 1,
+      "loadSeconds": 1,
+      "cleanupSeconds": 0.1
+    },
+    {
+      "observationIndex": 2,
+      "loadSeconds": 2,
+      "cleanupSeconds": 0.1
+    },
+    {
+      "observationIndex": 3,
+      "loadSeconds": 3,
+      "cleanupSeconds": 0.1
+    },
+    {
+      "observationIndex": 4,
+      "loadSeconds": 4,
+      "cleanupSeconds": 0.1
+    },
+    {
+      "observationIndex": 5,
+      "loadSeconds": 5,
+      "cleanupSeconds": 0.1
+    }
+  ],
+  "generationObservations": [
+    {
+      "caseId": "es-punctuation-dialogue-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-abbreviations-initials-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-cardinals-ordinals-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-decimals-thousands-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-date-time-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-currency-percent-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-code-span-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-combining-sequence-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-astral-character-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-foreign-name-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-narrative-target",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-narrative-near-hard",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-punctuation-dialogue-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-abbreviations-initials-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-cardinals-ordinals-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-decimals-thousands-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-date-time-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-currency-percent-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-code-span-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-combining-sequence-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-astral-character-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-foreign-name-short",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-narrative-target",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-narrative-near-hard",
+      "phase": "warm",
+      "sampleCount": 441000,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 10,
+      "wallSeconds": 1,
+      "firstAudioSeconds": 1,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-narrative-target",
+      "phase": "sustained",
+      "sampleCount": 661500,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 15,
+      "wallSeconds": 1.5,
+      "firstAudioSeconds": 1.5,
+      "timeTo15SecondsMedia": 1.5,
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-punctuation-dialogue-short",
+      "phase": "sustained",
+      "sampleCount": 661500,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 15,
+      "wallSeconds": 1.5,
+      "firstAudioSeconds": 1.5,
+      "timeTo15SecondsMedia": 1.5,
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-narrative-near-hard",
+      "phase": "sustained",
+      "sampleCount": 661500,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 15,
+      "wallSeconds": 1.5,
+      "firstAudioSeconds": 1.5,
+      "timeTo15SecondsMedia": 1.5,
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-date-time-short",
+      "phase": "sustained",
+      "sampleCount": 661500,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 15,
+      "wallSeconds": 1.5,
+      "firstAudioSeconds": 1.5,
+      "timeTo15SecondsMedia": 1.5,
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-narrative-target",
+      "phase": "sustained",
+      "sampleCount": 661500,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 15,
+      "wallSeconds": 1.5,
+      "firstAudioSeconds": 1.5,
+      "timeTo15SecondsMedia": 1.5,
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-currency-percent-short",
+      "phase": "sustained",
+      "sampleCount": 661500,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 15,
+      "wallSeconds": 1.5,
+      "firstAudioSeconds": 1.5,
+      "timeTo15SecondsMedia": 1.5,
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-narrative-near-hard",
+      "phase": "sustained",
+      "sampleCount": 661500,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 15,
+      "wallSeconds": 1.5,
+      "firstAudioSeconds": 1.5,
+      "timeTo15SecondsMedia": 1.5,
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-combining-sequence-short",
+      "phase": "sustained",
+      "sampleCount": 661500,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 15,
+      "wallSeconds": 1.5,
+      "firstAudioSeconds": 1.5,
+      "timeTo15SecondsMedia": 1.5,
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-narrative-target",
+      "phase": "sustained",
+      "sampleCount": 661500,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 15,
+      "wallSeconds": 1.5,
+      "firstAudioSeconds": 1.5,
+      "timeTo15SecondsMedia": 1.5,
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-foreign-name-short",
+      "phase": "sustained",
+      "sampleCount": 661500,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 15,
+      "wallSeconds": 1.5,
+      "firstAudioSeconds": 1.5,
+      "timeTo15SecondsMedia": 1.5,
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-narrative-near-hard",
+      "phase": "sustained",
+      "sampleCount": 661500,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 15,
+      "wallSeconds": 1.5,
+      "firstAudioSeconds": 1.5,
+      "timeTo15SecondsMedia": 1.5,
+      "rtf": 0.1
+    },
+    {
+      "caseId": "es-astral-character-short",
+      "phase": "sustained",
+      "sampleCount": 661500,
+      "sampleRateHz": 44100,
+      "generatedDurationSeconds": 15,
+      "wallSeconds": 1.5,
+      "firstAudioSeconds": 1.5,
+      "timeTo15SecondsMedia": 1.5,
+      "rtf": 0.1
+    }
+  ],
+  "aggregates": {
+    "coldLoadSeconds": {
+      "count": 5,
+      "p50": 3,
+      "p95": 5,
+      "maximum": 5
+    },
+    "warmFirstAudioSeconds": {
+      "count": 24,
+      "p50": 1,
+      "p95": 1,
+      "maximum": 1
+    },
+    "warmTimeTo15SecondsMediaSeconds": "unavailable",
+    "warmShorterCompleteSeconds": {
+      "count": 24,
+      "p50": 1,
+      "p95": 1,
+      "maximum": 1
+    },
+    "warmRtf": {
+      "count": 24,
+      "p50": 0.1,
+      "p95": 0.1,
+      "maximum": 0.1
+    },
+    "sustainedRtf": {
+      "count": 12,
+      "p50": 0.1,
+      "p95": 0.1,
+      "maximum": 0.1
+    },
+    "totalSustainedRtf": 0.1,
+    "sustainedGeneratedDurationSeconds": 180
+  },
+  "memory": {
+    "samplingIntervalMilliseconds": 50,
+    "peakProcessTreeRamBytes": 1073741824,
+    "peakVramBytes": "unavailable",
+    "gpuProviderAllocations": 0
+  },
+  "cancellation": [
+    {
+      "trialId": "before-dispatch",
+      "stopMode": "cooperative",
+      "stopSeconds": 0.1,
+      "cleanupSeconds": 0.2,
+      "staleFrames": 0,
+      "rawSessionRemoved": true
+    },
+    {
+      "trialId": "accepted-before-audio",
+      "stopMode": "cooperative",
+      "stopSeconds": 0.1,
+      "cleanupSeconds": 0.2,
+      "staleFrames": 0,
+      "rawSessionRemoved": true
+    },
+    {
+      "trialId": "after-first-audio",
+      "stopMode": "cooperative",
+      "stopSeconds": 0.1,
+      "cleanupSeconds": 0.2,
+      "staleFrames": 0,
+      "rawSessionRemoved": true
+    },
+    {
+      "trialId": "after-five-media-seconds",
+      "stopMode": "cooperative",
+      "stopSeconds": 0.1,
+      "cleanupSeconds": 0.2,
+      "staleFrames": 0,
+      "rawSessionRemoved": true
+    },
+    {
+      "trialId": "near-hard-mid-generation",
+      "stopMode": "cooperative",
+      "stopSeconds": 0.1,
+      "cleanupSeconds": 0.2,
+      "staleFrames": 0,
+      "rawSessionRemoved": true
+    }
+  ],
+  "quality": {
+    "evaluatorCount": 3,
+    "blindOrder": true,
+    "scale": "1-5",
+    "overallMean": 4,
+    "dimensions": {
+      "intelligibility": 4,
+      "spanishPronunciation": 4,
+      "punctuationDialogue": 4,
+      "numericExpressions": 4,
+      "foreignNames": 4,
+      "naturalness": 4,
+      "artifactFreedom": 4
+    },
+    "meaningChangingDefects": 0,
+    "limitations": [
+      "small-panel",
+      "spanish-only",
+      "fixed-voices-only",
+      "synthetic-corpus-only",
+      "not-accessibility-certification"
+    ]
+  },
+  "audits": {
+    "offline": {
+      "status": "pass",
+      "violations": 0
+    },
+    "privacy": {
+      "status": "pass",
+      "violations": 0
+    },
+    "artifacts": {
+      "status": "pass",
+      "violations": 0
+    },
+    "license": {
+      "status": "pass",
+      "reviewId": "fixture-license-review"
+    }
+  },
+  "gateEvaluation": {
+    "outcome": "pass",
+    "failedGates": []
+  },
+  "notes": [
+    "complete-waveform-only",
+    "vram-unavailable-cpu-role",
+    "schema-validation-fixture-only"
+  ]
+}

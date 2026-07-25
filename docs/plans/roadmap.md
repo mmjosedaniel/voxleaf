@@ -178,7 +178,13 @@ Milestones 2 through 4 provide the shared locator-range and narration-segment co
 
 ## Milestone 6: Prove local TTS feasibility and select engine profiles
 
-**Status:** Approved planned and next in sequence. The [Milestone 6 ExecPlan](active/M006-local-tts-feasibility-and-engine-profiles.md) is approved; implementation has not started, and no engine, model profile, benchmark result, runtime dependency, or hardware-support claim exists yet.
+**Status:** In progress and next in sequence. Milestone 1 of the
+[Milestone 6 ExecPlan](active/M006-local-tts-feasibility-and-engine-profiles.md)
+has frozen the candidate intake, synthetic corpus, measurement procedure,
+numeric role gates, listening rubric, and content-safe summary authority before
+results. No model has been executed, no official benchmark result or profile
+selection exists, and no production runtime dependency or hardware-support
+claim exists yet.
 
 ### Goal
 
@@ -198,11 +204,11 @@ Milestone 1 supplies the isolated Python foundation. Milestone 2 supplies capabi
 
 ### Major risks and unknowns
 
-- Qwen3-TTS, Kokoro, or alternatives may not meet Spanish quality, startup, memory, licensing, or packaging needs.
+- The admitted Qwen3-TTS or Supertonic profiles may not meet Spanish quality, startup, memory, licensing, or packaging gates.
 - CPU fallback performance may require a different engine and voice set.
 - GPU and driver compatibility may vary sharply across user machines.
 - Model installation and updates must not create an accidental runtime network dependency or silently exhaust disk, RAM, or VRAM.
-- The project still needs a measurable wall-clock startup target in addition to the accepted 15-second playable-audio lead.
+- The frozen feasibility profile now supplies pre-result wall-clock generation gates; later integrated playback evidence must still validate command-to-audible startup.
 
 ## Milestone 7: Implement the local TTS service and process protocol
 

@@ -11,7 +11,7 @@ For detailed rationale and invariants, see the [architecture overview](overview.
 | Status | Meaning |
 | --- | --- |
 | **Implemented** | Production code exists for the stated boundary and repository validation covers it. |
-| **In progress** | Active implementation evidence exists, but the approved boundary is not complete. No major component currently has this status. |
+| **In progress** | Active implementation evidence exists, but the approved boundary is not complete. |
 | **Approved planned** | An accepted decision or approved roadmap milestone authorizes the work; production implementation is not claimed. |
 | **Deferred** | The roadmap places the work after the next approved milestone or its design remains intentionally unresolved. |
 | **Foundation only** | A scaffold, contract, fake, or shell exists without the runtime behavior its area will eventually own. |
@@ -29,7 +29,7 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 | Shared contracts and fakes | **Implemented** | Versioned contracts, runtime decoders, conformance fixtures, and deterministic fakes exist; they do not implement TTS, queues, playback, or synchronization. |
 | Tauri native shell | **Foundation only** | The shell starts the React application; no commands, plugins, filesystem capabilities, or process transport are configured. |
 | Python TTS area | **Foundation only** | A package/version scaffold and schema conformance tests exist; there is no engine, server, model integration, inference, cancellation, or audio output. |
-| TTS feasibility | **Approved planned** | The Milestone 6 ExecPlan is approved and implementation has not started. No selected engine/model, measured hardware profile, benchmark result, or production dependency exists. |
+| TTS feasibility | **In progress** | Milestone 1 freezes the candidate intake, synthetic corpus, measurement/selection profile, and content-safe summary schema. No model has run; no measured result, selected profile, hardware claim, or production dependency exists. |
 | TTS runtime through release packaging | **Deferred** | Milestones 7–11 cover runtime integration, audio, synchronization, hardware profiles, and packaging after feasibility evidence. |
 
 ## Component and trust-boundary map
@@ -37,6 +37,7 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 ```mermaid
 flowchart LR
     classDef implemented fill:#d9f2e6,stroke:#247a52,color:#102a20
+    classDef progress fill:#dcecff,stroke:#356aa0,color:#13253a,stroke-dasharray: 3 3
     classDef planned fill:#fff0c7,stroke:#9a6b00,color:#332400,stroke-dasharray: 5 5
     classDef deferred fill:#eceff3,stroke:#667085,color:#20242a,stroke-dasharray: 5 5
     classDef foundation fill:#e8e0f7,stroke:#6f4aa8,color:#241735
@@ -64,7 +65,7 @@ flowchart LR
 
         subgraph TTSAREA["services/tts and later local runtime"]
             PYTHON["Python package/version scaffold<br/>Foundation only"]:::foundation
-            FEASIBILITY["TTS feasibility and profiling<br/>Approved planned: M6"]:::planned
+            FEASIBILITY["TTS feasibility and profiling<br/>In progress: authority frozen; no results"]:::progress
             TTS["Local TTS runtime + transport<br/>Deferred: M7; choices unresolved"]:::deferred
         end
     end
@@ -96,6 +97,7 @@ The diagram deliberately has no solid edge from the desktop session to narration
 ```mermaid
 flowchart TD
     classDef implemented fill:#d9f2e6,stroke:#247a52,color:#102a20
+    classDef progress fill:#dcecff,stroke:#356aa0,color:#13253a,stroke-dasharray: 3 3
     classDef planned fill:#fff0c7,stroke:#9a6b00,color:#332400,stroke-dasharray: 5 5
     classDef deferred fill:#eceff3,stroke:#667085,color:#20242a,stroke-dasharray: 5 5
     classDef external fill:#dcecff,stroke:#356aa0,color:#13253a
@@ -106,7 +108,7 @@ flowchart TD
     SAFE["Immutable safe semantic document<br/>Implemented"]:::implemented
     VISUAL["Visual reader + logical-locator persistence<br/>Implemented"]:::implemented
     PREP["Source-mapped normalization and<br/>bounded prepared narration batches<br/>Implemented package API"]:::implemented
-    PROFILE["Engine feasibility + measured profiles<br/>Approved planned: M6"]:::planned
+    PROFILE["Engine feasibility + measured profiles<br/>In progress: authority frozen; no results"]:::progress
     INFER["Cancellable local inference + transport<br/>Deferred: M7"]:::deferred
     BUFFER["Bounded in-memory audio queue<br/>and playable-duration startup gate<br/>Deferred: M8"]:::deferred
     FOLLOW["Playback, highlighting, reader following,<br/>and shared-position persistence<br/>Deferred: M9"]:::deferred
@@ -144,12 +146,13 @@ The current user-visible flow ends at `VISUAL`. `PREP` is usable by package call
 | Native Windows startup evidence | [Milestone 4 native smoke closeout](../plans/completed/M004-001-native-webdriver-startup-smoke.md) |
 | Narration preparation | [Milestone 5 completed plan](../plans/completed/M005-narration-text-preparation.md), [ADR-0012](decisions/ADR-0012-bounded-narration-preparation.md), [narration normalization](narration-normalization-v1.md) |
 | Playable-audio startup rule | [ADR-0004](decisions/ADR-0004-start-after-audio-lead.md); target only until Milestone 8 |
+| Local TTS feasibility authority | [Milestone 6 active plan](../plans/active/M006-local-tts-feasibility-and-engine-profiles.md), [frozen feasibility profile](tts-feasibility-profile-v1.md); no result or selection yet |
 | Local-first desktop and future local process direction | [ADR-0001](decisions/ADR-0001-local-first-desktop.md); transport and engine remain unresolved |
 | Roadmap status | [Roadmap](../plans/roadmap.md) |
 
 ## Remaining gates
 
-1. **Milestone 6 — Approved planned:** execute the [approved ExecPlan](../plans/active/M006-local-tts-feasibility-and-engine-profiles.md), evaluate local engine/model candidates, and record reproducible non-content measurements before selecting an integration.
+1. **Milestone 6 — In progress:** Milestone 1 has frozen the evaluation authority before results. Continue the [active ExecPlan](../plans/active/M006-local-tts-feasibility-and-engine-profiles.md), implement the candidate-neutral harness, evaluate the admitted profiles, and record reproducible content-free measurements before selecting an integration.
 2. **Milestone 7 — Deferred:** implement a bounded cancellable local TTS runtime and an explicit transport only after Milestone 6 evidence.
 3. **Milestone 8 — Deferred:** implement bounded audio framing, queueing, playback, backpressure, underrun telemetry, and the duration-based startup gate.
 4. **Milestone 9 — Deferred:** connect one stable logical position across the visual reader, prepared narration, playback progress, highlighting, following, seek, and restoration.

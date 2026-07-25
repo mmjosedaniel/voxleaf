@@ -16,6 +16,7 @@ Documentation is organized by purpose so contributors and Codex can load only th
 - [`architecture/performance-budget.md`](architecture/performance-budget.md): latency, buffering, memory, and measurement targets.
 - [`architecture/narration-normalization-v1.md`](architecture/narration-normalization-v1.md): accepted test-only neutral/Spanish normalization corpus policy for Milestone 5.
 - [`architecture/narration-preparation-limits-v1.md`](architecture/narration-preparation-limits-v1.md): accepted test-only `narration-v1` chunk, work, retention, checkpoint, and yield limits.
+- [`architecture/tts-feasibility-profile-v1.md`](architecture/tts-feasibility-profile-v1.md): frozen Milestone 6 local TTS measurement procedure, role gates, listening rubric, and content-safe summary authority.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development
@@ -29,7 +30,7 @@ Documentation is organized by purpose so contributors and Codex can load only th
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
-- [`plans/active/M006-local-tts-feasibility-and-engine-profiles.md`](plans/active/M006-local-tts-feasibility-and-engine-profiles.md): approved ExecPlan for roadmap Milestone 6's privacy-safe local TTS candidate evaluation and engine-profile selection. Implementation has not started.
+- [`plans/active/M006-local-tts-feasibility-and-engine-profiles.md`](plans/active/M006-local-tts-feasibility-and-engine-profiles.md): active ExecPlan for roadmap Milestone 6's privacy-safe local TTS candidate evaluation and engine-profile selection. Milestone 1 has frozen the evaluation authority; no model result or profile selection exists yet.
 - [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.
 - [`plans/completed/M002-shared-contracts-and-test-harness.md`](plans/completed/M002-shared-contracts-and-test-harness.md): completed ExecPlan and validation evidence for roadmap Milestone 2.
 - [`plans/completed/M003-secure-epub-ingestion-and-document-model.md`](plans/completed/M003-secure-epub-ingestion-and-document-model.md): completed ExecPlan and validation evidence for secure EPUB ingestion and the framework-independent document model in roadmap Milestone 3.
