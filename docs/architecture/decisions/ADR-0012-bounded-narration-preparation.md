@@ -51,9 +51,16 @@ controller as source-window preparation, bounds normalized scan and temporary
 index retention, enforces the accepted 8,832-code-point/26,624-byte retained
 narration ceilings, splits an oversized unprotected token only at a legal
 Unicode-safe hard boundary, and fails content-free when one indivisible unit
-cannot fit. Prepared locator ranges and the public result remain unimplemented.
-No runtime dependency, shared schema, desktop integration, TTS behavior, audio
-behavior, persistence, or capability was added.
+cannot fit. Task 4.4 adds the package-internal finalization stage that validates
+the complete packed block before publishing immutable sensitive narration text,
+canonical half-open `LocatorRangeV1` values, the closed boundary reason,
+content-free size measurements, completion, and an exact source continuation.
+Every endpoint is constructed through the existing package locator owner and
+shared decoder; test-only work identities prove `NarrationSegmentV1`
+compatibility without production identity generation or a schema change. The
+public `prepareNarration` result remains unimplemented. No runtime dependency,
+shared schema, desktop integration, TTS behavior, audio behavior, persistence,
+or capability was added.
 
 ## Context
 
@@ -466,8 +473,10 @@ Those decisions remain with roadmap Milestones 6 through 9.
   semantic packing, per-segment output enforcement, and the 17-entry retained
   lookahead ceiling. Task 4.3 adds fixed oversized-token behavior, retained
   scan/text ceilings, deterministic work measurements, cooperative yields, and
-  cancellation before result publication; prepared locator ranges and public
-  integration still require later tasks.
+  cancellation before result publication. Task 4.4 adds canonical block-local
+  prepared ranges, exact source continuation, deep immutability, and
+  compatibility evidence for the unchanged shared narration-segment contract;
+  public integration still requires later tasks.
 
 ## Alternatives considered
 

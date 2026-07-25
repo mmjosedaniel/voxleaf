@@ -18,7 +18,9 @@ source-code-point, narration-code-point, UTF-8-byte, and sentence dimensions
 plus the 17-entry retained-segment, 8,832-code-point retained narration,
 26,624-byte retained narration, 4,096-unit temporary-index, work-checkpoint,
 yield, and cancellation ceilings through a package-internal block-local
-packer. Batch totals, prepared locator ranges, and
+packer. Task 4.4 converts the already-bounded retained output into at most 17
+canonical locator-linked prepared segments plus one exact source continuation
+only after all ranges and aggregate measurements validate. Batch totals and
 `OpenedPublication.prepareNarration` remain unimplemented.
 
 The exact test authority is
@@ -126,6 +128,14 @@ combining sequence or one source-mapped expansion that cannot fit without an
 illegal interior split produces the same fixed content-free resource-limit
 outcome. No empty or reversed range is published.
 
+Task 4.4 adds no larger collection. It stages at most the packer's accepted 17
+segments, validates sensitive-text code-point/UTF-8 measurements and aggregate
+counts, constructs each half-open range through the package locator owner and
+shared decoder, and publishes only the deeply frozen complete result. Its
+canonical continuation is the exact consumed source offset; a partial retained
+block advances to the final prepared range end, while a completed unspoken
+block advances to its legal block end.
+
 The 16,384-code-point source ceiling is deliberately much smaller than the
 64-MiB publication text budget. One request therefore cannot copy or prepare a
 whole large publication, while continuation can process it through repeated
@@ -162,9 +172,11 @@ inspection, scanner/structural transitions, and retained appends separately,
 and discards all partial events on cancellation or failure. Task 4.3 uses the
 same controller while validating scans, building bounded prefix/safety indexes,
 selecting fallbacks, and copying retained narration text; cancellation before
-or after an injected yield publishes no packed block. The production policy
-constants are package-internal; Task 5.1 still owns the final public
-request/result surface and remaining profile enforcement.
+or after an injected yield publishes no packed block. Task 4.4 finalizes that
+bounded output synchronously and publishes no partial prepared result when any
+source identity, range, measurement, or aggregate invariant fails. The
+production policy constants are package-internal; Task 5.1 still owns the
+final public request/result surface and remaining profile enforcement.
 
 ## Synthetic evidence
 

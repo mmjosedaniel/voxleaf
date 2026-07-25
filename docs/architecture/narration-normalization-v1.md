@@ -15,8 +15,9 @@ those normalized units through a deterministic source-offset sentence,
 dialogue-turn, clause, and protected-token scanner. Tasks 4.2-4.3 pack each
 scanned block into immutable cancellable bounded source-offset segments,
 consume the accepted top-level scene-break forms without speech, and harden
-oversized-token/indivisible-sequence behavior. Prepared locator ranges and
-`OpenedPublication.prepareNarration` remain unimplemented.
+oversized-token/indivisible-sequence behavior. Task 4.4 validates the complete
+packed block and emits immutable canonical locator-linked prepared segments.
+`OpenedPublication.prepareNarration` remains unimplemented.
 Task 1.3 has accepted the separate
 [`narration-v1` resource profile](narration-preparation-limits-v1.md), so
 Milestone 1's policy, corpus, and bounds gates are closed before production
@@ -126,9 +127,11 @@ closing punctuation, applies deterministic block-final fallback, and protects
 accepted lexical/code/ellipsis spans without reparsing an untracked string.
 Tasks 4.2-4.3 then pack those mapped units by semantic priority under
 independent source/code-point/UTF-8-byte/sentence/retention/work ceilings
-without consulting this test-only table at runtime. The corpus does not select a TTS engine or
-model-specific preprocessing. Later Milestone 5 tasks must map the packed
-source offsets to canonical locator ranges without changing displayed
-publication semantics. Any proposed corpus change must update the
+without consulting this test-only table at runtime. Task 4.4 maps packed
+source offsets through the existing package/shared locator authority and
+revalidates text and aggregate measurements before publishing frozen prepared
+output. The corpus does not select a TTS engine or model-specific
+preprocessing. Later Milestone 5 tasks must expose bounded public batches
+without changing displayed publication semantics. Any proposed corpus change must update the
 authoritative fixture, its integrity tests, this summary, and the active plan
 before production expectations change.
