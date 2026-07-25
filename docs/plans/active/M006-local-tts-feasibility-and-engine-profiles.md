@@ -1096,13 +1096,32 @@ In progress on 2026-07-25.
   private path. The temporary firewall rule is absent and AC sleep is restored
   to 45 minutes. The ignored audio remains only until the maintainer submits
   the blinded scorecard, after which aggregation and mandatory cleanup remain.
+- The completed scorecard passed strict submission validation. Its limited
+  aggregate gives Qwen an overall mean of `4.095238095238096` and Supertonic
+  `3.288095238095238` on the frozen 1–5 scale. Qwen's dimension means are
+  `4.333333333333333` intelligibility, `4.416666666666667` Spanish
+  pronunciation, `4.166666666666667` punctuation/dialogue, `4.0` numeric
+  expressions, `4.25` foreign names, `3.5` naturalness, and `4.0` artifact
+  freedom, with four meaning-changing defects. Supertonic's corresponding
+  means are `3.9166666666666665`, `3.75`, `3.8333333333333335`, `2.6`,
+  `2.5`, `3.1666666666666665`, and `3.25`, with five meaning-changing
+  defects.
+- The aggregate is correctly marked `eligibleForPromotion: false` with
+  `small-panel`, `spanish-only`, `fixed-voices-only`,
+  `synthetic-corpus-only`, and `not-accessibility-certification`
+  limitations. It is useful directional evidence but does not establish a
+  passing quality gate.
+- Required cleanup removed the entire session, including its 24 WAV files and
+  randomization key, plus the downloaded scorecard copy. A recursive raw-root
+  check found zero WAV files; the session and temporary firewall rule are
+  absent.
 
 #### Status
 
-In progress — implementation, deterministic validation, exact candidate
-generation, blinding, and session audits are complete. Manual scoring by the
-one available fluent-Spanish evaluator, limited aggregation, and verified
-deletion of every generated WAV remain.
+Complete — the bounded blinded session was generated, scored by the one
+available fluent-Spanish evaluator, aggregated with the frozen limitations,
+and deleted with zero generated audio remaining. The result is limited and
+non-promotable; it is not a passing-quality claim.
 
 ### Task 3.4: Audit licensing, offline behavior, and packaging risk
 
@@ -1623,6 +1642,14 @@ A profile is selectable only when its performance, quality, capability, license,
   path. The temporary firewall rule was removed and AC sleep restored to 45
   minutes. Manual scoring, limited aggregation, and verified audio cleanup
   remain.
+- 2026-07-25: Completed Task 3.3. The submitted scorecard passed strict
+  validation. Limited blinded means were `4.095238095238096` for Qwen and
+  `3.288095238095238` for Supertonic, with four and five meaning-changing
+  defects respectively. The one-evaluator aggregate is correctly
+  non-promotable and carries all five frozen limitations. Required cleanup
+  removed the complete session, randomization key, downloaded scorecard, and
+  all 24 WAV files; recursive verification found zero generated audio and no
+  temporary firewall rule.
 
 ## Discoveries and decisions
 
@@ -1751,13 +1778,12 @@ is valid but fails balanced-role startup, throughput, zero-failure, and
 cancellation gates; its peak RAM and dual-signal VRAM observations pass their
 ceilings. The complete Supertonic `v2` matrix is also valid and fails
 compatibility first-audio, zero-failure, and cancellation gates while passing
-its other numeric gates. The sequential quality and audit tasks have not
-completed: the explicit quality workflow is implemented but its approved
-single-evaluator session awaits manual scoring and will remain limited and
-non-promotable under the frozen three-evaluator schema, and the audit has not
-started. The 24 generated listening files are retained only in their ignored
-bounded session pending scoring and mandatory cleanup; the temporary firewall
-rule is absent, AC sleep is restored to 45 minutes, no summary was promoted,
-and no profile was selected.
+its other numeric gates. Task 3.3 is complete: the bounded one-evaluator
+quality result favors Qwen but is limited and non-promotable under the frozen
+three-evaluator schema, and both candidates had meaning-changing defects.
+Required cleanup left zero generated audio, no scorecard copy, no session, and
+no temporary firewall rule. The licensing, offline, and packaging audit has
+not started; AC sleep is restored to 45 minutes, no summary was promoted, and
+no profile was selected.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.
