@@ -1150,11 +1150,33 @@ Performance cannot conceal an unacceptable license, download, privacy, or packag
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25. Sources were retrieved on that date. The frozen
+candidate manifest remains unchanged; this post-result audit records facts for
+selection without rewriting intake authority.
+
+| Audit field | Qwen balanced candidate | Supertonic compatibility candidate |
+| --- | --- | --- |
+| Engine code | `qwen-tts==0.1.1`, Apache-2.0. The exact PyPI release identifies the license, Python `>=3.9`, pure-Python wheel, release date, and dependency set; the upstream repository contains the Apache-2.0 grant and redistribution conditions. Sources: [PyPI release](https://pypi.org/project/qwen-tts/0.1.1/), [release JSON](https://pypi.org/pypi/qwen-tts/0.1.1/json), [upstream license](https://github.com/QwenLM/Qwen3-TTS/blob/main/LICENSE). | `supertonic==1.3.1`, MIT. The exact PyPI release identifies the SPDX expression, Python `>=3.9`, pure-Python wheel, four core dependencies, and optional playback/server extras; the MIT grant requires retaining its copyright and permission notice. Sources: [PyPI release](https://pypi.org/project/supertonic/1.3.1/), [release JSON](https://pypi.org/pypi/supertonic/1.3.1/json), [upstream license](https://github.com/supertone-inc/supertonic-py/blob/main/LICENSE). |
+| Model and voice | The exact `8f9ebcf8826db6eeb9cdd4caa09d575a7f9ce4bd` model card declares Apache-2.0. Aiden is embedded in that model, so no separately licensed voice artifact exists. Source: [revision-pinned model card](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice/blob/8f9ebcf8826db6eeb9cdd4caa09d575a7f9ce4bd/README.md). | The exact `3cadd1ee6394adea1bd021217a0e650ede09a323` snapshot includes the model and F1 style under BigScience OpenRAIL-M. It grants use, modification, hosting, and distribution, including end-use applications, subject to its conditions. Sources: [revision-pinned model card](https://huggingface.co/Supertone/supertonic-3/blob/3cadd1ee6394adea1bd021217a0e650ede09a323/README.md), [revision-pinned license](https://huggingface.co/Supertone/supertonic-3/blob/3cadd1ee6394adea1bd021217a0e650ede09a323/LICENSE). |
+| Redistribution and commercial use | Redistribution and commercial use are permitted. Distribution must include the Apache-2.0 license, preserve applicable notices, mark modified files, and carry any upstream `NOTICE` attribution if present. The frozen model snapshot contains no separate acceptance gate or additional voice terms. | Redistribution and charged end-use are permitted, but downstream terms must make the paragraph 5 use restrictions enforceable, notify recipients, include the license, retain notices, and mark modified files. Attachment A restricts listed harmful uses and requires machine-generated-content disclosure in its specified context. The license also asks for reasonable efforts to use the latest model. These are product-license and update-policy requirements, not optional attribution alone. |
+| Acquisition and offline behavior | Networked setup is required to obtain the wheel and approximately 2.50 GB verified snapshot. Upstream documents automatic or explicit Hugging Face/ModelScope download and accepts a local directory. Official runs used the local revision with `HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`, and `local_files_only=true`; all phases completed while the exact interpreter was blocked outbound. No synthesis-time remote service was required. The firewall proof establishes offline operability, not the absence of blocked connection attempts. | Networked setup is required to obtain the wheel and approximately 414.7 MB snapshot. Upstream documents a first-run download, but also describes entirely on-device synthesis. Official runs instead used the verified local directory with `auto_download=false` and `HF_HUB_OFFLINE=1`; all phases completed while the exact interpreter was blocked outbound. No synthesis-time remote service was required. The firewall proof establishes offline operability, not the absence of blocked connection attempts. |
+| Measured installed footprint | Model snapshot: `2,498,444,461` bytes across 27 files. Isolated environment: `5,227,411,977` bytes across 32,460 files and 88 distributions. Combined: `7,725,856,438` bytes. Its 373 `.dll`, `.pyd`, and `.exe` files occupy `4,713,151,865` bytes; the largest include PyTorch CUDA, cuBLAS, cuDNN, and cuSPARSE binaries. | Model snapshot: `414,741,773` bytes across 79 files, including the 292,046-byte F1 style. Isolated environment: `111,691,023` bytes across 2,402 files and 24 distributions. Combined: `526,432,796` bytes. Its 42 `.dll`, `.pyd`, and `.exe` files occupy `77,514,569` bytes, led by OpenBLAS and ONNX Runtime. |
+| Verified platform | Windows `10.0.26200`, CPython `3.12.10`, PyTorch `2.9.1+cu128`, torchaudio `2.9.1+cu128`, CUDA/bfloat16/SDPA, NVIDIA driver `577.05`, and RTX 5060 Laptop GPU with 8,546,942,976 bytes VRAM. This is the only measured balanced configuration. | Windows `10.0.26200`, CPython `3.12.10`, `supertonic 1.3.1`, `onnxruntime 1.27.0`, CPUExecutionProvider, and float32 on the Intel Core Ultra 7 255HX. No GPU is required. This is the only measured compatibility configuration. |
+| Packaging risk | High. The benchmark lock pulls a broad 88-distribution graph, approximately 4.71 GB of native executables, GPU-driver compatibility, and packages not needed by the selected inference path, including Gradio and ONNX Runtime. FlashAttention was deliberately excluded, so there is no selected local build step, but a production package would need a purpose-built reduced lock, native-DLL notice collection, driver preflight, and a separate model-acquisition/update design. | Moderate. The core wheel is pure Python and the selected lock avoids playback and server extras, but ONNX Runtime, OpenBLAS, SoundFile, Hugging Face/Xet, and their native notices still require installer review. A production package should remove acquisition-only dependencies if feasible, preserve OpenRAIL-M terms in the application flow, define update handling, and keep model storage separate from ephemeral audio. |
+| Advisory check | The exact PyPI release JSON reported no known vulnerabilities for `qwen-tts==0.1.1`. This is not a transitive dependency audit and does not clear its 88-distribution graph. | The exact PyPI release JSON reported no known vulnerabilities for `supertonic==1.3.1`. This is not a transitive dependency audit and does not clear ONNX Runtime or other dependencies. |
+
+Neither candidate has an unresolved mandatory-network boundary after explicit
+setup. Qwen's Apache-2.0 terms are straightforward for packaging. Supertonic's
+OpenRAIL-M terms are explicit enough for this feasibility decision but impose
+material product-policy, disclosure, license-flow, and update-review work
+before distribution. Those burdens do not rescue or worsen either candidate's
+already failed frozen performance and cancellation gates.
 
 #### Status
 
-Not started.
+Complete — every audit row has dated authoritative sources or direct local
+measurement. No production dependency or model artifact was added, and no
+redistribution claim exceeds the reviewed license text.
 
 ## Milestone 4: Select profiles and record durable decisions
 
@@ -1650,6 +1672,16 @@ A profile is selectable only when its performance, quality, capability, license,
   removed the complete session, randomization key, downloaded scorecard, and
   all 24 WAV files; recursive verification found zero generated audio and no
   temporary firewall rule.
+- 2026-07-25: Completed Task 3.4 against revision-pinned Hugging Face
+  materials, exact PyPI releases, upstream licenses, the installed locks, and
+  direct filesystem measurements. Qwen is Apache-2.0 but carries a
+  7,725,856,438-byte combined footprint, 88 distributions, 373 native files,
+  and high CUDA/driver/installer risk. Supertonic code is MIT and its model/F1
+  voice are OpenRAIL-M; its 526,432,796-byte combined footprint is smaller,
+  but redistribution requires enforceable use restrictions, downstream
+  notice/license flow, disclosure policy, and update review. Both exact
+  profiles completed synthesis under application-scoped outbound denial, so
+  neither has a mandatory synthesis-time network dependency after setup.
 
 ## Discoveries and decisions
 
@@ -1782,8 +1814,9 @@ its other numeric gates. Task 3.3 is complete: the bounded one-evaluator
 quality result favors Qwen but is limited and non-promotable under the frozen
 three-evaluator schema, and both candidates had meaning-changing defects.
 Required cleanup left zero generated audio, no scorecard copy, no session, and
-no temporary firewall rule. The licensing, offline, and packaging audit has
-not started; AC sleep is restored to 45 minutes, no summary was promoted, and
-no profile was selected.
+no temporary firewall rule. The licensing, offline, and packaging audit is
+complete with authoritative sources and local size/runtime measurements; AC
+sleep is restored to 45 minutes, no summary was promoted, and no profile was
+selected.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.
