@@ -36,6 +36,57 @@ export const READER_REFLOW_PARAGRAPH_COUNT = 36;
 export const READER_REFLOW_PRESERVED_PARAGRAPH_INDEX = 18;
 
 /**
+ * Provenance for the short Milestone 5 public narration fixture. Every text
+ * value is original repository-authored synthetic test content.
+ */
+export const NARRATION_INTEGRATION_FIXTURE_PROVENANCE = Object.freeze({
+  kind: "repository-authored-synthetic",
+  source: "packages/epub/test-support/epub-fixture.ts",
+} as const);
+
+export const NARRATION_INTEGRATION_FIXTURE_EXPECTATIONS = Object.freeze({
+  anchors: Object.freeze({
+    neutralHeading: "neutral-heading",
+    neutralInline: "neutral-inline",
+    neutralQuote: "neutral-quote",
+    neutralListOne: "neutral-list-one",
+    neutralListTwo: "neutral-list-two",
+    neutralDialogue: "neutral-dialogue",
+    neutralScene: "neutral-scene",
+    neutralLong: "neutral-long",
+    spanishHeading: "spanish-heading",
+    spanishDialogue: "spanish-dialogue",
+    spanishForms: "spanish-forms",
+    spanishForeign: "spanish-foreign",
+    spanishImage: "spanish-image",
+    finalHeading: "final-heading",
+    finalParagraph: "final-paragraph",
+  }),
+  narrationText: Object.freeze({
+    neutralHeading: "Neutral opening",
+    neutralInline:
+      "A brief emphasis, strong text, and synthetic link keep code_21() unchanged. Next line stays beside an image without speaking its label.",
+    neutralQuote: "“A synthetic quotation remains intact.”",
+    neutralListOne: "First nested list item.",
+    neutralListTwo: "Second item keeps item_2() unchanged.",
+    firstDialogueTurn: "—First synthetic voice.",
+    secondDialogueTurn: "—Second synthetic voice.",
+    spanishHeading: "Escena española",
+    firstSpanishDialogueTurn: "—¿Llegó la doctora Mar?",
+    secondSpanishDialogueTurn: "—Sí, llegó.",
+    spanishForms:
+      "La doctora Mar llegó el veinticuatro de julio de dos mil veintiséis a las catorce treinta; pagó doce euros con cincuenta céntimos y dejó veinticinco por ciento.",
+    spanishForeign: "Después saludó a George Smith y a Sol y Mar.",
+    finalHeading: "Final section",
+    finalParagraph: "Final synthetic sentence.",
+  }),
+  omittedText: Object.freeze({
+    imageAlternative: "NARRATION_IMAGE_ALTERNATIVE_CANARY",
+    sceneBreak: "***",
+  }),
+});
+
+/**
  * Structural expectations are authored with the fixture, never derived from
  * an opened publication. Tests combine these values with the independently
  * calculated exact-byte book identity when they require a complete locator.
@@ -462,6 +513,56 @@ export async function buildComprehensiveEpubFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Builds the short provenance-labeled public EPUB-to-segment matrix fixture.
+ * It is deliberately separate from reader and ingestion fixtures so narration
+ * expectations cannot be inferred from production output.
+ */
+export async function buildNarrationIntegrationEpubFixture(): Promise<Uint8Array> {
+  return buildDeterministicZipFixture([
+    Object.freeze({
+      name: "mimetype",
+      content: EPUB_MIMETYPE,
+      compression: "stored",
+    }),
+    Object.freeze({
+      name: "META-INF/container.xml",
+      content: minimalContainerDocument(),
+      compression: "deflate",
+    }),
+    Object.freeze({
+      name: "EPUB/package.opf",
+      content: narrationIntegrationPackageDocument(),
+      compression: "deflate",
+    }),
+    Object.freeze({
+      name: "EPUB/nav.xhtml",
+      content: narrationIntegrationNavigationDocument(),
+      compression: "deflate",
+    }),
+    Object.freeze({
+      name: "EPUB/text/neutral.xhtml",
+      content: narrationIntegrationNeutralChapter(),
+      compression: "deflate",
+    }),
+    Object.freeze({
+      name: "EPUB/text/spanish.xhtml",
+      content: narrationIntegrationSpanishChapter(),
+      compression: "deflate",
+    }),
+    Object.freeze({
+      name: "EPUB/text/final.xhtml",
+      content: narrationIntegrationFinalChapter(),
+      compression: "deflate",
+    }),
+    Object.freeze({
+      name: "EPUB/images/narration.png",
+      content: syntheticStaticPngBytes(),
+      compression: "stored",
+    }),
+  ]);
+}
+
+/**
  * Builds the multi-spine, nested-TOC, internal-target, and local-raster
  * fixture used by reader navigation scenarios.
  */
@@ -643,4 +744,25 @@ function comprehensiveSecondChapter(): string {
 
 function comprehensiveAppendix(): string {
   return `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Appendix</title></head><body><h2 id="appendix">Appendix</h2><p>Nonlinear synthetic material.</p></body></html>`;
+}
+
+function narrationIntegrationPackageDocument(): string {
+  return `<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:narration-integration</dc:identifier><dc:title>Synthetic narration integration</dc:title><dc:language>en</dc:language><dc:language>es</dc:language><meta property="dcterms:modified">2026-07-25T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="neutral" href="text/neutral.xhtml" media-type="application/xhtml+xml"/><item id="spanish" href="text/spanish.xhtml" media-type="application/xhtml+xml"/><item id="final" href="text/final.xhtml" media-type="application/xhtml+xml"/><item id="narration-image" href="images/narration.png" media-type="image/png"/></manifest><spine><itemref idref="neutral"/><itemref idref="spanish"/><itemref idref="final"/></spine></package>`;
+}
+
+function narrationIntegrationNavigationDocument(): string {
+  return `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Synthetic narration contents</title></head><body><nav epub:type="toc"><h2>Contents</h2><ol><li><a href="text/neutral.xhtml#neutral-heading">Neutral opening</a></li><li><a href="text/spanish.xhtml#spanish-heading">Escena española</a></li><li><a href="text/final.xhtml#final-heading">Final section</a></li></ol></nav></body></html>`;
+}
+
+function narrationIntegrationNeutralChapter(): string {
+  const longSentence = `${"Synthetic ".repeat(72)}ending.`;
+  return `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Neutral narration</title></head><body><h1 id="neutral-heading">Neutral opening</h1><p id="neutral-inline">A brief <em>emphasis</em>, <strong>strong text</strong>, and <a href="spanish.xhtml#spanish-heading">synthetic link</a> keep <code>code_21()</code> unchanged.<br/>Next line stays beside an image <img src="../images/narration.png" alt="NARRATION_IMAGE_ALTERNATIVE_CANARY"/> without speaking its label.</p><blockquote><p id="neutral-quote">“A synthetic quotation remains intact.”</p><ul><li><p id="neutral-list-one">First nested list item.</p></li><li><p id="neutral-list-two">Second item keeps <code>item_2()</code> unchanged.</p></li></ul></blockquote><p id="neutral-dialogue">—First synthetic voice.<br/>—Second synthetic voice.</p><p id="neutral-scene">***</p><p id="neutral-long">${longSentence}</p></body></html>`;
+}
+
+function narrationIntegrationSpanishChapter(): string {
+  return `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="es"><head><title>Narración española</title></head><body><h1 id="spanish-heading">Escena española</h1><p id="spanish-dialogue">—¿Llegó la Dra. Mar?<br/>—Sí, llegó.</p><p id="spanish-forms">La Dra. Mar llegó el 24/07/2026 a 14:30; pagó 12,50 € y dejó 25 %.</p><p id="spanish-foreign">Después saludó a <em xml:lang="en">George Smith</em> y a Sol &amp; Mar.</p><p id="spanish-image"><img src="../images/narration.png" alt="NARRATION_IMAGE_ALTERNATIVE_CANARY"/></p></body></html>`;
+}
+
+function narrationIntegrationFinalChapter(): string {
+  return `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Final narration</title></head><body><h2 id="final-heading">Final section</h2><p id="final-paragraph">Final synthetic sentence.</p></body></html>`;
 }

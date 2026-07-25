@@ -70,8 +70,12 @@ cancellation, concurrent use, resource exhaustion, close, and unexpected
 failure return frozen content-free outcomes under the existing publication
 lifecycle. No runtime dependency, shared schema, desktop integration, TTS
 behavior, audio behavior, persistence, network access, or capability was added.
-Tasks 5.2-5.3 still own the broader synthetic integration matrix and
-deterministic resource proof.
+Task 5.2 adds a dedicated provenance-labeled, repository-authored three-spine
+neutral/Spanish EPUB and proves the public root opener-to-segment matrix across
+representative semantics, exact/recovered starts, continuation, structural
+gaps, spine transitions, source immutability, shared-contract wrapping, image
+omission/read isolation, and zero external capability use. Task 5.3 still owns
+the deterministic resource proof.
 
 ## Context
 
@@ -490,7 +494,8 @@ Those decisions remain with roadmap Milestones 6 through 9.
   Task 5.1 adds the accepted public operation, containing-segment relation,
   final batch continuation, independent batch ceilings, closed result mapping,
   and publication-owned cancellation/concurrency/close integration. The
-  broader integration and exact-bound proof remain Tasks 5.2-5.3.
+  Task 5.2 adds the broader public integration matrix; the deterministic
+  exact-bound proof remains Task 5.3.
 
 ## Alternatives considered
 
