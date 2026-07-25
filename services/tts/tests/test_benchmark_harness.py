@@ -227,6 +227,26 @@ def test_sensitive_diagnostics_and_raw_exceptions_collapse_to_fixed_failures() -
     assert observation.sensitive_value_observed is True
 
 
+def test_unexpected_factory_failure_collapses_to_content_free_crash() -> None:
+    corpus = load_corpus(CORPUS_PATH)
+
+    def factory() -> DeterministicFakeAdapter:
+        raise RuntimeError(next(iter(corpus.cases.values())).text)
+
+    result = BenchmarkHarness(
+        clock=FakeNanosecondClock(),
+        memory_probe=FakeMemoryProbe(),
+    ).run_protocol(
+        adapter_factory=factory,
+        corpus=corpus,
+        role="compatibility",
+    )
+    assert result.run is None
+    assert result.failure is not None
+    assert result.failure.code == "crash"
+    assert next(iter(corpus.cases.values())).text not in repr(result.failure)
+
+
 def test_exact_input_and_output_bounds_fail_closed_without_pending_work() -> None:
     corpus = load_corpus(CORPUS_PATH)
     case = next(iter(corpus.cases.values()))

@@ -103,6 +103,14 @@ class BenchmarkAdapter(Protocol):
 type AdapterFactory = Callable[[], BenchmarkAdapter]
 
 
+class AdapterOperationError(RuntimeError):
+    """Fixed content-free worker/adapter outcome understood by the harness."""
+
+    def __init__(self, code: FailureCode) -> None:
+        super().__init__(f"tts-benchmark-adapter-operation:{code}")
+        self.code = code
+
+
 class NanosecondClock(Protocol):
     """Injectable monotonic clock retaining integer nanoseconds."""
 

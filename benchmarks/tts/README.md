@@ -60,3 +60,32 @@ offline controls enabled.
 Remove a rejected candidate by deleting only its directory under
 `services/tts/benchmarks/candidates/`. Keep its content-free manifest entry and
 summary so the decision remains reviewable.
+
+## Implemented model-free benchmark boundary
+
+`services/tts/benchmarks/` now contains the private candidate-neutral harness,
+summary promotion gate, two thin candidate adapters, and a spawn-isolated
+worker supervisor. Default tests use deterministic fakes and mocked candidate
+libraries; they do not import an installed candidate stack, acquire or load
+weights, use audio devices, or require CUDA.
+
+Each real adapter validates the manifest-selected revision, voice, provider,
+precision, offline controls, and local artifact hashes before importing its
+candidate library. Sensitive requests cross the spawned-worker boundary only
+through a private pipe, never through OS command-line arguments or environment
+variables. Only bounded `AudioChunk` metadata returns. Child diagnostics are
+captured and discarded, timeouts and worker errors become fixed codes, and
+forced cancellation terminates the worker process tree and discards every
+later frame by request identity.
+
+The selected Qwen and Supertonic public APIs expose complete waveforms. The
+benchmark records this honestly and rejects an end-of-output frame as evidence
+of a mid-generation cancellation boundary. Worker termination is benchmark
+feasibility evidence only, not a production cancellation design.
+
+There is intentionally no root TTS benchmark command yet. Milestone 2 supplies
+the bounded execution boundary, but artifact acquisition, host preflight,
+offline network enforcement, hardware measurement, and official result
+promotion belong to later tasks in the active plan. Adding a runnable command
+before those pieces exist would create an incomplete and non-authoritative
+measurement path.

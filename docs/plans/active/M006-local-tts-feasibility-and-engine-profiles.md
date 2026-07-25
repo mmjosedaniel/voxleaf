@@ -667,11 +667,57 @@ The benchmark can safely proceed to official hardware runs.
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- Added a spawn-isolated candidate-neutral worker wrapper. Sensitive requests
+  cross only a private multiprocessing pipe, never OS command-line arguments or
+  environment variables, and the child returns one bounded `AudioChunk`
+  metadata record at a time with pipe backpressure. Waveform payload never
+  crosses the boundary.
+- Child stdout and stderr are captured by the same 65,536-byte discard
+  boundary, including request text as a privacy canary. Child exceptions and
+  malformed responses collapse to the frozen failure taxonomy; arbitrary
+  messages, tracebacks, paths, environment values, and adapter objects do not
+  cross IPC.
+- Worker-side chunk and sample-frame totals use the same 4,096-chunk and
+  115,200,000-frame hard limits as the harness. The parent enforces the frozen
+  load/request/termination/cleanup timeouts and converts timeout, crash,
+  resource, privacy, and cleanup outcomes into fixed harness failures.
+- Forced cancellation closes the pipe, terminates the exact Windows process
+  tree (or POSIX process group), waits for exit, rejects every later frame by
+  request identity, and automatically starts a newly loaded worker for a later
+  trial. Success and close also leave no worker.
+- The harness now understands fixed adapter-operation outcomes and rejects an
+  end-of-output frame as evidence for `after-first-audio`,
+  `after-five-media-seconds`, or `near-hard-mid-generation` cancellation. This
+  prevents the admitted complete-waveform APIs from receiving false
+  mid-generation cancellation credit.
+- Exact candidate dispatch is spawn-safe and observes capabilities without
+  importing Qwen, Supertonic, PyTorch, or ONNX Runtime in the parent. Direct
+  candidate adapters retain at most one model reference and release it on
+  close; Qwen additionally releases the CUDA cache through its frozen runtime.
+- Four isolation tests cover worker replacement, one active profile,
+  timeout, max-plus-one output, hard process cleanup, late-output isolation,
+  complete-output cancellation rejection, and private-value-free
+  representation. Together with the adapter and harness suites, focused Ruff,
+  strict mypy over 22 source files, and 16 focused tests pass.
+- No hardware/model run was performed or required for this milestone.
+  Unsupported real-engine cancellation or cleanup remains a measurable
+  feasibility risk for the official hardware phase rather than an
+  implementation claim.
+- The canonical system diagram was reviewed. This private benchmark worker
+  does not change the documented production component, process, persistence,
+  or runtime data-flow boundaries, so no diagram change was warranted.
+- Final validation passed the complete 25-test Python suite, both exact
+  candidate lock checks and install dry runs, the production sdist/wheel build
+  with no benchmark or candidate code packaged, and the authoritative native
+  Windows `pnpm.cmd check` including formatting, lint, TypeScript/Python type
+  checks, 940 JavaScript/TypeScript/Node tests, 25 Python tests, Rust checks,
+  and the release Tauri and Python builds.
 
 #### Status
 
-Not started.
+Complete.
 
 ## Milestone 3: Execute reproducible performance and quality evaluation
 
@@ -1187,6 +1233,7 @@ A profile is selectable only when its performance, quality, capability, license,
 - 2026-07-25: Completed Task 1.2. The byte-frozen synthetic Spanish corpus, deterministic performance/sustained orders, Milestone 5 size boundary checks, privacy canaries, ignored raw layout, cleanup policy, and repository artifact audits are now enforced by model-free Python tests.
 - 2026-07-25: Completed Task 2.1. The private candidate-neutral harness, bounded diagnostic capture, allowlisted summary promotion, deterministic fake adapter, exact arithmetic, protocol ordering, and input/output/privacy/cancellation bounds pass all focused checks without candidate packages or hardware.
 - 2026-07-25: Completed Task 2.2. Thin Qwen and Supertonic adapters now validate the frozen profile, offline controls, local artifact hashes, runtime/provider/precision/voice identity, native complete-waveform behavior, and fixed-code failure boundary in deterministic model-free tests.
+- 2026-07-25: Completed Task 2.3. Spawn-isolated execution now bounds metadata and diagnostics, hard-stops worker process trees, rejects stale or falsely mid-generation complete-waveform output, restarts cleanly between forced-cancellation trials, and leaves real candidate limitations explicit for official measurement.
 - 2026-07-25: Completed Task 1.3 and Milestone 1. The pre-result measurement procedure, numeric gates, listening rubric, invalidation/rerun rules, private summary schema, synthetic valid fixture, and semantic mutation tests are frozen and linked from the performance and architecture authorities. No engine was executed and no official result exists.
 - 2026-07-25: Corrected the recorded sustained-sequence total from 3,144
   to the verified 3,139 code points and froze that exact aggregate in the
@@ -1207,6 +1254,7 @@ A profile is selectable only when its performance, quality, capability, license,
   Supertonic/ONNX CPU profiles to the frozen evaluation only; admission does
   not select either profile or authorize a production dependency.
 - Official model execution must be offline after explicit acquisition. A local loopback server is not required for feasibility and would prematurely couple the work to Milestone 7.
+- Milestone 2 intentionally adds no root TTS benchmark command. The candidate dispatch and isolation boundary now exist, but acquisition, host/resource preflight, network-disable proof, raw-session ownership, measurement probes, and official promotion are Task 3 work; exposing a partial command would create a non-authoritative result path.
 - First produced audio, complete generated output, media duration, and audible playback are different measurements. Milestone 6 can measure the first three but does not implement or claim the fourth.
 - A benchmark worker process may be used for isolation and termination measurement without selecting the production process transport.
 - The approximately 15-second value remains a future playable-audio lead. The feasibility harness measures the time needed to produce that amount of media; it never sleeps for 15 seconds to satisfy the rule.

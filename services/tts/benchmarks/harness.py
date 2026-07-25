@@ -11,6 +11,7 @@ from typing import Final, NoReturn, cast
 
 from benchmarks.contracts import (
     AdapterFactory,
+    AdapterOperationError,
     AudioChunk,
     BenchmarkAdapter,
     BenchmarkCorpus,
@@ -187,6 +188,8 @@ class BenchmarkHarness:
         try:
             with capture:
                 adapter.load()
+        except AdapterOperationError as error:
+            _fail(error.code, request_id)
         except Exception:
             _fail("load-failed", request_id)
         finally:
@@ -211,6 +214,8 @@ class BenchmarkHarness:
         try:
             with capture:
                 adapter.close()
+        except AdapterOperationError as error:
+            _fail(error.code, request_id)
         except Exception:
             _fail("cleanup-failed", request_id)
         finally:
@@ -236,6 +241,8 @@ class BenchmarkHarness:
         try:
             with capture:
                 adapter.warm_up(request)
+        except AdapterOperationError as error:
+            _fail(error.code, request.request_id)
         except Exception:
             _fail("warmup-failed", request.request_id)
         finally:
@@ -302,6 +309,8 @@ class BenchmarkHarness:
             with suppress(Exception):
                 adapter.cancel(request.request_id)
             raise
+        except AdapterOperationError as error:
+            _fail(error.code, request.request_id)
         except Exception:
             _fail("generation-failed", request.request_id)
         finally:
@@ -346,6 +355,8 @@ class BenchmarkHarness:
         try:
             with capture:
                 response = adapter.cancel(request_id)
+        except AdapterOperationError as error:
+            _fail(error.code, request_id)
         except Exception:
             _fail("cancellation-failed", request_id)
         finally:
@@ -400,6 +411,8 @@ class BenchmarkHarness:
                             )
                             expected_sequence += 1
                             samples_before_cancel += chunk.sample_count
+                            if chunk.end_of_output:
+                                _fail("cancellation-failed", request.request_id)
                             if trial_id in ("after-first-audio", "near-hard-mid-generation"):
                                 break
                             if (
@@ -416,6 +429,18 @@ class BenchmarkHarness:
                     for chunk in chunks:
                         stale_frames += chunk.sample_count
         except StopIteration:
+            _fail("cancellation-failed", request.request_id)
+        except _HarnessFailure:
+            with suppress(Exception):
+                adapter.cancel(request.request_id)
+            raise
+        except AdapterOperationError as error:
+            with suppress(Exception):
+                adapter.cancel(request.request_id)
+            _fail(error.code, request.request_id)
+        except Exception:
+            with suppress(Exception):
+                adapter.cancel(request.request_id)
             _fail("cancellation-failed", request.request_id)
         finally:
             diagnostic = capture.observation()
@@ -605,4 +630,15 @@ class BenchmarkHarness:
                     code=failure.code,
                     request_id=failure.request_id,
                 ),
+            )
+        except Exception:
+            if main_adapter is not None:
+                with suppress(Exception):
+                    main_adapter.close()
+            if memory_started:
+                with suppress(Exception):
+                    self._memory_probe.stop()
+            return BenchmarkRunResult(
+                run=None,
+                failure=BenchmarkFailure(code="crash"),
             )

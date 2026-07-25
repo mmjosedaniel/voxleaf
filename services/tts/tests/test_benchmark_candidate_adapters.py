@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import hashlib
+import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Final, cast
 
 import pytest
 
+from benchmarks.adapters.factory import CandidateAdapterFactory
 from benchmarks.adapters.manifest import (
     QWEN_CANDIDATE_ID,
     SUPERTONIC_CANDIDATE_ID,
@@ -78,6 +80,18 @@ def test_manifest_loads_only_the_two_exact_admitted_profiles() -> None:
         match=r"^tts-benchmark-adapter:candidate$",
     ):
         load_candidate_profile(MANIFEST_PATH, "not-admitted")
+
+
+def test_exact_dispatch_observes_capabilities_without_candidate_import(
+    tmp_path: Path,
+) -> None:
+    candidate_modules = ("qwen_tts", "supertonic", "torch", "onnxruntime")
+    before = {name: sys.modules.get(name) for name in candidate_modules}
+    for candidate_id in (QWEN_CANDIDATE_ID, SUPERTONIC_CANDIDATE_ID):
+        profile = load_candidate_profile(MANIFEST_PATH, candidate_id)
+        adapter = CandidateAdapterFactory(profile, _configuration(profile, tmp_path))()
+        assert adapter.capabilities().candidate_id == candidate_id
+    assert {name: sys.modules.get(name) for name in candidate_modules} == before
 
 
 def test_missing_artifact_fails_before_candidate_import_or_download(
