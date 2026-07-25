@@ -106,8 +106,11 @@ expansions. Task 3.3 also admits at most 128 code points of numeric parser
 lookahead before returning the fixed resource-limit failure. Task 3.4 adds
 composed-stream and content-free failure assertions. Task 4.1 visits each
 normalized unit exactly twice while enforcing the 256-code-point protected-token
-hard maximum. Semantic-unit packing, prepared-segment output limits, and the
-public operation remain pending.
+hard maximum. Task 4.2 uses bounded prefix accounting and source-order scans to
+enforce the 768-source-code-point, 640-narration-code-point, 2,048-byte, and
+8-sentence per-segment maxima plus the 17-entry retained-output ceiling.
+Oversized-token hardening, batch-total enforcement, prepared locator ranges,
+and the public operation remain pending.
 
 The profile targets 320 narration code points / 1,024 UTF-8 bytes per segment,
 eight segments per batch, cancellation checks every 512 work units, and a

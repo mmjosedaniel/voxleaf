@@ -12,8 +12,10 @@ abbreviation, number, date, time, currency, percentage, and language-context
 slices as a pure source-mapped production normalizer. Task 3.4 additionally
 enforces the composed-stream invariant and privacy gate. Task 4.1 consumes
 those normalized units through a deterministic source-offset sentence,
-dialogue-turn, clause, and protected-token scanner. Packing, prepared ranges,
-and `OpenedPublication.prepareNarration` remain unimplemented.
+dialogue-turn, clause, and protected-token scanner. Task 4.2 packs each scanned
+block into immutable bounded source-offset segments and consumes the accepted
+top-level scene-break forms without speech. Prepared locator ranges and
+`OpenedPublication.prepareNarration` remain unimplemented.
 Task 1.3 has accepted the separate
 [`narration-v1` resource profile](narration-preparation-limits-v1.md), so
 Milestone 1's policy, corpus, and bounds gates are closed before production
@@ -121,8 +123,11 @@ code points per source code point. Task 4.1 records immutable source-offset
 boundaries, collapses repeated terminal marks, carries sentence endings through
 closing punctuation, applies deterministic block-final fallback, and protects
 accepted lexical/code/ellipsis spans without reparsing an untracked string.
-The corpus does not select a TTS engine or model-specific preprocessing. Later
-Milestone 5 tasks must pack and map those boundaries without changing displayed
+Task 4.2 then packs those mapped units by semantic priority under independent
+source/code-point/UTF-8-byte/sentence ceilings without consulting this
+test-only table at runtime. The corpus does not select a TTS engine or
+model-specific preprocessing. Later Milestone 5 tasks must map the packed
+source offsets to canonical locator ranges without changing displayed
 publication semantics. Any proposed corpus change must update the
 authoritative fixture, its integrity tests, this summary, and the active plan
 before production expectations change.
