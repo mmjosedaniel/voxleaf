@@ -957,6 +957,12 @@ In progress on 2026-07-25.
   tests, 20 desktop files/204 tests, six native WebDriver-client tests, all 45
   Python tests, Cargo tests, package/desktop release builds, and Python
   distributions. The existing Vite chunk-size advisory remains informational.
+- The first clean `v2` Qwen preflight setup attempt reached the operating-system
+  authorization boundary before any model load. AC sleep was temporarily
+  disabled, but Windows returned access denied when the non-administrator
+  process attempted to create the exact Qwen interpreter firewall rule. AC
+  sleep was immediately restored to 45 minutes. No pilot, official run, raw
+  session, or result was created.
 
 #### Status
 
@@ -1467,6 +1473,11 @@ A profile is selectable only when its performance, quality, capability, license,
 - 2026-07-25: The authoritative native `pnpm.cmd check` passed after the v2
   implementation, including all format/lint/type/test/build stages and the
   expanded 45-test Python suite.
+- 2026-07-25: Attempted the clean Qwen `v2` preflight setup. Windows denied
+  creation of the exact application-scoped firewall rule because the process
+  is not administrator-elevated. AC sleep was restored to 45 minutes and no
+  candidate execution began. The next action requires administrator
+  authorization to create that one temporary rule.
 
 ## Discoveries and decisions
 
@@ -1590,8 +1601,10 @@ Completed before the hardware-attribution blocker on 2026-07-25:
   matching rule remains.
 
 Milestone 3 is not complete. The `v2` authority and Windows/PyTorch
-implementation pass focused validation, but both complete candidate reruns are
-still pending. The sequential quality and audit tasks have not started. No
-summary was promoted and no profile was selected.
+implementation pass full repository validation, but the first Qwen preflight
+is blocked on administrator authorization for its exact temporary outbound
+firewall rule. Both complete candidate reruns remain pending. The sequential
+quality and audit tasks have not started. No summary was promoted and no
+profile was selected.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.
