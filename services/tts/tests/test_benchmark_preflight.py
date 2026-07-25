@@ -69,6 +69,7 @@ def host_snapshot() -> HostSnapshot:
         driver_version="fixture-1.0",
         total_vram_bytes=8 * GIB,
         free_vram_bytes=7 * GIB,
+        process_vram_available=True,
     )
 
 
@@ -202,6 +203,7 @@ def test_resource_power_sleep_provider_and_operator_gates_fail_closed(
         driver_version="unavailable",
         total_vram_bytes=None,
         free_vram_bytes=None,
+        process_vram_available=False,
     )
     result = run_preflight(
         preflight_request,
@@ -219,6 +221,7 @@ def test_resource_power_sleep_provider_and_operator_gates_fail_closed(
         "disk-headroom",
         "provider",
         "vram-headroom",
+        "vram-measurement",
     )
     assert result.eligible_for_promotion is False
 

@@ -254,7 +254,8 @@ complete and the allowlisted summary passes validation.
 
 The command fails closed on a dirty or different revision, wrong platform or
 Python, missing environment, wrong artifact hash, missing offline controls,
-missing firewall rule, battery power, insufficient RAM/VRAM/disk, or
+missing firewall rule, battery power, insufficient RAM/VRAM/disk, unavailable
+WDDM per-process dedicated-memory counters for the balanced role, or
 unconfirmed sleep/background/thermal conditions. Its JSON output is
 content-free and contains no hostname, account, serial, UUID, private path,
 environment value, process command line, text, or audio. A `pilot` purpose may

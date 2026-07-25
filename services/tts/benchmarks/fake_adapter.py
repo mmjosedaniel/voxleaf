@@ -51,8 +51,18 @@ class FakeMemoryProbe:
             raise RuntimeError("tts-benchmark-fake:memory-inactive")
         self._active = False
         return MemoryObservation(
-            sampling_interval_milliseconds=50,
+            ram_sampling_interval_milliseconds=50,
+            process_vram_sampling_interval_milliseconds=(
+                1_000 if self.peak_vram_bytes is not None else None
+            ),
+            vram_measurement_method=(
+                "wddm-dedicated-plus-pytorch-reserved"
+                if self.peak_vram_bytes is not None
+                else "unavailable-cpu-role"
+            ),
             peak_process_tree_ram_bytes=self.peak_process_tree_ram_bytes,
+            peak_process_vram_bytes=self.peak_vram_bytes,
+            peak_framework_vram_bytes=self.peak_vram_bytes,
             peak_vram_bytes=self.peak_vram_bytes,
             gpu_provider_allocations=self.gpu_provider_allocations,
         )
@@ -179,6 +189,9 @@ class DeterministicFakeAdapter:
         self.cancelled_request_ids.add(request_id)
         self.finish_request(request_id)
         return CancellationResponse(acknowledged=True, stop_mode="cooperative")
+
+    def framework_memory_high_water_bytes(self) -> None:
+        return None
 
     def finish_request(self, request_id: str) -> None:
         self.active_request_ids.discard(request_id)

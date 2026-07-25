@@ -823,8 +823,8 @@ In progress on 2026-07-25.
 
 #### Status
 
-In progress — compatibility `v1` preflight complete; `v2` authority and
-Windows-compatible measurement implementation approved and pending validation.
+In progress — `v2` authority and Windows-compatible measurement implementation
+pass focused validation; clean official candidate preflights and reruns remain.
 
 ### Task 3.2: Run cold, warm, sustained, cancellation, and failure matrices
 
@@ -929,6 +929,34 @@ In progress on 2026-07-25.
   attempted to lint third-party candidate bundles. The root lint ignore now
   excludes every `.venv` recursively; candidate code remains isolated and
   unreviewed vendor files no longer enter repository lint scope.
+- The approved `v2` implementation replaces the unavailable NVML signal with
+  a dependency-free native PDH reader for
+  `GPU Process Memory(*)\Dedicated Usage`. It collects at the documented
+  one-second maximum frequency, aggregates only numeric instances belonging to
+  the recursively discovered worker process tree, and retains no PID, LUID,
+  instance name, process name, path, or unrelated-process value.
+- The exact Qwen adapter resets PyTorch peak statistics immediately before
+  model load and reports only `max_memory_reserved()` bytes after successful
+  load, warm-up, generation, and close commands. The spawn-isolated parent
+  retains the maximum across replacement workers. Balanced measurement now
+  requires positive WDDM and PyTorch peaks and uses their maximum; CPU
+  measurement retains explicit unavailable VRAM and zero GPU allocations.
+- Raw and reviewable authorities are versioned as
+  `tts-feasibility-raw-v2`, `tts-feasibility-profile-v2`, and
+  `tts-feasibility-summary-v2`. The v2 schema reuses unchanged closed v1
+  definitions through an offline registered resource, while the memory object
+  exposes only fixed method IDs, intervals, byte peaks, and allocation count.
+- Model-free validation passes Ruff, strict mypy over 31 source files, and all
+  45 Python tests. A native root-environment WDDM smoke returned a valid zero
+  observation for a non-GPU process; a disposable 256-MiB CUDA allocation in
+  the exact Qwen environment returned `372781056` process-dedicated bytes and
+  one allocating PID without loading the model.
+- The authoritative native `pnpm.cmd check` passes on the v2 implementation:
+  formatting, ESLint, Rustfmt, Ruff, Clippy with warnings denied, TypeScript
+  and strict Python type checks, 18 shared files/175 tests, 34 EPUB files/555
+  tests, 20 desktop files/204 tests, six native WebDriver-client tests, all 45
+  Python tests, Cargo tests, package/desktop release builds, and Python
+  distributions. The existing Vite chunk-size advisory remains informational.
 
 #### Status
 
@@ -1430,6 +1458,15 @@ A profile is selectable only when its performance, quality, capability, license,
   measured WDDM host. `v2` will pair the one-second Windows process counter
   with PyTorch's in-worker allocator peak, preserve the six-GiB gate and
   privacy boundary, and require complete reruns of both admitted candidates.
+- 2026-07-25: Implemented the `v2` Windows/PyTorch memory path. Native PDH
+  WDDM attribution, private-pipe allocator peaks, dual-signal fail-closed
+  semantics, v2 raw/summary authorities, preflight availability, and
+  deterministic coverage pass 45 tests, Ruff, and strict mypy. A disposable
+  exact-environment CUDA allocation proved the local WDDM counter attributes
+  positive dedicated bytes to the allocating PID.
+- 2026-07-25: The authoritative native `pnpm.cmd check` passed after the v2
+  implementation, including all format/lint/type/test/build stages and the
+  expanded 45-test Python suite.
 
 ## Discoveries and decisions
 
@@ -1552,10 +1589,9 @@ Completed before the hardware-attribution blocker on 2026-07-25:
   temporary Supertonic firewall rule and a native query confirmed that no
   matching rule remains.
 
-Milestone 3 is not complete. The maintainer approved a versioned replacement
-for unavailable NVML process attribution, but the `v2` authority,
-implementation, and complete candidate reruns are still pending. The
-sequential quality and audit tasks have not started. No summary was promoted
-and no profile was selected.
+Milestone 3 is not complete. The `v2` authority and Windows/PyTorch
+implementation pass focused validation, but both complete candidate reruns are
+still pending. The sequential quality and audit tasks have not started. No
+summary was promoted and no profile was selected.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.

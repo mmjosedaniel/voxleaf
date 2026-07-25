@@ -137,10 +137,11 @@ Rustfmt, Clippy, Cargo test, and Cargo build come from the pinned Rust toolchain
 | `mypy` | `2.3.0` | Performs strict static type checking. |
 | `pytest` | `9.1.1` | Runs deterministic Python smoke and cross-language contract-conformance tests. |
 | `jsonschema` | `4.26.0` | Validates the shared serialized fixture corpus against the canonical Draft 2020-12 schemas entirely offline during Python tests. |
+| `referencing` | `0.37.0` | Registers the retained v1 benchmark schema as an offline resource while validating the v2 summary schema without duplicating its unchanged closed definitions. |
 | `types-jsonschema` | `4.26.0.20260518` | Supplies mypy declarations for the test-only `jsonschema` API. |
 | `uv_build` | compatible `0.11.x` selected by the build frontend | Builds the pure-Python source distribution and wheel; it is an isolated build-system requirement, not a service runtime dependency. |
 
-Ruff replaces the overlapping Black, isort, and Flake8 toolchain. Mypy and pytest are established focused tools for typing and tests. Python's `jsonschema` validator was selected instead of a handwritten structural model so Python checks the language-neutral canonical schemas rather than creating a second contract authority; it and its typing package remain in the development group and are not service runtime dependencies. `uv_build` is appropriate for the current pure-Python package; a compiled-extension requirement could justify a different backend later without replacing uv's environment and lock ownership.
+Ruff replaces the overlapping Black, isort, and Flake8 toolchain. Mypy and pytest are established focused tools for typing and tests. Python's `jsonschema` validator was selected instead of a handwritten structural model so Python checks the language-neutral canonical schemas rather than creating a second contract authority. Its existing `referencing` dependency is now direct because the benchmark v2 schema deliberately reuses v1's unchanged closed definitions through an offline registry; neither package is a service runtime dependency. `uv_build` is appropriate for the current pure-Python package; a compiled-extension requirement could justify a different backend later without replacing uv's environment and lock ownership.
 
 ## Continuous-integration actions
 

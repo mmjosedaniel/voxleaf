@@ -83,6 +83,7 @@ def test_receipt_output_is_allowlisted_and_contains_no_private_paths(tmp_path: P
         driver_version="unavailable",
         total_vram_bytes=None,
         free_vram_bytes=None,
+        process_vram_available=False,
     )
     receipt = PreflightReceipt(
         purpose="official",
@@ -114,6 +115,7 @@ def test_receipt_output_is_allowlisted_and_contains_no_private_paths(tmp_path: P
         "driverVersion",
         "totalVramBytes",
         "freeVramBytes",
+        "processVramAvailable",
     }
 
 

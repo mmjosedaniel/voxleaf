@@ -194,6 +194,9 @@ class Supertonic3Adapter:
         del request_id
         return CancellationResponse(acknowledged=False, stop_mode=None)
 
+    def framework_memory_high_water_bytes(self) -> None:
+        return None
+
     def close(self) -> None:
         self._voice_style = None
         self._engine = None

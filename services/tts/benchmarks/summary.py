@@ -7,9 +7,10 @@ import math
 import re
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Final, NoReturn, cast
+from typing import Any, Final, NoReturn, cast
 
 from jsonschema import Draft202012Validator
+from referencing import Registry, Resource
 
 from benchmarks.contracts import BenchmarkCorpus, BenchmarkRun, SummaryMetadata
 from benchmarks.metrics import (
@@ -19,7 +20,14 @@ from benchmarks.metrics import (
     real_time_factor,
 )
 
-SUMMARY_VERSION: Final = "tts-feasibility-summary-v1"
+SUMMARY_VERSION: Final = "tts-feasibility-summary-v2"
+_V1_SCHEMA_PATH: Final = (
+    Path(__file__).resolve().parents[3]
+    / "benchmarks"
+    / "tts"
+    / "schemas"
+    / "summary-v1.schema.json"
+)
 MAX_SUMMARY_BYTES: Final = 1_048_576
 ARITHMETIC_TOLERANCE: Final = 0.000001
 _ABSOLUTE_WINDOWS_PATH = re.compile(rb"[A-Za-z]:[\\/]")
@@ -40,6 +48,26 @@ class SummaryValidationError(ValueError):
 
 def _fail(code: str) -> NoReturn:
     raise SummaryValidationError(code)
+
+
+type JsonSchema = bool | Mapping[str, Any]
+
+
+def schema_registry() -> Registry[JsonSchema]:
+    value = cast(object, json.loads(_V1_SCHEMA_PATH.read_text(encoding="utf-8")))
+    schema = _read_mapping(value, "invalid-schema")
+    resource = cast(
+        Resource[JsonSchema],
+        Resource.from_contents(cast(Mapping[str, Any], schema)),
+    )
+    registry: Registry[JsonSchema] = Registry()
+    return cast(
+        Registry[JsonSchema],
+        registry.with_resource(
+            "urn:voxleaf:benchmark:tts-feasibility-summary:v1",
+            resource,
+        ),
+    )
 
 
 def _distribution_dict(values: Sequence[float]) -> dict[str, object]:
@@ -295,8 +323,24 @@ def build_summary(run: BenchmarkRun, metadata: SummaryMetadata) -> dict[str, obj
             "sustainedGeneratedDurationSeconds": sustained_duration,
         },
         "memory": {
-            "samplingIntervalMilliseconds": run.memory.sampling_interval_milliseconds,
+            "ramSamplingIntervalMilliseconds": (run.memory.ram_sampling_interval_milliseconds),
+            "processVramSamplingIntervalMilliseconds": (
+                run.memory.process_vram_sampling_interval_milliseconds
+                if run.memory.process_vram_sampling_interval_milliseconds is not None
+                else "unavailable"
+            ),
+            "vramMeasurementMethod": run.memory.vram_measurement_method,
             "peakProcessTreeRamBytes": run.memory.peak_process_tree_ram_bytes,
+            "peakProcessVramBytes": (
+                run.memory.peak_process_vram_bytes
+                if run.memory.peak_process_vram_bytes is not None
+                else "unavailable"
+            ),
+            "peakFrameworkVramBytes": (
+                run.memory.peak_framework_vram_bytes
+                if run.memory.peak_framework_vram_bytes is not None
+                else "unavailable"
+            ),
             "peakVramBytes": (
                 run.memory.peak_vram_bytes
                 if run.memory.peak_vram_bytes is not None
@@ -491,11 +535,38 @@ def validate_summary_semantics(
 
     role = _read_string(summary.get("role"), "invalid-role")
     memory = _read_mapping(summary.get("memory"), "invalid-memory")
-    if role == "balanced" and memory.get("peakVramBytes") == "unavailable":
-        _fail("balanced-vram")
-    if (
-        role == "compatibility"
-        and _read_integer(memory.get("gpuProviderAllocations"), "invalid-memory") != 0
+    gpu_allocations = _read_integer(
+        memory.get("gpuProviderAllocations"),
+        "invalid-memory",
+    )
+    if role == "balanced":
+        process_peak = _read_integer(
+            memory.get("peakProcessVramBytes"),
+            "invalid-memory",
+        )
+        framework_peak = _read_integer(
+            memory.get("peakFrameworkVramBytes"),
+            "invalid-memory",
+        )
+        peak = _read_integer(memory.get("peakVramBytes"), "invalid-memory")
+        if (
+            memory.get("vramMeasurementMethod") != "wddm-dedicated-plus-pytorch-reserved"
+            or _read_integer(
+                memory.get("processVramSamplingIntervalMilliseconds"),
+                "invalid-memory",
+            )
+            != 1_000
+            or min(process_peak, framework_peak, peak, gpu_allocations) <= 0
+            or peak != max(process_peak, framework_peak)
+        ):
+            _fail("balanced-vram")
+    elif (
+        memory.get("vramMeasurementMethod") != "unavailable-cpu-role"
+        or memory.get("processVramSamplingIntervalMilliseconds") != "unavailable"
+        or memory.get("peakProcessVramBytes") != "unavailable"
+        or memory.get("peakFrameworkVramBytes") != "unavailable"
+        or memory.get("peakVramBytes") != "unavailable"
+        or gpu_allocations != 0
     ):
         _fail("compatibility-gpu")
 
@@ -545,7 +616,7 @@ def summary_filename(candidate_id: str, *, forbidden_values: Sequence[str] = ())
         _fail("invalid-candidate-id")
     if any(value and value in candidate_id for value in forbidden_values):
         _fail("sensitive-value")
-    return f"{candidate_id}.summary-v1.json"
+    return f"{candidate_id}.summary-v2.json"
 
 
 def promote_summary(
@@ -558,7 +629,12 @@ def promote_summary(
     """Validate and return canonical JSON/Markdown; no file write occurs here."""
 
     Draft202012Validator.check_schema(schema)
-    errors = tuple(Draft202012Validator(schema).iter_errors(summary))
+    errors = tuple(
+        Draft202012Validator(
+            schema,
+            registry=schema_registry(),
+        ).iter_errors(summary)
+    )
     if errors:
         _fail("schema")
     validate_summary_semantics(summary, corpus)

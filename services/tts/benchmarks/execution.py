@@ -13,7 +13,10 @@ from benchmarks.adapters.factory import create_isolated_candidate_adapter
 from benchmarks.contracts import BenchmarkAdapter, BenchmarkFailure
 from benchmarks.harness import BenchmarkHarness, SystemNanosecondClock, load_corpus
 from benchmarks.memory import (
+    PROCESS_VRAM_SAMPLING_INTERVAL_MILLISECONDS,
+    FrameworkVramTracker,
     ProcessTreeMemoryProbe,
+    WindowsGpuProcessMemorySampler,
     WindowsProcessResourceSampler,
 )
 from benchmarks.preflight import PreflightRequest
@@ -67,6 +70,7 @@ def run_measurement_worker(
             raise RuntimeError("interpreter")
         corpus = load_corpus(CORPUS_PATH)
         sensitive_values = _forbidden_values(request)
+        framework_tracker = FrameworkVramTracker() if request.profile.role == "balanced" else None
 
         def build_adapter() -> BenchmarkAdapter:
             if adapter_builder is not None:
@@ -75,6 +79,9 @@ def run_measurement_worker(
                 manifest_path=MANIFEST_PATH,
                 configuration=request.configuration,
                 forbidden_values=sensitive_values,
+                framework_memory_observer=(
+                    framework_tracker.observe if framework_tracker is not None else None
+                ),
             )
 
         if request.conditions.purpose == "pilot":
@@ -109,12 +116,21 @@ def run_measurement_worker(
             commit_sha=request.expected_commit_sha,
             session_id=session_id,
         )
+        vram_sampler = (
+            WindowsGpuProcessMemorySampler() if request.profile.role == "balanced" else None
+        )
         harness = BenchmarkHarness(
             clock=SystemNanosecondClock(),
             memory_probe=ProcessTreeMemoryProbe(
                 root_pid=os.getpid(),
-                sampler=WindowsProcessResourceSampler(),
+                sampler=WindowsProcessResourceSampler(vram_sampler=vram_sampler),
                 require_vram=request.profile.role == "balanced",
+                process_vram_sampling_interval_milliseconds=(
+                    PROCESS_VRAM_SAMPLING_INTERVAL_MILLISECONDS
+                    if request.profile.role == "balanced"
+                    else None
+                ),
+                framework_vram_tracker=framework_tracker,
             ),
             observation_sink=journal,
         )

@@ -18,7 +18,8 @@ from benchmarks.contracts import (
     MemoryObservation,
 )
 
-RAW_VERSION: Final = "tts-feasibility-raw-v1"
+RAW_VERSION: Final = "tts-feasibility-raw-v2"
+PROTOCOL_VERSION: Final = "tts-feasibility-profile-v2"
 MAXIMUM_RAW_BYTES: Final = 262_144
 MAXIMUM_LOAD_OBSERVATIONS: Final = 5
 MAXIMUM_GENERATION_OBSERVATIONS: Final = 144
@@ -55,6 +56,7 @@ class RawMeasurementJournal:
         ):
             raise RawJournalError("invalid-metadata")
         self._metadata: Mapping[str, object] = {
+            "protocolVersion": PROTOCOL_VERSION,
             "candidateId": candidate_id,
             "role": role,
             "commitSha": commit_sha,
@@ -139,8 +141,14 @@ class RawMeasurementJournal:
         if self._memory is not None:
             raise RawJournalError("observation-limit")
         self._memory = {
-            "samplingIntervalMilliseconds": observation.sampling_interval_milliseconds,
+            "ramSamplingIntervalMilliseconds": (observation.ram_sampling_interval_milliseconds),
+            "processVramSamplingIntervalMilliseconds": (
+                observation.process_vram_sampling_interval_milliseconds
+            ),
+            "vramMeasurementMethod": observation.vram_measurement_method,
             "peakProcessTreeRamBytes": observation.peak_process_tree_ram_bytes,
+            "peakProcessVramBytes": observation.peak_process_vram_bytes,
+            "peakFrameworkVramBytes": observation.peak_framework_vram_bytes,
             "peakVramBytes": observation.peak_vram_bytes,
             "gpuProviderAllocations": observation.gpu_provider_allocations,
         }
@@ -215,7 +223,7 @@ class RawMeasurementJournal:
         if len(relative.parts) != 2 or session.exists():
             raise RawJournalError("session-path")
         session.mkdir(parents=True)
-        target = session / "performance-v1.raw.json"
+        target = session / "performance-v2.raw.json"
         try:
             target.write_bytes(payload)
         except Exception:

@@ -33,6 +33,10 @@ class _CudaRuntime(Protocol):
 
     def is_bf16_supported(self) -> bool: ...
 
+    def reset_peak_memory_stats(self) -> None: ...
+
+    def max_memory_reserved(self) -> int: ...
+
     def empty_cache(self) -> None: ...
 
 
@@ -78,6 +82,7 @@ class Qwen3TtsAdapter:
         self._version_reader = version_reader
         self._model: _QwenModel | None = None
         self._torch: _TorchModule | None = None
+        self._peak_framework_vram_bytes: int | None = None
 
     def capabilities(self) -> AdapterCapabilities:
         return AdapterCapabilities(
@@ -109,6 +114,7 @@ class Qwen3TtsAdapter:
             cuda = torch.cuda
             if not bool(cuda.is_available()) or not bool(cuda.is_bf16_supported()):
                 raise AdapterConfigurationError("provider-unavailable")
+            cuda.reset_peak_memory_stats()
             model_class = qwen_tts.Qwen3TTSModel
             model = model_class.from_pretrained(
                 str(root),
@@ -166,7 +172,21 @@ class Qwen3TtsAdapter:
         del request_id
         return CancellationResponse(acknowledged=False, stop_mode=None)
 
+    def framework_memory_high_water_bytes(self) -> int | None:
+        torch = self._torch
+        if torch is None:
+            return self._peak_framework_vram_bytes
+        value = torch.cuda.max_memory_reserved()
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise RuntimeError("tts-benchmark-adapter:measurement-unavailable")
+        self._peak_framework_vram_bytes = max(
+            self._peak_framework_vram_bytes or 0,
+            value,
+        )
+        return self._peak_framework_vram_bytes
+
     def close(self) -> None:
+        self.framework_memory_high_water_bytes()
         self._model = None
         torch = self._torch
         self._torch = None

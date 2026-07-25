@@ -22,11 +22,13 @@ class ProcessFakeAdapter:
         block_generation: bool = False,
         emit_late_chunk: bool = False,
         sample_count: int = 44_100,
+        framework_memory_bytes: int | None = None,
     ) -> None:
         self._loaded = False
         self._block_generation = block_generation
         self._emit_late_chunk = emit_late_chunk
         self._sample_count = sample_count
+        self._framework_memory_bytes = framework_memory_bytes
 
     def capabilities(self) -> AdapterCapabilities:
         return AdapterCapabilities(
@@ -73,6 +75,9 @@ class ProcessFakeAdapter:
         del request_id
         return CancellationResponse(acknowledged=False, stop_mode=None)
 
+    def framework_memory_high_water_bytes(self) -> int | None:
+        return self._framework_memory_bytes
+
     def close(self) -> None:
         self._loaded = False
 
@@ -84,14 +89,17 @@ class ProcessFakeFactory:
         block_generation: bool = False,
         emit_late_chunk: bool = False,
         sample_count: int = 44_100,
+        framework_memory_bytes: int | None = None,
     ) -> None:
         self._block_generation = block_generation
         self._emit_late_chunk = emit_late_chunk
         self._sample_count = sample_count
+        self._framework_memory_bytes = framework_memory_bytes
 
     def __call__(self) -> ProcessFakeAdapter:
         return ProcessFakeAdapter(
             block_generation=self._block_generation,
             emit_late_chunk=self._emit_late_chunk,
             sample_count=self._sample_count,
+            framework_memory_bytes=self._framework_memory_bytes,
         )

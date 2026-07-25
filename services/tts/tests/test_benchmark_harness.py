@@ -44,13 +44,13 @@ from benchmarks.summary import (
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v1.json"
-SCHEMA_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "schemas" / "summary-v1.schema.json"
+SCHEMA_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "schemas" / "summary-v2.schema.json"
 
 
 def fixture_metadata() -> SummaryMetadata:
     return SummaryMetadata(
         report_purpose="schema-validation-fixture",
-        protocol_version="tts-feasibility-profile-v1",
+        protocol_version="tts-feasibility-profile-v2",
         corpus_version="tts-synthetic-corpus-v1",
         candidate_manifest_version="tts-candidate-manifest-v1",
         role="compatibility",

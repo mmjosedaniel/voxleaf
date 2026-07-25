@@ -9,10 +9,13 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   acquisition boundaries, and isolated uv projects before measurements.
 - `corpus-v1.json` freezes the repository-authored prepared-text corpus and
   performance order.
-- `schemas/summary-v1.schema.json` is the private benchmark-summary schema.
+- `schemas/summary-v2.schema.json` is the current private benchmark-summary
+  schema. It reuses unchanged closed definitions from the retained historical
+  `summary-v1.schema.json` through an offline schema registry.
 - `fixtures/` contains synthetic validation fixtures, not candidate results.
-- [`docs/architecture/tts-feasibility-profile-v1.md`](../../docs/architecture/tts-feasibility-profile-v1.md)
-  freezes the procedure, gates, listening rubric, and invalidation rules.
+- [`docs/architecture/tts-feasibility-profile-v2.md`](../../docs/architecture/tts-feasibility-profile-v2.md)
+  is the current rerun authority. The superseded `v1` document and fixture
+  remain historical validation evidence only.
 
 Raw measurements, model files, generated audio, listening-session metadata,
 and profiling output belong below `benchmarks/results/raw/`, which is ignored.
@@ -94,7 +97,9 @@ Official execution records bounded content-free nanosecond/sample/resource
 observations under the ignored raw session directory. It does not retain
 waveform samples. A raw session is not a reviewable summary and is never
 eligible for selection until the quality, audit, schema, arithmetic, privacy,
-and gate promotion steps pass. The balanced role additionally fails closed
-unless the measured host exposes reliable process-attributed NVML VRAM.
-NVIDIA's Windows WDDM mode reports that value as unavailable, so whole-device
-usage or zero cannot be substituted.
+and gate promotion steps pass. The balanced role fails closed unless both the
+one-second PID-tagged Windows WDDM dedicated-memory counter and the isolated
+Qwen worker's PyTorch allocator high-water mark are available and positive.
+The authoritative peak is their maximum. RAM remains sampled every 50
+milliseconds; PIDs, counter instances, paths, and unrelated process values
+never enter raw or reviewable output.

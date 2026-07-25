@@ -179,6 +179,7 @@ def _receipt_payload(receipt: PreflightReceipt) -> dict[str, object]:
             "driverVersion": host.driver_version,
             "totalVramBytes": host.total_vram_bytes,
             "freeVramBytes": host.free_vram_bytes,
+            "processVramAvailable": host.process_vram_available,
         },
         "artifacts": [
             {

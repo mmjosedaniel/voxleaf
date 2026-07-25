@@ -157,6 +157,8 @@ def test_qwen_adapter_uses_exact_local_profile_and_discards_waveform(
     torch.__dict__["cuda"] = SimpleNamespace(
         is_available=lambda: True,
         is_bf16_supported=lambda: True,
+        reset_peak_memory_stats=lambda: calls.update(reset_peak_memory_stats=True),
+        max_memory_reserved=lambda: 2_000_000_000,
         empty_cache=lambda: calls.update(empty_cache=True),
     )
     qwen = ModuleType("qwen_tts")
@@ -203,7 +205,9 @@ def test_qwen_adapter_uses_exact_local_profile_and_discards_waveform(
         "speaker": "Aiden",
     }
     assert adapter.cancel("request-1").acknowledged is False
+    assert adapter.framework_memory_high_water_bytes() == 2_000_000_000
     adapter.close()
+    assert calls["reset_peak_memory_stats"] is True
     assert calls["empty_cache"] is True
 
 

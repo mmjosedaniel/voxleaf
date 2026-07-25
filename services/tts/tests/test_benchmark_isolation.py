@@ -26,11 +26,18 @@ def _request(request_id: str = "process-request") -> GenerationRequest:
 
 
 def test_worker_termination_discards_late_output_and_restarts_one_clean_worker() -> None:
+    memory_observations: list[int | None] = []
     adapter = IsolatedBenchmarkAdapter(
-        ProcessFakeFactory(emit_late_chunk=True),
+        ProcessFakeFactory(
+            emit_late_chunk=True,
+            framework_memory_bytes=123_456,
+        ),
         forbidden_values=("Texto sintético privado.",),
+        framework_memory_observer=memory_observations.append,
     )
     adapter.load()
+    assert adapter.framework_memory_high_water_bytes() == 123_456
+    assert memory_observations == [123_456]
     first_pid = adapter.worker_pid
     assert first_pid is not None
 

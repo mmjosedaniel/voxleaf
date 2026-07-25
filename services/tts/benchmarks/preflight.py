@@ -40,6 +40,7 @@ type PreflightFailureCode = Literal[
     "thermal-state",
     "ram-headroom",
     "vram-headroom",
+    "vram-measurement",
     "disk-headroom",
     "provider",
     "host-probe",
@@ -83,6 +84,7 @@ class HostSnapshot:
     driver_version: str
     total_vram_bytes: int | None
     free_vram_bytes: int | None
+    process_vram_available: bool
 
 
 @dataclass(frozen=True)
@@ -177,12 +179,17 @@ def _powershell_host_facts(repository_root: Path) -> Mapping[str, object]:
         "$battery=Get-CimInstance -Namespace root\\wmi -Class BatteryStatus "
         "-ErrorAction SilentlyContinue|Select-Object -First 1;"
         "$power=(powercfg /GETACTIVESCHEME | Out-String).Trim();"
+        "$gpuProcessMemory=Get-Counter "
+        "'\\GPU Process Memory(*)\\Dedicated Usage' "
+        "-ErrorAction SilentlyContinue;"
         "[ordered]@{cpuModel=$cpu.Name;logicalProcessors=$cpu.NumberOfLogicalProcessors;"
         "totalRamBytes=[uint64]$computer.TotalPhysicalMemory;"
         "freeRamBytes=[uint64]$os.FreePhysicalMemory*1KB;"
         "freeDiskBytes=[uint64]$drive.Free;"
         "powerOnline=if($battery){[bool]$battery.PowerOnline}else{$true};"
-        "powerMode=$power}|ConvertTo-Json -Compress"
+        "powerMode=$power;"
+        "processVramAvailable=[bool]($null -ne $gpuProcessMemory)}"
+        "|ConvertTo-Json -Compress"
     )
     try:
         completed = subprocess.run(
@@ -262,6 +269,7 @@ class WindowsHostProbe:
             driver_version=driver,
             total_vram_bytes=total_vram,
             free_vram_bytes=free_vram,
+            process_vram_available=facts.get("processVramAvailable") is True,
         )
 
 
@@ -388,6 +396,8 @@ def run_preflight(
             failures.append("provider")
         if host.free_vram_bytes is None or host.free_vram_bytes < MINIMUM_VRAM_BY_ROLE["balanced"]:
             failures.append("vram-headroom")
+        if not host.process_vram_available:
+            failures.append("vram-measurement")
     elif profile.provider != "onnxruntime-cpu":
         failures.append("provider")
 

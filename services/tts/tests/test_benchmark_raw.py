@@ -56,7 +56,18 @@ def test_raw_journal_writes_only_bounded_content_free_observations(tmp_path: Pat
         "after-first-audio",
         BenchmarkFailure(code="cancellation-failed", request_id="cancel-3"),
     )
-    value.record_memory(MemoryObservation(50, 1_000_000, None, 0))
+    value.record_memory(
+        MemoryObservation(
+            ram_sampling_interval_milliseconds=50,
+            process_vram_sampling_interval_milliseconds=None,
+            vram_measurement_method="unavailable-cpu-role",
+            peak_process_tree_ram_bytes=1_000_000,
+            peak_process_vram_bytes=None,
+            peak_framework_vram_bytes=None,
+            peak_vram_bytes=None,
+            gpu_provider_allocations=0,
+        )
+    )
 
     target = value.write(
         tmp_path / "raw",
@@ -65,6 +76,9 @@ def test_raw_journal_writes_only_bounded_content_free_observations(tmp_path: Pat
     )
     payload = json.loads(target.read_text(encoding="utf-8"))
     assert payload["status"] == "failed"
+    assert payload["rawVersion"] == "tts-feasibility-raw-v2"
+    assert payload["protocolVersion"] == "tts-feasibility-profile-v2"
+    assert payload["memory"]["vramMeasurementMethod"] == "unavailable-cpu-role"
     assert payload["memory"]["peakVramBytes"] is None
     assert payload["cancellationTrials"][1] == {
         "trialId": "after-first-audio",
