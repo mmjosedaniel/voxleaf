@@ -963,11 +963,38 @@ In progress on 2026-07-25.
   process attempted to create the exact Qwen interpreter firewall rule. AC
   sleep was immediately restored to 45 minutes. No pilot, official run, raw
   session, or result was created.
+- After the administrator supplied the exact firewall rule, closing Chrome
+  raised free RAM from 11,785,637,888 bytes to 16,777,011,200 bytes. The clean
+  official Qwen preflight then passed every gate from commit
+  `76f27d1ff41b4d4ea1e20341b9a4cd9d86b3f8ff`, and the disposable pilot passed
+  without retaining a session.
+- The official Qwen `v2` matrix completed from that same clean commit. Its
+  ignored 10,419-byte journal contains five cold loads, 24 warm generations,
+  12 sustained generations, five cancellation trials, the two required VRAM
+  signals, and one fixed failure. It contains zero corpus-text, privacy-canary,
+  private-path, and generated-audio findings.
+- Content-free balanced results were: cold-load p95 `7.2040064` seconds; warm
+  first-produced-audio p95 `69.3758902` seconds; warm 15-seconds-of-media p95
+  `92.8405388` seconds over four reaching outputs; warm shorter-complete p95
+  `11.8831504` seconds over 20 shorter outputs; warm RTF p95
+  `1.44146538043478`; sustained request RTF p95 `1.4419725`; total sustained
+  RTF `1.42426716080402` over `254.72` generated seconds; peak process-tree RAM
+  `2,660,442,112` bytes; peak WDDM process-dedicated VRAM `4,164,468,736`
+  bytes; peak PyTorch allocator-reserved VRAM `4,026,531,840` bytes; and
+  authoritative peak VRAM `4,164,468,736` bytes.
+- Qwen passes cold load, RAM, VRAM, GPU-allocation, and sustained-duration
+  completeness. It fails warm first audio, 15-seconds-of-media production,
+  shorter-complete latency, warm RTF, sustained request RTF, total sustained
+  RTF, zero-failure, and cancellation. `before-dispatch` and
+  `accepted-before-audio` passed by worker termination in `0.3654485` and
+  `0.2840815` seconds. The three mid-generation trials failed because the
+  complete-waveform API exposed no valid cancellation boundary. AC sleep was
+  restored to 45 minutes after the matrix.
 
 #### Status
 
-In progress — prior `v1` CPU evidence retained as historical only; both
-candidates require complete `v2` reruns.
+In progress — the Qwen `v2` matrix is complete and fails the balanced-role
+gates; the complete Supertonic `v2` rerun remains.
 
 ### Task 3.3: Run the blinded Spanish quality evaluation
 
@@ -1488,6 +1515,12 @@ A profile is selectable only when its performance, quality, capability, license,
   and AC sleep was restored to 45 minutes. Closing active user applications is
   a required operator decision because automated termination could discard
   work or terminate the benchmark session.
+- 2026-07-25: Closing Chrome restored sufficient free RAM. The clean Qwen
+  official preflight and disposable pilot passed from commit
+  `76f27d1ff41b4d4ea1e20341b9a4cd9d86b3f8ff`. The complete official matrix
+  then produced valid content-free `v2` evidence and failed the balanced role
+  on startup, throughput, zero-failure, and cancellation gates while remaining
+  below the frozen RAM and VRAM ceilings. No generated audio was retained.
 
 ## Discoveries and decisions
 
@@ -1611,11 +1644,11 @@ Completed before the hardware-attribution blocker on 2026-07-25:
   matching rule remains.
 
 Milestone 3 is not complete. The `v2` authority and Windows/PyTorch
-implementation pass full repository validation, and the exact temporary Qwen
-firewall rule is active. The first clean Qwen preflight is now blocked only by
-the frozen 12-GiB free-RAM headroom gate: the observed 11,785,637,888 bytes
-were 1,099,264,000 bytes short. Both complete candidate reruns remain pending.
-The sequential quality and audit tasks have not started. No model loaded, no
+implementation pass full repository validation. The complete Qwen `v2` matrix
+is valid but fails balanced-role startup, throughput, zero-failure, and
+cancellation gates; its peak RAM and dual-signal VRAM observations pass their
+ceilings. The complete Supertonic `v2` rerun remains pending. The sequential
+quality and audit tasks have not started. No generated audio was retained, no
 summary was promoted, and no profile was selected.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.
