@@ -25,6 +25,7 @@ import { resolvePublicationLocator } from "../locator/locator-resolver.js";
 import {
   narrationPreparationFailure,
   prepareNarrationBatch,
+  type NarrationPreparationResourceObserver,
   validateNarrationPreparationRequest,
 } from "../narration/narration-preparation.js";
 import {
@@ -52,6 +53,7 @@ export interface OpenedPublicationValues {
   readonly navigation: readonly PublicationNavigationNode[];
   readonly locatorIndex: PublicationLocatorIndex;
   readonly targetIndex: PublicationTargetIndex;
+  readonly narrationResourceObserver?: NarrationPreparationResourceObserver;
   readonly narrationYieldScheduler?: NarrationYieldScheduler;
 }
 
@@ -121,6 +123,8 @@ class OpenedPublicationHandle implements OpenedPublication {
   readonly #archive: OpenedEpubArchive;
   readonly #bindingsById: ReadonlyMap<string, RasterImageResourceBinding>;
   readonly #locatorIndex: PublicationLocatorIndex;
+  readonly #narrationResourceObserver:
+    NarrationPreparationResourceObserver | undefined;
   readonly #narrationYieldScheduler: NarrationYieldScheduler;
   readonly #targetIndex: PublicationTargetIndex;
   readonly #closeController = new AbortController();
@@ -145,6 +149,7 @@ class OpenedPublicationHandle implements OpenedPublication {
     this.book = values.book;
     this.documents = Object.freeze([...values.documents]);
     this.#locatorIndex = values.locatorIndex;
+    this.#narrationResourceObserver = values.narrationResourceObserver;
     this.#narrationYieldScheduler =
       values.narrationYieldScheduler ?? DEFAULT_NARRATION_YIELD_SCHEDULER;
     this.#targetIndex = values.targetIndex;
@@ -275,6 +280,7 @@ class OpenedPublicationHandle implements OpenedPublication {
           signal: linkedSignal.signal,
         }),
         this.#narrationYieldScheduler,
+        this.#narrationResourceObserver,
       );
       if (
         (this.#closed || linkedSignal.signal.aborted) &&

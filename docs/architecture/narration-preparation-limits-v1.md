@@ -19,11 +19,14 @@ plus the 17-entry retained-segment, 8,832-code-point retained narration,
 26,624-byte retained narration, 4,096-unit temporary-index, work-checkpoint,
 yield, and cancellation ceilings through a package-internal block-local
 packer. Task 4.4 converts the already-bounded retained output into at most 17
-  canonical locator-linked prepared segments plus one exact source continuation
-  only after all ranges and aggregate measurements validate. Task 5.1
-  production-enforces the public 1-16 segment request, 8,192-code-point,
-  24,576-byte, and 64-sentence batch ceilings and exposes only frozen closed
-  results through `OpenedPublication.prepareNarration`.
+canonical locator-linked prepared segments plus one exact source continuation
+only after all ranges and aggregate measurements validate. Task 5.1
+production-enforces the public 1-16 segment request, 8,192-code-point,
+24,576-byte, and 64-sentence batch ceilings and exposes only frozen closed
+results through `OpenedPublication.prepareNarration`. Task 5.3 caps each
+internal pack operation by the remaining aggregate retention capacity and adds
+numeric-only observation evidence for one active request, one result, retained
+source events/tokens, prepared segments, narration code points, and UTF-8 bytes.
 
 The exact test authority is
 [`packages/epub/test-support/narration-preparation-limits.ts`](../../packages/epub/test-support/narration-preparation-limits.ts).
@@ -176,9 +179,13 @@ same controller while validating scans, building bounded prefix/safety indexes,
 selecting fallbacks, and copying retained narration text; cancellation before
 or after an injected yield publishes no packed block. Task 4.4 finalizes that
 bounded output synchronously and publishes no partial prepared result when any
-  source identity, range, measurement, or aggregate invariant fails. Task 5.1
-  retains the production policy constants package-internally while enforcing
-  the final public request/result and batch profile boundary.
+source identity, range, measurement, or aggregate invariant fails. Task 5.1
+retains the production policy constants package-internally while enforcing the
+final public request/result and batch profile boundary. Task 5.3 proves the
+controller's exact 512-unit checkpoint and 4,096-unit yield cadence through
+8,192 observations without reading time. It also proves exact 8,192-code-point
+and 24,576-byte public batches plus one hard-sized lookahead remain within the
+8,832-code-point and 26,624-byte aggregate retention ceilings.
 
 ## Synthetic evidence
 
@@ -207,6 +214,13 @@ max-plus-one value returns the same frozen content-free result, repeated
 evidence runs produce identical narration bytes and source ranges, malformed
 measurements are not coerced, and a 300-code-point astral sample has 600 UTF-16
 code units and 1,200 UTF-8 bytes without changing its code-point admission.
+Task 5.3 adds public-coordinator high-water evidence over exact aggregate
+code-point/byte cases and 96 synthetic 400-code-point paragraphs processed in
+12 eight-segment requests. Only the current bounded result and numeric totals
+are retained between requests. Caller cancellation and publication close
+during an injected yield publish no result snapshot; retry after caller
+cancellation succeeds. These are deterministic structural assertions, not
+wall-clock or hardware claims.
 
 ## Deferred decisions
 

@@ -24,6 +24,7 @@ import { resolvePublicationLocator } from "../locator/locator-resolver.js";
 import { createEpubProcessingBudget } from "../security/processing-budget.js";
 import {
   NARRATION_V1_BATCH_POLICY,
+  NARRATION_V1_SEGMENT_POLICY,
   NARRATION_V1_SOURCE_WINDOW_POLICY,
 } from "./narration-policy.js";
 import {
@@ -53,6 +54,28 @@ interface MutablePreparationMeasurements {
   checkpointCount: number;
   sourceCodePointsInspected: number;
 }
+
+interface MutableCandidateBatch {
+  readonly segments: PreparedNarrationSegment[];
+  lookahead?: PreparedNarrationSegment;
+  narrationCodePoints: number;
+  narrationUtf8Bytes: number;
+  sentenceCount: number;
+}
+
+export interface NarrationPreparationResourceSnapshot {
+  readonly activeRequestCount: Index;
+  readonly retainedResultCount: Index;
+  readonly retainedSourceEventCount: Index;
+  readonly retainedSourceTokenCount: Index;
+  readonly retainedPreparedSegmentCount: Index;
+  readonly retainedNarrationCodePoints: Index;
+  readonly retainedNarrationUtf8Bytes: Index;
+}
+
+export type NarrationPreparationResourceObserver = (
+  snapshot: NarrationPreparationResourceSnapshot,
+) => void;
 
 const REQUEST_KEYS = new Set([
   "defaultLanguage",
@@ -88,6 +111,126 @@ function indexFrom(value: number): Index {
 function addSafe(left: number, right: number): number {
   const result = left + right;
   return Number.isSafeInteger(result) ? result : fail();
+}
+
+function retainedCandidateMeasurements(batch: MutableCandidateBatch): Readonly<{
+  narrationCodePoints: number;
+  narrationUtf8Bytes: number;
+  segmentCount: number;
+}> {
+  const lookahead = batch.lookahead;
+  return Object.freeze({
+    narrationCodePoints: addSafe(
+      batch.narrationCodePoints,
+      lookahead?.measurements.narrationCodePoints ?? 0,
+    ),
+    narrationUtf8Bytes: addSafe(
+      batch.narrationUtf8Bytes,
+      lookahead?.measurements.narrationUtf8Bytes ?? 0,
+    ),
+    segmentCount: batch.segments.length + (lookahead === undefined ? 0 : 1),
+  });
+}
+
+function assertRetainedCandidateBounds(
+  batch: MutableCandidateBatch,
+  pending?: PreparedNarrationBlock,
+): void {
+  const retained = retainedCandidateMeasurements(batch);
+  const segmentCount = addSafe(
+    retained.segmentCount,
+    pending?.segments.length ?? 0,
+  );
+  const narrationCodePoints = addSafe(
+    retained.narrationCodePoints,
+    pending?.measurements.narrationCodePoints ?? 0,
+  );
+  const narrationUtf8Bytes = addSafe(
+    retained.narrationUtf8Bytes,
+    pending?.measurements.narrationUtf8Bytes ?? 0,
+  );
+  if (
+    segmentCount >
+      NARRATION_V1_SEGMENT_POLICY.retainedSegmentEntriesHardMaximum ||
+    narrationCodePoints >
+      NARRATION_V1_SEGMENT_POLICY.retainedNarrationCodePointsHardMaximum ||
+    narrationUtf8Bytes >
+      NARRATION_V1_SEGMENT_POLICY.retainedNarrationUtf8BytesHardMaximum
+  ) {
+    return fail("resource-limit-exceeded");
+  }
+}
+
+function retainCandidate(
+  batch: MutableCandidateBatch,
+  segment: PreparedNarrationSegment,
+  maximumSegments: number,
+): "lookahead" | "returned" {
+  if (batch.lookahead !== undefined) {
+    return fail();
+  }
+  const narrationCodePoints = addSafe(
+    batch.narrationCodePoints,
+    segment.measurements.narrationCodePoints,
+  );
+  const narrationUtf8Bytes = addSafe(
+    batch.narrationUtf8Bytes,
+    segment.measurements.narrationUtf8Bytes,
+  );
+  const sentenceCount = addSafe(
+    batch.sentenceCount,
+    segment.measurements.sentenceCount,
+  );
+  if (
+    batch.segments.length >= maximumSegments ||
+    narrationCodePoints >
+      NARRATION_V1_BATCH_POLICY.narrationCodePointsHardMaximum ||
+    narrationUtf8Bytes >
+      NARRATION_V1_BATCH_POLICY.narrationUtf8BytesHardMaximum ||
+    sentenceCount > NARRATION_V1_BATCH_POLICY.sentencesHardMaximum
+  ) {
+    batch.lookahead = segment;
+    assertRetainedCandidateBounds(batch);
+    return "lookahead";
+  }
+  batch.segments.push(segment);
+  batch.narrationCodePoints = narrationCodePoints;
+  batch.narrationUtf8Bytes = narrationUtf8Bytes;
+  batch.sentenceCount = sentenceCount;
+  assertRetainedCandidateBounds(batch);
+  return "returned";
+}
+
+function observeResourceSnapshot(
+  observer: NarrationPreparationResourceObserver | undefined,
+  values: Readonly<{
+    activeRequestCount: number;
+    retainedResultCount: number;
+    retainedSourceEventCount: number;
+    retainedSourceTokenCount: number;
+    retainedPreparedSegmentCount: number;
+    retainedNarrationCodePoints: number;
+    retainedNarrationUtf8Bytes: number;
+  }>,
+): void {
+  if (observer === undefined) {
+    return;
+  }
+  observer(
+    Object.freeze({
+      activeRequestCount: indexFrom(values.activeRequestCount),
+      retainedResultCount: indexFrom(values.retainedResultCount),
+      retainedSourceEventCount: indexFrom(values.retainedSourceEventCount),
+      retainedSourceTokenCount: indexFrom(values.retainedSourceTokenCount),
+      retainedPreparedSegmentCount: indexFrom(
+        values.retainedPreparedSegmentCount,
+      ),
+      retainedNarrationCodePoints: indexFrom(
+        values.retainedNarrationCodePoints,
+      ),
+      retainedNarrationUtf8Bytes: indexFrom(values.retainedNarrationUtf8Bytes),
+    }),
+  );
 }
 
 function isAbortSignal(value: unknown): value is AbortSignal {
@@ -405,6 +548,7 @@ export async function prepareNarrationBatch(
   locatorIndex: PublicationLocatorIndex,
   request: ValidatedNarrationPreparationRequest,
   scheduler: NarrationYieldScheduler,
+  resourceObserver?: NarrationPreparationResourceObserver,
 ): Promise<NarrationPreparationResult> {
   try {
     const signal = request.signal ?? new AbortController().signal;
@@ -422,14 +566,19 @@ export async function prepareNarrationBatch(
       canonicalLocator.textOffsetCodePoints < targetBlock.textLengthCodePoints
         ? createBlockLocatorAtOffset(targetBlock, 0)
         : canonicalLocator;
-    const candidates: PreparedNarrationSegment[] = [];
+    const candidates: MutableCandidateBatch = {
+      segments: [],
+      narrationCodePoints: 0,
+      narrationUtf8Bytes: 0,
+      sentenceCount: 0,
+    };
     const operation: MutablePreparationMeasurements = {
       checkpointCount: 0,
       sourceCodePointsInspected: 0,
     };
     let sourceComplete = false;
 
-    while (candidates.length <= request.maximumSegments && !sourceComplete) {
+    while (candidates.lookahead === undefined && !sourceComplete) {
       const window = await prepareNarrationSourceWindow(
         locatorIndex,
         Object.freeze({ startLocator: cursor, signal }),
@@ -443,6 +592,28 @@ export async function prepareNarrationBatch(
         window.measurements.sourceCodePointsInspected,
         window.measurements.checkpointCount,
       );
+      let retainedSourceTokenCount = 0;
+      for (const event of window.events) {
+        if (event.kind === "leaf") {
+          retainedSourceTokenCount = addSafe(
+            retainedSourceTokenCount,
+            event.sourceTokens.length,
+          );
+        }
+      }
+      observeResourceSnapshot(resourceObserver, {
+        activeRequestCount: 1,
+        retainedResultCount: 0,
+        retainedSourceEventCount: window.events.length,
+        retainedSourceTokenCount,
+        retainedPreparedSegmentCount:
+          candidates.segments.length +
+          (candidates.lookahead === undefined ? 0 : 1),
+        retainedNarrationCodePoints:
+          retainedCandidateMeasurements(candidates).narrationCodePoints,
+        retainedNarrationUtf8Bytes:
+          retainedCandidateMeasurements(candidates).narrationUtf8Bytes,
+      });
 
       let nextCursor: ReadingLocatorV1 | undefined;
       let requiresAnotherWindow = false;
@@ -452,29 +623,71 @@ export async function prepareNarrationBatch(
         }
         let leaf = tokenLeafFromWindow(event);
         while (true) {
+          const retained = retainedCandidateMeasurements(candidates);
+          const remainingSegmentEntries =
+            NARRATION_V1_SEGMENT_POLICY.retainedSegmentEntriesHardMaximum -
+            retained.segmentCount;
+          const remainingNarrationCodePoints =
+            NARRATION_V1_SEGMENT_POLICY.retainedNarrationCodePointsHardMaximum -
+            retained.narrationCodePoints;
+          const remainingNarrationUtf8Bytes =
+            NARRATION_V1_SEGMENT_POLICY.retainedNarrationUtf8BytesHardMaximum -
+            retained.narrationUtf8Bytes;
+          if (
+            remainingSegmentEntries <= 0 ||
+            remainingNarrationCodePoints <
+              NARRATION_V1_SEGMENT_POLICY.narrationCodePointsHardMaximum ||
+            remainingNarrationUtf8Bytes <
+              NARRATION_V1_SEGMENT_POLICY.narrationUtf8BytesHardMaximum
+          ) {
+            return narrationPreparationFailure("resource-limit-exceeded");
+          }
           const prepared = await prepareNarrationSourceLeaf(
             leaf,
             request.defaultLanguage,
-            Object.freeze({ signal, scheduler }),
+            Object.freeze({
+              maximumSegments: remainingSegmentEntries,
+              retainedNarrationCodePointsMaximum: remainingNarrationCodePoints,
+              retainedNarrationUtf8BytesMaximum: remainingNarrationUtf8Bytes,
+              signal,
+              scheduler,
+            }),
           );
           operation.checkpointCount = addSafe(
             operation.checkpointCount,
             prepared.measurements.checkpointCount,
           );
+          assertRetainedCandidateBounds(candidates, prepared);
+          observeResourceSnapshot(resourceObserver, {
+            activeRequestCount: 1,
+            retainedResultCount: 0,
+            retainedSourceEventCount: window.events.length,
+            retainedSourceTokenCount,
+            retainedPreparedSegmentCount:
+              retained.segmentCount + prepared.segments.length,
+            retainedNarrationCodePoints: addSafe(
+              retained.narrationCodePoints,
+              prepared.measurements.narrationCodePoints,
+            ),
+            retainedNarrationUtf8Bytes: addSafe(
+              retained.narrationUtf8Bytes,
+              prepared.measurements.narrationUtf8Bytes,
+            ),
+          });
           const stable = stableSegments(leaf, prepared);
           for (const segment of stable) {
-            if (
-              segmentIsAtOrAfterStart(segment, canonicalLocator) &&
-              candidates.length <= request.maximumSegments
-            ) {
-              candidates.push(segment);
+            if (!segmentIsAtOrAfterStart(segment, canonicalLocator)) {
+              continue;
             }
-            if (candidates.length > request.maximumSegments) {
+            if (
+              retainCandidate(candidates, segment, request.maximumSegments) ===
+              "lookahead"
+            ) {
               break;
             }
           }
           nextCursor = nextLeafStart(leaf, prepared, stable);
-          if (candidates.length > request.maximumSegments) {
+          if (candidates.lookahead !== undefined) {
             break;
           }
           if (!prepared.complete) {
@@ -492,15 +705,12 @@ export async function prepareNarrationBatch(
           }
           break;
         }
-        if (
-          candidates.length > request.maximumSegments ||
-          requiresAnotherWindow
-        ) {
+        if (candidates.lookahead !== undefined || requiresAnotherWindow) {
           break;
         }
       }
 
-      if (candidates.length > request.maximumSegments) {
+      if (candidates.lookahead !== undefined) {
         break;
       }
       if (window.status === "complete" && !requiresAnotherWindow) {
@@ -519,30 +729,50 @@ export async function prepareNarrationBatch(
       cursor = continuation;
     }
 
-    const returned = Object.freeze(
-      candidates.slice(0, request.maximumSegments),
-    );
+    const returned = Object.freeze([...candidates.segments]);
     const start = createStart(resolution, returned);
     const measurements = batchMeasurements(returned, operation);
-    if (!sourceComplete || candidates.length > request.maximumSegments) {
+    if (!sourceComplete || candidates.lookahead !== undefined) {
       const finalSegment = returned[returned.length - 1];
       if (finalSegment === undefined) {
         return narrationPreparationFailure("resource-limit-exceeded");
       }
-      return Object.freeze({
+      const result = Object.freeze({
         status: "batch",
         start,
         segments: returned,
         continuation: finalSegment.sourceRange.end,
         measurements,
       });
+      const retained = retainedCandidateMeasurements(candidates);
+      observeResourceSnapshot(resourceObserver, {
+        activeRequestCount: 1,
+        retainedResultCount: 1,
+        retainedSourceEventCount: 0,
+        retainedSourceTokenCount: 0,
+        retainedPreparedSegmentCount: retained.segmentCount,
+        retainedNarrationCodePoints: retained.narrationCodePoints,
+        retainedNarrationUtf8Bytes: retained.narrationUtf8Bytes,
+      });
+      return result;
     }
-    return Object.freeze({
+    const result = Object.freeze({
       status: "complete",
       start,
       segments: returned,
       measurements,
     });
+    const retained = retainedCandidateMeasurements(candidates);
+    observeResourceSnapshot(resourceObserver, {
+      activeRequestCount: 1,
+      retainedResultCount: 1,
+      retainedSourceEventCount: 0,
+      retainedSourceTokenCount: 0,
+      retainedPreparedSegmentCount: retained.segmentCount,
+      retainedNarrationCodePoints: retained.narrationCodePoints,
+      retainedNarrationUtf8Bytes: retained.narrationUtf8Bytes,
+    });
+    return result;
   } catch (error: unknown) {
     return mapThrownFailure(error);
   }

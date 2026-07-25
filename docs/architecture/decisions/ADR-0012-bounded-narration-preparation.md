@@ -74,8 +74,10 @@ Task 5.2 adds a dedicated provenance-labeled, repository-authored three-spine
 neutral/Spanish EPUB and proves the public root opener-to-segment matrix across
 representative semantics, exact/recovered starts, continuation, structural
 gaps, spine transitions, source immutability, shared-contract wrapping, image
-omission/read isolation, and zero external capability use. Task 5.3 still owns
-the deterministic resource proof.
+omission/read isolation, and zero external capability use. Task 5.3 proves the
+accepted exact deterministic work cadence, independent batch totals,
+one-lookahead aggregate retention, repeated bounded continuation, and
+no-result cancellation/close behavior through numeric-only package evidence.
 
 ## Context
 
@@ -315,12 +317,12 @@ Failure results contain no segment, narration text, partial measurements,
 canonical locator, rejected value, exception, stack, or dependency message.
 Their operational-error mappings are:
 
-| Detail | `OperationalErrorV1` code |
+| Detail                                        | `OperationalErrorV1` code |
 | --------------------------------------------- | ------------------------- |
-| `cancelled` | `operation-cancelled` |
-| `invalid-request`, `invalid-start` | `invalid-input` |
-| `operation-active`, `resource-limit-exceeded` | `resource-exhausted` |
-| `internal-failure` | `internal-failure` |
+| `cancelled`                                   | `operation-cancelled`     |
+| `invalid-request`, `invalid-start`            | `invalid-input`           |
+| `operation-active`, `resource-limit-exceeded` | `resource-exhausted`      |
+| `internal-failure`                            | `internal-failure`        |
 
 A malformed locator, wrong-book locator, or publication without an addressable
 source position is `invalid-start`. Structurally recoverable spine, anchor, or
@@ -494,8 +496,10 @@ Those decisions remain with roadmap Milestones 6 through 9.
   Task 5.1 adds the accepted public operation, containing-segment relation,
   final batch continuation, independent batch ceilings, closed result mapping,
   and publication-owned cancellation/concurrency/close integration. The
-  Task 5.2 adds the broader public integration matrix; the deterministic
-  exact-bound proof remains Task 5.3.
+  Task 5.2 adds the broader public integration matrix. Task 5.3 caps internal
+  prepared output by remaining aggregate retention capacity and adds
+  numeric-only exact-bound, repeated-batch, cancellation, close, and privacy
+  evidence without a wall-clock or hardware gate.
 
 ## Alternatives considered
 
