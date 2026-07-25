@@ -1083,12 +1083,26 @@ In progress on 2026-07-25.
   tests, 20 desktop files/204 tests, six native WebDriver-client tests, all 49
   Python tests, Cargo tests, package/desktop release builds, and Python
   distributions. The existing Vite chunk-size advisory remains informational.
+- From clean implementation commit
+  `8251945566dd64037b47a335bceb58e7e0d49548`, session
+  `f85c4201a73441b6ae1cb0058aeb8ba6` generated all 12 Qwen and all 12
+  Supertonic listening samples under the exact verified candidate
+  interpreters and temporary application-scoped outbound blocks. Finalization
+  emitted one independently randomized evaluator page and marked the session
+  ineligible for promotion because the evaluator count is one.
+- The finalized session contains exactly 24 WAV files and no staging
+  directory, occupies 17,336,186 bytes against the 512 MiB cap, and its
+  evaluator page contains no candidate IDs, corpus text, privacy canary, or
+  private path. The temporary firewall rule is absent and AC sleep is restored
+  to 45 minutes. The ignored audio remains only until the maintainer submits
+  the blinded scorecard, after which aggregation and mandatory cleanup remain.
 
 #### Status
 
-In progress — implementation and deterministic validation are complete; create
-the one-evaluator limited session from a clean commit, collect the blinded
-scorecard, record the aggregate limitation, and delete every generated WAV.
+In progress — implementation, deterministic validation, exact candidate
+generation, blinding, and session audits are complete. Manual scoring by the
+one available fluent-Spanish evaluator, limited aggregation, and verified
+deletion of every generated WAV remain.
 
 ### Task 3.4: Audit licensing, offline behavior, and packaging risk
 
@@ -1599,6 +1613,16 @@ A profile is selectable only when its performance, quality, capability, license,
   generation, blinding, scoring, aggregation, and cleanup workflow now passes
   49 model-free Python tests, Ruff, strict mypy, and the complete native root
   check; no listening audio has yet been generated.
+- 2026-07-25: The clean one-evaluator quality session
+  `f85c4201a73441b6ae1cb0058aeb8ba6` generated all 12 samples for each
+  admitted candidate from commit
+  `8251945566dd64037b47a335bceb58e7e0d49548`. Finalization produced one
+  blinded, independently randomized 24-sample page and correctly marked it
+  non-promotable. The session is 17,336,186 bytes, has no staging residue, and
+  its page contains no candidate identity, corpus text, canary, or private
+  path. The temporary firewall rule was removed and AC sleep restored to 45
+  minutes. Manual scoring, limited aggregation, and verified audio cleanup
+  remain.
 
 ## Discoveries and decisions
 
@@ -1729,9 +1753,11 @@ ceilings. The complete Supertonic `v2` matrix is also valid and fails
 compatibility first-audio, zero-failure, and cancellation gates while passing
 its other numeric gates. The sequential quality and audit tasks have not
 completed: the explicit quality workflow is implemented but its approved
-single-evaluator run remains limited and non-promotable under the frozen
-three-evaluator schema, and the audit has not started. No generated audio is
-currently retained, the temporary firewall rule is absent, AC sleep is
-restored to 45 minutes, no summary was promoted, and no profile was selected.
+single-evaluator session awaits manual scoring and will remain limited and
+non-promotable under the frozen three-evaluator schema, and the audit has not
+started. The 24 generated listening files are retained only in their ignored
+bounded session pending scoring and mandatory cleanup; the temporary firewall
+rule is absent, AC sleep is restored to 45 minutes, no summary was promoted,
+and no profile was selected.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.
