@@ -186,6 +186,143 @@ The Tauri build produces the React frontend and a release-mode Windows executabl
 
 The root `check` command does not start the development server. The development server runs only when explicitly requested with the focused `dev` command above.
 
+## Local TTS feasibility preflight
+
+Milestone 6's hardware benchmark is explicit, manual, native-Windows work. It
+is excluded from root checks and CI and does not make either candidate a
+production dependency. First create the selected candidate environment from
+its checked-in lock and acquire the exact manifest revision into an ignored
+local model directory. Acquisition is a separate networked operation.
+
+The official measurement worker must have outbound networking blocked at the
+operating-system boundary. From an administrator PowerShell terminal, create
+one application-scoped rule for the exact candidate interpreter:
+
+```powershell
+$candidatePython = (Resolve-Path "services/tts/benchmarks/candidates/<candidate>/.venv/Scripts/python.exe").Path
+New-NetFirewallRule -DisplayName "VoxLeaf TTS Benchmark Offline" -Direction Outbound -Action Block -Program $candidatePython -Profile Any
+```
+
+The preflight queries that exact enabled rule. An offline environment variable
+or a caller-supplied boolean is not accepted as network-isolation proof.
+Remove the rule after all official work with:
+
+```powershell
+Remove-NetFirewallRule -DisplayName "VoxLeaf TTS Benchmark Offline"
+```
+
+Pass private local paths through standard input, never command-line arguments,
+environment values, or a tracked configuration file. The closed input also
+requires the manifest's exact candidate, revision, voice, provider, and
+precision:
+
+```powershell
+$preflight = @{
+  candidateId = "<manifest-candidate-id>"
+  artifactRoot = "<absolute-verified-local-artifact-root>"
+  candidatePython = $candidatePython
+  modelRevision = "<manifest-model-revision>"
+  voiceId = "<manifest-voice-id>"
+  provider = "<pytorch-cuda-or-onnxruntime-cpu>"
+  precision = "<bfloat16-or-float32>"
+  offline = $true
+  expectedCommitSha = (git rev-parse HEAD)
+  purpose = "official"
+  sleepDisabled = $true
+  backgroundLoadAcceptable = $true
+  thermalStateAcceptable = $true
+} | ConvertTo-Json -Compress
+$preflight | pnpm.cmd benchmark:tts:preflight
+```
+
+After a passing preflight, use the same closed payload with `purpose = "pilot"`
+for one disposable load/generation/cleanup smoke:
+
+```powershell
+$preflight | pnpm.cmd benchmark:tts:measure
+```
+
+The pilot emits no comparable measurements and creates no raw session. Change
+the purpose to `official` only from a clean committed revision after the pilot
+passes. The official command repeats preflight in both the root supervisor and
+the exact candidate interpreter, runs the frozen protocol, and writes one
+bounded content-free raw journal below the ignored
+`benchmarks/results/raw/<candidate-id>/<session-id>/` directory. It never
+writes waveform samples. The returned session ID is content-free; the raw
+journal remains non-promotable until the later quality and audit fields are
+complete and the allowlisted summary passes validation.
+
+The command fails closed on a dirty or different revision, wrong platform or
+Python, missing environment, wrong artifact hash, missing offline controls,
+missing firewall rule, battery power, insufficient RAM/VRAM/disk, unavailable
+WDDM per-process dedicated-memory counters for the balanced role, or
+unconfirmed sleep/background/thermal conditions. Its JSON output is
+content-free and contains no hostname, account, serial, UUID, private path,
+environment value, process command line, text, or audio. A `pilot` purpose may
+exercise setup but is never eligible for official promotion.
+
+### Disposable TTS listening session
+
+The manual quality workflow is also excluded from CI. It is the only Milestone
+6 command allowed to persist generated audio, requires explicit
+`qualityOptIn = $true`, and writes only to a caller-known ignored session. Use
+the same 32-character session ID for both candidates:
+
+```powershell
+$sessionId = [Guid]::NewGuid().ToString("N")
+$qualityPayload = $candidatePreflight | ConvertFrom-Json
+$qualityPayload | Add-Member -NotePropertyName qualityOptIn -NotePropertyValue $true
+$qualityPayload | Add-Member -NotePropertyName sessionId -NotePropertyValue $sessionId
+$qualityPayload | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:quality:generate
+```
+
+`$candidatePreflight` is the passing `purpose = "official"` payload above.
+Run generation once per candidate, switching the exact firewall rule between
+interpreters while retaining the same session ID. Generation removes the
+whole session on failure. When both commands report
+`readyForFinalization: true`, create the blinded pages:
+
+```powershell
+@{
+  qualityOptIn = $true
+  sessionId = $sessionId
+  evaluatorCount = 1
+} | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:quality:finalize
+```
+
+Open the generated `evaluator-01.html` below the ignored session, complete
+every score, and use its export button. Submit the downloaded JSON as a nested
+object, then aggregate:
+
+```powershell
+$scorecard = Get-Content -Raw "<downloaded-scorecard>" | ConvertFrom-Json
+@{
+  qualityOptIn = $true
+  sessionId = $sessionId
+  scorecard = $scorecard
+} | ConvertTo-Json -Depth 20 -Compress | pnpm.cmd benchmark:tts:quality:submit
+
+@{
+  qualityOptIn = $true
+  sessionId = $sessionId
+} | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:quality:aggregate
+```
+
+One evaluator produces explicitly limited evidence and remains ineligible for
+the frozen summary schema, which requires at least three independently
+randomized fluent-Spanish evaluators. After recording the content-free
+aggregate, remove the exact session and every generated WAV:
+
+```powershell
+@{
+  qualityOptIn = $true
+  sessionId = $sessionId
+} | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:quality:cleanup
+```
+
+The detailed storage, blinding, bounds, and privacy rules are documented in
+the [benchmark README](../../benchmarks/tts/README.md#disposable-blinded-quality-session).
+
 ## Continuous integration
 
 The `Foundation checks` workflow runs on pushes to `main` and `agent/**`, pull requests targeting `main`, and manual dispatches. `Windows native foundation` explicitly installs the pinned Playwright Chromium, runs `pnpm.cmd test:browser`, runs authoritative `pnpm.cmd check`, and then runs `pnpm.cmd test:native-startup` against packaged WebView2; `Ubuntu portable foundation` runs the deliberately narrower `pnpm check:portable`. Both install package dependencies from committed lockfiles. The Windows job does not restore a browser cache, so browser network activity is confined to its named installation step. See [`testing.md`](testing.md) for the exact coverage distinction.

@@ -44,13 +44,13 @@ from benchmarks.summary import (
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v1.json"
-SCHEMA_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "schemas" / "summary-v1.schema.json"
+SCHEMA_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "schemas" / "summary-v2.schema.json"
 
 
 def fixture_metadata() -> SummaryMetadata:
     return SummaryMetadata(
         report_purpose="schema-validation-fixture",
-        protocol_version="tts-feasibility-profile-v1",
+        protocol_version="tts-feasibility-profile-v2",
         corpus_version="tts-synthetic-corpus-v1",
         candidate_manifest_version="tts-candidate-manifest-v1",
         role="compatibility",
@@ -156,6 +156,29 @@ def test_exact_metric_arithmetic_and_nearest_rank_are_stable() -> None:
     assert nearest_rank((5.0, 1.0, 3.0, 2.0, 4.0), 0.50) == 3
     assert nearest_rank((5.0, 1.0, 3.0, 2.0, 4.0), 0.95) == 5
     assert distribution((5.0, 1.0, 3.0, 2.0, 4.0)).maximum == 5
+
+
+def test_pilot_exercises_one_generation_without_producing_comparable_results() -> None:
+    corpus = load_corpus(CORPUS_PATH)
+    clock = FakeNanosecondClock()
+    adapter: DeterministicFakeAdapter | None = None
+
+    def factory() -> DeterministicFakeAdapter:
+        nonlocal adapter
+        adapter = DeterministicFakeAdapter(clock)
+        return adapter
+
+    failure = BenchmarkHarness(
+        clock=clock,
+        memory_probe=FakeMemoryProbe(),
+    ).run_pilot(
+        adapter_factory=factory,
+        corpus=corpus,
+    )
+    assert failure is None
+    assert adapter is not None
+    assert adapter.closed is True
+    assert adapter.active_request_ids == set()
 
 
 def test_fake_runs_complete_frozen_protocol_and_promotes_content_free_summary() -> None:

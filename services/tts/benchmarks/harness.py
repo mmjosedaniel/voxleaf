@@ -16,6 +16,7 @@ from benchmarks.contracts import (
     BenchmarkAdapter,
     BenchmarkCorpus,
     BenchmarkFailure,
+    BenchmarkObservationSink,
     BenchmarkRun,
     BenchmarkRunResult,
     CancellationObservation,
@@ -27,6 +28,7 @@ from benchmarks.contracts import (
     GenerationObservation,
     GenerationRequest,
     LoadObservation,
+    MemoryObservation,
     MemoryProbe,
     NanosecondClock,
     SampleFormat,
@@ -41,6 +43,7 @@ MAX_SAMPLE_RATE_HZ: Final = 192_000
 MAX_CHANNELS: Final = 8
 LOAD_TIMEOUT_NS: Final = 120_000_000_000
 REQUEST_TIMEOUT_NS: Final = 120_000_000_000
+SUSTAINED_TIMEOUT_NS: Final = 900_000_000_000
 CANCELLATION_TIMEOUT_NS: Final = 500_000_000
 WORKER_TERMINATION_TIMEOUT_NS: Final = 2_000_000_000
 CLEANUP_TIMEOUT_NS: Final = 5_000_000_000
@@ -58,6 +61,30 @@ CANCELLATION_TRIAL_ORDER: Final[tuple[CancellationTrialId, ...]] = (
 class SystemNanosecondClock:
     def now_ns(self) -> int:
         return time.perf_counter_ns()
+
+
+class _NullObservationSink:
+    def record_load(self, observation: LoadObservation) -> None:
+        del observation
+
+    def record_generation(self, observation: GenerationObservation) -> None:
+        del observation
+
+    def record_cancellation(self, observation: CancellationObservation) -> None:
+        del observation
+
+    def record_cancellation_failure(
+        self,
+        trial_id: CancellationTrialId,
+        failure: BenchmarkFailure,
+    ) -> None:
+        del trial_id, failure
+
+    def record_memory(self, observation: MemoryObservation) -> None:
+        del observation
+
+    def record_failure(self, failure: BenchmarkFailure) -> None:
+        del failure
 
 
 class _HarnessFailure(RuntimeError):
@@ -172,9 +199,59 @@ class BenchmarkHarness:
         *,
         clock: NanosecondClock,
         memory_probe: MemoryProbe,
+        observation_sink: BenchmarkObservationSink | None = None,
     ) -> None:
         self._clock = clock
         self._memory_probe = memory_probe
+        self._observation_sink = observation_sink or _NullObservationSink()
+
+    def run_pilot(
+        self,
+        *,
+        adapter_factory: AdapterFactory,
+        corpus: BenchmarkCorpus,
+    ) -> BenchmarkFailure | None:
+        """Exercise one non-comparable load/generation/cleanup path."""
+
+        forbidden_values = _forbidden_values(corpus)
+        adapter: BenchmarkAdapter | None = None
+        try:
+            adapter = adapter_factory()
+            self._load(
+                adapter,
+                forbidden_values=forbidden_values,
+                request_id="pilot-load",
+            )
+            case = corpus.cases[corpus.performance_order[0]]
+            self.observe_generation(
+                adapter,
+                GenerationRequest(
+                    request_id="pilot-generation",
+                    case_id=case.case_id,
+                    phase="warm",
+                    text=case.text,
+                    language=case.language,
+                ),
+                forbidden_values=forbidden_values,
+            )
+            self._close(
+                adapter,
+                forbidden_values=forbidden_values,
+                request_id="pilot-close",
+            )
+            adapter = None
+            return None
+        except _HarnessFailure as failure:
+            return BenchmarkFailure(
+                code=failure.code,
+                request_id=failure.request_id,
+            )
+        except Exception:
+            return BenchmarkFailure(code="crash", request_id="pilot")
+        finally:
+            if adapter is not None:
+                with suppress(Exception):
+                    adapter.close()
 
     def _load(
         self,
@@ -492,17 +569,20 @@ class BenchmarkHarness:
                     forbidden_values=forbidden_values,
                     request_id=f"cold-{index}",
                 )
-                load_observations.append(
-                    LoadObservation(
-                        observation_index=index,
-                        load_ns=load_ns,
-                        cleanup_ns=cleanup_ns,
-                    )
+                load_observation = LoadObservation(
+                    observation_index=index,
+                    load_ns=load_ns,
+                    cleanup_ns=cleanup_ns,
                 )
+                load_observations.append(load_observation)
+                self._observation_sink.record_load(load_observation)
 
             main_adapter = adapter_factory()
             capabilities = main_adapter.capabilities()
-            self._memory_probe.start()
+            try:
+                self._memory_probe.start()
+            except Exception:
+                _fail("measurement-unavailable", "memory")
             memory_started = True
             self._load(
                 main_adapter,
@@ -526,26 +606,27 @@ class BenchmarkHarness:
             for pass_index in range(2):
                 for case_id in corpus.performance_order:
                     case = corpus.cases[case_id]
-                    generation_observations.append(
-                        self.observe_generation(
-                            main_adapter,
-                            GenerationRequest(
-                                request_id=f"warm-{pass_index + 1}-{case.case_id}",
-                                case_id=case.case_id,
-                                phase="warm",
-                                text=case.text,
-                                language=case.language,
-                            ),
-                            forbidden_values=forbidden_values,
-                        )
+                    generation_observation = self.observe_generation(
+                        main_adapter,
+                        GenerationRequest(
+                            request_id=f"warm-{pass_index + 1}-{case.case_id}",
+                            case_id=case.case_id,
+                            phase="warm",
+                            text=case.text,
+                            language=case.language,
+                        ),
+                        forbidden_values=forbidden_values,
                     )
+                    generation_observations.append(generation_observation)
+                    self._observation_sink.record_generation(generation_observation)
 
             sustained_sample_seconds = 0.0
             sustained_count = 0
+            sustained_started_ns = self._clock.now_ns()
             for round_index in range(MAX_SUSTAINED_ROUNDS):
                 for case_id in corpus.sustained_sequence:
                     case = corpus.cases[case_id]
-                    observation = self.observe_generation(
+                    sustained_observation = self.observe_generation(
                         main_adapter,
                         GenerationRequest(
                             request_id=f"sustained-{round_index + 1}-{sustained_count + 1}",
@@ -556,22 +637,26 @@ class BenchmarkHarness:
                         ),
                         forbidden_values=forbidden_values,
                     )
-                    generation_observations.append(observation)
+                    generation_observations.append(sustained_observation)
+                    self._observation_sink.record_generation(sustained_observation)
                     sustained_count += 1
                     sustained_sample_seconds += (
-                        observation.sample_count / observation.sample_rate_hz
+                        sustained_observation.sample_count / sustained_observation.sample_rate_hz
                     )
+                    if self._clock.now_ns() - sustained_started_ns > SUSTAINED_TIMEOUT_NS:
+                        _fail("timeout", "sustained")
                 if sustained_sample_seconds >= SUSTAINED_TARGET_SAMPLE_SECONDS:
                     break
             if sustained_sample_seconds < SUSTAINED_TARGET_SAMPLE_SECONDS:
                 _fail("resource-limit", "sustained")
 
             cancellation_observations: list[CancellationObservation] = []
+            cancellation_failures = 0
             near_hard_case = corpus.cases["es-narrative-near-hard"]
             for trial_index, trial_id in enumerate(CANCELLATION_TRIAL_ORDER, start=1):
                 case = near_hard_case if trial_id == "near-hard-mid-generation" else first_case
-                cancellation_observations.append(
-                    self.observe_cancellation(
+                try:
+                    cancellation_observation = self.observe_cancellation(
                         main_adapter,
                         GenerationRequest(
                             request_id=f"cancel-{trial_index}",
@@ -583,7 +668,20 @@ class BenchmarkHarness:
                         trial_id,
                         forbidden_values=forbidden_values,
                     )
-                )
+                except _HarnessFailure as failure:
+                    if failure.code != "cancellation-failed":
+                        raise
+                    cancellation_failures += 1
+                    self._observation_sink.record_cancellation_failure(
+                        trial_id,
+                        BenchmarkFailure(
+                            code=failure.code,
+                            request_id=failure.request_id,
+                        ),
+                    )
+                    continue
+                cancellation_observations.append(cancellation_observation)
+                self._observation_sink.record_cancellation(cancellation_observation)
 
             self._close(
                 main_adapter,
@@ -591,8 +689,12 @@ class BenchmarkHarness:
                 request_id="measurement-close",
             )
             main_adapter = None
-            memory = self._memory_probe.stop()
+            try:
+                memory = self._memory_probe.stop()
+            except Exception:
+                _fail("measurement-unavailable", "memory")
             memory_started = False
+            self._observation_sink.record_memory(memory)
 
             output_shapes = {
                 (
@@ -604,18 +706,26 @@ class BenchmarkHarness:
             }
             if len(output_shapes) != 1:
                 _fail("invalid-output")
+            run = BenchmarkRun(
+                candidate_id=capabilities.candidate_id,
+                role=cast(CandidateRole, role),
+                capabilities=capabilities,
+                load_observations=tuple(load_observations),
+                generation_observations=tuple(generation_observations),
+                cancellation_observations=tuple(cancellation_observations),
+                memory=memory,
+                failed_observations=cancellation_failures,
+            )
             return BenchmarkRunResult(
-                run=BenchmarkRun(
-                    candidate_id=capabilities.candidate_id,
-                    role=cast(CandidateRole, role),
-                    capabilities=capabilities,
-                    load_observations=tuple(load_observations),
-                    generation_observations=tuple(generation_observations),
-                    cancellation_observations=tuple(cancellation_observations),
-                    memory=memory,
-                    failed_observations=0,
+                run=run,
+                failure=(
+                    BenchmarkFailure(
+                        code="cancellation-failed",
+                        request_id="cancellation",
+                    )
+                    if cancellation_failures
+                    else None
                 ),
-                failure=None,
             )
         except _HarnessFailure as failure:
             if main_adapter is not None:
@@ -624,12 +734,14 @@ class BenchmarkHarness:
             if memory_started:
                 with suppress(Exception):
                     self._memory_probe.stop()
+            result_failure = BenchmarkFailure(
+                code=failure.code,
+                request_id=failure.request_id,
+            )
+            self._observation_sink.record_failure(result_failure)
             return BenchmarkRunResult(
                 run=None,
-                failure=BenchmarkFailure(
-                    code=failure.code,
-                    request_id=failure.request_id,
-                ),
+                failure=result_failure,
             )
         except Exception:
             if main_adapter is not None:
@@ -638,7 +750,9 @@ class BenchmarkHarness:
             if memory_started:
                 with suppress(Exception):
                     self._memory_probe.stop()
+            result_failure = BenchmarkFailure(code="crash")
+            self._observation_sink.record_failure(result_failure)
             return BenchmarkRunResult(
                 run=None,
-                failure=BenchmarkFailure(code="crash"),
+                failure=result_failure,
             )

@@ -60,6 +60,14 @@ Both projects set uv's `exclude-newer` cutoff to `2026-07-18T00:00:00Z`, seven
 days before the intake review, so regenerating either lock cannot silently
 admit a just-published dependency.
 
+The disposable quality workflow adds no manifest or lockfile edge. It uses the
+Python standard library for WAV/container, randomization, JSON, HTML, and
+cleanup work, and uses the NumPy runtime already locked transitively inside
+each isolated candidate environment solely to apply one identical bounded
+float-to-PCM16 conversion. NumPy is not imported by the production service or
+default model-free tests, and the temporary PCM format is benchmark evidence,
+not a selected product audio dependency or contract.
+
 ### Milestone 5 dependency gate
 
 The implemented [Milestone 5 narration-preparation boundary](../plans/completed/M005-narration-text-preparation.md) and [ADR-0012](../architecture/decisions/ADR-0012-bounded-narration-preparation.md) add no dependency, manifest entry, lockfile edge, install script, or runtime capability. Repository-owned TypeScript modules perform exhaustive semantic projection, Unicode-code-point source mapping, deterministic neutral/Spanish normalization, boundary scanning, bounded packing, canonical locator-range construction, public batch coordination, and numeric-only resource observation over the existing safe semantic model, locator index, and shared decoders. The test-only corpus, EPUB fixture, integration matrix, and resource-bound suite also use existing repository tooling. Any proposed production dependency requires an amended or superseding ADR documenting a concrete unmet requirement, deterministic Node/WebView behavior, source-range support, Spanish evidence, exact version/release pinning, license, package size, transitive graph, install scripts, runtime capabilities, maintenance, alternatives, manifest/lock changes, and this inventory update. `Intl.Segmenter` is not a production segmentation authority and may appear only in a non-authoritative test-only investigation. No segmentation library, language detector, model tokenizer, pronunciation package, or model-specific preprocessor is selected or approved.
@@ -137,10 +145,11 @@ Rustfmt, Clippy, Cargo test, and Cargo build come from the pinned Rust toolchain
 | `mypy` | `2.3.0` | Performs strict static type checking. |
 | `pytest` | `9.1.1` | Runs deterministic Python smoke and cross-language contract-conformance tests. |
 | `jsonschema` | `4.26.0` | Validates the shared serialized fixture corpus against the canonical Draft 2020-12 schemas entirely offline during Python tests. |
+| `referencing` | `0.37.0` | Registers the retained v1 benchmark schema as an offline resource while validating the v2 summary schema without duplicating its unchanged closed definitions. |
 | `types-jsonschema` | `4.26.0.20260518` | Supplies mypy declarations for the test-only `jsonschema` API. |
 | `uv_build` | compatible `0.11.x` selected by the build frontend | Builds the pure-Python source distribution and wheel; it is an isolated build-system requirement, not a service runtime dependency. |
 
-Ruff replaces the overlapping Black, isort, and Flake8 toolchain. Mypy and pytest are established focused tools for typing and tests. Python's `jsonschema` validator was selected instead of a handwritten structural model so Python checks the language-neutral canonical schemas rather than creating a second contract authority; it and its typing package remain in the development group and are not service runtime dependencies. `uv_build` is appropriate for the current pure-Python package; a compiled-extension requirement could justify a different backend later without replacing uv's environment and lock ownership.
+Ruff replaces the overlapping Black, isort, and Flake8 toolchain. Mypy and pytest are established focused tools for typing and tests. Python's `jsonschema` validator was selected instead of a handwritten structural model so Python checks the language-neutral canonical schemas rather than creating a second contract authority. Its existing `referencing` dependency is now direct because the benchmark v2 schema deliberately reuses v1's unchanged closed definitions through an offline registry; neither package is a service runtime dependency. `uv_build` is appropriate for the current pure-Python package; a compiled-extension requirement could justify a different backend later without replacing uv's environment and lock ownership.
 
 ## Continuous-integration actions
 

@@ -8,6 +8,13 @@
     "pnpm": "11.15.1"
   },
   "scripts": {
+    "benchmark:tts:measure": "uv run --directory services/tts --locked python -m benchmarks.cli measure",
+    "benchmark:tts:preflight": "uv run --directory services/tts --locked python -m benchmarks.cli preflight",
+    "benchmark:tts:quality:aggregate": "uv run --directory services/tts --locked python -m benchmarks.quality_cli aggregate",
+    "benchmark:tts:quality:cleanup": "uv run --directory services/tts --locked python -m benchmarks.quality_cli cleanup",
+    "benchmark:tts:quality:finalize": "uv run --directory services/tts --locked python -m benchmarks.quality_cli finalize",
+    "benchmark:tts:quality:generate": "uv run --directory services/tts --locked python -m benchmarks.quality_cli generate",
+    "benchmark:tts:quality:submit": "uv run --directory services/tts --locked python -m benchmarks.quality_cli submit",
     "benchmark:reader": "pnpm run build:packages && pnpm --filter @voxleaf/desktop benchmark:reader",
     "benchmark:reader:native": "pnpm run build:packages && pnpm --filter @voxleaf/desktop benchmark:reader:native",
     "build": "pnpm run build:packages && pnpm run build:desktop && pnpm run build:python",

@@ -10,6 +10,10 @@ type CandidateRole = Literal["balanced", "compatibility"]
 type GenerationPhase = Literal["warmup", "warm", "sustained", "cancellation"]
 type StreamingGranularity = Literal["sample-chunks", "complete-waveform"]
 type SampleFormat = Literal["float32", "signed-int16"]
+type VramMeasurementMethod = Literal[
+    "unavailable-cpu-role",
+    "wddm-dedicated-plus-pytorch-reserved",
+]
 type CancellationCapability = Literal["cooperative", "worker-termination", "unsupported", "unknown"]
 type CancellationStopMode = Literal["cooperative", "worker-termination"]
 type CancellationTrialId = Literal[
@@ -96,6 +100,9 @@ class BenchmarkAdapter(Protocol):
     def cancel(self, request_id: str) -> CancellationResponse:
         """Request cancellation for exactly one benchmark request identity."""
 
+    def framework_memory_high_water_bytes(self) -> int | None:
+        """Return a content-free framework allocator peak when available."""
+
     def close(self) -> None:
         """Release the candidate and any candidate-owned resources."""
 
@@ -170,8 +177,12 @@ class CancellationObservation:
 
 @dataclass(frozen=True)
 class MemoryObservation:
-    sampling_interval_milliseconds: int
+    ram_sampling_interval_milliseconds: int
+    process_vram_sampling_interval_milliseconds: int | None
+    vram_measurement_method: VramMeasurementMethod
     peak_process_tree_ram_bytes: int
+    peak_process_vram_bytes: int | None
+    peak_framework_vram_bytes: int | None
     peak_vram_bytes: int | None
     gpu_provider_allocations: int
 
@@ -200,10 +211,30 @@ class BenchmarkRun:
 
 @dataclass(frozen=True)
 class BenchmarkRunResult:
-    """Closed result for one complete deterministic protocol run."""
+    """Closed result; a valid failed run may retain its completed observations."""
 
     run: BenchmarkRun | None
     failure: BenchmarkFailure | None
+
+
+class BenchmarkObservationSink(Protocol):
+    """Bounded content-free observation journal used by manual hardware runs."""
+
+    def record_load(self, observation: LoadObservation) -> None: ...
+
+    def record_generation(self, observation: GenerationObservation) -> None: ...
+
+    def record_cancellation(self, observation: CancellationObservation) -> None: ...
+
+    def record_cancellation_failure(
+        self,
+        trial_id: CancellationTrialId,
+        failure: BenchmarkFailure,
+    ) -> None: ...
+
+    def record_memory(self, observation: MemoryObservation) -> None: ...
+
+    def record_failure(self, failure: BenchmarkFailure) -> None: ...
 
 
 class MemoryProbe(Protocol):

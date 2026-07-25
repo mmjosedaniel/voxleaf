@@ -62,6 +62,16 @@ def _failure_for(command: str) -> FailureCode:
     return failures.get(command, "invalid-request")
 
 
+def _framework_peak(adapter: BenchmarkAdapter) -> int | None:
+    try:
+        value = adapter.framework_memory_high_water_bytes()
+    except Exception:
+        raise AdapterOperationError("measurement-unavailable") from None
+    if value is not None and (not isinstance(value, int) or isinstance(value, bool) or value < 0):
+        raise AdapterOperationError("measurement-unavailable")
+    return value
+
+
 def _worker_command(
     adapter: BenchmarkAdapter,
     connection: _WorkerConnection,
@@ -88,10 +98,10 @@ def _worker_command(
         with capture:
             if command == "load":
                 adapter.load()
-                response: _Message = ("ok",)
+                response: _Message = ("ok", _framework_peak(adapter))
             elif command == "warmup" and request is not None:
                 adapter.warm_up(request)
-                response = ("ok",)
+                response = ("ok", _framework_peak(adapter))
             elif command == "generate" and request is not None:
                 sample_frames = 0
                 for chunk_count, chunk in enumerate(adapter.generate(request), start=1):
@@ -102,12 +112,15 @@ def _worker_command(
                         _send(connection, ("error", "resource-limit"))
                         return False
                     _send(connection, ("chunk", chunk))
-                response = ("done",)
+                response = ("done", _framework_peak(adapter))
             elif command == "close":
+                peak = _framework_peak(adapter)
                 adapter.close()
-                response = ("ok",)
+                response = ("ok", peak)
             else:
                 response = ("error", "invalid-request")
+    except AdapterOperationError as error:
+        response = ("error", error.code)
     except Exception:
         response = ("error", _failure_for(command))
     observation = capture.observation()
@@ -205,7 +218,8 @@ class _ProcessGeneration(Iterator[AudioChunk]):
             if isinstance(chunk, AudioChunk) and chunk.request_id == self._request_id:
                 return chunk
             self._owner.abort("invalid-output")
-        if response[0] == "done":
+        if response[0] == "done" and len(response) == 2:
+            self._owner.observe_framework_peak(response[1])
             self._complete = True
             self._owner.finish_request(self._request_id)
             raise StopIteration
@@ -223,11 +237,14 @@ class IsolatedBenchmarkAdapter:
         forbidden_values: Sequence[str],
         timeouts: IsolationTimeouts | None = None,
         context: SpawnContext | None = None,
+        framework_memory_observer: Callable[[int | None], None] | None = None,
     ) -> None:
         self._adapter_factory = adapter_factory
         self._forbidden_values = tuple(forbidden_values)
         self.timeouts = timeouts or IsolationTimeouts()
         self._context = context or multiprocessing.get_context("spawn")
+        self._framework_memory_observer = framework_memory_observer
+        self._peak_framework_vram_bytes: int | None = None
         self._capabilities = adapter_factory().capabilities()
         self._process: BaseProcess | None = None
         self._connection: _WorkerConnection | None = None
@@ -287,8 +304,26 @@ class IsolatedBenchmarkAdapter:
             self.abort(code)
         self.abort("crash")
 
+    def observe_framework_peak(self, value: object) -> None:
+        if value is not None and (
+            not isinstance(value, int) or isinstance(value, bool) or value < 0
+        ):
+            self.abort("measurement-unavailable")
+        peak = cast(int | None, value)
+        if peak is not None:
+            self._peak_framework_vram_bytes = max(
+                self._peak_framework_vram_bytes or 0,
+                peak,
+            )
+        observer = self._framework_memory_observer
+        if observer is not None:
+            observer(peak)
+
     def _expect_ok(self, timeout_seconds: float) -> None:
         response = self.receive(timeout_seconds)
+        if len(response) == 2 and response[0] == "ok":
+            self.observe_framework_peak(response[1])
+            return
         if response != ("ok",):
             self.raise_response(response)
 
@@ -329,6 +364,9 @@ class IsolatedBenchmarkAdapter:
         self.finish_request(request_id)
         self._terminate_worker()
         return CancellationResponse(acknowledged=True, stop_mode="worker-termination")
+
+    def framework_memory_high_water_bytes(self) -> int | None:
+        return self._peak_framework_vram_bytes
 
     def abort(self, code: FailureCode) -> None:
         self._terminate_worker()

@@ -11,9 +11,13 @@ from typing import Final, NoReturn, cast
 
 import pytest
 from jsonschema import Draft202012Validator
+from referencing import Registry, Resource
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
-SCHEMA_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "schemas" / "summary-v1.schema.json"
+SCHEMA_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "schemas" / "summary-v2.schema.json"
+V1_SCHEMA_PATH: Final = (
+    REPOSITORY_ROOT / "benchmarks" / "tts" / "schemas" / "summary-v1.schema.json"
+)
 FIXTURE_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "fixtures" / "summary-v1.valid.json"
 ARITHMETIC_TOLERANCE: Final = 0.000001
 CANCELLATION_TRIAL_ORDER: Final = (
@@ -253,18 +257,38 @@ def validate_semantics(summary: Mapping[str, object]) -> None:
 
     role = read_string(summary.get("role"))
     memory = read_mapping(summary.get("memory"), code="invalid-memory")
-    peak_vram = memory.get("peakVramBytes")
     gpu_allocations = read_integer(memory.get("gpuProviderAllocations"))
-    if role == "balanced" and peak_vram == "unavailable":
-        fail("balanced-vram-unavailable")
-    if role == "compatibility" and gpu_allocations != 0:
+    if role == "balanced":
+        process_peak = read_integer(memory.get("peakProcessVramBytes"))
+        framework_peak = read_integer(memory.get("peakFrameworkVramBytes"))
+        peak = read_integer(memory.get("peakVramBytes"))
+        if (
+            memory.get("vramMeasurementMethod") != "wddm-dedicated-plus-pytorch-reserved"
+            or read_integer(memory.get("processVramSamplingIntervalMilliseconds")) != 1_000
+            or min(process_peak, framework_peak, peak, gpu_allocations) <= 0
+            or peak != max(process_peak, framework_peak)
+        ):
+            fail("balanced-vram")
+    elif (
+        memory.get("vramMeasurementMethod") != "unavailable-cpu-role"
+        or memory.get("processVramSamplingIntervalMilliseconds") != "unavailable"
+        or memory.get("peakProcessVramBytes") != "unavailable"
+        or memory.get("peakFrameworkVramBytes") != "unavailable"
+        or memory.get("peakVramBytes") != "unavailable"
+        or gpu_allocations != 0
+    ):
         fail("compatibility-gpu-allocation")
 
 
 def schema_errors(value: object) -> tuple[object, ...]:
     schema = read_mapping(load_json(SCHEMA_PATH), code="invalid-schema")
+    v1_schema = read_mapping(load_json(V1_SCHEMA_PATH), code="invalid-schema")
+    registry = Registry().with_resource(
+        "urn:voxleaf:benchmark:tts-feasibility-summary:v1",
+        Resource.from_contents(v1_schema),
+    )
     Draft202012Validator.check_schema(schema)
-    validator = Draft202012Validator(schema)
+    validator = Draft202012Validator(schema, registry=registry)
     return tuple(validator.iter_errors(value))
 
 
@@ -272,7 +296,20 @@ def valid_fixture() -> dict[str, object]:
     value = load_json(FIXTURE_PATH)
     if not isinstance(value, dict):
         fail("invalid-fixture")
-    return copy.deepcopy(cast(dict[str, object], value))
+    fixture = copy.deepcopy(cast(dict[str, object], value))
+    fixture["schemaVersion"] = "tts-feasibility-summary-v2"
+    fixture["protocolVersion"] = "tts-feasibility-profile-v2"
+    fixture["memory"] = {
+        "ramSamplingIntervalMilliseconds": 50,
+        "processVramSamplingIntervalMilliseconds": "unavailable",
+        "vramMeasurementMethod": "unavailable-cpu-role",
+        "peakProcessTreeRamBytes": 1_073_741_824,
+        "peakProcessVramBytes": "unavailable",
+        "peakFrameworkVramBytes": "unavailable",
+        "peakVramBytes": "unavailable",
+        "gpuProviderAllocations": 0,
+    }
+    return fixture
 
 
 def test_fixture_passes_schema_and_semantic_arithmetic() -> None:
@@ -297,7 +334,7 @@ def test_schema_rejects_sensitive_text_unknown_fields_negative_values_and_versio
     assert schema_errors(negative)
 
     unsupported = valid_fixture()
-    unsupported["schemaVersion"] = "tts-feasibility-summary-v2"
+    unsupported["schemaVersion"] = "tts-feasibility-summary-v3"
     assert schema_errors(unsupported)
 
 

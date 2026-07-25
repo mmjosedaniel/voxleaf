@@ -134,7 +134,11 @@ The exact candidate identifiers and dependency layout are frozen by Milestone 1 
 - `services/tts/tests/`: deterministic corpus, metric, report, redaction, cancellation, and fake-adapter tests.
 - Candidate-specific benchmark project and lock files under a reviewed path below `services/tts/benchmarks/`, isolated from the production dependency group.
 - `package.json`: explicit benchmark setup and execution commands added during implementation; no benchmark command is claimed to exist before that task completes.
-- `docs/architecture/tts-feasibility-profile-v1.md`: the frozen pre-result benchmark protocol, numeric gates, scoring rubric, and report field policy.
+- `docs/architecture/tts-feasibility-profile-v1.md`: the original frozen
+  pre-result benchmark protocol, retained as superseded historical authority.
+- `docs/architecture/tts-feasibility-profile-v2.md`: the approved rerun
+  authority that replaces unavailable WDDM NVML process attribution with a
+  Windows/PyTorch cross-checked measurement.
 - `docs/architecture/decisions/ADR-0013-local-tts-engine-profiles.md`: the final profile selection or explicit no-viable-profile decision, provided `ADR-0013` remains the next free identifier when the decision is written.
 - Product, architecture, development, dependency, testing, roadmap, and plan documentation named above.
 
@@ -748,11 +752,91 @@ Official measurements are attributable to a known, privacy-safe local configurat
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- Added a deterministic, fail-closed preflight boundary and a private-stdin
+  root command. It binds an official request to one exact clean commit,
+  admitted manifest profile, verified local artifact set, candidate
+  interpreter, Windows x86-64/Python 3.12 host, AC power, recorded power mode,
+  operator-confirmed sleep/background/thermal conditions, and role-specific
+  RAM/VRAM/disk headroom.
+- Offline proof is not a caller assertion. The production probe requires one
+  enabled outbound-block Windows Firewall rule for the exact candidate Python
+  interpreter in addition to the frozen Hugging Face/Transformers offline
+  controls. Private model/interpreter paths enter only through bounded stdin
+  and never enter the allowlisted receipt.
+- Artifact SHA-256 verification now also returns only stable artifact ID, hash,
+  and measured byte size. Pilot receipts can pass setup but are structurally
+  ineligible for official execution or promotion.
+- Eight focused preflight/command tests cover exact pass, non-promotable pilot,
+  dirty/mismatched revision, wrong or missing artifact, offline/network
+  failure, resource/power/sleep/operator gates, platform/profile rejection,
+  closed input, and private-path exclusion. Focused Ruff and strict mypy over
+  26 source files pass.
+- The observed native host has Windows build 26200, an Intel Core Ultra 7
+  255HX with 20 logical processors, 32 GB RAM, an NVIDIA GeForce RTX 5060
+  Laptop GPU with 8,151 MiB VRAM and driver 577.05, ample disk, and AC power.
+  This is setup evidence only, not an official candidate result.
+- Both candidate environments now install from their exact locks. The Qwen
+  environment occupies 5,165,928,540 bytes and reports `qwen-tts 0.1.1`,
+  `torch 2.9.1+cu128`, available CUDA/bfloat16, and the expected RTX 5060.
+  The Supertonic environment occupies 111,602,972 bytes and reports
+  `supertonic 1.3.1`, `onnxruntime 1.27.0`, CPU device, and the package's
+  source-confirmed `CPUExecutionProvider` default.
+- The immutable Qwen and Supertonic snapshots were acquired into ignored
+  local model storage. Their measured snapshot sizes are 2,498,444,461 and
+  414,741,773 bytes respectively. Every manifest SHA-256 matches, including
+  Qwen's 1,811,626,576-byte primary model, all four Supertonic ONNX files, and
+  the 292,046-byte `F1` voice style. Git ignore checks cover both environments
+  and both model roots.
+- The prior 45-minute AC sleep setting was observed and retained for
+  restoration. An administrator created the exact application-scoped
+  outbound firewall rule for the Supertonic interpreter, and AC sleep was
+  disabled for the official session.
+- The Supertonic compatibility-profile preflight passed from clean commit
+  `64e8324f9426c381dcac1d013264ba9fcb833065`. It verified the exact five
+  artifacts, offline control, interpreter-specific firewall isolation, AC
+  power, balanced power mode, 11,009,933,312 free RAM bytes, 8,151 MiB total
+  VRAM, 7,810 MiB free VRAM, and 665,578,512,384 bytes free disk. The receipt
+  contained only allowlisted content-free host and artifact fields.
+- At this preflight checkpoint, no model or pilot had run. The balanced Qwen
+  preflight still required replacing the temporary rule with one for its exact
+  interpreter and restoring at least 12 GiB free RAM; the observed
+  11,009,933,312 free bytes did not meet that frozen headroom gate.
+- A later bounded CUDA allocation probe established a more fundamental
+  balanced-role blocker before the Qwen model loaded. This RTX 5060 uses WDDM,
+  and `nvidia-smi --query-compute-apps=pid,used_gpu_memory` returned `[N/A]`
+  for the exact allocating PID. NVIDIA documents that NVML process
+  `usedGpuMemory` is always unavailable under WDDM because Windows KMD owns
+  memory management
+  ([NVML process-info reference, retrieved 2026-07-25](https://docs.nvidia.com/deploy/nvml-api/structnvmlProcessInfo__v1__t.html)).
+  The frozen profile requires reliable process-attributed NVML VRAM and
+  forbids substituting zero or whole-device usage. Therefore an official Qwen
+  preflight/run cannot become valid on this host even if its firewall rule and
+  free-RAM conditions are changed.
+- On 2026-07-25 the maintainer approved a new `v2` authority rather than
+  requiring unavailable replacement hardware. The replacement measurement
+  must use PyTorch's allocator high-water mark for transient CUDA allocations
+  and the host's PID-tagged WDDM dedicated-memory counter as an independent
+  process-attribution cross-check. The old result is not comparable to `v2`;
+  every candidate must rerun.
+- The approved `v2` path passed deterministic tests and a native disposable
+  CUDA attribution probe. Qwen's official preflight and pilot then passed from
+  clean commit `76f27d1ff41b4d4ea1e20341b9a4cd9d86b3f8ff` after the maintainer
+  closed Chrome to restore the frozen RAM headroom. Supertonic's official
+  preflight and pilot passed from clean commit
+  `a0640fe7ff1c3bde4ceb68ba8e89cb57150adaac`. Both exact artifact sets,
+  interpreters, offline controls, application-scoped firewall blocks, power
+  conditions, and role-specific resource headroom were therefore proven
+  before their comparable matrices.
+- Final cleanup restored AC sleep to 45 minutes and removed every temporary
+  benchmark firewall rule.
 
 #### Status
 
-Not started.
+Complete — both admitted `v2` profiles passed clean, exact, offline-capable
+official preflight and disposable pilot validation before their complete
+matrices, and host controls were restored afterward.
 
 ### Task 3.2: Run cold, warm, sustained, cancellation, and failure matrices
 
@@ -785,11 +869,168 @@ The repository contains comparable content-free evidence, not anecdotal console 
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- Added the closed `benchmark:tts:measure` supervisor. It repeats preflight,
+  launches only the exact candidate interpreter, repeats preflight inside that
+  interpreter, and accepts private paths only through bounded standard input.
+- Added the disposable non-comparable pilot path and official protocol
+  dispatch. Pilot execution retains no raw session. Official execution writes
+  one UUID-named ignored journal containing only fixed IDs, integer
+  nanoseconds, sample metadata, numeric resource observations, and fixed
+  failures; waveform samples and candidate diagnostics are discarded.
+- Added a dependency-free native Windows process-tree sampler that enumerates
+  only numeric PID/parent-PID relationships, samples descendant working sets
+  every 50 milliseconds, subtracts the pre-load baseline, and reports no
+  process names, command lines, paths, or unrelated processes. CPU runs record
+  VRAM as unavailable and zero GPU allocations. Balanced execution fails
+  closed when the host cannot supply its required process-attributed VRAM.
+- The harness now enforces the frozen 900-second sustained-phase timeout,
+  journals each completed observation before later phases, runs all five
+  cancellation trials even when one fails, and retains a bounded failed-run
+  journal rather than erasing earlier valid numeric evidence.
+- Supertonic now verifies that all four loaded ONNX sessions select exactly
+  `CPUExecutionProvider`; provider availability alone is no longer accepted.
+- Model-free focused validation covers the command output allowlist,
+  interpreter binding, pilot lifecycle, raw bounds/privacy, memory baseline
+  arithmetic, native PID-tree smoke, exact provider selection, continued
+  cancellation behavior, and the existing protocol.
+- The first disposable Supertonic pilot failed with the fixed
+  `generation-failed` code and retained no session. Investigation found that
+  the mock had modeled `TTS.synthesize` as returning a bare waveform although
+  installed Supertonic 1.3.1 returns `(waveform, duration)`. The adapter and
+  regression fake now match the installed public API; no gate, corpus, or
+  result was changed.
+- The corrected pilot passed from clean commit
+  `56bd9894fd582375dd1b45e384155705f14f07cb`: the exact CPU profile loaded,
+  one frozen Spanish case generated locally, the waveform was discarded, the
+  worker closed, and no raw session was retained. This pilot is explicitly
+  non-comparable and cannot enter a summary.
+- The official Supertonic matrix ran from clean commit
+  `532e2c740f463ff09ebfce9581a68462307ae7ab`. Its ignored 10,159-byte raw
+  journal contains five cold loads, 24 warm generations, 12 sustained
+  generations, five cancellation trials, one numeric memory observation, and
+  fixed failure codes. A corpus-text/canary scan and absolute-path scan both
+  returned zero findings; the directory contains no audio.
+- Content-free CPU results were: cold-load p95 `1.7466072` seconds; warm
+  first-produced-audio p95 `12.1117541` seconds; warm 15-seconds-of-media p95
+  `13.5122745` seconds over four reaching outputs; warm shorter-complete p95
+  `2.8935058` seconds over 20 shorter outputs; warm RTF p95
+  `0.53917248046875`; sustained request RTF p95 `0.632854423828125`; total
+  sustained RTF `0.30936313618694034` over `233.62244897959187` generated
+  seconds; peak descendant RAM above baseline `668860416` bytes; unavailable
+  CPU-role VRAM; and zero GPU allocations.
+- The compatibility profile passes cold load, 15-second production,
+  shorter-complete, warm RTF, sustained RTF, total sustained RTF, RAM, and
+  zero-GPU gates. It fails warm first-audio (`12.1117541 > 5` seconds) and
+  cancellation. `before-dispatch` and `accepted-before-audio` passed by worker
+  termination; `after-first-audio`, `after-five-media-seconds`, and
+  `near-hard-mid-generation` failed because the complete-waveform API exposed
+  no valid mid-generation boundary.
+- The balanced Qwen matrix did not start and no Qwen model loaded. The host's
+  WDDM driver cannot supply the protocol's mandatory process-attributed NVML
+  VRAM value, so substituting another metric would invalidate the frozen
+  authority.
+- The prior 45-minute AC sleep timeout was restored after measurement.
+  Non-administrator removal of the exact temporary Supertonic firewall rule
+  initially returned access denied. The administrator subsequently removed
+  it, and `netsh advfirewall firewall show rule` confirmed that no matching
+  rule remains.
+- The first authoritative root check after candidate installation exposed
+  that ESLint did not recursively ignore nested `.venv` directories and
+  attempted to lint third-party candidate bundles. The root lint ignore now
+  excludes every `.venv` recursively; candidate code remains isolated and
+  unreviewed vendor files no longer enter repository lint scope.
+- The approved `v2` implementation replaces the unavailable NVML signal with
+  a dependency-free native PDH reader for
+  `GPU Process Memory(*)\Dedicated Usage`. It collects at the documented
+  one-second maximum frequency, aggregates only numeric instances belonging to
+  the recursively discovered worker process tree, and retains no PID, LUID,
+  instance name, process name, path, or unrelated-process value.
+- The exact Qwen adapter resets PyTorch peak statistics immediately before
+  model load and reports only `max_memory_reserved()` bytes after successful
+  load, warm-up, generation, and close commands. The spawn-isolated parent
+  retains the maximum across replacement workers. Balanced measurement now
+  requires positive WDDM and PyTorch peaks and uses their maximum; CPU
+  measurement retains explicit unavailable VRAM and zero GPU allocations.
+- Raw and reviewable authorities are versioned as
+  `tts-feasibility-raw-v2`, `tts-feasibility-profile-v2`, and
+  `tts-feasibility-summary-v2`. The v2 schema reuses unchanged closed v1
+  definitions through an offline registered resource, while the memory object
+  exposes only fixed method IDs, intervals, byte peaks, and allocation count.
+- Model-free validation passes Ruff, strict mypy over 31 source files, and all
+  45 Python tests. A native root-environment WDDM smoke returned a valid zero
+  observation for a non-GPU process; a disposable 256-MiB CUDA allocation in
+  the exact Qwen environment returned `372781056` process-dedicated bytes and
+  one allocating PID without loading the model.
+- The authoritative native `pnpm.cmd check` passes on the v2 implementation:
+  formatting, ESLint, Rustfmt, Ruff, Clippy with warnings denied, TypeScript
+  and strict Python type checks, 18 shared files/175 tests, 34 EPUB files/555
+  tests, 20 desktop files/204 tests, six native WebDriver-client tests, all 45
+  Python tests, Cargo tests, package/desktop release builds, and Python
+  distributions. The existing Vite chunk-size advisory remains informational.
+- The first clean `v2` Qwen preflight setup attempt reached the operating-system
+  authorization boundary before any model load. AC sleep was temporarily
+  disabled, but Windows returned access denied when the non-administrator
+  process attempted to create the exact Qwen interpreter firewall rule. AC
+  sleep was immediately restored to 45 minutes. No pilot, official run, raw
+  session, or result was created.
+- After the administrator supplied the exact firewall rule, closing Chrome
+  raised free RAM from 11,785,637,888 bytes to 16,777,011,200 bytes. The clean
+  official Qwen preflight then passed every gate from commit
+  `76f27d1ff41b4d4ea1e20341b9a4cd9d86b3f8ff`, and the disposable pilot passed
+  without retaining a session.
+- The official Qwen `v2` matrix completed from that same clean commit. Its
+  ignored 10,419-byte journal contains five cold loads, 24 warm generations,
+  12 sustained generations, five cancellation trials, the two required VRAM
+  signals, and one fixed failure. It contains zero corpus-text, privacy-canary,
+  private-path, and generated-audio findings.
+- Content-free balanced results were: cold-load p95 `7.2040064` seconds; warm
+  first-produced-audio p95 `69.3758902` seconds; warm 15-seconds-of-media p95
+  `92.8405388` seconds over four reaching outputs; warm shorter-complete p95
+  `11.8831504` seconds over 20 shorter outputs; warm RTF p95
+  `1.44146538043478`; sustained request RTF p95 `1.4419725`; total sustained
+  RTF `1.42426716080402` over `254.72` generated seconds; peak process-tree RAM
+  `2,660,442,112` bytes; peak WDDM process-dedicated VRAM `4,164,468,736`
+  bytes; peak PyTorch allocator-reserved VRAM `4,026,531,840` bytes; and
+  authoritative peak VRAM `4,164,468,736` bytes.
+- Qwen passes cold load, RAM, VRAM, GPU-allocation, and sustained-duration
+  completeness. It fails warm first audio, 15-seconds-of-media production,
+  shorter-complete latency, warm RTF, sustained request RTF, total sustained
+  RTF, zero-failure, and cancellation. `before-dispatch` and
+  `accepted-before-audio` passed by worker termination in `0.3654485` and
+  `0.2840815` seconds. The three mid-generation trials failed because the
+  complete-waveform API exposed no valid cancellation boundary. AC sleep was
+  restored to 45 minutes after the matrix.
+- The exact firewall rule was then switched to the Supertonic interpreter.
+  Its clean official preflight and disposable pilot passed from commit
+  `a0640fe7ff1c3bde4ceb68ba8e89cb57150adaac`.
+- The official Supertonic `v2` rerun completed from that same clean commit.
+  Its ignored 10,361-byte journal contains five cold loads, 24 warm
+  generations, 12 sustained generations, five cancellation trials, CPU-role
+  unavailable VRAM, zero GPU allocations, and one fixed failure. It contains
+  zero corpus-text, privacy-canary, private-path, and generated-audio findings.
+- Content-free compatibility results were: cold-load p95 `1.7851637` seconds;
+  warm first-produced-audio p95 `12.1658585` seconds; warm
+  15-seconds-of-media p95 `12.952202` seconds over four reaching outputs; warm
+  shorter-complete p95 `2.6426412` seconds over 20 shorter outputs; warm RTF
+  p95 `0.531674546833444`; sustained request RTF p95 `0.640149345703125`;
+  total sustained RTF `0.307939984424547` over `233.622448979592` generated
+  seconds; and peak process-tree RAM `667,475,968` bytes.
+- Supertonic passes cold load, 15-seconds-of-media production,
+  shorter-complete latency, warm and sustained RTF, total sustained RTF, RAM,
+  zero-GPU, and sustained-duration completeness. It fails warm first audio,
+  zero-failure, and cancellation. `before-dispatch` and
+  `accepted-before-audio` passed by worker termination in `0.203811` and
+  `1.4079207` seconds. The three mid-generation trials failed because the
+  complete-waveform API exposed no valid cancellation boundary. AC sleep was
+  restored to 45 minutes after the matrix.
 
 #### Status
 
-Not started.
+Complete — both admitted candidates have complete comparable `v2` performance,
+memory, cancellation, cleanup, and privacy evidence. Both fail their assigned
+role gates; no performance result is promotable as a selected profile.
 
 ### Task 3.3: Run the blinded Spanish quality evaluation
 
@@ -819,11 +1060,80 @@ The selection includes reproducible bounded human quality evidence rather than s
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- The maintainer confirmed fluent Spanish comprehension and approved proceeding
+  as the only available evaluator. The frozen schema still requires at least
+  three evaluators, so this session is limited evidence, remains ineligible for
+  summary promotion, and cannot establish a passing quality gate.
+- Added closed `benchmark:tts:quality:generate`, `finalize`, `submit`,
+  `aggregate`, and `cleanup` commands. Generation requires explicit
+  `qualityOptIn: true`, repeats official preflight in the exact candidate
+  interpreter, uses one caller-known ignored session, and removes the whole
+  session on failure.
+- Both benchmark adapters now expose their exact waveform only to the private
+  quality boundary; the performance path still discards it. The quality
+  boundary applies one identical mono PCM16 conversion, caps every sample at
+  120 seconds and the complete session at 512 MiB, and adds no dependency or
+  product audio contract.
+- Finalization requires the same 12 cases from both candidates, replaces
+  identity-bearing staging names with opaque random IDs, independently shuffles
+  each evaluator order, emits a local scoring page containing only case IDs and
+  the frozen rubric, and removes staging before evaluation.
+- Submission rejects partial, reordered, unknown, out-of-range, or incomplete
+  scorecards. Aggregation applies per-case medians and dimension means, marks a
+  panel below three evaluators non-promotable, and cleanup deletes the exact
+  path-confined session.
+- Model-free validation passes Ruff, strict mypy over 34 source files, and all
+  49 Python tests. The four new quality tests cover bounded two-candidate
+  creation, blinding/privacy, score validation, limited aggregation, failure
+  cleanup, closed input, and final cleanup without candidate packages, models,
+  NumPy, or audio devices.
+- The authoritative native `pnpm.cmd check` passes with the quality workflow:
+  formatting, ESLint, Rustfmt, Ruff, Clippy with warnings denied, TypeScript
+  and strict Python type checks, 18 shared files/175 tests, 34 EPUB files/555
+  tests, 20 desktop files/204 tests, six native WebDriver-client tests, all 49
+  Python tests, Cargo tests, package/desktop release builds, and Python
+  distributions. The existing Vite chunk-size advisory remains informational.
+- From clean implementation commit
+  `8251945566dd64037b47a335bceb58e7e0d49548`, session
+  `f85c4201a73441b6ae1cb0058aeb8ba6` generated all 12 Qwen and all 12
+  Supertonic listening samples under the exact verified candidate
+  interpreters and temporary application-scoped outbound blocks. Finalization
+  emitted one independently randomized evaluator page and marked the session
+  ineligible for promotion because the evaluator count is one.
+- The finalized session contains exactly 24 WAV files and no staging
+  directory, occupies 17,336,186 bytes against the 512 MiB cap, and its
+  evaluator page contains no candidate IDs, corpus text, privacy canary, or
+  private path. The temporary firewall rule is absent and AC sleep is restored
+  to 45 minutes. The ignored audio remains only until the maintainer submits
+  the blinded scorecard, after which aggregation and mandatory cleanup remain.
+- The completed scorecard passed strict submission validation. Its limited
+  aggregate gives Qwen an overall mean of `4.095238095238096` and Supertonic
+  `3.288095238095238` on the frozen 1–5 scale. Qwen's dimension means are
+  `4.333333333333333` intelligibility, `4.416666666666667` Spanish
+  pronunciation, `4.166666666666667` punctuation/dialogue, `4.0` numeric
+  expressions, `4.25` foreign names, `3.5` naturalness, and `4.0` artifact
+  freedom, with four meaning-changing defects. Supertonic's corresponding
+  means are `3.9166666666666665`, `3.75`, `3.8333333333333335`, `2.6`,
+  `2.5`, `3.1666666666666665`, and `3.25`, with five meaning-changing
+  defects.
+- The aggregate is correctly marked `eligibleForPromotion: false` with
+  `small-panel`, `spanish-only`, `fixed-voices-only`,
+  `synthetic-corpus-only`, and `not-accessibility-certification`
+  limitations. It is useful directional evidence but does not establish a
+  passing quality gate.
+- Required cleanup removed the entire session, including its 24 WAV files and
+  randomization key, plus the downloaded scorecard copy. A recursive raw-root
+  check found zero WAV files; the session and temporary firewall rule are
+  absent.
 
 #### Status
 
-Not started.
+Complete — the bounded blinded session was generated, scored by the one
+available fluent-Spanish evaluator, aggregated with the frozen limitations,
+and deleted with zero generated audio remaining. The result is limited and
+non-promotable; it is not a passing-quality claim.
 
 ### Task 3.4: Audit licensing, offline behavior, and packaging risk
 
@@ -852,11 +1162,33 @@ Performance cannot conceal an unacceptable license, download, privacy, or packag
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25. Sources were retrieved on that date. The frozen
+candidate manifest remains unchanged; this post-result audit records facts for
+selection without rewriting intake authority.
+
+| Audit field | Qwen balanced candidate | Supertonic compatibility candidate |
+| --- | --- | --- |
+| Engine code | `qwen-tts==0.1.1`, Apache-2.0. The exact PyPI release identifies the license, Python `>=3.9`, pure-Python wheel, release date, and dependency set; the upstream repository contains the Apache-2.0 grant and redistribution conditions. Sources: [PyPI release](https://pypi.org/project/qwen-tts/0.1.1/), [release JSON](https://pypi.org/pypi/qwen-tts/0.1.1/json), [upstream license](https://github.com/QwenLM/Qwen3-TTS/blob/main/LICENSE). | `supertonic==1.3.1`, MIT. The exact PyPI release identifies the SPDX expression, Python `>=3.9`, pure-Python wheel, four core dependencies, and optional playback/server extras; the MIT grant requires retaining its copyright and permission notice. Sources: [PyPI release](https://pypi.org/project/supertonic/1.3.1/), [release JSON](https://pypi.org/pypi/supertonic/1.3.1/json), [upstream license](https://github.com/supertone-inc/supertonic-py/blob/main/LICENSE). |
+| Model and voice | The exact `8f9ebcf8826db6eeb9cdd4caa09d575a7f9ce4bd` model card declares Apache-2.0. Aiden is embedded in that model, so no separately licensed voice artifact exists. Source: [revision-pinned model card](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice/blob/8f9ebcf8826db6eeb9cdd4caa09d575a7f9ce4bd/README.md). | The exact `3cadd1ee6394adea1bd021217a0e650ede09a323` snapshot includes the model and F1 style under BigScience OpenRAIL-M. It grants use, modification, hosting, and distribution, including end-use applications, subject to its conditions. Sources: [revision-pinned model card](https://huggingface.co/Supertone/supertonic-3/blob/3cadd1ee6394adea1bd021217a0e650ede09a323/README.md), [revision-pinned license](https://huggingface.co/Supertone/supertonic-3/blob/3cadd1ee6394adea1bd021217a0e650ede09a323/LICENSE). |
+| Redistribution and commercial use | Redistribution and commercial use are permitted. Distribution must include the Apache-2.0 license, preserve applicable notices, mark modified files, and carry any upstream `NOTICE` attribution if present. The frozen model snapshot contains no separate acceptance gate or additional voice terms. | Redistribution and charged end-use are permitted, but downstream terms must make the paragraph 5 use restrictions enforceable, notify recipients, include the license, retain notices, and mark modified files. Attachment A restricts listed harmful uses and requires machine-generated-content disclosure in its specified context. The license also asks for reasonable efforts to use the latest model. These are product-license and update-policy requirements, not optional attribution alone. |
+| Acquisition and offline behavior | Networked setup is required to obtain the wheel and approximately 2.50 GB verified snapshot. Upstream documents automatic or explicit Hugging Face/ModelScope download and accepts a local directory. Official runs used the local revision with `HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1`, and `local_files_only=true`; all phases completed while the exact interpreter was blocked outbound. No synthesis-time remote service was required. The firewall proof establishes offline operability, not the absence of blocked connection attempts. | Networked setup is required to obtain the wheel and approximately 414.7 MB snapshot. Upstream documents a first-run download, but also describes entirely on-device synthesis. Official runs instead used the verified local directory with `auto_download=false` and `HF_HUB_OFFLINE=1`; all phases completed while the exact interpreter was blocked outbound. No synthesis-time remote service was required. The firewall proof establishes offline operability, not the absence of blocked connection attempts. |
+| Measured installed footprint | Model snapshot: `2,498,444,461` bytes across 27 files. Isolated environment: `5,227,411,977` bytes across 32,460 files and 88 distributions. Combined: `7,725,856,438` bytes. Its 373 `.dll`, `.pyd`, and `.exe` files occupy `4,713,151,865` bytes; the largest include PyTorch CUDA, cuBLAS, cuDNN, and cuSPARSE binaries. | Model snapshot: `414,741,773` bytes across 79 files, including the 292,046-byte F1 style. Isolated environment: `111,691,023` bytes across 2,402 files and 24 distributions. Combined: `526,432,796` bytes. Its 42 `.dll`, `.pyd`, and `.exe` files occupy `77,514,569` bytes, led by OpenBLAS and ONNX Runtime. |
+| Verified platform | Windows `10.0.26200`, CPython `3.12.10`, PyTorch `2.9.1+cu128`, torchaudio `2.9.1+cu128`, CUDA/bfloat16/SDPA, NVIDIA driver `577.05`, and RTX 5060 Laptop GPU with 8,546,942,976 bytes VRAM. This is the only measured balanced configuration. | Windows `10.0.26200`, CPython `3.12.10`, `supertonic 1.3.1`, `onnxruntime 1.27.0`, CPUExecutionProvider, and float32 on the Intel Core Ultra 7 255HX. No GPU is required. This is the only measured compatibility configuration. |
+| Packaging risk | High. The benchmark lock pulls a broad 88-distribution graph, approximately 4.71 GB of native executables, GPU-driver compatibility, and packages not needed by the selected inference path, including Gradio and ONNX Runtime. FlashAttention was deliberately excluded, so there is no selected local build step, but a production package would need a purpose-built reduced lock, native-DLL notice collection, driver preflight, and a separate model-acquisition/update design. | Moderate. The core wheel is pure Python and the selected lock avoids playback and server extras, but ONNX Runtime, OpenBLAS, SoundFile, Hugging Face/Xet, and their native notices still require installer review. A production package should remove acquisition-only dependencies if feasible, preserve OpenRAIL-M terms in the application flow, define update handling, and keep model storage separate from ephemeral audio. |
+| Advisory check | The exact PyPI release JSON reported no known vulnerabilities for `qwen-tts==0.1.1`. This is not a transitive dependency audit and does not clear its 88-distribution graph. | The exact PyPI release JSON reported no known vulnerabilities for `supertonic==1.3.1`. This is not a transitive dependency audit and does not clear ONNX Runtime or other dependencies. |
+
+Neither candidate has an unresolved mandatory-network boundary after explicit
+setup. Qwen's Apache-2.0 terms are straightforward for packaging. Supertonic's
+OpenRAIL-M terms are explicit enough for this feasibility decision but impose
+material product-policy, disclosure, license-flow, and update-review work
+before distribution. Those burdens do not rescue or worsen either candidate's
+already failed frozen performance and cancellation gates.
 
 #### Status
 
-Not started.
+Complete — every audit row has dated authoritative sources or direct local
+measurement. No production dependency or model artifact was added, and no
+redistribution claim exceeds the reviewed license text.
 
 ## Milestone 4: Select profiles and record durable decisions
 
@@ -1234,6 +1566,37 @@ A profile is selectable only when its performance, quality, capability, license,
 - 2026-07-25: Completed Task 2.1. The private candidate-neutral harness, bounded diagnostic capture, allowlisted summary promotion, deterministic fake adapter, exact arithmetic, protocol ordering, and input/output/privacy/cancellation bounds pass all focused checks without candidate packages or hardware.
 - 2026-07-25: Completed Task 2.2. Thin Qwen and Supertonic adapters now validate the frozen profile, offline controls, local artifact hashes, runtime/provider/precision/voice identity, native complete-waveform behavior, and fixed-code failure boundary in deterministic model-free tests.
 - 2026-07-25: Completed Task 2.3. Spawn-isolated execution now bounds metadata and diagnostics, hard-stops worker process trees, rejects stale or falsely mid-generation complete-waveform output, restarts cleanly between forced-cancellation trials, and leaves real candidate limitations explicit for official measurement.
+- 2026-07-25: Started Task 3.1 on a new branch from merged Milestone 2. The closed preflight command, privacy-safe host/artifact receipt, role headroom gates, non-promotable pilot state, and exact Windows Firewall network-isolation proof pass deterministic tests; official eligibility awaits candidate acquisition, offline controls, firewall authorization, and sufficient free balanced-role RAM.
+- 2026-07-25: Completed the networked acquisition portion of Task 3.1. Both exact candidate locks installed, both immutable snapshots downloaded into ignored storage, and every manifest checksum/provider import matched. Windows denied creation of the required outbound firewall rule because the shell is not elevated; the prior AC sleep timeout was restored and no inference began.
+- 2026-07-25: The administrator-created Supertonic application rule was
+  verified and its official compatibility preflight passed from clean commit
+  `64e8324f9426c381dcac1d013264ba9fcb833065`. No model loaded. Qwen still
+  requires its exact rule and the frozen 12 GiB free-RAM headroom.
+- 2026-07-25: Started Task 3.2 implementation before model execution. The
+  exact-interpreter supervisor, disposable pilot, bounded raw journal,
+  50-millisecond PID-tree RAM probe, sustained-phase timeout, all-trial
+  cancellation journaling, and exact Supertonic loaded-provider verification
+  pass model-free checks. Balanced process-attributed VRAM measurement remains
+  fail-closed; at that checkpoint no pilot or official generation had run.
+- 2026-07-25: The first non-comparable Supertonic pilot loaded the verified
+  local CPU profile but failed generation because the adapter mock had the
+  wrong installed return shape. It retained no raw session. The pre-result
+  fix unpacks the actual `(waveform, duration)` pair and discards both values
+  after extracting bounded sample metadata.
+- 2026-07-25: The corrected Supertonic pilot passed from clean commit
+  `56bd9894fd582375dd1b45e384155705f14f07cb` with no retained raw session.
+  The frozen gates and corpus were unchanged, so the official CPU matrix may
+  proceed from the next clean documentation checkpoint.
+- 2026-07-25: The official Supertonic matrix completed from clean commit
+  `532e2c740f463ff09ebfce9581a68462307ae7ab`. All numeric phases completed
+  and the raw journal passed content/path scans. The profile failed the
+  first-audio and cancellation gates; no summary was promoted while quality
+  and audit fields remain incomplete.
+- 2026-07-25: A disposable 256 MiB CUDA allocation proved that this host's
+  WDDM driver reports process VRAM as `[N/A]`, matching NVIDIA's documented
+  NVML limitation. Because balanced process-attributed VRAM is mandatory, the
+  Qwen matrix is blocked before model load; total-device or zero substitution
+  is prohibited.
 - 2026-07-25: Completed Task 1.3 and Milestone 1. The pre-result measurement procedure, numeric gates, listening rubric, invalidation/rerun rules, private summary schema, synthetic valid fixture, and semantic mutation tests are frozen and linked from the performance and architecture authorities. No engine was executed and no official result exists.
 - 2026-07-25: Corrected the recorded sustained-sequence total from 3,144
   to the verified 3,139 code points and froze that exact aggregate in the
@@ -1244,6 +1607,93 @@ A profile is selectable only when its performance, quality, capability, license,
   pass the 14-test Python suite plus Ruff and strict mypy. No candidate
   dependency, model, audio payload, hardware access, production service API,
   root benchmark command, or official result was added.
+- 2026-07-25: Verified post-run cleanup after administrator action. The exact
+  temporary Supertonic outbound firewall rule no longer exists, AC sleep is
+  restored to 45 minutes, and the feature branch is clean. The Qwen run remains
+  blocked independently by unavailable process-attributed NVML VRAM under
+  WDDM.
+- 2026-07-25: The maintainer approved replacing the blocked `v1` memory rule
+  with a versioned authority instead of buying new hardware. Local inspection
+  confirmed PID-tagged `GPU Process Memory` dedicated/shared counters on the
+  measured WDDM host. `v2` will pair the one-second Windows process counter
+  with PyTorch's in-worker allocator peak, preserve the six-GiB gate and
+  privacy boundary, and require complete reruns of both admitted candidates.
+- 2026-07-25: Implemented the `v2` Windows/PyTorch memory path. Native PDH
+  WDDM attribution, private-pipe allocator peaks, dual-signal fail-closed
+  semantics, v2 raw/summary authorities, preflight availability, and
+  deterministic coverage pass 45 tests, Ruff, and strict mypy. A disposable
+  exact-environment CUDA allocation proved the local WDDM counter attributes
+  positive dedicated bytes to the allocating PID.
+- 2026-07-25: The authoritative native `pnpm.cmd check` passed after the v2
+  implementation, including all format/lint/type/test/build stages and the
+  expanded 45-test Python suite.
+- 2026-07-25: Attempted the clean Qwen `v2` preflight setup. Windows denied
+  creation of the exact application-scoped firewall rule because the process
+  is not administrator-elevated. AC sleep was restored to 45 minutes and no
+  candidate execution began. The next action requires administrator
+  authorization to create that one temporary rule.
+- 2026-07-25: Administrator authorization succeeded. Two temporary duplicate
+  Qwen rules left by the elevation retries were replaced with one exact
+  interpreter-scoped outbound block, and native verification found exactly one
+  matching rule. The clean official `v2` preflight passed every other check but
+  failed the frozen 12-GiB balanced-role RAM-headroom gate: free RAM was
+  11,785,637,888 bytes. Free VRAM was 8,189,378,560 bytes and the WDDM process
+  counter was available. No model loaded, no raw session or result was created,
+  and AC sleep was restored to 45 minutes. Closing active user applications is
+  a required operator decision because automated termination could discard
+  work or terminate the benchmark session.
+- 2026-07-25: Closing Chrome restored sufficient free RAM. The clean Qwen
+  official preflight and disposable pilot passed from commit
+  `76f27d1ff41b4d4ea1e20341b9a4cd9d86b3f8ff`. The complete official matrix
+  then produced valid content-free `v2` evidence and failed the balanced role
+  on startup, throughput, zero-failure, and cancellation gates while remaining
+  below the frozen RAM and VRAM ceilings. No generated audio was retained.
+- 2026-07-25: The exact firewall rule was switched to Supertonic. Its clean
+  `v2` preflight, disposable pilot, and complete official matrix passed setup
+  from commit `a0640fe7ff1c3bde4ceb68ba8e89cb57150adaac`. The valid content-free
+  CPU evidence passes every numeric compatibility gate except first-audio
+  latency and fails cancellation at the same three unavailable
+  complete-waveform boundaries. Task 3.2 is complete; neither candidate passes
+  its assigned role.
+- 2026-07-25: Post-run cleanup removed the exact temporary firewall rule,
+  restored the 45-minute AC sleep timeout, and verified a clean tree at
+  `7ab924a520f6a5c964e8b7d3fa92dff9377eb311`. Task 3.3 is blocked before
+  audio generation because the required three-person fluent-Spanish panel is
+  not yet confirmed.
+- 2026-07-25: The maintainer approved proceeding as the only fluent-Spanish
+  evaluator. This does not change the frozen three-evaluator gate: the resulting
+  score remains limited and non-promotable. The bounded explicit-opt-in
+  generation, blinding, scoring, aggregation, and cleanup workflow now passes
+  49 model-free Python tests, Ruff, strict mypy, and the complete native root
+  check; no listening audio has yet been generated.
+- 2026-07-25: The clean one-evaluator quality session
+  `f85c4201a73441b6ae1cb0058aeb8ba6` generated all 12 samples for each
+  admitted candidate from commit
+  `8251945566dd64037b47a335bceb58e7e0d49548`. Finalization produced one
+  blinded, independently randomized 24-sample page and correctly marked it
+  non-promotable. The session is 17,336,186 bytes, has no staging residue, and
+  its page contains no candidate identity, corpus text, canary, or private
+  path. The temporary firewall rule was removed and AC sleep restored to 45
+  minutes. Manual scoring, limited aggregation, and verified audio cleanup
+  remain.
+- 2026-07-25: Completed Task 3.3. The submitted scorecard passed strict
+  validation. Limited blinded means were `4.095238095238096` for Qwen and
+  `3.288095238095238` for Supertonic, with four and five meaning-changing
+  defects respectively. The one-evaluator aggregate is correctly
+  non-promotable and carries all five frozen limitations. Required cleanup
+  removed the complete session, randomization key, downloaded scorecard, and
+  all 24 WAV files; recursive verification found zero generated audio and no
+  temporary firewall rule.
+- 2026-07-25: Completed Task 3.4 against revision-pinned Hugging Face
+  materials, exact PyPI releases, upstream licenses, the installed locks, and
+  direct filesystem measurements. Qwen is Apache-2.0 but carries a
+  7,725,856,438-byte combined footprint, 88 distributions, 373 native files,
+  and high CUDA/driver/installer risk. Supertonic code is MIT and its model/F1
+  voice are OpenRAIL-M; its 526,432,796-byte combined footprint is smaller,
+  but redistribution requires enforceable use restrictions, downstream
+  notice/license flow, disclosure policy, and update review. Both exact
+  profiles completed synthesis under application-scoped outbound denial, so
+  neither has a mandatory synthesis-time network dependency after setup.
 
 ## Discoveries and decisions
 
@@ -1254,6 +1704,7 @@ A profile is selectable only when its performance, quality, capability, license,
   Supertonic/ONNX CPU profiles to the frozen evaluation only; admission does
   not select either profile or authorize a production dependency.
 - Official model execution must be offline after explicit acquisition. A local loopback server is not required for feasibility and would prematurely couple the work to Milestone 7.
+- The exact application-scoped Windows Firewall rule requires an administrator PowerShell session. Ordinary repository/tool sandbox escalation does not grant that operating-system authorization; an access-denied attempt created no rule and is a hard preflight blocker rather than permission to weaken the offline gate.
 - Milestone 2 intentionally adds no root TTS benchmark command. The candidate dispatch and isolation boundary now exist, but acquisition, host/resource preflight, network-disable proof, raw-session ownership, measurement probes, and official promotion are Task 3 work; exposing a partial command would create a non-authoritative result path.
 - First produced audio, complete generated output, media duration, and audible playback are different measurements. Milestone 6 can measure the first three but does not implement or claim the fourth.
 - A benchmark worker process may be used for isolation and termination measurement without selecting the production process transport.
@@ -1277,6 +1728,14 @@ A profile is selectable only when its performance, quality, capability, license,
 - The Qwen candidate uses SDPA rather than optional FlashAttention so admission
   does not add an unproven native build. This is a benchmark profile choice, not
   a production runtime decision.
+- Windows WDDM exposes PID-tagged dedicated GPU-memory counters even when NVML
+  process memory is unavailable. Microsoft documents these as VidMm-owned
+  process observations that include CUDA workloads, but also states that
+  Windows performance counters are not appropriate above one sample per
+  second. `v2` therefore cannot merely swap the old 50-millisecond NVML sample
+  for a 50-millisecond WDDM sample: it combines the one-second WDDM
+  process-attribution cross-check with PyTorch's exact caching-allocator
+  high-water mark and fails if either signal is unavailable or inconsistent.
 
 ## Final validation results
 
@@ -1327,10 +1786,70 @@ Milestone 1 completed on 2026-07-25 on
   raw result, cache, private path, corpus text, or privacy canary entered a
   reviewable summary.
 
-No model was downloaded or executed, no generated audio or official result was
-created, and no GPU/hardware claim was made. Milestones 2-5 of this ExecPlan,
-including model acquisition, hardware measurement, listening evaluation,
-profile selection, ADR acceptance, and full Milestone 6 closeout, remain not
-started.
+At that Milestone 1 checkpoint, no model was downloaded or executed, no
+generated audio or official result was created, and no GPU/hardware claim was
+made. The later entries above supersede that historical execution status.
+
+### Milestone 3 validation
+
+Completed on 2026-07-25:
+
+- Focused model-free validation passed Ruff, strict mypy, the native
+  process-tree smoke, and all 43 Python tests.
+- The corrected non-comparable Supertonic pilot passed and retained no raw
+  session.
+- The official Supertonic matrix completed every numeric phase from clean
+  commit `532e2c740f463ff09ebfce9581a68462307ae7ab`; its ignored raw journal
+  passed exact count/order, corpus-text/canary, absolute-path, sample-duration,
+  RTF, percentile, sustained-total, memory, and cancellation inspection.
+- The first `pnpm.cmd check` reached TypeScript lint and failed because ESLint
+  traversed the newly installed ignored candidate `.venv`. After adding the
+  recursive ignore, the authoritative native `pnpm.cmd check` passed
+  formatting, ESLint, Rustfmt, Ruff, Clippy with warnings denied, TypeScript
+  and strict Python type checks, 18 shared files/175 tests, 34 EPUB files/555
+  tests, 20 desktop files/204 tests, six native WebDriver-client tests, all 43
+  Python tests, Cargo tests, package/desktop release builds, and Python
+  distributions. The existing Vite chunk-size advisory remained
+  informational.
+- AC sleep was restored to its prior 45-minute value. After the initial
+  non-administrator removal attempt was denied, the administrator removed the
+  temporary Supertonic firewall rule and a native query confirmed that no
+  matching rule remains.
+- The `v2` Windows/PyTorch authority, native WDDM attribution, private worker
+  peak, preflight integration, and fail-closed dual-signal semantics pass
+  deterministic coverage. A disposable exact-environment CUDA allocation
+  attributed 372,781,056 dedicated bytes to the allocating process.
+- Both official `v2` matrices contain the frozen five cold loads, 24 warm
+  generations, 12 sustained generations, and five cancellation trials. Their
+  raw journals passed count/order, arithmetic, duration, text/canary,
+  absolute-path, memory, cancellation, and privacy audits.
+- The bounded quality session generated the same 12 cases for both candidates,
+  blinded and independently randomized all 24 samples, accepted only the
+  complete scorecard, marked the one-evaluator aggregate non-promotable, and
+  deleted the session, randomization key, scorecard copy, and every WAV.
+- The license/offline/packaging matrix uses revision-pinned model materials,
+  exact PyPI releases, upstream licenses, installed-lock inspection, and
+  direct local size measurements retrieved on 2026-07-25.
+- The authoritative final `pnpm.cmd check` passed on implementation commit
+  `7a523f518ff964ad399599f4d4fe75183c49e1a9`: Prettier, Rustfmt, Ruff,
+  ESLint, Clippy with warnings denied, TypeScript and strict Python type
+  checks, 18 shared files/175 tests, 34 EPUB files/555 tests, 20 desktop
+  files/204 tests, six native WebDriver-client tests, all 49 Python tests,
+  Cargo tests, package/desktop release builds, and Python distributions. The
+  existing Vite chunk-size advisory remained informational.
+- Final cleanup verification found zero generated WAV files, no quality
+  session or downloaded scorecard, no benchmark firewall rule, and the
+  restored 45-minute AC sleep value.
+
+Milestone 3 is complete. The Qwen `v2` matrix is valid but fails balanced-role
+startup, throughput, zero-failure, and cancellation gates; its peak RAM and
+dual-signal VRAM observations pass their ceilings. The Supertonic `v2` matrix
+is valid but fails compatibility first-audio, zero-failure, and cancellation
+gates while passing its other numeric gates. Limited blinded quality favors
+Qwen but cannot establish a passing gate, and both candidates had
+meaning-changing defects. Licensing and offline operation are sufficiently
+resolved for selection, with high Qwen and moderate Supertonic packaging risk.
+No summary was promoted and no profile was selected; those decisions belong to
+Milestone 4.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.

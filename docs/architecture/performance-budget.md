@@ -171,10 +171,12 @@ Store summarized, reproducible benchmark reports in Git. Do not commit:
 - Very large raw profiling artifacts.
 
 Milestone 6's
-[`tts-feasibility-profile-v1`](tts-feasibility-profile-v1.md) is the frozen
-authority for local TTS timing boundaries, process-cold and warm sample counts,
-sample-derived duration/RTF arithmetic, nearest-rank percentiles, memory and
-cancellation observations, blinded Spanish quality scoring, and balanced/CPU
-numeric gates. It measures how quickly 15 seconds of media is produced; it
-does not add a fixed wait or implement playback. Its benchmark-local summary
-schema permits only content-free allowlisted fields.
+[`tts-feasibility-profile-v2`](tts-feasibility-profile-v2.md) is the current
+rerun authority for local TTS timing boundaries, process-cold and warm sample
+counts, sample-derived duration/RTF arithmetic, nearest-rank percentiles,
+cross-checked Windows/PyTorch memory observations, cancellation, blinded
+Spanish quality scoring, and balanced/CPU numeric gates. It measures how
+quickly 15 seconds of media is produced; it does not add a fixed wait or
+implement playback. Its benchmark-local summary schema permits only
+content-free allowlisted fields. The superseded `v1` authority remains
+historical and cannot promote a `v2` result.

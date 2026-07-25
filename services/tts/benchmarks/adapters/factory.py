@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
@@ -41,6 +42,7 @@ def create_isolated_candidate_adapter(
     configuration: CandidateConfiguration,
     forbidden_values: tuple[str, ...],
     timeouts: IsolationTimeouts | None = None,
+    framework_memory_observer: Callable[[int | None], None] | None = None,
 ) -> IsolatedBenchmarkAdapter:
     """Build the candidate-neutral worker boundary for one admitted profile."""
 
@@ -49,6 +51,7 @@ def create_isolated_candidate_adapter(
         CandidateAdapterFactory(profile, configuration),
         forbidden_values=forbidden_values,
         timeouts=timeouts,
+        framework_memory_observer=framework_memory_observer,
     )
 
 

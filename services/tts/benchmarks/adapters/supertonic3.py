@@ -38,8 +38,20 @@ class _Waveform(Protocol):
     shape: tuple[int, int]
 
 
+class _OnnxSession(Protocol):
+    def get_providers(self) -> list[str]: ...
+
+
+class _SupertonicCore(Protocol):
+    dp_ort: _OnnxSession
+    text_enc_ort: _OnnxSession
+    vector_est_ort: _OnnxSession
+    vocoder_ort: _OnnxSession
+
+
 class _SupertonicEngine(Protocol):
     sample_rate: int
+    model: _SupertonicCore
 
     def get_voice_style(self, voice_id: str) -> object: ...
 
@@ -47,7 +59,7 @@ class _SupertonicEngine(Protocol):
         self,
         text: str,
         **kwargs: object,
-    ) -> _Waveform: ...
+    ) -> tuple[_Waveform, object]: ...
 
 
 class _EngineFactory(Protocol):
@@ -115,6 +127,14 @@ class Supertonic3Adapter:
                 model_dir=str(root),
                 auto_download=False,
             )
+            sessions = (
+                engine.model.dp_ort,
+                engine.model.text_enc_ort,
+                engine.model.vector_est_ort,
+                engine.model.vocoder_ort,
+            )
+            if any(session.get_providers() != ["CPUExecutionProvider"] for session in sessions):
+                raise AdapterConfigurationError("provider-selected")
             if engine.sample_rate != self._profile.output_sample_rate_hz:
                 raise AdapterConfigurationError("invalid-output")
             voice_style = engine.get_voice_style(self._profile.voice_id)
@@ -129,13 +149,15 @@ class Supertonic3Adapter:
         for _ in self.generate(request):
             pass
 
-    def generate(self, request: GenerationRequest) -> Iterator[AudioChunk]:
+    def synthesize_for_quality(self, request: GenerationRequest) -> tuple[_Waveform, int]:
+        """Return one waveform only for the explicit disposable listening workflow."""
+
         engine = self._engine
         voice_style = self._voice_style
         if engine is None or voice_style is None:
             raise AdapterConfigurationError("not-loaded")
         try:
-            waveform = engine.synthesize(
+            waveform, duration = engine.synthesize(
                 request.text,
                 voice_style=voice_style,
                 lang="es",
@@ -145,6 +167,7 @@ class Supertonic3Adapter:
                 silence_duration=0.3,
                 verbose=False,
             )
+            del duration
             shape = waveform.shape
             if not isinstance(shape, tuple) or len(shape) != 2 or shape[0] != 1:
                 raise AdapterConfigurationError("invalid-output")
@@ -158,6 +181,11 @@ class Supertonic3Adapter:
             raise
         except Exception:
             raise AdapterConfigurationError("generation-failed") from None
+        return waveform, sample_rate
+
+    def generate(self, request: GenerationRequest) -> Iterator[AudioChunk]:
+        waveform, sample_rate = self.synthesize_for_quality(request)
+        sample_count = waveform.shape[1]
         del waveform
         yield AudioChunk(
             request_id=request.request_id,
@@ -172,6 +200,9 @@ class Supertonic3Adapter:
     def cancel(self, request_id: str) -> CancellationResponse:
         del request_id
         return CancellationResponse(acknowledged=False, stop_mode=None)
+
+    def framework_memory_high_water_bytes(self) -> None:
+        return None
 
     def close(self) -> None:
         self._voice_style = None

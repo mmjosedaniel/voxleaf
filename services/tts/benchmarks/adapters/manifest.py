@@ -33,6 +33,13 @@ class ArtifactIdentity:
 
 
 @dataclass(frozen=True)
+class VerifiedArtifact:
+    artifact_id: str
+    sha256: str
+    size_bytes: int
+
+
+@dataclass(frozen=True)
 class CandidateProfile:
     candidate_id: str
     role: Literal["balanced", "compatibility"]
@@ -219,9 +226,13 @@ def validate_configuration(
     return root
 
 
-def verify_artifacts(root: Path, artifacts: tuple[ArtifactIdentity, ...]) -> None:
+def verify_and_measure_artifacts(
+    root: Path,
+    artifacts: tuple[ArtifactIdentity, ...],
+) -> tuple[VerifiedArtifact, ...]:
     """Verify allowlisted local files without following paths outside the root."""
 
+    verified: list[VerifiedArtifact] = []
     for artifact in artifacts:
         relative = PurePosixPath(artifact.relative_path)
         if relative.is_absolute() or ".." in relative.parts:
@@ -242,3 +253,15 @@ def verify_artifacts(root: Path, artifacts: tuple[ArtifactIdentity, ...]) -> Non
             raise AdapterConfigurationError("artifact-unreadable") from None
         if digest.hexdigest() != artifact.sha256:
             raise AdapterConfigurationError("artifact-mismatch")
+        verified.append(
+            VerifiedArtifact(
+                artifact_id=relative.as_posix().replace("/", ":"),
+                sha256=artifact.sha256,
+                size_bytes=target.stat().st_size,
+            )
+        )
+    return tuple(verified)
+
+
+def verify_artifacts(root: Path, artifacts: tuple[ArtifactIdentity, ...]) -> None:
+    verify_and_measure_artifacts(root, artifacts)

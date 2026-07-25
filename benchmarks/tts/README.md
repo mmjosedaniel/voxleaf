@@ -9,10 +9,13 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   acquisition boundaries, and isolated uv projects before measurements.
 - `corpus-v1.json` freezes the repository-authored prepared-text corpus and
   performance order.
-- `schemas/summary-v1.schema.json` is the private benchmark-summary schema.
+- `schemas/summary-v2.schema.json` is the current private benchmark-summary
+  schema. It reuses unchanged closed definitions from the retained historical
+  `summary-v1.schema.json` through an offline schema registry.
 - `fixtures/` contains synthetic validation fixtures, not candidate results.
-- [`docs/architecture/tts-feasibility-profile-v1.md`](../../docs/architecture/tts-feasibility-profile-v1.md)
-  freezes the procedure, gates, listening rubric, and invalidation rules.
+- [`docs/architecture/tts-feasibility-profile-v2.md`](../../docs/architecture/tts-feasibility-profile-v2.md)
+  is the current rerun authority. The superseded `v1` document and fixture
+  remain historical validation evidence only.
 
 Raw measurements, model files, generated audio, listening-session metadata,
 and profiling output belong below `benchmarks/results/raw/`, which is ignored.
@@ -83,9 +86,51 @@ benchmark records this honestly and rejects an end-of-output frame as evidence
 of a mid-generation cancellation boundary. Worker termination is benchmark
 feasibility evidence only, not a production cancellation design.
 
-There is intentionally no root TTS benchmark command yet. Milestone 2 supplies
-the bounded execution boundary, but artifact acquisition, host preflight,
-offline network enforcement, hardware measurement, and official result
-promotion belong to later tasks in the active plan. Adding a runnable command
-before those pieces exist would create an incomplete and non-authoritative
-measurement path.
+Milestone 3 adds explicit root commands. `benchmark:tts:preflight` verifies
+the clean revision, exact artifacts, host headroom, offline controls, and exact
+candidate-interpreter firewall rule without loading a model.
+`benchmark:tts:measure` repeats that preflight, launches the exact candidate
+interpreter, and either runs one disposable non-comparable pilot or the frozen
+official protocol. Private paths enter only through bounded standard input.
+
+Official execution records bounded content-free nanosecond/sample/resource
+observations under the ignored raw session directory. It does not retain
+waveform samples. A raw session is not a reviewable summary and is never
+eligible for selection until the quality, audit, schema, arithmetic, privacy,
+and gate promotion steps pass. The balanced role fails closed unless both the
+one-second PID-tagged Windows WDDM dedicated-memory counter and the isolated
+Qwen worker's PyTorch allocator high-water mark are available and positive.
+The authoritative peak is their maximum. RAM remains sampled every 50
+milliseconds; PIDs, counter instances, paths, and unrelated process values
+never enter raw or reviewable output.
+
+## Disposable blinded quality session
+
+The five `benchmark:tts:quality:*` commands implement the manual listening
+boundary. They are explicit native-Windows commands outside CI. They never run
+unless `qualityOptIn` is the JSON boolean `true`, repeat the exact official
+preflight for each candidate, and write only below the ignored
+`benchmarks/results/raw/quality-v2/<session-id>/` directory.
+
+Use one caller-created 32-character lowercase hexadecimal session ID for both
+candidates. Run `quality:generate` once per candidate while that candidate's
+exact interpreter firewall rule is active. A generation failure removes the
+whole session instead of retaining a partial comparison. After both candidates
+produce the same 12 frozen cases, `quality:finalize` converts the staging names
+to opaque random IDs, creates an independently randomized evaluator page and
+scorecard for each evaluator, and removes the identity-bearing staging tree.
+
+Each evaluator page reveals only case IDs, instructions, opaque audio names,
+and the frozen seven scoring dimensions. It contains no narration text,
+privacy canary, candidate, engine, model, voice, path, or prior result. Its
+exported completed scorecard is submitted through
+`benchmark:tts:quality:submit`; `quality:aggregate` applies the frozen
+per-case median and dimension-mean arithmetic. Fewer than three evaluators
+remain explicitly ineligible for summary promotion even though the limited
+aggregate can be inspected. `quality:cleanup` removes the exact session and
+all generated audio after the result is recorded.
+
+The audio boundary is mono 16-bit PCM WAV using the same bounded conversion for
+both candidates. Each file is capped at 120 seconds and the whole session at
+512 MiB. Audio is temporary benchmark evidence only: never commit, attach,
+copy into documentation, or treat it as the product's future audio format.

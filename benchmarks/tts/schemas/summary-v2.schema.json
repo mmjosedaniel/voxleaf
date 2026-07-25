@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:benchmark:tts-feasibility-summary:v2",
+  "title": "VoxLeaf local TTS feasibility summary v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "protocolVersion",
+    "corpusVersion",
+    "candidateManifestVersion",
+    "reportPurpose",
+    "candidateId",
+    "role",
+    "source",
+    "host",
+    "runtime",
+    "artifacts",
+    "output",
+    "counts",
+    "loadObservations",
+    "generationObservations",
+    "aggregates",
+    "memory",
+    "cancellation",
+    "quality",
+    "audits",
+    "gateEvaluation",
+    "notes"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "tts-feasibility-summary-v2"
+    },
+    "protocolVersion": {
+      "const": "tts-feasibility-profile-v2"
+    },
+    "corpusVersion": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/corpusVersion"
+    },
+    "candidateManifestVersion": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/candidateManifestVersion"
+    },
+    "reportPurpose": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/reportPurpose"
+    },
+    "candidateId": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/candidateId"
+    },
+    "role": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/role"
+    },
+    "source": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/source"
+    },
+    "host": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/host"
+    },
+    "runtime": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/runtime"
+    },
+    "artifacts": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/artifacts"
+    },
+    "output": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/output"
+    },
+    "counts": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/counts"
+    },
+    "loadObservations": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/loadObservations"
+    },
+    "generationObservations": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/generationObservations"
+    },
+    "aggregates": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/aggregates"
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ramSamplingIntervalMilliseconds",
+        "processVramSamplingIntervalMilliseconds",
+        "vramMeasurementMethod",
+        "peakProcessTreeRamBytes",
+        "peakProcessVramBytes",
+        "peakFrameworkVramBytes",
+        "peakVramBytes",
+        "gpuProviderAllocations"
+      ],
+      "properties": {
+        "ramSamplingIntervalMilliseconds": {
+          "const": 50
+        },
+        "processVramSamplingIntervalMilliseconds": {
+          "oneOf": [
+            {
+              "const": 1000
+            },
+            {
+              "const": "unavailable"
+            }
+          ]
+        },
+        "vramMeasurementMethod": {
+          "enum": [
+            "unavailable-cpu-role",
+            "wddm-dedicated-plus-pytorch-reserved"
+          ]
+        },
+        "peakProcessTreeRamBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "peakProcessVramBytes": {
+          "$ref": "#/$defs/optionalBytes"
+        },
+        "peakFrameworkVramBytes": {
+          "$ref": "#/$defs/optionalBytes"
+        },
+        "peakVramBytes": {
+          "$ref": "#/$defs/optionalBytes"
+        },
+        "gpuProviderAllocations": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "cancellation": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/cancellation"
+    },
+    "quality": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/quality"
+    },
+    "audits": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/audits"
+    },
+    "gateEvaluation": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/gateEvaluation"
+    },
+    "notes": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/notes"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "balanced"
+          }
+        },
+        "required": ["role"]
+      },
+      "then": {
+        "properties": {
+          "memory": {
+            "properties": {
+              "processVramSamplingIntervalMilliseconds": {
+                "const": 1000
+              },
+              "vramMeasurementMethod": {
+                "const": "wddm-dedicated-plus-pytorch-reserved"
+              },
+              "peakProcessVramBytes": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "peakFrameworkVramBytes": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "peakVramBytes": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "gpuProviderAllocations": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "memory": {
+            "properties": {
+              "processVramSamplingIntervalMilliseconds": {
+                "const": "unavailable"
+              },
+              "vramMeasurementMethod": {
+                "const": "unavailable-cpu-role"
+              },
+              "peakProcessVramBytes": {
+                "const": "unavailable"
+              },
+              "peakFrameworkVramBytes": {
+                "const": "unavailable"
+              },
+              "peakVramBytes": {
+                "const": "unavailable"
+              },
+              "gpuProviderAllocations": {
+                "const": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "optionalBytes": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "const": "unavailable"
+        }
+      ]
+    }
+  }
+}
