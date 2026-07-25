@@ -539,11 +539,38 @@ The harness and sanitizer are trustworthy before a large third-party model stack
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- Added a private `services/tts/benchmarks` package with a typed synchronous
+  adapter protocol for capability observation, load, warm-up, payload-free
+  generation metadata, cancellation, and close. The package is included in
+  strict mypy checks but remains outside the built `voxleaf_tts` production
+  package and root export.
+- The harness retains integer monotonic nanoseconds until serialization,
+  derives media duration only from per-channel sample frames and sample rate,
+  enforces one 640-code-point request plus explicit chunk/sample/rate/channel
+  bounds, and never accepts or retains waveform payload.
+- Candidate stdout and stderr are redirected into a 65,536-byte transient
+  boundary. It records only counts/truncation/sensitive-value presence,
+  discards captured bytes, and converts adapter exceptions to fixed codes.
+- The allowlisted builder constructs every summary field explicitly. Promotion
+  validates the checked-in schema, recomputes counts, order, duration, RTF,
+  nearest-rank distributions, sustained totals, cancellation gates, and role
+  memory constraints, rejects private paths and corpus canaries, and emits
+  canonical JSON plus content-free Markdown without writing a file.
+- A manual-clock fake executes all five cold observations, the excluded
+  warm-up, 24 warm requests, a 180-second sustained round, and all five
+  cancellation trials without sleeping, networking, hardware, candidate
+  packages, models, audio devices, files, or waveform allocation.
+- Focused Ruff, strict mypy over 13 source files, and the complete Python suite
+  pass 14 tests. Exact/max-plus-one input and output bounds, timing arithmetic,
+  diagnostic truncation, sensitive stdout/stderr, raw exception redaction,
+  unknown summary fields, arithmetic drift, private paths, filename canaries,
+  cancellation cleanup, and schema-valid promotion are covered.
 
 #### Status
 
-Not started.
+Complete.
 
 ### Task 2.2: Implement thin adapters for every admitted candidate
 
@@ -1131,6 +1158,12 @@ A profile is selectable only when its performance, quality, capability, license,
 - 2026-07-25: Corrected the recorded sustained-sequence total from 3,144
   to the verified 3,139 code points and froze that exact aggregate in the
   corpus authority test.
+- 2026-07-25: Completed Task 2.1. The benchmark-only typed harness, exact
+  sample/timing arithmetic, bounded diagnostic redaction, allowlisted
+  schema/semantic promotion gate, and full-protocol deterministic fake now
+  pass the 14-test Python suite plus Ruff and strict mypy. No candidate
+  dependency, model, audio payload, hardware access, production service API,
+  root benchmark command, or official result was added.
 
 ## Discoveries and decisions
 
