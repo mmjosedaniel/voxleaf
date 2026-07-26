@@ -5,15 +5,18 @@ from __future__ import annotations
 import copy
 import json
 import sys
+from dataclasses import replace
 from pathlib import Path
 from typing import Final, cast
 
 import pytest
 
 from benchmarks.contracts import (
+    AdapterCapabilities,
     ArtifactSummary,
     BenchmarkRunResult,
     GenerationRequest,
+    MemoryObservation,
     SummaryMetadata,
 )
 from benchmarks.diagnostics import MAX_DIAGNOSTIC_BYTES, DiagnosticCapture
@@ -24,6 +27,7 @@ from benchmarks.fake_adapter import (
 )
 from benchmarks.harness import (
     MAX_INPUT_CODE_POINTS,
+    MAX_INPUT_UTF8_BYTES,
     MAX_SAMPLE_FRAMES_PER_REQUEST,
     BenchmarkHarness,
     load_corpus,
@@ -45,6 +49,9 @@ from benchmarks.summary import (
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v1.json"
 SCHEMA_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "schemas" / "summary-v2.schema.json"
+V3_SCHEMA_PATH: Final = (
+    REPOSITORY_ROOT / "benchmarks" / "tts" / "schemas" / "summary-v3.schema.json"
+)
 
 
 def fixture_metadata() -> SummaryMetadata:
@@ -303,6 +310,18 @@ def test_exact_input_and_output_bounds_fail_closed_without_pending_work() -> Non
             forbidden_values=forbidden_values,
         )
 
+    with pytest.raises(RuntimeError, match=r"^tts-benchmark:invalid-request:max-input-bytes$"):
+        harness.observe_generation(
+            exact_adapter,
+            GenerationRequest(
+                request_id="max-input-bytes",
+                case_id=case.case_id,
+                phase="warm",
+                text="🦊" * (MAX_INPUT_UTF8_BYTES // 4 + 1),
+            ),
+            forbidden_values=forbidden_values,
+        )
+
     oversized_adapter = DeterministicFakeAdapter(
         clock,
         sample_count_override=MAX_SAMPLE_FRAMES_PER_REQUEST + 1,
@@ -382,3 +401,77 @@ def test_promotion_rejects_unknown_fields_arithmetic_drift_canaries_and_paths() 
         match=r"^tts-benchmark-summary:sensitive-value$",
     ):
         summary_filename(canary, forbidden_values=forbidden_values)
+
+
+def test_v3_summary_build_and_promotion_keep_only_authority_fingerprints() -> None:
+    result, _, _ = run_fake_protocol()
+    assert result.run is not None
+    candidate_id = "qwen3-tts-1-7b-customvoice-cuda-bf16-v1"
+    run = replace(
+        result.run,
+        candidate_id=candidate_id,
+        role="balanced",
+        capabilities=AdapterCapabilities(
+            candidate_id=candidate_id,
+            streaming_granularity="complete-waveform",
+            sample_format="float32",
+            generation_cancellation="worker-termination",
+        ),
+        memory=MemoryObservation(
+            ram_sampling_interval_milliseconds=50,
+            process_vram_sampling_interval_milliseconds=1000,
+            vram_measurement_method="wddm-dedicated-plus-pytorch-reserved",
+            peak_process_tree_ram_bytes=5_000_000_000,
+            peak_process_vram_bytes=4_000_000_000,
+            peak_framework_vram_bytes=5_000_000_000,
+            peak_vram_bytes=5_000_000_000,
+            gpu_provider_allocations=1,
+        ),
+    )
+    authority = {
+        "profileSha256": "7d062a4f662ed95b1cb5ff0a21fc40864f4ac3858cea4314ee612b84c2e08dbe",
+        "configurationIdentitySha256": (
+            "b689b9b81cc7633687e80030ed172878d89196d57149370a82839e1ec83d61df"
+        ),
+        "candidateLockSha256": ("1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913"),
+        "speakerScreenResultSha256": (
+            "d55764525a0152e130205b8bb37bc7f7371a5514057928689501897d6e3ac56d"
+        ),
+        "instructionSha256": ("a34bbe86eb3594cbe6a763778a9c2e1e86710a8047de0a0fdc126703e65527db"),
+        "generationSettingsSha256": (
+            "1a03c4c5af681d0285200377b2321dd547d92f65c90649d8f36f0c31c25c263e"
+        ),
+        "batchSize": 1,
+        "automaticRetries": 0,
+        "modelLifetime": "one-resident-instance-per-session-and-complete-identity",
+        "auxiliaryAnalysis": ["whisper-excluded", "vad-or-energy-excluded"],
+    }
+    metadata = replace(
+        fixture_metadata(),
+        protocol_version="tts-feasibility-profile-v3",
+        candidate_manifest_version="tts-candidate-manifest-v3",
+        role="balanced",
+        gpu_model="Synthetic GPU",
+        driver_version="fixture-driver",
+        engine_version="0.1.1",
+        model_revision="0c0e3051f131929182e2c023b9537f8b1c68adfe",
+        voice_id="Serena",
+        provider="pytorch-cuda",
+        precision="bfloat16",
+        evaluation_authority=authority,
+    )
+    summary = build_summary(run, metadata)
+    private_instruction = "private instruction canary"
+    payload, markdown = promote_summary(
+        summary,
+        schema=load_schema(V3_SCHEMA_PATH),
+        corpus=load_corpus(CORPUS_PATH),
+        forbidden_values=(private_instruction,),
+    )
+    assert summary["schemaVersion"] == "tts-feasibility-summary-v3"
+    assert b"private instruction canary" not in payload
+    assert private_instruction not in markdown
+    assert summary_filename(
+        run.candidate_id,
+        protocol_version=metadata.protocol_version,
+    ).endswith(".summary-v3.json")

@@ -14,7 +14,7 @@ from benchmarks.adapters.manifest import (
     CandidateConfiguration,
     CandidatePrecision,
     CandidateProvider,
-    load_candidate_profile,
+    load_benchmark_candidate_profile,
 )
 from benchmarks.preflight import (
     PreflightReceipt,
@@ -26,7 +26,6 @@ from benchmarks.preflight import (
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 SERVICE_ROOT: Final = REPOSITORY_ROOT / "services" / "tts"
-MANIFEST_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "candidates-v1.json"
 MAXIMUM_STDIN_BYTES: Final = 16_384
 MEASUREMENT_TIMEOUT_SECONDS: Final = 7_200
 PREFLIGHT_FIELDS: Final = frozenset(
@@ -117,7 +116,7 @@ def parse_preflight_request(value: object) -> PreflightRequest:
     if set(payload) != PREFLIGHT_FIELDS:
         _fail("invalid-input")
     candidate_id = _string(payload.get("candidateId"))
-    profile = load_candidate_profile(MANIFEST_PATH, candidate_id)
+    profile = load_benchmark_candidate_profile(REPOSITORY_ROOT, candidate_id)
     provider = _string(payload.get("provider"))
     precision = _string(payload.get("precision"))
     if provider not in ("pytorch-cuda", "onnxruntime-cpu") or precision not in (

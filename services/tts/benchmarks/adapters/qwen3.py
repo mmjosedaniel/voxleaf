@@ -1,4 +1,4 @@
-"""Qwen3-TTS 0.6B CustomVoice CUDA benchmark adapter."""
+"""Qwen3-TTS CustomVoice CUDA benchmark adapters."""
 
 from __future__ import annotations
 
@@ -11,9 +11,11 @@ from typing import Final, Protocol, cast
 
 from benchmarks.adapters.manifest import (
     QWEN_CANDIDATE_ID,
+    QWEN_V3_CANDIDATE_ID,
     AdapterConfigurationError,
     CandidateConfiguration,
     CandidateProfile,
+    v3_profile_identity_matches,
     validate_configuration,
     verify_artifacts,
 )
@@ -52,6 +54,7 @@ class _QwenModel(Protocol):
         text: str,
         language: str,
         speaker: str,
+        **kwargs: object,
     ) -> tuple[Sequence[Sized], int]: ...
 
 
@@ -64,9 +67,7 @@ class _QwenModule(Protocol):
 
 
 class Qwen3TtsAdapter:
-    """Minimum local-path-only adapter for the frozen Qwen profile."""
-
-    candidate_id: Final = QWEN_CANDIDATE_ID
+    """Local-path-only adapter for one fully frozen Qwen profile."""
 
     def __init__(
         self,
@@ -76,6 +77,9 @@ class Qwen3TtsAdapter:
         importer: ModuleImporter = importlib.import_module,
         version_reader: VersionReader = metadata.version,
     ) -> None:
+        if profile.candidate_id not in (QWEN_CANDIDATE_ID, QWEN_V3_CANDIDATE_ID):
+            raise AdapterConfigurationError("candidate")
+        self.candidate_id: Final = profile.candidate_id
         self._profile = profile
         self._configuration = configuration
         self._importer = importer
@@ -99,6 +103,10 @@ class Qwen3TtsAdapter:
         if (
             self._profile.candidate_id != self.candidate_id
             or self._profile.distribution != "qwen-tts"
+            or (
+                self._profile.candidate_id == QWEN_V3_CANDIDATE_ID
+                and not v3_profile_identity_matches(self._profile)
+            )
             or os.environ.get("HF_HUB_OFFLINE") != "1"
             or os.environ.get("TRANSFORMERS_OFFLINE") != "1"
         ):
@@ -108,6 +116,11 @@ class Qwen3TtsAdapter:
             if self._version_reader("qwen-tts") != self._profile.engine_version:
                 raise AdapterConfigurationError("engine-version")
             if self._version_reader("torch") != "2.9.1+cu128":
+                raise AdapterConfigurationError("runtime-version")
+            if (
+                self._profile.candidate_id == QWEN_V3_CANDIDATE_ID
+                and self._version_reader("torchaudio") != "2.9.1+cu128"
+            ):
                 raise AdapterConfigurationError("runtime-version")
             torch = cast(_TorchModule, self._importer("torch"))
             qwen_tts = cast(_QwenModule, self._importer("qwen_tts"))
@@ -140,26 +153,45 @@ class Qwen3TtsAdapter:
         model = self._model
         if model is None:
             raise AdapterConfigurationError("not-loaded")
+        generation = self._profile.generation_settings
+        instruction = self._profile.instruction
+        extra: dict[str, object] = {}
+        if self._profile.candidate_id == QWEN_V3_CANDIDATE_ID:
+            if generation is None or instruction is None or self._profile.authority is None:
+                raise AdapterConfigurationError("profile-mismatch")
+            extra = {
+                "instruct": instruction,
+                **generation.as_qwen_kwargs(),
+            }
         try:
             waveforms, sample_rate = model.generate_custom_voice(
                 text=request.text,
-                language="Spanish",
+                language=self._profile.language,
                 speaker=self._profile.voice_id,
+                **extra,
             )
             if (
                 not isinstance(sample_rate, int)
                 or not isinstance(waveforms, (list, tuple))
                 or len(waveforms) != 1
+                or (
+                    self._profile.output_sample_rate_hz is not None
+                    and sample_rate != self._profile.output_sample_rate_hz
+                )
             ):
                 raise AdapterConfigurationError("invalid-output")
-            sample_count = len(waveforms[0])
+            waveform = waveforms[0]
+            shape = getattr(waveform, "shape", None)
+            if shape is not None and (not isinstance(shape, tuple) or len(shape) != 1):
+                raise AdapterConfigurationError("invalid-output")
+            sample_count = len(waveform)
             if sample_count <= 0:
                 raise AdapterConfigurationError("invalid-output")
         except AdapterConfigurationError:
             raise
         except Exception:
             raise AdapterConfigurationError("generation-failed") from None
-        return waveforms[0], sample_rate
+        return waveform, sample_rate
 
     def generate(self, request: GenerationRequest) -> Iterator[AudioChunk]:
         waveform, sample_rate = self.synthesize_for_quality(request)

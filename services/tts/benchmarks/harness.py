@@ -36,6 +36,7 @@ from benchmarks.contracts import (
 from benchmarks.diagnostics import DiagnosticCapture
 
 MAX_INPUT_CODE_POINTS: Final = 640
+MAX_INPUT_UTF8_BYTES: Final = 2_048
 MAX_CHUNKS_PER_REQUEST: Final = 4_096
 MAX_SAMPLE_FRAMES_PER_REQUEST: Final = 115_200_000
 MIN_SAMPLE_RATE_HZ: Final = 8_000
@@ -167,6 +168,7 @@ def _validate_request(request: GenerationRequest) -> None:
         or request.language != "es"
         or not request.text
         or len(request.text) > MAX_INPUT_CODE_POINTS
+        or len(request.text.encode("utf-8")) > MAX_INPUT_UTF8_BYTES
     ):
         _fail("invalid-request", request.request_id or "request")
 

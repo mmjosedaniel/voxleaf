@@ -9,9 +9,11 @@ from typing import Final
 
 from benchmarks.adapters.manifest import (
     QWEN_CANDIDATE_ID,
+    QWEN_V3_CANDIDATE_ID,
     ArtifactIdentity,
     CandidateConfiguration,
     CandidateProfile,
+    load_v3_candidate_profile,
 )
 from benchmarks.preflight import (
     GIB,
@@ -23,6 +25,7 @@ from benchmarks.preflight import (
 )
 
 COMMIT_SHA: Final = "a" * 40
+REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 
 
 class FixedRepositoryProbe:
@@ -139,6 +142,85 @@ def test_exact_official_preflight_passes_with_content_free_receipt(tmp_path: Pat
     assert result.artifacts[0].artifact_id == "model.safetensors"
     assert result.artifacts[0].size_bytes == len(b"verified-local-model")
     assert str(tmp_path) not in repr(result)
+
+
+def test_v3_preflight_requires_exact_locked_candidate_interpreter(
+    tmp_path: Path,
+) -> None:
+    payload = b"model"
+    (tmp_path / "model.safetensors").write_bytes(payload)
+    profile = load_v3_candidate_profile(REPOSITORY_ROOT, QWEN_V3_CANDIDATE_ID)
+    assert profile.authority is not None
+    profile = replace(
+        profile,
+        artifacts=(ArtifactIdentity("model.safetensors", hashlib.sha256(payload).hexdigest()),),
+    )
+    candidate_python = (
+        tmp_path
+        / "services"
+        / "tts"
+        / "benchmarks"
+        / "candidates"
+        / "qwen3_1_7b_customvoice_cuda"
+        / ".venv"
+        / "Scripts"
+        / "python.exe"
+    )
+    candidate_python.parent.mkdir(parents=True)
+    candidate_python.write_bytes(b"fixture")
+    configuration = CandidateConfiguration(
+        candidate_id=profile.candidate_id,
+        artifact_root=tmp_path.resolve(),
+        model_revision=profile.model_revision,
+        voice_id=profile.voice_id,
+        provider=profile.provider,
+        precision=profile.precision,
+        offline=True,
+    )
+    preflight_request = PreflightRequest(
+        expected_commit_sha=COMMIT_SHA,
+        repository_root=tmp_path,
+        profile=profile,
+        configuration=configuration,
+        candidate_python=candidate_python,
+        conditions=RunConditions(
+            purpose="official",
+            sleep_disabled=True,
+            background_load_acceptable=True,
+            thermal_state_acceptable=True,
+        ),
+    )
+    result = run_preflight(
+        preflight_request,
+        repository_probe=FixedRepositoryProbe(),
+        host_probe=FixedHostProbe(host_snapshot()),
+        network_probe=FixedNetworkProbe(),
+        environment={"HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1"},
+    )
+    assert result.failures == ()
+
+    other_python = tmp_path / "other-python.exe"
+    other_python.write_bytes(b"fixture")
+    mismatch = run_preflight(
+        replace(preflight_request, candidate_python=other_python),
+        repository_probe=FixedRepositoryProbe(),
+        host_probe=FixedHostProbe(host_snapshot()),
+        network_probe=FixedNetworkProbe(),
+        environment={"HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1"},
+    )
+    assert "profile-authority" in mismatch.failures
+
+    stale_identity = run_preflight(
+        replace(
+            preflight_request,
+            profile=replace(preflight_request.profile, instruction="changed"),
+        ),
+        repository_probe=FixedRepositoryProbe(),
+        host_probe=FixedHostProbe(host_snapshot()),
+        network_probe=FixedNetworkProbe(),
+        environment={"HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1"},
+    )
+    assert "profile-authority" in stale_identity.failures
 
 
 def test_pilot_can_pass_but_is_never_eligible_for_promotion(tmp_path: Path) -> None:

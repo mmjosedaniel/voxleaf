@@ -42,9 +42,11 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   cancellation.
 - `corpus-v1.json` freezes the repository-authored prepared-text corpus and
   performance order.
-- `schemas/summary-v2.schema.json` is the current private benchmark-summary
-  schema. It reuses unchanged closed definitions from the retained historical
-  `summary-v1.schema.json` through an offline schema registry.
+- `schemas/summary-v3.schema.json` is the current blocker-resolution
+  benchmark-summary schema. It binds the exact profile/configuration, lock,
+  selected-screen result, instruction, and generation-setting fingerprints
+  while excluding the instruction itself. The retained `summary-v2` and
+  `summary-v1` schemas remain the completed first-cycle authority.
 - `fixtures/` contains synthetic validation fixtures, not candidate results.
 - [`selection-v2.md`](selection-v2.md) is the accepted content-free decision
   matrix. It rejects both exact evaluated profiles and links ADR-0013.
@@ -208,26 +210,31 @@ quality, pass `v3`, or change ADR-0013 by itself.
 ## Implemented model-free benchmark boundary
 
 `services/tts/benchmarks/` now contains the private candidate-neutral harness,
-summary promotion gate, two thin candidate adapters, and a spawn-isolated
-worker supervisor. Default tests use deterministic fakes and mocked candidate
-libraries; they do not import an installed candidate stack, acquire or load
-weights, use audio devices, or require CUDA.
+summary promotion gate, thin adapters for the retained first-cycle candidates
+and the exact `v3` Serena candidate, and a spawn-isolated worker supervisor.
+Default tests use deterministic fakes and mocked candidate libraries; they do
+not import an installed candidate stack, acquire or load weights, use audio
+devices, or require CUDA.
 
-Each real adapter validates the manifest-selected revision, voice, provider,
+Each real adapter validates the authority-selected revision, voice, provider,
 precision, offline controls, and local artifact hashes before importing its
-candidate library. Sensitive requests cross the spawned-worker boundary only
-through a private pipe, never through OS command-line arguments or environment
-variables. Only bounded `AudioChunk` metadata returns. Child diagnostics are
-captured and discarded, timeouts and worker errors become fixed codes, and
-forced cancellation terminates the worker process tree and discards every
-later frame by request identity.
+candidate library. The `v3` loader additionally verifies every authority hash,
+the complete model/speaker/instruction/settings identity, screen order and
+outcome, batch size one, zero-retry policy, and exact isolated interpreter.
+Sensitive requests cross the spawned-worker boundary only through a private
+pipe, never through OS command-line arguments or environment variables. Only
+bounded `AudioChunk` metadata returns. Child diagnostics are captured and
+discarded, timeouts and worker errors become fixed codes, and forced
+cancellation terminates the worker process tree and discards every later frame
+by request identity.
 
 The evaluated Qwen and Supertonic public APIs expose complete waveforms. The
 benchmark records this honestly and rejects an end-of-output frame as evidence
 of a mid-generation cancellation boundary. Worker termination is benchmark
 feasibility evidence only, not a production cancellation design.
 
-Milestone 3 adds explicit root commands. `benchmark:tts:preflight` verifies
+The candidate-neutral benchmark commands are unchanged.
+`benchmark:tts:preflight` verifies
 the clean revision, exact artifacts, host headroom, offline controls, and exact
 candidate-interpreter firewall rule without loading a model.
 `benchmark:tts:measure` repeats that preflight, launches the exact candidate
@@ -253,13 +260,15 @@ unless `qualityOptIn` is the JSON boolean `true`, repeat the exact official
 preflight for each candidate, and write only below the ignored
 `benchmarks/results/raw/quality-v2/<session-id>/` directory.
 
-Use one caller-created 32-character lowercase hexadecimal session ID for both
-candidates. Run `quality:generate` once per candidate while that candidate's
-exact interpreter firewall rule is active. A generation failure removes the
-whole session instead of retaining a partial comparison. After both candidates
-produce the same 12 frozen cases, `quality:finalize` converts the staging names
-to opaque random IDs, creates an independently randomized evaluator page and
-scorecard for each evaluator, and removes the identity-bearing staging tree.
+For the retained `v2` comparison, use one caller-created 32-character
+lowercase hexadecimal session ID for both candidates and run
+`quality:generate` once per candidate. For `v3`, the authority binds a
+single-candidate session to the exact configuration fingerprint and one
+generation produces all 12 samples. A generation failure removes the whole
+session instead of retaining partial evidence. Once the authority-required
+candidate set is complete, `quality:finalize` converts staging names to opaque
+random IDs, creates an independently randomized evaluator page and scorecard
+for each evaluator, and removes the identity-bearing staging tree.
 
 Each evaluator page reveals only case IDs, instructions, opaque audio names,
 and the frozen seven scoring dimensions. It contains no narration text,

@@ -47,21 +47,39 @@ class RawMeasurementJournal:
         role: str,
         commit_sha: str,
         session_id: str,
+        protocol_version: str = PROTOCOL_VERSION,
+        configuration_identity_sha256: str | None = None,
     ) -> None:
         if (
             _STABLE_ID.fullmatch(candidate_id) is None
             or role not in ("balanced", "compatibility")
             or re.fullmatch(r"[0-9a-f]{40}", commit_sha) is None
             or _SESSION_ID.fullmatch(session_id) is None
+            or protocol_version not in ("tts-feasibility-profile-v2", "tts-feasibility-profile-v3")
+            or (
+                configuration_identity_sha256 is not None
+                and re.fullmatch(r"[0-9a-f]{64}", configuration_identity_sha256) is None
+            )
+            or (
+                protocol_version == "tts-feasibility-profile-v3"
+                and configuration_identity_sha256 is None
+            )
+            or (
+                protocol_version == "tts-feasibility-profile-v2"
+                and configuration_identity_sha256 is not None
+            )
         ):
             raise RawJournalError("invalid-metadata")
-        self._metadata: Mapping[str, object] = {
-            "protocolVersion": PROTOCOL_VERSION,
+        metadata: dict[str, object] = {
+            "protocolVersion": protocol_version,
             "candidateId": candidate_id,
             "role": role,
             "commitSha": commit_sha,
             "sessionId": session_id,
         }
+        if configuration_identity_sha256 is not None:
+            metadata["configurationIdentitySha256"] = configuration_identity_sha256
+        self._metadata: Mapping[str, object] = metadata
         self._loads: list[dict[str, object]] = []
         self._generations: list[dict[str, object]] = []
         self._cancellations: list[dict[str, object]] = []
@@ -169,8 +187,13 @@ class RawMeasurementJournal:
     def payload(self, *, status: str) -> dict[str, object]:
         if status not in ("complete", "failed", "invalid"):
             raise RawJournalError("invalid-status")
+        raw_version = (
+            "tts-feasibility-raw-v3"
+            if self._metadata["protocolVersion"] == "tts-feasibility-profile-v3"
+            else RAW_VERSION
+        )
         return {
-            "rawVersion": RAW_VERSION,
+            "rawVersion": raw_version,
             **self._metadata,
             "status": status,
             "loadObservations": self._loads,
@@ -223,7 +246,10 @@ class RawMeasurementJournal:
         if len(relative.parts) != 2 or session.exists():
             raise RawJournalError("session-path")
         session.mkdir(parents=True)
-        target = session / "performance-v2.raw.json"
+        version = (
+            "v3" if self._metadata["protocolVersion"] == "tts-feasibility-profile-v3" else "v2"
+        )
+        target = session / f"performance-{version}.raw.json"
         try:
             target.write_bytes(payload)
         except Exception:

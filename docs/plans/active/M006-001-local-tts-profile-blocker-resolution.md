@@ -487,7 +487,37 @@ official performance pass, or production authorization.
 
 ### Status
 
-Not started.
+Completed on branch `feat/m006-3-candidate-neutral-benchmark`. The existing
+isolated 107-package lock remains outside production dependencies. The
+candidate-neutral loader, adapter, preflight, raw journal, safe-summary, and
+disposable quality boundaries now admit only the exact `v3` Serena identity.
+They retain complete-waveform truth, batch size one, one resident
+configuration, first-attempt authority, zero automatic retries, bounded input
+and observations, worker-termination cancellation, stale-identity rejection,
+content-free errors, and cleanup.
+
+The authority/schema checkpoint is `6b8506a`; the adapter and model-free
+integration checkpoint is `a7cefb1`. Whisper and VAD/energy remain excluded,
+so no auxiliary dependency or post-processing path was added. This milestone
+does not run the official matrix, select a production profile, supersede
+ADR-0013, or unblock Milestone 7.
+
+Implemented and validated with the repository-defined commands:
+
+    uv lock --project services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --check
+    uv run --directory services/tts --locked ruff check benchmarks tests
+    uv run --directory services/tts --locked mypy .
+    uv run --directory services/tts --locked pytest tests -q
+    pnpm.cmd check:portable
+    pnpm.cmd check
+
+The real-host smoke also invoked
+`uv run --directory services/tts --locked python -m benchmarks.cli preflight`
+with bounded private paths on standard input, offline flags active, and all
+operator-only readiness declarations set to false. It accepted the exact
+artifacts, authority, interpreter, firewall, provider, and hardware and
+reported only the three intentionally false operator declarations. No model
+was loaded and no audio was generated.
 
 ## Milestone 4: Execute the frozen v3 evaluation
 
@@ -805,6 +835,55 @@ dependency changes are involved.
   45-minute AC sleep setting, and verified zero remaining candidate processes
   and zero reported GPU utilization/memory. No raw session or generated audio
   was created.
+- 2026-07-26: Created branch
+  `feat/m006-3-candidate-neutral-benchmark` from merged `main` at `4be6821`.
+  The worktree was clean and the branch contained the completed Milestones 1
+  and 2 authorities.
+- 2026-07-26: Added the `summary-v3` closed schema and an exact profile loader
+  before any official generation. The loader verifies every authority hash,
+  speaker order and selected outcome, supported-speaker membership, complete
+  model/speaker/instruction/settings identity, batch-one/zero-retry policy,
+  and the existing candidate lock. Twelve focused authority/summary tests
+  passed before checkpoint `6b8506a`.
+- 2026-07-26: Extended the existing Qwen adapter and candidate-neutral
+  dispatch for the exact 1.7B CustomVoice/Serena profile. The implementation
+  uses one resident model, identical frozen kwargs for every first attempt,
+  no retry loop, 24 kHz complete-waveform output, in-memory payload release,
+  spawned-worker termination, and existing request-identity stale rejection.
+- 2026-07-26: Extended preflight to require the exact isolated interpreter and
+  profile/configuration/lock/screen/instruction/settings fingerprints. Added a
+  2,048-byte UTF-8 input ceiling alongside the existing 640-code-point bound,
+  `v3` raw-journal configuration binding, single-candidate blinded quality
+  sessions, and `v3` safe-summary promotion.
+- 2026-07-26: The full GPU-free Python suite passed with 72 tests after Ruff
+  formatting/lint and strict mypy. Tests cover frozen authority and ordering,
+  exact adapter kwargs, resident reuse/disposal, first-failure/no-retry
+  behavior, stale identity, preflight mismatch, bounds, frame ordering,
+  cancellation/cleanup, content-free raw/summary output, and privacy canaries.
+- 2026-07-26: The isolated candidate lock check resolved the unchanged 107
+  packages. With Hugging Face and Transformers offline flags active, the exact
+  candidate interpreter imported `qwen-tts==0.1.1`, PyTorch
+  `2.9.1+cu128`, and Torchaudio `2.9.1+cu128` without loading weights or
+  generating audio. FlashAttention and SoX emitted optional-tool warnings;
+  SDPA is frozen and the Qwen generation path does not require either tool.
+- 2026-07-26: From clean documentation checkpoint `057bca8`, the real-host
+  offline preflight verified both exact artifacts (4,516,695,644 bytes
+  combined), the selected profile and interpreter, the application firewall
+  block, 13,427,974,144 free RAM bytes, and 8,174,698,496 free VRAM bytes. It
+  failed only `sleep`, `background-load`, and `thermal-state`, which were
+  deliberately declared false to prevent the smoke from authorizing a pilot
+  or official run.
+- 2026-07-26: `pnpm.cmd check:portable` passed in 76.9 seconds and
+  `pnpm.cmd check` passed in 74.9 seconds. Both included 18 shared test files /
+  175 tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204
+  tests, 6 native-WebDriver-client tests, and 72 Python tests. The native
+  aggregate also passed Rust formatting, Clippy, crate tests, release build,
+  and Python source/wheel packaging. The existing Vite chunk-size advisory
+  remained informational.
+- 2026-07-26: The 20 changed files passed `git diff --check`,
+  private-path/credential-pattern scans, tracked audio/model/raw-input audits,
+  and the three changed Markdown files passed the local-link audit. The
+  ignored raw tree contains zero files.
 
 ## Discoveries and decisions
 
@@ -870,6 +949,15 @@ dependency changes are involved.
     official warm measurement and does not pass the inherited 3-second gate.
     It is retained as an honest signal for Milestone 4 rather than interpreted
     as a prototype failure or hidden by changing the authority.
+16. A safe `v3` summary must identify the exact evaluation without carrying
+    the instruction, narration, audio, local paths, or candidate diagnostics.
+    The new schema therefore exposes only fixed identifiers and SHA-256
+    fingerprints, while the ignored raw journal carries bounded numeric
+    observations plus the configuration fingerprint.
+17. The 1.7B high-level API remains a complete-waveform boundary. Extending
+    the shared adapter does not reclassify it as native streaming: progress
+    occurs at one bounded narration segment, and cancellation credibility
+    remains process termination plus identity-first stale rejection.
 
 ## Final validation results
 
@@ -899,6 +987,23 @@ again passed local-link, privacy-canary, and `git diff --check` audits.
 50.5 seconds with the same test/build scope above. No runtime or architecture
 status changed, so the canonical system diagram remains accurate without
 another node or edge change.
+
+Milestone 3 extended the benchmark without running the official matrix.
+Authority, adapter, preflight, raw journal, quality-session, safe-summary,
+privacy, cancellation, and cleanup behavior passed 72 GPU-free tests. The
+isolated lock and offline import smoke passed without loading weights. The
+real-host preflight hashed both exact artifacts and found no authority,
+environment, firewall, provider, artifact, RAM, VRAM, disk, or measurement
+failure; only the three deliberately false operator-readiness declarations
+failed, as intended.
+
+`pnpm.cmd check:portable` and `pnpm.cmd check` both passed with the full
+TypeScript, Python, Rust, packaging, and build scope described in the progress
+log. `git diff --check`, local Markdown links, changed-file private
+path/credential patterns, tracked audio/model/raw-input exclusions, and raw
+cleanup audits passed. No model was loaded by the preflight, no official
+observation was accepted, no audio was generated, and no raw session or
+private path was retained.
 
 After correcting the candidate to CustomVoice for the built-in-default-voice
 requirement, all 13 changed Markdown files passed the local-link,

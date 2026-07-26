@@ -14,10 +14,17 @@ from pathlib import Path
 from typing import Final, Literal, Protocol, cast
 
 from benchmarks.adapters.manifest import (
+    PROFILE_V3_CONFIGURATION_SHA256,
+    PROFILE_V3_GENERATION_SHA256,
+    PROFILE_V3_INSTRUCTION_SHA256,
+    PROFILE_V3_LOCK_SHA256,
+    PROFILE_V3_SCREEN_RESULT_SHA256,
+    PROFILE_V3_SHA256,
     AdapterConfigurationError,
     CandidateConfiguration,
     CandidateProfile,
     VerifiedArtifact,
+    v3_profile_identity_matches,
     validate_configuration,
     verify_and_measure_artifacts,
 )
@@ -30,6 +37,7 @@ type PreflightFailureCode = Literal[
     "host-architecture",
     "python-version",
     "profile-mismatch",
+    "profile-authority",
     "artifact",
     "offline-control",
     "candidate-environment",
@@ -365,6 +373,38 @@ def run_preflight(
         or request.configuration.precision != profile.precision
     ):
         failures.append("profile-mismatch")
+    authority = profile.authority
+    if authority is not None:
+        expected_python = (
+            request.repository_root
+            / Path(authority.environment_project)
+            / ".venv"
+            / "Scripts"
+            / "python.exe"
+        )
+        try:
+            candidate_python_matches = request.candidate_python.resolve(
+                strict=True
+            ) == expected_python.resolve(strict=True)
+        except OSError:
+            candidate_python_matches = False
+        if (
+            authority.profile_version != "tts-feasibility-profile-v3"
+            or authority.profile_sha256 != PROFILE_V3_SHA256
+            or authority.configuration_identity_sha256 != PROFILE_V3_CONFIGURATION_SHA256
+            or authority.candidate_lock_sha256 != PROFILE_V3_LOCK_SHA256
+            or authority.speaker_screen_result_sha256 != PROFILE_V3_SCREEN_RESULT_SHA256
+            or authority.instruction_sha256 != PROFILE_V3_INSTRUCTION_SHA256
+            or authority.generation_settings_sha256 != PROFILE_V3_GENERATION_SHA256
+            or authority.candidate_manifest_version != "tts-candidate-manifest-v3"
+            or authority.environment_project
+            != "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda"
+            or authority.batch_size != 1
+            or authority.automatic_retries != 0
+            or not v3_profile_identity_matches(profile)
+            or not candidate_python_matches
+        ):
+            failures.append("profile-authority")
     if not _offline_controls_match(profile, environment):
         failures.append("offline-control")
     if not request.candidate_python.is_file():

@@ -284,3 +284,7 @@ class SummaryMetadata:
     audits: Mapping[str, object]
     gate_evaluation: Mapping[str, object]
     notes: Sequence[str]
+    evaluation_authority: Mapping[str, object] | None = field(
+        default=None,
+        repr=False,
+    )
