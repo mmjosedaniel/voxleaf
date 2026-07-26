@@ -226,13 +226,19 @@ required foundation jobs on the exact evidence commit. Base voice cloning is
 outside the current MVP. Whisper and VAD/energy analysis are excluded from
 `v3`.
 
-The planned
+The active
 [Milestone 6.2 plan](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md)
-has no implemented batch-two test or hardware command at present. It requires a
-new pre-result authority, deterministic fake coverage for ordering, bounded
-retention, whole-batch invalidation, playback arithmetic, and conditional CPU
-placement, followed by exact-host full-GPU evidence. Default tests and CI must
-remain model-free.
+has a frozen pre-result `v4` profile, normalized eight-unit/four-pair synthetic
+corpus, closed raw and summary schemas, exact full-GPU and conditional
+speech-tokenizer CPU identities, and deterministic authority enforcement.
+`test_benchmark_v4_authority.py` verifies byte stability, corpus arithmetic,
+pair and result order, no retries, strict authority ancestry fields,
+conjunctive pass claims, conditional CPU admission, schema closure, and
+private-content rejection without importing Qwen or requiring CUDA. No
+batch-two runner or hardware command exists yet; Milestone 2 must add those
+with fake coverage for bounded retention, whole-batch invalidation, and
+playback arithmetic before exact-host execution. Default tests and CI remain
+model-free.
 
 ## Deferred coverage
 

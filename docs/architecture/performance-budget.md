@@ -246,21 +246,27 @@ official 6,286,802,944-byte peak is therefore the relevant measured capacity
 observation. It is the maximum of baseline-adjusted WDDM dedicated memory and
 PyTorch peak-reserved memory, not a claim that every byte was a live tensor.
 
-Planned
 [Milestone 6.2](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md)
-will freeze a separate `v4` authority before testing whether one resident model
-can generate two ordered approximately 8-20-second semantic units in a shared
-batch quickly enough to keep a bounded playback simulation supplied. Shorter
-complete units may reduce first-result latency but do not improve sustained RTF
-by themselves. The evaluation must report aggregate batch RTF, startup lead,
-buffer drift, underruns, RAM, VRAM, failures, order, cancellation, and cleanup.
-The unchanged standard target remains sustained RTF at or below 0.8; a focused
-scheduling result additionally requires aggregate RTF below 1.0 and no more
-than the existing five seconds of buffering per minute.
+has frozen the separate
+[`v4` authority](tts-feasibility-profile-v4.md) before testing whether one
+resident model can generate two ordered 8–20-second semantic units in a shared
+batch quickly enough to keep a bounded playback simulation supplied. The
+simulation retains at most one active batch, two queued complete units, and
+40 playable seconds; it starts at approximately 15 playable seconds or when a
+shorter remaining range is complete. Shorter complete units may reduce
+first-result latency but do not improve sustained RTF by themselves. The
+evaluation must report aggregate batch RTF, startup lead, buffer drift,
+underruns, RAM, VRAM, failures, order, cancellation, and cleanup. The unchanged
+standard target remains sustained RTF at or below 0.8; a focused scheduling
+result additionally requires aggregate RTF strictly below 1.0 and no more than
+the existing five seconds of buffering per minute.
 
 Full-GPU batch two is the primary experiment. CPU placement may be tested only
-as a separately identified contingency after a predeclared full-GPU memory
-stop. Hugging Face documents CPU offload as a capacity technique that transfers
+as a separately identified contingency after the frozen full-GPU memory stop.
+The authority reserves 536,870,912 dedicated-VRAM bytes from the accepted
+8,174,698,496-byte preflight observation, caps the engineering peak at
+7,637,827,584 bytes, and forbids shared-GPU-memory use. Hugging Face documents
+CPU offload as a capacity technique that transfers
 layers to the accelerator when needed; it is expected to trade speed for
 capacity rather than improve throughput. Generic layer offload is therefore
 not the first contingency. A narrowly targeted speech-tokenizer/audio-decoder

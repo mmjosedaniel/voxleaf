@@ -13,11 +13,11 @@ detection, and installers remain unimplemented.
 The content-free `benchmarks/tts/selection-v3.md` record retains that failed
 standard result and separately identifies the constrained demo input.
 
-Milestone 6.2 is planned but has no command or result yet. Its separate
-ExecPlan must freeze the `v4` authority and add a reviewed batch hardware
-command before testing shorter ordered units and shared-model batch size two.
-Conditional targeted CPU placement is evaluation-only and may run only after
-the full-GPU arm reaches its predeclared memory stop.
+Milestone 6.2 is active and its `v4` authority is frozen, but it has no batch
+hardware command or result yet. The ExecPlan's Milestone 2 must add and review
+that command before testing shorter ordered units and shared-model batch size
+two. Conditional targeted CPU placement is evaluation-only and may run only
+after the full-GPU arm reaches its frozen memory stop.
 
 ## Prerequisite version matrix
 
