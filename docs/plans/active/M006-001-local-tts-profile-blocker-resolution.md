@@ -385,8 +385,9 @@ caches, locks, and outputs must remain isolated.
 ### Status
 
 In progress. The exact candidate manifest, isolated environment lock,
-pre-audio screen authority, closed result schema, and model-free screen runner
-are implemented. The authority contains no observed result and
+corrected pre-audio `customvoice-spanish-screen-v2` authority, closed result
+schema, and model-free screen runner are implemented. The authority contains
+no observed result and
 `selectedSpeaker` remains `null`; the frozen screen must run from a clean
 committed revision before `tts-feasibility-profile-v3` can be published.
 
@@ -683,6 +684,22 @@ changing production contracts or dependencies.
   as `46ceded1e72d1f5ebe6c04dab4ed62c91e09bdca`
   (`feat(tts): freeze CustomVoice speaker-screen authority`). No screen
   generation request had been accepted before this checkpoint.
+- 2026-07-25: The first frozen `v1` generation produced 27 blinded samples in
+  522.5 seconds under offline preflight, but the evaluator page exposed that
+  the currency/percentage case lacked the prior protocol's explicit numeric
+  expressions score. No scorecard was submitted and no selection result was
+  produced. The raw session and all 27 WAV files were deleted.
+- 2026-07-25: Preserved the `v1` authority and schema unchanged, then created
+  frozen `candidates-v3` and `customvoice-spanish-screen-v2` corrections
+  before replacement audio. The corrected authority adds
+  `numericExpressions` only to the currency/percentage case and
+  `punctuationDialogue` only to the two tagged dialogue cases. Six focused
+  model-free tests, Ruff, and strict mypy pass for the corrected boundary.
+- 2026-07-25: The corrected pre-audio checkpoint passed
+  `pnpm.cmd check:portable` in 27.3 seconds with 18 shared test files / 175
+  tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204 tests, 6
+  native-WebDriver-client tests, and 56 Python tests. The existing
+  informational Vite chunk-size advisory remains unchanged.
 
 ## Discoveries and decisions
 
@@ -732,6 +749,11 @@ changing production contracts or dependencies.
 12. Whisper adds no authority needed by Milestone 1. It remains excluded from
     production and `v3`; no audio-to-text output, transcript retention, cloud
     call, or ASR quality oracle is admitted.
+13. A synthetic case is not sufficient evidence when the evaluator lacks its
+    applicable scoring dimension. The unscored `v1` screen was therefore
+    discarded instead of interpreting general intelligibility as numeric or
+    punctuation accuracy. `v2` applies each technical dimension only to cases
+    whose frozen corpus tags make it meaningful.
 
 ## Final validation results
 

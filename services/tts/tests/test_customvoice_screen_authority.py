@@ -20,10 +20,24 @@ SCHEMA_PATH: Final = (
     / "schemas"
     / "customvoice-spanish-screen-result-v1.schema.json"
 )
+ACTIVE_MANIFEST_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "candidates-v3.json"
+ACTIVE_SCREEN_PATH: Final = (
+    REPOSITORY_ROOT / "benchmarks" / "tts" / "customvoice-spanish-screen-v2.json"
+)
+ACTIVE_SCHEMA_PATH: Final = (
+    REPOSITORY_ROOT
+    / "benchmarks"
+    / "tts"
+    / "schemas"
+    / "customvoice-spanish-screen-result-v2.schema.json"
+)
 EXPECTED_HASHES: Final = {
     MANIFEST_PATH: "89c069fa4fa6c1f88887613c11f93e1c68b6bfa94f137f38e5fa7b37961db793",
     SCREEN_PATH: "462105e09610a8604682f4f904a7f87e7eb03bfbc1f8823923f286ea7d63d793",
     SCHEMA_PATH: "0a449633c1b5ce1638c8a2fd3709d21f237f8ad7d958d3010f67fc366c2aaa55",
+    ACTIVE_MANIFEST_PATH: "dce294309f4edd27d4b32fa95eb677f58b399fc71867ce5bc1a7b27049352a72",
+    ACTIVE_SCREEN_PATH: "c4a277db8d319c9bb21165a3524233dabdbd38edbb3c8c760948a4a35c04d96d",
+    ACTIVE_SCHEMA_PATH: "16091eea8f7d27a5e9f6211494e426e2a81dcc84e736a73f57acb11e3436bfe9",
 }
 SPEAKERS: Final = (
     "Vivian",
@@ -63,6 +77,7 @@ def test_pre_audio_authorities_are_byte_frozen() -> None:
 
 def test_candidate_and_screen_authorities_are_consistent_and_bounded() -> None:
     manifest = _load(MANIFEST_PATH)
+    amendment = _load(ACTIVE_MANIFEST_PATH)
     candidates = cast(list[Mapping[str, object]], manifest["candidates"])
     assert len(candidates) == 1
     candidate = candidates[0]
@@ -73,6 +88,16 @@ def test_candidate_and_screen_authorities_are_consistent_and_bounded() -> None:
     artifacts = cast(list[Mapping[str, object]], model["majorArtifacts"])
 
     assert manifest["manifestVersion"] == "tts-candidate-manifest-v2"
+    assert amendment["manifestVersion"] == "tts-candidate-manifest-v3"
+    assert amendment["status"] == "frozen-before-screen-v2-audio"
+    assert amendment["candidateId"] == candidate["candidateId"]
+    assert amendment["selectionAuthority"] == "customvoice-spanish-screen-v2"
+    assert amendment["supersedesSelectionAuthority"] == ("customvoice-spanish-screen-v1")
+    assert amendment["invalidationEvidence"] == {
+        "supersededResultProduced": False,
+        "supersededScorecardSubmitted": False,
+        "supersededRawSessionDeleted": True,
+    }
     assert candidate["candidateId"] == "qwen3-tts-1-7b-customvoice-cuda-bf16-v1"
     assert candidate["admission"] == "speaker-screen-only"
     assert model["repository"] == "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"
@@ -118,7 +143,8 @@ def test_candidate_and_screen_authorities_are_consistent_and_bounded() -> None:
     assert prototype_gate["requiredBeforeFullBenchmark"] is True
     assert prototype_gate["failureOutcome"] == "stop-candidate-cycle-before-full-matrix"
 
-    screen = _load(SCREEN_PATH)
+    screen = _load(ACTIVE_SCREEN_PATH)
+    assert screen["screenVersion"] == "customvoice-spanish-screen-v2"
     assert screen["status"] == "frozen-before-audio"
     assert screen["candidateId"] == candidate["candidateId"]
     assert screen["corpusSha256"] == (
@@ -137,6 +163,22 @@ def test_candidate_and_screen_authorities_are_consistent_and_bounded() -> None:
         "es-currency-percent-short",
         "es-narrative-target",
     ]
+    evaluation = cast(Mapping[str, object], screen["evaluation"])
+    assert evaluation["dimensions"] == [
+        "intelligibility",
+        "spanishPronunciation",
+        "punctuationDialogue",
+        "numericExpressions",
+        "naturalness",
+        "audiobookSuitability",
+        "artifactFreedom",
+    ]
+    applicability = cast(Mapping[str, object], evaluation["dimensionApplicability"])
+    assert applicability["numericExpressions"] == ["es-currency-percent-short"]
+    assert applicability["punctuationDialogue"] == [
+        "es-punctuation-dialogue-short",
+        "es-narrative-target",
+    ]
     bounds = cast(Mapping[str, object], screen["privacyAndBounds"])
     assert bounds["maximumSamples"] == 27
     assert bounds["maximumSessionAudioBytes"] == 256 * 1024 * 1024
@@ -144,7 +186,7 @@ def test_candidate_and_screen_authorities_are_consistent_and_bounded() -> None:
 
 
 def test_result_schema_is_strict_and_self_consistent() -> None:
-    schema = _load(SCHEMA_PATH)
+    schema = _load(ACTIVE_SCHEMA_PATH)
     Draft202012Validator.check_schema(schema)
     properties = cast(Mapping[str, object], schema["properties"])
     speakers = cast(Mapping[str, object], properties["speakers"])

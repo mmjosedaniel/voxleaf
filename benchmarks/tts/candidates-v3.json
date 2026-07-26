@@ -1,0 +1,18 @@
+{
+  "manifestVersion": "tts-candidate-manifest-v3",
+  "status": "frozen-before-screen-v2-audio",
+  "reviewedAt": "2026-07-25",
+  "baseManifest": {
+    "path": "benchmarks/tts/candidates-v2.json",
+    "sha256": "89c069fa4fa6c1f88887613c11f93e1c68b6bfa94f137f38e5fa7b37961db793"
+  },
+  "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
+  "supersedesSelectionAuthority": "customvoice-spanish-screen-v1",
+  "selectionAuthority": "customvoice-spanish-screen-v2",
+  "reasonCode": "add-case-specific-numeric-and-punctuation-scoring-before-results",
+  "invalidationEvidence": {
+    "supersededResultProduced": false,
+    "supersededScorecardSubmitted": false,
+    "supersededRawSessionDeleted": true
+  }
+}

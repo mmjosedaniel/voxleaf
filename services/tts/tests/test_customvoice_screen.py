@@ -10,7 +10,6 @@ import pytest
 
 from benchmarks.customvoice_screen import (
     CANDIDATE_ID,
-    DIMENSIONS,
     ScreenError,
     ScreenRequest,
     cleanup_screen,
@@ -96,7 +95,7 @@ def _generate(
     )
     assert result == {"status": "pass", "sessionId": session_id, "sampleCount": 27}
     assert adapter.closed is True
-    return raw_root / "customvoice-spanish-screen-v1" / session_id
+    return raw_root / "customvoice-spanish-screen-v2" / session_id
 
 
 def test_generation_is_complete_blinded_bounded_and_disposable(
@@ -118,6 +117,14 @@ def test_generation_is_complete_blinded_bounded_and_disposable(
     assert all(case["text"] not in page for case in corpus["cases"])
     assert all(case["privacyCanary"] not in page for case in corpus["cases"])
     assert str(_request(tmp_path).artifact_root) not in page
+    assert "Expresiones numéricas" in page
+    assert "Puntuación y diálogo" in page
+    template = json.loads((session / "scorecard.template.json").read_text(encoding="utf-8"))
+    scores_by_case = {sample["caseId"]: set(sample["scores"]) for sample in template["samples"]}
+    assert "numericExpressions" in scores_by_case["es-currency-percent-short"]
+    assert "numericExpressions" not in scores_by_case["es-narrative-target"]
+    assert "punctuationDialogue" in scores_by_case["es-narrative-target"]
+    assert "punctuationDialogue" not in scores_by_case["es-currency-percent-short"]
 
     cleanup_screen(session_id, raw_root=tmp_path / "raw")
     assert not session.exists()
@@ -134,7 +141,7 @@ def test_complete_scores_apply_frozen_eligibility_and_ranking(
     scorecard = json.loads((session / "scorecard.template.json").read_text(encoding="utf-8"))
     for sample in scorecard["samples"]:
         value = 5 if speaker_by_sample[sample["sampleId"]] == "Serena" else 4
-        sample["scores"] = {dimension: value for dimension in DIMENSIONS}
+        sample["scores"] = {dimension: value for dimension in sample["scores"]}
         sample["meaningChangingDefect"] = False
 
     result = submit_and_select(session_id, cast(object, scorecard), raw_root=tmp_path / "raw")

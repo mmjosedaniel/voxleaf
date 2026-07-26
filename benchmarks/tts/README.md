@@ -8,16 +8,21 @@ roadmap Milestone 6. It is not a production TTS service boundary.
 - `candidates-v1.json` freezes candidate identities, roles, artifacts, licenses,
   acquisition boundaries, and isolated uv projects before measurements.
 - `candidates-v2.json` freezes the separate Qwen3-TTS 12Hz 1.7B CustomVoice
-  speaker-screen candidate, exact local runtime, pre-admission gate,
+  candidate identity, exact local runtime, pre-admission gate,
   first-attempt/no-retry policy, and the exclusion of Whisper and VAD/energy
-  from `v3`.
-- `customvoice-spanish-screen-v1.json` freezes all nine built-in speakers, the
-  three synthetic Spanish cases, one instruction, identical generation
-  settings, blind scoring, deterministic selection, and disposable-audio
-  bounds before any screen audio exists.
-- `schemas/customvoice-spanish-screen-result-v1.schema.json` is the closed
-  content-safe result shape for that screen. No result exists until the
-  frozen screen has run and every score is complete.
+  from `v3`. `candidates-v3.json` is the byte-frozen correction that selects
+  the `v2` screen authority without mutating that base identity.
+- `customvoice-spanish-screen-v2.json` is the active pre-audio authority. It
+  freezes all nine built-in speakers, three synthetic Spanish cases, one
+  instruction, identical generation settings, applicable-case scoring,
+  blind presentation, deterministic selection, and disposable-audio bounds.
+- `customvoice-spanish-screen-v1.json` and its result schema remain immutable
+  abandoned authority. Its generated raw session was deleted before any
+  scorecard or result after the evaluator exposed missing numeric-expression
+  scoring.
+- `schemas/customvoice-spanish-screen-result-v2.schema.json` is the active
+  closed content-safe result shape. No result exists until the corrected
+  frozen screen has run and every applicable score is complete.
 - `corpus-v1.json` freezes the repository-authored prepared-text corpus and
   performance order.
 - `schemas/summary-v2.schema.json` is the current private benchmark-summary
@@ -112,7 +117,7 @@ $generate | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:screen:generate
 ```
 
 Open only the generated ignored
-`benchmarks/results/raw/customvoice-spanish-screen-v1/<session-id>/evaluate.html`.
+`benchmarks/results/raw/customvoice-spanish-screen-v2/<session-id>/evaluate.html`.
 The page contains 27 opaque randomized samples and downloads one completed
 scorecard after every field is filled. Submit that exact JSON without editing
 the authority:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib
 import json
 import math
@@ -29,24 +30,27 @@ from benchmarks.quality import _write_json, _write_wave
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 AUTHORITY_PATH: Final = (
-    REPOSITORY_ROOT / "benchmarks" / "tts" / "customvoice-spanish-screen-v1.json"
+    REPOSITORY_ROOT / "benchmarks" / "tts" / "customvoice-spanish-screen-v2.json"
 )
-MANIFEST_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "candidates-v2.json"
+BASE_MANIFEST_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "candidates-v2.json"
+MANIFEST_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "candidates-v3.json"
 CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v1.json"
 RESULT_SCHEMA_PATH: Final = (
     REPOSITORY_ROOT
     / "benchmarks"
     / "tts"
     / "schemas"
-    / "customvoice-spanish-screen-result-v1.schema.json"
+    / "customvoice-spanish-screen-result-v2.schema.json"
 )
 RAW_ROOT: Final = REPOSITORY_ROOT / "benchmarks" / "results" / "raw"
-SCREEN_ROOT_NAME: Final = "customvoice-spanish-screen-v1"
+SCREEN_ROOT_NAME: Final = "customvoice-spanish-screen-v2"
 CANDIDATE_ID: Final = "qwen3-tts-1-7b-customvoice-cuda-bf16-v1"
-SESSION_VERSION: Final = "customvoice-spanish-screen-session-v1"
+SESSION_VERSION: Final = "customvoice-spanish-screen-session-v2"
 DIMENSIONS: Final = (
     "intelligibility",
     "spanishPronunciation",
+    "punctuationDialogue",
+    "numericExpressions",
     "naturalness",
     "audiobookSuitability",
     "artifactFreedom",
@@ -121,7 +125,7 @@ def _session_path(session_id: str, *, raw_root: Path = RAW_ROOT, must_exist: boo
 def _authority() -> Mapping[str, object]:
     authority = _load_json(AUTHORITY_PATH)
     if (
-        authority.get("screenVersion") != "customvoice-spanish-screen-v1"
+        authority.get("screenVersion") != "customvoice-spanish-screen-v2"
         or authority.get("status") != "frozen-before-audio"
         or authority.get("candidateId") != CANDIDATE_ID
         or _strings(authority.get("speakerOrder"))
@@ -142,8 +146,37 @@ def _authority() -> Mapping[str, object]:
     return authority
 
 
+def _dimension_applicability(
+    authority: Mapping[str, object],
+) -> Mapping[str, tuple[str, ...]]:
+    evaluation = _mapping(authority.get("evaluation"))
+    raw = _mapping(evaluation.get("dimensionApplicability"))
+    if set(raw) != set(DIMENSIONS):
+        raise ScreenError("authority")
+    applicability = {dimension: _strings(raw.get(dimension)) for dimension in DIMENSIONS}
+    case_ids = set(_strings(authority.get("caseIds")))
+    if any(not cases or not set(cases).issubset(case_ids) for cases in applicability.values()):
+        raise ScreenError("authority")
+    return applicability
+
+
 def _candidate_profile() -> CandidateProfile:
-    manifest = _load_json(MANIFEST_PATH)
+    amendment = _load_json(MANIFEST_PATH)
+    if (
+        amendment.get("manifestVersion") != "tts-candidate-manifest-v3"
+        or amendment.get("status") != "frozen-before-screen-v2-audio"
+        or amendment.get("candidateId") != CANDIDATE_ID
+        or amendment.get("selectionAuthority") != "customvoice-spanish-screen-v2"
+        or amendment.get("supersedesSelectionAuthority") != "customvoice-spanish-screen-v1"
+    ):
+        raise ScreenError("manifest")
+    base = _mapping(amendment.get("baseManifest"), "manifest")
+    if (
+        base.get("path") != "benchmarks/tts/candidates-v2.json"
+        or base.get("sha256") != hashlib.sha256(BASE_MANIFEST_PATH.read_bytes()).hexdigest()
+    ):
+        raise ScreenError("manifest")
+    manifest = _load_json(BASE_MANIFEST_PATH)
     candidates = manifest.get("candidates")
     if manifest.get("manifestVersion") != "tts-candidate-manifest-v2" or not isinstance(
         candidates, list
@@ -303,21 +336,28 @@ def _shuffle(values: MutableSequence[dict[str, str]]) -> None:
     secrets.SystemRandom().shuffle(values)
 
 
-def _render_page(session_id: str, samples: Sequence[Mapping[str, str]]) -> str:
+def _render_page(
+    session_id: str,
+    samples: Sequence[Mapping[str, str]],
+    applicability: Mapping[str, tuple[str, ...]],
+) -> str:
     card = {
         "sessionId": session_id,
         "samples": [
             {
                 "sampleId": sample["sampleId"],
                 "caseId": sample["caseId"],
-                "scores": {dimension: None for dimension in DIMENSIONS},
+                "scores": {
+                    dimension: None
+                    for dimension in DIMENSIONS
+                    if sample["caseId"] in applicability[dimension]
+                },
                 "meaningChangingDefect": None,
             }
             for sample in samples
         ],
     }
     payload = json.dumps(card, ensure_ascii=True, separators=(",", ":"))
-    dimensions = json.dumps(DIMENSIONS)
     template = """<!doctype html>
 <html lang="es"><meta charset="utf-8"><title>VoxLeaf CustomVoice Spanish screen</title>
 <style>
@@ -332,10 +372,11 @@ button { font-size: 1rem; padding: .7rem; }
 <main id="samples"></main><button id="export">Validar y descargar resultados</button>
 <script>
 const card = __CARD__;
-const dimensions = __DIMENSIONS__;
 const labels = {
   intelligibility: "Inteligibilidad",
   spanishPronunciation: "Pronunciación en español",
+  punctuationDialogue: "Puntuación y diálogo",
+  numericExpressions: "Expresiones numéricas",
   naturalness: "Naturalidad",
   audiobookSuitability: "Aptitud para audiolibros",
   artifactFreedom: "Sin artefactos, repeticiones ni cortes",
@@ -347,7 +388,7 @@ for (const [index, sample] of card.samples.entries()) {
     + `<audio controls preload="none" src="audio/${sample.sampleId}.wav"></audio>`
     + "<fieldset></fieldset>";
   const fields = article.querySelector("fieldset");
-  for (const dimension of dimensions) {
+  for (const dimension of Object.keys(sample.scores)) {
     const label = document.createElement("label");
     label.textContent = labels[dimension];
     const select = document.createElement("select");
@@ -394,7 +435,7 @@ document.querySelector("#export").addEventListener("click", () => {
 });
 </script></html>
 """
-    return template.replace("__CARD__", payload).replace("__DIMENSIONS__", dimensions)
+    return template.replace("__CARD__", payload)
 
 
 def generate_screen(
@@ -418,6 +459,7 @@ def generate_screen(
     corpus = load_corpus(CORPUS_PATH)
     speakers = _strings(authority.get("speakerOrder"))
     case_ids = _strings(authority.get("caseIds"))
+    applicability = _dimension_applicability(authority)
     session.mkdir(parents=True)
     staging = session / "staging"
     staging.mkdir()
@@ -490,7 +532,11 @@ def generate_screen(
                                 {
                                     "sampleId": item["sampleId"],
                                     "caseId": item["caseId"],
-                                    "scores": {dimension: None for dimension in DIMENSIONS},
+                                    "scores": {
+                                        dimension: None
+                                        for dimension in DIMENSIONS
+                                        if item["caseId"] in applicability[dimension]
+                                    },
                                     "meaningChangingDefect": None,
                                 }
                                 for item in order
@@ -501,7 +547,9 @@ def generate_screen(
             ),
         )
         (session / "evaluate.html").write_text(
-            _render_page(session_id, order), encoding="utf-8", newline="\n"
+            _render_page(session_id, order, applicability),
+            encoding="utf-8",
+            newline="\n",
         )
     except Exception as error:
         shutil.rmtree(session, ignore_errors=True)
@@ -547,17 +595,18 @@ def submit_and_select(
         sample = _mapping(raw, "scorecard")
         expected = _mapping(expected_raw, "scorecard")
         scores = _mapping(sample.get("scores"), "scorecard")
+        expected_scores = _mapping(expected.get("scores"), "scorecard")
         sample_id = sample.get("sampleId")
         if (
             sample_id != expected.get("sampleId")
             or sample.get("caseId") != expected.get("caseId")
             or not isinstance(sample_id, str)
-            or set(scores) != set(DIMENSIONS)
+            or set(scores) != set(expected_scores)
             or not isinstance(sample.get("meaningChangingDefect"), bool)
         ):
             raise ScreenError("scorecard")
         sanitized[sample_id] = (
-            {dimension: _score(scores[dimension]) for dimension in DIMENSIONS},
+            {dimension: _score(value) for dimension, value in scores.items()},
             cast(bool, sample["meaningChangingDefect"]),
         )
     key = _load_json(session / "randomization-key.json", "metadata")
@@ -565,6 +614,7 @@ def submit_and_select(
     if not isinstance(mappings, list):
         raise ScreenError("metadata")
     authority = _authority()
+    applicability = _dimension_applicability(authority)
     speaker_order = _strings(authority.get("speakerOrder"))
     eligibility = _mapping(_mapping(authority.get("evaluation")).get("speakerEligibility"))
     results: list[dict[str, object]] = []
@@ -576,13 +626,18 @@ def submit_and_select(
         ]
         if len(speaker_samples) != 3:
             raise ScreenError("metadata")
-        dimensions = {
-            dimension: sum(
-                sanitized[cast(str, item["sampleId"])][0][dimension] for item in speaker_samples
-            )
-            / len(speaker_samples)
-            for dimension in DIMENSIONS
-        }
+        dimensions: dict[str, float] = {}
+        for dimension in DIMENSIONS:
+            applicable_samples = [
+                item
+                for item in speaker_samples
+                if cast(str, item["caseId"]) in applicability[dimension]
+            ]
+            if not applicable_samples:
+                raise ScreenError("metadata")
+            dimensions[dimension] = sum(
+                sanitized[cast(str, item["sampleId"])][0][dimension] for item in applicable_samples
+            ) / len(applicable_samples)
         overall = sum(dimensions.values()) / len(dimensions)
         defects = sum(int(sanitized[cast(str, item["sampleId"])][1]) for item in speaker_samples)
         eligible = (
@@ -613,12 +668,20 @@ def submit_and_select(
             -cast(float, cast(Mapping[str, object], item["dimensions"])["naturalness"]),
             -cast(float, cast(Mapping[str, object], item["dimensions"])["artifactFreedom"]),
             -cast(float, cast(Mapping[str, object], item["dimensions"])["intelligibility"]),
+            -cast(
+                float,
+                cast(Mapping[str, object], item["dimensions"])["punctuationDialogue"],
+            ),
+            -cast(
+                float,
+                cast(Mapping[str, object], item["dimensions"])["numericExpressions"],
+            ),
             order_index[cast(str, item["speakerId"])],
         ),
     )
     result = {
-        "schemaVersion": "customvoice-spanish-screen-result-v1",
-        "screenVersion": "customvoice-spanish-screen-v1",
+        "schemaVersion": "customvoice-spanish-screen-result-v2",
+        "screenVersion": "customvoice-spanish-screen-v2",
         "candidateId": CANDIDATE_ID,
         "evaluatorCount": 1,
         "selectedSpeaker": ranked[0]["speakerId"] if ranked else None,
