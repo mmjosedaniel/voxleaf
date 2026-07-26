@@ -194,8 +194,8 @@ are exact-host feasibility observations, not new user-visible targets or
 general hardware requirements. The initial playable-audio-lead, buffering, and
 cancellation targets above remain unchanged and unimplemented.
 
-The active
-[Milestone 6.1 blocker-resolution plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md)
+The completed
+[Milestone 6.1 blocker-resolution plan](../plans/completed/M006-001-local-tts-profile-blocker-resolution.md)
 now has a content-safe Serena intake result and frozen
 [`tts-feasibility-profile-v3`](tts-feasibility-profile-v3.md). `v3` inherits
 the unchanged balanced timing/memory gates and WDDM/PyTorch method from `v2`,

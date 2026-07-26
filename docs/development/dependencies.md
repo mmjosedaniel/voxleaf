@@ -62,8 +62,8 @@ Both projects set uv's `exclude-newer` cutoff to `2026-07-18T00:00:00Z`, seven
 days before the intake review, so regenerating either lock cannot silently
 admit a just-published dependency.
 
-The active
-[Milestone 6.1 blocker-resolution plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md)
+The completed
+[Milestone 6.1 blocker-resolution plan](../plans/completed/M006-001-local-tts-profile-blocker-resolution.md)
 freezes Qwen3-TTS 12Hz 1.7B CustomVoice as the exact development candidate.
 Its isolated project pins `qwen-tts==0.1.1`,
 `torch==2.9.1`, and `torchaudio==2.9.1`; the PyTorch packages resolve from the

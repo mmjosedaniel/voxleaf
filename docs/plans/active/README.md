@@ -17,6 +17,5 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`M006-001-local-tts-profile-blocker-resolution.md`](M006-001-local-tts-profile-blocker-resolution.md): active Milestone 6.1 closeout plan. The exact Qwen3-TTS 1.7B CustomVoice/Serena batch-one `v3` matrix failed standard performance, reliability, and mid-generation cancellation gates; accepted `selection-v3` retains that blocker while ADR-0014 permits only a constrained development demo. Milestone 6 local repository/privacy validation passed; required final pull-request CI remains.
 - [`M006-002-qwen-short-segment-batch-feasibility.md`](M006-002-qwen-short-segment-batch-feasibility.md): planned Milestone 6.2 plan. It must freeze a separate `v4` authority before testing shorter ordered semantic units and shared-model batch size two; targeted CPU placement is a conditional memory contingency, not an assumed speed optimization.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): retained broader context spanning the completed reader work and later narration synchronization/audio startup. It does not supersede the completed Milestones 4 through 6 authorities and does not authorize blocked Milestone 7 or later work.

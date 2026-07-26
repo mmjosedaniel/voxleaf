@@ -5,7 +5,7 @@
 Roadmap Milestone 6 is complete. Its frozen `v2` evaluation selected no viable
 profile, and ADR-0013 remains the standard production authority.
 
-Milestone 6.1 is closing the exact Qwen3-TTS 12Hz 1.7B CustomVoice/Serena
+Milestone 6.1 completed the exact Qwen3-TTS 12Hz 1.7B CustomVoice/Serena
 batch-one `v3` evaluation. That evaluation passed its resource, offline,
 artifact, license, packaging, and cleanup gates but failed startup, sustained
 throughput, zero-failure, and mid-generation cancellation gates. ADR-0014
@@ -149,7 +149,7 @@ Primary upstream references:
 - `docs/development/dependencies.md`
 - `docs/development/testing.md`
 - `docs/plans/roadmap.md`
-- `docs/plans/active/M006-001-local-tts-profile-blocker-resolution.md`
+- `docs/plans/completed/M006-001-local-tts-profile-blocker-resolution.md`
 - `docs/plans/completed/M005-narration-text-preparation.md`
 - `services/tts/benchmarks/`
 - `services/tts/tests/`

@@ -311,7 +311,7 @@ freeze:
 No audio was generated and no runtime, segmenter, buffer, playback, dependency,
 profile, ADR, or roadmap commitment changed while recording this hypothesis.
 The later documentation decision assigned this hypothesis to the separate
-[Milestone 6.2 ExecPlan](M006-002-qwen-short-segment-batch-feasibility.md).
+[Milestone 6.2 ExecPlan](../active/M006-002-qwen-short-segment-batch-feasibility.md).
 That handoff is a roadmap commitment to evaluation only; it still does not
 provide a `v4` authority, result, implementation, or support claim.
 
@@ -700,7 +700,8 @@ the failed standard result, retains ADR-0013 as the standard viability
 authority, and separately records ADR-0014's exact constrained
 development-demo exception. The roadmap, architecture, product, benchmark,
 dependency, setup, testing, performance, and system-diagram surfaces are
-reconciled. Milestone 6 repository/CI closeout remains separate.
+reconciled. Milestone 6 repository/CI closeout remained separate at that
+checkpoint and is completed below.
 The Milestone 5 documentation passed local-link, privacy, forbidden-artifact,
 portable, and authoritative Windows validation before its checkpoint commit.
 
@@ -727,10 +728,10 @@ portable, and authoritative Windows validation before its checkpoint commit.
 
 ### Status
 
-In progress. Local deterministic, candidate-import, repository/privacy,
-portable, and authoritative Windows validation passed on 2026-07-26. Both
-required pull-request jobs must still pass on the final evidence commit before
-this milestone and plan can close.
+Complete as of 2026-07-26. Local deterministic, candidate-import,
+repository/privacy, portable, and authoritative Windows validation passed.
+Pull request #104 then passed both required foundation jobs on exact evidence
+commit `4dd55b11aac0d98550a2daf30cfb11de0856f3db`.
 
 ## Testing and benchmark strategy
 
@@ -1210,6 +1211,22 @@ dependency changes are involved.
   runtime, dependency, lock, model, audio, book, raw-result, or user-prose
   change. All 111 relative links resolved, `git diff --check` passed, and the
   changed-file privacy/credential scan found no private path or secret.
+- 2026-07-26: Pull request
+  [#104](https://github.com/mmjosedaniel/voxleaf/pull/104) tested exact evidence
+  commit `4dd55b11aac0d98550a2daf30cfb11de0856f3db` in Foundation
+  [run 30212387595](https://github.com/mmjosedaniel/voxleaf/actions/runs/30212387595).
+  Ubuntu portable foundation passed. The first Windows attempt built the
+  release executable and stopped at the second WebDriver session creation; the
+  unchanged job rerun passed the complete Windows native foundation matrix.
+  Both required jobs therefore passed on the exact evidence commit without a
+  runtime or test change.
+- 2026-07-26: Moved this ExecPlan to `docs/plans/completed/` and reconciled
+  the roadmap, documentation indexes, product status, setup/dependency/testing
+  guidance, benchmark link, performance budget, and canonical system diagram.
+  All 144 relative links across the 14 closure Markdown files resolved;
+  `git diff --check`, private-path/credential scans, tracked forbidden-artifact
+  checks, and ignored raw cleanup passed. The closure changes no runtime,
+  dependency, lock, authority, result, or accepted decision.
 
 ## Discoveries and decisions
 
@@ -1536,6 +1553,8 @@ authoritative Windows aggregate all passed with the evidence recorded in the
 progress log. The branch changes documentation only; no production dependency,
 model/audio/book/raw artifact, private path, credential, or user prose is added.
 The ignored local model cache remains outside Git and is not repository
-evidence. Milestone 6 and this ExecPlan remain open until both required
-pull-request jobs pass on the final evidence commit; only then may this file
-move to `docs/plans/completed/`.
+evidence. Pull request #104's Foundation run `30212387595` passed both required
+jobs on exact evidence commit `4dd55b11aac0d98550a2daf30cfb11de0856f3db`;
+the unchanged Windows rerun passed after the first attempt stopped at restart
+session creation. Every required task and decision is complete, so this
+ExecPlan is retained under `docs/plans/completed/`.

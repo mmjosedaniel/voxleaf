@@ -16,7 +16,7 @@ This record applies the conjunctive gates in the accepted
 [`tts-feasibility-profile-v3`](../../docs/architecture/tts-feasibility-profile-v3.md)
 and machine-readable [`profile-v3.json`](profile-v3.json) to the content-free
 results retained in the
-[Milestone 6.1 ExecPlan](../../docs/plans/active/M006-001-local-tts-profile-blocker-resolution.md).
+[Milestone 6.1 ExecPlan](../../docs/plans/completed/M006-001-local-tts-profile-blocker-resolution.md).
 The private raw journal, generated audio, scorecard, and randomization data were
 deleted after the allowlisted aggregates below were derived.
 
