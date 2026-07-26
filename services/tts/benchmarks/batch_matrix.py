@@ -18,7 +18,7 @@ from benchmarks.batch_contracts import (
     BatchWorkIdentity,
 )
 from benchmarks.batch_execution import BoundedOrderedBatchController
-from benchmarks.v4_authority import load_frozen_v4_authority
+from benchmarks.v4_authority import load_frozen_v4_mechanics_authority
 
 type MatrixPurpose = Literal["disposable-pilot", "official"]
 PILOT_CALL_LIMIT: Final = 3
@@ -48,7 +48,7 @@ def frozen_v4_requests(
 ) -> tuple[BatchGenerationRequest, ...]:
     """Build the exact warmup and measured call order without rewriting text."""
 
-    authority = load_frozen_v4_authority(repository_root)
+    authority = load_frozen_v4_mechanics_authority(repository_root)
     units = {
         cast(str, unit["unitId"]): BatchUnitRequest(
             unit_id=cast(str, unit["unitId"]),

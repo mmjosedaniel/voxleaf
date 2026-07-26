@@ -31,7 +31,7 @@ from benchmarks.preflight import (
     RunConditions,
     run_local_preflight,
 )
-from benchmarks.v4_authority import load_frozen_v4_authority
+from benchmarks.v4_authority import load_frozen_v4_mechanics_authority
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 MAXIMUM_STDIN_BYTES: Final = 32_768
@@ -104,7 +104,7 @@ def _payload() -> dict[str, object]:
 
 
 def _run(payload: dict[str, object]) -> dict[str, object]:
-    load_frozen_v4_authority(REPOSITORY_ROOT)
+    load_frozen_v4_mechanics_authority(REPOSITORY_ROOT)
     if (
         payload.get("batchOptIn") is not True
         or payload.get("resultPurpose") != "disposable-pilot"
@@ -156,7 +156,7 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
         or host.free_vram_bytes < 8_174_698_496
     ):
         raise BatchCommandError("preflight")
-    authority = load_frozen_v4_authority(REPOSITORY_ROOT)
+    authority = load_frozen_v4_mechanics_authority(REPOSITORY_ROOT)
     forbidden = tuple(
         cast(str, unit[key])
         for raw_unit in cast(list[dict[str, object]], authority.corpus["units"])

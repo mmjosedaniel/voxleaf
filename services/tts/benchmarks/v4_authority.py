@@ -10,9 +10,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final, cast
 
-from jsonschema import Draft202012Validator
-from referencing import Registry, Resource
-
 PROFILE_RELATIVE_PATH: Final = Path("benchmarks/tts/profile-v4.json")
 CORPUS_RELATIVE_PATH: Final = Path("benchmarks/tts/corpus-v4.json")
 RAW_SCHEMA_RELATIVE_PATH: Final = Path(
@@ -291,22 +288,33 @@ def _verify_corpus(corpus: Mapping[str, object]) -> None:
         raise _fail("corpus-pair")
 
 
-def load_frozen_v4_authority(repository_root: Path) -> FrozenV4Authority:
-    """Load the exact byte-frozen v4 authority or fail with a fixed code."""
+def load_frozen_v4_mechanics_authority(
+    repository_root: Path,
+) -> FrozenV4Authority:
+    """Load byte-frozen mechanics without requiring schema tooling."""
 
     _verify_file_hashes(repository_root)
     profile = _load_object(repository_root / PROFILE_RELATIVE_PATH)
     corpus = _load_object(repository_root / CORPUS_RELATIVE_PATH)
     raw_schema = _load_object(repository_root / RAW_SCHEMA_RELATIVE_PATH)
     summary_schema = _load_object(repository_root / SUMMARY_SCHEMA_RELATIVE_PATH)
-    try:
-        Draft202012Validator.check_schema(raw_schema)
-        Draft202012Validator.check_schema(summary_schema)
-    except Exception as error:
-        raise _fail("invalid-schema") from error
     _verify_profile_authority(profile, corpus)
     _verify_corpus(corpus)
     return FrozenV4Authority(profile, corpus, raw_schema, summary_schema)
+
+
+def load_frozen_v4_authority(repository_root: Path) -> FrozenV4Authority:
+    """Load the exact byte-frozen v4 authority or fail with a fixed code."""
+
+    from jsonschema import Draft202012Validator
+
+    authority = load_frozen_v4_mechanics_authority(repository_root)
+    try:
+        Draft202012Validator.check_schema(authority.raw_schema)
+        Draft202012Validator.check_schema(authority.summary_schema)
+    except Exception as error:
+        raise _fail("invalid-schema") from error
+    return authority
 
 
 def _reject_private_content(value: object, corpus: Mapping[str, object]) -> None:
@@ -334,7 +342,9 @@ def _reject_private_content(value: object, corpus: Mapping[str, object]) -> None
     visit(value)
 
 
-def _schema_registry(authority: FrozenV4Authority) -> Registry[JsonSchema]:
+def _schema_registry(authority: FrozenV4Authority) -> Any:
+    from referencing import Registry, Resource
+
     registry: Registry[JsonSchema] = Registry()
     for schema in (authority.raw_schema, authority.summary_schema):
         identifier = cast(str, schema["$id"])
@@ -599,6 +609,8 @@ def validate_v4_result(
     ancestry_checker: Callable[[str, str], bool] | None = None,
 ) -> None:
     """Validate one v4 raw journal or safe summary without loading a model."""
+
+    from jsonschema import Draft202012Validator
 
     authority = load_frozen_v4_authority(repository_root)
     if not isinstance(value, dict):
