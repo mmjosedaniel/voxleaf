@@ -387,6 +387,7 @@ disposable generated speech and produce aggregate error counts, but:
 - `benchmarks/tts/customvoice-spanish-screen-v2.json`
 - `benchmarks/tts/customvoice-spanish-screen-result-v2.json`
 - `benchmarks/tts/profile-v3.json`
+- `benchmarks/tts/selection-v3.md`
 - `benchmarks/tts/incremental-cancellation-prototype-v1.json`
 - `benchmarks/tts/incremental-cancellation-prototype-result-v1.json`
 - `benchmarks/tts/schemas/incremental-cancellation-prototype-result-v1.schema.json`
@@ -694,9 +695,14 @@ remains failed and non-promotable.
 
 ### Status
 
-In progress. ADR-0014 records the exact constrained development-demo
-exception and preserves the failed standard authority. The candidate-neutral
-`selection-v3` record and final cross-document reconciliation remain.
+Complete on 2026-07-26. The candidate-neutral `selection-v3` record preserves
+the failed standard result, retains ADR-0013 as the standard viability
+authority, and separately records ADR-0014's exact constrained
+development-demo exception. The roadmap, architecture, product, benchmark,
+dependency, setup, testing, performance, and system-diagram surfaces are
+reconciled. Milestone 6 repository/CI closeout remains separate.
+The Milestone 5 documentation passed local-link, privacy, forbidden-artifact,
+portable, and authoritative Windows validation before its checkpoint commit.
 
 ## Milestone 6: Close repository and privacy validation
 
@@ -1157,6 +1163,21 @@ dependency changes are involved.
   `pnpm.cmd check` in 51.7 seconds. The initial sandboxed portable check stopped
   only because the protected existing `.pytest_cache` could not be scanned;
   the unchanged command passed outside the sandbox.
+- 2026-07-26: Created `benchmarks/tts/selection-v3.md` as the missing
+  candidate-neutral Milestone 5 decision record. It applies every frozen
+  standard gate without promotion, records the limited one-maintainer quality
+  result as descriptive only, and identifies ADR-0014's separate exact
+  constrained-demo boundary. Reconciled Milestone 5 as complete while leaving
+  Milestone 6 repository and required-CI closeout open.
+- 2026-07-26: Milestone 5 closeout passed the 48-file Markdown local-link
+  audit, changed-file private-path/credential scan, tracked
+  audio/model/private-input audit, and `git diff --check`.
+  `pnpm.cmd check:portable` passed in 27.4 seconds and `pnpm.cmd check` passed
+  in 49.7 seconds. Both included 18 shared test files / 175 tests, 34 EPUB test
+  files / 555 tests, 20 desktop test files / 204 tests, 6 native-WebDriver
+  client tests, and 72 Python tests; the native aggregate also passed Rust
+  formatting, Clippy, crate tests, the release build, and Python packaging.
+  The existing Vite chunk-size advisory remained informational.
 
 ## Discoveries and decisions
 
@@ -1293,6 +1314,10 @@ dependency changes are involved.
     Generic layer offload is excluded from the first experiment; a separately
     frozen targeted speech-tokenizer/audio-decoder placement may run only if
     full-GPU batch two hits its predeclared memory stop condition.
+32. One candidate-neutral selection record can retain two non-conflicting
+    conclusions only when their authorities remain explicit: failed standard
+    `v3` selects no production profile, while ADR-0014 permits the identical
+    configuration solely as a constrained development-demo input.
 
 ## Final validation results
 

@@ -222,8 +222,10 @@ extended the candidate-neutral benchmark. Milestone 4 completed the official
 matrix: resource/offline/audit gates passed, while startup, throughput,
 zero-failure, and three mid-generation cancellation gates failed. One fluent
 maintainer accepted audible quality for a near-term demo; ADR-0014 permits only
-a constrained development-demo exception. Formal selection consequences,
-final repository validation, and closeout remain. The
+a constrained development-demo exception. Milestone 5 is complete:
+[`selection-v3`](../../benchmarks/tts/selection-v3.md) retains the failed
+standard blocker and separately records that exact demo exception. Final
+repository validation and closeout remain. The
 [blocker-resolution ExecPlan](active/M006-001-local-tts-profile-blocker-resolution.md)
 records the candidate-intake evidence, decisions, tasks, and validation
 sequence. Frozen `v3` remains failed and ADR-0013 remains authoritative for
