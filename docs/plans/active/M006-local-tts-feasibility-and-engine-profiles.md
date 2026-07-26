@@ -1217,11 +1217,35 @@ The outcome is reproducible whether it selects profiles or blocks the next miles
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- Added the content-free
+  [`selection-v2`](../../../benchmarks/tts/selection-v2.md) record. It applies
+  every applicable conjunctive `v2` gate to each candidate separately and
+  preserves exact measured-host scope.
+- Qwen is rejected for the balanced role. It fails warm first audio,
+  15-seconds-of-media production, shorter-complete latency, warm and sustained
+  RTF, total sustained RTF, zero-failure, mid-generation cancellation, the
+  three-evaluator quality-panel minimum, and the zero-defect quality gate. Its
+  cold-load, RAM, dual-signal VRAM, artifact, offline, cleanup, and license
+  gates pass.
+- Supertonic is rejected for the compatibility role. It fails warm first
+  audio, zero-failure, mid-generation cancellation, the three-evaluator
+  quality-panel minimum, and the zero-defect quality gate. Its remaining
+  numeric, RAM, zero-GPU, artifact, offline, cleanup, and decision-sufficiency
+  license gates pass.
+- No unavailable value was converted to zero or a favorable score. The limited
+  one-evaluator quality result remains explicitly non-promotable.
+- Neither role has a viable candidate, so no weighted or least-bad selection
+  was made. The required roadmap response is a newly frozen evaluation cycle
+  for an exact candidate or materially changed engine API that credibly exposes
+  incremental audio and mid-generation cancellation, followed by the complete
+  protocol and at least three fluent-Spanish evaluators.
 
 #### Status
 
-Not started.
+Complete — neither candidate passes its assigned role's frozen conjunctive
+matrix, and Milestone 7 has no authorized engine integration target.
 
 ### Task 4.2: Accept the engine-profile ADR
 
@@ -1694,6 +1718,12 @@ A profile is selectable only when its performance, quality, capability, license,
   notice/license flow, disclosure policy, and update review. Both exact
   profiles completed synthesis under application-scoped outbound denial, so
   neither has a mandatory synthesis-time network dependency after setup.
+- 2026-07-25: Completed Task 4.1. The checked-in content-free selection record
+  applies the frozen `v2` matrix without averaging hardware, replacing
+  unavailable values, or allowing a weighted rescue. Qwen is rejected for the
+  balanced role and Supertonic for the compatibility role. No profile is
+  selected; a new pre-result authority and complete evaluation are required
+  before Milestone 7 may receive an engine target.
 
 ## Discoveries and decisions
 
@@ -1736,6 +1766,14 @@ A profile is selectable only when its performance, quality, capability, license,
   for a 50-millisecond WDDM sample: it combines the one-second WDDM
   process-attribution cross-check with PyTorch's exact caching-allocator
   high-water mark and fails if either signal is unavailable or inconsistent.
+- A valid failed performance run does not become a selectable profile merely
+  because some numeric gates pass. Both candidates independently fail
+  performance, zero-failure, and cancellation gates before the limited quality
+  result is considered.
+- Because the only available Spanish evaluation had one participant, no
+  schema-governed official summary can be promoted. The content-free selection
+  record preserves the complete recomputable gate matrix while leaving that
+  missing evidence unfavorable, as the frozen authority requires.
 
 ## Final validation results
 
