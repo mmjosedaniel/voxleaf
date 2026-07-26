@@ -11,6 +11,7 @@
     "benchmark:tts:measure": "uv run --directory services/tts --locked python -m benchmarks.cli measure",
     "benchmark:tts:preflight": "uv run --directory services/tts --locked python -m benchmarks.cli preflight",
     "benchmark:tts:prototype": "uv run --directory services/tts --project benchmarks/candidates/qwen3_1_7b_customvoice_cuda --locked python -m benchmarks.incremental_prototype_cli run",
+    "benchmark:tts:batch": "uv run --directory services/tts --project benchmarks/candidates/qwen3_1_7b_customvoice_cuda --locked python -m benchmarks.batch_cli run",
     "benchmark:tts:quality:aggregate": "uv run --directory services/tts --locked python -m benchmarks.quality_cli aggregate",
     "benchmark:tts:quality:cleanup": "uv run --directory services/tts --locked python -m benchmarks.quality_cli cleanup",
     "benchmark:tts:quality:finalize": "uv run --directory services/tts --locked python -m benchmarks.quality_cli finalize",

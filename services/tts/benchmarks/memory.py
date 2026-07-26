@@ -24,6 +24,7 @@ _PDH_FMT_LARGE: Final = 0x00000400
 _PDH_MORE_DATA: Final = 0x800007D2
 _PDH_VALID_DATA: Final = 0
 _GPU_PROCESS_MEMORY_COUNTER: Final = r"\GPU Process Memory(*)\Dedicated Usage"
+GPU_PROCESS_SHARED_MEMORY_COUNTER: Final = r"\GPU Process Memory(*)\Shared Usage"
 _GPU_INSTANCE_PID = re.compile(r"^pid_([0-9]+)_")
 
 
@@ -149,9 +150,14 @@ class FrameworkVramTracker:
 class WindowsGpuProcessMemorySampler:
     """Rate-limited WDDM dedicated-memory sampling through native PDH."""
 
-    def __init__(self) -> None:
+    def __init__(self, counter_path: str = _GPU_PROCESS_MEMORY_COUNTER) -> None:
         if os.name != "nt":
             raise RuntimeError("tts-benchmark-memory:windows-required")
+        if counter_path not in (
+            _GPU_PROCESS_MEMORY_COUNTER,
+            GPU_PROCESS_SHARED_MEMORY_COUNTER,
+        ):
+            raise RuntimeError("tts-benchmark-memory:counter")
         self._pdh = _load_windows_dll("pdh")
         self._pdh.PdhOpenQueryW.argtypes = (
             wintypes.LPCWSTR,
@@ -186,7 +192,7 @@ class WindowsGpuProcessMemorySampler:
         try:
             status = self._pdh.PdhAddEnglishCounterW(
                 query,
-                _GPU_PROCESS_MEMORY_COUNTER,
+                counter_path,
                 0,
                 ctypes.byref(counter),
             )
