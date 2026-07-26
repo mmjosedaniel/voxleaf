@@ -6,6 +6,7 @@ import copy
 import hashlib
 import json
 import subprocess
+import sys
 from pathlib import Path
 from typing import Final, cast
 
@@ -473,6 +474,16 @@ def test_v5_authority_is_byte_frozen_and_result_blind() -> None:
         "frozen-before-v5-implementation-pilot-and-official-results"
     )
     assert_no_v5_official_results(REPOSITORY_ROOT)
+
+
+def test_v5_execution_authority_can_skip_optional_schema_library(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(sys.modules, "jsonschema", None)
+
+    authority = load_frozen_v5_authority(REPOSITORY_ROOT, validate_schemas=False)
+
+    assert authority.profile["profileVersion"] == "tts-dual-worker-profile-v5"
 
 
 def test_v5_raw_accepts_exact_arms_and_rejects_identity_order_or_retry() -> None:

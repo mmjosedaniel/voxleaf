@@ -372,10 +372,12 @@ def _verify_corpus(
         raise _fail("duration-policy")
 
 
-def load_frozen_v5_authority(repository_root: Path) -> FrozenV5Authority:
+def load_frozen_v5_authority(
+    repository_root: Path,
+    *,
+    validate_schemas: bool = True,
+) -> FrozenV5Authority:
     """Load the exact byte-frozen v5 authority without importing a candidate."""
-
-    from jsonschema import Draft202012Validator
 
     _verify_file_hashes(repository_root)
     profile = _load_object(repository_root / PROFILE_RELATIVE_PATH)
@@ -394,11 +396,14 @@ def load_frozen_v5_authority(repository_root: Path) -> FrozenV5Authority:
     _verify_workers(profile)
     _verify_execution_and_gates(profile)
     _verify_corpus(corpus, base_corpus)
-    for schema in (raw_schema, summary_schema):
-        try:
-            Draft202012Validator.check_schema(cast(JsonSchema, schema))
-        except Exception as error:
-            raise _fail("invalid-schema") from error
+    if validate_schemas:
+        from jsonschema import Draft202012Validator
+
+        for schema in (raw_schema, summary_schema):
+            try:
+                Draft202012Validator.check_schema(cast(JsonSchema, schema))
+            except Exception as error:
+                raise _fail("invalid-schema") from error
     return FrozenV5Authority(profile, corpus, base_corpus, raw_schema, summary_schema)
 
 
