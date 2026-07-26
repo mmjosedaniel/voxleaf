@@ -259,14 +259,16 @@ schema-valid safe result reproduces the same shared-memory stop and VRAM
 boundary before media, and its private raw session was also deleted. Default
 tests and CI remain model-free.
 
-Pending Milestones 6-10 of the same ExecPlan require a separately frozen `v5`
-authority and new model-free coverage before hardware execution. The future
-tests must cover CPU-only placement, CPU-solo admission, deterministic
-GPU-primary/CPU-support dispatch, ordered head-of-line blocking, worker
-contention, same-authority baseline comparison, identity-first cancellation,
-and simultaneous 300-second, 40-unit, 28,800,000-byte PCM, and two-active-unit
-retention limits. No dual-worker command or test exists yet; documentation
-must not list one as runnable until Milestone 7 adds and validates it.
+Milestone 6 adds the separately frozen `v5` authority and
+`test_benchmark_v5_authority.py`. Its model-free coverage verifies byte-stable
+profile/corpus/schemas, complete GPU and CPU identities, exact schedules,
+first attempts, CPU zero-CUDA/dedicated/shared-GPU use, missing/duplicate/
+reordered occurrence rejection, authority ancestry, schema closure, private
+content exclusion, CPU-solo and concurrent conjunctive conclusions, aggregate
+RTF below one, and simultaneous 300-second, 40-unit, 28,800,000-byte PCM, and
+two-active-unit retention limits. No dual-worker runner or hardware result
+exists yet; documentation must not list a command as runnable until Milestone
+7 adds and validates it.
 
 ## Deferred coverage
 
