@@ -1275,11 +1275,30 @@ Milestone 7 has an explicit integration input or an explicit blocker.
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- Accepted
+  [ADR-0013](../../architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md)
+  as the next available architecture decision.
+- The ADR selects neither evaluated profile and links the frozen authority,
+  candidate identities, content-free selection record, measured configuration
+  scope, fixed failed gates, and limited quality evidence.
+- It records directly supported, unsupported, and unknown capabilities;
+  offline-after-setup behavior; license and artifact consequences; high Qwen
+  and moderate Supertonic packaging risk; and the unchanged zero-dependency
+  production service boundary.
+- It assigns future model-specific preprocessing to a future service adapter
+  without changing `narration-v1`, and distinguishes benchmark worker
+  termination from production cancellation.
+- Process transport, production audio format, playback, hardware detection,
+  acquisition/update/storage policy, and installer topology remain explicitly
+  deferred. Milestone 7 receives an explicit blocker rather than an engine
+  integration input.
 
 #### Status
 
-Not started.
+Complete — ADR-0013 is accepted, selects no profile, and requires a new frozen
+candidate evaluation before engine integration.
 
 ### Task 4.3: Reconcile architecture, product, roadmap, and development documentation
 
@@ -1724,6 +1743,11 @@ A profile is selectable only when its performance, quality, capability, license,
   balanced role and Supertonic for the compatibility role. No profile is
   selected; a new pre-result authority and complete evaluation are required
   before Milestone 7 may receive an engine target.
+- 2026-07-25: Completed Task 4.2. Accepted ADR-0013 records the exact rejected
+  configurations, measured capabilities, licenses, offline and packaging
+  consequences, future adapter ownership, cancellation limitation, unchanged
+  production dependency graph, deferred runtime decisions, and explicit
+  Milestone 7 blocker.
 
 ## Discoveries and decisions
 
@@ -1774,6 +1798,10 @@ A profile is selectable only when its performance, quality, capability, license,
   schema-governed official summary can be promoted. The content-free selection
   record preserves the complete recomputable gate matrix while leaving that
   missing evidence unfavorable, as the frozen authority requires.
+- A benchmark worker can prove forced-termination timing without proving a
+  production cancellation design. The exact complete-waveform APIs remain
+  unsuitable for the selected roles until a newly frozen evaluation proves an
+  incremental-audio and mid-generation cancellation boundary.
 
 ## Final validation results
 
