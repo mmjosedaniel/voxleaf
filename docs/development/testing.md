@@ -247,9 +247,11 @@ coverage for the five cold-load observations, exact official call/unit
 counts, ignored raw result, five cancellation records, memory/cleanup shape,
 closed safe-summary derivation, and opaque-session command input. The
 candidate-environment run and base-environment derive/delete steps are
-separate so the candidate lock remains unchanged. Neither command has been
-executed; no pilot or official v4 result exists. Default tests and CI remain
-model-free.
+separate so the candidate lock remains unchanged. Milestone 3 executed the
+disposable pilot and official full-GPU path. The committed safe result validates
+the exact counts and cleanup but stops on `shared-gpu-memory` before any
+reviewable audio, playback, or throughput evidence; the ignored raw session was
+deleted. Default tests and CI remain model-free.
 
 ## Deferred coverage
 

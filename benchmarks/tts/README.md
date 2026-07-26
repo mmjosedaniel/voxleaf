@@ -36,10 +36,13 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   after an exact full-GPU batch-two memory stop.
 - `schemas/short-segment-batch-raw-v4.schema.json` and
   `schemas/short-segment-batch-summary-v4.schema.json` are the closed private
-  journal and content-safe summary shapes. The reviewed disposable-pilot and
-  official run/derive commands plus model-free batch mechanics now exist, but
-  no v4 pilot, hardware result, quality result, or selection record exists
-  yet.
+  journal and content-safe summary shapes.
+- `short-segment-batch-result-v4.json` is the schema-valid, content-safe
+  full-GPU result. The frozen zero-shared-memory rule stopped the run after
+  79,691,776 bytes of shared GPU memory were observed, before reviewable audio
+  or throughput evidence existed. It fails standard and scheduling conclusions
+  and admits only the separately frozen targeted-CPU contingency. No quality
+  result or selection record exists.
 - `incremental-cancellation-prototype-v1.json` freezes the development-only
   prototype topology before results: complete-segment delivery, one resident
   spawned worker, explicit input/output/queue ceilings, identity-first stale
@@ -70,9 +73,9 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   development candidate. `v2` remains the completed first-cycle authority and
   supplies the inherited balanced measurement rules; `v1` remains historical.
 - [`docs/architecture/tts-feasibility-profile-v4.md`](../../docs/architecture/tts-feasibility-profile-v4.md)
-  explains the frozen short-unit/shared-model batch authority. It is active
-  pre-result development evidence and does not supersede the failed v3
-  decision.
+  explains the frozen short-unit/shared-model batch authority. The committed
+  full-GPU result stops on its exact shared-memory rule and does not supersede
+  the failed v3 decision.
 
 Raw measurements, model files, generated audio, listening-session metadata,
 and profiling output belong below `benchmarks/results/raw/`, which is ignored.
@@ -272,8 +275,9 @@ Milestone 6.2 adds `benchmark:tts:batch`. It repeats the exact authority, host,
 clean-tree, artifact, offline, firewall, power, sleep, background-load,
 thermal, RAM, and 8,174,698,496-byte free-VRAM preflight; invokes Qwen with
 one list containing one or two unchanged narration units through the isolated
-candidate interpreter; and discards waveform payloads. Do not execute it
-before Milestone 3 starts from a clean committed checkpoint.
+candidate interpreter; and discards waveform payloads. Milestone 3 executed it
+from a clean committed checkpoint. Future runs require their own admitted
+ExecPlan milestone and must not overwrite the committed full-GPU result.
 
 The disposable pilot runs only the three frozen excluded warm-up calls and
 emits a non-promotable content-safe mechanics receipt:

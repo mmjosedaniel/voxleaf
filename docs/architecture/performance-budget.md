@@ -272,3 +272,12 @@ capacity rather than improve throughput. Generic layer offload is therefore
 not the first contingency. A narrowly targeted speech-tokenizer/audio-decoder
 placement still requires device-map, RAM, VRAM, transfer, failure, and timing
 evidence before it can be considered viable.
+
+The official full-GPU `v4` run stopped on that frozen rule after observing
+79,691,776 bytes of shared GPU memory. Before the stop it observed a
+4,432,904,192-byte authoritative VRAM peak, 4,633,399,296 bytes of process-tree
+RAM, and 3,757,047,808 bytes of minimum free dedicated VRAM. Because all 36
+measured first attempts were then recorded as failed and no media was admitted,
+the result provides no aggregate RTF, startup, buffer, or short-unit duration
+measurement. It admits the separate targeted-CPU contingency; it does not show
+that offload is faster or viable.

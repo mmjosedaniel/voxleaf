@@ -307,9 +307,12 @@ No pilot or official hardware output was produced.
 
 #### Status
 
-In progress on 2026-07-26. The official full-GPU run/derive boundary is
-implemented and passing focused model-free validation. The disposable pilot
-and official hardware matrix have not yet run.
+Complete on 2026-07-26. The disposable pilot completed and remained
+non-promotable. The official full-GPU run stopped on the frozen
+`shared-gpu-memory` rule after observing 79,691,776 bytes of shared GPU memory,
+derived a schema-valid content-safe result, and deleted its private raw
+session. The stop occurred before usable media, throughput, playback, or
+quality evidence existed.
 
 ### Milestone 4: Run the conditional targeted-CPU arm if admitted
 
@@ -332,7 +335,7 @@ and official hardware matrix have not yet run.
 
 #### Status
 
-Conditional; not admitted.
+Admitted by Milestone 3's exact `shared-gpu-memory` stop; not started.
 
 ### Milestone 5: Evaluate playback credibility and bounded quality
 
@@ -586,6 +589,22 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
   but serialized the trademarked Windows label. Updated raw serialization and
   its regression to use the same frozen normalization; the session was
   deleted and no invalid result was retained.
+- 2026-07-26: Ran the final official full-GPU safety path from clean checkpoint
+  `3eb1635`. It reproduced the frozen `shared-gpu-memory` stop, derived the
+  schema-valid content-safe
+  `benchmarks/tts/short-segment-batch-result-v4.json`, and deleted the exact
+  ignored raw session. The committed summary SHA-256 is
+  `9ce8141fa5987878ab29bf472f6f16dc3a6370dd4ffcc1141b30964914c62e32`.
+  It records five cold loads with 9.6984155-second p95, 36 failed measured
+  first attempts and zero retries, 4,633,399,296 bytes peak process-tree RAM,
+  4,432,904,192 bytes peak authoritative VRAM, 3,757,047,808 bytes minimum
+  free dedicated VRAM, 79,691,776 bytes peak shared GPU memory, and successful
+  cleanup. No generated audio or private raw evidence remains.
+- 2026-07-26: Milestone 3 therefore fails standard viability and scheduling
+  sustainability without evaluating constrained-demo quality. It supplies no
+  RTF, startup, buffer, or short-unit duration evidence. The exact memory stop
+  admits the separately frozen targeted-CPU Milestone 4 arm; it does not prove
+  that CPU placement will be faster or viable.
 
 ## Discoveries and decisions
 
@@ -663,16 +682,27 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
 20. Windows reports the exact reference CPU as
     `Intel(R) Core(TM) Ultra 7 255HX`, while the frozen v4 reference label
     intentionally omits trademark markers. Exact-host comparison must remove
-    only `(R)` and `(TM)` plus duplicate whitespace before comparing and
-    before writing the frozen raw host identity.
+     only `(R)` and `(TM)` plus duplicate whitespace before comparing and
+     before writing the frozen raw host identity.
+21. The disposable pilot's 81,788,928-byte shared-memory observation was not
+    noise that the official authority could waive. The final official run
+    observed 79,691,776 bytes, so the frozen zero-shared-memory rule stopped
+    the matrix before performance evidence.
+22. Evidence-workflow repeats used to correct derivation and host
+    serialization did not become candidate retries: every bounded run used
+    first attempts only, every rejected private session was deleted, and only
+    the final schema-valid summary is reviewable evidence.
+23. A safe stop is not a batch-performance result. Zero media makes the
+    aggregate RTF, startup, playback, duration, and listening fields
+    unavailable rather than passing or failing by speed.
 
 ## Final validation results
 
-Milestones 1 and 2 are complete. Milestone 1 adds result-blind authority;
-Milestone 2 adds development-only model-free mechanics and a reviewed
-disposable-pilot command. Neither milestone adds a candidate dependency,
-executes a model, produces generated audio or a hardware result, changes a
-production contract/runtime, makes a support claim, or selects a profile.
+Milestones 1 through 3 are complete. Milestone 1 adds result-blind authority;
+Milestone 2 adds development-only model-free mechanics and reviewed execution
+commands; Milestone 3 executes only the frozen full-GPU hardware arm. No
+milestone changes a production contract/runtime, makes a support claim, or
+selects a profile.
 
 The authority checkpoint passed:
 
@@ -740,3 +770,37 @@ All ten changed Markdown files resolve their relative links. The changed-tree
 private-path/credential scan, tracked audio/model/book/raw-artifact scan,
 ignored raw-tree check, and `git diff --check` pass; the ignored raw tree
 contains zero files.
+
+Milestone 3 hardware and result validation completed on 2026-07-26:
+
+- the non-promotable pilot completed its three excluded calls/four units with
+  correct order, bounded retention, zero retries/failures, and cleanup;
+- the official full-GPU arm ran from clean execution commit
+  `3eb16351d2bb7e06cc16a1f1981ba757408ca6e7`, stopped on the exact
+  `shared-gpu-memory` rule, and produced the schema-valid content-safe
+  `short-segment-batch-result-v4.json`;
+- the result records the exact five cold loads, three excluded warmups, three
+  measured passes, 24 batch-one calls/units, 12 batch-two calls/24 units, 36
+  failed first attempts, five cancellation records, and zero retries;
+- the safe-summary SHA-256 is
+  `9ce8141fa5987878ab29bf472f6f16dc3a6370dd4ffcc1141b30964914c62e32`;
+- every private raw session and sidecar was deleted, the ignored v4 raw tree
+  contains zero files, and no generated audio was retained.
+
+Final Milestone 3 repository validation passed:
+
+- Ruff formatting/lint and strict mypy over 58 source files;
+- all 101 Python tests;
+- the unchanged 107-package candidate lock and exact
+  `qwen_tts`/PyTorch/Torchaudio import smoke;
+- `pnpm.cmd check:portable` in 28.5 seconds;
+- `pnpm.cmd check` on native Windows in 51.5 seconds, including Rust format,
+  Clippy, crate tests, the Tauri release build, and Python package builds;
+- all 58 tracked Markdown files in the relative-link audit;
+- the added-private-pattern, tracked sensitive-artifact, result-hash,
+  raw-cleanup, and `git diff --check` audits.
+
+The known optional FlashAttention/SoX candidate-import warnings and Vite
+chunk-size advisory remain informational. Milestone 3 is complete. Its outcome
+admits Milestone 4; it does not admit Milestone 5 quality review, produce a
+selection, or change production behavior.

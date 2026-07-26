@@ -351,7 +351,7 @@ def _summary_fixture(profile_id: str = FULL_GPU_PROFILE_ID) -> dict[str, object]
     }
 
 
-def test_v4_authority_is_byte_frozen_and_result_blind() -> None:
+def test_v4_authority_is_byte_frozen_before_the_committed_result() -> None:
     authority = load_frozen_v4_authority(REPOSITORY_ROOT)
     assert _sha256("benchmarks/tts/profile-v4.json") == PROFILE_SHA256
     assert _sha256("benchmarks/tts/corpus-v4.json") == CORPUS_SHA256
@@ -366,7 +366,15 @@ def test_v4_authority_is_byte_frozen_and_result_blind() -> None:
     assert authority.profile["status"] == (
         "frozen-before-v4-implementation-pilot-and-official-results"
     )
-    assert not (REPOSITORY_ROOT / "benchmarks/tts/short-segment-batch-result-v4.json").exists()
+    result = json.loads(
+        (REPOSITORY_ROOT / "benchmarks/tts/short-segment-batch-result-v4.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    validate_v4_result(REPOSITORY_ROOT, result, summary=True)
+    assert result["executionCommitSha"] != AUTHORITY_COMMIT_SHA
+    assert result["memory"]["memoryStopCode"] == "shared-gpu-memory"
+    assert result["conclusions"]["schedulingSustainability"]["outcome"] == "fail"
     assert not (REPOSITORY_ROOT / "benchmarks/tts/selection-v4.md").exists()
 
 

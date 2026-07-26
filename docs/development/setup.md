@@ -17,10 +17,10 @@ Milestone 6.2 is active. Its `v4` authority is frozen and Milestone 2 adds the
 reviewed `benchmark:tts:batch` disposable-pilot and official commands,
 `benchmark:tts:batch:derive` safe-summary/cleanup command, and model-free
 one/two-unit, ordering, invalidation, resource, playback, schema, and
-derivation mechanics. None of those hardware paths has been executed and no
-v4 hardware result exists. Conditional targeted CPU placement is
-evaluation-only and may run only after the full-GPU arm reaches its frozen
-memory stop.
+derivation mechanics. Milestone 3 ran the full-GPU path and committed its
+content-safe result. The exact `shared-gpu-memory` stop admits the conditional
+targeted-CPU evaluation; that arm has not run. The result contains no
+reviewable audio or throughput evidence and changes no production behavior.
 
 ## Prerequisite version matrix
 
