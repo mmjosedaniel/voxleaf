@@ -550,6 +550,13 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
   source files, and 14 v4 tests. The new tests cover official counts, bounded
   cleanup/memory evidence, content-safe derivation, and closed opaque-session
   input without importing Qwen or requiring CUDA.
+- 2026-07-26: The first disposable-pilot attempt stopped before model load
+  with the fixed `preflight` code. The generic content-safe preflight then
+  passed every repository, artifact, offline, firewall, power, headroom,
+  provider, and measurement check. The v4 wrapper alone rejected Windows'
+  trademarked CPU string against the frozen normalized CPU label. Added a
+  narrow normalization regression test without weakening any other exact-host
+  field; no pilot result or GPU execution occurred on the rejected attempt.
 
 ## Discoveries and decisions
 
@@ -624,6 +631,11 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
     sidecar, derives the p95 in the base environment, and deletes the sidecar
     with the raw journal. No authority field or reviewable private evidence is
     added.
+20. Windows reports the exact reference CPU as
+    `Intel(R) Core(TM) Ultra 7 255HX`, while the frozen v4 reference label
+    intentionally omits trademark markers. Exact-host comparison must remove
+    only `(R)` and `(TM)` plus duplicate whitespace before comparing; raw
+    evidence retains the observed Windows label.
 
 ## Final validation results
 

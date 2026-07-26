@@ -76,3 +76,10 @@ def test_official_input_requires_one_opaque_session_id(
     monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
     with pytest.raises(batch_cli.BatchCommandError, match=":input$"):
         batch_cli._payload()
+
+
+def test_exact_host_cpu_identity_ignores_windows_trademark_markers() -> None:
+    assert (
+        batch_cli._normalized_cpu_model("Intel(R) Core(TM) Ultra 7 255HX")
+        == "Intel Core Ultra 7 255HX"
+    )

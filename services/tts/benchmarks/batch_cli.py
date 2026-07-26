@@ -180,6 +180,10 @@ def _preflight_raw(host: HostSnapshot) -> dict[str, object]:
     }
 
 
+def _normalized_cpu_model(value: str) -> str:
+    return " ".join(value.replace("(R)", "").replace("(TM)", "").split())
+
+
 def _run(payload: dict[str, object]) -> dict[str, object]:
     load_frozen_v4_mechanics_authority(REPOSITORY_ROOT)
     if (
@@ -225,7 +229,7 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
         or host.os_version != "10.0.26200"
         or host.architecture != "x86_64"
         or host.python_version != "3.12.10"
-        or host.cpu_model != "Intel Core Ultra 7 255HX"
+        or _normalized_cpu_model(host.cpu_model) != "Intel Core Ultra 7 255HX"
         or host.gpu_model != "NVIDIA GeForce RTX 5060 Laptop GPU"
         or host.total_vram_bytes != 8_546_942_976
         or host.driver_version != "577.05"
