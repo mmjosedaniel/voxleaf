@@ -281,3 +281,13 @@ measured first attempts were then recorded as failed and no media was admitted,
 the result provides no aggregate RTF, startup, buffer, or short-unit duration
 measurement. It admits the separate targeted-CPU contingency; it does not show
 that offload is faster or viable.
+
+The admitted targeted-CPU arm then moved only
+`model.speech_tokenizer.model` and its wrapper device to CPU after the exact
+CUDA load. Its schema-valid result reproduced the full-GPU
+4,432,904,192-byte authoritative VRAM peak, 4,311,744,512-byte framework
+reserve, 79,691,776-byte shared-GPU-memory observation, and
+3,757,047,808-byte minimum free dedicated VRAM. It stopped before usable media
+with all 36 measured first attempts failed and zero retries. This exact
+placement therefore provides no capacity, throughput, startup, playback, or
+quality evidence on the reference host and does not admit the listening arm.

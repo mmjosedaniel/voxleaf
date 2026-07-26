@@ -393,6 +393,21 @@ def test_committed_full_gpu_stop_admits_only_the_frozen_cpu_arm() -> None:
     }
 
 
+def test_committed_cpu_result_is_closed_and_does_not_admit_quality() -> None:
+    result = json.loads(
+        (REPOSITORY_ROOT / "benchmarks/tts/short-segment-batch-result-v4-cpu.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    validate_v4_result(REPOSITORY_ROOT, result, summary=True)
+    assert result["placementProfileId"] == CPU_PROFILE_ID
+    assert result["cpuAdmission"]["fullGpuResultSha256"] == FULL_GPU_RESULT_SHA256
+    assert result["memory"]["memoryStopCode"] == "shared-gpu-memory"
+    assert result["aggregates"]["orderedUnitCount"] == 0
+    assert result["quality"]["status"] == "not-admitted"
+    assert result["conclusions"]["schedulingSustainability"]["outcome"] == "fail"
+
+
 def test_v4_raw_result_rejects_missing_pairs_reordering_and_retry() -> None:
     _validate(_raw_fixture(), summary=False)
 

@@ -41,8 +41,13 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   full-GPU result. The frozen zero-shared-memory rule stopped the run after
   79,691,776 bytes of shared GPU memory were observed, before reviewable audio
   or throughput evidence existed. It fails standard and scheduling conclusions
-  and admits only the separately frozen targeted-CPU contingency. No quality
-  result or selection record exists.
+  and admits only the separately frozen targeted-CPU contingency.
+- `short-segment-batch-result-v4-cpu.json` is the schema-valid, content-safe
+  result of that admitted placement. It moves only the speech tokenizer to CPU,
+  but reproduces the same authoritative/framework VRAM, minimum-free-VRAM, and
+  shared-GPU-memory measurements before usable media. It fails standard and
+  scheduling conclusions and does not admit quality review. No quality result
+  or selection record exists.
 - `incremental-cancellation-prototype-v1.json` freezes the development-only
   prototype topology before results: complete-segment delivery, one resident
   spawned worker, explicit input/output/queue ceilings, identity-first stale
@@ -106,6 +111,8 @@ sleep/background-load, and clean-commit preconditions as the speaker screen,
 run the prototype by piping its private paths through standard input:
 
 ```powershell
+$env:HF_HUB_OFFLINE = "1"
+$env:TRANSFORMERS_OFFLINE = "1"
 $candidatePython = (Resolve-Path "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/.venv/Scripts/python.exe").Path
 $prototype = @{
   prototypeOptIn = $true
@@ -319,6 +326,29 @@ $batchOfficial = @{
   thermalStateAcceptable = $true
 }
 $batchOfficial | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:batch
+```
+
+The separately frozen targeted-CPU identity is official-only; it has no
+disposable pilot and is allowed only when the repository's exact committed
+full-GPU result supplies the admitted memory stop and hash. On an ExecPlan
+milestone that explicitly admits the arm, use a new session ID and replace only
+the placement identity:
+
+```powershell
+$sessionId = [guid]::NewGuid().ToString("N")
+$batchCpuOfficial = @{
+  batchOptIn = $true
+  resultPurpose = "official"
+  placementProfileId = "qwen3-serena-v4-speech-tokenizer-cpu"
+  sessionId = $sessionId
+  artifactRoot = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda").Path
+  candidatePython = $candidatePython
+  expectedCommitSha = (git rev-parse HEAD).Trim()
+  sleepDisabled = $true
+  backgroundLoadAcceptable = $true
+  thermalStateAcceptable = $true
+}
+$batchCpuOfficial | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:batch
 ```
 
 Official execution records bounded content-free nanosecond/sample/resource

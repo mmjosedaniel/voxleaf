@@ -335,13 +335,13 @@ quality evidence existed.
 
 #### Status
 
-In progress on 2026-07-26. Milestone 3's exact `shared-gpu-memory` stop was
-reverified from the committed content-safe result and admits this arm. The
-benchmark now derives that admission from the fixed full-GPU result, applies
-only the frozen speech-tokenizer CPU move, and fails closed unless every other
-model parameter remains on `cuda:0` with no disk/meta placement or implicit
-fallback. Deterministic implementation validation passes; the admitted hardware
-run has not yet started.
+Complete on 2026-07-26. The schema-valid targeted-CPU result is
+`benchmarks/tts/short-segment-batch-result-v4-cpu.json` with SHA-256
+`d3766ae87bdebc806210d04d974081b6f79f976bf9793a184c4d021273f85234`.
+The exact placement loaded and verified, but the run reproduced the full-GPU
+`shared-gpu-memory` stop and identical VRAM boundary before usable media. It
+fails standard viability and scheduling sustainability, provides no playback
+or quality evidence, and does not admit Milestone 5.
 
 ### Milestone 5: Evaluate playback credibility and bounded quality
 
@@ -367,7 +367,10 @@ run has not yet started.
 
 #### Status
 
-Not started.
+Not admitted. Milestone 4 stopped before usable media on the frozen
+`shared-gpu-memory` rule, so there are no outputs eligible for playback replay
+or listening review. Milestone 6 must record that failed outcome without
+inventing quality evidence.
 
 ### Milestone 6: Record the decision and close validation
 
@@ -642,6 +645,29 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
   The verifier now accepts that exact CUDA object form and still rejects CPU,
   meta, disk, or mixed device-map entries; focused Ruff, mypy, and nine adapter
   tests pass.
+- 2026-07-26: The first corrected hardware run reached the expected
+  `shared-gpu-memory` stop, but derivation correctly rejected its execution
+  commit because GitHub's earlier squash merge had again removed the frozen
+  authority parent from `main`. The failed derivation deleted the complete
+  private raw session. Recorded unchanged `f6bccf7` as an ancestry-only second
+  parent in checkpoint `0af8331`; no authority bytes or implementation files
+  changed in that merge.
+- 2026-07-26: Repeated the official targeted-CPU arm from clean authority-valid
+  checkpoint `0af833179e99f542bdf4eb11c56434f780a5d6ba`. It completed in 70.6
+  seconds, reached the frozen `shared-gpu-memory` stop before usable media,
+  derived schema-valid
+  `benchmarks/tts/short-segment-batch-result-v4-cpu.json`, and deleted the
+  ignored raw session. The safe-summary SHA-256 is
+  `d3766ae87bdebc806210d04d974081b6f79f976bf9793a184c4d021273f85234`.
+- 2026-07-26: The CPU result records five cold loads with 9.8610702-second p95,
+  36 failed measured first attempts and zero retries, 4,591,538,176 bytes peak
+  process-tree RAM, 4,432,904,192 bytes peak authoritative VRAM,
+  4,311,744,512 bytes peak framework-reserved VRAM, 3,757,047,808 bytes
+  minimum free dedicated VRAM, 79,691,776 bytes peak shared GPU memory, and
+  successful cleanup/privacy. It produced zero media, so RTF, startup,
+  playback, unit duration, cancellation-under-generation, and quality remain
+  unavailable. Milestone 4 is complete with a failed outcome; Milestone 5 is
+  not admitted.
 
 ## Discoveries and decisions
 
@@ -732,14 +758,27 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
 23. A safe stop is not a batch-performance result. Zero media makes the
     aggregate RTF, startup, playback, duration, and listening fields
     unavailable rather than passing or failing by speed.
+24. Transformers represents the installed model's exact `cuda:0` device-map
+    entry as a `torch.device` object. Placement verification must normalize
+    that exact object without widening acceptance to CPU, meta, disk, or mixed
+    entries.
+25. This targeted placement cannot avoid the frozen load-time peak on the
+    reference host because the authority requires an exact CUDA load before
+    moving the speech tokenizer to CPU. The CPU result reproduced the full-GPU
+    authoritative/framework VRAM, minimum-free-VRAM, and shared-memory values,
+    so it supplies neither a capacity reduction nor a speed measurement.
+26. A failed private derivation is not evidence. The authority-ancestry
+    rejection deleted its session, and only the later clean-checkpoint,
+    schema-valid safe summary is retained.
 
 ## Final validation results
 
-Milestones 1 through 3 are complete. Milestone 1 adds result-blind authority;
+Milestones 1 through 4 are complete. Milestone 1 adds result-blind authority;
 Milestone 2 adds development-only model-free mechanics and reviewed execution
-commands; Milestone 3 executes only the frozen full-GPU hardware arm. No
-milestone changes a production contract/runtime, makes a support claim, or
-selects a profile.
+commands; Milestone 3 executes the frozen full-GPU hardware arm; and Milestone
+4 executes the admitted targeted-CPU arm. Both hardware arms stop before usable
+media on the frozen shared-memory rule. No milestone changes a production
+contract/runtime, makes a support claim, or selects a profile.
 
 The authority checkpoint passed:
 

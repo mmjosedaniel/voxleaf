@@ -235,7 +235,10 @@ speech-tokenizer CPU identities, and deterministic authority enforcement.
 `test_benchmark_v4_authority.py` verifies byte stability, corpus arithmetic,
 pair and result order, no retries, strict authority ancestry fields,
 conjunctive pass claims, conditional CPU admission, schema closure, and
-private-content rejection without importing Qwen or requiring CUDA.
+private-content rejection without importing Qwen or requiring CUDA. Milestone
+4 adds exact content-free placement evidence and model-free checks that only
+the speech-tokenizer model/wrapper move to CPU while every other parameter
+remains on `cuda:0`.
 Milestone 2 adds the development-only one/two-unit request/result boundary,
 exact 39-call frozen matrix construction, whole-batch identity invalidation,
 content-free playback simulator, isolated Qwen list-call adapter, and reviewed
@@ -251,7 +254,10 @@ separate so the candidate lock remains unchanged. Milestone 3 executed the
 disposable pilot and official full-GPU path. The committed safe result validates
 the exact counts and cleanup but stops on `shared-gpu-memory` before any
 reviewable audio, playback, or throughput evidence; the ignored raw session was
-deleted. Default tests and CI remain model-free.
+deleted. Milestone 4 executed the separately admitted targeted-CPU arm. Its
+schema-valid safe result reproduces the same shared-memory stop and VRAM
+boundary before media, and its private raw session was also deleted. Default
+tests and CI remain model-free.
 
 ## Deferred coverage
 
