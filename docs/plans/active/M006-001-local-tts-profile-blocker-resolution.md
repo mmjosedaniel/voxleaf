@@ -303,6 +303,7 @@ disposable generated speech and produce aggregate error counts, but:
 - `docs/architecture/tts-feasibility-profile-v2.md`
 - `docs/architecture/tts-feasibility-profile-v3.md`
 - `docs/architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md`
+- `docs/architecture/decisions/ADR-0014-constrained-qwen-development-demo.md`
 - `docs/development/dependencies.md`
 - `docs/development/setup.md`
 - `docs/development/testing.md`
@@ -547,42 +548,55 @@ was loaded and no audio was generated.
 
 ### Status
 
-In progress on `feat/m006-4-frozen-v3-evaluation`. Milestones 1 through 3 are
-present on the merged base. After the first exact-host preflight correctly
-rejected insufficient readiness, available RAM recovered above the frozen
-12 GiB gate and the one permitted disposable pilot passed from clean
-checkpoint `8475b28`. The pilot retained no session and is not promotable.
-Licensing and packaging are audited. The official machine matrix completed
-from clean checkpoint `8898762` with every frozen count, but failed performance
-and mid-generation cancellation gates and is not promotable. The final blinded
-quality session now contains exactly three independently randomized evaluator
-pages. Completion is blocked on three independent fluent-Spanish human
-scorecards; quality cannot change the machine-gate failure.
+Completed on `feat/m006-4-frozen-v3-evaluation`. The pilot passed and the
+official machine matrix completed every frozen count from clean checkpoints.
+Cold load, RAM, VRAM, offline, artifact, license, packaging, and cleanup gates
+passed. Startup, throughput, zero-failure, and three mid-generation
+cancellation gates failed. One fluent Spanish maintainer completed the blinded
+quality evaluation after explicitly waiving the three-person panel for the
+development-demo MVP decision. That limited result averaged
+4.266666666666667/5 but reported three meaning-changing defects. The post-result
+waiver does not alter or promote frozen `profile-v3`; the official result
+remains failed and non-promotable.
 
 ## Milestone 5: Select or retain the blocker
 
 ### Work
 
 - Produce a candidate-neutral `selection-v3` record.
-- If every applicable gate passes, accept a superseding ADR that selects the
-  exact profile and gives Milestone 7 a bounded integration input.
-- If any gate fails, retain ADR-0013's blocker and record the exact failure
-  without choosing the least-bad profile.
+- Record the frozen `v3` failure without changing its authority or claiming a
+  passing balanced profile.
+- Apply the maintainer's explicit post-result MVP decision through a separate
+  constrained development-demo record: permit the exact Serena profile only
+  for a bounded, clearly labeled demonstration while ADR-0013 remains
+  authoritative for production viability.
+- Freeze the demo boundary before implementation: local prewarmed model,
+  complete bounded narration units, no audio persistence, batch one, one
+  queued unit, identity-first invalidation plus worker termination, explicit
+  preparing/buffering state, and no continuous or real-time claim.
+- Treat one fluent maintainer as sufficient for future MVP demo-quality
+  feedback. Do not rewrite the historical `v3` three-person requirement or
+  duplicate one person's score as independent evidence.
 - Reconcile the roadmap, architecture, product, setup, dependency, testing,
   performance-budget, and system-diagram surfaces.
 
 ### Validation
 
-- Selection is conjunctive, not weighted.
-- A selected profile identifies exact artifacts, runtime, built-in speaker,
+- The standard feasibility result remains conjunctive and failed; the demo
+  exception is explicit and cannot masquerade as a passing profile.
+- The constrained demo profile identifies exact artifacts, runtime, built-in speaker,
   instruction, configuration lifecycle/identity, batch/retention limits,
   first-attempt reliability, hardware evidence, offline controls, and actual
   incremental or complete-waveform capabilities.
-- No production dependency is added before a passing decision.
+- No production dependency is added by the decision record. A later
+  development-only integration must preserve the zero-persistence and
+  content-free privacy boundary.
 
 ### Status
 
-Not started.
+In progress. ADR-0014 records the exact constrained development-demo
+exception and preserves the failed standard authority. The candidate-neutral
+`selection-v3` record and final cross-document reconciliation remain.
 
 ## Milestone 6: Close repository and privacy validation
 
@@ -992,6 +1006,35 @@ dependency changes are involved.
   strict type checks, and builds. The native aggregate also passed Rust
   formatting, Clippy, crate-test execution, and the release build. The existing
   Vite chunk-size advisory remained informational.
+- 2026-07-26: The maintainer declined the remaining two evaluators and
+  explicitly reduced future MVP demo-quality review to one fluent Spanish
+  maintainer. Preserved the frozen three-person `v3` authority unchanged
+  because changing it after performance and listening results would invalidate
+  the evaluation.
+- 2026-07-26: Submitted and sanitized the completed `evaluator-01` scorecard.
+  The one-person descriptive result has overall mean 4.266666666666667,
+  intelligibility 4.5, Spanish pronunciation 4.0, punctuation/dialogue
+  4.666666666666667, numeric expressions 4.0, foreign names 4.2, naturalness
+  4.166666666666667, artifact freedom 4.333333333333333, and three
+  meaning-changing defects. It is not eligible for `profile-v3` promotion.
+- 2026-07-26: The maintainer judged the audio suitable for a near-term demo,
+  with understandable accent variation and number/symbol pronunciation as the
+  main weakness. Existing Milestone 5 narration preparation already expands
+  the accepted Spanish cardinals, ordinals, decimals, dates, times, currency,
+  percentages, and closed symbols while preserving unsupported forms.
+- 2026-07-26: Accepted a planning direction to use the exact Qwen 1.7B
+  CustomVoice/Serena configuration only as a constrained development-demo
+  profile. This does not make its 1.4521558253532183 sustained RTF real-time:
+  one minute of audio took about 87 seconds, so a continuous stream would fall
+  behind by about 27 seconds per minute. A later implementation must use a
+  bounded prepared excerpt, disclose preparation/buffering, and retain the
+  production performance blocker.
+- 2026-07-26: Recorded that constrained decision in ADR-0014, then used the
+  repository cleanup command to delete the exact ignored quality session
+  containing 12 WAV files, three evaluator pages, six JSON files, and its
+  randomization data. Deleted the downloaded disposable scorecard from the
+  repository root after deriving the aggregate. The ignored raw tree again
+  contains zero files.
 
 ## Discoveries and decisions
 
@@ -1084,6 +1127,21 @@ dependency changes are involved.
     before audio acceptance, but cannot make a completed-waveform API satisfy
     mid-generation cancellation. The official failures confirm the prototype
     boundary and must not be hidden by retries or relabeled as streaming.
+22. One fluent maintainer is sufficient for the project's near-term demo
+    quality decision, but it cannot retroactively satisfy the immutable
+    three-person `v3` authority. Keeping those statements separate preserves
+    the pre-result evaluation boundary.
+23. The maintainer accepts Serena's audible quality for a demo and considers
+    number/symbol pronunciation addressable through narration preparation.
+    That judgment supports a constrained demo choice, not a real-time
+    performance claim: RTF above one guarantees that an indefinitely long
+    bounded buffer eventually drains.
+24. The fastest credible demo path is to reuse the installed exact profile
+    with prewarming, complete bounded units, explicit preparation/buffering,
+    and no persistence. Replacing the runtime with vLLM or another engine is a
+    separate post-demo investigation because the
+    [current official vLLM path](https://github.com/QwenLM/Qwen3-TTS#vllm-usage)
+    is offline inference and does not remove this measured API boundary.
 
 ## Final validation results
 
@@ -1149,18 +1207,21 @@ total sustained RTF, zero failures, and three mid-generation cancellation
 trials failed. The receipt is non-promotable regardless of later quality
 scores. Its raw journal passed the content/privacy scan and was deleted after
 derivation; no raw file or generated audio remains. Final quality evaluation
-is still outstanding.
+later produced the limited one-maintainer evidence below; it cannot promote
+this failed receipt.
 
 The separate final-quality generation then completed from clean checkpoint
 `3df2823` with all 12 samples, bounded storage, offline controls, and cleanup.
 Exactly three independently randomized evaluator pages are ready, staging
-identities are gone, and the blinded-page privacy scan passed. No evaluator
-score has been submitted, so no quality aggregate exists yet. The temporary
-ignored quality session must remain until three independent fluent-Spanish
-humans complete their separate scorecards. Both full repository validation
-aggregates pass; this evaluation changes no production dependency, runtime
-topology, or architectural boundary, so the canonical system diagram remains
-accurate without modification.
+identities are gone, and the blinded-page privacy scan passed. One maintainer
+score was submitted and sanitized; the limited descriptive means and three
+meaning-changing defects are recorded above. The maintainer waived the
+remaining two evaluators for the development-demo decision, while immutable
+`profile-v3` remains failed and non-promotable. Both full repository validation
+aggregates passed before this decision update. No production dependency or
+runtime implementation was added. The exact quality session and downloaded
+scorecard were subsequently deleted after derivation; the ignored raw tree
+again contains zero files.
 
 After correcting the candidate to CustomVoice for the built-in-default-voice
 requirement, all 13 changed Markdown files passed the local-link,
@@ -1242,3 +1303,20 @@ Milestone 2 is complete. The passing result permits Milestone 3 to extend the
 candidate-neutral benchmark, but does not select the candidate, supersede
 ADR-0013, unblock Milestone 7, claim native waveform streaming, or claim that
 the inherited 3-second warm first-audio gate passed.
+
+After the Milestone 4 one-maintainer demo decision, all 13 changed Markdown
+files passed the local-link and changed-file private-path/credential scans.
+`git diff --check`, the tracked audio/model/private-input scan, and the ignored
+raw/root-scorecard cleanup audit passed. The repository cleanup command deleted
+the exact 21-file quality session, and the downloaded disposable scorecard was
+removed after derivation.
+
+`pnpm.cmd check:portable` passed in 26.6 seconds with 18 shared test files / 175
+tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204 tests, 6
+native-WebDriver-client tests, 72 Python tests, formatting, lint, strict type
+checks, and portable builds. `pnpm.cmd check` passed in 49.1 seconds with the
+same TypeScript/Python evidence plus Rust formatting, Clippy, crate-test
+execution, the native release build, and Python source/wheel packaging. The
+existing Vite chunk-size advisory remained informational. No runtime code,
+production dependency, generated audio, model artifact, raw evidence, private
+path, or credential was added.

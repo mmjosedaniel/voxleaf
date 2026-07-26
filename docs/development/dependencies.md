@@ -64,8 +64,8 @@ admit a just-published dependency.
 
 The active
 [Milestone 6.1 blocker-resolution plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md)
-now freezes Qwen3-TTS 12Hz 1.7B CustomVoice as a speaker-screen-only
-development candidate. Its isolated project pins `qwen-tts==0.1.1`,
+freezes Qwen3-TTS 12Hz 1.7B CustomVoice as the exact development candidate.
+Its isolated project pins `qwen-tts==0.1.1`,
 `torch==2.9.1`, and `torchaudio==2.9.1`; the PyTorch packages resolve from the
 CUDA 12.8 index and the exact transitive graph is retained in that project's
 `uv.lock`. The model revision and major artifact hashes are frozen separately
@@ -73,15 +73,20 @@ in `benchmarks/tts/candidates-v2.json`. The bounded intake screen selected
 Serena, and `benchmarks/tts/profile-v3.json` now freezes that complete
 development-evaluation identity. The development prototype subsequently
 passed using only that isolated lock and existing standard-library benchmark
-code; it added no production dependency or lock edge. This does not approve
-the candidate for integration.
+code; it added no production dependency or lock edge. The official `v3`
+performance matrix then failed the frozen startup, throughput, and
+mid-generation cancellation gates. ADR-0014 permits the exact profile only for
+a future bounded development demo; it does not add the candidate to the
+production graph or approve distribution.
 
 Base voice cloning remains outside the MVP. Whisper is excluded from the
 production graph and from `v3`; VAD/energy analysis is also excluded from
 `v3` so neither auxiliary runtime can affect timed synthesis or selection.
-The candidate still requires licensing/notice, native-runtime, offline,
-packaging, removal, official performance, final quality, and complete
-evaluation-closeout evidence before any production profile can be selected.
+The completed audit records Apache-2.0 candidate/model licensing and an exact
+9,747,862,094-byte isolated candidate footprint. Native-runtime integration,
+offline enforcement in the shipped application, packaging, removal, and a
+passing or explicitly revised production authority remain unresolved before
+any production profile can be selected.
 
 The disposable quality workflow adds no manifest or lockfile edge. It uses the
 Python standard library for WAV/container, randomization, JSON, HTML, and

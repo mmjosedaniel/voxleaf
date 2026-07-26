@@ -24,6 +24,7 @@ ADR-0002-short-description.md
 - [`ADR-0011-bounded-web-storage-reader-state.md`](ADR-0011-bounded-web-storage-reader-state.md): bounded Web Storage envelopes, display-preference ownership, save lifecycle, and explicit migration.
 - [`ADR-0012-bounded-narration-preparation.md`](ADR-0012-bounded-narration-preparation.md): publication-owned bounded narration preparation, stable source ranges, continuation, cancellation, and closed outcomes.
 - [`ADR-0013-no-viable-local-tts-engine-profile.md`](ADR-0013-no-viable-local-tts-engine-profile.md): no balanced or compatibility profile selected from the frozen v2 evaluation; Milestone 7 remains blocked pending a new candidate cycle.
+- [`ADR-0014-constrained-qwen-development-demo.md`](ADR-0014-constrained-qwen-development-demo.md): permit the exact Qwen 1.7B CustomVoice/Serena profile only for a bounded development demo while the standard feasibility blocker remains.
 
 ## Template
 

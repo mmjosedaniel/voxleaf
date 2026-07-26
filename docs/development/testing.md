@@ -151,6 +151,11 @@ independently randomized scorecards; one evaluator is retained solely as
 limited evidence. Cleanup must delete every generated WAV after the aggregate
 is recorded.
 
+That rule remains the historical `v2`/`v3` benchmark implementation. ADR-0014
+accepts one fluent maintainer for future constrained-demo quality feedback,
+but such feedback is not a retroactive promotable `v3` aggregate and cannot be
+duplicated into multiple evaluator identities.
+
 The browser command requires one prior networked `pnpm.cmd test:browser:install`. Ordinary execution does not download browsers and can run offline after that setup. It uses a fresh isolated context, blocks and counts non-loopback requests, removes its fixed synthetic and reader-state storage keys, and lets Playwright stop the loopback preview server. Failure-only traces and screenshots are ignored artifacts and may contain only repository-authored synthetic test content. The native-startup command requires `tauri-driver` and a Microsoft EdgeDriver matching the installed WebView2 runtime; it uses the standard WebDriver launch path plus proxied CDP logging and creates no browser artifact. Chromium and WebView2 evidence remain complementary.
 
 ### Hardware-specific visual-reader benchmark
@@ -203,18 +208,18 @@ These results validate development evidence only. They do not exercise or imply 
 
 The active
 [Milestone 6.1 plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md)
-now has a frozen Qwen3-TTS 1.7B CustomVoice candidate manifest, isolated lock,
+has a frozen Qwen3-TTS 1.7B CustomVoice candidate manifest, isolated lock,
 blinded Spanish built-in-speaker authority, schema-valid content-safe Serena
 selection, frozen `v3`, a passing content-safe exact-host prototype result,
-and model-free authority/generation/scoring/cleanup/profile/prototype tests.
-Those default tests do not load a model or require CUDA. The manual prototype
-uses the isolated candidate interpreter and is excluded from root checks and
-CI. It proves bounded complete-segment delivery, identity-first stale
-rejection, worker termination, and cleanup; it does not prove native streaming
-or production transport. Benchmark extension, the official exact-host matrix,
-the full three-person Spanish quality panel, audit, and closeout remain. Base
-voice cloning is outside the current MVP. Whisper and VAD/energy analysis are
-excluded from `v3`.
+the completed failed official matrix, and model-free
+authority/generation/scoring/cleanup/profile/prototype tests. Those default
+tests do not load a model or require CUDA. The manual prototype proves bounded
+complete-segment delivery, identity-first stale rejection, worker termination,
+and cleanup; it does not prove native streaming or production transport. One
+fluent maintainer accepted audible quality for a near-term demo and ADR-0014
+permits only that constrained development path. Formal selection consequences
+and closeout remain. Base voice cloning is outside the current MVP. Whisper and
+VAD/energy analysis are excluded from `v3`.
 
 ## Deferred coverage
 

@@ -4,6 +4,13 @@
 
 The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, minimal Tauri 2 native shell, isolated Python service foundation, aggregate root quality commands, deterministic Playwright Chromium smoke, and continuous integration are initialized. The version, focused, development-server, and root commands identified as Windows commands in this document have been run successfully in Windows PowerShell. Secure in-memory EPUB 3 ingestion, immutable semantic documents, bounded local raster reads, deterministic locator/target resolution, and bounded locator-linked narration preparation are implemented in `@voxleaf/epub`. The desktop passes one bounded local-file read to the publication session, presents accessible open/close lifecycle states, renders one active spine document's supported semantic text and bounded static raster images through application-owned React elements, and navigates hierarchical TOC entries, internal targets, and readable previous/next chapters through one desktop coordinator and canonical package locators. Publication images are loaded near the viewport through one serialized, eight-request-bounded reader loader and the existing preflight/decode manager; they use only application-created `blob:` sources, clear caller-owned bytes, abort stale work, release on document/book change, and fall back locally. Passive visual-position tracking, viewport/preference reflow restoration, bounded large-chapter rendering, keyboard/focus behavior, content-free persistence, and exact/nearest-valid restoration after exact-file reselection are implemented and validated in Chromium and packaged WebView2. Generated standalone contract validators run under a CSP with no `unsafe-eval` or network image origin. The development-only Milestone 6 harness evaluated both exact TTS profiles, but ADR-0013 selected neither one and no production TTS dependency was added. Milestone 6.1 is active: its bounded Spanish intake screen selected Serena, `tts-feasibility-profile-v3` froze the exact Qwen3-TTS 1.7B CustomVoice development identity, and the exact-host prototype passed its bounded complete-segment delivery and worker-termination cancellation stop gate. The ignored model setup and manual prototype command exist, but no production profile is approved; Base voice cloning, Whisper, and VAD/energy are excluded from `v3`. The desktop does not call `OpenedPublication.prepareNarration`; Milestone 7 remains blocked, and TTS inference, process transport, generated audio, playback, synchronization, hardware detection, and installers are not implemented.
 
+The later official Qwen 1.7B CustomVoice/Serena `v3` matrix failed standard
+startup, throughput, zero-failure, and mid-generation cancellation gates.
+ADR-0014 permits only a future bounded development demo with that exact local
+profile; it adds no production dependency and does not approve continuous
+playback. TTS inference, transport, audio, playback, synchronization, hardware
+detection, and installers remain unimplemented.
+
 ## Prerequisite version matrix
 
 The selected versions establish a reproducible foundation with the reviewed low-level EPUB ZIP/XML dependencies, but without selecting renderer, audio, transport, or TTS-model dependencies.
@@ -258,6 +265,12 @@ For the completed `v2` cycle, the audit is complete but the one-evaluator
 quality result remains below the frozen three-person minimum, so no official
 summary or production profile was promoted. The accepted content-free outcome
 is in [`selection-v2.md`](../../benchmarks/tts/selection-v2.md).
+
+The later `v3` cycle also remains failed and non-promotable. A post-result
+maintainer decision accepts one fluent Spanish evaluator for future
+development-demo feedback, but it does not rewrite the frozen `v3` panel or
+change this command's promotion rules. ADR-0014 records the separate
+constrained demo exception.
 
 The command fails closed on a dirty or different revision, wrong platform or
 Python, missing environment, wrong artifact hash, missing offline controls,

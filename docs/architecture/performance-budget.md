@@ -219,3 +219,15 @@ segment waveform after dispatch took 5.210 seconds. These are development
 topology observations, not official warm-performance results: the 5.210-second
 observation does not pass or replace the unchanged 3-second warm first-audio
 gate, and complete-segment publication is not native frame streaming.
+
+The subsequent official `v3` matrix confirmed that limitation. Warm first
+audio p95 was 67.6685348 seconds, sustained-request RTF p95 was
+1.5041296794871795, total sustained RTF was 1.4521558253532183, and three
+mid-generation cancellation races failed. Cold start p95
+(26.6606755 seconds), process-tree RAM (4,640,518,144 bytes), and authoritative
+dual-source VRAM (6,286,802,944 bytes) passed their frozen ceilings. At the
+measured total RTF, producing one minute of speech takes approximately 87
+seconds, so an indefinitely long bounded buffer loses approximately 27 seconds
+per minute. ADR-0014 therefore permits this exact profile only for a bounded
+development demo with explicit preparation/buffering; it does not change the
+normal startup, sustained-throughput, underrun, or cancellation targets above.
