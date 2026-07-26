@@ -24,9 +24,9 @@ same measured VRAM/shared-memory boundary. Milestone 5 quality review is not
 admitted. The results contain no reviewable audio or throughput evidence and
 change no production behavior.
 
-The same active ExecPlan now continues with pending result-blind `v5` work.
-Milestone 6 must record the `v4` outcome and freeze one GPU-primary plus one
-fully CPU-only support-worker authority before new generation. Later
+The same active ExecPlan now has a frozen result-blind `v5` authority after
+`selection-v4` recorded the failed outcome. It defines one GPU-primary plus
+one fully CPU-only float32 support worker before new generation. Later
 milestones must add a separate reviewed command, run CPU-solo admission, then
 compare same-authority GPU-solo and concurrent execution over approximately
 8-16-second target units. The proposed five-minute value is a bounded

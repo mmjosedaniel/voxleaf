@@ -1,0 +1,666 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voxleaf.local/schemas/tts/dual-worker-summary-v5.schema.json",
+  "title": "VoxLeaf content-safe dual-worker TTS summary v5",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "profileVersion",
+    "profileSha256",
+    "corpusVersion",
+    "corpusSha256",
+    "authorityCommitSha",
+    "executionCommitSha",
+    "arm",
+    "host",
+    "counts",
+    "aggregates",
+    "memory",
+    "cancellation",
+    "playback",
+    "quality",
+    "audits",
+    "conclusions",
+    "failureCodes",
+    "limitations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "tts-dual-worker-summary-v5"
+    },
+    "profileVersion": {
+      "const": "tts-dual-worker-profile-v5"
+    },
+    "profileSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "corpusVersion": {
+      "const": "tts-dual-worker-corpus-v5"
+    },
+    "corpusSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "authorityCommitSha": {
+      "$ref": "#/$defs/gitSha"
+    },
+    "executionCommitSha": {
+      "$ref": "#/$defs/gitSha"
+    },
+    "arm": {
+      "$ref": "#/$defs/arm"
+    },
+    "host": {
+      "$ref": "#/$defs/host"
+    },
+    "counts": {
+      "$ref": "#/$defs/counts"
+    },
+    "aggregates": {
+      "$ref": "#/$defs/aggregates"
+    },
+    "memory": {
+      "$ref": "#/$defs/memory"
+    },
+    "cancellation": {
+      "$ref": "#/$defs/cancellation"
+    },
+    "playback": {
+      "$ref": "#/$defs/playback"
+    },
+    "quality": {
+      "$ref": "#/$defs/quality"
+    },
+    "audits": {
+      "$ref": "#/$defs/audits"
+    },
+    "conclusions": {
+      "$ref": "#/$defs/conclusions"
+    },
+    "failureCodes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "exact-host-only",
+          "complete-waveform-units",
+          "cpu-solo-screen-is-not-scheduling-pass",
+          "worker-termination-not-cooperative-model-cancellation",
+          "head-of-line-blocking-remains-visible",
+          "five-minute-capacity-is-not-continuity-evidence",
+          "scheduling-pass-does-not-promote-failed-v3",
+          "development-benchmark-not-production-runtime"
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "nonnegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "nonnegativeNumber": {
+      "type": "number",
+      "minimum": 0
+    },
+    "nullableNumber": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "arm": {
+      "enum": ["cpu-solo", "gpu-solo", "concurrent"]
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operatingSystem",
+        "osVersion",
+        "architecture",
+        "pythonVersion",
+        "cpuModel",
+        "logicalProcessors",
+        "totalRamBytes",
+        "gpuModel",
+        "totalVramBytes",
+        "driverVersion"
+      ],
+      "properties": {
+        "operatingSystem": {
+          "const": "Windows"
+        },
+        "osVersion": {
+          "const": "10.0.26200"
+        },
+        "architecture": {
+          "const": "x86_64"
+        },
+        "pythonVersion": {
+          "const": "3.12.10"
+        },
+        "cpuModel": {
+          "const": "Intel Core Ultra 7 255HX"
+        },
+        "logicalProcessors": {
+          "const": 20
+        },
+        "totalRamBytes": {
+          "const": 33752997888
+        },
+        "gpuModel": {
+          "const": "NVIDIA GeForce RTX 5060 Laptop GPU"
+        },
+        "totalVramBytes": {
+          "const": 8546942976
+        },
+        "driverVersion": {
+          "const": "577.05"
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coldLoads",
+        "warmupUnits",
+        "measuredUnits",
+        "gpuMeasuredUnits",
+        "cpuMeasuredUnits",
+        "completedFirstAttempts",
+        "failedOrTimedOutFirstAttempts",
+        "automaticRetries",
+        "cancellationTrials"
+      ],
+      "properties": {
+        "coldLoads": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "warmupUnits": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "measuredUnits": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "gpuMeasuredUnits": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "cpuMeasuredUnits": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "completedFirstAttempts": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "failedOrTimedOutFirstAttempts": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "automaticRetries": {
+          "const": 0
+        },
+        "cancellationTrials": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        }
+      }
+    },
+    "workerAggregate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "measuredUnits",
+        "mediaSeconds",
+        "generationSeconds",
+        "totalRtf",
+        "requestRtfP95",
+        "firstCompleteP95Seconds"
+      ],
+      "properties": {
+        "measuredUnits": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "mediaSeconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "generationSeconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "totalRtf": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "requestRtfP95": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "firstCompleteP95Seconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        }
+      }
+    },
+    "aggregates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coldLoadP95Seconds",
+        "mediaSeconds",
+        "elapsedGenerationSeconds",
+        "aggregateRtf",
+        "gpuSoloBaselineAggregateRtf",
+        "aggregateThroughputImprovementFraction",
+        "gpu",
+        "cpu",
+        "gpuSlowdownFraction",
+        "minimumUnitDurationSeconds",
+        "maximumUnitDurationSeconds",
+        "unitsWithinTargetDuration",
+        "unitsOutsideTargetWithinHardBound",
+        "maximumHeadOfLineWaitSeconds",
+        "orderedPublishedUnits",
+        "reorderedPublishedUnits",
+        "duplicateOrMissingIdentities"
+      ],
+      "properties": {
+        "coldLoadP95Seconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "mediaSeconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "elapsedGenerationSeconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "aggregateRtf": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "gpuSoloBaselineAggregateRtf": {
+          "$ref": "#/$defs/nullableNumber"
+        },
+        "aggregateThroughputImprovementFraction": {
+          "$ref": "#/$defs/nullableNumber"
+        },
+        "gpu": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/workerAggregate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cpu": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/workerAggregate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "gpuSlowdownFraction": {
+          "$ref": "#/$defs/nullableNumber"
+        },
+        "minimumUnitDurationSeconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "maximumUnitDurationSeconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "unitsWithinTargetDuration": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "unitsOutsideTargetWithinHardBound": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "maximumHeadOfLineWaitSeconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "orderedPublishedUnits": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "reorderedPublishedUnits": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "duplicateOrMissingIdentities": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "peakCombinedProcessTreeRamBytes",
+        "minimumSystemAvailableRamBytes",
+        "minimumSystemCommitHeadroomBytes",
+        "peakGpuWorkerDedicatedVramBytes",
+        "peakGpuWorkerSharedGpuBytes",
+        "peakCpuWorkerDedicatedVramBytes",
+        "peakCpuWorkerSharedGpuBytes",
+        "peakFrameworkReservedVramBytes",
+        "ramSamplingIntervalMilliseconds",
+        "vramSamplingIntervalMilliseconds"
+      ],
+      "properties": {
+        "peakCombinedProcessTreeRamBytes": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "minimumSystemAvailableRamBytes": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "minimumSystemCommitHeadroomBytes": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "peakGpuWorkerDedicatedVramBytes": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "peakGpuWorkerSharedGpuBytes": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "peakCpuWorkerDedicatedVramBytes": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "peakCpuWorkerSharedGpuBytes": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "peakFrameworkReservedVramBytes": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "ramSamplingIntervalMilliseconds": {
+          "const": 50
+        },
+        "vramSamplingIntervalMilliseconds": {
+          "const": 1000
+        }
+      }
+    },
+    "cancellation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trialCount",
+        "passedTrialCount",
+        "maximumIdentityInvalidationMilliseconds",
+        "maximumWorkerTerminationMilliseconds",
+        "stalePublishedUnits",
+        "stalePlayedUnits"
+      ],
+      "properties": {
+        "trialCount": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "passedTrialCount": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "maximumIdentityInvalidationMilliseconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "maximumWorkerTerminationMilliseconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "stalePublishedUnits": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "stalePlayedUnits": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        }
+      }
+    },
+    "thresholdObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["playableSeconds", "reached", "wallSeconds"],
+      "properties": {
+        "playableSeconds": {
+          "enum": [15, 30, 60, 120, 300]
+        },
+        "reached": {
+          "type": "boolean"
+        },
+        "wallSeconds": {
+          "$ref": "#/$defs/nullableNumber"
+        }
+      }
+    },
+    "playback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "startupWallSeconds",
+        "startupPlayableSeconds",
+        "playedSeconds",
+        "minimumBufferSeconds",
+        "peakBufferSeconds",
+        "peakBufferedPcmBytes",
+        "peakQueuedCompleteUnits",
+        "peakActiveUnits",
+        "underrunCount",
+        "bufferingSeconds",
+        "bufferingSecondsPerMinute",
+        "producerLeadTrendSecondsPerMinute",
+        "thresholds",
+        "stalePlayedUnits"
+      ],
+      "properties": {
+        "status": {
+          "enum": ["not-applicable", "complete", "incomplete"]
+        },
+        "startupWallSeconds": {
+          "$ref": "#/$defs/nullableNumber"
+        },
+        "startupPlayableSeconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "playedSeconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "minimumBufferSeconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "peakBufferSeconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "peakBufferedPcmBytes": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "peakQueuedCompleteUnits": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "peakActiveUnits": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "underrunCount": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        },
+        "bufferingSeconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "bufferingSecondsPerMinute": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "producerLeadTrendSecondsPerMinute": {
+          "type": "number"
+        },
+        "thresholds": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": {
+            "$ref": "#/$defs/thresholdObservation"
+          }
+        },
+        "stalePlayedUnits": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "evaluatorCount",
+        "overallMean",
+        "intelligibilityMean",
+        "numberAndSymbolMean",
+        "joinBoundaryMean",
+        "prosodyMean",
+        "accentMean",
+        "meaningChangingDefects"
+      ],
+      "properties": {
+        "status": {
+          "enum": ["not-admitted", "complete"]
+        },
+        "evaluatorCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "overallMean": {
+          "$ref": "#/$defs/nullableNumber"
+        },
+        "intelligibilityMean": {
+          "$ref": "#/$defs/nullableNumber"
+        },
+        "numberAndSymbolMean": {
+          "$ref": "#/$defs/nullableNumber"
+        },
+        "joinBoundaryMean": {
+          "$ref": "#/$defs/nullableNumber"
+        },
+        "prosodyMean": {
+          "$ref": "#/$defs/nullableNumber"
+        },
+        "accentMean": {
+          "$ref": "#/$defs/nullableNumber"
+        },
+        "meaningChangingDefects": {
+          "$ref": "#/$defs/nonnegativeInteger"
+        }
+      }
+    },
+    "audits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "offline",
+        "artifacts",
+        "license",
+        "privacy",
+        "ordering",
+        "boundedRetention",
+        "cleanup",
+        "cpuZeroGpu",
+        "noDiskOffload",
+        "approvedWorkerIdentities",
+        "firstAttemptsOnly"
+      ],
+      "properties": {
+        "offline": {
+          "type": "boolean"
+        },
+        "artifacts": {
+          "type": "boolean"
+        },
+        "license": {
+          "type": "boolean"
+        },
+        "privacy": {
+          "type": "boolean"
+        },
+        "ordering": {
+          "type": "boolean"
+        },
+        "boundedRetention": {
+          "type": "boolean"
+        },
+        "cleanup": {
+          "type": "boolean"
+        },
+        "cpuZeroGpu": {
+          "type": "boolean"
+        },
+        "noDiskOffload": {
+          "type": "boolean"
+        },
+        "approvedWorkerIdentities": {
+          "type": "boolean"
+        },
+        "firstAttemptsOnly": {
+          "type": "boolean"
+        }
+      }
+    },
+    "conclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "allRequiredGatesPassed", "failedGateCodes"],
+      "properties": {
+        "outcome": {
+          "enum": ["pass", "fail", "not-applicable", "not-evaluated"]
+        },
+        "allRequiredGatesPassed": {
+          "type": "boolean"
+        },
+        "failedGateCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          }
+        }
+      }
+    },
+    "conclusions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cpuSoloAdmission",
+        "concurrentSchedulingSustainability",
+        "preferredStandardMargin",
+        "constrainedDemoUsefulness",
+        "unchangedStandardProductionViability"
+      ],
+      "properties": {
+        "cpuSoloAdmission": {
+          "$ref": "#/$defs/conclusion"
+        },
+        "concurrentSchedulingSustainability": {
+          "$ref": "#/$defs/conclusion"
+        },
+        "preferredStandardMargin": {
+          "$ref": "#/$defs/conclusion"
+        },
+        "constrainedDemoUsefulness": {
+          "$ref": "#/$defs/conclusion"
+        },
+        "unchangedStandardProductionViability": {
+          "$ref": "#/$defs/conclusion"
+        }
+      }
+    }
+  }
+}

@@ -96,12 +96,13 @@ an evaluation-only surface. Its failed result is not a production dependency,
 approved fallback, packaging choice, or claim that generic CPU offload
 improves performance.
 
-Pending `v5` work in the same ExecPlan proposes a second complete Qwen process
-loaded CPU-only beside the existing GPU-primary process. It must reuse the
-unchanged isolated candidate graph unless a separately documented dependency
-review approves a change. The plan does not add a production dependency,
-approve two-model packaging, or establish that the second installed instance
-fits safely in RAM or improves aggregate throughput.
+The frozen `v5` authority in the same ExecPlan specifies a second complete
+Qwen process loaded CPU-only beside the existing GPU-primary process. It reuses
+the unchanged isolated candidate graph, so this milestone adds no dependency
+or lock edge. The authority does not approve a production dependency,
+two-model packaging, or establish that the second installed instance fits
+safely in RAM or improves aggregate throughput; later hardware evidence must
+answer those questions.
 
 Base voice cloning remains outside the MVP. Whisper is excluded from the
 production graph and from `v3`; VAD/energy analysis is also excluded from

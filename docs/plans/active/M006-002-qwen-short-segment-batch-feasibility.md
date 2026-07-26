@@ -178,9 +178,12 @@ Primary upstream references:
 - `benchmarks/tts/corpus-v4.json`
 - `benchmarks/tts/schemas/short-segment-batch-raw-v4.schema.json`
 - `benchmarks/tts/schemas/short-segment-batch-summary-v4.schema.json`
-- planned `benchmarks/tts/profile-v5.json`
-- planned `benchmarks/tts/corpus-v5.json`
-- planned closed private-raw and content-safe-summary `v5` schemas
+- `benchmarks/tts/profile-v5.json`
+- `benchmarks/tts/corpus-v5.json`
+- `benchmarks/tts/schemas/dual-worker-raw-v5.schema.json`
+- `benchmarks/tts/schemas/dual-worker-summary-v5.schema.json`
+- `benchmarks/tts/selection-v4.md`
+- `docs/architecture/tts-feasibility-profile-v5.md`
 - `docs/product/mvp.md`
 - `docs/architecture/overview.md`
 - `docs/architecture/system-diagram.md`
@@ -447,8 +450,8 @@ or quality evidence, and does not admit Milestone 5.
 
 Not admitted. Milestone 4 stopped before usable media on the frozen
 `shared-gpu-memory` rule, so there are no outputs eligible for playback replay
-or listening review. Milestone 6 must record that failed outcome without
-inventing quality evidence.
+or listening review. Milestone 6 records that failed outcome without inventing
+quality evidence.
 
 ### Milestone 6: Record the v4 decision and freeze v5 dual-worker authority
 
@@ -496,7 +499,12 @@ inventing quality evidence.
 
 #### Status
 
-Not started.
+Complete on 2026-07-26. Accepted `selection-v4` selects neither placement and
+retains unavailable performance and quality as unavailable. The separately
+versioned `profile-v5.json`, scheduled `corpus-v5.json`, closed raw/summary
+schemas, human authority, model-free validator, and deterministic tests were
+committed before any `v5` runner, pilot, official waveform, listening result,
+or selection existed.
 
 ### Milestone 7: Extend the benchmark with independent dual workers
 
@@ -941,6 +949,54 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
   system diagram, setup, testing, and dependency inventory. Every document
   distinguishes planned `v5` evidence from implemented runtime and retains
   ADR-0014's current one-worker constrained-demo boundary.
+- 2026-07-26: Created branch
+  `feat/m006-2-freeze-v5-dual-worker-authority` from merged `main` at
+  `73fd6aa`. The worktree was clean and PR #108 had merged.
+- 2026-07-26: Added content-safe `selection-v4.md` from only the two committed
+  schema-valid results. It records both standard and scheduling failures,
+  leaves throughput/playback/quality unavailable, selects neither placement,
+  and explains that the targeted speech-tokenizer move was not a complete
+  CPU-only worker. Committed this decision separately as `6a8a4ad`.
+- 2026-07-26: Froze `profile-v5.json`, `corpus-v5.json`, and the closed
+  dual-worker raw/summary schemas. The GPU primary retains exact CUDA BF16
+  identity. The independent CPU support identity uses the same exact model,
+  Serena, instruction, settings, artifacts, and isolated lock on CPU float32,
+  twelve intra-op threads, one inter-op thread, OS-default affinity, and
+  `CUDA_VISIBLE_DEVICES=-1` before PyTorch import.
+- 2026-07-26: Froze CPU solo before concurrency, the same-authority GPU-solo
+  baseline, deterministic earliest-unclaimed dispatch, ordered release,
+  visible CPU head-of-line blocking, zero retry/duplicate rescue, hard
+  20-second units, aggregate RTF below 1.0, no more than 25% GPU slowdown, and
+  the unchanged preferred 0.8 margin. CPU solo must produce eight valid
+  first-attempt units, at least 60 seconds of media, and total RTF at or below
+  3.2 with zero CPU-worker GPU allocation.
+- 2026-07-26: Froze 12-GiB preflight RAM and 8-GiB preflight commit headroom,
+  20-GiB combined process-tree RAM, 4-GiB live RAM/commit reserves, the
+  GPU-worker engineering VRAM boundary, a separate 128-MiB GPU-worker shared
+  ceiling, and exact zero dedicated/shared GPU bytes for the CPU worker.
+- 2026-07-26: Froze ADR-0004's 15-second playable startup gate plus simultaneous
+  300-second, 40-complete-unit, 28,800,000-byte PCM, and two-active-unit
+  ceilings. Every active unit reserves the hard 20 seconds and 1,920,000 PCM
+  bytes before dispatch. The authority states explicitly that the larger
+  buffer cannot rescue aggregate RTF at or above 1.0.
+- 2026-07-26: Added `v5_authority.py` and eleven model-free tests. They
+  byte-verify the authorities and schemas, recompute complete worker
+  identities, enforce exact schedules and first attempts, require authority
+  bytes at a strict ancestor commit, and reject CPU CUDA/dedicated/shared-GPU
+  use, missing/duplicate/reordered occurrences, retries, private content,
+  retention overruns, and false CPU/concurrent/standard conclusions.
+- 2026-07-26: Committed the initial pre-result authority checkpoint as
+  `f05f589` (`feat(tts): freeze v5 dual-worker authority`). No `v5` runner,
+  command, candidate import, model load, waveform, raw journal, official
+  result, or product runtime was added or executed.
+- 2026-07-26: The branch-wide diff audit found one trailing blank line at EOF
+  in `selection-v4.md` and the human v5 profile. Before any output, removed
+  those lines and refreshed the dependent selection/profile hashes and
+  validator constants. Final profile SHA-256 is
+  `74148d1f86c5a12c05e412a345b2523d98eef49ffce1e81b6d9bd83a5234bcf5`;
+  final selection SHA-256 is
+  `aa4b033c37ee099b5d7ce87e5f646e9c0be4fc9bdd9871552f7b496eb4a9ceb7`.
+  This was a pre-result authority normalization, not observed-result tuning.
 
 ## Discoveries and decisions
 
@@ -1060,27 +1116,56 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
     Sustainability still requires aggregate RTF below 1.0 and acceptable
     measured underruns; the maximum only limits how much valid lead may be
     retained.
+32. A CUDA-enabled PyTorch wheel can remain in the unchanged isolated
+    environment while the CPU process is still CPU-only. Runtime evidence is
+    decisive: CUDA must be hidden before import, all parameters must be on CPU,
+    PyTorch must expose zero CUDA devices, and WDDM must attribute zero
+    dedicated/shared GPU bytes to that process.
+33. CPU float32 is the conservative pre-result compatibility choice. It costs
+    more RAM than BF16, so the authority freezes RAM and commit headroom rather
+    than assuming the 4.5-GB artifact size predicts resident memory.
+34. Twelve intra-op CPU threads with one inter-op thread and OS-default
+    affinity leave eight logical processors for the GPU worker, controller,
+    samplers, and operating system without assuming a stable P-core/E-core
+    numbering scheme.
+35. CPU-solo RTF at or below 3.2 is only admission. It cannot establish
+    scheduling sustainability because concurrent memory bandwidth, host work,
+    thermal limits, and head-of-line ordering can slow either worker.
+36. The same-authority GPU-solo baseline is mandatory. Concurrent work must
+    achieve aggregate RTF below 1.0, beat that baseline, and limit GPU slowdown
+    to 25%; merely adding a CPU waveform does not prove useful support.
+37. `v5` separately permits at most 134,217,728 bytes of GPU-worker shared
+    memory because both committed `v4` results made the prior zero boundary
+    observable. This does not reinterpret `v4` or permit any CPU-worker shared
+    GPU allocation.
+38. Reserving each active unit's hard 20-second/1,920,000-byte capacity before
+    dispatch makes the 300-second and 28,800,000-byte ceilings real even while
+    waveform duration is not yet known.
+39. Authority ancestry is verified by content rather than a self-referential
+    hard-coded commit: an official result must name a strict ancestor commit
+    whose Git tree contains the exact frozen profile, corpus, and schema
+    hashes.
 
 ## Final validation results
 
-Milestones 1 through 4 are complete. Milestone 1 adds result-blind authority;
-Milestone 2 adds development-only model-free mechanics and reviewed execution
-commands; Milestone 3 executes the frozen full-GPU hardware arm; and Milestone
-4 executes the admitted targeted-CPU arm. Both hardware arms stop before usable
+Milestones 1 through 4 and 6 are complete. Milestone 1 adds result-blind `v4`
+authority; Milestone 2 adds development-only model-free mechanics and reviewed
+execution commands; Milestones 3 and 4 execute the frozen full-GPU and
+targeted-CPU arms; and Milestone 6 records their failed decision and freezes
+the separate `v5` authority. Both `v4` hardware arms stopped before usable
 media on the frozen shared-memory rule. No milestone changes a production
-contract/runtime, makes a support claim, or selects a profile.
+contract/runtime, makes a support claim, or selects a production profile.
 
-Milestone 5 is not admitted. Milestones 6 through 10 are pending: record the
-failed `v4` decision, freeze `v5` before new results, implement the independent
-dual-worker benchmark, run CPU-solo and concurrent hardware evidence, replay
-the five-minute-bounded queue, and record the resulting decision. The plan is
-therefore active and must not yet move to `docs/plans/completed/`.
+Milestone 5 is not admitted. Milestones 7 through 10 are pending: implement
+the independent dual-worker benchmark, run CPU-solo and concurrent hardware
+evidence, replay the five-minute-bounded queue, and record the resulting
+decision. The plan is therefore active and must not yet move to
+`docs/plans/completed/`.
 
-The `v5` planning amendment changed documentation only. All 58 tracked Markdown
-files and 242 relative links resolve, `git diff --check` passes, and the diff
-contains no code, dependency, authority, schema, result, model, audio, or raw
-benchmark change. No hardware command or candidate import was run because the
-new authority and reviewed command do not exist yet.
+The earlier `v5` planning amendment changed documentation only. Milestone 6
+now adds separately versioned authority and model-free validation, but still
+adds no candidate dependency, runner, command, model load, generated audio,
+raw hardware journal, official result, or product behavior.
 
 The authority checkpoint passed:
 
@@ -1224,7 +1309,49 @@ ignored pytest directories in the primary checkout had deny-style ACLs; the
 clean worktree used fresh frozen offline dependencies and the exact committed
 checkpoint. The known optional FlashAttention/SoX candidate-import warnings and
 Vite chunk-size advisory remain informational. Milestone 4 is complete with a
-failed safety outcome. Milestone 5 is not admitted. Milestone 6 must record the
-durable `v4` decision and freeze the independent `v5` dual-worker authority;
-Milestones 7-10 then own implementation, hardware execution, bounded playback
+failed safety outcome. Milestone 5 is not admitted. Milestone 6 records the
+durable `v4` decision and freezes the independent `v5` dual-worker authority;
+Milestones 7-10 own implementation, hardware execution, bounded playback
 review, and final closeout.
+
+Milestone 6 authority and repository validation completed on 2026-07-26:
+
+- `selection-v4.md` is bound to both committed result hashes, selects neither
+  placement, and reports usable media, aggregate RTF, playback, and quality as
+  unavailable/not admitted rather than inventing zero-valued performance.
+- final frozen SHA-256 values are
+  `74148d1f86c5a12c05e412a345b2523d98eef49ffce1e81b6d9bd83a5234bcf5`
+  for `profile-v5.json`,
+  `e92a7700c9e264e75562fe4d4856fdefdea23e8b9494ab89f33c22fb8b6de9a6`
+  for `corpus-v5.json`,
+  `01b234f27f1d34d31e05c1d36f1c08b52412863030a22a8104773020b4e45775`
+  for the raw schema, and
+  `917860b2a577067fce4d9089c34fb6aceb938c4c882e1f94563a7d6d831359a9`
+  for the safe-summary schema.
+- Prettier accepted all four JSON authority files; Ruff formatting/lint passed
+  over 59 Python files; strict mypy passed over 60 source files; all 117 Python
+  tests passed, including eleven new v5 authority tests and the updated v4
+  selection guard.
+- The unchanged isolated Qwen candidate lock resolved 107 packages and passed
+  `uv lock --check`.
+- `pnpm.cmd check:portable` passed in a clean detached worktree in 37.4 seconds.
+- `pnpm.cmd check` passed on native Windows in the same clean worktree in
+  158.1 seconds, including 18 shared test files / 175 tests, 34 EPUB test
+  files / 555 tests, 20 desktop test files / 204 tests, six native WebDriver
+  client tests, 117 Python tests, Rust formatting, Clippy, crate tests, Python
+  package builds, and the Tauri release build.
+- The root suites used a clean detached worktree because the primary checkout
+  retains pre-existing ignored pytest directories with deny-style ACLs. The
+  initial primary-checkout failure was only Prettier's inability to scan that
+  ignored directory. After the root suites, the final authority normalization
+  changed only two Markdown EOF lines and their dependent content hashes;
+  final JSON formatting, full Ruff/mypy/pytest, schema, and diff checks passed.
+- All 60 tracked Markdown files and 257 relative links resolve. No private
+  Windows/WSL path, tracked audio/model/raw artifact, ignored raw file, or
+  `dual-worker-result-v5-*.json` file exists. The final branch and working-tree
+  `git diff --check` audits pass.
+
+No candidate import, model load, hardware generation, listening exercise, or
+firewall change was applicable to this pre-result milestone. The known Vite
+chunk-size advisory and primary-checkout pytest-cache warning remain
+informational.

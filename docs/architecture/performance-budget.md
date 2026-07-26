@@ -297,8 +297,8 @@ with all 36 measured first attempts failed and zero retries. This exact
 placement therefore provides no capacity, throughput, startup, playback, or
 quality evidence on the reference host and does not admit the listening arm.
 
-The same Milestone 6.2 ExecPlan now schedules a separately versioned `v5`
-experiment rather than rewriting `v4`. It will test one complete Qwen instance
+The same Milestone 6.2 ExecPlan now has a separately frozen `v5` authority
+rather than rewriting `v4`. It will test one complete Qwen instance
 as a GPU-primary worker and one separately loaded complete Qwen instance as a
 CPU-only support worker. CPU solo must pass frozen placement, waveform,
 RAM/commit, timeout, cleanup, and total sustained RTF at or below 3.2 before
@@ -308,7 +308,7 @@ report worker-specific RTF, aggregate RTF, GPU slowdown, ordered head-of-line
 delay, failures, cancellation, RAM, dedicated/shared VRAM, and cleanup.
 
 `v5` targets complete semantic units expected to produce approximately 8-16
-seconds of audio, with a separate hard duration bound frozen before results.
+seconds of audio and freezes a hard maximum of 20 seconds before results.
 The playback replay still starts at approximately 15 contiguous playable
 seconds or a complete shorter remainder. After startup, it may grow
 opportunistically but must stop before exceeding any of these simultaneous
@@ -324,6 +324,6 @@ Five minutes is a maximum in-memory capacity, not a required startup lead and
 not evidence that generation remains ahead. Sustainable scheduling still
 requires directly measured concurrent aggregate RTF below 1.0 and no more than
 five seconds of buffering per minute. The preferred standard margin remains
-aggregate RTF at or below 0.8. Until the new authority, implementation, hardware
-run, and decision exist, this is an evaluation hypothesis and does not amend
+aggregate RTF at or below 0.8. Until implementation, hardware results, and a
+decision exist, this remains an evaluation hypothesis and does not amend
 ADR-0014's accepted one-worker constrained demo.
