@@ -727,7 +727,10 @@ portable, and authoritative Windows validation before its checkpoint commit.
 
 ### Status
 
-Not started.
+In progress. Local deterministic, candidate-import, repository/privacy,
+portable, and authoritative Windows validation passed on 2026-07-26. Both
+required pull-request jobs must still pass on the final evidence commit before
+this milestone and plan can close.
 
 ## Testing and benchmark strategy
 
@@ -1178,6 +1181,35 @@ dependency changes are involved.
   client tests, and 72 Python tests; the native aggregate also passed Rust
   formatting, Clippy, crate tests, the release build, and Python packaging.
   The existing Vite chunk-size advisory remained informational.
+- 2026-07-26: Created branch
+  `feat/m006-6-repository-privacy-closeout` from merged `main` at `3ba3ada`.
+  The worktree and ignored raw-results area were clean before validation.
+- 2026-07-26: Milestone 6 focused validation passed: the isolated candidate
+  lock resolved all 107 packages; the offline import smoke reported
+  `qwen-tts 0.1.1`, PyTorch/Torchaudio `2.9.1+cu128`, CUDA 12.8, CUDA
+  availability, and both candidate CLI imports without loading model weights.
+  The existing optional FlashAttention and SoX warnings remain non-blocking
+  because frozen `v3` uses SDPA and no SoX path. Focused Ruff and strict mypy
+  passed, and all 72 model-free Python tests passed.
+- 2026-07-26: The committed-tree artifact scan found zero audio files, model
+  weights, books, private inputs, raw results, or secret files. Credential,
+  private-path, and exact-host scans found no real secret or private path; the
+  one home-style match is the deliberate `/home/private/voice` privacy canary.
+  The ignored local `models/` cache still contains benchmark artifacts required
+  for manual evaluation, but no cache file is tracked or added by this branch.
+  The disposable raw-results area contains zero files.
+- 2026-07-26: `pnpm.cmd check:portable` passed in 76.1 seconds and
+  `pnpm.cmd check` passed in 72.4 seconds. Both included 18 shared test files /
+  175 tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204 tests,
+  6 native-WebDriver-client tests, and 72 Python tests. The native aggregate
+  also passed Rust formatting, Clippy, crate tests, the release build, and
+  Python source/wheel packaging. The existing Vite chunk-size advisory remained
+  informational. Required pull-request CI is intentionally still pending, so
+  this plan remains active.
+- 2026-07-26: Final local diff review found eight documentation files and no
+  runtime, dependency, lock, model, audio, book, raw-result, or user-prose
+  change. All 111 relative links resolved, `git diff --check` passed, and the
+  changed-file privacy/credential scan found no private path or secret.
 
 ## Discoveries and decisions
 
@@ -1496,3 +1528,14 @@ execution, the native release build, and Python source/wheel packaging. The
 existing Vite chunk-size advisory remained informational. No runtime code,
 production dependency, generated audio, model artifact, raw evidence, private
 path, or credential was added.
+
+Milestone 6 local closeout passed on 2026-07-26. The exact candidate lock and
+offline import smokes, focused deterministic Python checks, committed-tree
+artifact/privacy scans, ignored-raw cleanup audit, portable aggregate, and
+authoritative Windows aggregate all passed with the evidence recorded in the
+progress log. The branch changes documentation only; no production dependency,
+model/audio/book/raw artifact, private path, credential, or user prose is added.
+The ignored local model cache remains outside Git and is not repository
+evidence. Milestone 6 and this ExecPlan remain open until both required
+pull-request jobs pass on the final evidence commit; only then may this file
+move to `docs/plans/completed/`.

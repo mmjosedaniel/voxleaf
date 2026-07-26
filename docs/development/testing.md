@@ -219,9 +219,11 @@ and cleanup; it does not prove native streaming or production transport. One
 fluent maintainer accepted audible quality for a near-term demo and ADR-0014
 permits only that constrained development path. The accepted candidate-neutral
 [`selection-v3`](../../benchmarks/tts/selection-v3.md) retains the failed
-standard result and records the separate demo exception. Repository/CI
-closeout remains. Base voice cloning is outside the current MVP. Whisper and
-VAD/energy analysis are excluded from `v3`.
+standard result and records the separate demo exception. Milestone 6 local
+deterministic, candidate-import, repository/privacy, portable, and
+authoritative Windows validation passed; both required pull-request jobs must
+still pass on the final evidence commit. Base voice cloning is outside the
+current MVP. Whisper and VAD/energy analysis are excluded from `v3`.
 
 The planned
 [Milestone 6.2 plan](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md)

@@ -224,8 +224,10 @@ zero-failure, and three mid-generation cancellation gates failed. One fluent
 maintainer accepted audible quality for a near-term demo; ADR-0014 permits only
 a constrained development-demo exception. Milestone 5 is complete:
 [`selection-v3`](../../benchmarks/tts/selection-v3.md) retains the failed
-standard blocker and separately records that exact demo exception. Final
-repository validation and closeout remain. The
+standard blocker and separately records that exact demo exception. Milestone 6
+local deterministic, candidate-import, repository/privacy, portable, and
+authoritative Windows validation passed. Both required pull-request jobs on the
+final evidence commit remain before closeout. The
 [blocker-resolution ExecPlan](active/M006-001-local-tts-profile-blocker-resolution.md)
 records the candidate-intake evidence, decisions, tasks, and validation
 sequence. Frozen `v3` remains failed and ADR-0013 remains authoritative for
@@ -520,7 +522,7 @@ Durable decisions belong in architecture decision records. Temporary implementat
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or the completed Milestones 4 through 6 plans and does not authorize implementing all of those areas at once.
 
-Milestones 1 through 6 are complete, with their evidence retained under [`completed/`](completed/). Milestone 6.1 is in progress with Milestones 1–4 complete and a constrained demo direction accepted under ADR-0014. Use the synchronized-reader plan only as later-milestone context; it does not supersede completed authority or turn the failed `v3` profile into a standard production selection.
+Milestones 1 through 6 are complete, with their evidence retained under [`completed/`](completed/). Milestone 6.1 is in progress with Milestones 1–5 and local Milestone 6 validation complete; required final pull-request CI remains. Use the synchronized-reader plan only as later-milestone context; it does not supersede completed authority or turn the failed `v3` profile into a standard production selection.
 
 ## MVP completion boundary
 
