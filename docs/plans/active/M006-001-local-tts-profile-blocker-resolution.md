@@ -548,13 +548,12 @@ was loaded and no audio was generated.
 ### Status
 
 In progress on `feat/m006-4-frozen-v3-evaluation`. Milestones 1 through 3 are
-present on the merged base. The first exact-host pilot preflight was correctly
-rejected before model load because AC sleep, operator background-load
-acceptance, and the frozen 12 GiB free-RAM gate were not satisfied. The host
-was otherwise idle and cool, the exact application firewall rule and both
-artifacts passed, and the ignored raw tree was empty. The licensing and
-packaging audit is complete; execution remains pending sufficient RAM
-headroom.
+present on the merged base. After the first exact-host preflight correctly
+rejected insufficient readiness, available RAM recovered above the frozen
+12 GiB gate and the one permitted disposable pilot passed from clean
+checkpoint `8475b28`. The pilot retained no session and is not promotable.
+Licensing and packaging are audited; the official matrix and final blinded
+quality panel remain.
 
 ## Milestone 5: Select or retain the blocker
 
@@ -914,6 +913,23 @@ dependency changes are involved.
   `.dll`/`.pyd`/`.exe` files account for `4,713,151,865` bytes. This is high
   packaging risk, not a performance or license failure, and Milestone 11 owns
   any production distribution design.
+- 2026-07-26: Committed the readiness, licensing, and packaging checkpoint as
+  `8475b289133c5e70f2123542f6842c46001e2eb7`
+  (`docs(tts): record v3 evaluation readiness`).
+- 2026-07-26: A first pilot wrapper was terminated by the command runner's
+  five-second timeout before a receipt existed. It left no candidate process
+  or raw file. AC sleep was immediately restored from zero to its captured
+  45-minute value, and the attempt was excluded from all evidence.
+- 2026-07-26: Available RAM subsequently recovered to `14,380,687,360` bytes.
+  From clean checkpoint `8475b28`, the one permitted disposable pilot passed
+  in 29.2 seconds with the exact local artifacts, Serena configuration,
+  outbound firewall block, Hugging Face/Transformers offline flags, and
+  operator readiness satisfied. Its receipt correctly reported no session,
+  zero official counts, and `eligibleForPromotion: false`.
+- 2026-07-26: Pilot cleanup restored the prior 45-minute AC sleep setting,
+  left zero candidate processes and zero raw files, and returned the GPU to
+  zero utilization / zero candidate memory with 7,810 MiB free VRAM. No pilot
+  waveform, narration text, private path, or diagnostic was retained.
 
 ## Discoveries and decisions
 
@@ -1045,10 +1061,11 @@ cleanup audits passed. No model was loaded by the preflight, no official
 observation was accepted, no audio was generated, and no raw session or
 private path was retained.
 
-Milestone 4 began from a clean merged base and stopped before the first pilot
-model load because the exact preflight correctly rejected insufficient RAM
-headroom and unchanged operator readiness. Artifact, authority, interpreter,
-provider, firewall, disk, and VRAM checks passed. The independent
+Milestone 4 began from a clean merged base. The first preflight correctly
+rejected insufficient readiness without loading the model; after RAM recovered,
+the one permitted disposable pilot passed from clean checkpoint `8475b28`.
+Artifact, authority, interpreter, provider, firewall, disk, RAM, VRAM, offline,
+generation, and cleanup boundaries passed the pilot. The independent
 license/packaging audit found no license ambiguity and measured the exact
 CustomVoice model plus isolated environment at `9,747,862,094` bytes. No
 official observation, generated audio, raw journal, or private input exists at
