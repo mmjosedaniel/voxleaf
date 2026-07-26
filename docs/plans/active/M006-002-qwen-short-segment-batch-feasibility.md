@@ -1,4 +1,4 @@
-# Prove Qwen short-segment batch feasibility
+# Prove Qwen short-segment and dual-worker feasibility
 
 ## Relationship to Milestones 6, 6.1, and 7
 
@@ -13,34 +13,40 @@ permits the exact profile only for a bounded development demo with explicit
 preparation or buffering. This plan must not modify, rerun, or reinterpret that
 failed authority.
 
-This is a separate Milestone 6.2 ExecPlan. It freezes and tests a materially
-different scheduling hypothesis before results: shorter ordered audio units
-and batch size two using one resident model. It is evaluation work, not the
-Milestone 7 production service or Milestone 8 player.
+This is a separate Milestone 6.2 ExecPlan. Its completed `v4` work froze and
+tested a materially different scheduling hypothesis before results: shorter
+ordered audio units and batch size two using one resident model. Both `v4`
+hardware arms stopped safely before usable media.
+
+The plan now continues with a separate result-blind `v5` hypothesis requested
+after those results: one full-GPU Qwen worker as the primary producer and one
+independent CPU-only Qwen worker as a support producer. The `v5` work must use
+new authority, schemas, results, and conclusions; it must not rewrite or
+reinterpret `v4`. Both stages are evaluation work, not the Milestone 7
+production service or Milestone 8 player.
 
 ## Goal
 
 Determine whether the exact already-evaluated Qwen/Serena candidate can produce
-ordered, bounded Spanish narration sustainably on the exact reference host
-when one resident model generates two short semantic units in one shared-model
-batch.
+ordered, bounded Spanish narration sustainably on the exact reference host.
 
-Test full-GPU execution first. If and only if batch size two cannot complete
-within a predeclared VRAM safety boundary, evaluate narrowly targeted CPU
-placement of the speech-tokenizer/audio-decoder component as a separate
-contingency profile. Generic layer offload is not the primary path and must not
-be presented as a performance optimization.
+The completed `v4` stage tested one resident model generating two short
+semantic units in one shared-model batch, followed by the admitted targeted
+speech-tokenizer CPU placement. The new `v5` stage must test a different
+topology: one exact full-GPU worker and one separately loaded, fully CPU-only
+worker producing independently identified short units for one ordered bounded
+consumer.
 
 ## User-visible outcome
 
 This plan adds no production user-visible behavior.
 
-If the evidence passes its frozen gates, VoxLeaf gains a measured scheduling
-input for a later bounded demo and for Milestones 7 and 8: two ordered complete
-waveforms can be produced by one shared model quickly enough to keep a bounded
-playback simulation supplied. If it fails, the constrained batch-one demo
-decision remains available under ADR-0014, while continuous-playback and
-production claims remain blocked.
+If the `v5` evidence passes its frozen gates, VoxLeaf gains a measured
+scheduling input for a later bounded demo and for Milestones 7 and 8: an
+independent GPU-primary/CPU-support topology can produce ordered complete
+waveforms quickly enough to keep a bounded playback simulation supplied. If it
+fails, the constrained batch-one demo decision remains available under
+ADR-0014, while continuous-playback and production claims remain blocked.
 
 Neither outcome establishes general hardware support, native waveform
 streaming, cooperative mid-call cancellation, production packaging, or a
@@ -86,6 +92,20 @@ selected CPU fallback.
 - `narration-v1` is implemented and authoritative. Its stable text, semantic
   boundaries, locator ranges, and hard limits must not change for this model
   experiment.
+- The completed full-GPU and targeted-CPU `v4` arms both stopped at the frozen
+  `shared-gpu-memory` rule after observing 79,691,776 bytes of shared GPU
+  memory. The targeted placement moved only the speech tokenizer after an
+  exact CUDA load; it was not an independent CPU-only Qwen worker and therefore
+  did not test the new topology.
+- The reference host has 33,752,997,888 bytes of physical RAM and an Intel
+  Core Ultra 7 255HX with 20 logical processors. Capacity arithmetic alone
+  does not prove that a second complete model instance is safe or fast enough.
+- Historical `v3` total sustained RTF was 1.4521558253532183, or approximately
+  0.6886 seconds of audio per wall-clock second. As a planning estimate only,
+  a CPU worker would need solo RTF at or below approximately 3.21 merely to
+  close the remaining real-time gap, and approximately 1.78 to reach a
+  combined effective RTF of 0.8. The new authority must judge directly
+  measured concurrent throughput rather than promote this estimate.
 
 Primary upstream references:
 
@@ -113,10 +133,22 @@ Primary upstream references:
   machine gates admit quality review.
 - Conditionally test targeted speech-tokenizer/audio-decoder CPU placement only
   after a frozen full-GPU memory stop condition is met.
+- Freeze and execute a separate `v5` CPU-solo admission and concurrent
+  GPU-primary/CPU-support matrix after recording the failed `v4` outcome.
+- Use independently loaded workers: exactly one complete model on CUDA and
+  exactly one complete model on CPU, with no CUDA, WDDM shared-memory, disk, or
+  implicit fallback use by the CPU worker.
+- Target complete semantic units expected to yield approximately 8-16 seconds
+  of audio, while freezing a separate hard duration limit before results.
+- Replay ordered completion through a 15-second startup gate and an
+  experimental 300-second maximum in-memory playable-audio envelope.
+- Bound the experimental envelope simultaneously by playable duration,
+  complete-unit count, float32 PCM payload bytes, and active work.
 
 ### Non-goals
 
-- Run two model processes or duplicate model weights on the GPU.
+- Run two GPU model processes, duplicate model weights on the GPU, or permit
+  the CPU-support worker to allocate dedicated or shared GPU memory.
 - Treat batch size two as two independent streams or as native streaming.
 - Change `narration-v1`, merge source ranges, or introduce model-specific text
   semantics into `@voxleaf/epub`.
@@ -132,6 +164,9 @@ Primary upstream references:
 - Retroactively change `profile-v3`, its three-person quality rule, failed
   results, or ADR-0013.
 - Claim that CPU placement improves performance before measurement.
+- Treat a five-minute buffer ceiling as proof that generation stays ahead.
+- Change ADR-0014's one-model/one-queued-unit demo exception before new
+  evidence is accepted through a separate durable decision.
 
 ## Relevant files and documentation
 
@@ -143,11 +178,15 @@ Primary upstream references:
 - `benchmarks/tts/corpus-v4.json`
 - `benchmarks/tts/schemas/short-segment-batch-raw-v4.schema.json`
 - `benchmarks/tts/schemas/short-segment-batch-summary-v4.schema.json`
+- planned `benchmarks/tts/profile-v5.json`
+- planned `benchmarks/tts/corpus-v5.json`
+- planned closed private-raw and content-safe-summary `v5` schemas
 - `docs/product/mvp.md`
 - `docs/architecture/overview.md`
 - `docs/architecture/system-diagram.md`
 - `docs/architecture/performance-budget.md`
 - `docs/architecture/tts-feasibility-profile-v3.md`
+- `docs/architecture/decisions/ADR-0004-start-after-audio-lead.md`
 - `docs/architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md`
 - `docs/architecture/decisions/ADR-0014-constrained-qwen-development-demo.md`
 - `docs/development/dependencies.md`
@@ -206,6 +245,45 @@ is expected to reduce throughput. The first permitted contingency is limited
 to investigating whether the separately loaded speech-tokenizer/audio-decoder
 component can remain on CPU safely. Source inspection alone is not proof that
 this placement works.
+
+The `v5` experiment is a new topology, not another `v4` placement. A controller
+owns one GPU-primary worker and one independently loaded CPU-support worker.
+Each worker may have at most one active unit. The GPU worker receives the
+earliest unclaimed unit; the CPU worker receives the next eligible unclaimed
+unit. Every unit retains source order, session, generation, segment, and
+worker identity. Completed results wait in a bounded reorder queue until all
+earlier units are available. A slow CPU head-of-line result is observable
+evidence, not a condition that can be hidden by an automatic retry or duplicate
+GPU request.
+
+CPU-only admission must run before concurrent generation. The new authority
+must freeze the CPU device, precision, thread/affinity policy, load checks,
+RAM/commit reserve, timeout, and exact zero-GPU verification before any output
+is generated. CPU admission requires a complete valid waveform, no failure,
+no GPU/shared-GPU allocation, safe RAM, and enough solo throughput to make a
+combined real-time result arithmetically credible. Passing CPU solo does not
+pass the concurrent profile: the official matrix must remeasure both workers
+together and report whether CPU contention slows the GPU, whether aggregate
+RTF improves, and whether ordered playback remains supplied.
+
+The `v5` target is approximately 8-16 seconds of measured audio per complete
+semantic unit to preserve more natural phrasing than the earlier 8-12-second
+aim. Because input text cannot guarantee output duration before synthesis, the
+authority must freeze eligible synthetic units and a separate hard output
+duration limit before results. It must not modify `narration-v1` or trim,
+concatenate, or rewrite generated speech to force a duration.
+
+Initial playback remains governed by ADR-0004: start when approximately 15
+seconds of contiguous active-generation audio is playable, or when a complete
+shorter remaining range is ready. The experimental queue may then grow under
+backpressure to at most 300 playable seconds. At the frozen 24 kHz mono
+float32 format, 300 seconds is exactly 28,800,000 PCM payload bytes. Retention
+must also be capped at 40 complete units and one active unit per worker, with
+worst-case active-unit capacity reserved before dispatch; the first reached
+limit stops new work. The five-minute value is a capacity ceiling, not a
+startup requirement or a guarantee of staying ahead. Only concurrent
+aggregate RTF below 1.0 plus the bounded underrun result can establish
+sustainability.
 
 ## Milestones
 
@@ -372,13 +450,166 @@ Not admitted. Milestone 4 stopped before usable media on the frozen
 or listening review. Milestone 6 must record that failed outcome without
 inventing quality evidence.
 
-### Milestone 6: Record the decision and close validation
+### Milestone 6: Record the v4 decision and freeze v5 dual-worker authority
 
 #### Work
 
 - Produce a content-safe `selection-v4` record that distinguishes standard
   viability, scheduling sustainability, and constrained-demo usefulness.
-- Amend or supersede an ADR only when the frozen evidence requires it.
+- Record that targeted component placement is not an independent CPU-only
+  worker and that neither `v4` result contains usable performance or quality
+  evidence.
+- Freeze new `v5` candidate identities for the exact full-GPU primary and a
+  separately loaded CPU-only support worker, including runtime/artifact
+  identity, device/dtype/thread policy, settings, host, offline controls, and
+  zero-GPU checks for the CPU worker.
+- Freeze the synthetic Spanish corpus, 8-16-second target, hard unit-duration
+  bound, source order, worker dispatch rule, sample counts, warm-up, first
+  attempts, timeouts, cancellation, and no-retry rule before new output.
+- Freeze CPU-solo admission, concurrent comparison, aggregate throughput,
+  GPU-slowdown, RAM/commit, dedicated/shared VRAM, ordering, cleanup, and
+  quality gates. Historical arithmetic may inform thresholds but cannot
+  replace direct concurrent measurements.
+- Require CPU-solo total sustained RTF at or below 3.2 for concurrent
+  admission. This is a screening threshold derived from the historical GPU
+  deficit, not a `v5` scheduling pass; the concurrent result must still achieve
+  aggregate RTF below 1.0 after measured contention.
+- Freeze the approximately 15-second startup gate and the simultaneous
+  300-playable-second, 40-complete-unit, 28,800,000-byte float32 PCM, and
+  two-active-unit retention ceilings.
+- Freeze new closed raw/result schemas, authority/result ancestry, derivation,
+  privacy, cleanup, promotion, and failure rules. No `v4` file or conclusion
+  may be edited to admit `v5`.
+
+#### Validation
+
+- `selection-v4` is derivable only from the two committed schema-valid results
+  and reports no unavailable performance or quality value.
+- The complete `v5` authority is byte-stable before any CPU-only or concurrent
+  waveform is generated or heard.
+- Model-free tests reject CPU CUDA/shared-memory use, missing or duplicate
+  identities, reordered dispatch/results, authority drift, hidden retry,
+  retention over any one bound, and a sustainability pass with aggregate RTF
+  at or above 1.0.
+- The authority explicitly states that a 300-second ceiling cannot compensate
+  for average production slower than playback.
+
+#### Status
+
+Not started.
+
+### Milestone 7: Extend the benchmark with independent dual workers
+
+#### Work
+
+- Add benchmark-local candidate-neutral worker-role, dispatch, completion, and
+  ordered-reorder contracts without changing production/shared contracts.
+- Add an exact CPU-only Qwen adapter path that loads the same frozen model,
+  speaker, instruction, and generation settings under the frozen CPU device,
+  dtype, and threading policy.
+- Add a controller with exactly one active unit per worker, deterministic
+  earliest-unclaimed dispatch, identity-first invalidation, bounded reorder
+  retention, and content-free worker-specific failures.
+- Extend the playback simulator to enforce the `v5` 15-second startup rule and
+  simultaneous 300-second, 40-unit, 28,800,000-byte, and two-active-unit
+  bounds.
+- Add a reviewed CPU-solo pilot and official dual-worker command surface before
+  hardware execution. Private inputs remain standard-input-only and generated
+  waveform payloads remain ignored and ephemeral.
+
+#### Validation
+
+- Model-free tests prove deterministic heterogeneous dispatch, ordered release,
+  head-of-line blocking, backpressure, all four retention limits, stale-result
+  rejection, both-worker cancellation, timeout, crash, cleanup, and exact
+  rational playback arithmetic.
+- Candidate-import tests prove that the CPU adapter cannot select CUDA, disk,
+  meta, or an implicit device map.
+- Focused Ruff, mypy, pytest, schema, privacy, and command invalid-input checks
+  pass without loading a model.
+- No production dependency, shared contract, `narration-v1` behavior, model
+  artifact, audio, or private path is committed.
+
+#### Status
+
+Not started.
+
+### Milestone 8: Run CPU-solo admission and the concurrent matrix
+
+#### Work
+
+- Run unchanged repository, artifact, offline/firewall, AC-power, sleep,
+  competing-process, and clean-checkpoint preflight.
+- Run one non-promotable CPU-solo pilot, followed by the frozen official
+  CPU-solo admission only if safety checks pass.
+- Stop before concurrent execution if CPU-only placement, waveform validity,
+  RAM/commit reserve, failure, timeout, cleanup, or frozen solo-throughput
+  admission fails.
+- If admitted, measure a same-authority GPU-solo baseline and the complete
+  concurrent GPU-primary/CPU-support matrix from clean committed checkpoints
+  with no retries.
+- Record worker-specific and aggregate RTF, GPU slowdown under CPU contention,
+  order/head-of-line delay, RAM/commit, dedicated/shared VRAM, failures,
+  cancellation, and cleanup. Derive content-safe summaries and delete raw
+  journals and audio.
+
+#### Validation
+
+- The CPU worker uses zero dedicated/shared GPU memory and the GPU worker stays
+  within its frozen safety boundary.
+- Official counts, worker assignments, identities, first attempts, ordering,
+  and authority ancestry match exactly.
+- Concurrent throughput is compared with the same-run GPU-solo baseline; a
+  CPU contribution cannot pass if contention removes its aggregate benefit.
+- No OOM, paging beyond the frozen RAM/commit boundary, hidden retry, stale
+  output, unbounded retention, or incomplete cleanup is accepted.
+
+#### Status
+
+Not started.
+
+### Milestone 9: Evaluate five-minute bounded playback credibility and quality
+
+#### Work
+
+- Replay actual ordered concurrent completion events through the frozen
+  bounded simulator, starting at approximately 15 playable seconds and
+  allowing opportunistic lead growth up to the five-minute ceiling.
+- Report time to startup, time and ability to reach each declared buffer
+  threshold, peak/minimum lead, head-of-line stalls, underruns, buffering
+  seconds per minute, and whether the producer loses or gains lead over time.
+- Prove that the simulation never exceeds 300 playable seconds, 40 complete
+  units, 28,800,000 retained PCM bytes, or the frozen active-work bound.
+- Run one bounded Spanish-maintainer review only if machine and scheduling
+  gates admit it, covering natural phrasing across 8-16-second targets, joins,
+  accents, number/symbol normalization, intelligibility, and defects.
+- Exercise cancellation and invalidation with both workers active and with
+  completed support-worker audio waiting behind an earlier unit.
+
+#### Validation
+
+- Combined aggregate RTF is strictly below 1.0 and the replay stays within the
+  MVP allowance of at most five seconds of buffering per minute.
+- The preferred standard margin remains aggregate RTF at or below 0.8; a
+  scheduling-only pass cannot rewrite failed `v3` standard gates.
+- No stale or out-of-order unit becomes playable, and all retained payloads are
+  released on invalidation or cleanup.
+- The five-minute ceiling is reported as bounded capacity, not as a startup
+  wait, sustained-throughput substitute, or production setting.
+
+#### Status
+
+Not started.
+
+### Milestone 10: Record the v5 decision and close validation
+
+#### Work
+
+- Produce a content-safe `selection-v5` record distinguishing CPU-solo
+  admission, concurrent scheduling sustainability, constrained-demo
+  usefulness, and unchanged standard production viability.
+- Amend or supersede ADR-0014 only if accepted evidence authorizes two workers,
+  the larger bounded buffer, or a broader demo topology.
 - Reconcile the roadmap, MVP, architecture, performance, dependency, setup,
   testing, and system-diagram documentation.
 - Run focused and repository-wide validation, privacy/artifact scans, cleanup,
@@ -422,6 +653,14 @@ reported only for the exact host. A pilot result cannot be promoted. Raw
 hardware journals and WAV files remain ignored and are deleted after a
 schema-valid content-safe result is derived.
 
+Milestone 7 must add and review a separate repository-owned dual-worker command
+before Milestone 8; no such command exists at this planning checkpoint. Its
+model-free path must run in the base environment, while exact GPU and CPU Qwen
+loads remain isolated under the unchanged candidate lock. Milestone 8 must
+measure CPU solo before concurrent execution, then compare the concurrent
+matrix with a same-authority GPU-solo baseline. Existing `v3`/`v4` measurements
+are historical inputs, not substitutes for that comparison.
+
 ## Risks and rollback
 
 - The Qwen batch call may execute elements serially or gain too little from
@@ -437,13 +676,29 @@ schema-valid content-safe result is derived.
 - Targeted CPU placement may be unsupported, cause device mismatches, increase
   RAM, or slow generation through transfers. It is optional evidence, not a
   required rescue.
+- A complete CPU-only Qwen instance may not support the selected dtype or may
+  be too slow despite fitting in RAM. Fail CPU admission before concurrency
+  rather than redefining the support worker.
+- Concurrent CPU load may reduce GPU throughput through host preprocessing,
+  memory bandwidth, thermal, or power contention. Require a same-run GPU
+  baseline and judge aggregate benefit after that slowdown.
+- The CPU worker may claim an early unit and become an ordered head-of-line
+  blocker while the GPU finishes later units. Preserve order and report the
+  stall; do not hide it with duplicate generation.
+- A 300-second queue can discard substantially more valid but obsolete audio
+  after a seek or settings change. Keep it ephemeral, bound it by duration,
+  count, bytes, and active work, and prove prompt identity-first cleanup.
+- Filling a larger buffer increases energy use and speculative work. The
+  experiment must report time-to-threshold and discarded-audio duration rather
+  than treating a full queue as inherently desirable.
 - A result from one 8-GiB laptop GPU cannot establish general support.
 - Model-specific optimization may leak into stable narration contracts. Keep
   all pairing and candidate fields inside the benchmark boundary.
 
 Rollback is documentation and development-benchmark only: remove unselected
-`v4` code and authorities while retaining the content-safe decision evidence.
-Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
+`v5` code and authorities while retaining the content-safe `v4` and `v5`
+decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
+`v4`, ADR-0013, or ADR-0014.
 
 ## Progress log
 
@@ -668,6 +923,24 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
   playback, unit duration, cancellation-under-generation, and quality remain
   unavailable. Milestone 4 is complete with a failed outcome; Milestone 5 is
   not admitted.
+- 2026-07-26: After reviewing the failed targeted-placement result, the
+  maintainer requested that this same ExecPlan continue with a materially
+  different topology instead of creating M006-003: one exact GPU-primary Qwen
+  worker and one separately loaded CPU-only support worker. The amendment adds
+  future result-blind `v5` Milestones 6-10 and does not modify `v4` authority,
+  schemas, results, or conclusions.
+- 2026-07-26: The maintainer changed the new experiment's complete-unit target
+  from approximately 8-12 seconds to approximately 8-16 seconds to protect
+  natural phrasing, and requested capacity for at least five minutes of
+  in-memory audio. The plan records 300 playable seconds as an experimental
+  maximum, not a startup requirement or continuity guarantee, and adds
+  simultaneous 40-unit, 28,800,000-byte float32 PCM, and two-active-unit
+  bounds. ADR-0004's approximately 15-second startup rule remains unchanged.
+- 2026-07-26: Reconciled the roadmap, documentation index, active-plan index,
+  MVP, project brief, architecture overview, performance budget, canonical
+  system diagram, setup, testing, and dependency inventory. Every document
+  distinguishes planned `v5` evidence from implemented runtime and retains
+  ADR-0014's current one-worker constrained-demo boundary.
 
 ## Discoveries and decisions
 
@@ -770,6 +1043,23 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
 26. A failed private derivation is not evidence. The authority-ancestry
     rejection deleted its session, and only the later clean-checkpoint,
     schema-valid safe summary is retained.
+27. Moving one internal component to CPU after a CUDA load is not evidence
+    about an independent CPU-only Qwen process. The proposed topology requires
+    a new authority and separate CPU-solo admission.
+28. Historical GPU RTF implies a CPU solo RTF of approximately 3.21 is the
+    arithmetic break-even estimate and approximately 1.78 is the estimate for
+    a combined effective RTF of 0.8. Concurrent contention can invalidate both
+    estimates, so direct aggregate measurement remains authoritative.
+29. A fixed number of completed sections is not a safe startup authority
+    because section durations vary. ADR-0004's playable-duration gate remains
+    approximately 15 seconds; section identities additionally preserve order.
+30. Five minutes of 24 kHz mono float32 PCM is exactly 28,800,000 payload
+    bytes. This makes a 300-second buffer technically bounded and modest beside
+    model memory, but it can increase speculative work and cancellation waste.
+31. A five-minute maximum does not ensure that the producer stays ahead.
+    Sustainability still requires aggregate RTF below 1.0 and acceptable
+    measured underruns; the maximum only limits how much valid lead may be
+    retained.
 
 ## Final validation results
 
@@ -779,6 +1069,18 @@ commands; Milestone 3 executes the frozen full-GPU hardware arm; and Milestone
 4 executes the admitted targeted-CPU arm. Both hardware arms stop before usable
 media on the frozen shared-memory rule. No milestone changes a production
 contract/runtime, makes a support claim, or selects a profile.
+
+Milestone 5 is not admitted. Milestones 6 through 10 are pending: record the
+failed `v4` decision, freeze `v5` before new results, implement the independent
+dual-worker benchmark, run CPU-solo and concurrent hardware evidence, replay
+the five-minute-bounded queue, and record the resulting decision. The plan is
+therefore active and must not yet move to `docs/plans/completed/`.
+
+The `v5` planning amendment changed documentation only. All 58 tracked Markdown
+files and 242 relative links resolve, `git diff --check` passes, and the diff
+contains no code, dependency, authority, schema, result, model, audio, or raw
+benchmark change. No hardware command or candidate import was run because the
+new authority and reviewed command do not exist yet.
 
 The authority checkpoint passed:
 
@@ -922,5 +1224,7 @@ ignored pytest directories in the primary checkout had deny-style ACLs; the
 clean worktree used fresh frozen offline dependencies and the exact committed
 checkpoint. The known optional FlashAttention/SoX candidate-import warnings and
 Vite chunk-size advisory remain informational. Milestone 4 is complete with a
-failed safety outcome. Milestone 5 is not admitted; Milestone 6 remains
-responsible for the durable decision and plan closeout.
+failed safety outcome. Milestone 5 is not admitted. Milestone 6 must record the
+durable `v4` decision and freeze the independent `v5` dual-worker authority;
+Milestones 7-10 then own implementation, hardware execution, bounded playback
+review, and final closeout.

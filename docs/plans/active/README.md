@@ -17,5 +17,5 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`M006-002-qwen-short-segment-batch-feasibility.md`](M006-002-qwen-short-segment-batch-feasibility.md): active Milestone 6.2 plan. Milestones 3 and 4 completed the full-GPU and targeted-CPU arms; both stopped on the frozen zero-shared-memory rule before usable media, so Milestone 5 playback/quality review is not admitted.
+- [`M006-002-qwen-short-segment-batch-feasibility.md`](M006-002-qwen-short-segment-batch-feasibility.md): active Milestone 6.2 plan. Completed `v4` full-GPU and targeted-CPU arms both stopped on the frozen zero-shared-memory rule before usable media, so its Milestone 5 playback/quality review is not admitted. The same plan now continues with pending Milestones 6-10: record that result, freeze a separate `v5` GPU-primary/CPU-support authority, implement and run the independent dual-worker benchmark, evaluate an 8-16-second-unit/five-minute-bounded playback hypothesis, and close the resulting decision.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): retained broader context spanning the completed reader work and later narration synchronization/audio startup. It does not supersede the completed Milestones 4 through 6 authorities and does not authorize blocked Milestone 7 or later work.

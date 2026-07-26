@@ -4,6 +4,15 @@
 
 Mixed implementation status. Roadmap Milestones 1 through 6 are complete. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop connects its capability-free local-file selection/read boundary to a UI-independent publication-session owner, presents one accessible idle/opening/ready/empty/failure/closing lifecycle surface, contains presentation failures, and renders the active spine document's supported text plus bounded static raster images through an exhaustive application-owned semantic React reader. Its continuous responsive layout, closed display preferences, bounded incremental large-chapter policy, passive logical-position tracking, viewport/preference reflow preservation, versioned bounded local reader-state repository, lifecycle-aware save coordinator, and exact/nearest-valid open restoration are implemented without publisher styling. A user can open, read, navigate, adjust the visual reader without losing the active logical passage, and explicitly close a supported publication; validated position and preference changes are saved locally on the approved bounded lifecycle and restored after exact-file reselection. Milestone 5 narration preparation is implemented and documented: `@voxleaf/epub` owns exhaustive narration source projection, Unicode-code-point source-span tokens, bounded canonical source windows/lifecycle, deterministic source-mapped neutral/Spanish normalization, normalization invariants/privacy tests, sentence/dialogue/clause/protected-token scanning, cancellable profile-bounded block-local semantic packing with oversized-token hardening, immutable canonical locator-linked prepared segments, the public frozen closed `OpenedPublication.prepareNarration` batch operation, repository-authored public EPUB-to-segment integration evidence, and deterministic exact-bound/resource evidence. Task 6.2 records successful local and pull-request validation. Milestone 6 implements and validates the candidate-neutral feasibility harness and accepts ADR-0013's explicit no-viable-profile decision after both exact candidates fail frozen role gates. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation completed and failed startup, throughput, zero-failure, and mid-generation cancellation gates. One fluent maintainer accepted the audible quality for a near-term demo, so ADR-0014 permits only a bounded development-demo exception with complete units, explicit preparation/buffering, and no persistence or real-time claim. Milestone 6.2 is active. Its first two milestones froze and implemented the development-only `v4` one/two-unit batch evaluation. Milestones 3 and 4 produced schema-valid full-GPU and targeted speech-tokenizer CPU results; both stopped on the frozen zero-shared-GPU-memory rule before producing throughput, playback, or reviewable audio evidence. The CPU arm reproduced the full-GPU VRAM/shared-memory boundary, so Milestone 5 playback/quality review is not admitted and no listening result or selection exists. Base voice cloning, Whisper, and VAD/energy remain excluded. No production desktop module calls `prepareNarration`; TTS engine integration, buffering, playback, and synchronization require later implementation evidence. The production Python area remains a foundation only. A constrained demo path may now be planned, while standard production graduation remains blocked pending viable evidence.
 
+Pending Milestone 6.2 work now preserves that `v4` failure and plans a
+separately versioned `v5` evidence path. It will freeze before results and test
+one GPU-primary model process plus one complete CPU-only support process,
+approximately 8-16-second target units, the unchanged approximately 15-second
+startup gate, and an experimental five-minute maximum bounded simultaneously
+by playable duration, complete units, PCM bytes, and active work. No `v5`
+authority, implementation, result, or topology decision exists yet, and the
+plan does not amend ADR-0014's accepted one-worker constrained demo.
+
 [`system-diagram.md`](system-diagram.md) is the canonical visual map and status legend. This overview owns the accompanying architectural rationale, invariants, and detailed implemented-boundary notes.
 
 ## Context
@@ -52,6 +61,8 @@ Local TTS service
 |-- Python package/version scaffold [foundation only]
 |-- Candidate-neutral feasibility harness and no-profile decision
 |   [implemented development evidence; not production runtime]
+|-- Shared-model v4 safety results and independent dual-worker v5 plan
+|   [development evidence/planning only; no product runtime]
 `-- Engine, process protocol, inference, cancellation,
     audio framing, and metrics [blocked/deferred to Milestone 7]
 ```

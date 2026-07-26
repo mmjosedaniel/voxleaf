@@ -259,6 +259,15 @@ schema-valid safe result reproduces the same shared-memory stop and VRAM
 boundary before media, and its private raw session was also deleted. Default
 tests and CI remain model-free.
 
+Pending Milestones 6-10 of the same ExecPlan require a separately frozen `v5`
+authority and new model-free coverage before hardware execution. The future
+tests must cover CPU-only placement, CPU-solo admission, deterministic
+GPU-primary/CPU-support dispatch, ordered head-of-line blocking, worker
+contention, same-authority baseline comparison, identity-first cancellation,
+and simultaneous 300-second, 40-unit, 28,800,000-byte PCM, and two-active-unit
+retention limits. No dual-worker command or test exists yet; documentation
+must not list one as runnable until Milestone 7 adds and validates it.
+
 ## Deferred coverage
 
 The secure EPUB ingestion scenario and boundary matrix is implemented with repository-authored synthetic inputs; deterministic desktop tests prove the bounded repository, approved save lifecycle, and exact/recovered open coordination; the real-browser smoke proves preference plus exact/nearest-valid locator restoration through production React reload/reselection; the packaged native smoke proves save/restore across a WebView2 application restart; the two hardware-specific benchmarks cover accepted prototype, production React, repeated lifecycle, and packaged WebView2 reader limits; and the test-only narration corpus/limits plus production source projector, normalizer, boundary scanner, packer, canonical prepared-segment finalizer, public batch operation, public neutral/Spanish EPUB-to-segment integration matrix, and deterministic resource matrix have evidence. Milestones 5 and 6 are complete. No default test or CI job loads either benchmark candidate, and no current test communicates with a production TTS process, plays audio, detects supported inference hardware, builds an installer, or exercises those later end-to-end flows. The examples below are requirements for later roadmap milestones, not claims about current coverage.

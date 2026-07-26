@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 6.1 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. ADR-0014 permits that exact profile only for a bounded development demo after one fluent maintainer accepted its audible quality. Milestone 6.2 is in progress: Milestone 1 froze the separate result-blind v4 authority, Milestone 2 implemented its bounded model-free mechanics, and Milestones 3 and 4 completed the full-GPU and targeted-CPU arms. Both stopped safely on the frozen zero-shared-GPU-memory rule before producing throughput or reviewable audio evidence. Milestone 5 playback/quality review is not admitted. Milestone 7 may plan the constrained demo slice, but production completion remains blocked until new evidence or an explicit later acceptance change resolves continuous playback, cancellation, hardware, and packaging. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 6.1 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. ADR-0014 permits that exact profile only for a bounded development demo after one fluent maintainer accepted its audible quality. Milestone 6.2 is in progress: its result-blind `v4` shared-model batch authority and both hardware arms are complete, but both stopped safely on the frozen zero-shared-GPU-memory rule before producing throughput or reviewable audio evidence. Milestone 5 playback/quality review is not admitted. The same active ExecPlan now continues with a separate result-blind `v5` experiment: one GPU-primary Qwen worker and one independent CPU-only support worker, approximately 8-16-second complete units, the normal approximately 15-second playable startup gate, and an experimental five-minute bounded maximum. No `v5` authority, implementation, result, or broader demo decision exists yet. Milestone 7 may plan only the existing constrained demo slice until accepted evidence says otherwise, and production completion remains blocked until new evidence or an explicit later acceptance change resolves continuous playback, cancellation, hardware, and packaging. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -29,7 +29,7 @@ Every milestone must preserve the product's defining constraints:
     -> 5. Narration text preparation
     -> 6. Local TTS feasibility and engine selection
     -> 6.1. Local TTS profile blocker resolution
-    -> 6.2. Qwen short-segment batch feasibility
+    -> 6.2. Qwen short-segment batch and dual-worker feasibility
     -> 7. Local TTS service and process protocol
     -> 8. Bounded audio playback and scheduling
     -> 9. Synchronized reading and narration
@@ -290,7 +290,7 @@ isolated lock, verified local artifacts, outbound blocking, an authorized
 - Automatic speech recognition can estimate content consistency but cannot
   judge naturalness, prosody, speaker similarity, or audible artifacts.
 
-## Milestone 6.2: Prove Qwen short-segment batch feasibility
+## Milestone 6.2: Prove Qwen short-segment and dual-worker feasibility
 
 **Status:** In progress. Milestones 1 through 4 completed on 2026-07-26. The
 [Milestone 6.2 ExecPlan](active/M006-002-qwen-short-segment-batch-feasibility.md)
@@ -300,14 +300,19 @@ bytes of shared GPU memory, stopped on the exact zero-shared-memory rule,
 cleaned their private raw sessions, and produced no usable audio/throughput
 matrix. The CPU arm reproduced the full-GPU 4,432,904,192-byte authoritative
 VRAM peak, so Milestone 5 playback/quality review is not admitted; Milestone 6
-decision/closeout remains pending. This work does not change failed batch-one
-`v3`, ADR-0013, or ADR-0014.
+must record that decision and freeze the separately versioned `v5` authority.
+Milestones 7-10 then plan an independent GPU-primary/CPU-support benchmark,
+CPU-solo admission, concurrent hardware matrix, five-minute-bounded playback
+replay, and final decision. This work does not change failed batch-one `v3`,
+frozen `v4`, ADR-0013, or ADR-0014.
 
 ### Goal
 
 Determine whether the exact Qwen/Serena candidate can keep a bounded playback
-simulation supplied when one resident model generates two ordered short
-semantic units in one shared-model batch.
+simulation supplied. The completed `v4` stage tested one resident model
+generating two ordered short semantic units in one shared-model batch. The
+planned `v5` stage tests one full-GPU primary worker plus one separately loaded
+CPU-only support worker.
 
 ### Expected outcome
 
@@ -323,6 +328,16 @@ semantic units in one shared-model batch.
 - The decision distinguishes unchanged standard-profile gates, scheduling
   sustainability, and constrained-demo usefulness without making a production
   or general-hardware claim.
+- The new `v5` authority targets approximately 8-16 seconds per complete
+  semantic unit without changing `narration-v1`, verifies the CPU worker uses
+  no GPU/shared GPU memory, requires CPU-solo total sustained RTF at or below
+  3.2 before concurrency, and compares CPU solo, same-authority GPU solo, and
+  concurrent execution.
+- Ordered playback still starts at approximately 15 playable seconds. The
+  experiment may retain at most 300 playable seconds, 40 completed units,
+  28,800,000 bytes of 24 kHz mono float32 PCM, and one active unit per worker.
+  Five minutes is a capacity ceiling, not a required startup wait or proof of
+  sustainable generation.
 
 ### Dependencies
 
@@ -331,7 +346,9 @@ decision. Milestone 5 supplies stable bounded `narration-v1` units. The
 candidate-neutral benchmark, exact isolated lock, verified local artifacts,
 outbound blocking, and exact reference host remain required. Milestone 2 adds
 the reviewed disposable-pilot command before execution; Milestone 3 owns the
-clean-checkpoint hardware run.
+clean-checkpoint `v4` hardware run. The same plan's Milestone 6 must freeze
+new `v5` CPU-only and concurrent authority before Milestone 7 adds a separate
+reviewed command and Milestone 8 performs new hardware work.
 
 ### Major risks and unknowns
 
@@ -343,6 +360,14 @@ clean-checkpoint hardware run.
 - Shorter units may create prosody or join defects.
 - CPU placement normally trades speed for accelerator capacity and may fail
   device placement, RAM, or throughput gates.
+- A complete CPU-only second model may fit in RAM but still be too slow, may
+  use an unsupported dtype, or may reduce GPU throughput through host-memory,
+  thermal, or power contention.
+- Independent completion can create ordered head-of-line stalls when the CPU
+  owns an earlier segment than already completed GPU work.
+- A five-minute maximum remains bounded but increases speculative work and the
+  amount discarded after invalidation; it cannot compensate for aggregate RTF
+  at or above one.
 - Evidence from one 8-GiB laptop GPU cannot establish general hardware support.
 
 ## Milestone 7: Implement the local TTS service and process protocol
@@ -375,9 +400,10 @@ Run the selected TTS engines behind a secure, typed, cancellable local process b
 Milestone 2 defines shared contracts. Milestone 6 supplies the evaluation
 authority but its first cycle selected no viable engine. Milestone 6.1 permits
 only the constrained ADR-0014 development-demo input. Milestone 6.2 has frozen
-its pre-result authority and is the active attempt to measure short-unit
-shared-model batching before any continuous-playback or standard-profile
-claim. Milestone 1 supplies process and packaging foundations.
+and executed its failed `v4` authority and is the active attempt to freeze and
+measure the independent `v5` dual-worker topology before any
+continuous-playback or standard-profile claim. Milestone 1 supplies process
+and packaging foundations.
 
 ### Major risks and unknowns
 
@@ -514,7 +540,7 @@ The following decisions should be made when evidence is available, not assumed s
 1. **Desktop stack gate:** validate and adopt the desktop framework, workspace, package manager, and supported development environments during Milestone 1.
 2. **EPUB gate:** validate archive limits, sanitization, rendering isolation, locator round-tripping, and dependency licensing before completing Milestone 3.
 3. **Persistence gate:** ADR-0011 selects bounded WebView `localStorage`, separate versioned position/preference envelopes, save lifecycle, and desktop-owned migration; implement and validate that boundary before completing Milestone 4.
-4. **TTS gate:** the completed Milestone 6 cycle and failed Milestone 6.1 `v3` matrix select no standard passing profile. ADR-0014 permits only an exact constrained development-demo slice. A production role must still pass every applicable gate or receive a separate explicit acceptance decision before production graduation.
+4. **TTS gate:** the completed Milestone 6 cycle and failed Milestone 6.1 `v3` matrix select no standard passing profile. ADR-0014 permits only an exact constrained development-demo slice. Milestone 6.2's `v4` arms also stopped without usable media; its planned `v5` dual-worker experiment is evidence work, not an accepted topology. A production role must still pass every applicable gate or receive a separate explicit acceptance decision before production graduation.
 5. **Protocol gate:** record transport, framing, backpressure, and local exposure decisions before completing Milestone 7.
 6. **Audio gate:** record internal audio format, playback mechanism, speed-control behavior, and the short-range startup rule before completing Milestone 8.
 7. **Interaction gate:** define manual navigation during active narration before completing Milestone 9.
