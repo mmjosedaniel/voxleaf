@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import os
+import sys
 from collections.abc import Callable, Iterator, Mapping, Sequence, Sized
 from importlib import metadata
 from types import ModuleType
@@ -42,6 +43,8 @@ class _CudaRuntime(Protocol):
 
     def is_bf16_supported(self) -> bool: ...
 
+    def device_count(self) -> int: ...
+
     def reset_peak_memory_stats(self) -> None: ...
 
     def max_memory_reserved(self) -> int: ...
@@ -52,7 +55,16 @@ class _CudaRuntime(Protocol):
 class _TorchModule(Protocol):
     cuda: _CudaRuntime
     bfloat16: object
+    float32: object
     device: Callable[[str], object]
+
+    def set_num_threads(self, value: int) -> None: ...
+
+    def set_num_interop_threads(self, value: int) -> None: ...
+
+    def get_num_threads(self) -> int: ...
+
+    def get_num_interop_threads(self) -> int: ...
 
 
 class _DeviceTensor(Protocol):
@@ -107,12 +119,18 @@ class Qwen3TtsAdapter:
         configuration: CandidateConfiguration,
         *,
         placement_profile_id: PlacementProfileId | None = None,
+        worker_candidate_id: str | None = None,
         importer: ModuleImporter = importlib.import_module,
         version_reader: VersionReader = metadata.version,
     ) -> None:
         if profile.candidate_id not in (QWEN_CANDIDATE_ID, QWEN_V3_CANDIDATE_ID):
             raise AdapterConfigurationError("candidate")
-        self.candidate_id: Final = profile.candidate_id
+        if worker_candidate_id is not None and (
+            placement_profile_id != "qwen3-serena-v5-cpu-support"
+            or worker_candidate_id != "qwen3-tts-1-7b-customvoice-cpu-fp32-v5"
+        ):
+            raise AdapterConfigurationError("candidate")
+        self.candidate_id: Final = worker_candidate_id or profile.candidate_id
         self._profile = profile
         self._configuration = configuration
         self._importer = importer
@@ -136,7 +154,10 @@ class Qwen3TtsAdapter:
             raise AdapterConfigurationError("already-loaded")
         root = validate_configuration(self._profile, self._configuration)
         if (
-            self._profile.candidate_id != self.candidate_id
+            (
+                self._profile.candidate_id != self.candidate_id
+                and self.candidate_id != "qwen3-tts-1-7b-customvoice-cpu-fp32-v5"
+            )
             or self._profile.distribution != "qwen-tts"
             or (
                 self._profile.candidate_id == QWEN_V3_CANDIDATE_ID
@@ -157,17 +178,34 @@ class Qwen3TtsAdapter:
                 and self._version_reader("torchaudio") != "2.9.1+cu128"
             ):
                 raise AdapterConfigurationError("runtime-version")
+            cpu_v5 = self._placement_profile_id == "qwen3-serena-v5-cpu-support"
+            gpu_v5 = self._placement_profile_id == "qwen3-serena-v5-gpu-primary"
+            if cpu_v5:
+                if "torch" in sys.modules or "qwen_tts" in sys.modules:
+                    raise AdapterConfigurationError("placement")
+                os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
             torch = cast(_TorchModule, self._importer("torch"))
+            if cpu_v5 or gpu_v5:
+                torch.set_num_threads(12 if cpu_v5 else 4)
+                torch.set_num_interop_threads(1)
             qwen_tts = cast(_QwenModule, self._importer("qwen_tts"))
             cuda = torch.cuda
-            if not bool(cuda.is_available()) or not bool(cuda.is_bf16_supported()):
+            cuda_available = bool(cuda.is_available())
+            cuda_device_count = (
+                int(cuda.device_count()) if cpu_v5 or gpu_v5 else int(cuda_available)
+            )
+            if cpu_v5:
+                if cuda_available or cuda_device_count != 0:
+                    raise AdapterConfigurationError("provider-unavailable")
+            elif not cuda_available or not bool(cuda.is_bf16_supported()):
                 raise AdapterConfigurationError("provider-unavailable")
-            cuda.reset_peak_memory_stats()
+            if not cpu_v5:
+                cuda.reset_peak_memory_stats()
             model_class = qwen_tts.Qwen3TTSModel
             model = model_class.from_pretrained(
                 str(root),
-                device_map="cuda:0",
-                dtype=torch.bfloat16,
+                device_map="cpu" if cpu_v5 else "cuda:0",
+                dtype=torch.float32 if cpu_v5 else torch.bfloat16,
                 attn_implementation="sdpa",
                 local_files_only=True,
             )
@@ -181,6 +219,10 @@ class Qwen3TtsAdapter:
                 self._placement_evidence = _verify_placement(
                     model,
                     self._placement_profile_id,
+                    cuda_available=cuda_available,
+                    cuda_device_count=cuda_device_count,
+                    intra_op_threads=(torch.get_num_threads() if cpu_v5 or gpu_v5 else None),
+                    interop_threads=(torch.get_num_interop_threads() if cpu_v5 or gpu_v5 else None),
                 )
         except AdapterConfigurationError:
             raise
@@ -325,6 +367,9 @@ class Qwen3TtsAdapter:
         torch = self._torch
         if torch is None:
             return self._peak_framework_vram_bytes
+        if self._placement_profile_id == "qwen3-serena-v5-cpu-support":
+            self._peak_framework_vram_bytes = 0
+            return 0
         value = torch.cuda.max_memory_reserved()
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
             raise RuntimeError("tts-benchmark-adapter:measurement-unavailable")
@@ -341,6 +386,8 @@ class Qwen3TtsAdapter:
         torch = self._torch
         self._torch = None
         if torch is None:
+            return
+        if self._placement_profile_id == "qwen3-serena-v5-cpu-support":
             return
         try:
             torch.cuda.empty_cache()
@@ -371,9 +418,23 @@ def _device_map_is_exact_cuda(value: object) -> bool:
         return False
 
 
+def _device_map_is_exact_cpu(value: object) -> bool:
+    if value == "cpu":
+        return True
+    try:
+        return _device_label(value) == "cpu"
+    except AdapterConfigurationError:
+        return False
+
+
 def _verify_placement(
     model: _QwenModel,
     profile_id: PlacementProfileId,
+    *,
+    cuda_available: bool = True,
+    cuda_device_count: int = 1,
+    intra_op_threads: int | None = None,
+    interop_threads: int | None = None,
 ) -> AdapterPlacementEvidence:
     inner = model.model
     tokenizer = inner.speech_tokenizer
@@ -390,10 +451,25 @@ def _verify_placement(
         for tensor in _module_tensors(inner)
         if id(tensor) not in {id(item) for item in tokenizer_tensors}
     )
+    cpu_full_model = profile_id == "qwen3-serena-v5-cpu-support"
     expected_tokenizer_device: Literal["cuda:0", "cpu"] = (
-        "cpu" if profile_id == "qwen3-serena-v4-speech-tokenizer-cpu" else "cuda:0"
+        "cpu"
+        if profile_id
+        in (
+            "qwen3-serena-v4-speech-tokenizer-cpu",
+            "qwen3-serena-v5-cpu-support",
+        )
+        else "cuda:0"
     )
+    expected_other_device: Literal["cuda:0", "cpu"] = "cpu" if cpu_full_model else "cuda:0"
     device_map = getattr(inner, "hf_device_map", None)
+    device_map_valid = (
+        all(_device_map_is_exact_cpu(value) for value in device_map.values())
+        if cpu_full_model and isinstance(device_map, Mapping)
+        else all(_device_map_is_exact_cuda(value) for value in device_map.values())
+        if isinstance(device_map, Mapping)
+        else False
+    )
     if (
         not tokenizer_parameters
         or not other_parameters
@@ -401,21 +477,43 @@ def _verify_placement(
         or not other_tensors
         or not isinstance(device_map, Mapping)
         or not device_map
-        or any(not _device_map_is_exact_cuda(value) for value in device_map.values())
+        or not device_map_valid
         or any(
             _device_label(tensor.device) != expected_tokenizer_device
             for tensor in tokenizer_tensors
         )
-        or any(_device_label(tensor.device) != "cuda:0" for tensor in other_tensors)
+        or any(_device_label(tensor.device) != expected_other_device for tensor in other_tensors)
         or _device_label(tokenizer.device) != expected_tokenizer_device
+        or (
+            profile_id == "qwen3-serena-v5-cpu-support"
+            and (
+                cuda_available
+                or cuda_device_count != 0
+                or intra_op_threads != 12
+                or interop_threads != 1
+            )
+        )
+        or (
+            profile_id == "qwen3-serena-v5-gpu-primary"
+            and (
+                not cuda_available
+                or cuda_device_count < 1
+                or intra_op_threads != 4
+                or interop_threads != 1
+            )
+        )
     ):
         raise AdapterConfigurationError("placement")
     return AdapterPlacementEvidence(
         profile_id=profile_id,
-        autoregressive_model_device="cuda:0",
+        autoregressive_model_device=expected_other_device,
         speech_tokenizer_model_device=expected_tokenizer_device,
         speech_tokenizer_wrapper_device=expected_tokenizer_device,
         disk_or_meta_parameters=0,
         implicit_fallback=False,
         offload_directory_created=False,
+        cuda_available=cuda_available,
+        cuda_device_count=cuda_device_count,
+        intra_op_threads=intra_op_threads,
+        interop_threads=interop_threads,
     )
