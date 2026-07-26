@@ -130,3 +130,12 @@ def test_cli_rejects_wrong_argv_without_reading_standard_input(
         "status": "fail",
         "failureCode": "invalid-request",
     }
+
+
+def test_cpu_model_serialization_matches_frozen_host_identity() -> None:
+    assert (
+        dual_worker_cli._normalized_cpu_model(
+            "Intel(R) Core(TM) Ultra 7 255HX",
+        )
+        == "Intel Core Ultra 7 255HX"
+    )

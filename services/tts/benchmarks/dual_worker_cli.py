@@ -101,13 +101,17 @@ def _host(receipt: PreflightReceipt) -> dict[str, object]:
         "osVersion": host.os_version,
         "architecture": host.architecture,
         "pythonVersion": host.python_version,
-        "cpuModel": host.cpu_model,
+        "cpuModel": _normalized_cpu_model(host.cpu_model),
         "logicalProcessors": host.logical_processors,
         "totalRamBytes": host.total_ram_bytes,
         "gpuModel": host.gpu_model,
         "totalVramBytes": host.total_vram_bytes,
         "driverVersion": host.driver_version,
     }
+
+
+def _normalized_cpu_model(value: str) -> str:
+    return " ".join(value.replace("(R)", "").replace("(TM)", "").split())
 
 
 def _summary_hash(arm: str, expected: str | None) -> None:

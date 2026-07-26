@@ -1089,6 +1089,17 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
   the first schema path and validator. Added success/failure lifecycle
   regressions. A new clean-checkpoint CPU pilot and official arm will replace,
   not promote, the invalid tooling run.
+- 2026-07-26: The replacement pilot at checkpoint `5f8a79f` again admitted
+  CPU-only execution: two of two first attempts completed in 135.5 seconds,
+  aggregate RTF was `3.0782776688102897`, and CPU-worker dedicated/shared GPU
+  memory remained exactly zero. The replacement official arm completed all
+  eight measured first attempts in 380.6 seconds. Preserved raw evidence
+  identified the sole first schema rejection as `host.cpuModel`'s frozen
+  `const`: the runner serialized Windows' trademarked CPU label instead of the
+  normalization already used by v4 and preflight. The ignored session was
+  deleted after diagnosis and no result was promoted. Added the same narrow,
+  model-independent normalization plus a regression before the next clean
+  run.
 
 ## Discoveries and decisions
 
