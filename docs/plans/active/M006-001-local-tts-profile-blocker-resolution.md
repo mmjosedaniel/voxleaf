@@ -384,7 +384,11 @@ caches, locks, and outputs must remain isolated.
 
 ### Status
 
-Not started. The research in this plan is candidate-intake evidence only.
+In progress. The exact candidate manifest, isolated environment lock,
+pre-audio screen authority, closed result schema, and model-free screen runner
+are implemented. The authority contains no observed result and
+`selectedSpeaker` remains `null`; the frozen screen must run from a clean
+committed revision before `tts-feasibility-profile-v3` can be published.
 
 ## Milestone 2: Prove incremental output and cancellation credibility
 
@@ -641,6 +645,40 @@ changing production contracts or dependencies.
 - 2026-07-25: Completed the default-narrator documentation validation. Local
   links, whitespace, privacy, and forbidden-artifact audits passed, followed
   by both repository aggregate checks.
+- 2026-07-25: Created branch
+  `feat/m006-1-freeze-candidate-authority` from merged `main` at
+  `c8cc4ea`. No prior Milestone 6 result or production dependency was changed.
+- 2026-07-25: Froze `candidates-v2.json` with the exact
+  `qwen-tts==0.1.1`, Qwen3-TTS 12Hz 1.7B CustomVoice revision
+  `0c0e3051f131929182e2c023b9537f8b1c68adfe`, two independently checkable
+  major artifact hashes, PyTorch/Torchaudio 2.9.1 CUDA 12.8, bfloat16/SDPA,
+  batch one, fixed sampling, all nine upstream speakers, and no selected
+  speaker.
+- 2026-07-25: Froze `customvoice-spanish-screen-v1` before audio. It uses
+  three existing repository-authored Spanish corpus cases, all nine speakers,
+  one exact neutral audiobook instruction, 27 maximum samples, one fluent
+  Spanish evaluator, blind random order, closed eligibility/tie/failure
+  rules, a 256 MiB session cap, ignored raw storage, and required cleanup.
+- 2026-07-25: Excluded Whisper and VAD/energy analysis from `v3`; froze
+  first-attempt authority, zero automatic retries, one resident
+  model/configuration identity per session, forbidden configuration
+  switching, and the incremental-output/cancellation prototype stop gate.
+- 2026-07-25: Added the isolated
+  `qwen3_1_7b_customvoice_cuda` uv project and resolved its lock to 107
+  packages without changing the zero-runtime-dependency production service.
+- 2026-07-25: Implemented closed screen generation/submission/cleanup
+  commands plus six GPU-free tests. Focused Ruff, strict mypy, and pytest
+  validation passed before the pre-audio checkpoint.
+- 2026-07-25: Installed the exact isolated lock and confirmed offline imports
+  report `qwen-tts 0.1.1`, PyTorch `2.9.1+cu128`, CUDA 12.8, and CUDA
+  availability on the authoritative Windows host. The command-level import
+  smoke also passed from the same project/directory combination used by the
+  package script. FlashAttention and SoX emitted optional-tool warnings;
+  neither is selected by or required for the frozen SDPA screen profile.
+- 2026-07-25: `pnpm.cmd check:portable` passed in 26.7 seconds with 18 shared
+  test files / 175 tests, 34 EPUB test files / 555 tests, 20 desktop test
+  files / 204 tests, 6 native-WebDriver-client tests, and 56 Python tests.
+  The existing informational Vite chunk-size advisory remains unchanged.
 
 ## Discoveries and decisions
 
@@ -670,8 +708,11 @@ changing production contracts or dependencies.
    exists.
 8. Automatic retry cannot participate in `v3` gate promotion because it would
    hide first-attempt reliability. It may be designed later in Milestone 10.
-   VAD/energy analysis is optional post-timing evidence only and needs a
-   separate pre-result admission decision.
+   VAD/energy analysis is excluded from `v3`: the bounded manual screen and
+   existing waveform validation are sufficient for intake, while adding an
+   auxiliary detector now would introduce a new dependency and resource
+   variable without making the production decision. Milestone 10 may reopen
+   content-free defect detection under a separately frozen authority.
 9. Persistent generated audio, prose logging, tracked private inputs,
    text-only audio caching, paragraph/chapter accumulation, runtime downloads,
    unlocked dependencies, and unproven “streaming” remain rejected.
@@ -679,6 +720,14 @@ changing production contracts or dependencies.
     Spanish-native and Qwen recommends native-language use. A predeclared,
     blinded, bounded Spanish screen must therefore select exactly one speaker
     before `v3`; upstream WER cannot make that product decision.
+11. The official screen cannot use a mutable upstream model identity. The
+    model repository commit, major artifact hashes, package wheel identity,
+    runtime, generation settings, speaker allowlist, and corpus bytes are
+    frozen and independently testable before the first accepted generation
+    request.
+12. Whisper adds no authority needed by Milestone 1. It remains excluded from
+    production and `v3`; no audio-to-text output, transcript retention, cloud
+    call, or ASR quality oracle is admitted.
 
 ## Final validation results
 
@@ -721,6 +770,17 @@ Clippy, crate-test execution, and the native release build. The system-diagram
 status labels now describe CustomVoice screening, while the topology remains
 unchanged. No runtime candidate, built-in speaker, production dependency, or
 profile is selected by this documentation change.
+
+Milestone 1's pre-audio implementation checkpoint added an isolated
+107-package candidate lock, three byte-frozen JSON authorities, a closed
+screen command surface, and six model-free tests without adding a production
+runtime dependency. The focused Ruff, strict mypy, pytest, exact candidate
+import, and package-script import smokes passed. The first full
+`pnpm.cmd check:portable` attempt correctly stopped on one Ruff formatting
+drift; after applying Ruff, the complete command passed in 26.7 seconds with
+the existing TypeScript scope and 56 Python tests. `git diff --check` also
+passed. No audio has been generated, no evaluator result exists, and
+`selectedSpeaker` remains `null`.
 
 Update this section with later implementation commands, outcomes, commit
 identities, and CI evidence as the plan progresses.

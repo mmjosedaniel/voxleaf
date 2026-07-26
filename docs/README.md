@@ -4,7 +4,7 @@ Documentation is organized by purpose so contributors and Codex can load only th
 
 ## Current project status
 
-Roadmap Milestones 1 through 6 are complete. The visual reader, bounded local restoration, locator-linked narration preparation, and candidate-neutral TTS feasibility harness are implemented and validated within their documented boundaries. The first frozen TTS evaluation selected no viable profile. Milestone 6.1 is now approved and planned to screen Qwen3-TTS 1.7B CustomVoice's built-in speakers, freeze one Spanish default-narrator profile, and prove incremental/cancellation behavior; it has not started and selects no engine or speaker. Milestone 7 remains blocked, and production TTS, audio, synchronization, hardware support, and release packaging are not implemented.
+Roadmap Milestones 1 through 6 are complete. The visual reader, bounded local restoration, locator-linked narration preparation, and candidate-neutral TTS feasibility harness are implemented and validated within their documented boundaries. The first frozen TTS evaluation selected no viable profile. Milestone 6.1 is active: its exact Qwen3-TTS 1.7B CustomVoice development candidate, isolated lock, and pre-audio Spanish built-in-speaker screen authority are frozen, but the screen has not produced a result and no engine or speaker is selected. Milestone 7 remains blocked, and production TTS, audio, synchronization, hardware support, and release packaging are not implemented.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 

@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:benchmark:customvoice-spanish-screen-result:v1",
+  "title": "CustomVoice Spanish screen result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "screenVersion",
+    "candidateId",
+    "evaluatorCount",
+    "selectedSpeaker",
+    "speakers",
+    "limitations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "customvoice-spanish-screen-result-v1"
+    },
+    "screenVersion": {
+      "const": "customvoice-spanish-screen-v1"
+    },
+    "candidateId": {
+      "const": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1"
+    },
+    "evaluatorCount": {
+      "const": 1
+    },
+    "selectedSpeaker": {
+      "oneOf": [
+        {
+          "enum": [
+            "Vivian",
+            "Serena",
+            "Uncle_Fu",
+            "Dylan",
+            "Eric",
+            "Ryan",
+            "Aiden",
+            "Ono_Anna",
+            "Sohee"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "speakers": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "speakerId",
+          "eligible",
+          "overallMean",
+          "dimensions",
+          "meaningChangingDefects"
+        ],
+        "properties": {
+          "speakerId": {
+            "enum": [
+              "Vivian",
+              "Serena",
+              "Uncle_Fu",
+              "Dylan",
+              "Eric",
+              "Ryan",
+              "Aiden",
+              "Ono_Anna",
+              "Sohee"
+            ]
+          },
+          "eligible": {
+            "type": "boolean"
+          },
+          "overallMean": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "dimensions": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "intelligibility",
+              "spanishPronunciation",
+              "naturalness",
+              "audiobookSuitability",
+              "artifactFreedom"
+            ],
+            "properties": {
+              "intelligibility": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "spanishPronunciation": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "naturalness": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "audiobookSuitability": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "artifactFreedom": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 5
+              }
+            }
+          },
+          "meaningChangingDefects": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          }
+        }
+      }
+    },
+    "limitations": {
+      "const": [
+        "one-evaluator-intake-screen",
+        "spanish-only",
+        "synthetic-corpus-only",
+        "built-in-speakers-only",
+        "not-production-quality-approval"
+      ]
+    }
+  }
+}

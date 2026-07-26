@@ -1,0 +1,108 @@
+{
+  "screenVersion": "customvoice-spanish-screen-v1",
+  "status": "frozen-before-audio",
+  "frozenAt": "2026-07-25",
+  "candidateManifestVersion": "tts-candidate-manifest-v2",
+  "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
+  "corpusVersion": "tts-synthetic-corpus-v1",
+  "corpusSha256": "7727e0ea0b2763690e3cffbd72074fd907d8bf3ca2a10addd028ba9072df96bb",
+  "caseIds": [
+    "es-punctuation-dialogue-short",
+    "es-currency-percent-short",
+    "es-narrative-target"
+  ],
+  "speakerOrder": [
+    "Vivian",
+    "Serena",
+    "Uncle_Fu",
+    "Dylan",
+    "Eric",
+    "Ryan",
+    "Aiden",
+    "Ono_Anna",
+    "Sohee"
+  ],
+  "instruction": "Lee con un tono neutro, claro, natural y sereno, apropiado para narrar un audiolibro; mantén un ritmo moderado y una expresividad contenida.",
+  "generation": {
+    "language": "Spanish",
+    "batchSize": 1,
+    "doSample": true,
+    "repetitionPenalty": 1.05,
+    "temperature": 0.9,
+    "topP": 1.0,
+    "topK": 50,
+    "subtalkerDoSample": true,
+    "subtalkerTemperature": 0.9,
+    "subtalkerTopP": 1.0,
+    "subtalkerTopK": 50,
+    "maxNewTokens": 2048
+  },
+  "attemptPolicy": {
+    "automaticRetries": 0,
+    "countEveryFirstAttemptFailure": true,
+    "allowDiagnosticRetryToChangeSelection": false
+  },
+  "evaluation": {
+    "evaluatorCount": 1,
+    "evaluatorRequirement": "fluent-Spanish-intake-evaluator",
+    "blindSpeakerIdentity": true,
+    "presentationOrder": "independent-cryptographic-random-shuffle",
+    "scale": {
+      "minimum": 1,
+      "maximum": 5
+    },
+    "dimensions": [
+      "intelligibility",
+      "spanishPronunciation",
+      "naturalness",
+      "audiobookSuitability",
+      "artifactFreedom"
+    ],
+    "speakerEligibility": {
+      "minimumOverallMean": 3.5,
+      "minimumIntelligibilityMean": 3.5,
+      "minimumSpanishPronunciationMean": 3.5,
+      "minimumEveryDimensionMean": 3.0,
+      "maximumMeaningChangingDefects": 0
+    },
+    "ranking": [
+      "overallMeanDescending",
+      "spanishPronunciationMeanDescending",
+      "audiobookSuitabilityMeanDescending",
+      "naturalnessMeanDescending",
+      "artifactFreedomMeanDescending",
+      "intelligibilityMeanDescending",
+      "speakerOrderAscending"
+    ],
+    "failureRule": "reject-candidate-if-no-speaker-is-eligible",
+    "selectionRule": "select-first-eligible-speaker-after-ranking"
+  },
+  "privacyAndBounds": {
+    "rawRoot": "benchmarks/results/raw/customvoice-spanish-screen-v1",
+    "maximumSamples": 27,
+    "maximumAudioSecondsPerSample": 120,
+    "maximumSessionAudioBytes": 268435456,
+    "reviewableResultSchema": "customvoice-spanish-screen-result-v1",
+    "forbidTextInReviewableResult": true,
+    "forbidAudioOutsideRawRoot": true,
+    "deleteRawSessionAfterValidatedResult": true
+  },
+  "invalidation": {
+    "authorityBecomesImmutableWhen": "first-generation-request-is-accepted",
+    "changesRequireNewVersion": [
+      "candidate",
+      "modelRevision",
+      "artifactHash",
+      "runtime",
+      "speakerOrder",
+      "instruction",
+      "generationSetting",
+      "caseId",
+      "evaluatorRule",
+      "scoringRule",
+      "rankingRule",
+      "failureRule",
+      "privacyBound"
+    ]
+  }
+}

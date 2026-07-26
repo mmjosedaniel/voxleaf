@@ -7,6 +7,17 @@ roadmap Milestone 6. It is not a production TTS service boundary.
 
 - `candidates-v1.json` freezes candidate identities, roles, artifacts, licenses,
   acquisition boundaries, and isolated uv projects before measurements.
+- `candidates-v2.json` freezes the separate Qwen3-TTS 12Hz 1.7B CustomVoice
+  speaker-screen candidate, exact local runtime, pre-admission gate,
+  first-attempt/no-retry policy, and the exclusion of Whisper and VAD/energy
+  from `v3`.
+- `customvoice-spanish-screen-v1.json` freezes all nine built-in speakers, the
+  three synthetic Spanish cases, one instruction, identical generation
+  settings, blind scoring, deterministic selection, and disposable-audio
+  bounds before any screen audio exists.
+- `schemas/customvoice-spanish-screen-result-v1.schema.json` is the closed
+  content-safe result shape for that screen. No result exists until the
+  frozen screen has run and every score is complete.
 - `corpus-v1.json` freezes the repository-authored prepared-text corpus and
   performance order.
 - `schemas/summary-v2.schema.json` is the current private benchmark-summary
@@ -45,6 +56,7 @@ Candidate libraries are locked in independent projects:
 
 ```text
 services/tts/benchmarks/candidates/
+    qwen3_1_7b_customvoice_cuda/
     qwen3_0_6b_cuda/
     supertonic3_cpu/
 ```
@@ -55,6 +67,7 @@ CI:
 
 ```powershell
 uv sync --project services/tts/benchmarks/candidates/qwen3_0_6b_cuda --locked
+uv sync --project services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --locked
 uv sync --project services/tts/benchmarks/candidates/supertonic3_cpu --locked
 ```
 
@@ -65,6 +78,67 @@ offline controls enabled.
 Remove a rejected candidate by deleting only its directory under
 `services/tts/benchmarks/candidates/`. Keep its content-free manifest entry and
 summary so the decision remains reviewable.
+
+## Frozen CustomVoice Spanish speaker screen
+
+The 1.7B CustomVoice environment and screen are development-only. Acquisition
+is the only networked phase and must precede the offline firewall/preflight
+phase:
+
+```powershell
+uv sync --project services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --locked
+uv run --project services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --locked hf download Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice --revision 0c0e3051f131929182e2c023b9537f8b1c68adfe --local-dir models/qwen3_1_7b_customvoice_cuda
+```
+
+Before generation, create the documented application-scoped outbound
+firewall rule for this candidate's exact `.venv\Scripts\python.exe`, disable
+sleep while on AC power, close material background load, and commit every
+authority change. Then run from a clean native Windows checkout:
+
+```powershell
+$candidatePython = (Resolve-Path "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/.venv/Scripts/python.exe").Path
+$sessionId = [guid]::NewGuid().ToString("N")
+$generate = @{
+  screenOptIn = $true
+  sessionId = $sessionId
+  artifactRoot = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda").Path
+  candidatePython = $candidatePython
+  expectedCommitSha = (git rev-parse HEAD).Trim()
+  sleepDisabled = $true
+  backgroundLoadAcceptable = $true
+  thermalStateAcceptable = $true
+}
+$generate | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:screen:generate
+```
+
+Open only the generated ignored
+`benchmarks/results/raw/customvoice-spanish-screen-v1/<session-id>/evaluate.html`.
+The page contains 27 opaque randomized samples and downloads one completed
+scorecard after every field is filled. Submit that exact JSON without editing
+the authority:
+
+```powershell
+$scorecard = Get-Content "<completed-scorecard.json>" -Raw | ConvertFrom-Json -AsHashtable
+$submit = @{
+  screenOptIn = $true
+  sessionId = $sessionId
+  scorecard = $scorecard
+}
+$submit | ConvertTo-Json -Depth 20 -Compress | pnpm.cmd benchmark:tts:screen:submit
+```
+
+Only the schema-valid content-free selection result may be promoted. Audio,
+the randomization key, scorecard, and local paths remain in ignored raw
+storage. After promotion and validation, delete the exact session with:
+
+```powershell
+@{ screenOptIn = $true; sessionId = $sessionId } |
+  ConvertTo-Json -Compress |
+  pnpm.cmd benchmark:tts:screen:cleanup
+```
+
+The screen selects an intake speaker only. It does not approve production
+quality, pass `v3`, or change ADR-0013 by itself.
 
 ## Implemented model-free benchmark boundary
 

@@ -201,17 +201,16 @@ Both exact profiles completed the required manual matrices on the measured host,
 
 These results validate development evidence only. They do not exercise or imply a production TTS process, selected engine profile, playback path, general hardware support claim, or installer.
 
-The approved
+The active
 [Milestone 6.1 plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md)
-defines future work, not completed coverage. Its Qwen3-TTS 1.7B CustomVoice
-candidate needs a frozen blinded Spanish built-in-speaker screen, one selected
-speaker/instruction in `v3`, an isolated lock, incremental-output and
-cancellation prototype, deterministic model-free adapter tests, exact-host
-measurements, and complete Spanish quality evaluation. Base voice cloning is
-outside the current MVP. Whisper is not a TTS candidate; if a fully local ASR
-runtime is later admitted as a benchmark aid, it must run outside timed
-synthesis and reduce sensitive transcripts to content-free aggregates before
-leaving the raw area.
+now has a frozen Qwen3-TTS 1.7B CustomVoice candidate manifest, isolated lock,
+pre-audio blinded Spanish built-in-speaker authority, closed result schema,
+and model-free authority/generation/scoring/cleanup tests. Those tests do not
+load a model or require CUDA. The screen still needs one completed evaluator,
+one selected speaker in `v3`, the incremental-output/cancellation prototype,
+exact-host measurements, and complete Spanish quality evaluation. Base voice
+cloning is outside the current MVP. Whisper and VAD/energy analysis are
+excluded from `v3`.
 
 ## Deferred coverage
 
