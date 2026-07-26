@@ -311,7 +311,7 @@ freeze:
 No audio was generated and no runtime, segmenter, buffer, playback, dependency,
 profile, ADR, or roadmap commitment changed while recording this hypothesis.
 The later documentation decision assigned this hypothesis to the separate
-[Milestone 6.2 ExecPlan](M006-002-qwen-short-segment-batch-feasibility.md).
+[Milestone 6.2 ExecPlan](../active/M006-002-qwen-short-segment-batch-feasibility.md).
 That handoff is a roadmap commitment to evaluation only; it still does not
 provide a `v4` authority, result, implementation, or support claim.
 
@@ -700,7 +700,8 @@ the failed standard result, retains ADR-0013 as the standard viability
 authority, and separately records ADR-0014's exact constrained
 development-demo exception. The roadmap, architecture, product, benchmark,
 dependency, setup, testing, performance, and system-diagram surfaces are
-reconciled. Milestone 6 repository/CI closeout remains separate.
+reconciled. Milestone 6 repository/CI closeout remained separate at that
+checkpoint and is completed below.
 The Milestone 5 documentation passed local-link, privacy, forbidden-artifact,
 portable, and authoritative Windows validation before its checkpoint commit.
 
@@ -727,7 +728,10 @@ portable, and authoritative Windows validation before its checkpoint commit.
 
 ### Status
 
-Not started.
+Complete as of 2026-07-26. Local deterministic, candidate-import,
+repository/privacy, portable, and authoritative Windows validation passed.
+Pull request #104 then passed both required foundation jobs on exact evidence
+commit `4dd55b11aac0d98550a2daf30cfb11de0856f3db`.
 
 ## Testing and benchmark strategy
 
@@ -1178,6 +1182,51 @@ dependency changes are involved.
   client tests, and 72 Python tests; the native aggregate also passed Rust
   formatting, Clippy, crate tests, the release build, and Python packaging.
   The existing Vite chunk-size advisory remained informational.
+- 2026-07-26: Created branch
+  `feat/m006-6-repository-privacy-closeout` from merged `main` at `3ba3ada`.
+  The worktree and ignored raw-results area were clean before validation.
+- 2026-07-26: Milestone 6 focused validation passed: the isolated candidate
+  lock resolved all 107 packages; the offline import smoke reported
+  `qwen-tts 0.1.1`, PyTorch/Torchaudio `2.9.1+cu128`, CUDA 12.8, CUDA
+  availability, and both candidate CLI imports without loading model weights.
+  The existing optional FlashAttention and SoX warnings remain non-blocking
+  because frozen `v3` uses SDPA and no SoX path. Focused Ruff and strict mypy
+  passed, and all 72 model-free Python tests passed.
+- 2026-07-26: The committed-tree artifact scan found zero audio files, model
+  weights, books, private inputs, raw results, or secret files. Credential,
+  private-path, and exact-host scans found no real secret or private path; the
+  one home-style match is the deliberate `/home/private/voice` privacy canary.
+  The ignored local `models/` cache still contains benchmark artifacts required
+  for manual evaluation, but no cache file is tracked or added by this branch.
+  The disposable raw-results area contains zero files.
+- 2026-07-26: `pnpm.cmd check:portable` passed in 76.1 seconds and
+  `pnpm.cmd check` passed in 72.4 seconds. Both included 18 shared test files /
+  175 tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204 tests,
+  6 native-WebDriver-client tests, and 72 Python tests. The native aggregate
+  also passed Rust formatting, Clippy, crate tests, the release build, and
+  Python source/wheel packaging. The existing Vite chunk-size advisory remained
+  informational. Required pull-request CI is intentionally still pending, so
+  this plan remains active.
+- 2026-07-26: Final local diff review found eight documentation files and no
+  runtime, dependency, lock, model, audio, book, raw-result, or user-prose
+  change. All 111 relative links resolved, `git diff --check` passed, and the
+  changed-file privacy/credential scan found no private path or secret.
+- 2026-07-26: Pull request
+  [#104](https://github.com/mmjosedaniel/voxleaf/pull/104) tested exact evidence
+  commit `4dd55b11aac0d98550a2daf30cfb11de0856f3db` in Foundation
+  [run 30212387595](https://github.com/mmjosedaniel/voxleaf/actions/runs/30212387595).
+  Ubuntu portable foundation passed. The first Windows attempt built the
+  release executable and stopped at the second WebDriver session creation; the
+  unchanged job rerun passed the complete Windows native foundation matrix.
+  Both required jobs therefore passed on the exact evidence commit without a
+  runtime or test change.
+- 2026-07-26: Moved this ExecPlan to `docs/plans/completed/` and reconciled
+  the roadmap, documentation indexes, product status, setup/dependency/testing
+  guidance, benchmark link, performance budget, and canonical system diagram.
+  All 144 relative links across the 14 closure Markdown files resolved;
+  `git diff --check`, private-path/credential scans, tracked forbidden-artifact
+  checks, and ignored raw cleanup passed. The closure changes no runtime,
+  dependency, lock, authority, result, or accepted decision.
 
 ## Discoveries and decisions
 
@@ -1496,3 +1545,16 @@ execution, the native release build, and Python source/wheel packaging. The
 existing Vite chunk-size advisory remained informational. No runtime code,
 production dependency, generated audio, model artifact, raw evidence, private
 path, or credential was added.
+
+Milestone 6 local closeout passed on 2026-07-26. The exact candidate lock and
+offline import smokes, focused deterministic Python checks, committed-tree
+artifact/privacy scans, ignored-raw cleanup audit, portable aggregate, and
+authoritative Windows aggregate all passed with the evidence recorded in the
+progress log. The branch changes documentation only; no production dependency,
+model/audio/book/raw artifact, private path, credential, or user prose is added.
+The ignored local model cache remains outside Git and is not repository
+evidence. Pull request #104's Foundation run `30212387595` passed both required
+jobs on exact evidence commit `4dd55b11aac0d98550a2daf30cfb11de0856f3db`;
+the unchanged Windows rerun passed after the first attempt stopped at restart
+session creation. Every required task and decision is complete, so this
+ExecPlan is retained under `docs/plans/completed/`.

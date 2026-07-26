@@ -125,8 +125,8 @@ directions are separated below:
 ADR-0013 records the standard rejection evidence. ADR-0014 permits only the
 exact constrained Qwen development-demo exception while retaining the
 production viability blocker. The
-[Milestone 6.1 plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md)
-records the official Qwen/Whisper research and active tasks. Serena is a
+[Milestone 6.1 plan](../plans/completed/M006-001-local-tts-profile-blocker-resolution.md)
+records the official Qwen/Whisper research and completed evaluation. Serena is a
 development-demo direction, not a passing production profile. The MVP uses a
 built-in default narrator; user
 voice cloning, enrollment, consent, ownership, impersonation safeguards, and

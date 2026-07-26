@@ -206,8 +206,8 @@ Both exact profiles completed the required manual matrices on the measured host,
 
 These results validate development evidence only. They do not exercise or imply a production TTS process, selected engine profile, playback path, general hardware support claim, or installer.
 
-The active
-[Milestone 6.1 plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md)
+The completed
+[Milestone 6.1 plan](../plans/completed/M006-001-local-tts-profile-blocker-resolution.md)
 has a frozen Qwen3-TTS 1.7B CustomVoice candidate manifest, isolated lock,
 blinded Spanish built-in-speaker authority, schema-valid content-safe Serena
 selection, frozen `v3`, a passing content-safe exact-host prototype result,
@@ -219,9 +219,12 @@ and cleanup; it does not prove native streaming or production transport. One
 fluent maintainer accepted audible quality for a near-term demo and ADR-0014
 permits only that constrained development path. The accepted candidate-neutral
 [`selection-v3`](../../benchmarks/tts/selection-v3.md) retains the failed
-standard result and records the separate demo exception. Repository/CI
-closeout remains. Base voice cloning is outside the current MVP. Whisper and
-VAD/energy analysis are excluded from `v3`.
+standard result and records the separate demo exception. Milestone 6.1 local
+deterministic, candidate-import, repository/privacy, portable, and
+authoritative Windows validation passed; pull request #104 also passed both
+required foundation jobs on the exact evidence commit. Base voice cloning is
+outside the current MVP. Whisper and VAD/energy analysis are excluded from
+`v3`.
 
 The planned
 [Milestone 6.2 plan](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md)

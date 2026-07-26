@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 6 are complete. Milestone 6.1 is active: its exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation completed and failed standard startup, throughput, zero-failure, and mid-generation cancellation gates. ADR-0014 permits that exact profile only for a bounded development demo after one fluent maintainer accepted its audible quality. Milestone 6.2 is planned as a separate pre-result evaluation of shorter ordered units and batch size two with one resident model; conditional targeted CPU placement is only a memory contingency. Milestone 7 may plan the constrained demo slice, but production completion remains blocked until new evidence or an explicit later acceptance change resolves continuous playback, cancellation, hardware, and packaging. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 6.1 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. ADR-0014 permits that exact profile only for a bounded development demo after one fluent maintainer accepted its audible quality. Milestone 6.2 is planned as a separate pre-result evaluation of shorter ordered units and batch size two with one resident model; conditional targeted CPU placement is only a memory contingency. Milestone 7 may plan the constrained demo slice, but production completion remains blocked until new evidence or an explicit later acceptance change resolves continuous playback, cancellation, hardware, and packaging. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -216,7 +216,7 @@ Milestone 1 supplies the isolated Python foundation. Milestone 2 supplies capabi
 
 ## Milestone 6.1: Resolve the local TTS profile blocker
 
-**Status:** In progress. Milestones 1–3 selected Serena, froze
+**Status:** Complete as of 2026-07-26. Milestones 1–3 selected Serena, froze
 `tts-feasibility-profile-v3`, passed the exact-host development stop gate, and
 extended the candidate-neutral benchmark. Milestone 4 completed the official
 matrix: resource/offline/audit gates passed, while startup, throughput,
@@ -224,9 +224,11 @@ zero-failure, and three mid-generation cancellation gates failed. One fluent
 maintainer accepted audible quality for a near-term demo; ADR-0014 permits only
 a constrained development-demo exception. Milestone 5 is complete:
 [`selection-v3`](../../benchmarks/tts/selection-v3.md) retains the failed
-standard blocker and separately records that exact demo exception. Final
-repository validation and closeout remain. The
-[blocker-resolution ExecPlan](active/M006-001-local-tts-profile-blocker-resolution.md)
+standard blocker and separately records that exact demo exception. Milestone 6
+local deterministic, candidate-import, repository/privacy, portable, and
+authoritative Windows validation passed. Pull request #104 passed both required
+foundation jobs on the exact evidence commit. The
+[completed blocker-resolution ExecPlan](completed/M006-001-local-tts-profile-blocker-resolution.md)
 records the candidate-intake evidence, decisions, tasks, and validation
 sequence. Frozen `v3` remains failed and ADR-0013 remains authoritative for
 standard production viability.
@@ -516,11 +518,11 @@ Durable decisions belong in architecture decision records. Temporary implementat
 
 ## Relationship to existing plans
 
-[`completed/M004-reflowable-visual-reader-and-position-restoration.md`](completed/M004-reflowable-visual-reader-and-position-restoration.md), [`completed/M005-narration-text-preparation.md`](completed/M005-narration-text-preparation.md), and [`completed/M006-local-tts-feasibility-and-engine-profiles.md`](completed/M006-local-tts-feasibility-and-engine-profiles.md) record the implementation authority and validation evidence for Milestones 4 through 6. Milestone 6 supplies development evidence and a no-viable-profile decision; it does not implement production TTS. [`active/M006-001-local-tts-profile-blocker-resolution.md`](active/M006-001-local-tts-profile-blocker-resolution.md) is the active follow-up authority for Milestone 6.1. It selects Serena only for the frozen `v3` evaluation and does not select a production engine.
+[`completed/M004-reflowable-visual-reader-and-position-restoration.md`](completed/M004-reflowable-visual-reader-and-position-restoration.md), [`completed/M005-narration-text-preparation.md`](completed/M005-narration-text-preparation.md), [`completed/M006-local-tts-feasibility-and-engine-profiles.md`](completed/M006-local-tts-feasibility-and-engine-profiles.md), and [`completed/M006-001-local-tts-profile-blocker-resolution.md`](completed/M006-001-local-tts-profile-blocker-resolution.md) record the implementation authority and validation evidence for Milestones 4 through 6.1. Milestone 6 supplies development evidence and a no-viable-profile decision; Milestone 6.1 retains the standard blocker and permits Serena only under ADR-0014's constrained demo exception. Neither plan implements production TTS.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or the completed Milestones 4 through 6 plans and does not authorize implementing all of those areas at once.
 
-Milestones 1 through 6 are complete, with their evidence retained under [`completed/`](completed/). Milestone 6.1 is in progress with Milestones 1–4 complete and a constrained demo direction accepted under ADR-0014. Use the synchronized-reader plan only as later-milestone context; it does not supersede completed authority or turn the failed `v3` profile into a standard production selection.
+Milestones 1 through 6.1 are complete, with their evidence retained under [`completed/`](completed/). Use the synchronized-reader plan only as later-milestone context; it does not supersede completed authority or turn the failed `v3` profile into a standard production selection.
 
 ## MVP completion boundary
 
