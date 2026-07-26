@@ -83,9 +83,11 @@ dependency or lock edge.
 
 The active
 [Milestone 6.2 batch-feasibility plan](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md)
-has frozen its v4 authority without adding a dependency. Later milestones
-evaluate batch sizes one and two through the existing isolated candidate
-graph. That graph already resolves
+has frozen its v4 authority and implemented the candidate-neutral batch
+mechanics, Qwen list-call adapter, and reviewed disposable-pilot command
+without adding a dependency or changing a lock. Later milestones evaluate
+batch sizes one and two through the existing isolated candidate graph. That
+graph already resolves
 `accelerate==1.12.0` transitively, but VoxLeaf source must not import or rely on
 that transitive package without a separately reviewed direct declaration.
 Conditional targeted speech-tokenizer/audio-decoder CPU placement is only an

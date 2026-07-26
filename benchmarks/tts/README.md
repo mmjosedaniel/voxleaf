@@ -36,8 +36,9 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   after an exact full-GPU batch-two memory stop.
 - `schemas/short-segment-batch-raw-v4.schema.json` and
   `schemas/short-segment-batch-summary-v4.schema.json` are the closed private
-  journal and content-safe summary shapes. No v4 pilot, hardware result,
-  quality result, selection record, or runner command exists yet.
+  journal and content-safe summary shapes. The reviewed disposable-pilot
+  command and model-free batch mechanics now exist, but no v4 pilot, hardware
+  result, quality result, or selection record exists yet.
 - `incremental-cancellation-prototype-v1.json` freezes the development-only
   prototype topology before results: complete-segment delivery, one resident
   spawned worker, explicit input/output/queue ceilings, identity-first stale
@@ -249,20 +250,51 @@ The model-free `v4_authority` validator is also implemented. It byte-verifies
 the new profile, corpus, and schemas; recomputes corpus size and placement
 identities; enforces exact pairing/first attempts; rejects result-before-
 authority, unapproved CPU placement, non-conjunctive pass claims, and private
-content. It does not implement or invoke Qwen batching.
+content. Milestone 2 separately implements the candidate-neutral one/two-unit
+boundary, exact frozen request matrix, ordered whole-batch invalidation,
+content-free playback simulation, deterministic failure candidates, and the
+Qwen native list call behind the existing spawned-worker boundary.
 
 The evaluated Qwen and Supertonic public APIs expose complete waveforms. The
 benchmark records this honestly and rejects an end-of-output frame as evidence
 of a mid-generation cancellation boundary. Worker termination is benchmark
 feasibility evidence only, not a production cancellation design.
 
-The candidate-neutral benchmark commands are unchanged.
 `benchmark:tts:preflight` verifies
 the clean revision, exact artifacts, host headroom, offline controls, and exact
 candidate-interpreter firewall rule without loading a model.
 `benchmark:tts:measure` repeats that preflight, launches the exact candidate
 interpreter, and either runs one disposable non-comparable pilot or the frozen
 official protocol. Private paths enter only through bounded standard input.
+
+Milestone 6.2 adds `benchmark:tts:batch`. It is intentionally limited to the
+full-GPU disposable mechanics pilot until the later official raw/summary
+workflow is executed. It repeats the exact authority, host, clean-tree,
+artifact, offline, firewall, power, sleep, background-load, thermal, RAM, and
+8,174,698,496-byte free-VRAM preflight; invokes Qwen with one list containing
+one or two unchanged narration units through the isolated candidate
+interpreter; discards waveform payloads; and emits only a non-promotable
+content-safe mechanics receipt. Do not execute it before Milestone 3 starts
+from a clean committed checkpoint:
+
+```powershell
+$candidatePython = (Resolve-Path "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/.venv/Scripts/python.exe").Path
+$batchPilot = @{
+  batchOptIn = $true
+  resultPurpose = "disposable-pilot"
+  placementProfileId = "qwen3-serena-v4-full-gpu"
+  artifactRoot = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda").Path
+  candidatePython = $candidatePython
+  expectedCommitSha = (git rev-parse HEAD).Trim()
+  sleepDisabled = $true
+  backgroundLoadAcceptable = $true
+  thermalStateAcceptable = $true
+}
+$batchPilot | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:batch
+```
+
+The receipt is not a frozen v4 raw result, summary, quality admission, or
+selection. Never redirect the private input to a tracked file.
 
 Official execution records bounded content-free nanosecond/sample/resource
 observations under the ignored raw session directory. It does not retain

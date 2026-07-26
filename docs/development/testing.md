@@ -235,9 +235,14 @@ speech-tokenizer CPU identities, and deterministic authority enforcement.
 pair and result order, no retries, strict authority ancestry fields,
 conjunctive pass claims, conditional CPU admission, schema closure, and
 private-content rejection without importing Qwen or requiring CUDA. No
-batch-two runner or hardware command exists yet; Milestone 2 must add those
-with fake coverage for bounded retention, whole-batch invalidation, and
-playback arithmetic before exact-host execution. Default tests and CI remain
+Milestone 2 adds the development-only one/two-unit request/result boundary,
+exact 39-call frozen matrix construction, whole-batch identity invalidation,
+content-free playback simulator, isolated Qwen list-call adapter, and reviewed
+`benchmark:tts:batch` disposable-pilot command. Deterministic scenarios cover
+ordered completion, swapped output, one-item failure, timeout, stale identity,
+cancellation, OOM, cleanup failure, bounded retention, underrun arithmetic,
+content-safe receipt output, and replay stability. The command has not been
+executed; no pilot or official v4 result exists. Default tests and CI remain
 model-free.
 
 ## Deferred coverage

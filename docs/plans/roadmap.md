@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 6.1 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. ADR-0014 permits that exact profile only for a bounded development demo after one fluent maintainer accepted its audible quality. Milestone 6.2 is in progress: Milestone 1 froze the separate result-blind v4 authority for shorter ordered units and batch size two with one resident model; conditional targeted CPU placement remains only a memory contingency. No v4 runner or result exists. Milestone 7 may plan the constrained demo slice, but production completion remains blocked until new evidence or an explicit later acceptance change resolves continuous playback, cancellation, hardware, and packaging. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 6.1 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. ADR-0014 permits that exact profile only for a bounded development demo after one fluent maintainer accepted its audible quality. Milestone 6.2 is in progress: Milestone 1 froze the separate result-blind v4 authority for shorter ordered units and batch size two with one resident model, and Milestone 2 implements its bounded model-free mechanics and reviewed disposable-pilot command. Conditional targeted CPU placement remains only a memory contingency. No v4 pilot or official result exists. Milestone 7 may plan the constrained demo slice, but production completion remains blocked until new evidence or an explicit later acceptance change resolves continuous playback, cancellation, hardware, and packaging. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -326,9 +326,9 @@ semantic units in one shared-model batch.
 Milestone 6.1 supplies the exact failed candidate evidence and constrained demo
 decision. Milestone 5 supplies stable bounded `narration-v1` units. The
 candidate-neutral benchmark, exact isolated lock, verified local artifacts,
-outbound blocking, and exact reference host remain required. The Milestone
-6.2 ExecPlan's Milestone 2 must add a reviewed batch hardware command before
-execution.
+outbound blocking, and exact reference host remain required. Milestone 2 adds
+the reviewed disposable-pilot command before execution; Milestone 3 owns the
+clean-checkpoint hardware run.
 
 ### Major risks and unknowns
 

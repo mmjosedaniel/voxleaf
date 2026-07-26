@@ -158,10 +158,10 @@ Primary upstream references:
 - `services/tts/benchmarks/`
 - `services/tts/tests/`
 
-Milestone 1 names and freezes the new `v4` authority, corpus, schemas, report
-shapes, and future command responsibility before implementation. No batch-two
-hardware command exists yet; Milestone 2 must add and review it before any
-hardware execution.
+Milestone 1 named and froze the new `v4` authority, corpus, schemas, report
+shapes, and future command responsibility before implementation. At that
+freeze no batch command existed; Milestone 2 subsequently added and reviewed
+the disposable-pilot command before any hardware execution.
 
 ## Architecture and constraints
 
@@ -276,7 +276,12 @@ exists.
 
 #### Status
 
-Not started.
+Complete on 2026-07-26. The development-only candidate-neutral batch
+contracts, exact frozen matrix constructor, ordered whole-batch invalidation,
+bounded content-free playback simulator, deterministic failure candidates,
+Qwen list-call adapter, spawned-worker path, dedicated/shared GPU observation
+surface, and reviewed disposable-pilot command are implemented and validated.
+No pilot or official hardware output was produced.
 
 ### Milestone 3: Run the full-GPU short-unit batch matrix
 
@@ -393,9 +398,9 @@ pnpm.cmd check:portable
 pnpm.cmd check
 ```
 
-Milestone 2 must add a narrow repository-owned batch hardware command before
-Milestone 3. Do not substitute an ad hoc private script for that reviewable
-surface.
+Milestone 2 adds the narrow repository-owned `benchmark:tts:batch`
+disposable-pilot command before Milestone 3. Do not substitute an ad hoc
+private script for that reviewable surface.
 
 Deterministic tests run without model weights or GPU hardware. Hardware work is
 Windows-host-specific, outside CI, offline after artifact preparation, and
@@ -464,6 +469,65 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
   branch-wide private-pattern/artifact audit found no private path, secret,
   book, audio, model weight, raw journal, or v4 result; the ignored raw tree
   contains zero files.
+- 2026-07-26: Created branch
+  `feat/m006-2-bounded-ordered-batching` from merged `main` at `025d6d8`.
+  Re-read the frozen v4 authority, product/architecture boundaries, ADR-0013,
+  ADR-0014, and completed narration-v1 plan before changing the benchmark.
+- 2026-07-26: Added a benchmark-local candidate-neutral one/two-unit request
+  and complete-waveform result boundary. The controller admits one active
+  batch, retains at most two payload-free unit results, records nanosecond,
+  sample, duration, RTF, RAM, dedicated/framework VRAM, free-VRAM, and shared
+  GPU observations, and publishes only exact ordered active identities.
+  Swapped, missing, failed, timed-out, cancelled, OOM, or stale output
+  invalidates the whole batch with fixed content-free codes.
+- 2026-07-26: Added the exact frozen 39-call constructor: three excluded
+  warmups followed by 36 measured first-attempt calls across the frozen
+  `[1,2]`, `[2,1]`, `[1,2]` pass order. It yields the required 24 batch-one
+  calls/24 units and 12 batch-two calls/24 units without changing the corpus,
+  pairs, narration-v1 text, authority files, retry rule, or production
+  contract.
+- 2026-07-26: Added a rational-arithmetic content-free playback simulator.
+  It starts at 15 seconds of ordered playable media or a complete shorter
+  remainder, consumes at real time, enforces two queued complete units and 40
+  playable seconds, and reports startup lead, minimum/peak buffer, underruns,
+  buffering duration/rate, active batches, and stale playback.
+- 2026-07-26: Extended the Qwen development adapter to make one upstream list
+  call for either frozen batch size and map returned waveform positions back
+  to independent unit identities while discarding payloads. The existing
+  spawned-worker isolation now supports that boundary and continues to
+  suppress candidate diagnostics and private paths/text.
+- 2026-07-26: Added the reviewed `benchmark:tts:batch` command. It accepts
+  private paths only through bounded standard input, is limited to the
+  full-GPU disposable mechanics pilot, repeats exact authority, host,
+  repository, artifact, offline, firewall, power, and headroom preflight,
+  samples dedicated/shared WDDM process memory and PyTorch reserved VRAM, and
+  emits only a non-promotable content-safe receipt. It was intentionally not
+  executed in Milestone 2.
+- 2026-07-26: Committed the model-free controller/simulator checkpoint as
+  `e9ee1ad` and the adapter/matrix/isolated-command checkpoint as `e90410b`.
+  Focused validation passed Ruff, strict mypy over 54 source files, all 96
+  Python tests, and package-script Prettier. No model import, CUDA use,
+  waveform, raw journal, pilot, official result, dependency, production
+  contract, or narration-v1 change occurred.
+- 2026-07-26: The exact candidate-environment command smoke exposed an
+  accidental import-time dependency on the base environment's schema
+  validator. Split byte-frozen mechanics loading from later result-schema
+  validation and committed the correction as `9314f5c`. The command now
+  reaches its closed input gate under the unchanged 107-package candidate
+  lock; JSON Schema remains required only for base-environment result
+  validation.
+- 2026-07-26: Closed Milestone 2 local validation. The unchanged candidate
+  lock resolved 107 packages and its Qwen/PyTorch/Torchaudio import smoke
+  passed. The isolated batch command reached its fixed `input` rejection
+  without loading a model. `pnpm.cmd check:portable` passed in 28 seconds and
+  authoritative native `pnpm.cmd check` passed in 51.4 seconds, including all
+  TypeScript, Python, Rust, build, and Tauri release checks. The existing Vite
+  chunk-size advisory remained informational.
+- 2026-07-26: All ten changed Markdown files passed the local-link audit.
+  `git diff --check`, changed-tree private-path/credential scanning, and the
+  tracked model/audio/book/raw-artifact scan passed. The ignored raw result
+  tree contains zero files, confirming that Milestone 2 produced no pilot,
+  waveform, journal, or private hardware evidence.
 
 ## Discoveries and decisions
 
@@ -509,13 +573,31 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
     unchanged standard machine viability, bounded scheduling sustainability,
     and one-maintainer constrained-demo usefulness. None can rescue another or
     select a production profile in this plan.
+14. The installed `qwen-tts==0.1.1` implementation accepts `List[str]` for
+    `text`, expands or validates parallel language/speaker/instruction lists,
+    performs one model generation call, and decodes one waveform per returned
+    code sequence. This proves the batch can be expressed; it does not prove
+    parallel execution or speedup.
+15. Batch output carries no candidate-provided identity, so the adapter maps
+    returned list positions to request positions and the controller validates
+    the complete ordered identity set before publishing anything. A swapped
+    or stale item therefore rejects the complete batch.
+16. The mechanics receipt is deliberately non-promotable. The frozen raw and
+    summary schemas, cancellation matrix, playback replay, memory stop, and
+    cleanup evidence remain Milestone 3 hardware responsibilities; a pilot
+    cannot become an official result.
+17. Candidate commands cannot assume the base development group's
+    `jsonschema` dependency is installed. Byte/hash/profile/corpus mechanics
+    verification therefore remains standard-library-only, while closed result
+    schema validation stays in the base benchmark environment.
 
 ## Final validation results
 
-Milestone 1 is complete. It adds development-benchmark authority and
-model-free validation only. It does not add the v4 runner, a hardware command,
-candidate dependency, model execution, generated audio, official result,
-production contract, runtime behavior, support claim, or selection decision.
+Milestones 1 and 2 are complete. Milestone 1 adds result-blind authority;
+Milestone 2 adds development-only model-free mechanics and a reviewed
+disposable-pilot command. Neither milestone adds a candidate dependency,
+executes a model, produces generated audio or a hardware result, changes a
+production contract/runtime, makes a support claim, or selects a profile.
 
 The authority checkpoint passed:
 
@@ -550,3 +632,36 @@ the branch-wide private-path, credential, added-artifact, raw-tree, and
 premature-v4-result scans passed. The ignored raw tree contains zero files.
 No official output was generated or heard. The existing Vite chunk-size
 advisory remained informational.
+
+Milestone 2 focused validation passed:
+
+- `uv run --directory services/tts --locked ruff format --check benchmarks tests`;
+- `uv run --directory services/tts --locked ruff check benchmarks tests`;
+- `uv run --directory services/tts --locked mypy .` over 54 source files;
+- `uv run --directory services/tts --locked pytest tests -q` with 96 passing
+  tests; and
+- `pnpm.cmd exec prettier --check package.json`.
+
+The new deterministic coverage proves exact frozen call/count order, batch
+sizes one and two, ordered output, whole-batch failure/stale invalidation,
+zero stale publication, two-unit/one-active-batch retention, fixed timeout,
+cancellation, OOM and cleanup outcomes, exact rational playback/underrun
+arithmetic, repeat-stable receipts, private-input suppression, isolated
+worker delivery, and one Qwen list call without candidate imports or CUDA.
+
+Repository-wide Milestone 2 validation also passed:
+
+- `uv lock --project services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --check`
+  with the unchanged 107-package lock;
+- the exact isolated candidate import smoke for `qwen_tts`, `torch`, and
+  `torchaudio`;
+- a no-hardware invalid-input `pnpm.cmd benchmark:tts:batch` smoke in the
+  exact candidate environment, which returned only the fixed `input` code;
+- `pnpm.cmd check:portable` in 28 seconds; and
+- `pnpm.cmd check` on native Windows in 51.4 seconds, including Rust format,
+  Clippy, crate tests, and the Tauri release build.
+
+All ten changed Markdown files resolve their relative links. The changed-tree
+private-path/credential scan, tracked audio/model/book/raw-artifact scan,
+ignored raw-tree check, and `git diff --check` pass; the ignored raw tree
+contains zero files.
