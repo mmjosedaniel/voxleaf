@@ -154,6 +154,10 @@ privacy, and honest failure accounting:
 | --- | --- | --- | --- |
 | Build the voice-clone prompt once and reuse it | **Do not transfer the prompt.** Base cloning is outside this MVP. Retain only the analogous bounded idea: load the selected CustomVoice model once and reuse one exact built-in speaker/instruction/settings identity in memory. | Plan Milestones 1–3 | Milestone 7 service lifecycle, only for a selected profile |
 | Generate with candidate batch size one | **Adopt as the conservative `v3` default.** It limits retained work and makes segment ownership observable. A larger batch requires pre-result authority plus measured benefit without weakening memory or cancellation. | Plan Milestones 1–4 | Milestone 7 may retain or supersede it from selected-profile evidence |
+| Generate two ordered segments in one shared-model batch | **Investigate later; do not treat as proven.** The exact API accepts a two-text batch and can share model weights, but `v3` measured only batch size one. Freeze a new batch-two/short-segment authority before hardware results. | No change to completed `v3` | A future focused spike before or within Milestone 7 |
+| Run two independent model processes | **Do not use as the first experiment.** Each process would load another model copy; the measured 6,286,802,944-byte peak already leaves insufficient evidence that two copies fit the 8 GiB GPU. | No implementation | Reconsider only with explicit memory evidence |
+| Target complete 8–20-second audio units | **Investigate at semantic boundaries.** Shorter units can reduce complete-waveform startup delay but do not improve sustained RTF by themselves and may introduce extra overhead or prosody discontinuities. | No change to `narration-v1` or `v3` | A future focused spike and Milestones 7–8 |
+| Concatenate completed WAV files during playback | **Reject.** Do not concatenate container bytes or persist intermediate files. Preserve order through identities and enqueue compatible in-memory PCM units or frames; any gap, fade, or crossfade rule requires listening evidence. | Existing privacy/boundedness rule | Milestone 8 playback |
 | Use bounded VoxLeaf narration segments | **Adopt.** The candidate consumes existing `narration-v1` units; it does not invent paragraph/chapter accumulation or model-specific text contracts. | Plan Milestone 2 | Milestones 7 and 9 |
 | Deliver each completed segment immediately | **Adopt for the prototype and selected-profile handoff.** Segment-at-a-time delivery improves startup and boundedness, but a complete-waveform call still does not prove mid-segment streaming or cancellation. | Plan Milestone 2 | Milestone 7 emits selected-profile audio; Milestone 8 buffers/plays it |
 | Retry failed segments a limited number of times | **Defer for production and prohibit as hidden benchmark recovery.** Official `v3` measurements count the first attempt and every failure. A separately labeled diagnostic retry may investigate a defect but cannot make a gate pass. | Plan Milestones 1 and 3 freeze/test failure accounting only | Milestone 10 may add bounded retry after failure classification, stale-result rejection, backoff, cleanup, and latency evidence |
@@ -218,6 +222,92 @@ iterator or cooperative cancellation. The installed `qwen-tts==0.1.1` Base
 prototype independently returns complete NumPy waveforms. Therefore the
 upstream streaming claim does not, by itself, resolve VoxLeaf's exact local
 incremental-audio or cancellation blocker.
+
+### Post-v3 short-segment and batch-two hypothesis
+
+This is a documented option for a later decision, not an amendment to the
+failed `v3` authority or an implementation commitment.
+
+The official
+[CustomVoice example](https://github.com/QwenLM/Qwen3-TTS#custom-voice-generate)
+accepts either one text or a batch list and returns one waveform per input. The
+exact installed `qwen-tts==0.1.1` implementation has the same interface: it
+validates equal batch lengths, performs one shared-model generation call, then
+decodes and returns the complete waveform list. This is batch inference, not
+two independent streaming calls. The caller receives no playable prefix while
+that call is running.
+
+The maintainer's external Base-cloning project already contains the analogous
+scheduling idea. Its optional `--chunk-batch-size` groups ordered text chunks
+and passes `batch_texts` to one `generate_voice_clone` call. Its default is one,
+its outer paragraph loop is sequential, and it retains the generated chunks
+until joining and persisting the paragraph. VoxLeaf may reuse only the
+shared-model ordered-batch idea. It must not copy the retained-file,
+text-preview, private-input, paragraph-cache, or whole-paragraph accumulation
+behavior.
+
+Short complete units could materially improve perceived startup. The warm
+observation that took about 67.67 seconds produced about 46.56 seconds of
+audio. Under the measured total sustained RTF of 1.4521558253532183, a purely
+linear estimate gives approximately 11.6, 17.4, and 29.0 seconds of generation
+for 8, 12, and 20 seconds of media respectively. These are hypotheses, not
+measurements: fixed per-request work can make short units slower per media
+second, while smaller autoregressive sequences can also change the ratio.
+
+A two-item shared-model batch could improve aggregate throughput because model
+weights are loaded once. For two equal 10-second units, the pair must finish in
+under 20 seconds to make aggregate RTF less than one, and in at most 16 seconds
+to meet an aggregate RTF of 0.8. With the current batch-one RTF, the batch may
+take at most about 1.377 times one equal-unit generation and still produce
+media faster than playback. This cannot be inferred from API support: padding,
+the longer item in an unequal pair, decoder work, CUDA utilization, and added
+activation/KV memory can erase the theoretical gain.
+
+The preferred hypothesis is therefore:
+
+1. prepare semantic units targeting 8–12 seconds for the initial pair and
+   8–20 seconds thereafter, never cutting words or protected constructs;
+2. generate the first ordered pair in one resident-model batch and start as
+   soon as approximately 15 seconds of contiguous playable audio is ready;
+3. while that audio plays, generate the next similarly sized ordered pair;
+4. tag every output with session, generation, segment, candidate,
+   configuration, and sequence identities and release it only in order;
+5. bound retained audio and work to the active batch plus the explicit playback
+   lead/queue;
+6. invalidate the complete batch before worker termination on pause, seek,
+   settings change, book close, or session replacement; and
+7. enqueue compatible in-memory PCM units or frames rather than joining or
+   persisting WAV files.
+
+This topology has costs that a later decision must weigh. A two-item call may
+delay both outputs until the slower item completes. Cancelling one unit
+invalidates both. Shorter boundaries may reset prosody or create clicks, gaps,
+or unnatural pauses. Batch-two memory may exceed the current 6 GiB evaluation
+ceiling even though it shares weights. These are reasons to measure the idea,
+not reasons to assume success or reject it without a bounded test.
+
+Before any hardware run, a new candidate-neutral probe or `v4` profile should
+freeze:
+
+- the unchanged exact CustomVoice/Serena identity and offline controls;
+- semantic segment targets of an estimated 8, 12, and 20 media seconds,
+  including how duration is estimated from text before synthesis;
+- batch sizes one and two, with similar-duration pair construction and fixed
+  first-attempt/no-retry accounting;
+- time to the first complete unit and approximately 15 seconds of contiguous
+  audio, per-unit and aggregate RTF, failure counts, RAM, VRAM, and cleanup;
+- a sustained playback simulation long enough to expose buffer drift and
+  underruns, with the existing five-seconds-per-minute MVP tolerance visible;
+- cancellation/stale-output behavior for every batch lifecycle point;
+- blinded listening at joins for missing/repeated speech, ordering, prosody,
+  clicks, gaps, and meaning-changing defects; and
+- separate decision thresholds for a constrained demo and any standard
+  production claim. Aggregate RTF must be below one to avoid inevitable buffer
+  drain; the existing standard performance target remains 0.8 unless a future
+  authority changes it before results.
+
+No audio was generated and no runtime, segmenter, buffer, playback, dependency,
+profile, ADR, or roadmap commitment changed while recording this hypothesis.
 
 ### OpenAI Whisper assessment
 
@@ -1035,6 +1125,17 @@ dependency changes are involved.
   randomization data. Deleted the downloaded disposable scorecard from the
   repository root after deriving the aggregate. The ignored raw tree again
   contains zero files.
+- 2026-07-26: Inspected the official CustomVoice batch interface, the exact
+  installed `qwen-tts==0.1.1` implementation, and the external Base project's
+  chunk-batch loop read-only. Documented shared-model batch size two plus
+  semantic 8–20-second units as an unresolved optimization hypothesis. No
+  hardware run, audio generation, authority change, or implementation occurred.
+- 2026-07-26: The documentation follow-up passed local-link, private-pattern,
+  tracked-forbidden-artifact, ignored-raw, and `git diff --check` audits.
+  `pnpm.cmd check:portable` passed in 26.8 seconds with 175 shared, 555 EPUB,
+  204 desktop, 6 native-WebDriver-client, and 72 Python tests plus formatting,
+  lint, strict type checks, and portable builds. The existing Vite chunk-size
+  advisory remained informational.
 
 ## Discoveries and decisions
 
@@ -1142,6 +1243,23 @@ dependency changes are involved.
     separate post-demo investigation because the
     [current official vLLM path](https://github.com/QwenLM/Qwen3-TTS#vllm-usage)
     is offline inference and does not remove this measured API boundary.
+25. The exact CustomVoice API supports a list of texts in one shared-model
+    batch, and the external Base project uses the analogous mechanism when
+    `--chunk-batch-size` exceeds one. This proves an available experiment
+    surface, not parallel speedup or streaming.
+26. Two separate model processes are not the preferred experiment. The
+    batch-one official run already reached 6,286,802,944 bytes of authoritative
+    peak VRAM on an 8 GiB GPU; shared-model batching avoids a second weight copy
+    but still requires measured activation/KV/decoder headroom.
+27. Shorter complete units can reduce time to the first playable result, but
+    they do not by themselves change aggregate RTF. Sustained playback becomes
+    credible only if batch-two aggregate RTF falls below one; the existing
+    standard target remains 0.8.
+28. A future probe must pair similarly sized semantic units, publish them in
+    identity-checked order, retain only bounded PCM/audio work, and measure
+    join quality, cancellation, memory, buffer drift, and underruns. It must be
+    frozen before results as a new authority rather than retroactively changing
+    failed batch-one `v3`.
 
 ## Final validation results
 
