@@ -307,7 +307,12 @@ No pilot or official hardware output was produced.
 
 #### Status
 
-Not started.
+Complete on 2026-07-26. The disposable pilot completed and remained
+non-promotable. The official full-GPU run stopped on the frozen
+`shared-gpu-memory` rule after observing 79,691,776 bytes of shared GPU memory,
+derived a schema-valid content-safe result, and deleted its private raw
+session. The stop occurred before usable media, throughput, playback, or
+quality evidence existed.
 
 ### Milestone 4: Run the conditional targeted-CPU arm if admitted
 
@@ -330,7 +335,7 @@ Not started.
 
 #### Status
 
-Conditional; not admitted.
+Admitted by Milestone 3's exact `shared-gpu-memory` stop; not started.
 
 ### Milestone 5: Evaluate playback credibility and bounded quality
 
@@ -528,6 +533,78 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
   tracked model/audio/book/raw-artifact scan passed. The ignored raw result
   tree contains zero files, confirming that Milestone 2 produced no pilot,
   waveform, journal, or private hardware evidence.
+- 2026-07-26: Created branch
+  `feat/m006-2-full-gpu-short-unit-batch-matrix` from merged `main` at
+  `9e7192a`. The checkout was clean and Milestone 2 was already merged.
+- 2026-07-26: Implemented the official full-GPU hardware boundary without
+  changing the frozen candidate, corpus, placement, gates, schemas, or
+  candidate lock. The candidate-environment command now supports one opaque
+  official session, five excluded cold-load observations, the exact 39-call
+  matrix, continuous bounded RAM/dedicated/shared/free-VRAM/framework
+  telemetry, five ordered cancellation trials, cleanup evidence, and ignored
+  raw files without retaining waveform samples.
+- 2026-07-26: Added a separate base-environment derive command. It validates
+  the frozen raw authority and schema, recomputes allowlisted counts,
+  percentiles, RTF, playback, memory, cancellation, audits, and conjunctive
+  standard/scheduling conclusions, validates the content-safe summary, and
+  deletes the exact ignored raw session before emitting it. This separation
+  keeps `jsonschema` out of the unchanged candidate lock.
+- 2026-07-26: Focused model-free validation passes Ruff, strict mypy over 58
+  source files, and 14 v4 tests. The new tests cover official counts, bounded
+  cleanup/memory evidence, content-safe derivation, and closed opaque-session
+  input without importing Qwen or requiring CUDA.
+- 2026-07-26: The first disposable-pilot attempt stopped before model load
+  with the fixed `preflight` code. The generic content-safe preflight then
+  passed every repository, artifact, offline, firewall, power, headroom,
+  provider, and measurement check. The v4 wrapper alone rejected Windows'
+  trademarked CPU string against the frozen normalized CPU label. Added a
+  narrow normalization regression test without weakening any other exact-host
+  field; no pilot result or GPU execution occurred on the rejected attempt.
+- 2026-07-26: The corrected disposable pilot completed in 67.2 seconds with
+  three excluded calls/four units, correct order, one active batch, two
+  retained units, zero retries/failures, cleanup, 2,212,458,496 bytes peak
+  process-tree RAM, 5,647,167,488 bytes peak dedicated VRAM, and
+  5,509,218,304 bytes peak framework-reserved VRAM. It was correctly marked
+  non-promotable. Its 81,788,928-byte shared-GPU observation required the
+  official run to apply the frozen zero-shared-memory stop rule.
+- 2026-07-26: The official full-GPU run from clean checkpoint `2ed9791`
+  completed its safety path in 69.1 seconds. The shared-memory signal
+  recurred, so the runner terminated the active work, recorded the remaining
+  exact calls as failed first attempts, skipped unsafe cancellation loads,
+  and produced an ignored session eligible for derivation. The first derive
+  attempt failed closed with a content-free internal code and deleted that
+  session. Added a model-free shared-memory-stop derivation regression, which
+  passes, plus safe authority-error mapping before repeating official
+  evidence; no reviewable result was promoted from the failed derive.
+- 2026-07-26: Repeated the same bounded official safety run from clean
+  checkpoint `9e2693a`; it reproduced the same five fixed failure codes in
+  69.1 seconds. Derivation now identified the rejection as `result-schema`
+  and again deleted the ignored session. Added a closed diagnostic that emits
+  only the first schema path and validator, never its value, before the next
+  repeat. The frozen authority, hardware conditions, candidate, and observed
+  safety outcome remain unchanged.
+- 2026-07-26: A third identical 69.0-second safety run let the closed
+  diagnostic identify `host.cpuModel`'s frozen `const` as the only first raw
+  schema rejection. The command compared the normalized identity correctly
+  but serialized the trademarked Windows label. Updated raw serialization and
+  its regression to use the same frozen normalization; the session was
+  deleted and no invalid result was retained.
+- 2026-07-26: Ran the final official full-GPU safety path from clean checkpoint
+  `3eb1635`. It reproduced the frozen `shared-gpu-memory` stop, derived the
+  schema-valid content-safe
+  `benchmarks/tts/short-segment-batch-result-v4.json`, and deleted the exact
+  ignored raw session. The committed summary SHA-256 is
+  `9ce8141fa5987878ab29bf472f6f16dc3a6370dd4ffcc1141b30964914c62e32`.
+  It records five cold loads with 9.6984155-second p95, 36 failed measured
+  first attempts and zero retries, 4,633,399,296 bytes peak process-tree RAM,
+  4,432,904,192 bytes peak authoritative VRAM, 3,757,047,808 bytes minimum
+  free dedicated VRAM, 79,691,776 bytes peak shared GPU memory, and successful
+  cleanup. No generated audio or private raw evidence remains.
+- 2026-07-26: Milestone 3 therefore fails standard viability and scheduling
+  sustainability without evaluating constrained-demo quality. It supplies no
+  RTF, startup, buffer, or short-unit duration evidence. The exact memory stop
+  admits the separately frozen targeted-CPU Milestone 4 arm; it does not prove
+  that CPU placement will be faster or viable.
 
 ## Discoveries and decisions
 
@@ -590,14 +667,42 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
     `jsonschema` dependency is installed. Byte/hash/profile/corpus mechanics
     verification therefore remains standard-library-only, while closed result
     schema validation stays in the base benchmark environment.
+18. GitHub squash-merged the original Milestone 1 authority commit, so the
+    recorded authority object exists but is not an ancestor of merged `main`.
+    The frozen validator correctly rejects an official result on that graph.
+    Before hardware execution, this branch must record the unchanged
+    `f6bccf7` authority commit as an ancestry-only merge parent; changing the
+    frozen hash would require a new profile version.
+19. The closed raw schema does not contain cold-load observations although the
+    safe summary requires their p95. The implementation retains the five
+    numeric load/cleanup observations in a separate content-free ignored
+    sidecar, derives the p95 in the base environment, and deletes the sidecar
+    with the raw journal. No authority field or reviewable private evidence is
+    added.
+20. Windows reports the exact reference CPU as
+    `Intel(R) Core(TM) Ultra 7 255HX`, while the frozen v4 reference label
+    intentionally omits trademark markers. Exact-host comparison must remove
+     only `(R)` and `(TM)` plus duplicate whitespace before comparing and
+     before writing the frozen raw host identity.
+21. The disposable pilot's 81,788,928-byte shared-memory observation was not
+    noise that the official authority could waive. The final official run
+    observed 79,691,776 bytes, so the frozen zero-shared-memory rule stopped
+    the matrix before performance evidence.
+22. Evidence-workflow repeats used to correct derivation and host
+    serialization did not become candidate retries: every bounded run used
+    first attempts only, every rejected private session was deleted, and only
+    the final schema-valid summary is reviewable evidence.
+23. A safe stop is not a batch-performance result. Zero media makes the
+    aggregate RTF, startup, playback, duration, and listening fields
+    unavailable rather than passing or failing by speed.
 
 ## Final validation results
 
-Milestones 1 and 2 are complete. Milestone 1 adds result-blind authority;
-Milestone 2 adds development-only model-free mechanics and a reviewed
-disposable-pilot command. Neither milestone adds a candidate dependency,
-executes a model, produces generated audio or a hardware result, changes a
-production contract/runtime, makes a support claim, or selects a profile.
+Milestones 1 through 3 are complete. Milestone 1 adds result-blind authority;
+Milestone 2 adds development-only model-free mechanics and reviewed execution
+commands; Milestone 3 executes only the frozen full-GPU hardware arm. No
+milestone changes a production contract/runtime, makes a support claim, or
+selects a profile.
 
 The authority checkpoint passed:
 
@@ -665,3 +770,37 @@ All ten changed Markdown files resolve their relative links. The changed-tree
 private-path/credential scan, tracked audio/model/book/raw-artifact scan,
 ignored raw-tree check, and `git diff --check` pass; the ignored raw tree
 contains zero files.
+
+Milestone 3 hardware and result validation completed on 2026-07-26:
+
+- the non-promotable pilot completed its three excluded calls/four units with
+  correct order, bounded retention, zero retries/failures, and cleanup;
+- the official full-GPU arm ran from clean execution commit
+  `3eb16351d2bb7e06cc16a1f1981ba757408ca6e7`, stopped on the exact
+  `shared-gpu-memory` rule, and produced the schema-valid content-safe
+  `short-segment-batch-result-v4.json`;
+- the result records the exact five cold loads, three excluded warmups, three
+  measured passes, 24 batch-one calls/units, 12 batch-two calls/24 units, 36
+  failed first attempts, five cancellation records, and zero retries;
+- the safe-summary SHA-256 is
+  `9ce8141fa5987878ab29bf472f6f16dc3a6370dd4ffcc1141b30964914c62e32`;
+- every private raw session and sidecar was deleted, the ignored v4 raw tree
+  contains zero files, and no generated audio was retained.
+
+Final Milestone 3 repository validation passed:
+
+- Ruff formatting/lint and strict mypy over 58 source files;
+- all 101 Python tests;
+- the unchanged 107-package candidate lock and exact
+  `qwen_tts`/PyTorch/Torchaudio import smoke;
+- `pnpm.cmd check:portable` in 28.5 seconds;
+- `pnpm.cmd check` on native Windows in 51.5 seconds, including Rust format,
+  Clippy, crate tests, the Tauri release build, and Python package builds;
+- all 58 tracked Markdown files in the relative-link audit;
+- the added-private-pattern, tracked sensitive-artifact, result-hash,
+  raw-cleanup, and `git diff --check` audits.
+
+The known optional FlashAttention/SoX candidate-import warnings and Vite
+chunk-size advisory remain informational. Milestone 3 is complete. Its outcome
+admits Milestone 4; it does not admit Milestone 5 quality review, produce a
+selection, or change production behavior.

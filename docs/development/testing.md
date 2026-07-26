@@ -62,6 +62,7 @@ host. One disposable blinded 24-sample session was evaluated by one fluent
 Spanish listener and then fully deleted. The content-free
 [`selection-v2`](../../benchmarks/tts/selection-v2.md) matrix records why both
 roles fail; default tests and CI still load no model or generated audio.
+
 - `pnpm.cmd --filter @voxleaf/shared generate:check` deterministically verifies that committed TypeScript wire DTOs and self-contained standalone validators match the canonical JSON Schema files. Generation fails on an unregistered runtime helper, runtime `require`, `eval`, or dynamic `Function` construction.
 - `packages/epub/src/index.test.ts` proves that the isolated EPUB package consumes synthetic book and locator contracts through the public `@voxleaf/shared` workspace boundary and exports only the validated `openEpubPublication` runtime entry point. `packages/epub/src/document/document-model.test.ts` exercises the public closed block/inline/navigation/resource/locator shapes, readonly recursive collections, opaque identifier separation, spine/non-spine documents, and explicit resource-read/locator-resolution/close lifecycle. Package-internal path, archive, processing-budget, XML-event, package, identity, navigation, XHTML projection, resource, and locator suites exercise untrusted ingestion with synthetic in-memory inputs, strict byte/count/depth/ratio/text/semantic-block limits, injected cancellation/deadlines, namespace-aware XML, fixed content-free failures, and no filesystem, network, worker, or DOM use. The XML/package regressions accept and omit valid legacy `meta name/content` compatibility values plus the inert HTML doctype in content documents while continuing to reject mixed/malformed metadata, package/container or non-HTML doctypes, public/system identifiers, internal subsets, custom entities, XInclude, and external-resource processing instructions. `packages/epub/test-support/epub-fixture.ts` supplies test-only deterministic arbitrary-ZIP, minimal-EPUB, comprehensive-EPUB, and documented byte-mutation builders with fixed order, timestamps, attributes, compression, and writer capabilities; `packages/epub/src/testing/epub-fixture.test.ts` proves repeated byte identity, fixed metadata, rich public opening, malformed construction, stale-checked mutations, caller-owned inputs, and no network or worker behavior. `packages/epub/src/public/open-epub-publication.test.ts` reuses the minimal builder to drive repository-authored in-memory EPUB bytes through the public opener and proves immutable semantic/navigation/resource/locator assembly, compatibility opening, exact resolution, close, every closed detail-to-`OperationalErrorV1` mapping, unknown-exception redaction, value-based invalid/cancelled results, and no network or worker capability. `packages/epub/src/integration/ingestion-matrix.test.ts` drives minimal, comprehensive, and adversarial deterministic EPUB bytes through the public boundary and proves representative failure at every ingestion stage, every untrusted-input detail family, rich deterministic success, shared-contract acceptance, lazy resource behavior, locator exact/recovery behavior, lifecycle closure, failure cleanup, privacy redaction, and absence of external capabilities. `packages/epub/src/document/xhtml-projector.test.ts` additionally proves allowlisted block/inline order, inherited language and direction, ordinary/code whitespace policy, opaque local links and images, inert external-link labels, omission of active/style/hidden/foreign/remote content, transactional failures, exact/max+1 content-document-byte and semantic-block accounting, and internal globally unique source-ID capture without changing semantic output. `packages/epub/src/resource/opened-publication.test.ts` proves lazy local GIF/JPEG/PNG/WebP reads, declared-size and signature gates, opaque immutable descriptors, independent caller-owned allocations, read-scoped and close-triggered cancellation, single-read concurrency, idempotent release, and closed-handle behavior without caching or external capabilities. `packages/epub/src/locator/locator-index.test.ts` proves final preorder assignment, exact/max+1 source-ID acceptance, deterministic duplicate/invalid/collision replacement, exact-byte and spine binding, shared-decoder round trips, Unicode code-point offsets, cancellation, immutability, and content-free failures. `packages/epub/src/locator/locator-resolver.test.ts` proves exact full-tuple resolution, wrong-book and malformed rejection, nearest offset/anchor/spine/book-start recovery, deterministic earlier-spine tie breaking, canonical immutable output, cancellation, and content-free failures without prose, page, or layout search. CFI parsing remains unsupported and deferred; public narration preparation is implemented and covered by the focused suites below, while application rendering, position restoration, and persistence remain desktop-owned.
 - `packages/epub/test-support/epub-fixture.ts` is also the sole test-only source for reader navigation, reflow/restoration, valid/malformed raster, and exact/max-plus-one long-chapter EPUB bytes. Browser, benchmark, and native smoke helpers import those named builders directly; their expected structural locator fields are repository-authored constants rather than parser-derived fixture output.
@@ -234,16 +235,23 @@ speech-tokenizer CPU identities, and deterministic authority enforcement.
 `test_benchmark_v4_authority.py` verifies byte stability, corpus arithmetic,
 pair and result order, no retries, strict authority ancestry fields,
 conjunctive pass claims, conditional CPU admission, schema closure, and
-private-content rejection without importing Qwen or requiring CUDA. No
+private-content rejection without importing Qwen or requiring CUDA.
 Milestone 2 adds the development-only one/two-unit request/result boundary,
 exact 39-call frozen matrix construction, whole-batch identity invalidation,
 content-free playback simulator, isolated Qwen list-call adapter, and reviewed
 `benchmark:tts:batch` disposable-pilot command. Deterministic scenarios cover
 ordered completion, swapped output, one-item failure, timeout, stale identity,
 cancellation, OOM, cleanup failure, bounded retention, underrun arithmetic,
-content-safe receipt output, and replay stability. The command has not been
-executed; no pilot or official v4 result exists. Default tests and CI remain
-model-free.
+content-safe receipt output, and replay stability. Milestone 3 adds model-free
+coverage for the five cold-load observations, exact official call/unit
+counts, ignored raw result, five cancellation records, memory/cleanup shape,
+closed safe-summary derivation, and opaque-session command input. The
+candidate-environment run and base-environment derive/delete steps are
+separate so the candidate lock remains unchanged. Milestone 3 executed the
+disposable pilot and official full-GPU path. The committed safe result validates
+the exact counts and cleanup but stops on `shared-gpu-memory` before any
+reviewable audio, playback, or throughput evidence; the ignored raw session was
+deleted. Default tests and CI remain model-free.
 
 ## Deferred coverage
 

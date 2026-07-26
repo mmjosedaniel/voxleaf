@@ -1,0 +1,167 @@
+{
+  "aggregates": {
+    "batchOneAggregateRtf": 0.0,
+    "batchOneFifteenSecondsMediaP95Seconds": null,
+    "batchOneFirstAudioP95Seconds": 0,
+    "batchOneMediaSeconds": 0,
+    "batchOneRequestRtfP95": 0,
+    "batchOneShorterCompleteP95Seconds": null,
+    "batchTwoAggregateRtf": 0.0,
+    "batchTwoFifteenSecondsMediaP95Seconds": null,
+    "batchTwoFirstAudioP95Seconds": 0,
+    "batchTwoMediaSeconds": 0,
+    "batchTwoShorterCompleteP95Seconds": null,
+    "batchTwoUnitRtfP95": 0,
+    "coldLoadP95Seconds": 9.6984155,
+    "maximumUnitDurationSeconds": 0,
+    "minimumUnitDurationSeconds": 0,
+    "missingPairCount": 0,
+    "orderedUnitCount": 0,
+    "reorderedUnitCount": 0
+  },
+  "audits": {
+    "approvedPlacement": true,
+    "artifacts": true,
+    "boundedRetention": true,
+    "cleanup": true,
+    "license": true,
+    "noDiskOffload": true,
+    "noSharedGpuPaging": false,
+    "offline": true,
+    "ordering": true,
+    "privacy": true
+  },
+  "authorityCommitSha": "f6bccf78e83cf0bd519ea00ab4e4997927152275",
+  "cancellation": {
+    "maximumIdentityInvalidationMilliseconds": 0.0,
+    "maximumWorkerTerminationMilliseconds": 0.0,
+    "passedTrialCount": 0,
+    "stalePlayedUnits": 0,
+    "stalePublishedUnits": 0,
+    "trialCount": 5
+  },
+  "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
+  "conclusions": {
+    "constrainedDemoUsefulness": {
+      "allRequiredGatesPassed": false,
+      "failedGateCodes": [],
+      "outcome": "not-evaluated"
+    },
+    "schedulingSustainability": {
+      "allRequiredGatesPassed": false,
+      "failedGateCodes": [
+        "cancellation",
+        "first-attempt-failure",
+        "minimum-media",
+        "safety-audit",
+        "unit-duration"
+      ],
+      "outcome": "fail"
+    },
+    "standardViability": {
+      "allRequiredGatesPassed": false,
+      "failedGateCodes": [
+        "cancellation",
+        "first-attempt-failure",
+        "required-audit",
+        "startup-media"
+      ],
+      "outcome": "fail"
+    }
+  },
+  "corpusSha256": "3dcb30ab07bc5796175137f956ab7c910f306cd2f39fa6fe30d05deca1eccd8e",
+  "corpusVersion": "tts-short-segment-corpus-v4",
+  "counts": {
+    "automaticRetries": 0,
+    "batchOneCalls": 24,
+    "batchOneUnits": 24,
+    "batchTwoCalls": 12,
+    "batchTwoUnits": 24,
+    "cancellationTrials": 5,
+    "coldLoads": 5,
+    "failedOrTimedOutFirstAttempts": 36,
+    "measuredPasses": 3,
+    "warmupBatchOneCalls": 2,
+    "warmupBatchTwoCalls": 1
+  },
+  "cpuAdmission": {
+    "fullGpuMemoryStopCode": null,
+    "fullGpuResultSha256": null,
+    "status": "not-applicable"
+  },
+  "executionCommitSha": "3eb16351d2bb7e06cc16a1f1981ba757408ca6e7",
+  "failureCodes": [
+    "cancellation",
+    "cancellation-failed",
+    "first-attempt-failure",
+    "generation-failed",
+    "minimum-media",
+    "playback-incomplete",
+    "required-audit",
+    "resource-limit",
+    "safety-audit",
+    "shared-gpu-memory",
+    "startup-media",
+    "unit-duration"
+  ],
+  "host": {
+    "architecture": "x86_64",
+    "cpuModel": "Intel Core Ultra 7 255HX",
+    "driverVersion": "577.05",
+    "gpuModel": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "logicalProcessors": 20,
+    "operatingSystem": "Windows",
+    "osVersion": "10.0.26200",
+    "pythonVersion": "3.12.10",
+    "totalRamBytes": 33752997888,
+    "totalVramBytes": 8546942976
+  },
+  "limitations": [
+    "exact-host-only",
+    "complete-waveform-batch",
+    "worker-termination-not-cooperative-model-cancellation",
+    "scheduling-pass-does-not-promote-failed-v3",
+    "explicit-preparation-delay-remains-visible",
+    "development-benchmark-not-production-runtime"
+  ],
+  "memory": {
+    "memoryStopCode": "shared-gpu-memory",
+    "memoryStopTriggered": true,
+    "minimumFreeDedicatedVramBytes": 3757047808,
+    "peakAuthoritativeVramBytes": 4432904192,
+    "peakFrameworkReservedVramBytes": 4311744512,
+    "peakProcessDedicatedVramBytes": 4432904192,
+    "peakProcessTreeRamBytes": 4633399296,
+    "peakSharedGpuMemoryBytes": 79691776,
+    "ramSamplingIntervalMilliseconds": 50,
+    "vramSamplingIntervalMilliseconds": 1000
+  },
+  "placementProfileId": "qwen3-serena-v4-full-gpu",
+  "playback": {
+    "bufferingSeconds": 0,
+    "bufferingSecondsPerMinute": 0,
+    "minimumBufferSeconds": 0,
+    "peakActiveBatches": 0,
+    "peakBufferSeconds": 0,
+    "peakQueuedUnits": 0,
+    "playedSeconds": 0,
+    "stalePlayedUnits": 0,
+    "startupPlayableSeconds": 0,
+    "startupWallSeconds": 0,
+    "underrunCount": 0
+  },
+  "profileSha256": "836895786f4cc041ce1b3818a5f74635cbc1edcd1e2a57f3ebddf84bd1ed3b68",
+  "profileVersion": "tts-short-segment-batch-profile-v4",
+  "quality": {
+    "accentMean": null,
+    "evaluatorCount": 0,
+    "intelligibilityMean": null,
+    "joinBoundaryMean": null,
+    "meaningChangingDefects": 0,
+    "numberAndSymbolMean": null,
+    "overallMean": null,
+    "prosodyMean": null,
+    "status": "not-admitted"
+  },
+  "schemaVersion": "tts-short-segment-batch-summary-v4"
+}

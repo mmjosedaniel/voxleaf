@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 6.1 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. ADR-0014 permits that exact profile only for a bounded development demo after one fluent maintainer accepted its audible quality. Milestone 6.2 is in progress: Milestone 1 froze the separate result-blind v4 authority for shorter ordered units and batch size two with one resident model, and Milestone 2 implements its bounded model-free mechanics and reviewed disposable-pilot command. Conditional targeted CPU placement remains only a memory contingency. No v4 pilot or official result exists. Milestone 7 may plan the constrained demo slice, but production completion remains blocked until new evidence or an explicit later acceptance change resolves continuous playback, cancellation, hardware, and packaging. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 6.1 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. ADR-0014 permits that exact profile only for a bounded development demo after one fluent maintainer accepted its audible quality. Milestone 6.2 is in progress: Milestone 1 froze the separate result-blind v4 authority, Milestone 2 implemented its bounded model-free mechanics, and Milestone 3 completed the full-GPU run. That run stopped safely on the frozen zero-shared-GPU-memory rule before producing throughput or reviewable audio evidence, which admits only the separate targeted-CPU Milestone 4 contingency. Milestone 7 may plan the constrained demo slice, but production completion remains blocked until new evidence or an explicit later acceptance change resolves continuous playback, cancellation, hardware, and packaging. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -292,11 +292,13 @@ isolated lock, verified local artifacts, outbound blocking, an authorized
 
 ## Milestone 6.2: Prove Qwen short-segment batch feasibility
 
-**Status:** In progress. Milestone 1 completed on 2026-07-26. The
+**Status:** In progress. Milestones 1 through 3 completed on 2026-07-26. The
 [Milestone 6.2 ExecPlan](active/M006-002-qwen-short-segment-batch-feasibility.md)
-now has the byte-frozen `v4` profile, normalized synthetic corpus, closed raw
-and summary schemas, explicit full-GPU memory stop, conditional CPU identity,
-and model-free enforcement. Milestones 2–6 and all hardware results remain
+has the byte-frozen `v4` authority, bounded mechanics, and schema-valid
+full-GPU result. The official run observed 79,691,776 bytes of shared GPU
+memory, stopped on the exact zero-shared-memory rule, cleaned its private raw
+session, and produced no usable audio/throughput matrix. Milestone 4 targeted
+CPU placement is now admitted but not started; Milestones 5 and 6 remain
 pending. This work does not change failed batch-one `v3`, ADR-0013, or
 ADR-0014.
 

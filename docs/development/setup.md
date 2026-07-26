@@ -14,27 +14,29 @@ The content-free `benchmarks/tts/selection-v3.md` record retains that failed
 standard result and separately identifies the constrained demo input.
 
 Milestone 6.2 is active. Its `v4` authority is frozen and Milestone 2 adds the
-reviewed `benchmark:tts:batch` disposable-pilot command plus model-free
-one/two-unit, ordering, invalidation, resource, and playback mechanics. The
-command has not been executed and no v4 hardware result exists. Conditional
-targeted CPU placement is evaluation-only and may run only after the full-GPU
-arm reaches its frozen memory stop.
+reviewed `benchmark:tts:batch` disposable-pilot and official commands,
+`benchmark:tts:batch:derive` safe-summary/cleanup command, and model-free
+one/two-unit, ordering, invalidation, resource, playback, schema, and
+derivation mechanics. Milestone 3 ran the full-GPU path and committed its
+content-safe result. The exact `shared-gpu-memory` stop admits the conditional
+targeted-CPU evaluation; that arm has not run. The result contains no
+reviewable audio or throughput evidence and changes no production behavior.
 
 ## Prerequisite version matrix
 
 The selected versions establish a reproducible foundation with the reviewed low-level EPUB ZIP/XML dependencies, but without selecting renderer, audio, transport, or TTS-model dependencies.
 
-| Prerequisite | Selected version or policy | Minimum supported version | Verified Windows state |
-| --- | --- | --- | --- |
-| Windows development host | Native 64-bit Windows; current host is 25H2 build `26200.8875` | Windows 10 version 1803, 64-bit | Satisfied |
-| Node.js | `24.18.0` LTS, pinned in `.nvmrc` | `22.12.0` LTS; supported majors are constrained in `package.json` | `v24.18.0` |
-| Package manager | pnpm `11.15.1`, pinned by `packageManager` and `engines.pnpm` in `package.json` | Exactly `11.15.1` for reproducible installs | `11.15.1` |
-| Rust compiler | Rust `1.97.1`, MSVC host, pinned in `rust-toolchain.toml` | `1.77.2`, the Tauri 2 baseline | `rustc 1.97.1` |
-| Cargo | Cargo bundled with pinned Rust `1.97.1` | Cargo bundled with Rust `1.77.2` | `cargo 1.97.1` |
-| Python | CPython `3.12.10`, pinned in `.python-version` | Python `3.12`; use the pinned patch release | `Python 3.12.10` |
-| Python project manager | uv `0.11.29`, pinned in setup and CI | Exactly `0.11.29` for reproducible lock and environment behavior | `uv 0.11.29` |
-| C++ build tools | Visual Studio Build Tools 2022 `17.14.36`, Desktop development with C++ workload | Visual Studio Build Tools 2022 with x64/x86 MSVC and a Windows SDK | MSVC `14.44.35207`; Windows SDK `10.0.26100.0` |
-| WebView | Automatically updated Evergreen WebView2 Runtime; do not pin a runtime patch | WebView2 Runtime `86.0.616.0` | Evergreen `150.0.4078.83` |
+| Prerequisite             | Selected version or policy                                                       | Minimum supported version                                          | Verified Windows state                         |
+| ------------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------- |
+| Windows development host | Native 64-bit Windows; current host is 25H2 build `26200.8875`                   | Windows 10 version 1803, 64-bit                                    | Satisfied                                      |
+| Node.js                  | `24.18.0` LTS, pinned in `.nvmrc`                                                | `22.12.0` LTS; supported majors are constrained in `package.json`  | `v24.18.0`                                     |
+| Package manager          | pnpm `11.15.1`, pinned by `packageManager` and `engines.pnpm` in `package.json`  | Exactly `11.15.1` for reproducible installs                        | `11.15.1`                                      |
+| Rust compiler            | Rust `1.97.1`, MSVC host, pinned in `rust-toolchain.toml`                        | `1.77.2`, the Tauri 2 baseline                                     | `rustc 1.97.1`                                 |
+| Cargo                    | Cargo bundled with pinned Rust `1.97.1`                                          | Cargo bundled with Rust `1.77.2`                                   | `cargo 1.97.1`                                 |
+| Python                   | CPython `3.12.10`, pinned in `.python-version`                                   | Python `3.12`; use the pinned patch release                        | `Python 3.12.10`                               |
+| Python project manager   | uv `0.11.29`, pinned in setup and CI                                             | Exactly `0.11.29` for reproducible lock and environment behavior   | `uv 0.11.29`                                   |
+| C++ build tools          | Visual Studio Build Tools 2022 `17.14.36`, Desktop development with C++ workload | Visual Studio Build Tools 2022 with x64/x86 MSVC and a Windows SDK | MSVC `14.44.35207`; Windows SDK `10.0.26100.0` |
+| WebView                  | Automatically updated Evergreen WebView2 Runtime; do not pin a runtime patch     | WebView2 Runtime `86.0.616.0`                                      | Evergreen `150.0.4078.83`                      |
 
 ### Selection rationale
 
