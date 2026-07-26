@@ -731,6 +731,11 @@ dependency changes are involved.
   across the abandoned and corrected attempts, both randomization/scorecard
   working sets, and the downloaded completed scorecard. No generated audio or
   per-sample result remains.
+- 2026-07-25: Committed the schema-valid aggregate, exact Serena `v3`
+  authority, authority-hash regressions, product/architecture reconciliation,
+  and Milestone 1 validation as
+  `e14c7770bdd9bc8be2bd392fe011f0c1dea249c0`
+  (`feat(tts): freeze Serena feasibility profile v3`).
 
 ## Discoveries and decisions
 
@@ -860,3 +865,8 @@ The generic rejected-pattern documentation mentions `input.txt` but contains
 no copy of that private file. No generated audio, scorecard, model weight,
 private input, private path, credential, or raw evaluator submission remains
 in the reviewable tree.
+
+Milestone 1 is complete at
+`e14c7770bdd9bc8be2bd392fe011f0c1dea249c0`. This completion admits the exact
+Serena profile only to Milestone 2's pre-admission prototype. It does not
+select a production engine or unblock Milestone 7.
