@@ -5,11 +5,13 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 from typing import Final, cast
 
 import pytest
 
+from benchmarks.dual_worker_result import derive_v5_summary
 from benchmarks.v5_authority import (
     CORPUS_SHA256,
     PROFILE_SHA256,
@@ -608,3 +610,26 @@ def test_v5_fixture_mutations_do_not_change_frozen_authority() -> None:
     cast(dict[str, object], mutated["aggregates"])["aggregateRtf"] = 2
     assert original != mutated
     assert _sha256("benchmarks/tts/profile-v5.json") == PROFILE_SHA256
+
+
+def test_v5_cpu_raw_derives_a_schema_valid_content_safe_summary() -> None:
+    raw = _raw_fixture("cpu-solo")
+    raw["authorityCommitSha"] = "fad271150303936625a7c4be348742f36a75f21b"
+    raw["executionCommitSha"] = subprocess.run(
+        ("git", "rev-parse", "HEAD"),
+        cwd=REPOSITORY_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    summary = derive_v5_summary(REPOSITORY_ROOT, raw)
+
+    assert summary["arm"] == "cpu-solo"
+    assert cast(dict[str, object], summary["counts"])["measuredUnits"] == 8
+    assert cast(dict[str, object], summary["conclusions"])["cpuSoloAdmission"] == {
+        "outcome": "pass",
+        "allRequiredGatesPassed": True,
+        "failedGateCodes": [],
+    }
+    assert "sourceText" not in json.dumps(summary)
