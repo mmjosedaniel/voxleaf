@@ -27,6 +27,7 @@ class CandidateAdapterFactory:
     profile: CandidateProfile
     configuration: CandidateConfiguration
     placement_profile_id: PlacementProfileId | None = None
+    worker_candidate_id: str | None = None
 
     def __call__(self) -> BenchmarkAdapter:
         if self.profile.candidate_id in (QWEN_CANDIDATE_ID, QWEN_V3_CANDIDATE_ID):
@@ -34,6 +35,7 @@ class CandidateAdapterFactory:
                 self.profile,
                 self.configuration,
                 placement_profile_id=self.placement_profile_id,
+                worker_candidate_id=self.worker_candidate_id,
             )
         if self.profile.candidate_id == SUPERTONIC_CANDIDATE_ID:
             return Supertonic3Adapter(self.profile, self.configuration)
@@ -48,6 +50,7 @@ def create_isolated_candidate_adapter(
     timeouts: IsolationTimeouts | None = None,
     framework_memory_observer: Callable[[int | None], None] | None = None,
     placement_profile_id: PlacementProfileId | None = None,
+    worker_candidate_id: str | None = None,
 ) -> IsolatedBenchmarkAdapter:
     """Build the candidate-neutral worker boundary for one admitted profile."""
 
@@ -56,6 +59,7 @@ def create_isolated_candidate_adapter(
             profile,
             configuration,
             placement_profile_id=placement_profile_id,
+            worker_candidate_id=worker_candidate_id,
         ),
         forbidden_values=forbidden_values,
         timeouts=timeouts,

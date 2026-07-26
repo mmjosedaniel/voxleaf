@@ -19,6 +19,8 @@ type CancellationStopMode = Literal["cooperative", "worker-termination"]
 type PlacementProfileId = Literal[
     "qwen3-serena-v4-full-gpu",
     "qwen3-serena-v4-speech-tokenizer-cpu",
+    "qwen3-serena-v5-gpu-primary",
+    "qwen3-serena-v5-cpu-support",
 ]
 type CancellationTrialId = Literal[
     "before-dispatch",
@@ -83,12 +85,16 @@ class AdapterPlacementEvidence:
     """Content-free proof of one exact benchmark-only model placement."""
 
     profile_id: PlacementProfileId
-    autoregressive_model_device: Literal["cuda:0"]
+    autoregressive_model_device: Literal["cuda:0", "cpu"]
     speech_tokenizer_model_device: Literal["cuda:0", "cpu"]
     speech_tokenizer_wrapper_device: Literal["cuda:0", "cpu"]
     disk_or_meta_parameters: int
     implicit_fallback: bool
     offload_directory_created: bool
+    cuda_available: bool = True
+    cuda_device_count: int = 1
+    intra_op_threads: int | None = None
+    interop_threads: int | None = None
 
 
 @dataclass(frozen=True)

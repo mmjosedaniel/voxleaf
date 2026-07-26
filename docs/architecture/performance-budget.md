@@ -298,11 +298,14 @@ placement therefore provides no capacity, throughput, startup, playback, or
 quality evidence on the reference host and does not admit the listening arm.
 
 The same Milestone 6.2 ExecPlan now has a separately frozen `v5` authority
-rather than rewriting `v4`. It will test one complete Qwen instance
-as a GPU-primary worker and one separately loaded complete Qwen instance as a
-CPU-only support worker. CPU solo must pass frozen placement, waveform,
-RAM/commit, timeout, cleanup, and total sustained RTF at or below 3.2 before
-concurrent work.
+rather than rewriting `v4`. Milestone 7 implements its benchmark-local
+dual-worker controller, exact CPU/GPU adapter placements, isolated worker
+boundary, ordered completion/reordering contracts, and bounded playback
+replay. These mechanics have not loaded the models or produced hardware
+evidence. Milestone 8 will test one complete Qwen instance as a GPU-primary
+worker and one separately loaded complete Qwen instance as a CPU-only support
+worker. CPU solo must pass frozen placement, waveform, RAM/commit, timeout,
+cleanup, and total sustained RTF at or below 3.2 before concurrent work.
 The concurrent matrix must compare with a same-authority GPU-solo baseline and
 report worker-specific RTF, aggregate RTF, GPU slowdown, ordered head-of-line
 delay, failures, cancellation, RAM, dedicated/shared VRAM, and cleanup.
@@ -324,6 +327,6 @@ Five minutes is a maximum in-memory capacity, not a required startup lead and
 not evidence that generation remains ahead. Sustainable scheduling still
 requires directly measured concurrent aggregate RTF below 1.0 and no more than
 five seconds of buffering per minute. The preferred standard margin remains
-aggregate RTF at or below 0.8. Until implementation, hardware results, and a
-decision exist, this remains an evaluation hypothesis and does not amend
-ADR-0014's accepted one-worker constrained demo.
+aggregate RTF at or below 0.8. Until hardware results and a decision exist,
+this remains an evaluation hypothesis and does not amend ADR-0014's accepted
+one-worker constrained demo.
