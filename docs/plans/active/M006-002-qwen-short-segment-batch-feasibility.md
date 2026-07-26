@@ -880,3 +880,47 @@ The known optional FlashAttention/SoX candidate-import warnings and Vite
 chunk-size advisory remain informational. Milestone 3 is complete. Its outcome
 admits Milestone 4; it does not admit Milestone 5 quality review, produce a
 selection, or change production behavior.
+
+Milestone 4 hardware and result validation completed on 2026-07-26:
+
+- the exact committed full-GPU result hash and `shared-gpu-memory` stop
+  admitted the official-only targeted-CPU identity;
+- every cold, measured, and cancellation worker verified the content-free
+  placement before generation: speech-tokenizer model/wrapper on CPU, all
+  remaining model tensors on `cuda:0`, and no disk/meta/fallback placement;
+- the authority-valid official arm ran from clean checkpoint
+  `0af833179e99f542bdf4eb11c56434f780a5d6ba`, stopped on the exact
+  `shared-gpu-memory` rule, and produced schema-valid content-safe
+  `short-segment-batch-result-v4-cpu.json`;
+- the result retains the exact five cold loads, frozen 24 batch-one calls/units,
+  12 batch-two calls/24 units, 36 failed first attempts, five cancellation
+  records, and zero retries without admitting media or quality review;
+- its safe-summary SHA-256 is
+  `d3766ae87bdebc806210d04d974081b6f79f976bf9793a184c4d021273f85234`;
+  and
+- successful derivation deleted the exact raw session, the ignored v4 raw tree
+  contains zero files, and no generated audio was retained.
+
+Final Milestone 4 repository validation passed on committed result/documentation
+checkpoint `6f8b355`:
+
+- Ruff formatting/lint and strict mypy over 58 source files;
+- all 106 Python tests, including the exact committed CPU-result guard;
+- the unchanged 107-package candidate lock and exact
+  `qwen_tts`/PyTorch/Torchaudio import smoke;
+- `pnpm.cmd check:portable` in 27.1 seconds;
+- `pnpm.cmd check` on native Windows in 60.9 seconds, including 934
+  TypeScript tests, Rust format, Clippy, crate tests, the Tauri release build,
+  and Python package builds;
+- all 58 tracked Markdown files and 242 relative links;
+- both expected v4 summary hashes and schema validation; and
+- the added-private-pattern, credential, tracked sensitive-artifact,
+  raw-cleanup, branch-diff, and `git diff --check` audits.
+
+The root suites ran from a clean detached worktree because sandbox-created
+ignored pytest directories in the primary checkout had deny-style ACLs; the
+clean worktree used fresh frozen offline dependencies and the exact committed
+checkpoint. The known optional FlashAttention/SoX candidate-import warnings and
+Vite chunk-size advisory remain informational. Milestone 4 is complete with a
+failed safety outcome. Milestone 5 is not admitted; Milestone 6 remains
+responsible for the durable decision and plan closeout.
