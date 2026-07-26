@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping, Sequence
+import subprocess
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final, cast
@@ -24,6 +25,7 @@ PROFILE_SHA256: Final = "836895786f4cc041ce1b3818a5f74635cbc1edcd1e2a57f3ebddf84
 CORPUS_SHA256: Final = "3dcb30ab07bc5796175137f956ab7c910f306cd2f39fa6fe30d05deca1eccd8e"
 RAW_SCHEMA_SHA256: Final = "c793be6d97523f866ea263960f13c981a693fca8e819966ec1b867cac9507f82"
 SUMMARY_SCHEMA_SHA256: Final = "2abb279fad5bc9f65f85ce21a6e56c7e8ee61550b5a7c14592ad0826fc4f101a"
+AUTHORITY_COMMIT_SHA: Final = "f6bccf78e83cf0bd519ea00ab4e4997927152275"
 FULL_GPU_PROFILE_ID: Final = "qwen3-serena-v4-full-gpu"
 CPU_PROFILE_ID: Final = "qwen3-serena-v4-speech-tokenizer-cpu"
 MEMORY_STOP_CODES: Final = frozenset(
@@ -563,11 +565,38 @@ def _verify_summary_conclusions(result: Mapping[str, object]) -> None:
             raise _fail("demo-conclusion")
 
 
+def _git_is_strict_ancestor(
+    repository_root: Path,
+    authority_commit: str,
+    execution_commit: str,
+) -> bool:
+    try:
+        completed = subprocess.run(
+            [
+                "git",
+                "merge-base",
+                "--is-ancestor",
+                authority_commit,
+                execution_commit,
+            ],
+            cwd=repository_root,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return completed.returncode == 0 and authority_commit != execution_commit
+
+
 def validate_v4_result(
     repository_root: Path,
     value: object,
     *,
     summary: bool,
+    ancestry_checker: Callable[[str, str], bool] | None = None,
 ) -> None:
     """Validate one v4 raw journal or safe summary without loading a model."""
 
@@ -582,11 +611,24 @@ def validate_v4_result(
     )
     if errors:
         raise _fail("result-schema")
+    authority_commit = result.get("authorityCommitSha")
+    execution_commit = result.get("executionCommitSha")
     if (
         result.get("profileSha256") != PROFILE_SHA256
         or result.get("corpusSha256") != CORPUS_SHA256
-        or result.get("authorityCommitSha") == result.get("executionCommitSha")
+        or authority_commit != AUTHORITY_COMMIT_SHA
+        or not isinstance(execution_commit, str)
+        or authority_commit == execution_commit
     ):
+        raise _fail("result-before-authority")
+    check_ancestry = ancestry_checker or (
+        lambda authority, execution: _git_is_strict_ancestor(
+            repository_root,
+            authority,
+            execution,
+        )
+    )
+    if not check_ancestry(AUTHORITY_COMMIT_SHA, execution_commit):
         raise _fail("result-before-authority")
     _verify_cpu_admission(result)
     if summary:

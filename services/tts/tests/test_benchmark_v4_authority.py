@@ -12,6 +12,7 @@ from typing import Final, cast
 import pytest
 
 from benchmarks.v4_authority import (
+    AUTHORITY_COMMIT_SHA,
     CORPUS_SHA256,
     CPU_PROFILE_ID,
     FULL_GPU_PROFILE_ID,
@@ -171,7 +172,7 @@ def _raw_fixture(profile_id: str = FULL_GPU_PROFILE_ID) -> dict[str, object]:
         "profileVersion": "tts-short-segment-batch-profile-v4",
         "profileSha256": PROFILE_SHA256,
         "corpusSha256": CORPUS_SHA256,
-        "authorityCommitSha": "1" * 40,
+        "authorityCommitSha": AUTHORITY_COMMIT_SHA,
         "executionCommitSha": "2" * 40,
         "treeClean": True,
         "resultPurpose": "official",
@@ -242,6 +243,17 @@ def _conclusion(outcome: str, *failed: str) -> dict[str, object]:
     }
 
 
+def _validate(value: object, *, summary: bool) -> None:
+    validate_v4_result(
+        REPOSITORY_ROOT,
+        value,
+        summary=summary,
+        ancestry_checker=lambda authority, execution: (
+            authority == AUTHORITY_COMMIT_SHA and execution == "2" * 40
+        ),
+    )
+
+
 def _summary_fixture(profile_id: str = FULL_GPU_PROFILE_ID) -> dict[str, object]:
     raw = _raw_fixture(profile_id)
     return {
@@ -250,7 +262,7 @@ def _summary_fixture(profile_id: str = FULL_GPU_PROFILE_ID) -> dict[str, object]
         "profileSha256": PROFILE_SHA256,
         "corpusVersion": "tts-short-segment-corpus-v4",
         "corpusSha256": CORPUS_SHA256,
-        "authorityCommitSha": "1" * 40,
+        "authorityCommitSha": AUTHORITY_COMMIT_SHA,
         "executionCommitSha": "2" * 40,
         "placementProfileId": profile_id,
         "cpuAdmission": _cpu_admission(profile_id),
@@ -359,48 +371,48 @@ def test_v4_authority_is_byte_frozen_and_result_blind() -> None:
 
 
 def test_v4_raw_result_rejects_missing_pairs_reordering_and_retry() -> None:
-    validate_v4_result(REPOSITORY_ROOT, _raw_fixture(), summary=False)
+    _validate(_raw_fixture(), summary=False)
 
     missing = _raw_fixture()
     cast(list[object], missing["calls"]).pop()
     with pytest.raises(V4AuthorityError, match="missing-or-reordered-pairs"):
-        validate_v4_result(REPOSITORY_ROOT, missing, summary=False)
+        _validate(missing, summary=False)
 
     reordered = _raw_fixture()
     calls = cast(list[dict[str, object]], reordered["calls"])
     calls[3], calls[4] = calls[4], calls[3]
     with pytest.raises(V4AuthorityError, match="missing-or-reordered-pairs"):
-        validate_v4_result(REPOSITORY_ROOT, reordered, summary=False)
+        _validate(reordered, summary=False)
 
     retried = _raw_fixture()
     cast(list[dict[str, object]], retried["calls"])[3]["attempt"] = 2
     with pytest.raises(V4AuthorityError, match="result-schema|first-attempt"):
-        validate_v4_result(REPOSITORY_ROOT, retried, summary=False)
+        _validate(retried, summary=False)
 
 
 def test_v4_result_rejects_unapproved_cpu_result_and_private_content() -> None:
-    validate_v4_result(REPOSITORY_ROOT, _raw_fixture(CPU_PROFILE_ID), summary=False)
+    _validate(_raw_fixture(CPU_PROFILE_ID), summary=False)
 
     unapproved = _raw_fixture(CPU_PROFILE_ID)
     unapproved["cpuAdmission"] = _cpu_admission(FULL_GPU_PROFILE_ID)
     with pytest.raises(V4AuthorityError, match="unapproved-cpu-placement"):
-        validate_v4_result(REPOSITORY_ROOT, unapproved, summary=False)
+        _validate(unapproved, summary=False)
 
     private = _raw_fixture()
     private["sourceText"] = "private"
     with pytest.raises(V4AuthorityError, match="private-content"):
-        validate_v4_result(REPOSITORY_ROOT, private, summary=False)
+        _validate(private, summary=False)
 
     corpus = load_frozen_v4_authority(REPOSITORY_ROOT).corpus
     first_unit = cast(list[Mapping[str, object]], corpus["units"])[0]
     leaked = _raw_fixture()
     leaked["failureCodes"] = [cast(str, first_unit["privacyCanary"])]
     with pytest.raises(V4AuthorityError, match="private-content"):
-        validate_v4_result(REPOSITORY_ROOT, leaked, summary=False)
+        _validate(leaked, summary=False)
 
 
 def test_v4_summary_conclusions_are_closed_and_conjunctive() -> None:
-    validate_v4_result(REPOSITORY_ROOT, _summary_fixture(), summary=True)
+    _validate(_summary_fixture(), summary=True)
 
     rescued_average = _summary_fixture()
     cast(dict[str, object], rescued_average["aggregates"])["batchTwoAggregateRtf"] = 1
@@ -408,18 +420,27 @@ def test_v4_summary_conclusions_are_closed_and_conjunctive() -> None:
         "fail", "total-sustained-rtf"
     )
     with pytest.raises(V4AuthorityError, match="scheduling-conclusion"):
-        validate_v4_result(REPOSITORY_ROOT, rescued_average, summary=True)
+        _validate(rescued_average, summary=True)
 
     quality_waiver = _summary_fixture()
     conclusions = cast(dict[str, object], quality_waiver["conclusions"])
     conclusions["constrainedDemoUsefulness"] = _conclusion("pass")
     with pytest.raises(V4AuthorityError, match="demo-conclusion"):
-        validate_v4_result(REPOSITORY_ROOT, quality_waiver, summary=True)
+        _validate(quality_waiver, summary=True)
 
     result_before_authority = _summary_fixture()
     result_before_authority["executionCommitSha"] = result_before_authority["authorityCommitSha"]
     with pytest.raises(V4AuthorityError, match="result-before-authority"):
-        validate_v4_result(REPOSITORY_ROOT, result_before_authority, summary=True)
+        _validate(result_before_authority, summary=True)
+
+    unrelated_commit = _summary_fixture()
+    with pytest.raises(V4AuthorityError, match="result-before-authority"):
+        validate_v4_result(
+            REPOSITORY_ROOT,
+            unrelated_commit,
+            summary=True,
+            ancestry_checker=lambda _authority, _execution: False,
+        )
 
 
 def test_v4_authority_drift_fails_closed(tmp_path: Path) -> None:
