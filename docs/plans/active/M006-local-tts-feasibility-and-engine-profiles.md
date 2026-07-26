@@ -1392,11 +1392,33 @@ Default validation remains offline at test runtime, model-free, hardware-indepen
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- Both isolated candidate locks synchronized exactly without loading weights:
+  Qwen resolved 107 packages and checked 88 installed packages; Supertonic
+  resolved 25 packages and checked 24 installed packages.
+- The isolated import/version smokes passed with `qwen-tts==0.1.1`,
+  `supertonic==1.3.1`, and `onnxruntime==1.27.0`. Qwen reported its expected
+  optional FlashAttention and SoX diagnostics; neither model was constructed,
+  no artifact was loaded, and no audio was generated.
+- Ruff format and lint checks passed over all 34 Python files. Strict mypy
+  passed all 34 source files, including the Linux-portable guarded Windows DLL
+  loader. Pytest passed all 50 model-free Python tests.
+- `uv build services/tts` produced both the source distribution and wheel.
+- `pnpm.cmd check:portable` passed Prettier, ESLint, Ruff, TypeScript and
+  Python type checks, 18 shared files/175 tests, 34 EPUB files/555 tests, 20
+  desktop files/204 tests, six native WebDriver-client tests, all 50 Python
+  tests, package builds, the portable desktop build, and Python distributions.
+- The authoritative native `pnpm.cmd check` passed the same deterministic
+  coverage plus Rustfmt, Clippy with warnings denied, Cargo tests, the native
+  release desktop build, and Python distributions. The existing Vite
+  chunk-size advisory remained informational.
 
 #### Status
 
-Not started.
+Complete — deterministic model-free validation, isolated lock/import
+validation, both aggregate repository checks, and package builds are green
+without loading weights or requiring benchmark hardware.
 
 ### Task 5.2: Complete official benchmark and quality evidence
 
@@ -1785,6 +1807,11 @@ A profile is selectable only when its performance, quality, capability, license,
   review, Mermaid/prose status review, and final branch-diff checks pass. The
   three logical checkpoints contain only documentation and the content-free
   selection record.
+- 2026-07-25: Completed Task 5.1 from clean `main` commit `8253ff4`. Both
+  isolated candidate locks and model-free imports validate, focused Python
+  formatting/lint/type/test/build checks pass, all 50 Python tests pass, and
+  both portable and authoritative native aggregate repository checks pass. No
+  model was constructed, no weight was loaded, and no audio was generated.
 
 ## Discoveries and decisions
 
