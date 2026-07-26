@@ -2,7 +2,7 @@
 
 A privacy-first desktop EPUB reader in development, designed for on-device neural text-to-speech and in-memory audio streaming.
 
-> **Status:** pre-alpha. Roadmap Milestones 1 through 5 are complete. Milestone 6 Tasks 1–4 implement a candidate-neutral local TTS feasibility harness and ADR-0013's no-viable-profile decision: both exact evaluated profiles failed frozen gates. The desktop can open a supported local EPUB, render and navigate its safe reflowable content, apply bounded display preferences, and restore a validated logical reading position after exact-file reselection. The EPUB package also exposes deterministic, bounded, locator-linked narration preparation. The desktop does not call that operation, and no production TTS engine, process protocol, generated audio, playback, synchronization, hardware profile, or installer is implemented.
+> **Status:** pre-alpha. Roadmap Milestones 1 through 6 are complete. Milestone 6 implemented and validated a candidate-neutral local TTS feasibility harness, and ADR-0013 records its no-viable-profile decision: both exact evaluated profiles failed frozen gates. The desktop can open a supported local EPUB, render and navigate its safe reflowable content, apply bounded display preferences, and restore a validated logical reading position after exact-file reselection. The EPUB package also exposes deterministic, bounded, locator-linked narration preparation. The desktop does not call that operation, and no production TTS engine, process protocol, generated audio, playback, synchronization, hardware profile, or installer is implemented.
 
 ## Goal
 

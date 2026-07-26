@@ -8,7 +8,7 @@ Neither evaluated candidate is selected for production.
 This record applies the conjunctive gates in the accepted
 [`tts-feasibility-profile-v2`](../../docs/architecture/tts-feasibility-profile-v2.md)
 to the content-free actual results recorded in the
-[Milestone 6 ExecPlan](../../docs/plans/active/M006-local-tts-feasibility-and-engine-profiles.md).
+[Milestone 6 completed ExecPlan](../../docs/plans/completed/M006-local-tts-feasibility-and-engine-profiles.md).
 The exact candidate identities remain frozen by
 [`candidates-v1.json`](candidates-v1.json).
 

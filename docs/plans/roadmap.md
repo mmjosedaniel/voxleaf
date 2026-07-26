@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 5 are complete. Milestone 6, local TTS feasibility and engine-profile selection, is the next roadmap priority. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 6 are complete. Milestone 7 remains blocked until a newly frozen local TTS evaluation selects a viable profile. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -178,15 +178,15 @@ Milestones 2 through 4 provide the shared locator-range and narration-segment co
 
 ## Milestone 6: Prove local TTS feasibility and select engine profiles
 
-**Status:** In progress. Milestones 1–4 of the
-[Milestone 6 ExecPlan](active/M006-local-tts-feasibility-and-engine-profiles.md)
-are complete. The frozen candidate-neutral harness measured both exact
-profiles; the one-evaluator Spanish result remains limited; the
-license/offline/packaging audit is complete; and
+**Status:** Complete. The
+[Milestone 6 completed ExecPlan](completed/M006-local-tts-feasibility-and-engine-profiles.md)
+records the frozen candidate-neutral harness, both exact measurements, the
+limited one-evaluator Spanish result, the license/offline/packaging audit, and
+the deterministic, hardware, privacy, artifact, repository, and required CI
+closeout.
 [ADR-0013](../architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md)
-selects neither profile. Milestone 5 deterministic, hardware, privacy,
-repository, and pull-request closeout remains. No production runtime
-dependency or general hardware-support claim exists.
+selects neither profile. No production runtime dependency or general
+hardware-support claim exists.
 
 ### Goal
 

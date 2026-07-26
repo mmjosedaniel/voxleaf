@@ -1503,8 +1503,7 @@ Milestone 6 is complete without pretending that the production TTS or audio path
 
 #### Actual result
 
-Local closeout completed on 2026-07-25; required pull-request validation is
-pending external publication of this branch.
+Completed on 2026-07-25.
 
 - `git diff --stat`, `git diff --name-only`, and `git diff --check` show only
   this ExecPlan's closeout evidence relative to `main`. No application,
@@ -1531,17 +1530,19 @@ pending external publication of this branch.
   evidence; the production TTS runtime, transport, audio, synchronization,
   hardware support, and packaging remain blocked or deferred.
 - Task 5.1 passed the authoritative native and portable aggregate commands on
-  this branch. The exact final documentation head still requires the existing
-  `Windows native foundation` and `Ubuntu portable foundation` pull-request
-  jobs before this task can be marked complete and the plan can move to
-  `docs/plans/completed/`.
+  this branch. Pull request
+  [#97](https://github.com/mmjosedaniel/voxleaf/pull/97) tested exact
+  implementation-and-evidence head
+  `4f06d8460cdee2e140602436f2004e30cfe83fb8` in foundation run
+  [30181825607](https://github.com/mmjosedaniel/voxleaf/actions/runs/30181825607).
+  `Ubuntu portable foundation` passed in 1 minute 25 seconds and `Windows
+  native foundation` passed in 12 minutes 59 seconds.
 
 #### Status
 
-In progress — every local deterministic, hardware-evidence, cleanup, privacy,
-artifact, scope, link, and repository check is complete. Required
-pull-request CI on the final published head and the completed-plan transition
-remain.
+Complete — deterministic, hardware-evidence, cleanup, privacy, artifact,
+scope, link, repository, and required pull-request validation are green. The
+plan is closed with no selected engine profile and no production TTS runtime.
 
 ## Testing and benchmark strategy
 
@@ -1895,6 +1896,12 @@ A profile is selectable only when its performance, quality, capability, license,
   private/corpus/canary values, production dependencies and CI remain
   model-free, and the canonical architecture boundary is unchanged. Final
   pull-request CI and completed-plan movement await branch publication.
+- 2026-07-25: Completed Task 5.3. Pull request #97 foundation run
+  `30181825607` passed Ubuntu portable and Windows native validation on exact
+  implementation-and-evidence head `4f06d8460cdee2e140602436f2004e30cfe83fb8`.
+  Repository status documentation now marks Milestone 6 complete, and this
+  ExecPlan moves to `docs/plans/completed/`. Milestone 7 remains blocked by
+  ADR-0013's no-viable-profile decision.
 
 ## Discoveries and decisions
 
@@ -2112,7 +2119,7 @@ Completed on 2026-07-25 on `feat/m006-select-engine-profiles`:
 
 ### Milestone 5 closeout validation
 
-Local validation completed on 2026-07-25 on
+Validation completed on 2026-07-25 on
 `feat/m006-close-validation`:
 
 - Both isolated candidate locks synchronized exactly, and model-free import
@@ -2128,14 +2135,14 @@ Local validation completed on 2026-07-25 on
   model-free CI, zero-production-dependency, canonical architecture, and
   relative-link reviews all passed. Three overlooked ignored historical raw
   journals were removed; zero raw files and zero WAV files remain.
-- The final branch currently changes only this ExecPlan. It adds no runtime
+- The implementation-and-evidence head
+  `4f06d8460cdee2e140602436f2004e30cfe83fb8` passed both required
+  pull-request jobs in foundation run `30181825607`. Ubuntu portable passed in
+  1 minute 25 seconds; Windows native passed in 12 minutes 59 seconds.
+- The final branch changes only closeout documentation. It adds no runtime
   behavior or support claim and does not rerun the unchanged accepted `v2`
   hardware matrices.
 
-The existing `Windows native foundation` and `Ubuntu portable foundation`
-pull-request jobs must still pass on the exact final published head. After
-that result is recorded, Task 5.3 can become complete, repository status
-documentation can advance Milestone 6, and this plan can move to
-`docs/plans/completed/`.
-
-This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.
+Every task has an actual result, ADR-0013 records the explicit no-viable
+outcome, required CI passed on the final implementation-and-evidence head, and
+the repository definition of done is satisfied. This plan is complete.
