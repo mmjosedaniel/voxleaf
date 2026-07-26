@@ -50,6 +50,9 @@ roadmap Milestone 6. It is not a production TTS service boundary.
 - `fixtures/` contains synthetic validation fixtures, not candidate results.
 - [`selection-v2.md`](selection-v2.md) is the accepted content-free decision
   matrix. It rejects both exact evaluated profiles and links ADR-0013.
+- [`selection-v3.md`](selection-v3.md) is the accepted content-free Milestone
+  6.1 decision record. It preserves the failed standard Serena `v3` result and
+  separately records ADR-0014's exact constrained development-demo exception.
 - [`docs/architecture/tts-feasibility-profile-v3.md`](../../docs/architecture/tts-feasibility-profile-v3.md)
   is the active blocker-resolution authority for the selected Serena
   development candidate. `v2` remains the completed first-cycle authority and

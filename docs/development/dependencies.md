@@ -77,7 +77,9 @@ code; it added no production dependency or lock edge. The official `v3`
 performance matrix then failed the frozen startup, throughput, and
 mid-generation cancellation gates. ADR-0014 permits the exact profile only for
 a future bounded development demo; it does not add the candidate to the
-production graph or approve distribution.
+production graph or approve distribution. The content-free
+`benchmarks/tts/selection-v3.md` record preserves both conclusions and adds no
+dependency or lock edge.
 
 The planned
 [Milestone 6.2 batch-feasibility plan](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md)

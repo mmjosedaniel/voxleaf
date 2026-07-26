@@ -217,8 +217,10 @@ tests do not load a model or require CUDA. The manual prototype proves bounded
 complete-segment delivery, identity-first stale rejection, worker termination,
 and cleanup; it does not prove native streaming or production transport. One
 fluent maintainer accepted audible quality for a near-term demo and ADR-0014
-permits only that constrained development path. Formal selection consequences
-and closeout remain. Base voice cloning is outside the current MVP. Whisper and
+permits only that constrained development path. The accepted candidate-neutral
+[`selection-v3`](../../benchmarks/tts/selection-v3.md) retains the failed
+standard result and records the separate demo exception. Repository/CI
+closeout remains. Base voice cloning is outside the current MVP. Whisper and
 VAD/energy analysis are excluded from `v3`.
 
 The planned

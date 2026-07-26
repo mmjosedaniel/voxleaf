@@ -231,6 +231,10 @@ seconds, so an indefinitely long bounded buffer loses approximately 27 seconds
 per minute. ADR-0014 therefore permits this exact profile only for a bounded
 development demo with explicit preparation/buffering; it does not change the
 normal startup, sustained-throughput, underrun, or cancellation targets above.
+The content-free
+[`selection-v3`](../../benchmarks/tts/selection-v3.md) record applies those
+failed gates and keeps the constrained demo exception separate from standard
+profile promotion.
 
 The `1.7B` model label is a parameter count, not a 1.7-GB VRAM requirement. The
 frozen main model safetensors occupy 3,833,402,552 bytes and the speech

@@ -10,6 +10,8 @@ ADR-0014 permits only a future bounded development demo with that exact local
 profile; it adds no production dependency and does not approve continuous
 playback. TTS inference, transport, audio, playback, synchronization, hardware
 detection, and installers remain unimplemented.
+The content-free `benchmarks/tts/selection-v3.md` record retains that failed
+standard result and separately identifies the constrained demo input.
 
 Milestone 6.2 is planned but has no command or result yet. Its separate
 ExecPlan must freeze the `v4` authority and add a reviewed batch hardware

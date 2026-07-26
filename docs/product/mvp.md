@@ -41,7 +41,10 @@ Implemented and validated:
 
 Remaining:
 
-- Complete the active Milestone 6.1 blocker-resolution plan: record the failed standard `v3` result and freeze the exact Serena profile only as a constrained development-demo input under ADR-0014.
+- Close the active Milestone 6.1 blocker-resolution plan through final
+  repository/privacy validation and required CI. Its accepted `selection-v3`
+  already retains failed standard `v3` and freezes the exact Serena identity
+  only as a constrained development-demo input under ADR-0014.
 - Execute the planned Milestone 6.2 pre-result evaluation before claiming that
   shared-model batch size two supports sustainable or continuous narration.
 - Implement a bounded demonstration excerpt with model prewarming, complete narration units, explicit preparation/buffering, one queued unit, identity-first cancellation, and no generated-audio persistence; do not claim uninterrupted or real-time narration.
