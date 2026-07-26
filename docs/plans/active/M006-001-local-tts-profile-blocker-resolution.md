@@ -700,6 +700,10 @@ changing production contracts or dependencies.
   tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204 tests, 6
   native-WebDriver-client tests, and 56 Python tests. The existing
   informational Vite chunk-size advisory remains unchanged.
+- 2026-07-25: Committed the corrected immutable pre-audio authority as
+  `ad9d835b998d63b6df909050a9d9513957b180ac`
+  (`fix(tts): add applicable speaker-screen scoring`). No replacement
+  generation request had been accepted before this checkpoint.
 
 ## Discoveries and decisions
 
