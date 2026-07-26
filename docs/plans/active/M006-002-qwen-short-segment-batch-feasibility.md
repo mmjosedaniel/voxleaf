@@ -594,7 +594,14 @@ in this milestone.
 
 #### Status
 
-Not started.
+In progress. The reviewed official evidence/derivation implementation is
+committed and the non-promotable CPU pilot passed. The first official CPU arm
+completed all eight measured first attempts, but a derivation-lifecycle defect
+deleted its ignored raw session before reporting a raw-schema rejection. That
+run is explicitly non-promotable. The corrected derivation retains failed raw
+evidence for content-free diagnosis and deletes it only after a schema-valid
+safe summary is derived. A fresh clean-checkpoint CPU run remains required
+before later arms.
 
 ### Milestone 9: Evaluate five-minute bounded playback credibility and quality
 
@@ -1056,6 +1063,32 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
   Ruff, strict mypy over 71 source files, 144 Python tests, package JSON
   formatting, and `git diff --check` passed. The only warning was the
   pre-existing primary-checkout pytest-cache ACL warning.
+- 2026-07-26: Created branch
+  `feat/m006-2-cpu-solo-concurrent-matrix` from merged `main` at `0d36817`.
+  Added frozen official cold-load, warmup, measured-arm, process/RAM/commit,
+  PID-tagged WDDM, cancellation, cleanup, ignored raw, and content-safe
+  derivation support. Checkpoints `6472b81` and `abc6eb5` keep the candidate
+  lock unchanged and allow execution-time authority verification without
+  adding the base environment's JSON-schema library to the isolated Qwen
+  environment.
+- 2026-07-26: The first pilot attempt stopped before model load because the
+  invoking process lacked `HF_HUB_OFFLINE=1` and
+  `TRANSFORMERS_OFFLINE=1`. With those existing controls set, the
+  non-promotable CPU-only pilot completed two first attempts in 134.3 seconds
+  with aggregate RTF `3.0552449189419795`, zero CPU-worker dedicated/shared
+  GPU bytes, no failure, no stale result, and frozen CPU-official admission.
+- 2026-07-26: The first official CPU arm at checkpoint `abc6eb5` completed in
+  385.8 seconds with all eight measured first attempts and private raw
+  capture. Its first derivation failed closed at raw-schema validation, but
+  the new derivation command deleted the ignored session before exposing the
+  content-free failing schema path. The receipt and run are non-promotable;
+  no result file, audio, book text, or private raw evidence was committed.
+- 2026-07-26: Corrected the lifecycle so a failed derivation retains only its
+  ignored raw session for diagnosis, successful derivation deletes that
+  session before returning a safe summary, and schema failures report only
+  the first schema path and validator. Added success/failure lifecycle
+  regressions. A new clean-checkpoint CPU pilot and official arm will replace,
+  not promote, the invalid tooling run.
 
 ## Discoveries and decisions
 
@@ -1133,8 +1166,8 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
 20. Windows reports the exact reference CPU as
     `Intel(R) Core(TM) Ultra 7 255HX`, while the frozen v4 reference label
     intentionally omits trademark markers. Exact-host comparison must remove
-     only `(R)` and `(TM)` plus duplicate whitespace before comparing and
-     before writing the frozen raw host identity.
+    only `(R)` and `(TM)` plus duplicate whitespace before comparing and
+    before writing the frozen raw host identity.
 21. The disposable pilot's 81,788,928-byte shared-memory observation was not
     noise that the official authority could waive. The final official run
     observed 79,691,776 bytes, so the frozen zero-shared-memory rule stopped

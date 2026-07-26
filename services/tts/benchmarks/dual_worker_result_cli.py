@@ -8,13 +8,15 @@ import sys
 from pathlib import Path
 from typing import Final, cast
 
+from jsonschema import Draft202012Validator
+
 from benchmarks.dual_worker_official import delete_private_raw, official_raw_root
 from benchmarks.dual_worker_result import (
     DualWorkerResultError,
     canonical_summary_json,
     derive_v5_summary,
 )
-from benchmarks.v5_authority import V5AuthorityError
+from benchmarks.v5_authority import V5AuthorityError, load_frozen_v5_authority
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 MAXIMUM_STDIN_BYTES: Final = 4_096
@@ -53,19 +55,40 @@ def _run(payload: dict[str, str]) -> dict[str, object]:
         raw = cast(dict[str, object], json.loads(path.read_text(encoding="utf-8")))
         if raw.get("arm") != payload["arm"]:
             raise DualWorkerResultError("input")
-        cleanup = cast(dict[str, object], raw.get("cleanup"))
-        delete_private_raw(REPOSITORY_ROOT, session_id)
+        cleanup_value = raw.get("cleanup")
+        if not isinstance(cleanup_value, dict):
+            raise DualWorkerResultError("raw")
+        cleanup = cast(dict[str, object], cleanup_value)
         cleanup["rawSessionRemoved"] = True
         baseline: object | None = None
         if payload["arm"] == "concurrent":
             baseline = json.loads(_summary_path("gpu-solo").read_text(encoding="utf-8"))
-        return derive_v5_summary(
-            REPOSITORY_ROOT,
-            raw,
-            gpu_baseline_value=baseline,
-        )
-    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        try:
+            summary = derive_v5_summary(
+                REPOSITORY_ROOT,
+                raw,
+                gpu_baseline_value=baseline,
+            )
+        except V5AuthorityError as error:
+            if str(error).endswith(":result-schema"):
+                authority = load_frozen_v5_authority(REPOSITORY_ROOT)
+                schema_errors = sorted(
+                    Draft202012Validator(authority.raw_schema).iter_errors(raw),
+                    key=lambda item: tuple(str(part) for part in item.absolute_path),
+                )
+                if schema_errors:
+                    first = schema_errors[0]
+                    schema_path = "-".join(str(part) for part in first.absolute_path) or "root"
+                    validator = str(first.validator or "unknown")
+                    raise DualWorkerResultError(
+                        f"result-schema-{schema_path}-{validator}"[:160]
+                    ) from error
+            raise
         delete_private_raw(REPOSITORY_ROOT, session_id)
+        if official_raw_root(REPOSITORY_ROOT, session_id).exists():
+            raise DualWorkerResultError("cleanup")
+        return summary
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
         raise DualWorkerResultError("raw") from error
 
 

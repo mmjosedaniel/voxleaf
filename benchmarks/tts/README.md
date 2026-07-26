@@ -416,18 +416,31 @@ import, uses CPU float32 with twelve/one threads, and rejects CUDA, disk, meta,
 or implicit placement. The GPU process uses `cuda:0` BF16 with four/one
 threads. Each process owns at most one blocking complete-waveform call.
 
-The command receipt is intentionally non-promotable in Milestone 7.
-Milestone 8 must add and execute the frozen private raw evidence, cancellation,
-memory, cleanup, and safe-summary derivation before any receipt becomes a
-`v5` result. Do not run the positive hardware path outside that milestone.
-The no-model invalid-input smoke is safe now:
+Milestone 8 adds private raw evidence, cancellation, memory/commit, cleanup,
+and safe-summary derivation. The hardware command still emits only a
+non-promotable receipt. Official raw stays under the ignored
+`benchmarks/results/raw/dual-worker-v5/<session-id>/` boundary. Run the base
+environment derivation with the same arm and session; it validates authority
+and schema, deletes the exact raw session only after successful derivation,
+and emits the content-safe summary. A failed derivation retains ignored raw
+for content-free diagnosis and never emits a result.
+
+Both positive commands require `HF_HUB_OFFLINE=1` and
+`TRANSFORMERS_OFFLINE=1`, the exact outbound firewall block, AC power, disabled
+sleep, accepted background/thermal conditions, a clean committed checkpoint,
+and the frozen resource headroom. Later arms also require SHA-256 hashes of the
+already committed prior safe summaries. Never place valid private command
+input in a tracked file.
+
+The no-model invalid-input smokes are safe:
 
 ```powershell
 "{}" | pnpm.cmd benchmark:tts:dual-worker
+"{}" | pnpm.cmd benchmark:tts:dual-worker:derive
 ```
 
-It returns only `{"status":"fail","failureCode":"input"}` and does not import
-Qwen or PyTorch. Never place valid private command input in a tracked file.
+Each returns only `{"status":"fail","failureCode":"input"}`. Neither loads Qwen
+or PyTorch.
 
 ## Disposable blinded quality session
 
