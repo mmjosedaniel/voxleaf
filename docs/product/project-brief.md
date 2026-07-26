@@ -6,7 +6,7 @@ This brief explains the intended VoxLeaf experience and the motivation behind th
 
 The normative MVP scope is in [`mvp.md`](mvp.md). Accepted technical decisions are recorded under [`../architecture/decisions/`](../architecture/decisions/), and current performance targets are in [`../architecture/performance-budget.md`](../architecture/performance-budget.md).
 
-The implemented product boundary currently includes private local EPUB ingestion, semantic visual reading/navigation, bounded display preferences, logical-position persistence, exact/nearest-valid restoration after exact-file reselection, and deterministic bounded narration-text preparation through `OpenedPublication.prepareNarration`. The package-owned narration path exhaustively projects semantic source positions, retains Unicode-code-point source spans, applies source-mapped neutral/Spanish normalization, scans and packs semantic boundaries, and emits immutable canonical locator-linked batches under fixed cancellation, close, privacy, and resource limits. Repository-authored public EPUB-to-segment and deterministic exact-bound/resource evidence validate that boundary. The Milestone 6 benchmark harness and no-viable-profile decision are also implemented as development evidence: the exact Qwen 0.6B CustomVoice and Supertonic compatibility profiles both failed frozen gates, so neither is selected. Milestone 6.1 is approved and planned to assess a different Qwen 1.7B Base ICL profile; it has not started. This does not make narration audible. Milestone 7 TTS engine integration remains blocked; generated audio, playback, synchronized highlighting, general hardware profiles, and installers remain deferred. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
+The implemented product boundary currently includes private local EPUB ingestion, semantic visual reading/navigation, bounded display preferences, logical-position persistence, exact/nearest-valid restoration after exact-file reselection, and deterministic bounded narration-text preparation through `OpenedPublication.prepareNarration`. The package-owned narration path exhaustively projects semantic source positions, retains Unicode-code-point source spans, applies source-mapped neutral/Spanish normalization, scans and packs semantic boundaries, and emits immutable canonical locator-linked batches under fixed cancellation, close, privacy, and resource limits. Repository-authored public EPUB-to-segment and deterministic exact-bound/resource evidence validate that boundary. The Milestone 6 benchmark harness and no-viable-profile decision are also implemented as development evidence: the exact Qwen 0.6B CustomVoice and Supertonic compatibility profiles both failed frozen gates, so neither is selected. Milestone 6.1 is approved and planned to screen Qwen 1.7B CustomVoice's built-in speakers and assess one frozen Spanish default-narrator profile; it has not started. This does not make narration audible. Milestone 7 TTS engine integration remains blocked; generated audio, playback, synchronized highlighting, general hardware profiles, and installers remain deferred. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
 
 ## Summary
 
@@ -114,8 +114,9 @@ directions are separated below:
 | TTS process | Deferred; blocked | Future persistent local process | Requires a passing engine profile before lifecycle, transport, and recovery implementation |
 | Balanced model | Rejected exact profile | Qwen3-TTS 0.6B CustomVoice, Aiden, CUDA bfloat16/SDPA | Failed startup, throughput, cancellation, zero-failure, and complete-quality gates |
 | Compatibility model | Rejected exact profile | Supertonic 3, F1, Spanish mode, ONNX Runtime CPU | Failed first-audio, cancellation, zero-failure, and complete-quality gates |
-| Blocker-resolution candidate | Approved for evaluation only | Qwen3-TTS 12Hz 1.7B Base, transcript-conditioned ICL voice cloning | Freeze `v3`; prove exact local incremental output, cancellation, quality, resources, offline behavior, licensing, and packaging |
-| Embedding-only experiment | Candidate intake only | The same 1.7B Base model with `x_vector_only_mode` | Keep separate from ICL; the maintainer found it robotic but acceptable and official Qwen guidance warns that cloning quality may be reduced |
+| Blocker-resolution candidate | Approved for evaluation only | Qwen3-TTS 12Hz 1.7B CustomVoice with one frozen built-in speaker and neutral Spanish audiobook instruction | Freeze the speaker screen and `v3`; prove exact local incremental output, cancellation, quality, resources, offline behavior, licensing, and packaging |
+| Built-in speaker selection | Approved screening only | All nine official CustomVoice speakers under one fixed blinded synthetic Spanish screen | None is described as Spanish-native; select exactly one by predeclared rules before `v3`, or reject the candidate |
+| Base voice cloning | Outside current MVP | Qwen3-TTS 1.7B Base ICL/x-vector modes require user reference audio | Retained only as related-runtime prototype evidence; no enrollment, clone prompt, or reference-data path is planned |
 | OpenAI Whisper | Rejected as TTS candidate | Automatic speech recognition: audio input and text output | Optional fully local benchmark-only transcription may be assessed separately; it cannot generate narration or replace human quality review |
 | Process transport | Unselected | Typed local IPC, standard streams, local socket, or loopback WebSocket | Deferred until a viable engine exposes real output and cancellation behavior |
 | Internal audio | Unselected | Streamed PCM with a bounded ring buffer | Browser and platform support, memory, playback quality, and speed control |
@@ -125,9 +126,10 @@ ADR-0013 records the exact rejection evidence and requires a newly frozen
 candidate cycle before engine integration. The
 [Milestone 6.1 plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md)
 records the official Qwen/Whisper research and the next tasks without selecting
-an engine. Voice cloning is evaluation scope only; user enrollment, consent,
-ownership, impersonation safeguards, reference-data deletion/persistence, and
-recovery require a separate accepted product and privacy decision. Audio
+an engine or built-in speaker. The MVP uses a built-in default narrator; user
+voice cloning, enrollment, consent, ownership, impersonation safeguards, and
+reference-data persistence remain outside scope and would require a separate
+accepted product/privacy decision. Audio
 encoding, transport, process ownership, and buffer thresholds still require
 prototypes, benchmarks,
 and—where durable—an architecture decision record. Current buffer and latency

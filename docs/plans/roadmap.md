@@ -228,20 +228,22 @@ or protocol work begins.
 
 ### Expected outcome
 
-- Freeze `tts-feasibility-profile-v3` before observing official results.
-- Evaluate Qwen3-TTS 12Hz 1.7B Base transcript-conditioned voice cloning as a
-  materially different candidate from the rejected 0.6B CustomVoice/Aiden
-  profile.
-- If speaker-embedding-only `x_vector_only_mode` is admitted, evaluate it as a
-  separate profile because the official Qwen documentation warns that it may
-  reduce cloning quality.
+- Record the MVP's built-in-default-voice direction; Base ICL/x-vector voice
+  cloning and reference-audio enrollment remain out of scope.
+- Freeze and execute a bounded blinded Spanish screen across the nine official
+  Qwen3-TTS 12Hz 1.7B CustomVoice speakers using one fixed synthetic corpus,
+  neutral audiobook instruction, settings set, and predeclared selection
+  rules.
+- Select exactly one built-in speaker from that screen, then freeze its
+  speaker ID, neutral instruction, and complete candidate identity in
+  `tts-feasibility-profile-v3` before observing official benchmark results.
 - Prove an actual incremental-audio and bounded cancellation boundary through
   the exact local runtime; upstream family-level streaming or 97 ms claims are
   candidate-intake facts, not VoxLeaf evidence.
-- Reuse an authorized reference prompt only in memory under a complete
-  candidate/reference/settings identity, keep the frozen candidate batch at
-  one, consume `narration-v1` segments, and release each bounded audio unit as
-  soon as it is valid.
+- Keep the selected model resident under a complete
+  candidate/speaker/instruction/settings identity, keep the frozen candidate
+  batch at one, consume `narration-v1` segments, and release each bounded audio
+  unit as soon as it is valid.
 - Count first attempts honestly. Automatic retries cannot rescue official
   gates; VAD/energy checks, if frozen, run after timing as content-free defect
   signals and do not repair audio or replace human review.
@@ -257,7 +259,7 @@ The completed Milestone 6 harness, frozen `v2` evidence, and ADR-0013 remain
 the baseline. The implemented `narration-v1` package boundary supplies bounded
 locator-linked text units. Candidate execution additionally requires an exact
 isolated lock, verified local artifacts, outbound blocking, an authorized
-reference-voice policy, and pre-result `v3` authority.
+built-in-speaker screening authority, and pre-result `v3` authority.
 
 ### Major risks and unknowns
 
@@ -266,9 +268,10 @@ reference-voice policy, and pre-result `v3` authority.
   mid-generation cancellation are still unproven.
 - The 1.7B model may fail startup, throughput, memory, artifact-size,
   packaging, reliability, or complete-panel quality gates.
-- Voice cloning introduces consent, ownership, impersonation, deletion, and
-  sensitive-reference-data questions that informal local success does not
-  answer.
+- None of the nine built-in speakers is described as Spanish-native; the
+  frozen screen may reject all of them.
+- The 1.7B CustomVoice profile may not improve enough over the failed 0.6B
+  CustomVoice/Aiden profile to justify its additional resource cost.
 - A modified runtime or third-party streaming fork may be too costly to audit,
   package, secure, and maintain.
 - Automatic speech recognition can estimate content consistency but cannot
@@ -289,8 +292,9 @@ Run the selected TTS engines behind a secure, typed, cancellable local process b
 - The desktop can start, monitor, use, recover, and stop a persistent local TTS service.
 - Model loading, warm-up, capabilities, synthesis, streamed audio, cancellation, health, recoverable errors, and fatal errors use a versioned protocol.
 - Audio frames and control messages preserve session, generation, segment, format, and locator identity.
-- A selected voice-clone prompt, if any, has an explicit in-memory owner,
-  complete identity key, invalidation rule, and release lifecycle.
+- The selected built-in speaker/instruction configuration has an explicit
+  in-memory owner, complete identity key, invalidation rule, and release
+  lifecycle.
 - The service emits each valid bounded segment/frame unit when available
   rather than accumulating a paragraph or chapter.
 - The service accepts bounded work, exposes measurable lifecycle state, and never logs narration text.

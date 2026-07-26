@@ -22,12 +22,13 @@ startup, sustained generation, memory, cancellation, offline, privacy,
 licensing, cleanup, and packaging gates without buying different development
 hardware.
 
-The primary new candidate direction is Qwen3-TTS 12Hz 1.7B Base voice cloning
-in transcript-conditioned ICL mode. The speaker-embedding-only
-`x_vector_only_mode` is a separate possible fallback profile because it changes
-quality and conditioning behavior materially. OpenAI Whisper is rejected as a
-production TTS candidate because it recognizes speech and emits text rather
-than synthesizing speech from text.
+The primary new candidate direction is Qwen3-TTS 12Hz 1.7B CustomVoice using
+one built-in speaker and one neutral Spanish audiobook instruction selected
+under a frozen bounded screening protocol. The Base voice-cloning path is
+outside the current MVP because the product requires a default narrator rather
+than a user voice clone. OpenAI Whisper is rejected as a production TTS
+candidate because it recognizes speech and emits text rather than synthesizing
+speech from text.
 
 ## User-visible outcome
 
@@ -37,11 +38,10 @@ begin a separate process/protocol implementation plan. If it fails, VoxLeaf
 retains a truthful blocker instead of integrating a model that cannot meet the
 reader's startup, cancellation, quality, privacy, or resource requirements.
 
-Voice cloning is evaluation scope only at plan creation. This plan does not
-silently add voice enrollment, reference-audio persistence, impersonation
-features, or generated-audio export to the MVP. Any production voice-cloning
-experience requires an explicit product, consent, privacy, and persistence
-decision before Milestone 7 can expose it.
+The selected candidate must require no user voice enrollment or reference
+audio. Voice cloning, voice design, impersonation features, and generated-audio
+export remain outside the MVP. Any future production voice-cloning experience
+requires a separate product, consent, privacy, and persistence decision.
 
 ## Current state
 
@@ -66,6 +66,11 @@ decision before Milestone 7 can expose it.
 The maintainer has a separate, external WSL prototype that was inspected
 read-only. It is not copied into VoxLeaf and its private inputs and outputs are
 not repository evidence.
+
+Because the clarified MVP requires a built-in default narrator, this Base
+voice-cloning prototype is now hardware/runtime and implementation-pattern
+intake evidence only. Its model, prompt, reference inputs, ICL result, and
+x-vector result are not the Milestone 6.1 candidate.
 
 The inspected current prototype:
 
@@ -100,21 +105,23 @@ installer-size claim.
 The following concepts should inform the blocker-resolution prototype without
 copying the personal batch-audiobook implementation:
 
-1. Build a reference prompt once, then reuse it for bounded generation units.
+1. Load the exact model once and reuse only the frozen built-in
+   speaker/instruction configuration for bounded generation units.
 2. Keep candidate batching at one until measurements justify a larger batch.
 3. Generate from VoxLeaf's stable locator-linked narration segments and
    publish each valid segment as soon as its audio is available.
 4. Keep any diagnostic retry bounded and explicit without allowing it to hide
    an official first-attempt failure; reject every result whose session,
-   generation, segment, model, voice, reference, or settings identity is
+   generation, segment, model, built-in speaker, instruction, or settings
+   identity is
    stale.
 5. Evaluate VAD or a cheaper content-free signal as a post-generation defect
    detector without making it a substitute for human Spanish quality review.
-6. Measure ICL and x-vector-only modes as different profiles; never switch
-   between them silently.
-7. Fingerprint every configuration and authorized reference input used for
-   evaluation without retaining the reference audio, transcript, generated
-   audio, or book text in committed artifacts.
+6. Screen built-in speakers under one predeclared Spanish protocol, then freeze
+   one speaker and never switch speakers or instructions silently.
+7. Fingerprint every model, built-in speaker, instruction, and settings
+   configuration used for evaluation without retaining generated audio or book
+   text in committed artifacts.
 
 ### Prototype behavior that VoxLeaf must not copy
 
@@ -141,46 +148,52 @@ privacy, and honest failure accounting:
 
 | Suggestion or observed behavior | Decision | First implementation phase | Later production owner |
 | --- | --- | --- | --- |
-| Build the voice-clone prompt once and reuse it | **Adopt with bounds.** Reuse one in-memory prompt only inside an authorized evaluation session. Key it by exact engine/model revision, mode, reference fingerprint, transcript fingerprint, sampling/configuration, precision, and provider; dispose it on session end or identity change. | Plan Milestones 1–3 | Milestone 7 service lifecycle, only for a selected profile |
+| Build the voice-clone prompt once and reuse it | **Do not transfer the prompt.** Base cloning is outside this MVP. Retain only the analogous bounded idea: load the selected CustomVoice model once and reuse one exact built-in speaker/instruction/settings identity in memory. | Plan Milestones 1–3 | Milestone 7 service lifecycle, only for a selected profile |
 | Generate with candidate batch size one | **Adopt as the conservative `v3` default.** It limits retained work and makes segment ownership observable. A larger batch requires pre-result authority plus measured benefit without weakening memory or cancellation. | Plan Milestones 1–4 | Milestone 7 may retain or supersede it from selected-profile evidence |
 | Use bounded VoxLeaf narration segments | **Adopt.** The candidate consumes existing `narration-v1` units; it does not invent paragraph/chapter accumulation or model-specific text contracts. | Plan Milestone 2 | Milestones 7 and 9 |
 | Deliver each completed segment immediately | **Adopt for the prototype and selected-profile handoff.** Segment-at-a-time delivery improves startup and boundedness, but a complete-waveform call still does not prove mid-segment streaming or cancellation. | Plan Milestone 2 | Milestone 7 emits selected-profile audio; Milestone 8 buffers/plays it |
 | Retry failed segments a limited number of times | **Defer for production and prohibit as hidden benchmark recovery.** Official `v3` measurements count the first attempt and every failure. A separately labeled diagnostic retry may investigate a defect but cannot make a gate pass. | Plan Milestones 1 and 3 freeze/test failure accounting only | Milestone 10 may add bounded retry after failure classification, stale-result rejection, backoff, cleanup, and latency evidence |
 | Use VAD/energy checks for silence, missing speech, or broken tails | **Adopt only as an optional benchmark defect signal.** Run it after timed synthesis, preserve the original result, report only content-free flags/counts, and keep human Spanish review authoritative. Do not trim, fade, repair, or rescore official audio automatically. | Plan Milestones 1, 3, and 4 if admitted before results | Milestone 10 may consider production monitoring only after false-positive, latency, memory, dependency, and quality evidence |
-| Attach generation identities and discard obsolete audio | **Adopt as mandatory.** Use the existing session/generation/segment identities plus exact candidate, voice/reference, and settings identity. Identity rejects stale output even when the model cannot stop promptly; it does not replace cancellation cleanup. | Plan Milestones 1–3 | Milestones 7–9 enforce the protocol, buffer, playback, and synchronization boundary |
-| Evaluate normal ICL and x-vector-only modes | **Adopt as separate candidate profiles.** They cannot share a result, quality conclusion, fallback label, or silent runtime switch. X-vector-only enters `v3` only if frozen before results. | Plan Milestones 1 and 4 | Milestone 10 may expose a measured fallback only if it independently passes |
-| Fingerprint model, reference, transcript, and settings | **Adopt as mandatory.** Store only content-free hashes/identifiers in safe evidence; private reference material stays in the raw area and is deleted after derivation. | Plan Milestones 1, 3, 4, and 6 | Milestones 7 and 10 own runtime identity and diagnostics |
+| Attach generation identities and discard obsolete audio | **Adopt as mandatory.** Use the existing session/generation/segment identities plus exact candidate, built-in speaker, instruction, and settings identity. Identity rejects stale output even when the model cannot stop promptly; it does not replace cancellation cleanup. | Plan Milestones 1–3 | Milestones 7–9 enforce the protocol, buffer, playback, and synchronization boundary |
+| Evaluate normal ICL and x-vector-only modes | **Exclude from this plan.** Both are Base voice-cloning modes and require reference audio. The external results remain non-promotable intake evidence only. | Product non-goal | No current roadmap commitment |
+| Fingerprint model, built-in speaker, instruction, and settings | **Adopt as mandatory.** Store only content-free hashes/identifiers in safe evidence; generated audio stays in the raw area and is deleted after derivation. | Plan Milestones 1, 3, 4, and 6 | Milestones 7 and 10 own runtime identity and diagnostics |
 | Persist generated WAV files | **Reject for normal VoxLeaf behavior.** Disposable blinded-quality audio may exist only in the ignored private raw area and must be cleaned after evidence derivation. Audiobook export remains outside the MVP. | Existing constraint; verify in Plan Milestones 3, 4, and 6 | Milestones 8 and 11 retain non-persistence |
 | Print narration or store prose previews | **Reject.** Errors, logs, summaries, tests, and diagnostics remain content-free. | Existing constraint; verify in Plan Milestones 3, 4, and 6 | Milestones 7–11 |
 | Track `input.txt`, bytecode, private paths, or raw voice material | **Reject.** Candidate inputs and outputs use ignored private raw storage; repository tests use synthetic/public authorities and privacy canaries. | Plan Milestones 3 and 6 | Milestone 11 packaging/privacy review |
 | Load by remote model name or use unlocked dependencies | **Reject for official or production execution.** Use an isolated lock, exact local artifact revision/hashes, fail-closed offline preflight, outbound blocking, and no runtime download. | Plan Milestones 1, 3, and 4 | Milestone 11 owns the deliberate distribution/acquisition strategy |
-| Reuse audio from a paragraph-text-only cache key | **Reject.** Milestone 6.1 adds no persistent audio cache. In-memory prompt reuse uses the complete identity tuple above; any future audio cache requires a separate privacy/persistence decision. | Plan Milestones 1–3 | No roadmap commitment |
+| Reuse audio from a paragraph-text-only cache key | **Reject.** Milestone 6.1 adds no persistent audio cache. Resident model/config reuse uses the complete identity tuple above; any future audio cache requires a separate privacy/persistence decision. | Plan Milestones 1–3 | No roadmap commitment |
 | Retain and join all paragraph/chapter waveforms | **Reject.** Retention is capped at the active bounded segment/frame and explicit queue limits. | Plan Milestone 2 | Milestones 7 and 8 |
 | Accept the high-level complete-waveform API as “streaming” | **Reject without proof.** The candidate cycle stops before the full matrix unless the exact topology proves bounded delivery, after-first-audio cancellation/stale suppression, and cleanup. | Plan Milestone 2 stop gate | Milestone 7 implements only the capability actually selected |
-| Treat the observed 4.3 GiB model and 7.8 GiB environment as acceptable packaging | **Do not decide from the prototype.** Measure clean locked artifacts separately; retain exact-host and exact-environment scope. | Plan Milestone 4 | Milestones 10 and 11 own support and packaging decisions |
+| Treat the observed Base model's 4.3 GiB cache and 7.8 GiB environment as acceptable CustomVoice packaging | **Reject the inference.** They describe a different model and a non-clean environment. Measure clean locked CustomVoice artifacts separately and retain exact-host scope. | Plan Milestone 4 | Milestones 10 and 11 own support and packaging decisions |
 
 No new ADR is required for this disposition because no production engine,
-transport, retry policy, VAD dependency, cache, or voice-cloning product
-experience is selected. The accepted privacy/boundedness rules already govern
-the project. A passing profile must hand candidate-specific facts to a
-superseding selection ADR; Milestones 7, 8, and 10 must record any later
-durable runtime choices when their evidence exists.
+built-in speaker, instruction, transport, retry policy, VAD dependency, or
+cache is selected. The accepted privacy/boundedness rules already govern the
+project. A passing profile must hand candidate-specific facts to a superseding
+selection ADR; Milestones 7, 8, and 10 must record any later durable runtime
+choices when their evidence exists.
 
 ### Official Qwen3-TTS evidence
 
 The official
 [Qwen3-TTS release post](https://qwen.ai/blog/?id=qwen3tts-0115),
 [Qwen3-TTS repository](https://github.com/QwenLM/Qwen3-TTS), and
-[1.7B Base model card](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base)
+[1.7B CustomVoice model card](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice)
 establish the following candidate-intake facts:
 
-- Qwen publishes 0.6B and 1.7B Base models for rapid voice cloning and lists
-  Spanish among ten supported languages.
-- The Base path accepts reference audio plus its transcript. The official
-  package documentation warns that speaker-embedding-only
-  `x_vector_only_mode` may reduce cloning quality.
-- A reusable prompt can avoid recomputing reference features for every
-  synthesis call.
+- The 1.7B CustomVoice model exposes nine Qwen-provided speaker identities,
+  accepts one `speaker` plus an optional style `instruct`, supports Spanish
+  among ten languages, and requires no user reference audio.
+- None of the nine speaker descriptions has Spanish as its native language.
+  Qwen recommends each speaker's native language for best quality while
+  stating that every speaker can use every supported model language. A frozen
+  Spanish screen is therefore required rather than assuming a default.
+- The 1.7B model adds instruction control over the target built-in timbre. The
+  word “CustomVoice” refers to those speaker-specific fine-tuned timbres; it
+  does not mean arbitrary user voice cloning.
+- Qwen documents `generate_custom_voice` for CustomVoice with a supported
+  speaker ID. It separately documents `generate_voice_clone`, reference audio,
+  and reference transcript for the Base models.
 - The family is described as supporting streaming and advertises a best-case
   end-to-end latency as low as 97 ms. This is an upstream family claim, not
   evidence for VoxLeaf's exact model, Python API, runtime, hardware, corpus, or
@@ -188,15 +201,19 @@ establish the following candidate-intake facts:
 - The official repository currently documents vLLM-Omni local offline
   inference while stating that online serving and further streaming support
   are future work.
-- The 1.7B Base model repository is Apache-2.0 and is approximately 4.54 GB at
-  the reviewed upstream state.
+- The published Spanish content-consistency table does not establish a
+  production result for VoxLeaf, a preferred built-in speaker, naturalness,
+  startup, sustained RTF, cancellation, memory, or packaging.
+- The 1.7B CustomVoice model card declares Apache-2.0. Exact revision,
+  artifacts, embedded-voice terms, and clean disk footprint remain intake
+  audit work.
 
-The installed `qwen-tts==0.1.1` source used by the personal prototype adds an
-important constraint: `generate_voice_clone` returns a list of complete NumPy
-waveforms, and its `non_streaming_mode` option changes text-input conditioning
-rather than exposing an incremental waveform iterator. The prototype also
-sets `non_streaming_mode=True`. Therefore the upstream streaming claim does
-not, by itself, resolve VoxLeaf's incremental-audio or cancellation blocker.
+The official high-level CustomVoice example returns a `wavs` collection after
+`generate_custom_voice`; it does not demonstrate an incremental waveform
+iterator or cooperative cancellation. The installed `qwen-tts==0.1.1` Base
+prototype independently returns complete NumPy waveforms. Therefore the
+upstream streaming claim does not, by itself, resolve VoxLeaf's exact local
+incremental-audio or cancellation blocker.
 
 ### OpenAI Whisper assessment
 
@@ -229,8 +246,14 @@ disposable generated speech and produce aggregate error counts, but:
 
 - Record candidate-intake facts from official sources and the external
   prototype without importing private artifacts or code.
-- Decide whether voice-cloning enrollment is acceptable for evaluation and,
-  separately, whether it could be acceptable product behavior.
+- Freeze a bounded, content-safe Spanish screening authority before generating
+  any CustomVoice speaker-screen output.
+- Screen the nine built-in speakers with one fixed synthetic Spanish corpus,
+  one fixed neutral audiobook instruction, identical settings, blinded order,
+  and predeclared selection/failure rules.
+- Select exactly one built-in speaker from the screen, then freeze its speaker
+  ID, instruction, and complete candidate identity in
+  `tts-feasibility-profile-v3` before official benchmark results.
 - Establish a credible incremental-audio and cancellation prototype before
   admitting a complete-waveform API to another official run.
 - Freeze `tts-feasibility-profile-v3` before any official result is observed.
@@ -249,12 +272,10 @@ disposable generated speech and produce aggregate error counts, but:
 - Treat an upstream benchmark or 97 ms marketing claim as local evidence.
 - Lower a failed `v2` gate after seeing a result.
 - Add OpenAI Whisper or a cloud API to the production TTS dependency graph.
-- Commit reference audio, reference transcripts, generated audio, model
-  weights, raw journals, book text, private paths, secrets, or user identity.
-- Persist voice embeddings, acoustic tokens, reference inputs, or generated
-  audio without a separate accepted privacy/persistence decision.
-- Add audiobook export, voice impersonation, or general voice-cloning product
-  claims.
+- Commit speaker-screen or benchmark audio, generated audio, model weights, raw
+  journals, book text, private paths, secrets, or user identity.
+- Add user voice cloning, reference-audio enrollment, VoiceDesign, audiobook
+  export, voice impersonation, or general voice-cloning product claims.
 
 ## Relevant files and documentation
 
@@ -280,15 +301,16 @@ disposable generated speech and produce aggregate error counts, but:
 ## Architecture and constraints
 
 The candidate-specific adapter remains inside the development-only benchmark
-boundary until a profile passes. Model-specific tokenization, prompt
-construction, sampling controls, x-vector/ICL behavior, and output conversion
-must never leak into `@voxleaf/epub`, `narration-v1`, displayed text, or stable
-locator contracts.
+boundary until a profile passes. Model-specific tokenization, built-in speaker
+IDs, style instructions, sampling controls, and output conversion must never
+leak into `@voxleaf/epub`, `narration-v1`, displayed text, or stable locator
+contracts.
 
 The first prototype must distinguish three different boundaries:
 
-1. **Reference preparation:** decode one authorized reference, create the
-   prompt, measure its time/resources, and keep the result only in memory.
+1. **Speaker/configuration authority:** screen built-in speakers under a frozen
+   intake protocol, select exactly one, and bind it to one fixed neutral
+   audiobook instruction and complete configuration identity.
 2. **Incremental generation:** consume bounded prepared narration segments and
    expose audio in bounded frames or segment waveforms without retaining a
    whole chapter.
@@ -306,14 +328,15 @@ exact-host review.
 
 All official runs must use verified local model paths, disabled runtime
 downloads, outbound blocking, content-free diagnostics, separate raw and safe
-summary areas, and cleanup verification. Reference audio and transcript are
-private sensitive inputs. Generated speech and any Whisper-produced
-transcript are equally sensitive.
+summary areas, and cleanup verification. Speaker-screen audio, generated
+speech, and any Whisper-produced transcript are sensitive disposable evidence.
 
-The personal WSL success demonstrates feasibility on the maintainer's existing
-computer only. Windows remains authoritative for native VoxLeaf development
-and official support evidence. WSL and Windows environments, caches, locks,
-and outputs must remain isolated.
+The personal WSL Base-cloning success demonstrates that a related 1.7B Qwen
+runtime can execute on the maintainer's computer only. It does not prove the
+CustomVoice model, a built-in Spanish narrator, Windows performance, streaming,
+cancellation, or packaging. Windows remains authoritative for native VoxLeaf
+development and official support evidence. WSL and Windows environments,
+caches, locks, and outputs must remain isolated.
 
 ## Milestones
 
@@ -321,34 +344,42 @@ and outputs must remain isolated.
 
 ### Work
 
-- Decide whether user-provided voice cloning is evaluation-only or an
-  acceptable optional MVP direction. Record consent, ownership,
-  impersonation-abuse, deletion, persistence, and recovery boundaries before
-  production selection.
-- Admit exact candidate identifiers for transcript-conditioned 1.7B Base ICL
-  and, only if justified, x-vector-only fallback. Treat them as separate
-  profiles with separate quality and performance outcomes.
+- Record the clarified product direction: the MVP uses a built-in default
+  narrator and does not enroll or clone the user's voice.
+- Admit Qwen3-TTS 12Hz 1.7B CustomVoice as a new exact candidate distinct from
+  the rejected 0.6B CustomVoice/Aiden profile. Exclude Base ICL and
+  x-vector-only cloning from `v3`.
 - Pin the Qwen engine, model revision, artifact hashes, PyTorch/CUDA runtime,
-  attention implementation, precision, sampling parameters, reference-input
-  policy, and supported platform.
-- Define a licensed or explicitly authorized reference corpus that can be
-  evaluated without committing private voice data.
+  attention implementation, precision, sampling parameters, supported speaker
+  allowlist, and supported platform.
+- Freeze `customvoice-spanish-screen-v1` before producing screen audio. It must
+  define the repository-authored synthetic Spanish text, all nine official
+  built-in speaker IDs, one exact neutral audiobook instruction, identical
+  generation settings, blinded/randomized presentation, one fluent-Spanish
+  intake evaluator, deterministic tie/failure rules, safe summary schema, raw
+  isolation, and cleanup.
+- Execute the frozen screen once, retain only its content-free selection
+  outcome, select exactly one built-in speaker, and do not tune the instruction
+  or settings from the observed outputs.
 - Decide whether local Whisper is excluded completely or admitted only as an
   optional post-generation benchmark tool. Do not admit the OpenAI API.
 - Define a pre-admission prototype gate requiring a credible incremental-audio
   and cancellation boundary.
-- Freeze batch size one, the complete prompt identity tuple and in-memory
-  lifetime, first-attempt failure accounting, the no-hidden-retry rule, and
-  whether post-timing VAD/energy checks are admitted.
+- Freeze batch size one, the complete model/speaker/instruction/settings
+  identity and in-memory lifetime, first-attempt failure accounting, the
+  no-hidden-retry rule, and whether post-timing VAD/energy checks are admitted.
 - Publish and accept `tts-feasibility-profile-v3` before official execution.
 
 ### Validation
 
 - Candidate identities and artifacts are immutable and independently
   checkable.
-- ICL and x-vector-only modes cannot be mixed or silently coerced.
+- The screen authority predates its audio/results and cannot be edited to
+  favor an observed speaker.
+- Exactly one built-in speaker and one neutral instruction enter `v3`; runtime
+  speaker or instruction switching is a configuration mismatch.
 - The authority contains no observed official `v3` result.
-- Product and privacy boundaries explicitly cover reference voice data.
+- No user reference audio, transcript, embedding, or clone prompt is accepted.
 - Whisper is absent from the production-candidate set.
 
 ### Status
@@ -361,12 +392,12 @@ Not started. The research in this plan is candidate-intake evidence only.
 
 - Reproduce the exact candidate on the authoritative Windows host from an
   isolated lock and verified local artifacts.
-- Measure reference-prompt preparation separately from model load and
-  synthesis.
+- Measure cold model load and frozen built-in speaker/configuration setup
+  separately from synthesis.
 - Prototype bounded generation from existing `narration-v1` segments with
   batch size one.
-- Build the authorized reference prompt once per exact identity and reuse it
-  without persisting the prompt, reference, transcript, or derived tokens.
+- Keep the selected model resident and reuse only the exact frozen
+  speaker/instruction/settings identity without persisting audio.
 - Publish each valid audio unit immediately instead of joining a paragraph or
   chapter.
 - Cap retained input/output at the active segment plus the explicit test queue;
@@ -374,8 +405,8 @@ Not started. The research in this plan is candidate-intake evidence only.
 - Exercise cancellation before dispatch, after acceptance, after first audio,
   near the hard mid-generation boundary, and during cleanup.
 - Reject late/stale audio by session, generation, segment, candidate,
-  voice/reference, and settings identity even when the underlying model call
-  finishes after cancellation.
+  built-in speaker, instruction, and settings identity even when the
+  underlying model call finishes after cancellation.
 - Stop the candidate cycle before the full matrix if no credible incremental
   output or bounded cancellation topology exists.
 
@@ -383,7 +414,8 @@ Not started. The research in this plan is candidate-intake evidence only.
 
 - The prototype reports first-produced-audio and cancellation timestamps
   without recording input text or audio.
-- Retained text, waveform, prompt, and queue sizes have explicit ceilings.
+- Retained text, waveform, model/configuration, and queue sizes have explicit
+  ceilings.
 - No cancellation trial publishes a stale frame.
 - Worker or cooperative-stop cleanup releases RAM/VRAM within the frozen
   bound.
@@ -399,12 +431,15 @@ Not started. No production adapter is authorized.
 - Add the exact candidate environment and lock outside production runtime
   dependencies.
 - Add a candidate adapter behind the existing benchmark contracts.
-- Add model-free tests for reference metadata, complete prompt-key identity,
-  prompt reuse/disposal, batch-one/retention bounds, unit/frame ordering,
-  first-attempt failure accounting, no-hidden-retry behavior, cancellation,
-  stale identity, cleanup, content-free errors, and configuration mismatch.
+- Add model-free tests for speaker-screen authority/order/outcome integrity,
+  supported-speaker validation, complete model/speaker/instruction/settings
+  identity, resident-config reuse/disposal, batch-one/retention bounds,
+  unit/frame ordering, first-attempt failure accounting, no-hidden-retry
+  behavior, cancellation, stale identity, cleanup, content-free errors, and
+  configuration mismatch.
 - Add fail-closed preflight checks for local artifacts, offline controls,
-  authorized reference fingerprints, runtime/provider/precision, and hardware.
+  selected speaker/instruction fingerprints, runtime/provider/precision, and
+  hardware.
 - If local Whisper is admitted as a test-only tool, run it outside timed TTS
   measurements and reduce its output immediately to content-free aggregate
   counts.
@@ -421,7 +456,7 @@ Not started. No production adapter is authorized.
   model or GPU.
 - Candidate import/preflight smokes are isolated, locked, offline-capable, and
   absent from normal CI model execution.
-- Privacy canaries prove that reference text, book text, ASR transcripts,
+- Privacy canaries prove that screen text, book text, ASR transcripts,
   generated audio, paths, and identity do not reach safe summaries.
 
 ### Status
@@ -439,11 +474,12 @@ Not started.
   into a passing result; separately labeled diagnostic retries are
   non-promotable.
 - Execute blinded Spanish quality evaluation with the frozen minimum panel.
-- Score ICL and x-vector-only separately if both were admitted.
+- Use only the exact built-in speaker and neutral instruction frozen by the
+  screening authority; any mismatch invalidates the run.
 - Run any admitted ASR or VAD defect analysis after timed synthesis and keep
   its content-free result separate from human quality scores.
 - Record only allowlisted content-free summaries and delete disposable audio,
-  raw journals, ASR text, and private reference working data after derivation.
+  raw journals, ASR text, and speaker-screen working data after derivation.
 
 ### Validation
 
@@ -472,10 +508,10 @@ Not started; unavailable until Milestones 1 through 3 complete.
 ### Validation
 
 - Selection is conjunctive, not weighted.
-- A selected profile identifies exact artifacts, runtime, voice/reference
-  policy, prompt lifecycle/identity, batch/retention limits, first-attempt
-  reliability, hardware evidence, offline controls, and actual incremental or
-  complete-waveform capabilities.
+- A selected profile identifies exact artifacts, runtime, built-in speaker,
+  instruction, configuration lifecycle/identity, batch/retention limits,
+  first-attempt reliability, hardware evidence, offline controls, and actual
+  incremental or complete-waveform capabilities.
 - No production dependency is added before a passing decision.
 
 ### Status
@@ -500,8 +536,8 @@ Not started.
 - `pnpm.cmd check` passes.
 - Both required pull-request jobs pass on the final evidence commit.
 - The final tree contains no model weights, reference voice material,
-  generated audio, raw journals, ASR transcript, copyrighted text, secrets,
-  or private paths.
+  speaker-screen audio, generated audio, raw journals, ASR transcript,
+  copyrighted text, secrets, or private paths.
 
 ### Status
 
@@ -510,17 +546,18 @@ Not started.
 ## Testing and benchmark strategy
 
 Deterministic default validation must remain model-free and hardware-free.
-Unit tests should cover candidate manifest decoding, reference-policy
-validation, prompt reuse identities, x-vector/ICL separation, incremental
-frame ordering, cancellation state transitions, stale-frame rejection,
-content-free failures, cleanup accounting, and summary allowlists.
+Unit tests should cover candidate manifest decoding, frozen speaker-screen
+authority and outcome validation, supported speaker/instruction identity,
+resident configuration reuse, incremental frame ordering, cancellation state
+transitions, stale-frame rejection, content-free failures, cleanup accounting,
+and summary allowlists.
 
 Hardware-specific execution is manual and isolated. Performance timing begins
-and ends at the same adapter boundary for every candidate. Reference prompt
-creation, cold model load, warm synthesis, first audio, complete audio, and
+and ends at the same adapter boundary for every candidate. Cold model load,
+speaker/configuration setup, warm synthesis, first audio, complete audio, and
 cleanup are separate measurements. Batch size, segment size, sampling
-parameters, precision, attention implementation, model revision, and reference
-policy are frozen inputs.
+parameters, precision, attention implementation, model revision, built-in
+speaker, and instruction are frozen inputs.
 
 Whisper, if admitted as test-only ASR, runs after TTS timing and in a separate
 process/resource phase. Only numeric alignment or error aggregates may leave
@@ -528,8 +565,8 @@ the raw area. Human listeners remain authoritative for pronunciation,
 naturalness, prosody, artifacts, and meaning-changing defects.
 
 The existing synthetic neutral/Spanish corpus remains the text authority
-unless `v3` changes it before results. No personal book excerpt, private
-reference transcript, or generated audio may become a fixture.
+unless `v3` changes it before results. No personal book excerpt, screen audio,
+or generated audio may become a fixture.
 
 ## Risks and rollback
 
@@ -542,20 +579,22 @@ reference transcript, or generated audio may become a fixture.
 - **A runtime fork may create an unmaintainable production dependency.**
   Compare the smallest upstream-compatible change with other engines and
   reject the fork if security, packaging, or maintenance cost is excessive.
-- **Voice cloning expands privacy and abuse risk.** Keep it evaluation-only
-  until consent, ownership, storage, deletion, and impersonation boundaries
-  are accepted.
-- **Private reference data may leak through logs, metadata, exceptions, ASR,
-  or fixtures.** Use content-free identities, raw-area isolation, canaries,
-  cleanup, and a final repository scan.
-- **X-vector-only may trade quality for stability without improving latency or
-  VRAM materially.** Measure it as a separate candidate; never assume it is a
-  compatibility profile.
+- **No built-in speaker is described as Spanish-native.** Freeze a bounded
+  Spanish screen before outputs and fail the candidate if no speaker satisfies
+  its intake rules; do not silently choose the least-bad voice.
+- **Instruction tuning can overfit observed outputs.** Freeze one neutral
+  audiobook instruction before the screen and carry it unchanged into `v3`.
+- **The 1.7B CustomVoice model may not improve the failed 0.6B profile enough
+  to offset higher resource cost.** Treat it as a new exact candidate, not an
+  assumed upgrade.
+- **Speaker-screen audio or derived ASR may leak through logs, metadata,
+  exceptions, or fixtures.** Use content-free identities, raw-area isolation,
+  canaries, cleanup, and a final repository scan.
 - **Whisper may be mistaken for a TTS engine or automatic quality oracle.**
   Keep its role explicitly ASR-only and optional; human quality gates remain.
-- **Prior informal success may bias the frozen authority.** Record it as
-  non-promotable intake evidence and freeze all official gates before new
-  results.
+- **Prior Base voice-cloning success may bias the CustomVoice decision.**
+  Retain it as non-promotable related-runtime evidence and freeze the speaker
+  screen plus all official gates before new results.
 
 Rollback is documentation-only until candidate implementation begins: revert
 the plan/roadmap change and retain ADR-0013. Later candidate code remains
@@ -591,19 +630,30 @@ changing production contracts or dependencies.
   pattern. Assigned evaluation work to this plan, selected-profile lifecycle
   work to Milestones 7–9, retry/VAD resilience decisions to Milestone 10, and
   distribution evidence to Milestone 11.
+- 2026-07-25: Clarified that the MVP needs a built-in default narrator rather
+  than personal voice cloning. Official Qwen documentation shows that Base is
+  the reference-audio cloning model, while 1.7B CustomVoice exposes nine
+  built-in speakers plus instruction control. Replaced Base ICL with a frozen
+  CustomVoice Spanish-speaker screening and single-speaker `v3` direction.
+- 2026-07-25: Reconciled the roadmap, product brief, MVP, architecture,
+  performance budget, system diagram, setup, dependencies, testing guidance,
+  and documentation indexes with the CustomVoice default-narrator direction.
+- 2026-07-25: Completed the default-narrator documentation validation. Local
+  links, whitespace, privacy, and forbidden-artifact audits passed, followed
+  by both repository aggregate checks.
 
 ## Discoveries and decisions
 
-1. The previous Qwen rejection is profile-specific. It does not reject the
-   1.7B Base family, voice cloning, ICL conditioning, another runtime, or
-   another output boundary.
-2. The personal prototype's good voice similarity is explained by a richer
-   conditioning path: speaker embedding plus reference acoustic codes and
-   exact transcript. The official documentation independently warns that
-   x-vector-only can reduce cloning quality.
-3. Prompt reuse, batch size one, bounded retries, and per-unit review are
-   useful concepts, but paragraph persistence, prose logging, incomplete cache
-   identity, and complete-paragraph retention conflict with VoxLeaf.
+1. The previous Qwen rejection is profile-specific. It rejects only the exact
+   0.6B CustomVoice/Aiden profile, not the 1.7B CustomVoice model, another
+   frozen built-in speaker/instruction, or another output boundary.
+2. “CustomVoice” means Qwen's speaker-specific fine-tuned built-in timbres with
+   optional instruction control. It is the appropriate family for a default
+   narrator; Base is the separate reference-audio voice-cloning family.
+3. The personal Base prototype proves only that a related 1.7B Qwen runtime
+   can execute on the maintainer's existing hardware. Its good clone quality,
+   reference prompt, ICL/x-vector behavior, and disk footprint do not select or
+   validate the CustomVoice candidate.
 4. The official Qwen family advertises streaming, yet the exact installed
    high-level Python call returns complete waveforms. The next work must prove
    the runtime/output boundary rather than cite the family capability.
@@ -613,10 +663,11 @@ changing production contracts or dependencies.
 6. A new blocker-resolution milestone is preferable to starting Milestone 7:
    production protocol design needs a real selected engine's output,
    cancellation, lifecycle, and resource behavior.
-7. Prompt reuse, batch size one, bounded narration-segment consumption,
-   immediate unit delivery, complete identities, and separate ICL/x-vector
-   profiles belong in this evaluation plan. They are constraints on the
-   experiment, not claims that production behavior exists.
+7. Resident-model reuse, batch size one, bounded narration-segment
+   consumption, immediate unit delivery, complete model/speaker/instruction
+   identities, and one frozen built-in voice belong in this evaluation plan.
+   They are constraints on the experiment, not claims that production behavior
+   exists.
 8. Automatic retry cannot participate in `v3` gate promotion because it would
    hide first-attempt reliability. It may be designed later in Milestone 10.
    VAD/energy analysis is optional post-timing evidence only and needs a
@@ -624,6 +675,10 @@ changing production contracts or dependencies.
 9. Persistent generated audio, prose logging, tracked private inputs,
    text-only audio caching, paragraph/chapter accumulation, runtime downloads,
    unlocked dependencies, and unproven “streaming” remain rejected.
+10. The nine built-in speakers support Spanish, but none is described as
+    Spanish-native and Qwen recommends native-language use. A predeclared,
+    blinded, bounded Spanish screen must therefore select exactly one speaker
+    before `v3`; upstream WER cannot make that product decision.
 
 ## Final validation results
 
@@ -653,6 +708,19 @@ again passed local-link, privacy-canary, and `git diff --check` audits.
 50.5 seconds with the same test/build scope above. No runtime or architecture
 status changed, so the canonical system diagram remains accurate without
 another node or edge change.
+
+After correcting the candidate to CustomVoice for the built-in-default-voice
+requirement, all 13 changed Markdown files passed the local-link,
+privacy-canary, forbidden-artifact, and `git diff --check` audits. The initial
+sandboxed `pnpm.cmd check:portable` attempt could not scan the existing
+`.pytest_cache`; the same command rerun outside the sandbox passed in 28.2
+seconds. `pnpm.cmd check` then passed in 50.1 seconds, including 18 shared test
+files / 175 tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204
+tests, 6 native-WebDriver-client tests, 50 Python tests, Rust formatting,
+Clippy, crate-test execution, and the native release build. The system-diagram
+status labels now describe CustomVoice screening, while the topology remains
+unchanged. No runtime candidate, built-in speaker, production dependency, or
+profile is selected by this documentation change.
 
 Update this section with later implementation commands, outcomes, commit
 identities, and CI evidence as the plan progresses.

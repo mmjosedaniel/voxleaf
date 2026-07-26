@@ -31,7 +31,7 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 | Tauri native shell | **Foundation only** | The shell starts the React application; no commands, plugins, filesystem capabilities, or process transport are configured. |
 | Python TTS area | **Foundation only** | A package/version scaffold and schema conformance tests exist; there is no engine, server, model integration, inference, cancellation, or audio output. |
 | TTS feasibility and profile decision | **Implemented** | The bounded candidate-neutral `v2` harness measured both exact profiles. The license/offline/packaging audit is complete; limited one-evaluator quality remains non-promotable; ADR-0013 selects neither profile. This is development evidence, not runtime behavior. |
-| TTS profile blocker resolution | **Approved planned** | Milestone 6.1 will freeze `v3`, assess the exact Qwen3-TTS 1.7B Base ICL direction, and prove incremental/cancellation behavior. No candidate, dependency, or hardware profile is selected. |
+| TTS profile blocker resolution | **Approved planned** | Milestone 6.1 will freeze a Spanish built-in-speaker screen and `v3`, assess one exact Qwen3-TTS 1.7B CustomVoice default-narrator profile, and prove incremental/cancellation behavior. No candidate, speaker, dependency, or hardware profile is selected. |
 | Local TTS runtime and process transport | **Blocked** | Milestone 7 has no selected profile. A newly frozen evaluation must select a viable production role before integration is authorized. |
 | Audio, synchronization, hardware support, and release packaging | **Deferred** | Milestones 8–11 remain after the blocked TTS runtime boundary; no production dependency or general hardware claim exists. |
 
@@ -70,7 +70,7 @@ flowchart LR
         subgraph TTSAREA["services/tts and later local runtime"]
             PYTHON["Python package/version scaffold<br/>Foundation only"]:::foundation
             FEASIBILITY["TTS feasibility harness + profile decision<br/>Implemented development evidence:<br/>both v2 roles rejected"]:::implemented
-            PROFILE_CYCLE["TTS profile blocker resolution<br/>Approved planned: M6.1<br/>Qwen 1.7B Base ICL candidate"]:::planned
+            PROFILE_CYCLE["TTS profile blocker resolution<br/>Approved planned: M6.1<br/>Qwen 1.7B CustomVoice screen"]:::planned
             TTS["Local TTS runtime + transport<br/>Blocked: M7 needs a viable profile"]:::blocked
         end
     end
@@ -162,7 +162,7 @@ The current user-visible flow ends at `VISUAL`. `PREP` is usable by package call
 
 ## Remaining gates
 
-1. **Milestone 6.1 — Approved planned:** freeze `v3`, prove a credible incremental/cancellation boundary, and evaluate the exact Qwen3-TTS 1.7B Base ICL candidate without weakening the existing gates.
+1. **Milestone 6.1 — Approved planned:** freeze a Spanish built-in-speaker screen and `v3`, prove a credible incremental/cancellation boundary, and evaluate one exact Qwen3-TTS 1.7B CustomVoice default-narrator profile without weakening the existing gates.
 2. **Milestone 7 — Blocked/deferred:** select a passing profile before implementing a bounded cancellable local TTS runtime or transport.
 3. **Milestone 8 — Deferred:** implement bounded audio framing, queueing, playback, backpressure, underrun telemetry, and the duration-based startup gate.
 4. **Milestone 9 — Deferred:** connect one stable logical position across the visual reader, prepared narration, playback progress, highlighting, following, seek, and restoration.

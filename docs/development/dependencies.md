@@ -64,10 +64,11 @@ admit a just-published dependency.
 
 The approved
 [Milestone 6.1 blocker-resolution plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md)
-identifies Qwen3-TTS 12Hz 1.7B Base ICL voice cloning as a new evaluation
-direction and OpenAI Whisper only as a possible local benchmark-ASR aid. No
-candidate project, dependency declaration, lockfile, runtime package, model,
-or production approval has been added for either one. Exact engine/model
+identifies Qwen3-TTS 12Hz 1.7B CustomVoice with one frozen built-in
+speaker/instruction as a new evaluation direction and OpenAI Whisper only as a
+possible local benchmark-ASR aid. Base voice cloning is outside the current
+MVP. No candidate project, dependency declaration, lockfile, runtime package,
+model, or production approval has been added for either one. Exact engine/model
 revisions, hashes, indexes, cutoffs, native libraries, install hooks,
 licenses, artifact sizes, and alternatives must be frozen and audited before
 candidate admission. Whisper must remain outside the production TTS graph.

@@ -203,13 +203,15 @@ These results validate development evidence only. They do not exercise or imply 
 
 The approved
 [Milestone 6.1 plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md)
-defines future work, not completed coverage. Its Qwen3-TTS 1.7B Base ICL
-candidate needs a frozen `v3` authority, isolated lock, incremental-output and
+defines future work, not completed coverage. Its Qwen3-TTS 1.7B CustomVoice
+candidate needs a frozen blinded Spanish built-in-speaker screen, one selected
+speaker/instruction in `v3`, an isolated lock, incremental-output and
 cancellation prototype, deterministic model-free adapter tests, exact-host
-measurements, and complete Spanish quality evaluation. Whisper is not a TTS
-candidate; if a fully local ASR runtime is later admitted as a benchmark aid,
-it must run outside timed synthesis and reduce sensitive transcripts to
-content-free aggregates before leaving the raw area.
+measurements, and complete Spanish quality evaluation. Base voice cloning is
+outside the current MVP. Whisper is not a TTS candidate; if a fully local ASR
+runtime is later admitted as a benchmark aid, it must run outside timed
+synthesis and reduce sensitive transcripts to content-free aggregates before
+leaving the raw area.
 
 ## Deferred coverage
 
