@@ -104,8 +104,10 @@ copying the personal batch-audiobook implementation:
 2. Keep candidate batching at one until measurements justify a larger batch.
 3. Generate from VoxLeaf's stable locator-linked narration segments and
    publish each valid segment as soon as its audio is available.
-4. Bound retries and reject every result whose session, generation, segment,
-   model, voice, reference, or settings identity is stale.
+4. Keep any diagnostic retry bounded and explicit without allowing it to hide
+   an official first-attempt failure; reject every result whose session,
+   generation, segment, model, voice, reference, or settings identity is
+   stale.
 5. Evaluate VAD or a cheaper content-free signal as a post-generation defect
    detector without making it a substitute for human Spanish quality review.
 6. Measure ICL and x-vector-only modes as different profiles; never switch
@@ -130,6 +132,39 @@ copying the personal batch-audiobook implementation:
   complete paragraph is joined.
 - The public call returns complete waveforms and has no proven cooperative
   cancellation boundary.
+
+### Suggestion decisions and implementation ownership
+
+The prototype suggestions are not one indivisible design. VoxLeaf adopts only
+the parts that preserve frozen evaluation, bounded memory, cancellation,
+privacy, and honest failure accounting:
+
+| Suggestion or observed behavior | Decision | First implementation phase | Later production owner |
+| --- | --- | --- | --- |
+| Build the voice-clone prompt once and reuse it | **Adopt with bounds.** Reuse one in-memory prompt only inside an authorized evaluation session. Key it by exact engine/model revision, mode, reference fingerprint, transcript fingerprint, sampling/configuration, precision, and provider; dispose it on session end or identity change. | Plan Milestones 1–3 | Milestone 7 service lifecycle, only for a selected profile |
+| Generate with candidate batch size one | **Adopt as the conservative `v3` default.** It limits retained work and makes segment ownership observable. A larger batch requires pre-result authority plus measured benefit without weakening memory or cancellation. | Plan Milestones 1–4 | Milestone 7 may retain or supersede it from selected-profile evidence |
+| Use bounded VoxLeaf narration segments | **Adopt.** The candidate consumes existing `narration-v1` units; it does not invent paragraph/chapter accumulation or model-specific text contracts. | Plan Milestone 2 | Milestones 7 and 9 |
+| Deliver each completed segment immediately | **Adopt for the prototype and selected-profile handoff.** Segment-at-a-time delivery improves startup and boundedness, but a complete-waveform call still does not prove mid-segment streaming or cancellation. | Plan Milestone 2 | Milestone 7 emits selected-profile audio; Milestone 8 buffers/plays it |
+| Retry failed segments a limited number of times | **Defer for production and prohibit as hidden benchmark recovery.** Official `v3` measurements count the first attempt and every failure. A separately labeled diagnostic retry may investigate a defect but cannot make a gate pass. | Plan Milestones 1 and 3 freeze/test failure accounting only | Milestone 10 may add bounded retry after failure classification, stale-result rejection, backoff, cleanup, and latency evidence |
+| Use VAD/energy checks for silence, missing speech, or broken tails | **Adopt only as an optional benchmark defect signal.** Run it after timed synthesis, preserve the original result, report only content-free flags/counts, and keep human Spanish review authoritative. Do not trim, fade, repair, or rescore official audio automatically. | Plan Milestones 1, 3, and 4 if admitted before results | Milestone 10 may consider production monitoring only after false-positive, latency, memory, dependency, and quality evidence |
+| Attach generation identities and discard obsolete audio | **Adopt as mandatory.** Use the existing session/generation/segment identities plus exact candidate, voice/reference, and settings identity. Identity rejects stale output even when the model cannot stop promptly; it does not replace cancellation cleanup. | Plan Milestones 1–3 | Milestones 7–9 enforce the protocol, buffer, playback, and synchronization boundary |
+| Evaluate normal ICL and x-vector-only modes | **Adopt as separate candidate profiles.** They cannot share a result, quality conclusion, fallback label, or silent runtime switch. X-vector-only enters `v3` only if frozen before results. | Plan Milestones 1 and 4 | Milestone 10 may expose a measured fallback only if it independently passes |
+| Fingerprint model, reference, transcript, and settings | **Adopt as mandatory.** Store only content-free hashes/identifiers in safe evidence; private reference material stays in the raw area and is deleted after derivation. | Plan Milestones 1, 3, 4, and 6 | Milestones 7 and 10 own runtime identity and diagnostics |
+| Persist generated WAV files | **Reject for normal VoxLeaf behavior.** Disposable blinded-quality audio may exist only in the ignored private raw area and must be cleaned after evidence derivation. Audiobook export remains outside the MVP. | Existing constraint; verify in Plan Milestones 3, 4, and 6 | Milestones 8 and 11 retain non-persistence |
+| Print narration or store prose previews | **Reject.** Errors, logs, summaries, tests, and diagnostics remain content-free. | Existing constraint; verify in Plan Milestones 3, 4, and 6 | Milestones 7–11 |
+| Track `input.txt`, bytecode, private paths, or raw voice material | **Reject.** Candidate inputs and outputs use ignored private raw storage; repository tests use synthetic/public authorities and privacy canaries. | Plan Milestones 3 and 6 | Milestone 11 packaging/privacy review |
+| Load by remote model name or use unlocked dependencies | **Reject for official or production execution.** Use an isolated lock, exact local artifact revision/hashes, fail-closed offline preflight, outbound blocking, and no runtime download. | Plan Milestones 1, 3, and 4 | Milestone 11 owns the deliberate distribution/acquisition strategy |
+| Reuse audio from a paragraph-text-only cache key | **Reject.** Milestone 6.1 adds no persistent audio cache. In-memory prompt reuse uses the complete identity tuple above; any future audio cache requires a separate privacy/persistence decision. | Plan Milestones 1–3 | No roadmap commitment |
+| Retain and join all paragraph/chapter waveforms | **Reject.** Retention is capped at the active bounded segment/frame and explicit queue limits. | Plan Milestone 2 | Milestones 7 and 8 |
+| Accept the high-level complete-waveform API as “streaming” | **Reject without proof.** The candidate cycle stops before the full matrix unless the exact topology proves bounded delivery, after-first-audio cancellation/stale suppression, and cleanup. | Plan Milestone 2 stop gate | Milestone 7 implements only the capability actually selected |
+| Treat the observed 4.3 GiB model and 7.8 GiB environment as acceptable packaging | **Do not decide from the prototype.** Measure clean locked artifacts separately; retain exact-host and exact-environment scope. | Plan Milestone 4 | Milestones 10 and 11 own support and packaging decisions |
+
+No new ADR is required for this disposition because no production engine,
+transport, retry policy, VAD dependency, cache, or voice-cloning product
+experience is selected. The accepted privacy/boundedness rules already govern
+the project. A passing profile must hand candidate-specific facts to a
+superseding selection ADR; Milestones 7, 8, and 10 must record any later
+durable runtime choices when their evidence exists.
 
 ### Official Qwen3-TTS evidence
 
@@ -302,6 +337,9 @@ and outputs must remain isolated.
   optional post-generation benchmark tool. Do not admit the OpenAI API.
 - Define a pre-admission prototype gate requiring a credible incremental-audio
   and cancellation boundary.
+- Freeze batch size one, the complete prompt identity tuple and in-memory
+  lifetime, first-attempt failure accounting, the no-hidden-retry rule, and
+  whether post-timing VAD/energy checks are admitted.
 - Publish and accept `tts-feasibility-profile-v3` before official execution.
 
 ### Validation
@@ -327,12 +365,17 @@ Not started. The research in this plan is candidate-intake evidence only.
   synthesis.
 - Prototype bounded generation from existing `narration-v1` segments with
   batch size one.
+- Build the authorized reference prompt once per exact identity and reuse it
+  without persisting the prompt, reference, transcript, or derived tokens.
 - Publish each valid audio unit immediately instead of joining a paragraph or
   chapter.
+- Cap retained input/output at the active segment plus the explicit test queue;
+  release each unit before advancing beyond that bound.
 - Exercise cancellation before dispatch, after acceptance, after first audio,
   near the hard mid-generation boundary, and during cleanup.
-- Reject late/stale audio by request identity even when the underlying model
-  call finishes after cancellation.
+- Reject late/stale audio by session, generation, segment, candidate,
+  voice/reference, and settings identity even when the underlying model call
+  finishes after cancellation.
 - Stop the candidate cycle before the full matrix if no credible incremental
   output or bounded cancellation topology exists.
 
@@ -356,13 +399,18 @@ Not started. No production adapter is authorized.
 - Add the exact candidate environment and lock outside production runtime
   dependencies.
 - Add a candidate adapter behind the existing benchmark contracts.
-- Add model-free tests for reference metadata, prompt reuse, frame ordering,
-  cancellation, cleanup, content-free errors, and configuration mismatch.
+- Add model-free tests for reference metadata, complete prompt-key identity,
+  prompt reuse/disposal, batch-one/retention bounds, unit/frame ordering,
+  first-attempt failure accounting, no-hidden-retry behavior, cancellation,
+  stale identity, cleanup, content-free errors, and configuration mismatch.
 - Add fail-closed preflight checks for local artifacts, offline controls,
   authorized reference fingerprints, runtime/provider/precision, and hardware.
 - If local Whisper is admitted as a test-only tool, run it outside timed TTS
   measurements and reduce its output immediately to content-free aggregate
   counts.
+- If VAD/energy review is admitted, run it after timed synthesis, retain the
+  unmodified official waveform, emit only allowlisted defect flags/counts, and
+  prove that its dependency/resources cannot affect measured TTS phases.
 - Update this plan with every exact command after the corresponding project or
   script exists; do not invent a command before implementation.
 
@@ -387,8 +435,13 @@ Not started.
 - Run pilot validation only as permitted by the frozen authority.
 - Execute cold-load, warm, shorter-complete, sustained, cancellation, RAM,
   VRAM, offline, artifact, cleanup, and packaging matrices.
+- Count the first attempt and every failure. Do not retry an official sample
+  into a passing result; separately labeled diagnostic retries are
+  non-promotable.
 - Execute blinded Spanish quality evaluation with the frozen minimum panel.
 - Score ICL and x-vector-only separately if both were admitted.
+- Run any admitted ASR or VAD defect analysis after timed synthesis and keep
+  its content-free result separate from human quality scores.
 - Record only allowlisted content-free summaries and delete disposable audio,
   raw journals, ASR text, and private reference working data after derivation.
 
@@ -420,7 +473,9 @@ Not started; unavailable until Milestones 1 through 3 complete.
 
 - Selection is conjunctive, not weighted.
 - A selected profile identifies exact artifacts, runtime, voice/reference
-  policy, hardware evidence, offline controls, and capabilities.
+  policy, prompt lifecycle/identity, batch/retention limits, first-attempt
+  reliability, hardware evidence, offline controls, and actual incremental or
+  complete-waveform capabilities.
 - No production dependency is added before a passing decision.
 
 ### Status
@@ -532,6 +587,10 @@ changing production contracts or dependencies.
 - 2026-07-25: Completed documentation closeout validation. Both repository
   aggregates passed; local links resolve; privacy/artifact and whitespace
   scans are clean.
+- 2026-07-25: Dispositioned every reusable and unsafe external-prototype
+  pattern. Assigned evaluation work to this plan, selected-profile lifecycle
+  work to Milestones 7–9, retry/VAD resilience decisions to Milestone 10, and
+  distribution evidence to Milestone 11.
 
 ## Discoveries and decisions
 
@@ -554,6 +613,17 @@ changing production contracts or dependencies.
 6. A new blocker-resolution milestone is preferable to starting Milestone 7:
    production protocol design needs a real selected engine's output,
    cancellation, lifecycle, and resource behavior.
+7. Prompt reuse, batch size one, bounded narration-segment consumption,
+   immediate unit delivery, complete identities, and separate ICL/x-vector
+   profiles belong in this evaluation plan. They are constraints on the
+   experiment, not claims that production behavior exists.
+8. Automatic retry cannot participate in `v3` gate promotion because it would
+   hide first-attempt reliability. It may be designed later in Milestone 10.
+   VAD/energy analysis is optional post-timing evidence only and needs a
+   separate pre-result admission decision.
+9. Persistent generated audio, prose logging, tracked private inputs,
+   text-only audio caching, paragraph/chapter accumulation, runtime downloads,
+   unlocked dependencies, and unproven “streaming” remain rejected.
 
 ## Final validation results
 
@@ -576,6 +646,13 @@ Plan creation is documentation-only. At creation time:
   release build; and
 - implementation and official `v3` validation remain not started. The
   existing informational Vite chunk-size advisory remains unchanged.
+
+After the suggestion-disposition follow-up, the two changed Markdown files
+again passed local-link, privacy-canary, and `git diff --check` audits.
+`pnpm.cmd check:portable` passed in 26.5 seconds and `pnpm.cmd check` passed in
+50.5 seconds with the same test/build scope above. No runtime or architecture
+status changed, so the canonical system diagram remains accurate without
+another node or edge change.
 
 Update this section with later implementation commands, outcomes, commit
 identities, and CI evidence as the plan progresses.

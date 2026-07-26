@@ -238,6 +238,13 @@ or protocol work begins.
 - Prove an actual incremental-audio and bounded cancellation boundary through
   the exact local runtime; upstream family-level streaming or 97 ms claims are
   candidate-intake facts, not VoxLeaf evidence.
+- Reuse an authorized reference prompt only in memory under a complete
+  candidate/reference/settings identity, keep the frozen candidate batch at
+  one, consume `narration-v1` segments, and release each bounded audio unit as
+  soon as it is valid.
+- Count first attempts honestly. Automatic retries cannot rescue official
+  gates; VAD/energy checks, if frozen, run after timing as content-free defect
+  signals and do not repair audio or replace human review.
 - Keep OpenAI Whisper outside the TTS candidate set. A separately pinned local
   Whisper runtime may be considered only as an optional benchmark ASR aid and
   cannot replace fluent-Spanish human quality review.
@@ -282,6 +289,10 @@ Run the selected TTS engines behind a secure, typed, cancellable local process b
 - The desktop can start, monitor, use, recover, and stop a persistent local TTS service.
 - Model loading, warm-up, capabilities, synthesis, streamed audio, cancellation, health, recoverable errors, and fatal errors use a versioned protocol.
 - Audio frames and control messages preserve session, generation, segment, format, and locator identity.
+- A selected voice-clone prompt, if any, has an explicit in-memory owner,
+  complete identity key, invalidation rule, and release lifecycle.
+- The service emits each valid bounded segment/frame unit when available
+  rather than accumulating a paragraph or chapter.
 - The service accepts bounded work, exposes measurable lifecycle state, and never logs narration text.
 - The chosen transport is restricted to the local application boundary and does not expose book contents to other processes or the network.
 
@@ -313,6 +324,8 @@ Create a model-independent in-memory producer-consumer pipeline that starts prom
 - Initial playback starts immediately when approximately 15 seconds of valid playable audio is ready, or when a complete shorter remaining range is ready.
 - Low, target, and maximum buffer thresholds control generation and backpressure.
 - Played, cancelled, and stale frames are discarded and never persisted.
+- Each selected-profile audio unit can enter the bounded queue immediately
+  without requiring paragraph/chapter joining or a persistent audio cache.
 - Pause, resume, flush, volume, supported speed control, buffering state, and underrun measurements work with deterministic fake audio before real-model integration.
 
 ### Dependencies
@@ -368,6 +381,11 @@ Make the integrated reader usable across documented supported hardware and recov
 - VoxLeaf detects relevant OS, CPU, RAM, GPU, VRAM, CUDA, ONNX providers, and supported precision without sending telemetry.
 - The UI recommends a measured engine profile while retaining user control and avoiding unsafe memory use.
 - CPU-compatible fallback, model-load failure recovery, service restart, cancellation timeout, and degraded buffering behavior are tested.
+- Any automatic segment retry is bounded, observable, identity-safe, and based
+  on classified recoverable failures; it cannot replay stale audio or hide
+  reliability metrics.
+- Production VAD/energy monitoring is added only if measured false-positive,
+  latency, memory, dependency, and quality evidence justifies it.
 - Long sessions keep memory, queues, GPU work, logs, and persisted state bounded.
 - Diagnostics and benchmark summaries contain no book text, narration, secrets, or unnecessary private paths.
 
