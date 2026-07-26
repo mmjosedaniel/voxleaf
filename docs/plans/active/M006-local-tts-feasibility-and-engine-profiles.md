@@ -1780,6 +1780,11 @@ A profile is selectable only when its performance, quality, capability, license,
   index, and this plan. Only benchmark evidence and the no-profile decision are
   implemented; the production runtime and every audio/integration milestone
   remain blocked or deferred.
+- 2026-07-25: Completed Milestone 4 validation. Both aggregate root checks,
+  candidate-lock integrity, relative-link resolution, tracked-artifact/privacy
+  review, Mermaid/prose status review, and final branch-diff checks pass. The
+  three logical checkpoints contain only documentation and the content-free
+  selection record.
 
 ## Discoveries and decisions
 
@@ -1950,5 +1955,45 @@ resolved for selection, with high Qwen and moderate Supertonic packaging risk.
 At the Milestone 3 checkpoint, no summary was promoted and no profile had been
 selected. Milestone 4 subsequently accepted the content-free selection record
 and ADR-0013's explicit no-viable-profile outcome.
+
+### Milestone 4 validation
+
+Completed on 2026-07-25 on `feat/m006-select-engine-profiles`:
+
+- A repository-wide relative Markdown-link audit validated all 44 Markdown
+  files under `docs/`, `benchmarks/tts/`, and the root README; every relative
+  target resolves.
+- The canonical Mermaid node labels, dashed arrows, status table, evidence
+  table, architecture prose, and roadmap status were compared directly. No
+  Mermaid-specific validator is configured in the repository. All surfaces
+  agree that the feasibility harness/decision is implemented development
+  evidence, no profile is selected, and the production runtime is
+  blocked/deferred.
+- `pnpm.cmd check:portable` passed formatting, ESLint, Ruff, TypeScript and
+  strict Python type checks, 18 shared files/175 tests, 34 EPUB files/555 tests,
+  20 desktop files/204 tests, six native WebDriver-client tests, all 49 Python
+  tests, package/desktop portable builds, and the Python distribution build.
+- The authoritative native `pnpm.cmd check` passed the same deterministic
+  suites plus Rustfmt, Clippy with warnings denied, Cargo tests, the native
+  release application build, and Python source/wheel distributions. The
+  existing Vite chunk-size advisory remained informational.
+- `uv lock --check --project
+  services/tts/benchmarks/candidates/qwen3_0_6b_cuda` resolved the unchanged
+  107-package lock, and the corresponding Supertonic command resolved its
+  unchanged 25-package lock. Neither lock enters the production service.
+- `git diff --check origin/main...HEAD` passed. The branch adds only the
+  content-free selection record, ADR-0013, and documentation reconciliation;
+  no source, schema, manifest, lock, generated file, native capability,
+  production dependency, public contract, desktop behavior, or runtime
+  topology changed.
+- The tracked-artifact audit found no model/weight, generated audio, book, raw
+  result, profiling trace, log, forbidden artifact extension, or tracked file
+  above 5 MiB. A changed-file scan found no private host path, account name,
+  secret, corpus text, audio, or unsupported hardware claim.
+- The exact hardware/model benchmarks were not rerun because Milestone 4
+  changes only the decision and documentation layers. ADR-0013 and the
+  selection record consume the already validated complete Milestone 3 `v2`
+  evidence without changing its authority, candidates, corpus, adapters, or
+  measurements.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.
