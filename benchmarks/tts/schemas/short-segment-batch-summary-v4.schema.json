@@ -1,0 +1,426 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:benchmark:tts-short-segment-batch-summary:v4",
+  "title": "VoxLeaf short-segment batch content-safe summary v4",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "profileVersion",
+    "profileSha256",
+    "corpusVersion",
+    "corpusSha256",
+    "authorityCommitSha",
+    "executionCommitSha",
+    "placementProfileId",
+    "cpuAdmission",
+    "candidateId",
+    "host",
+    "counts",
+    "aggregates",
+    "memory",
+    "cancellation",
+    "playback",
+    "quality",
+    "audits",
+    "conclusions",
+    "failureCodes",
+    "limitations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "tts-short-segment-batch-summary-v4"
+    },
+    "profileVersion": {
+      "const": "tts-short-segment-batch-profile-v4"
+    },
+    "profileSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "corpusVersion": {
+      "const": "tts-short-segment-corpus-v4"
+    },
+    "corpusSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "authorityCommitSha": {
+      "$ref": "#/$defs/gitSha"
+    },
+    "executionCommitSha": {
+      "$ref": "#/$defs/gitSha"
+    },
+    "placementProfileId": {
+      "$ref": "#/$defs/placementProfileId"
+    },
+    "cpuAdmission": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/$defs/cpuAdmission"
+    },
+    "candidateId": {
+      "const": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1"
+    },
+    "host": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/$defs/host"
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coldLoads",
+        "warmupBatchOneCalls",
+        "warmupBatchTwoCalls",
+        "measuredPasses",
+        "batchOneCalls",
+        "batchOneUnits",
+        "batchTwoCalls",
+        "batchTwoUnits",
+        "cancellationTrials",
+        "failedOrTimedOutFirstAttempts",
+        "automaticRetries"
+      ],
+      "properties": {
+        "coldLoads": {
+          "const": 5
+        },
+        "warmupBatchOneCalls": {
+          "const": 2
+        },
+        "warmupBatchTwoCalls": {
+          "const": 1
+        },
+        "measuredPasses": {
+          "const": 3
+        },
+        "batchOneCalls": {
+          "const": 24
+        },
+        "batchOneUnits": {
+          "const": 24
+        },
+        "batchTwoCalls": {
+          "const": 12
+        },
+        "batchTwoUnits": {
+          "const": 24
+        },
+        "cancellationTrials": {
+          "const": 5
+        },
+        "failedOrTimedOutFirstAttempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "automaticRetries": {
+          "const": 0
+        }
+      }
+    },
+    "aggregates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coldLoadP95Seconds",
+        "batchOneFirstAudioP95Seconds",
+        "batchTwoFirstAudioP95Seconds",
+        "batchOneFifteenSecondsMediaP95Seconds",
+        "batchTwoFifteenSecondsMediaP95Seconds",
+        "batchOneShorterCompleteP95Seconds",
+        "batchTwoShorterCompleteP95Seconds",
+        "batchOneRequestRtfP95",
+        "batchTwoUnitRtfP95",
+        "batchOneAggregateRtf",
+        "batchTwoAggregateRtf",
+        "batchOneMediaSeconds",
+        "batchTwoMediaSeconds",
+        "minimumUnitDurationSeconds",
+        "maximumUnitDurationSeconds",
+        "orderedUnitCount",
+        "reorderedUnitCount",
+        "missingPairCount"
+      ],
+      "properties": {
+        "coldLoadP95Seconds": {
+          "$ref": "#/$defs/nonNegativeNumber"
+        },
+        "batchOneFirstAudioP95Seconds": {
+          "$ref": "#/$defs/nonNegativeNumber"
+        },
+        "batchTwoFirstAudioP95Seconds": {
+          "$ref": "#/$defs/nonNegativeNumber"
+        },
+        "batchOneFifteenSecondsMediaP95Seconds": {
+          "$ref": "#/$defs/nullableNonNegativeNumber"
+        },
+        "batchTwoFifteenSecondsMediaP95Seconds": {
+          "$ref": "#/$defs/nullableNonNegativeNumber"
+        },
+        "batchOneShorterCompleteP95Seconds": {
+          "$ref": "#/$defs/nullableNonNegativeNumber"
+        },
+        "batchTwoShorterCompleteP95Seconds": {
+          "$ref": "#/$defs/nullableNonNegativeNumber"
+        },
+        "batchOneRequestRtfP95": {
+          "$ref": "#/$defs/nonNegativeNumber"
+        },
+        "batchTwoUnitRtfP95": {
+          "$ref": "#/$defs/nonNegativeNumber"
+        },
+        "batchOneAggregateRtf": {
+          "$ref": "#/$defs/nonNegativeNumber"
+        },
+        "batchTwoAggregateRtf": {
+          "$ref": "#/$defs/nonNegativeNumber"
+        },
+        "batchOneMediaSeconds": {
+          "$ref": "#/$defs/nonNegativeNumber"
+        },
+        "batchTwoMediaSeconds": {
+          "$ref": "#/$defs/nonNegativeNumber"
+        },
+        "minimumUnitDurationSeconds": {
+          "$ref": "#/$defs/nonNegativeNumber"
+        },
+        "maximumUnitDurationSeconds": {
+          "$ref": "#/$defs/nonNegativeNumber"
+        },
+        "orderedUnitCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reorderedUnitCount": {
+          "const": 0
+        },
+        "missingPairCount": {
+          "const": 0
+        }
+      }
+    },
+    "memory": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/$defs/memory"
+    },
+    "cancellation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trialCount",
+        "passedTrialCount",
+        "maximumIdentityInvalidationMilliseconds",
+        "maximumWorkerTerminationMilliseconds",
+        "stalePublishedUnits",
+        "stalePlayedUnits"
+      ],
+      "properties": {
+        "trialCount": {
+          "const": 5
+        },
+        "passedTrialCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "maximumIdentityInvalidationMilliseconds": {
+          "$ref": "#/$defs/nonNegativeNumber"
+        },
+        "maximumWorkerTerminationMilliseconds": {
+          "$ref": "#/$defs/nonNegativeNumber"
+        },
+        "stalePublishedUnits": {
+          "const": 0
+        },
+        "stalePlayedUnits": {
+          "const": 0
+        }
+      }
+    },
+    "playback": {
+      "$ref": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4#/$defs/playback"
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "evaluatorCount",
+        "overallMean",
+        "intelligibilityMean",
+        "numberAndSymbolMean",
+        "joinBoundaryMean",
+        "prosodyMean",
+        "accentMean",
+        "meaningChangingDefects"
+      ],
+      "properties": {
+        "status": {
+          "enum": ["not-admitted", "completed"]
+        },
+        "evaluatorCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "overallMean": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "intelligibilityMean": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "numberAndSymbolMean": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "joinBoundaryMean": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "prosodyMean": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "accentMean": {
+          "$ref": "#/$defs/nullableScore"
+        },
+        "meaningChangingDefects": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "audits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "offline",
+        "artifacts",
+        "license",
+        "privacy",
+        "ordering",
+        "boundedRetention",
+        "cleanup",
+        "noSharedGpuPaging",
+        "noDiskOffload",
+        "approvedPlacement"
+      ],
+      "properties": {
+        "offline": {
+          "type": "boolean"
+        },
+        "artifacts": {
+          "type": "boolean"
+        },
+        "license": {
+          "type": "boolean"
+        },
+        "privacy": {
+          "type": "boolean"
+        },
+        "ordering": {
+          "type": "boolean"
+        },
+        "boundedRetention": {
+          "type": "boolean"
+        },
+        "cleanup": {
+          "type": "boolean"
+        },
+        "noSharedGpuPaging": {
+          "type": "boolean"
+        },
+        "noDiskOffload": {
+          "type": "boolean"
+        },
+        "approvedPlacement": {
+          "type": "boolean"
+        }
+      }
+    },
+    "conclusions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "standardViability",
+        "schedulingSustainability",
+        "constrainedDemoUsefulness"
+      ],
+      "properties": {
+        "standardViability": {
+          "$ref": "#/$defs/conclusion"
+        },
+        "schedulingSustainability": {
+          "$ref": "#/$defs/conclusion"
+        },
+        "constrainedDemoUsefulness": {
+          "$ref": "#/$defs/conclusion"
+        }
+      }
+    },
+    "failureCodes": {
+      "type": "array",
+      "maxItems": 48,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/safeCode"
+      }
+    },
+    "limitations": {
+      "const": [
+        "exact-host-only",
+        "complete-waveform-batch",
+        "worker-termination-not-cooperative-model-cancellation",
+        "scheduling-pass-does-not-promote-failed-v3",
+        "explicit-preparation-delay-remains-visible",
+        "development-benchmark-not-production-runtime"
+      ]
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "safeCode": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,63}$"
+    },
+    "placementProfileId": {
+      "enum": [
+        "qwen3-serena-v4-full-gpu",
+        "qwen3-serena-v4-speech-tokenizer-cpu"
+      ]
+    },
+    "nonNegativeNumber": {
+      "type": "number",
+      "minimum": 0
+    },
+    "nullableNonNegativeNumber": {
+      "type": ["number", "null"],
+      "minimum": 0
+    },
+    "nullableScore": {
+      "type": ["number", "null"],
+      "minimum": 1,
+      "maximum": 5
+    },
+    "conclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "allRequiredGatesPassed", "failedGateCodes"],
+      "properties": {
+        "outcome": {
+          "enum": ["pass", "fail", "not-evaluated"]
+        },
+        "allRequiredGatesPassed": {
+          "type": "boolean"
+        },
+        "failedGateCodes": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/safeCode"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,177 @@
+{
+  "corpusVersion": "tts-short-segment-corpus-v4",
+  "status": "frozen-before-v4-implementation-pilot-and-official-results",
+  "provenance": {
+    "author": "VoxLeaf contributors",
+    "createdAt": "2026-07-26",
+    "kind": "repository-authored-synthetic",
+    "license": "CC0-1.0",
+    "sourceMaterial": "none"
+  },
+  "language": "es",
+  "normalizationAuthority": {
+    "profile": "narration-v1",
+    "documentation": {
+      "path": "docs/architecture/narration-normalization-v1.md",
+      "sha256": "c90b5d9436515ffe983fda052d76b0d4a6fdab274f9bc253d8985745b5e1ac70"
+    },
+    "policy": {
+      "path": "packages/epub/src/narration/narration-policy.ts",
+      "sha256": "96a62a9d0d57e5fad904b4c38d98ded4d48d5c2f8e125ea527c5df535ac0f85c"
+    },
+    "normalizer": {
+      "path": "packages/epub/src/narration/narration-normalizer.ts",
+      "sha256": "8bee1b480a81a96b105df32cf85eaf65f6e42bae382e152e89adbaa02353db74"
+    },
+    "spanishRules": {
+      "path": "packages/epub/src/narration/spanish-normalization.ts",
+      "sha256": "f6e24298b9a80dbca5f9427580abee23aa04db5ffa5538141dcdb0b1cc531eba"
+    },
+    "testCorpus": {
+      "path": "packages/epub/test-support/narration-normalization-corpus.ts",
+      "sha256": "82275a7c576aa47c8ceb180902b3df2f946dc01ed009a91b5165f3ad52da9816"
+    },
+    "candidateSpecificRewriting": "forbidden",
+    "engineInputField": "narrationText"
+  },
+  "durationPolicy": {
+    "desiredMinimumSeconds": 8,
+    "desiredMaximumSeconds": 12,
+    "admissibleMinimumSeconds": 8,
+    "admissibleMaximumSeconds": 20,
+    "selectionBasis": "pre-result-semantic-shape-and-normalized-code-point-bounds",
+    "observedDurationMayChangeOfficialInput": false
+  },
+  "narrationV1Boundary": {
+    "maximumCodePointsPerUnit": 640,
+    "maximumUtf8BytesPerUnit": 2048,
+    "unitsRemainIndependent": true,
+    "sourceRangeMerging": "forbidden"
+  },
+  "unitOrder": [
+    "es-v4-arrival",
+    "es-v4-dialogue",
+    "es-v4-numbers",
+    "es-v4-date-time",
+    "es-v4-temperature",
+    "es-v4-foreign-name",
+    "es-v4-route",
+    "es-v4-closing"
+  ],
+  "pairOrder": [
+    {
+      "pairId": "es-v4-pair-01",
+      "unitIds": ["es-v4-arrival", "es-v4-dialogue"]
+    },
+    {
+      "pairId": "es-v4-pair-02",
+      "unitIds": ["es-v4-numbers", "es-v4-date-time"]
+    },
+    {
+      "pairId": "es-v4-pair-03",
+      "unitIds": ["es-v4-temperature", "es-v4-foreign-name"]
+    },
+    {
+      "pairId": "es-v4-pair-04",
+      "unitIds": ["es-v4-route", "es-v4-closing"]
+    }
+  ],
+  "units": [
+    {
+      "unitId": "es-v4-arrival",
+      "sequence": 0,
+      "tags": ["narrative", "neutral"],
+      "sourceText": "Al llegar a la estación, Clara dejó la mochila junto al banco y observó el andén vacío. La primera luz del día aparecía detrás de las montañas.",
+      "narrationText": "Al llegar a la estación, Clara dejó la mochila junto al banco y observó el andén vacío. La primera luz del día aparecía detrás de las montañas.",
+      "sourceCodePointCount": 143,
+      "sourceUtf8ByteCount": 152,
+      "narrationCodePointCount": 143,
+      "narrationUtf8ByteCount": 152,
+      "privacyCanary": "tts-v4-canary-01-arrival"
+    },
+    {
+      "unitId": "es-v4-dialogue",
+      "sequence": 1,
+      "tags": ["dialogue", "punctuation"],
+      "sourceText": "—¿Trajiste el mapa? —preguntó Elena. Marcos asintió, abrió la carpeta sobre la mesa y respondió: —Sí; podemos revisar la ruta antes de salir.",
+      "narrationText": "—¿Trajiste el mapa? —preguntó Elena. Marcos asintió, abrió la carpeta sobre la mesa y respondió: —Sí; podemos revisar la ruta antes de salir.",
+      "sourceCodePointCount": 141,
+      "sourceUtf8ByteCount": 153,
+      "narrationCodePointCount": 141,
+      "narrationUtf8ByteCount": 153,
+      "privacyCanary": "tts-v4-canary-02-dialogue"
+    },
+    {
+      "unitId": "es-v4-numbers",
+      "sequence": 2,
+      "tags": ["numbers", "percentage", "currency", "normalized"],
+      "sourceText": "El informe de 2026 confirmó que el avance llegó al 25 % y que quedaban 12,50 € para completar la compra de materiales.",
+      "narrationText": "El informe de dos mil veintiséis confirmó que el avance llegó al veinticinco por ciento y que quedaban doce euros con cincuenta céntimos para completar la compra de materiales.",
+      "sourceCodePointCount": 118,
+      "sourceUtf8ByteCount": 122,
+      "narrationCodePointCount": 176,
+      "narrationUtf8ByteCount": 180,
+      "privacyCanary": "tts-v4-canary-03-numbers"
+    },
+    {
+      "unitId": "es-v4-date-time",
+      "sequence": 3,
+      "tags": ["date", "time", "normalized"],
+      "sourceText": "La revisión quedó fijada para el 24/07/2026 a las 14:30. El equipo llegará con tiempo para preparar la sala y comprobar cada conexión.",
+      "narrationText": "La revisión quedó fijada para el veinticuatro de julio de dos mil veintiséis a las catorce treinta. El equipo llegará con tiempo para preparar la sala y comprobar cada conexión.",
+      "sourceCodePointCount": 134,
+      "sourceUtf8ByteCount": 138,
+      "narrationCodePointCount": 177,
+      "narrationUtf8ByteCount": 182,
+      "privacyCanary": "tts-v4-canary-04-date-time"
+    },
+    {
+      "unitId": "es-v4-temperature",
+      "sequence": 4,
+      "tags": ["temperature", "ampersand", "normalized"],
+      "sourceText": "El cartel de Sol & Mar indicó 20 °C al mediodía. Aun así, una brisa constante mantuvo fresco el sendero durante toda la caminata.",
+      "narrationText": "El cartel de Sol y Mar indicó veinte grados Celsius al mediodía. Aun así, una brisa constante mantuvo fresco el sendero durante toda la caminata.",
+      "sourceCodePointCount": 129,
+      "sourceUtf8ByteCount": 133,
+      "narrationCodePointCount": 145,
+      "narrationUtf8ByteCount": 148,
+      "privacyCanary": "tts-v4-canary-05-temperature"
+    },
+    {
+      "unitId": "es-v4-foreign-name",
+      "sequence": 5,
+      "tags": ["embedded-foreign-name", "accent"],
+      "sourceText": "Siobhán O'Connor presentó el cuaderno en Bogotá y explicó sus conclusiones con calma. Después escuchó cada pregunta antes de responder.",
+      "narrationText": "Siobhán O'Connor presentó el cuaderno en Bogotá y explicó sus conclusiones con calma. Después escuchó cada pregunta antes de responder.",
+      "sourceCodePointCount": 135,
+      "sourceUtf8ByteCount": 141,
+      "narrationCodePointCount": 135,
+      "narrationUtf8ByteCount": 141,
+      "privacyCanary": "tts-v4-canary-06-foreign-name"
+    },
+    {
+      "unitId": "es-v4-route",
+      "sequence": 6,
+      "tags": ["narrative", "ordered-action"],
+      "sourceText": "Tomás cerró la puerta, comprobó la brújula y señaló el camino del bosque. El grupo avanzó despacio para reconocer cada marca sin separarse.",
+      "narrationText": "Tomás cerró la puerta, comprobó la brújula y señaló el camino del bosque. El grupo avanzó despacio para reconocer cada marca sin separarse.",
+      "sourceCodePointCount": 139,
+      "sourceUtf8ByteCount": 146,
+      "narrationCodePointCount": 139,
+      "narrationUtf8ByteCount": 146,
+      "privacyCanary": "tts-v4-canary-07-route"
+    },
+    {
+      "unitId": "es-v4-closing",
+      "sequence": 7,
+      "tags": ["narrative", "closing"],
+      "sourceText": "Cuando terminó la lluvia, las nubes se abrieron sobre el valle. Nadie habló durante unos instantes; el sonido del río bastaba para cerrar la jornada.",
+      "narrationText": "Cuando terminó la lluvia, las nubes se abrieron sobre el valle. Nadie habló durante unos instantes; el sonido del río bastaba para cerrar la jornada.",
+      "sourceCodePointCount": 149,
+      "sourceUtf8ByteCount": 152,
+      "narrationCodePointCount": 149,
+      "narrationUtf8ByteCount": 152,
+      "privacyCanary": "tts-v4-canary-08-closing"
+    }
+  ]
+}

@@ -1,0 +1,663 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:benchmark:tts-short-segment-batch-raw:v4",
+  "title": "VoxLeaf short-segment batch private raw journal v4",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "profileVersion",
+    "profileSha256",
+    "corpusSha256",
+    "authorityCommitSha",
+    "executionCommitSha",
+    "treeClean",
+    "resultPurpose",
+    "placementProfileId",
+    "cpuAdmission",
+    "candidateId",
+    "host",
+    "preflight",
+    "calls",
+    "units",
+    "cancellationTrials",
+    "playback",
+    "memory",
+    "cleanup",
+    "failureCodes"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "tts-short-segment-batch-raw-v4"
+    },
+    "profileVersion": {
+      "const": "tts-short-segment-batch-profile-v4"
+    },
+    "profileSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "corpusSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "authorityCommitSha": {
+      "$ref": "#/$defs/gitSha"
+    },
+    "executionCommitSha": {
+      "$ref": "#/$defs/gitSha"
+    },
+    "treeClean": {
+      "const": true
+    },
+    "resultPurpose": {
+      "enum": ["disposable-pilot", "official"]
+    },
+    "placementProfileId": {
+      "$ref": "#/$defs/placementProfileId"
+    },
+    "cpuAdmission": {
+      "$ref": "#/$defs/cpuAdmission"
+    },
+    "candidateId": {
+      "const": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1"
+    },
+    "host": {
+      "$ref": "#/$defs/host"
+    },
+    "preflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidateInterpreterVerified",
+        "authorityHashesVerified",
+        "artifactHashesVerified",
+        "offlineEnvironmentVerified",
+        "localFilesOnlyVerified",
+        "outboundFirewallBlockVerified",
+        "acPowerVerified",
+        "sleepDisabled",
+        "backgroundLoadAccepted",
+        "thermalStateAccepted",
+        "freeRamBytes",
+        "freeVramBytes",
+        "sharedGpuMemoryBytes"
+      ],
+      "properties": {
+        "candidateInterpreterVerified": {
+          "const": true
+        },
+        "authorityHashesVerified": {
+          "const": true
+        },
+        "artifactHashesVerified": {
+          "const": true
+        },
+        "offlineEnvironmentVerified": {
+          "const": true
+        },
+        "localFilesOnlyVerified": {
+          "const": true
+        },
+        "outboundFirewallBlockVerified": {
+          "const": true
+        },
+        "acPowerVerified": {
+          "const": true
+        },
+        "sleepDisabled": {
+          "const": true
+        },
+        "backgroundLoadAccepted": {
+          "const": true
+        },
+        "thermalStateAccepted": {
+          "const": true
+        },
+        "freeRamBytes": {
+          "type": "integer",
+          "minimum": 12884901888
+        },
+        "freeVramBytes": {
+          "type": "integer",
+          "minimum": 8174698496
+        },
+        "sharedGpuMemoryBytes": {
+          "const": 0
+        }
+      }
+    },
+    "calls": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/$defs/call"
+      }
+    },
+    "units": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/unit"
+      }
+    },
+    "cancellationTrials": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "$ref": "#/$defs/cancellationTrial"
+      }
+    },
+    "playback": {
+      "$ref": "#/$defs/playback"
+    },
+    "memory": {
+      "$ref": "#/$defs/memory"
+    },
+    "cleanup": {
+      "$ref": "#/$defs/cleanup"
+    },
+    "failureCodes": {
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/safeCode"
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "safeCode": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,63}$"
+    },
+    "safeLabel": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+():-]{0,159}$"
+    },
+    "placementProfileId": {
+      "enum": [
+        "qwen3-serena-v4-full-gpu",
+        "qwen3-serena-v4-speech-tokenizer-cpu"
+      ]
+    },
+    "cpuAdmission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "fullGpuMemoryStopCode", "fullGpuResultSha256"],
+      "properties": {
+        "status": {
+          "enum": ["not-applicable", "admitted"]
+        },
+        "fullGpuMemoryStopCode": {
+          "anyOf": [
+            {
+              "enum": [
+                "vram-safety-ceiling",
+                "vram-reserve-exhausted",
+                "shared-gpu-memory",
+                "cuda-out-of-memory"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fullGpuResultSha256": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "unitId": {
+      "enum": [
+        "es-v4-arrival",
+        "es-v4-dialogue",
+        "es-v4-numbers",
+        "es-v4-date-time",
+        "es-v4-temperature",
+        "es-v4-foreign-name",
+        "es-v4-route",
+        "es-v4-closing"
+      ]
+    },
+    "pairId": {
+      "enum": [
+        "es-v4-pair-01",
+        "es-v4-pair-02",
+        "es-v4-pair-03",
+        "es-v4-pair-04"
+      ]
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operatingSystem",
+        "osVersion",
+        "architecture",
+        "pythonVersion",
+        "cpuModel",
+        "logicalProcessors",
+        "totalRamBytes",
+        "gpuModel",
+        "totalVramBytes",
+        "driverVersion"
+      ],
+      "properties": {
+        "operatingSystem": {
+          "const": "Windows"
+        },
+        "osVersion": {
+          "const": "10.0.26200"
+        },
+        "architecture": {
+          "const": "x86_64"
+        },
+        "pythonVersion": {
+          "const": "3.12.10"
+        },
+        "cpuModel": {
+          "const": "Intel Core Ultra 7 255HX"
+        },
+        "logicalProcessors": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "totalRamBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "gpuModel": {
+          "const": "NVIDIA GeForce RTX 5060 Laptop GPU"
+        },
+        "totalVramBytes": {
+          "const": 8546942976
+        },
+        "driverVersion": {
+          "const": "577.05"
+        }
+      }
+    },
+    "call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "callIndex",
+        "phase",
+        "passIndex",
+        "pairId",
+        "batchSize",
+        "unitIds",
+        "attempt",
+        "acceptedNanoseconds",
+        "completedNanoseconds",
+        "status",
+        "failureCode"
+      ],
+      "properties": {
+        "callIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "phase": {
+          "enum": ["warmup", "measured", "cancellation"]
+        },
+        "passIndex": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 3
+        },
+        "pairId": {
+          "$ref": "#/$defs/pairId"
+        },
+        "batchSize": {
+          "enum": [1, 2]
+        },
+        "unitIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/unitId"
+          }
+        },
+        "attempt": {
+          "const": 1
+        },
+        "acceptedNanoseconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completedNanoseconds": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "status": {
+          "enum": ["completed", "failed", "timed-out", "cancelled"]
+        },
+        "failureCode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/safeCode"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "callIndex",
+        "unitId",
+        "sourceSequence",
+        "batchPosition",
+        "sampleCount",
+        "sampleRateHz",
+        "durationSeconds",
+        "firstAudioNanoseconds",
+        "completionNanoseconds",
+        "requestRtf",
+        "publishedSequence",
+        "status",
+        "failureCode"
+      ],
+      "properties": {
+        "callIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unitId": {
+          "$ref": "#/$defs/unitId"
+        },
+        "sourceSequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 7
+        },
+        "batchPosition": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "sampleCount": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "sampleRateHz": {
+          "const": 24000
+        },
+        "durationSeconds": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0
+        },
+        "firstAudioNanoseconds": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "completionNanoseconds": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "requestRtf": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "publishedSequence": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "failed",
+            "timed-out",
+            "cancelled",
+            "stale-rejected"
+          ]
+        },
+        "failureCode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/safeCode"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "cancellationTrial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trialId",
+        "passed",
+        "stopMode",
+        "identityInvalidationNanoseconds",
+        "workerTerminationNanoseconds",
+        "stalePublishedUnits",
+        "workerExited",
+        "cleanupNanoseconds"
+      ],
+      "properties": {
+        "trialId": {
+          "enum": [
+            "before-dispatch",
+            "accepted-before-audio",
+            "during-batch-generation",
+            "after-complete-before-publication",
+            "after-first-unit-publication"
+          ]
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "stopMode": {
+          "enum": ["identity-invalidation", "worker-process-termination"]
+        },
+        "identityInvalidationNanoseconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "workerTerminationNanoseconds": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "stalePublishedUnits": {
+          "const": 0
+        },
+        "workerExited": {
+          "type": "boolean"
+        },
+        "cleanupNanoseconds": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "playback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "startupWallSeconds",
+        "startupPlayableSeconds",
+        "playedSeconds",
+        "minimumBufferSeconds",
+        "peakBufferSeconds",
+        "underrunCount",
+        "bufferingSeconds",
+        "bufferingSecondsPerMinute",
+        "peakQueuedUnits",
+        "peakActiveBatches",
+        "stalePlayedUnits"
+      ],
+      "properties": {
+        "startupWallSeconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "startupPlayableSeconds": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 40
+        },
+        "playedSeconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "minimumBufferSeconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "peakBufferSeconds": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 40
+        },
+        "underrunCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bufferingSeconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "bufferingSecondsPerMinute": {
+          "type": "number",
+          "minimum": 0
+        },
+        "peakQueuedUnits": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "peakActiveBatches": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "stalePlayedUnits": {
+          "const": 0
+        }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ramSamplingIntervalMilliseconds",
+        "vramSamplingIntervalMilliseconds",
+        "peakProcessTreeRamBytes",
+        "peakProcessDedicatedVramBytes",
+        "peakFrameworkReservedVramBytes",
+        "peakAuthoritativeVramBytes",
+        "minimumFreeDedicatedVramBytes",
+        "peakSharedGpuMemoryBytes",
+        "memoryStopTriggered",
+        "memoryStopCode"
+      ],
+      "properties": {
+        "ramSamplingIntervalMilliseconds": {
+          "const": 50
+        },
+        "vramSamplingIntervalMilliseconds": {
+          "const": 1000
+        },
+        "peakProcessTreeRamBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "peakProcessDedicatedVramBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "peakFrameworkReservedVramBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "peakAuthoritativeVramBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "minimumFreeDedicatedVramBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "peakSharedGpuMemoryBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "memoryStopTriggered": {
+          "type": "boolean"
+        },
+        "memoryStopCode": {
+          "anyOf": [
+            {
+              "enum": [
+                "vram-safety-ceiling",
+                "vram-reserve-exhausted",
+                "shared-gpu-memory",
+                "cuda-out-of-memory"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workerProcessesRemaining",
+        "postCleanupProcessTreeRamBytes",
+        "postCleanupProcessTreeVramBytes",
+        "rawSessionRemoved",
+        "generatedAudioRemoved",
+        "sleepSettingRestored"
+      ],
+      "properties": {
+        "workerProcessesRemaining": {
+          "const": 0
+        },
+        "postCleanupProcessTreeRamBytes": {
+          "const": 0
+        },
+        "postCleanupProcessTreeVramBytes": {
+          "const": 0
+        },
+        "rawSessionRemoved": {
+          "const": true
+        },
+        "generatedAudioRemoved": {
+          "const": true
+        },
+        "sleepSettingRestored": {
+          "const": true
+        }
+      }
+    }
+  }
+}
