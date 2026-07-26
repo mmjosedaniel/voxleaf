@@ -139,6 +139,10 @@ Primary upstream references:
 - `.agents/PLANS.md`
 - `benchmarks/tts/candidates-v2.json`
 - `benchmarks/tts/profile-v3.json`
+- `benchmarks/tts/profile-v4.json`
+- `benchmarks/tts/corpus-v4.json`
+- `benchmarks/tts/schemas/short-segment-batch-raw-v4.schema.json`
+- `benchmarks/tts/schemas/short-segment-batch-summary-v4.schema.json`
 - `docs/product/mvp.md`
 - `docs/architecture/overview.md`
 - `docs/architecture/system-diagram.md`
@@ -154,9 +158,10 @@ Primary upstream references:
 - `services/tts/benchmarks/`
 - `services/tts/tests/`
 
-Milestone 1 will name the new `v4` authority, schemas, reports, and command
-surface before implementation. No batch-two hardware command exists at plan
-creation time, so this plan does not present an invented command as usable.
+Milestone 1 names and freezes the new `v4` authority, corpus, schemas, report
+shapes, and future command responsibility before implementation. No batch-two
+hardware command exists yet; Milestone 2 must add and review it before any
+hardware execution.
 
 ## Architecture and constraints
 
@@ -239,7 +244,10 @@ this placement works.
 
 #### Status
 
-Not started.
+Complete on 2026-07-26. The exact authority, normalized corpus, schemas,
+model-free validator, documentation, and deterministic tests are frozen before
+any v4 runner, pilot, official hardware output, listening result, or selection
+exists.
 
 ### Milestone 2: Extend the benchmark with bounded ordered batching
 
@@ -425,6 +433,37 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
   units, ordered bounded playback simulation, exact VRAM/artifact arithmetic,
   and conditional targeted CPU placement as pre-result work. No runtime code,
   hardware run, generated audio, dependency, or support claim was added.
+- 2026-07-26: Created branch `feat/m006-2-freeze-v4-authority` from merged
+  `main` at `cbb49f6`. The worktree was clean and no v4 result existed.
+- 2026-07-26: Froze `profile-v4.json` and `corpus-v4.json` before adding any
+  runner or hearing output. The corpus has eight repository-authored Spanish
+  semantic units in four immutable source-order pairs and binds the
+  implemented `narration-v1` normalization authority by hash. Batch one and
+  batch two share the exact candidate, inputs, settings, three measured
+  passes, 24 per-unit observations, first attempts, and zero-retry policy.
+- 2026-07-26: Froze the full-GPU-first memory boundary. The accepted
+  8,174,698,496-byte free-VRAM observation minus a 536,870,912-byte reserve
+  produces a 7,637,827,584-byte engineering ceiling; zero shared-GPU-memory
+  use is permitted. Only four exact memory stop codes admit the separate
+  speech-tokenizer CPU placement. Speed, standard-gate, or quality failure
+  does not.
+- 2026-07-26: Added closed private-raw and content-safe-summary schemas plus a
+  model-free authority validator. Six focused tests pass and reject byte
+  drift, result-before-authority, missing or reordered pairs/units, retries,
+  unapproved CPU placement, private content, and pass claims that attempt to
+  waive failed conjunctive gates.
+- 2026-07-26: Committed the pre-result authority checkpoint as `f6bccf7`
+  (`feat(tts): freeze v4 batch evaluation authority`). This checkpoint adds no
+  candidate dependency, model import, GPU execution, generated audio, raw
+  result, production contract, runtime, or command.
+- 2026-07-26: Closed Milestone 1 validation. The full Python boundary passed
+  Ruff formatting/lint, strict mypy over 45 source files, 78 tests, and the
+  unchanged 107-package candidate lock check. `pnpm.cmd check:portable` passed
+  in 28 seconds and `pnpm.cmd check` passed on native Windows in 50.9 seconds.
+  All 48 repository Markdown files passed the relative-link audit. The
+  branch-wide private-pattern/artifact audit found no private path, secret,
+  book, audio, model weight, raw journal, or v4 result; the ignored raw tree
+  contains zero files.
 
 ## Discoveries and decisions
 
@@ -454,29 +493,60 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
 9. Passing a scheduling-sustainability gate would inform the demo and later
    production design, but it would not retroactively convert failed standard
    `v3` into a passing profile.
+10. The frozen short corpus uses the already implemented `narration-v1`
+    expansion for supported Spanish numbers and symbols. Qwen receives only
+    the resulting `narrationText`; model-specific text rewriting remains
+    forbidden.
+11. Both batch sizes receive the same 24 ordered units. Batch one uses 24
+    calls, batch two uses 12 calls, and alternating per-pass batch order limits
+    a fixed warm/thermal ordering bias without changing inputs.
+12. The conditional placement is not generic Accelerate offload. It moves
+    only `model.speech_tokenizer.model` and its wrapper device to CPU after
+    exact CUDA load, requires every other parameter to remain on CUDA, and
+    rejects disk/meta placement, an offload directory, implicit fallback, and
+    Windows shared-GPU-memory paging.
+13. V4 retains three conclusions because they answer different questions:
+    unchanged standard machine viability, bounded scheduling sustainability,
+    and one-maintainer constrained-demo usefulness. None can rescue another or
+    select a production profile in this plan.
 
 ## Final validation results
 
-Plan creation is documentation-only. No runtime code, benchmark authority,
-hardware command, candidate lock, production dependency, hardware result,
-generated audio, or support claim was added.
+Milestone 1 is complete. It adds development-benchmark authority and
+model-free validation only. It does not add the v4 runner, a hardware command,
+candidate dependency, model execution, generated audio, official result,
+production contract, runtime behavior, support claim, or selection decision.
 
-The documentation reconciliation passed:
+The authority checkpoint passed:
 
-- a local-link audit across all 45 Markdown files;
-- a changed-scope private-path and credential-pattern audit with no matches;
-- `git diff --check`;
-- `pnpm.cmd check:portable` outside the sandbox in 26.4 seconds, including 18
-  shared test files / 175 tests, 34 EPUB test files / 555 tests, 20 desktop
-  test files / 204 tests, 6 native-WebDriver-client tests, and 72 Python tests,
-  plus formatting, lint, strict type checks, portable builds, and Python
-  packages; and
-- `pnpm.cmd check` on the authoritative Windows host in 51.7 seconds with the
-  same TypeScript/Python evidence plus Rust formatting, Clippy, crate tests,
-  the native release build, and Python source/wheel packaging.
+- Prettier checks for all four new JSON authorities;
+- Ruff formatting and lint for the new validator and tests;
+- strict mypy for both new Python files;
+- six focused model-free tests covering byte identity, schema closure, exact
+  normalized-corpus arithmetic, unit/pair order, equal first-attempt counts,
+  result ancestry fields, no retries, memory-before-CPU admission, private
+  content rejection, and conjunctive standard/scheduling/demo conclusions;
+  and
+- `git diff --check`.
 
-The first sandboxed portable check stopped because Prettier could not scan the
-existing protected `services/tts/.pytest_cache`. The unchanged command passed
-outside the sandbox; this was an environment access limitation, not a
-repository validation failure. The existing Vite chunk-size advisory remained
-informational.
+Repository-wide validation also passed:
+
+- `uv run --directory services/tts --locked ruff format --check benchmarks tests`;
+- `uv run --directory services/tts --locked ruff check benchmarks tests`;
+- `uv run --directory services/tts --locked mypy .` over 45 source files;
+- `uv run --directory services/tts --locked pytest tests -q` with 78 passing
+  tests;
+- `uv lock --project services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --check`
+  with the unchanged 107-package lock;
+- `pnpm.cmd check:portable` in 28 seconds, including 18 shared test files /
+  175 tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204
+  tests, six native-WebDriver-client tests, 78 Python tests, strict type
+  checks, linting, portable builds, and Python packages; and
+- `pnpm.cmd check` on native Windows in 50.9 seconds with the same evidence
+  plus Rust formatting, Clippy, crate tests, and the Tauri release build.
+
+All 48 Markdown files passed the relative-link audit. `git diff --check` and
+the branch-wide private-path, credential, added-artifact, raw-tree, and
+premature-v4-result scans passed. The ignored raw tree contains zero files.
+No official output was generated or heard. The existing Vite chunk-size
+advisory remained informational.

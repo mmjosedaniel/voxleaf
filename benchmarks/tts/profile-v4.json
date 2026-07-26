@@ -1,0 +1,427 @@
+{
+  "profileVersion": "tts-short-segment-batch-profile-v4",
+  "status": "frozen-before-v4-implementation-pilot-and-official-results",
+  "acceptedAt": "2026-07-26",
+  "purpose": "development-only-short-segment-shared-model-batch-feasibility",
+  "authorities": {
+    "predecessorCandidateProfile": {
+      "path": "benchmarks/tts/profile-v3.json",
+      "sha256": "7d062a4f662ed95b1cb5ff0a21fc40864f4ac3858cea4314ee612b84c2e08dbe"
+    },
+    "candidateManifestCorrection": {
+      "path": "benchmarks/tts/candidates-v3.json",
+      "sha256": "dce294309f4edd27d4b32fa95eb677f58b399fc71867ce5bc1a7b27049352a72"
+    },
+    "speakerScreenResult": {
+      "path": "benchmarks/tts/customvoice-spanish-screen-result-v2.json",
+      "sha256": "d55764525a0152e130205b8bb37bc7f7371a5514057928689501897d6e3ac56d"
+    },
+    "candidateLock": {
+      "path": "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock",
+      "sha256": "1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913"
+    },
+    "corpus": {
+      "path": "benchmarks/tts/corpus-v4.json",
+      "sha256": "3dcb30ab07bc5796175137f956ab7c910f306cd2f39fa6fe30d05deca1eccd8e"
+    },
+    "privateRawSchema": {
+      "path": "benchmarks/tts/schemas/short-segment-batch-raw-v4.schema.json",
+      "sha256": "c793be6d97523f866ea263960f13c981a693fca8e819966ec1b867cac9507f82"
+    },
+    "contentSafeSummarySchema": {
+      "path": "benchmarks/tts/schemas/short-segment-batch-summary-v4.schema.json",
+      "sha256": "2abb279fad5bc9f65f85ce21a6e56c7e8ee61550b5a7c14592ad0826fc4f101a"
+    }
+  },
+  "candidate": {
+    "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
+    "baseConfigurationIdentitySha256": "b689b9b81cc7633687e80030ed172878d89196d57149370a82839e1ec83d61df",
+    "engine": {
+      "distribution": "qwen-tts",
+      "version": "0.1.1",
+      "wheelSha256": "11a290d8dabc7ef91a90c54478c8ab19b3edb1d85c0882313721892bdc4af15d"
+    },
+    "model": {
+      "repository": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+      "revision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+      "majorArtifacts": [
+        {
+          "path": "model.safetensors",
+          "sha256": "38b1d5971bdbd982b561cccec982669a53b0537c3cf5e9bd4778ed07bb2f5137",
+          "sizeBytes": 3833402552
+        },
+        {
+          "path": "speech_tokenizer/model.safetensors",
+          "sha256": "836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258",
+          "sizeBytes": 682293092
+        }
+      ],
+      "totalMajorArtifactBytes": 4515695644
+    },
+    "voice": {
+      "mode": "built-in-customvoice",
+      "speaker": "Serena",
+      "language": "Spanish",
+      "instruction": "Lee con un tono neutro, claro, natural y sereno, apropiado para narrar un audiolibro; mantén un ritmo moderado y una expresividad contenida."
+    },
+    "runtime": {
+      "operatingSystem": "Windows",
+      "architecture": "x86_64",
+      "python": "3.12.10",
+      "provider": "PyTorch CUDA",
+      "torch": "2.9.1+cu128",
+      "torchaudio": "2.9.1+cu128",
+      "precision": "bfloat16",
+      "attention": "sdpa"
+    },
+    "generation": {
+      "doSample": true,
+      "repetitionPenalty": 1.05,
+      "temperature": 0.9,
+      "topP": 1.0,
+      "topK": 50,
+      "subtalkerDoSample": true,
+      "subtalkerTemperature": 0.9,
+      "subtalkerTopP": 1.0,
+      "subtalkerTopK": 50,
+      "maxNewTokens": 2048,
+      "outputSampleRateHz": 24000,
+      "channels": 1,
+      "sampleFormat": "float32"
+    }
+  },
+  "referenceHost": {
+    "operatingSystem": "Windows",
+    "osVersion": "10.0.26200",
+    "architecture": "x86_64",
+    "pythonVersion": "3.12.10",
+    "cpuModel": "Intel Core Ultra 7 255HX",
+    "gpuModel": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "totalVramBytes": 8546942976,
+    "driverVersion": "577.05",
+    "scope": "exact-host-only"
+  },
+  "placementProfiles": [
+    {
+      "profileId": "qwen3-serena-v4-full-gpu",
+      "configurationIdentitySha256": "432bf9dad7f73e3fcde9770f7a2e7ae93de161c5bdd54c0877c6bd6211c3f8b9",
+      "admission": "always-first",
+      "load": {
+        "deviceMap": "cuda:0",
+        "dtype": "bfloat16",
+        "attention": "sdpa",
+        "postLoadMoves": []
+      },
+      "requiredDeviceEvidence": {
+        "autoregressiveModel": "cuda:0",
+        "speechTokenizerModel": "cuda:0",
+        "diskOrMetaParameters": 0,
+        "implicitFallback": false
+      }
+    },
+    {
+      "profileId": "qwen3-serena-v4-speech-tokenizer-cpu",
+      "configurationIdentitySha256": "1a4c229d08c3ea29ef70f7ba835341479ef0f5d58831e35fad77113384b97722",
+      "admission": "conditional-after-full-gpu-memory-stop-only",
+      "load": {
+        "initialDeviceMap": "cuda:0",
+        "dtype": "bfloat16",
+        "attention": "sdpa",
+        "postLoadMoves": [
+          {
+            "objectPath": "model.speech_tokenizer.model",
+            "operation": "to-cpu"
+          },
+          {
+            "objectPath": "model.speech_tokenizer.device",
+            "operation": "set-torch-device-cpu"
+          },
+          {
+            "objectPath": "torch.cuda",
+            "operation": "empty-cache-after-relocation"
+          }
+        ]
+      },
+      "requiredDeviceEvidence": {
+        "autoregressiveModel": "cuda:0",
+        "speechTokenizerModel": "cpu",
+        "speechTokenizerWrapperDevice": "cpu",
+        "diskOrMetaParameters": 0,
+        "implicitFallback": false,
+        "offloadDirectoryCreated": false
+      }
+    }
+  ],
+  "offlineControls": {
+    "verifiedLocalArtifactRootRequired": true,
+    "runtimeDownloads": "forbidden",
+    "localFilesOnly": true,
+    "environment": {
+      "HF_HUB_OFFLINE": "1",
+      "TRANSFORMERS_OFFLINE": "1"
+    },
+    "outboundFirewallBlockBoundToCandidateInterpreter": true,
+    "networkAttemptOutcome": "invalidate-complete-run"
+  },
+  "inputAuthority": {
+    "corpusVersion": "tts-short-segment-corpus-v4",
+    "engineInputField": "narrationText",
+    "unitOrder": [
+      "es-v4-arrival",
+      "es-v4-dialogue",
+      "es-v4-numbers",
+      "es-v4-date-time",
+      "es-v4-temperature",
+      "es-v4-foreign-name",
+      "es-v4-route",
+      "es-v4-closing"
+    ],
+    "pairOrder": [
+      ["es-v4-arrival", "es-v4-dialogue"],
+      ["es-v4-numbers", "es-v4-date-time"],
+      ["es-v4-temperature", "es-v4-foreign-name"],
+      ["es-v4-route", "es-v4-closing"]
+    ],
+    "candidateSpecificTextRewriting": "forbidden",
+    "observedAudioMayChangeCorpusOrPairing": false,
+    "eachUnitRetainsIndependentIdentityAndRange": true
+  },
+  "executionPolicy": {
+    "clock": "monotonic-perf-counter-nanoseconds",
+    "modelLifetime": "one-resident-instance-per-placement-profile",
+    "nativeGenerationGranularity": "complete-waveform-batch",
+    "publicationGranularity": "one-complete-waveform-per-independent-unit",
+    "batchSizes": [1, 2],
+    "automaticRetries": 0,
+    "diagnosticRetries": 0,
+    "failureAccounting": "first-attempt-is-authoritative",
+    "wholeBatchInvalidationOnAnyStaleIdentity": true,
+    "maximumActiveBatches": 1,
+    "warmup": {
+      "pairId": "es-v4-pair-01",
+      "batchOneCalls": [["es-v4-arrival"], ["es-v4-dialogue"]],
+      "batchTwoCalls": [["es-v4-arrival", "es-v4-dialogue"]],
+      "excludedFromEveryReportedCountAndAggregate": true
+    },
+    "coldLoadObservationsPerPlacementProfile": 5,
+    "measuredPasses": 3,
+    "passBatchOrder": [
+      [1, 2],
+      [2, 1],
+      [1, 2]
+    ],
+    "pairOrderWithinEveryPass": [
+      "es-v4-pair-01",
+      "es-v4-pair-02",
+      "es-v4-pair-03",
+      "es-v4-pair-04"
+    ],
+    "expectedMeasuredCountsPerPlacementProfile": {
+      "batchOneCalls": 24,
+      "batchOneUnits": 24,
+      "batchTwoCalls": 12,
+      "batchTwoUnits": 24
+    },
+    "minimumMeasuredMediaSecondsPerBatchSize": 180,
+    "timeoutsMilliseconds": {
+      "coldLoad": 120000,
+      "generationCall": 120000,
+      "identityInvalidation": 500,
+      "workerTermination": 2000,
+      "cleanup": 5000
+    },
+    "memorySamplingIntervalsMilliseconds": {
+      "processTreeRam": 50,
+      "wddmDedicatedVram": 1000,
+      "wddmSharedGpuMemory": 1000
+    },
+    "cancellationTrialOrder": [
+      "before-dispatch",
+      "accepted-before-audio",
+      "during-batch-generation",
+      "after-complete-before-publication",
+      "after-first-unit-publication"
+    ],
+    "cleanup": {
+      "workerProcessesRemaining": 0,
+      "postCleanupTrackedRamBytes": 0,
+      "postCleanupTrackedVramBytes": 0,
+      "rawSessionRemovedAfterSafeDerivation": true,
+      "generatedAudioRemoved": true,
+      "priorSleepSettingRestored": true
+    }
+  },
+  "playbackSimulation": {
+    "input": "ordered-first-attempt-completion-timeline",
+    "startWhenPlayableSecondsAtLeast": 15,
+    "shorterRemainingRangeMayStartOnlyWhenComplete": true,
+    "maximumQueuedCompleteUnits": 2,
+    "maximumPlayableBufferSeconds": 40,
+    "maximumActiveBatches": 1,
+    "backpressure": "do-not-dispatch-when-one-complete-batch-cannot-fit",
+    "consumptionRatePlayableSecondsPerWallSecond": 1,
+    "maximumBufferingSecondsPerMediaMinute": 5,
+    "stalePlayableUnits": 0,
+    "persistOrConcatenateWaveContainers": false
+  },
+  "memorySafety": {
+    "authoritativePeakMethod": "maximum-of-baseline-adjusted-wddm-dedicated-and-pytorch-peak-reserved",
+    "preflightMinimumFreeRamBytes": 12884901888,
+    "preflightMinimumFreeVramBytes": 8174698496,
+    "dedicatedVramReserveBytes": 536870912,
+    "maximumEngineeringPeakVramBytes": 7637827584,
+    "minimumObservedFreeDedicatedVramBytes": 536870912,
+    "maximumSharedGpuMemoryBytes": 0,
+    "arithmetic": "8174698496-minus-536870912-equals-7637827584",
+    "evaluateBeforeConditionalCpuAdmission": true,
+    "fullGpuMemoryStopCodes": [
+      "vram-safety-ceiling",
+      "vram-reserve-exhausted",
+      "shared-gpu-memory",
+      "cuda-out-of-memory"
+    ],
+    "conditionalCpuAdmission": {
+      "requiresFullGpuBatchTwoFirstAttemptStopCode": true,
+      "performanceOnlyFailureDoesNotAdmit": true,
+      "standardGateFailureDoesNotAdmit": true,
+      "qualityFailureDoesNotAdmit": true,
+      "differentCandidateOrCorpusDoesNotAdmit": true
+    }
+  },
+  "standardBalancedGates": {
+    "allGatesAreConjunctive": true,
+    "maximumColdLoadP95Seconds": 60,
+    "maximumWarmFirstAudioP95Seconds": 3,
+    "maximumWarmFifteenSecondsMediaP95Seconds": 12,
+    "maximumWarmShorterCompleteP95Seconds": 5,
+    "maximumWarmRequestRtfP95": 0.8,
+    "maximumSustainedRequestRtfP95": 0.8,
+    "maximumTotalSustainedRtf": 0.75,
+    "maximumPeakProcessTreeRamBytes": 12884901888,
+    "maximumPeakVramBytes": 6442450944,
+    "maximumFailedOrTimedOutFirstAttempts": 0,
+    "requiredCancellationTrialsPassed": 5,
+    "requiredOfflineArtifactLicensePrivacyOrderingBoundednessAndCleanupAudits": true,
+    "resultScope": "new-v4-machine-conclusion-only",
+    "mayPromoteOrRewriteFailedV3": false
+  },
+  "schedulingSustainabilityGates": {
+    "allGatesAreConjunctive": true,
+    "requiredBatchSize": 2,
+    "maximumAggregateBatchRtfExclusive": 1,
+    "maximumBufferingSecondsPerMediaMinute": 5,
+    "minimumMeasuredMediaSeconds": 180,
+    "minimumUnitDurationSeconds": 8,
+    "maximumUnitDurationSeconds": 20,
+    "maximumReorderedUnits": 0,
+    "maximumMissingPairs": 0,
+    "maximumStalePublishedOrPlayedUnits": 0,
+    "maximumFailedOrTimedOutFirstAttempts": 0,
+    "requiredCancellationTrialsPassed": 5,
+    "requiredMemorySafetyOrderingBoundednessPrivacyAndCleanupAudits": true,
+    "standardLatencyOrRtfFailureMayBeWaived": false,
+    "mayPromoteOrRewriteFailedV3": false,
+    "explicitPreparationDelayMustRemainReported": true
+  },
+  "qualityWorkflow": {
+    "admission": "only-after-valid-scheduling-machine-result-with-no-safety-ordering-privacy-or-cleanup-failure",
+    "independentFluentSpanishEvaluators": 1,
+    "randomizedBlindOrder": true,
+    "scoreRange": [1, 5],
+    "dimensions": [
+      "intelligibility",
+      "number-and-symbol-normalization",
+      "join-boundaries",
+      "prosody",
+      "accent"
+    ],
+    "minimumOverallMean": 3.5,
+    "minimumIntelligibilityMean": 3.5,
+    "minimumNumberAndSymbolMean": 3.5,
+    "minimumEveryDimensionMean": 3,
+    "maximumMeaningChangingDefects": 0,
+    "firstEvaluationOnly": true,
+    "laterQualityWaiver": "forbidden",
+    "scope": "focused-mvp-scheduling-and-demo-decision-not-v3-panel"
+  },
+  "conclusionPolicy": {
+    "separateConclusionsRequired": [
+      "standardViability",
+      "schedulingSustainability",
+      "constrainedDemoUsefulness"
+    ],
+    "standardViability": "pass-only-if-every-standard-balanced-machine-gate-passes",
+    "schedulingSustainability": "pass-only-if-every-scheduling-gate-passes",
+    "constrainedDemoUsefulness": "pass-only-if-scheduling-sustainability-and-every-focused-quality-gate-pass",
+    "averageCannotRescueFailedGate": true,
+    "retryCannotRescueFailedGate": true,
+    "qualityCannotRescueMachineFailure": true,
+    "conditionalCpuCannotRescueOrAlterFullGpuConclusion": true,
+    "onePlacementProfileCannotPromoteAnother": true,
+    "productionProfileSelectionAuthorized": false,
+    "v3DecisionRemainsImmutable": true
+  },
+  "resultAuthority": {
+    "privateRawSchemaVersion": "tts-short-segment-batch-raw-v4",
+    "contentSafeSummarySchemaVersion": "tts-short-segment-batch-summary-v4",
+    "officialResultMustRecordAuthorityCommit": true,
+    "authorityCommitMustBeStrictAncestorOfExecutionCommit": true,
+    "officialResultAtFreeze": "forbidden",
+    "pilotEligibleForPromotion": false,
+    "rawToSummaryDerivation": [
+      "validate-authority-and-raw-schema",
+      "verify-exact-count-order-pairing-and-first-attempts",
+      "recompute-duration-rtf-percentiles-memory-and-playback",
+      "evaluate-every-gate-conjunctively",
+      "validate-content-safe-summary-schema",
+      "delete-raw-journal-audio-scorecard-and-randomization-key"
+    ],
+    "forbiddenCommittedOrReviewableEvidence": [
+      "sourceText",
+      "narrationText",
+      "privacyCanary",
+      "generatedAudio",
+      "waveformBytes",
+      "modelPath",
+      "userPath",
+      "commandLine",
+      "environmentValue",
+      "exceptionMessage",
+      "scorecard",
+      "randomizationKey",
+      "privateIdentity"
+    ]
+  },
+  "invalidation": {
+    "changesRequireNewProfileVersion": [
+      "authorityHash",
+      "candidate",
+      "modelRevision",
+      "artifactHash",
+      "candidateLock",
+      "runtime",
+      "host",
+      "speaker",
+      "instruction",
+      "generationSetting",
+      "placement",
+      "corpus",
+      "normalization",
+      "unitOrder",
+      "pairing",
+      "batchSize",
+      "sampleCount",
+      "warmup",
+      "measurementInterval",
+      "retryOrFailureAccounting",
+      "timeout",
+      "playbackRule",
+      "memoryBoundary",
+      "cancellationRule",
+      "qualityRule",
+      "conclusionRule",
+      "privacyOrCleanupRule",
+      "resultSchema"
+    ]
+  }
+}

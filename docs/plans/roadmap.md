@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 6.1 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. ADR-0014 permits that exact profile only for a bounded development demo after one fluent maintainer accepted its audible quality. Milestone 6.2 is planned as a separate pre-result evaluation of shorter ordered units and batch size two with one resident model; conditional targeted CPU placement is only a memory contingency. Milestone 7 may plan the constrained demo slice, but production completion remains blocked until new evidence or an explicit later acceptance change resolves continuous playback, cancellation, hardware, and packaging. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 6.1 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. ADR-0014 permits that exact profile only for a bounded development demo after one fluent maintainer accepted its audible quality. Milestone 6.2 is in progress: Milestone 1 froze the separate result-blind v4 authority for shorter ordered units and batch size two with one resident model; conditional targeted CPU placement remains only a memory contingency. No v4 runner or result exists. Milestone 7 may plan the constrained demo slice, but production completion remains blocked until new evidence or an explicit later acceptance change resolves continuous playback, cancellation, hardware, and packaging. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -292,11 +292,13 @@ isolated lock, verified local artifacts, outbound blocking, an authorized
 
 ## Milestone 6.2: Prove Qwen short-segment batch feasibility
 
-**Status:** Planned; not started. The
+**Status:** In progress. Milestone 1 completed on 2026-07-26. The
 [Milestone 6.2 ExecPlan](active/M006-002-qwen-short-segment-batch-feasibility.md)
-records the scope and must freeze a new `v4` authority before official
-hardware results. This work does not change failed batch-one `v3`, ADR-0013,
-or ADR-0014.
+now has the byte-frozen `v4` profile, normalized synthetic corpus, closed raw
+and summary schemas, explicit full-GPU memory stop, conditional CPU identity,
+and model-free enforcement. Milestones 2–6 and all hardware results remain
+pending. This work does not change failed batch-one `v3`, ADR-0013, or
+ADR-0014.
 
 ### Goal
 
@@ -324,8 +326,9 @@ semantic units in one shared-model batch.
 Milestone 6.1 supplies the exact failed candidate evidence and constrained demo
 decision. Milestone 5 supplies stable bounded `narration-v1` units. The
 candidate-neutral benchmark, exact isolated lock, verified local artifacts,
-outbound blocking, and exact reference host remain required. Milestone 6.2
-must add a reviewed batch hardware command before execution.
+outbound blocking, and exact reference host remain required. The Milestone
+6.2 ExecPlan's Milestone 2 must add a reviewed batch hardware command before
+execution.
 
 ### Major risks and unknowns
 
@@ -368,10 +371,10 @@ Run the selected TTS engines behind a secure, typed, cancellable local process b
 
 Milestone 2 defines shared contracts. Milestone 6 supplies the evaluation
 authority but its first cycle selected no viable engine. Milestone 6.1 permits
-only the constrained ADR-0014 development-demo input. Milestone 6.2 is the
-planned attempt to measure short-unit shared-model batching before any
-continuous-playback or standard-profile claim. Milestone 1 supplies process
-and packaging foundations.
+only the constrained ADR-0014 development-demo input. Milestone 6.2 has frozen
+its pre-result authority and is the active attempt to measure short-unit
+shared-model batching before any continuous-playback or standard-profile
+claim. Milestone 1 supplies process and packaging foundations.
 
 ### Major risks and unknowns
 

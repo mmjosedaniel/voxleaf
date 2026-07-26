@@ -28,6 +28,16 @@ roadmap Milestone 6. It is not a production TTS service boundary.
 - `profile-v3.json` freezes the complete Serena candidate identity,
   prototype stop gate, inherited official gates, exclusions, privacy rules,
   and invalidation authority before any prototype or official result.
+- `profile-v4.json` freezes Milestone 6.2 before implementation or results. It
+  keeps the exact Serena candidate, binds the `narration-v1`-normalized
+  `corpus-v4.json`, fixes batch-one/batch-two order and counts, separates
+  standard/scheduling/demo conclusions, reserves 512 MiB of dedicated VRAM,
+  and permits the separately identified speech-tokenizer CPU placement only
+  after an exact full-GPU batch-two memory stop.
+- `schemas/short-segment-batch-raw-v4.schema.json` and
+  `schemas/short-segment-batch-summary-v4.schema.json` are the closed private
+  journal and content-safe summary shapes. No v4 pilot, hardware result,
+  quality result, selection record, or runner command exists yet.
 - `incremental-cancellation-prototype-v1.json` freezes the development-only
   prototype topology before results: complete-segment delivery, one resident
   spawned worker, explicit input/output/queue ceilings, identity-first stale
@@ -57,6 +67,10 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   is the active blocker-resolution authority for the selected Serena
   development candidate. `v2` remains the completed first-cycle authority and
   supplies the inherited balanced measurement rules; `v1` remains historical.
+- [`docs/architecture/tts-feasibility-profile-v4.md`](../../docs/architecture/tts-feasibility-profile-v4.md)
+  explains the frozen short-unit/shared-model batch authority. It is active
+  pre-result development evidence and does not supersede the failed v3
+  decision.
 
 Raw measurements, model files, generated audio, listening-session metadata,
 and profiling output belong below `benchmarks/results/raw/`, which is ignored.
@@ -230,6 +244,12 @@ bounded `AudioChunk` metadata returns. Child diagnostics are captured and
 discarded, timeouts and worker errors become fixed codes, and forced
 cancellation terminates the worker process tree and discards every later frame
 by request identity.
+
+The model-free `v4_authority` validator is also implemented. It byte-verifies
+the new profile, corpus, and schemas; recomputes corpus size and placement
+identities; enforces exact pairing/first attempts; rejects result-before-
+authority, unapproved CPU placement, non-conjunctive pass claims, and private
+content. It does not implement or invoke Qwen batching.
 
 The evaluated Qwen and Supertonic public APIs expose complete waveforms. The
 benchmark records this honestly and rejects an end-of-output frame as evidence

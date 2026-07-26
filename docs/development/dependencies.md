@@ -81,10 +81,11 @@ production graph or approve distribution. The content-free
 `benchmarks/tts/selection-v3.md` record preserves both conclusions and adds no
 dependency or lock edge.
 
-The planned
+The active
 [Milestone 6.2 batch-feasibility plan](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md)
-does not add a dependency. It first evaluates batch sizes one and two through
-the existing isolated candidate graph. That graph already resolves
+has frozen its v4 authority without adding a dependency. Later milestones
+evaluate batch sizes one and two through the existing isolated candidate
+graph. That graph already resolves
 `accelerate==1.12.0` transitively, but VoxLeaf source must not import or rely on
 that transitive package without a separately reviewed direct declaration.
 Conditional targeted speech-tokenizer/audio-decoder CPU placement is only an
