@@ -193,3 +193,14 @@ media in 12.952202 seconds and passed the frozen RTF and memory ceilings. These
 are exact-host feasibility observations, not new user-visible targets or
 general hardware requirements. The initial playable-audio-lead, buffering, and
 cancellation targets above remain unchanged and unimplemented.
+
+The approved
+[Milestone 6.1 blocker-resolution plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md)
+does not replace `v2` or add a result. It requires a pre-result
+frozen built-in-speaker screen and `tts-feasibility-profile-v3` before the
+exact Qwen3-TTS 1.7B CustomVoice candidate can be measured officially. Qwen's
+upstream family claim of
+best-case latency as low as 97 ms is candidate-intake information only: it
+does not establish VoxLeaf first audio, time to 15 seconds of media, sustained
+RTF, cancellation, memory, or command-to-audible performance on the reference
+host.

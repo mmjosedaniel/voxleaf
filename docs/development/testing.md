@@ -193,9 +193,29 @@ pnpm.cmd --filter @voxleaf/epub build
 
 The final Milestone 5 tree passed all three commands, including 34 EPUB test files / 555 tests. Task 6.2 also passed `pnpm.cmd check:portable`, the authoritative native `pnpm.cmd check`, and both required pull-request jobs; the retained exact results are in the completed plan. No Markdown or Mermaid-specific validator is currently configured in the repository.
 
+## Milestone 6 TTS feasibility validation
+
+The [completed Milestone 6 plan](../plans/completed/M006-local-tts-feasibility-and-engine-profiles.md) retains the frozen `v2` authority, exact candidate-run evidence, limited one-evaluator Spanish quality result, license/offline/packaging audit, privacy cleanup, and repository closeout. The model-free Python suite contains 50 deterministic benchmark tests, and each isolated candidate environment has a locked dependency/import smoke.
+
+Both exact profiles completed the required manual matrices on the measured host, but each failed at least one frozen role gate; ADR-0013 therefore selects neither profile. Disposable generated audio and private raw results were removed after content-safe summaries were derived. Pull request #97's final head (`0e05c58820e3647d0656d41e17b8749851f873b2`) passed the Ubuntu and Windows foundation jobs in GitHub Actions run `30182306655`.
+
+These results validate development evidence only. They do not exercise or imply a production TTS process, selected engine profile, playback path, general hardware support claim, or installer.
+
+The approved
+[Milestone 6.1 plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md)
+defines future work, not completed coverage. Its Qwen3-TTS 1.7B CustomVoice
+candidate needs a frozen blinded Spanish built-in-speaker screen, one selected
+speaker/instruction in `v3`, an isolated lock, incremental-output and
+cancellation prototype, deterministic model-free adapter tests, exact-host
+measurements, and complete Spanish quality evaluation. Base voice cloning is
+outside the current MVP. Whisper is not a TTS candidate; if a fully local ASR
+runtime is later admitted as a benchmark aid, it must run outside timed
+synthesis and reduce sensitive transcripts to content-free aggregates before
+leaving the raw area.
+
 ## Deferred coverage
 
-The secure EPUB ingestion scenario and boundary matrix is implemented with repository-authored synthetic inputs; deterministic desktop tests prove the bounded repository, approved save lifecycle, and exact/recovered open coordination; the real-browser smoke proves preference plus exact/nearest-valid locator restoration through production React reload/reselection; the packaged native smoke proves save/restore across a WebView2 application restart; the two hardware-specific benchmarks cover accepted prototype, production React, repeated lifecycle, and packaged WebView2 reader limits; and the test-only narration corpus/limits plus production source projector, normalizer, boundary scanner, packer, canonical prepared-segment finalizer, public batch operation, public neutral/Spanish EPUB-to-segment integration matrix, and deterministic resource matrix have evidence. Milestone 5 documentation and Task 6.2 close validation are complete. The explicit Milestone 6 manual benchmark did start both exact candidate models and generated only disposable quality audio, but no default test or CI job does so. No current test communicates with a production TTS process, plays audio, detects supported inference hardware, builds an installer, or exercises those later end-to-end flows. The examples below are requirements for later roadmap milestones, not claims about current coverage.
+The secure EPUB ingestion scenario and boundary matrix is implemented with repository-authored synthetic inputs; deterministic desktop tests prove the bounded repository, approved save lifecycle, and exact/recovered open coordination; the real-browser smoke proves preference plus exact/nearest-valid locator restoration through production React reload/reselection; the packaged native smoke proves save/restore across a WebView2 application restart; the two hardware-specific benchmarks cover accepted prototype, production React, repeated lifecycle, and packaged WebView2 reader limits; and the test-only narration corpus/limits plus production source projector, normalizer, boundary scanner, packer, canonical prepared-segment finalizer, public batch operation, public neutral/Spanish EPUB-to-segment integration matrix, and deterministic resource matrix have evidence. Milestones 5 and 6 are complete. No default test or CI job loads either benchmark candidate, and no current test communicates with a production TTS process, plays audio, detects supported inference hardware, builds an installer, or exercises those later end-to-end flows. The examples below are requirements for later roadmap milestones, not claims about current coverage.
 
 ## Test levels
 

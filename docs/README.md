@@ -2,6 +2,12 @@
 
 Documentation is organized by purpose so contributors and Codex can load only the context needed for a task.
 
+## Current project status
+
+Roadmap Milestones 1 through 6 are complete. The visual reader, bounded local restoration, locator-linked narration preparation, and candidate-neutral TTS feasibility harness are implemented and validated within their documented boundaries. The first frozen TTS evaluation selected no viable profile. Milestone 6.1 is now approved and planned to screen Qwen3-TTS 1.7B CustomVoice's built-in speakers, freeze one Spanish default-narrator profile, and prove incremental/cancellation behavior; it has not started and selects no engine or speaker. Milestone 7 remains blocked, and production TTS, audio, synchronization, hardware support, and release packaging are not implemented.
+
+Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
+
 ## Product
 
 - [`product/vision.md`](product/vision.md): product purpose, audience, and principles.
@@ -12,7 +18,7 @@ Documentation is organized by purpose so contributors and Codex can load only th
 ## Architecture
 
 - [`architecture/system-diagram.md`](architecture/system-diagram.md): canonical implemented/approved component map, EPUB-to-audio flow, status legend, and maintenance conditions.
-- [`architecture/overview.md`](architecture/overview.md): detailed component boundaries, invariants, and implemented EPUB, reader, and persistence behavior.
+- [`architecture/overview.md`](architecture/overview.md): detailed component boundaries, invariants, implemented EPUB/reader/narration-preparation behavior, and the current TTS feasibility boundary.
 - [`architecture/performance-budget.md`](architecture/performance-budget.md): latency, buffering, memory, and measurement targets.
 - [`architecture/narration-normalization-v1.md`](architecture/narration-normalization-v1.md): accepted test-only neutral/Spanish normalization corpus policy for Milestone 5.
 - [`architecture/narration-preparation-limits-v1.md`](architecture/narration-preparation-limits-v1.md): accepted test-only `narration-v1` chunk, work, retention, checkpoint, and yield limits.
@@ -38,7 +44,8 @@ Documentation is organized by purpose so contributors and Codex can load only th
 - [`plans/completed/M004-001-native-webdriver-startup-smoke.md`](plans/completed/M004-001-native-webdriver-startup-smoke.md): completed test-infrastructure ExecPlan for the packaged WebView2 startup smoke used by Milestone 4 validation.
 - [`plans/completed/M005-narration-text-preparation.md`](plans/completed/M005-narration-text-preparation.md): completed ExecPlan and validation evidence for roadmap Milestone 5's deterministic, bounded, locator-linked narration normalization, segmentation, and public `OpenedPublication.prepareNarration` boundary.
 - [`plans/completed/M006-local-tts-feasibility-and-engine-profiles.md`](plans/completed/M006-local-tts-feasibility-and-engine-profiles.md): completed ExecPlan and validation evidence for roadmap Milestone 6's privacy-safe local TTS candidate evaluation, explicit no-viable-profile decision, and deterministic/hardware/privacy/repository closeout.
-- [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broader plan retained as historical context for later narration/audio integration; it is not the implementation authority for Milestone 5 or completed Milestone 4 work.
+- [`plans/active/M006-001-local-tts-profile-blocker-resolution.md`](plans/active/M006-001-local-tts-profile-blocker-resolution.md): approved Milestone 6.1 candidate-intake and blocker-resolution plan covering the external Qwen prototype findings, official Qwen3-TTS and OpenAI Whisper evidence, frozen-authority work, and validation tasks.
+- [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broader plan retained as historical context for later narration/audio integration; it does not supersede completed Milestones 4 through 6 or authorize blocked Milestone 7 work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 
 For complex work, follow [`.agents/PLANS.md`](../.agents/PLANS.md).

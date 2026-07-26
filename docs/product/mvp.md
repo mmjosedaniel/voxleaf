@@ -2,7 +2,7 @@
 
 ## Implementation status
 
-The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestone 5 narration preparation is implemented, documented, and fully validated: `@voxleaf/epub` exhaustively projects semantic source positions, retains Unicode-code-point source spans, applies deterministic source-mapped neutral/Spanish normalization, scans sentence/dialogue/clause/protected-token boundaries, packs bounded block-local semantic units, and exposes immutable canonical locator-linked batches through `OpenedPublication.prepareNarration`. Repository-authored public integration and deterministic exact-bound/resource tests cover continuation, structural gaps, cancellation, close, privacy, and source immutability. Milestone 6 is complete: the validated benchmark harness and explicit no-viable-profile decision reject both exact evaluated engines for production. The package prepares ephemeral sensitive text only; TTS inference, audio buffering/playback, synchronized highlighting, general hardware profiles, and packaging behavior remain pending. The capability and acceptance lists below describe the complete MVP target, not a claim that every item is currently implemented.
+The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestone 5 narration preparation is implemented, documented, and fully validated: `@voxleaf/epub` exhaustively projects semantic source positions, retains Unicode-code-point source spans, applies deterministic source-mapped neutral/Spanish normalization, scans sentence/dialogue/clause/protected-token boundaries, packs bounded block-local semantic units, and exposes immutable canonical locator-linked batches through `OpenedPublication.prepareNarration`. Repository-authored public integration and deterministic exact-bound/resource tests cover continuation, structural gaps, cancellation, close, privacy, and source immutability. Milestone 6 is complete: the validated benchmark harness and explicit no-viable-profile decision reject both exact evaluated engines for production. Milestone 6.1 is approved and planned to screen Qwen3-TTS 1.7B CustomVoice's built-in speakers and evaluate one frozen Spanish default-narrator profile without changing that decision prematurely. The package prepares ephemeral sensitive text only; TTS inference, audio buffering/playback, synchronized highlighting, general hardware profiles, and packaging behavior remain pending. The capability and acceptance lists below describe the complete MVP target, not a claim that every item is currently implemented.
 
 ## Current implemented flow
 
@@ -35,11 +35,13 @@ Implemented and validated:
 - Restore an exact or nearest-valid passage after the user reselects the same exact EPUB bytes.
 - Persist bounded logical reading state and closed display preferences.
 - Prepare deterministic bounded narration text and locator-linked segments through the package API.
+- Run the candidate-neutral local TTS feasibility harness and retain the explicit no-viable-profile decision for both exact evaluated profiles.
 - Display actionable reader loading, opening, restoration, and error states.
 - Provide documented local setup plus deterministic reader/package validation.
 
 Remaining:
 
+- Execute the approved Milestone 6.1 blocker-resolution plan: freeze and run the built-in-speaker screen, freeze one CustomVoice speaker/instruction in `v3`, prove exact incremental/cancellation behavior, and select the profile only if every applicable gate passes before local TTS integration begins.
 - Select a chapter or paragraph as a narration starting point in a desktop playback flow.
 - Generate speech through a selected supported local TTS engine and voice.
 - Buffer and play generated audio in bounded memory.
@@ -107,5 +109,6 @@ Remaining:
 - DRM circumvention.
 - Supporting every ebook format.
 - Automatic multi-character voice casting.
+- User voice cloning or reference-voice enrollment without a separate accepted consent, privacy, persistence, deletion, and abuse-safeguard decision.
 - Mobile applications.
 - A plugin marketplace.

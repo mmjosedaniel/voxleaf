@@ -17,4 +17,5 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): retained broader context spanning the completed reader work and later narration synchronization/audio startup. It is not the implementation authority for completed Milestones 4 or 5 and does not authorize Milestone 6 work.
+- [`M006-001-local-tts-profile-blocker-resolution.md`](M006-001-local-tts-profile-blocker-resolution.md): approved, not-yet-started Milestone 6.1 plan to freeze a Spanish built-in-speaker screen, select one Qwen3-TTS 1.7B CustomVoice default-narrator profile, and prove an actual incremental/cancellation boundary without promoting it prematurely. Milestone 7 remains blocked.
+- [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): retained broader context spanning the completed reader work and later narration synchronization/audio startup. It does not supersede the completed Milestones 4 through 6 authorities and does not authorize blocked Milestone 7 or later work.
