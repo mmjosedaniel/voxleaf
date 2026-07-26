@@ -36,9 +36,10 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   after an exact full-GPU batch-two memory stop.
 - `schemas/short-segment-batch-raw-v4.schema.json` and
   `schemas/short-segment-batch-summary-v4.schema.json` are the closed private
-  journal and content-safe summary shapes. The reviewed disposable-pilot
-  command and model-free batch mechanics now exist, but no v4 pilot, hardware
-  result, quality result, or selection record exists yet.
+  journal and content-safe summary shapes. The reviewed disposable-pilot and
+  official run/derive commands plus model-free batch mechanics now exist, but
+  no v4 pilot, hardware result, quality result, or selection record exists
+  yet.
 - `incremental-cancellation-prototype-v1.json` freezes the development-only
   prototype topology before results: complete-segment delivery, one resident
   spawned worker, explicit input/output/queue ceilings, identity-first stale
@@ -267,15 +268,15 @@ candidate-interpreter firewall rule without loading a model.
 interpreter, and either runs one disposable non-comparable pilot or the frozen
 official protocol. Private paths enter only through bounded standard input.
 
-Milestone 6.2 adds `benchmark:tts:batch`. It is intentionally limited to the
-full-GPU disposable mechanics pilot until the later official raw/summary
-workflow is executed. It repeats the exact authority, host, clean-tree,
-artifact, offline, firewall, power, sleep, background-load, thermal, RAM, and
-8,174,698,496-byte free-VRAM preflight; invokes Qwen with one list containing
-one or two unchanged narration units through the isolated candidate
-interpreter; discards waveform payloads; and emits only a non-promotable
-content-safe mechanics receipt. Do not execute it before Milestone 3 starts
-from a clean committed checkpoint:
+Milestone 6.2 adds `benchmark:tts:batch`. It repeats the exact authority, host,
+clean-tree, artifact, offline, firewall, power, sleep, background-load,
+thermal, RAM, and 8,174,698,496-byte free-VRAM preflight; invokes Qwen with
+one list containing one or two unchanged narration units through the isolated
+candidate interpreter; and discards waveform payloads. Do not execute it
+before Milestone 3 starts from a clean committed checkpoint.
+
+The disposable pilot runs only the three frozen excluded warm-up calls and
+emits a non-promotable content-safe mechanics receipt:
 
 ```powershell
 $candidatePython = (Resolve-Path "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/.venv/Scripts/python.exe").Path
@@ -296,16 +297,50 @@ $batchPilot | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:batch
 The receipt is not a frozen v4 raw result, summary, quality admission, or
 selection. Never redirect the private input to a tracked file.
 
+After the pilot succeeds, use a new opaque session ID for the official run
+from the same clean committed checkpoint:
+
+```powershell
+$sessionId = [guid]::NewGuid().ToString("N")
+$batchOfficial = @{
+  batchOptIn = $true
+  resultPurpose = "official"
+  placementProfileId = "qwen3-serena-v4-full-gpu"
+  sessionId = $sessionId
+  artifactRoot = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda").Path
+  candidatePython = $candidatePython
+  expectedCommitSha = (git rev-parse HEAD).Trim()
+  sleepDisabled = $true
+  backgroundLoadAcceptable = $true
+  thermalStateAcceptable = $true
+}
+$batchOfficial | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:batch
+```
+
 Official execution records bounded content-free nanosecond/sample/resource
-observations under the ignored raw session directory. It does not retain
-waveform samples. A raw session is not a reviewable summary and is never
-eligible for selection until the quality, audit, schema, arithmetic, privacy,
-and gate promotion steps pass. The balanced role fails closed unless both the
-one-second PID-tagged Windows WDDM dedicated-memory counter and the isolated
-Qwen worker's PyTorch allocator high-water mark are available and positive.
-The authoritative peak is their maximum. RAM remains sampled every 50
-milliseconds; PIDs, counter instances, paths, and unrelated process values
-never enter raw or reviewable output.
+observations below the ignored
+`benchmarks/results/raw/short-segment-batch-v4/<session-id>/` directory. It
+does not retain waveform samples. A raw session is not reviewable evidence.
+Derive and validate the allowlisted summary in the base development
+environment; successful derivation deletes the exact ignored session before
+emitting the summary:
+
+```powershell
+$derive = @{
+  batchOptIn = $true
+  sessionId = $sessionId
+}
+$derive | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:batch:derive
+```
+
+The official run fails closed unless the 50-millisecond process-tree RAM
+sampler, one-second PID-tagged WDDM dedicated/shared counters, live free-VRAM
+probe, and isolated Qwen worker's PyTorch allocator high-water mark are all
+available. The authoritative peak is the maximum of dedicated WDDM and
+PyTorch reserved bytes. PIDs, counter instances, paths, input text, and
+unrelated process values never enter raw or reviewable output. A summary
+remains machine evidence only until later playback/quality and decision
+milestones interpret it.
 
 ## Disposable blinded quality session
 

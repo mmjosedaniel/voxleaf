@@ -61,3 +61,18 @@ def test_command_rejects_unknown_fields_without_echoing_input(
     output = capsys.readouterr().out
     assert output == '{"status":"fail","failureCode":"input"}\n'
     assert "private-text" not in output
+
+
+def test_official_input_requires_one_opaque_session_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = _input()
+    payload["resultPurpose"] = "official"
+    payload["sessionId"] = "a" * 32
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+    assert batch_cli._payload()["sessionId"] == "a" * 32
+
+    payload["sessionId"] = "../private"
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+    with pytest.raises(batch_cli.BatchCommandError, match=":input$"):
+        batch_cli._payload()

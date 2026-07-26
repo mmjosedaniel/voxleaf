@@ -307,7 +307,9 @@ No pilot or official hardware output was produced.
 
 #### Status
 
-Not started.
+In progress on 2026-07-26. The official full-GPU run/derive boundary is
+implemented and passing focused model-free validation. The disposable pilot
+and official hardware matrix have not yet run.
 
 ### Milestone 4: Run the conditional targeted-CPU arm if admitted
 
@@ -528,6 +530,26 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
   tracked model/audio/book/raw-artifact scan passed. The ignored raw result
   tree contains zero files, confirming that Milestone 2 produced no pilot,
   waveform, journal, or private hardware evidence.
+- 2026-07-26: Created branch
+  `feat/m006-2-full-gpu-short-unit-batch-matrix` from merged `main` at
+  `9e7192a`. The checkout was clean and Milestone 2 was already merged.
+- 2026-07-26: Implemented the official full-GPU hardware boundary without
+  changing the frozen candidate, corpus, placement, gates, schemas, or
+  candidate lock. The candidate-environment command now supports one opaque
+  official session, five excluded cold-load observations, the exact 39-call
+  matrix, continuous bounded RAM/dedicated/shared/free-VRAM/framework
+  telemetry, five ordered cancellation trials, cleanup evidence, and ignored
+  raw files without retaining waveform samples.
+- 2026-07-26: Added a separate base-environment derive command. It validates
+  the frozen raw authority and schema, recomputes allowlisted counts,
+  percentiles, RTF, playback, memory, cancellation, audits, and conjunctive
+  standard/scheduling conclusions, validates the content-safe summary, and
+  deletes the exact ignored raw session before emitting it. This separation
+  keeps `jsonschema` out of the unchanged candidate lock.
+- 2026-07-26: Focused model-free validation passes Ruff, strict mypy over 58
+  source files, and 14 v4 tests. The new tests cover official counts, bounded
+  cleanup/memory evidence, content-safe derivation, and closed opaque-session
+  input without importing Qwen or requiring CUDA.
 
 ## Discoveries and decisions
 
@@ -590,6 +612,18 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
     `jsonschema` dependency is installed. Byte/hash/profile/corpus mechanics
     verification therefore remains standard-library-only, while closed result
     schema validation stays in the base benchmark environment.
+18. GitHub squash-merged the original Milestone 1 authority commit, so the
+    recorded authority object exists but is not an ancestor of merged `main`.
+    The frozen validator correctly rejects an official result on that graph.
+    Before hardware execution, this branch must record the unchanged
+    `f6bccf7` authority commit as an ancestry-only merge parent; changing the
+    frozen hash would require a new profile version.
+19. The closed raw schema does not contain cold-load observations although the
+    safe summary requires their p95. The implementation retains the five
+    numeric load/cleanup observations in a separate content-free ignored
+    sidecar, derives the p95 in the base environment, and deletes the sidecar
+    with the raw journal. No authority field or reviewable private evidence is
+    added.
 
 ## Final validation results
 
