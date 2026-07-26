@@ -67,7 +67,8 @@ class _Candidate:
 
 
 class _Monitor:
-    stop_code: str | None = None
+    def __init__(self, stop_code: str | None = None) -> None:
+        self.stop_code = stop_code
 
     def start(self) -> None:
         return None
@@ -78,8 +79,10 @@ class _Monitor:
             peak_process_dedicated_vram_bytes=6_000_000_000,
             peak_framework_reserved_vram_bytes=5_900_000_000,
             minimum_free_dedicated_vram_bytes=1_000_000_000,
-            peak_shared_gpu_memory_bytes=0,
-            memory_stop_code=None,
+            peak_shared_gpu_memory_bytes=(
+                80_000_000 if self.stop_code == "shared-gpu-memory" else 0
+            ),
+            memory_stop_code=self.stop_code,
         )
 
     def post_cleanup_resources(self) -> tuple[int, int]:
@@ -194,3 +197,22 @@ def test_official_derivation_is_schema_valid_and_content_safe() -> None:
     serialized = str(summary)
     assert "narrationText" not in serialized
     assert "privacyCanary" not in serialized
+
+
+def test_official_shared_memory_stop_remains_derivable() -> None:
+    execution = execute_official_v4(
+        REPOSITORY_ROOT,
+        execution_commit_sha=_head(),
+        host=_host(),
+        preflight=_preflight(),
+        candidate_factory=_Candidate,
+        monitor=_Monitor("shared-gpu-memory"),
+    )
+    summary = derive_v4_summary(
+        REPOSITORY_ROOT,
+        execution.raw,
+        list(execution.load_observations),
+        ancestry_checker=lambda _authority, _execution: True,
+    )
+    assert summary["failureCodes"]
+    assert summary["memory"] == execution.raw["memory"]

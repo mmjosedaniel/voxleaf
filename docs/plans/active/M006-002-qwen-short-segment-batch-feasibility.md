@@ -557,6 +557,22 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
   trademarked CPU string against the frozen normalized CPU label. Added a
   narrow normalization regression test without weakening any other exact-host
   field; no pilot result or GPU execution occurred on the rejected attempt.
+- 2026-07-26: The corrected disposable pilot completed in 67.2 seconds with
+  three excluded calls/four units, correct order, one active batch, two
+  retained units, zero retries/failures, cleanup, 2,212,458,496 bytes peak
+  process-tree RAM, 5,647,167,488 bytes peak dedicated VRAM, and
+  5,509,218,304 bytes peak framework-reserved VRAM. It was correctly marked
+  non-promotable. Its 81,788,928-byte shared-GPU observation required the
+  official run to apply the frozen zero-shared-memory stop rule.
+- 2026-07-26: The official full-GPU run from clean checkpoint `2ed9791`
+  completed its safety path in 69.1 seconds. The shared-memory signal
+  recurred, so the runner terminated the active work, recorded the remaining
+  exact calls as failed first attempts, skipped unsafe cancellation loads,
+  and produced an ignored session eligible for derivation. The first derive
+  attempt failed closed with a content-free internal code and deleted that
+  session. Added a model-free shared-memory-stop derivation regression, which
+  passes, plus safe authority-error mapping before repeating official
+  evidence; no reviewable result was promoted from the failed derive.
 
 ## Discoveries and decisions
 

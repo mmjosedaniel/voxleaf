@@ -15,6 +15,7 @@ from benchmarks.batch_result import (
     canonical_summary_json,
     derive_v4_summary,
 )
+from benchmarks.v4_authority import V4AuthorityError
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 MAXIMUM_STDIN_BYTES: Final = 4_096
@@ -67,7 +68,12 @@ def main() -> int:
         print(canonical_summary_json(_run(_payload())), end="")
         return 0
     except Exception as error:
-        code = error.code if isinstance(error, BatchResultError) else "internal"
+        if isinstance(error, BatchResultError):
+            code = error.code
+        elif isinstance(error, V4AuthorityError):
+            code = str(error).rsplit(":", maxsplit=1)[-1]
+        else:
+            code = "internal"
         print(json.dumps({"status": "fail", "failureCode": code}, separators=(",", ":")))
         return 2
 
