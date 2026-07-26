@@ -9,13 +9,18 @@ import sys
 from pathlib import Path
 from typing import Final, cast
 
+from jsonschema import Draft202012Validator
+
 from benchmarks.batch_official import official_raw_root
 from benchmarks.batch_result import (
     BatchResultError,
     canonical_summary_json,
     derive_v4_summary,
 )
-from benchmarks.v4_authority import V4AuthorityError
+from benchmarks.v4_authority import (
+    V4AuthorityError,
+    load_frozen_v4_authority,
+)
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 MAXIMUM_STDIN_BYTES: Final = 4_096
@@ -51,7 +56,21 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
     try:
         raw = cast(object, json.loads(raw_path.read_text(encoding="utf-8")))
         loads = cast(object, json.loads(loads_path.read_text(encoding="utf-8")))
-        summary = derive_v4_summary(REPOSITORY_ROOT, raw, loads)
+        try:
+            summary = derive_v4_summary(REPOSITORY_ROOT, raw, loads)
+        except V4AuthorityError as error:
+            if str(error).endswith(":result-schema"):
+                authority = load_frozen_v4_authority(REPOSITORY_ROOT)
+                schema_errors = sorted(
+                    Draft202012Validator(authority.raw_schema).iter_errors(raw),
+                    key=lambda item: tuple(str(part) for part in item.absolute_path),
+                )
+                if schema_errors:
+                    first = schema_errors[0]
+                    path = "-".join(str(part) for part in first.absolute_path) or "root"
+                    validator = str(first.validator or "unknown")
+                    raise BatchResultError(f"result-schema-{path}-{validator}"[:160]) from error
+            raise
     except (OSError, UnicodeError, json.JSONDecodeError) as error:
         raise BatchResultError("raw") from error
     finally:

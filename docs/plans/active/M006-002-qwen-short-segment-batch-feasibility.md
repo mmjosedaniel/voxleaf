@@ -573,6 +573,13 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
   session. Added a model-free shared-memory-stop derivation regression, which
   passes, plus safe authority-error mapping before repeating official
   evidence; no reviewable result was promoted from the failed derive.
+- 2026-07-26: Repeated the same bounded official safety run from clean
+  checkpoint `9e2693a`; it reproduced the same five fixed failure codes in
+  69.1 seconds. Derivation now identified the rejection as `result-schema`
+  and again deleted the ignored session. Added a closed diagnostic that emits
+  only the first schema path and validator, never its value, before the next
+  repeat. The frozen authority, hardware conditions, candidate, and observed
+  safety outcome remain unchanged.
 
 ## Discoveries and decisions
 
