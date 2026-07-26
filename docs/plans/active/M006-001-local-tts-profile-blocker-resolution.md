@@ -59,10 +59,12 @@ requires a separate product, consent, privacy, and persistence decision.
   complete-panel, and zero-defect quality gates.
 - Both adapters exposed complete waveforms. Neither proved incremental local
   audio delivery or usable cancellation after audio began.
-- The exact `v3` development prototype now proves bounded complete-segment
+- The exact `v3` development prototype proved bounded complete-segment
   delivery, identity-first stale rejection, and worker-termination
-  cancellation on the authoritative host. It does not yet supply official
-  performance/quality results or a production runtime.
+  cancellation on the authoritative host. The later official batch-one matrix
+  failed startup, throughput, zero-failure, and mid-generation cancellation
+  gates. Its limited one-maintainer quality result supports only ADR-0014's
+  constrained demo decision, not a passing profile or production runtime.
 - The production `services/tts` package still has zero runtime dependencies.
 
 ### Maintainer-provided Qwen voice-cloning prototype
@@ -154,6 +156,10 @@ privacy, and honest failure accounting:
 | --- | --- | --- | --- |
 | Build the voice-clone prompt once and reuse it | **Do not transfer the prompt.** Base cloning is outside this MVP. Retain only the analogous bounded idea: load the selected CustomVoice model once and reuse one exact built-in speaker/instruction/settings identity in memory. | Plan Milestones 1–3 | Milestone 7 service lifecycle, only for a selected profile |
 | Generate with candidate batch size one | **Adopt as the conservative `v3` default.** It limits retained work and makes segment ownership observable. A larger batch requires pre-result authority plus measured benefit without weakening memory or cancellation. | Plan Milestones 1–4 | Milestone 7 may retain or supersede it from selected-profile evidence |
+| Generate two ordered segments in one shared-model batch | **Investigate separately; do not treat as proven.** The exact API accepts a two-text batch and can share model weights, but `v3` measured only batch size one. Freeze a new batch-two/short-segment authority before hardware results. | No change to completed `v3`; planned Milestone 6.2 | Milestones 7–8 may consume only measured evidence |
+| Run two independent model processes | **Do not use as the first experiment.** Each process would load another model copy; the measured 6,286,802,944-byte peak already leaves insufficient evidence that two copies fit the 8 GiB GPU. | No implementation | Reconsider only with explicit memory evidence |
+| Target complete 8–20-second audio units | **Investigate at semantic boundaries.** Shorter units can reduce complete-waveform startup delay but do not improve sustained RTF by themselves and may introduce extra overhead or prosody discontinuities. | No change to `narration-v1` or `v3`; planned Milestone 6.2 | Milestones 7–8 may consume only measured evidence |
+| Concatenate completed WAV files during playback | **Reject.** Do not concatenate container bytes or persist intermediate files. Preserve order through identities and enqueue compatible in-memory PCM units or frames; any gap, fade, or crossfade rule requires listening evidence. | Existing privacy/boundedness rule | Milestone 8 playback |
 | Use bounded VoxLeaf narration segments | **Adopt.** The candidate consumes existing `narration-v1` units; it does not invent paragraph/chapter accumulation or model-specific text contracts. | Plan Milestone 2 | Milestones 7 and 9 |
 | Deliver each completed segment immediately | **Adopt for the prototype and selected-profile handoff.** Segment-at-a-time delivery improves startup and boundedness, but a complete-waveform call still does not prove mid-segment streaming or cancellation. | Plan Milestone 2 | Milestone 7 emits selected-profile audio; Milestone 8 buffers/plays it |
 | Retry failed segments a limited number of times | **Defer for production and prohibit as hidden benchmark recovery.** Official `v3` measurements count the first attempt and every failure. A separately labeled diagnostic retry may investigate a defect but cannot make a gate pass. | Plan Milestones 1 and 3 freeze/test failure accounting only | Milestone 10 may add bounded retry after failure classification, stale-result rejection, backoff, cleanup, and latency evidence |
@@ -218,6 +224,96 @@ iterator or cooperative cancellation. The installed `qwen-tts==0.1.1` Base
 prototype independently returns complete NumPy waveforms. Therefore the
 upstream streaming claim does not, by itself, resolve VoxLeaf's exact local
 incremental-audio or cancellation blocker.
+
+### Post-v3 short-segment and batch-two hypothesis
+
+This is a documented option for a later decision, not an amendment to the
+failed `v3` authority or an implementation commitment.
+
+The official
+[CustomVoice example](https://github.com/QwenLM/Qwen3-TTS#custom-voice-generate)
+accepts either one text or a batch list and returns one waveform per input. The
+exact installed `qwen-tts==0.1.1` implementation has the same interface: it
+validates equal batch lengths, performs one shared-model generation call, then
+decodes and returns the complete waveform list. This is batch inference, not
+two independent streaming calls. The caller receives no playable prefix while
+that call is running.
+
+The maintainer's external Base-cloning project already contains the analogous
+scheduling idea. Its optional `--chunk-batch-size` groups ordered text chunks
+and passes `batch_texts` to one `generate_voice_clone` call. Its default is one,
+its outer paragraph loop is sequential, and it retains the generated chunks
+until joining and persisting the paragraph. VoxLeaf may reuse only the
+shared-model ordered-batch idea. It must not copy the retained-file,
+text-preview, private-input, paragraph-cache, or whole-paragraph accumulation
+behavior.
+
+Short complete units could materially improve perceived startup. The warm
+observation that took about 67.67 seconds produced about 46.56 seconds of
+audio. Under the measured total sustained RTF of 1.4521558253532183, a purely
+linear estimate gives approximately 11.6, 17.4, and 29.0 seconds of generation
+for 8, 12, and 20 seconds of media respectively. These are hypotheses, not
+measurements: fixed per-request work can make short units slower per media
+second, while smaller autoregressive sequences can also change the ratio.
+
+A two-item shared-model batch could improve aggregate throughput because model
+weights are loaded once. For two equal 10-second units, the pair must finish in
+under 20 seconds to make aggregate RTF less than one, and in at most 16 seconds
+to meet an aggregate RTF of 0.8. With the current batch-one RTF, the batch may
+take at most about 1.377 times one equal-unit generation and still produce
+media faster than playback. This cannot be inferred from API support: padding,
+the longer item in an unequal pair, decoder work, CUDA utilization, and added
+activation/KV memory can erase the theoretical gain.
+
+The preferred hypothesis is therefore:
+
+1. prepare semantic units targeting 8–12 seconds for the initial pair and
+   8–20 seconds thereafter, never cutting words or protected constructs;
+2. generate the first ordered pair in one resident-model batch and start as
+   soon as approximately 15 seconds of contiguous playable audio is ready;
+3. while that audio plays, generate the next similarly sized ordered pair;
+4. tag every output with session, generation, segment, candidate,
+   configuration, and sequence identities and release it only in order;
+5. bound retained audio and work to the active batch plus the explicit playback
+   lead/queue;
+6. invalidate the complete batch before worker termination on pause, seek,
+   settings change, book close, or session replacement; and
+7. enqueue compatible in-memory PCM units or frames rather than joining or
+   persisting WAV files.
+
+This topology has costs that a later decision must weigh. A two-item call may
+delay both outputs until the slower item completes. Cancelling one unit
+invalidates both. Shorter boundaries may reset prosody or create clicks, gaps,
+or unnatural pauses. Batch-two memory may exceed the current 6 GiB evaluation
+ceiling even though it shares weights. These are reasons to measure the idea,
+not reasons to assume success or reject it without a bounded test.
+
+Before any hardware run, a new candidate-neutral probe or `v4` profile should
+freeze:
+
+- the unchanged exact CustomVoice/Serena identity and offline controls;
+- semantic segment targets of an estimated 8, 12, and 20 media seconds,
+  including how duration is estimated from text before synthesis;
+- batch sizes one and two, with similar-duration pair construction and fixed
+  first-attempt/no-retry accounting;
+- time to the first complete unit and approximately 15 seconds of contiguous
+  audio, per-unit and aggregate RTF, failure counts, RAM, VRAM, and cleanup;
+- a sustained playback simulation long enough to expose buffer drift and
+  underruns, with the existing five-seconds-per-minute MVP tolerance visible;
+- cancellation/stale-output behavior for every batch lifecycle point;
+- blinded listening at joins for missing/repeated speech, ordering, prosody,
+  clicks, gaps, and meaning-changing defects; and
+- separate decision thresholds for a constrained demo and any standard
+  production claim. Aggregate RTF must be below one to avoid inevitable buffer
+  drain; the existing standard performance target remains 0.8 unless a future
+  authority changes it before results.
+
+No audio was generated and no runtime, segmenter, buffer, playback, dependency,
+profile, ADR, or roadmap commitment changed while recording this hypothesis.
+The later documentation decision assigned this hypothesis to the separate
+[Milestone 6.2 ExecPlan](M006-002-qwen-short-segment-batch-feasibility.md).
+That handoff is a roadmap commitment to evaluation only; it still does not
+provide a `v4` authority, result, implementation, or support claim.
 
 ### OpenAI Whisper assessment
 
@@ -303,10 +399,12 @@ disposable generated speech and produce aggregate error counts, but:
 - `docs/architecture/tts-feasibility-profile-v2.md`
 - `docs/architecture/tts-feasibility-profile-v3.md`
 - `docs/architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md`
+- `docs/architecture/decisions/ADR-0014-constrained-qwen-development-demo.md`
 - `docs/development/dependencies.md`
 - `docs/development/setup.md`
 - `docs/development/testing.md`
 - `docs/plans/roadmap.md`
+- `docs/plans/active/M006-002-qwen-short-segment-batch-feasibility.md`
 - `docs/plans/completed/M006-local-tts-feasibility-and-engine-profiles.md`
 - `services/tts/benchmarks/`
 - `services/tts/tests/`
@@ -547,32 +645,58 @@ was loaded and no audio was generated.
 
 ### Status
 
-Not started; unavailable until Milestones 1 through 3 complete.
+Completed on `feat/m006-4-frozen-v3-evaluation`. The pilot passed and the
+official machine matrix completed every frozen count from clean checkpoints.
+Cold load, RAM, VRAM, offline, artifact, license, packaging, and cleanup gates
+passed. Startup, throughput, zero-failure, and three mid-generation
+cancellation gates failed. One fluent Spanish maintainer completed the blinded
+quality evaluation after explicitly waiving the three-person panel for the
+development-demo MVP decision. That limited result averaged
+4.266666666666667/5 but reported three meaning-changing defects. The post-result
+waiver does not alter or promote frozen `profile-v3`; the official result
+remains failed and non-promotable.
 
 ## Milestone 5: Select or retain the blocker
 
 ### Work
 
 - Produce a candidate-neutral `selection-v3` record.
-- If every applicable gate passes, accept a superseding ADR that selects the
-  exact profile and gives Milestone 7 a bounded integration input.
-- If any gate fails, retain ADR-0013's blocker and record the exact failure
-  without choosing the least-bad profile.
+- Record the frozen `v3` failure without changing its authority or claiming a
+  passing balanced profile.
+- Apply the maintainer's explicit post-result MVP decision through a separate
+  constrained development-demo record: permit the exact Serena profile only
+  for a bounded, clearly labeled demonstration while ADR-0013 remains
+  authoritative for production viability.
+- Freeze the demo boundary before implementation: local prewarmed model,
+  complete bounded narration units, no audio persistence, batch one, one
+  queued unit, identity-first invalidation plus worker termination, explicit
+  preparing/buffering state, and no continuous or real-time claim.
+- Treat one fluent maintainer as sufficient for future MVP demo-quality
+  feedback. Do not rewrite the historical `v3` three-person requirement or
+  duplicate one person's score as independent evidence.
 - Reconcile the roadmap, architecture, product, setup, dependency, testing,
   performance-budget, and system-diagram surfaces.
+- Hand the post-result short-unit, shared-model batch-two, and conditional
+  targeted-CPU-placement hypotheses to the separate Milestone 6.2 ExecPlan.
+  Do not expand, rerun, or reinterpret the frozen batch-one `v3` authority.
 
 ### Validation
 
-- Selection is conjunctive, not weighted.
-- A selected profile identifies exact artifacts, runtime, built-in speaker,
+- The standard feasibility result remains conjunctive and failed; the demo
+  exception is explicit and cannot masquerade as a passing profile.
+- The constrained demo profile identifies exact artifacts, runtime, built-in speaker,
   instruction, configuration lifecycle/identity, batch/retention limits,
   first-attempt reliability, hardware evidence, offline controls, and actual
   incremental or complete-waveform capabilities.
-- No production dependency is added before a passing decision.
+- No production dependency is added by the decision record. A later
+  development-only integration must preserve the zero-persistence and
+  content-free privacy boundary.
 
 ### Status
 
-Not started.
+In progress. ADR-0014 records the exact constrained development-demo
+exception and preserves the failed standard authority. The candidate-neutral
+`selection-v3` record and final cross-document reconciliation remain.
 
 ## Milestone 6: Close repository and privacy validation
 
@@ -867,7 +991,7 @@ dependency changes are involved.
   generating audio. FlashAttention and SoX emitted optional-tool warnings;
   SDPA is frozen and the Qwen generation path does not require either tool.
 - 2026-07-26: From clean documentation checkpoint `057bca8`, the real-host
-  offline preflight verified both exact artifacts (4,516,695,644 bytes
+  offline preflight verified both exact artifacts (4,515,695,644 bytes
   combined), the selected profile and interpreter, the application firewall
   block, 13,427,974,144 free RAM bytes, and 8,174,698,496 free VRAM bytes. It
   failed only `sleep`, `background-load`, and `thermal-state`, which were
@@ -884,6 +1008,155 @@ dependency changes are involved.
   private-path/credential-pattern scans, tracked audio/model/raw-input audits,
   and the three changed Markdown files passed the local-link audit. The
   ignored raw tree contains zero files.
+- 2026-07-26: Created branch `feat/m006-4-frozen-v3-evaluation` from merged
+  `main` at `2b1f7ef`. The worktree and ignored raw result tree were clean.
+- 2026-07-26: The first Milestone 4 pilot preflight ran fail-closed without
+  loading the model. It verified the exact candidate interpreter, outbound
+  firewall block, authorities, provider, and both artifact hashes. It rejected
+  the run on the deliberately unchanged 45-minute AC sleep setting, an
+  unaccepted background-load declaration, and `12,279,525,376` free RAM bytes,
+  which were `605,376,512` bytes below the frozen 12 GiB admission gate.
+  NVIDIA reported an idle, 50 C RTX 5060 Laptop GPU with 7,810 MiB free VRAM;
+  a five-sample host check measured 4.8% mean and 6% maximum CPU use.
+- 2026-07-26: Reconfirmed the exact installed model card and
+  `qwen-tts==0.1.1` package as Apache-2.0. Serena is embedded in the model and
+  has no separate voice artifact or acceptance terms. Redistribution remains
+  subject to the Apache-2.0 license/notice obligations already recorded by the
+  repository; no licensing ambiguity blocks evaluation.
+- 2026-07-26: Measured the clean CustomVoice packaging boundary rather than
+  inheriting the unrelated Base-prototype estimate. The exact model snapshot
+  occupies `4,520,220,349` bytes across 27 files. The isolated locked
+  environment occupies `5,227,641,745` bytes across 32,476 files and 88
+  distributions. Combined size is `9,747,862,094` bytes; 373 native
+  `.dll`/`.pyd`/`.exe` files account for `4,713,151,865` bytes. This is high
+  packaging risk, not a performance or license failure, and Milestone 11 owns
+  any production distribution design.
+- 2026-07-26: Committed the readiness, licensing, and packaging checkpoint as
+  `8475b289133c5e70f2123542f6842c46001e2eb7`
+  (`docs(tts): record v3 evaluation readiness`).
+- 2026-07-26: A first pilot wrapper was terminated by the command runner's
+  five-second timeout before a receipt existed. It left no candidate process
+  or raw file. AC sleep was immediately restored from zero to its captured
+  45-minute value, and the attempt was excluded from all evidence.
+- 2026-07-26: Available RAM subsequently recovered to `14,380,687,360` bytes.
+  From clean checkpoint `8475b28`, the one permitted disposable pilot passed
+  in 29.2 seconds with the exact local artifacts, Serena configuration,
+  outbound firewall block, Hugging Face/Transformers offline flags, and
+  operator readiness satisfied. Its receipt correctly reported no session,
+  zero official counts, and `eligibleForPromotion: false`.
+- 2026-07-26: Pilot cleanup restored the prior 45-minute AC sleep setting,
+  left zero candidate processes and zero raw files, and returned the GPU to
+  zero utilization / zero candidate memory with 7,810 MiB free VRAM. No pilot
+  waveform, narration text, private path, or diagnostic was retained.
+- 2026-07-26: Committed the passing pilot and cleanup checkpoint as
+  `8898762dbd8ac7628d5cbb1fa86e7f2f334e4ab2`
+  (`docs(tts): record frozen v3 pilot`).
+- 2026-07-26: Executed the one official machine matrix from clean checkpoint
+  `8898762` with the exact frozen profile, local artifacts, candidate
+  interpreter, application firewall block, offline flags, Serena voice and
+  neutral instruction. It counted all 5 cold loads, 24 warm generations, 12
+  sustained generations / 254.8 media seconds, and 5 cancellation trials.
+  There were no automatic or diagnostic retries.
+- 2026-07-26: Cold-load p95 was 26.6606755 seconds and passed the 60-second
+  gate. Peak process-tree RAM was `4,640,518,144` bytes and peak dual-signal
+  VRAM was `6,286,802,944` bytes, both below their 12 GiB / 6 GiB ceilings.
+  Both required VRAM signals were present: WDDM process VRAM peaked at
+  `6,286,802,944` bytes and PyTorch reserved VRAM at `6,148,849,664` bytes.
+- 2026-07-26: The complete-waveform API failed every latency/throughput gate:
+  warm first-audio p95 was 67.6685348 seconds, 15-seconds-media p95 was
+  68.0576463 seconds, shorter-complete p95 was 11.8231507 seconds, warm
+  request RTF p95 was 1.8274885634328357, sustained request RTF p95 was
+  1.5041296794871795, and total sustained RTF was 1.4521558253532183.
+- 2026-07-26: `before-dispatch` and `accepted-before-audio` cancellation
+  passed by worker termination with zero stale frames. `after-first-audio`,
+  `after-five-media-seconds`, and `near-hard-mid-generation` failed because
+  the public call exposes no cancellable mid-generation audio boundary. The
+  official receipt therefore failed closed with `cancellation-failed` and
+  `eligibleForPromotion: false`.
+- 2026-07-26: Official cleanup restored the captured 45-minute AC sleep
+  setting, left zero candidate GPU allocation / utilization and 7,810 MiB free
+  VRAM, and emitted no retained waveform. No failed result was promoted.
+- 2026-07-26: Before deletion, the 10,516-byte content-safe raw journal had
+  zero corpus-text/privacy-canary hits, zero private Windows user-path hits,
+  and zero URL hits. After deriving the allowlisted aggregates above, deleted
+  the exact raw session and disposable runner outputs. The ignored raw tree
+  again contains zero files.
+- 2026-07-26: Committed the exact official machine result and cleanup
+  checkpoint as `3df282306265b7ccf358a9b211c87507e76ec0eb`
+  (`docs(tts): record frozen v3 machine results`).
+- 2026-07-26: From clean checkpoint `3df2823`, generated all 12 first-attempt
+  blinded quality samples for the exact Serena configuration under the same
+  offline/firewall/preflight boundary. The session retained `6,747,922` bytes
+  before finalization, remained under the 512 MiB cap, restored the prior
+  45-minute AC sleep setting, and released the candidate process/GPU.
+- 2026-07-26: Finalized exactly three evaluator pages. Each page contains all
+  12 samples in a different opaque order; finalization removed the
+  identity-bearing staging tree. Page scans found zero candidate, model,
+  speaker, corpus-text, privacy-canary, or private-path hits. The finalized
+  ignored session occupies `6,785,906` bytes.
+- 2026-07-26: No quality score has been submitted. The frozen minimum remains
+  three independent fluent-Spanish evaluators; the earlier one-person intake
+  screen does not count. Temporary audio and randomization data remain only in
+  ignored raw storage until all three completed scorecards can be submitted,
+  aggregated, recorded, and cleaned.
+- 2026-07-26: `pnpm.cmd check:portable` passed in 83.3 seconds and
+  `pnpm.cmd check` passed in 80.1 seconds. Both included 18 shared test files /
+  175 tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204
+  tests, 6 native-WebDriver-client tests, 72 Python tests, formatting, lint,
+  strict type checks, and builds. The native aggregate also passed Rust
+  formatting, Clippy, crate-test execution, and the release build. The existing
+  Vite chunk-size advisory remained informational.
+- 2026-07-26: The maintainer declined the remaining two evaluators and
+  explicitly reduced future MVP demo-quality review to one fluent Spanish
+  maintainer. Preserved the frozen three-person `v3` authority unchanged
+  because changing it after performance and listening results would invalidate
+  the evaluation.
+- 2026-07-26: Submitted and sanitized the completed `evaluator-01` scorecard.
+  The one-person descriptive result has overall mean 4.266666666666667,
+  intelligibility 4.5, Spanish pronunciation 4.0, punctuation/dialogue
+  4.666666666666667, numeric expressions 4.0, foreign names 4.2, naturalness
+  4.166666666666667, artifact freedom 4.333333333333333, and three
+  meaning-changing defects. It is not eligible for `profile-v3` promotion.
+- 2026-07-26: The maintainer judged the audio suitable for a near-term demo,
+  with understandable accent variation and number/symbol pronunciation as the
+  main weakness. Existing Milestone 5 narration preparation already expands
+  the accepted Spanish cardinals, ordinals, decimals, dates, times, currency,
+  percentages, and closed symbols while preserving unsupported forms.
+- 2026-07-26: Accepted a planning direction to use the exact Qwen 1.7B
+  CustomVoice/Serena configuration only as a constrained development-demo
+  profile. This does not make its 1.4521558253532183 sustained RTF real-time:
+  one minute of audio took about 87 seconds, so a continuous stream would fall
+  behind by about 27 seconds per minute. A later implementation must use a
+  bounded prepared excerpt, disclose preparation/buffering, and retain the
+  production performance blocker.
+- 2026-07-26: Recorded that constrained decision in ADR-0014, then used the
+  repository cleanup command to delete the exact ignored quality session
+  containing 12 WAV files, three evaluator pages, six JSON files, and its
+  randomization data. Deleted the downloaded disposable scorecard from the
+  repository root after deriving the aggregate. The ignored raw tree again
+  contains zero files.
+- 2026-07-26: Inspected the official CustomVoice batch interface, the exact
+  installed `qwen-tts==0.1.1` implementation, and the external Base project's
+  chunk-batch loop read-only. Documented shared-model batch size two plus
+  semantic 8–20-second units as an unresolved optimization hypothesis. No
+  hardware run, audio generation, authority change, or implementation occurred.
+- 2026-07-26: The documentation follow-up passed local-link, private-pattern,
+  tracked-forbidden-artifact, ignored-raw, and `git diff --check` audits.
+  `pnpm.cmd check:portable` passed in 26.8 seconds with 175 shared, 555 EPUB,
+  204 desktop, 6 native-WebDriver-client, and 72 Python tests plus formatting,
+  lint, strict type checks, and portable builds. The existing Vite chunk-size
+  advisory remained informational.
+- 2026-07-26: Moved the unproven short-unit/shared-model batch-two and
+  targeted-CPU-placement work into the separate
+  `M006-002-qwen-short-segment-batch-feasibility.md` ExecPlan and added
+  Milestone 6.2 to the roadmap. M006-001 remains the immutable closeout record
+  for failed batch-one `v3`; no hardware run or runtime change occurred.
+- 2026-07-26: The M006-002 handoff and cross-document reconciliation passed
+  the 45-file Markdown local-link audit, private-pattern scan,
+  `git diff --check`, `pnpm.cmd check:portable` in 26.4 seconds, and
+  `pnpm.cmd check` in 51.7 seconds. The initial sandboxed portable check stopped
+  only because the protected existing `.pytest_cache` could not be scanned;
+  the unchanged command passed outside the sandbox.
 
 ## Discoveries and decisions
 
@@ -958,6 +1231,68 @@ dependency changes are involved.
     the shared adapter does not reclassify it as native streaming: progress
     occurs at one bounded narration segment, and cancellation credibility
     remains process termination plus identity-first stale rejection.
+18. Pilot readiness must remain fail-closed even when the host appears idle.
+    The first Milestone 4 attempt was only about 605 MB below the frozen
+    free-RAM gate; admitting it anyway would change the authority after seeing
+    host state. Closing user applications and rerunning the same preflight is
+    valid, while weakening the 12 GiB gate is not.
+19. The clean 1.7B CustomVoice model plus locked environment occupies about
+    9.08 GiB, materially more than the earlier 0.6B candidate and distinct
+    from the external Base prototype. Apache-2.0 licensing permits continued
+    evaluation, but this footprint remains an explicit high packaging risk
+    for Milestone 11 rather than an implicit production acceptance.
+20. The 1.7B CustomVoice profile fits the frozen RAM and VRAM ceilings on this
+    exact RTX 5060 Laptop host, but its complete-waveform boundary misses every
+    startup/throughput gate. Passing resource fit is therefore not evidence of
+    viable interactive narration.
+21. Worker termination provides credible cancellation before dispatch or
+    before audio acceptance, but cannot make a completed-waveform API satisfy
+    mid-generation cancellation. The official failures confirm the prototype
+    boundary and must not be hidden by retries or relabeled as streaming.
+22. One fluent maintainer is sufficient for the project's near-term demo
+    quality decision, but it cannot retroactively satisfy the immutable
+    three-person `v3` authority. Keeping those statements separate preserves
+    the pre-result evaluation boundary.
+23. The maintainer accepts Serena's audible quality for a demo and considers
+    number/symbol pronunciation addressable through narration preparation.
+    That judgment supports a constrained demo choice, not a real-time
+    performance claim: RTF above one guarantees that an indefinitely long
+    bounded buffer eventually drains.
+24. The fastest credible demo path is to reuse the installed exact profile
+    with prewarming, complete bounded units, explicit preparation/buffering,
+    and no persistence. Replacing the runtime with vLLM or another engine is a
+    separate post-demo investigation because the
+    [current official vLLM path](https://github.com/QwenLM/Qwen3-TTS#vllm-usage)
+    is offline inference and does not remove this measured API boundary.
+25. The exact CustomVoice API supports a list of texts in one shared-model
+    batch, and the external Base project uses the analogous mechanism when
+    `--chunk-batch-size` exceeds one. This proves an available experiment
+    surface, not parallel speedup or streaming.
+26. Two separate model processes are not the preferred experiment. The
+    batch-one official run already reached 6,286,802,944 bytes of authoritative
+    peak VRAM on an 8 GiB GPU; shared-model batching avoids a second weight copy
+    but still requires measured activation/KV/decoder headroom.
+27. Shorter complete units can reduce time to the first playable result, but
+    they do not by themselves change aggregate RTF. Sustained playback becomes
+    credible only if batch-two aggregate RTF falls below one; the existing
+    standard target remains 0.8.
+28. A future probe must pair similarly sized semantic units, publish them in
+    identity-checked order, retain only bounded PCM/audio work, and measure
+    join quality, cancellation, memory, buffer drift, and underruns. It must be
+    frozen before results as a new authority rather than retroactively changing
+    failed batch-one `v3`.
+29. The future probe belongs in a separate Milestone 6.2 ExecPlan. It changes
+    batching, target unit duration, scheduling, and potentially device
+    placement, so folding it into M006-001 would blur the pre-result authority
+    and the historical failed result.
+30. `1.7B` is a parameter count rather than an artifact or VRAM size. The exact
+    frozen model artifacts total 4,515,695,644 bytes, while the official
+    batch-one run reached 6,286,802,944 bytes of authoritative peak VRAM after
+    accounting for the runtime and framework reserve.
+31. CPU offload is a capacity contingency, not an assumed speed improvement.
+    Generic layer offload is excluded from the first experiment; a separately
+    frozen targeted speech-tokenizer/audio-decoder placement may run only if
+    full-GPU batch two hits its predeclared memory stop condition.
 
 ## Final validation results
 
@@ -1004,6 +1339,40 @@ path/credential patterns, tracked audio/model/raw-input exclusions, and raw
 cleanup audits passed. No model was loaded by the preflight, no official
 observation was accepted, no audio was generated, and no raw session or
 private path was retained.
+
+Milestone 4 began from a clean merged base. The first preflight correctly
+rejected insufficient readiness without loading the model; after RAM recovered,
+the one permitted disposable pilot passed from clean checkpoint `8475b28`.
+Artifact, authority, interpreter, provider, firewall, disk, RAM, VRAM, offline,
+generation, and cleanup boundaries passed the pilot. The independent
+license/packaging audit found no license ambiguity and measured the exact
+CustomVoice model plus isolated environment at `9,747,862,094` bytes. No
+official observation, generated audio, raw journal, or private input exists at
+this checkpoint.
+
+The official machine matrix then completed from clean checkpoint `8898762`
+with exact counts and no retries. Cold load, RAM, VRAM, offline, artifact,
+license, packaging, and process cleanup passed. Warm first audio,
+15-seconds-media delivery, shorter completion, warm/sustained request RTF,
+total sustained RTF, zero failures, and three mid-generation cancellation
+trials failed. The receipt is non-promotable regardless of later quality
+scores. Its raw journal passed the content/privacy scan and was deleted after
+derivation; no raw file or generated audio remains. Final quality evaluation
+later produced the limited one-maintainer evidence below; it cannot promote
+this failed receipt.
+
+The separate final-quality generation then completed from clean checkpoint
+`3df2823` with all 12 samples, bounded storage, offline controls, and cleanup.
+Exactly three independently randomized evaluator pages are ready, staging
+identities are gone, and the blinded-page privacy scan passed. One maintainer
+score was submitted and sanitized; the limited descriptive means and three
+meaning-changing defects are recorded above. The maintainer waived the
+remaining two evaluators for the development-demo decision, while immutable
+`profile-v3` remains failed and non-promotable. Both full repository validation
+aggregates passed before this decision update. No production dependency or
+runtime implementation was added. The exact quality session and downloaded
+scorecard were subsequently deleted after derivation; the ignored raw tree
+again contains zero files.
 
 After correcting the candidate to CustomVoice for the built-in-default-voice
 requirement, all 13 changed Markdown files passed the local-link,
@@ -1085,3 +1454,20 @@ Milestone 2 is complete. The passing result permits Milestone 3 to extend the
 candidate-neutral benchmark, but does not select the candidate, supersede
 ADR-0013, unblock Milestone 7, claim native waveform streaming, or claim that
 the inherited 3-second warm first-audio gate passed.
+
+After the Milestone 4 one-maintainer demo decision, all 13 changed Markdown
+files passed the local-link and changed-file private-path/credential scans.
+`git diff --check`, the tracked audio/model/private-input scan, and the ignored
+raw/root-scorecard cleanup audit passed. The repository cleanup command deleted
+the exact 21-file quality session, and the downloaded disposable scorecard was
+removed after derivation.
+
+`pnpm.cmd check:portable` passed in 26.6 seconds with 18 shared test files / 175
+tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204 tests, 6
+native-WebDriver-client tests, 72 Python tests, formatting, lint, strict type
+checks, and portable builds. `pnpm.cmd check` passed in 49.1 seconds with the
+same TypeScript/Python evidence plus Rust formatting, Clippy, crate-test
+execution, the native release build, and Python source/wheel packaging. The
+existing Vite chunk-size advisory remained informational. No runtime code,
+production dependency, generated audio, model artifact, raw evidence, private
+path, or credential was added.

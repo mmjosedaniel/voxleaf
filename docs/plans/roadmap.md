@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 6 are complete. Milestone 6.1 is active: its first milestone selected Serena for the exact Qwen3-TTS 1.7B CustomVoice development evaluation and froze `v3`, while the prototype and official matrices remain. Milestone 7 stays blocked until that or another frozen local TTS evaluation passes every production gate. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 6 are complete. Milestone 6.1 is active: its exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation completed and failed standard startup, throughput, zero-failure, and mid-generation cancellation gates. ADR-0014 permits that exact profile only for a bounded development demo after one fluent maintainer accepted its audible quality. Milestone 6.2 is planned as a separate pre-result evaluation of shorter ordered units and batch size two with one resident model; conditional targeted CPU placement is only a memory contingency. Milestone 7 may plan the constrained demo slice, but production completion remains blocked until new evidence or an explicit later acceptance change resolves continuous playback, cancellation, hardware, and packaging. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -29,6 +29,7 @@ Every milestone must preserve the product's defining constraints:
     -> 5. Narration text preparation
     -> 6. Local TTS feasibility and engine selection
     -> 6.1. Local TTS profile blocker resolution
+    -> 6.2. Qwen short-segment batch feasibility
     -> 7. Local TTS service and process protocol
     -> 8. Bounded audio playback and scheduling
     -> 9. Synchronized reading and narration
@@ -215,16 +216,18 @@ Milestone 1 supplies the isolated Python foundation. Milestone 2 supplies capabi
 
 ## Milestone 6.1: Resolve the local TTS profile blocker
 
-**Status:** In progress. Milestone 1 selected Serena through the frozen intake
-screen and published `tts-feasibility-profile-v3`. Milestone 2 passed the
-exact-host development stop gate with bounded complete-segment delivery, zero
-stale output, identity-first worker termination, and complete cleanup;
-benchmark extension, official evaluation, audit, final quality, and closeout
-remain. The
+**Status:** In progress. Milestones 1–3 selected Serena, froze
+`tts-feasibility-profile-v3`, passed the exact-host development stop gate, and
+extended the candidate-neutral benchmark. Milestone 4 completed the official
+matrix: resource/offline/audit gates passed, while startup, throughput,
+zero-failure, and three mid-generation cancellation gates failed. One fluent
+maintainer accepted audible quality for a near-term demo; ADR-0014 permits only
+a constrained development-demo exception. Formal selection consequences,
+final repository validation, and closeout remain. The
 [blocker-resolution ExecPlan](active/M006-001-local-tts-profile-blocker-resolution.md)
 records the candidate-intake evidence, decisions, tasks, and validation
-sequence. Serena is selected for evaluation only and ADR-0013 remains
-authoritative for production.
+sequence. Frozen `v3` remains failed and ADR-0013 remains authoritative for
+standard production viability.
 
 ### Goal
 
@@ -255,8 +258,9 @@ or protocol work begins.
 - Keep OpenAI Whisper outside the TTS candidate set. A separately pinned local
   Whisper runtime may be considered only as an optional benchmark ASR aid and
   cannot replace fluent-Spanish human quality review.
-- Select a profile through a superseding ADR only if every frozen gate passes;
-  otherwise retain the Milestone 7 blocker with content-safe evidence.
+- Preserve the failed standard result and retain the production blocker.
+  ADR-0014 separately permits the exact profile only for a bounded
+  development-demo path with no real-time or continuous-playback claim.
 
 ### Dependencies
 
@@ -282,11 +286,62 @@ isolated lock, verified local artifacts, outbound blocking, an authorized
 - Automatic speech recognition can estimate content consistency but cannot
   judge naturalness, prosody, speaker similarity, or audible artifacts.
 
+## Milestone 6.2: Prove Qwen short-segment batch feasibility
+
+**Status:** Planned; not started. The
+[Milestone 6.2 ExecPlan](active/M006-002-qwen-short-segment-batch-feasibility.md)
+records the scope and must freeze a new `v4` authority before official
+hardware results. This work does not change failed batch-one `v3`, ADR-0013,
+or ADR-0014.
+
+### Goal
+
+Determine whether the exact Qwen/Serena candidate can keep a bounded playback
+simulation supplied when one resident model generates two ordered short
+semantic units in one shared-model batch.
+
+### Expected outcome
+
+- Batch sizes one and two are measured under one frozen candidate, corpus,
+  settings, host, offline, privacy, and first-attempt authority.
+- Per-unit latency, aggregate batch RTF, ordered delivery, buffer drift,
+  underruns, RAM, VRAM, failures, cancellation, and cleanup are reported.
+- Short units preserve `narration-v1` text, semantic boundaries, identities,
+  stable locator ranges, and hard limits.
+- Full-GPU execution is evaluated first. A separately identified targeted
+  speech-tokenizer/audio-decoder CPU placement may run only if full-GPU batch
+  two reaches a predeclared memory stop condition.
+- The decision distinguishes unchanged standard-profile gates, scheduling
+  sustainability, and constrained-demo usefulness without making a production
+  or general-hardware claim.
+
+### Dependencies
+
+Milestone 6.1 supplies the exact failed candidate evidence and constrained demo
+decision. Milestone 5 supplies stable bounded `narration-v1` units. The
+candidate-neutral benchmark, exact isolated lock, verified local artifacts,
+outbound blocking, and exact reference host remain required. Milestone 6.2
+must add a reviewed batch hardware command before execution.
+
+### Major risks and unknowns
+
+- The Qwen batch API may serialize work or gain too little throughput to reach
+  aggregate RTF below one.
+- Batch-two activation, cache, or decoder memory may exceed the remaining VRAM
+  headroom or trigger unacceptable Windows shared-memory paging.
+- Complete batch returns may delay the first ordered unit behind a straggler.
+- Shorter units may create prosody or join defects.
+- CPU placement normally trades speed for accelerator capacity and may fail
+  device placement, RAM, or throughput gates.
+- Evidence from one 8-GiB laptop GPU cannot establish general hardware support.
+
 ## Milestone 7: Implement the local TTS service and process protocol
 
-**Status:** Blocked and deferred. ADR-0013 selects no viable engine profile.
-A newly frozen candidate evaluation must produce a passing profile before a
-focused protocol plan can resolve the process boundary.
+**Status:** Constrained development demo permitted; production completion
+blocked. ADR-0014 permits a focused Qwen/Serena demo plan around complete
+bounded units and worker termination. ADR-0013 still records that no standard
+profile passed, so continuous playback, general hardware support, packaging,
+and production graduation require later evidence.
 
 ### Goal
 
@@ -308,9 +363,11 @@ Run the selected TTS engines behind a secure, typed, cancellable local process b
 ### Dependencies
 
 Milestone 2 defines shared contracts. Milestone 6 supplies the evaluation
-authority but its first cycle selected no viable engine. Milestone 6.1 is the
-next approved attempt to produce the required engine/capability input.
-Milestone 1 supplies process and packaging foundations.
+authority but its first cycle selected no viable engine. Milestone 6.1 permits
+only the constrained ADR-0014 development-demo input. Milestone 6.2 is the
+planned attempt to measure short-unit shared-model batching before any
+continuous-playback or standard-profile claim. Milestone 1 supplies process
+and packaging foundations.
 
 ### Major risks and unknowns
 
@@ -447,7 +504,7 @@ The following decisions should be made when evidence is available, not assumed s
 1. **Desktop stack gate:** validate and adopt the desktop framework, workspace, package manager, and supported development environments during Milestone 1.
 2. **EPUB gate:** validate archive limits, sanitization, rendering isolation, locator round-tripping, and dependency licensing before completing Milestone 3.
 3. **Persistence gate:** ADR-0011 selects bounded WebView `localStorage`, separate versioned position/preference envelopes, save lifecycle, and desktop-owned migration; implement and validate that boundary before completing Milestone 4.
-4. **TTS gate:** the completed Milestone 6 cycle selected neither evaluated profile. Execute the approved Milestone 6.1 blocker-resolution plan, including a pre-result frozen quality, latency, memory, cancellation, license, privacy, artifact, and packaging evaluation, before Milestone 7. At least one exact production role must pass every applicable gate.
+4. **TTS gate:** the completed Milestone 6 cycle and failed Milestone 6.1 `v3` matrix select no standard passing profile. ADR-0014 permits only an exact constrained development-demo slice. A production role must still pass every applicable gate or receive a separate explicit acceptance decision before production graduation.
 5. **Protocol gate:** record transport, framing, backpressure, and local exposure decisions before completing Milestone 7.
 6. **Audio gate:** record internal audio format, playback mechanism, speed-control behavior, and the short-range startup rule before completing Milestone 8.
 7. **Interaction gate:** define manual navigation during active narration before completing Milestone 9.
@@ -461,7 +518,7 @@ Durable decisions belong in architecture decision records. Temporary implementat
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or the completed Milestones 4 through 6 plans and does not authorize implementing all of those areas at once.
 
-Milestones 1 through 6 are complete, with their evidence retained under [`completed/`](completed/). Milestone 6.1 is in progress with its first milestone complete. Use the synchronized-reader plan only as later-milestone context; it does not supersede any completed milestone authority or unblock Milestone 7.
+Milestones 1 through 6 are complete, with their evidence retained under [`completed/`](completed/). Milestone 6.1 is in progress with Milestones 1–4 complete and a constrained demo direction accepted under ADR-0014. Use the synchronized-reader plan only as later-milestone context; it does not supersede completed authority or turn the failed `v3` profile into a standard production selection.
 
 ## MVP completion boundary
 
