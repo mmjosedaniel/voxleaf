@@ -1503,11 +1503,45 @@ Milestone 6 is complete without pretending that the production TTS or audio path
 
 #### Actual result
 
-Pending.
+Local closeout completed on 2026-07-25; required pull-request validation is
+pending external publication of this branch.
+
+- `git diff --stat`, `git diff --name-only`, and `git diff --check` show only
+  this ExecPlan's closeout evidence relative to `main`. No application,
+  package, service, benchmark implementation, schema, manifest, lockfile,
+  workflow, dependency, Tauri capability, public contract, or generated file
+  changed.
+- The tracked-artifact audit inspected all 344 tracked files. It found zero
+  books, generated-audio formats, model/weight formats, profiling logs, or
+  traces and zero tracked files above 5 MiB. The raw benchmark root, both
+  isolated `.venv` directories, candidate model roots, generated
+  distributions, and caches remain ignored.
+- Direct ignored-root inspection reports zero raw benchmark files and zero
+  WAV files after Task 5.2 cleanup. The changed-plan scan found zero private
+  host/account patterns, corpus-text values, or privacy canaries.
+- A repository-wide audit checked 175 relative links across all 45 Markdown
+  files under `docs/`, `benchmarks/tts/`, and the root documentation; every
+  target resolves.
+- The required CI workflow contains no TTS benchmark, candidate, model, CUDA,
+  or weight command. The production Python service retains zero runtime
+  dependencies. The explicit benchmark commands remain outside
+  `pnpm.cmd check` and `pnpm.cmd check:portable`.
+- The canonical system diagram still matches the implementation: only the
+  feasibility harness and no-profile decision are implemented development
+  evidence; the production TTS runtime, transport, audio, synchronization,
+  hardware support, and packaging remain blocked or deferred.
+- Task 5.1 passed the authoritative native and portable aggregate commands on
+  this branch. The exact final documentation head still requires the existing
+  `Windows native foundation` and `Ubuntu portable foundation` pull-request
+  jobs before this task can be marked complete and the plan can move to
+  `docs/plans/completed/`.
 
 #### Status
 
-Not started.
+In progress — every local deterministic, hardware-evidence, cleanup, privacy,
+artifact, scope, link, and repository check is complete. Required
+pull-request CI on the final published head and the completed-plan transition
+remain.
 
 ## Testing and benchmark strategy
 
@@ -1854,6 +1888,13 @@ A profile is selectable only when its performance, quality, capability, license,
   hardware cycle. Closeout removed three overlooked ignored raw performance
   journals and confirmed zero remaining raw files/WAVs, no temporary benchmark
   firewall rule, and restored 45-minute AC sleep.
+- 2026-07-25: Completed the local portion of Task 5.3 on
+  `feat/m006-close-validation`. The branch changes documentation only; all 344
+  tracked files pass the forbidden-artifact and 5-MiB audits, all 175 relative
+  Markdown links resolve, raw output is empty, changed evidence contains no
+  private/corpus/canary values, production dependencies and CI remain
+  model-free, and the canonical architecture boundary is unchanged. Final
+  pull-request CI and completed-plan movement await branch publication.
 
 ## Discoveries and decisions
 
@@ -2068,5 +2109,33 @@ Completed on 2026-07-25 on `feat/m006-select-engine-profiles`:
   selection record consume the already validated complete Milestone 3 `v2`
   evidence without changing its authority, candidates, corpus, adapters, or
   measurements.
+
+### Milestone 5 closeout validation
+
+Local validation completed on 2026-07-25 on
+`feat/m006-close-validation`:
+
+- Both isolated candidate locks synchronized exactly, and model-free import
+  smokes verified `qwen-tts==0.1.1`, `supertonic==1.3.1`, and
+  `onnxruntime==1.27.0` without constructing a model or loading weights.
+- Focused Ruff format/lint, strict mypy over 34 files, all 50 model-free
+  Python tests, and both Python distribution builds passed.
+- `pnpm.cmd check:portable` and the authoritative native `pnpm.cmd check`
+  passed the complete deterministic repository suites and builds. The
+  existing Vite chunk-size advisory remained informational.
+- Evidence revision/run identity, frozen-rerun-rule, firewall, power, raw
+  cleanup, privacy, ignored-path, tracked-artifact, large-file, scope,
+  model-free CI, zero-production-dependency, canonical architecture, and
+  relative-link reviews all passed. Three overlooked ignored historical raw
+  journals were removed; zero raw files and zero WAV files remain.
+- The final branch currently changes only this ExecPlan. It adds no runtime
+  behavior or support claim and does not rerun the unchanged accepted `v2`
+  hardware matrices.
+
+The existing `Windows native foundation` and `Ubuntu portable foundation`
+pull-request jobs must still pass on the exact final published head. After
+that result is recorded, Task 5.3 can become complete, repository status
+documentation can advance Milestone 6, and this plan can move to
+`docs/plans/completed/`.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.
