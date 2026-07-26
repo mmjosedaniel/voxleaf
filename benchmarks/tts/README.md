@@ -28,6 +28,12 @@ roadmap Milestone 6. It is not a production TTS service boundary.
 - `profile-v3.json` freezes the complete Serena candidate identity,
   prototype stop gate, inherited official gates, exclusions, privacy rules,
   and invalidation authority before any prototype or official result.
+- `incremental-cancellation-prototype-v1.json` freezes the development-only
+  prototype topology before results: complete-segment delivery, one resident
+  spawned worker, explicit input/output/queue ceilings, identity-first stale
+  rejection, bounded worker termination, five ordered trials, and no audio
+  persistence. Its strict safe-result shape is
+  `schemas/incremental-cancellation-prototype-result-v1.schema.json`.
 - `corpus-v1.json` freezes the repository-authored prepared-text corpus and
   performance order.
 - `schemas/summary-v2.schema.json` is the current private benchmark-summary

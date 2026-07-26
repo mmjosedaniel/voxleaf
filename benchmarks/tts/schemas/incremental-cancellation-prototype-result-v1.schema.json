@@ -1,0 +1,394 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voxleaf.local/schemas/tts/incremental-cancellation-prototype-result-v1.schema.json",
+  "title": "VoxLeaf incremental and cancellation prototype result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "prototypeVersion",
+    "candidateId",
+    "profileSha256",
+    "configurationIdentitySha256",
+    "commitSha",
+    "host",
+    "topology",
+    "timingNanoseconds",
+    "trials",
+    "memory",
+    "cleanup",
+    "passed",
+    "failureCodes",
+    "limitations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "incremental-cancellation-prototype-result-v1"
+    },
+    "prototypeVersion": {
+      "const": "incremental-cancellation-prototype-v1"
+    },
+    "candidateId": {
+      "const": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1"
+    },
+    "profileSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "configurationIdentitySha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "commitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operatingSystem",
+        "osVersion",
+        "architecture",
+        "pythonVersion",
+        "cpuModel",
+        "logicalProcessors",
+        "totalRamBytes",
+        "gpuModel",
+        "driverVersion"
+      ],
+      "properties": {
+        "operatingSystem": {
+          "const": "Windows"
+        },
+        "osVersion": {
+          "$ref": "#/$defs/safeLabel"
+        },
+        "architecture": {
+          "const": "x86_64"
+        },
+        "pythonVersion": {
+          "type": "string",
+          "pattern": "^3\\.12\\.[0-9]+$"
+        },
+        "cpuModel": {
+          "$ref": "#/$defs/safeLabel"
+        },
+        "logicalProcessors": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "totalRamBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "gpuModel": {
+          "$ref": "#/$defs/safeLabel"
+        },
+        "driverVersion": {
+          "$ref": "#/$defs/safeLabel"
+        }
+      }
+    },
+    "topology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nativeGenerationGranularity",
+        "publishedUnitGranularity",
+        "stopMode",
+        "normalDeliveryUnits",
+        "normalDeliveryUnitsReleased",
+        "peakQueuedSegments",
+        "peakPublishedQueueUnits",
+        "peakRetainedControllerAudioBytes"
+      ],
+      "properties": {
+        "nativeGenerationGranularity": {
+          "const": "complete-waveform"
+        },
+        "publishedUnitGranularity": {
+          "const": "complete-narration-segment"
+        },
+        "stopMode": {
+          "const": "worker-process-termination"
+        },
+        "normalDeliveryUnits": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "normalDeliveryUnitsReleased": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "peakQueuedSegments": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "peakPublishedQueueUnits": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "peakRetainedControllerAudioBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20480000
+        }
+      }
+    },
+    "timingNanoseconds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coldLoad", "configurationSetup", "firstProducedAudio"],
+      "properties": {
+        "coldLoad": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120000000000
+        },
+        "configurationSetup": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000000000
+        },
+        "firstProducedAudio": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 300000000000
+        }
+      }
+    },
+    "trials": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/beforeDispatchTrial"
+        },
+        {
+          "$ref": "#/$defs/workerTrial"
+        },
+        {
+          "$ref": "#/$defs/workerTrial"
+        },
+        {
+          "$ref": "#/$defs/workerTrial"
+        },
+        {
+          "$ref": "#/$defs/workerTrial"
+        }
+      ],
+      "items": false
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ramSamplingIntervalMilliseconds",
+        "vramSamplingIntervalMilliseconds",
+        "peakProcessTreeRamBytes",
+        "peakProcessTreeVramBytes",
+        "peakFrameworkVramBytes"
+      ],
+      "properties": {
+        "ramSamplingIntervalMilliseconds": {
+          "const": 50
+        },
+        "vramSamplingIntervalMilliseconds": {
+          "const": 1000
+        },
+        "peakProcessTreeRamBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "peakProcessTreeVramBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "peakFrameworkVramBytes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maximumCleanupNanoseconds",
+        "postCleanupProcessTreeRamBytes",
+        "postCleanupProcessTreeVramBytes",
+        "workerProcessesRemaining",
+        "rawSessionCreated",
+        "rawSessionRemoved"
+      ],
+      "properties": {
+        "maximumCleanupNanoseconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000000000
+        },
+        "postCleanupProcessTreeRamBytes": {
+          "const": 0
+        },
+        "postCleanupProcessTreeVramBytes": {
+          "const": 0
+        },
+        "workerProcessesRemaining": {
+          "const": 0
+        },
+        "rawSessionCreated": {
+          "const": false
+        },
+        "rawSessionRemoved": {
+          "const": true
+        }
+      }
+    },
+    "passed": {
+      "type": "boolean"
+    },
+    "failureCodes": {
+      "type": "array",
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/safeCode"
+      }
+    },
+    "limitations": {
+      "const": [
+        "complete-waveform-per-segment",
+        "worker-termination-not-cooperative-model-cancellation",
+        "development-prototype-not-production-runtime",
+        "exact-host-only"
+      ]
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "safeLabel": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+():-]{0,159}$"
+    },
+    "safeCode": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,63}$"
+    },
+    "baseTrialProperties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trialId",
+        "passed",
+        "stopMode",
+        "identityInvalidationNanoseconds",
+        "workerTerminationNanoseconds",
+        "cleanupNanoseconds",
+        "publishedUnitsBeforeCancellation",
+        "stalePublishedUnits",
+        "workerExited",
+        "processResourcesReleased"
+      ],
+      "properties": {
+        "trialId": {
+          "enum": [
+            "before-dispatch",
+            "accepted-before-audio",
+            "after-first-audio",
+            "near-hard-mid-generation",
+            "during-cleanup"
+          ]
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "stopMode": {
+          "enum": ["identity-invalidation", "worker-process-termination"]
+        },
+        "identityInvalidationNanoseconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 500000000
+        },
+        "workerTerminationNanoseconds": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 2000000000
+        },
+        "cleanupNanoseconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000000000
+        },
+        "publishedUnitsBeforeCancellation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "stalePublishedUnits": {
+          "const": 0
+        },
+        "workerExited": {
+          "type": "boolean"
+        },
+        "processResourcesReleased": {
+          "type": "boolean"
+        }
+      }
+    },
+    "beforeDispatchTrial": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseTrialProperties"
+        },
+        {
+          "properties": {
+            "trialId": {
+              "const": "before-dispatch"
+            },
+            "stopMode": {
+              "const": "identity-invalidation"
+            },
+            "workerTerminationNanoseconds": {
+              "const": null
+            }
+          }
+        }
+      ]
+    },
+    "workerTrial": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseTrialProperties"
+        },
+        {
+          "properties": {
+            "trialId": {
+              "enum": [
+                "accepted-before-audio",
+                "after-first-audio",
+                "near-hard-mid-generation",
+                "during-cleanup"
+              ]
+            },
+            "stopMode": {
+              "const": "worker-process-termination"
+            },
+            "workerTerminationNanoseconds": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2000000000
+            }
+          }
+        }
+      ]
+    }
+  }
+}

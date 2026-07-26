@@ -287,6 +287,8 @@ disposable generated speech and produce aggregate error counts, but:
 - `benchmarks/tts/customvoice-spanish-screen-v2.json`
 - `benchmarks/tts/customvoice-spanish-screen-result-v2.json`
 - `benchmarks/tts/profile-v3.json`
+- `benchmarks/tts/incremental-cancellation-prototype-v1.json`
+- `benchmarks/tts/schemas/incremental-cancellation-prototype-result-v1.schema.json`
 - `benchmarks/tts/selection-v2.md`
 - `docs/product/project-brief.md`
 - `docs/product/mvp.md`
@@ -434,7 +436,10 @@ blocker remain.
 
 ### Status
 
-Not started. No production adapter is authorized.
+In progress. The exact development-only topology, input/output/identity bounds,
+five ordered trials, timing limits, pass rules, privacy boundary, and safe
+result schema are frozen before prototype execution. No production adapter is
+authorized.
 
 ## Milestone 3: Extend the candidate-neutral benchmark safely
 
@@ -736,6 +741,15 @@ dependency changes are involved.
   and Milestone 1 validation as
   `e14c7770bdd9bc8be2bd392fe011f0c1dea249c0`
   (`feat(tts): freeze Serena feasibility profile v3`).
+- 2026-07-25: Created branch
+  `feat/m006-2-incremental-cancellation` from merged Milestone 1 commit
+  `de2c2dc`. Froze `incremental-cancellation-prototype-v1` before any
+  prototype generation or cancellation result. The authority binds exact
+  `profile-v3`, complete-segment delivery, one resident spawned worker per
+  trial, batch one, one queued segment/unit, `narration-v1` input ceilings,
+  identity invalidation before bounded worker termination, five ordered
+  trials, zero stale units, no audio persistence, and a strict content-safe
+  result schema.
 
 ## Discoveries and decisions
 

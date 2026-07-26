@@ -1,0 +1,104 @@
+{
+  "prototypeVersion": "incremental-cancellation-prototype-v1",
+  "status": "frozen-before-prototype-results",
+  "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
+  "candidateProfile": {
+    "path": "benchmarks/tts/profile-v3.json",
+    "sha256": "7d062a4f662ed95b1cb5ff0a21fc40864f4ac3858cea4314ee612b84c2e08dbe"
+  },
+  "configurationIdentitySha256": "b689b9b81cc7633687e80030ed172878d89196d57149370a82839e1ec83d61df",
+  "topology": {
+    "controller": "candidate-interpreter-parent-process",
+    "workerStartMethod": "spawn",
+    "workerLifetime": "one-resident-model-and-frozen-configuration-per-trial",
+    "generationApi": "generate_custom_voice",
+    "nativeGenerationGranularity": "complete-waveform",
+    "publishedUnitGranularity": "one-complete-waveform-per-narration-segment",
+    "midSegmentStopMode": "worker-process-termination",
+    "automaticRetries": 0
+  },
+  "inputAuthority": {
+    "corpus": {
+      "path": "benchmarks/tts/corpus-v1.json",
+      "sha256": "7727e0ea0b2763690e3cffbd72074fd907d8bf3ca2a10addd028ba9072df96bb"
+    },
+    "normalDeliveryCaseIds": [
+      "es-punctuation-dialogue-short",
+      "es-narrative-target"
+    ],
+    "cancellationCaseId": "es-narrative-target",
+    "language": "Spanish",
+    "batchSize": 1,
+    "maximumActiveSegments": 1,
+    "maximumQueuedSegments": 1,
+    "maximumInputCodePointsPerSegment": 640,
+    "maximumInputUtf8BytesPerSegment": 2048,
+    "candidateSpecificTextRewriting": "forbidden"
+  },
+  "outputAuthority": {
+    "sampleRateHz": 24000,
+    "channels": 1,
+    "sampleFormat": "float32",
+    "maximumSampleFramesPerUnit": 5120000,
+    "maximumBytesPerUnit": 20480000,
+    "maximumPublishedQueueUnits": 1,
+    "maximumRetainedWorkerWaveforms": 1,
+    "maximumRetainedControllerUnits": 1,
+    "releaseUnitBeforeNextDispatch": true,
+    "persistGeneratedAudio": false
+  },
+  "identityAuthority": {
+    "requiredFields": [
+      "sessionId",
+      "generationId",
+      "segmentId",
+      "candidateId",
+      "configurationIdentitySha256"
+    ],
+    "invalidateBeforeStop": true,
+    "rejectEveryMismatchedOrInactiveUnit": true
+  },
+  "timingAuthority": {
+    "clock": "monotonic-perf-counter-nanoseconds",
+    "maximumColdLoadNanoseconds": 120000000000,
+    "maximumConfigurationSetupNanoseconds": 5000000000,
+    "maximumGenerationNanoseconds": 300000000000,
+    "maximumIdentityInvalidationNanoseconds": 500000000,
+    "maximumWorkerTerminationNanoseconds": 2000000000,
+    "maximumCleanupNanoseconds": 5000000000,
+    "nearHardCancellationDelayNanoseconds": 5000000000
+  },
+  "trialOrder": [
+    "before-dispatch",
+    "accepted-before-audio",
+    "after-first-audio",
+    "near-hard-mid-generation",
+    "during-cleanup"
+  ],
+  "passRules": {
+    "normalDeliveryUnits": 2,
+    "normalDeliveryBeforeNextDispatch": true,
+    "everyTrialPasses": true,
+    "maximumStalePublishedUnits": 0,
+    "workerExitedAfterTermination": true,
+    "postCleanupProcessTreeRamBytes": 0,
+    "postCleanupProcessTreeVramBytes": 0,
+    "rawSessionCreated": false,
+    "fullMatrixAdmissionOnFailure": "forbidden"
+  },
+  "privacy": {
+    "verifiedLocalArtifactsOnly": true,
+    "offlineEnvironmentRequired": true,
+    "outboundFirewallBlockRequired": true,
+    "forbiddenSafeEvidence": [
+      "inputText",
+      "generatedAudio",
+      "waveformBytes",
+      "paths",
+      "exceptions",
+      "environmentValues",
+      "privateIdentity"
+    ],
+    "safeResultSchema": "benchmarks/tts/schemas/incremental-cancellation-prototype-result-v1.schema.json"
+  }
+}
