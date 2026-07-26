@@ -6,6 +6,12 @@ from pathlib import Path
 
 import pytest
 
+from benchmarks.batch_contracts import (
+    BatchGenerationRequest,
+    BatchUnitRequest,
+    BatchWorkIdentity,
+)
+from benchmarks.batch_fake import DeterministicBatchCandidateFactory
 from benchmarks.contracts import AdapterOperationError, GenerationRequest
 from benchmarks.fake_adapter import FakeMemoryProbe, FakeNanosecondClock
 from benchmarks.harness import (
@@ -22,6 +28,21 @@ def _request(request_id: str = "process-request") -> GenerationRequest:
         case_id="process-case",
         phase="warm",
         text="Texto sintético privado.",
+    )
+
+
+def _batch_request() -> BatchGenerationRequest:
+    return BatchGenerationRequest(
+        call_index=1,
+        phase="measured",
+        pass_index=1,
+        pair_id="es-v4-pair-01",
+        attempt=1,
+        identity=BatchWorkIdentity("session", "generation"),
+        units=(
+            BatchUnitRequest("es-v4-arrival", 0, "Uno."),
+            BatchUnitRequest("es-v4-dialogue", 1, "Dos."),
+        ),
     )
 
 
@@ -56,6 +77,21 @@ def test_worker_termination_discards_late_output_and_restarts_one_clean_worker()
     assert replacement_pid != first_pid
     assert [chunk.sequence for chunk in replacement] == [0, 1]
     assert all(chunk.request_id == "replacement" for chunk in replacement)
+    adapter.close()
+    assert adapter.worker_pid is None
+
+
+def test_worker_returns_one_bounded_ordered_batch_without_payload() -> None:
+    adapter = IsolatedBenchmarkAdapter(
+        DeterministicBatchCandidateFactory(),
+        forbidden_values=("Uno.", "Dos."),
+    )
+    outputs = adapter.generate_batch(_batch_request())
+    assert [output.unit_id for output in outputs] == [
+        "es-v4-arrival",
+        "es-v4-dialogue",
+    ]
+    assert all(output.sample_count == 240_000 for output in outputs)
     adapter.close()
     assert adapter.worker_pid is None
 

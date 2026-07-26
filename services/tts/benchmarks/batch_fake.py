@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
+from collections.abc import Iterator
+from dataclasses import dataclass, replace
 from typing import Literal
 
 from benchmarks.batch_contracts import (
@@ -10,6 +11,12 @@ from benchmarks.batch_contracts import (
     BatchBenchmarkError,
     BatchGenerationRequest,
     BatchResourceSnapshot,
+)
+from benchmarks.contracts import (
+    AdapterCapabilities,
+    AudioChunk,
+    CancellationResponse,
+    GenerationRequest,
 )
 
 type FakeBatchScenario = Literal[
@@ -64,6 +71,32 @@ class DeterministicBatchCandidate:
         self.closed = False
         self.calls = 0
 
+    def capabilities(self) -> AdapterCapabilities:
+        return AdapterCapabilities(
+            candidate_id="fixture-v4-batch-candidate",
+            streaming_granularity="complete-waveform",
+            sample_format="float32",
+            generation_cancellation="worker-termination",
+        )
+
+    def load(self) -> None:
+        if self.closed:
+            raise BatchBenchmarkError("generation-failed")
+
+    def warm_up(self, request: GenerationRequest) -> None:
+        del request
+
+    def generate(self, request: GenerationRequest) -> Iterator[AudioChunk]:
+        del request
+        return iter(())
+
+    def cancel(self, request_id: str) -> CancellationResponse:
+        del request_id
+        return CancellationResponse(acknowledged=True, stop_mode="worker-termination")
+
+    def framework_memory_high_water_bytes(self) -> int:
+        return 2_000_000_000
+
     def generate_batch(
         self,
         request: BatchGenerationRequest,
@@ -108,3 +141,11 @@ class DeterministicBatchCandidate:
         self.closed = True
         if self.scenario == "cleanup-failure":
             raise BatchBenchmarkError("cleanup-failed")
+
+
+@dataclass(frozen=True)
+class DeterministicBatchCandidateFactory:
+    scenario: FakeBatchScenario = "ordered"
+
+    def __call__(self) -> DeterministicBatchCandidate:
+        return DeterministicBatchCandidate(FakeBatchClock(), scenario=self.scenario)

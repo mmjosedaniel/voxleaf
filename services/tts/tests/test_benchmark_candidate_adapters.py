@@ -13,15 +13,22 @@ import pytest
 from benchmarks.adapters.factory import CandidateAdapterFactory
 from benchmarks.adapters.manifest import (
     QWEN_CANDIDATE_ID,
+    QWEN_V3_CANDIDATE_ID,
     SUPERTONIC_CANDIDATE_ID,
     AdapterConfigurationError,
     ArtifactIdentity,
     CandidateConfiguration,
     CandidateProfile,
     load_candidate_profile,
+    load_v3_candidate_profile,
 )
 from benchmarks.adapters.qwen3 import Qwen3TtsAdapter
 from benchmarks.adapters.supertonic3 import Supertonic3Adapter
+from benchmarks.batch_contracts import (
+    BatchGenerationRequest,
+    BatchUnitRequest,
+    BatchWorkIdentity,
+)
 from benchmarks.contracts import GenerationRequest
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
@@ -209,6 +216,83 @@ def test_qwen_adapter_uses_exact_local_profile_and_discards_waveform(
     adapter.close()
     assert calls["reset_peak_memory_stats"] is True
     assert calls["empty_cache"] is True
+
+
+def test_qwen_v4_batch_adapter_uses_one_list_call_and_preserves_unit_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+    monkeypatch.setenv("TRANSFORMERS_OFFLINE", "1")
+    profile = load_v3_candidate_profile(REPOSITORY_ROOT, QWEN_V3_CANDIDATE_ID)
+    calls: dict[str, object] = {}
+
+    class Model:
+        def generate_custom_voice(self, **kwargs: object) -> tuple[list[list[float]], int]:
+            calls["generate"] = kwargs
+            return [[0.0] * 192_000, [0.0] * 240_000], 24_000
+
+    class ModelClass:
+        @staticmethod
+        def from_pretrained(path: str, **kwargs: object) -> Model:
+            calls["load_path"] = path
+            calls["load"] = kwargs
+            return Model()
+
+    torch = ModuleType("torch")
+    torch.__dict__["bfloat16"] = object()
+    torch.__dict__["cuda"] = SimpleNamespace(
+        is_available=lambda: True,
+        is_bf16_supported=lambda: True,
+        reset_peak_memory_stats=lambda: None,
+        max_memory_reserved=lambda: 2_000_000_000,
+        empty_cache=lambda: None,
+    )
+    qwen = ModuleType("qwen_tts")
+    qwen.__dict__["Qwen3TTSModel"] = ModelClass
+    monkeypatch.setattr(
+        "benchmarks.adapters.qwen3.validate_configuration",
+        lambda _profile, _configuration: tmp_path.resolve(),
+    )
+    monkeypatch.setattr(
+        "benchmarks.adapters.qwen3.verify_artifacts",
+        lambda _root, _artifacts: None,
+    )
+    adapter = Qwen3TtsAdapter(
+        profile,
+        _configuration(profile, tmp_path),
+        importer=lambda name: {"torch": torch, "qwen_tts": qwen}[name],
+        version_reader={
+            "qwen-tts": "0.1.1",
+            "torch": "2.9.1+cu128",
+            "torchaudio": "2.9.1+cu128",
+        }.__getitem__,
+    )
+    adapter.load()
+    request = BatchGenerationRequest(
+        call_index=7,
+        phase="measured",
+        pass_index=1,
+        pair_id="es-v4-pair-01",
+        attempt=1,
+        identity=BatchWorkIdentity("session", "generation"),
+        units=(
+            BatchUnitRequest("es-v4-arrival", 0, "Primer texto."),
+            BatchUnitRequest("es-v4-dialogue", 1, "Segundo texto."),
+        ),
+    )
+    outputs = adapter.generate_batch(request)
+    assert [output.unit_id for output in outputs] == [
+        "es-v4-arrival",
+        "es-v4-dialogue",
+    ]
+    assert [output.sample_count for output in outputs] == [192_000, 240_000]
+    generated = cast(dict[str, object], calls["generate"])
+    assert generated["text"] == ["Primer texto.", "Segundo texto."]
+    assert generated["language"] == ["Spanish", "Spanish"]
+    assert generated["speaker"] == ["Serena", "Serena"]
+    assert generated["instruct"] == [profile.instruction, profile.instruction]
+    assert "batchSize" not in generated
 
 
 def test_supertonic_adapter_forces_local_cpu_profile_and_discards_waveform(

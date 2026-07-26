@@ -19,6 +19,11 @@ from benchmarks.adapters.manifest import (
     validate_configuration,
     verify_artifacts,
 )
+from benchmarks.batch_contracts import (
+    BatchAudioUnit,
+    BatchBenchmarkError,
+    BatchGenerationRequest,
+)
 from benchmarks.contracts import (
     AdapterCapabilities,
     AudioChunk,
@@ -51,9 +56,9 @@ class _QwenModel(Protocol):
     def generate_custom_voice(
         self,
         *,
-        text: str,
-        language: str,
-        speaker: str,
+        text: str | list[str],
+        language: str | list[str],
+        speaker: str | list[str],
         **kwargs: object,
     ) -> tuple[Sequence[Sized], int]: ...
 
@@ -192,6 +197,65 @@ class Qwen3TtsAdapter:
         except Exception:
             raise AdapterConfigurationError("generation-failed") from None
         return waveform, sample_rate
+
+    def generate_batch(
+        self,
+        request: BatchGenerationRequest,
+    ) -> tuple[BatchAudioUnit, ...]:
+        """Run exactly one v4 batch while returning payload-free unit metadata."""
+
+        model = self._model
+        generation = self._profile.generation_settings
+        instruction = self._profile.instruction
+        if (
+            model is None
+            or self._profile.candidate_id != QWEN_V3_CANDIDATE_ID
+            or generation is None
+            or instruction is None
+            or len(request.units) not in (1, 2)
+        ):
+            raise BatchBenchmarkError("generation-failed")
+        try:
+            waveforms, sample_rate = model.generate_custom_voice(
+                text=[unit.text for unit in request.units],
+                language=[unit.language for unit in request.units],
+                speaker=[self._profile.voice_id for _unit in request.units],
+                instruct=[instruction for _unit in request.units],
+                **generation.as_qwen_kwargs(),
+            )
+            if (
+                not isinstance(sample_rate, int)
+                or sample_rate != 24_000
+                or not isinstance(waveforms, (list, tuple))
+                or len(waveforms) != len(request.units)
+            ):
+                raise BatchBenchmarkError("invalid-output")
+            outputs: list[BatchAudioUnit] = []
+            for position, (unit, waveform) in enumerate(zip(request.units, waveforms, strict=True)):
+                shape = getattr(waveform, "shape", None)
+                if shape is not None and (not isinstance(shape, tuple) or len(shape) != 1):
+                    raise BatchBenchmarkError("invalid-output")
+                sample_count = len(waveform)
+                if sample_count <= 0:
+                    raise BatchBenchmarkError("invalid-output")
+                outputs.append(
+                    BatchAudioUnit(
+                        identity=request.identity,
+                        call_index=request.call_index,
+                        unit_id=unit.unit_id,
+                        source_sequence=unit.source_sequence,
+                        batch_position=position,
+                        sample_count=sample_count,
+                        sample_rate_hz=sample_rate,
+                        channels=1,
+                        sample_format="float32",
+                    )
+                )
+        except BatchBenchmarkError:
+            raise
+        except Exception:
+            raise BatchBenchmarkError("generation-failed") from None
+        return tuple(outputs)
 
     def generate(self, request: GenerationRequest) -> Iterator[AudioChunk]:
         waveform, sample_rate = self.synthesize_for_quality(request)

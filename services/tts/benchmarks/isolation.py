@@ -13,6 +13,11 @@ from multiprocessing.context import SpawnContext
 from multiprocessing.process import BaseProcess
 from typing import Final, Protocol, cast
 
+from benchmarks.batch_contracts import (
+    BatchAudioUnit,
+    BatchCandidate,
+    BatchGenerationRequest,
+)
 from benchmarks.contracts import (
     AdapterCapabilities,
     AdapterFactory,
@@ -83,15 +88,26 @@ def _worker_command(
         return False
     command = message[0]
     request: GenerationRequest | None = None
+    batch_request: BatchGenerationRequest | None = None
     if command in ("warmup", "generate"):
         if len(message) != 2 or not isinstance(message[1], GenerationRequest):
             _send(connection, ("error", "invalid-request"))
             return False
         request = message[1]
+    elif command == "generate-batch":
+        if len(message) != 2 or not isinstance(message[1], BatchGenerationRequest):
+            _send(connection, ("error", "invalid-request"))
+            return False
+        batch_request = message[1]
     capture = DiagnosticCapture(
         forbidden_values=(
             *forbidden_values,
             *((request.text,) if request is not None else ()),
+            *(
+                tuple(unit.text for unit in batch_request.units)
+                if batch_request is not None
+                else ()
+            ),
         )
     )
     try:
@@ -113,6 +129,12 @@ def _worker_command(
                         return False
                     _send(connection, ("chunk", chunk))
                 response = ("done", _framework_peak(adapter))
+            elif command == "generate-batch" and batch_request is not None:
+                outputs = tuple(cast(BatchCandidate, adapter).generate_batch(batch_request))
+                if len(outputs) not in (1, 2) or len(outputs) != len(batch_request.units):
+                    response = ("error", "invalid-output")
+                else:
+                    response = ("batch", outputs, _framework_peak(adapter))
             elif command == "close":
                 peak = _framework_peak(adapter)
                 adapter.close()
@@ -351,6 +373,33 @@ class IsolatedBenchmarkAdapter:
         self._active_request_id = request.request_id
         self._send(("generate", request))
         return _ProcessGeneration(self, request.request_id)
+
+    def generate_batch(
+        self,
+        request: BatchGenerationRequest,
+    ) -> tuple[BatchAudioUnit, ...]:
+        """Run one bounded complete-waveform batch in the isolated worker."""
+
+        if self._active_request_id is not None:
+            raise AdapterOperationError("invalid-request")
+        self._ensure_loaded()
+        request_id = f"batch-{request.call_index}"
+        self._active_request_id = request_id
+        self._send(("generate-batch", request))
+        response = self.receive(self.timeouts.request_seconds)
+        try:
+            if len(response) == 3 and response[0] == "batch":
+                raw_outputs = response[1]
+                if not isinstance(raw_outputs, tuple) or not all(
+                    isinstance(output, BatchAudioUnit) for output in raw_outputs
+                ):
+                    self.abort("invalid-output")
+                self.observe_framework_peak(response[2])
+                return cast(tuple[BatchAudioUnit, ...], raw_outputs)
+            self.raise_response(response)
+            raise AssertionError("unreachable")
+        finally:
+            self.finish_request(request_id)
 
     def was_cancelled(self, request_id: str) -> bool:
         return request_id in self._cancelled_request_ids
