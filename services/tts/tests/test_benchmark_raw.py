@@ -118,3 +118,28 @@ def test_raw_journal_rejects_duplicate_sessions_and_sensitive_values(tmp_path: P
                 request_id="not allowed prose",
             )
         )
+
+
+def test_v3_raw_journal_binds_configuration_without_text_or_paths(
+    tmp_path: Path,
+) -> None:
+    identity = "b689b9b81cc7633687e80030ed172878d89196d57149370a82839e1ec83d61df"
+    value = RawMeasurementJournal(
+        candidate_id="qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
+        role="balanced",
+        commit_sha="a" * 40,
+        session_id="c" * 32,
+        protocol_version="tts-feasibility-profile-v3",
+        configuration_identity_sha256=identity,
+    )
+    target = value.write(
+        tmp_path / "raw",
+        status="failed",
+        forbidden_values=("private narration", str(tmp_path)),
+    )
+    payload = json.loads(target.read_text(encoding="utf-8"))
+    assert target.name == "performance-v3.raw.json"
+    assert payload["rawVersion"] == "tts-feasibility-raw-v3"
+    assert payload["protocolVersion"] == "tts-feasibility-profile-v3"
+    assert payload["configurationIdentitySha256"] == identity
+    assert b"private narration" not in target.read_bytes()

@@ -24,7 +24,6 @@ from benchmarks.raw import RawJournalError, RawMeasurementJournal
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v1.json"
-MANIFEST_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "candidates-v1.json"
 RAW_ROOT: Final = REPOSITORY_ROOT / "benchmarks" / "results" / "raw"
 
 
@@ -76,7 +75,7 @@ def run_measurement_worker(
             if adapter_builder is not None:
                 return adapter_builder()
             return create_isolated_candidate_adapter(
-                manifest_path=MANIFEST_PATH,
+                profile=request.profile,
                 configuration=request.configuration,
                 forbidden_values=sensitive_values,
                 framework_memory_observer=(
@@ -115,6 +114,16 @@ def run_measurement_worker(
             role=request.profile.role,
             commit_sha=request.expected_commit_sha,
             session_id=session_id,
+            protocol_version=(
+                request.profile.authority.profile_version
+                if request.profile.authority is not None
+                else "tts-feasibility-profile-v2"
+            ),
+            configuration_identity_sha256=(
+                request.profile.authority.configuration_identity_sha256
+                if request.profile.authority is not None
+                else None
+            ),
         )
         vram_sampler = (
             WindowsGpuProcessMemorySampler() if request.profile.role == "balanced" else None

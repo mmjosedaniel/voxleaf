@@ -20,6 +20,16 @@ PROFILE_V3_SHA256: Final = "7d062a4f662ed95b1cb5ff0a21fc40864f4ac3858cea4314ee61
 PROFILE_V3_CONFIGURATION_SHA256: Final = (
     "b689b9b81cc7633687e80030ed172878d89196d57149370a82839e1ec83d61df"
 )
+PROFILE_V3_LOCK_SHA256: Final = "1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913"
+PROFILE_V3_SCREEN_RESULT_SHA256: Final = (
+    "d55764525a0152e130205b8bb37bc7f7371a5514057928689501897d6e3ac56d"
+)
+PROFILE_V3_INSTRUCTION_SHA256: Final = (
+    "a34bbe86eb3594cbe6a763778a9c2e1e86710a8047de0a0fdc126703e65527db"
+)
+PROFILE_V3_GENERATION_SHA256: Final = (
+    "1a03c4c5af681d0285200377b2321dd547d92f65c90649d8f36f0c31c25c263e"
+)
 HASH_READ_BYTES: Final = 1024 * 1024
 
 
@@ -56,6 +66,21 @@ class CustomVoiceGenerationSettings:
     subtalker_top_p: float
     subtalker_top_k: int
     max_new_tokens: int
+
+    def as_authority_value(self) -> dict[str, object]:
+        return {
+            "batchSize": 1,
+            "doSample": self.do_sample,
+            "repetitionPenalty": self.repetition_penalty,
+            "temperature": self.temperature,
+            "topP": self.top_p,
+            "topK": self.top_k,
+            "subtalkerDoSample": self.subtalker_do_sample,
+            "subtalkerTemperature": self.subtalker_temperature,
+            "subtalkerTopP": self.subtalker_top_p,
+            "subtalkerTopK": self.subtalker_top_k,
+            "maxNewTokens": self.max_new_tokens,
+        }
 
     def as_qwen_kwargs(self) -> dict[str, object]:
         return {
@@ -413,6 +438,29 @@ def load_benchmark_candidate_profile(repository_root: Path, candidate_id: str) -
     return load_candidate_profile(
         repository_root / "benchmarks" / "tts" / "candidates-v1.json",
         candidate_id,
+    )
+
+
+def v3_profile_identity_matches(profile: CandidateProfile) -> bool:
+    """Recheck the sensitive in-memory fields against content-safe fingerprints."""
+
+    authority = profile.authority
+    generation = profile.generation_settings
+    instruction = profile.instruction
+    return bool(
+        profile.candidate_id == QWEN_V3_CANDIDATE_ID
+        and profile.model_revision == "0c0e3051f131929182e2c023b9537f8b1c68adfe"
+        and profile.voice_id == "Serena"
+        and profile.language == "Spanish"
+        and profile.provider == "pytorch-cuda"
+        and profile.precision == "bfloat16"
+        and profile.output_sample_rate_hz == 24_000
+        and instruction is not None
+        and generation is not None
+        and authority is not None
+        and hashlib.sha256(instruction.encode("utf-8")).hexdigest() == authority.instruction_sha256
+        and _canonical_sha256(generation.as_authority_value())
+        == authority.generation_settings_sha256
     )
 
 

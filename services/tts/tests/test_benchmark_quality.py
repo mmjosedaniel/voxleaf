@@ -8,7 +8,11 @@ from typing import cast
 
 import pytest
 
-from benchmarks.adapters.manifest import QWEN_CANDIDATE_ID, SUPERTONIC_CANDIDATE_ID
+from benchmarks.adapters.manifest import (
+    QWEN_CANDIDATE_ID,
+    QWEN_V3_CANDIDATE_ID,
+    SUPERTONIC_CANDIDATE_ID,
+)
 from benchmarks.cli import parse_preflight_request
 from benchmarks.contracts import GenerationRequest
 from benchmarks.preflight import PreflightRequest
@@ -45,7 +49,14 @@ class FakeQualityAdapter:
 
 
 def _request(tmp_path: Path, candidate_id: str) -> PreflightRequest:
-    if candidate_id == QWEN_CANDIDATE_ID:
+    if candidate_id == QWEN_V3_CANDIDATE_ID:
+        values = {
+            "modelRevision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+            "voiceId": "Serena",
+            "provider": "pytorch-cuda",
+            "precision": "bfloat16",
+        }
+    elif candidate_id == QWEN_CANDIDATE_ID:
         values = {
             "modelRevision": "8f9ebcf8826db6eeb9cdd4caa09d575a7f9ce4bd",
             "voiceId": "Aiden",
@@ -253,3 +264,35 @@ def test_quality_generation_input_requires_explicit_opt_in_and_closed_fields(
         match=r"^tts-benchmark-quality-command:invalid-input$",
     ):
         _require_fields(payload, GENERATE_FIELDS)
+
+
+def test_v3_quality_session_is_single_candidate_and_identity_bound(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("benchmarks.quality._write_wave", _fake_wave)
+    raw_root = tmp_path / "raw"
+    session_id = "5" * 32
+    request = _request(tmp_path, QWEN_V3_CANDIDATE_ID)
+    generated = generate_candidate_audio(
+        request,
+        session_id,
+        raw_root=raw_root,
+        adapter_builder=FakeQualityAdapter,
+    )
+    assert generated["readyForFinalization"] is True
+    sample_ids = iter(f"{index:032x}" for index in range(49, 61))
+    finalized = finalize_session(
+        session_id,
+        3,
+        raw_root=raw_root,
+        id_factory=lambda: next(sample_ids),
+    )
+    assert finalized["sampleCount"] == 12
+    assert finalized["eligibleForPromotion"] is True
+    session = raw_root / "quality-v2" / session_id
+    metadata = (session / "session.json").read_text(encoding="utf-8")
+    assert request.profile.instruction is not None
+    assert request.profile.instruction not in metadata
+    assert str(request.configuration.artifact_root) not in metadata
+    assert QWEN_V3_CANDIDATE_ID not in (session / "evaluator-01.html").read_text(encoding="utf-8")

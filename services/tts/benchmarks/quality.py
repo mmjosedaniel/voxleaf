@@ -17,7 +17,12 @@ from pathlib import Path
 from typing import Any, Final, Protocol, cast
 
 from benchmarks.adapters.factory import CandidateAdapterFactory
-from benchmarks.adapters.manifest import QWEN_CANDIDATE_ID, SUPERTONIC_CANDIDATE_ID
+from benchmarks.adapters.manifest import (
+    QWEN_CANDIDATE_ID,
+    QWEN_V3_CANDIDATE_ID,
+    SUPERTONIC_CANDIDATE_ID,
+    CandidateProfile,
+)
 from benchmarks.contracts import GenerationRequest
 from benchmarks.diagnostics import DiagnosticCapture
 from benchmarks.harness import load_corpus
@@ -29,7 +34,7 @@ RAW_ROOT: Final = REPOSITORY_ROOT / "benchmarks" / "results" / "raw"
 QUALITY_ROOT_NAME: Final = "quality-v2"
 PROTOCOL_VERSION: Final = "tts-feasibility-profile-v2"
 SESSION_VERSION: Final = "tts-quality-session-v1"
-EXPECTED_CANDIDATES: Final = (QWEN_CANDIDATE_ID, SUPERTONIC_CANDIDATE_ID)
+LEGACY_EXPECTED_CANDIDATES: Final = (QWEN_CANDIDATE_ID, SUPERTONIC_CANDIDATE_ID)
 DIMENSIONS: Final = (
     "intelligibility",
     "spanishPronunciation",
@@ -108,13 +113,33 @@ def _read_mapping(path: Path) -> dict[str, object]:
     return cast(dict[str, object], value)
 
 
-def _new_session(session: Path) -> dict[str, object]:
+def _expected_candidates(profile: CandidateProfile) -> tuple[str, ...]:
+    if profile.candidate_id == QWEN_V3_CANDIDATE_ID and profile.authority is not None:
+        return (QWEN_V3_CANDIDATE_ID,)
+    if profile.candidate_id in LEGACY_EXPECTED_CANDIDATES:
+        return LEGACY_EXPECTED_CANDIDATES
+    raise QualitySessionError("candidate-state")
+
+
+def _new_session(session: Path, profile: CandidateProfile) -> dict[str, object]:
     session.mkdir(parents=True)
+    expected = _expected_candidates(profile)
+    protocol = (
+        profile.authority.profile_version if profile.authority is not None else PROTOCOL_VERSION
+    )
     value: dict[str, object] = {
         "sessionVersion": SESSION_VERSION,
-        "protocolVersion": PROTOCOL_VERSION,
+        "protocolVersion": protocol,
         "corpusVersion": "tts-synthetic-corpus-v1",
         "state": "staging",
+        "expectedCandidates": list(expected),
+        "configurationIdentities": {
+            profile.candidate_id: (
+                profile.authority.configuration_identity_sha256
+                if profile.authority is not None
+                else "legacy-profile-v2"
+            )
+        },
         "candidateCommits": {},
     }
     _write_json(session / "session.json", value)
@@ -123,11 +148,21 @@ def _new_session(session: Path) -> dict[str, object]:
 
 def _load_staging_session(session: Path) -> dict[str, object]:
     metadata = _read_mapping(session / "session.json")
+    raw_expected = metadata.get("expectedCandidates")
+    expected = tuple(raw_expected) if isinstance(raw_expected, list) else ()
+    protocol = metadata.get("protocolVersion")
     if (
         metadata.get("sessionVersion") != SESSION_VERSION
-        or metadata.get("protocolVersion") != PROTOCOL_VERSION
+        or (
+            (protocol, expected)
+            not in (
+                (PROTOCOL_VERSION, LEGACY_EXPECTED_CANDIDATES),
+                ("tts-feasibility-profile-v3", (QWEN_V3_CANDIDATE_ID,)),
+            )
+        )
         or metadata.get("corpusVersion") != "tts-synthetic-corpus-v1"
         or metadata.get("state") != "staging"
+        or not isinstance(metadata.get("configurationIdentities"), dict)
         or not isinstance(metadata.get("candidateCommits"), dict)
     ):
         raise QualitySessionError("invalid-metadata")
@@ -189,11 +224,28 @@ def generate_candidate_audio(
 
     session = _session_path(session_id, raw_root=raw_root)
     try:
-        metadata = _load_staging_session(session) if session.exists() else _new_session(session)
+        metadata = (
+            _load_staging_session(session)
+            if session.exists()
+            else _new_session(session, request.profile)
+        )
         commits = cast(dict[str, object], metadata["candidateCommits"])
         candidate_id = request.profile.candidate_id
-        if candidate_id not in EXPECTED_CANDIDATES or candidate_id in commits:
+        expected = tuple(cast(list[str], metadata["expectedCandidates"]))
+        expected_identity = (
+            request.profile.authority.configuration_identity_sha256
+            if request.profile.authority is not None
+            else "legacy-profile-v2"
+        )
+        identities = cast(dict[str, object], metadata["configurationIdentities"])
+        if (
+            expected != _expected_candidates(request.profile)
+            or candidate_id not in expected
+            or candidate_id in commits
+            or identities.get(candidate_id, expected_identity) != expected_identity
+        ):
             raise QualitySessionError("candidate-state")
+        identities[candidate_id] = expected_identity
         corpus = load_corpus(CORPUS_PATH)
         if len(corpus.performance_order) != len(corpus.cases) or set(
             corpus.performance_order
@@ -252,7 +304,7 @@ def generate_candidate_audio(
             "sessionId": session_id,
             "candidateId": candidate_id,
             "generatedSamples": len(corpus.performance_order),
-            "readyForFinalization": set(commits) == set(EXPECTED_CANDIDATES),
+            "readyForFinalization": set(commits) == set(expected),
         }
     except Exception as error:
         shutil.rmtree(session, ignore_errors=True)
@@ -377,7 +429,8 @@ def finalize_session(
     session = _session_path(session_id, raw_root=raw_root, must_exist=True)
     metadata = _load_staging_session(session)
     commits = cast(dict[str, object], metadata["candidateCommits"])
-    if set(commits) != set(EXPECTED_CANDIDATES):
+    expected_candidates = tuple(cast(list[str], metadata["expectedCandidates"]))
+    if set(commits) != set(expected_candidates):
         raise QualitySessionError("candidate-state")
     corpus = load_corpus(CORPUS_PATH)
     staging = session / "staging"
@@ -387,7 +440,7 @@ def finalize_session(
     scorecards.mkdir()
     key_samples: list[dict[str, str]] = []
     try:
-        for candidate_id in EXPECTED_CANDIDATES:
+        for candidate_id in expected_candidates:
             for case_id in corpus.performance_order:
                 source = staging / candidate_id / f"{case_id}.wav"
                 if not source.is_file():
@@ -406,7 +459,7 @@ def finalize_session(
                         "caseId": case_id,
                     }
                 )
-        if len(key_samples) != len(EXPECTED_CANDIDATES) * len(corpus.performance_order):
+        if len(key_samples) != len(expected_candidates) * len(corpus.performance_order):
             raise QualitySessionError("incomplete-audio")
         evaluator_ids: list[str] = []
         for index in range(evaluator_count):
@@ -566,8 +619,13 @@ def aggregate_scores(
             cast(str, candidate_id),
             cast(str, case_id),
         )
+    expected_candidates = metadata.get("expectedCandidates")
+    if not isinstance(expected_candidates, list):
+        raise QualitySessionError("invalid-metadata")
     results: dict[str, object] = {}
-    for candidate_id in EXPECTED_CANDIDATES:
+    for candidate_id in expected_candidates:
+        if not isinstance(candidate_id, str):
+            raise QualitySessionError("invalid-metadata")
         dimension_values: dict[str, list[float]] = {dimension: [] for dimension in DIMENSIONS}
         defects = 0
         for case_id in load_corpus(CORPUS_PATH).performance_order:
