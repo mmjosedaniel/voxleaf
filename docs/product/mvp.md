@@ -35,11 +35,13 @@ Implemented and validated:
 - Restore an exact or nearest-valid passage after the user reselects the same exact EPUB bytes.
 - Persist bounded logical reading state and closed display preferences.
 - Prepare deterministic bounded narration text and locator-linked segments through the package API.
+- Run the candidate-neutral local TTS feasibility harness and retain the explicit no-viable-profile decision for both exact evaluated profiles.
 - Display actionable reader loading, opening, restoration, and error states.
 - Provide documented local setup plus deterministic reader/package validation.
 
 Remaining:
 
+- Freeze and execute a new candidate evaluation that selects at least one viable production profile before local TTS integration begins.
 - Select a chapter or paragraph as a narration starting point in a desktop playback flow.
 - Generate speech through a selected supported local TTS engine and voice.
 - Buffer and play generated audio in bounded memory.

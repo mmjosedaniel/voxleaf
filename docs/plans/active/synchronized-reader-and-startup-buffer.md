@@ -1,8 +1,8 @@
 # Synchronized visual reader, position restoration, and startup audio lead
 
-## Relationship to the roadmap and Milestone 4 plan
+## Relationship to the roadmap and completed milestone plans
 
-This broad plan predates the milestone-specific implementation plans and intentionally spans visual reading, narration synchronization, and audio startup work. The completed [`M004-reflowable-visual-reader-and-position-restoration.md`](../completed/M004-reflowable-visual-reader-and-position-restoration.md) records the implementation authority and evidence for roadmap Milestone 4. Retain this document as context for later roadmap Milestones 8 and 9; it does not retroactively bring narration or audio work into Milestone 4.
+This broad plan predates the milestone-specific implementation plans and intentionally spans visual reading, narration synchronization, and audio startup work. The completed [`M004-reflowable-visual-reader-and-position-restoration.md`](../completed/M004-reflowable-visual-reader-and-position-restoration.md), [`M005-narration-text-preparation.md`](../completed/M005-narration-text-preparation.md), and [`M006-local-tts-feasibility-and-engine-profiles.md`](../completed/M006-local-tts-feasibility-and-engine-profiles.md) plans record the implementation authority and evidence for roadmap Milestones 4 through 6. Retain this document as context for later roadmap Milestones 8 and 9; it does not supersede those completed authorities, authorize blocked Milestone 7, or bring narration/audio work into an earlier milestone.
 
 ## Goal
 
@@ -57,6 +57,8 @@ The desktop implements capability-free local EPUB selection, publication lifecyc
 - `docs/architecture/decisions/ADR-0002-in-memory-audio.md`
 - `docs/architecture/decisions/ADR-0003-stable-reading-locators.md`
 - `docs/architecture/decisions/ADR-0004-start-after-audio-lead.md`
+- `docs/architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md`
+- `docs/plans/completed/M006-local-tts-feasibility-and-engine-profiles.md`
 - `docs/development/setup.md`
 - `docs/development/testing.md`
 - Implementation areas: `apps/desktop`, `packages/epub`, `packages/shared`, and `services/tts`
@@ -202,6 +204,7 @@ Documentation-only changes can be rolled back independently. Persisted locator c
 - 2026-07-22: Reconciled this plan's current-state and milestone evidence with completed roadmap Milestones 1 through 3. Reader, persistence, narration, TTS, audio, and integrated feature work remain incomplete.
 - 2026-07-24: Reconciled current state with Milestone 4 implementation. Visual reading, navigation, bounded persistence, exact/nearest restoration, accessibility interaction, and reader performance/resource evidence are implemented; narration, TTS, audio, synchronization, hardware, and packaging remain deferred.
 - 2026-07-25: Reconciled current state with completed Milestone 5. Bounded locator-linked narration preparation is implemented and validated in `@voxleaf/epub`; the desktop caller, TTS, audio, synchronization, hardware, and packaging remain unimplemented.
+- 2026-07-25: Reconciled current state with completed Milestone 6. The candidate-neutral feasibility harness, both exact candidate runs, and the no-viable-profile decision are complete; Milestone 7 is blocked pending a newly frozen evaluation that selects a viable profile.
 
 ## Discoveries and decisions
 
@@ -220,4 +223,4 @@ Initial documentation validation completed on 2026-07-20:
 - No documentation retains the obsolete allowance of a fixed or maximum 15-second startup wait.
 - `git diff --check` passed for tracked changes, with only informational line-ending warnings.
 
-The implementation toolchain, shared contracts, secure EPUB package, visual reader, bounded position persistence/restoration, and Milestone 5 narration-preparation boundary now exist. The completed Milestone 5 evidence is retained in [`../completed/M005-narration-text-preparation.md`](../completed/M005-narration-text-preparation.md); TTS, audio, spoken highlighting, and integrated synchronization remain unimplemented. Retain this broad plan as later-milestone context, and do not use it to claim that those remaining systems work.
+The implementation toolchain, shared contracts, secure EPUB package, visual reader, bounded position persistence/restoration, and Milestone 5 narration-preparation boundary now exist. The completed Milestone 5 evidence is retained in [`../completed/M005-narration-text-preparation.md`](../completed/M005-narration-text-preparation.md). The completed Milestone 6 evidence and explicit no-viable-profile decision are retained in [`../completed/M006-local-tts-feasibility-and-engine-profiles.md`](../completed/M006-local-tts-feasibility-and-engine-profiles.md) and [ADR-0013](../../architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md). Production TTS, audio, spoken highlighting, and integrated synchronization remain unimplemented, and Milestone 7 remains blocked. Retain this broad plan as later-milestone context, and do not use it to claim that those remaining systems work.

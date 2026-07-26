@@ -30,9 +30,9 @@ The MVP is allowed to:
 
 ## Architecture
 
-The canonical [system architecture diagram](docs/architecture/system-diagram.md) distinguishes implemented components, work in progress, approved planned work, and deferred systems. The framework-independent `@voxleaf/epub` package validates in-memory EPUB bytes and exposes safe semantic documents, bounded resources, deterministic locators, and `OpenedPublication.prepareNarration`. That implemented operation derives separate ephemeral narration text and locator-linked prepared segments without changing displayed text. The desktop consumes the publication boundary for visual reading and position restoration but does not yet connect prepared segments to TTS or playback.
+The canonical [system architecture diagram](docs/architecture/system-diagram.md) distinguishes implemented components, work in progress, approved planned work, blocked boundaries, foundations, external systems, and deferred work. The framework-independent `@voxleaf/epub` package validates in-memory EPUB bytes and exposes safe semantic documents, bounded resources, deterministic locators, and `OpenedPublication.prepareNarration`. That implemented operation derives separate ephemeral narration text and locator-linked prepared segments without changing displayed text. The desktop consumes the publication boundary for visual reading and position restoration but does not yet connect prepared segments to TTS or playback.
 
-Tauri, React, TypeScript, the direct semantic DOM reader, and bounded WebView `localStorage` persistence are accepted and implemented within their documented limits. A separate local Python TTS process and bounded in-memory audio remain later-roadmap directions, but the TTS engine, process transport, audio format, and playback API are undecided. Candidate model names are evaluation inputs, not selected architecture.
+Tauri, React, TypeScript, the direct semantic DOM reader, and bounded WebView `localStorage` persistence are accepted and implemented within their documented limits. A separate local Python TTS process and bounded in-memory audio remain later-roadmap directions. The exact Qwen3-TTS balanced and Supertonic CPU-compatible profiles are rejected evaluation evidence, not selected production architecture; the engine, process transport, audio format, and playback API remain undecided, and Milestone 7 is blocked until a newly frozen evaluation selects a viable profile.
 
 ## Privacy principles
 
@@ -53,7 +53,7 @@ Important files:
 - [`docs/product/project-brief.md`](docs/product/project-brief.md): detailed product context and candidate technical direction.
 - [`docs/product/mvp.md`](docs/product/mvp.md): MVP scope and acceptance criteria.
 - [`docs/architecture/system-diagram.md`](docs/architecture/system-diagram.md): canonical current/approved components, boundaries, data flows, status, and maintenance rules.
-- [`docs/architecture/overview.md`](docs/architecture/overview.md): detailed component boundaries, invariants, and implemented EPUB/shared-contract behavior.
+- [`docs/architecture/overview.md`](docs/architecture/overview.md): detailed component boundaries, invariants, implemented reader and narration-preparation behavior, and the current TTS feasibility boundary.
 - [`docs/plans/roadmap.md`](docs/plans/roadmap.md): high-level implementation sequence and technical decision gates.
 - [`.agents/PLANS.md`](.agents/PLANS.md): format for longer implementation plans.
 - [`.agents/skills/`](.agents/skills/): repeatable Codex workflows.

@@ -13,11 +13,12 @@ For detailed rationale and invariants, see the [architecture overview](overview.
 | **Implemented** | Production code exists for the stated boundary and repository validation covers it. |
 | **In progress** | Active implementation evidence exists, but the approved boundary is not complete. |
 | **Approved planned** | An accepted decision or approved roadmap milestone authorizes the work; production implementation is not claimed. |
+| **Blocked** | A required decision or prerequisite is missing or failed, so implementation is not authorized. |
 | **Deferred** | The roadmap places the work after the next approved milestone or its design remains intentionally unresolved. |
 | **Foundation only** | A scaffold, contract, fake, or shell exists without the runtime behavior its area will eventually own. |
 | **External** | A user-, operating-system-, or hardware-owned boundary outside the repository. |
 
-Solid arrows are implemented runtime or package relationships. Dashed arrows are approved planned or deferred relationships and must not be read as working data flow.
+Solid arrows are implemented runtime or package relationships. Dashed arrows are approved planned, blocked, or deferred relationships and must not be read as working data flow.
 
 ## Current status snapshot
 
@@ -30,7 +31,8 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 | Tauri native shell | **Foundation only** | The shell starts the React application; no commands, plugins, filesystem capabilities, or process transport are configured. |
 | Python TTS area | **Foundation only** | A package/version scaffold and schema conformance tests exist; there is no engine, server, model integration, inference, cancellation, or audio output. |
 | TTS feasibility and profile decision | **Implemented** | The bounded candidate-neutral `v2` harness measured both exact profiles. The license/offline/packaging audit is complete; limited one-evaluator quality remains non-promotable; ADR-0013 selects neither profile. This is development evidence, not runtime behavior. |
-| TTS runtime through release packaging | **Deferred** | Milestone 7 is blocked pending a newly evaluated viable profile. Milestones 8–11 remain deferred; no production dependency or general hardware claim exists. |
+| Local TTS runtime and process transport | **Blocked** | Milestone 7 has no selected profile. A newly frozen evaluation must select a viable production role before integration is authorized. |
+| Audio, synchronization, hardware support, and release packaging | **Deferred** | Milestones 8–11 remain after the blocked TTS runtime boundary; no production dependency or general hardware claim exists. |
 
 ## Component and trust-boundary map
 
@@ -39,6 +41,7 @@ flowchart LR
     classDef implemented fill:#d9f2e6,stroke:#247a52,color:#102a20
     classDef progress fill:#dcecff,stroke:#356aa0,color:#13253a,stroke-dasharray: 3 3
     classDef planned fill:#fff0c7,stroke:#9a6b00,color:#332400,stroke-dasharray: 5 5
+    classDef blocked fill:#fde2e2,stroke:#b42318,color:#3a0d0d,stroke-dasharray: 5 5
     classDef deferred fill:#eceff3,stroke:#667085,color:#20242a,stroke-dasharray: 5 5
     classDef foundation fill:#e8e0f7,stroke:#6f4aa8,color:#241735
     classDef external fill:#dcecff,stroke:#356aa0,color:#13253a
@@ -66,7 +69,7 @@ flowchart LR
         subgraph TTSAREA["services/tts and later local runtime"]
             PYTHON["Python package/version scaffold<br/>Foundation only"]:::foundation
             FEASIBILITY["TTS feasibility harness + profile decision<br/>Implemented development evidence:<br/>both v2 roles rejected"]:::implemented
-            TTS["Local TTS runtime + transport<br/>Blocked/deferred: M7 needs a viable profile"]:::deferred
+            TTS["Local TTS runtime + transport<br/>Blocked: M7 needs a viable profile"]:::blocked
         end
     end
 
@@ -99,6 +102,7 @@ flowchart TD
     classDef implemented fill:#d9f2e6,stroke:#247a52,color:#102a20
     classDef progress fill:#dcecff,stroke:#356aa0,color:#13253a,stroke-dasharray: 3 3
     classDef planned fill:#fff0c7,stroke:#9a6b00,color:#332400,stroke-dasharray: 5 5
+    classDef blocked fill:#fde2e2,stroke:#b42318,color:#3a0d0d,stroke-dasharray: 5 5
     classDef deferred fill:#eceff3,stroke:#667085,color:#20242a,stroke-dasharray: 5 5
     classDef external fill:#dcecff,stroke:#356aa0,color:#13253a
 
@@ -109,7 +113,7 @@ flowchart TD
     VISUAL["Visual reader + logical-locator persistence<br/>Implemented"]:::implemented
     PREP["Source-mapped normalization and<br/>bounded prepared narration batches<br/>Implemented package API"]:::implemented
     PROFILE["Engine feasibility + profile decision<br/>Implemented evidence:<br/>both exact v2 profiles rejected"]:::implemented
-    INFER["Cancellable local inference + transport<br/>Deferred: M7"]:::deferred
+    INFER["Cancellable local inference + transport<br/>Blocked: M7 needs a viable profile"]:::blocked
     BUFFER["Bounded in-memory audio queue<br/>and playable-duration startup gate<br/>Deferred: M8"]:::deferred
     FOLLOW["Playback, highlighting, reader following,<br/>and shared-position persistence<br/>Deferred: M9"]:::deferred
     DEVICE["OS audio device<br/>External"]:::external

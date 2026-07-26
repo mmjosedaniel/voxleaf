@@ -39,7 +39,7 @@ Some prototypes may inform later milestones before their full implementation beg
 
 ## Milestone 1: Establish the engineering foundation
 
-**Status:** Complete as of 2026-07-21. Milestones 2 through 5 are also complete.
+**Status:** Complete as of 2026-07-21. Milestones 2 through 6 are also complete.
 
 ### Goal
 
@@ -202,15 +202,15 @@ Use reproducible benchmarks to determine whether candidate local TTS engines can
 
 ### Dependencies
 
-Milestone 1 supplies the isolated Python foundation. Milestone 2 supplies capability, audio, error, primitive, and deterministic fake-test support; it does not define a dedicated benchmark-report schema. Milestone 5 provides representative normalization policy and bounded prepared segments. The Milestone 6 plan defines its own fixed synthetic prepared-text corpus and private benchmark-report authority so inference measurements remain comparable without changing public runtime contracts.
+Milestone 1 supplies the isolated Python foundation. Milestone 2 supplies capability, audio, error, primitive, and deterministic fake-test support; it does not define a dedicated benchmark-report schema. Milestone 5 provides representative normalization policy and bounded prepared segments. The [completed Milestone 6 plan](completed/M006-local-tts-feasibility-and-engine-profiles.md) defines its own fixed synthetic prepared-text corpus and private benchmark-report authority so inference measurements remain comparable without changing public runtime contracts.
 
 ### Major risks and unknowns
 
-- The admitted Qwen3-TTS or Supertonic profiles may not meet Spanish quality, startup, memory, licensing, or packaging gates.
-- CPU fallback performance may require a different engine and voice set.
+- Neither exact evaluated profile met all frozen gates; the next candidate cycle may also fail to produce a viable production profile.
+- No CPU-compatible fallback is currently selected; a different engine, voice set, or tightly bounded role may be required.
 - GPU and driver compatibility may vary sharply across user machines.
 - Model installation and updates must not create an accidental runtime network dependency or silently exhaust disk, RAM, or VRAM.
-- The frozen feasibility profile now supplies pre-result wall-clock generation gates; later integrated playback evidence must still validate command-to-audible startup.
+- Any future evaluation must freeze its authority before results and preserve the content-safe, candidate-neutral evidence boundary. Later integrated playback evidence must still validate command-to-audible startup.
 
 ## Milestone 7: Implement the local TTS service and process protocol
 
@@ -365,7 +365,7 @@ The following decisions should be made when evidence is available, not assumed s
 1. **Desktop stack gate:** validate and adopt the desktop framework, workspace, package manager, and supported development environments during Milestone 1.
 2. **EPUB gate:** validate archive limits, sanitization, rendering isolation, locator round-tripping, and dependency licensing before completing Milestone 3.
 3. **Persistence gate:** ADR-0011 selects bounded WebView `localStorage`, separate versioned position/preference envelopes, save lifecycle, and desktop-owned migration; implement and validate that boundary before completing Milestone 4.
-4. **TTS gate:** select balanced and compatibility profiles only after reproducible quality, latency, memory, cancellation, license, and packaging evaluation in Milestone 6.
+4. **TTS gate:** the completed Milestone 6 cycle selected neither evaluated profile. Before Milestone 7, freeze and execute a new reproducible quality, latency, memory, cancellation, license, and packaging evaluation that selects at least one viable production role.
 5. **Protocol gate:** record transport, framing, backpressure, and local exposure decisions before completing Milestone 7.
 6. **Audio gate:** record internal audio format, playback mechanism, speed-control behavior, and the short-range startup rule before completing Milestone 8.
 7. **Interaction gate:** define manual navigation during active narration before completing Milestone 9.
@@ -375,11 +375,11 @@ Durable decisions belong in architecture decision records. Temporary implementat
 
 ## Relationship to existing plans
 
-[`completed/M004-reflowable-visual-reader-and-position-restoration.md`](completed/M004-reflowable-visual-reader-and-position-restoration.md) records the implementation authority and validation evidence for Milestone 4 without authorizing narration or audio work.
+[`completed/M004-reflowable-visual-reader-and-position-restoration.md`](completed/M004-reflowable-visual-reader-and-position-restoration.md), [`completed/M005-narration-text-preparation.md`](completed/M005-narration-text-preparation.md), and [`completed/M006-local-tts-feasibility-and-engine-profiles.md`](completed/M006-local-tts-feasibility-and-engine-profiles.md) record the implementation authority and validation evidence for Milestones 4 through 6. Milestone 6 supplies development evidence and a no-viable-profile decision; it does not implement production TTS.
 
-[`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or the milestone-specific M004 plan and does not authorize implementing all of those areas at once.
+[`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or the completed Milestones 4 through 6 plans and does not authorize implementing all of those areas at once.
 
-Milestones 1 through 5 are complete, with their evidence retained under [`completed/`](completed/). Use the synchronized-reader plan only as later-milestone context; it does not supersede any completed milestone authority.
+Milestones 1 through 6 are complete, with their evidence retained under [`completed/`](completed/). Use the synchronized-reader plan only as later-milestone context; it does not supersede any completed milestone authority or unblock Milestone 7.
 
 ## MVP completion boundary
 
