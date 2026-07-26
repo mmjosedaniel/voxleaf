@@ -502,6 +502,23 @@ so no auxiliary dependency or post-processing path was added. This milestone
 does not run the official matrix, select a production profile, supersede
 ADR-0013, or unblock Milestone 7.
 
+Implemented and validated with the repository-defined commands:
+
+    uv lock --project services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --check
+    uv run --directory services/tts --locked ruff check benchmarks tests
+    uv run --directory services/tts --locked mypy .
+    uv run --directory services/tts --locked pytest tests -q
+    pnpm.cmd check:portable
+    pnpm.cmd check
+
+The real-host smoke also invoked
+`uv run --directory services/tts --locked python -m benchmarks.cli preflight`
+with bounded private paths on standard input, offline flags active, and all
+operator-only readiness declarations set to false. It accepted the exact
+artifacts, authority, interpreter, firewall, provider, and hardware and
+reported only the three intentionally false operator declarations. No model
+was loaded and no audio was generated.
+
 ## Milestone 4: Execute the frozen v3 evaluation
 
 ### Work
@@ -849,6 +866,24 @@ dependency changes are involved.
   `2.9.1+cu128`, and Torchaudio `2.9.1+cu128` without loading weights or
   generating audio. FlashAttention and SoX emitted optional-tool warnings;
   SDPA is frozen and the Qwen generation path does not require either tool.
+- 2026-07-26: From clean documentation checkpoint `057bca8`, the real-host
+  offline preflight verified both exact artifacts (4,516,695,644 bytes
+  combined), the selected profile and interpreter, the application firewall
+  block, 13,427,974,144 free RAM bytes, and 8,174,698,496 free VRAM bytes. It
+  failed only `sleep`, `background-load`, and `thermal-state`, which were
+  deliberately declared false to prevent the smoke from authorizing a pilot
+  or official run.
+- 2026-07-26: `pnpm.cmd check:portable` passed in 76.9 seconds and
+  `pnpm.cmd check` passed in 74.9 seconds. Both included 18 shared test files /
+  175 tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204
+  tests, 6 native-WebDriver-client tests, and 72 Python tests. The native
+  aggregate also passed Rust formatting, Clippy, crate tests, release build,
+  and Python source/wheel packaging. The existing Vite chunk-size advisory
+  remained informational.
+- 2026-07-26: The 20 changed files passed `git diff --check`,
+  private-path/credential-pattern scans, tracked audio/model/raw-input audits,
+  and the three changed Markdown files passed the local-link audit. The
+  ignored raw tree contains zero files.
 
 ## Discoveries and decisions
 
@@ -952,6 +987,23 @@ again passed local-link, privacy-canary, and `git diff --check` audits.
 50.5 seconds with the same test/build scope above. No runtime or architecture
 status changed, so the canonical system diagram remains accurate without
 another node or edge change.
+
+Milestone 3 extended the benchmark without running the official matrix.
+Authority, adapter, preflight, raw journal, quality-session, safe-summary,
+privacy, cancellation, and cleanup behavior passed 72 GPU-free tests. The
+isolated lock and offline import smoke passed without loading weights. The
+real-host preflight hashed both exact artifacts and found no authority,
+environment, firewall, provider, artifact, RAM, VRAM, disk, or measurement
+failure; only the three deliberately false operator-readiness declarations
+failed, as intended.
+
+`pnpm.cmd check:portable` and `pnpm.cmd check` both passed with the full
+TypeScript, Python, Rust, packaging, and build scope described in the progress
+log. `git diff --check`, local Markdown links, changed-file private
+path/credential patterns, tracked audio/model/raw-input exclusions, and raw
+cleanup audits passed. No model was loaded by the preflight, no official
+observation was accepted, no audio was generated, and no raw session or
+private path was retained.
 
 After correcting the candidate to CustomVoice for the built-in-default-voice
 requirement, all 13 changed Markdown files passed the local-link,
