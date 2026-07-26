@@ -552,8 +552,11 @@ present on the merged base. After the first exact-host preflight correctly
 rejected insufficient readiness, available RAM recovered above the frozen
 12 GiB gate and the one permitted disposable pilot passed from clean
 checkpoint `8475b28`. The pilot retained no session and is not promotable.
-Licensing and packaging are audited; the official matrix and final blinded
-quality panel remain.
+Licensing and packaging are audited. The official machine matrix completed
+from clean checkpoint `8898762` with every frozen count, but failed performance
+and mid-generation cancellation gates and is not promotable. The final blinded
+quality panel remains required to complete the evaluation record; it cannot
+change the machine-gate failure.
 
 ## Milestone 5: Select or retain the blocker
 
@@ -930,6 +933,39 @@ dependency changes are involved.
   left zero candidate processes and zero raw files, and returned the GPU to
   zero utilization / zero candidate memory with 7,810 MiB free VRAM. No pilot
   waveform, narration text, private path, or diagnostic was retained.
+- 2026-07-26: Committed the passing pilot and cleanup checkpoint as
+  `8898762dbd8ac7628d5cbb1fa86e7f2f334e4ab2`
+  (`docs(tts): record frozen v3 pilot`).
+- 2026-07-26: Executed the one official machine matrix from clean checkpoint
+  `8898762` with the exact frozen profile, local artifacts, candidate
+  interpreter, application firewall block, offline flags, Serena voice and
+  neutral instruction. It counted all 5 cold loads, 24 warm generations, 12
+  sustained generations / 254.8 media seconds, and 5 cancellation trials.
+  There were no automatic or diagnostic retries.
+- 2026-07-26: Cold-load p95 was 26.6606755 seconds and passed the 60-second
+  gate. Peak process-tree RAM was `4,640,518,144` bytes and peak dual-signal
+  VRAM was `6,286,802,944` bytes, both below their 12 GiB / 6 GiB ceilings.
+  Both required VRAM signals were present: WDDM process VRAM peaked at
+  `6,286,802,944` bytes and PyTorch reserved VRAM at `6,148,849,664` bytes.
+- 2026-07-26: The complete-waveform API failed every latency/throughput gate:
+  warm first-audio p95 was 67.6685348 seconds, 15-seconds-media p95 was
+  68.0576463 seconds, shorter-complete p95 was 11.8231507 seconds, warm
+  request RTF p95 was 1.8274885634328357, sustained request RTF p95 was
+  1.5041296794871795, and total sustained RTF was 1.4521558253532183.
+- 2026-07-26: `before-dispatch` and `accepted-before-audio` cancellation
+  passed by worker termination with zero stale frames. `after-first-audio`,
+  `after-five-media-seconds`, and `near-hard-mid-generation` failed because
+  the public call exposes no cancellable mid-generation audio boundary. The
+  official receipt therefore failed closed with `cancellation-failed` and
+  `eligibleForPromotion: false`.
+- 2026-07-26: Official cleanup restored the captured 45-minute AC sleep
+  setting, left zero candidate GPU allocation / utilization and 7,810 MiB free
+  VRAM, and emitted no retained waveform. No failed result was promoted.
+- 2026-07-26: Before deletion, the 10,516-byte content-safe raw journal had
+  zero corpus-text/privacy-canary hits, zero private Windows user-path hits,
+  and zero URL hits. After deriving the allowlisted aggregates above, deleted
+  the exact raw session and disposable runner outputs. The ignored raw tree
+  again contains zero files.
 
 ## Discoveries and decisions
 
@@ -1014,6 +1050,14 @@ dependency changes are involved.
     from the external Base prototype. Apache-2.0 licensing permits continued
     evaluation, but this footprint remains an explicit high packaging risk
     for Milestone 11 rather than an implicit production acceptance.
+20. The 1.7B CustomVoice profile fits the frozen RAM and VRAM ceilings on this
+    exact RTX 5060 Laptop host, but its complete-waveform boundary misses every
+    startup/throughput gate. Passing resource fit is therefore not evidence of
+    viable interactive narration.
+21. Worker termination provides credible cancellation before dispatch or
+    before audio acceptance, but cannot make a completed-waveform API satisfy
+    mid-generation cancellation. The official failures confirm the prototype
+    boundary and must not be hidden by retries or relabeled as streaming.
 
 ## Final validation results
 
@@ -1070,6 +1114,16 @@ license/packaging audit found no license ambiguity and measured the exact
 CustomVoice model plus isolated environment at `9,747,862,094` bytes. No
 official observation, generated audio, raw journal, or private input exists at
 this checkpoint.
+
+The official machine matrix then completed from clean checkpoint `8898762`
+with exact counts and no retries. Cold load, RAM, VRAM, offline, artifact,
+license, packaging, and process cleanup passed. Warm first audio,
+15-seconds-media delivery, shorter completion, warm/sustained request RTF,
+total sustained RTF, zero failures, and three mid-generation cancellation
+trials failed. The receipt is non-promotable regardless of later quality
+scores. Its raw journal passed the content/privacy scan and was deleted after
+derivation; no raw file or generated audio remains. Final quality evaluation
+is still outstanding.
 
 After correcting the candidate to CustomVoice for the built-in-default-voice
 requirement, all 13 changed Markdown files passed the local-link,
