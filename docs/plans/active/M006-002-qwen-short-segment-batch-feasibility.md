@@ -1113,6 +1113,22 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
   passing cancellation trials, no stale publication, and complete cleanup.
   This admits the same-authority GPU-solo baseline; it is not itself a
   concurrent scheduling pass or production-profile promotion.
+- 2026-07-26: The same-authority GPU-solo baseline at clean checkpoint
+  `cb751b7` completed all forty measured first attempts in 738.3 seconds,
+  derived schema-valid
+  `benchmarks/tts/dual-worker-result-v5-gpu-solo.json`, and deleted its
+  ignored raw session. The safe-summary SHA-256 is
+  `2f12e3542038ff9d7b566dc662495a08187163ecf4ccb71ad6d9601b43d64fdb`.
+- 2026-07-26: GPU solo produced 446.24 media seconds with aggregate RTF
+  `1.467080448861599`, 10.846-second cold-load p95, forty of forty
+  first-attempt completions, zero retries/failures, and all units inside the
+  8-16-second target. Peak GPU-worker dedicated/shared memory was
+  5,296,939,008 / 81,788,928 bytes, peak framework reserve was 5,158,993,920
+  bytes, and both cancellation trials plus cleanup passed. Its simulated
+  standalone timeline incurred 24.995 buffering seconds per media minute and
+  cannot sustain real time alone. The ideal CPU/GPU throughput sum leaves
+  little margin, but frozen authority requires the actual concurrent
+  contention matrix.
 
 ## Discoveries and decisions
 
