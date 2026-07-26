@@ -98,11 +98,15 @@ improves performance.
 
 The frozen `v5` authority in the same ExecPlan specifies a second complete
 Qwen process loaded CPU-only beside the existing GPU-primary process. It reuses
-the unchanged isolated candidate graph, so this milestone adds no dependency
-or lock edge. The authority does not approve a production dependency,
-two-model packaging, or establish that the second installed instance fits
-safely in RAM or improves aggregate throughput; later hardware evidence must
-answer those questions.
+the unchanged isolated candidate graph. Milestone 7 adds only benchmark-local
+adapter, controller, worker-process, playback, and command code, so it adds no
+dependency or lock edge. Its CPU adapter hides CUDA before importing Torch,
+requires CPU float32 placement, and fixes the reviewed thread policy; its GPU
+adapter retains the frozen CUDA placement. These are evaluation-only
+mechanics. They do not approve a production dependency, two-model packaging,
+or establish that the second installed instance fits safely in RAM or
+improves aggregate throughput; Milestone 8 hardware evidence must answer those
+questions.
 
 Base voice cloning remains outside the MVP. Whisper is excluded from the
 production graph and from `v3`; VAD/energy analysis is also excluded from

@@ -279,6 +279,52 @@ def test_cpu_adapter_fails_closed_if_cuda_remains_visible(
         adapter.load()
 
 
+@pytest.mark.parametrize("device", ["cuda:0", "meta", "disk"])
+def test_cpu_adapter_rejects_non_cpu_tensor_or_device_map(
+    device: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+    monkeypatch.setenv("TRANSFORMERS_OFFLINE", "1")
+    monkeypatch.delitem(sys.modules, "torch", raising=False)
+    monkeypatch.delitem(sys.modules, "qwen_tts", raising=False)
+    profile = load_v3_candidate_profile(REPOSITORY_ROOT, QWEN_V3_CANDIDATE_ID)
+    calls: dict[str, object] = {}
+    torch, qwen = _runtime_modules(
+        device=device,
+        cuda_available=False,
+        cuda_device_count=0,
+        calls=calls,
+    )
+    monkeypatch.setattr(
+        "benchmarks.adapters.qwen3.validate_configuration",
+        lambda _profile, _configuration: tmp_path.resolve(),
+    )
+    monkeypatch.setattr(
+        "benchmarks.adapters.qwen3.verify_artifacts",
+        lambda _root, _artifacts: None,
+    )
+    adapter = Qwen3TtsAdapter(
+        profile,
+        _configuration(tmp_path),
+        placement_profile_id=CPU_PROFILE_ID,
+        worker_candidate_id=CPU_CANDIDATE_ID,
+        importer=lambda name: {"torch": torch, "qwen_tts": qwen}[name],
+        version_reader={
+            "qwen-tts": "0.1.1",
+            "torch": "2.9.1+cu128",
+            "torchaudio": "2.9.1+cu128",
+        }.__getitem__,
+    )
+
+    with pytest.raises(
+        AdapterConfigurationError,
+        match=r"^tts-benchmark-adapter:placement$",
+    ):
+        adapter.load()
+
+
 def test_gpu_primary_adapter_freezes_threads_and_exact_cuda_placement(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

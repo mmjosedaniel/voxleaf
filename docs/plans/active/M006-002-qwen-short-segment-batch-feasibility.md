@@ -540,7 +540,27 @@ or selection existed.
 
 #### Status
 
-Not started.
+Complete on 2026-07-26. The benchmark now has exact `v5` occurrence
+construction, benchmark-local worker/dispatch/completion/release contracts,
+one-active-unit-per-worker scheduling, GPU-first tie handling, bounded ordered
+release with observable head-of-line delay, identity-first invalidation, and
+fixed content-free failure outcomes.
+
+The exact Qwen adapter now has distinct GPU-primary and CPU-support paths. The
+CPU path sets `CUDA_VISIBLE_DEVICES=-1` before importing PyTorch, loads the
+complete model on CPU float32, applies the frozen twelve/one thread policy,
+and rejects CUDA visibility, non-CPU tensors, disk/meta device-map entries, or
+implicit placement. The GPU path applies the frozen four/one thread policy and
+verifies complete `cuda:0` placement. Both remain inside the unchanged
+isolated candidate environment.
+
+The `benchmark:tts:dual-worker` command accepts only the closed standard-input
+contract, freezes CPU-solo pilot versus official arm progression, and exposes
+the reviewed mechanics path without promoting its receipt. Milestone 8 still
+owns cold-load/cancellation/memory raw evidence, schema-valid safe derivation,
+the first pilot, and every official hardware run. No model was imported or
+loaded and no waveform, raw journal, result, or quality evidence was produced
+in this milestone.
 
 ### Milestone 8: Run CPU-solo admission and the concurrent matrix
 
@@ -997,6 +1017,45 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
   final selection SHA-256 is
   `aa4b033c37ee099b5d7ce87e5f646e9c0be4fc9bdd9871552f7b496eb4a9ceb7`.
   This was a pre-result authority normalization, not observed-result tuning.
+- 2026-07-26: Created branch
+  `feat/m006-2-dual-worker-benchmark` from merged `main` at `fad2711`; that
+  commit already contained the accepted Milestone 6 authority from PR #109.
+  The checkout was clean and no `v5` result or ignored raw file existed.
+- 2026-07-26: Added exact schedule expansion for all eight CPU-solo and forty
+  GPU-solo/concurrent occurrences. The benchmark-local controller dispatches
+  the GPU primary first, gives the CPU support worker the next occurrence,
+  keeps at most one active unit per worker, resolves exact completion ties in
+  GPU order, and publishes only contiguous active-generation results.
+- 2026-07-26: Added deterministic heterogeneous fake workers and tests for
+  slow-CPU head-of-line blocking, timeout, crash, generation failure, invalid
+  waveform, stale identity, invalidation before release, invalidation with
+  both workers active, cleanup failure, and exact no-stale publication.
+- 2026-07-26: Added exact rational `v5` playback replay. It accounts for the
+  15-second startup lead, complete shorter remainder, 300 playable seconds,
+  forty complete units, 28,800,000 PCM bytes, two active units, one active
+  unit per role, and 20-second/1,920,000-byte pre-dispatch reservations.
+  Deterministic tests reject every represented duration/count/active/reserved
+  capacity violation and report head-of-line delay and invalidation discard.
+- 2026-07-26: Extended the Qwen benchmark adapter with separately identified
+  `v5` GPU-primary and CPU-support paths. Model-free imports prove that the CPU
+  path hides CUDA before PyTorch import, selects CPU/float32, applies twelve
+  intra-op and one inter-op thread, verifies every model/tokenizer tensor and
+  device-map value on CPU, reports CUDA unavailable with zero devices, and
+  rejects CUDA, meta, or disk placement. The GPU path selects
+  `cuda:0`/bfloat16, applies four/one threads, and verifies exact CUDA
+  placement.
+- 2026-07-26: Added one isolated process per role plus a bounded threaded
+  controller bridge, so blocking complete-waveform calls can execute
+  independently while process termination remains the cancellation boundary.
+  Added the closed `benchmark:tts:dual-worker` standard-input surface with
+  exact CPU-pilot/official arm progression and prior-summary hash fields.
+  Every receipt remains non-promotable; Milestone 8 owns private raw evidence
+  and safe result derivation.
+- 2026-07-26: Committed the implementation checkpoint as `69a0bfb`
+  (`feat(tts): add v5 dual-worker benchmark mechanics`). Before documentation,
+  Ruff, strict mypy over 71 source files, 144 Python tests, package JSON
+  formatting, and `git diff --check` passed. The only warning was the
+  pre-existing primary-checkout pytest-cache ACL warning.
 
 ## Discoveries and decisions
 
@@ -1145,22 +1204,38 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
     hard-coded commit: an official result must name a strict ancestor commit
     whose Git tree contains the exact frozen profile, corpus, and schema
     hashes.
+40. Hiding CUDA only at model-load arguments is insufficient for the CPU
+    worker. `CUDA_VISIBLE_DEVICES=-1` must be set before the child imports
+    PyTorch, and runtime placement evidence must independently reject visible
+    CUDA devices and every non-CPU tensor or device-map entry.
+41. Independent blocking Qwen calls do not require a production protocol.
+    Two separately spawned benchmark workers can be coordinated by a bounded
+    benchmark-local thread bridge while preserving process termination and
+    stale-identity rejection.
+42. A completed support-worker waveform is not playable merely because it
+    exists. It remains in the bounded reorder set until every earlier source
+    sequence is complete; the measured wait is explicit head-of-line evidence.
+43. The reviewed command receipt is deliberately non-promotable. Milestone 8
+    must still collect the frozen cold-load, memory, cancellation, placement,
+    cleanup, and private raw evidence and derive a schema-valid safe result.
 
 ## Final validation results
 
-Milestones 1 through 4 and 6 are complete. Milestone 1 adds result-blind `v4`
+Milestones 1 through 4, 6, and 7 are complete. Milestone 1 adds result-blind `v4`
 authority; Milestone 2 adds development-only model-free mechanics and reviewed
 execution commands; Milestones 3 and 4 execute the frozen full-GPU and
 targeted-CPU arms; and Milestone 6 records their failed decision and freezes
-the separate `v5` authority. Both `v4` hardware arms stopped before usable
-media on the frozen shared-memory rule. No milestone changes a production
-contract/runtime, makes a support claim, or selects a production profile.
+the separate `v5` authority. Milestone 7 implements the independent
+benchmark-local worker mechanics, exact CPU/GPU adapter paths, bounded replay,
+and reviewed command surface. Both `v4` hardware arms stopped before usable
+media on the frozen shared-memory rule. No completed milestone changes a
+production contract/runtime, makes a support claim, or selects a production
+profile.
 
-Milestone 5 is not admitted. Milestones 7 through 10 are pending: implement
-the independent dual-worker benchmark, run CPU-solo and concurrent hardware
-evidence, replay the five-minute-bounded queue, and record the resulting
-decision. The plan is therefore active and must not yet move to
-`docs/plans/completed/`.
+Milestone 5 is not admitted. Milestones 8 through 10 are pending: run CPU-solo
+and concurrent hardware evidence, replay the measured five-minute-bounded
+queue and quality workflow, and record the resulting decision. The plan is
+therefore active and must not yet move to `docs/plans/completed/`.
 
 The earlier `v5` planning amendment changed documentation only. Milestone 6
 now adds separately versioned authority and model-free validation, but still

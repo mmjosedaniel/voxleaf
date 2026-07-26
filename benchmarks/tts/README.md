@@ -59,8 +59,10 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   screen before the same-authority GPU-solo and concurrent arms.
 - `schemas/dual-worker-raw-v5.schema.json` and
   `schemas/dual-worker-summary-v5.schema.json` freeze the closed private and
-  content-safe result shapes. No `v5` runner, pilot, official result, audio, or
-  quality finding exists at this authority checkpoint.
+  content-safe result shapes. Plan Milestone 7 now implements the
+  benchmark-local controller, exact CPU/GPU adapter paths, bounded replay, and
+  reviewed command surface. No `v5` pilot, official result, audio, or quality
+  finding exists.
 - `incremental-cancellation-prototype-v1.json` freezes the development-only
   prototype topology before results: complete-segment delivery, one resident
   spawned worker, explicit input/output/queue ceilings, identity-first stale
@@ -283,13 +285,17 @@ boundary, exact frozen request matrix, ordered whole-batch invalidation,
 content-free playback simulation, deterministic failure candidates, and the
 Qwen native list call behind the existing spawned-worker boundary.
 
-The result-blind `v5_authority` validator is implemented without a runner. It
-byte-verifies the new profile, corpus, and schemas; recomputes both complete
-worker identities; rejects CPU CUDA/dedicated/shared-GPU use, missing,
-duplicate, or reordered occurrences, hidden retries, authority drift,
-retention overruns, private content, and a sustainability pass at aggregate
-RTF `>= 1.0`; and verifies that an eventual authority commit contains the
-exact frozen bytes and strictly precedes execution.
+The result-blind `v5_authority` validator and model-free mechanics are
+implemented. The validator byte-verifies the new profile, corpus, and schemas;
+recomputes both complete worker identities; rejects CPU
+CUDA/dedicated/shared-GPU use, missing, duplicate, or reordered occurrences,
+hidden retries, authority drift, retention overruns, private content, and a
+sustainability pass at aggregate RTF `>= 1.0`; and verifies that an eventual
+authority commit contains the exact frozen bytes and strictly precedes
+execution. The controller keeps one active unit per worker, makes
+head-of-line delay observable, rejects stale completion, and replays the
+15/300-second, 40-unit, 28,800,000-byte, and two-active-unit bounds with exact
+rational arithmetic.
 
 The evaluated Qwen and Supertonic public APIs expose complete waveforms. The
 benchmark records this honestly and rejects an end-of-output frame as evidence
@@ -400,6 +406,28 @@ PyTorch reserved bytes. PIDs, counter instances, paths, input text, and
 unrelated process values never enter raw or reviewable output. A summary
 remains machine evidence only until later playback/quality and decision
 milestones interpret it.
+
+Milestone 7 adds `benchmark:tts:dual-worker` for the separately frozen `v5`
+mechanics. Its private JSON enters only through standard input. The command
+admits a CPU-solo pilot first, then official arms in the frozen CPU-solo,
+GPU-solo, concurrent sequence. Later arms require the content-safe prior
+summary hashes in their input. The exact CPU process hides CUDA before PyTorch
+import, uses CPU float32 with twelve/one threads, and rejects CUDA, disk, meta,
+or implicit placement. The GPU process uses `cuda:0` BF16 with four/one
+threads. Each process owns at most one blocking complete-waveform call.
+
+The command receipt is intentionally non-promotable in Milestone 7.
+Milestone 8 must add and execute the frozen private raw evidence, cancellation,
+memory, cleanup, and safe-summary derivation before any receipt becomes a
+`v5` result. Do not run the positive hardware path outside that milestone.
+The no-model invalid-input smoke is safe now:
+
+```powershell
+"{}" | pnpm.cmd benchmark:tts:dual-worker
+```
+
+It returns only `{"status":"fail","failureCode":"input"}` and does not import
+Qwen or PyTorch. Never place valid private command input in a tracked file.
 
 ## Disposable blinded quality session
 

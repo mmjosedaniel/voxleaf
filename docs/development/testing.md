@@ -266,9 +266,21 @@ first attempts, CPU zero-CUDA/dedicated/shared-GPU use, missing/duplicate/
 reordered occurrence rejection, authority ancestry, schema closure, private
 content exclusion, CPU-solo and concurrent conjunctive conclusions, aggregate
 RTF below one, and simultaneous 300-second, 40-unit, 28,800,000-byte PCM, and
-two-active-unit retention limits. No dual-worker runner or hardware result
-exists yet; documentation must not list a command as runnable until Milestone
-7 adds and validates it.
+two-active-unit retention limits.
+
+Milestone 7 adds the model-free dual-worker contracts, deterministic
+controller and fake workers, exact CPU/GPU Qwen adapter placement checks,
+isolated worker-process boundary, bounded playback replay, and reviewed
+`benchmark:tts:dual-worker` command. Deterministic tests cover GPU-first
+dispatch and tie breaking, one-active-unit-per-worker enforcement, contiguous
+publication, out-of-order completion, stale identity, timeout, crash,
+cancellation, cleanup failure, head-of-line accounting, active-capacity
+reservation, and every simultaneous retention bound. The command surface
+accepts only frozen CPU-pilot or official-arm inputs and returns a
+non-promotable mechanics receipt. It does not load a model, synthesize audio,
+or create a hardware result. Milestone 8 owns the private raw evidence,
+CPU-solo admission, same-authority GPU-solo/concurrent measurements, safe
+derivation, and cleanup.
 
 ## Deferred coverage
 
