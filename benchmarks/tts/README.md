@@ -13,6 +13,8 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   schema. It reuses unchanged closed definitions from the retained historical
   `summary-v1.schema.json` through an offline schema registry.
 - `fixtures/` contains synthetic validation fixtures, not candidate results.
+- [`selection-v2.md`](selection-v2.md) is the accepted content-free decision
+  matrix. It rejects both exact evaluated profiles and links ADR-0013.
 - [`docs/architecture/tts-feasibility-profile-v2.md`](../../docs/architecture/tts-feasibility-profile-v2.md)
   is the current rerun authority. The superseded `v1` document and fixture
   remain historical validation evidence only.
@@ -81,7 +83,7 @@ captured and discarded, timeouts and worker errors become fixed codes, and
 forced cancellation terminates the worker process tree and discards every
 later frame by request identity.
 
-The selected Qwen and Supertonic public APIs expose complete waveforms. The
+The evaluated Qwen and Supertonic public APIs expose complete waveforms. The
 benchmark records this honestly and rejects an end-of-output frame as evidence
 of a mid-generation cancellation boundary. Worker termination is benchmark
 feasibility evidence only, not a production cancellation design.

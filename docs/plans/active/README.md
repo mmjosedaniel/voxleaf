@@ -17,5 +17,5 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`M006-local-tts-feasibility-and-engine-profiles.md`](M006-local-tts-feasibility-and-engine-profiles.md): approved implementation authority for roadmap Milestone 6's privacy-safe candidate evaluation, benchmark evidence, and engine-profile selection. Implementation has not started.
+- [`M006-local-tts-feasibility-and-engine-profiles.md`](M006-local-tts-feasibility-and-engine-profiles.md): active implementation authority for roadmap Milestone 6's privacy-safe candidate evaluation, benchmark evidence, and engine-profile selection. Milestones 1–4 are complete; ADR-0013 selects no viable profile, and Milestone 5 closeout remains.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): retained broader context spanning the completed reader work and later narration synchronization/audio startup. It is not the implementation authority for completed Milestones 4 or 5 and does not authorize Milestone 6 work.

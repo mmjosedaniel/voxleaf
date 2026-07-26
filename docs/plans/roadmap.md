@@ -178,13 +178,15 @@ Milestones 2 through 4 provide the shared locator-range and narration-segment co
 
 ## Milestone 6: Prove local TTS feasibility and select engine profiles
 
-**Status:** In progress and next in sequence. Milestone 1 of the
+**Status:** In progress. Milestones 1–4 of the
 [Milestone 6 ExecPlan](active/M006-local-tts-feasibility-and-engine-profiles.md)
-has frozen the candidate intake, synthetic corpus, measurement procedure,
-numeric role gates, listening rubric, and content-safe summary authority before
-results. No model has been executed, no official benchmark result or profile
-selection exists, and no production runtime dependency or hardware-support
-claim exists yet.
+are complete. The frozen candidate-neutral harness measured both exact
+profiles; the one-evaluator Spanish result remains limited; the
+license/offline/packaging audit is complete; and
+[ADR-0013](../architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md)
+selects neither profile. Milestone 5 deterministic, hardware, privacy,
+repository, and pull-request closeout remains. No production runtime
+dependency or general hardware-support claim exists.
 
 ### Goal
 
@@ -212,7 +214,9 @@ Milestone 1 supplies the isolated Python foundation. Milestone 2 supplies capabi
 
 ## Milestone 7: Implement the local TTS service and process protocol
 
-**Status:** Deferred until Milestone 6 selects viable engine profiles and a focused protocol plan resolves the process boundary.
+**Status:** Blocked and deferred. ADR-0013 selects no viable engine profile.
+A newly frozen candidate evaluation must produce a passing profile before a
+focused protocol plan can resolve the process boundary.
 
 ### Goal
 
@@ -228,7 +232,10 @@ Run the selected TTS engines behind a secure, typed, cancellable local process b
 
 ### Dependencies
 
-Milestone 2 defines shared contracts. Milestone 6 selects viable engines and capabilities. Milestone 1 supplies process and packaging foundations.
+Milestone 2 defines shared contracts. Milestone 6 supplies the evaluation
+authority but its first cycle selected no viable engine. A future frozen cycle
+must produce the engine/capability input. Milestone 1 supplies process and
+packaging foundations.
 
 ### Major risks and unknowns
 
@@ -311,7 +318,10 @@ Make the integrated reader usable across documented supported hardware and recov
 
 ### Dependencies
 
-Milestone 6 defines supported engine profiles. Milestones 7 through 9 provide the integrated lifecycle and observable metrics.
+Milestone 6 defines the evaluation authority, but its first cycle selected no
+supported profile. A future frozen cycle must supply that input before
+Milestones 7 through 9 can provide the integrated lifecycle and observable
+metrics required here.
 
 ### Major risks and unknowns
 
