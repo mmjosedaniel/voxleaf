@@ -10,6 +10,7 @@ from typing import cast
 import pytest
 
 from benchmarks import batch_cli
+from benchmarks.preflight import HostSnapshot
 
 
 def _input() -> dict[str, object]:
@@ -83,3 +84,24 @@ def test_exact_host_cpu_identity_ignores_windows_trademark_markers() -> None:
         batch_cli._normalized_cpu_model("Intel(R) Core(TM) Ultra 7 255HX")
         == "Intel Core Ultra 7 255HX"
     )
+    raw = batch_cli._host_raw(
+        HostSnapshot(
+            operating_system="Windows",
+            os_version="10.0.26200",
+            architecture="x86_64",
+            python_version="3.12.10",
+            cpu_model="Intel(R) Core(TM) Ultra 7 255HX",
+            logical_processors=20,
+            total_ram_bytes=33_752_997_888,
+            free_ram_bytes=15_000_000_000,
+            free_disk_bytes=600_000_000_000,
+            power_online=True,
+            power_mode="Equilibrado",
+            gpu_model="NVIDIA GeForce RTX 5060 Laptop GPU",
+            driver_version="577.05",
+            total_vram_bytes=8_546_942_976,
+            free_vram_bytes=8_189_378_560,
+            process_vram_available=True,
+        )
+    )
+    assert raw["cpuModel"] == "Intel Core Ultra 7 255HX"

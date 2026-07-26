@@ -580,6 +580,12 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
   only the first schema path and validator, never its value, before the next
   repeat. The frozen authority, hardware conditions, candidate, and observed
   safety outcome remain unchanged.
+- 2026-07-26: A third identical 69.0-second safety run let the closed
+  diagnostic identify `host.cpuModel`'s frozen `const` as the only first raw
+  schema rejection. The command compared the normalized identity correctly
+  but serialized the trademarked Windows label. Updated raw serialization and
+  its regression to use the same frozen normalization; the session was
+  deleted and no invalid result was retained.
 
 ## Discoveries and decisions
 
@@ -657,8 +663,8 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
 20. Windows reports the exact reference CPU as
     `Intel(R) Core(TM) Ultra 7 255HX`, while the frozen v4 reference label
     intentionally omits trademark markers. Exact-host comparison must remove
-    only `(R)` and `(TM)` plus duplicate whitespace before comparing; raw
-    evidence retains the observed Windows label.
+    only `(R)` and `(TM)` plus duplicate whitespace before comparing and
+    before writing the frozen raw host identity.
 
 ## Final validation results
 

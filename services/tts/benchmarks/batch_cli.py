@@ -153,7 +153,7 @@ def _host_raw(host: HostSnapshot) -> dict[str, object]:
         "osVersion": host.os_version,
         "architecture": host.architecture,
         "pythonVersion": host.python_version,
-        "cpuModel": host.cpu_model,
+        "cpuModel": _normalized_cpu_model(host.cpu_model),
         "logicalProcessors": host.logical_processors,
         "totalRamBytes": host.total_ram_bytes,
         "gpuModel": host.gpu_model,
