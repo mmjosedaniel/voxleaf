@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 6 are complete. Milestone 7 remains blocked until a newly frozen local TTS evaluation selects a viable profile. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 6 are complete. Milestone 6.1 is the next approved, not-yet-started blocker-resolution cycle; Milestone 7 remains blocked until that or another newly frozen local TTS evaluation selects a viable profile. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -28,6 +28,7 @@ Every milestone must preserve the product's defining constraints:
     -> 4. Reflowable visual reader and position restoration
     -> 5. Narration text preparation
     -> 6. Local TTS feasibility and engine selection
+    -> 6.1. Local TTS profile blocker resolution
     -> 7. Local TTS service and process protocol
     -> 8. Bounded audio playback and scheduling
     -> 9. Synchronized reading and narration
@@ -212,6 +213,60 @@ Milestone 1 supplies the isolated Python foundation. Milestone 2 supplies capabi
 - Model installation and updates must not create an accidental runtime network dependency or silently exhaust disk, RAM, or VRAM.
 - Any future evaluation must freeze its authority before results and preserve the content-safe, candidate-neutral evidence boundary. Later integrated playback evidence must still validate command-to-audible startup.
 
+## Milestone 6.1: Resolve the local TTS profile blocker
+
+**Status:** Approved and planned; not started. The
+[blocker-resolution ExecPlan](active/M006-001-local-tts-profile-blocker-resolution.md)
+records the candidate-intake evidence, decisions, tasks, and validation
+sequence. No candidate is selected and ADR-0013 remains authoritative.
+
+### Goal
+
+Determine whether an exact local TTS profile can pass the unchanged product
+constraints on the maintainer's available hardware before production process
+or protocol work begins.
+
+### Expected outcome
+
+- Freeze `tts-feasibility-profile-v3` before observing official results.
+- Evaluate Qwen3-TTS 12Hz 1.7B Base transcript-conditioned voice cloning as a
+  materially different candidate from the rejected 0.6B CustomVoice/Aiden
+  profile.
+- If speaker-embedding-only `x_vector_only_mode` is admitted, evaluate it as a
+  separate profile because the official Qwen documentation warns that it may
+  reduce cloning quality.
+- Prove an actual incremental-audio and bounded cancellation boundary through
+  the exact local runtime; upstream family-level streaming or 97 ms claims are
+  candidate-intake facts, not VoxLeaf evidence.
+- Keep OpenAI Whisper outside the TTS candidate set. A separately pinned local
+  Whisper runtime may be considered only as an optional benchmark ASR aid and
+  cannot replace fluent-Spanish human quality review.
+- Select a profile through a superseding ADR only if every frozen gate passes;
+  otherwise retain the Milestone 7 blocker with content-safe evidence.
+
+### Dependencies
+
+The completed Milestone 6 harness, frozen `v2` evidence, and ADR-0013 remain
+the baseline. The implemented `narration-v1` package boundary supplies bounded
+locator-linked text units. Candidate execution additionally requires an exact
+isolated lock, verified local artifacts, outbound blocking, an authorized
+reference-voice policy, and pre-result `v3` authority.
+
+### Major risks and unknowns
+
+- The installed high-level Qwen API returns complete waveforms despite the
+  upstream family streaming claim; usable incremental delivery and
+  mid-generation cancellation are still unproven.
+- The 1.7B model may fail startup, throughput, memory, artifact-size,
+  packaging, reliability, or complete-panel quality gates.
+- Voice cloning introduces consent, ownership, impersonation, deletion, and
+  sensitive-reference-data questions that informal local success does not
+  answer.
+- A modified runtime or third-party streaming fork may be too costly to audit,
+  package, secure, and maintain.
+- Automatic speech recognition can estimate content consistency but cannot
+  judge naturalness, prosody, speaker similarity, or audible artifacts.
+
 ## Milestone 7: Implement the local TTS service and process protocol
 
 **Status:** Blocked and deferred. ADR-0013 selects no viable engine profile.
@@ -233,9 +288,9 @@ Run the selected TTS engines behind a secure, typed, cancellable local process b
 ### Dependencies
 
 Milestone 2 defines shared contracts. Milestone 6 supplies the evaluation
-authority but its first cycle selected no viable engine. A future frozen cycle
-must produce the engine/capability input. Milestone 1 supplies process and
-packaging foundations.
+authority but its first cycle selected no viable engine. Milestone 6.1 is the
+next approved attempt to produce the required engine/capability input.
+Milestone 1 supplies process and packaging foundations.
 
 ### Major risks and unknowns
 
@@ -365,7 +420,7 @@ The following decisions should be made when evidence is available, not assumed s
 1. **Desktop stack gate:** validate and adopt the desktop framework, workspace, package manager, and supported development environments during Milestone 1.
 2. **EPUB gate:** validate archive limits, sanitization, rendering isolation, locator round-tripping, and dependency licensing before completing Milestone 3.
 3. **Persistence gate:** ADR-0011 selects bounded WebView `localStorage`, separate versioned position/preference envelopes, save lifecycle, and desktop-owned migration; implement and validate that boundary before completing Milestone 4.
-4. **TTS gate:** the completed Milestone 6 cycle selected neither evaluated profile. Before Milestone 7, freeze and execute a new reproducible quality, latency, memory, cancellation, license, and packaging evaluation that selects at least one viable production role.
+4. **TTS gate:** the completed Milestone 6 cycle selected neither evaluated profile. Execute the approved Milestone 6.1 blocker-resolution plan, including a pre-result frozen quality, latency, memory, cancellation, license, privacy, artifact, and packaging evaluation, before Milestone 7. At least one exact production role must pass every applicable gate.
 5. **Protocol gate:** record transport, framing, backpressure, and local exposure decisions before completing Milestone 7.
 6. **Audio gate:** record internal audio format, playback mechanism, speed-control behavior, and the short-range startup rule before completing Milestone 8.
 7. **Interaction gate:** define manual navigation during active narration before completing Milestone 9.
@@ -375,11 +430,11 @@ Durable decisions belong in architecture decision records. Temporary implementat
 
 ## Relationship to existing plans
 
-[`completed/M004-reflowable-visual-reader-and-position-restoration.md`](completed/M004-reflowable-visual-reader-and-position-restoration.md), [`completed/M005-narration-text-preparation.md`](completed/M005-narration-text-preparation.md), and [`completed/M006-local-tts-feasibility-and-engine-profiles.md`](completed/M006-local-tts-feasibility-and-engine-profiles.md) record the implementation authority and validation evidence for Milestones 4 through 6. Milestone 6 supplies development evidence and a no-viable-profile decision; it does not implement production TTS.
+[`completed/M004-reflowable-visual-reader-and-position-restoration.md`](completed/M004-reflowable-visual-reader-and-position-restoration.md), [`completed/M005-narration-text-preparation.md`](completed/M005-narration-text-preparation.md), and [`completed/M006-local-tts-feasibility-and-engine-profiles.md`](completed/M006-local-tts-feasibility-and-engine-profiles.md) record the implementation authority and validation evidence for Milestones 4 through 6. Milestone 6 supplies development evidence and a no-viable-profile decision; it does not implement production TTS. [`active/M006-001-local-tts-profile-blocker-resolution.md`](active/M006-001-local-tts-profile-blocker-resolution.md) is the approved follow-up authority for Milestone 6.1 and does not select an engine.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or the completed Milestones 4 through 6 plans and does not authorize implementing all of those areas at once.
 
-Milestones 1 through 6 are complete, with their evidence retained under [`completed/`](completed/). Use the synchronized-reader plan only as later-milestone context; it does not supersede any completed milestone authority or unblock Milestone 7.
+Milestones 1 through 6 are complete, with their evidence retained under [`completed/`](completed/). Milestone 6.1 is approved but not started. Use the synchronized-reader plan only as later-milestone context; it does not supersede any completed milestone authority or unblock Milestone 7.
 
 ## MVP completion boundary
 

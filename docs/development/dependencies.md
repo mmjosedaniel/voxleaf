@@ -62,6 +62,16 @@ Both projects set uv's `exclude-newer` cutoff to `2026-07-18T00:00:00Z`, seven
 days before the intake review, so regenerating either lock cannot silently
 admit a just-published dependency.
 
+The approved
+[Milestone 6.1 blocker-resolution plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md)
+identifies Qwen3-TTS 12Hz 1.7B Base ICL voice cloning as a new evaluation
+direction and OpenAI Whisper only as a possible local benchmark-ASR aid. No
+candidate project, dependency declaration, lockfile, runtime package, model,
+or production approval has been added for either one. Exact engine/model
+revisions, hashes, indexes, cutoffs, native libraries, install hooks,
+licenses, artifact sizes, and alternatives must be frozen and audited before
+candidate admission. Whisper must remain outside the production TTS graph.
+
 The disposable quality workflow adds no manifest or lockfile edge. It uses the
 Python standard library for WAV/container, randomization, JSON, HTML, and
 cleanup work, and uses the NumPy runtime already locked transitively inside

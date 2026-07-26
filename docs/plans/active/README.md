@@ -17,4 +17,5 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
+- [`M006-001-local-tts-profile-blocker-resolution.md`](M006-001-local-tts-profile-blocker-resolution.md): approved, not-yet-started Milestone 6.1 plan to freeze a new evaluation authority, prove an actual incremental/cancellation boundary, and assess the exact Qwen3-TTS 1.7B Base ICL direction without selecting it prematurely. Milestone 7 remains blocked.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): retained broader context spanning the completed reader work and later narration synchronization/audio startup. It does not supersede the completed Milestones 4 through 6 authorities and does not authorize blocked Milestone 7 or later work.

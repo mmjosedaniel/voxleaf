@@ -4,7 +4,7 @@ Documentation is organized by purpose so contributors and Codex can load only th
 
 ## Current project status
 
-Roadmap Milestones 1 through 6 are complete. The visual reader, bounded local restoration, locator-linked narration preparation, and candidate-neutral TTS feasibility harness are implemented and validated within their documented boundaries. The first frozen TTS evaluation selected no viable profile, so Milestone 7 is blocked pending a newly frozen passing evaluation; production TTS, audio, synchronization, hardware support, and release packaging are not implemented.
+Roadmap Milestones 1 through 6 are complete. The visual reader, bounded local restoration, locator-linked narration preparation, and candidate-neutral TTS feasibility harness are implemented and validated within their documented boundaries. The first frozen TTS evaluation selected no viable profile. Milestone 6.1 is now approved and planned to evaluate the materially different Qwen3-TTS 1.7B Base ICL direction and prove incremental/cancellation behavior; it has not started and selects no engine. Milestone 7 remains blocked, and production TTS, audio, synchronization, hardware support, and release packaging are not implemented.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -44,6 +44,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M004-001-native-webdriver-startup-smoke.md`](plans/completed/M004-001-native-webdriver-startup-smoke.md): completed test-infrastructure ExecPlan for the packaged WebView2 startup smoke used by Milestone 4 validation.
 - [`plans/completed/M005-narration-text-preparation.md`](plans/completed/M005-narration-text-preparation.md): completed ExecPlan and validation evidence for roadmap Milestone 5's deterministic, bounded, locator-linked narration normalization, segmentation, and public `OpenedPublication.prepareNarration` boundary.
 - [`plans/completed/M006-local-tts-feasibility-and-engine-profiles.md`](plans/completed/M006-local-tts-feasibility-and-engine-profiles.md): completed ExecPlan and validation evidence for roadmap Milestone 6's privacy-safe local TTS candidate evaluation, explicit no-viable-profile decision, and deterministic/hardware/privacy/repository closeout.
+- [`plans/active/M006-001-local-tts-profile-blocker-resolution.md`](plans/active/M006-001-local-tts-profile-blocker-resolution.md): approved Milestone 6.1 candidate-intake and blocker-resolution plan covering the external Qwen prototype findings, official Qwen3-TTS and OpenAI Whisper evidence, frozen-authority work, and validation tasks.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broader plan retained as historical context for later narration/audio integration; it does not supersede completed Milestones 4 through 6 or authorize blocked Milestone 7 work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 
