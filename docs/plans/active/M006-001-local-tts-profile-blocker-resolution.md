@@ -985,6 +985,13 @@ dependency changes are involved.
   screen does not count. Temporary audio and randomization data remain only in
   ignored raw storage until all three completed scorecards can be submitted,
   aggregated, recorded, and cleaned.
+- 2026-07-26: `pnpm.cmd check:portable` passed in 83.3 seconds and
+  `pnpm.cmd check` passed in 80.1 seconds. Both included 18 shared test files /
+  175 tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204
+  tests, 6 native-WebDriver-client tests, 72 Python tests, formatting, lint,
+  strict type checks, and builds. The native aggregate also passed Rust
+  formatting, Clippy, crate-test execution, and the release build. The existing
+  Vite chunk-size advisory remained informational.
 
 ## Discoveries and decisions
 
@@ -1150,7 +1157,10 @@ Exactly three independently randomized evaluator pages are ready, staging
 identities are gone, and the blinded-page privacy scan passed. No evaluator
 score has been submitted, so no quality aggregate exists yet. The temporary
 ignored quality session must remain until three independent fluent-Spanish
-humans complete their separate scorecards.
+humans complete their separate scorecards. Both full repository validation
+aggregates pass; this evaluation changes no production dependency, runtime
+topology, or architectural boundary, so the canonical system diagram remains
+accurate without modification.
 
 After correcting the candidate to CustomVoice for the built-in-default-voice
 requirement, all 13 changed Markdown files passed the local-link,
