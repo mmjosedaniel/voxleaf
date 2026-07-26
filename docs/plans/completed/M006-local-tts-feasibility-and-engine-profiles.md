@@ -1392,11 +1392,33 @@ Default validation remains offline at test runtime, model-free, hardware-indepen
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- Both isolated candidate locks synchronized exactly without loading weights:
+  Qwen resolved 107 packages and checked 88 installed packages; Supertonic
+  resolved 25 packages and checked 24 installed packages.
+- The isolated import/version smokes passed with `qwen-tts==0.1.1`,
+  `supertonic==1.3.1`, and `onnxruntime==1.27.0`. Qwen reported its expected
+  optional FlashAttention and SoX diagnostics; neither model was constructed,
+  no artifact was loaded, and no audio was generated.
+- Ruff format and lint checks passed over all 34 Python files. Strict mypy
+  passed all 34 source files, including the Linux-portable guarded Windows DLL
+  loader. Pytest passed all 50 model-free Python tests.
+- `uv build services/tts` produced both the source distribution and wheel.
+- `pnpm.cmd check:portable` passed Prettier, ESLint, Ruff, TypeScript and
+  Python type checks, 18 shared files/175 tests, 34 EPUB files/555 tests, 20
+  desktop files/204 tests, six native WebDriver-client tests, all 50 Python
+  tests, package builds, the portable desktop build, and Python distributions.
+- The authoritative native `pnpm.cmd check` passed the same deterministic
+  coverage plus Rustfmt, Clippy with warnings denied, Cargo tests, the native
+  release desktop build, and Python distributions. The existing Vite
+  chunk-size advisory remained informational.
 
 #### Status
 
-Not started.
+Complete — deterministic model-free validation, isolated lock/import
+validation, both aggregate repository checks, and package builds are green
+without loading weights or requiring benchmark hardware.
 
 ### Task 5.2: Complete official benchmark and quality evidence
 
@@ -1418,11 +1440,47 @@ Selected profiles pass their gates; failed candidates and unavailable measuremen
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- The accepted Qwen `v2` matrix is bound to clean revision
+  `76f27d1ff41b4d4ea1e20341b9a4cd9d86b3f8ff` and content-free run ID
+  `1087e0bfc07f46299451f0cc4e1916e5`. The accepted Supertonic `v2` matrix
+  is bound to clean revision
+  `a0640fe7ff1c3bde4ceb68ba8e89cb57150adaac` and run ID
+  `fcb61f2f85c049d68b11ec5cc4d29105`. Both evidence commits remain
+  reachable in repository history.
+- The blinded quality session
+  `f85c4201a73441b6ae1cb0058aeb8ba6` remains bound to clean revision
+  `8251945566dd64037b47a335bceb58e7e0d49548`. It generated the complete
+  24-sample comparison, accepted the one fluent-Spanish evaluator's complete
+  scorecard, retained all frozen limitations, and remained correctly
+  non-promotable.
+- The exact measured Windows/Python/engine/runtime/CPU/GPU configurations,
+  numeric matrices, limited quality means and defects, license/offline audit,
+  packaging risks, and failed gates remain recorded in Tasks 3.1–3.4,
+  `selection-v2`, and ADR-0013. No unavailable or limited value was converted
+  into a favorable result.
+- No protocol, corpus, candidate identity, adapter behavior, measurement
+  semantic, or gate changed after the complete `v2` cycle. The later guarded
+  Windows DLL loader is a typing/portability repair with identical Windows
+  loading behavior. Under the frozen invalidation rule, no new hardware run
+  is required; a normative change would require a new `v3` authority and a
+  complete rerun rather than silently replacing `v2` evidence.
+- Closeout found the three ignored historical performance journals still
+  present: the Qwen `v2`, Supertonic `v2`, and non-comparable Supertonic `v1`
+  sessions. Their exact directories were verified below
+  `benchmarks/results/raw/` and removed after the content-free selection
+  record was confirmed. The raw root now contains zero files and zero WAVs.
+- Native cleanup verification reports no matching temporary benchmark
+  firewall rule. The balanced Windows power scheme reports AC sleep at
+  `0x00000a8c` seconds, equal to the restored 45-minute value.
 
 #### Status
 
-Not started.
+Complete — both exact profiles have complete accepted `v2` performance,
+resource, cancellation, offline, audit, and cleanup evidence; the limited
+one-evaluator quality result remains visibly non-promotable; neither rejected
+profile is selected.
 
 ### Task 5.3: Complete CI, privacy, artifact, and scope closeout
 
@@ -1445,11 +1503,46 @@ Milestone 6 is complete without pretending that the production TTS or audio path
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- `git diff --stat`, `git diff --name-only`, and `git diff --check` show only
+  this ExecPlan's closeout evidence relative to `main`. No application,
+  package, service, benchmark implementation, schema, manifest, lockfile,
+  workflow, dependency, Tauri capability, public contract, or generated file
+  changed.
+- The tracked-artifact audit inspected all 344 tracked files. It found zero
+  books, generated-audio formats, model/weight formats, profiling logs, or
+  traces and zero tracked files above 5 MiB. The raw benchmark root, both
+  isolated `.venv` directories, candidate model roots, generated
+  distributions, and caches remain ignored.
+- Direct ignored-root inspection reports zero raw benchmark files and zero
+  WAV files after Task 5.2 cleanup. The changed-plan scan found zero private
+  host/account patterns, corpus-text values, or privacy canaries.
+- A repository-wide audit checked 175 relative links across all 45 Markdown
+  files under `docs/`, `benchmarks/tts/`, and the root documentation; every
+  target resolves.
+- The required CI workflow contains no TTS benchmark, candidate, model, CUDA,
+  or weight command. The production Python service retains zero runtime
+  dependencies. The explicit benchmark commands remain outside
+  `pnpm.cmd check` and `pnpm.cmd check:portable`.
+- The canonical system diagram still matches the implementation: only the
+  feasibility harness and no-profile decision are implemented development
+  evidence; the production TTS runtime, transport, audio, synchronization,
+  hardware support, and packaging remain blocked or deferred.
+- Task 5.1 passed the authoritative native and portable aggregate commands on
+  this branch. Pull request
+  [#97](https://github.com/mmjosedaniel/voxleaf/pull/97) tested exact
+  implementation-and-evidence head
+  `4f06d8460cdee2e140602436f2004e30cfe83fb8` in foundation run
+  [30181825607](https://github.com/mmjosedaniel/voxleaf/actions/runs/30181825607).
+  `Ubuntu portable foundation` passed in 1 minute 25 seconds and `Windows
+  native foundation` passed in 12 minutes 59 seconds.
 
 #### Status
 
-Not started.
+Complete — deterministic, hardware-evidence, cleanup, privacy, artifact,
+scope, link, repository, and required pull-request validation are green. The
+plan is closed with no selected engine profile and no production TTS runtime.
 
 ## Testing and benchmark strategy
 
@@ -1785,6 +1878,30 @@ A profile is selectable only when its performance, quality, capability, license,
   review, Mermaid/prose status review, and final branch-diff checks pass. The
   three logical checkpoints contain only documentation and the content-free
   selection record.
+- 2026-07-25: Completed Task 5.1 from clean `main` commit `8253ff4`. Both
+  isolated candidate locks and model-free imports validate, focused Python
+  formatting/lint/type/test/build checks pass, all 50 Python tests pass, and
+  both portable and authoritative native aggregate repository checks pass. No
+  model was constructed, no weight was loaded, and no audio was generated.
+- 2026-07-25: Completed Task 5.2. Revalidated the clean Qwen, Supertonic, and
+  quality evidence revisions plus their content-free run identities. No
+  normative `v2` input changed, so the frozen rule does not require another
+  hardware cycle. Closeout removed three overlooked ignored raw performance
+  journals and confirmed zero remaining raw files/WAVs, no temporary benchmark
+  firewall rule, and restored 45-minute AC sleep.
+- 2026-07-25: Completed the local portion of Task 5.3 on
+  `feat/m006-close-validation`. The branch changes documentation only; all 344
+  tracked files pass the forbidden-artifact and 5-MiB audits, all 175 relative
+  Markdown links resolve, raw output is empty, changed evidence contains no
+  private/corpus/canary values, production dependencies and CI remain
+  model-free, and the canonical architecture boundary is unchanged. Final
+  pull-request CI and completed-plan movement await branch publication.
+- 2026-07-25: Completed Task 5.3. Pull request #97 foundation run
+  `30181825607` passed Ubuntu portable and Windows native validation on exact
+  implementation-and-evidence head `4f06d8460cdee2e140602436f2004e30cfe83fb8`.
+  Repository status documentation now marks Milestone 6 complete, and this
+  ExecPlan moves to `docs/plans/completed/`. Milestone 7 remains blocked by
+  ADR-0013's no-viable-profile decision.
 
 ## Discoveries and decisions
 
@@ -1796,6 +1913,10 @@ A profile is selectable only when its performance, quality, capability, license,
   not select either profile or authorize a production dependency.
 - Official model execution must be offline after explicit acquisition. A local loopback server is not required for feasibility and would prematurely couple the work to Milestone 7.
 - The exact application-scoped Windows Firewall rule requires an administrator PowerShell session. Ordinary repository/tool sandbox escalation does not grant that operating-system authorization; an access-denied attempt created no rule and is a hard preflight blocker rather than permission to weaken the offline gate.
+- Tracked-artifact audits do not prove ignored raw-session cleanup. Milestone 5
+  must inspect the confined ignored raw root directly; this closeout found and
+  removed the three completed performance journals after their content-free
+  decision evidence was confirmed.
 - Milestone 2 intentionally adds no root TTS benchmark command. The candidate dispatch and isolation boundary now exist, but acquisition, host/resource preflight, network-disable proof, raw-session ownership, measurement probes, and official promotion are Task 3 work; exposing a partial command would create a non-authoritative result path.
 - First produced audio, complete generated output, media duration, and audible playback are different measurements. Milestone 6 can measure the first three but does not implement or claim the fourth.
 - A benchmark worker process may be used for isolation and termination measurement without selecting the production process transport.
@@ -1996,4 +2117,32 @@ Completed on 2026-07-25 on `feat/m006-select-engine-profiles`:
   evidence without changing its authority, candidates, corpus, adapters, or
   measurements.
 
-This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.
+### Milestone 5 closeout validation
+
+Validation completed on 2026-07-25 on
+`feat/m006-close-validation`:
+
+- Both isolated candidate locks synchronized exactly, and model-free import
+  smokes verified `qwen-tts==0.1.1`, `supertonic==1.3.1`, and
+  `onnxruntime==1.27.0` without constructing a model or loading weights.
+- Focused Ruff format/lint, strict mypy over 34 files, all 50 model-free
+  Python tests, and both Python distribution builds passed.
+- `pnpm.cmd check:portable` and the authoritative native `pnpm.cmd check`
+  passed the complete deterministic repository suites and builds. The
+  existing Vite chunk-size advisory remained informational.
+- Evidence revision/run identity, frozen-rerun-rule, firewall, power, raw
+  cleanup, privacy, ignored-path, tracked-artifact, large-file, scope,
+  model-free CI, zero-production-dependency, canonical architecture, and
+  relative-link reviews all passed. Three overlooked ignored historical raw
+  journals were removed; zero raw files and zero WAV files remain.
+- The implementation-and-evidence head
+  `4f06d8460cdee2e140602436f2004e30cfe83fb8` passed both required
+  pull-request jobs in foundation run `30181825607`. Ubuntu portable passed in
+  1 minute 25 seconds; Windows native passed in 12 minutes 59 seconds.
+- The final branch changes only closeout documentation. It adds no runtime
+  behavior or support claim and does not rerun the unchanged accepted `v2`
+  hardware matrices.
+
+Every task has an actual result, ADR-0013 records the explicit no-viable
+outcome, required CI passed on the final implementation-and-evidence head, and
+the repository definition of done is satisfied. This plan is complete.
