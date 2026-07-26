@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 6 are complete. Milestone 6.1 is the next approved, not-yet-started blocker-resolution cycle; Milestone 7 remains blocked until that or another newly frozen local TTS evaluation selects a viable profile. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 6 are complete. Milestone 6.1 is active: its first milestone selected Serena for the exact Qwen3-TTS 1.7B CustomVoice development evaluation and froze `v3`, while the prototype and official matrices remain. Milestone 7 stays blocked until that or another frozen local TTS evaluation passes every production gate. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -215,10 +215,13 @@ Milestone 1 supplies the isolated Python foundation. Milestone 2 supplies capabi
 
 ## Milestone 6.1: Resolve the local TTS profile blocker
 
-**Status:** Approved and planned; not started. The
+**Status:** In progress. Milestone 1 selected Serena through the frozen intake
+screen and published `tts-feasibility-profile-v3`; prototype, benchmark,
+audit, final-quality, and closeout work remain. The
 [blocker-resolution ExecPlan](active/M006-001-local-tts-profile-blocker-resolution.md)
 records the candidate-intake evidence, decisions, tasks, and validation
-sequence. No candidate is selected and ADR-0013 remains authoritative.
+sequence. Serena is selected for evaluation only and ADR-0013 remains
+authoritative for production.
 
 ### Goal
 
@@ -245,8 +248,7 @@ or protocol work begins.
   batch at one, consume `narration-v1` segments, and release each bounded audio
   unit as soon as it is valid.
 - Count first attempts honestly. Automatic retries cannot rescue official
-  gates; VAD/energy checks, if frozen, run after timing as content-free defect
-  signals and do not repair audio or replace human review.
+  gates; Whisper and VAD/energy analysis are excluded from `v3`.
 - Keep OpenAI Whisper outside the TTS candidate set. A separately pinned local
   Whisper runtime may be considered only as an optional benchmark ASR aid and
   cannot replace fluent-Spanish human quality review.
@@ -259,7 +261,7 @@ The completed Milestone 6 harness, frozen `v2` evidence, and ADR-0013 remain
 the baseline. The implemented `narration-v1` package boundary supplies bounded
 locator-linked text units. Candidate execution additionally requires an exact
 isolated lock, verified local artifacts, outbound blocking, an authorized
-built-in-speaker screening authority, and pre-result `v3` authority.
+  built-in-speaker result and pre-result `v3` authority.
 
 ### Major risks and unknowns
 
@@ -452,11 +454,11 @@ Durable decisions belong in architecture decision records. Temporary implementat
 
 ## Relationship to existing plans
 
-[`completed/M004-reflowable-visual-reader-and-position-restoration.md`](completed/M004-reflowable-visual-reader-and-position-restoration.md), [`completed/M005-narration-text-preparation.md`](completed/M005-narration-text-preparation.md), and [`completed/M006-local-tts-feasibility-and-engine-profiles.md`](completed/M006-local-tts-feasibility-and-engine-profiles.md) record the implementation authority and validation evidence for Milestones 4 through 6. Milestone 6 supplies development evidence and a no-viable-profile decision; it does not implement production TTS. [`active/M006-001-local-tts-profile-blocker-resolution.md`](active/M006-001-local-tts-profile-blocker-resolution.md) is the approved follow-up authority for Milestone 6.1 and does not select an engine.
+[`completed/M004-reflowable-visual-reader-and-position-restoration.md`](completed/M004-reflowable-visual-reader-and-position-restoration.md), [`completed/M005-narration-text-preparation.md`](completed/M005-narration-text-preparation.md), and [`completed/M006-local-tts-feasibility-and-engine-profiles.md`](completed/M006-local-tts-feasibility-and-engine-profiles.md) record the implementation authority and validation evidence for Milestones 4 through 6. Milestone 6 supplies development evidence and a no-viable-profile decision; it does not implement production TTS. [`active/M006-001-local-tts-profile-blocker-resolution.md`](active/M006-001-local-tts-profile-blocker-resolution.md) is the active follow-up authority for Milestone 6.1. It selects Serena only for the frozen `v3` evaluation and does not select a production engine.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or the completed Milestones 4 through 6 plans and does not authorize implementing all of those areas at once.
 
-Milestones 1 through 6 are complete, with their evidence retained under [`completed/`](completed/). Milestone 6.1 is approved but not started. Use the synchronized-reader plan only as later-milestone context; it does not supersede any completed milestone authority or unblock Milestone 7.
+Milestones 1 through 6 are complete, with their evidence retained under [`completed/`](completed/). Milestone 6.1 is in progress with its first milestone complete. Use the synchronized-reader plan only as later-milestone context; it does not supersede any completed milestone authority or unblock Milestone 7.
 
 ## MVP completion boundary
 

@@ -7,6 +7,27 @@ roadmap Milestone 6. It is not a production TTS service boundary.
 
 - `candidates-v1.json` freezes candidate identities, roles, artifacts, licenses,
   acquisition boundaries, and isolated uv projects before measurements.
+- `candidates-v2.json` freezes the separate Qwen3-TTS 12Hz 1.7B CustomVoice
+  candidate identity, exact local runtime, pre-admission gate,
+  first-attempt/no-retry policy, and the exclusion of Whisper and VAD/energy
+  from `v3`. `candidates-v3.json` is the byte-frozen correction that selects
+  the `v2` screen authority without mutating that base identity.
+- `customvoice-spanish-screen-v2.json` is the active pre-audio authority. It
+  freezes all nine built-in speakers, three synthetic Spanish cases, one
+  instruction, identical generation settings, applicable-case scoring,
+  blind presentation, deterministic selection, and disposable-audio bounds.
+- `customvoice-spanish-screen-v1.json` and its result schema remain immutable
+  abandoned authority. Its generated raw session was deleted before any
+  scorecard or result after the evaluator exposed missing numeric-expression
+  scoring.
+- `schemas/customvoice-spanish-screen-result-v2.schema.json` is the active
+  closed content-safe result shape.
+- `customvoice-spanish-screen-result-v2.json` is the schema-valid
+  content-safe intake result. It selects Serena with zero meaning-changing
+  defects; it contains no sample IDs, scorecard, audio, text, or path.
+- `profile-v3.json` freezes the complete Serena candidate identity,
+  prototype stop gate, inherited official gates, exclusions, privacy rules,
+  and invalidation authority before any prototype or official result.
 - `corpus-v1.json` freezes the repository-authored prepared-text corpus and
   performance order.
 - `schemas/summary-v2.schema.json` is the current private benchmark-summary
@@ -15,9 +36,10 @@ roadmap Milestone 6. It is not a production TTS service boundary.
 - `fixtures/` contains synthetic validation fixtures, not candidate results.
 - [`selection-v2.md`](selection-v2.md) is the accepted content-free decision
   matrix. It rejects both exact evaluated profiles and links ADR-0013.
-- [`docs/architecture/tts-feasibility-profile-v2.md`](../../docs/architecture/tts-feasibility-profile-v2.md)
-  is the current rerun authority. The superseded `v1` document and fixture
-  remain historical validation evidence only.
+- [`docs/architecture/tts-feasibility-profile-v3.md`](../../docs/architecture/tts-feasibility-profile-v3.md)
+  is the active blocker-resolution authority for the selected Serena
+  development candidate. `v2` remains the completed first-cycle authority and
+  supplies the inherited balanced measurement rules; `v1` remains historical.
 
 Raw measurements, model files, generated audio, listening-session metadata,
 and profiling output belong below `benchmarks/results/raw/`, which is ignored.
@@ -45,6 +67,7 @@ Candidate libraries are locked in independent projects:
 
 ```text
 services/tts/benchmarks/candidates/
+    qwen3_1_7b_customvoice_cuda/
     qwen3_0_6b_cuda/
     supertonic3_cpu/
 ```
@@ -55,6 +78,7 @@ CI:
 
 ```powershell
 uv sync --project services/tts/benchmarks/candidates/qwen3_0_6b_cuda --locked
+uv sync --project services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --locked
 uv sync --project services/tts/benchmarks/candidates/supertonic3_cpu --locked
 ```
 
@@ -65,6 +89,67 @@ offline controls enabled.
 Remove a rejected candidate by deleting only its directory under
 `services/tts/benchmarks/candidates/`. Keep its content-free manifest entry and
 summary so the decision remains reviewable.
+
+## Frozen CustomVoice Spanish speaker screen
+
+The 1.7B CustomVoice environment and screen are development-only. Acquisition
+is the only networked phase and must precede the offline firewall/preflight
+phase:
+
+```powershell
+uv sync --project services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --locked
+uv run --project services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --locked hf download Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice --revision 0c0e3051f131929182e2c023b9537f8b1c68adfe --local-dir models/qwen3_1_7b_customvoice_cuda
+```
+
+Before generation, create the documented application-scoped outbound
+firewall rule for this candidate's exact `.venv\Scripts\python.exe`, disable
+sleep while on AC power, close material background load, and commit every
+authority change. Then run from a clean native Windows checkout:
+
+```powershell
+$candidatePython = (Resolve-Path "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/.venv/Scripts/python.exe").Path
+$sessionId = [guid]::NewGuid().ToString("N")
+$generate = @{
+  screenOptIn = $true
+  sessionId = $sessionId
+  artifactRoot = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda").Path
+  candidatePython = $candidatePython
+  expectedCommitSha = (git rev-parse HEAD).Trim()
+  sleepDisabled = $true
+  backgroundLoadAcceptable = $true
+  thermalStateAcceptable = $true
+}
+$generate | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:screen:generate
+```
+
+Open only the generated ignored
+`benchmarks/results/raw/customvoice-spanish-screen-v2/<session-id>/evaluate.html`.
+The page contains 27 opaque randomized samples and downloads one completed
+scorecard after every field is filled. Submit that exact JSON without editing
+the authority:
+
+```powershell
+$scorecard = Get-Content "<completed-scorecard.json>" -Raw | ConvertFrom-Json -AsHashtable
+$submit = @{
+  screenOptIn = $true
+  sessionId = $sessionId
+  scorecard = $scorecard
+}
+$submit | ConvertTo-Json -Depth 20 -Compress | pnpm.cmd benchmark:tts:screen:submit
+```
+
+Only the schema-valid content-free selection result may be promoted. Audio,
+the randomization key, scorecard, and local paths remain in ignored raw
+storage. After promotion and validation, delete the exact session with:
+
+```powershell
+@{ screenOptIn = $true; sessionId = $sessionId } |
+  ConvertTo-Json -Compress |
+  pnpm.cmd benchmark:tts:screen:cleanup
+```
+
+The screen selects an intake speaker only. It does not approve production
+quality, pass `v3`, or change ADR-0013 by itself.
 
 ## Implemented model-free benchmark boundary
 

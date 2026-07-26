@@ -1,0 +1,179 @@
+{
+  "manifestVersion": "tts-candidate-manifest-v2",
+  "reviewedAt": "2026-07-25",
+  "targetPlatform": {
+    "operatingSystem": "Windows",
+    "architecture": "x86_64",
+    "python": "3.12.*"
+  },
+  "productionServiceDependencyBaseline": {
+    "project": "services/tts/pyproject.toml",
+    "runtimeDependencies": []
+  },
+  "candidates": [
+    {
+      "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
+      "admission": "speaker-screen-only",
+      "intendedRoles": ["balanced"],
+      "environmentProject": "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda",
+      "engine": {
+        "distribution": "qwen-tts",
+        "version": "0.1.1",
+        "wheelSha256": "11a290d8dabc7ef91a90c54478c8ab19b3edb1d85c0882313721892bdc4af15d",
+        "license": "Apache-2.0",
+        "source": "https://pypi.org/project/qwen-tts/0.1.1/"
+      },
+      "model": {
+        "repository": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+        "revision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+        "repositorySizeBytes": 4523965995,
+        "license": "Apache-2.0",
+        "source": "https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/tree/0c0e3051f131929182e2c023b9537f8b1c68adfe",
+        "majorArtifacts": [
+          {
+            "path": "model.safetensors",
+            "sha256": "38b1d5971bdbd982b561cccec982669a53b0537c3cf5e9bd4778ed07bb2f5137",
+            "sizeBytes": 3833402552
+          },
+          {
+            "path": "speech_tokenizer/model.safetensors",
+            "sha256": "836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258",
+            "sizeBytes": 682293092
+          }
+        ]
+      },
+      "voice": {
+        "mode": "built-in-customvoice",
+        "selectionAuthority": "customvoice-spanish-screen-v1",
+        "selectedSpeaker": null,
+        "instruction": "Lee con un tono neutro, claro, natural y sereno, apropiado para narrar un audiolibro; mantén un ritmo moderado y una expresividad contenida.",
+        "supportedSpeakers": [
+          {
+            "id": "Vivian",
+            "nativeLanguage": "Chinese"
+          },
+          {
+            "id": "Serena",
+            "nativeLanguage": "Chinese"
+          },
+          {
+            "id": "Uncle_Fu",
+            "nativeLanguage": "Chinese"
+          },
+          {
+            "id": "Dylan",
+            "nativeLanguage": "Chinese (Beijing Dialect)"
+          },
+          {
+            "id": "Eric",
+            "nativeLanguage": "Chinese (Sichuan Dialect)"
+          },
+          {
+            "id": "Ryan",
+            "nativeLanguage": "English"
+          },
+          {
+            "id": "Aiden",
+            "nativeLanguage": "English"
+          },
+          {
+            "id": "Ono_Anna",
+            "nativeLanguage": "Japanese"
+          },
+          {
+            "id": "Sohee",
+            "nativeLanguage": "Korean"
+          }
+        ]
+      },
+      "runtime": {
+        "provider": "PyTorch CUDA",
+        "torch": "2.9.1+cu128",
+        "torchaudio": "2.9.1+cu128",
+        "precision": "bfloat16",
+        "attention": "sdpa",
+        "batchSize": 1,
+        "language": "Spanish",
+        "generation": {
+          "doSample": true,
+          "repetitionPenalty": 1.05,
+          "temperature": 0.9,
+          "topP": 1.0,
+          "topK": 50,
+          "subtalkerDoSample": true,
+          "subtalkerTemperature": 0.9,
+          "subtalkerTopP": 1.0,
+          "subtalkerTopK": 50,
+          "maxNewTokens": 2048
+        },
+        "accelerationRequired": true
+      },
+      "evaluationPolicy": {
+        "batchSize": 1,
+        "modelLifetime": "one-resident-instance-per-session-and-complete-identity",
+        "configurationSwitching": "forbidden",
+        "automaticRetries": 0,
+        "failureAccounting": "first-attempt-is-authoritative",
+        "diagnosticRetry": "separately-labeled-and-never-promotable",
+        "auxiliaryAnalysis": {
+          "whisper": "excluded",
+          "vadOrEnergy": "excluded-from-v3"
+        },
+        "preAdmissionPrototypeGate": {
+          "requiredBeforeFullBenchmark": true,
+          "requirements": [
+            "bounded-narration-v1-segment-input",
+            "audio-unit-delivery-before-advancing-to-next-segment",
+            "after-first-audio-cancellation-or-bounded-worker-termination",
+            "zero-stale-frame-publication",
+            "bounded-ram-vram-input-output-and-queue-retention",
+            "verified-cleanup-after-cancellation"
+          ],
+          "failureOutcome": "stop-candidate-cycle-before-full-matrix"
+        }
+      },
+      "acquisition": {
+        "networkedSetupRequired": true,
+        "modelSource": "Hugging Face",
+        "officialRunUsesLocalPath": true,
+        "offlineControls": [
+          "HF_HUB_OFFLINE=1",
+          "TRANSFORMERS_OFFLINE=1",
+          "local_files_only=true",
+          "application-scoped outbound firewall block"
+        ]
+      },
+      "installHooks": {
+        "candidatePackage": "none-declared",
+        "nativeBuild": "none-selected",
+        "optionalFlashAttention": "not-admitted"
+      },
+      "licenseAndRedistribution": {
+        "engine": "Apache-2.0",
+        "modelAndBuiltInSpeakers": "Apache-2.0",
+        "redistribution": "permitted-with-license-and-notice-obligations",
+        "finalPackagingAudit": "required-before-profile-selection"
+      },
+      "knownRisks": [
+        "No built-in speaker is documented as Spanish-native.",
+        "The high-level Python API returns complete waveforms and does not prove incremental generation or cooperative cancellation.",
+        "The 4.52 GB model snapshot and CUDA dependency graph create material packaging risk.",
+        "The candidate has not passed the frozen speaker screen or any v3 performance gate."
+      ]
+    }
+  ],
+  "excluded": [
+    {
+      "candidateId": "qwen3-tts-1-7b-base-voice-cloning",
+      "reasonCode": "voice-cloning-outside-mvp"
+    },
+    {
+      "candidateId": "qwen3-tts-1-7b-voicedesign",
+      "reasonCode": "voice-design-outside-default-narrator-scope"
+    },
+    {
+      "candidateId": "openai-whisper",
+      "reasonCode": "automatic-speech-recognition-not-tts"
+    }
+  ]
+}

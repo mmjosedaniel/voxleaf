@@ -282,6 +282,11 @@ disposable generated speech and produce aggregate error counts, but:
 - `AGENTS.md`
 - `.agents/PLANS.md`
 - `benchmarks/tts/candidates-v1.json`
+- `benchmarks/tts/candidates-v2.json`
+- `benchmarks/tts/candidates-v3.json`
+- `benchmarks/tts/customvoice-spanish-screen-v2.json`
+- `benchmarks/tts/customvoice-spanish-screen-result-v2.json`
+- `benchmarks/tts/profile-v3.json`
 - `benchmarks/tts/selection-v2.md`
 - `docs/product/project-brief.md`
 - `docs/product/mvp.md`
@@ -289,6 +294,7 @@ disposable generated speech and produce aggregate error counts, but:
 - `docs/architecture/system-diagram.md`
 - `docs/architecture/performance-budget.md`
 - `docs/architecture/tts-feasibility-profile-v2.md`
+- `docs/architecture/tts-feasibility-profile-v3.md`
 - `docs/architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md`
 - `docs/development/dependencies.md`
 - `docs/development/setup.md`
@@ -384,7 +390,13 @@ caches, locks, and outputs must remain isolated.
 
 ### Status
 
-Not started. The research in this plan is candidate-intake evidence only.
+Completed. The exact candidate manifest, isolated environment lock, corrected
+pre-audio `customvoice-spanish-screen-v2` authority, closed result schema, and
+model-free screen runner are implemented. The frozen screen selected Serena,
+its content-safe aggregate is retained, and `tts-feasibility-profile-v3`
+freezes the complete evaluation identity before prototype or official
+results. This is evaluation admission only; ADR-0013 and the Milestone 7
+blocker remain.
 
 ## Milestone 2: Prove incremental output and cancellation credibility
 
@@ -596,10 +608,10 @@ or generated audio may become a fixture.
   Retain it as non-promotable related-runtime evidence and freeze the speaker
   screen plus all official gates before new results.
 
-Rollback is documentation-only until candidate implementation begins: revert
-the plan/roadmap change and retain ADR-0013. Later candidate code remains
-isolated under development-only benchmark projects and can be removed without
-changing production contracts or dependencies.
+Rollback retains the content-safe screen outcome as historical evidence,
+removes only the isolated development candidate project/commands when no
+longer needed, and keeps ADR-0013 authoritative. No production contract or
+dependency changes are involved.
 
 ## Progress log
 
@@ -641,6 +653,89 @@ changing production contracts or dependencies.
 - 2026-07-25: Completed the default-narrator documentation validation. Local
   links, whitespace, privacy, and forbidden-artifact audits passed, followed
   by both repository aggregate checks.
+- 2026-07-25: Created branch
+  `feat/m006-1-freeze-candidate-authority` from merged `main` at
+  `c8cc4ea`. No prior Milestone 6 result or production dependency was changed.
+- 2026-07-25: Froze `candidates-v2.json` with the exact
+  `qwen-tts==0.1.1`, Qwen3-TTS 12Hz 1.7B CustomVoice revision
+  `0c0e3051f131929182e2c023b9537f8b1c68adfe`, two independently checkable
+  major artifact hashes, PyTorch/Torchaudio 2.9.1 CUDA 12.8, bfloat16/SDPA,
+  batch one, fixed sampling, all nine upstream speakers, and no selected
+  speaker.
+- 2026-07-25: Froze `customvoice-spanish-screen-v1` before audio. It uses
+  three existing repository-authored Spanish corpus cases, all nine speakers,
+  one exact neutral audiobook instruction, 27 maximum samples, one fluent
+  Spanish evaluator, blind random order, closed eligibility/tie/failure
+  rules, a 256 MiB session cap, ignored raw storage, and required cleanup.
+- 2026-07-25: Excluded Whisper and VAD/energy analysis from `v3`; froze
+  first-attempt authority, zero automatic retries, one resident
+  model/configuration identity per session, forbidden configuration
+  switching, and the incremental-output/cancellation prototype stop gate.
+- 2026-07-25: Added the isolated
+  `qwen3_1_7b_customvoice_cuda` uv project and resolved its lock to 107
+  packages without changing the zero-runtime-dependency production service.
+- 2026-07-25: Implemented closed screen generation/submission/cleanup
+  commands plus six GPU-free tests. Focused Ruff, strict mypy, and pytest
+  validation passed before the pre-audio checkpoint.
+- 2026-07-25: Installed the exact isolated lock and confirmed offline imports
+  report `qwen-tts 0.1.1`, PyTorch `2.9.1+cu128`, CUDA 12.8, and CUDA
+  availability on the authoritative Windows host. The command-level import
+  smoke also passed from the same project/directory combination used by the
+  package script. FlashAttention and SoX emitted optional-tool warnings;
+  neither is selected by or required for the frozen SDPA screen profile.
+- 2026-07-25: `pnpm.cmd check:portable` passed in 26.7 seconds with 18 shared
+  test files / 175 tests, 34 EPUB test files / 555 tests, 20 desktop test
+  files / 204 tests, 6 native-WebDriver-client tests, and 56 Python tests.
+  The existing informational Vite chunk-size advisory remains unchanged.
+- 2026-07-25: Committed the immutable pre-audio authority and screen boundary
+  as `46ceded1e72d1f5ebe6c04dab4ed62c91e09bdca`
+  (`feat(tts): freeze CustomVoice speaker-screen authority`). No screen
+  generation request had been accepted before this checkpoint.
+- 2026-07-25: The first frozen `v1` generation produced 27 blinded samples in
+  522.5 seconds under offline preflight, but the evaluator page exposed that
+  the currency/percentage case lacked the prior protocol's explicit numeric
+  expressions score. No scorecard was submitted and no selection result was
+  produced. The raw session and all 27 WAV files were deleted.
+- 2026-07-25: Preserved the `v1` authority and schema unchanged, then created
+  frozen `candidates-v3` and `customvoice-spanish-screen-v2` corrections
+  before replacement audio. The corrected authority adds
+  `numericExpressions` only to the currency/percentage case and
+  `punctuationDialogue` only to the two tagged dialogue cases. Six focused
+  model-free tests, Ruff, and strict mypy pass for the corrected boundary.
+- 2026-07-25: The corrected pre-audio checkpoint passed
+  `pnpm.cmd check:portable` in 27.3 seconds with 18 shared test files / 175
+  tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204 tests, 6
+  native-WebDriver-client tests, and 56 Python tests. The existing
+  informational Vite chunk-size advisory remains unchanged.
+- 2026-07-25: Committed the corrected immutable pre-audio authority as
+  `ad9d835b998d63b6df909050a9d9513957b180ac`
+  (`fix(tts): add applicable speaker-screen scoring`). No replacement
+  generation request had been accepted before this checkpoint.
+- 2026-07-25: Executed the corrected screen from clean commit
+  `c42eee1328646fbdd846d305d8467dee1b8f3715` under the exact outbound
+  firewall block and offline controls. All 27 first-attempt samples completed
+  in 527.7 seconds; the session retained 17,119,908 audio bytes, remained
+  below the 256 MiB cap, exposed no speaker identity in the evaluator page,
+  and restored the prior AC sleep setting.
+- 2026-07-25: The one fluent-Spanish intake evaluator completed all applicable
+  scores. Frozen ranking selected Serena with overall 4.571428571428571,
+  intelligibility 5.0, Spanish pronunciation 4.333333333333333,
+  punctuation/dialogue 5.0, numeric expressions 4.0, naturalness
+  4.333333333333333, audiobook suitability 4.666666666666667, artifact
+  freedom 4.666666666666667, and zero meaning-changing defects.
+- 2026-07-25: Promoted only the schema-valid content-safe aggregate and froze
+  `profile-v3.json` plus `tts-feasibility-profile-v3.md`. The screen remains
+  one-evaluator intake evidence and does not count toward the later
+  three-person final panel or production approval.
+- 2026-07-25: Deleted both raw screen sessions, all 54 generated WAV files
+  across the abandoned and corrected attempts, both randomization/scorecard
+  working sets, and the downloaded completed scorecard. No generated audio or
+  per-sample result remains.
+- 2026-07-25: Committed the schema-valid aggregate, exact Serena `v3`
+  authority, authority-hash regressions, product/architecture reconciliation,
+  and Milestone 1 validation as
+  `e14c7770bdd9bc8be2bd392fe011f0c1dea249c0`
+  (`feat(tts): freeze Serena feasibility profile v3`).
 
 ## Discoveries and decisions
 
@@ -670,8 +765,11 @@ changing production contracts or dependencies.
    exists.
 8. Automatic retry cannot participate in `v3` gate promotion because it would
    hide first-attempt reliability. It may be designed later in Milestone 10.
-   VAD/energy analysis is optional post-timing evidence only and needs a
-   separate pre-result admission decision.
+   VAD/energy analysis is excluded from `v3`: the bounded manual screen and
+   existing waveform validation are sufficient for intake, while adding an
+   auxiliary detector now would introduce a new dependency and resource
+   variable without making the production decision. Milestone 10 may reopen
+   content-free defect detection under a separately frozen authority.
 9. Persistent generated audio, prose logging, tracked private inputs,
    text-only audio caching, paragraph/chapter accumulation, runtime downloads,
    unlocked dependencies, and unproven “streaming” remain rejected.
@@ -679,6 +777,19 @@ changing production contracts or dependencies.
     Spanish-native and Qwen recommends native-language use. A predeclared,
     blinded, bounded Spanish screen must therefore select exactly one speaker
     before `v3`; upstream WER cannot make that product decision.
+11. The official screen cannot use a mutable upstream model identity. The
+    model repository commit, major artifact hashes, package wheel identity,
+    runtime, generation settings, speaker allowlist, and corpus bytes are
+    frozen and independently testable before the first accepted generation
+    request.
+12. Whisper adds no authority needed by Milestone 1. It remains excluded from
+    production and `v3`; no audio-to-text output, transcript retention, cloud
+    call, or ASR quality oracle is admitted.
+13. A synthetic case is not sufficient evidence when the evaluator lacks its
+    applicable scoring dimension. The unscored `v1` screen was therefore
+    discarded instead of interpreting general intelligibility as numeric or
+    punctuation accuracy. `v2` applies each technical dimension only to cases
+    whose frozen corpus tags make it meaningful.
 
 ## Final validation results
 
@@ -722,5 +833,40 @@ status labels now describe CustomVoice screening, while the topology remains
 unchanged. No runtime candidate, built-in speaker, production dependency, or
 profile is selected by this documentation change.
 
-Update this section with later implementation commands, outcomes, commit
-identities, and CI evidence as the plan progresses.
+Milestone 1's pre-audio implementation checkpoint added an isolated
+107-package candidate lock, three byte-frozen JSON authorities, a closed
+screen command surface, and six model-free tests without adding a production
+runtime dependency. The focused Ruff, strict mypy, pytest, exact candidate
+import, and package-script import smokes passed. The first full
+`pnpm.cmd check:portable` attempt correctly stopped on one Ruff formatting
+drift; after applying Ruff, the complete command passed in 26.7 seconds with
+the existing TypeScript scope and 56 Python tests. `git diff --check` also
+passed. No audio has been generated, no evaluator result exists, and
+`selectedSpeaker` remained `null` at that pre-audio checkpoint. The later
+screen/result entries above supersede only that status statement.
+
+Milestone 1 closeout froze the schema-valid content-safe speaker aggregate and
+`profile-v3.json` before prototype or official benchmark results. The focused
+authority suite and both repository aggregates passed. Final
+`pnpm.cmd check:portable` passed in 27.1 seconds with 18 shared test files /
+175 tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204 tests,
+6 native-WebDriver-client tests, and 57 Python tests.
+`pnpm.cmd check` passed outside the sandbox in 49.5 seconds with the same
+TypeScript/Python evidence plus Rust format, Clippy, crate-test execution,
+native release build, and Python source/wheel packaging. Its sandboxed
+precursor stopped only because Prettier could not scan the protected existing
+`.pytest_cache`. The exact isolated candidate `uv lock --check` resolved all
+107 packages.
+
+All 14 changed Markdown files passed the local-link audit. `git diff --check`,
+changed-file private-path/credential-pattern scans, the tracked
+audio/model/private-input audit, and root/raw-session cleanup checks passed.
+The generic rejected-pattern documentation mentions `input.txt` but contains
+no copy of that private file. No generated audio, scorecard, model weight,
+private input, private path, credential, or raw evaluator submission remains
+in the reviewable tree.
+
+Milestone 1 is complete at
+`e14c7770bdd9bc8be2bd392fe011f0c1dea249c0`. This completion admits the exact
+Serena profile only to Milestone 2's pre-admission prototype. It does not
+select a production engine or unblock Milestone 7.
