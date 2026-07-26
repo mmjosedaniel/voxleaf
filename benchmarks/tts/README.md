@@ -34,6 +34,12 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   rejection, bounded worker termination, five ordered trials, and no audio
   persistence. Its strict safe-result shape is
   `schemas/incremental-cancellation-prototype-result-v1.schema.json`.
+- `incremental-cancellation-prototype-result-v1.json` is the schema-valid,
+  content-safe exact-host result. All five frozen trials passed with zero stale
+  units, bounded queues, released worker resources, and no raw session. It
+  proves segment-level incremental delivery plus process-termination
+  cancellation, not native waveform streaming or cooperative model
+  cancellation.
 - `corpus-v1.json` freezes the repository-authored prepared-text corpus and
   performance order.
 - `schemas/summary-v2.schema.json` is the current private benchmark-summary
@@ -60,6 +66,38 @@ dispatch, and invalidates identity before any forced worker termination. Its
 standard output is a strict content-safe result; candidate output, input text,
 paths, exceptions, and waveform bytes remain transient and are never written
 to the repository or raw storage.
+
+The accepted exact-host run used clean implementation commit `1cc4fd2`,
+delivered and released two complete bounded segment waveforms, retained at
+most one queued segment and one published unit, and published zero stale units
+across every cancellation race. Peak measured process-tree RAM was
+4,689,559,552 bytes; authoritative PyTorch peak reserved VRAM was
+5,440,012,288 bytes. Cold load was 8.367 seconds and first produced segment
+audio after dispatch was 5.210 seconds. That first-audio observation is
+informational here: the prototype is a topology stop gate, while the unchanged
+official 3-second warm first-audio gate belongs to the later full evaluation.
+
+After satisfying the same native-Windows firewall, offline-model,
+sleep/background-load, and clean-commit preconditions as the speaker screen,
+run the prototype by piping its private paths through standard input:
+
+```powershell
+$candidatePython = (Resolve-Path "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/.venv/Scripts/python.exe").Path
+$prototype = @{
+  prototypeOptIn = $true
+  artifactRoot = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda").Path
+  candidatePython = $candidatePython
+  expectedCommitSha = (git rev-parse HEAD).Trim()
+  sleepDisabled = $true
+  backgroundLoadAcceptable = $true
+  thermalStateAcceptable = $true
+}
+$prototype | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:prototype
+```
+
+Do not redirect this private input to a tracked file. The command performs no
+download, creates no raw session, writes no waveform, and emits only its
+closed content-safe result.
 
 Every raw run uses a content-free directory such as
 `benchmarks/results/raw/<candidate-id>/<session-id>/`. A normal completion,

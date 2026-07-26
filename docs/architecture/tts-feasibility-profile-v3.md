@@ -18,6 +18,10 @@ gate. It does not select a production engine, supersede ADR-0013, claim general
 hardware support, authorize Milestone 7, or count the one-person intake screen
 as final quality approval.
 
+The subsequently executed prototype passed its frozen stop gate on the exact
+host. The historical frozen-result declaration at the end of this document
+still records what was known when `v3` was accepted.
+
 ## Speaker-screen decision
 
 The frozen
@@ -103,6 +107,33 @@ evidence. Segment-at-a-time delivery may satisfy boundedness but does not by
 itself satisfy mid-segment cancellation. If the prototype gate fails, stop the
 candidate cycle before the full benchmark; do not lower a gate or reinterpret
 complete output as streaming.
+
+## Prototype result
+
+The schema-valid
+[`incremental-cancellation-prototype-result-v1`](../../benchmarks/tts/incremental-cancellation-prototype-result-v1.json)
+records a passing exact-host result from clean implementation commit
+`1cc4fd2df63d35019e9ad7747307ce0010ea4cff`.
+
+- Two bounded complete-segment waveforms were delivered and released in
+  order; peak queued segments and published units were both one.
+- Every frozen cancellation race passed. Identity was invalidated before
+  worker termination, zero stale units were published, all workers exited,
+  and final tracked process RAM and VRAM were zero.
+- Peak process-tree RAM was 4,689,559,552 bytes. The authoritative PyTorch
+  peak-reserved VRAM observation was 5,440,012,288 bytes.
+- Maximum worker termination was 330.301 milliseconds and maximum cleanup,
+  including normal graceful cleanup, was 1.030 seconds.
+- Cold load was 8.367 seconds. First complete segment audio after dispatch
+  was produced in 5.210 seconds.
+- No raw session or audio artifact was created or retained.
+
+This proves a credible development topology based on immediate
+complete-segment publication and bounded worker-process termination. It does
+not prove native token/frame streaming, cooperative cancellation inside the
+Qwen generation call, a production process protocol, or the official
+3-second warm first-audio gate. Those performance and integration decisions
+remain subject to the later frozen matrix.
 
 ## Inherited official evaluation
 

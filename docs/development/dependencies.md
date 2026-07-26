@@ -71,15 +71,17 @@ CUDA 12.8 index and the exact transitive graph is retained in that project's
 `uv.lock`. The model revision and major artifact hashes are frozen separately
 in `benchmarks/tts/candidates-v2.json`. The bounded intake screen selected
 Serena, and `benchmarks/tts/profile-v3.json` now freezes that complete
-development-evaluation identity. This does not add a production dependency or
-approve the candidate for integration.
+development-evaluation identity. The development prototype subsequently
+passed using only that isolated lock and existing standard-library benchmark
+code; it added no production dependency or lock edge. This does not approve
+the candidate for integration.
 
 Base voice cloning remains outside the MVP. Whisper is excluded from the
 production graph and from `v3`; VAD/energy analysis is also excluded from
 `v3` so neither auxiliary runtime can affect timed synthesis or selection.
 The candidate still requires licensing/notice, native-runtime, offline,
-packaging, removal, prototype, performance, final quality, and cleanup
-evidence before any production profile can be selected.
+packaging, removal, official performance, final quality, and complete
+evaluation-closeout evidence before any production profile can be selected.
 
 The disposable quality workflow adds no manifest or lockfile edge. It uses the
 Python standard library for WAV/container, randomization, JSON, HTML, and

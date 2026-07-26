@@ -288,6 +288,7 @@ disposable generated speech and produce aggregate error counts, but:
 - `benchmarks/tts/customvoice-spanish-screen-result-v2.json`
 - `benchmarks/tts/profile-v3.json`
 - `benchmarks/tts/incremental-cancellation-prototype-v1.json`
+- `benchmarks/tts/incremental-cancellation-prototype-result-v1.json`
 - `benchmarks/tts/schemas/incremental-cancellation-prototype-result-v1.schema.json`
 - `benchmarks/tts/selection-v2.md`
 - `docs/product/project-brief.md`
@@ -436,10 +437,14 @@ blocker remain.
 
 ### Status
 
-In progress. The exact development-only topology, input/output/identity bounds,
-five ordered trials, timing limits, pass rules, privacy boundary, and safe
-result schema are frozen before prototype execution. No production adapter is
-authorized.
+Completed. The exact development-only topology was frozen before execution,
+implemented without a production adapter, and executed on the authoritative
+Windows host. All five trials passed with zero stale units, bounded input,
+waveform, and queue retention, identity invalidation before worker
+termination, and complete resource cleanup. The result proves immediate
+complete-segment delivery and bounded process-termination cancellation; it
+does not claim native waveform streaming, cooperative model cancellation, an
+official performance pass, or production authorization.
 
 ## Milestone 3: Extend the candidate-neutral benchmark safely
 
@@ -767,6 +772,35 @@ dependency changes are involved.
   `pnpm.cmd check:portable` passed in 26.3 seconds with 63 Python tests plus
   the unchanged TypeScript/EPUB/desktop suites and builds. The exact isolated
   candidate-interpreter import smoke also passed without loading the model.
+- 2026-07-25: Confirmed the exact candidate firewall rule, local model and
+  interpreter, 15,365,660,672 free RAM bytes, and an NVIDIA GeForce RTX 5060
+  Laptop GPU with 8,151 MiB total / 7,810 MiB free VRAM. Disabled AC sleep
+  only for the run with an independent restoration watcher.
+- 2026-07-25: Rejected the first invocation before preflight because Windows
+  PowerShell had added a byte-order mark to the private standard-input JSON.
+  No model loaded and no prototype observation was accepted. Re-encoded the
+  disposable input without a byte-order mark and kept the authority unchanged.
+- 2026-07-25: Executed the prototype from clean implementation commit
+  `1cc4fd2df63d35019e9ad7747307ce0010ea4cff` with offline controls and the
+  application-scoped firewall block active. Both normal units were delivered
+  and released; peak queued segments and published units were one, and peak
+  retained controller audio was 2,257,920 bytes.
+- 2026-07-25: All five ordered cancellation trials passed. Identity
+  invalidation took at most 1,200 nanoseconds, worker termination took at most
+  330,300,500 nanoseconds, no trial published a stale unit, every worker
+  exited, and tracked post-cleanup process RAM, VRAM, and worker count were
+  zero.
+- 2026-07-25: The exact-host prototype measured 8,366,579,700 nanoseconds for
+  the maximum cold load, 23,300 nanoseconds for configuration setup, and
+  5,209,888,900 nanoseconds to first complete segment audio after dispatch.
+  Peak process-tree RAM was 4,689,559,552 bytes; authoritative PyTorch
+  peak-reserved VRAM was 5,440,012,288 bytes. Maximum cleanup, including
+  normal graceful cleanup, was 1,030,022,600 nanoseconds.
+- 2026-07-25: Promoted only the schema-valid content-safe result. Deleted the
+  exact disposable input, output, and stderr files, restored the prior
+  45-minute AC sleep setting, and verified zero remaining candidate processes
+  and zero reported GPU utilization/memory. No raw session or generated audio
+  was created.
 
 ## Discoveries and decisions
 
@@ -821,6 +855,17 @@ dependency changes are involved.
     discarded instead of interpreting general intelligibility as numeric or
     punctuation accuracy. `v2` applies each technical dimension only to cases
     whose frozen corpus tags make it meaningful.
+14. The exact high-level Qwen API does not expose native incremental frames or
+    cooperative mid-call cancellation, but a useful bounded topology is still
+    credible: consume one existing narration segment, publish its complete
+    waveform immediately, reject stale identities in the controller, and
+    terminate an isolated worker when cancellation occurs. This is sufficient
+    to continue the evaluation cycle, not sufficient to select the production
+    transport.
+15. The prototype's 5.210-second first-produced-audio observation is not an
+    official warm measurement and does not pass the inherited 3-second gate.
+    It is retained as an honest signal for Milestone 4 rather than interpreted
+    as a prototype failure or hidden by changing the authority.
 
 ## Final validation results
 

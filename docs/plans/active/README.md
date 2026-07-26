@@ -17,5 +17,5 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`M006-001-local-tts-profile-blocker-resolution.md`](M006-001-local-tts-profile-blocker-resolution.md): active Milestone 6.1 plan. Milestone 1 selected Serena for the frozen Qwen3-TTS 1.7B CustomVoice `v3` evaluation; the incremental/cancellation prototype and full official matrices remain, and Milestone 7 stays blocked.
+- [`M006-001-local-tts-profile-blocker-resolution.md`](M006-001-local-tts-profile-blocker-resolution.md): active Milestone 6.1 plan. Milestone 1 selected Serena for the frozen Qwen3-TTS 1.7B CustomVoice `v3` evaluation, and Milestone 2 passed the exact-host segment-delivery/cancellation prototype. Benchmark extension and the full official matrices remain, and Milestone 7 stays blocked.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): retained broader context spanning the completed reader work and later narration synchronization/audio startup. It does not supersede the completed Milestones 4 through 6 authorities and does not authorize blocked Milestone 7 or later work.

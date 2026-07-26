@@ -29,6 +29,7 @@ RESULT_PATH: Final = (
 EXPECTED_HASHES: Final = {
     PROTOTYPE_PATH: "09f3ca90ad6f1a4e8f9cbdce8fb66127694ddee7ad69536d4d694b56801179be",
     SCHEMA_PATH: "8b99efcaa1f817ad29693c254b506b248879794ed2990faa5d57fb93b4cb7058",
+    RESULT_PATH: "32d72315cb6a3a64a2d68b770c3bf8ef6ec4d244def8a04b8db4bb7aef3dfea5",
 }
 TRIAL_ORDER: Final = [
     "before-dispatch",
@@ -47,14 +48,17 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def test_prototype_authority_and_result_schema_are_byte_frozen() -> None:
+def test_prototype_authority_schema_and_safe_result_are_byte_frozen() -> None:
     for path, expected in EXPECTED_HASHES.items():
         assert _sha256(path) == expected
 
     schema = _load(SCHEMA_PATH)
     Draft202012Validator.check_schema(schema)
     assert schema["additionalProperties"] is False
-    assert not RESULT_PATH.exists()
+    result = _load(RESULT_PATH)
+    Draft202012Validator(schema).validate(result)
+    assert result["passed"] is True
+    assert result["failureCodes"] == []
 
 
 def test_prototype_is_bound_to_the_exact_v3_configuration_before_results() -> None:

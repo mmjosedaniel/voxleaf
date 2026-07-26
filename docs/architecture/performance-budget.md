@@ -206,3 +206,16 @@ best-case latency as low as 97 ms is candidate-intake information only: it
 does not establish VoxLeaf first audio, time to 15 seconds of media, sustained
 RTF, cancellation, memory, or command-to-audible performance on the reference
 host.
+
+The later frozen development
+[prototype result](../../benchmarks/tts/incremental-cancellation-prototype-result-v1.json)
+passed the topology stop gate on the exact host. It delivered and released two
+bounded complete-segment waveforms with one queued unit, published zero stale
+units across all five cancellation races, terminated workers within 330.301
+milliseconds, and completed cleanup within 1.030 seconds. Peak process-tree
+RAM was 4,689,559,552 bytes and authoritative PyTorch peak-reserved VRAM was
+5,440,012,288 bytes. Cold load was 8.367 seconds and the first complete
+segment waveform after dispatch took 5.210 seconds. These are development
+topology observations, not official warm-performance results: the 5.210-second
+observation does not pass or replace the unchanged 3-second warm first-audio
+gate, and complete-segment publication is not native frame streaming.
