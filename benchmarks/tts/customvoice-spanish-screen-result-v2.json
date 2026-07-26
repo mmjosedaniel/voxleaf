@@ -1,0 +1,151 @@
+{
+  "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
+  "evaluatorCount": 1,
+  "limitations": [
+    "one-evaluator-intake-screen",
+    "spanish-only",
+    "synthetic-corpus-only",
+    "built-in-speakers-only",
+    "not-production-quality-approval"
+  ],
+  "schemaVersion": "customvoice-spanish-screen-result-v2",
+  "screenVersion": "customvoice-spanish-screen-v2",
+  "selectedSpeaker": "Serena",
+  "speakers": [
+    {
+      "dimensions": {
+        "artifactFreedom": 3.3333333333333335,
+        "audiobookSuitability": 3.6666666666666665,
+        "intelligibility": 3.6666666666666665,
+        "naturalness": 3.0,
+        "numericExpressions": 1.0,
+        "punctuationDialogue": 5.0,
+        "spanishPronunciation": 3.6666666666666665
+      },
+      "eligible": false,
+      "meaningChangingDefects": 2,
+      "overallMean": 3.333333333333333,
+      "speakerId": "Vivian"
+    },
+    {
+      "dimensions": {
+        "artifactFreedom": 4.666666666666667,
+        "audiobookSuitability": 4.666666666666667,
+        "intelligibility": 5.0,
+        "naturalness": 4.333333333333333,
+        "numericExpressions": 4.0,
+        "punctuationDialogue": 5.0,
+        "spanishPronunciation": 4.333333333333333
+      },
+      "eligible": true,
+      "meaningChangingDefects": 0,
+      "overallMean": 4.571428571428571,
+      "speakerId": "Serena"
+    },
+    {
+      "dimensions": {
+        "artifactFreedom": 4.333333333333333,
+        "audiobookSuitability": 3.3333333333333335,
+        "intelligibility": 5.0,
+        "naturalness": 3.0,
+        "numericExpressions": 3.0,
+        "punctuationDialogue": 5.0,
+        "spanishPronunciation": 4.333333333333333
+      },
+      "eligible": true,
+      "meaningChangingDefects": 0,
+      "overallMean": 4.0,
+      "speakerId": "Uncle_Fu"
+    },
+    {
+      "dimensions": {
+        "artifactFreedom": 4.666666666666667,
+        "audiobookSuitability": 4.0,
+        "intelligibility": 4.666666666666667,
+        "naturalness": 4.333333333333333,
+        "numericExpressions": 3.0,
+        "punctuationDialogue": 4.5,
+        "spanishPronunciation": 4.333333333333333
+      },
+      "eligible": true,
+      "meaningChangingDefects": 0,
+      "overallMean": 4.214285714285714,
+      "speakerId": "Dylan"
+    },
+    {
+      "dimensions": {
+        "artifactFreedom": 3.3333333333333335,
+        "audiobookSuitability": 3.3333333333333335,
+        "intelligibility": 4.666666666666667,
+        "naturalness": 3.3333333333333335,
+        "numericExpressions": 3.0,
+        "punctuationDialogue": 5.0,
+        "spanishPronunciation": 4.0
+      },
+      "eligible": true,
+      "meaningChangingDefects": 0,
+      "overallMean": 3.8095238095238098,
+      "speakerId": "Eric"
+    },
+    {
+      "dimensions": {
+        "artifactFreedom": 4.333333333333333,
+        "audiobookSuitability": 3.6666666666666665,
+        "intelligibility": 4.333333333333333,
+        "naturalness": 3.0,
+        "numericExpressions": 4.0,
+        "punctuationDialogue": 4.5,
+        "spanishPronunciation": 4.0
+      },
+      "eligible": true,
+      "meaningChangingDefects": 0,
+      "overallMean": 3.976190476190476,
+      "speakerId": "Ryan"
+    },
+    {
+      "dimensions": {
+        "artifactFreedom": 5.0,
+        "audiobookSuitability": 3.6666666666666665,
+        "intelligibility": 5.0,
+        "naturalness": 3.6666666666666665,
+        "numericExpressions": 4.0,
+        "punctuationDialogue": 3.5,
+        "spanishPronunciation": 4.0
+      },
+      "eligible": true,
+      "meaningChangingDefects": 0,
+      "overallMean": 4.119047619047619,
+      "speakerId": "Aiden"
+    },
+    {
+      "dimensions": {
+        "artifactFreedom": 4.0,
+        "audiobookSuitability": 3.6666666666666665,
+        "intelligibility": 4.666666666666667,
+        "naturalness": 4.0,
+        "numericExpressions": 2.0,
+        "punctuationDialogue": 5.0,
+        "spanishPronunciation": 3.6666666666666665
+      },
+      "eligible": false,
+      "meaningChangingDefects": 1,
+      "overallMean": 3.857142857142857,
+      "speakerId": "Ono_Anna"
+    },
+    {
+      "dimensions": {
+        "artifactFreedom": 4.333333333333333,
+        "audiobookSuitability": 4.0,
+        "intelligibility": 4.666666666666667,
+        "naturalness": 3.6666666666666665,
+        "numericExpressions": 3.0,
+        "punctuationDialogue": 4.5,
+        "spanishPronunciation": 3.6666666666666665
+      },
+      "eligible": false,
+      "meaningChangingDefects": 1,
+      "overallMean": 3.976190476190476,
+      "speakerId": "Sohee"
+    }
+  ]
+}

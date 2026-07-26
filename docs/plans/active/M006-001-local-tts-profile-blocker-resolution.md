@@ -282,6 +282,11 @@ disposable generated speech and produce aggregate error counts, but:
 - `AGENTS.md`
 - `.agents/PLANS.md`
 - `benchmarks/tts/candidates-v1.json`
+- `benchmarks/tts/candidates-v2.json`
+- `benchmarks/tts/candidates-v3.json`
+- `benchmarks/tts/customvoice-spanish-screen-v2.json`
+- `benchmarks/tts/customvoice-spanish-screen-result-v2.json`
+- `benchmarks/tts/profile-v3.json`
 - `benchmarks/tts/selection-v2.md`
 - `docs/product/project-brief.md`
 - `docs/product/mvp.md`
@@ -289,6 +294,7 @@ disposable generated speech and produce aggregate error counts, but:
 - `docs/architecture/system-diagram.md`
 - `docs/architecture/performance-budget.md`
 - `docs/architecture/tts-feasibility-profile-v2.md`
+- `docs/architecture/tts-feasibility-profile-v3.md`
 - `docs/architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md`
 - `docs/development/dependencies.md`
 - `docs/development/setup.md`
@@ -384,12 +390,13 @@ caches, locks, and outputs must remain isolated.
 
 ### Status
 
-In progress. The exact candidate manifest, isolated environment lock,
-corrected pre-audio `customvoice-spanish-screen-v2` authority, closed result
-schema, and model-free screen runner are implemented. The authority contains
-no observed result and
-`selectedSpeaker` remains `null`; the frozen screen must run from a clean
-committed revision before `tts-feasibility-profile-v3` can be published.
+Completed. The exact candidate manifest, isolated environment lock, corrected
+pre-audio `customvoice-spanish-screen-v2` authority, closed result schema, and
+model-free screen runner are implemented. The frozen screen selected Serena,
+its content-safe aggregate is retained, and `tts-feasibility-profile-v3`
+freezes the complete evaluation identity before prototype or official
+results. This is evaluation admission only; ADR-0013 and the Milestone 7
+blocker remain.
 
 ## Milestone 2: Prove incremental output and cancellation credibility
 
@@ -601,10 +608,10 @@ or generated audio may become a fixture.
   Retain it as non-promotable related-runtime evidence and freeze the speaker
   screen plus all official gates before new results.
 
-Rollback is documentation-only until candidate implementation begins: revert
-the plan/roadmap change and retain ADR-0013. Later candidate code remains
-isolated under development-only benchmark projects and can be removed without
-changing production contracts or dependencies.
+Rollback retains the content-safe screen outcome as historical evidence,
+removes only the isolated development candidate project/commands when no
+longer needed, and keeps ADR-0013 authoritative. No production contract or
+dependency changes are involved.
 
 ## Progress log
 
@@ -704,6 +711,26 @@ changing production contracts or dependencies.
   `ad9d835b998d63b6df909050a9d9513957b180ac`
   (`fix(tts): add applicable speaker-screen scoring`). No replacement
   generation request had been accepted before this checkpoint.
+- 2026-07-25: Executed the corrected screen from clean commit
+  `c42eee1328646fbdd846d305d8467dee1b8f3715` under the exact outbound
+  firewall block and offline controls. All 27 first-attempt samples completed
+  in 527.7 seconds; the session retained 17,119,908 audio bytes, remained
+  below the 256 MiB cap, exposed no speaker identity in the evaluator page,
+  and restored the prior AC sleep setting.
+- 2026-07-25: The one fluent-Spanish intake evaluator completed all applicable
+  scores. Frozen ranking selected Serena with overall 4.571428571428571,
+  intelligibility 5.0, Spanish pronunciation 4.333333333333333,
+  punctuation/dialogue 5.0, numeric expressions 4.0, naturalness
+  4.333333333333333, audiobook suitability 4.666666666666667, artifact
+  freedom 4.666666666666667, and zero meaning-changing defects.
+- 2026-07-25: Promoted only the schema-valid content-safe aggregate and froze
+  `profile-v3.json` plus `tts-feasibility-profile-v3.md`. The screen remains
+  one-evaluator intake evidence and does not count toward the later
+  three-person final panel or production approval.
+- 2026-07-25: Deleted both raw screen sessions, all 54 generated WAV files
+  across the abandoned and corrected attempts, both randomization/scorecard
+  working sets, and the downloaded completed scorecard. No generated audio or
+  per-sample result remains.
 
 ## Discoveries and decisions
 
@@ -810,7 +837,26 @@ import, and package-script import smokes passed. The first full
 drift; after applying Ruff, the complete command passed in 26.7 seconds with
 the existing TypeScript scope and 56 Python tests. `git diff --check` also
 passed. No audio has been generated, no evaluator result exists, and
-`selectedSpeaker` remains `null`.
+`selectedSpeaker` remained `null` at that pre-audio checkpoint. The later
+screen/result entries above supersede only that status statement.
 
-Update this section with later implementation commands, outcomes, commit
-identities, and CI evidence as the plan progresses.
+Milestone 1 closeout froze the schema-valid content-safe speaker aggregate and
+`profile-v3.json` before prototype or official benchmark results. The focused
+authority suite and both repository aggregates passed. Final
+`pnpm.cmd check:portable` passed in 27.1 seconds with 18 shared test files /
+175 tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204 tests,
+6 native-WebDriver-client tests, and 57 Python tests.
+`pnpm.cmd check` passed outside the sandbox in 49.5 seconds with the same
+TypeScript/Python evidence plus Rust format, Clippy, crate-test execution,
+native release build, and Python source/wheel packaging. Its sandboxed
+precursor stopped only because Prettier could not scan the protected existing
+`.pytest_cache`. The exact isolated candidate `uv lock --check` resolved all
+107 packages.
+
+All 14 changed Markdown files passed the local-link audit. `git diff --check`,
+changed-file private-path/credential-pattern scans, the tracked
+audio/model/private-input audit, and root/raw-session cleanup checks passed.
+The generic rejected-pattern documentation mentions `input.txt` but contains
+no copy of that private file. No generated audio, scorecard, model weight,
+private input, private path, credential, or raw evaluator submission remains
+in the reviewable tree.

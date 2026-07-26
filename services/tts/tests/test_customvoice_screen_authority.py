@@ -31,6 +31,10 @@ ACTIVE_SCHEMA_PATH: Final = (
     / "schemas"
     / "customvoice-spanish-screen-result-v2.schema.json"
 )
+RESULT_PATH: Final = (
+    REPOSITORY_ROOT / "benchmarks" / "tts" / "customvoice-spanish-screen-result-v2.json"
+)
+PROFILE_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "profile-v3.json"
 EXPECTED_HASHES: Final = {
     MANIFEST_PATH: "89c069fa4fa6c1f88887613c11f93e1c68b6bfa94f137f38e5fa7b37961db793",
     SCREEN_PATH: "462105e09610a8604682f4f904a7f87e7eb03bfbc1f8823923f286ea7d63d793",
@@ -38,6 +42,8 @@ EXPECTED_HASHES: Final = {
     ACTIVE_MANIFEST_PATH: "dce294309f4edd27d4b32fa95eb677f58b399fc71867ce5bc1a7b27049352a72",
     ACTIVE_SCREEN_PATH: "c4a277db8d319c9bb21165a3524233dabdbd38edbb3c8c760948a4a35c04d96d",
     ACTIVE_SCHEMA_PATH: "16091eea8f7d27a5e9f6211494e426e2a81dcc84e736a73f57acb11e3436bfe9",
+    RESULT_PATH: "d55764525a0152e130205b8bb37bc7f7371a5514057928689501897d6e3ac56d",
+    PROFILE_PATH: "7d062a4f662ed95b1cb5ff0a21fc40864f4ac3858cea4314ee612b84c2e08dbe",
 }
 SPEAKERS: Final = (
     "Vivian",
@@ -193,3 +199,41 @@ def test_result_schema_is_strict_and_self_consistent() -> None:
     assert schema["additionalProperties"] is False
     assert speakers["minItems"] == len(SPEAKERS)
     assert speakers["maxItems"] == len(SPEAKERS)
+
+    result = _load(RESULT_PATH)
+    Draft202012Validator(schema).validate(result)
+    assert result["selectedSpeaker"] == "Serena"
+    selected = tuple(
+        speaker
+        for speaker in cast(list[Mapping[str, object]], result["speakers"])
+        if speaker["speakerId"] == "Serena"
+    )
+    assert len(selected) == 1
+    assert selected[0]["eligible"] is True
+    assert selected[0]["meaningChangingDefects"] == 0
+
+
+def test_v3_profile_freezes_the_selected_identity_before_prototype_results() -> None:
+    profile = _load(PROFILE_PATH)
+    candidate = cast(Mapping[str, object], profile["candidate"])
+    voice = cast(Mapping[str, object], candidate["voice"])
+    execution = cast(Mapping[str, object], profile["executionPolicy"])
+    prototype = cast(Mapping[str, object], profile["preAdmissionPrototypeGate"])
+    official = cast(Mapping[str, object], profile["officialEvaluation"])
+
+    assert profile["profileVersion"] == "tts-feasibility-profile-v3"
+    assert profile["status"] == "frozen-before-prototype-and-official-results"
+    assert candidate["candidateId"] == "qwen3-tts-1-7b-customvoice-cuda-bf16-v1"
+    assert voice["speaker"] == "Serena"
+    assert voice["mode"] == "built-in-customvoice"
+    assert candidate["generation"] == {
+        key: value for key, value in GENERATION.items() if key != "language"
+    }
+    assert execution["automaticRetries"] == 0
+    assert execution["whisper"] == "excluded"
+    assert execution["vadOrEnergy"] == "excluded"
+    assert execution["referenceAudio"] == "forbidden"
+    assert prototype["requiredBeforeFullBenchmark"] is True
+    assert prototype["failureOutcome"] == "stop-candidate-cycle-before-full-matrix"
+    assert official["screenResultIsIntakeOnly"] is True
+    assert official["screenEvaluatorCountsTowardFinalPanel"] is False

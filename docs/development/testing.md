@@ -204,13 +204,13 @@ These results validate development evidence only. They do not exercise or imply 
 The active
 [Milestone 6.1 plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md)
 now has a frozen Qwen3-TTS 1.7B CustomVoice candidate manifest, isolated lock,
-pre-audio blinded Spanish built-in-speaker authority, closed result schema,
-and model-free authority/generation/scoring/cleanup tests. Those tests do not
-load a model or require CUDA. The screen still needs one completed evaluator,
-one selected speaker in `v3`, the incremental-output/cancellation prototype,
-exact-host measurements, and complete Spanish quality evaluation. Base voice
-cloning is outside the current MVP. Whisper and VAD/energy analysis are
-excluded from `v3`.
+blinded Spanish built-in-speaker authority, schema-valid content-safe Serena
+selection, frozen `v3`, and model-free
+authority/generation/scoring/cleanup/profile tests. Those tests do not load a
+model or require CUDA. The incremental-output/cancellation prototype,
+exact-host measurements, full three-person Spanish quality panel, audit, and
+closeout remain. Base voice cloning is outside the current MVP. Whisper and
+VAD/energy analysis are excluded from `v3`.
 
 ## Deferred coverage
 

@@ -21,8 +21,13 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   scorecard or result after the evaluator exposed missing numeric-expression
   scoring.
 - `schemas/customvoice-spanish-screen-result-v2.schema.json` is the active
-  closed content-safe result shape. No result exists until the corrected
-  frozen screen has run and every applicable score is complete.
+  closed content-safe result shape.
+- `customvoice-spanish-screen-result-v2.json` is the schema-valid
+  content-safe intake result. It selects Serena with zero meaning-changing
+  defects; it contains no sample IDs, scorecard, audio, text, or path.
+- `profile-v3.json` freezes the complete Serena candidate identity,
+  prototype stop gate, inherited official gates, exclusions, privacy rules,
+  and invalidation authority before any prototype or official result.
 - `corpus-v1.json` freezes the repository-authored prepared-text corpus and
   performance order.
 - `schemas/summary-v2.schema.json` is the current private benchmark-summary
@@ -31,9 +36,10 @@ roadmap Milestone 6. It is not a production TTS service boundary.
 - `fixtures/` contains synthetic validation fixtures, not candidate results.
 - [`selection-v2.md`](selection-v2.md) is the accepted content-free decision
   matrix. It rejects both exact evaluated profiles and links ADR-0013.
-- [`docs/architecture/tts-feasibility-profile-v2.md`](../../docs/architecture/tts-feasibility-profile-v2.md)
-  is the current rerun authority. The superseded `v1` document and fixture
-  remain historical validation evidence only.
+- [`docs/architecture/tts-feasibility-profile-v3.md`](../../docs/architecture/tts-feasibility-profile-v3.md)
+  is the active blocker-resolution authority for the selected Serena
+  development candidate. `v2` remains the completed first-cycle authority and
+  supplies the inherited balanced measurement rules; `v1` remains historical.
 
 Raw measurements, model files, generated audio, listening-session metadata,
 and profiling output belong below `benchmarks/results/raw/`, which is ignored.

@@ -171,8 +171,8 @@ Store summarized, reproducible benchmark reports in Git. Do not commit:
 - Very large raw profiling artifacts.
 
 Milestone 6's
-[`tts-feasibility-profile-v2`](tts-feasibility-profile-v2.md) is the current
-rerun authority for local TTS timing boundaries, process-cold and warm sample
+[`tts-feasibility-profile-v2`](tts-feasibility-profile-v2.md) remains the
+completed first-cycle authority for local TTS timing boundaries, process-cold and warm sample
 counts, sample-derived duration/RTF arithmetic, nearest-rank percentiles,
 cross-checked Windows/PyTorch memory observations, cancellation, blinded
 Spanish quality scoring, and balanced/CPU numeric gates. It measures how
@@ -194,11 +194,13 @@ are exact-host feasibility observations, not new user-visible targets or
 general hardware requirements. The initial playable-audio-lead, buffering, and
 cancellation targets above remain unchanged and unimplemented.
 
-The approved
+The active
 [Milestone 6.1 blocker-resolution plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md)
-does not replace `v2` or add a result. It requires a pre-result
-frozen built-in-speaker screen and `tts-feasibility-profile-v3` before the
-exact Qwen3-TTS 1.7B CustomVoice candidate can be measured officially. Qwen's
+now has a content-safe Serena intake result and frozen
+[`tts-feasibility-profile-v3`](tts-feasibility-profile-v3.md). `v3` inherits
+the unchanged balanced timing/memory gates and WDDM/PyTorch method from `v2`,
+adds the exact candidate identity and a mandatory incremental/cancellation
+prototype stop gate, and remains evaluation-only. Qwen's
 upstream family claim of
 best-case latency as low as 97 ms is candidate-intake information only: it
 does not establish VoxLeaf first audio, time to 15 seconds of media, sustained

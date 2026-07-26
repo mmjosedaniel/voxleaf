@@ -1,0 +1,175 @@
+{
+  "profileVersion": "tts-feasibility-profile-v3",
+  "status": "frozen-before-prototype-and-official-results",
+  "acceptedAt": "2026-07-25",
+  "candidateRole": "balanced",
+  "authorities": {
+    "baseCandidateManifest": {
+      "path": "benchmarks/tts/candidates-v2.json",
+      "sha256": "89c069fa4fa6c1f88887613c11f93e1c68b6bfa94f137f38e5fa7b37961db793"
+    },
+    "candidateManifestCorrection": {
+      "path": "benchmarks/tts/candidates-v3.json",
+      "sha256": "dce294309f4edd27d4b32fa95eb677f58b399fc71867ce5bc1a7b27049352a72"
+    },
+    "speakerScreen": {
+      "path": "benchmarks/tts/customvoice-spanish-screen-v2.json",
+      "sha256": "c4a277db8d319c9bb21165a3524233dabdbd38edbb3c8c760948a4a35c04d96d"
+    },
+    "speakerScreenResult": {
+      "path": "benchmarks/tts/customvoice-spanish-screen-result-v2.json",
+      "sha256": "d55764525a0152e130205b8bb37bc7f7371a5514057928689501897d6e3ac56d"
+    },
+    "corpus": {
+      "path": "benchmarks/tts/corpus-v1.json",
+      "sha256": "7727e0ea0b2763690e3cffbd72074fd907d8bf3ca2a10addd028ba9072df96bb"
+    },
+    "candidateLock": {
+      "path": "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock",
+      "sha256": "1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913"
+    },
+    "inheritedMeasurementProfile": {
+      "path": "docs/architecture/tts-feasibility-profile-v2.md",
+      "sha256": "92384d22a7f8f93761b98448ed24ee3bf829eeb2b32e38aa0f5ac508c201e527"
+    }
+  },
+  "candidate": {
+    "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
+    "engine": {
+      "distribution": "qwen-tts",
+      "version": "0.1.1",
+      "wheelSha256": "11a290d8dabc7ef91a90c54478c8ab19b3edb1d85c0882313721892bdc4af15d"
+    },
+    "model": {
+      "repository": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+      "revision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+      "majorArtifacts": [
+        {
+          "path": "model.safetensors",
+          "sha256": "38b1d5971bdbd982b561cccec982669a53b0537c3cf5e9bd4778ed07bb2f5137",
+          "sizeBytes": 3833402552
+        },
+        {
+          "path": "speech_tokenizer/model.safetensors",
+          "sha256": "836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258",
+          "sizeBytes": 682293092
+        }
+      ]
+    },
+    "voice": {
+      "mode": "built-in-customvoice",
+      "speaker": "Serena",
+      "language": "Spanish",
+      "instruction": "Lee con un tono neutro, claro, natural y sereno, apropiado para narrar un audiolibro; mantén un ritmo moderado y una expresividad contenida."
+    },
+    "runtime": {
+      "operatingSystem": "Windows",
+      "architecture": "x86_64",
+      "python": "3.12.*",
+      "provider": "PyTorch CUDA",
+      "torch": "2.9.1+cu128",
+      "torchaudio": "2.9.1+cu128",
+      "precision": "bfloat16",
+      "attention": "sdpa"
+    },
+    "generation": {
+      "batchSize": 1,
+      "doSample": true,
+      "repetitionPenalty": 1.05,
+      "temperature": 0.9,
+      "topP": 1.0,
+      "topK": 50,
+      "subtalkerDoSample": true,
+      "subtalkerTemperature": 0.9,
+      "subtalkerTopP": 1.0,
+      "subtalkerTopK": 50,
+      "maxNewTokens": 2048
+    }
+  },
+  "executionPolicy": {
+    "modelLifetime": "one-resident-instance-per-session-and-complete-identity",
+    "configurationSwitching": "forbidden",
+    "automaticRetries": 0,
+    "failureAccounting": "first-attempt-is-authoritative",
+    "diagnosticRetry": "separately-labeled-and-never-promotable",
+    "whisper": "excluded",
+    "vadOrEnergy": "excluded",
+    "referenceAudio": "forbidden",
+    "referenceTranscript": "forbidden",
+    "voiceClonePrompt": "forbidden"
+  },
+  "preAdmissionPrototypeGate": {
+    "requiredBeforeFullBenchmark": true,
+    "requirements": [
+      "bounded-narration-v1-segment-input",
+      "audio-unit-delivery-before-advancing-to-next-segment",
+      "after-first-audio-cancellation-or-bounded-worker-termination",
+      "zero-stale-frame-publication",
+      "bounded-ram-vram-input-output-and-queue-retention",
+      "verified-cleanup-after-cancellation"
+    ],
+    "failureOutcome": "stop-candidate-cycle-before-full-matrix"
+  },
+  "officialEvaluation": {
+    "screenResultIsIntakeOnly": true,
+    "screenEvaluatorCountsTowardFinalPanel": false,
+    "performanceAndMemoryProtocol": "inherit-tts-feasibility-profile-v2-balanced-role",
+    "balancedNumericGates": {
+      "maximumColdLoadP95Seconds": 60,
+      "maximumWarmFirstAudioP95Seconds": 3,
+      "maximumWarmFifteenSecondsMediaP95Seconds": 12,
+      "maximumWarmShorterCompleteP95Seconds": 5,
+      "maximumWarmRequestRtfP95": 0.8,
+      "maximumSustainedRequestRtfP95": 0.8,
+      "maximumTotalSustainedRtf": 0.75,
+      "maximumPeakProcessTreeRamBytes": 12884901888,
+      "maximumPeakVramBytes": 6442450944,
+      "maximumFailedOrTimedOutObservations": 0
+    },
+    "cancellationTrials": [
+      "before-dispatch",
+      "accepted-before-audio",
+      "after-first-audio",
+      "after-five-media-seconds",
+      "near-hard-mid-generation"
+    ],
+    "finalQuality": {
+      "minimumIndependentFluentSpanishEvaluators": 3,
+      "minimumOverallMean": 3.5,
+      "minimumIntelligibilityMean": 3.5,
+      "minimumSpanishPronunciationMean": 3.5,
+      "minimumEveryDimensionMean": 3.0,
+      "maximumMeaningChangingDefects": 0
+    },
+    "allOfflinePrivacyArtifactLicensePackagingAndCleanupGatesRequired": true
+  },
+  "privacyAndPersistence": {
+    "officialInferenceUsesVerifiedLocalPath": true,
+    "runtimeDownloads": "forbidden",
+    "outboundFirewallBlockRequired": true,
+    "generatedAudioOutsideIgnoredRawSession": "forbidden",
+    "narrationTextInLogsSummariesOrSnapshots": "forbidden",
+    "rawSessionCleanupAfterSafeDerivation": "required"
+  },
+  "invalidation": {
+    "changesRequireNewProfileVersion": [
+      "authorityHash",
+      "candidate",
+      "modelRevision",
+      "artifactHash",
+      "lock",
+      "runtime",
+      "speaker",
+      "instruction",
+      "generationSetting",
+      "batchSize",
+      "lifetimePolicy",
+      "retryPolicy",
+      "auxiliaryAnalysis",
+      "prototypeGate",
+      "measurementRule",
+      "qualityRule",
+      "privacyRule"
+    ]
+  }
+}
