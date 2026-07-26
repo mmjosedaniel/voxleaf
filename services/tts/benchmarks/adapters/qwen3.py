@@ -363,7 +363,12 @@ def _module_tensors(module: _TorchModel) -> tuple[_DeviceTensor, ...]:
 
 
 def _device_map_is_exact_cuda(value: object) -> bool:
-    return value in (0, "cuda", "cuda:0")
+    if value in (0, "cuda", "cuda:0"):
+        return True
+    try:
+        return _device_label(value) == "cuda:0"
+    except AdapterConfigurationError:
+        return False
 
 
 def _verify_placement(

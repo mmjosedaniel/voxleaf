@@ -348,7 +348,7 @@ def test_qwen_v4_cpu_profile_moves_only_the_speech_tokenizer(
                 model=tokenizer_model,
                 device=Device("cuda:0"),
             )
-            self.hf_device_map = {"": "cuda:0"}
+            self.hf_device_map = {"": Device("cuda:0")}
 
     class Model:
         def __init__(self) -> None:

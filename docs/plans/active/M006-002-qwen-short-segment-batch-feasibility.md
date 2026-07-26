@@ -631,6 +631,17 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
   proves the exact module move, preserved autoregressive CUDA placement,
   admission derivation, official-only command surface, result binding, and
   schema-valid CPU summary derivation. The hardware run remains pending.
+- 2026-07-26: The first official attempt stopped before model load because the
+  invoking PowerShell process lacked the two required offline environment
+  flags; no raw session was created. With those controls restored, the first
+  cold load exposed a fail-closed verifier mismatch: the installed Transformers
+  loader represents its exact `cuda:0` device-map entry as a `torch.device`
+  object rather than the equivalent frozen string. A content-free one-load
+  diagnostic confirmed 400 speech-tokenizer parameters and 150 buffers on CPU,
+  while all 404 other parameters and two other buffers remained on `cuda:0`.
+  The verifier now accepts that exact CUDA object form and still rejects CPU,
+  meta, disk, or mixed device-map entries; focused Ruff, mypy, and nine adapter
+  tests pass.
 
 ## Discoveries and decisions
 
