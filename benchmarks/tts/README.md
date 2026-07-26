@@ -51,6 +51,16 @@ Raw measurements, model files, generated audio, listening-session metadata,
 and profiling output belong below `benchmarks/results/raw/`, which is ignored.
 Nothing below that path is a reviewable result.
 
+Milestone 6.1's explicit `benchmark:tts:prototype` command runs only from the
+exact isolated Qwen candidate interpreter. It accepts one bounded JSON request
+through standard input, repeats official local/offline/firewall preflight,
+holds one exact model/configuration resident per trial, transfers at most one
+complete bounded segment waveform through memory, releases it before the next
+dispatch, and invalidates identity before any forced worker termination. Its
+standard output is a strict content-safe result; candidate output, input text,
+paths, exceptions, and waveform bytes remain transient and are never written
+to the repository or raw storage.
+
 Every raw run uses a content-free directory such as
 `benchmarks/results/raw/<candidate-id>/<session-id>/`. A normal completion,
 rejection, timeout, cancellation, or interrupted setup must delete that exact

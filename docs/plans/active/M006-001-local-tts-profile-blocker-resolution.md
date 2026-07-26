@@ -750,6 +750,23 @@ dependency changes are involved.
   identity invalidation before bounded worker termination, five ordered
   trials, zero stale units, no audio persistence, and a strict content-safe
   result schema.
+- 2026-07-25: Implemented the development-only spawned Qwen prototype behind
+  the exact candidate interpreter. The parent accepts one bounded synthetic
+  prepared segment, the worker retains one exact resident model/configuration,
+  and one complete segment waveform crosses the in-memory pipe before the
+  controller releases it and advances. Cancellation invalidates the complete
+  session/generation/segment/candidate/configuration identity before killing
+  the worker; no production adapter, process protocol, or audio format is
+  selected.
+- 2026-07-25: Added six model-free authority/topology tests. They cover exact
+  hash/schema/configuration binding, narration input and audio/queue ceilings,
+  two-unit delivery/release, all five ordered cancellation/cleanup trials,
+  rejection of deliberately late fake units, fail-closed early completion at
+  the near-hard boundary, and safe-result privacy. The first portable run
+  stopped on one Ruff formatting drift; after formatting,
+  `pnpm.cmd check:portable` passed in 26.3 seconds with 63 Python tests plus
+  the unchanged TypeScript/EPUB/desktop suites and builds. The exact isolated
+  candidate-interpreter import smoke also passed without loading the model.
 
 ## Discoveries and decisions
 

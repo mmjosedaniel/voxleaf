@@ -105,9 +105,7 @@ def test_prototype_input_output_identity_and_trial_bounds_are_closed() -> None:
 
     assert authority["trialOrder"] == TRIAL_ORDER
     assert topology["nativeGenerationGranularity"] == "complete-waveform"
-    assert topology["publishedUnitGranularity"] == (
-        "one-complete-waveform-per-narration-segment"
-    )
+    assert topology["publishedUnitGranularity"] == ("one-complete-waveform-per-narration-segment")
     assert topology["midSegmentStopMode"] == "worker-process-termination"
     assert topology["automaticRetries"] == 0
     assert input_authority["batchSize"] == 1
