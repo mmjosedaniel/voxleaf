@@ -1440,11 +1440,47 @@ Selected profiles pass their gates; failed candidates and unavailable measuremen
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- The accepted Qwen `v2` matrix is bound to clean revision
+  `76f27d1ff41b4d4ea1e20341b9a4cd9d86b3f8ff` and content-free run ID
+  `1087e0bfc07f46299451f0cc4e1916e5`. The accepted Supertonic `v2` matrix
+  is bound to clean revision
+  `a0640fe7ff1c3bde4ceb68ba8e89cb57150adaac` and run ID
+  `fcb61f2f85c049d68b11ec5cc4d29105`. Both evidence commits remain
+  reachable in repository history.
+- The blinded quality session
+  `f85c4201a73441b6ae1cb0058aeb8ba6` remains bound to clean revision
+  `8251945566dd64037b47a335bceb58e7e0d49548`. It generated the complete
+  24-sample comparison, accepted the one fluent-Spanish evaluator's complete
+  scorecard, retained all frozen limitations, and remained correctly
+  non-promotable.
+- The exact measured Windows/Python/engine/runtime/CPU/GPU configurations,
+  numeric matrices, limited quality means and defects, license/offline audit,
+  packaging risks, and failed gates remain recorded in Tasks 3.1–3.4,
+  `selection-v2`, and ADR-0013. No unavailable or limited value was converted
+  into a favorable result.
+- No protocol, corpus, candidate identity, adapter behavior, measurement
+  semantic, or gate changed after the complete `v2` cycle. The later guarded
+  Windows DLL loader is a typing/portability repair with identical Windows
+  loading behavior. Under the frozen invalidation rule, no new hardware run
+  is required; a normative change would require a new `v3` authority and a
+  complete rerun rather than silently replacing `v2` evidence.
+- Closeout found the three ignored historical performance journals still
+  present: the Qwen `v2`, Supertonic `v2`, and non-comparable Supertonic `v1`
+  sessions. Their exact directories were verified below
+  `benchmarks/results/raw/` and removed after the content-free selection
+  record was confirmed. The raw root now contains zero files and zero WAVs.
+- Native cleanup verification reports no matching temporary benchmark
+  firewall rule. The balanced Windows power scheme reports AC sleep at
+  `0x00000a8c` seconds, equal to the restored 45-minute value.
 
 #### Status
 
-Not started.
+Complete — both exact profiles have complete accepted `v2` performance,
+resource, cancellation, offline, audit, and cleanup evidence; the limited
+one-evaluator quality result remains visibly non-promotable; neither rejected
+profile is selected.
 
 ### Task 5.3: Complete CI, privacy, artifact, and scope closeout
 
@@ -1812,6 +1848,12 @@ A profile is selectable only when its performance, quality, capability, license,
   formatting/lint/type/test/build checks pass, all 50 Python tests pass, and
   both portable and authoritative native aggregate repository checks pass. No
   model was constructed, no weight was loaded, and no audio was generated.
+- 2026-07-25: Completed Task 5.2. Revalidated the clean Qwen, Supertonic, and
+  quality evidence revisions plus their content-free run identities. No
+  normative `v2` input changed, so the frozen rule does not require another
+  hardware cycle. Closeout removed three overlooked ignored raw performance
+  journals and confirmed zero remaining raw files/WAVs, no temporary benchmark
+  firewall rule, and restored 45-minute AC sleep.
 
 ## Discoveries and decisions
 
@@ -1823,6 +1865,10 @@ A profile is selectable only when its performance, quality, capability, license,
   not select either profile or authorize a production dependency.
 - Official model execution must be offline after explicit acquisition. A local loopback server is not required for feasibility and would prematurely couple the work to Milestone 7.
 - The exact application-scoped Windows Firewall rule requires an administrator PowerShell session. Ordinary repository/tool sandbox escalation does not grant that operating-system authorization; an access-denied attempt created no rule and is a hard preflight blocker rather than permission to weaken the offline gate.
+- Tracked-artifact audits do not prove ignored raw-session cleanup. Milestone 5
+  must inspect the confined ignored raw root directly; this closeout found and
+  removed the three completed performance journals after their content-free
+  decision evidence was confirmed.
 - Milestone 2 intentionally adds no root TTS benchmark command. The candidate dispatch and isolation boundary now exist, but acquisition, host/resource preflight, network-disable proof, raw-session ownership, measurement probes, and official promotion are Task 3 work; exposing a partial command would create a non-authoritative result path.
 - First produced audio, complete generated output, media duration, and audible playback are different measurements. Milestone 6 can measure the first three but does not implement or claim the fourth.
 - A benchmark worker process may be used for isolation and termination measurement without selecting the production process transport.
