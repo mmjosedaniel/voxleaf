@@ -59,6 +59,10 @@ requires a separate product, consent, privacy, and persistence decision.
   complete-panel, and zero-defect quality gates.
 - Both adapters exposed complete waveforms. Neither proved incremental local
   audio delivery or usable cancellation after audio began.
+- The exact `v3` development prototype now proves bounded complete-segment
+  delivery, identity-first stale rejection, and worker-termination
+  cancellation on the authoritative host. It does not yet supply official
+  performance/quality results or a production runtime.
 - The production `services/tts` package still has zero runtime dependencies.
 
 ### Maintainer-provided Qwen voice-cloning prototype
@@ -946,3 +950,33 @@ Milestone 1 is complete at
 `e14c7770bdd9bc8be2bd392fe011f0c1dea249c0`. This completion admits the exact
 Serena profile only to Milestone 2's pre-admission prototype. It does not
 select a production engine or unblock Milestone 7.
+
+Milestone 2 implemented and froze its authority in
+`a9622b7` (`docs(tts): freeze incremental cancellation prototype`), then
+implemented the model-free topology and exact candidate command in `1cc4fd2`
+(`feat(tts): prototype bounded segment cancellation`). The focused final
+authority/topology suite passed with 6 tests. The exact candidate lock check
+resolved all 107 packages.
+
+The hardware execution and schema-valid content-safe result were committed as
+`2a7017e` (`feat(tts): record passing incremental prototype`). From that
+committed state, `pnpm.cmd check:portable` passed in 26.2 seconds and
+`pnpm.cmd check` passed in 48.5 seconds. Both included 18 shared test files /
+175 tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204 tests,
+6 native-WebDriver-client tests, and 63 Python tests. The native aggregate
+also passed Rust formatting, Clippy, crate tests, the release build, and
+Python source/wheel packaging. The existing Vite chunk-size advisory remained
+informational.
+
+All relative links in the 14 changed Markdown files resolved. `git diff
+--check`, changed-file private-path/credential scans across 22 changed files,
+the tracked audio/model/private-input scan, and ignored raw-file cleanup scan
+passed. No prototype Python worker remains; the pre-run 45-minute AC sleep
+setting is restored. The only GPU compute row after the run is unrelated to
+the prototype. No generated audio, raw result file, model weight, private
+path, credential, or user content was committed.
+
+Milestone 2 is complete. The passing result permits Milestone 3 to extend the
+candidate-neutral benchmark, but does not select the candidate, supersede
+ADR-0013, unblock Milestone 7, claim native waveform streaming, or claim that
+the inherited 3-second warm first-audio gate passed.
