@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ctypes
 from dataclasses import dataclass
 
 import pytest
@@ -12,7 +13,19 @@ from benchmarks.memory import (
     ProcessTreeMemoryProbe,
     WindowsGpuProcessMemorySampler,
     WindowsProcessResourceSampler,
+    _load_windows_dll,
 )
+
+
+def test_windows_dll_loader_fails_closed_when_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delattr(ctypes, "WinDLL", raising=False)
+    with pytest.raises(
+        RuntimeError,
+        match=r"^tts-benchmark-memory:windows-required$",
+    ):
+        _load_windows_dll("pdh")
 
 
 @dataclass

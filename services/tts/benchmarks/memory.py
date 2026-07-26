@@ -9,7 +9,7 @@ import threading
 import time
 from ctypes import wintypes
 from dataclasses import dataclass
-from typing import Final, Protocol
+from typing import Final, Protocol, cast
 
 from benchmarks.contracts import MemoryObservation
 
@@ -25,6 +25,13 @@ _PDH_MORE_DATA: Final = 0x800007D2
 _PDH_VALID_DATA: Final = 0
 _GPU_PROCESS_MEMORY_COUNTER: Final = r"\GPU Process Memory(*)\Dedicated Usage"
 _GPU_INSTANCE_PID = re.compile(r"^pid_([0-9]+)_")
+
+
+def _load_windows_dll(name: str) -> ctypes.CDLL:
+    loader = getattr(ctypes, "WinDLL", None)
+    if loader is None:
+        raise RuntimeError("tts-benchmark-memory:windows-required")
+    return cast(ctypes.CDLL, loader(name, use_last_error=True))
 
 
 class _ProcessEntry32W(ctypes.Structure):
@@ -145,7 +152,7 @@ class WindowsGpuProcessMemorySampler:
     def __init__(self) -> None:
         if os.name != "nt":
             raise RuntimeError("tts-benchmark-memory:windows-required")
-        self._pdh = ctypes.WinDLL("pdh", use_last_error=True)
+        self._pdh = _load_windows_dll("pdh")
         self._pdh.PdhOpenQueryW.argtypes = (
             wintypes.LPCWSTR,
             ctypes.c_size_t,
@@ -287,8 +294,8 @@ class WindowsProcessResourceSampler:
     def __init__(self, *, vram_sampler: ProcessVramSampler | None = None) -> None:
         if os.name != "nt":
             raise RuntimeError("tts-benchmark-memory:windows-required")
-        self._kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-        self._psapi = ctypes.WinDLL("psapi", use_last_error=True)
+        self._kernel32 = _load_windows_dll("kernel32")
+        self._psapi = _load_windows_dll("psapi")
         self._kernel32.CreateToolhelp32Snapshot.argtypes = (wintypes.DWORD, wintypes.DWORD)
         self._kernel32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
         self._kernel32.Process32FirstW.argtypes = (
