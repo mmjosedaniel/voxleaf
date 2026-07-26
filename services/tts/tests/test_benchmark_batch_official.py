@@ -6,7 +6,7 @@ import subprocess
 import time
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Final, cast
+from typing import Final, Literal, cast
 
 from benchmarks.batch_contracts import (
     BatchAudioUnit,
@@ -17,19 +17,47 @@ from benchmarks.batch_official import (
     execute_official_v4,
 )
 from benchmarks.batch_result import derive_v4_summary
-from benchmarks.contracts import CancellationResponse
-from benchmarks.v4_authority import validate_v4_result
+from benchmarks.contracts import (
+    AdapterPlacementEvidence,
+    CancellationResponse,
+    PlacementProfileId,
+)
+from benchmarks.v4_authority import (
+    CPU_PROFILE_ID,
+    FULL_GPU_PROFILE_ID,
+    load_frozen_cpu_admission,
+    validate_v4_result,
+)
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 
 
 class _Candidate:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        placement_profile_id: PlacementProfileId = FULL_GPU_PROFILE_ID,
+    ) -> None:
         self._worker_pid: int | None = None
+        tokenizer_device: Literal["cuda:0", "cpu"] = (
+            "cpu" if placement_profile_id == CPU_PROFILE_ID else "cuda:0"
+        )
+        self._placement_evidence = AdapterPlacementEvidence(
+            profile_id=placement_profile_id,
+            autoregressive_model_device="cuda:0",
+            speech_tokenizer_model_device=tokenizer_device,
+            speech_tokenizer_wrapper_device=tokenizer_device,
+            disk_or_meta_parameters=0,
+            implicit_fallback=False,
+            offload_directory_created=False,
+        )
 
     @property
     def worker_pid(self) -> int | None:
         return self._worker_pid
+
+    @property
+    def placement_evidence(self) -> AdapterPlacementEvidence:
+        return self._placement_evidence
 
     def load(self) -> None:
         self._worker_pid = 1
@@ -216,3 +244,27 @@ def test_official_shared_memory_stop_remains_derivable() -> None:
     )
     assert summary["failureCodes"]
     assert summary["memory"] == execution.raw["memory"]
+
+
+def test_official_cpu_placement_binds_the_admitted_full_gpu_result() -> None:
+    admission = load_frozen_cpu_admission(REPOSITORY_ROOT).as_raw()
+    execution = execute_official_v4(
+        REPOSITORY_ROOT,
+        execution_commit_sha=_head(),
+        host=_host(),
+        preflight=_preflight(),
+        candidate_factory=lambda: _Candidate(CPU_PROFILE_ID),
+        monitor=_Monitor(),
+        placement_profile_id=CPU_PROFILE_ID,
+        cpu_admission=admission,
+    )
+    assert execution.raw["placementProfileId"] == CPU_PROFILE_ID
+    assert execution.raw["cpuAdmission"] == admission
+    summary = derive_v4_summary(
+        REPOSITORY_ROOT,
+        execution.raw,
+        list(execution.load_observations),
+        ancestry_checker=lambda _authority, _execution: True,
+    )
+    assert summary["placementProfileId"] == CPU_PROFILE_ID
+    assert cast(dict[str, object], summary["audits"])["approvedPlacement"] is True

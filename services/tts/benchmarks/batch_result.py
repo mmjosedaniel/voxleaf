@@ -8,7 +8,12 @@ from pathlib import Path
 from typing import cast
 
 from benchmarks.metrics import nanoseconds_to_seconds, nearest_rank
-from benchmarks.v4_authority import validate_v4_result
+from benchmarks.v4_authority import (
+    CPU_PROFILE_ID,
+    FULL_GPU_PROFILE_ID,
+    load_frozen_cpu_admission,
+    validate_v4_result,
+)
 
 
 class BatchResultError(RuntimeError):
@@ -119,6 +124,12 @@ def derive_v4_summary(
         ancestry_checker=ancestry_checker,
     )
     raw = _mapping(raw_value, "raw")
+    placement_profile_id = raw.get("placementProfileId")
+    if placement_profile_id == CPU_PROFILE_ID:
+        if raw.get("cpuAdmission") != load_frozen_cpu_admission(repository_root).as_raw():
+            raise BatchResultError("cpu-admission")
+    elif placement_profile_id != FULL_GPU_PROFILE_ID:
+        raise BatchResultError("placement")
     loads = _load_observations(load_value)
     calls = tuple(_mapping(item, "calls") for item in _sequence(raw.get("calls"), "calls"))
     units = tuple(_mapping(item, "units") for item in _sequence(raw.get("units"), "units"))
@@ -280,7 +291,7 @@ def derive_v4_summary(
         ),
         "noSharedGpuPaging": (_integer(raw_memory.get("peakSharedGpuMemoryBytes"), "memory") == 0),
         "noDiskOffload": True,
-        "approvedPlacement": raw.get("placementProfileId") == "qwen3-serena-v4-full-gpu",
+        "approvedPlacement": placement_profile_id in (FULL_GPU_PROFILE_ID, CPU_PROFILE_ID),
     }
     all_audits = all(audits.values())
     raw_failures = [

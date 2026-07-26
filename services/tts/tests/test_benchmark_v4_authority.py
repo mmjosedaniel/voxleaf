@@ -16,10 +16,12 @@ from benchmarks.v4_authority import (
     CORPUS_SHA256,
     CPU_PROFILE_ID,
     FULL_GPU_PROFILE_ID,
+    FULL_GPU_RESULT_SHA256,
     PROFILE_SHA256,
     RAW_SCHEMA_SHA256,
     SUMMARY_SCHEMA_SHA256,
     V4AuthorityError,
+    load_frozen_cpu_admission,
     load_frozen_v4_authority,
     validate_v4_result,
 )
@@ -376,6 +378,19 @@ def test_v4_authority_is_byte_frozen_before_the_committed_result() -> None:
     assert result["memory"]["memoryStopCode"] == "shared-gpu-memory"
     assert result["conclusions"]["schedulingSustainability"]["outcome"] == "fail"
     assert not (REPOSITORY_ROOT / "benchmarks/tts/selection-v4.md").exists()
+
+
+def test_committed_full_gpu_stop_admits_only_the_frozen_cpu_arm() -> None:
+    admission = load_frozen_cpu_admission(REPOSITORY_ROOT)
+    result_path = REPOSITORY_ROOT / "benchmarks/tts/short-segment-batch-result-v4.json"
+    assert admission.full_gpu_memory_stop_code == "shared-gpu-memory"
+    assert admission.full_gpu_result_sha256 == hashlib.sha256(result_path.read_bytes()).hexdigest()
+    assert admission.full_gpu_result_sha256 == FULL_GPU_RESULT_SHA256
+    assert admission.as_raw() == {
+        "status": "admitted",
+        "fullGpuMemoryStopCode": "shared-gpu-memory",
+        "fullGpuResultSha256": admission.full_gpu_result_sha256,
+    }
 
 
 def test_v4_raw_result_rejects_missing_pairs_reordering_and_retry() -> None:

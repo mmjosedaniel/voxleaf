@@ -335,7 +335,13 @@ quality evidence existed.
 
 #### Status
 
-Admitted by Milestone 3's exact `shared-gpu-memory` stop; not started.
+In progress on 2026-07-26. Milestone 3's exact `shared-gpu-memory` stop was
+reverified from the committed content-safe result and admits this arm. The
+benchmark now derives that admission from the fixed full-GPU result, applies
+only the frozen speech-tokenizer CPU move, and fails closed unless every other
+model parameter remains on `cuda:0` with no disk/meta placement or implicit
+fallback. Deterministic implementation validation passes; the admitted hardware
+run has not yet started.
 
 ### Milestone 5: Evaluate playback credibility and bounded quality
 
@@ -605,6 +611,26 @@ Never delete or rewrite `v2`, failed batch-one `v3`, ADR-0013, or ADR-0014.
   RTF, startup, buffer, or short-unit duration evidence. The exact memory stop
   admits the separately frozen targeted-CPU Milestone 4 arm; it does not prove
   that CPU placement will be faster or viable.
+- 2026-07-26: Created branch `feat/m006-2-targeted-cpu-arm` from merged `main`
+  at `32e18fb`. Reverified the committed full-GPU summary rather than accepting
+  caller-provided admission: its SHA-256 is
+  `9ce8141fa5987878ab29bf472f6f16dc3a6370dd4ffcc1141b30964914c62e32`,
+  its exact stop is `shared-gpu-memory`, all 36 measured first attempts failed,
+  zero retries occurred, cleanup/privacy passed, and both performance
+  conclusions failed.
+- 2026-07-26: Implemented the frozen conditional placement without adding a
+  production dependency or changing the v4 authority. Each isolated candidate
+  first loads the exact model on `cuda:0`, then moves only
+  `model.speech_tokenizer.model` and its wrapper device to CPU, clears the CUDA
+  cache, and reports content-free placement evidence. Every official cold,
+  measured, and cancellation worker rejects a CPU/meta/disk/fallback mismatch
+  before generation. CPU execution is official-only and its admission is bound
+  to the fixed committed full-GPU result hash.
+- 2026-07-26: The first deterministic Milestone 4 checkpoint passes Ruff,
+  strict mypy over 58 source files, and 25 focused tests. New model-free coverage
+  proves the exact module move, preserved autoregressive CUDA placement,
+  admission derivation, official-only command surface, result binding, and
+  schema-valid CPU summary derivation. The hardware run remains pending.
 
 ## Discoveries and decisions
 

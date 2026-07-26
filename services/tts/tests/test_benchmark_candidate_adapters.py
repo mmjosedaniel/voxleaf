@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Final, cast
@@ -30,6 +31,7 @@ from benchmarks.batch_contracts import (
     BatchWorkIdentity,
 )
 from benchmarks.contracts import GenerationRequest
+from benchmarks.v4_authority import CPU_PROFILE_ID
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 MANIFEST_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "candidates-v1.json"
@@ -293,6 +295,116 @@ def test_qwen_v4_batch_adapter_uses_one_list_call_and_preserves_unit_identity(
     assert generated["speaker"] == ["Serena", "Serena"]
     assert generated["instruct"] == [profile.instruction, profile.instruction]
     assert "batchSize" not in generated
+
+
+def test_qwen_v4_cpu_profile_moves_only_the_speech_tokenizer(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+    monkeypatch.setenv("TRANSFORMERS_OFFLINE", "1")
+    profile = load_v3_candidate_profile(REPOSITORY_ROOT, QWEN_V3_CANDIDATE_ID)
+    calls: dict[str, object] = {}
+
+    class Device:
+        def __init__(self, label: str) -> None:
+            device_type, _, raw_index = label.partition(":")
+            self.type = device_type
+            self.index = int(raw_index) if raw_index else None
+
+    class Tensor:
+        def __init__(self, label: str) -> None:
+            self.device = Device(label)
+
+    class Module:
+        def __init__(self, parameters: list[Tensor], buffers: list[Tensor]) -> None:
+            self._parameters = parameters
+            self._buffers = buffers
+
+        def parameters(self) -> Iterator[Tensor]:
+            return iter(self._parameters)
+
+        def buffers(self) -> Iterator[Tensor]:
+            return iter(self._buffers)
+
+        def to(self, device: str) -> Module:
+            calls["tokenizer_to"] = device
+            for tensor in (*self._parameters, *self._buffers):
+                tensor.device = Device(device)
+            return self
+
+    tokenizer_parameter = Tensor("cuda:0")
+    tokenizer_buffer = Tensor("cuda:0")
+    autoregressive_parameter = Tensor("cuda:0")
+    tokenizer_model = Module([tokenizer_parameter], [tokenizer_buffer])
+
+    class Inner(Module):
+        def __init__(self) -> None:
+            super().__init__(
+                [autoregressive_parameter, tokenizer_parameter],
+                [tokenizer_buffer],
+            )
+            self.speech_tokenizer = SimpleNamespace(
+                model=tokenizer_model,
+                device=Device("cuda:0"),
+            )
+            self.hf_device_map = {"": "cuda:0"}
+
+    class Model:
+        def __init__(self) -> None:
+            self.model = Inner()
+
+    class ModelClass:
+        @staticmethod
+        def from_pretrained(path: str, **kwargs: object) -> Model:
+            del path, kwargs
+            return Model()
+
+    torch = ModuleType("torch")
+    torch.__dict__["bfloat16"] = object()
+    torch.__dict__["device"] = Device
+    torch.__dict__["cuda"] = SimpleNamespace(
+        is_available=lambda: True,
+        is_bf16_supported=lambda: True,
+        reset_peak_memory_stats=lambda: None,
+        max_memory_reserved=lambda: 2_000_000_000,
+        empty_cache=lambda: calls.update(empty_cache=True),
+    )
+    qwen = ModuleType("qwen_tts")
+    qwen.__dict__["Qwen3TTSModel"] = ModelClass
+    monkeypatch.setattr(
+        "benchmarks.adapters.qwen3.validate_configuration",
+        lambda _profile, _configuration: tmp_path.resolve(),
+    )
+    monkeypatch.setattr(
+        "benchmarks.adapters.qwen3.verify_artifacts",
+        lambda _root, _artifacts: None,
+    )
+
+    adapter = Qwen3TtsAdapter(
+        profile,
+        _configuration(profile, tmp_path),
+        placement_profile_id=CPU_PROFILE_ID,
+        importer=lambda name: {"torch": torch, "qwen_tts": qwen}[name],
+        version_reader={
+            "qwen-tts": "0.1.1",
+            "torch": "2.9.1+cu128",
+            "torchaudio": "2.9.1+cu128",
+        }.__getitem__,
+    )
+    adapter.load()
+
+    evidence = adapter.placement_evidence()
+    assert evidence is not None
+    assert evidence.profile_id == CPU_PROFILE_ID
+    assert evidence.autoregressive_model_device == "cuda:0"
+    assert evidence.speech_tokenizer_model_device == "cpu"
+    assert evidence.speech_tokenizer_wrapper_device == "cpu"
+    assert calls["tokenizer_to"] == "cpu"
+    assert calls["empty_cache"] is True
+    assert autoregressive_parameter.device.type == "cuda"
+    assert tokenizer_parameter.device.type == "cpu"
+    assert tokenizer_buffer.device.type == "cpu"
 
 
 def test_supertonic_adapter_forces_local_cpu_profile_and_discards_waveform(

@@ -22,6 +22,7 @@ from benchmarks.contracts import (
     AdapterCapabilities,
     AdapterFactory,
     AdapterOperationError,
+    AdapterPlacementEvidence,
     AudioChunk,
     BenchmarkAdapter,
     CancellationResponse,
@@ -77,6 +78,18 @@ def _framework_peak(adapter: BenchmarkAdapter) -> int | None:
     return value
 
 
+def _placement_evidence(adapter: BenchmarkAdapter) -> AdapterPlacementEvidence | None:
+    reader = getattr(adapter, "placement_evidence", None)
+    if reader is None:
+        return None
+    if not callable(reader):
+        raise AdapterOperationError("load-failed")
+    value = cast(object, reader())
+    if value is not None and not isinstance(value, AdapterPlacementEvidence):
+        raise AdapterOperationError("load-failed")
+    return value
+
+
 def _worker_command(
     adapter: BenchmarkAdapter,
     connection: _WorkerConnection,
@@ -114,7 +127,11 @@ def _worker_command(
         with capture:
             if command == "load":
                 adapter.load()
-                response: _Message = ("ok", _framework_peak(adapter))
+                response: _Message = (
+                    "ok",
+                    _framework_peak(adapter),
+                    _placement_evidence(adapter),
+                )
             elif command == "warmup" and request is not None:
                 adapter.warm_up(request)
                 response = ("ok", _framework_peak(adapter))
@@ -267,6 +284,7 @@ class IsolatedBenchmarkAdapter:
         self._context = context or multiprocessing.get_context("spawn")
         self._framework_memory_observer = framework_memory_observer
         self._peak_framework_vram_bytes: int | None = None
+        self._placement_evidence: AdapterPlacementEvidence | None = None
         self._capabilities = adapter_factory().capabilities()
         self._process: BaseProcess | None = None
         self._connection: _WorkerConnection | None = None
@@ -282,6 +300,10 @@ class IsolatedBenchmarkAdapter:
     def capabilities(self) -> AdapterCapabilities:
         return self._capabilities
 
+    @property
+    def placement_evidence(self) -> AdapterPlacementEvidence | None:
+        return self._placement_evidence
+
     def _start(self) -> None:
         if self.worker_pid is not None:
             return
@@ -296,6 +318,7 @@ class IsolatedBenchmarkAdapter:
         self._connection = cast(_WorkerConnection, parent)
         self._process = process
         self._loaded = False
+        self._placement_evidence = None
 
     def _send(self, message: _Message) -> None:
         connection = self._connection
@@ -343,6 +366,13 @@ class IsolatedBenchmarkAdapter:
 
     def _expect_ok(self, timeout_seconds: float) -> None:
         response = self.receive(timeout_seconds)
+        if len(response) == 3 and response[0] == "ok":
+            self.observe_framework_peak(response[1])
+            evidence = response[2]
+            if evidence is not None and not isinstance(evidence, AdapterPlacementEvidence):
+                self.abort("load-failed")
+            self._placement_evidence = cast(AdapterPlacementEvidence | None, evidence)
+            return
         if len(response) == 2 and response[0] == "ok":
             self.observe_framework_peak(response[1])
             return
@@ -427,6 +457,7 @@ class IsolatedBenchmarkAdapter:
         self._process = None
         self._connection = None
         self._loaded = False
+        self._placement_evidence = None
         self._active_request_id = None
         if connection is not None:
             with suppress(Exception):

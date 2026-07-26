@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import importlib
 import os
-from collections.abc import Callable, Iterator, Sequence, Sized
+from collections.abc import Callable, Iterator, Mapping, Sequence, Sized
 from importlib import metadata
 from types import ModuleType
-from typing import Final, Protocol, cast
+from typing import Final, Literal, Protocol, cast
 
 from benchmarks.adapters.manifest import (
     QWEN_CANDIDATE_ID,
@@ -26,9 +26,11 @@ from benchmarks.batch_contracts import (
 )
 from benchmarks.contracts import (
     AdapterCapabilities,
+    AdapterPlacementEvidence,
     AudioChunk,
     CancellationResponse,
     GenerationRequest,
+    PlacementProfileId,
 )
 
 type ModuleImporter = Callable[[str], ModuleType]
@@ -50,9 +52,34 @@ class _CudaRuntime(Protocol):
 class _TorchModule(Protocol):
     cuda: _CudaRuntime
     bfloat16: object
+    device: Callable[[str], object]
+
+
+class _DeviceTensor(Protocol):
+    device: object
+
+
+class _TorchModel(Protocol):
+    def to(self, device: str) -> object: ...
+
+    def parameters(self) -> Iterator[_DeviceTensor]: ...
+
+    def buffers(self) -> Iterator[_DeviceTensor]: ...
+
+
+class _SpeechTokenizer(Protocol):
+    model: _TorchModel
+    device: object
+
+
+class _QwenInnerModel(_TorchModel, Protocol):
+    speech_tokenizer: _SpeechTokenizer
+    hf_device_map: Mapping[str, object]
 
 
 class _QwenModel(Protocol):
+    model: _QwenInnerModel
+
     def generate_custom_voice(
         self,
         *,
@@ -79,6 +106,7 @@ class Qwen3TtsAdapter:
         profile: CandidateProfile,
         configuration: CandidateConfiguration,
         *,
+        placement_profile_id: PlacementProfileId | None = None,
         importer: ModuleImporter = importlib.import_module,
         version_reader: VersionReader = metadata.version,
     ) -> None:
@@ -89,6 +117,8 @@ class Qwen3TtsAdapter:
         self._configuration = configuration
         self._importer = importer
         self._version_reader = version_reader
+        self._placement_profile_id = placement_profile_id
+        self._placement_evidence: AdapterPlacementEvidence | None = None
         self._model: _QwenModel | None = None
         self._torch: _TorchModule | None = None
         self._peak_framework_vram_bytes: int | None = None
@@ -141,12 +171,28 @@ class Qwen3TtsAdapter:
                 attn_implementation="sdpa",
                 local_files_only=True,
             )
+            if self._placement_profile_id is not None:
+                if self._profile.candidate_id != QWEN_V3_CANDIDATE_ID:
+                    raise AdapterConfigurationError("placement")
+                if self._placement_profile_id == "qwen3-serena-v4-speech-tokenizer-cpu":
+                    model.model.speech_tokenizer.model.to("cpu")
+                    model.model.speech_tokenizer.device = torch.device("cpu")
+                    cuda.empty_cache()
+                self._placement_evidence = _verify_placement(
+                    model,
+                    self._placement_profile_id,
+                )
         except AdapterConfigurationError:
             raise
         except Exception:
             raise AdapterConfigurationError("load-failed") from None
         self._torch = torch
         self._model = model
+
+    def placement_evidence(self) -> AdapterPlacementEvidence | None:
+        """Return the verified content-free v4 placement after load."""
+
+        return self._placement_evidence
 
     def warm_up(self, request: GenerationRequest) -> None:
         for _ in self.generate(request):
@@ -291,6 +337,7 @@ class Qwen3TtsAdapter:
     def close(self) -> None:
         self.framework_memory_high_water_bytes()
         self._model = None
+        self._placement_evidence = None
         torch = self._torch
         self._torch = None
         if torch is None:
@@ -299,3 +346,71 @@ class Qwen3TtsAdapter:
             torch.cuda.empty_cache()
         except Exception:
             raise AdapterConfigurationError("cleanup-failed") from None
+
+
+def _device_label(value: object) -> str:
+    device_type = getattr(value, "type", None)
+    index = getattr(value, "index", None)
+    if device_type == "cpu":
+        return "cpu"
+    if device_type == "cuda" and index == 0:
+        return "cuda:0"
+    raise AdapterConfigurationError("placement")
+
+
+def _module_tensors(module: _TorchModel) -> tuple[_DeviceTensor, ...]:
+    return (*tuple(module.parameters()), *tuple(module.buffers()))
+
+
+def _device_map_is_exact_cuda(value: object) -> bool:
+    return value in (0, "cuda", "cuda:0")
+
+
+def _verify_placement(
+    model: _QwenModel,
+    profile_id: PlacementProfileId,
+) -> AdapterPlacementEvidence:
+    inner = model.model
+    tokenizer = inner.speech_tokenizer
+    tokenizer_parameters = tuple(tokenizer.model.parameters())
+    tokenizer_tensors = _module_tensors(tokenizer.model)
+    tokenizer_parameter_ids = {id(parameter) for parameter in tokenizer_parameters}
+    other_parameters = tuple(
+        parameter
+        for parameter in inner.parameters()
+        if id(parameter) not in tokenizer_parameter_ids
+    )
+    other_tensors = tuple(
+        tensor
+        for tensor in _module_tensors(inner)
+        if id(tensor) not in {id(item) for item in tokenizer_tensors}
+    )
+    expected_tokenizer_device: Literal["cuda:0", "cpu"] = (
+        "cpu" if profile_id == "qwen3-serena-v4-speech-tokenizer-cpu" else "cuda:0"
+    )
+    device_map = getattr(inner, "hf_device_map", None)
+    if (
+        not tokenizer_parameters
+        or not other_parameters
+        or not tokenizer_tensors
+        or not other_tensors
+        or not isinstance(device_map, Mapping)
+        or not device_map
+        or any(not _device_map_is_exact_cuda(value) for value in device_map.values())
+        or any(
+            _device_label(tensor.device) != expected_tokenizer_device
+            for tensor in tokenizer_tensors
+        )
+        or any(_device_label(tensor.device) != "cuda:0" for tensor in other_tensors)
+        or _device_label(tokenizer.device) != expected_tokenizer_device
+    ):
+        raise AdapterConfigurationError("placement")
+    return AdapterPlacementEvidence(
+        profile_id=profile_id,
+        autoregressive_model_device="cuda:0",
+        speech_tokenizer_model_device=expected_tokenizer_device,
+        speech_tokenizer_wrapper_device=expected_tokenizer_device,
+        disk_or_meta_parameters=0,
+        implicit_fallback=False,
+        offload_directory_created=False,
+    )
