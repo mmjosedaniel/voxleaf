@@ -380,7 +380,7 @@ def test_v4_authority_is_byte_frozen_before_the_committed_result() -> None:
     selection_path = REPOSITORY_ROOT / "benchmarks/tts/selection-v4.md"
     selection = selection_path.read_text(encoding="utf-8")
     assert _sha256("benchmarks/tts/selection-v4.md") == (
-        "ea113c286732f6151c8ed9c0664a941ba39dc26f8a8b632cd4f68549228648b6"
+        "aa4b033c37ee099b5d7ce87e5f646e9c0be4fc9bdd9871552f7b496eb4a9ceb7"
     )
     assert FULL_GPU_RESULT_SHA256 in selection
     assert "d3766ae87bdebc806210d04d974081b6f79f976bf9793a184c4d021273f85234" in selection

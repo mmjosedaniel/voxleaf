@@ -985,10 +985,18 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
   bytes at a strict ancestor commit, and reject CPU CUDA/dedicated/shared-GPU
   use, missing/duplicate/reordered occurrences, retries, private content,
   retention overruns, and false CPU/concurrent/standard conclusions.
-- 2026-07-26: Committed the byte-stable pre-result authority as `f05f589`
-  (`feat(tts): freeze v5 dual-worker authority`). No `v5` runner, command,
-  candidate import, model load, waveform, raw journal, official result, or
-  product runtime was added or executed.
+- 2026-07-26: Committed the initial pre-result authority checkpoint as
+  `f05f589` (`feat(tts): freeze v5 dual-worker authority`). No `v5` runner,
+  command, candidate import, model load, waveform, raw journal, official
+  result, or product runtime was added or executed.
+- 2026-07-26: The branch-wide diff audit found one trailing blank line at EOF
+  in `selection-v4.md` and the human v5 profile. Before any output, removed
+  those lines and refreshed the dependent selection/profile hashes and
+  validator constants. Final profile SHA-256 is
+  `74148d1f86c5a12c05e412a345b2523d98eef49ffce1e81b6d9bd83a5234bcf5`;
+  final selection SHA-256 is
+  `aa4b033c37ee099b5d7ce87e5f646e9c0be4fc9bdd9871552f7b496eb4a9ceb7`.
+  This was a pre-result authority normalization, not observed-result tuning.
 
 ## Discoveries and decisions
 
@@ -1305,3 +1313,45 @@ failed safety outcome. Milestone 5 is not admitted. Milestone 6 records the
 durable `v4` decision and freezes the independent `v5` dual-worker authority;
 Milestones 7-10 own implementation, hardware execution, bounded playback
 review, and final closeout.
+
+Milestone 6 authority and repository validation completed on 2026-07-26:
+
+- `selection-v4.md` is bound to both committed result hashes, selects neither
+  placement, and reports usable media, aggregate RTF, playback, and quality as
+  unavailable/not admitted rather than inventing zero-valued performance.
+- final frozen SHA-256 values are
+  `74148d1f86c5a12c05e412a345b2523d98eef49ffce1e81b6d9bd83a5234bcf5`
+  for `profile-v5.json`,
+  `e92a7700c9e264e75562fe4d4856fdefdea23e8b9494ab89f33c22fb8b6de9a6`
+  for `corpus-v5.json`,
+  `01b234f27f1d34d31e05c1d36f1c08b52412863030a22a8104773020b4e45775`
+  for the raw schema, and
+  `917860b2a577067fce4d9089c34fb6aceb938c4c882e1f94563a7d6d831359a9`
+  for the safe-summary schema.
+- Prettier accepted all four JSON authority files; Ruff formatting/lint passed
+  over 59 Python files; strict mypy passed over 60 source files; all 117 Python
+  tests passed, including eleven new v5 authority tests and the updated v4
+  selection guard.
+- The unchanged isolated Qwen candidate lock resolved 107 packages and passed
+  `uv lock --check`.
+- `pnpm.cmd check:portable` passed in a clean detached worktree in 37.4 seconds.
+- `pnpm.cmd check` passed on native Windows in the same clean worktree in
+  158.1 seconds, including 18 shared test files / 175 tests, 34 EPUB test
+  files / 555 tests, 20 desktop test files / 204 tests, six native WebDriver
+  client tests, 117 Python tests, Rust formatting, Clippy, crate tests, Python
+  package builds, and the Tauri release build.
+- The root suites used a clean detached worktree because the primary checkout
+  retains pre-existing ignored pytest directories with deny-style ACLs. The
+  initial primary-checkout failure was only Prettier's inability to scan that
+  ignored directory. After the root suites, the final authority normalization
+  changed only two Markdown EOF lines and their dependent content hashes;
+  final JSON formatting, full Ruff/mypy/pytest, schema, and diff checks passed.
+- All 60 tracked Markdown files and 257 relative links resolve. No private
+  Windows/WSL path, tracked audio/model/raw artifact, ignored raw file, or
+  `dual-worker-result-v5-*.json` file exists. The final branch and working-tree
+  `git diff --check` audits pass.
+
+No candidate import, model load, hardware generation, listening exercise, or
+firewall change was applicable to this pre-result milestone. The known Vite
+chunk-size advisory and primary-checkout pytest-cache warning remain
+informational.

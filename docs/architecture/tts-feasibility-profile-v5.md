@@ -9,7 +9,7 @@ runner, pilot, official waveform, listening result, or selection existed.
 
 The normative machine-readable authority is
 [`profile-v5.json`](../../benchmarks/tts/profile-v5.json), SHA-256
-`e6fca19592c4e0d074bbb13e35d624be588c94408da512bba9b819b560750fd5`.
+`74148d1f86c5a12c05e412a345b2523d98eef49ffce1e81b6d9bd83a5234bcf5`.
 It binds:
 
 - the exact candidate artifacts, runtime, Serena voice, instruction, and
@@ -224,4 +224,3 @@ closure, worker placement, corpus schedules, dispatch/result identities,
 first-attempt accounting, CPU-zero-GPU evidence, retention ceilings,
 conjunctive conclusions, ancestry, and private-content exclusions without
 importing Qwen or requiring a GPU.
-

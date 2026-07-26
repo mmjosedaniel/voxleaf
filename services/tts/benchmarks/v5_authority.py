@@ -17,7 +17,7 @@ RAW_SCHEMA_RELATIVE_PATH: Final = Path("benchmarks/tts/schemas/dual-worker-raw-v
 SUMMARY_SCHEMA_RELATIVE_PATH: Final = Path(
     "benchmarks/tts/schemas/dual-worker-summary-v5.schema.json"
 )
-PROFILE_SHA256: Final = "e6fca19592c4e0d074bbb13e35d624be588c94408da512bba9b819b560750fd5"
+PROFILE_SHA256: Final = "74148d1f86c5a12c05e412a345b2523d98eef49ffce1e81b6d9bd83a5234bcf5"
 CORPUS_SHA256: Final = "e92a7700c9e264e75562fe4d4856fdefdea23e8b9494ab89f33c22fb8b6de9a6"
 BASE_CORPUS_SHA256: Final = "3dcb30ab07bc5796175137f956ab7c910f306cd2f39fa6fe30d05deca1eccd8e"
 RAW_SCHEMA_SHA256: Final = "01b234f27f1d34d31e05c1d36f1c08b52412863030a22a8104773020b4e45775"
@@ -141,7 +141,7 @@ def _verify_authority_links(profile: Mapping[str, object]) -> None:
     expected = {
         "v4Selection": (
             "benchmarks/tts/selection-v4.md",
-            "ea113c286732f6151c8ed9c0664a941ba39dc26f8a8b632cd4f68549228648b6",
+            "aa4b033c37ee099b5d7ce87e5f646e9c0be4fc9bdd9871552f7b496eb4a9ceb7",
         ),
         "v4FullGpuResult": (
             "benchmarks/tts/short-segment-batch-result-v4.json",

@@ -18,7 +18,7 @@
     },
     "v4Selection": {
       "path": "benchmarks/tts/selection-v4.md",
-      "sha256": "ea113c286732f6151c8ed9c0664a941ba39dc26f8a8b632cd4f68549228648b6"
+      "sha256": "aa4b033c37ee099b5d7ce87e5f646e9c0be4fc9bdd9871552f7b496eb4a9ceb7"
     },
     "v4FullGpuResult": {
       "path": "benchmarks/tts/short-segment-batch-result-v4.json",

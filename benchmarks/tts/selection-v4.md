@@ -111,4 +111,3 @@ decision neither removes nor expands it.
 - Keep production Milestone 7 blocked. No production dependency, transport,
   player, installer payload, CPU fallback, or continuous-playback claim is
   selected by this record.
-
