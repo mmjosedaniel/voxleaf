@@ -216,8 +216,11 @@ Milestone 1 supplies the isolated Python foundation. Milestone 2 supplies capabi
 ## Milestone 6.1: Resolve the local TTS profile blocker
 
 **Status:** In progress. Milestone 1 selected Serena through the frozen intake
-screen and published `tts-feasibility-profile-v3`; prototype, benchmark,
-audit, final-quality, and closeout work remain. The
+screen and published `tts-feasibility-profile-v3`. Milestone 2 passed the
+exact-host development stop gate with bounded complete-segment delivery, zero
+stale output, identity-first worker termination, and complete cleanup;
+benchmark extension, official evaluation, audit, final quality, and closeout
+remain. The
 [blocker-resolution ExecPlan](active/M006-001-local-tts-profile-blocker-resolution.md)
 records the candidate-intake evidence, decisions, tasks, and validation
 sequence. Serena is selected for evaluation only and ADR-0013 remains

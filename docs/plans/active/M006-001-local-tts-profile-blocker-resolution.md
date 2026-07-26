@@ -59,6 +59,10 @@ requires a separate product, consent, privacy, and persistence decision.
   complete-panel, and zero-defect quality gates.
 - Both adapters exposed complete waveforms. Neither proved incremental local
   audio delivery or usable cancellation after audio began.
+- The exact `v3` development prototype now proves bounded complete-segment
+  delivery, identity-first stale rejection, and worker-termination
+  cancellation on the authoritative host. It does not yet supply official
+  performance/quality results or a production runtime.
 - The production `services/tts` package still has zero runtime dependencies.
 
 ### Maintainer-provided Qwen voice-cloning prototype
@@ -287,6 +291,9 @@ disposable generated speech and produce aggregate error counts, but:
 - `benchmarks/tts/customvoice-spanish-screen-v2.json`
 - `benchmarks/tts/customvoice-spanish-screen-result-v2.json`
 - `benchmarks/tts/profile-v3.json`
+- `benchmarks/tts/incremental-cancellation-prototype-v1.json`
+- `benchmarks/tts/incremental-cancellation-prototype-result-v1.json`
+- `benchmarks/tts/schemas/incremental-cancellation-prototype-result-v1.schema.json`
 - `benchmarks/tts/selection-v2.md`
 - `docs/product/project-brief.md`
 - `docs/product/mvp.md`
@@ -434,7 +441,14 @@ blocker remain.
 
 ### Status
 
-Not started. No production adapter is authorized.
+Completed. The exact development-only topology was frozen before execution,
+implemented without a production adapter, and executed on the authoritative
+Windows host. All five trials passed with zero stale units, bounded input,
+waveform, and queue retention, identity invalidation before worker
+termination, and complete resource cleanup. The result proves immediate
+complete-segment delivery and bounded process-termination cancellation; it
+does not claim native waveform streaming, cooperative model cancellation, an
+official performance pass, or production authorization.
 
 ## Milestone 3: Extend the candidate-neutral benchmark safely
 
@@ -736,6 +750,61 @@ dependency changes are involved.
   and Milestone 1 validation as
   `e14c7770bdd9bc8be2bd392fe011f0c1dea249c0`
   (`feat(tts): freeze Serena feasibility profile v3`).
+- 2026-07-25: Created branch
+  `feat/m006-2-incremental-cancellation` from merged Milestone 1 commit
+  `de2c2dc`. Froze `incremental-cancellation-prototype-v1` before any
+  prototype generation or cancellation result. The authority binds exact
+  `profile-v3`, complete-segment delivery, one resident spawned worker per
+  trial, batch one, one queued segment/unit, `narration-v1` input ceilings,
+  identity invalidation before bounded worker termination, five ordered
+  trials, zero stale units, no audio persistence, and a strict content-safe
+  result schema.
+- 2026-07-25: Implemented the development-only spawned Qwen prototype behind
+  the exact candidate interpreter. The parent accepts one bounded synthetic
+  prepared segment, the worker retains one exact resident model/configuration,
+  and one complete segment waveform crosses the in-memory pipe before the
+  controller releases it and advances. Cancellation invalidates the complete
+  session/generation/segment/candidate/configuration identity before killing
+  the worker; no production adapter, process protocol, or audio format is
+  selected.
+- 2026-07-25: Added six model-free authority/topology tests. They cover exact
+  hash/schema/configuration binding, narration input and audio/queue ceilings,
+  two-unit delivery/release, all five ordered cancellation/cleanup trials,
+  rejection of deliberately late fake units, fail-closed early completion at
+  the near-hard boundary, and safe-result privacy. The first portable run
+  stopped on one Ruff formatting drift; after formatting,
+  `pnpm.cmd check:portable` passed in 26.3 seconds with 63 Python tests plus
+  the unchanged TypeScript/EPUB/desktop suites and builds. The exact isolated
+  candidate-interpreter import smoke also passed without loading the model.
+- 2026-07-25: Confirmed the exact candidate firewall rule, local model and
+  interpreter, 15,365,660,672 free RAM bytes, and an NVIDIA GeForce RTX 5060
+  Laptop GPU with 8,151 MiB total / 7,810 MiB free VRAM. Disabled AC sleep
+  only for the run with an independent restoration watcher.
+- 2026-07-25: Rejected the first invocation before preflight because Windows
+  PowerShell had added a byte-order mark to the private standard-input JSON.
+  No model loaded and no prototype observation was accepted. Re-encoded the
+  disposable input without a byte-order mark and kept the authority unchanged.
+- 2026-07-25: Executed the prototype from clean implementation commit
+  `1cc4fd2df63d35019e9ad7747307ce0010ea4cff` with offline controls and the
+  application-scoped firewall block active. Both normal units were delivered
+  and released; peak queued segments and published units were one, and peak
+  retained controller audio was 2,257,920 bytes.
+- 2026-07-25: All five ordered cancellation trials passed. Identity
+  invalidation took at most 1,200 nanoseconds, worker termination took at most
+  330,300,500 nanoseconds, no trial published a stale unit, every worker
+  exited, and tracked post-cleanup process RAM, VRAM, and worker count were
+  zero.
+- 2026-07-25: The exact-host prototype measured 8,366,579,700 nanoseconds for
+  the maximum cold load, 23,300 nanoseconds for configuration setup, and
+  5,209,888,900 nanoseconds to first complete segment audio after dispatch.
+  Peak process-tree RAM was 4,689,559,552 bytes; authoritative PyTorch
+  peak-reserved VRAM was 5,440,012,288 bytes. Maximum cleanup, including
+  normal graceful cleanup, was 1,030,022,600 nanoseconds.
+- 2026-07-25: Promoted only the schema-valid content-safe result. Deleted the
+  exact disposable input, output, and stderr files, restored the prior
+  45-minute AC sleep setting, and verified zero remaining candidate processes
+  and zero reported GPU utilization/memory. No raw session or generated audio
+  was created.
 
 ## Discoveries and decisions
 
@@ -790,6 +859,17 @@ dependency changes are involved.
     discarded instead of interpreting general intelligibility as numeric or
     punctuation accuracy. `v2` applies each technical dimension only to cases
     whose frozen corpus tags make it meaningful.
+14. The exact high-level Qwen API does not expose native incremental frames or
+    cooperative mid-call cancellation, but a useful bounded topology is still
+    credible: consume one existing narration segment, publish its complete
+    waveform immediately, reject stale identities in the controller, and
+    terminate an isolated worker when cancellation occurs. This is sufficient
+    to continue the evaluation cycle, not sufficient to select the production
+    transport.
+15. The prototype's 5.210-second first-produced-audio observation is not an
+    official warm measurement and does not pass the inherited 3-second gate.
+    It is retained as an honest signal for Milestone 4 rather than interpreted
+    as a prototype failure or hidden by changing the authority.
 
 ## Final validation results
 
@@ -870,3 +950,33 @@ Milestone 1 is complete at
 `e14c7770bdd9bc8be2bd392fe011f0c1dea249c0`. This completion admits the exact
 Serena profile only to Milestone 2's pre-admission prototype. It does not
 select a production engine or unblock Milestone 7.
+
+Milestone 2 implemented and froze its authority in
+`a9622b7` (`docs(tts): freeze incremental cancellation prototype`), then
+implemented the model-free topology and exact candidate command in `1cc4fd2`
+(`feat(tts): prototype bounded segment cancellation`). The focused final
+authority/topology suite passed with 6 tests. The exact candidate lock check
+resolved all 107 packages.
+
+The hardware execution and schema-valid content-safe result were committed as
+`2a7017e` (`feat(tts): record passing incremental prototype`). From that
+committed state, `pnpm.cmd check:portable` passed in 26.2 seconds and
+`pnpm.cmd check` passed in 48.5 seconds. Both included 18 shared test files /
+175 tests, 34 EPUB test files / 555 tests, 20 desktop test files / 204 tests,
+6 native-WebDriver-client tests, and 63 Python tests. The native aggregate
+also passed Rust formatting, Clippy, crate tests, the release build, and
+Python source/wheel packaging. The existing Vite chunk-size advisory remained
+informational.
+
+All relative links in the 14 changed Markdown files resolved. `git diff
+--check`, changed-file private-path/credential scans across 22 changed files,
+the tracked audio/model/private-input scan, and ignored raw-file cleanup scan
+passed. No prototype Python worker remains; the pre-run 45-minute AC sleep
+setting is restored. The only GPU compute row after the run is unrelated to
+the prototype. No generated audio, raw result file, model weight, private
+path, credential, or user content was committed.
+
+Milestone 2 is complete. The passing result permits Milestone 3 to extend the
+candidate-neutral benchmark, but does not select the candidate, supersede
+ADR-0013, unblock Milestone 7, claim native waveform streaming, or claim that
+the inherited 3-second warm first-audio gate passed.

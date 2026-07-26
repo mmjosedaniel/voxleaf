@@ -1,0 +1,119 @@
+{
+  "schemaVersion": "incremental-cancellation-prototype-result-v1",
+  "prototypeVersion": "incremental-cancellation-prototype-v1",
+  "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
+  "profileSha256": "7d062a4f662ed95b1cb5ff0a21fc40864f4ac3858cea4314ee612b84c2e08dbe",
+  "configurationIdentitySha256": "b689b9b81cc7633687e80030ed172878d89196d57149370a82839e1ec83d61df",
+  "commitSha": "1cc4fd2df63d35019e9ad7747307ce0010ea4cff",
+  "host": {
+    "operatingSystem": "Windows",
+    "osVersion": "10.0.26200",
+    "architecture": "x86_64",
+    "pythonVersion": "3.12.10",
+    "cpuModel": "Intel(R) Core(TM) Ultra 7 255HX",
+    "logicalProcessors": 20,
+    "totalRamBytes": 33752997888,
+    "gpuModel": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "driverVersion": "577.05"
+  },
+  "topology": {
+    "nativeGenerationGranularity": "complete-waveform",
+    "publishedUnitGranularity": "complete-narration-segment",
+    "stopMode": "worker-process-termination",
+    "normalDeliveryUnits": 2,
+    "normalDeliveryUnitsReleased": 2,
+    "peakQueuedSegments": 1,
+    "peakPublishedQueueUnits": 1,
+    "peakRetainedControllerAudioBytes": 2257920
+  },
+  "timingNanoseconds": {
+    "coldLoad": 8366579700,
+    "configurationSetup": 23300,
+    "firstProducedAudio": 5209888900
+  },
+  "trials": [
+    {
+      "trialId": "before-dispatch",
+      "passed": true,
+      "stopMode": "identity-invalidation",
+      "identityInvalidationNanoseconds": 600,
+      "workerTerminationNanoseconds": null,
+      "cleanupNanoseconds": 0,
+      "publishedUnitsBeforeCancellation": 0,
+      "stalePublishedUnits": 0,
+      "workerExited": true,
+      "processResourcesReleased": true
+    },
+    {
+      "trialId": "accepted-before-audio",
+      "passed": true,
+      "stopMode": "worker-process-termination",
+      "identityInvalidationNanoseconds": 700,
+      "workerTerminationNanoseconds": 280880000,
+      "cleanupNanoseconds": 280880000,
+      "publishedUnitsBeforeCancellation": 0,
+      "stalePublishedUnits": 0,
+      "workerExited": true,
+      "processResourcesReleased": true
+    },
+    {
+      "trialId": "after-first-audio",
+      "passed": true,
+      "stopMode": "worker-process-termination",
+      "identityInvalidationNanoseconds": 500,
+      "workerTerminationNanoseconds": 330300500,
+      "cleanupNanoseconds": 330300500,
+      "publishedUnitsBeforeCancellation": 1,
+      "stalePublishedUnits": 0,
+      "workerExited": true,
+      "processResourcesReleased": true
+    },
+    {
+      "trialId": "near-hard-mid-generation",
+      "passed": true,
+      "stopMode": "worker-process-termination",
+      "identityInvalidationNanoseconds": 1200,
+      "workerTerminationNanoseconds": 324522800,
+      "cleanupNanoseconds": 324522800,
+      "publishedUnitsBeforeCancellation": 0,
+      "stalePublishedUnits": 0,
+      "workerExited": true,
+      "processResourcesReleased": true
+    },
+    {
+      "trialId": "during-cleanup",
+      "passed": true,
+      "stopMode": "worker-process-termination",
+      "identityInvalidationNanoseconds": 800,
+      "workerTerminationNanoseconds": 279037100,
+      "cleanupNanoseconds": 279037100,
+      "publishedUnitsBeforeCancellation": 0,
+      "stalePublishedUnits": 0,
+      "workerExited": true,
+      "processResourcesReleased": true
+    }
+  ],
+  "memory": {
+    "ramSamplingIntervalMilliseconds": 50,
+    "vramSamplingIntervalMilliseconds": 1000,
+    "peakProcessTreeRamBytes": 4689559552,
+    "peakProcessTreeVramBytes": 4598583296,
+    "peakFrameworkVramBytes": 5440012288
+  },
+  "cleanup": {
+    "maximumCleanupNanoseconds": 1030022600,
+    "postCleanupProcessTreeRamBytes": 0,
+    "postCleanupProcessTreeVramBytes": 0,
+    "workerProcessesRemaining": 0,
+    "rawSessionCreated": false,
+    "rawSessionRemoved": true
+  },
+  "passed": true,
+  "failureCodes": [],
+  "limitations": [
+    "complete-waveform-per-segment",
+    "worker-termination-not-cooperative-model-cancellation",
+    "development-prototype-not-production-runtime",
+    "exact-host-only"
+  ]
+}
