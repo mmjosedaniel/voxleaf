@@ -43,7 +43,12 @@ from benchmarks.preflight import (
     RunPurpose,
     run_local_preflight,
 )
-from benchmarks.v4_authority import load_frozen_v4_mechanics_authority
+from benchmarks.v4_authority import (
+    CPU_PROFILE_ID,
+    FULL_GPU_PROFILE_ID,
+    load_frozen_cpu_admission,
+    load_frozen_v4_mechanics_authority,
+)
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 MAXIMUM_STDIN_BYTES: Final = 32_768
@@ -186,12 +191,20 @@ def _normalized_cpu_model(value: str) -> str:
 
 def _run(payload: dict[str, object]) -> dict[str, object]:
     load_frozen_v4_mechanics_authority(REPOSITORY_ROOT)
+    purpose = cast(MatrixPurpose, payload.get("resultPurpose"))
+    placement_profile_id = payload.get("placementProfileId")
     if (
         payload.get("batchOptIn") is not True
-        or payload.get("resultPurpose") not in ("disposable-pilot", "official")
-        or payload.get("placementProfileId") != "qwen3-serena-v4-full-gpu"
+        or purpose not in ("disposable-pilot", "official")
+        or placement_profile_id not in (FULL_GPU_PROFILE_ID, CPU_PROFILE_ID)
+        or (placement_profile_id == CPU_PROFILE_ID and purpose != "official")
     ):
         raise BatchCommandError("authority")
+    cpu_admission = (
+        load_frozen_cpu_admission(REPOSITORY_ROOT).as_raw()
+        if placement_profile_id == CPU_PROFILE_ID
+        else None
+    )
     profile = load_v3_candidate_profile(REPOSITORY_ROOT, QWEN_V3_CANDIDATE_ID)
     candidate_python = Path(_string(payload.get("candidatePython"))).resolve()
     if Path(sys.executable).resolve() != candidate_python:
@@ -205,7 +218,6 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
         precision=profile.precision,
         offline=True,
     )
-    purpose = cast(MatrixPurpose, payload["resultPurpose"])
     preflight_purpose: RunPurpose = "official" if purpose == "official" else "pilot"
     receipt = run_local_preflight(
         PreflightRequest(
@@ -264,10 +276,10 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
                 configuration=configuration,
                 forbidden_values=forbidden_values,
                 framework_memory_observer=tracker.observe,
+                placement_profile_id=placement_profile_id,
             ),
         )
 
-    candidate = candidate_factory()
     try:
         if purpose == "official":
             ensure_raw_root_is_ignored(REPOSITORY_ROOT)
@@ -292,6 +304,8 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
                     preflight=_preflight_raw(host),
                     candidate_factory=candidate_factory,
                     monitor=monitor,
+                    placement_profile_id=placement_profile_id,
+                    cpu_admission=cpu_admission,
                 )
                 session.mkdir(parents=True)
                 (session / "raw.json").write_text(
@@ -325,6 +339,7 @@ def _run(payload: dict[str, object]) -> dict[str, object]:
                 "eligibleForDerivation": True,
                 "failureCodes": execution.raw["failureCodes"],
             }
+        candidate = candidate_factory()
         return execute_v4_batch_mechanics(
             REPOSITORY_ROOT,
             candidate=candidate,

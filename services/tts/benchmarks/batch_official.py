@@ -9,7 +9,7 @@ from collections.abc import Callable, Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final, Protocol, cast
+from typing import Final, Literal, Protocol, cast
 
 from benchmarks.batch_contracts import (
     BatchAudioUnit,
@@ -25,7 +25,11 @@ from benchmarks.batch_contracts import (
 from benchmarks.batch_execution import BoundedOrderedBatchController
 from benchmarks.batch_matrix import SystemBatchClock, frozen_v4_requests
 from benchmarks.batch_playback import PlaybackArrival, simulate_bounded_playback
-from benchmarks.contracts import CancellationResponse
+from benchmarks.contracts import (
+    AdapterPlacementEvidence,
+    CancellationResponse,
+    PlacementProfileId,
+)
 from benchmarks.memory import (
     FrameworkVramTracker,
     ProcessResourceSampler,
@@ -33,7 +37,9 @@ from benchmarks.memory import (
 from benchmarks.v4_authority import (
     AUTHORITY_COMMIT_SHA,
     CORPUS_SHA256,
+    CPU_PROFILE_ID,
     FULL_GPU_PROFILE_ID,
+    MEMORY_STOP_CODES,
     PROFILE_SHA256,
 )
 
@@ -58,6 +64,9 @@ class OfficialBatchError(RuntimeError):
 class OfficialBatchCandidate(BatchCandidate, Protocol):
     @property
     def worker_pid(self) -> int | None: ...
+
+    @property
+    def placement_evidence(self) -> AdapterPlacementEvidence | None: ...
 
     def load(self) -> None: ...
 
@@ -259,6 +268,30 @@ class ThreadedOfficialMemoryMonitor:
 class OfficialExecution:
     raw: dict[str, object]
     load_observations: tuple[dict[str, int], ...]
+
+
+def _expected_placement(profile_id: str) -> AdapterPlacementEvidence:
+    tokenizer_device: Literal["cuda:0", "cpu"]
+    if profile_id == FULL_GPU_PROFILE_ID:
+        tokenizer_device = "cuda:0"
+    elif profile_id == CPU_PROFILE_ID:
+        tokenizer_device = "cpu"
+    else:
+        raise OfficialBatchError("placement")
+    return AdapterPlacementEvidence(
+        profile_id=cast(PlacementProfileId, profile_id),
+        autoregressive_model_device="cuda:0",
+        speech_tokenizer_model_device=tokenizer_device,
+        speech_tokenizer_wrapper_device=tokenizer_device,
+        disk_or_meta_parameters=0,
+        implicit_fallback=False,
+        offload_directory_created=False,
+    )
+
+
+def _require_placement(candidate: OfficialBatchCandidate, profile_id: str) -> None:
+    if candidate.placement_evidence != _expected_placement(profile_id):
+        raise OfficialBatchError("placement")
 
 
 def _zero_resources() -> BatchResourceSnapshot:
@@ -499,6 +532,7 @@ def _run_cancellation_trial(
     trial_index: int,
     trial_id: str,
     candidate_factory: OfficialCandidateFactory,
+    placement_profile_id: str,
 ) -> dict[str, object]:
     invalidation_started = time.perf_counter_ns()
     if trial_id == "before-dispatch":
@@ -517,6 +551,7 @@ def _run_cancellation_trial(
     request = _cancellation_request(repository_root, trial_index=trial_index)
     controller = BoundedOrderedBatchController(clock=SystemBatchClock())
     candidate.load()
+    _require_placement(candidate, placement_profile_id)
     invalidation_ns = 0
     termination_ns: int | None = None
     completed_outputs: list[tuple[BatchAudioUnit, ...]] = []
@@ -622,8 +657,30 @@ def execute_official_v4(
     preflight: Mapping[str, object],
     candidate_factory: OfficialCandidateFactory,
     monitor: OfficialMemoryMonitor,
+    placement_profile_id: str = FULL_GPU_PROFILE_ID,
+    cpu_admission: Mapping[str, object] | None = None,
 ) -> OfficialExecution:
-    """Run the exact official full-GPU matrix and return private raw evidence."""
+    """Run one exact official v4 placement and return private raw evidence."""
+
+    if placement_profile_id == FULL_GPU_PROFILE_ID:
+        admission: Mapping[str, object] = {
+            "status": "not-applicable",
+            "fullGpuMemoryStopCode": None,
+            "fullGpuResultSha256": None,
+        }
+        if cpu_admission is not None:
+            raise OfficialBatchError("placement")
+    elif placement_profile_id == CPU_PROFILE_ID:
+        if (
+            cpu_admission is None
+            or cpu_admission.get("status") != "admitted"
+            or cpu_admission.get("fullGpuMemoryStopCode") not in MEMORY_STOP_CODES
+            or not isinstance(cpu_admission.get("fullGpuResultSha256"), str)
+        ):
+            raise OfficialBatchError("placement")
+        admission = dict(cpu_admission)
+    else:
+        raise OfficialBatchError("placement")
 
     clock = SystemBatchClock()
     load_observations: list[dict[str, int]] = []
@@ -632,6 +689,7 @@ def execute_official_v4(
         started = clock.now_ns()
         try:
             candidate.load()
+            _require_placement(candidate, placement_profile_id)
             load_ns = max(1, clock.now_ns() - started)
             cleanup_started = clock.now_ns()
             candidate.close()
@@ -655,6 +713,7 @@ def execute_official_v4(
     terminal_code: str | None = None
     try:
         candidate.load()
+        _require_placement(candidate, placement_profile_id)
         requests = frozen_v4_requests(
             repository_root,
             identity=BatchWorkIdentity("v4-private-session", "v4-generation"),
@@ -700,6 +759,7 @@ def execute_official_v4(
                         trial_index=index,
                         trial_id=trial_id,
                         candidate_factory=candidate_factory,
+                        placement_profile_id=placement_profile_id,
                     )
                 )
             except Exception:
@@ -762,12 +822,8 @@ def execute_official_v4(
         "executionCommitSha": execution_commit_sha,
         "treeClean": True,
         "resultPurpose": "official",
-        "placementProfileId": FULL_GPU_PROFILE_ID,
-        "cpuAdmission": {
-            "status": "not-applicable",
-            "fullGpuMemoryStopCode": None,
-            "fullGpuResultSha256": None,
-        },
+        "placementProfileId": placement_profile_id,
+        "cpuAdmission": dict(admission),
         "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
         "host": dict(host),
         "preflight": dict(preflight),

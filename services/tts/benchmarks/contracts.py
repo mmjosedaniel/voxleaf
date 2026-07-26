@@ -16,6 +16,10 @@ type VramMeasurementMethod = Literal[
 ]
 type CancellationCapability = Literal["cooperative", "worker-termination", "unsupported", "unknown"]
 type CancellationStopMode = Literal["cooperative", "worker-termination"]
+type PlacementProfileId = Literal[
+    "qwen3-serena-v4-full-gpu",
+    "qwen3-serena-v4-speech-tokenizer-cpu",
+]
 type CancellationTrialId = Literal[
     "before-dispatch",
     "accepted-before-audio",
@@ -72,6 +76,19 @@ class AdapterCapabilities:
     streaming_granularity: StreamingGranularity
     sample_format: SampleFormat
     generation_cancellation: CancellationCapability
+
+
+@dataclass(frozen=True)
+class AdapterPlacementEvidence:
+    """Content-free proof of one exact benchmark-only model placement."""
+
+    profile_id: PlacementProfileId
+    autoregressive_model_device: Literal["cuda:0"]
+    speech_tokenizer_model_device: Literal["cuda:0", "cpu"]
+    speech_tokenizer_wrapper_device: Literal["cuda:0", "cpu"]
+    disk_or_meta_parameters: int
+    implicit_fallback: bool
+    offload_directory_created: bool
 
 
 @dataclass(frozen=True)

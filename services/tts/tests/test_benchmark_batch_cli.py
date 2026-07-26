@@ -105,3 +105,10 @@ def test_exact_host_cpu_identity_ignores_windows_trademark_markers() -> None:
         )
     )
     assert raw["cpuModel"] == "Intel Core Ultra 7 255HX"
+
+
+def test_targeted_cpu_arm_is_official_only() -> None:
+    payload = _input()
+    payload["placementProfileId"] = "qwen3-serena-v4-speech-tokenizer-cpu"
+    with pytest.raises(batch_cli.BatchCommandError, match=":authority$"):
+        batch_cli._run(payload)

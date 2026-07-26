@@ -83,17 +83,25 @@ dependency or lock edge.
 
 The active
 [Milestone 6.2 batch-feasibility plan](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md)
-has frozen its v4 authority and implemented the candidate-neutral batch
-mechanics, Qwen list-call adapter, and reviewed disposable-pilot command
-without adding a dependency or changing a lock. Later milestones evaluate
-batch sizes one and two through the existing isolated candidate graph. That
+has frozen its v4 authority, implemented the candidate-neutral batch mechanics,
+Qwen list-call adapter, and reviewed commands, and completed the full-GPU plus
+targeted speech-tokenizer CPU hardware arms without adding a dependency or
+changing a lock. Both arms stopped on the frozen shared-memory boundary before
+media. The evaluation uses the existing isolated candidate graph. That
 graph already resolves
 `accelerate==1.12.0` transitively, but VoxLeaf source must not import or rely on
 that transitive package without a separately reviewed direct declaration.
-Conditional targeted speech-tokenizer/audio-decoder CPU placement is only an
-evaluation surface if the full-GPU batch-two arm reaches its frozen memory
-stop. It is not a production dependency, approved fallback, packaging choice,
-or claim that generic CPU offload improves performance.
+The conditional targeted speech-tokenizer/audio-decoder CPU placement remains
+an evaluation-only surface. Its failed result is not a production dependency,
+approved fallback, packaging choice, or claim that generic CPU offload
+improves performance.
+
+Pending `v5` work in the same ExecPlan proposes a second complete Qwen process
+loaded CPU-only beside the existing GPU-primary process. It must reuse the
+unchanged isolated candidate graph unless a separately documented dependency
+review approves a change. The plan does not add a production dependency,
+approve two-model packaging, or establish that the second installed instance
+fits safely in RAM or improves aggregate throughput.
 
 Base voice cloning remains outside the MVP. Whisper is excluded from the
 production graph and from `v3`; VAD/energy analysis is also excluded from

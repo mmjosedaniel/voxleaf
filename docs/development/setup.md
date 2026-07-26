@@ -17,10 +17,21 @@ Milestone 6.2 is active. Its `v4` authority is frozen and Milestone 2 adds the
 reviewed `benchmark:tts:batch` disposable-pilot and official commands,
 `benchmark:tts:batch:derive` safe-summary/cleanup command, and model-free
 one/two-unit, ordering, invalidation, resource, playback, schema, and
-derivation mechanics. Milestone 3 ran the full-GPU path and committed its
-content-safe result. The exact `shared-gpu-memory` stop admits the conditional
-targeted-CPU evaluation; that arm has not run. The result contains no
-reviewable audio or throughput evidence and changes no production behavior.
+derivation mechanics. Milestones 3 and 4 ran the full-GPU and admitted
+targeted-CPU paths and committed their content-safe results. Both reached the
+exact `shared-gpu-memory` stop before usable media; the CPU arm reproduced the
+same measured VRAM/shared-memory boundary. Milestone 5 quality review is not
+admitted. The results contain no reviewable audio or throughput evidence and
+change no production behavior.
+
+The same active ExecPlan now continues with pending result-blind `v5` work.
+Milestone 6 must record the `v4` outcome and freeze one GPU-primary plus one
+fully CPU-only support-worker authority before new generation. Later
+milestones must add a separate reviewed command, run CPU-solo admission, then
+compare same-authority GPU-solo and concurrent execution over approximately
+8-16-second target units. The proposed five-minute value is a bounded
+playback-simulation maximum, not a setup requirement, startup delay, accepted
+runtime configuration, or reason to run two model processes manually.
 
 ## Prerequisite version matrix
 
@@ -219,12 +230,16 @@ operating-system boundary. From an administrator PowerShell terminal, create
 one application-scoped rule for the exact candidate interpreter:
 
 ```powershell
+$env:HF_HUB_OFFLINE = "1"
+$env:TRANSFORMERS_OFFLINE = "1"
 $candidatePython = (Resolve-Path "services/tts/benchmarks/candidates/<candidate>/.venv/Scripts/python.exe").Path
 New-NetFirewallRule -DisplayName "VoxLeaf TTS Benchmark Offline" -Direction Outbound -Action Block -Program $candidatePython -Profile Any
 ```
 
-The preflight queries that exact enabled rule. An offline environment variable
-or a caller-supplied boolean is not accepted as network-isolation proof.
+Keep both offline variables in the same PowerShell process that invokes the
+preflight or benchmark. The preflight requires them and separately queries the
+exact enabled firewall rule. Environment variables or a caller-supplied boolean
+alone are not accepted as network-isolation proof.
 Remove the rule after all official work with:
 
 ```powershell

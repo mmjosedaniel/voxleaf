@@ -154,11 +154,16 @@ A starting implementation may use:
 - Initial playable buffer: approximately 15 seconds.
 - Low-water mark: approximately 8 seconds.
 - Target buffer: approximately 30 seconds.
-- Maximum buffer: approximately 60 seconds.
+- Initial single-worker maximum buffer hypothesis: approximately 60 seconds.
 
 These are hypotheses. Benchmarks should determine final values.
 
 The initial threshold may eventually adapt to measured inference speed, but the MVP must not implement a fixed 15-second timer or confuse generated audio duration with elapsed generation time.
+
+The active Milestone 6.2 plan separately proposes a five-minute maximum for its
+future `v5` dual-worker simulation. That larger value does not change the
+approximately 15-second startup gate and is not yet an accepted production
+setting.
 
 ## Benchmark reporting
 
@@ -281,3 +286,44 @@ measured first attempts were then recorded as failed and no media was admitted,
 the result provides no aggregate RTF, startup, buffer, or short-unit duration
 measurement. It admits the separate targeted-CPU contingency; it does not show
 that offload is faster or viable.
+
+The admitted targeted-CPU arm then moved only
+`model.speech_tokenizer.model` and its wrapper device to CPU after the exact
+CUDA load. Its schema-valid result reproduced the full-GPU
+4,432,904,192-byte authoritative VRAM peak, 4,311,744,512-byte framework
+reserve, 79,691,776-byte shared-GPU-memory observation, and
+3,757,047,808-byte minimum free dedicated VRAM. It stopped before usable media
+with all 36 measured first attempts failed and zero retries. This exact
+placement therefore provides no capacity, throughput, startup, playback, or
+quality evidence on the reference host and does not admit the listening arm.
+
+The same Milestone 6.2 ExecPlan now schedules a separately versioned `v5`
+experiment rather than rewriting `v4`. It will test one complete Qwen instance
+as a GPU-primary worker and one separately loaded complete Qwen instance as a
+CPU-only support worker. CPU solo must pass frozen placement, waveform,
+RAM/commit, timeout, cleanup, and total sustained RTF at or below 3.2 before
+concurrent work.
+The concurrent matrix must compare with a same-authority GPU-solo baseline and
+report worker-specific RTF, aggregate RTF, GPU slowdown, ordered head-of-line
+delay, failures, cancellation, RAM, dedicated/shared VRAM, and cleanup.
+
+`v5` targets complete semantic units expected to produce approximately 8-16
+seconds of audio, with a separate hard duration bound frozen before results.
+The playback replay still starts at approximately 15 contiguous playable
+seconds or a complete shorter remainder. After startup, it may grow
+opportunistically but must stop before exceeding any of these simultaneous
+limits:
+
+- 300 playable seconds;
+- 40 complete units;
+- 28,800,000 bytes of 24 kHz mono float32 PCM payload; or
+- one active unit per worker, with worst-case active capacity reserved before
+  dispatch.
+
+Five minutes is a maximum in-memory capacity, not a required startup lead and
+not evidence that generation remains ahead. Sustainable scheduling still
+requires directly measured concurrent aggregate RTF below 1.0 and no more than
+five seconds of buffering per minute. The preferred standard margin remains
+aggregate RTF at or below 0.8. Until the new authority, implementation, hardware
+run, and decision exist, this is an evaluation hypothesis and does not amend
+ADR-0014's accepted one-worker constrained demo.

@@ -18,6 +18,8 @@ RAW_SCHEMA_RELATIVE_PATH: Final = Path(
 SUMMARY_SCHEMA_RELATIVE_PATH: Final = Path(
     "benchmarks/tts/schemas/short-segment-batch-summary-v4.schema.json"
 )
+FULL_GPU_RESULT_RELATIVE_PATH: Final = Path("benchmarks/tts/short-segment-batch-result-v4.json")
+FULL_GPU_RESULT_SHA256: Final = "9ce8141fa5987878ab29bf472f6f16dc3a6370dd4ffcc1141b30964914c62e32"
 PROFILE_SHA256: Final = "836895786f4cc041ce1b3818a5f74635cbc1edcd1e2a57f3ebddf84bd1ed3b68"
 CORPUS_SHA256: Final = "3dcb30ab07bc5796175137f956ab7c910f306cd2f39fa6fe30d05deca1eccd8e"
 RAW_SCHEMA_SHA256: Final = "c793be6d97523f866ea263960f13c981a693fca8e819966ec1b867cac9507f82"
@@ -63,6 +65,21 @@ class FrozenV4Authority:
     corpus: Mapping[str, object]
     raw_schema: Mapping[str, object]
     summary_schema: Mapping[str, object]
+
+
+@dataclass(frozen=True)
+class FrozenCpuAdmission:
+    """Content-free admission derived from the committed full-GPU result."""
+
+    full_gpu_memory_stop_code: str
+    full_gpu_result_sha256: str
+
+    def as_raw(self) -> dict[str, object]:
+        return {
+            "status": "admitted",
+            "fullGpuMemoryStopCode": self.full_gpu_memory_stop_code,
+            "fullGpuResultSha256": self.full_gpu_result_sha256,
+        }
 
 
 def _fail(code: str) -> V4AuthorityError:
@@ -340,6 +357,63 @@ def _reject_private_content(value: object, corpus: Mapping[str, object]) -> None
             raise _fail("private-content")
 
     visit(value)
+
+
+def load_frozen_cpu_admission(repository_root: Path) -> FrozenCpuAdmission:
+    """Verify the committed safe full-GPU stop without candidate dependencies."""
+
+    authority = load_frozen_v4_mechanics_authority(repository_root)
+    path = repository_root / FULL_GPU_RESULT_RELATIVE_PATH
+    result_sha256 = _sha256(path)
+    if result_sha256 != FULL_GPU_RESULT_SHA256:
+        raise _fail("cpu-admission-result")
+    result = _load_object(path)
+    _reject_private_content(result, authority.corpus)
+    required = _sequence(authority.summary_schema.get("required"), "result-shape")
+    if not all(isinstance(key, str) for key in required) or set(result) != set(required):
+        raise _fail("result-shape")
+    admission = _mapping(result.get("cpuAdmission"), "cpu-admission-result")
+    memory = _mapping(result.get("memory"), "memory-result")
+    counts = _mapping(result.get("counts"), "count-result")
+    audits = _mapping(result.get("audits"), "audit-result")
+    conclusions = _mapping(result.get("conclusions"), "conclusion-result")
+    standard = _mapping(conclusions.get("standardViability"), "conclusion-result")
+    scheduling = _mapping(
+        conclusions.get("schedulingSustainability"),
+        "conclusion-result",
+    )
+    stop_code = memory.get("memoryStopCode")
+    if (
+        result.get("schemaVersion") != "tts-short-segment-batch-summary-v4"
+        or result.get("profileVersion") != "tts-short-segment-batch-profile-v4"
+        or result.get("profileSha256") != PROFILE_SHA256
+        or result.get("corpusSha256") != CORPUS_SHA256
+        or result.get("authorityCommitSha") != AUTHORITY_COMMIT_SHA
+        or result.get("placementProfileId") != FULL_GPU_PROFILE_ID
+        or result.get("candidateId") != "qwen3-tts-1-7b-customvoice-cuda-bf16-v1"
+        or admission
+        != {
+            "status": "not-applicable",
+            "fullGpuMemoryStopCode": None,
+            "fullGpuResultSha256": None,
+        }
+        or memory.get("memoryStopTriggered") is not True
+        or stop_code not in MEMORY_STOP_CODES
+        or counts.get("batchTwoCalls") != 12
+        or counts.get("batchTwoUnits") != 24
+        or counts.get("automaticRetries") != 0
+        or not isinstance(counts.get("failedOrTimedOutFirstAttempts"), int)
+        or cast(int, counts["failedOrTimedOutFirstAttempts"]) <= 0
+        or audits.get("cleanup") is not True
+        or audits.get("privacy") is not True
+        or standard.get("outcome") != "fail"
+        or scheduling.get("outcome") != "fail"
+    ):
+        raise _fail("cpu-admission-result")
+    return FrozenCpuAdmission(
+        full_gpu_memory_stop_code=stop_code,
+        full_gpu_result_sha256=result_sha256,
+    )
 
 
 def _schema_registry(authority: FrozenV4Authority) -> Any:
