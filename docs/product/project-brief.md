@@ -6,7 +6,7 @@ This brief explains the intended VoxLeaf experience and the motivation behind th
 
 The normative MVP scope is in [`mvp.md`](mvp.md). Accepted technical decisions are recorded under [`../architecture/decisions/`](../architecture/decisions/), and current performance targets are in [`../architecture/performance-budget.md`](../architecture/performance-budget.md).
 
-The implemented product boundary currently includes private local EPUB ingestion, semantic visual reading/navigation, bounded display preferences, logical-position persistence, exact/nearest-valid restoration after exact-file reselection, and deterministic bounded narration-text preparation through `OpenedPublication.prepareNarration`. The package-owned narration path exhaustively projects semantic source positions, retains Unicode-code-point source spans, applies source-mapped neutral/Spanish normalization, scans and packs semantic boundaries, and emits immutable canonical locator-linked batches under fixed cancellation, close, privacy, and resource limits. Repository-authored public EPUB-to-segment and deterministic exact-bound/resource evidence validate that boundary. Milestone 5 is complete; it does not make narration audible. TTS engines and process integration, generated audio, playback, synchronized highlighting, hardware profiles, and installers remain deferred to later milestones. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
+The implemented product boundary currently includes private local EPUB ingestion, semantic visual reading/navigation, bounded display preferences, logical-position persistence, exact/nearest-valid restoration after exact-file reselection, and deterministic bounded narration-text preparation through `OpenedPublication.prepareNarration`. The package-owned narration path exhaustively projects semantic source positions, retains Unicode-code-point source spans, applies source-mapped neutral/Spanish normalization, scans and packs semantic boundaries, and emits immutable canonical locator-linked batches under fixed cancellation, close, privacy, and resource limits. Repository-authored public EPUB-to-segment and deterministic exact-bound/resource evidence validate that boundary. The Milestone 6 benchmark harness and no-viable-profile decision are also implemented as development evidence: the exact Qwen balanced and Supertonic compatibility profiles both failed frozen gates, so neither is selected. This does not make narration audible. TTS engine integration, generated audio, playback, synchronized highlighting, general hardware profiles, and installers remain deferred. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
 
 ## Summary
 
@@ -105,19 +105,26 @@ The implemented persisted reader state retains only bounded exact-byte identity,
 
 ## Current and candidate technical direction
 
-Accepted implementation choices and still-unselected candidates are separated below:
+Accepted implementation choices, rejected evaluated profiles, and still-deferred
+directions are separated below:
 
-| Area                | Status             | Direction or candidate                                                    | Remaining validation                                                       |
-| ------------------- | ------------------ | ------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Desktop             | Implemented        | Tauri 2, React, TypeScript, and Vite                                      | Installer, signing, and release-platform validation remain Milestone 11    |
-| TTS process         | Deferred candidate | Persistent local Python sidecar                                           | Lifecycle, isolation, cancellation, installation, and recovery             |
-| Balanced model      | Admitted for evaluation | Qwen3-TTS 0.6B CustomVoice, Aiden, CUDA bfloat16/SDPA                 | Frozen Spanish quality, latency, RTF, cancellation, licensing, and memory gates |
-| Compatibility model | Admitted for evaluation | Supertonic 3, F1, Spanish mode, ONNX Runtime CPU                      | Frozen CPU quality, latency, RTF, cancellation, licensing, packaging, and memory gates |
-| Process transport   | Unselected         | Typed local IPC, standard streams, local socket, or loopback WebSocket    | Security, binary streaming, cancellation, and operational simplicity      |
-| Internal audio      | Unselected         | Streamed PCM with a bounded ring buffer                                   | Browser and platform support, memory, playback quality, and speed control |
-| Playback mechanism  | Unselected         | AudioWorklet or an equivalent low-level mechanism                         | Stable streaming, underrun observability, packaging, and testability      |
+| Area | Status | Direction or evaluated candidate | Remaining validation |
+| --- | --- | --- | --- |
+| Desktop | Implemented | Tauri 2, React, TypeScript, and Vite | Installer, signing, and release-platform validation remain Milestone 11 |
+| TTS process | Deferred; blocked | Future persistent local process | Requires a passing engine profile before lifecycle, transport, and recovery implementation |
+| Balanced model | Rejected exact profile | Qwen3-TTS 0.6B CustomVoice, Aiden, CUDA bfloat16/SDPA | Failed startup, throughput, cancellation, zero-failure, and complete-quality gates |
+| Compatibility model | Rejected exact profile | Supertonic 3, F1, Spanish mode, ONNX Runtime CPU | Failed first-audio, cancellation, zero-failure, and complete-quality gates |
+| Process transport | Unselected | Typed local IPC, standard streams, local socket, or loopback WebSocket | Deferred until a viable engine exposes real output and cancellation behavior |
+| Internal audio | Unselected | Streamed PCM with a bounded ring buffer | Browser and platform support, memory, playback quality, and speed control |
+| Playback mechanism | Unselected | AudioWorklet or an equivalent low-level mechanism | Stable streaming, underrun observability, packaging, and testability |
 
-Model names, audio encoding, transport, process ownership, and buffer thresholds require prototypes, benchmarks, and—where durable—an architecture decision record. Current buffer and latency targets come from [`../architecture/performance-budget.md`](../architecture/performance-budget.md), not from this brief.
+ADR-0013 records the exact rejection evidence and requires a newly frozen
+candidate cycle before engine integration. Audio encoding, transport, process
+ownership, and buffer thresholds still require prototypes, benchmarks,
+and—where durable—an architecture decision record. Current buffer and latency
+targets come from
+[`../architecture/performance-budget.md`](../architecture/performance-budget.md),
+not from this brief.
 
 ## Concurrency and cancellation principles
 

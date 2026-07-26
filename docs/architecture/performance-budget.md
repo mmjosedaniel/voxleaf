@@ -180,3 +180,16 @@ quickly 15 seconds of media is produced; it does not add a fixed wait or
 implement playback. Its benchmark-local summary schema permits only
 content-free allowlisted fields. The superseded `v1` authority remains
 historical and cannot promote a `v2` result.
+
+[`ADR-0013`](decisions/ADR-0013-no-viable-local-tts-engine-profile.md) and the
+content-free [`selection-v2`](../../benchmarks/tts/selection-v2.md) matrix
+record the first completed selection outcome. Qwen's measured balanced profile
+failed warm first audio at 69.3758902 seconds, time to produce 15 seconds of
+media at 92.8405388 seconds, shorter-complete latency, warm and sustained RTF,
+zero-failure, cancellation, and complete-quality gates. Supertonic's measured
+CPU profile failed warm first audio at 12.1658585 seconds, zero-failure,
+cancellation, and complete-quality gates, although it produced 15 seconds of
+media in 12.952202 seconds and passed the frozen RTF and memory ceilings. These
+are exact-host feasibility observations, not new user-visible targets or
+general hardware requirements. The initial playable-audio-lead, buffering, and
+cancellation targets above remain unchanged and unimplemented.

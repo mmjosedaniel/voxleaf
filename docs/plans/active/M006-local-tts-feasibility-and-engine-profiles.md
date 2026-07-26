@@ -139,7 +139,8 @@ The exact candidate identifiers and dependency layout are frozen by Milestone 1 
 - `docs/architecture/tts-feasibility-profile-v2.md`: the approved rerun
   authority that replaces unavailable WDDM NVML process attribution with a
   Windows/PyTorch cross-checked measurement.
-- `docs/architecture/decisions/ADR-0013-local-tts-engine-profiles.md`: the final profile selection or explicit no-viable-profile decision, provided `ADR-0013` remains the next free identifier when the decision is written.
+- `docs/architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md`:
+  the accepted explicit no-viable-profile decision.
 - Product, architecture, development, dependency, testing, roadmap, and plan documentation named above.
 
 Do not create a shared public benchmark schema unless a real cross-process or cross-language runtime consumer is identified. A benchmark-local schema and allowlisted serializer are sufficient for Milestone 6.
@@ -1217,11 +1218,35 @@ The outcome is reproducible whether it selects profiles or blocks the next miles
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- Added the content-free
+  [`selection-v2`](../../../benchmarks/tts/selection-v2.md) record. It applies
+  every applicable conjunctive `v2` gate to each candidate separately and
+  preserves exact measured-host scope.
+- Qwen is rejected for the balanced role. It fails warm first audio,
+  15-seconds-of-media production, shorter-complete latency, warm and sustained
+  RTF, total sustained RTF, zero-failure, mid-generation cancellation, the
+  three-evaluator quality-panel minimum, and the zero-defect quality gate. Its
+  cold-load, RAM, dual-signal VRAM, artifact, offline, cleanup, and license
+  gates pass.
+- Supertonic is rejected for the compatibility role. It fails warm first
+  audio, zero-failure, mid-generation cancellation, the three-evaluator
+  quality-panel minimum, and the zero-defect quality gate. Its remaining
+  numeric, RAM, zero-GPU, artifact, offline, cleanup, and decision-sufficiency
+  license gates pass.
+- No unavailable value was converted to zero or a favorable score. The limited
+  one-evaluator quality result remains explicitly non-promotable.
+- Neither role has a viable candidate, so no weighted or least-bad selection
+  was made. The required roadmap response is a newly frozen evaluation cycle
+  for an exact candidate or materially changed engine API that credibly exposes
+  incremental audio and mid-generation cancellation, followed by the complete
+  protocol and at least three fluent-Spanish evaluators.
 
 #### Status
 
-Not started.
+Complete — neither candidate passes its assigned role's frozen conjunctive
+matrix, and Milestone 7 has no authorized engine integration target.
 
 ### Task 4.2: Accept the engine-profile ADR
 
@@ -1251,11 +1276,30 @@ Milestone 7 has an explicit integration input or an explicit blocker.
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- Accepted
+  [ADR-0013](../../architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md)
+  as the next available architecture decision.
+- The ADR selects neither evaluated profile and links the frozen authority,
+  candidate identities, content-free selection record, measured configuration
+  scope, fixed failed gates, and limited quality evidence.
+- It records directly supported, unsupported, and unknown capabilities;
+  offline-after-setup behavior; license and artifact consequences; high Qwen
+  and moderate Supertonic packaging risk; and the unchanged zero-dependency
+  production service boundary.
+- It assigns future model-specific preprocessing to a future service adapter
+  without changing `narration-v1`, and distinguishes benchmark worker
+  termination from production cancellation.
+- Process transport, production audio format, playback, hardware detection,
+  acquisition/update/storage policy, and installer topology remain explicitly
+  deferred. Milestone 7 receives an explicit blocker rather than an engine
+  integration input.
 
 #### Status
 
-Not started.
+Complete — ADR-0013 is accepted, selects no profile, and requires a new frozen
+candidate evaluation before engine integration.
 
 ### Task 4.3: Reconcile architecture, product, roadmap, and development documentation
 
@@ -1288,11 +1332,36 @@ The repository communicates exactly what Milestone 6 proved and nothing more.
 
 #### Actual result
 
-Pending.
+Completed on 2026-07-25.
+
+- The canonical system diagram now marks only the benchmark harness and
+  no-profile decision as implemented development evidence. The production
+  Python runtime remains foundation-only, and every TTS/audio/synchronization
+  flow remains dashed, blocked, or deferred.
+- The architecture overview, roadmap, documentation index, project brief,
+  performance budget, benchmark README, setup, testing strategy, and dependency
+  inventory now agree that both exact profiles were rejected and Milestone 7
+  has no engine integration target.
+- The project brief's candidate table records Qwen and Supertonic as rejected
+  exact profiles. The production dependency inventory remains unchanged; both
+  isolated candidate locks are benchmark-only reproduction inputs.
+- Setup retains the explicit networked acquisition, exact-interpreter firewall,
+  offline preflight/measurement, disposable quality, and cleanup commands while
+  stating that they reproduce rejected feasibility profiles rather than install
+  a selected engine.
+- Testing distinguishes model-free default/CI coverage from the completed
+  hardware/manual matrices and disposable one-evaluator listening session.
+- The performance budget adds only accepted measured observations. It does not
+  change the approximately 15-second playable-audio lead, buffering,
+  cancellation, or other unimplemented product targets.
+- No new glossary term was needed. No documentation claims a production TTS
+  service, desktop integration, audio buffering/playback, synchronization,
+  hardware detection, installer, or general hardware support.
 
 #### Status
 
-Not started.
+Complete — product, architecture, roadmap, development, benchmark, and plan
+documentation consistently record the explicit no-viable-profile blocker.
 
 ## Milestone 5: Close deterministic, hardware, privacy, and repository validation
 
@@ -1694,6 +1763,28 @@ A profile is selectable only when its performance, quality, capability, license,
   notice/license flow, disclosure policy, and update review. Both exact
   profiles completed synthesis under application-scoped outbound denial, so
   neither has a mandatory synthesis-time network dependency after setup.
+- 2026-07-25: Completed Task 4.1. The checked-in content-free selection record
+  applies the frozen `v2` matrix without averaging hardware, replacing
+  unavailable values, or allowing a weighted rescue. Qwen is rejected for the
+  balanced role and Supertonic for the compatibility role. No profile is
+  selected; a new pre-result authority and complete evaluation are required
+  before Milestone 7 may receive an engine target.
+- 2026-07-25: Completed Task 4.2. Accepted ADR-0013 records the exact rejected
+  configurations, measured capabilities, licenses, offline and packaging
+  consequences, future adapter ownership, cancellation limitation, unchanged
+  production dependency graph, deferred runtime decisions, and explicit
+  Milestone 7 blocker.
+- 2026-07-25: Completed Task 4.3. Reconciled the canonical diagram,
+  architecture overview, product brief, roadmap, performance evidence,
+  benchmark index, setup, testing boundary, dependency status, documentation
+  index, and this plan. Only benchmark evidence and the no-profile decision are
+  implemented; the production runtime and every audio/integration milestone
+  remain blocked or deferred.
+- 2026-07-25: Completed Milestone 4 validation. Both aggregate root checks,
+  candidate-lock integrity, relative-link resolution, tracked-artifact/privacy
+  review, Mermaid/prose status review, and final branch-diff checks pass. The
+  three logical checkpoints contain only documentation and the content-free
+  selection record.
 
 ## Discoveries and decisions
 
@@ -1736,6 +1827,18 @@ A profile is selectable only when its performance, quality, capability, license,
   for a 50-millisecond WDDM sample: it combines the one-second WDDM
   process-attribution cross-check with PyTorch's exact caching-allocator
   high-water mark and fails if either signal is unavailable or inconsistent.
+- A valid failed performance run does not become a selectable profile merely
+  because some numeric gates pass. Both candidates independently fail
+  performance, zero-failure, and cancellation gates before the limited quality
+  result is considered.
+- Because the only available Spanish evaluation had one participant, no
+  schema-governed official summary can be promoted. The content-free selection
+  record preserves the complete recomputable gate matrix while leaving that
+  missing evidence unfavorable, as the frozen authority requires.
+- A benchmark worker can prove forced-termination timing without proving a
+  production cancellation design. The exact complete-waveform APIs remain
+  unsuitable for the selected roles until a newly frozen evaluation proves an
+  incremental-audio and mid-generation cancellation boundary.
 
 ## Final validation results
 
@@ -1849,7 +1952,48 @@ gates while passing its other numeric gates. Limited blinded quality favors
 Qwen but cannot establish a passing gate, and both candidates had
 meaning-changing defects. Licensing and offline operation are sufficiently
 resolved for selection, with high Qwen and moderate Supertonic packaging risk.
-No summary was promoted and no profile was selected; those decisions belong to
-Milestone 4.
+At the Milestone 3 checkpoint, no summary was promoted and no profile had been
+selected. Milestone 4 subsequently accepted the content-free selection record
+and ADR-0013's explicit no-viable-profile outcome.
+
+### Milestone 4 validation
+
+Completed on 2026-07-25 on `feat/m006-select-engine-profiles`:
+
+- A repository-wide relative Markdown-link audit validated all 44 Markdown
+  files under `docs/`, `benchmarks/tts/`, and the root README; every relative
+  target resolves.
+- The canonical Mermaid node labels, dashed arrows, status table, evidence
+  table, architecture prose, and roadmap status were compared directly. No
+  Mermaid-specific validator is configured in the repository. All surfaces
+  agree that the feasibility harness/decision is implemented development
+  evidence, no profile is selected, and the production runtime is
+  blocked/deferred.
+- `pnpm.cmd check:portable` passed formatting, ESLint, Ruff, TypeScript and
+  strict Python type checks, 18 shared files/175 tests, 34 EPUB files/555 tests,
+  20 desktop files/204 tests, six native WebDriver-client tests, all 49 Python
+  tests, package/desktop portable builds, and the Python distribution build.
+- The authoritative native `pnpm.cmd check` passed the same deterministic
+  suites plus Rustfmt, Clippy with warnings denied, Cargo tests, the native
+  release application build, and Python source/wheel distributions. The
+  existing Vite chunk-size advisory remained informational.
+- `uv lock --check --project
+  services/tts/benchmarks/candidates/qwen3_0_6b_cuda` resolved the unchanged
+  107-package lock, and the corresponding Supertonic command resolved its
+  unchanged 25-package lock. Neither lock enters the production service.
+- `git diff --check origin/main...HEAD` passed. The branch adds only the
+  content-free selection record, ADR-0013, and documentation reconciliation;
+  no source, schema, manifest, lock, generated file, native capability,
+  production dependency, public contract, desktop behavior, or runtime
+  topology changed.
+- The tracked-artifact audit found no model/weight, generated audio, book, raw
+  result, profiling trace, log, forbidden artifact extension, or tracked file
+  above 5 MiB. A changed-file scan found no private host path, account name,
+  secret, corpus text, audio, or unsupported hardware claim.
+- The exact hardware/model benchmarks were not rerun because Milestone 4
+  changes only the decision and documentation layers. ADR-0013 and the
+  selection record consume the already validated complete Milestone 3 `v2`
+  evidence without changing its authority, candidates, corpus, adapters, or
+  measurements.
 
 This plan must not move to `docs/plans/completed/` until every task above has an actual result, the selected profiles or explicit no-viable outcome have accepted evidence, required CI passes on the final implementation head, and the repository definition of done is satisfied.

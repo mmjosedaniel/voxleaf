@@ -34,18 +34,18 @@ The production Python package has no runtime dependencies. `apps/desktop` depend
 
 ### Milestone 6 benchmark-only candidate environments
 
-The [candidate manifest](../../benchmarks/tts/candidates-v1.json) admits two
-evaluation profiles without selecting either one:
+The [candidate manifest](../../benchmarks/tts/candidates-v1.json) admitted two
+evaluation profiles. ADR-0013 now rejects both exact profiles:
 
 | Candidate project | Direct benchmark dependencies | Role and isolation |
 | --- | --- | --- |
-| `services/tts/benchmarks/candidates/qwen3_0_6b_cuda` | `qwen-tts==0.1.1`, `torch==2.9.1+cu128`, `torchaudio==2.9.1+cu128` | Accelerated balanced-role candidate. Its PyTorch wheels come only from the explicit official `cu128` index. FlashAttention is not admitted. |
-| `services/tts/benchmarks/candidates/supertonic3_cpu` | `supertonic==1.3.1` | CPU compatibility-role candidate. It uses the lock-selected ONNX Runtime CPU provider, immutable Supertonic 3 model assets, Spanish mode, and the fixed F1 voice style. Server and playback extras are excluded. |
+| `services/tts/benchmarks/candidates/qwen3_0_6b_cuda` | `qwen-tts==0.1.1`, `torch==2.9.1+cu128`, `torchaudio==2.9.1+cu128` | Rejected exact balanced profile. It failed startup, throughput, zero-failure, cancellation, and complete-quality gates. Its PyTorch wheels come only from the explicit official `cu128` index. |
+| `services/tts/benchmarks/candidates/supertonic3_cpu` | `supertonic==1.3.1` | Rejected exact compatibility profile. It failed first-audio, zero-failure, cancellation, and complete-quality gates. Server and playback extras remain excluded. |
 
 Each candidate owns a separate uv lock and environment. Candidate setup is
 never part of `pnpm.cmd install`, `pnpm.cmd check`, `pnpm check:portable`,
 default `uv sync --project services/tts --locked`, or CI. Model and voice
-acquisition is a later explicit networked command and targets only the ignored
+acquisition is an explicit reproduction command and targets only the ignored
 `benchmarks/results/raw/` tree. Official runs must use verified local artifacts
 with network access disabled.
 
@@ -53,9 +53,11 @@ The candidate locks are evaluation inputs, not production approvals. Delete a
 rejected candidate's directory under `services/tts/benchmarks/candidates/` to
 remove its packages and environment; remove its uv environment/cache with
 ordinary uv cache management outside the repository. Retain only its
-content-free manifest/report rationale. A selected engine must still pass the
-Task 3.4 license, security, offline, native-binary, install-hook, artifact-size,
-and packaging audit before Milestone 7 may propose a production dependency.
+content-free manifest/report rationale. Neither rejected lock may enter the
+production graph. A future candidate must pass a newly frozen complete
+evaluation, including the license, security, offline, native-binary,
+install-hook, artifact-size, and packaging audit, before Milestone 7 may
+propose a production dependency.
 Both projects set uv's `exclude-newer` cutoff to `2026-07-18T00:00:00Z`, seven
 days before the intake review, so regenerating either lock cannot silently
 admit a just-published dependency.

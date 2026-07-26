@@ -190,7 +190,9 @@ The root `check` command does not start the development server. The development 
 
 Milestone 6's hardware benchmark is explicit, manual, native-Windows work. It
 is excluded from root checks and CI and does not make either candidate a
-production dependency. First create the selected candidate environment from
+production dependency. ADR-0013 rejects both evaluated profiles; these commands
+exist only to reproduce or extend feasibility evidence, not to install a
+selected engine. First create the candidate environment being reproduced from
 its checked-in lock and acquire the exact manifest revision into an ignored
 local model directory. Acquisition is a separate networked operation.
 
@@ -251,6 +253,11 @@ bounded content-free raw journal below the ignored
 writes waveform samples. The returned session ID is content-free; the raw
 journal remains non-promotable until the later quality and audit fields are
 complete and the allowlisted summary passes validation.
+
+For the completed `v2` cycle, the audit is complete but the one-evaluator
+quality result remains below the frozen three-person minimum, so no official
+summary or production profile was promoted. The accepted content-free outcome
+is in [`selection-v2.md`](../../benchmarks/tts/selection-v2.md).
 
 The command fails closed on a dirty or different revision, wrong platform or
 Python, missing environment, wrong artifact hash, missing offline controls,
