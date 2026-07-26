@@ -32,6 +32,7 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 | Python TTS area | **Foundation only** | A package/version scaffold and schema conformance tests exist; there is no engine, server, model integration, inference, cancellation, or audio output. |
 | TTS feasibility and profile decision | **Implemented** | The bounded candidate-neutral `v2` harness measured both exact profiles. The license/offline/packaging audit is complete; limited one-evaluator quality remains non-promotable; ADR-0013 selects neither profile. This is development evidence, not runtime behavior. |
 | TTS profile blocker resolution | **In progress; official evaluation complete** | The exact Serena `v3` matrix passed cold load, RAM, VRAM, offline, artifact, license, packaging, and cleanup but failed startup, throughput, zero-failure, and mid-generation cancellation. ADR-0014 permits the exact profile only for a bounded development demo; no passing standard or general hardware profile exists. |
+| Short-unit shared-model batch feasibility | **Planned** | Milestone 6.2 will freeze a separate `v4` authority before testing shorter ordered semantic units and batch size two with one resident Qwen/Serena model. Targeted CPU placement is conditional on a full-GPU memory stop; no result or runtime exists. |
 | Local TTS runtime and process transport | **Blocked for production; constrained demo permitted** | Milestone 7 may plan one development-only Qwen path with complete bounded units, explicit preparation/buffering, one queued unit, and identity-first worker termination. Production transport and continuous playback remain unselected. |
 | Audio, synchronization, hardware support, and release packaging | **Deferred** | Milestones 8–11 remain after the blocked TTS runtime boundary; no production dependency or general hardware claim exists. |
 
@@ -70,8 +71,9 @@ flowchart LR
         subgraph TTSAREA["services/tts and later local runtime"]
             PYTHON["Python package/version scaffold<br/>Foundation only"]:::foundation
             FEASIBILITY["TTS feasibility harness + profile decision<br/>Implemented development evidence:<br/>both v2 roles rejected"]:::implemented
-            PROFILE_CYCLE["TTS profile blocker resolution<br/>In progress: M6.1<br/>Serena v3; prototype passed"]:::progress
-            TTS["Local TTS runtime + transport<br/>Blocked: M7 needs a viable profile"]:::blocked
+            PROFILE_CYCLE["TTS profile blocker resolution<br/>In progress: M6.1 closeout<br/>batch-one v3 failed; demo exception"]:::progress
+            BATCH_PROBE["Short-unit shared-model batch probe<br/>Planned: M6.2<br/>new pre-result v4 authority"]:::planned
+            TTS["Local TTS runtime + transport<br/>M7 demo permitted; production blocked"]:::blocked
         end
     end
 
@@ -87,7 +89,9 @@ flowchart LR
 
     PYTHON -.-> FEASIBILITY
     FEASIBILITY -.-> PROFILE_CYCLE
-    PROFILE_CYCLE -.-> TTS
+    PROFILE_CYCLE -.-> BATCH_PROBE
+    PROFILE_CYCLE -.->|"ADR-0014 constrained demo only"| TTS
+    BATCH_PROBE -.->|"future measured scheduling evidence"| TTS
     PREP -.->|"future ephemeral prepared text"| TTS
     SHARED -.->|"future request/event contracts"| TTS
     TTS -.->|"future audio frames"| PLAYBACK
@@ -116,8 +120,9 @@ flowchart TD
     VISUAL["Visual reader + logical-locator persistence<br/>Implemented"]:::implemented
     PREP["Source-mapped normalization and<br/>bounded prepared narration batches<br/>Implemented package API"]:::implemented
     PROFILE["Engine feasibility + profile decision<br/>Implemented evidence:<br/>both exact v2 profiles rejected"]:::implemented
-    NEXT_PROFILE["Profile blocker resolution<br/>In progress: M6.1<br/>Serena v3; prototype passed"]:::progress
-    INFER["Cancellable local inference + transport<br/>Blocked: M7 needs a viable profile"]:::blocked
+    NEXT_PROFILE["Profile blocker resolution<br/>In progress: M6.1 closeout<br/>batch-one v3 failed; demo exception"]:::progress
+    BATCH_PROBE["Short-unit shared-model batch probe<br/>Planned: M6.2<br/>no result yet"]:::planned
+    INFER["Cancellable local inference + transport<br/>M7 demo permitted; production blocked"]:::blocked
     BUFFER["Bounded in-memory audio queue<br/>and playable-duration startup gate<br/>Deferred: M8"]:::deferred
     FOLLOW["Playback, highlighting, reader following,<br/>and shared-position persistence<br/>Deferred: M9"]:::deferred
     DEVICE["OS audio device<br/>External"]:::external
@@ -126,13 +131,15 @@ flowchart TD
     SAFE --> PREP
     PREP -.->|"future ephemeral prepared text"| INFER
     PROFILE -.-> NEXT_PROFILE
-    NEXT_PROFILE -.->|"blocked until an exact profile passes"| INFER
+    NEXT_PROFILE -.-> BATCH_PROBE
+    NEXT_PROFILE -.->|"ADR-0014 constrained demo only"| INFER
+    BATCH_PROBE -.->|"future measured scheduling evidence"| INFER
     INFER -.-> BUFFER
     BUFFER -.-> FOLLOW
     FOLLOW -.-> DEVICE
 ```
 
-The current user-visible flow ends at `VISUAL`. `PREP` is usable by package callers and tests but is not wired into the desktop. `NEXT_PROFILE` is active development-only research/evaluation work, not runtime behavior or a selected engine. All inference steps after it are future work. Approximately 15 seconds is a target amount of playable audio held in the future bounded buffer, not a fixed wall-clock delay; a shorter complete remaining range may start when fully ready.
+The current user-visible flow ends at `VISUAL`. `PREP` is usable by package callers and tests but is not wired into the desktop. `NEXT_PROFILE` is active closeout evidence and `BATCH_PROBE` is planned development-only evaluation; neither is runtime behavior or a selected production engine. All inference steps after them are future work. Approximately 15 seconds is a target amount of playable audio held in the future bounded buffer, not a fixed wall-clock delay; a shorter complete remaining range may start when fully ready.
 
 ## Privacy, persistence, cancellation, and bounds
 
@@ -157,15 +164,17 @@ The current user-visible flow ends at `VISUAL`. `PREP` is usable by package call
 | Playable-audio startup rule | [ADR-0004](decisions/ADR-0004-start-after-audio-lead.md); target only until Milestone 8 |
 | Local TTS feasibility authority | [Milestone 6 completed plan](../plans/completed/M006-local-tts-feasibility-and-engine-profiles.md), [current v2 feasibility profile](tts-feasibility-profile-v2.md), [selection matrix](../../benchmarks/tts/selection-v2.md), and [ADR-0013](decisions/ADR-0013-no-viable-local-tts-engine-profile.md); both exact roles rejected and no production profile selected |
 | Local TTS profile blocker resolution | [Milestone 6.1 active plan](../plans/active/M006-001-local-tts-profile-blocker-resolution.md), [Serena intake result](../../benchmarks/tts/customvoice-spanish-screen-result-v2.json), machine-readable [`profile-v3.json`](../../benchmarks/tts/profile-v3.json), [v3 authority](tts-feasibility-profile-v3.md), [passing exact-host prototype result](../../benchmarks/tts/incremental-cancellation-prototype-result-v1.json), completed model-free benchmark extension, failed official matrix recorded in the ExecPlan, and [ADR-0014 constrained demo decision](decisions/ADR-0014-constrained-qwen-development-demo.md) |
+| Short-unit shared-model batch feasibility | [Milestone 6.2 planned ExecPlan](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md); no `v4` authority, batch-two result, CPU-placement result, or implementation exists yet |
 | Local-first desktop and future local process direction | [ADR-0001](decisions/ADR-0001-local-first-desktop.md); ADR-0014 permits a constrained development demo while production transport remains unresolved |
 | Roadmap status | [Roadmap](../plans/roadmap.md) |
 
 ## Remaining gates
 
 1. **Milestone 6.1 — In progress:** record the completed failed `v3` matrix, constrained demo exception, one-maintainer descriptive quality result, selection consequences, cleanup, and closeout without rewriting the frozen authority.
-2. **Milestone 7 — Constrained demo permitted; production blocked:** plan one bounded Qwen development-demo vertical slice under ADR-0014. Do not claim passing performance, continuous playback, native streaming, general hardware support, or production transport.
-3. **Milestone 8 — Deferred:** implement bounded audio framing, queueing, playback, backpressure, underrun telemetry, and the duration-based startup gate.
-4. **Milestone 9 — Deferred:** connect one stable logical position across the visual reader, prepared narration, playback progress, highlighting, following, seek, and restoration.
-5. **Milestones 10–11 — Deferred:** validate hardware profiles and CPU fallback, then complete installer/signing/distribution and full MVP closeout.
+2. **Milestone 6.2 — Planned:** freeze and execute the separate short-unit/shared-model batch evaluation. Run targeted CPU placement only if the full-GPU arm reaches its predeclared memory stop condition.
+3. **Milestone 7 — Constrained demo permitted; production blocked:** plan one bounded Qwen development-demo vertical slice under ADR-0014. Do not claim passing performance, continuous playback, native streaming, general hardware support, or production transport.
+4. **Milestone 8 — Deferred:** implement bounded audio framing, queueing, playback, backpressure, underrun telemetry, and the duration-based startup gate.
+5. **Milestone 9 — Deferred:** connect one stable logical position across the visual reader, prepared narration, playback progress, highlighting, following, seek, and restoration.
+6. **Milestones 10–11 — Deferred:** validate hardware profiles and CPU fallback, then complete installer/signing/distribution and full MVP closeout.
 
 Update this document whenever a major component boundary, process/package dependency, trust boundary, persistence owner, external interaction, runtime flow, or roadmap implementation status changes. A completed plan may advance a node or arrow only when its definition of done and validation evidence are present.

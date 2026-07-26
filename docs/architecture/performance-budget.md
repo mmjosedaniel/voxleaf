@@ -231,3 +231,34 @@ seconds, so an indefinitely long bounded buffer loses approximately 27 seconds
 per minute. ADR-0014 therefore permits this exact profile only for a bounded
 development demo with explicit preparation/buffering; it does not change the
 normal startup, sustained-throughput, underrun, or cancellation targets above.
+
+The `1.7B` model label is a parameter count, not a 1.7-GB VRAM requirement. The
+frozen main model safetensors occupy 3,833,402,552 bytes and the speech
+tokenizer safetensors occupy 682,293,092 bytes, for 4,515,695,644 bytes of
+model artifacts. Runtime VRAM additionally includes loaded precision/layout,
+activations, autoregressive state, decoder work, CUDA libraries and kernels,
+temporary workspaces, allocator reserve, and host/driver accounting. The
+official 6,286,802,944-byte peak is therefore the relevant measured capacity
+observation. It is the maximum of baseline-adjusted WDDM dedicated memory and
+PyTorch peak-reserved memory, not a claim that every byte was a live tensor.
+
+Planned
+[Milestone 6.2](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md)
+will freeze a separate `v4` authority before testing whether one resident model
+can generate two ordered approximately 8-20-second semantic units in a shared
+batch quickly enough to keep a bounded playback simulation supplied. Shorter
+complete units may reduce first-result latency but do not improve sustained RTF
+by themselves. The evaluation must report aggregate batch RTF, startup lead,
+buffer drift, underruns, RAM, VRAM, failures, order, cancellation, and cleanup.
+The unchanged standard target remains sustained RTF at or below 0.8; a focused
+scheduling result additionally requires aggregate RTF below 1.0 and no more
+than the existing five seconds of buffering per minute.
+
+Full-GPU batch two is the primary experiment. CPU placement may be tested only
+as a separately identified contingency after a predeclared full-GPU memory
+stop. Hugging Face documents CPU offload as a capacity technique that transfers
+layers to the accelerator when needed; it is expected to trade speed for
+capacity rather than improve throughput. Generic layer offload is therefore
+not the first contingency. A narrowly targeted speech-tokenizer/audio-decoder
+placement still requires device-map, RAM, VRAM, transfer, failure, and timing
+evidence before it can be considered viable.

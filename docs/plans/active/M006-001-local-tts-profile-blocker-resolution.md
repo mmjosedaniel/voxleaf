@@ -59,10 +59,12 @@ requires a separate product, consent, privacy, and persistence decision.
   complete-panel, and zero-defect quality gates.
 - Both adapters exposed complete waveforms. Neither proved incremental local
   audio delivery or usable cancellation after audio began.
-- The exact `v3` development prototype now proves bounded complete-segment
+- The exact `v3` development prototype proved bounded complete-segment
   delivery, identity-first stale rejection, and worker-termination
-  cancellation on the authoritative host. It does not yet supply official
-  performance/quality results or a production runtime.
+  cancellation on the authoritative host. The later official batch-one matrix
+  failed startup, throughput, zero-failure, and mid-generation cancellation
+  gates. Its limited one-maintainer quality result supports only ADR-0014's
+  constrained demo decision, not a passing profile or production runtime.
 - The production `services/tts` package still has zero runtime dependencies.
 
 ### Maintainer-provided Qwen voice-cloning prototype
@@ -154,9 +156,9 @@ privacy, and honest failure accounting:
 | --- | --- | --- | --- |
 | Build the voice-clone prompt once and reuse it | **Do not transfer the prompt.** Base cloning is outside this MVP. Retain only the analogous bounded idea: load the selected CustomVoice model once and reuse one exact built-in speaker/instruction/settings identity in memory. | Plan Milestones 1–3 | Milestone 7 service lifecycle, only for a selected profile |
 | Generate with candidate batch size one | **Adopt as the conservative `v3` default.** It limits retained work and makes segment ownership observable. A larger batch requires pre-result authority plus measured benefit without weakening memory or cancellation. | Plan Milestones 1–4 | Milestone 7 may retain or supersede it from selected-profile evidence |
-| Generate two ordered segments in one shared-model batch | **Investigate later; do not treat as proven.** The exact API accepts a two-text batch and can share model weights, but `v3` measured only batch size one. Freeze a new batch-two/short-segment authority before hardware results. | No change to completed `v3` | A future focused spike before or within Milestone 7 |
+| Generate two ordered segments in one shared-model batch | **Investigate separately; do not treat as proven.** The exact API accepts a two-text batch and can share model weights, but `v3` measured only batch size one. Freeze a new batch-two/short-segment authority before hardware results. | No change to completed `v3`; planned Milestone 6.2 | Milestones 7–8 may consume only measured evidence |
 | Run two independent model processes | **Do not use as the first experiment.** Each process would load another model copy; the measured 6,286,802,944-byte peak already leaves insufficient evidence that two copies fit the 8 GiB GPU. | No implementation | Reconsider only with explicit memory evidence |
-| Target complete 8–20-second audio units | **Investigate at semantic boundaries.** Shorter units can reduce complete-waveform startup delay but do not improve sustained RTF by themselves and may introduce extra overhead or prosody discontinuities. | No change to `narration-v1` or `v3` | A future focused spike and Milestones 7–8 |
+| Target complete 8–20-second audio units | **Investigate at semantic boundaries.** Shorter units can reduce complete-waveform startup delay but do not improve sustained RTF by themselves and may introduce extra overhead or prosody discontinuities. | No change to `narration-v1` or `v3`; planned Milestone 6.2 | Milestones 7–8 may consume only measured evidence |
 | Concatenate completed WAV files during playback | **Reject.** Do not concatenate container bytes or persist intermediate files. Preserve order through identities and enqueue compatible in-memory PCM units or frames; any gap, fade, or crossfade rule requires listening evidence. | Existing privacy/boundedness rule | Milestone 8 playback |
 | Use bounded VoxLeaf narration segments | **Adopt.** The candidate consumes existing `narration-v1` units; it does not invent paragraph/chapter accumulation or model-specific text contracts. | Plan Milestone 2 | Milestones 7 and 9 |
 | Deliver each completed segment immediately | **Adopt for the prototype and selected-profile handoff.** Segment-at-a-time delivery improves startup and boundedness, but a complete-waveform call still does not prove mid-segment streaming or cancellation. | Plan Milestone 2 | Milestone 7 emits selected-profile audio; Milestone 8 buffers/plays it |
@@ -308,6 +310,10 @@ freeze:
 
 No audio was generated and no runtime, segmenter, buffer, playback, dependency,
 profile, ADR, or roadmap commitment changed while recording this hypothesis.
+The later documentation decision assigned this hypothesis to the separate
+[Milestone 6.2 ExecPlan](M006-002-qwen-short-segment-batch-feasibility.md).
+That handoff is a roadmap commitment to evaluation only; it still does not
+provide a `v4` authority, result, implementation, or support claim.
 
 ### OpenAI Whisper assessment
 
@@ -398,6 +404,7 @@ disposable generated speech and produce aggregate error counts, but:
 - `docs/development/setup.md`
 - `docs/development/testing.md`
 - `docs/plans/roadmap.md`
+- `docs/plans/active/M006-002-qwen-short-segment-batch-feasibility.md`
 - `docs/plans/completed/M006-local-tts-feasibility-and-engine-profiles.md`
 - `services/tts/benchmarks/`
 - `services/tts/tests/`
@@ -669,6 +676,9 @@ remains failed and non-promotable.
   duplicate one person's score as independent evidence.
 - Reconcile the roadmap, architecture, product, setup, dependency, testing,
   performance-budget, and system-diagram surfaces.
+- Hand the post-result short-unit, shared-model batch-two, and conditional
+  targeted-CPU-placement hypotheses to the separate Milestone 6.2 ExecPlan.
+  Do not expand, rerun, or reinterpret the frozen batch-one `v3` authority.
 
 ### Validation
 
@@ -981,7 +991,7 @@ dependency changes are involved.
   generating audio. FlashAttention and SoX emitted optional-tool warnings;
   SDPA is frozen and the Qwen generation path does not require either tool.
 - 2026-07-26: From clean documentation checkpoint `057bca8`, the real-host
-  offline preflight verified both exact artifacts (4,516,695,644 bytes
+  offline preflight verified both exact artifacts (4,515,695,644 bytes
   combined), the selected profile and interpreter, the application firewall
   block, 13,427,974,144 free RAM bytes, and 8,174,698,496 free VRAM bytes. It
   failed only `sleep`, `background-load`, and `thermal-state`, which were
@@ -1136,6 +1146,17 @@ dependency changes are involved.
   204 desktop, 6 native-WebDriver-client, and 72 Python tests plus formatting,
   lint, strict type checks, and portable builds. The existing Vite chunk-size
   advisory remained informational.
+- 2026-07-26: Moved the unproven short-unit/shared-model batch-two and
+  targeted-CPU-placement work into the separate
+  `M006-002-qwen-short-segment-batch-feasibility.md` ExecPlan and added
+  Milestone 6.2 to the roadmap. M006-001 remains the immutable closeout record
+  for failed batch-one `v3`; no hardware run or runtime change occurred.
+- 2026-07-26: The M006-002 handoff and cross-document reconciliation passed
+  the 45-file Markdown local-link audit, private-pattern scan,
+  `git diff --check`, `pnpm.cmd check:portable` in 26.4 seconds, and
+  `pnpm.cmd check` in 51.7 seconds. The initial sandboxed portable check stopped
+  only because the protected existing `.pytest_cache` could not be scanned;
+  the unchanged command passed outside the sandbox.
 
 ## Discoveries and decisions
 
@@ -1260,6 +1281,18 @@ dependency changes are involved.
     join quality, cancellation, memory, buffer drift, and underruns. It must be
     frozen before results as a new authority rather than retroactively changing
     failed batch-one `v3`.
+29. The future probe belongs in a separate Milestone 6.2 ExecPlan. It changes
+    batching, target unit duration, scheduling, and potentially device
+    placement, so folding it into M006-001 would blur the pre-result authority
+    and the historical failed result.
+30. `1.7B` is a parameter count rather than an artifact or VRAM size. The exact
+    frozen model artifacts total 4,515,695,644 bytes, while the official
+    batch-one run reached 6,286,802,944 bytes of authoritative peak VRAM after
+    accounting for the runtime and framework reserve.
+31. CPU offload is a capacity contingency, not an assumed speed improvement.
+    Generic layer offload is excluded from the first experiment; a separately
+    frozen targeted speech-tokenizer/audio-decoder placement may run only if
+    full-GPU batch two hits its predeclared memory stop condition.
 
 ## Final validation results
 

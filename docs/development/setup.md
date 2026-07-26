@@ -11,6 +11,12 @@ profile; it adds no production dependency and does not approve continuous
 playback. TTS inference, transport, audio, playback, synchronization, hardware
 detection, and installers remain unimplemented.
 
+Milestone 6.2 is planned but has no command or result yet. Its separate
+ExecPlan must freeze the `v4` authority and add a reviewed batch hardware
+command before testing shorter ordered units and shared-model batch size two.
+Conditional targeted CPU placement is evaluation-only and may run only after
+the full-GPU arm reaches its predeclared memory stop.
+
 ## Prerequisite version matrix
 
 The selected versions establish a reproducible foundation with the reviewed low-level EPUB ZIP/XML dependencies, but without selecting renderer, audio, transport, or TTS-model dependencies.

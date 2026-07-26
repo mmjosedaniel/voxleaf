@@ -221,6 +221,14 @@ permits only that constrained development path. Formal selection consequences
 and closeout remain. Base voice cloning is outside the current MVP. Whisper and
 VAD/energy analysis are excluded from `v3`.
 
+The planned
+[Milestone 6.2 plan](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md)
+has no implemented batch-two test or hardware command at present. It requires a
+new pre-result authority, deterministic fake coverage for ordering, bounded
+retention, whole-batch invalidation, playback arithmetic, and conditional CPU
+placement, followed by exact-host full-GPU evidence. Default tests and CI must
+remain model-free.
+
 ## Deferred coverage
 
 The secure EPUB ingestion scenario and boundary matrix is implemented with repository-authored synthetic inputs; deterministic desktop tests prove the bounded repository, approved save lifecycle, and exact/recovered open coordination; the real-browser smoke proves preference plus exact/nearest-valid locator restoration through production React reload/reselection; the packaged native smoke proves save/restore across a WebView2 application restart; the two hardware-specific benchmarks cover accepted prototype, production React, repeated lifecycle, and packaged WebView2 reader limits; and the test-only narration corpus/limits plus production source projector, normalizer, boundary scanner, packer, canonical prepared-segment finalizer, public batch operation, public neutral/Spanish EPUB-to-segment integration matrix, and deterministic resource matrix have evidence. Milestones 5 and 6 are complete. No default test or CI job loads either benchmark candidate, and no current test communicates with a production TTS process, plays audio, detects supported inference hardware, builds an installer, or exercises those later end-to-end flows. The examples below are requirements for later roadmap milestones, not claims about current coverage.

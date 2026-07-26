@@ -79,6 +79,17 @@ mid-generation cancellation gates. ADR-0014 permits the exact profile only for
 a future bounded development demo; it does not add the candidate to the
 production graph or approve distribution.
 
+The planned
+[Milestone 6.2 batch-feasibility plan](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md)
+does not add a dependency. It first evaluates batch sizes one and two through
+the existing isolated candidate graph. That graph already resolves
+`accelerate==1.12.0` transitively, but VoxLeaf source must not import or rely on
+that transitive package without a separately reviewed direct declaration.
+Conditional targeted speech-tokenizer/audio-decoder CPU placement is only an
+evaluation surface if the full-GPU batch-two arm reaches its frozen memory
+stop. It is not a production dependency, approved fallback, packaging choice,
+or claim that generic CPU offload improves performance.
+
 Base voice cloning remains outside the MVP. Whisper is excluded from the
 production graph and from `v3`; VAD/energy analysis is also excluded from
 `v3` so neither auxiliary runtime can affect timed synthesis or selection.
