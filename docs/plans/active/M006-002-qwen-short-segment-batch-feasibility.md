@@ -595,13 +595,10 @@ in this milestone.
 #### Status
 
 In progress. The reviewed official evidence/derivation implementation is
-committed and the non-promotable CPU pilot passed. The first official CPU arm
-completed all eight measured first attempts, but a derivation-lifecycle defect
-deleted its ignored raw session before reporting a raw-schema rejection. That
-run is explicitly non-promotable. The corrected derivation retains failed raw
-evidence for content-free diagnosis and deletes it only after a schema-valid
-safe summary is derived. A fresh clean-checkpoint CPU run remains required
-before later arms.
+committed and the final non-promotable CPU pilot passed. The schema-valid
+official CPU-solo result passes admission, and its ignored raw session is
+deleted. The same-authority GPU-solo baseline and conditional concurrent arm
+remain.
 
 ### Milestone 9: Evaluate five-minute bounded playback credibility and quality
 
@@ -1100,6 +1097,22 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
   deleted after diagnosis and no result was promoted. Added the same narrow,
   model-independent normalization plus a regression before the next clean
   run.
+- 2026-07-26: The final pilot at clean checkpoint `4395ff7` completed two of
+  two first attempts in 129.3 seconds with aggregate RTF
+  `3.0556705734323426` and zero CPU-worker dedicated/shared GPU memory. The
+  final official CPU arm completed in 392.3 seconds and derived schema-valid
+  `benchmarks/tts/dual-worker-result-v5-cpu-solo.json`; its ignored raw
+  session was deleted. The safe-summary SHA-256 is
+  `43ed927e2a765cf39214bc8937398c1c454993cc23bd6485596aa591fe5224a2`.
+- 2026-07-26: CPU-solo admission passes with eight of eight first attempts,
+  zero retries/failures, 97.04 media seconds, aggregate RTF
+  `2.999443394476504`, 9.151-second cold-load p95, all eight units inside the
+  8-16-second target, exact zero CPU dedicated/shared GPU memory,
+  10,681,810,944 bytes peak combined process RAM, 7,405,936,640 bytes minimum
+  available system RAM, 5,974,171,648 bytes minimum commit headroom, two
+  passing cancellation trials, no stale publication, and complete cleanup.
+  This admits the same-authority GPU-solo baseline; it is not itself a
+  concurrent scheduling pass or production-profile promotion.
 
 ## Discoveries and decisions
 

@@ -19,7 +19,6 @@ from benchmarks.v5_authority import (
     RAW_SCHEMA_SHA256,
     SUMMARY_SCHEMA_SHA256,
     V5AuthorityError,
-    assert_no_v5_official_results,
     load_frozen_v5_authority,
     validate_v5_raw_result,
     validate_v5_summary_result,
@@ -461,7 +460,7 @@ def _validate_summary(value: object) -> None:
     )
 
 
-def test_v5_authority_is_byte_frozen_and_result_blind() -> None:
+def test_v5_authority_is_byte_frozen() -> None:
     authority = load_frozen_v5_authority(REPOSITORY_ROOT)
     assert _sha256("benchmarks/tts/profile-v5.json") == PROFILE_SHA256
     assert _sha256("benchmarks/tts/corpus-v5.json") == CORPUS_SHA256
@@ -473,7 +472,16 @@ def test_v5_authority_is_byte_frozen_and_result_blind() -> None:
     assert authority.profile["status"] == (
         "frozen-before-v5-implementation-pilot-and-official-results"
     )
-    assert_no_v5_official_results(REPOSITORY_ROOT)
+
+
+def test_committed_v5_summaries_are_schema_valid() -> None:
+    paths = sorted((REPOSITORY_ROOT / "benchmarks/tts").glob("dual-worker-result-v5-*.json"))
+    assert paths
+    for path in paths:
+        validate_v5_summary_result(
+            REPOSITORY_ROOT,
+            json.loads(path.read_text(encoding="utf-8")),
+        )
 
 
 def test_v5_execution_authority_can_skip_optional_schema_library(
