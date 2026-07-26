@@ -13,8 +13,13 @@ type CandidateProvider = Literal["pytorch-cuda", "onnxruntime-cpu"]
 type CandidatePrecision = Literal["bfloat16", "float32"]
 
 QWEN_CANDIDATE_ID: Final = "qwen3-tts-0-6b-customvoice-cuda-bf16-v1"
+QWEN_V3_CANDIDATE_ID: Final = "qwen3-tts-1-7b-customvoice-cuda-bf16-v1"
 SUPERTONIC_CANDIDATE_ID: Final = "supertonic-3-onnx-cpu-f1-es-v1"
 ADMITTED_CANDIDATE_IDS: Final = frozenset((QWEN_CANDIDATE_ID, SUPERTONIC_CANDIDATE_ID))
+PROFILE_V3_SHA256: Final = "7d062a4f662ed95b1cb5ff0a21fc40864f4ac3858cea4314ee612b84c2e08dbe"
+PROFILE_V3_CONFIGURATION_SHA256: Final = (
+    "b689b9b81cc7633687e80030ed172878d89196d57149370a82839e1ec83d61df"
+)
 HASH_READ_BYTES: Final = 1024 * 1024
 
 
@@ -40,6 +45,51 @@ class VerifiedArtifact:
 
 
 @dataclass(frozen=True)
+class CustomVoiceGenerationSettings:
+    do_sample: bool
+    repetition_penalty: float
+    temperature: float
+    top_p: float
+    top_k: int
+    subtalker_do_sample: bool
+    subtalker_temperature: float
+    subtalker_top_p: float
+    subtalker_top_k: int
+    max_new_tokens: int
+
+    def as_qwen_kwargs(self) -> dict[str, object]:
+        return {
+            "do_sample": self.do_sample,
+            "repetition_penalty": self.repetition_penalty,
+            "temperature": self.temperature,
+            "top_p": self.top_p,
+            "top_k": self.top_k,
+            "subtalker_dosample": self.subtalker_do_sample,
+            "subtalker_temperature": self.subtalker_temperature,
+            "subtalker_top_p": self.subtalker_top_p,
+            "subtalker_top_k": self.subtalker_top_k,
+            "max_new_tokens": self.max_new_tokens,
+        }
+
+
+@dataclass(frozen=True)
+class EvaluationAuthority:
+    profile_version: str
+    profile_sha256: str
+    configuration_identity_sha256: str
+    candidate_manifest_version: str
+    environment_project: str
+    candidate_lock_sha256: str
+    speaker_screen_result_sha256: str
+    instruction_sha256: str
+    generation_settings_sha256: str
+    batch_size: int
+    automatic_retries: int
+    model_lifetime: str
+    auxiliary_analysis: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class CandidateProfile:
     candidate_id: str
     role: Literal["balanced", "compatibility"]
@@ -51,6 +101,13 @@ class CandidateProfile:
     precision: CandidatePrecision
     artifacts: tuple[ArtifactIdentity, ...]
     output_sample_rate_hz: int | None
+    language: str = "Spanish"
+    instruction: str | None = field(default=None, repr=False)
+    generation_settings: CustomVoiceGenerationSettings | None = field(
+        default=None,
+        repr=False,
+    )
+    authority: EvaluationAuthority | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True)
@@ -98,6 +155,265 @@ def _read_manifest(path: Path) -> Mapping[str, object]:
         raise
     except Exception:
         raise AdapterConfigurationError("manifest") from None
+
+
+def _canonical_sha256(value: object) -> str:
+    payload = json.dumps(
+        value,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    try:
+        with path.open("rb") as source:
+            while chunk := source.read(HASH_READ_BYTES):
+                digest.update(chunk)
+    except OSError:
+        raise AdapterConfigurationError("authority") from None
+    return digest.hexdigest()
+
+
+def _authority_path(repository_root: Path, value: object) -> tuple[Path, str]:
+    authority = _mapping(value, "authority")
+    raw_path = _string(authority.get("path"), "authority")
+    relative = PurePosixPath(raw_path)
+    if relative.is_absolute() or ".." in relative.parts:
+        raise AdapterConfigurationError("authority")
+    target = repository_root.joinpath(*relative.parts).resolve()
+    try:
+        target.relative_to(repository_root.resolve())
+    except ValueError:
+        raise AdapterConfigurationError("authority") from None
+    expected = _sha256(authority.get("sha256"))
+    if not target.is_file() or _file_sha256(target) != expected:
+        raise AdapterConfigurationError("authority")
+    return target, expected
+
+
+def _exact_generation_settings(value: object) -> CustomVoiceGenerationSettings:
+    generation = _mapping(value, "authority")
+    expected = {
+        "batchSize": 1,
+        "doSample": True,
+        "repetitionPenalty": 1.05,
+        "temperature": 0.9,
+        "topP": 1.0,
+        "topK": 50,
+        "subtalkerDoSample": True,
+        "subtalkerTemperature": 0.9,
+        "subtalkerTopP": 1.0,
+        "subtalkerTopK": 50,
+        "maxNewTokens": 2048,
+    }
+    if dict(generation) != expected:
+        raise AdapterConfigurationError("authority")
+    return CustomVoiceGenerationSettings(
+        do_sample=True,
+        repetition_penalty=1.05,
+        temperature=0.9,
+        top_p=1.0,
+        top_k=50,
+        subtalker_do_sample=True,
+        subtalker_temperature=0.9,
+        subtalker_top_p=1.0,
+        subtalker_top_k=50,
+        max_new_tokens=2048,
+    )
+
+
+def load_v3_candidate_profile(repository_root: Path, candidate_id: str) -> CandidateProfile:
+    """Load the exact v3 candidate only after all frozen authorities agree."""
+
+    if candidate_id != QWEN_V3_CANDIDATE_ID:
+        raise AdapterConfigurationError("candidate")
+    profile_path = repository_root / "benchmarks" / "tts" / "profile-v3.json"
+    if _file_sha256(profile_path) != PROFILE_V3_SHA256:
+        raise AdapterConfigurationError("authority")
+    profile = _read_manifest(profile_path)
+    if (
+        profile.get("profileVersion") != "tts-feasibility-profile-v3"
+        or profile.get("status") != "frozen-before-prototype-and-official-results"
+        or profile.get("candidateRole") != "balanced"
+    ):
+        raise AdapterConfigurationError("authority")
+
+    authorities = _mapping(profile.get("authorities"), "authority")
+    required_authorities = {
+        "baseCandidateManifest",
+        "candidateManifestCorrection",
+        "speakerScreen",
+        "speakerScreenResult",
+        "corpus",
+        "candidateLock",
+        "inheritedMeasurementProfile",
+    }
+    if set(authorities) != required_authorities:
+        raise AdapterConfigurationError("authority")
+    resolved = {
+        name: _authority_path(repository_root, authorities.get(name))
+        for name in required_authorities
+    }
+    base_manifest = _read_manifest(resolved["baseCandidateManifest"][0])
+    correction = _read_manifest(resolved["candidateManifestCorrection"][0])
+    screen = _read_manifest(resolved["speakerScreen"][0])
+    screen_result = _read_manifest(resolved["speakerScreenResult"][0])
+
+    candidates = base_manifest.get("candidates")
+    if not isinstance(candidates, list) or len(candidates) != 1:
+        raise AdapterConfigurationError("authority")
+    base_candidate = _mapping(candidates[0], "authority")
+    candidate = _mapping(profile.get("candidate"), "authority")
+    engine = _mapping(candidate.get("engine"), "authority")
+    model = _mapping(candidate.get("model"), "authority")
+    voice = _mapping(candidate.get("voice"), "authority")
+    runtime = _mapping(candidate.get("runtime"), "authority")
+    base_model = _mapping(base_candidate.get("model"), "authority")
+    generation = _exact_generation_settings(candidate.get("generation"))
+
+    supported = _mapping(base_candidate.get("voice"), "authority").get("supportedSpeakers")
+    if not isinstance(supported, list):
+        raise AdapterConfigurationError("authority")
+    supported_order = tuple(
+        _string(_mapping(value, "authority").get("id"), "authority") for value in supported
+    )
+    speaker = _string(voice.get("speaker"), "authority")
+    selected_result = screen_result.get("selectedSpeaker")
+    screen_order = screen.get("speakerOrder")
+    result_speakers = screen_result.get("speakers")
+    if (
+        candidate.get("candidateId") != candidate_id
+        or base_candidate.get("candidateId") != candidate_id
+        or correction.get("candidateId") != candidate_id
+        or screen.get("candidateId") != candidate_id
+        or screen_result.get("candidateId") != candidate_id
+        or selected_result != speaker
+        or not isinstance(screen_order, list)
+        or tuple(screen_order) != supported_order
+        or not isinstance(result_speakers, list)
+        or tuple(
+            _string(_mapping(value, "authority").get("speakerId"), "authority")
+            for value in result_speakers
+        )
+        != supported_order
+        or speaker not in supported_order
+    ):
+        raise AdapterConfigurationError("authority")
+    selected = next(
+        _mapping(value, "authority")
+        for value in result_speakers
+        if _mapping(value, "authority").get("speakerId") == speaker
+    )
+    if selected.get("eligible") is not True or selected.get("meaningChangingDefects") != 0:
+        raise AdapterConfigurationError("authority")
+
+    instruction = _string(voice.get("instruction"), "authority")
+    base_voice = _mapping(base_candidate.get("voice"), "authority")
+    base_runtime = _mapping(base_candidate.get("runtime"), "authority")
+    base_generation = _mapping(base_runtime.get("generation"), "authority")
+    if (
+        base_manifest.get("manifestVersion") != "tts-candidate-manifest-v2"
+        or correction.get("manifestVersion") != "tts-candidate-manifest-v3"
+        or correction.get("selectionAuthority") != "customvoice-spanish-screen-v2"
+        or screen.get("screenVersion") != "customvoice-spanish-screen-v2"
+        or screen_result.get("screenVersion") != "customvoice-spanish-screen-v2"
+        or engine.get("distribution") != "qwen-tts"
+        or engine.get("version") != "0.1.1"
+        or model.get("revision") != base_model.get("revision")
+        or voice.get("mode") != "built-in-customvoice"
+        or voice.get("language") != "Spanish"
+        or instruction != base_voice.get("instruction")
+        or instruction != screen.get("instruction")
+        or runtime.get("provider") != "PyTorch CUDA"
+        or runtime.get("torch") != "2.9.1+cu128"
+        or runtime.get("torchaudio") != "2.9.1+cu128"
+        or runtime.get("precision") != "bfloat16"
+        or runtime.get("attention") != "sdpa"
+        or {"batchSize": base_runtime.get("batchSize"), **base_generation}
+        != candidate.get("generation")
+    ):
+        raise AdapterConfigurationError("authority")
+
+    major_artifacts = model.get("majorArtifacts")
+    if not isinstance(major_artifacts, list) or len(major_artifacts) != 2:
+        raise AdapterConfigurationError("authority")
+    artifacts = tuple(
+        ArtifactIdentity(
+            relative_path=_string(_mapping(item, "authority").get("path"), "authority"),
+            sha256=_sha256(_mapping(item, "authority").get("sha256")),
+        )
+        for item in major_artifacts
+    )
+    configuration_value = {
+        "candidateId": candidate_id,
+        "model": candidate.get("model"),
+        "voice": candidate.get("voice"),
+        "runtime": candidate.get("runtime"),
+        "generation": candidate.get("generation"),
+    }
+    configuration_sha256 = _canonical_sha256(configuration_value)
+    if configuration_sha256 != PROFILE_V3_CONFIGURATION_SHA256:
+        raise AdapterConfigurationError("authority")
+    policy = _mapping(profile.get("executionPolicy"), "authority")
+    if (
+        policy.get("automaticRetries") != 0
+        or policy.get("failureAccounting") != "first-attempt-is-authoritative"
+        or policy.get("configurationSwitching") != "forbidden"
+        or policy.get("whisper") != "excluded"
+        or policy.get("vadOrEnergy") != "excluded"
+        or policy.get("referenceAudio") != "forbidden"
+        or policy.get("referenceTranscript") != "forbidden"
+        or policy.get("voiceClonePrompt") != "forbidden"
+    ):
+        raise AdapterConfigurationError("authority")
+
+    generation_mapping = cast(Mapping[str, object], candidate["generation"])
+    authority = EvaluationAuthority(
+        profile_version="tts-feasibility-profile-v3",
+        profile_sha256=PROFILE_V3_SHA256,
+        configuration_identity_sha256=configuration_sha256,
+        candidate_manifest_version="tts-candidate-manifest-v3",
+        environment_project=_string(base_candidate.get("environmentProject"), "authority"),
+        candidate_lock_sha256=resolved["candidateLock"][1],
+        speaker_screen_result_sha256=resolved["speakerScreenResult"][1],
+        instruction_sha256=hashlib.sha256(instruction.encode("utf-8")).hexdigest(),
+        generation_settings_sha256=_canonical_sha256(generation_mapping),
+        batch_size=1,
+        automatic_retries=0,
+        model_lifetime=_string(policy.get("modelLifetime"), "authority"),
+        auxiliary_analysis=("whisper-excluded", "vad-or-energy-excluded"),
+    )
+    return CandidateProfile(
+        candidate_id=candidate_id,
+        role="balanced",
+        distribution="qwen-tts",
+        engine_version="0.1.1",
+        model_revision=_string(model.get("revision"), "authority"),
+        voice_id=speaker,
+        provider="pytorch-cuda",
+        precision="bfloat16",
+        artifacts=artifacts,
+        output_sample_rate_hz=24_000,
+        language="Spanish",
+        instruction=instruction,
+        generation_settings=generation,
+        authority=authority,
+    )
+
+
+def load_benchmark_candidate_profile(repository_root: Path, candidate_id: str) -> CandidateProfile:
+    """Route legacy profiles and the exact v3 profile without candidate imports."""
+
+    if candidate_id == QWEN_V3_CANDIDATE_ID:
+        return load_v3_candidate_profile(repository_root, candidate_id)
+    return load_candidate_profile(
+        repository_root / "benchmarks" / "tts" / "candidates-v1.json",
+        candidate_id,
+    )
 
 
 def load_candidate_profile(path: Path, candidate_id: str) -> CandidateProfile:

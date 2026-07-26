@@ -21,6 +21,7 @@ from benchmarks.metrics import (
 )
 
 SUMMARY_VERSION: Final = "tts-feasibility-summary-v2"
+SUMMARY_V3_VERSION: Final = "tts-feasibility-summary-v3"
 _V1_SCHEMA_PATH: Final = (
     Path(__file__).resolve().parents[3]
     / "benchmarks"
@@ -28,6 +29,7 @@ _V1_SCHEMA_PATH: Final = (
     / "schemas"
     / "summary-v1.schema.json"
 )
+_V2_SCHEMA_PATH: Final = _V1_SCHEMA_PATH.with_name("summary-v2.schema.json")
 MAX_SUMMARY_BYTES: Final = 1_048_576
 ARITHMETIC_TOLERANCE: Final = 0.000001
 _ABSOLUTE_WINDOWS_PATH = re.compile(rb"[A-Za-z]:[\\/]")
@@ -54,20 +56,55 @@ type JsonSchema = bool | Mapping[str, Any]
 
 
 def schema_registry() -> Registry[JsonSchema]:
-    value = cast(object, json.loads(_V1_SCHEMA_PATH.read_text(encoding="utf-8")))
-    schema = _read_mapping(value, "invalid-schema")
-    resource = cast(
-        Resource[JsonSchema],
-        Resource.from_contents(cast(Mapping[str, Any], schema)),
-    )
     registry: Registry[JsonSchema] = Registry()
-    return cast(
-        Registry[JsonSchema],
-        registry.with_resource(
-            "urn:voxleaf:benchmark:tts-feasibility-summary:v1",
-            resource,
+    for path, identifier in (
+        (_V1_SCHEMA_PATH, "urn:voxleaf:benchmark:tts-feasibility-summary:v1"),
+        (_V2_SCHEMA_PATH, "urn:voxleaf:benchmark:tts-feasibility-summary:v2"),
+    ):
+        value = cast(object, json.loads(path.read_text(encoding="utf-8")))
+        schema = _read_mapping(value, "invalid-schema")
+        resource = cast(
+            Resource[JsonSchema],
+            Resource.from_contents(cast(Mapping[str, Any], schema)),
+        )
+        registry = registry.with_resource(identifier, resource)
+    return registry
+
+
+def _evaluation_authority_allowlist(value: Mapping[str, object]) -> dict[str, object]:
+    return {
+        "profileSha256": _read_string(value.get("profileSha256"), "invalid-authority"),
+        "configurationIdentitySha256": _read_string(
+            value.get("configurationIdentitySha256"),
+            "invalid-authority",
         ),
-    )
+        "candidateLockSha256": _read_string(
+            value.get("candidateLockSha256"),
+            "invalid-authority",
+        ),
+        "speakerScreenResultSha256": _read_string(
+            value.get("speakerScreenResultSha256"),
+            "invalid-authority",
+        ),
+        "instructionSha256": _read_string(
+            value.get("instructionSha256"),
+            "invalid-authority",
+        ),
+        "generationSettingsSha256": _read_string(
+            value.get("generationSettingsSha256"),
+            "invalid-authority",
+        ),
+        "batchSize": _read_integer(value.get("batchSize"), "invalid-authority"),
+        "automaticRetries": _read_integer(
+            value.get("automaticRetries"),
+            "invalid-authority",
+        ),
+        "modelLifetime": _read_string(value.get("modelLifetime"), "invalid-authority"),
+        "auxiliaryAnalysis": [
+            _read_string(item, "invalid-authority")
+            for item in _read_sequence(value.get("auxiliaryAnalysis"), "invalid-authority")
+        ],
+    }
 
 
 def _distribution_dict(values: Sequence[float]) -> dict[str, object]:
@@ -246,8 +283,11 @@ def build_summary(run: BenchmarkRun, metadata: SummaryMetadata) -> dict[str, obj
         _fail("empty-sustained")
 
     notes = [_read_string(note, "invalid-note") for note in metadata.notes]
-    return {
-        "schemaVersion": SUMMARY_VERSION,
+    is_v3 = metadata.protocol_version == "tts-feasibility-profile-v3"
+    if is_v3 != (metadata.evaluation_authority is not None):
+        _fail("authority-mismatch")
+    summary: dict[str, object] = {
+        "schemaVersion": SUMMARY_V3_VERSION if is_v3 else SUMMARY_VERSION,
         "protocolVersion": metadata.protocol_version,
         "corpusVersion": metadata.corpus_version,
         "candidateManifestVersion": metadata.candidate_manifest_version,
@@ -364,6 +404,11 @@ def build_summary(run: BenchmarkRun, metadata: SummaryMetadata) -> dict[str, obj
         "gateEvaluation": _gate_allowlist(metadata.gate_evaluation),
         "notes": notes,
     }
+    if metadata.evaluation_authority is not None:
+        summary["evaluationAuthority"] = _evaluation_authority_allowlist(
+            metadata.evaluation_authority
+        )
+    return summary
 
 
 def _validate_distribution(value: object, expected_values: Sequence[float]) -> None:
@@ -400,6 +445,15 @@ def validate_summary_semantics(
     corpus: BenchmarkCorpus,
 ) -> None:
     """Recompute all timing/order/count arithmetic before promotion."""
+
+    if summary.get("protocolVersion") == "tts-feasibility-profile-v3":
+        authority = _read_mapping(summary.get("evaluationAuthority"), "invalid-authority")
+        if (
+            _read_integer(authority.get("batchSize"), "invalid-authority") != 1
+            or _read_integer(authority.get("automaticRetries"), "invalid-authority") != 0
+            or authority.get("auxiliaryAnalysis") != ["whisper-excluded", "vad-or-energy-excluded"]
+        ):
+            _fail("invalid-authority")
 
     counts = _read_mapping(summary.get("counts"), "invalid-counts")
     loads = [
@@ -611,12 +665,18 @@ def render_summary_markdown(summary: Mapping[str, object]) -> str:
     )
 
 
-def summary_filename(candidate_id: str, *, forbidden_values: Sequence[str] = ()) -> str:
+def summary_filename(
+    candidate_id: str,
+    *,
+    protocol_version: str = "tts-feasibility-profile-v2",
+    forbidden_values: Sequence[str] = (),
+) -> str:
     if re.fullmatch(r"[a-z0-9][a-z0-9._:-]{0,127}", candidate_id) is None:
         _fail("invalid-candidate-id")
     if any(value and value in candidate_id for value in forbidden_values):
         _fail("sensitive-value")
-    return f"{candidate_id}.summary-v2.json"
+    suffix = "v3" if protocol_version == "tts-feasibility-profile-v3" else "v2"
+    return f"{candidate_id}.summary-{suffix}.json"
 
 
 def promote_summary(
