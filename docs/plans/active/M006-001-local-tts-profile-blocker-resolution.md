@@ -555,8 +555,9 @@ checkpoint `8475b28`. The pilot retained no session and is not promotable.
 Licensing and packaging are audited. The official machine matrix completed
 from clean checkpoint `8898762` with every frozen count, but failed performance
 and mid-generation cancellation gates and is not promotable. The final blinded
-quality panel remains required to complete the evaluation record; it cannot
-change the machine-gate failure.
+quality session now contains exactly three independently randomized evaluator
+pages. Completion is blocked on three independent fluent-Spanish human
+scorecards; quality cannot change the machine-gate failure.
 
 ## Milestone 5: Select or retain the blocker
 
@@ -966,6 +967,24 @@ dependency changes are involved.
   and zero URL hits. After deriving the allowlisted aggregates above, deleted
   the exact raw session and disposable runner outputs. The ignored raw tree
   again contains zero files.
+- 2026-07-26: Committed the exact official machine result and cleanup
+  checkpoint as `3df282306265b7ccf358a9b211c87507e76ec0eb`
+  (`docs(tts): record frozen v3 machine results`).
+- 2026-07-26: From clean checkpoint `3df2823`, generated all 12 first-attempt
+  blinded quality samples for the exact Serena configuration under the same
+  offline/firewall/preflight boundary. The session retained `6,747,922` bytes
+  before finalization, remained under the 512 MiB cap, restored the prior
+  45-minute AC sleep setting, and released the candidate process/GPU.
+- 2026-07-26: Finalized exactly three evaluator pages. Each page contains all
+  12 samples in a different opaque order; finalization removed the
+  identity-bearing staging tree. Page scans found zero candidate, model,
+  speaker, corpus-text, privacy-canary, or private-path hits. The finalized
+  ignored session occupies `6,785,906` bytes.
+- 2026-07-26: No quality score has been submitted. The frozen minimum remains
+  three independent fluent-Spanish evaluators; the earlier one-person intake
+  screen does not count. Temporary audio and randomization data remain only in
+  ignored raw storage until all three completed scorecards can be submitted,
+  aggregated, recorded, and cleaned.
 
 ## Discoveries and decisions
 
@@ -1124,6 +1143,14 @@ trials failed. The receipt is non-promotable regardless of later quality
 scores. Its raw journal passed the content/privacy scan and was deleted after
 derivation; no raw file or generated audio remains. Final quality evaluation
 is still outstanding.
+
+The separate final-quality generation then completed from clean checkpoint
+`3df2823` with all 12 samples, bounded storage, offline controls, and cleanup.
+Exactly three independently randomized evaluator pages are ready, staging
+identities are gone, and the blinded-page privacy scan passed. No evaluator
+score has been submitted, so no quality aggregate exists yet. The temporary
+ignored quality session must remain until three independent fluent-Spanish
+humans complete their separate scorecards.
 
 After correcting the candidate to CustomVoice for the built-in-default-voice
 requirement, all 13 changed Markdown files passed the local-link,
