@@ -547,7 +547,14 @@ was loaded and no audio was generated.
 
 ### Status
 
-Not started; unavailable until Milestones 1 through 3 complete.
+In progress on `feat/m006-4-frozen-v3-evaluation`. Milestones 1 through 3 are
+present on the merged base. The first exact-host pilot preflight was correctly
+rejected before model load because AC sleep, operator background-load
+acceptance, and the frozen 12 GiB free-RAM gate were not satisfied. The host
+was otherwise idle and cool, the exact application firewall rule and both
+artifacts passed, and the ignored raw tree was empty. The licensing and
+packaging audit is complete; execution remains pending sufficient RAM
+headroom.
 
 ## Milestone 5: Select or retain the blocker
 
@@ -884,6 +891,29 @@ dependency changes are involved.
   private-path/credential-pattern scans, tracked audio/model/raw-input audits,
   and the three changed Markdown files passed the local-link audit. The
   ignored raw tree contains zero files.
+- 2026-07-26: Created branch `feat/m006-4-frozen-v3-evaluation` from merged
+  `main` at `2b1f7ef`. The worktree and ignored raw result tree were clean.
+- 2026-07-26: The first Milestone 4 pilot preflight ran fail-closed without
+  loading the model. It verified the exact candidate interpreter, outbound
+  firewall block, authorities, provider, and both artifact hashes. It rejected
+  the run on the deliberately unchanged 45-minute AC sleep setting, an
+  unaccepted background-load declaration, and `12,279,525,376` free RAM bytes,
+  which were `605,376,512` bytes below the frozen 12 GiB admission gate.
+  NVIDIA reported an idle, 50 C RTX 5060 Laptop GPU with 7,810 MiB free VRAM;
+  a five-sample host check measured 4.8% mean and 6% maximum CPU use.
+- 2026-07-26: Reconfirmed the exact installed model card and
+  `qwen-tts==0.1.1` package as Apache-2.0. Serena is embedded in the model and
+  has no separate voice artifact or acceptance terms. Redistribution remains
+  subject to the Apache-2.0 license/notice obligations already recorded by the
+  repository; no licensing ambiguity blocks evaluation.
+- 2026-07-26: Measured the clean CustomVoice packaging boundary rather than
+  inheriting the unrelated Base-prototype estimate. The exact model snapshot
+  occupies `4,520,220,349` bytes across 27 files. The isolated locked
+  environment occupies `5,227,641,745` bytes across 32,476 files and 88
+  distributions. Combined size is `9,747,862,094` bytes; 373 native
+  `.dll`/`.pyd`/`.exe` files account for `4,713,151,865` bytes. This is high
+  packaging risk, not a performance or license failure, and Milestone 11 owns
+  any production distribution design.
 
 ## Discoveries and decisions
 
@@ -958,6 +988,16 @@ dependency changes are involved.
     the shared adapter does not reclassify it as native streaming: progress
     occurs at one bounded narration segment, and cancellation credibility
     remains process termination plus identity-first stale rejection.
+18. Pilot readiness must remain fail-closed even when the host appears idle.
+    The first Milestone 4 attempt was only about 605 MB below the frozen
+    free-RAM gate; admitting it anyway would change the authority after seeing
+    host state. Closing user applications and rerunning the same preflight is
+    valid, while weakening the 12 GiB gate is not.
+19. The clean 1.7B CustomVoice model plus locked environment occupies about
+    9.08 GiB, materially more than the earlier 0.6B candidate and distinct
+    from the external Base prototype. Apache-2.0 licensing permits continued
+    evaluation, but this footprint remains an explicit high packaging risk
+    for Milestone 11 rather than an implicit production acceptance.
 
 ## Final validation results
 
@@ -1004,6 +1044,15 @@ path/credential patterns, tracked audio/model/raw-input exclusions, and raw
 cleanup audits passed. No model was loaded by the preflight, no official
 observation was accepted, no audio was generated, and no raw session or
 private path was retained.
+
+Milestone 4 began from a clean merged base and stopped before the first pilot
+model load because the exact preflight correctly rejected insufficient RAM
+headroom and unchanged operator readiness. Artifact, authority, interpreter,
+provider, firewall, disk, and VRAM checks passed. The independent
+license/packaging audit found no license ambiguity and measured the exact
+CustomVoice model plus isolated environment at `9,747,862,094` bytes. No
+official observation, generated audio, raw journal, or private input exists at
+this checkpoint.
 
 After correcting the candidate to CustomVoice for the built-in-default-voice
 requirement, all 13 changed Markdown files passed the local-link,
