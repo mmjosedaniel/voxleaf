@@ -1,0 +1,107 @@
+{
+  "corpusVersion": "tts-dual-worker-corpus-v5",
+  "status": "frozen-before-v5-implementation-pilot-and-official-results",
+  "provenance": {
+    "author": "VoxLeaf contributors",
+    "acceptedAt": "2026-07-26",
+    "kind": "repository-authored-synthetic",
+    "license": "CC0-1.0",
+    "sourceMaterial": "none"
+  },
+  "baseCorpus": {
+    "path": "benchmarks/tts/corpus-v4.json",
+    "sha256": "3dcb30ab07bc5796175137f956ab7c910f306cd2f39fa6fe30d05deca1eccd8e",
+    "corpusVersion": "tts-short-segment-corpus-v4",
+    "engineInputField": "narrationText",
+    "reusePolicy": "exact-bytes-and-unit-identities",
+    "candidateSpecificTextRewriting": "forbidden"
+  },
+  "normalizationAuthority": {
+    "profile": "narration-v1",
+    "documentation": {
+      "path": "docs/architecture/narration-normalization-v1.md",
+      "sha256": "c90b5d9436515ffe983fda052d76b0d4a6fdab274f9bc253d8985745b5e1ac70"
+    },
+    "policy": {
+      "path": "packages/epub/src/narration/narration-policy.ts",
+      "sha256": "96a62a9d0d57e5fad904b4c38d98ded4d48d5c2f8e125ea527c5df535ac0f85c"
+    },
+    "normalizer": {
+      "path": "packages/epub/src/narration/narration-normalizer.ts",
+      "sha256": "8bee1b480a81a96b105df32cf85eaf65f6e42bae382e152e89adbaa02353db74"
+    },
+    "spanishRules": {
+      "path": "packages/epub/src/narration/spanish-normalization.ts",
+      "sha256": "f6e24298b9a80dbca5f9427580abee23aa04db5ffa5538141dcdb0b1cc531eba"
+    },
+    "testCorpus": {
+      "path": "packages/epub/test-support/narration-normalization-corpus.ts",
+      "sha256": "82275a7c576aa47c8ceb180902b3df2f946dc01ed009a91b5165f3ad52da9816"
+    }
+  },
+  "durationPolicy": {
+    "targetMinimumSeconds": 8,
+    "targetMaximumSeconds": 16,
+    "hardMinimumSecondsExclusive": 0,
+    "hardMaximumSecondsInclusive": 20,
+    "selectionBasis": "pre-result-semantic-shape-and-frozen-v4-normalized-input",
+    "outsideTargetButWithinHardBound": "report-without-rewriting-input",
+    "observedDurationMayChangeOfficialInput": false
+  },
+  "narrationV1Boundary": {
+    "maximumCodePointsPerUnit": 640,
+    "maximumUtf8BytesPerUnit": 2048,
+    "unitsRemainIndependent": true,
+    "sourceRangeMerging": "forbidden"
+  },
+  "baseUnitOrder": [
+    "es-v4-arrival",
+    "es-v4-dialogue",
+    "es-v4-numbers",
+    "es-v4-date-time",
+    "es-v4-temperature",
+    "es-v4-foreign-name",
+    "es-v4-route",
+    "es-v4-closing"
+  ],
+  "officialSchedules": {
+    "cpuSolo": {
+      "measuredPasses": 1,
+      "unitCount": 8,
+      "occurrenceIdFormat": "v5-cpu-p{pass:02d}-{unitId}"
+    },
+    "gpuSolo": {
+      "measuredPasses": 5,
+      "unitCount": 40,
+      "occurrenceIdFormat": "v5-gpu-p{pass:02d}-{unitId}"
+    },
+    "concurrent": {
+      "measuredPasses": 5,
+      "unitCount": 40,
+      "occurrenceIdFormat": "v5-concurrent-p{pass:02d}-{unitId}"
+    }
+  },
+  "scheduleExpansion": {
+    "passNumbersStartAt": 1,
+    "repeatBaseUnitOrderExactlyWithinEveryPass": true,
+    "sourceSequenceStartsAt": 0,
+    "sourceSequenceIsContiguousAcrossPasses": true,
+    "duplicateOccurrenceIds": "forbidden",
+    "automaticRetryOrDuplicateGeneration": "forbidden"
+  },
+  "warmup": {
+    "excludedFromEveryReportedCountAndAggregate": true,
+    "cpuSoloUnitIds": ["es-v4-arrival"],
+    "gpuSoloUnitIds": ["es-v4-arrival"],
+    "concurrentAssignments": [
+      {
+        "workerRole": "gpu-primary",
+        "unitId": "es-v4-arrival"
+      },
+      {
+        "workerRole": "cpu-support",
+        "unitId": "es-v4-dialogue"
+      }
+    ]
+  }
+}

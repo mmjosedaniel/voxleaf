@@ -46,8 +46,21 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   result of that admitted placement. It moves only the speech tokenizer to CPU,
   but reproduces the same authoritative/framework VRAM, minimum-free-VRAM, and
   shared-GPU-memory measurements before usable media. It fails standard and
-  scheduling conclusions and does not admit quality review. No quality result
-  or selection record exists.
+  scheduling conclusions and does not admit quality review.
+- [`selection-v4.md`](selection-v4.md) is the accepted content-safe decision.
+  It selects neither `v4` placement, keeps unavailable performance and quality
+  unavailable, and records that targeted component placement is not evidence
+  for an independent CPU-only Qwen worker.
+- `profile-v5.json` and `corpus-v5.json` freeze the separate independent
+  GPU-primary/CPU-support hypothesis before implementation or results. The CPU
+  worker is one fully separate CPU float32 model with CUDA hidden, twelve
+  intra-op threads, one inter-op thread, OS-default affinity, and required
+  zero dedicated/shared GPU allocation. CPU solo must pass its RTF `<= 3.2`
+  screen before the same-authority GPU-solo and concurrent arms.
+- `schemas/dual-worker-raw-v5.schema.json` and
+  `schemas/dual-worker-summary-v5.schema.json` freeze the closed private and
+  content-safe result shapes. No `v5` runner, pilot, official result, audio, or
+  quality finding exists at this authority checkpoint.
 - `incremental-cancellation-prototype-v1.json` freezes the development-only
   prototype topology before results: complete-segment delivery, one resident
   spawned worker, explicit input/output/queue ceilings, identity-first stale
@@ -81,6 +94,10 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   explains the frozen short-unit/shared-model batch authority. The committed
   full-GPU result stops on its exact shared-memory rule and does not supersede
   the failed v3 decision.
+- [`docs/architecture/tts-feasibility-profile-v5.md`](../../docs/architecture/tts-feasibility-profile-v5.md)
+  explains the frozen independent GPU-primary/CPU-support authority, exact arm
+  order, dispatch, CPU-zero-GPU checks, RAM/commit gates, simultaneous
+  five-minute bounds, and non-promotable standard conclusion.
 
 Raw measurements, model files, generated audio, listening-session metadata,
 and profiling output belong below `benchmarks/results/raw/`, which is ignored.
@@ -265,6 +282,14 @@ content. Milestone 2 separately implements the candidate-neutral one/two-unit
 boundary, exact frozen request matrix, ordered whole-batch invalidation,
 content-free playback simulation, deterministic failure candidates, and the
 Qwen native list call behind the existing spawned-worker boundary.
+
+The result-blind `v5_authority` validator is implemented without a runner. It
+byte-verifies the new profile, corpus, and schemas; recomputes both complete
+worker identities; rejects CPU CUDA/dedicated/shared-GPU use, missing,
+duplicate, or reordered occurrences, hidden retries, authority drift,
+retention overruns, private content, and a sustainability pass at aggregate
+RTF `>= 1.0`; and verifies that an eventual authority commit contains the
+exact frozen bytes and strictly precedes execution.
 
 The evaluated Qwen and Supertonic public APIs expose complete waveforms. The
 benchmark records this honestly and rejects an end-of-output frame as evidence
