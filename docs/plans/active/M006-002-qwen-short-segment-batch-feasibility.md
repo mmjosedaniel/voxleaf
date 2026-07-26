@@ -1430,3 +1430,39 @@ No candidate import, model load, hardware generation, listening exercise, or
 firewall change was applicable to this pre-result milestone. The known Vite
 chunk-size advisory and primary-checkout pytest-cache warning remain
 informational.
+
+Milestone 7 implementation and repository validation completed on 2026-07-26:
+
+- the benchmark mechanics checkpoint is `69a0bfb` and the documentation plus
+  CPU-placement hardening checkpoint is `6f25eb2`;
+- Ruff formatting and lint passed over the benchmark and test tree, strict
+  mypy passed over 71 source files, all 147 Python tests passed, and the 41
+  focused dual-worker/v5 authority tests passed;
+- the unchanged isolated Qwen candidate lock resolved 107 packages, and exact
+  `qwen-tts==0.1.1`, `torch==2.9.1+cu128`, and
+  `torchaudio==2.9.1+cu128` imports passed without loading model weights;
+- an invalid-input `pnpm.cmd benchmark:tts:dual-worker` smoke ran in the exact
+  candidate environment, returned only the fixed `input` failure code, and
+  loaded no model;
+- `pnpm.cmd check:portable` passed in 41.1 seconds in a clean detached
+  worktree at `6f25eb2`;
+- `pnpm.cmd check` passed on native Windows in 164.0 seconds in the same
+  worktree, including 18 shared test files / 175 tests, 34 EPUB test files /
+  555 tests, 20 desktop test files / 204 tests, six native WebDriver-client
+  tests, 147 Python tests, Rust formatting, Clippy, crate tests, Python package
+  builds, and the Tauri release build;
+- all 60 tracked Markdown files and 257 relative links resolve, and the
+  private-pattern, tracked sensitive-artifact, ignored-raw-tree, premature-v5-
+  result, and `git diff --check` audits pass; and
+- no model load, CUDA/CPU inference, waveform, private raw journal, hardware
+  result, listening exercise, dependency/lock change, production contract, or
+  narration-v1 change occurred.
+
+The primary-checkout portable command reached Prettier but could not scan a
+pre-existing deny-ACL pytest directory under `tmp`; the clean detached
+worktree removed that environmental obstruction and supplied the
+authoritative passing results above. Optional FlashAttention/SoX candidate
+import warnings and the existing Vite chunk-size advisory remain
+informational. Milestone 7 is complete. Milestone 8 owns the first CPU-solo
+pilot, every official hardware run, private raw evidence and cleanup, and
+schema-valid safe result derivation.
