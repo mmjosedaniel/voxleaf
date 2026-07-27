@@ -61,12 +61,20 @@ Completed M008 provides:
 - identity-first invalidation on stop, visual-locator change, publication
   replacement/close, failure, and application exit.
 
-The current gap is explicit:
+M009 Milestone 2 now closes the playback-side projection gap:
 
-- scheduler and player metadata retain segment identity but not its source
-  locator range;
-- the player exposes active sequence and sample counts but no audible locator;
-- the coordinator drops its prepared-segment entry after synthesis;
+- the scheduler retains each prepared segment's immutable source range and
+  canonical sequence only while its complete audio unit remains eligible;
+- the player publishes exact `segment-started` and `segment-completed`
+  observations plus played-frame progress at no more than the frozen 250 ms
+  cadence;
+- the coordinator forwards those content-free observations through a
+  subscription that is separate from its React-facing snapshot; and
+- released or invalidated units immediately lose their source-range
+  projection while PCM cleanup remains bounded.
+
+The remaining synchronization gap is explicit:
+
 - the reader can map one semantic position to a collapsed DOM range but does
   not render an audible source-range highlight;
 - passive visual movement currently stops narration instead of participating
@@ -383,11 +391,21 @@ Complete.
 - Command: `pnpm.cmd --filter @voxleaf/desktop typecheck`
 - Expected result: source-range observations follow FIFO playback exactly,
   stale transitions are absent, and existing resource/release bounds pass.
-- Actual result: Not run.
+- Actual result: Passed on 2026-07-27. The focused scheduler/player/coordinator
+  suite passes 29 tests, and the desktop typecheck passes. Manual-clock
+  coverage proves exact FIFO starts/completions, 250 ms played-frame
+  observations, silence while paused, same-unit resume, underrun/refill
+  ordering, identity-first invalidation, failure suppression, and bounded
+  cleanup. The coordinator exposes the immutable range and existing work
+  identities only through its dedicated audible-progress subscription;
+  serialized React-facing snapshots contain neither ranges, identities,
+  narration text, nor PCM. `pnpm.cmd check:portable` also passes with 1,034
+  Vitest tests, six Node WebDriver-client tests, 233 Python tests, all portable
+  formatting/lint/type checks, and portable builds.
 
 ### Status
 
-Not started.
+Complete.
 
 ## Milestone 3: Render segment highlighting and focus-safe following
 
@@ -614,6 +632,17 @@ persistence. Do not use destructive storage migration as rollback.
   typechecks, 1,031 TypeScript tests plus six Node driver-client tests, 25 Rust
   tests, 233 Python tests, and full/portable builds. Browser and packaged
   WebView2 commands also exited zero outside the Windows process sandbox.
+- 2026-07-27: Implemented M009 Milestone 2. Immutable source ranges and
+  canonical sequences now follow eligible FIFO audio ownership; the player
+  emits exact start/completion and bounded played-frame observations; and the
+  coordinator forwards them outside its React-facing snapshot.
+- 2026-07-27: The focused Milestone 2 suite passes 29 tests and the desktop
+  typecheck passes. No shared schema, M005 segmentation, M007 protocol, model,
+  native, persistence, or dependency change was required.
+- 2026-07-27: `pnpm.cmd check:portable` passes after the Milestone 2 changes:
+  1,034 Vitest tests, six Node WebDriver-client tests, 233 Python tests, all
+  portable formatting/lint/type checks, generated-contract verification, and
+  portable builds pass.
 
 ## Discoveries and decisions
 
@@ -631,6 +660,13 @@ persistence. Do not use destructive storage migration as rollback.
   second position.
 - M009 does not need a protocol-v1 field: the source range exists before
   synthesis and playback remains ordered by the desktop coordinator.
+- Range metadata belongs beside the sole-owner eligible FIFO unit, not inside
+  PCM metadata or the M007 response. Invalidation strips that projection
+  before bounded payload cleanup, so stale range transitions cannot escape.
+- Audible progress is a dedicated imperative subscription rather than part of
+  `ProductNarrationSnapshot`. This gives the later reader integration the
+  required structural timing without causing 250 ms React snapshot churn or
+  exposing narration text/PCM.
 - The accepted persistence policy favors replaying part of a segment over
   skipping unheard content after interruption: save segment start when
   audible, advance only on completion, and restore a mid-segment interruption
@@ -652,10 +688,12 @@ persistence. Do not use destructive storage migration as rollback.
 
 ## Final validation results
 
-M009 Milestone 1 is complete. Focused unit, full desktop, six-test Chromium,
-packaged WebView2, portable repository, link, privacy, and diff validation
-pass. Later milestones, exact-host synchronization evidence, pull-request CI,
-and final M009 validation are not yet available.
+M009 Milestones 1 and 2 are complete. Milestone 1 focused unit, full desktop,
+six-test Chromium, packaged WebView2, portable repository, link, privacy, and
+diff validation pass. Milestone 2 focused scheduler/player/coordinator tests
+and desktop typecheck pass, as does the full portable repository gate. Reader
+highlighting, following, navigation, persistence, exact-host synchronization
+evidence, pull-request CI, and final M009 validation are not yet available.
 
 When the plan completes, record:
 
