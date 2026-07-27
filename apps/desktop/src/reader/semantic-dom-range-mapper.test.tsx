@@ -122,6 +122,18 @@ describe("semantic DOM range mapping", () => {
     expect(mapper.rangeFor(located, 1)?.startOffset).toBe(1);
     expect(mapper.rangeFor(located, 2)?.startOffset).toBe(3);
     expect(mapper.rangeFor(located, 4)?.startOffset).toBe(5);
+    const highlightedRange = mapper.rangeBetween(located, 1, 11);
+    expect(highlightedRange?.collapsed).toBe(false);
+    expect(highlightedRange?.toString()).toBe("😀énestedZ");
+    const collapsedHighlight = mapper.rangeBetween(located, 4, 4);
+    expect(collapsedHighlight?.collapsed).toBe(true);
+    expect(mapper.positionFor(collapsedHighlight!)).toEqual({
+      locatedBlock: located,
+      textOffsetCodePoints: 4,
+    });
+    expect(mapper.rangeBetween(located, -1, 1)).toBeUndefined();
+    expect(mapper.rangeBetween(located, 2, 1)).toBeUndefined();
+    expect(mapper.rangeBetween(located, 0, 16)).toBeUndefined();
 
     const insideSurrogate = document.createRange();
     insideSurrogate.setStart(firstText, 2);

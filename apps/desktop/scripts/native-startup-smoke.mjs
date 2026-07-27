@@ -150,6 +150,10 @@ const FIXED_FAILURE_CODES = new Map([
     "synthetic-preferences-not-restored",
   ],
   [
+    "Native synchronization feasibility proof failed.",
+    "synchronization-feasibility-failed",
+  ],
+  [
     "Native reader performance metrics were unavailable.",
     "reader-performance-metrics-unavailable",
   ],
@@ -1743,6 +1747,166 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
   await driver.setWindowRect(960, 720);
 }
 
+async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
+  setStage("native synchronization feasibility setup");
+  await driver.setWindowRect(800, 400);
+  const proof = await driver.execute(
+    `const highlights = CSS.highlights;
+     if (
+       highlights === undefined ||
+       typeof globalThis.Highlight !== "function"
+     ) {
+       return { supported: false };
+     }
+     const styleSheet = Array.from(document.styleSheets).find((sheet) => {
+       try {
+         return sheet.cssRules !== undefined;
+       } catch {
+         return false;
+       }
+     });
+     const leaves = Array.from(
+       document.querySelectorAll(
+         ".semantic-document h1, .semantic-document h2, " +
+         ".semantic-document h3, .semantic-document h4, " +
+         ".semantic-document h5, .semantic-document h6, " +
+         ".semantic-document p",
+       ),
+     );
+     const selectionOwner = leaves[0];
+     const target = leaves.at(-1);
+     const firstText = (element) => {
+       if (!(element instanceof HTMLElement)) {
+         return undefined;
+       }
+       const walker = document.createTreeWalker(
+         element,
+         NodeFilter.SHOW_TEXT,
+       );
+       const node = walker.nextNode();
+       return node instanceof Text ? node : undefined;
+     };
+     const selectionText = firstText(selectionOwner);
+     const targetText = firstText(target);
+     const selection = document.getSelection();
+     const theme = document.querySelector('select[name="theme"]');
+     if (
+       selectionText === undefined ||
+       targetText === undefined ||
+       selectionText.data.length < 2 ||
+       targetText.data.length < 2 ||
+       selection === null ||
+       styleSheet === undefined ||
+       !(theme instanceof HTMLSelectElement)
+     ) {
+       return { supported: true, fixtureReady: false };
+     }
+
+     theme.focus({ preventScroll: true });
+     const selected = document.createRange();
+     selected.setStart(selectionText, 0);
+     selected.setEnd(selectionText, 1);
+     selection.removeAllRanges();
+     selection.addRange(selected);
+     const selectionBefore = selection.toString();
+     const article = target.closest(".semantic-document");
+     const descendantCountBefore = article?.querySelectorAll("*").length;
+     const textLengthBefore = article?.textContent?.length;
+     const initialUrl = window.location.href;
+
+     const range = document.createRange();
+     range.setStart(targetText, 0);
+     range.setEnd(targetText, targetText.data.length);
+     const highlightName = "voxleaf-narration-active";
+     const highlight = new Highlight(range);
+     const ruleIndex = styleSheet.insertRule(
+       "::highlight(voxleaf-narration-active) {" +
+       "background-color: rgb(255 214 64);" +
+       "color: rgb(20 20 20);}",
+       styleSheet.cssRules.length,
+     );
+     highlights.set(highlightName, highlight);
+
+     window.scrollTo(0, 0);
+     const beforeFollow = range.getBoundingClientRect();
+     const comfortInsetPx = 24;
+     const comfortBottom = window.innerHeight - comfortInsetPx;
+     const outsideBefore =
+       beforeFollow.bottom < comfortInsetPx ||
+       beforeFollow.top > comfortBottom;
+     if (outsideBefore) {
+       window.scrollBy({
+         top: beforeFollow.top - comfortInsetPx,
+         left: 0,
+         behavior: "auto",
+       });
+     }
+     const afterFollow = range.getBoundingClientRect();
+     const result = {
+       supported: true,
+       fixtureReady: true,
+       registered:
+         highlights.has(highlightName) && highlight.has(range),
+       styleRegistered:
+         styleSheet.cssRules[ruleIndex]?.cssText.includes(
+           "::highlight(voxleaf-narration-active)",
+         ) === true,
+       rangeConnected: target.isConnected && !range.collapsed,
+       followed:
+         outsideBefore &&
+         afterFollow.bottom >= comfortInsetPx - 1 &&
+         afterFollow.top <= comfortBottom + 1,
+       focusPreserved:
+         document.activeElement?.getAttribute("name") === "theme",
+       selectionPreserved:
+         selection.rangeCount === 1 &&
+         selection.toString() === selectionBefore &&
+         selection.getRangeAt(0) === selected,
+       publicationDomUnchanged:
+         article?.querySelectorAll("*").length ===
+           descendantCountBefore &&
+         article?.textContent?.length === textLengthBefore,
+       urlUnchanged: window.location.href === initialUrl,
+     };
+     highlights.delete(highlightName);
+     styleSheet.deleteRule(ruleIndex);
+     selection.removeAllRanges();
+     return result;`,
+  );
+  await driver.setWindowRect(960, 720);
+
+  setStage("native synchronization feasibility assertion");
+  if (
+    proof?.supported !== true ||
+    proof.fixtureReady !== true ||
+    proof.registered !== true ||
+    proof.styleRegistered !== true ||
+    proof.rangeConnected !== true ||
+    proof.followed !== true ||
+    proof.focusPreserved !== true ||
+    proof.selectionPreserved !== true ||
+    proof.publicationDomUnchanged !== true ||
+    proof.urlUnchanged !== true
+  ) {
+    console.error(
+      `Native synchronization feasibility observation: ${JSON.stringify(proof)}`,
+    );
+  }
+  assert(
+    proof?.supported === true &&
+      proof.fixtureReady === true &&
+      proof.registered === true &&
+      proof.styleRegistered === true &&
+      proof.rangeConnected === true &&
+      proof.followed === true &&
+      proof.focusPreserved === true &&
+      proof.selectionPreserved === true &&
+      proof.publicationDomUnchanged === true &&
+      proof.urlUnchanged === true,
+    "Native synchronization feasibility proof failed.",
+  );
+}
+
 async function beginNativeRenderInstrumentation(driver) {
   const startedAt = await driver.execute(
     `const originalRequestAnimationFrame =
@@ -2590,6 +2754,11 @@ async function run() {
       stage = nextStage;
     });
 
+    stage = "native synchronization feasibility";
+    await exerciseNativeSynchronizationFeasibility(driver, (nextStage) => {
+      stage = nextStage;
+    });
+
     stage = "synthetic restoration seed navigation";
     const restorationSeedLinks = await driver.findElements(
       "button.reader-toc-link",
@@ -2768,7 +2937,7 @@ async function run() {
     );
 
     console.log(
-      "Native startup smoke passed: root mounted, bounded TTS protocol and supervised fake-service lifecycle passed with binary delivery/cancellation/crash recovery, local file reselection/cancellation/replacement and exact/max-plus-one boundaries passed, narrow and accessible keyboard reader matrix passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication closed, no errors, no external requests.",
+      "Native startup smoke passed: root mounted, bounded TTS protocol and supervised fake-service lifecycle passed with binary delivery/cancellation/crash recovery, local file reselection/cancellation/replacement and exact/max-plus-one boundaries passed, narrow and accessible keyboard reader matrix and synchronization feasibility proof passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication closed, no errors, no external requests.",
     );
   } catch (error) {
     console.error(

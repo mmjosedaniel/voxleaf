@@ -504,6 +504,34 @@ function createRangeAtOffset(
   return undefined;
 }
 
+function createRangeBetweenOffsets(
+  registration: RegisteredBlock,
+  startTextOffsetCodePoints: number,
+  endTextOffsetCodePoints: number,
+): Range | undefined {
+  if (
+    !Number.isSafeInteger(startTextOffsetCodePoints) ||
+    !Number.isSafeInteger(endTextOffsetCodePoints) ||
+    startTextOffsetCodePoints < 0 ||
+    endTextOffsetCodePoints < startTextOffsetCodePoints
+  ) {
+    return undefined;
+  }
+  const start = createRangeAtOffset(registration, startTextOffsetCodePoints);
+  const end = createRangeAtOffset(registration, endTextOffsetCodePoints);
+  if (start === undefined || end === undefined) {
+    return undefined;
+  }
+  try {
+    const range = registration.element.ownerDocument.createRange();
+    range.setStart(start.startContainer, start.startOffset);
+    range.setEnd(end.startContainer, end.startOffset);
+    return range;
+  } catch {
+    return undefined;
+  }
+}
+
 function offsetForRange(
   registration: RegisteredBlock,
   range: Range,
@@ -611,6 +639,21 @@ export class SemanticDomRangeMapper {
     return registration === undefined
       ? undefined
       : createRangeAtOffset(registration, textOffsetCodePoints);
+  }
+
+  public rangeBetween(
+    locatedBlock: PublicationLocatedBlock,
+    startTextOffsetCodePoints: number,
+    endTextOffsetCodePoints: number,
+  ): Range | undefined {
+    const registration = this.#registrationsByBlock.get(locatedBlock);
+    return registration === undefined
+      ? undefined
+      : createRangeBetweenOffsets(
+          registration,
+          startTextOffsetCodePoints,
+          endTextOffsetCodePoints,
+        );
   }
 
   public elementFor(
