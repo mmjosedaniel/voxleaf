@@ -175,6 +175,10 @@ const FIXED_FAILURE_CODES = new Map([
     "Native application attempted an external request.",
     "external-request-observed",
   ],
+  [
+    "Native TTS protocol probe did not deliver bounded binary audio.",
+    "tts-protocol-probe-failed",
+  ],
   ["Native driver logs were invalid.", "native-driver-log-invalid"],
 ]);
 
@@ -461,6 +465,52 @@ async function waitForCondition(
   }
 
   throw new WebDriverClientError("webdriver-condition-timeout");
+}
+
+async function exerciseNativeTtsProtocolProbe(driver, setStage) {
+  setStage("native TTS protocol probe dispatch");
+  const started = await driver.execute(
+    `if (typeof globalThis.__voxleafRunTtsProtocolProbe !== "function") {
+       return false;
+     }
+     globalThis.__voxleafTtsProtocolProbeObservation = { status: "pending" };
+     globalThis.__voxleafRunTtsProtocolProbe()
+       .then((observation) => {
+         globalThis.__voxleafTtsProtocolProbeObservation = {
+           status: "complete",
+           observation,
+         };
+       })
+       .catch(() => {
+         globalThis.__voxleafTtsProtocolProbeObservation = {
+           status: "failed",
+         };
+       });
+     return true;`,
+  );
+  assert(
+    started === true,
+    "Native TTS protocol probe did not deliver bounded binary audio.",
+  );
+
+  setStage("native TTS protocol probe binary delivery");
+  await waitForCondition(
+    driver,
+    `return globalThis.__voxleafTtsProtocolProbeObservation?.status !==
+       "pending";`,
+  );
+  const result = await driver.execute(
+    `const result = globalThis.__voxleafTtsProtocolProbeObservation;
+     delete globalThis.__voxleafTtsProtocolProbeObservation;
+     return result;`,
+  );
+  assert(
+    result?.status === "complete" &&
+      result.observation?.byteLength === 19_200 &&
+      result.observation?.sampleCount === 4_800 &&
+      result.observation?.sampleFormat === "float32-le",
+    "Native TTS protocol probe did not deliver bounded binary audio.",
+  );
 }
 
 async function createSizedDisposableFile(filePath, byteLength) {
@@ -1932,6 +1982,10 @@ async function run() {
       return;
     }
 
+    await exerciseNativeTtsProtocolProbe(driver, (nextStage) => {
+      stage = nextStage;
+    });
+
     stage = "synthetic file injection";
     const fileInput = await driver.findElement('input[type="file"]');
     await driver.sendKeys(fileInput, fixturePath);
@@ -2202,7 +2256,7 @@ async function run() {
     );
 
     console.log(
-      "Native startup smoke passed: root mounted, local file reselection/cancellation/replacement and exact/max-plus-one boundaries passed, narrow and accessible keyboard reader matrix passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication closed, no errors, no external requests.",
+      "Native startup smoke passed: root mounted, bounded TTS child/std-stream/binary WebView probe passed, local file reselection/cancellation/replacement and exact/max-plus-one boundaries passed, narrow and accessible keyboard reader matrix passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication closed, no errors, no external requests.",
     );
   } catch (error) {
     console.error(
