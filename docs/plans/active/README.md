@@ -17,5 +17,4 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`M008-bounded-adaptive-prebuffering.md`](M008-bounded-adaptive-prebuffering.md): active implementation plan for the first product narration caller, one-GPU quick-start and explicit prepared playback, bounded multi-unit ownership, adaptive buffering, playback-only pause continuation, frontier warnings, and a 30-minute in-memory ceiling. Completed M007 supplies its protocol/service prerequisite; M008 Milestone 1 freezes the exact buffer and UX authority before scheduler implementation.
-- [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): retained broader context spanning the completed reader/service work and later narration synchronization/audio startup. It does not supersede completed Milestones 4 through 7 or the focused M008 authority.
+- [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): retained broader context spanning the completed reader/service/playback work and later narration synchronization. It does not supersede completed Milestones 4 through 8.

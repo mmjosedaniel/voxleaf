@@ -132,7 +132,9 @@ GPU worker. `selection-v5` therefore rejects the dual-worker product topology.
 ADR-0015 and M008 add no dependency. Milestone 5 connects the unchanged
 isolated candidate to the existing Web Audio platform API and M007 client only
 for the exact one-GPU development demo; it adds no package, plugin, model
-artifact, install script, or production runtime dependency.
+artifact, install script, or production runtime dependency. Milestone 6 retains
+the same graph while closing defaults and validation; it does not move the
+candidate into the base Python lock or approve redistribution.
 
 M007 Milestone 1 adds exactly pinned `@tauri-apps/api@2.11.1` for the typed
 frontend invoke and optimized binary-response boundary. The Rust prototype

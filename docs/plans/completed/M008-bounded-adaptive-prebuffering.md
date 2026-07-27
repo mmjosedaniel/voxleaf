@@ -465,8 +465,7 @@ Completed on 2026-07-27.
   zero.
 - These measurements prove the constrained exact-host demo path, not a
   standard profile, uninterrupted playback, or general hardware support. The
-  default boundary wait remains zero; Milestone 6 owns the final policy
-  decision.
+  default boundary wait remained zero for Milestone 6's final policy decision.
 
 ### Milestone 6: Record the demo policy and close validation
 
@@ -488,7 +487,41 @@ Completed on 2026-07-27.
 
 #### Status
 
-Not started.
+Complete. Local deterministic, portable, native, packaged, exact-host,
+privacy, artifact, and documentation validation passed. PR #126 then passed
+the required Ubuntu portable and Windows native foundation jobs on commit
+`14ccf0d`.
+
+#### Actual result
+
+- Selected quick start as the default mode. It begins only at 15 playable
+  seconds or a complete shorter range and remains independent of wall-clock
+  elapsed time.
+- Kept prepared playback explicit with 1, 2, 5, and 10-minute choices and one
+  minute as the initial selected target. Kept refill/resume at one minute and
+  low water at 10 seconds.
+- Retained `0` ms as the semantic-boundary-wait default because the exact-host
+  run supplied no evidence that a hidden or planned pause improves throughput
+  or listening enough to offset added delay. Retained `1.0x`, 100% default
+  volume, and every simultaneous resource ceiling.
+- Recorded that 20.91 buffering seconds per playback minute exceeds the MVP
+  target of at most 5 seconds. The exact Qwen/Serena path therefore remains
+  native-configured and development-only; the standard blocker remains.
+- Added content-safe troubleshooting for missing controls, slow quick start,
+  frontier buffering, invalidation/restart, resource cleanup, and safe
+  diagnostics. The guidance forbids fake-child promotion, outbound-unblocking,
+  automatic retry, audio persistence, and a second model worker.
+- Reconciled product, architecture, performance, dependency, setup, testing,
+  roadmap, decision-index, and canonical system-diagram status without changing
+  a runtime contract, dependency, capability, persistence boundary, or
+  executable default.
+- Re-ran the packaged exact-host matrix under the interpreter-bound outbound
+  firewall rule. It passed with quick command-to-audible `41,312` ms,
+  `16,480` ms start lead, one underrun, `19.49` buffering seconds per playback
+  minute, `0` ms intentional wait, `24` ms cancellation, and a `64,320` ms
+  prepared lead after `110,219` ms. Peak dedicated GPU memory remained `4,882`
+  MiB, all prepared options were accepted, external requests were zero, and
+  the exact worker/GPU allocation returned to zero after cleanup.
 
 ## Testing and benchmark strategy
 
@@ -626,6 +659,27 @@ accepted no-standard-profile decision.
   peak dedicated GPU memory `4,882` MiB, zero intentional wait, and zero
   external requests. This completes Milestone 5 while retaining the standard
   profile blocker.
+- 2026-07-27: Milestone 5 PR #125 merged to `main` at `7f7bbe5`; Ubuntu
+  portable passed while Windows native was still running when Milestone 6
+  began. Created
+  `feat/m008-m6-demo-policy-closeout` from that clean merged base.
+- 2026-07-27: Closed the measured demo policy without changing executable
+  constants: quick mode default, one-minute initial prepared/refill target,
+  10-second low water, zero default boundary wait, `1.0x`, 100% volume, and the
+  simultaneous 30-minute ceiling. Updated ADR-0015 and the frozen authority at
+  checkpoint `42b74b8`.
+- 2026-07-27: Added content-safe exact-demo troubleshooting and reconciled
+  product, architecture, performance, setup, testing, dependency, roadmap, and
+  system-diagram documentation. Local and exact-host validation remained to be
+  executed before the closeout could be committed and offered for PR review.
+- 2026-07-27: Completed the local closeout matrix. Focused deterministic,
+  candidate-lock, portable, authoritative Windows, packaged model-free,
+  exact-host, Markdown-link, privacy, artifact, and diff checks all pass. The
+  exact rerun independently reproduced slower-than-real-time buffering and
+  clean shutdown.
+- 2026-07-27: PR #126 passed the required Ubuntu portable foundation and
+  Windows native foundation jobs on commit `14ccf0d`. Marked Milestone 6
+  complete and moved this ExecPlan from `active/` to `completed/`.
 
 ## Discoveries and decisions
 
@@ -713,7 +767,21 @@ accepted no-standard-profile decision.
     boolean. Python paths, model paths, prompts, work identities, and audio
     remain outside React state and presentation diagnostics.
 27. The exact matrix does not justify a nonzero semantic-boundary wait. The
-    accepted default remains zero pending Milestone 6's policy closeout.
+    accepted default remains zero in Milestone 6's policy closeout.
+28. Milestone 6 retains the zero boundary-wait default. A slower-than-real-time
+    model cannot gain throughput from planned silence, and the exact evidence
+    does not establish a listening benefit that justifies delaying audio.
+29. Quick mode remains the default because it provides the earliest supported
+    audible start. One minute is the initial prepared choice and refill target,
+    not a mandatory startup wait; larger choices remain explicit.
+30. The measured 20.91 buffering seconds per playback minute fails the MVP
+    target of at most 5 seconds. M008 can close as a constrained-demo
+    implementation while the standard-profile blocker and production gates
+    remain.
+31. Troubleshooting must preserve the product boundary. Missing availability,
+    slow generation, and buffering are not authorization to expose the fake
+    child, disable offline controls, persist audio, add retry, or load another
+    model.
 
 ## Final validation results
 
@@ -835,4 +903,35 @@ Milestone 5 validation currently passes:
 Milestone 5 introduces no dependency, shared protocol version, Tauri
 capability, persistence boundary, model artifact, generated-audio fixture,
 private book, or automatic retry. Required pull-request CI and the final demo
-policy/plan closeout remain Milestone 6 work.
+policy/plan closeout were assigned to Milestone 6.
+
+Milestone 6 local validation passes:
+
+- The focused authority/scheduler/player/preparation/controls/coordinator/client
+  and application matrix passes eight files/84 tests.
+- `uv lock --project
+  services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --check`
+  resolves the unchanged isolated 107-package lock.
+- `pnpm.cmd check:portable` passes Prettier, Ruff format/check, ESLint, mypy,
+  all workspace typechecks, 196 shared tests, 555 EPUB tests, 275 desktop
+  Vitest tests, six native-driver client tests, 233 Python tests, and
+  package/desktop/Python builds.
+- The authoritative Windows `pnpm.cmd check` passes the same surface plus Cargo
+  formatting, Clippy, 25 Rust tests, the release Tauri build, and both Python
+  distributions.
+- `pnpm.cmd test:native-startup` passes the packaged model-free lifecycle,
+  local-file, reader, raster, restoration, cleanup, and zero-external-request
+  matrix.
+- `pnpm.cmd test:tts:adaptive-exact-host` passes from the exact ignored
+  candidate/model configuration under the outbound firewall rule with the
+  content-safe measurements recorded in Milestone 6's actual result.
+- All 54 Markdown documents pass the relative-link audit. The 15-file branch
+  delta has zero generated-audio, book, model-weight, archive, private-path,
+  email, credential, or other forbidden-artifact findings, and
+  `git diff --check main` passes.
+
+Milestone 6 changes only policy/documentation and adds no dependency, protocol,
+capability, persistence, model, audio, private fixture, retry, or network
+behavior. PR #126 passed the required Ubuntu portable and Windows native
+foundation jobs on commit `14ccf0d`; the completion gate is satisfied and this
+ExecPlan is archived.

@@ -211,7 +211,7 @@ Primary upstream references:
 - `docs/architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md`
 - `docs/architecture/decisions/ADR-0014-constrained-qwen-development-demo.md`
 - `docs/architecture/decisions/ADR-0015-bounded-adaptive-qwen-demo-buffering.md`
-- `docs/plans/active/M008-bounded-adaptive-prebuffering.md`
+- `docs/plans/completed/M008-bounded-adaptive-prebuffering.md`
 - `docs/development/dependencies.md`
 - `docs/development/testing.md`
 - `docs/plans/roadmap.md`

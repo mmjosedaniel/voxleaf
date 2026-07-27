@@ -2,16 +2,16 @@
 
 ## Current status
 
-The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, minimal Tauri 2 native shell, isolated Python service foundation, aggregate root quality commands, deterministic Playwright Chromium smoke, and continuous integration are initialized. The version, focused, development-server, and root commands identified as Windows commands in this document have been run successfully in Windows PowerShell. Secure in-memory EPUB 3 ingestion, immutable semantic documents, bounded local raster reads, deterministic locator/target resolution, and bounded locator-linked narration preparation are implemented in `@voxleaf/epub`. The desktop passes one bounded local-file read to the publication session, presents accessible open/close lifecycle states, renders one active spine document's supported semantic text and bounded static raster images through application-owned React elements, and navigates hierarchical TOC entries, internal targets, and readable previous/next chapters through one desktop coordinator and canonical package locators. Publication images are loaded near the viewport through one serialized, eight-request-bounded reader loader and the existing preflight/decode manager; they use only application-created `blob:` sources, clear caller-owned bytes, abort stale work, release on document/book change, and fall back locally. Passive visual-position tracking, viewport/preference reflow restoration, bounded large-chapter rendering, keyboard/focus behavior, content-free persistence, and exact/nearest-valid restoration after exact-file reselection are implemented and validated in Chromium and packaged WebView2. Generated standalone contract validators run under a CSP with no `unsafe-eval` or network image origin. ADR-0013 still selects no standard TTS profile. Completed M007 implements the protocol-v1 service, native supervision, typed client, one-unit ownership, and exact development-only Qwen/Serena adapter. M008 is in progress through Milestone 5: an application-level coordinator now calls `OpenedPublication.prepareNarration` from the active visual locator, dispatches one exact request at a time, transfers complete units into the bounded Web Audio player, and mounts accessible quick/prepared controls only when exact native configuration is available. The packaged exact-host matrix passes audible quick/prepared flows, cancellation, bounded resource sampling, cleanup, and zero external requests. Synchronization, general hardware detection, production distribution, and final M008 policy closeout remain unimplemented.
+The prerequisite toolchains, TypeScript workspace, React/Tauri desktop, isolated Python service, quality commands, browser/native smokes, secure EPUB reader, bounded restoration, and locator-linked narration preparation are initialized and validated within their documented boundaries. Completed M007 provides protocol v1, native supervision, typed one-unit ownership, and the exact development-only Qwen/Serena adapter. Completed M008 connects the active visual locator to bounded preparation, one-at-a-time synthesis, the sole-owner FIFO, Web Audio playback, and accessible quick/prepared controls. Quick mode is the default; prepared playback initially selects one minute; refill remains one minute; low water is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target. The final exact-host rerun passes but records 19.49 buffering seconds per playback minute, so ADR-0013 still selects no standard profile. Synchronization, general hardware detection, production distribution, and installers remain unimplemented.
 
 The later official Qwen 1.7B CustomVoice/Serena `v3` matrix failed standard
 startup, throughput, zero-failure, and mid-generation cancellation gates.
 ADR-0015 now supersedes ADR-0014's scheduling and buffering details and permits
 only a bounded one-GPU adaptive development demo with that exact local
 profile; it adds no production dependency and does not approve continuous
-playback. The constrained development inference and transport boundary is now
-implemented and exact-host validated. Product narration dispatch, audio
-playback, synchronization, general hardware detection, and installers remain
+playback. The constrained development inference, transport, narration
+dispatch, and audio playback path is implemented and exact-host validated.
+Synchronization, general hardware detection, and installers remain
 unimplemented.
 The content-free `benchmarks/tts/selection-v3.md` record retains that failed
 standard result and separately identifies the constrained demo input.
@@ -38,6 +38,12 @@ during playback-only pause, truthful frontier buffering, and an approximately
 30-minute in-memory ceiling only for the exact development host. Completed
 M007 supplies the constrained service boundary; M008 Milestone 5 supplies its
 application coordinator and audible player connection.
+
+Use [`troubleshooting.md`](troubleshooting.md) for the content-safe exact-demo
+failure and recovery procedure. Do not work around an unavailable control,
+slow preparation, or buffering by enabling the fake child, removing outbound
+blocking, persisting audio, starting a second model worker, or adding automatic
+retry.
 
 ## Prerequisite version matrix
 

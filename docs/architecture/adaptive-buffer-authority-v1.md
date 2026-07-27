@@ -7,8 +7,11 @@ exact-bound arithmetic live in
 `apps/desktop/src/tts/adaptive-buffer-authority.ts`. Milestone 2 implements
 the deterministic scheduler, Milestone 3 implements its payload-owning FIFO
 and low-level PCM player, and Milestone 5 connects them through the
-exact-development product coordinator. Later work must preserve this authority
-without silently changing its values or meanings.
+exact-development product coordinator. Milestone 6 retains every frozen value
+as the final constrained-demo policy: quick mode is the default, prepared mode
+is explicit with 1 minute initially selected, refill/resume remains 1 minute,
+and boundary waits remain disabled at `0` ms. Later work must preserve this
+authority without silently changing its values or meanings.
 
 This document freezes model-independent scheduling and UX behavior for
 ADR-0015's exact one-GPU Qwen/Serena constrained development demo. It does not
@@ -268,7 +271,9 @@ The wait is interruptible by pause, stop, invalidation, or exit. It contributes
 zero playable frames, is reported separately from buffering, and cannot delay
 the transition to `buffering` after valid lead reaches zero. The M008 Milestone
 5 exact-host matrix used zero intentional wait and did not justify enabling a
-nonzero default; Milestone 6 owns any final policy change.
+nonzero default. Milestone 6 retains `0` ms as the final demo default; a later
+change requires new listening/timing evidence and an explicit authority
+revision.
 
 ## Buffer-status and UX language
 

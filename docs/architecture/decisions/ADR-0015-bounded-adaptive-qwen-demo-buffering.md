@@ -90,6 +90,29 @@ memory was 4,882 MiB; and external requests were zero. This evidence confirms
 the constrained demo is audible but not real time. It does not promote the
 profile or justify a nonzero boundary-wait default.
 
+M008 Milestone 6 closes the demo policy from that evidence:
+
+- quick start is the default mode and begins only after 15 playable seconds, or
+  a complete shorter remaining range, with no fixed wall-clock timer;
+- prepared playback remains an explicit opt-in, exposes 1-, 2-, 5-, and
+  10-minute choices, and initially selects 1 minute;
+- the refill/resume target remains 1 minute;
+- the low-water warning remains 10 playable seconds;
+- optional semantic-boundary waits remain disabled by default at `0` ms;
+- playback remains `1.0x` only, with 100% default volume;
+- the simultaneous 30-minute frame/byte/unit ceiling remains a maximum, never a
+  startup target or uninterrupted-playback promise; and
+- the exact Qwen/Serena path remains available only behind explicit native
+  development configuration.
+
+The measured 20.91 buffering seconds per playback minute exceeds the MVP target
+of at most 5 seconds. Prepared playback may exchange a longer explicit wait for
+more listening time, and playback-only pause may build lead, but neither changes
+the model's real-time factor. The standard-profile blocker therefore remains.
+No automatic retry, persistent audio cache, second model worker, CPU fallback,
+nonzero hidden wait, general-hardware claim, or production distribution is
+accepted by this closeout.
+
 This remains a development-demo exception. ADR-0013 continues to block a
 standard production-profile claim. ADR-0002's memory-only rule and ADR-0004's
 quick-start rule remain accepted.
