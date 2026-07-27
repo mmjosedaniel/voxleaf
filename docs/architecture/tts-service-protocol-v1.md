@@ -4,9 +4,12 @@
 
 Accepted and frozen by M007 Milestone 1. Deterministic, release parent/child,
 and packaged WebView2 evidence passes. Milestone 2 implements the frozen
-values as canonical cross-language contracts and a bounded model-free Python
-service. Milestone 3 implements native supervision and typed desktop consumption with a
-model-free Rust child; the exact model adapter remains later work.
+values as canonical cross-language contracts and a bounded Python service.
+Milestone 3 implements native supervision and typed desktop consumption with a
+model-free Rust child. Milestone 4 implements the exact Qwen/Serena adapter
+behind native-only development configuration and passes its reviewed
+exact-host delivery, termination, stale-suppression, reload, and shutdown
+diagnostic.
 
 This authority applies only to ADR-0015's exact one-GPU
 Qwen3-TTS 12Hz 1.7B CustomVoice/Serena constrained development demo. It does
@@ -365,6 +368,14 @@ application-exit cleanup. A typed desktop client independently validates
 control order, service/work identity, finite PCM, stale completion, and one
 complete-unit ownership outside React state. Packaged WebView2 evidence covers
 normal binary delivery, cancellation, crash recovery, cleanup, and zero
-external requests. The separate model-free Python service is not yet the
-supervised production child. Actual Qwen load/inference, product narration
-dispatch, and playback remain unimplemented.
+external requests. Milestone 4 adds `QwenSerenaTtsEngine` and makes the same
+supervisor start the exact Python service only when the three frozen
+development keys resolve to the reviewed candidate interpreter and local
+artifacts. Rust byte-verifies the unchanged candidate lock; the adapter
+verifies runtime versions, artifact hashes and sizes, revision receipts, CUDA
+bfloat16 support, Serena, and the complete bounded waveform before delivery.
+The first reviewed exact-host run passes valid delivery, concurrent rejection,
+identity-first process-tree termination with zero stale return, explicit clean
+reload, and shutdown. Product narration dispatch, playback, measured Milestone
+5 handoff evidence, production packaging, and general hardware support remain
+unimplemented.

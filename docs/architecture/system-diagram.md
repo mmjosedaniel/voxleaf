@@ -28,12 +28,12 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 | EPUB ingestion                                           | **Implemented**                         | Bounded in-memory open, archive/package/navigation validation, immutable safe semantics, lazy bounded raster access, and deterministic locators.                                                                                                                                                                                                      |
 | Narration preparation                                    | **Implemented**                         | `@voxleaf/epub` exposes bounded, cancellable, locator-linked `OpenedPublication.prepareNarration` batches. The desktop has no production caller.                                                                                                                                                                                                      |
 | Shared contracts and fakes                               | **Implemented**                         | Versioned contracts, runtime decoders, conformance fixtures, deterministic fakes, and the closed protocol-v1 control family exist. They do not implement real TTS, playback, or synchronization.                                                                                                                                                      |
-| Tauri native shell                                       | **In progress**                         | M007 Milestones 1 and 3 implement the narrow binary-response boundary plus persistent model-free child supervision, framed standard streams, fixed timeouts, process-tree termination, zero automatic restart, narrow typed commands, and exit cleanup. No plugin, general shell capability, or listener is granted.                                  |
-| Python TTS area                                          | **In progress**                         | M007 Milestone 2 adds an offline-validated framed protocol loop, closed lifecycle, bounded ownership, deterministic fake engine, complete synthetic PCM output, cancellation, late suppression, and cleanup. It loads no model or audio device and is not native-supervised.                                                                          |
+| Tauri native shell                                       | **In progress**                         | M007 Milestones 1, 3, and 4 implement the narrow binary-response boundary, persistent child supervision, framed standard streams, fixed timeouts, process-tree termination, zero automatic restart, typed commands, native-only exact-service activation, and exit cleanup. No plugin, general shell capability, or listener is granted.              |
+| Python TTS area                                          | **In progress**                         | M007 Milestones 2 and 4 add the offline-validated framed service, bounded fake engine, common one-active adapter boundary, and exact development-only Qwen/Serena adapter. Default tests remain model-free; the reviewed exact-host path verifies runtime/artifacts and complete output before publication.                                           |
 | TTS feasibility and profile decision                     | **Implemented**                         | The bounded candidate-neutral `v2` harness measured both exact profiles. The license/offline/packaging audit is complete; limited one-evaluator quality remains non-promotable; ADR-0013 selects neither profile. This is development evidence, not runtime behavior.                                                                                 |
 | TTS profile blocker resolution                           | **Complete; standard blocker retained** | The exact Serena `v3` matrix failed startup, throughput, zero-failure, and mid-generation cancellation. `selection-v5` retains the standard blocker and ADR-0015 permits one exact GPU worker only for a bounded adaptive development demo. No passing standard or general hardware profile exists.                                                   |
 | Short-unit and dual-worker feasibility                   | **Complete; alternatives rejected**     | Milestone 6.2 rejects shared batching, targeted tokenizer placement, CPU-only generation, and dual-worker scheduling. The official concurrent arm stopped at `resource-limit`; a later low-load diagnostic completed but improved aggregate RTF by only about 2.6% while substantially slowing the GPU worker. Local and required PR validation pass. |
-| Constrained local TTS service and process protocol       | **In progress**                         | M007 Milestones 1-3 have frozen transport limits, canonical cross-language contracts, a bounded model-free Python service, native supervision, typed desktop consumption, one-unit memory ownership, and packaged cancellation/crash/cleanup evidence. The Qwen adapter and product caller remain unimplemented.                                      |
+| Constrained local TTS service and process protocol       | **In progress**                         | M007 Milestones 1-4 have frozen transport limits, canonical contracts, bounded Python service, native supervision, typed desktop consumption, one-unit ownership, exact Qwen/Serena integration, and model-free packaged plus focused exact-host evidence. The measured handoff matrix and product caller remain unimplemented.                       |
 | Standard production TTS profile and distribution         | **Blocked**                             | ADR-0013 still selects no passing standard profile. Continuous playback, CPU fallback, general hardware support, model/runtime distribution, and production graduation require later evidence and decisions.                                                                                                                                          |
 | Adaptive audio scheduling and playback                   | **Approved planned**                    | M008 plans quick start or explicit prepared playback, an approximately 30-minute in-memory ceiling, bounded generation during playback-only pause, low-buffer warning, truthful frontier buffering, and optional measured boundary waits. No production queue, player, or scheduler exists.                                                           |
 | Synchronization, hardware support, and release packaging | **Deferred**                            | Milestones 9–11 remain future work; no production dependency or general hardware claim exists.                                                                                                                                                                                                                                                        |
@@ -52,6 +52,7 @@ flowchart LR
 
     EPUB["Local EPUB selected by user<br/>External"]:::external
     AUDIO["OS audio device<br/>External; unused today"]:::external
+    GPU["Exact configured CUDA GPU<br/>External development host"]:::external
 
     subgraph DEVICE["User device / local-only trust boundary"]
         subgraph DESKTOP["apps/desktop"]
@@ -59,7 +60,7 @@ flowchart LR
             SESSION["Publication session owner<br/>Implemented"]:::implemented
             READER["Semantic React reader<br/>navigation, reflow, locator tracking<br/>Implemented"]:::implemented
             STORE["WebView localStorage<br/>locator + display preferences only<br/>Implemented"]:::implemented
-            SHELL["Tauri native supervisor<br/>persistent model-free child + narrow commands<br/>M7 M3 implemented; no plugin/capability"]:::progress
+            SHELL["Tauri native supervisor<br/>model-free default or native-configured exact child<br/>M7 M3-M4 implemented; no plugin/capability"]:::progress
             CLIENT["Typed TTS client + one-unit sink<br/>M7 M3 implemented<br/>outside React; no product caller"]:::progress
             PLAYBACK["Adaptive audio queue, player, backpressure<br/>Approved plan: M8; not implemented"]:::planned
             SYNC["Playback/reader synchronization<br/>highlighting and following<br/>Deferred: M9"]:::deferred
@@ -72,12 +73,13 @@ flowchart LR
         end
 
         subgraph TTSAREA["services/tts and later local runtime"]
-            PYTHON["Bounded model-free Python service<br/>M7 Milestone 2 implemented<br/>fake engine; no model/device"]:::progress
+            PYTHON["Bounded Python protocol service<br/>fake + common one-active adapter boundary<br/>M7 M2/M4 implemented"]:::progress
             FAKE_CHILD["Supervised model-free Rust child<br/>framed stdio + synthetic complete unit<br/>M7 Milestone 3 implemented"]:::progress
+            QWEN["Exact Qwen/Serena adapter<br/>verified local artifacts + complete unit<br/>M7 Milestone 4 implemented; dev-only"]:::implemented
             FEASIBILITY["TTS feasibility harness + profile decision<br/>Implemented development evidence:<br/>both v2 roles rejected"]:::implemented
             PROFILE_CYCLE["TTS profile blocker resolution<br/>Complete: M6.1<br/>batch-one v3 failed; demo exception"]:::implemented
             BATCH_PROBE["Short-unit and dual-worker probe<br/>Complete: M6.2<br/>CPU + dual worker rejected"]:::implemented
-            TTS["Constrained local TTS service + protocol<br/>M7 in progress: model-free supervisor/client complete<br/>no Qwen adapter or product caller"]:::progress
+            TTS["Constrained local TTS service + protocol<br/>M7 in progress: exact adapter integrated<br/>no measured handoff matrix or product caller"]:::progress
             PROD_TTS["Standard production TTS profile<br/>Blocked: no passing profile"]:::blocked
         end
     end
@@ -92,7 +94,8 @@ flowchart LR
     EPUBCORE -->|"locator and narration contracts"| SHARED
     SHELL --> READER
     CLIENT -->|"narrow typed invoke + binary response"| SHELL
-    SHELL -->|"bounded framed standard streams"| FAKE_CHILD
+    SHELL -->|"model-free default child"| FAKE_CHILD
+    SHELL -->|"native-only exact configuration"| PYTHON
     SHARED -->|"typed control decoding"| CLIENT
 
     PYTHON -.-> FEASIBILITY
@@ -103,6 +106,9 @@ flowchart LR
     PREP -.->|"future ephemeral prepared text"| TTS
     SHARED -->|"generated protocol contracts"| PYTHON
     PYTHON -->|"model-free service evidence"| TTS
+    PYTHON -->|"one active exact request"| QWEN
+    QWEN -->|"local CUDA bfloat16/SDPA"| GPU
+    QWEN -->|"validated complete unit"| TTS
     FAKE_CHILD -->|"supervised lifecycle evidence"| TTS
     CLIENT -->|"validated one-unit handoff"| TTS
     TTS -.->|"future audio frames"| PLAYBACK
@@ -111,7 +117,7 @@ flowchart LR
     SYNC -.-> READER
 ```
 
-The diagram deliberately has no solid edge from the desktop session to narration preparation: the API is implemented and validated at the package boundary, but the production desktop does not call it. M007 Milestone 1 contains the Rust-owned synthetic child/std-stream and optimized binary-response probe. Milestone 2 adds the canonical control contracts and a directly executable model-free Python protocol loop. Milestone 3 adds the native supervisor, supervised model-free Rust child, typed client, and one-unit sink used by packaged validation. The Python service is not yet the native-supervised child, and neither model-free path has a Qwen adapter or product caller.
+The diagram deliberately has no solid edge from the desktop session to narration preparation: the API is implemented and validated at the package boundary, but the production desktop does not call it. M007 Milestone 1 contains the Rust-owned synthetic child/std-stream and optimized binary-response probe. Milestone 2 adds the canonical control contracts and Python protocol loop. Milestone 3 adds the native supervisor, supervised model-free child, typed client, and one-unit sink used by packaged validation. Milestone 4 makes that supervisor start the exact Python/Qwen path only behind native-only development configuration and validates it on the exact host. The default path remains model-free, and there is still no product caller.
 
 ## EPUB-to-audio flow
 
@@ -133,7 +139,7 @@ flowchart TD
     PROFILE["Engine feasibility + profile decision<br/>Implemented evidence:<br/>both exact v2 profiles rejected"]:::implemented
     NEXT_PROFILE["Profile blocker resolution<br/>Complete: M6.1<br/>batch-one v3 failed; demo exception"]:::implemented
     BATCH_PROBE["Short-unit and dual-worker probe<br/>Complete: M6.2<br/>CPU + dual worker rejected"]:::implemented
-    INFER["Constrained local inference + protocol<br/>M7 in progress: model-free supervisor/client implemented<br/>Qwen adapter/product caller not implemented"]:::progress
+    INFER["Constrained local inference + protocol<br/>M7 in progress: exact adapter implemented<br/>handoff matrix/product caller not implemented"]:::progress
     PROD["Standard production TTS<br/>Blocked: no passing profile"]:::blocked
     BUFFER["Bounded adaptive in-memory audio queue<br/>quick/prepared startup + frontier policy<br/>Approved plan: M8"]:::planned
     FOLLOW["Playback, highlighting, reader following,<br/>and shared-position persistence<br/>Deferred: M9"]:::deferred
@@ -151,7 +157,7 @@ flowchart TD
     FOLLOW -.-> DEVICE
 ```
 
-The current user-visible flow ends at `VISUAL`. `PREP` is usable by package callers and tests but is not wired into the desktop. `NEXT_PROFILE` and `BATCH_PROBE` are completed development evidence. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains the exact GPU candidate only for ADR-0015's constrained demo. M007 is in progress; Milestones 1-3 complete the model-free transport, protocol authority, canonical contracts, fake Python service, native supervisor, typed client, and one-unit memory handoff. No Qwen integration, audible product runtime, or selected production engine exists. Quick start uses approximately 15 playable seconds rather than a fixed wall-clock delay; an explicit prepared mode may target 1, 2, 5, or 10 playable minutes. The approximately 30-minute in-memory value is a simultaneous ceiling, not a startup target or uninterrupted-playback guarantee.
+The current user-visible flow ends at `VISUAL`. `PREP` is usable by package callers and tests but is not wired into the desktop. `NEXT_PROFILE` and `BATCH_PROBE` are completed development evidence. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains the exact GPU candidate only for ADR-0015's constrained demo. M007 is in progress; Milestones 1-4 complete the model-free transport, protocol authority, canonical contracts, Python service, native supervisor, typed client, one-unit handoff, and exact development-only Qwen/Serena adapter. The measured Milestone 5 handoff matrix and audible product runtime do not exist, and no production engine is selected. Quick start uses approximately 15 playable seconds rather than a fixed wall-clock delay; an explicit prepared mode may target 1, 2, 5, or 10 playable minutes. The approximately 30-minute in-memory value is a simultaneous ceiling, not a startup target or uninterrupted-playback guarantee.
 
 ## Privacy, persistence, cancellation, and bounds
 
@@ -177,13 +183,13 @@ The current user-visible flow ends at `VISUAL`. `PREP` is usable by package call
 | Local TTS feasibility authority                        | [Milestone 6 completed plan](../plans/completed/M006-local-tts-feasibility-and-engine-profiles.md), [current v2 feasibility profile](tts-feasibility-profile-v2.md), [selection matrix](../../benchmarks/tts/selection-v2.md), and [ADR-0013](decisions/ADR-0013-no-viable-local-tts-engine-profile.md); both exact roles rejected and no production profile selected                                                                                                                                                                                                                                                                                                                   |
 | Local TTS profile blocker resolution                   | [Milestone 6.1 completed plan](../plans/completed/M006-001-local-tts-profile-blocker-resolution.md), [Serena intake result](../../benchmarks/tts/customvoice-spanish-screen-result-v2.json), machine-readable [`profile-v3.json`](../../benchmarks/tts/profile-v3.json), [v3 authority](tts-feasibility-profile-v3.md), [passing exact-host prototype result](../../benchmarks/tts/incremental-cancellation-prototype-result-v1.json), [candidate-neutral `selection-v3`](../../benchmarks/tts/selection-v3.md), historical [ADR-0014](decisions/ADR-0014-constrained-qwen-development-demo.md), and superseding [ADR-0015](decisions/ADR-0015-bounded-adaptive-qwen-demo-buffering.md) |
 | Short-unit and dual-worker feasibility                 | [Milestone 6.2 completed plan](../plans/completed/M006-002-qwen-short-segment-batch-feasibility.md), [v4 authority](tts-feasibility-profile-v4.md), both stopped `v4` results, accepted [`selection-v4`](../../benchmarks/tts/selection-v4.md), frozen [v5 authority](tts-feasibility-profile-v5.md), schema-valid [`v5` CPU admission](../../benchmarks/tts/dual-worker-result-v5-cpu-solo.json), schema-valid [`v5` GPU baseline](../../benchmarks/tts/dual-worker-result-v5-gpu-solo.json), the completed-plan diagnostic record, and accepted [`selection-v5`](../../benchmarks/tts/selection-v5.md). CPU and dual-worker scheduling are rejected; no product runtime exists.       |
-| Constrained local TTS service and process protocol     | [M007 active ExecPlan](../plans/active/M007-local-tts-service-and-process-protocol.md), accepted frozen [protocol v1 authority](tts-service-protocol-v1.md), and accepted [ADR-0016](decisions/ADR-0016-rust-owned-stdio-tts-protocol.md). Milestones 1-3 have transport, canonical contract, model-free Python-service, native supervision, typed-client, process-tree containment, and packaged WebView evidence; exact model work remains open.                                                                                                                                                                                                                                      |
+| Constrained local TTS service and process protocol     | [M007 active ExecPlan](../plans/active/M007-local-tts-service-and-process-protocol.md), accepted frozen [protocol v1 authority](tts-service-protocol-v1.md), and accepted [ADR-0016](decisions/ADR-0016-rust-owned-stdio-tts-protocol.md). Milestones 1-4 have transport, canonical contracts, Python service, native supervision, typed client, exact Qwen/Serena integration, model-free packaged evidence, and focused exact-host delivery/termination/reload evidence; the measured handoff matrix and product caller remain open.                                                                                                                                                  |
 | Local-first desktop and future local process direction | [ADR-0001](decisions/ADR-0001-local-first-desktop.md); ADR-0015 permits a constrained one-GPU development demo while production transport remains unresolved                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Roadmap status                                         | [Roadmap](../plans/roadmap.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 ## Remaining gates
 
-1. **Milestone 7 — In progress; production blocked:** implement M007's one bounded GPU Qwen/Serena development-demo adapter on the completed transport, canonical protocol, model-free service, native supervisor, and typed-client foundation. Do not claim passing performance, continuous playback, native model streaming, general hardware support, or production distribution.
+1. **Milestone 7 — In progress; production blocked:** complete M007's measured exact-host handoff matrix and repository/protocol closeout on the implemented one-GPU Qwen/Serena development adapter, transport, service, native supervisor, and typed-client foundation. Do not claim passing performance, continuous playback, native model streaming, general hardware support, or production distribution.
 2. **Milestone 8 — Approved planned:** follow M008 to implement bounded audio framing, one-GPU scheduling, quick/prepared startup, playback-only pause continuation, adaptive boundary waits, truthful frontier buffering, and the 30-minute ceiling.
 3. **Milestone 9 — Deferred:** connect one stable logical position across the visual reader, prepared narration, playback progress, highlighting, following, seek, and restoration.
 4. **Milestones 10–11 — Deferred:** validate hardware profiles and CPU fallback, then complete installer/signing/distribution and full MVP closeout.
