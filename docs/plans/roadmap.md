@@ -453,9 +453,11 @@ model-independent scheduler and playback behavior remain separately owned.
 ## Milestone 8: Build bounded audio playback and scheduling
 
 **Status:** In progress. M008 Milestone 1 freezes the exact adaptive-buffer and
-UX authority with deterministic exact/max-plus-one arithmetic. No production
-queue, audio payload owner, player, startup gate, adaptive scheduler, or
-underrun instrumentation exists yet. Follow
+UX authority, and Milestone 2 implements an unconnected model-free scheduler
+state machine with deterministic startup, resource, ownership, invalidation,
+depletion, failure, end-of-range, and recovery traces. No production
+publication caller, payload-owning queue, player, UI, or underrun
+instrumentation exists yet. Follow
 [`M008-bounded-adaptive-prebuffering.md`](active/M008-bounded-adaptive-prebuffering.md).
 
 ### Goal

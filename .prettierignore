@@ -7,6 +7,8 @@
 **/src-tauri/gen/
 **/target/
 **/__pycache__/
+**/tmp/**
+**/temp/**
 services/tts/.venv/
 **/Cargo.lock
 pnpm-lock.yaml

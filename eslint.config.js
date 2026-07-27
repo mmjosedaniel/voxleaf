@@ -8,12 +8,18 @@ export default tseslint.config(
   {
     ignores: [
       "**/.venv/**",
+      "**/.mypy_cache/**",
+      "**/.pytest_cache/**",
+      "**/.ruff_cache/**",
+      "**/__pycache__/**",
       "**/coverage/**",
       "**/dist/**",
       "**/node_modules/**",
       "**/src/generated/validators/standalone.ts",
       "**/src-tauri/gen/**",
       "**/target/**",
+      "temp/**",
+      "tmp/**",
     ],
   },
   eslint.configs.recommended,
