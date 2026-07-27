@@ -58,6 +58,7 @@ function ownedUnit(
   segmentId: string,
   playableMs: number,
   identity = IDENTITY,
+  payloadByteAdjustment = 0,
 ): OwnedUnit {
   const sampleCountSamples = sampleFramesFromPlayableMilliseconds(playableMs);
   let releaseCount = 0;
@@ -69,7 +70,7 @@ function ownedUnit(
       channelCount: 1,
       sampleFormat: "float32-le",
       sampleCountSamples,
-      payloadBytes: sampleCountSamples * 4,
+      payloadBytes: sampleCountSamples * 4 + payloadByteAdjustment,
       endOfSegment: true,
     }),
     get releaseCount() {
@@ -249,6 +250,29 @@ describe("adaptive buffer scheduler", () => {
 
     scheduler.settleServiceStop();
     expect(scheduler.observe().serviceState).toBe("stopped");
+  });
+
+  it("releases an invalid active completion once and removes its reservation", () => {
+    const scheduler = makeReadyScheduler(createManualClock(0));
+    prepare(scheduler, [segment(1)]);
+    const segmentId = scheduler.beginSynthesis();
+    const invalid = ownedUnit(segmentId, 1_000, IDENTITY, 4);
+
+    expect(scheduler.acceptCompletedUnit(invalid)).toBe("invalid");
+    expect(invalid.releaseCount).toBe(1);
+    expect(scheduler.observe()).toMatchObject({
+      serviceState: "failed",
+      playbackState: "failed",
+      playableDurationMs: 0,
+      retainedAudioUnitCount: 0,
+      resourceSnapshot: {
+        audioSampleFrames: 0,
+        audioPayloadBytes: 0,
+        completeAudioUnits: 0,
+        audioMetadataEntries: 0,
+        activeSyntheses: 0,
+      },
+    });
   });
 
   it("requires an explicit stopped-to-started-to-prepared recovery before later synthesis", () => {

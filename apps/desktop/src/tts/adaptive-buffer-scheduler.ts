@@ -464,7 +464,7 @@ export class AdaptiveBufferScheduler {
     }
 
     const audio = ADAPTIVE_BUFFER_AUTHORITY_V1.audioLimits;
-    const resources: AdaptiveBufferResourceSnapshot = {
+    const resources = this.#settleActivePromptResources({
       ...this.#resources,
       audioSampleFrames:
         this.#resources.audioSampleFrames -
@@ -475,8 +475,7 @@ export class AdaptiveBufferScheduler {
         audio.serviceUnitReservationPayloadBytes +
         unit.metadata.payloadBytes,
       activeSyntheses: 0,
-    };
-    this.#settleActivePromptResources(resources);
+    });
     this.#assertResources(resources);
     this.#resources = resources;
     this.#activeSynthesis = undefined;
@@ -685,12 +684,13 @@ export class AdaptiveBufferScheduler {
 
   #settleActivePromptResources(
     resources: AdaptiveBufferResourceSnapshot,
-  ): void {
+  ): AdaptiveBufferResourceSnapshot {
     const segment = this.#activeSynthesis?.segment;
     if (segment === undefined) {
       throw new AdaptiveBufferSchedulerError("invalid-state");
     }
-    Object.assign(resources, {
+    return {
+      ...resources,
       retainedPreparedSegments: resources.retainedPreparedSegments - 1,
       retainedNarrationCodePoints:
         resources.retainedNarrationCodePoints - segment.narrationCodePoints,
@@ -698,12 +698,12 @@ export class AdaptiveBufferScheduler {
         resources.retainedNarrationUtf8Bytes - segment.narrationUtf8Bytes,
       retainedNarrationSentences:
         resources.retainedNarrationSentences - segment.sentenceCount,
-    });
+    };
   }
 
   #settleActiveSynthesis(): void {
     const audio = ADAPTIVE_BUFFER_AUTHORITY_V1.audioLimits;
-    const resources: AdaptiveBufferResourceSnapshot = {
+    const resources = this.#settleActivePromptResources({
       ...this.#resources,
       audioSampleFrames:
         this.#resources.audioSampleFrames -
@@ -714,8 +714,7 @@ export class AdaptiveBufferScheduler {
       completeAudioUnits: this.#resources.completeAudioUnits - 1,
       audioMetadataEntries: this.#resources.audioMetadataEntries - 1,
       activeSyntheses: 0,
-    };
-    this.#settleActivePromptResources(resources);
+    });
     this.#resources = resources;
     this.#activeSynthesis = undefined;
     this.#clearPreparedBatchIfSettled();
