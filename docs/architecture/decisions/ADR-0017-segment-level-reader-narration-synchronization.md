@@ -2,8 +2,10 @@
 
 ## Status
 
-Accepted for M009. Milestone 1 freezes and validates the authority; runtime
-integration remains assigned to M009 Milestones 2 through 5.
+Accepted for M009. Milestones 1 through 3 freeze the authority, project exact
+audible source ranges, and implement reader highlighting/following. Runtime
+user-navigation and heard-progress persistence remain assigned to M009
+Milestones 4 and 5.
 
 ## Context
 
@@ -69,8 +71,9 @@ change is authorized.
   existing work identities.
 - A later timestamp-capable engine requires a new authority before word-level
   highlighting or inside-segment clipping can be implemented.
-- This decision does not improve Qwen throughput, resolve ADR-0013's standard
-  profile blocker, or make synchronized runtime behavior complete.
+- The implemented reader projection does not improve Qwen throughput, resolve
+  ADR-0013's standard profile blocker, or make synchronized user navigation
+  and heard-progress persistence complete.
 
 ## Alternatives considered
 

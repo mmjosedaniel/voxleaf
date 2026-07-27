@@ -61,7 +61,8 @@ Completed M008 provides:
 - identity-first invalidation on stop, visual-locator change, publication
   replacement/close, failure, and application exit.
 
-M009 Milestone 2 now closes the playback-side projection gap:
+M009 Milestones 2 and 3 now close the playback-side projection and reader
+decoration gaps:
 
 - the scheduler retains each prepared segment's immutable source range and
   canonical sequence only while its complete audio unit remains eligible;
@@ -72,11 +73,18 @@ M009 Milestone 2 now closes the playback-side projection gap:
   subscription that is separate from its React-facing snapshot; and
 - released or invalidated units immediately lose their source-range
   projection while PCM cleanup remains bounded.
+- the reader consumes exact segment transitions, maps each block-local
+  half-open range through the existing semantic DOM mapper, and owns exactly
+  one `voxleaf-narration-active` Custom Highlight;
+- automatic following uses the frozen 24-pixel comfort inset and instant
+  placement without moving focus, selection, history, or publication nodes;
+  and
+- passive visual sampling remains suspended while a range waits for
+  incremental or next-chapter rendering and resumes without synthesizing a
+  user seek.
 
 The remaining synchronization gap is explicit:
 
-- the reader can map one semantic position to a collapsed DOM range but does
-  not render an audible source-range highlight;
 - passive visual movement currently stops narration instead of participating
   in a frozen synchronized-seek policy; and
 - persisted progress follows the visual locator, not an explicit heard
@@ -423,17 +431,28 @@ Complete.
 
 ### Validation
 
-- Command: `pnpm.cmd --filter @voxleaf/desktop exec vitest run src/reader/semantic-dom-range-mapper.test.tsx src/reader/ReaderPublication.test.tsx`
+- Command: `pnpm.cmd --filter @voxleaf/desktop exec vitest run src/reader/segment-highlight-controller.test.tsx src/reader/semantic-dom-range-mapper.test.tsx src/reader/ReaderPublication.test.tsx`
 - Command: `pnpm.cmd test:browser`
 - Command: `pnpm.cmd test:native-startup`
 - Expected result: highlighting and following work across reflow, narrow
   viewports, incremental rendering, and chapter boundaries without focus,
   history, URL, or network side effects.
-- Actual result: Not run.
+- Actual result: Passed on 2026-07-27. The focused controller/mapper/reader
+  suite passes 25 tests, desktop typecheck and ESLint pass, and the full
+  desktop suite passes 288 Vitest tests plus six Node WebDriver-client tests.
+  All six production Chromium tests pass, including the production
+  `::highlight(voxleaf-narration-active)` rule, reflow and narrow-viewport
+  checks, unchanged focus/selection/URL/DOM, and zero external requests. The
+  packaged WebView2 startup matrix also passes the synchronization proof,
+  keyboard reader matrix, restart/restoration lifecycle, zero runtime errors,
+  and zero external requests. `pnpm.cmd check:portable` passes with all
+  formatting/lint/type checks, 1,039 Vitest tests, six Node
+  WebDriver-client tests, 233 Python tests, generated-contract verification,
+  and portable builds.
 
 ### Status
 
-Not started.
+Complete.
 
 ## Milestone 4: Integrate synchronized user navigation
 
@@ -643,6 +662,19 @@ persistence. Do not use destructive storage migration as rollback.
   1,034 Vitest tests, six Node WebDriver-client tests, 233 Python tests, all
   portable formatting/lint/type checks, generated-contract verification, and
   portable builds pass.
+- 2026-07-27: Implemented M009 Milestone 3. The application now connects the
+  coordinator's exact audible transitions to one bounded semantic range
+  projection, production Custom Highlight entry, and focus-safe automatic
+  reader following across incremental registration and chapter replacement.
+- 2026-07-27: Focused component tests, desktop typecheck, ESLint, all 288
+  desktop Vitest tests, six Node driver-client tests, all six production
+  Chromium tests, and the packaged WebView2 startup/synchronization matrix
+  pass. No shared schema, M005 segmentation, M007 protocol, storage shape,
+  native capability, runtime dependency, or network boundary changed.
+- 2026-07-27: The final Milestone 3 `pnpm.cmd check:portable` gate passes:
+  1,039 Vitest tests, six Node WebDriver-client tests, 233 Python tests,
+  formatting, lint, TypeScript/Python type checks, generated-contract
+  verification, and portable builds all pass.
 
 ## Discoveries and decisions
 
@@ -678,6 +710,16 @@ persistence. Do not use destructive storage migration as rollback.
   it.
 - The existing reader's 24-pixel visual-locator inset is sufficient as the
   synchronization comfort region, avoiding a second geometry policy.
+- Mapper registration notifications are the required bridge for incremental
+  rendering: the projection retains only one immutable active source range,
+  not DOM paths or geometry, and remaps it when the relevant semantic block
+  appears.
+- Treating automatic next-chapter materialization as handled programmatic
+  navigation prevents the existing destination-focus policy and passive
+  tracker from reinterpreting narration following as user input.
+- A completed segment advances the internal audible projection to its range
+  end while retaining the last-heard highlight and performing no second
+  follow, matching the frozen transition table.
 - Chromium and packaged WebView2 both accept the selected proof. Browser and
   native GUI suites must run outside the Codex filesystem/process sandbox on
   this Windows host so their child process trees can terminate normally;
@@ -688,12 +730,12 @@ persistence. Do not use destructive storage migration as rollback.
 
 ## Final validation results
 
-M009 Milestones 1 and 2 are complete. Milestone 1 focused unit, full desktop,
-six-test Chromium, packaged WebView2, portable repository, link, privacy, and
-diff validation pass. Milestone 2 focused scheduler/player/coordinator tests
-and desktop typecheck pass, as does the full portable repository gate. Reader
-highlighting, following, navigation, persistence, exact-host synchronization
-evidence, pull-request CI, and final M009 validation are not yet available.
+M009 Milestones 1 through 3 are complete. Authority, source-range projection,
+reader highlighting/following, focused unit/component, full desktop,
+six-test Chromium, packaged WebView2, and portable repository validation pass
+through the recorded checkpoints. Synchronized user
+navigation, heard-position persistence, exact-host synchronization evidence,
+pull-request CI, and final M009 validation are not yet available.
 
 When the plan completes, record:
 
