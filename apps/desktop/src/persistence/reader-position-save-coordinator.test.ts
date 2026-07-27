@@ -22,6 +22,7 @@ import type {
   ReaderPositionRepository,
   ReaderRepositoryWriteResult,
 } from "./reader-position-repository";
+import { ReaderPositionRestoreCoordinator } from "./reader-position-restore-coordinator";
 import {
   PASSIVE_POSITION_SAVE_DEBOUNCE_MS,
   ReaderPositionSaveCoordinator,
@@ -306,12 +307,168 @@ describe("reader position save coordinator", () => {
 
     coordinator.schedulePassive(locator);
     environment.advance(499);
-    expect(coordinator.scheduleImmediate(locator)).toBe(true);
+    expect(coordinator.scheduleReflow(locator)).toBe(true);
     environment.advance(0);
     await coordinator.flush();
 
     expect(repository.writePosition).toHaveBeenCalledTimes(1);
     expect(environment.scheduledCount).toBe(0);
+  });
+
+  it("persists audible starts and advances only after matching completion", async () => {
+    const { coordinator, environment, repository } = createHarness();
+
+    expect(coordinator.beginNarration()).toBe(true);
+    expect(coordinator.schedulePassive(locatorAt(40))).toBe(false);
+    expect(
+      coordinator.recordHeardCheckpoint({
+        kind: "segment-completed",
+        segmentId: "segment:one",
+        locator: locatorAt(20),
+      }),
+    ).toBe(false);
+    expect(
+      coordinator.recordHeardCheckpoint({
+        kind: "segment-started",
+        segmentId: "segment:one",
+        locator: locatorAt(10),
+      }),
+    ).toBe(true);
+    environment.advance(0);
+    await coordinator.flush();
+
+    expect(repository.writePosition).toHaveBeenCalledTimes(1);
+    expect(
+      repository.writePosition.mock.calls[0]?.[0].locator.textOffsetCodePoints,
+    ).toBe(10);
+
+    expect(
+      coordinator.recordHeardCheckpoint({
+        kind: "segment-completed",
+        segmentId: "segment:stale",
+        locator: locatorAt(90),
+      }),
+    ).toBe(false);
+    expect(
+      coordinator.recordHeardCheckpoint({
+        kind: "segment-completed",
+        segmentId: "segment:one",
+        locator: locatorAt(20),
+      }),
+    ).toBe(true);
+    environment.advance(0);
+    await coordinator.flush();
+
+    expect(repository.writePosition).toHaveBeenCalledTimes(2);
+    expect(
+      repository.writePosition.mock.calls[1]?.[0].locator.textOffsetCodePoints,
+    ).toBe(20);
+  });
+
+  it("protects the latest heard checkpoint from reflow until user movement", async () => {
+    const { coordinator, environment, repository } = createHarness();
+
+    coordinator.beginNarration();
+    coordinator.recordHeardCheckpoint({
+      kind: "segment-started",
+      segmentId: "segment:protected",
+      locator: locatorAt(12),
+    });
+    environment.advance(0);
+    await coordinator.finishNarration();
+
+    expect(coordinator.scheduleReflow(locatorAt(4))).toBe(false);
+    await coordinator.flush();
+    expect(repository.writePosition).toHaveBeenCalledTimes(1);
+    expect(
+      repository.writePosition.mock.calls[0]?.[0].locator.textOffsetCodePoints,
+    ).toBe(12);
+
+    expect(coordinator.schedulePassive(locatorAt(4))).toBe(true);
+    environment.advance(PASSIVE_POSITION_SAVE_DEBOUNCE_MS);
+    await coordinator.flush();
+    expect(repository.writePosition).toHaveBeenCalledTimes(2);
+    expect(
+      repository.writePosition.mock.calls[1]?.[0].locator.textOffsetCodePoints,
+    ).toBe(4);
+  });
+
+  it("does not turn an unheard visual target into a lifecycle checkpoint", async () => {
+    const environment = new ManualSaveEnvironment();
+    const repository = createRepository();
+    const coordinator = new ReaderPositionSaveCoordinator(
+      createPublication(),
+      repository,
+      {
+        environment,
+        initialLocator: locatorAt(2),
+        persistInitialLocatorOnFlush: false,
+      },
+    );
+    coordinator.start();
+
+    coordinator.schedulePassive(locatorAt(30));
+    coordinator.beginNarration();
+    environment.emit("hidden");
+    await coordinator.flush();
+    environment.emit("pagehide");
+    await coordinator.finishNarration();
+
+    expect(repository.writePosition).not.toHaveBeenCalled();
+  });
+
+  it("restores the audible segment start after a mid-segment lifecycle interruption", async () => {
+    const environment = new ManualSaveEnvironment();
+    const publication = createPublication();
+    let savedState: PersistedReadingStateV1 | undefined;
+    const repository: ReaderPositionRepository = {
+      readPosition: vi.fn(async () =>
+        savedState === undefined
+          ? { status: "missing" as const }
+          : { status: "ready" as const, state: savedState },
+      ),
+      writePosition: vi.fn(async (state) => {
+        savedState = state;
+        return { status: "saved" as const };
+      }),
+      readPreferences: vi.fn(async () => ({ status: "missing" as const })),
+      writePreferences: vi.fn(async () => ({ status: "saved" as const })),
+    };
+    const coordinator = new ReaderPositionSaveCoordinator(
+      publication,
+      repository,
+      {
+        environment,
+        initialLocator: locatorAt(2),
+        persistInitialLocatorOnFlush: false,
+      },
+    );
+    coordinator.start();
+    coordinator.beginNarration();
+    coordinator.recordHeardCheckpoint({
+      kind: "segment-started",
+      segmentId: "segment:interrupted",
+      locator: locatorAt(14),
+    });
+    environment.advance(0);
+    coordinator.scheduleImmediate(locatorAt(80));
+    environment.emit("pagehide");
+    await coordinator.finishNarration();
+    await coordinator.close();
+
+    const restoration = await new ReaderPositionRestoreCoordinator(
+      repository,
+    ).restore(createPublication());
+    expect(restoration.status).toBe("ready");
+    if (restoration.status !== "ready") {
+      throw new Error("Synthetic restoration was cancelled.");
+    }
+    expect(restoration.position).toMatchObject({
+      mode: "exact",
+      locator: {
+        textOffsetCodePoints: 14,
+      },
+    });
   });
 
   it("flushes the latest validated state when hidden and on pagehide", async () => {

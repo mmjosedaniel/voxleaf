@@ -16,6 +16,7 @@ import {
   createWebStorageReaderPositionRepository,
   type ReaderPositionRepository,
 } from "./persistence/reader-position-repository";
+import { bindNarrationPositionPersistence } from "./persistence/narration-position-save-bridge";
 import {
   ReaderPositionRestoreCoordinator,
   type ReadyReaderOpenRestoration,
@@ -384,6 +385,19 @@ export function App({
 
   useEffect(() => {
     if (
+      narrationCoordinator === undefined ||
+      positionSaveCoordinator === undefined
+    ) {
+      return;
+    }
+    return bindNarrationPositionPersistence(
+      narrationCoordinator,
+      positionSaveCoordinator,
+    );
+  }, [narrationCoordinator, positionSaveCoordinator]);
+
+  useEffect(() => {
+    if (
       positionSaveCoordinator !== undefined &&
       readyRestorationResult?.position.mode === "recovered" &&
       readyRestoration?.settlement === "settled"
@@ -476,10 +490,11 @@ export function App({
     ): void => {
       if (reason === "reflow") {
         narrationCoordinator?.preserveActiveLocator(locator);
+        positionSaveCoordinator?.scheduleReflow(locator);
       } else {
         narrationCoordinator?.settleExternalNavigation(locator);
+        positionSaveCoordinator?.scheduleImmediate(locator);
       }
-      positionSaveCoordinator?.scheduleImmediate(locator);
     },
     [narrationCoordinator, positionSaveCoordinator],
   );
