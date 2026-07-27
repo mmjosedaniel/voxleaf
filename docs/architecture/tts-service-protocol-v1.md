@@ -3,8 +3,9 @@
 ## Status
 
 Accepted and frozen by M007 Milestone 1. Deterministic, release parent/child,
-and packaged WebView2 evidence passes. Milestone 2 must implement these values
-without changing them silently.
+and packaged WebView2 evidence passes. Milestone 2 implements the frozen
+values as canonical cross-language contracts and a bounded model-free Python
+service. Native supervision and the exact model adapter remain later work.
 
 This authority applies only to ADR-0015's exact one-GPU
 Qwen3-TTS 12Hz 1.7B CustomVoice/Serena constrained development demo. It does
@@ -105,8 +106,19 @@ the active request as a whole. No partial audio becomes eligible.
 | `error`             | Carries one closed operational error and one closed protocol reason.      |
 | `protocolRejected`  | Rejects the peer version or framing and then closes the process boundary. |
 
-The exact JSON shapes and cross-language fixtures are Milestone 2 work. They
-must implement these closed families rather than introduce another authority.
+The exact JSON shapes are frozen in
+`packages/shared/schemas/tts-protocol-control/v1.schema.json`, with one closed
+root union covering all 15 control kinds. Every message has
+`schemaVersion: 1`, `protocolVersion: 1`, its exact `kind`, and only the
+fields admitted for that kind. Work-bearing messages reuse the existing
+session, generation, segment, locator-range, audio-frame, capability, and
+operational-error schemas rather than duplicating those domains.
+
+The shared generator emits a self-contained TypeScript validator and an
+offline Python schema registry from those canonical files. Python performs
+Draft 2020-12 validation against that embedded registry; Rust and every other
+consumer use the same committed fixtures for conformance. Raw PCM remains a
+separate kind-2 record and never appears in the JSON schema.
 
 ## Lifecycle states
 
@@ -303,7 +315,7 @@ unverified, or mismatched values produce the fixed unavailable state. This is
 a development-only configuration boundary, not an installer or distribution
 decision.
 
-## Prototype evidence and remaining gate
+## Model-free implementation evidence and remaining gate
 
 The Milestone 1 prototype uses the packaged VoxLeaf executable as a
 repository-authored synthetic child. The parent sends one framed control
@@ -333,3 +345,16 @@ CSP source. After adding only `ipc:` and `http://ipc.localhost`, the optimized
 response arrived as binary data and the authoritative packaged smoke passed
 the probe, the existing application matrix, zero runtime-error checks, and zero
 external-request checks.
+
+Milestone 2 adds `voxleaf_tts.protocol`, `voxleaf_tts.fake_engine`, and
+`voxleaf_tts.service`. The protocol module reads the fixed header before any
+payload allocation, rejects duplicate JSON keys and non-finite JSON numbers,
+validates canonical message shape plus semantic identity/format relationships,
+and writes only bounded records. The service loop implements the frozen
+handshake, load, warm, ready, generate, cancel, stopped, failed, and shutdown
+transitions with one active synthesis and no queue. The deterministic fake
+models successful complete output, pending work, late completion, failure,
+timeout, crash, invalid audio, cancellation, and cleanup without model
+libraries, CUDA, an audio device, private content, or retained narration text.
+Actual Qwen load/inference, native service supervision, restart orchestration,
+and desktop consumption remain unimplemented.

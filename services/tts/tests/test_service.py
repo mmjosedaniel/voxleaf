@@ -220,6 +220,7 @@ def test_failure_timeout_crash_and_invalid_waveform_publish_zero_audio(
     assert control_from(settled[-1])["state"] == "failed"
     assert engine.observe().active_count == 0
     assert engine.observe().retained_audio_units == 0
+    assert engine.observe().generation_count == 1
 
     replacement, _ = make_ready()
     assert replacement.state is ServiceState.READY

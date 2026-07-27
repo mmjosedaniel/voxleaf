@@ -181,7 +181,7 @@ fn validate_audio_metadata(object: &Map<String, Value>) -> bool {
         && frame.get("channelCount").and_then(Value::as_u64) == Some(1)
         && frame.get("endOfSegment").and_then(Value::as_bool) == Some(true)
         && samples.is_some_and(|value| value > 0 && value <= MAX_AUDIO_SAMPLES)
-        && payload_bytes.is_some_and(|value| value >= 4 && value <= MAX_AUDIO_BYTES)
+        && payload_bytes.is_some_and(|value| (4..=MAX_AUDIO_BYTES).contains(&value))
         && payload_bytes == samples.map(|value| value * 4)
 }
 

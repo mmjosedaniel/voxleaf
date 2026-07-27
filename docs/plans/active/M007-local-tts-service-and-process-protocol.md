@@ -46,10 +46,15 @@ Until then, the current user-visible product still ends at visual reading.
   standard-stream child probe, one narrow application command, and typed binary
   WebView response validation. It is not the production supervisor or TTS
   client, adds no plugin/capability/listener, and accepts no book text.
-- `services/tts` has a dependency-free package/version scaffold, schema
-  conformance tests, and development-only benchmark modules. It has no
-  production service loop, engine adapter, process protocol, inference, or
-  audio payload output.
+- `@voxleaf/shared` now also owns the closed protocol-v1 control schema,
+  fixtures, generated TypeScript predicate, and generated offline Python
+  schema registry. Rust, Python, and TypeScript conformance tests consume that
+  one authority.
+- `services/tts` now has the bounded model-free protocol decoder/encoder,
+  lifecycle service loop, and deterministic fake engine. It can emit one
+  complete synthetic PCM unit over supplied binary standard streams and prove
+  cancellation/cleanup without a model or device. It has no Qwen adapter,
+  native supervisor, product caller, or real inference.
 - The exact `qwen3-tts-1-7b-customvoice-cuda-bf16-v1` identity is frozen by
   `profile-v3.json`: Qwen3-TTS 12Hz 1.7B CustomVoice revision
   `0c0e3051f131929182e2c023b9537f8b1c68adfe`, `qwen-tts==0.1.1`,
@@ -365,7 +370,8 @@ max-plus-one tests are required for every selected dimension.
 Complete. The deterministic Rust-owned standard-stream and binary-response
 prototype, transport comparison, frozen protocol authority, accepted ADR,
 release parent/child evidence, and packaged WebView2 binary-response evidence
-all pass. Milestone 2 has not started.
+all pass. Milestone 2 is also complete; this milestone remains the accepted
+transport foundation for that implementation.
 
 #### Selected authority and actual result
 
@@ -436,7 +442,39 @@ all pass. Milestone 2 has not started.
 
 #### Status
 
-Not started.
+Complete.
+
+#### Actual result
+
+- Added one closed `tts-protocol-control/v1` canonical schema with all seven
+  native-to-service and eight service-to-native control kinds. It references
+  the existing narration, audio-frame, capability, and operational-error
+  families; raw PCM remains a separate kind-2 frame.
+- Added valid fixtures for every kind plus invalid unknown-field, protocol,
+  and message-kind cases. The shared generator now emits the standalone
+  TypeScript validator and a committed offline Python schema registry. Rust,
+  Python, and TypeScript tests consume the same fixtures.
+- Added strict TypeScript and Python decoding beyond structural schema checks:
+  exact Unicode/UTF-8 bounds, nested narration identity, audio metadata
+  arithmetic, closed reason/error mappings, duplicate-key and non-finite JSON
+  rejection, deep immutable accepted values, and fixed unsupported-versus-
+  malformed outcomes.
+- Added `voxleaf_tts.protocol`, `voxleaf_tts.fake_engine`, and
+  `voxleaf_tts.service`. The binary service entry point implements
+  handshake/load/warm/ready/generate/cancel/stopped/failed/shutdown, one active
+  synthesis, zero queue, bounded frame ownership, metadata-before-audio
+  ordering, identity-first cancellation, late suppression, zero automatic
+  retry, and deterministic cleanup.
+- Fake outcomes cover success, pending work, late completion, failure,
+  timeout, crash, non-finite output, and oversized output. The fake retains no
+  narration text, loads no model/device library, opens no listener, writes no
+  log, and emits only protocol bytes on standard output.
+- `jsonschema` and `referencing`, already present in the locked development
+  graph, are explicit base-service runtime dependencies solely for offline
+  canonical validation. No model, Torch, CUDA, audio-device, or network
+  dependency was added.
+- Native production supervision, real Qwen inference, restart orchestration,
+  and desktop consumption remain Milestones 3-5 work.
 
 ### Milestone 3: Implement native supervision and the typed desktop client
 
@@ -742,6 +780,22 @@ artifact behind.
   unchanged source with the shorter ignored temp root made all 161 Python tests
   pass. The complete `pnpm.cmd test:native-startup` build-and-run command then
   passed outside the sandbox.
+- 2026-07-27: Created
+  `feat/m007-2-canonical-protocol-python-service` from merged `main` at
+  `a664ef1`. Commit `4bdb076` adds the canonical closed protocol-v1 control
+  schema, all-kind fixtures, generated TypeScript validation, shared decoding,
+  and Python/Rust/TypeScript fixture conformance.
+- 2026-07-27: Commit `86c8535` adds the generated offline Python schema
+  registry, strict bounded framing and message validation, deterministic fake
+  engine, and model-free standard-stream service loop. The service implements
+  the frozen lifecycle, one-active/no-queue rule, metadata/audio/completion
+  ordering, identity-first cancellation, stale suppression, fixed failures,
+  zero retries, and cleanup without model or device libraries.
+- 2026-07-27: Focused validation passes 196 shared tests, 12 Rust tests, 40
+  Python protocol/service/conformance/health tests, Python type checking over
+  82 source files, deterministic generation, Rust fixture conformance, and
+  Python source/wheel builds. Documentation was reconciled without claiming
+  native supervision, Qwen integration, or product playback.
 
 ## Discoveries and decisions
 
@@ -778,6 +832,17 @@ artifact behind.
     These are not an application server or external listener. A serialized
     array fallback remains invalid, and the native smoke distinguishes internal
     IPC from external requests.
+12. Structural control validation must not become a Python-owned second
+    authority. The shared generator therefore embeds the canonical schema
+    registry in the Python wheel, and runtime validation performs no file,
+    URI, or network lookup.
+13. The service retains only the active and immediately settled request
+    identities needed for bounded duplicate/stale rejection. The native owner
+    remains responsible for fresh identities; an unbounded historical-ID set
+    is prohibited.
+14. The model-free service reports local speech generation and hardware as
+    unknown until a verified real adapter is ready. Synthetic PCM proves the
+    protocol lifecycle only and cannot promote a product capability.
 
 ## Final validation results
 
@@ -832,4 +897,44 @@ Milestone 1 implementation validation on 2026-07-26 currently records:
 The implementation is model-free and makes no playback, production,
 native-model-streaming, cooperative-cancellation, standard-profile, or
 general-hardware claim. Every Milestone 1 work item and acceptance gate is
-complete; Milestone 2 remains not started.
+complete. Milestone 2 is also complete with the separate implementation and
+validation evidence recorded above and below.
+
+Milestone 2 implementation validation completed on 2026-07-27:
+
+- `pnpm.cmd check` passes with ignored workspace-local uv/temporary
+  directories. It includes Prettier, Rust/Python formatting, ESLint, Clippy,
+  Ruff, TypeScript/Python types, 196 shared tests, 555 EPUB tests, 211 desktop
+  Vitest tests, six native-driver client tests, 12 Rust tests, 198 Python
+  tests, all package builds, the Tauri release build, and Python source/wheel
+  builds.
+- The first complete check found one current-Clippy
+  `manual_range_contains` warning in the new test-only Rust fixture validator.
+  Replacing the equivalent comparison with the inclusive range expression
+  fixed it; the focused 12-test Rust suite and unchanged complete check then
+  passed.
+- The focused Python protocol/service/conformance/health matrix passes all 40
+  tests, and mypy passes all 82 Python source files.
+- `pnpm.cmd --filter @voxleaf/shared generate:check` verifies all 16 generated
+  files. The built wheel contains
+  `voxleaf_tts/generated/protocol_schemas.py`, proving that offline canonical
+  validation is packaged.
+- The unchanged Qwen candidate lock passes `uv lock --check` with 107 resolved
+  packages. The model-free implementation does not import or load that
+  environment.
+- Markdown formatting passes for all ten reconciled documents; every relative
+  link resolves; the changed-content privacy scan finds no private path,
+  email, credential, or private-key marker; and `git diff --check` passes.
+- The first `pnpm.cmd test:native-startup` attempt built the release
+  executable and completed the first native session, then stopped before
+  application mount on restart with the fixed
+  `webdriver-session-not-created` infrastructure outcome. An unchanged retry
+  passed the complete packaged matrix: the binary TTS probe, open/reselection/
+  cancellation/replacement boundaries, keyboard/accessibility matrix, local
+  image decode, restart restoration, cleanup, zero errors, and zero external
+  requests.
+
+Milestone 2 adds no real model, audio-device use, listener, native supervisor,
+desktop process client, playback, persistence, production-profile, or
+general-hardware claim. Every Milestone 2 work item and acceptance gate is
+complete; Milestone 3 has not started.

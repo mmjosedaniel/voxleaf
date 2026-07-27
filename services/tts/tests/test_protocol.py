@@ -217,6 +217,10 @@ def test_control_decoder_accepts_all_shared_valid_kinds_and_rejects_invalids() -
 def test_control_decoder_enforces_text_bytes_and_audio_arithmetic() -> None:
     synthesize = load_fixture("valid-synthesize.json")
     segment = cast(dict[str, object], synthesize["segment"])
+    segment["text"] = "a" * 640
+    decode_control_payload(encode_control_message(synthesize))
+    segment["text"] = "a" * 641
+    assert reason_from(lambda: encode_control_message(synthesize)) is ProtocolReason.INVALID_MESSAGE
     segment["text"] = "😀" * 512
     decode_control_payload(encode_control_message(synthesize))
     segment["text"] = "😀" * 513
@@ -225,6 +229,15 @@ def test_control_decoder_enforces_text_bytes_and_audio_arithmetic() -> None:
     metadata = load_fixture("valid-audio-metadata.json")
     metadata["payloadBytes"] = 19_196
     assert reason_from(lambda: encode_control_message(metadata)) is ProtocolReason.FORMAT_MISMATCH
+
+
+def test_control_decoder_enforces_exact_identifier_code_point_and_byte_bounds() -> None:
+    handshake = load_fixture("valid-handshake.json")
+    handshake["serviceInstanceId"] = "😀" * 128
+    decode_control_payload(encode_control_message(handshake))
+
+    handshake["serviceInstanceId"] = "😀" * 129
+    assert reason_from(lambda: encode_control_message(handshake)) is ProtocolReason.INVALID_MESSAGE
 
 
 def test_audio_validation_rejects_length_and_nonfinite_samples() -> None:
@@ -238,6 +251,9 @@ def test_audio_validation_rejects_length_and_nonfinite_samples() -> None:
     )
     metadata = load_fixture("valid-audio-metadata.json")
     cast(dict[str, object], metadata["frame"])["sequence"] = 1
+    assert reason_from(lambda: encode_control_message(metadata)) is ProtocolReason.INVALID_MESSAGE
+    metadata = load_fixture("valid-audio-metadata.json")
+    cast(dict[str, object], metadata["frame"])["sampleRateHz"] = 44_100
     assert reason_from(lambda: encode_control_message(metadata)) is ProtocolReason.INVALID_MESSAGE
     non_finite = struct.pack("<f", float("nan")) + valid_audio[4:]
     assert (

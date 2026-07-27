@@ -30,8 +30,21 @@ These are the only direct libraries that can participate in the current applicat
 | `@zip.js/zip.js`   | `2.8.30`          | Supplies narrowly wrapped, in-memory ZIP metadata iteration, deterministic test-fixture writing, and bounded entry decompression for implemented EPUB ingestion. VoxLeaf selects the pure-JavaScript core subpath, disables workers and native compression streams, enables strict ambiguity, overlap, and signature checks, and never instantiates its HTTP, Blob, or filesystem-oriented APIs.       | JSZip and fflate were credible low-level alternatives, but adopting either would require more repository-owned ZIP metadata, overlap, integrity, streaming, and cancellation machinery. A renderer-oriented EPUB framework is prohibited by ADR-0007. Version `2.8.30` is the first release with the required strict canonical archive selection and had crossed the workspace's seven-day release-age gate; `2.8.31` through `2.8.33` had not. |
 | `saxes`            | `6.0.0`           | Supplies strict, namespace-aware, non-validating streaming XML events without creating a DOM. The wrapper registers no resolver, accepts only the inert HTML doctype in XHTML content/navigation, rejects every other doctype and all DTD/entity processing, accepts only XML 1.0, and maps parser failures to fixed content-free codes.                                                               | Browser `DOMParser` is not an ingestion security boundary. Object-building parsers such as fast-xml-parser would add an eager intermediate representation, while the older `sax` package offers a less precise namespace/type surface. `saxes` keeps XML policy in a narrow event adapter.                                                                                                                                                      |
 | `tauri` Rust crate | `2.11.5`          | Creates the native Windows application, embeds the local webview, and owns M007's one narrow synthetic protocol-probe command and child process. The shell still registers no plugin and grants no capability.                                                                                                                                                                                         | Electron was rejected for its expected runtime footprint; browser-only deployment cannot satisfy local process requirements; a renderer-accessible shell plugin would be broader than the application-owned command selected by ADR-0016.                                                                                                                                                                                                       |
+| `jsonschema`       | `4.26.0`          | Validates model-free Python service control messages against the canonical Draft 2020-12 protocol schemas embedded by the deterministic shared generator. It performs no network retrieval.                                                                                                                                                                                                            | A handwritten second structural validator would create divergent protocol authority. The package was already locked for conformance tests; Milestone 2 promotes the same version to the base service runtime graph.                                                                                                                                                                                                                             |
+| `referencing`      | `0.37.0`          | Builds the closed offline schema registry consumed by `jsonschema`, including every shared protocol reference.                                                                                                                                                                                                                                                                                         | URI fetching is prohibited and copying referenced shapes into one Python-owned schema would duplicate the shared authority. This package was already transitively locked and is now an explicit runtime dependency because production protocol validation imports it directly.                                                                                                                                                                  |
 
-The production Python package has no runtime dependencies. `apps/desktop` depends directly on the two local workspace packages for publication lifecycle and shared contracts plus the official Tauri frontend API for the narrow model-free probe. `@voxleaf/epub` depends on the local `@voxleaf/shared` contract boundary plus the two low-level ingestion libraries above. `@voxleaf/shared` has no third-party production dependency: its schema validators are committed self-contained generated code. No EPUB renderer, TTS engine, model runtime, server, audio library, or persistence library participates in the application runtime.
+The production Python foundation now has exactly the two schema-validation
+runtime dependencies above. Its generated registry is committed, drift
+checked, included in the wheel, and performs no schema or network lookup at
+runtime. `apps/desktop` depends directly on the two local workspace packages
+for publication lifecycle and shared contracts plus the official Tauri
+frontend API for the narrow model-free probe. `@voxleaf/epub` depends on the
+local `@voxleaf/shared` contract boundary plus the two low-level ingestion
+libraries above. `@voxleaf/shared` has no third-party production dependency:
+its TypeScript schema validators are committed self-contained generated code.
+The Rust fixture-conformance tests add `serde_json` only as a development
+dependency. No EPUB renderer, TTS engine, model runtime, audio library, or
+persistence library participates in the application runtime.
 
 ### Milestone 6 benchmark-only candidate environments
 
@@ -123,6 +136,12 @@ library. ADR-0016 is accepted after packaged WebView evidence passed. The
 frozen Qwen candidate remains in its isolated development environment; M007
 does not approve moving it into the base service graph, bundling it, or
 redistributing it.
+
+M007 Milestone 2 promotes the already locked `jsonschema` and `referencing`
+packages into the base Python runtime solely for offline canonical control
+validation. It adds no model, Torch, CUDA, server, audio-device, or network
+dependency. The model-free service communicates only over supplied binary
+standard streams and emits deterministic synthetic PCM in tests.
 
 Base voice cloning remains outside the MVP. Whisper is excluded from the
 production graph and from `v3`; VAD/energy analysis is also excluded from
