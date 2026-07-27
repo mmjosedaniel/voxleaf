@@ -73,6 +73,14 @@ Milestone 8 must determine the default refill/resume target. Ten minutes may be
 an explicit user-selected preparation target, but it is not a mandatory
 startup or rebuffer threshold.
 
+M008 Milestone 1 resolves the remaining exact policy in
+[`adaptive-buffer-authority-v1.md`](../adaptive-buffer-authority-v1.md):
+10-second low water, 15-second quick start, one-minute refill/resume, explicit
+1/2/5/10-minute prepared targets, exact simultaneous frame/byte/unit/text/work
+limits, one pending desktop queue, 0-100% volume, and `1.0x`-only MVP playback.
+This authority freezes later implementation inputs; it does not claim that the
+scheduler, player, caller, or UI exists.
+
 This remains a development-demo exception. ADR-0013 continues to block a
 standard production-profile claim. ADR-0002's memory-only rule and ADR-0004's
 quick-start rule remain accepted.

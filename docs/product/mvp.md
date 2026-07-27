@@ -2,7 +2,7 @@
 
 ## Implementation status
 
-The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestone 5 narration preparation is implemented, documented, and fully validated: `@voxleaf/epub` exhaustively projects semantic source positions, retains Unicode-code-point source spans, applies deterministic source-mapped neutral/Spanish normalization, scans sentence/dialogue/clause/protected-token boundaries, packs bounded block-local semantic units, and exposes immutable canonical locator-linked batches through `OpenedPublication.prepareNarration`. Repository-authored public integration and deterministic exact-bound/resource tests cover continuation, structural gaps, cancellation, close, privacy, and source immutability. Milestone 6 is complete: the validated benchmark harness and explicit no-viable-profile decision reject both original exact profiles for production. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation also failed standard startup, throughput, zero-failure, and mid-generation cancellation gates. Milestone 6.2 then rejected shared-model batching, targeted tokenizer placement, CPU-only generation, and an independent GPU-primary/CPU-support topology. Its accepted `selection-v5` retains exactly one GPU worker only for a constrained development demo; it does not select a passing standard profile. M007 is complete: protocol v1, canonical cross-language controls, the bounded Python service, native supervisor, typed desktop client, one-complete-unit binary handoff, and exact development-only Qwen/Serena adapter are implemented and validated. The measured exact-host service matrix passes complete-unit delivery, retained-unit backpressure, invalidation, process-tree termination, stale suppression, cleanup, and explicit reload. Delivered-unit RTF remains above one. M008 is now the active implementation plan for the product narration caller and adaptive scheduler: quick start at approximately 15 playable seconds, explicit prepared playback targeting 1, 2, 5, or 10 playable minutes, bounded generation during playback-only pause, truthful frontier buffering, and a simultaneous approximately 30-minute in-memory ceiling. The package prepares ephemeral sensitive text only; product audio buffering/playback, synchronized highlighting, general hardware profiles, and packaging behavior remain pending. The capability and acceptance lists below describe the complete MVP target, not a claim that every item is currently implemented.
+The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestone 5 narration preparation is implemented, documented, and fully validated: `@voxleaf/epub` exhaustively projects semantic source positions, retains Unicode-code-point source spans, applies deterministic source-mapped neutral/Spanish normalization, scans sentence/dialogue/clause/protected-token boundaries, packs bounded block-local semantic units, and exposes immutable canonical locator-linked batches through `OpenedPublication.prepareNarration`. Repository-authored public integration and deterministic exact-bound/resource tests cover continuation, structural gaps, cancellation, close, privacy, and source immutability. Milestone 6 is complete: the validated benchmark harness and explicit no-viable-profile decision reject both original exact profiles for production. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation also failed standard startup, throughput, zero-failure, and mid-generation cancellation gates. Milestone 6.2 then rejected shared-model batching, targeted tokenizer placement, CPU-only generation, and an independent GPU-primary/CPU-support topology. Its accepted `selection-v5` retains exactly one GPU worker only for a constrained development demo; it does not select a passing standard profile. M007 is complete: protocol v1, canonical cross-language controls, the bounded Python service, native supervisor, typed desktop client, one-complete-unit binary handoff, and exact development-only Qwen/Serena adapter are implemented and validated. The measured exact-host service matrix passes complete-unit delivery, retained-unit backpressure, invalidation, process-tree termination, stale suppression, cleanup, and explicit reload. Delivered-unit RTF remains above one. M008 is in progress. Milestone 1 freezes exact 10-second low water, 15-second quick start, one-minute refill, 1/2/5/10-minute prepared targets, simultaneous resource ceilings, ownership/lifecycle rules, 0-100% volume, and `1.0x`-only playback before scheduler implementation. The package prepares ephemeral sensitive text only; the product narration caller, audio buffering/playback, synchronized highlighting, general hardware profiles, and packaging behavior remain pending. The capability and acceptance lists below describe the complete MVP target, not a claim that every item is currently implemented.
 
 ## Current implemented flow
 
@@ -51,8 +51,10 @@ Remaining:
   CPU-only or dual-worker product scheduling.
 - Implement quick start at approximately 15 playable seconds and explicit
   prepared-playback targets of 1, 2, 5, or 10 playable minutes.
-- Enforce a simultaneous approximately 30-minute playable-audio ceiling with
-  matching unit, payload-byte, prepared-text, and active-work bounds.
+- Implement the frozen simultaneous 43,200,000-sample-frame,
+  172,800,000-byte, 256-unit/metadata-entry ceiling with one prepared batch,
+  16 retained prepared segments, one active synthesis, and zero service-queued
+  synthesis.
 - Continue same-identity generation during playback-only pause while
   preserving explicit stop and invalidating-action cancellation.
 - Add low-buffer warning, truthful rebuffering, and optional measurable
@@ -99,8 +101,8 @@ Remaining:
 - Changing chapters cannot play audio from the previous chapter.
 - Changing the active book, model, or voice cannot play audio from the previous generation.
 - Buffer exhaustion is represented as buffering, not as an application freeze.
-- A low-buffer warning appears before predictable frontier exhaustion when the
-  available lead crosses the frozen implementation threshold.
+- A low-buffer warning appears before predictable frontier exhaustion when
+  available lead crosses from above to at or below 10 playable seconds.
 
 ### Accessibility
 
@@ -114,9 +116,10 @@ Remaining:
 - Wall-clock startup latency and playable audio depth at startup are measured separately.
 - The MVP may buffer for up to 5 seconds per minute.
 - Queues and buffers have explicit maximum sizes.
-- The constrained demo retains at most approximately 30 minutes of playable
-  generated audio simultaneously in memory; this is a ceiling, not a startup
-  target or uninterrupted-playback promise.
+- The constrained demo retains or reserves at most 43,200,000 24-kHz mono
+  sample frames, 172,800,000 logical PCM bytes, and 256 complete
+  units/metadata entries simultaneously; 30 playable minutes is a ceiling, not
+  a startup target or uninterrupted-playback promise.
 - Intentional paragraph/chapter waits are reported separately from involuntary
   buffering and cannot be used to claim real-time generation.
 - Startup latency, real-time factor, buffer depth, underruns, and cancellation latency can be measured.
