@@ -788,10 +788,10 @@ services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --check`
 
 #### Status
 
-In progress. The durable decision, documentation reconciliation, complete
-implementation audit, and local validation are complete on 2026-07-27.
-Required pull-request Ubuntu portable and Windows native jobs must pass on the
-exact final head before this plan moves to `completed/`.
+Complete as of 2026-07-27. The durable decision, documentation reconciliation,
+complete implementation audit, local validation, and required pull-request
+Ubuntu portable and Windows native jobs all pass on the exact final head.
+PR #119 merged that head as `e605780bc5a68f2573e3d2e605b8b7378f9fb666`.
 
 ## Testing and benchmark strategy
 
@@ -1074,6 +1074,11 @@ artifact behind.
   first-attempt matrix was validated from its committed result rather than
   rerun. Final changed-scope audits and this validation record form the second
   local closeout checkpoint.
+- 2026-07-27: PR #119 passed the required Ubuntu portable and Windows native
+  foundation jobs and merged to `main` as
+  `e605780bc5a68f2573e3d2e605b8b7378f9fb666`. Every M007 milestone and
+  acceptance gate is complete, so this ExecPlan moved to `completed/`. M008 is
+  now the active dependent implementation plan.
 
 ## Discoveries and decisions
 
@@ -1367,9 +1372,8 @@ playback, audio persistence, cooperative model cancellation, automatic
 download, installer, production dependency, standard profile, or
 general-hardware support claim. Every Milestone 4 work item and acceptance
 gate is complete. Milestone 5 subsequently passed its frozen exact-host
-service-handoff matrix. Milestone 6 locally closes the protocol decision and
-repository validation; required final pull-request CI and plan archival
-remain.
+service-handoff matrix. Milestone 6 closes the protocol decision and
+repository validation.
 
 Milestone 6 local closeout validation completed on 2026-07-27:
 
@@ -1411,7 +1415,5 @@ Milestone 6 local closeout validation completed on 2026-07-27:
 
 No protocol version 2, new ADR, dependency, permission, listener, audio-device
 surface, persistence behavior, product narration caller, playback buffer, or
-production/general-hardware claim is justified by this closeout. M007 remains
-active only until the exact final branch head passes both required
-pull-request jobs. After that external evidence is recorded, this plan can
-move to `completed/`.
+production/general-hardware claim is justified by this closeout. PR #119
+passed both required jobs and merged the exact final head, completing M007.

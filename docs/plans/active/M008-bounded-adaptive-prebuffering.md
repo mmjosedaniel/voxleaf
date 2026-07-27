@@ -36,12 +36,12 @@ specific preparation duration.
   deterministic fakes exist.
 - `@voxleaf/epub` exposes bounded locator-linked
   `OpenedPublication.prepareNarration`; the desktop does not call it.
-- M007 is the active closeout prerequisite for the constrained local TTS
-  service and process protocol. Its Milestones 1-6 implement and locally
-  validate the bounded complete-unit service, development-only adapter, and
-  protocol/repository decision audit. Required final pull-request CI and plan
-  archival remain. M008 owns the product narration caller; no playback stream
-  exists yet.
+- M007 is complete. Its accepted protocol v1, bounded complete-unit service,
+  native supervisor, typed `TtsProcessClient`, one-unit handoff sink, exact
+  development-only adapter, packaged lifecycle evidence, and measured
+  exact-host matrix are the implemented service boundary M008 must consume.
+  M008 owns the product narration caller, scheduling queue, multi-unit audio
+  ownership, and player; none exists yet.
 - ADR-0013 selects no standard TTS profile.
 - ADR-0015 permits only the exact one-GPU Qwen/Serena development-demo
   topology with bounded adaptive in-memory preparation.
@@ -81,12 +81,17 @@ RTF remains the planning authority for depletion arithmetic.
 ### Scope
 
 - One active GPU Qwen/Serena worker and batch size one.
+- A desktop-owned narration caller that requests bounded locator-linked
+  prepared segments from the active publication and releases sensitive text
+  after each generation identity settles.
 - Model-independent playable-duration accounting and backpressure.
 - Quick-start and explicit prepared-playback state machines.
 - A simultaneous 30-minute playable-audio ceiling with exact byte, frame/unit,
   metadata, and active-work bounds.
 - Bounded generation continuation during playback-only pause.
 - Low-water warning, involuntary buffering, estimated refill, and resume.
+- Playback pause/resume/stop, volume, and an explicitly frozen supported-speed
+  policy.
 - Optional adaptive 1-3-second waits at semantic paragraph/chapter boundaries.
 - Identity-first invalidation, worker termination, stale-output rejection, and
   prompt payload release.
@@ -112,12 +117,13 @@ RTF remains the planning authority for depletion arithmetic.
 - `docs/architecture/decisions/ADR-0004-start-after-audio-lead.md`
 - `docs/architecture/decisions/ADR-0015-bounded-adaptive-qwen-demo-buffering.md`
 - `docs/plans/roadmap.md`
-- `docs/plans/active/M007-local-tts-service-and-process-protocol.md`
+- `docs/plans/completed/M007-local-tts-service-and-process-protocol.md`
+- `docs/architecture/tts-service-protocol-v1.md`
 - `packages/shared/src/contracts/`
 - `packages/shared/src/testing/`
-- `apps/desktop/src/`
-- `services/tts/`
-- `packages/epub/src/`
+- `apps/desktop/src/tts/process-client.ts`
+- `apps/desktop/src-tauri/src/tts_service_supervisor.rs`
+- `packages/epub/src/narration/`
 
 Before implementation, read the completed Milestone 5 plan and preserve the
 implemented narration-preparation boundary.
@@ -147,6 +153,22 @@ implemented narration-preparation boundary.
   elapsed wall time as playable lead.
 - Recovery estimates must include the measured explicit restart/prepare cost
   after worker termination. A fast process kill is not fast model readiness.
+- M007 remains one-active with no service-side work queue. M008 must own the
+  only pending-work queue and dispatch at most one segment to the service at a
+  time.
+- A completed unit moves through `TtsProcessClient.takeAudioUnit()` into the
+  M008 buffer. The buffer becomes the sole owner of that unit and must call
+  `release()` after playback, invalidation, or discard. It must not retain a
+  second copy or leave a unit in the client sink while dispatching later work.
+- M008 must consume protocol v1 and the existing native commands without
+  silently widening service framing, timeouts, permissions, retry policy, or
+  candidate identity. Any required protocol change needs separately frozen
+  authority rather than an incidental scheduler edit.
+- Invalidating actions must make the product identity stale immediately and
+  begin bounded queued-audio release. If synthesis is active, the controller
+  then calls the existing identity-scoped cancellation path; if no synthesis
+  is active, it uses shutdown. Later work must explicitly start and prepare a
+  fresh service instance before dispatch.
 
 ## Milestones
 
@@ -156,10 +178,17 @@ implemented narration-preparation boundary.
 
 - Freeze quick-start, prepared targets, low-water warning, empty-buffer,
   refill/resume, and maximum-capacity semantics before implementation.
+- Freeze volume bounds and the supported playback-speed behavior, including
+  whether the MVP initially supports only `1.0x` or a bounded pitch-preserving
+  range.
 - Freeze exact duration, byte, complete-unit/frame, metadata, active-work, and
   prepared-text retention limits.
+- Freeze the single pending-work queue, `takeAudioUnit()` ownership transfer,
+  per-unit release, and one-active service dispatch rules.
 - Define playback-only pause, explicit stop, invalidation, and application-exit
   behavior.
+- Define the active-publication narration caller, prepared-batch continuation,
+  sensitive-text release, and cancel-versus-shutdown service transition.
 - Define truthful progress and estimated-wait UI language.
 
 #### Validation
@@ -182,11 +211,15 @@ Not started.
   failure, and end-of-range traces.
 - Model quick start and prepared targets without a model or audio device.
 - Prove backpressure and exact 30-minute saturation.
+- Model service cancellation as a transition to stopped followed by measured
+  restart/prepare before later synthesis, not as an immediately ready worker.
 
 #### Validation
 
 - No stale identity contributes playable duration.
 - The buffer never exceeds any simultaneous limit.
+- Every accepted unit has one owner and one release; invalidation makes all
+  queued units ineligible before cancel/shutdown completion.
 - Reference-host RTF `1.467080448861599` produces the documented depletion
   behavior without inventing real-time output.
 - Repeat runs are deterministic.
@@ -201,8 +234,14 @@ Not started.
 
 - Select and record the internal audio format and playback API.
 - Implement bounded payload ownership outside React.
+- Move each accepted unit from the M007 one-unit sink into the multi-unit
+  buffer through `takeAudioUnit()`; make exactly one buffer owner responsible
+  for `release()`.
 - Implement consumption, discard-after-play, low/target/max backpressure,
   underrun accounting, and cleanup.
+- Implement pause/resume/stop, bounded volume control, and only the frozen
+  supported-speed behavior; do not obtain speed changes by silently
+  reinterpreting the 24-kHz sample rate.
 - Keep deterministic fakes as the first integration source.
 
 #### Validation
@@ -211,6 +250,8 @@ Not started.
   pass.
 - Pause/resume, explicit stop, seek/invalidation, end-of-range, and close
   release all payloads correctly.
+- Volume and every admitted playback speed preserve bounded ownership, format
+  continuity, and observable consumption timing.
 - Generated audio is not written to disk or serialized into UI state.
 
 #### Status
@@ -222,6 +263,7 @@ Not started.
 #### Work
 
 - Add quick-start and explicit prepared-playback controls.
+- Add accessible pause/resume/stop, volume, and admitted speed controls.
 - Show playable lead, estimated preparation time, low-buffer warning,
   buffering, and resume state.
 - Continue bounded work during playback-only pause and stop at the selected
@@ -244,8 +286,8 @@ Not started.
 
 #### Work
 
-- Connect the Milestone 7 local TTS service only after its process/protocol
-  boundary is implemented.
+- Connect the completed M007 local TTS service through protocol v1 and the
+  typed `TtsProcessClient`; do not add a service-side queue or automatic retry.
 - Schedule bounded locator-linked narration segments from the active visual
   location.
 - Reject incomplete, invalid, cancelled, or obsolete complete-waveform output.
@@ -344,11 +386,17 @@ accepted no-standard-profile decision.
   seconds, and restart/prepare p95 after termination was about `16.61`
   seconds. M008 must accumulate complete units for quick start, model
   termination and readiness separately, and retain the longer `v5` RTF for
-  sustained depletion arithmetic. M007 closeout remains a prerequisite.
+  sustained depletion arithmetic. M007 closeout remained a prerequisite at
+  that point.
 - 2026-07-27: M007 Milestone 6 retained ADR-0016 and protocol v1 after the
   complete implementation, dependency, permission, privacy, artifact, and
-  historical-authority audit. Local portable/native/packaged validation passes;
-  required final PR CI and plan archival remain before M008 implementation.
+  historical-authority audit. Local portable/native/packaged validation passes.
+- 2026-07-27: M007 PR #119 passed the required Ubuntu portable and Windows
+  native jobs, merged to `main`, and moved to `completed/`. M008 is now the
+  active implementation plan. Review of the implemented client makes its
+  ownership seam explicit: accepted units move through `takeAudioUnit()` into
+  one M008-owned bounded queue, and that queue releases every played, stale,
+  invalidated, or discarded unit.
 
 ## Discoveries and decisions
 
@@ -368,6 +416,17 @@ accepted no-standard-profile decision.
 7. Worker termination can be prompt while useful recovery remains slow.
    Cancellation latency and restart/readiness latency require separate state,
    estimates, and metrics.
+8. M007 completion removes the service/protocol dependency blocker. It does
+   not implement any M008 behavior or remove the standard-profile blocker.
+9. The existing one-unit client sink is a handoff boundary, not the playback
+   buffer. `takeAudioUnit()` transfers ownership; M008 must retain no duplicate
+   bytes and must invoke the unit's `release()` lifecycle.
+10. The scheduler, not the Python service or native supervisor, owns pending
+    narration order, low/target/max decisions, and multi-unit backpressure.
+11. The roadmap's audio gate also requires a durable speed-control decision.
+    M008 must either implement a bounded pitch-preserving range or explicitly
+    freeze `1.0x` as the only MVP speed; changing the declared sample rate is
+    not an acceptable substitute.
 
 ## Final validation results
 
