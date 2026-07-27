@@ -473,8 +473,9 @@ Complete.
   graph, are explicit base-service runtime dependencies solely for offline
   canonical validation. No model, Torch, CUDA, audio-device, or network
   dependency was added.
-- Native production supervision, real Qwen inference, restart orchestration,
-  and desktop consumption remain Milestones 3-5 work.
+- At the Milestone 2 checkpoint, native supervision and desktop consumption
+  remained open. Milestone 3 now closes those model-free boundaries; real Qwen
+  inference remains Milestones 4-5 work.
 
 ### Milestone 3: Implement native supervision and the typed desktop client
 
@@ -508,7 +509,10 @@ Complete.
 
 #### Status
 
-Not started.
+Complete on 2026-07-27. The implementation is deliberately model-free: the
+native supervisor currently starts a repository-authored Rust protocol child,
+while the separate Python service remains independently validated protocol
+evidence. The exact Qwen/Serena child replacement is Milestone 4.
 
 ### Milestone 4: Integrate the exact one-GPU Qwen/Serena adapter
 
@@ -796,6 +800,30 @@ artifact behind.
   82 source files, deterministic generation, Rust fixture conformance, and
   Python source/wheel builds. Documentation was reconciled without claiming
   native supervision, Qwen integration, or product playback.
+- 2026-07-27: Created
+  `feat/m007-3-native-supervision-client` from merged `origin/main` at
+  `15db9fa`. Commit `1e84954` adds the native supervisor checkpoint: one
+  persistent model-free child, strict framed standard-stream I/O, canonical
+  control/audio validation, one-active backpressure, frozen timeouts, zero
+  automatic restart, identity-first cancellation, Windows Job Object
+  process-tree containment, explicit shutdown, application-exit cleanup, and
+  narrow Tauri commands. No plugin, listener, general shell capability,
+  Python/model path, model dependency, or audio-device dependency was added.
+- 2026-07-27: Commit `c0bd2db` adds the typed desktop process client and
+  one-unit binary sink outside React state. It independently validates exact
+  lifecycle order, service/work identities, narration input, finite
+  little-endian PCM, active/stale completion, one-active/one-retained bounds,
+  fixed failures, cancellation, and zeroing on stale completion or release.
+  A content-safe packaged probe exercises normal delivery and cancellation;
+  the hidden release host additionally covers crash followed by explicit
+  restart, shutdown, and Windows descendant cleanup.
+- 2026-07-27: Focused implementation validation passes 21 Rust tests, Rustfmt,
+  Clippy with warnings denied, 220 desktop Vitest tests, six Node
+  WebDriver-client tests, TypeScript checking, ESLint, the Vite production
+  build, the release supervisor host, and the complete packaged WebView2
+  startup matrix. The packaged matrix reports no runtime error or external
+  request and the existing visual reader remains functional without TTS
+  configuration.
 
 ## Discoveries and decisions
 
@@ -843,6 +871,22 @@ artifact behind.
 14. The model-free service reports local speech generation and hardware as
     unknown until a verified real adapter is ready. Synthetic PCM proves the
     protocol lifecycle only and cannot promote a product capability.
+15. Milestone 3 uses the packaged executable itself as the supervised
+    model-free Rust child. This exercises the production native ownership,
+    framing, cancellation, tree-cleanup, and Tauri boundaries without making
+    the separately validated Python service or a private interpreter path a
+    prerequisite. Milestone 4 must replace this child deliberately with the
+    exact service adapter.
+16. Cancellation cannot wait behind the one-operation mutex: the native
+    supervisor invalidates the active identity first, writes a best-effort
+    cancel, closes the Windows Job Object, and removes the session while the
+    synthesis receiver unwinds. A later request requires an explicit start and
+    prepare; no automatic restart or retry hides the cost or failure.
+17. One optimized binary Tauri response is also the backpressure boundary.
+    The TypeScript client owns at most one complete unit outside React state,
+    rejects another request while generation or retained audio exists, and
+    zeroes stale or released bytes. M008, not this client, owns any multi-unit
+    playback queue.
 
 ## Final validation results
 
@@ -937,4 +981,43 @@ Milestone 2 implementation validation completed on 2026-07-27:
 Milestone 2 adds no real model, audio-device use, listener, native supervisor,
 desktop process client, playback, persistence, production-profile, or
 general-hardware claim. Every Milestone 2 work item and acceptance gate is
-complete; Milestone 3 has not started.
+complete; Milestone 3 completion is recorded below.
+
+Milestone 3 implementation validation completed on 2026-07-27:
+
+- `cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml --check`,
+  `cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets -- -D warnings`,
+  and `cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml` pass all
+  21 native tests.
+- `cargo build --release --manifest-path apps/desktop/src-tauri/Cargo.toml`
+  passes, and the release executable's
+  `--voxleaf-tts-service-supervisor-host` diagnostic exits zero after normal
+  generation, cancellation, crash plus explicit restart, shutdown, and
+  Windows descendant cleanup.
+- `pnpm.cmd --filter @voxleaf/desktop test` passes 220 Vitest tests and six
+  Node native-driver tests. The new client cases cover strict typed decoding,
+  exact control order, active/stale classification, one-unit bounds,
+  concurrent rejection, cancellation, late-byte suppression, release, and
+  fixed content-free failures.
+- `pnpm.cmd --filter @voxleaf/desktop typecheck`,
+  `pnpm.cmd --filter @voxleaf/desktop build`, focused ESLint, and
+  `node --check apps/desktop/scripts/native-startup-smoke.mjs` pass.
+- `pnpm.cmd --filter @voxleaf/desktop test:native-startup` passes outside the
+  sandbox. It proves the hidden supervisor host matrix, real Tauri
+  start/prepare/generate/health/shutdown commands, bounded binary delivery,
+  typed-client release, active cancellation with zero stale publication, full
+  application exit/restart, the unchanged reader matrix, zero runtime errors,
+  and zero external requests.
+- `pnpm.cmd check` passes with a short ignored workspace-local uv/temporary
+  root. It includes Prettier, Rust/Python formatting, ESLint, Clippy, Ruff,
+  TypeScript/Python types, 196 shared tests, 555 EPUB tests, 220 desktop Vitest
+  tests, six Node native-driver tests, 21 Rust tests, 198 Python tests, all
+  package builds, the Tauri release build, and Python source/wheel builds. The
+  first complete-check attempt found only three new TypeScript files requiring
+  Prettier; formatting them made the unchanged implementation pass.
+
+The implementation loads no model or audio device, persists no generated
+audio, emits no narration or path in errors/logs, and makes no playback,
+native-model-streaming, standard-profile, production, or general-hardware
+claim. Every Milestone 3 work item and acceptance gate is complete; Milestone
+4 remains open.

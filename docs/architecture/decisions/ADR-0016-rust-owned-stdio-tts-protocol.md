@@ -105,10 +105,11 @@ that authority and cannot maintain permissive independent message models.
 - The decision does not create native model streaming, cooperative
   cancellation, audible playback, a production profile, CPU fallback,
   distribution, or general hardware support.
-- The exactly pinned `@tauri-apps/api@2.11.1` runtime dependency is added for
-  the typed frontend invoke boundary. No Tauri plugin, Rust dependency,
-  capability, Python runtime dependency, model package, or listener is added
-  by Milestone 1.
+- The exactly pinned `@tauri-apps/api@2.11.1` runtime dependency supplies the
+  typed frontend invoke boundary. Milestone 3 promotes already-transitive
+  `serde`/`serde_json` to direct Rust runtime ownership and adds the narrow
+  Windows `windows-sys` Job Object surface for process-tree termination. No
+  Tauri plugin, capability, model package, or listener is added.
 
 ## Prototype evidence
 
@@ -127,6 +128,16 @@ that authority and cannot maintain permissive independent message models.
 - The packaged WebView2 smoke passes the standard-stream child exchange,
   optimized binary response, exact frontend PCM validation, existing
   application matrix, and zero external-request/runtime-error assertions.
+- Milestone 3 implements the accepted production-shaped model-free boundary:
+  one persistent native-owned child, fixed lifecycle/timeouts, continuous
+  bounded stdout draining, one active operation, zero automatic restart,
+  Windows Job Object termination, application-exit cleanup, narrow Tauri
+  commands, and a typed one-unit desktop sink outside React state.
+- Its hidden release host matrix passes normal generation, cancellation,
+  crash followed by explicit restart, shutdown, and Windows descendant
+  cleanup. The packaged WebView2 matrix additionally passes normal binary
+  handoff and cancellation through the typed desktop client with no runtime
+  errors or external requests.
 
 ## Alternatives considered
 

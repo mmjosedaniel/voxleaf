@@ -199,6 +199,14 @@ const FIXED_FAILURE_CODES = new Map([
     "Native TTS protocol probe returned an unsupported binary view.",
     "tts-protocol-probe-unsupported-view",
   ],
+  [
+    "Native TTS supervisor host matrix failed.",
+    "tts-supervisor-host-matrix-failed",
+  ],
+  [
+    "Native TTS service lifecycle probe failed.",
+    "tts-service-lifecycle-probe-failed",
+  ],
   ["Native driver logs were invalid.", "native-driver-log-invalid"],
 ]);
 
@@ -566,6 +574,81 @@ async function exerciseNativeTtsProtocolProbe(driver, setStage) {
       result.observation?.sampleCount === 4_800 &&
       result.observation?.sampleFormat === "float32-le",
     "Native TTS protocol probe did not deliver bounded binary audio.",
+  );
+}
+
+async function exerciseNativeTtsSupervisorHost() {
+  await new Promise((resolve, reject) => {
+    execFile(
+      executablePath,
+      ["--voxleaf-tts-service-supervisor-host"],
+      {
+        timeout: 30_000,
+        windowsHide: true,
+      },
+      (error) => {
+        if (error === null) {
+          resolve();
+          return;
+        }
+        reject(new Error("Native TTS supervisor host matrix failed."));
+      },
+    );
+  });
+}
+
+async function exerciseNativeTtsServiceLifecycle(driver, setStage) {
+  setStage("native TTS service lifecycle dispatch");
+  const started = await driver.execute(
+    `if (
+       typeof globalThis.__voxleafRunTtsServiceLifecycleProbe !== "function"
+     ) {
+       return false;
+     }
+     globalThis.__voxleafTtsServiceLifecycleObservation = {
+       status: "pending",
+     };
+     globalThis.__voxleafRunTtsServiceLifecycleProbe()
+       .then((observation) => {
+         globalThis.__voxleafTtsServiceLifecycleObservation = {
+           status: "complete",
+           observation,
+         };
+       })
+       .catch((error) => {
+         const code =
+           typeof error?.code === "string" &&
+           error.code.startsWith("tts-service-")
+             ? error.code
+             : "tts-service-unexpected";
+         globalThis.__voxleafTtsServiceLifecycleObservation = {
+           status: "failed",
+           code,
+         };
+       });
+     return true;`,
+  );
+  assert(started === true, "Native TTS service lifecycle probe failed.");
+
+  setStage("native TTS service lifecycle completion");
+  await waitForCondition(
+    driver,
+    `return globalThis.__voxleafTtsServiceLifecycleObservation?.status !==
+       "pending";`,
+  );
+  const result = await driver.execute(
+    `const result = globalThis.__voxleafTtsServiceLifecycleObservation;
+     delete globalThis.__voxleafTtsServiceLifecycleObservation;
+     return result;`,
+  );
+  assert(
+    result?.status === "complete" &&
+      result.observation?.normalPayloadBytes === 19_200 &&
+      result.observation?.normalSampleCountSamples === 4_800 &&
+      result.observation?.cancellationCode === "tts-service-cancelled" &&
+      result.observation?.finalState === "stopped" &&
+      result.observation?.retainedAudioUnits === 0,
+    "Native TTS service lifecycle probe failed.",
   );
 }
 
@@ -2006,6 +2089,9 @@ async function run() {
   const collectedPerformanceLogs = [];
 
   try {
+    stage = "native TTS supervisor host matrix";
+    await exerciseNativeTtsSupervisorHost();
+    stage = "WebDriver startup";
     await waitForDriver(endpoint, child, spawnState);
     stage = "native WebView session creation";
     await driver.createSession(executablePath, profileDirectory);
@@ -2041,6 +2127,9 @@ async function run() {
     }
 
     await exerciseNativeTtsProtocolProbe(driver, (nextStage) => {
+      stage = nextStage;
+    });
+    await exerciseNativeTtsServiceLifecycle(driver, (nextStage) => {
       stage = nextStage;
     });
 
@@ -2316,7 +2405,7 @@ async function run() {
     );
 
     console.log(
-      "Native startup smoke passed: root mounted, bounded TTS child/std-stream/binary WebView probe passed, local file reselection/cancellation/replacement and exact/max-plus-one boundaries passed, narrow and accessible keyboard reader matrix passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication closed, no errors, no external requests.",
+      "Native startup smoke passed: root mounted, bounded TTS protocol and supervised fake-service lifecycle passed with binary delivery/cancellation/crash recovery, local file reselection/cancellation/replacement and exact/max-plus-one boundaries passed, narrow and accessible keyboard reader matrix passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication closed, no errors, no external requests.",
     );
   } catch (error) {
     console.error(
