@@ -313,6 +313,35 @@ must not advance persisted progress beyond completed audible content.
 - Prove that no service protocol, M005 segmentation, or shared schema change is
   required, or explicitly amend scope before making one.
 
+Accepted result:
+
+- `synchronization-authority.ts` freezes one closed 16-event transition table
+  for start, exact segment boundaries, pause/resume, buffering, user and
+  programmatic navigation, reflow, stop, replacement, failure, and cleanup.
+- The only timing authority is the prepared segment's existing source
+  `LocatorRangeV1`. Word timing is unsupported; an inside-segment target
+  replays its containing segment; previous/next moves by stable prepared
+  segments.
+- CSS Custom Highlight with the fixed `voxleaf-narration-active` name is
+  selected over publication DOM wrappers or rendered overlays. Chromium and
+  packaged WebView2 accept a noncollapsed range and CSSOM rule without
+  publication mutation, focus/selection loss, URL change, runtime error, or
+  external request.
+- Automatic following uses the reader's existing 24-pixel comfort inset,
+  instant placement, preserved focus, suspended passive sampling, and
+  highlight-only fallback when geometry is unavailable.
+- User-originated passive movement invalidates on its first canonical locator
+  change and settles for 500 ms. Active play intent then restarts at the
+  active visual locator; paused intent remains paused there.
+- Exact `segment-started` and `segment-completed` events are complemented by
+  optional observations no more often than every 250 ms.
+- Persistence saves segment start when audible, segment end after completion,
+  and the latest heard checkpoint on interruption. A mid-segment restore
+  replays from segment start; periodic writes are prohibited.
+- ADR-0017 and `synchronization-authority-v1.md` record the durable decision.
+  No shared schema, M005 segmentation, M007 protocol, or dependency change is
+  required.
+
 ### Validation
 
 - Command: `pnpm.cmd --filter @voxleaf/desktop typecheck`
@@ -322,11 +351,18 @@ must not advance persisted progress beyond completed audible content.
 - Expected result: the model-free interaction matrix passes in unit/component,
   production Chromium, and packaged WebView2 environments; focus, URL, and
   network assertions remain unchanged.
-- Actual result: Not run.
+- Actual result: Passed on 2026-07-27. The desktop typecheck passes. The full
+  desktop suite passes 280 Vitest tests and six Node WebDriver-client tests;
+  the focused authority/range subset passes 10 tests. The new production
+  Chromium proof passes with all six browser tests and the repository command
+  exits zero when run outside the filesystem/process sandbox. The packaged
+  WebView2 command also exits zero and passes the synchronization proof
+  together with its existing focus, URL, runtime-error, and
+  zero-external-request assertions.
 
 ### Status
 
-Not started.
+Complete.
 
 ## Milestone 2: Project bounded audible progress
 
@@ -564,6 +600,20 @@ persistence. Do not use destructive storage migration as rollback.
   results and actual constrained audible runtime.
 - 2026-07-27: Created this focused roadmap-Milestone-9 ExecPlan. No M009
   production implementation has started.
+- 2026-07-27: Implemented and unit-tested the frozen 16-event segment-level
+  synchronization authority plus noncollapsed semantic DOM range mapping.
+- 2026-07-27: Proved CSS Custom Highlight decoration and focus-safe
+  24-pixel-comfort-region following in production Chromium and packaged
+  WebView2. The packaged proof passes under the real CSP with unchanged
+  publication content, selection, focus, URL, and external-request boundary.
+- 2026-07-27: Accepted ADR-0017, documented synchronization authority v1, and
+  completed M009 Milestone 1 without changing shared contracts, M005
+  segmentation, M007 protocol v1, or runtime dependencies.
+- 2026-07-27: `pnpm.cmd check` and `pnpm.cmd check:portable` passed after the
+  Milestone 1 changes, including formatting, lint, TypeScript/Python
+  typechecks, 1,031 TypeScript tests plus six Node driver-client tests, 25 Rust
+  tests, 233 Python tests, and full/portable builds. Browser and packaged
+  WebView2 commands also exited zero outside the Windows process sandbox.
 
 ## Discoveries and decisions
 
@@ -581,16 +631,31 @@ persistence. Do not use destructive storage migration as rollback.
   second position.
 - M009 does not need a protocol-v1 field: the source range exists before
   synthesis and playback remains ordered by the desktop coordinator.
-- The recommended persistence policy favors replaying part of a segment over
-  skipping unheard content after interruption. Milestone 1 must freeze and
-  validate the exact rule before implementation.
+- The accepted persistence policy favors replaying part of a segment over
+  skipping unheard content after interruption: save segment start when
+  audible, advance only on completion, and restore a mid-segment interruption
+  from segment start.
+- The CSS Custom Highlight API accepts real DOM ranges in both supported proof
+  engines. Adding a test-only inline style is rejected by the packaged CSP;
+  inserting and removing the proof rule through the existing same-origin
+  stylesheet's CSSOM validates the real security boundary without weakening
+  it.
+- The existing reader's 24-pixel visual-locator inset is sufficient as the
+  synchronization comfort region, avoiding a second geometry policy.
+- Chromium and packaged WebView2 both accept the selected proof. Browser and
+  native GUI suites must run outside the Codex filesystem/process sandbox on
+  this Windows host so their child process trees can terminate normally;
+  required pull-request checks remain final closeout evidence.
 - The existing exact-development profile remains slower than the MVP
   sustained-buffering target. Synchronization work can improve coherence and
   accessibility, but it cannot claim real-time or uninterrupted narration.
 
 ## Final validation results
 
-Not available. M009 implementation has not started.
+M009 Milestone 1 is complete. Focused unit, full desktop, six-test Chromium,
+packaged WebView2, portable repository, link, privacy, and diff validation
+pass. Later milestones, exact-host synchronization evidence, pull-request CI,
+and final M009 validation are not yet available.
 
 When the plan completes, record:
 
