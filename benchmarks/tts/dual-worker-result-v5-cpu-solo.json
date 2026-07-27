@@ -1,0 +1,184 @@
+{
+  "aggregates": {
+    "aggregateRtf": 2.999443394476504,
+    "aggregateThroughputImprovementFraction": null,
+    "coldLoadP95Seconds": 9.15094040002441,
+    "cpu": {
+      "firstCompleteP95Seconds": 39.8774293,
+      "generationSeconds": 291.0656285,
+      "measuredUnits": 8,
+      "mediaSeconds": 97.04,
+      "requestRtfP95": 3.0431287499999997,
+      "totalRtf": 2.99943970012366
+    },
+    "duplicateOrMissingIdentities": 0,
+    "elapsedGenerationSeconds": 291.065987,
+    "gpu": null,
+    "gpuSlowdownFraction": null,
+    "gpuSoloBaselineAggregateRtf": null,
+    "maximumHeadOfLineWaitSeconds": 0.0,
+    "maximumUnitDurationSeconds": 13.28,
+    "mediaSeconds": 97.04,
+    "minimumUnitDurationSeconds": 10.96,
+    "orderedPublishedUnits": 8,
+    "reorderedPublishedUnits": 0,
+    "unitsOutsideTargetWithinHardBound": 0,
+    "unitsWithinTargetDuration": 8
+  },
+  "arm": "cpu-solo",
+  "audits": {
+    "approvedWorkerIdentities": true,
+    "artifacts": true,
+    "boundedRetention": true,
+    "cleanup": true,
+    "cpuZeroGpu": true,
+    "firstAttemptsOnly": true,
+    "license": true,
+    "noDiskOffload": true,
+    "offline": true,
+    "ordering": true,
+    "privacy": true
+  },
+  "authorityCommitSha": "fad271150303936625a7c4be348742f36a75f21b",
+  "cancellation": {
+    "maximumIdentityInvalidationMilliseconds": 0.0019,
+    "maximumWorkerTerminationMilliseconds": 1890.6019999994896,
+    "passedTrialCount": 2,
+    "stalePlayedUnits": 0,
+    "stalePublishedUnits": 0,
+    "trialCount": 2
+  },
+  "conclusions": {
+    "concurrentSchedulingSustainability": {
+      "allRequiredGatesPassed": false,
+      "failedGateCodes": [],
+      "outcome": "not-applicable"
+    },
+    "constrainedDemoUsefulness": {
+      "allRequiredGatesPassed": false,
+      "failedGateCodes": [],
+      "outcome": "not-evaluated"
+    },
+    "cpuSoloAdmission": {
+      "allRequiredGatesPassed": true,
+      "failedGateCodes": [],
+      "outcome": "pass"
+    },
+    "preferredStandardMargin": {
+      "allRequiredGatesPassed": false,
+      "failedGateCodes": [],
+      "outcome": "not-applicable"
+    },
+    "unchangedStandardProductionViability": {
+      "allRequiredGatesPassed": false,
+      "failedGateCodes": ["inherited-v3-standard-failure"],
+      "outcome": "fail"
+    }
+  },
+  "corpusSha256": "e92a7700c9e264e75562fe4d4856fdefdea23e8b9494ab89f33c22fb8b6de9a6",
+  "corpusVersion": "tts-dual-worker-corpus-v5",
+  "counts": {
+    "automaticRetries": 0,
+    "cancellationTrials": 2,
+    "coldLoads": 3,
+    "completedFirstAttempts": 8,
+    "cpuMeasuredUnits": 8,
+    "failedOrTimedOutFirstAttempts": 0,
+    "gpuMeasuredUnits": 0,
+    "measuredUnits": 8,
+    "warmupUnits": 1
+  },
+  "executionCommitSha": "4395ff79f3b8fecdadced60b2662415f92117a5e",
+  "failureCodes": [],
+  "host": {
+    "architecture": "x86_64",
+    "cpuModel": "Intel Core Ultra 7 255HX",
+    "driverVersion": "577.05",
+    "gpuModel": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "logicalProcessors": 20,
+    "operatingSystem": "Windows",
+    "osVersion": "10.0.26200",
+    "pythonVersion": "3.12.10",
+    "totalRamBytes": 33752997888,
+    "totalVramBytes": 8546942976
+  },
+  "limitations": [
+    "exact-host-only",
+    "complete-waveform-units",
+    "cpu-solo-screen-is-not-scheduling-pass",
+    "worker-termination-not-cooperative-model-cancellation",
+    "head-of-line-blocking-remains-visible",
+    "five-minute-capacity-is-not-continuity-evidence",
+    "scheduling-pass-does-not-promote-failed-v3",
+    "development-benchmark-not-production-runtime"
+  ],
+  "memory": {
+    "minimumSystemAvailableRamBytes": 7405936640,
+    "minimumSystemCommitHeadroomBytes": 5974171648,
+    "peakCombinedProcessTreeRamBytes": 10681810944,
+    "peakCpuWorkerDedicatedVramBytes": 0,
+    "peakCpuWorkerSharedGpuBytes": 0,
+    "peakFrameworkReservedVramBytes": 0,
+    "peakGpuWorkerDedicatedVramBytes": 0,
+    "peakGpuWorkerSharedGpuBytes": 0,
+    "ramSamplingIntervalMilliseconds": 50,
+    "vramSamplingIntervalMilliseconds": 1000
+  },
+  "playback": {
+    "bufferingSeconds": 0,
+    "bufferingSecondsPerMinute": 0,
+    "minimumBufferSeconds": 0,
+    "peakActiveUnits": 1,
+    "peakBufferSeconds": 0,
+    "peakBufferedPcmBytes": 0,
+    "peakQueuedCompleteUnits": 0,
+    "playedSeconds": 0,
+    "producerLeadTrendSecondsPerMinute": 0,
+    "stalePlayedUnits": 0,
+    "startupPlayableSeconds": 0,
+    "startupWallSeconds": null,
+    "status": "not-applicable",
+    "thresholds": [
+      {
+        "playableSeconds": 15,
+        "reached": false,
+        "wallSeconds": null
+      },
+      {
+        "playableSeconds": 30,
+        "reached": false,
+        "wallSeconds": null
+      },
+      {
+        "playableSeconds": 60,
+        "reached": false,
+        "wallSeconds": null
+      },
+      {
+        "playableSeconds": 120,
+        "reached": false,
+        "wallSeconds": null
+      },
+      {
+        "playableSeconds": 300,
+        "reached": false,
+        "wallSeconds": null
+      }
+    ],
+    "underrunCount": 0
+  },
+  "profileSha256": "74148d1f86c5a12c05e412a345b2523d98eef49ffce1e81b6d9bd83a5234bcf5",
+  "profileVersion": "tts-dual-worker-profile-v5",
+  "quality": {
+    "accentMean": null,
+    "evaluatorCount": 0,
+    "intelligibilityMean": null,
+    "joinBoundaryMean": null,
+    "meaningChangingDefects": 0,
+    "numberAndSymbolMean": null,
+    "overallMean": null,
+    "prosodyMean": null,
+    "status": "not-admitted"
+  },
+  "schemaVersion": "tts-dual-worker-summary-v5"
+}

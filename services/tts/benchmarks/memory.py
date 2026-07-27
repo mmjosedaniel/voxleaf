@@ -330,6 +330,31 @@ class WindowsProcessResourceSampler:
         self._psapi.GetProcessMemoryInfo.restype = wintypes.BOOL
         self._vram_sampler = vram_sampler or CpuOnlyVramSampler()
 
+    def process_working_set_bytes(self, process_id: int) -> int:
+        """Return one process working set without including its descendants."""
+
+        if process_id <= 0:
+            return 0
+        handle = self._kernel32.OpenProcess(
+            _PROCESS_QUERY_LIMITED_INFORMATION | _PROCESS_VM_READ,
+            False,
+            process_id,
+        )
+        if not handle:
+            return 0
+        counters = _ProcessMemoryCountersEx()
+        counters.cb = ctypes.sizeof(_ProcessMemoryCountersEx)
+        try:
+            if not self._psapi.GetProcessMemoryInfo(
+                handle,
+                ctypes.byref(counters),
+                counters.cb,
+            ):
+                return 0
+            return int(counters.WorkingSetSize)
+        finally:
+            self._kernel32.CloseHandle(handle)
+
     def _parent_by_pid(self) -> dict[int, int]:
         snapshot = self._kernel32.CreateToolhelp32Snapshot(_TH32CS_SNAPPROCESS, 0)
         invalid_handle = ctypes.c_void_p(-1).value

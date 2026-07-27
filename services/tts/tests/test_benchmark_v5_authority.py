@@ -5,18 +5,22 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Final, cast
 
 import pytest
 
+import benchmarks.v5_authority as v5_authority
+from benchmarks.dual_worker_result import derive_v5_summary
 from benchmarks.v5_authority import (
+    AUTHORITY_COMMIT_SHA,
     CORPUS_SHA256,
     PROFILE_SHA256,
     RAW_SCHEMA_SHA256,
     SUMMARY_SCHEMA_SHA256,
     V5AuthorityError,
-    assert_no_v5_official_results,
     load_frozen_v5_authority,
     validate_v5_raw_result,
     validate_v5_summary_result,
@@ -25,6 +29,10 @@ from benchmarks.v5_authority import (
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 AUTHORITY_COMMIT: Final = "a" * 40
 EXECUTION_COMMIT: Final = "b" * 40
+COMMITTED_EXECUTION_COMMITS: Final = {
+    "dual-worker-result-v5-cpu-solo.json": "4395ff79f3b8fecdadced60b2662415f92117a5e",
+    "dual-worker-result-v5-gpu-solo.json": "cb751b7cd497426611c7c0ce6611b8496d19e843",
+}
 UNIT_ORDER: Final = (
     "es-v4-arrival",
     "es-v4-dialogue",
@@ -39,6 +47,14 @@ UNIT_ORDER: Final = (
 
 def _sha256(path: str) -> str:
     return hashlib.sha256((REPOSITORY_ROOT / path).read_bytes()).hexdigest()
+
+
+def _committed_ancestry_checker(
+    expected_execution: str,
+) -> Callable[[str, str], bool]:
+    return lambda authority, execution: (
+        authority == AUTHORITY_COMMIT_SHA and execution == expected_execution
+    )
 
 
 def _host() -> dict[str, object]:
@@ -458,7 +474,7 @@ def _validate_summary(value: object) -> None:
     )
 
 
-def test_v5_authority_is_byte_frozen_and_result_blind() -> None:
+def test_v5_authority_is_byte_frozen() -> None:
     authority = load_frozen_v5_authority(REPOSITORY_ROOT)
     assert _sha256("benchmarks/tts/profile-v5.json") == PROFILE_SHA256
     assert _sha256("benchmarks/tts/corpus-v5.json") == CORPUS_SHA256
@@ -470,7 +486,37 @@ def test_v5_authority_is_byte_frozen_and_result_blind() -> None:
     assert authority.profile["status"] == (
         "frozen-before-v5-implementation-pilot-and-official-results"
     )
-    assert_no_v5_official_results(REPOSITORY_ROOT)
+
+
+def test_v5_result_rejects_a_substitute_authority_commit() -> None:
+    with pytest.raises(V5AuthorityError, match="result-before-authority"):
+        validate_v5_summary_result(
+            REPOSITORY_ROOT,
+            _summary_fixture(),
+            ancestry_checker=lambda _authority, _execution: True,
+        )
+
+
+def test_committed_v5_summaries_are_schema_valid() -> None:
+    paths = sorted((REPOSITORY_ROOT / "benchmarks/tts").glob("dual-worker-result-v5-*.json"))
+    assert {path.name for path in paths} == set(COMMITTED_EXECUTION_COMMITS)
+    for path in paths:
+        expected_execution = COMMITTED_EXECUTION_COMMITS[path.name]
+        validate_v5_summary_result(
+            REPOSITORY_ROOT,
+            json.loads(path.read_text(encoding="utf-8")),
+            ancestry_checker=_committed_ancestry_checker(expected_execution),
+        )
+
+
+def test_v5_execution_authority_can_skip_optional_schema_library(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(sys.modules, "jsonschema", None)
+
+    authority = load_frozen_v5_authority(REPOSITORY_ROOT, validate_schemas=False)
+
+    assert authority.profile["profileVersion"] == "tts-dual-worker-profile-v5"
 
 
 def test_v5_raw_accepts_exact_arms_and_rejects_identity_order_or_retry() -> None:
@@ -608,3 +654,29 @@ def test_v5_fixture_mutations_do_not_change_frozen_authority() -> None:
     cast(dict[str, object], mutated["aggregates"])["aggregateRtf"] = 2
     assert original != mutated
     assert _sha256("benchmarks/tts/profile-v5.json") == PROFILE_SHA256
+
+
+def test_v5_cpu_raw_derives_a_schema_valid_content_safe_summary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    raw = _raw_fixture("cpu-solo")
+    raw["authorityCommitSha"] = AUTHORITY_COMMIT_SHA
+    raw["executionCommitSha"] = EXECUTION_COMMIT
+    monkeypatch.setattr(
+        v5_authority,
+        "_git_is_strict_ancestor",
+        lambda _repository, authority, execution: (
+            authority == AUTHORITY_COMMIT_SHA and execution == EXECUTION_COMMIT
+        ),
+    )
+
+    summary = derive_v5_summary(REPOSITORY_ROOT, raw)
+
+    assert summary["arm"] == "cpu-solo"
+    assert cast(dict[str, object], summary["counts"])["measuredUnits"] == 8
+    assert cast(dict[str, object], summary["conclusions"])["cpuSoloAdmission"] == {
+        "outcome": "pass",
+        "allRequiredGatesPassed": True,
+        "failedGateCodes": [],
+    }
+    assert "sourceText" not in json.dumps(summary)

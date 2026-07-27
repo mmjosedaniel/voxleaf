@@ -10,7 +10,7 @@ from typing import Literal, cast
 
 from benchmarks.dual_worker_contracts import DualWorkerArm
 
-type DualCommandPurpose = Literal["cpu-solo-pilot", "official"]
+type DualCommandPurpose = Literal["cpu-solo-pilot", "concurrent-diagnostic", "official"]
 
 SESSION_PATTERN = re.compile(r"^[0-9a-f]{32}$")
 GIT_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
@@ -33,6 +33,7 @@ BASE_FIELDS = frozenset(
     }
 )
 OFFICIAL_FIELDS = BASE_FIELDS | {"sessionId"}
+DIAGNOSTIC_FIELDS = BASE_FIELDS | {"diagnosticMaxNewTokens"}
 
 
 class DualWorkerCommandError(RuntimeError):
@@ -57,6 +58,7 @@ class DualWorkerCommandRequest:
     sleep_disabled: bool
     background_load_acceptable: bool
     thermal_state_acceptable: bool
+    diagnostic_max_new_tokens: int | None
 
 
 def _string(value: object) -> str:
@@ -80,14 +82,20 @@ def parse_dual_worker_command(value: object) -> DualWorkerCommandRequest:
         raise DualWorkerCommandError("input")
     payload = cast(Mapping[str, object], value)
     purpose = payload.get("resultPurpose")
-    expected_fields = OFFICIAL_FIELDS if purpose == "official" else BASE_FIELDS
+    expected_fields = (
+        OFFICIAL_FIELDS
+        if purpose == "official"
+        else DIAGNOSTIC_FIELDS
+        if purpose == "concurrent-diagnostic"
+        else BASE_FIELDS
+    )
     if set(payload) != expected_fields:
         raise DualWorkerCommandError("input")
     arm = payload.get("arm")
     if (
         payload.get("schemaVersion") != "tts-dual-worker-command-v5"
         or payload.get("dualWorkerOptIn") is not True
-        or purpose not in ("cpu-solo-pilot", "official")
+        or purpose not in ("cpu-solo-pilot", "concurrent-diagnostic", "official")
         or arm not in ("cpu-solo", "gpu-solo", "concurrent")
     ):
         raise DualWorkerCommandError("authority")
@@ -102,11 +110,25 @@ def parse_dual_worker_command(value: object) -> DualWorkerCommandRequest:
     cpu_summary = _optional_sha256(payload.get("priorCpuSoloSummarySha256"))
     gpu_summary = _optional_sha256(payload.get("priorGpuSoloSummarySha256"))
     session_id = payload.get("sessionId")
+    diagnostic_max_new_tokens = payload.get("diagnosticMaxNewTokens")
     if purpose == "cpu-solo-pilot":
         if arm != "cpu-solo" or cpu_summary is not None or gpu_summary is not None:
             raise DualWorkerCommandError("authority")
         session = None
+        diagnostic_tokens = None
+    elif purpose == "concurrent-diagnostic":
+        if (
+            arm != "concurrent"
+            or cpu_summary is None
+            or gpu_summary is None
+            or diagnostic_max_new_tokens != 256
+            or session_id is not None
+        ):
+            raise DualWorkerCommandError("authority")
+        session = None
+        diagnostic_tokens = 256
     else:
+        diagnostic_tokens = None
         if not isinstance(session_id, str) or SESSION_PATTERN.fullmatch(session_id) is None:
             raise DualWorkerCommandError("input")
         session = session_id
@@ -136,4 +158,5 @@ def parse_dual_worker_command(value: object) -> DualWorkerCommandRequest:
         sleep_disabled=cast(bool, booleans[0]),
         background_load_acceptable=cast(bool, booleans[1]),
         thermal_state_acceptable=cast(bool, booleans[2]),
+        diagnostic_max_new_tokens=diagnostic_tokens,
     )

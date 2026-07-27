@@ -221,8 +221,8 @@ authority/generation/scoring/cleanup/profile/prototype tests. Those default
 tests do not load a model or require CUDA. The manual prototype proves bounded
 complete-segment delivery, identity-first stale rejection, worker termination,
 and cleanup; it does not prove native streaming or production transport. One
-fluent maintainer accepted audible quality for a near-term demo and ADR-0014
-permits only that constrained development path. The accepted candidate-neutral
+fluent maintainer accepted audible quality for a near-term demo and ADR-0015
+now governs that constrained one-GPU development path. The accepted candidate-neutral
 [`selection-v3`](../../benchmarks/tts/selection-v3.md) retains the failed
 standard result and records the separate demo exception. Milestone 6.1 local
 deterministic, candidate-import, repository/privacy, portable, and
@@ -231,8 +231,8 @@ required foundation jobs on the exact evidence commit. Base voice cloning is
 outside the current MVP. Whisper and VAD/energy analysis are excluded from
 `v3`.
 
-The active
-[Milestone 6.2 plan](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md)
+The completed
+[Milestone 6.2 plan](../plans/completed/M006-002-qwen-short-segment-batch-feasibility.md)
 has a frozen pre-result `v4` profile, normalized eight-unit/four-pair synthetic
 corpus, closed raw and summary schemas, exact full-GPU and conditional
 speech-tokenizer CPU identities, and deterministic authority enforcement.
@@ -282,9 +282,12 @@ cancellation, cleanup failure, head-of-line accounting, active-capacity
 reservation, and every simultaneous retention bound. The command surface
 accepts only frozen CPU-pilot or official-arm inputs and returns a
 non-promotable mechanics receipt. It does not load a model, synthesize audio,
-or create a hardware result. Milestone 8 owns the private raw evidence,
-CPU-solo admission, same-authority GPU-solo/concurrent measurements, safe
-derivation, and cleanup.
+or create a hardware result. Milestone 8 completed the private hardware work:
+CPU solo measured aggregate RTF 2.999, GPU solo measured RTF 1.467, and the
+official concurrent arm stopped at `resource-limit`. A low-load diagnostic
+later completed at aggregate RTF 1.429 but substantially slowed the GPU worker.
+Accepted `selection-v5` rejects CPU-only and dual-worker scheduling. Default
+tests and CI remain model-free.
 
 ## Deferred coverage
 
@@ -306,6 +309,13 @@ Examples:
 - Reading-locator serialization, resolution, and nearest-valid fallback.
 - Reflow calculations preserve the logical reading location.
 - Startup gating uses playable audio duration rather than elapsed wall-clock time.
+- Quick-start and explicit prepared-playback targets remain distinct.
+- Duration, complete-unit, payload-byte, prepared-text, and active-work bounds
+  apply simultaneously at the approximately 30-minute ceiling.
+- Playback-only pause continues only same-identity bounded generation; explicit
+  stop and invalidating actions clean up.
+- Low-buffer warnings, involuntary rebuffering, and intentional adaptive
+  boundary waits are independently observable.
 
 ### Integration
 
@@ -328,6 +338,12 @@ Critical journeys:
 - Start playback.
 - Verify that narration starts from the visible passage and keeps the active paragraph on screen.
 - Verify that playback starts as soon as approximately 15 seconds of playable audio is buffered, without a fixed 15-second delay.
+- Verify that explicit 1-, 2-, 5-, and 10-minute prepared-playback targets show
+  content-free progress and do not change quick-start behavior.
+- Verify that playback-only pause can build valid lead only to the frozen
+  maximum, while explicit stop and invalidation release work and audio.
+- Verify that nearing the generation frontier warns and then enters a truthful
+  buffering state, with intentional boundary waits measured separately.
 - Pause and resume.
 - Seek to another paragraph.
 - Change chapters.
@@ -344,6 +360,7 @@ Report separately:
 - Delay between satisfying the initial audio threshold and audible playback.
 - Real-time factor.
 - Buffer underrun frequency and duration.
+- Intentional adaptive boundary-wait count and duration, reported separately.
 - Cancellation latency.
 - CPU, GPU, VRAM, and RAM use.
 

@@ -9,44 +9,49 @@ Milestone 6.1 completed the exact Qwen3-TTS 12Hz 1.7B CustomVoice/Serena
 batch-one `v3` evaluation. That evaluation passed its resource, offline,
 artifact, license, packaging, and cleanup gates but failed startup, sustained
 throughput, zero-failure, and mid-generation cancellation gates. ADR-0014
-permits the exact profile only for a bounded development demo with explicit
-preparation or buffering. This plan must not modify, rerun, or reinterpret that
-failed authority.
+originally permitted the exact profile only for a bounded development demo.
+ADR-0015 now supersedes that decision's scheduling and buffering details while
+retaining its exact candidate identity and standard-profile blocker. This plan
+must not modify, rerun, or reinterpret the failed `v3` authority.
 
 This is a separate Milestone 6.2 ExecPlan. Its completed `v4` work froze and
 tested a materially different scheduling hypothesis before results: shorter
 ordered audio units and batch size two using one resident model. Both `v4`
 hardware arms stopped safely before usable media.
 
-The plan now continues with a separate result-blind `v5` hypothesis requested
-after those results: one full-GPU Qwen worker as the primary producer and one
-independent CPU-only Qwen worker as a support producer. The `v5` work must use
-new authority, schemas, results, and conclusions; it must not rewrite or
-reinterpret `v4`. Both stages are evaluation work, not the Milestone 7
-production service or Milestone 8 player.
+The separate result-blind `v5` hypothesis then tested one full-GPU Qwen worker
+as the primary producer and one independent CPU-only Qwen worker as a support
+producer. CPU solo and GPU solo completed, the official concurrent arm stopped
+at its frozen resource boundary, and a non-promotable low-application-load
+diagnostic later completed both workers. Accepted `selection-v5` rejects the
+CPU-only and dual-worker alternatives and retains exactly one GPU worker only
+for the constrained demo governed by ADR-0015. Both evaluated stages remain
+development evidence, not the Milestone 7 production service or Milestone 8
+player.
 
 ## Goal
 
 Determine whether the exact already-evaluated Qwen/Serena candidate can produce
-ordered, bounded Spanish narration sustainably on the exact reference host.
+ordered, bounded Spanish narration sustainably on the exact reference host,
+then record which tested topology, if any, may inform later product work.
 
 The completed `v4` stage tested one resident model generating two short
 semantic units in one shared-model batch, followed by the admitted targeted
-speech-tokenizer CPU placement. The new `v5` stage must test a different
-topology: one exact full-GPU worker and one separately loaded, fully CPU-only
-worker producing independently identified short units for one ordered bounded
-consumer.
+speech-tokenizer CPU placement. The completed `v5` hardware work tested a
+different topology: one exact full-GPU worker and one separately loaded, fully
+CPU-only worker producing independently identified short units for one ordered
+bounded consumer. The evidence rejects that dual-worker topology.
 
 ## User-visible outcome
 
 This plan adds no production user-visible behavior.
 
-If the `v5` evidence passes its frozen gates, VoxLeaf gains a measured
-scheduling input for a later bounded demo and for Milestones 7 and 8: an
-independent GPU-primary/CPU-support topology can produce ordered complete
-waveforms quickly enough to keep a bounded playback simulation supplied. If it
-fails, the constrained batch-one demo decision remains available under
-ADR-0014, while continuous-playback and production claims remain blocked.
+The accepted outcome rejects CPU-only generation and the independent
+GPU-primary/CPU-support topology. It retains the exact single-GPU candidate
+only for a later bounded adaptive demonstration under ADR-0015. M008 owns that
+unimplemented follow-up: quick start or explicit prepared playback, continued
+bounded generation during playback-only pause, truthful buffering at the
+generation frontier, and a 30-minute simultaneous in-memory ceiling.
 
 Neither outcome establishes general hardware support, native waveform
 streaming, cooperative mid-call cancellation, production packaging, or a
@@ -106,6 +111,18 @@ selected CPU fallback.
   close the remaining real-time gap, and approximately 1.78 to reach a
   combined effective RTF of 0.8. The new authority must judge directly
   measured concurrent throughput rather than promote this estimate.
+- The `v5` CPU-solo result passed its bounded admission at aggregate RTF
+  `2.999443394476504`, and the same-authority GPU-solo result completed at
+  aggregate RTF `1.467080448861599`.
+- The official concurrent run stopped at the frozen `resource-limit` boundary
+  before a promotable result. The later 256-token diagnostic identified the
+  exact stop as `commit-headroom`.
+- After unrelated applications were closed, a second non-promotable diagnostic
+  completed all 40 units at aggregate RTF `1.4291263397435898`. Its GPU worker
+  slowed to RTF `2.3290592090374167` and its CPU worker measured RTF
+  `3.4522421854976506`; the roughly 2.6% aggregate gain over GPU solo is not
+  enough to justify the additional model, contention, memory, and scheduling
+  complexity.
 
 Primary upstream references:
 
@@ -183,6 +200,7 @@ Primary upstream references:
 - `benchmarks/tts/schemas/dual-worker-raw-v5.schema.json`
 - `benchmarks/tts/schemas/dual-worker-summary-v5.schema.json`
 - `benchmarks/tts/selection-v4.md`
+- `benchmarks/tts/selection-v5.md`
 - `docs/architecture/tts-feasibility-profile-v5.md`
 - `docs/product/mvp.md`
 - `docs/architecture/overview.md`
@@ -192,6 +210,8 @@ Primary upstream references:
 - `docs/architecture/decisions/ADR-0004-start-after-audio-lead.md`
 - `docs/architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md`
 - `docs/architecture/decisions/ADR-0014-constrained-qwen-development-demo.md`
+- `docs/architecture/decisions/ADR-0015-bounded-adaptive-qwen-demo-buffering.md`
+- `docs/plans/active/M008-bounded-adaptive-prebuffering.md`
 - `docs/development/dependencies.md`
 - `docs/development/testing.md`
 - `docs/plans/roadmap.md`
@@ -594,7 +614,12 @@ in this milestone.
 
 #### Status
 
-Not started.
+Complete with a failed concurrent outcome. The final non-promotable CPU pilot
+passed, the schema-valid official CPU-solo result passes admission, and the
+schema-valid same-authority GPU-solo baseline is recorded. The concurrent arm
+ran from the required clean/hash-bound checkpoint but stopped with the frozen
+content-free `resource-limit` failure before promotable raw/result creation.
+Cleanup and sleep restoration passed. Milestone 9 is not admitted.
 
 ### Milestone 9: Evaluate five-minute bounded playback credibility and quality
 
@@ -627,7 +652,10 @@ Not started.
 
 #### Status
 
-Not started.
+Not admitted. Milestone 8's concurrent arm stopped at the frozen
+`resource-limit` boundary before a promotable concurrent result. The existing
+GPU-solo replay is diagnostic baseline evidence only; no concurrent
+five-minute playback or quality claim is authorized.
 
 ### Milestone 10: Record the v5 decision and close validation
 
@@ -656,7 +684,10 @@ Not started.
 
 #### Status
 
-Not started.
+Complete on 2026-07-26. The content-safe `selection-v5` decision, ADR-0015,
+and the follow-up M008 ExecPlan are recorded. Final local validation and both
+required pull-request CI jobs pass on exact final implementation head
+`d265278f20f68b6f5e6710341c297a27345be0f9`.
 
 ## Testing and benchmark strategy
 
@@ -1056,6 +1087,161 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
   Ruff, strict mypy over 71 source files, 144 Python tests, package JSON
   formatting, and `git diff --check` passed. The only warning was the
   pre-existing primary-checkout pytest-cache ACL warning.
+- 2026-07-26: Created branch
+  `feat/m006-2-cpu-solo-concurrent-matrix` from merged `main` at `0d36817`.
+  Added frozen official cold-load, warmup, measured-arm, process/RAM/commit,
+  PID-tagged WDDM, cancellation, cleanup, ignored raw, and content-safe
+  derivation support. Checkpoints `6472b81` and `abc6eb5` keep the candidate
+  lock unchanged and allow execution-time authority verification without
+  adding the base environment's JSON-schema library to the isolated Qwen
+  environment.
+- 2026-07-26: The first pilot attempt stopped before model load because the
+  invoking process lacked `HF_HUB_OFFLINE=1` and
+  `TRANSFORMERS_OFFLINE=1`. With those existing controls set, the
+  non-promotable CPU-only pilot completed two first attempts in 134.3 seconds
+  with aggregate RTF `3.0552449189419795`, zero CPU-worker dedicated/shared
+  GPU bytes, no failure, no stale result, and frozen CPU-official admission.
+- 2026-07-26: The first official CPU arm at checkpoint `abc6eb5` completed in
+  385.8 seconds with all eight measured first attempts and private raw
+  capture. Its first derivation failed closed at raw-schema validation, but
+  the new derivation command deleted the ignored session before exposing the
+  content-free failing schema path. The receipt and run are non-promotable;
+  no result file, audio, book text, or private raw evidence was committed.
+- 2026-07-26: Corrected the lifecycle so a failed derivation retains only its
+  ignored raw session for diagnosis, successful derivation deletes that
+  session before returning a safe summary, and schema failures report only
+  the first schema path and validator. Added success/failure lifecycle
+  regressions. A new clean-checkpoint CPU pilot and official arm will replace,
+  not promote, the invalid tooling run.
+- 2026-07-26: The replacement pilot at checkpoint `5f8a79f` again admitted
+  CPU-only execution: two of two first attempts completed in 135.5 seconds,
+  aggregate RTF was `3.0782776688102897`, and CPU-worker dedicated/shared GPU
+  memory remained exactly zero. The replacement official arm completed all
+  eight measured first attempts in 380.6 seconds. Preserved raw evidence
+  identified the sole first schema rejection as `host.cpuModel`'s frozen
+  `const`: the runner serialized Windows' trademarked CPU label instead of the
+  normalization already used by v4 and preflight. The ignored session was
+  deleted after diagnosis and no result was promoted. Added the same narrow,
+  model-independent normalization plus a regression before the next clean
+  run.
+- 2026-07-26: The final pilot at clean checkpoint `4395ff7` completed two of
+  two first attempts in 129.3 seconds with aggregate RTF
+  `3.0556705734323426` and zero CPU-worker dedicated/shared GPU memory. The
+  final official CPU arm completed in 392.3 seconds and derived schema-valid
+  `benchmarks/tts/dual-worker-result-v5-cpu-solo.json`; its ignored raw
+  session was deleted. The safe-summary SHA-256 is
+  `43ed927e2a765cf39214bc8937398c1c454993cc23bd6485596aa591fe5224a2`.
+- 2026-07-26: CPU-solo admission passes with eight of eight first attempts,
+  zero retries/failures, 97.04 media seconds, aggregate RTF
+  `2.999443394476504`, 9.151-second cold-load p95, all eight units inside the
+  8-16-second target, exact zero CPU dedicated/shared GPU memory,
+  10,681,810,944 bytes peak combined process RAM, 7,405,936,640 bytes minimum
+  available system RAM, 5,974,171,648 bytes minimum commit headroom, two
+  passing cancellation trials, no stale publication, and complete cleanup.
+  This admits the same-authority GPU-solo baseline; it is not itself a
+  concurrent scheduling pass or production-profile promotion.
+- 2026-07-26: The same-authority GPU-solo baseline at clean checkpoint
+  `cb751b7` completed all forty measured first attempts in 738.3 seconds,
+  derived schema-valid
+  `benchmarks/tts/dual-worker-result-v5-gpu-solo.json`, and deleted its
+  ignored raw session. The safe-summary SHA-256 is
+  `2f12e3542038ff9d7b566dc662495a08187163ecf4ccb71ad6d9601b43d64fdb`.
+- 2026-07-26: GPU solo produced 446.24 media seconds with aggregate RTF
+  `1.467080448861599`, 10.846-second cold-load p95, forty of forty
+  first-attempt completions, zero retries/failures, and all units inside the
+  8-16-second target. Peak GPU-worker dedicated/shared memory was
+  5,296,939,008 / 81,788,928 bytes, peak framework reserve was 5,158,993,920
+  bytes, and both cancellation trials plus cleanup passed. Its simulated
+  standalone timeline incurred 24.995 buffering seconds per media minute and
+  cannot sustain real time alone. The ideal CPU/GPU throughput sum leaves
+  little margin, but frozen authority requires the actual concurrent
+  contention matrix.
+- 2026-07-26: Ran the hash-bound concurrent GPU-primary/CPU-support arm from
+  clean checkpoint `9cc9517`. Both workers loaded and the fixed first-attempt
+  matrix ran for 759.1 seconds before the live evidence path returned the
+  frozen content-free `resource-limit` stop. The command created no
+  promotable raw session or concurrent summary, performed no retry, left no
+  Python/GPU worker process, restored the 45-minute AC sleep setting, and
+  returned the GPU to zero utilization with 7,810 MiB free.
+- 2026-07-26: The failed run cannot distinguish the exact safety subcode
+  because the initial implementation collapsed live monitor stops to
+  `resource-limit`. The combined solo profiles make RAM/commit reserve the
+  likely cause, but that is an inference and is not promoted as measured fact.
+  Hardened the command so future live stops interrupt at the next completion
+  boundary and preserve the exact content-free subcode. Repeating an arm that
+  already reached a frozen resource boundary is not admitted on this hardware.
+  Milestone 8 therefore completes with CPU admission, a valid GPU baseline,
+  and failed concurrent hardware feasibility; Milestone 9 is skipped.
+- 2026-07-26: A user-requested, explicitly non-promotable follow-up tested
+  whether Qwen's 2048 generated-token ceiling caused the concurrent failure.
+  Checkpoint `2d84559` adds a closed `concurrent-diagnostic` purpose that
+  accepts only 256 tokens, the concurrent arm, and both committed solo-summary
+  hashes. It preserves official authority, writes no raw/result evidence, and
+  returns exact content-free live safety subcodes.
+- 2026-07-26: The 256-token two-worker diagnostic passed preflight with
+  17,632,972,800 bytes free RAM, 7,810 MiB free VRAM, an idle GPU, and the
+  exact outbound firewall block. It stopped after 98.4 seconds with
+  `commit-headroom`. This proves that the earlier `resource-limit` represented
+  Windows commit headroom falling below the frozen 4-GiB floor; reducing the
+  generated-token ceiling did not resolve the two-model residency limit.
+  Cleanup left zero workers, zero GPU use, 7,810 MiB free VRAM,
+  18,012,766,208 bytes available RAM, 21,985,099,776 bytes commit headroom,
+  the restored 45-minute AC sleep setting, and zero raw files.
+- 2026-07-26: Repeated the same non-promotable 256-token diagnostic after the
+  user closed other applications. Preflight improved to 21,443,198,976 bytes
+  available RAM and 30,360,735,744 bytes commit headroom. All 40 first
+  attempts completed and produced 452.4 media seconds without a safety stop,
+  failure, retry, raw journal, or promotable result.
+- 2026-07-26: The completed repeat reached aggregate RTF
+  `1.4291263397435898`, versus GPU-solo `1.467080448861599`. This small
+  throughput improvement remains slower than real time. The GPU worker slowed
+  to RTF `2.3290592090374167` under contention while the CPU worker reached
+  RTF `3.4522421854976506`; the GPU slowdown exceeds the frozen 25-percent
+  ceiling. Peak combined process RAM was 12,961,947,648 bytes, minimum
+  available RAM was 9,301,962,752 bytes, and minimum commit headroom was
+  7,641,972,736 bytes.
+- 2026-07-26: The repeat's maximum unit duration was 14.16 seconds, peak GPU
+  dedicated/shared memory was 5,351,464,960 / 81,788,928 bytes, and CPU
+  dedicated/shared GPU use remained zero. Cleanup restored 45-minute AC
+  sleep, zero workers, zero GPU use with 7,810 MiB free, and zero raw files.
+  Closing applications solves this occurrence of the commit stop but does not
+  make the dual-worker schedule real-time or product-viable.
+- 2026-07-26: Recorded accepted `benchmarks/tts/selection-v5.md`. It rejects
+  CPU-only and dual-worker scheduling, retains the same exact GPU identity only
+  for a constrained development demo, preserves every frozen standard failure,
+  and treats both 256-token diagnostics as non-promotable supplementary
+  evidence.
+- 2026-07-26: Accepted ADR-0015, superseding ADR-0014's scheduling and
+  buffering details. The next implementation may use one GPU worker with quick
+  start or an explicit bounded preparation target, continue generation during
+  playback-only pause, represent frontier exhaustion as buffering, and retain
+  at most approximately 30 minutes of playable audio in memory. No such
+  runtime behavior is implemented by this decision.
+- 2026-07-26: Created the M008 bounded adaptive prebuffering ExecPlan and
+  reconciled product, architecture, roadmap, setup, dependency, testing, and
+  system-diagram documentation.
+- 2026-07-26: Final local validation passed from clean detached checkpoint
+  `1727e03`. `pnpm.cmd check:portable` passed in 78.0 seconds and
+  `pnpm.cmd check` passed on authoritative Windows in 159.9 seconds. Both
+  included 175 shared, 555 EPUB, 204 desktop, six native-client, and 160 Python
+  tests; the native aggregate additionally passed Rust formatting, Clippy,
+  crate tests, the Tauri release build, and Python source/wheel builds. The
+  unchanged 107-package candidate lock and exact Qwen/Torch/Torchaudio import
+  smoke passed. Prettier, 274 relative links, `git diff --check`, and the
+  changed-document private-pattern scan also passed. Milestone 10 remains open
+  only for required pull-request CI.
+- 2026-07-26: Closed the Windows CI portability issue without weakening the
+  frozen evidence policy. The v5 validator now requires exact authority commit
+  `fad271150303936625a7c4be348742f36a75f21b`, and the committed-result tests
+  bind the CPU/GPU summaries to their exact frozen execution commits instead
+  of consulting a hosted runner's live Git graph. Focused validation passed
+  all 15 v5 authority tests, and exact commit `d265278` passed the complete
+  native Windows `pnpm.cmd check` suite with 161 Python tests.
+- 2026-07-26: Required PR #112 CI passed on exact head
+  `d265278f20f68b6f5e6710341c297a27345be0f9`: Ubuntu portable foundation
+  completed successfully at 2026-07-27T03:27:20Z and Windows native foundation
+  completed successfully at 2026-07-27T03:39:06Z. Milestone 10 and this
+  ExecPlan are complete.
 
 ## Discoveries and decisions
 
@@ -1133,8 +1319,8 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
 20. Windows reports the exact reference CPU as
     `Intel(R) Core(TM) Ultra 7 255HX`, while the frozen v4 reference label
     intentionally omits trademark markers. Exact-host comparison must remove
-     only `(R)` and `(TM)` plus duplicate whitespace before comparing and
-     before writing the frozen raw host identity.
+    only `(R)` and `(TM)` plus duplicate whitespace before comparing and
+    before writing the frozen raw host identity.
 21. The disposable pilot's 81,788,928-byte shared-memory observation was not
     noise that the official authority could waive. The final official run
     observed 79,691,776 bytes, so the frozen zero-shared-memory rule stopped
@@ -1218,10 +1404,40 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
 43. The reviewed command receipt is deliberately non-promotable. Milestone 8
     must still collect the frozen cold-load, memory, cancellation, placement,
     cleanup, and private raw evidence and derive a schema-valid safe result.
+44. Qwen's frozen `maxNewTokens: 2048` was not the cause of the concurrent
+    safety stop. A closed 256-token diagnostic reproduced the exact
+    `commit-headroom` subcode; repeating it after closing applications
+    completed all 40 units. Commit feasibility therefore depends on baseline
+    host load, while the completed RTF and contention measurements independently
+    reject the dual-worker schedule.
+45. The low-load concurrent diagnostic improves aggregate RTF by only about
+    2.6% over GPU solo while slowing the GPU worker by about 58.8%. That trade
+    does not justify a second model instance, its roughly 13-GB combined
+    process-RAM peak, baseline-load sensitivity, or ordered-worker complexity.
+46. The exact GPU candidate remains slower than real time, so a larger buffer
+    changes how long playback can continue before catching the generation
+    frontier; it does not turn the model into a sustainable producer.
+47. Quick start and prepared playback answer different user needs. Quick start
+    preserves ADR-0004's approximately 15-playable-second threshold. Explicit
+    preparation may target 1, 2, 5, or 10 playable minutes, but the UI must
+    show honest progress and an estimate rather than disguise preparation as a
+    fixed startup requirement.
+48. Playback-only pause may continue useful generation within the same active
+    identity and bounds. Explicit stop, seek, chapter change, voice/model
+    change, book/session replacement, and exit still cancel or invalidate work
+    and release obsolete audio.
+49. A 30-minute simultaneous playable-audio ceiling is a capacity limit, not
+    a startup target or uninterrupted-playback guarantee. M008 must freeze the
+    corresponding unit, byte, active-work, and prepared-text limits before
+    implementation.
+50. One- to three-second paragraph/chapter waits may reduce frontier pressure
+    and improve listening cadence, but they cannot compensate for RTF above
+    1.0. M008 must make such waits adaptive, bounded, observable, separately
+    measured, and optional.
 
 ## Final validation results
 
-Milestones 1 through 4, 6, and 7 are complete. Milestone 1 adds result-blind `v4`
+Milestones 1 through 4 and 6 through 8 are complete. Milestone 1 adds result-blind `v4`
 authority; Milestone 2 adds development-only model-free mechanics and reviewed
 execution commands; Milestones 3 and 4 execute the frozen full-GPU and
 targeted-CPU arms; and Milestone 6 records their failed decision and freezes
@@ -1232,10 +1448,13 @@ media on the frozen shared-memory rule. No completed milestone changes a
 production contract/runtime, makes a support claim, or selects a production
 profile.
 
-Milestone 5 is not admitted. Milestones 8 through 10 are pending: run CPU-solo
-and concurrent hardware evidence, replay the measured five-minute-bounded
-queue and quality workflow, and record the resulting decision. The plan is
-therefore active and must not yet move to `docs/plans/completed/`.
+Milestone 5 is not admitted. Milestone 8 is complete with a failed concurrent
+hardware outcome: CPU solo passed admission, the same-authority GPU-solo
+baseline completed, and the concurrent arm reached the frozen
+`resource-limit` boundary. Milestone 9 is therefore not admitted. Milestone 10
+has recorded the durable `v5` decision and follow-up authority. Required
+pull-request CI passes on the exact final implementation head, so this plan is
+complete and belongs in `docs/plans/completed/`.
 
 The earlier `v5` planning amendment changed documentation only. Milestone 6
 now adds separately versioned authority and model-free validation, but still
@@ -1466,3 +1685,92 @@ import warnings and the existing Vite chunk-size advisory remain
 informational. Milestone 7 is complete. Milestone 8 owns the first CPU-solo
 pilot, every official hardware run, private raw evidence and cleanup, and
 schema-valid safe result derivation.
+
+Milestone 8 hardware and result validation completed on 2026-07-26:
+
+- the final CPU-only pilot at clean checkpoint `4395ff7` completed both
+  first attempts with aggregate RTF `3.0556705734323426` and exact zero
+  dedicated/shared GPU memory;
+- the official CPU-solo arm completed all eight first attempts without a retry
+  or failure, produced 97.04 seconds of media at aggregate RTF
+  `2.999443394476504`, passed both cancellation trials and cleanup, and derived
+  schema-valid `dual-worker-result-v5-cpu-solo.json` with SHA-256
+  `43ed927e2a765cf39214bc8937398c1c454993cc23bd6485596aa591fe5224a2`;
+- the same-authority GPU-solo arm completed all forty first attempts without a
+  retry or failure, produced 446.24 seconds of media at aggregate RTF
+  `1.467080448861599`, passed both cancellation trials and cleanup, and derived
+  schema-valid `dual-worker-result-v5-gpu-solo.json` with SHA-256
+  `2f12e3542038ff9d7b566dc662495a08187163ecf4ccb71ad6d9601b43d64fdb`;
+- the hash-bound concurrent arm at clean checkpoint `9cc9517` ran its fixed
+  first-attempt matrix for 759.1 seconds and stopped at the frozen
+  `resource-limit` boundary. It performed no retry, created no promotable raw
+  session or concurrent result, left no worker process, restored the
+  45-minute AC sleep setting, and returned the GPU to zero utilization;
+- because the first implementation collapsed live safety subcodes to
+  `resource-limit`, RAM/commit pressure is only an inference, not a measured
+  exact cause. The runner now preserves a future exact content-free subcode,
+  but the frozen authority does not permit repeating an arm that already
+  reached a resource boundary on this hardware; and
+- successful derivations deleted their ignored raw sessions. The final raw
+  tree contains zero files, and no generated audio, model weight, book,
+  credential, or private benchmark evidence is tracked.
+
+Final Milestone 8 repository validation passed at committed checkpoint
+`a8f4397`:
+
+- Ruff formatting/lint passed, strict mypy passed over 75 source files, all
+  154 Python tests passed, Prettier accepted the tracked source, and both
+  committed `v5` summaries passed their frozen schema and authority checks;
+- `pnpm.cmd check:portable` passed in 40.1 seconds in a clean detached
+  worktree, including 175 shared, 555 EPUB, 204 desktop, six native-client,
+  and 154 Python tests plus all portable builds;
+- `pnpm.cmd check` passed on native Windows in 153.1 seconds in the same
+  worktree, including Rust formatting, Clippy, crate tests, the Tauri release
+  build, and Python package builds;
+- the unchanged 107-package isolated Qwen lock passed `uv lock --check`, and
+  exact `qwen_tts`, `torch==2.9.1+cu128`, and
+  `torchaudio==2.9.1+cu128` imports passed without loading model weights; and
+- the primary-checkout portable command was blocked only by its pre-existing
+  deny-ACL pytest directory under `tmp`. The clean worktree supplied the
+  authoritative passing result. Optional FlashAttention/SoX import notices and
+  the existing Vite chunk-size advisory remain informational.
+
+Milestone 8 is complete. Its failed concurrent resource outcome does not admit
+Milestone 9, select a production profile, or change product behavior.
+Milestone 10 remains necessary to record the durable `v5` decision and close
+the ExecPlan.
+
+The post-milestone 256-token concurrent diagnostic also passed its repository
+and cleanup controls:
+
+- checkpoint `2d84559` passed Ruff formatting/lint, strict mypy over the four
+  affected source files, 25 focused tests, and all 160 Python tests;
+- `pnpm.cmd check:portable` passed from a clean detached worktree at
+  checkpoint `5b3da32`, including formatting, lint, type checks, 175 shared,
+  555 EPUB, 204 desktop, six native-client, and 160 Python tests plus all
+  portable builds;
+- the exact hardware command ran only the concurrent GPU-primary/CPU-support
+  arm and returned `commit-headroom` after 98.4 seconds;
+- the token override is fixed at 256, cannot enter an official request, emits
+  no promotable evidence, and writes no raw result; and
+- post-run process, GPU, RAM/commit, sleep-restoration, raw-tree, and clean
+  working-tree checks passed.
+
+This diagnostic identifies the original safety category but does not
+retroactively promote or replace the frozen failed concurrent result.
+
+The same diagnostic was repeated after closing applications. It completed all
+40 units with minimum commit headroom 7,641,972,736 bytes and no safety stop,
+confirming that the earlier commit failure was baseline-load dependent. Its
+aggregate RTF `1.4291263397435898`, GPU-worker RTF
+`2.3290592090374167`, and CPU-worker RTF `3.4522421854976506` still fail
+real-time and contention gates. Post-run process, GPU, sleep, raw-tree, and
+temporary-output cleanup passed. Milestone 9 remains not admitted.
+
+Accepted `selection-v5` now rejects CPU-only and dual-worker scheduling and
+retains the exact GPU worker only for ADR-0015's constrained adaptive demo.
+ADR-0015 supersedes ADR-0014's scheduling and buffering details without
+changing the frozen failed `v3` standard result. M008 records the unimplemented
+follow-up. Final local validation and required PR #112 CI pass on exact head
+`d265278f20f68b6f5e6710341c297a27345be0f9`. Milestone 10 and this ExecPlan are
+complete.

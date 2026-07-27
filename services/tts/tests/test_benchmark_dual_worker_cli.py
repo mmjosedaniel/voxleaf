@@ -14,6 +14,7 @@ from benchmarks.dual_worker_command import (
     DualWorkerCommandError,
     parse_dual_worker_command,
 )
+from benchmarks.dual_worker_official import DualWorkerOfficialError
 
 GIT_A = "a" * 40
 GIT_B = "b" * 40
@@ -43,6 +44,8 @@ def _payload(
     }
     if purpose == "official":
         value["sessionId"] = "0123456789abcdef0123456789abcdef"
+    elif purpose == "concurrent-diagnostic":
+        value["diagnosticMaxNewTokens"] = 256
     return value
 
 
@@ -67,6 +70,16 @@ def test_command_contract_accepts_pilot_and_frozen_official_arm_progression() ->
     concurrent = parse_dual_worker_command(concurrent_payload)
     assert concurrent.prior_gpu_solo_summary_sha256 == SHA_B
 
+    diagnostic_payload = _payload(
+        purpose="concurrent-diagnostic",
+        arm="concurrent",
+    )
+    diagnostic_payload["priorCpuSoloSummarySha256"] = SHA_A
+    diagnostic_payload["priorGpuSoloSummarySha256"] = SHA_B
+    diagnostic = parse_dual_worker_command(diagnostic_payload)
+    assert diagnostic.diagnostic_max_new_tokens == 256
+    assert diagnostic.session_id is None
+
 
 @pytest.mark.parametrize(
     "payload",
@@ -85,6 +98,12 @@ def test_command_contract_accepts_pilot_and_frozen_official_arm_progression() ->
             "priorCpuSoloSummarySha256": SHA_A,
         },
         {**_payload(), "expectedCommitSha": GIT_A},
+        {
+            **_payload(purpose="concurrent-diagnostic", arm="concurrent"),
+            "priorCpuSoloSummarySha256": SHA_A,
+            "priorGpuSoloSummarySha256": SHA_B,
+            "diagnosticMaxNewTokens": 255,
+        },
     ],
 )
 def test_command_contract_rejects_drift_and_out_of_order_arms(
@@ -129,4 +148,32 @@ def test_cli_rejects_wrong_argv_without_reading_standard_input(
     assert json.loads(capsys.readouterr().out) == {
         "status": "fail",
         "failureCode": "invalid-request",
+    }
+
+
+def test_cpu_model_serialization_matches_frozen_host_identity() -> None:
+    assert (
+        dual_worker_cli._normalized_cpu_model(
+            "Intel(R) Core(TM) Ultra 7 255HX",
+        )
+        == "Intel Core Ultra 7 255HX"
+    )
+
+
+def test_official_safety_subcode_remains_content_free(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(sys, "argv", ["dual_worker_cli.py", "run"])
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(_payload())))
+    monkeypatch.setattr(
+        dual_worker_cli,
+        "_run",
+        lambda _request: (_ for _ in ()).throw(DualWorkerOfficialError("ram-safety")),
+    )
+
+    assert dual_worker_cli.main() == 2
+    assert json.loads(capsys.readouterr().out) == {
+        "status": "fail",
+        "failureCode": "ram-safety",
     }

@@ -2,7 +2,7 @@
 
 ## Implementation status
 
-The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestone 5 narration preparation is implemented, documented, and fully validated: `@voxleaf/epub` exhaustively projects semantic source positions, retains Unicode-code-point source spans, applies deterministic source-mapped neutral/Spanish normalization, scans sentence/dialogue/clause/protected-token boundaries, packs bounded block-local semantic units, and exposes immutable canonical locator-linked batches through `OpenedPublication.prepareNarration`. Repository-authored public integration and deterministic exact-bound/resource tests cover continuation, structural gaps, cancellation, close, privacy, and source immutability. Milestone 6 is complete: the validated benchmark harness and explicit no-viable-profile decision reject both original exact profiles for production. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation also failed standard startup, throughput, zero-failure, and mid-generation cancellation gates. One fluent maintainer accepted its audible quality for a near-term demonstration; ADR-0014 therefore permits only a bounded development-demo exception with explicit preparation/buffering and no real-time or continuous-playback claim. Milestone 6.2's completed result-blind `v4` full-GPU and targeted speech-tokenizer CPU arms both stopped on the frozen zero-shared-GPU-memory rule before producing throughput, playback, or reviewable audio evidence; accepted `selection-v4` selects neither placement and records that the targeted move was not an independent CPU worker. The separate `v5` authority freezes one GPU-primary worker plus one fully CPU-only support worker, approximately 8-16-second complete units, and an experimental five-minute bounded maximum. Plan Milestone 7 implements its benchmark-local controller, exact CPU/GPU adapter paths, bounded ordered replay, and reviewed non-promotable command surface without loading a model. No `v5` pilot, official result, quality finding, or accepted two-worker product policy exists. These results and plans do not change the failed profile decision or current MVP behavior. The package prepares ephemeral sensitive text only; TTS inference, audio buffering/playback, synchronized highlighting, general hardware profiles, and packaging behavior remain pending. The capability and acceptance lists below describe the complete MVP target, not a claim that every item is currently implemented.
+The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestone 5 narration preparation is implemented, documented, and fully validated: `@voxleaf/epub` exhaustively projects semantic source positions, retains Unicode-code-point source spans, applies deterministic source-mapped neutral/Spanish normalization, scans sentence/dialogue/clause/protected-token boundaries, packs bounded block-local semantic units, and exposes immutable canonical locator-linked batches through `OpenedPublication.prepareNarration`. Repository-authored public integration and deterministic exact-bound/resource tests cover continuation, structural gaps, cancellation, close, privacy, and source immutability. Milestone 6 is complete: the validated benchmark harness and explicit no-viable-profile decision reject both original exact profiles for production. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation also failed standard startup, throughput, zero-failure, and mid-generation cancellation gates. Milestone 6.2 then rejected shared-model batching, targeted tokenizer placement, CPU-only generation, and an independent GPU-primary/CPU-support topology. Its accepted `selection-v5` retains exactly one GPU worker only for a constrained development demo; it does not select a passing standard profile. ADR-0015 supersedes ADR-0014's scheduling and buffering details and approves planning for two honest modes: quick start at approximately 15 playable seconds, or explicit prepared playback targeting 1, 2, 5, or 10 playable minutes. Generation may continue during playback-only pause, must stop at a simultaneous approximately 30-minute in-memory ceiling, and must expose buffering when playback reaches the generation frontier. These behaviors are not implemented yet. The package prepares ephemeral sensitive text only; TTS inference, audio buffering/playback, synchronized highlighting, general hardware profiles, and packaging behavior remain pending. The capability and acceptance lists below describe the complete MVP target, not a claim that every item is currently implemented.
 
 ## Current implemented flow
 
@@ -18,11 +18,14 @@ Separately, `@voxleaf/epub` callers can prepare bounded, locator-linked narratio
 ## Remaining target user flow
 
 1. The user selects an available local voice and starts narration from the active visual locator.
-2. VoxLeaf requests local TTS for prepared segments and builds a bounded audio lead in memory.
-3. Playback starts immediately when approximately 15 seconds of playable audio is ready, or when a complete shorter remaining range is ready; there is no fixed timer.
-4. Later valid audio is generated while playback consumes the buffer, and the visible passage follows the narration.
-5. Pause, resume, seek, chapter, voice, model, book, and session changes cancel or supersede obsolete work.
-6. VoxLeaf persists the shared logical position without persisting narration text or generated audio.
+2. The user chooses quick start or an explicit prepared-playback target.
+3. VoxLeaf requests local TTS for prepared segments and builds a bounded audio lead in memory.
+4. Quick-start playback begins immediately when approximately 15 seconds of playable audio is ready, or when a complete shorter remaining range is ready; there is no fixed timer.
+5. Prepared playback begins when its explicit 1-, 2-, 5-, or 10-minute target is ready, unless a complete shorter remaining range finishes first. The UI shows preparation progress and an estimate.
+6. Later valid audio is generated while playback consumes the buffer, and the visible passage follows the narration. Playback-only pause may continue bounded useful generation for the same active identity.
+7. If playback approaches the generation frontier, VoxLeaf shows a low-buffer warning and represents exhaustion as buffering. Optional one- to three-second waits may be inserted only at eligible paragraph or chapter boundaries and must remain observable.
+8. Explicit stop, seek, chapter, voice, model, book, session, and application-exit changes cancel or supersede obsolete work.
+9. VoxLeaf retains no more than approximately 30 minutes of playable generated audio at once and persists neither narration text nor generated audio.
 
 ## MVP capability status
 
@@ -41,15 +44,20 @@ Implemented and validated:
 
 Remaining:
 
-- Execute the implemented, separately versioned `v5` CPU-solo and concurrent
-  GPU-primary/CPU-support benchmark before claiming that
-  dual-worker generation supports sustainable or continuous narration.
-- Evaluate approximately 8-16-second complete audio targets under the unchanged
-  `narration-v1` boundary, the approximately 15-second playable startup gate,
-  and simultaneous five-minute duration, unit-count, PCM-byte, and active-work
-  limits. The five-minute value is a maximum capacity hypothesis, not a startup
-  wait or continuity guarantee.
-- Implement a bounded demonstration excerpt with model prewarming, complete narration units, explicit preparation/buffering, one queued unit, identity-first cancellation, and no generated-audio persistence; do not claim uninterrupted or real-time narration.
+- Implement ADR-0015 through the M008 ExecPlan using one GPU worker; do not add
+  CPU-only or dual-worker product scheduling.
+- Implement quick start at approximately 15 playable seconds and explicit
+  prepared-playback targets of 1, 2, 5, or 10 playable minutes.
+- Enforce a simultaneous approximately 30-minute playable-audio ceiling with
+  matching unit, payload-byte, prepared-text, and active-work bounds.
+- Continue same-identity generation during playback-only pause while
+  preserving explicit stop and invalidating-action cancellation.
+- Add low-buffer warning, truthful rebuffering, and optional measurable
+  one- to three-second waits only at eligible paragraph/chapter boundaries.
+- Implement the constrained demonstration with model prewarming, complete
+  narration units, identity-first invalidation, and no generated-audio
+  persistence; do not claim uninterrupted, real-time, or general-hardware
+  narration.
 - Select a chapter or paragraph as a narration starting point in a desktop playback flow.
 - Generate speech through a selected supported local TTS engine and voice.
 - Buffer and play generated audio in bounded memory.
@@ -79,12 +87,17 @@ Remaining:
 - Narration starts from the current visual reading location.
 - Playback begins when the initial playable-audio threshold is met rather than after a fixed timer.
 - The initial threshold is measured in playable audio seconds and targets approximately 15 seconds.
+- Prepared playback is an explicit user choice with 1-, 2-, 5-, or 10-minute
+  playable-audio targets, visible progress, and a content-free estimate.
 - The visible reading passage follows narration across layout or chapter boundaries without losing the logical reading position.
-- Pausing does not create uncontrolled generation work.
+- Playback-only pause may continue bounded generation for the same active
+  identity; explicit stop and invalidating actions cancel obsolete work.
 - Seeking invalidates stale queued audio.
 - Changing chapters cannot play audio from the previous chapter.
 - Changing the active book, model, or voice cannot play audio from the previous generation.
 - Buffer exhaustion is represented as buffering, not as an application freeze.
+- A low-buffer warning appears before predictable frontier exhaustion when the
+  available lead crosses the frozen implementation threshold.
 
 ### Accessibility
 
@@ -98,6 +111,11 @@ Remaining:
 - Wall-clock startup latency and playable audio depth at startup are measured separately.
 - The MVP may buffer for up to 5 seconds per minute.
 - Queues and buffers have explicit maximum sizes.
+- The constrained demo retains at most approximately 30 minutes of playable
+  generated audio simultaneously in memory; this is a ceiling, not a startup
+  target or uninterrupted-playback promise.
+- Intentional paragraph/chapter waits are reported separately from involuntary
+  buffering and cannot be used to claim real-time generation.
 - Startup latency, real-time factor, buffer depth, underruns, and cancellation latency can be measured.
 
 ### Reliability
@@ -112,6 +130,8 @@ Remaining:
 ## Non-goals for the first version
 
 - Producing or exporting complete audiobook files.
+- Guaranteeing uninterrupted or real-time narration on the constrained Qwen
+  development profile.
 - Cloud synchronization.
 - Online TTS providers.
 - DRM circumvention.

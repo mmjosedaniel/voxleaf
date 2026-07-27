@@ -4,6 +4,15 @@
 
 This broad plan predates the milestone-specific implementation plans and intentionally spans visual reading, narration synchronization, and audio startup work. The completed [`M004-reflowable-visual-reader-and-position-restoration.md`](../completed/M004-reflowable-visual-reader-and-position-restoration.md), [`M005-narration-text-preparation.md`](../completed/M005-narration-text-preparation.md), and [`M006-local-tts-feasibility-and-engine-profiles.md`](../completed/M006-local-tts-feasibility-and-engine-profiles.md) plans record the implementation authority and evidence for roadmap Milestones 4 through 6. Retain this document as context for later roadmap Milestones 8 and 9; it does not supersede those completed authorities, authorize blocked Milestone 7, or bring narration/audio work into an earlier milestone.
 
+ADR-0015 and
+[`M008-bounded-adaptive-prebuffering.md`](M008-bounded-adaptive-prebuffering.md)
+now own Milestone 8's detailed scheduling authority. They preserve this plan's
+approximately 15-playable-second quick-start rule and add explicit prepared
+playback, bounded generation during playback-only pause, truthful frontier
+buffering, optional adaptive boundary waits, and an approximately 30-minute
+simultaneous ceiling. This older cross-milestone plan does not override those
+decisions.
+
 ## Goal
 
 Implement a normal reflowable EPUB reading surface that shares one stable reading position with narration, restores the user's last visible passage, and starts playback immediately after approximately 15 seconds of playable audio—not 15 seconds of wall-clock waiting—has accumulated in bounded memory.

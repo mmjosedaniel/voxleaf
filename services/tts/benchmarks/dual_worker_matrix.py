@@ -35,7 +35,7 @@ def build_v5_requests(
 ) -> tuple[DualUnitRequest, ...]:
     """Expand only the byte-frozen corpus and official arm schedule."""
 
-    authority = load_frozen_v5_authority(repository_root)
+    authority = load_frozen_v5_authority(repository_root, validate_schemas=False)
     units = {
         cast(str, unit.get("unitId")): unit
         for raw in _sequence(authority.base_corpus.get("units"))

@@ -375,3 +375,64 @@ def test_gpu_primary_adapter_freezes_threads_and_exact_cuda_placement(
         "attn_implementation": "sdpa",
         "local_files_only": True,
     }
+
+
+def test_v5_diagnostic_overrides_only_the_generated_token_ceiling(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HF_HUB_OFFLINE", "1")
+    monkeypatch.setenv("TRANSFORMERS_OFFLINE", "1")
+    profile = load_v3_candidate_profile(REPOSITORY_ROOT, QWEN_V3_CANDIDATE_ID)
+    calls: dict[str, object] = {}
+    torch, qwen = _runtime_modules(
+        device="cuda:0",
+        cuda_available=True,
+        cuda_device_count=1,
+        calls=calls,
+    )
+    monkeypatch.setattr(
+        "benchmarks.adapters.qwen3.validate_configuration",
+        lambda _profile, _configuration: tmp_path.resolve(),
+    )
+    monkeypatch.setattr(
+        "benchmarks.adapters.qwen3.verify_artifacts",
+        lambda _root, _artifacts: None,
+    )
+    adapter = Qwen3TtsAdapter(
+        profile,
+        _configuration(tmp_path),
+        placement_profile_id=GPU_PROFILE_ID,
+        diagnostic_max_new_tokens=256,
+        importer=lambda name: {"torch": torch, "qwen_tts": qwen}[name],
+        version_reader={
+            "qwen-tts": "0.1.1",
+            "torch": "2.9.1+cu128",
+            "torchaudio": "2.9.1+cu128",
+        }.__getitem__,
+    )
+
+    adapter.load()
+    adapter.generate_batch(_request())
+
+    generated = calls["generate"]
+    assert isinstance(generated, dict)
+    assert generated["max_new_tokens"] == 256
+
+
+@pytest.mark.parametrize("value", [0, 255, 257, 2048])
+def test_v5_diagnostic_rejects_every_other_token_ceiling(
+    value: int,
+    tmp_path: Path,
+) -> None:
+    profile = load_v3_candidate_profile(REPOSITORY_ROOT, QWEN_V3_CANDIDATE_ID)
+    with pytest.raises(
+        AdapterConfigurationError,
+        match=r"^tts-benchmark-adapter:authority$",
+    ):
+        Qwen3TtsAdapter(
+            profile,
+            _configuration(tmp_path),
+            placement_profile_id=GPU_PROFILE_ID,
+            diagnostic_max_new_tokens=value,
+        )

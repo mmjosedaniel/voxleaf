@@ -59,10 +59,14 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   screen before the same-authority GPU-solo and concurrent arms.
 - `schemas/dual-worker-raw-v5.schema.json` and
   `schemas/dual-worker-summary-v5.schema.json` freeze the closed private and
-  content-safe result shapes. Plan Milestone 7 now implements the
+  content-safe result shapes. Plan Milestone 7 implements the
   benchmark-local controller, exact CPU/GPU adapter paths, bounded replay, and
-  reviewed command surface. No `v5` pilot, official result, audio, or quality
-  finding exists.
+  reviewed command surface. CPU-solo and GPU-solo official results exist; the
+  official concurrent arm stopped at its frozen resource boundary.
+- [`selection-v5.md`](selection-v5.md) is the accepted content-safe final
+  decision. It rejects CPU-only and dual-worker scheduling, retains the exact
+  GPU identity only for ADR-0015's constrained demo, and keeps both
+  diagnostics non-promotable.
 - `incremental-cancellation-prototype-v1.json` freezes the development-only
   prototype topology before results: complete-segment delivery, one resident
   spawned worker, explicit input/output/queue ceilings, identity-first stale
@@ -87,7 +91,8 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   matrix. It rejects both exact evaluated profiles and links ADR-0013.
 - [`selection-v3.md`](selection-v3.md) is the accepted content-free Milestone
   6.1 decision record. It preserves the failed standard Serena `v3` result and
-  separately records ADR-0014's exact constrained development-demo exception.
+  separately records the original ADR-0014 constrained-demo exception;
+  ADR-0015 now governs scheduling and buffering.
 - [`docs/architecture/tts-feasibility-profile-v3.md`](../../docs/architecture/tts-feasibility-profile-v3.md)
   is the active blocker-resolution authority for the selected Serena
   development candidate. `v2` remains the completed first-cycle authority and
@@ -290,9 +295,9 @@ implemented. The validator byte-verifies the new profile, corpus, and schemas;
 recomputes both complete worker identities; rejects CPU
 CUDA/dedicated/shared-GPU use, missing, duplicate, or reordered occurrences,
 hidden retries, authority drift, retention overruns, private content, and a
-sustainability pass at aggregate RTF `>= 1.0`; and verifies that an eventual
-authority commit contains the exact frozen bytes and strictly precedes
-execution. The controller keeps one active unit per worker, makes
+sustainability pass at aggregate RTF `>= 1.0`; and requires the exact frozen
+authority commit `fad271150303936625a7c4be348742f36a75f21b` to strictly
+precede execution. The controller keeps one active unit per worker, makes
 head-of-line delay observable, rejects stale completion, and replays the
 15/300-second, 40-unit, 28,800,000-byte, and two-active-unit bounds with exact
 rational arithmetic.
@@ -416,18 +421,65 @@ import, uses CPU float32 with twelve/one threads, and rejects CUDA, disk, meta,
 or implicit placement. The GPU process uses `cuda:0` BF16 with four/one
 threads. Each process owns at most one blocking complete-waveform call.
 
-The command receipt is intentionally non-promotable in Milestone 7.
-Milestone 8 must add and execute the frozen private raw evidence, cancellation,
-memory, cleanup, and safe-summary derivation before any receipt becomes a
-`v5` result. Do not run the positive hardware path outside that milestone.
-The no-model invalid-input smoke is safe now:
+Milestone 8 adds private raw evidence, cancellation, memory/commit, cleanup,
+and safe-summary derivation. The hardware command still emits only a
+non-promotable receipt. Official raw stays under the ignored
+`benchmarks/results/raw/dual-worker-v5/<session-id>/` boundary. Run the base
+environment derivation with the same arm and session; it validates authority
+and schema, deletes the exact raw session only after successful derivation,
+and emits the content-safe summary. A failed derivation retains ignored raw
+for content-free diagnosis and never emits a result.
+
+Both positive commands require `HF_HUB_OFFLINE=1` and
+`TRANSFORMERS_OFFLINE=1`, the exact outbound firewall block, AC power, disabled
+sleep, accepted background/thermal conditions, a clean committed checkpoint,
+and the frozen resource headroom. Later arms also require SHA-256 hashes of the
+already committed prior safe summaries. Never place valid private command
+input in a tracked file.
+
+The no-model invalid-input smokes are safe:
 
 ```powershell
 "{}" | pnpm.cmd benchmark:tts:dual-worker
+"{}" | pnpm.cmd benchmark:tts:dual-worker:derive
 ```
 
-It returns only `{"status":"fail","failureCode":"input"}` and does not import
-Qwen or PyTorch. Never place valid private command input in a tracked file.
+Each returns only `{"status":"fail","failureCode":"input"}`. Neither loads Qwen
+or PyTorch.
+
+The Milestone 8 exact-host run produced schema-valid CPU-solo and GPU-solo
+summaries at `dual-worker-result-v5-cpu-solo.json` and
+`dual-worker-result-v5-gpu-solo.json`. CPU solo passed its bounded admission;
+GPU solo remained slower than real time. The hash-bound concurrent arm stopped
+with the frozen `resource-limit` code before promotable raw/result creation,
+so no concurrent summary exists and playback/quality Milestone 9 is not
+admitted. This is a failed feasibility outcome, not a production topology.
+
+A later non-promotable diagnostic answers the original failure's collapsed
+subcode without changing the frozen authority. `resultPurpose:
+concurrent-diagnostic` accepts only the concurrent arm, both committed solo
+summary hashes, and `diagnosticMaxNewTokens: 256`. It uses the same two isolated
+workers and safety monitor, writes no raw/result evidence, and can never be
+promoted. The exact-host diagnostic stopped on `commit-headroom` after about
+98 seconds. Reducing Qwen's generated-token ceiling from 2048 to 256 therefore
+did not remove the original memory pressure.
+
+A repeat after closing other applications completed all 40 first attempts.
+This proves the commit failure depends on the host's baseline application load,
+not on an unavoidable two-model allocation alone. The completed diagnostic
+still failed scheduling feasibility: aggregate RTF was `1.4291263397435898`
+against the required value below `1.0`, and the GPU worker's RTF increased to
+`2.3290592090374167` under CPU contention. The maximum unit was 14.16 seconds,
+so the 256-token ceiling did not truncate the intended 8-16-second output.
+The official result remains `resource-limit`; both diagnostics remain
+non-promotable and do not admit playback/quality review.
+
+Accepted `selection-v5` concludes the experiment. CPU-only and dual-worker
+product scheduling are rejected; the approximately 2.6% low-load aggregate
+gain does not justify the GPU slowdown, memory sensitivity, or second-model
+complexity. ADR-0015 and M008 retain one GPU worker for a separately bounded
+adaptive demo plan. They do not promote these benchmark mechanics into the
+production dependency graph or runtime.
 
 ## Disposable blinded quality session
 

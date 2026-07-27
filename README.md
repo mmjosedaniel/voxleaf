@@ -2,7 +2,7 @@
 
 A privacy-first desktop EPUB reader in development, designed for on-device neural text-to-speech and in-memory audio streaming.
 
-> **Status:** pre-alpha. Roadmap Milestones 1 through 6.1 are complete. Milestone 6 implemented and validated a candidate-neutral local TTS feasibility harness, and ADR-0013 records its no-viable-profile decision: both exact evaluated profiles failed frozen gates. Milestone 6.1 evaluated Qwen3-TTS 1.7B CustomVoice with the built-in Serena speaker. Its frozen standard profile failed startup, throughput, zero-failure, and mid-generation cancellation gates, while ADR-0014 permits the same exact identity only for a bounded development demo after one fluent maintainer accepted its audible quality. Repository/privacy closeout and required pull-request CI passed. The desktop can open a supported local EPUB, render and navigate its safe reflowable content, apply bounded display preferences, and restore a validated logical reading position after exact-file reselection. The EPUB package also exposes deterministic, bounded, locator-linked narration preparation. The desktop does not call that operation, and no production TTS engine, process protocol, generated audio, playback, synchronization, general hardware profile, or installer is implemented.
+> **Status:** pre-alpha. Roadmap Milestones 1 through 6.2 are complete. Milestone 6 implemented a candidate-neutral local TTS feasibility harness, and ADR-0013 records that no standard profile passed. Completed Milestone 6.2 records `selection-v5`, which rejects CPU-only and dual-worker scheduling and retains the exact Qwen3-TTS 1.7B CustomVoice/Serena GPU identity only for a constrained development demo. ADR-0015 approves planning for bounded one-GPU adaptive preparation, not a production or real-time claim. The desktop can open a supported local EPUB, render and navigate its safe reflowable content, apply bounded display preferences, and restore a validated logical reading position after exact-file reselection. The EPUB package also exposes deterministic, bounded, locator-linked narration preparation. The desktop does not call that operation, and no production TTS engine, process protocol, generated audio, playback, synchronization, general hardware profile, or installer is implemented.
 
 ## Goal
 
@@ -11,8 +11,10 @@ VoxLeaf will let a user open an EPUB and listen to it without uploading the book
 The MVP is allowed to:
 
 - Build approximately 15 seconds of playable audio before narration starts, without imposing a fixed 15-second wall-clock wait.
+- Offer explicit prepared playback with a visible 1-, 2-, 5-, or 10-minute playable-audio target.
 - Buffer occasionally for up to 5 seconds per minute.
-- Keep a bounded amount of generated audio in memory.
+- Keep at most approximately 30 minutes of generated playable audio in memory
+  for the constrained demo, with simultaneous byte/count/work bounds.
 - Discard audio after playback instead of building a permanent audiobook file.
 
 ## MVP capability target
@@ -32,7 +34,7 @@ The MVP is allowed to:
 
 The canonical [system architecture diagram](docs/architecture/system-diagram.md) distinguishes implemented components, work in progress, approved planned work, blocked boundaries, foundations, external systems, and deferred work. The framework-independent `@voxleaf/epub` package validates in-memory EPUB bytes and exposes safe semantic documents, bounded resources, deterministic locators, and `OpenedPublication.prepareNarration`. That implemented operation derives separate ephemeral narration text and locator-linked prepared segments without changing displayed text. The desktop consumes the publication boundary for visual reading and position restoration but does not yet connect prepared segments to TTS or playback.
 
-Tauri, React, TypeScript, the direct semantic DOM reader, and bounded WebView `localStorage` persistence are accepted and implemented within their documented limits. A separate local Python TTS process and bounded in-memory audio remain later-roadmap directions. The exact Qwen3-TTS 0.6B CustomVoice and Supertonic CPU-compatible profiles are rejected evaluation evidence, not selected production architecture. The 1.7B CustomVoice built-in-speaker path is approved only for a new frozen candidate cycle; Base voice cloning is outside the current MVP. OpenAI Whisper is speech recognition and is not a TTS candidate. The engine, built-in speaker, process transport, audio format, and playback API remain undecided, and Milestone 7 stays blocked until a newly frozen evaluation selects a viable profile.
+Tauri, React, TypeScript, the direct semantic DOM reader, and bounded WebView `localStorage` persistence are accepted and implemented within their documented limits. A separate local Python TTS process and bounded in-memory audio remain later-roadmap directions. The exact Qwen3-TTS 0.6B CustomVoice and Supertonic CPU-compatible profiles are rejected evaluation evidence, not selected production architecture. The 1.7B CustomVoice/Serena GPU path is approved only for ADR-0015's constrained development demo; CPU-only and dual-worker scheduling are rejected, and Base voice cloning is outside the current MVP. OpenAI Whisper is speech recognition and is not a TTS candidate. Process transport, audio format, playback API, production profile, and general hardware support remain undecided.
 
 ## Privacy principles
 

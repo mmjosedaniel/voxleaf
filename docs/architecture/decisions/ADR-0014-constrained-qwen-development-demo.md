@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted.
+Superseded by
+[ADR-0015](ADR-0015-bounded-adaptive-qwen-demo-buffering.md).
+
+This record remains the historical authority for accepting the exact Qwen
+identity and its original constrained-demo boundary.
 
 ## Context
 
