@@ -663,6 +663,39 @@ implemented or run.
   [`result schema`](../../../benchmarks/tts/schemas/service-handoff-result-v1.schema.json)
   are the pre-result authority.
 
+#### Implementation checkpoint
+
+- A separate hidden release-host mode consumes the frozen profile at compile
+  time and drives the existing exact `TtsServiceSupervisor`. The public Tauri
+  command set and protocol-v1 controls are unchanged.
+- The supervisor now exposes internal measured forms of the existing prepare
+  and synthesis operations. They retain the same behavior while recording
+  load, warm, command-to-audio-metadata, command-to-complete-unit, and
+  move-plus-final-validation durations.
+- The hidden host owns a one-unit diagnostic consumer. It zeroes released or
+  stale bytes, rejects a second dispatch while one exact unit is retained, and
+  emits only closed phase and numeric result events. No narration text,
+  waveform, path, process identity, exception, or command is emitted.
+- The separate base-service runner verifies the existing interpreter-bound
+  outbound firewall rule, launches the release host, samples descendant RAM
+  every 50 ms and WDDM dedicated/shared GPU memory every 1,000 ms, observes
+  bound/external network endpoints without reporting process identities, and
+  requires zero descendants after every termination.
+- The runner derives nearest-rank p95 values, validates the closed result
+  schema, and writes only one content-safe JSON object to standard output. It
+  retains no raw journal, text, audio, path, process identity, or exception.
+- The reviewed command is:
+
+  ```powershell
+  $env:VOXLEAF_TTS_DEV_ENABLED = "1"
+  $env:VOXLEAF_TTS_DEV_PYTHON = (Resolve-Path "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/.venv/Scripts/python.exe").Path
+  $env:VOXLEAF_TTS_DEV_MODEL_ROOT = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda").Path
+  pnpm.cmd test:tts:handoff-host
+  ```
+
+  It is Windows/CUDA-only, requires the existing outbound firewall block, and
+  is excluded from portable/default checks and CI.
+
 ### Milestone 6: Record the protocol decision and close validation
 
 #### Work
@@ -737,6 +770,10 @@ ignored model root. The checked-in launcher emits only a fixed pass/fail line;
 the native host and child emit no path, narration text, waveform, environment
 value, exception, or process command. The command is Windows/CUDA-only,
 hardware-specific, and excluded from default checks and CI.
+
+Milestone 5 adds the separate measured handoff command recorded in its
+implementation checkpoint. It must be committed after the authority
+checkpoint and before its one authoritative hardware attempt.
 
 Default and CI validation must remain model-free and hardware-free. Exact-host
 validation runs only on native Windows with the frozen candidate environment,
@@ -936,6 +973,13 @@ artifact behind.
   inputs, ordered nine-case matrix, clocks, RAM/VRAM sampling, first-attempt
   policy, cleanup gates, privacy boundary, and closed result schema. Focused
   authority validation passes ten tests plus Ruff and strict mypy.
+- 2026-07-27: Implemented the result-blind hidden native matrix host, internal
+  supervisor timing observations, bounded diagnostic consumer, Windows
+  process-tree/WDDM/network runner, closed result derivation, and reviewed
+  `pnpm.cmd test:tts:handoff-host` command. Deterministic validation passes 24
+  Rust tests and 22 focused Python authority/runner/memory tests plus Rustfmt,
+  Clippy with warnings denied, Ruff, and strict mypy. The hardware command has
+  not yet been executed.
 
 ## Discoveries and decisions
 
@@ -1014,6 +1058,11 @@ artifact behind.
     measurement runner. The supervised Qwen child's standard output remains
     protocol-only, and no measurement field is added to the public Tauri or
     process protocol surface.
+21. Exact-host resource ownership spans the Rust diagnostic owner and its Qwen
+    descendant. The measurement runner therefore attributes RAM plus WDDM
+    dedicated/shared memory to the release host's descendant tree, checks
+    bound/external endpoints without retaining PIDs, and rejects a result
+    unless all four post-termination observations and final cleanup are zero.
 
 ## Final validation results
 

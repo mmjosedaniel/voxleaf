@@ -128,6 +128,21 @@ impl ExactRuntime {
     }
 }
 
+#[derive(Debug)]
+pub(crate) struct PrepareMeasurement {
+    pub records: Vec<Value>,
+    pub load_elapsed: Duration,
+    pub warm_elapsed: Duration,
+}
+
+#[derive(Debug)]
+pub(crate) struct SynthesisMeasurement {
+    pub audio: Vec<u8>,
+    pub command_to_first_transport_frame: Duration,
+    pub command_to_complete_unit: Duration,
+    pub native_frame_handoff: Duration,
+}
+
 fn absolute_existing_path(key: &str, directory: bool) -> Result<PathBuf, TtsNativeFailure> {
     let value = std::env::var_os(key).ok_or(TtsNativeFailure::ChildUnavailable)?;
     let configured = PathBuf::from(value);
@@ -452,6 +467,12 @@ impl TtsServiceSupervisor {
         }
     }
 
+    pub(crate) fn exact_from_environment() -> Result<Self, TtsNativeFailure> {
+        Ok(Self::with_child(ServiceChild::Exact(
+            ExactRuntime::from_environment()?,
+        )))
+    }
+
     fn acquire_operation(&self) -> Result<std::sync::MutexGuard<'_, ()>, TtsNativeFailure> {
         match self.operation.try_lock() {
             Ok(guard) => Ok(guard),
@@ -567,9 +588,15 @@ impl TtsServiceSupervisor {
     }
 
     pub fn prepare(&self) -> Result<Vec<Value>, TtsNativeFailure> {
+        self.prepare_measured()
+            .map(|measurement| measurement.records)
+    }
+
+    pub(crate) fn prepare_measured(&self) -> Result<PrepareMeasurement, TtsNativeFailure> {
         let _operation = self.acquire_operation()?;
         let session = self.active_session()?;
         let result = (|| {
+            let load_started = Instant::now();
             session.write_control(&service_control("load", &session.service_instance_id))?;
             let loading = self.receive_control(&session, LOAD_TIMEOUT, "state")?;
             if loading.get("state").and_then(Value::as_str) != Some("loading") {
@@ -579,13 +606,19 @@ impl TtsServiceSupervisor {
             if warming.get("state").and_then(Value::as_str) != Some("warming") {
                 return Err(TtsNativeFailure::ProtocolRejected);
             }
+            let load_elapsed = load_started.elapsed();
+            let warm_started = Instant::now();
             session.write_control(&service_control("warm", &session.service_instance_id))?;
             let ready = self.receive_control(&session, WARM_TIMEOUT, "state")?;
             if ready.get("state").and_then(Value::as_str) != Some("ready") {
                 return Err(TtsNativeFailure::ProtocolRejected);
             }
             let capabilities = self.receive_control(&session, WARM_TIMEOUT, "capabilities")?;
-            Ok(vec![loading, warming, ready, capabilities])
+            Ok(PrepareMeasurement {
+                records: vec![loading, warming, ready, capabilities],
+                load_elapsed,
+                warm_elapsed: warm_started.elapsed(),
+            })
         })();
         result.map_err(|failure| self.fail_session(failure))
     }
@@ -603,6 +636,14 @@ impl TtsServiceSupervisor {
     }
 
     pub fn synthesize(&self, segment: Value) -> Result<Vec<u8>, TtsNativeFailure> {
+        self.synthesize_measured(segment)
+            .map(|measurement| measurement.audio)
+    }
+
+    pub(crate) fn synthesize_measured(
+        &self,
+        segment: Value,
+    ) -> Result<SynthesisMeasurement, TtsNativeFailure> {
         let _operation = self.acquire_operation()?;
         let session = self.active_session()?;
         let identity = build_work_identity(&segment)?;
@@ -624,6 +665,7 @@ impl TtsServiceSupervisor {
             "requestId": identity.request_id,
             "segment": segment,
         });
+        let command_started = Instant::now();
         let result = (|| {
             session.write_control(&synthesize)?;
             let generating = self.receive_control(&session, SYNTHESIS_TIMEOUT, "state")?;
@@ -637,11 +679,15 @@ impl TtsServiceSupervisor {
             {
                 return Err(TtsNativeFailure::ProtocolRejected);
             }
+            let command_to_first_transport_frame = command_started.elapsed();
             let audio = session.receive(SYNTHESIS_TIMEOUT)?;
             if audio.kind != FrameKind::Audio {
                 return Err(TtsNativeFailure::ProtocolRejected);
             }
+            let native_handoff_started = Instant::now();
             validate_audio(&audio.payload, &metadata)?;
+            let payload = audio.payload;
+            let native_frame_handoff = native_handoff_started.elapsed();
             let completed = self.receive_control(&session, SYNTHESIS_TIMEOUT, "completed")?;
             if !identity.matches_value(completed.get("workIdentity")) {
                 return Err(TtsNativeFailure::ProtocolRejected);
@@ -660,7 +706,12 @@ impl TtsServiceSupervisor {
             if !still_active {
                 return Err(TtsNativeFailure::Cancelled);
             }
-            Ok(audio.payload)
+            Ok(SynthesisMeasurement {
+                audio: payload,
+                command_to_first_transport_frame,
+                command_to_complete_unit: command_started.elapsed(),
+                native_frame_handoff,
+            })
         })();
         let cancelled = self
             .lifecycle
@@ -680,6 +731,26 @@ impl TtsServiceSupervisor {
                 self.fail_session(failure)
             }
         })
+    }
+
+    pub(crate) fn active_cancel_scope(&self) -> Result<CancelScope, TtsNativeFailure> {
+        let lifecycle = self
+            .lifecycle
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        let identity = lifecycle
+            .active
+            .as_ref()
+            .ok_or(TtsNativeFailure::InvalidState)?;
+        Ok(CancelScope {
+            session_id: identity.session_id.clone(),
+            generation_id: identity.generation_id.clone(),
+            segment_id: identity.segment_id.clone(),
+        })
+    }
+
+    pub(crate) fn terminate_child_for_diagnostic(&self) -> Result<(), TtsNativeFailure> {
+        self.active_session()?.terminate()
     }
 
     pub fn cancel(&self, scope: CancelScope) -> Result<Vec<Value>, TtsNativeFailure> {
@@ -1107,7 +1178,7 @@ pub fn run_exact_host() -> Result<(), &'static str> {
     Ok(())
 }
 
-fn verify_exact_capabilities(records: &[Value]) -> Result<(), &'static str> {
+pub(crate) fn verify_exact_capabilities(records: &[Value]) -> Result<(), &'static str> {
     let supported = records.iter().any(|record| {
         record.get("kind").and_then(Value::as_str) == Some("capabilities")
             && record

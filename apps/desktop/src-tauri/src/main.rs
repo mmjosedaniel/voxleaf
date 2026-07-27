@@ -7,6 +7,7 @@ use tauri::Manager;
 mod tts_protocol_contract;
 mod tts_protocol_probe;
 mod tts_service_fake_child;
+mod tts_service_handoff;
 mod tts_service_protocol;
 mod tts_service_supervisor;
 
@@ -66,6 +67,13 @@ fn main() {
             if argument == std::ffi::OsStr::new(tts_service_supervisor::EXACT_HOST_ARGUMENT) =>
         {
             std::process::exit(if tts_service_supervisor::run_exact_host().is_ok() {
+                0
+            } else {
+                1
+            });
+        }
+        Some(argument) if argument == std::ffi::OsStr::new(tts_service_handoff::HOST_ARGUMENT) => {
+            std::process::exit(if tts_service_handoff::run_host().is_ok() {
                 0
             } else {
                 1
