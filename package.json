@@ -36,7 +36,7 @@
     "format:check": "pnpm run format:check:typescript && pnpm run format:check:rust && pnpm run format:check:python",
     "format:check:python": "uv run --project services/tts --locked ruff format --check services/tts",
     "format:check:rust": "cargo fmt --check --manifest-path apps/desktop/src-tauri/Cargo.toml",
-    "format:check:typescript": "prettier --check \"**/*.{css,js,json,ts,tsx,yaml,yml}\"",
+    "format:check:typescript": "prettier --check \"**/*.{css,js,json,ts,tsx,yaml,yml}\" \"!tmp/**\" \"!temp/**\" \"!**/.pytest_cache/**\" \"!**/.mypy_cache/**\" \"!**/.ruff_cache/**\" \"!**/__pycache__/**\"",
     "format:python": "uv run --project services/tts --locked ruff format services/tts",
     "format:rust": "cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml",
     "format:typescript": "prettier --write \"**/*.{css,js,json,ts,tsx,yaml,yml}\"",

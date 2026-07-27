@@ -32,6 +32,10 @@ specific preparation duration.
 
 - The production desktop has no TTS caller, audio payload queue, player,
   preparation UI, or synchronization flow.
+- A model-free, manually clocked adaptive scheduler state machine now proves
+  M008 ordering, startup, reservation, backpressure, invalidation, release,
+  failure, end-of-range, and service-recovery semantics. It is not connected
+  to the publication, M007 client, an audio payload queue, or an audio device.
 - Shared session, generation, audio-frame, and buffer-status contracts plus
   deterministic fakes exist.
 - `@voxleaf/epub` exposes bounded locator-linked
@@ -204,8 +208,8 @@ implemented narration-preparation boundary.
 
 Complete. The model-independent authority, executable constants, exact-bound
 arithmetic, ownership/lifecycle semantics, volume/speed decision, and truthful
-UX language are frozen before scheduler implementation. Milestone 2 has not
-started.
+UX language are frozen before scheduler implementation. Milestone 2 implements
+only the model-free deterministic scheduler proof described below.
 
 #### Frozen authority and actual result
 
@@ -269,7 +273,37 @@ started.
 
 #### Status
 
-Not started.
+Complete.
+
+#### Actual result
+
+- Added `apps/desktop/src/tts/adaptive-buffer-scheduler.ts`, a content-free,
+  manually clocked producer-consumer state machine over M008 authority
+  arithmetic. It models the stopped/start/unloaded/prepare/ready/generating
+  service lifecycle, one active preparation, one active synthesis, zero
+  service queue, FIFO segment dispatch, quick/prepared startup, refill,
+  low-water, buffering, end-of-range, failure, invalidation, and replacement.
+- Every synthesis dispatch reserves the full M007 20-second unit maximum before
+  work starts. The same reservation function admits the exact final unit at
+  43,200,000 frames/172,800,000 bytes and rejects another unit at saturation.
+- The proof separates remaining playable frames from whole retained-unit
+  memory. A partially consumed unit remains one retained frame/byte owner until
+  completion, while only its unconsumed frames contribute playable lead.
+- Metadata-only units have one scheduler owner. Playback, invalidation, invalid
+  output, and stale late completion each release that owner exactly once.
+  Invalidation clears eligibility and all counters before the modeled
+  cancel/shutdown transition settles.
+- The reference RTF `1.467080448861599` trace starts from exactly 15 playable
+  seconds, observes low water, and enters buffering after 47 playback seconds.
+  This matches the documented approximate 47-second depletion estimate; it is
+  explicitly a deterministic planning trace, not a real-time or hardware
+  claim. A separate RTF `0.5` trace remains supplied for 120 seconds while
+  respecting the one-minute target.
+- Explicit replacement remains stopped until separate start and prepare
+  transitions complete. The deterministic recovery trace advances the manual
+  clock by the measured 16.61-second restart/prepare observation before
+  readiness; the scheduler does not convert that observation into a fixed
+  readiness timer.
 
 ### Milestone 3: Implement bounded in-memory buffering and playback
 
@@ -452,6 +486,22 @@ accepted no-standard-profile decision.
   optional disabled-by-default boundary waits, and content-free truthful UI
   meanings. Added deterministic exact/max-plus-one tests without generating or
   retaining audio.
+- 2026-07-27: Completed Milestone 2 on
+  `feat/m008-m2-deterministic-scheduler`. Added the model-free manually clocked
+  scheduler, full-unit pre-dispatch reservation, prepared-text accounting,
+  complete-unit FIFO ownership/release, identity-first invalidation, explicit
+  service recovery, and deterministic quick/prepared/faster/RTF/bursty/
+  failure/end-of-range traces. Focused authority plus scheduler validation
+  passes 26 tests; no model, audio device, payload persistence, protocol,
+  dependency, capability, UI, or product caller was added. Implementation
+  checkpoint `8f5aae4` and ownership-hardening checkpoint `57f3e66` retain the
+  sequential code/test history.
+- 2026-07-27: Final portable validation exposed pre-existing ignored
+  `tmp`/Python cache trees that are owned by an earlier sandbox account and
+  cannot be traversed by the normal Windows user. Formatter and linter
+  traversal now excludes those already repository-ignored trees before
+  scanning; the exact portable command then passes without weakening source
+  coverage.
 
 ## Discoveries and decisions
 
@@ -493,6 +543,16 @@ accepted no-standard-profile decision.
     approximately 15-second quick-start depletion cycle, while avoiding the
     rejected mandatory 10-minute rebuffer wait. It remains a constrained-demo
     policy, not a sustained real-time claim.
+15. Remaining playable frames and retained-unit memory are different
+    quantities. Partial playback reduces lead immediately, but the complete
+    unit's frames and bytes remain retained for resource accounting until its
+    sole owner releases it.
+16. Exact-host restart/prepare time is an estimate input, not a scheduler
+    timeout. Readiness still requires explicit M007 start and prepare
+    completion; deterministic traces place that event after 16.61 seconds.
+17. The complete-unit RTF trace reproduces the approximate 47-second quick
+    depletion estimate. It does not change the accepted slower-than-real-time
+    conclusion or imply uninterrupted playback.
 
 ## Final validation results
 
@@ -511,6 +571,26 @@ Milestone 1 focused validation passes:
   have zero private-path/credential-pattern or forbidden generated-artifact
   hits, and `git diff --check` passes.
 
-The authority makes no queue, scheduler, player, product caller, audible
-playback, continuous-output, production-profile, or general-hardware claim.
-Milestones 2 through 6 remain not started.
+Milestone 2 validation passes:
+
+- `pnpm.cmd --filter @voxleaf/desktop exec vitest run src/tts/adaptive-buffer-authority.test.ts src/tts/adaptive-buffer-scheduler.test.ts`
+  passes two files/26 tests.
+- `pnpm.cmd --filter @voxleaf/desktop typecheck`,
+  `pnpm.cmd --filter @voxleaf/desktop test`, and
+  `pnpm.cmd lint:typescript` pass. The complete desktop run passes 24 Vitest
+  files/246 tests plus six native-driver client tests.
+- The final exact `pnpm.cmd check:portable` passes Prettier, Ruff
+  format/check, ESLint, mypy, every workspace typecheck, 196 shared tests, 555
+  EPUB tests, 246 desktop Vitest tests, six native-driver client tests, 233
+  Python tests, package/desktop/Python builds, and both Python distributions.
+  The existing Vite chunk-size advisory and denied-write Pytest cache warning
+  are informational; every commanded gate exits successfully.
+- Eight changed Markdown files resolve all 150 relative targets. The complete
+  13-file `main` delta has no binary, book, audio, model, archive, generated
+  contract, credential/private-path pattern, dependency, protocol, Tauri
+  capability, or persistence change; `git diff --check` passes.
+
+Milestone 2 adds only a model-free scheduler state-machine proof and
+metadata-only ownership traces. It makes no audio-payload queue, player,
+product caller, audible playback, continuous-output, production-profile, or
+general-hardware claim. Milestones 3 through 6 remain not started.
