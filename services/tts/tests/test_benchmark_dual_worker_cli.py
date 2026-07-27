@@ -44,6 +44,8 @@ def _payload(
     }
     if purpose == "official":
         value["sessionId"] = "0123456789abcdef0123456789abcdef"
+    elif purpose == "concurrent-diagnostic":
+        value["diagnosticMaxNewTokens"] = 256
     return value
 
 
@@ -68,6 +70,16 @@ def test_command_contract_accepts_pilot_and_frozen_official_arm_progression() ->
     concurrent = parse_dual_worker_command(concurrent_payload)
     assert concurrent.prior_gpu_solo_summary_sha256 == SHA_B
 
+    diagnostic_payload = _payload(
+        purpose="concurrent-diagnostic",
+        arm="concurrent",
+    )
+    diagnostic_payload["priorCpuSoloSummarySha256"] = SHA_A
+    diagnostic_payload["priorGpuSoloSummarySha256"] = SHA_B
+    diagnostic = parse_dual_worker_command(diagnostic_payload)
+    assert diagnostic.diagnostic_max_new_tokens == 256
+    assert diagnostic.session_id is None
+
 
 @pytest.mark.parametrize(
     "payload",
@@ -86,6 +98,12 @@ def test_command_contract_accepts_pilot_and_frozen_official_arm_progression() ->
             "priorCpuSoloSummarySha256": SHA_A,
         },
         {**_payload(), "expectedCommitSha": GIT_A},
+        {
+            **_payload(purpose="concurrent-diagnostic", arm="concurrent"),
+            "priorCpuSoloSummarySha256": SHA_A,
+            "priorGpuSoloSummarySha256": SHA_B,
+            "diagnosticMaxNewTokens": 255,
+        },
     ],
 )
 def test_command_contract_rejects_drift_and_out_of_order_arms(

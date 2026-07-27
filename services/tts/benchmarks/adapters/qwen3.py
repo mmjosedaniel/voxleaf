@@ -120,6 +120,7 @@ class Qwen3TtsAdapter:
         *,
         placement_profile_id: PlacementProfileId | None = None,
         worker_candidate_id: str | None = None,
+        diagnostic_max_new_tokens: int | None = None,
         importer: ModuleImporter = importlib.import_module,
         version_reader: VersionReader = metadata.version,
     ) -> None:
@@ -130,12 +131,19 @@ class Qwen3TtsAdapter:
             or worker_candidate_id != "qwen3-tts-1-7b-customvoice-cpu-fp32-v5"
         ):
             raise AdapterConfigurationError("candidate")
+        if diagnostic_max_new_tokens is not None and (
+            diagnostic_max_new_tokens != 256
+            or placement_profile_id
+            not in ("qwen3-serena-v5-cpu-support", "qwen3-serena-v5-gpu-primary")
+        ):
+            raise AdapterConfigurationError("authority")
         self.candidate_id: Final = worker_candidate_id or profile.candidate_id
         self._profile = profile
         self._configuration = configuration
         self._importer = importer
         self._version_reader = version_reader
         self._placement_profile_id = placement_profile_id
+        self._diagnostic_max_new_tokens = diagnostic_max_new_tokens
         self._placement_evidence: AdapterPlacementEvidence | None = None
         self._model: _QwenModel | None = None
         self._torch: _TorchModule | None = None
@@ -304,12 +312,15 @@ class Qwen3TtsAdapter:
         ):
             raise BatchBenchmarkError("generation-failed")
         try:
+            generation_kwargs = generation.as_qwen_kwargs()
+            if self._diagnostic_max_new_tokens is not None:
+                generation_kwargs["max_new_tokens"] = self._diagnostic_max_new_tokens
             waveforms, sample_rate = model.generate_custom_voice(
                 text=[unit.text for unit in request.units],
                 language=[unit.language for unit in request.units],
                 speaker=[self._profile.voice_id for _unit in request.units],
                 instruct=[instruction for _unit in request.units],
-                **generation.as_qwen_kwargs(),
+                **generation_kwargs,
             )
             if (
                 not isinstance(sample_rate, int)

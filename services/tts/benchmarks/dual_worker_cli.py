@@ -157,6 +157,7 @@ def _adapter(
     profile: CandidateProfile,
     configuration: CandidateConfiguration,
     forbidden_values: tuple[str, ...],
+    diagnostic_max_new_tokens: int | None = None,
 ) -> IsolatedBenchmarkAdapter:
     cpu = role == CPU_WORKER_ROLE
     return create_isolated_candidate_adapter(
@@ -171,6 +172,7 @@ def _adapter(
         ),
         placement_profile_id=CPU_PROFILE_ID if cpu else GPU_PROFILE_ID,
         worker_candidate_id=CPU_CANDIDATE_ID if cpu else None,
+        diagnostic_max_new_tokens=diagnostic_max_new_tokens,
     )
 
 
@@ -179,6 +181,7 @@ def _runtime(
     profile: CandidateProfile,
     configuration: CandidateConfiguration,
     forbidden_values: tuple[str, ...],
+    diagnostic_max_new_tokens: int | None = None,
 ) -> ThreadedDualWorkerRuntime:
     candidates = {
         role: _adapter(
@@ -186,6 +189,7 @@ def _runtime(
             profile=profile,
             configuration=configuration,
             forbidden_values=forbidden_values,
+            diagnostic_max_new_tokens=diagnostic_max_new_tokens,
         )
         for role in roles
     }
@@ -452,7 +456,13 @@ def _run(request: DualWorkerCommandRequest) -> dict[str, object]:
     load_observations: list[dict[str, object]] = []
     try:
         if request.purpose == "cpu-solo-pilot" or request.arm == "concurrent":
-            runtime = _runtime(roles, profile, configuration, forbidden_values)
+            runtime = _runtime(
+                roles,
+                profile,
+                configuration,
+                forbidden_values,
+                request.diagnostic_max_new_tokens,
+            )
             load_observations = _load_runtime(runtime, roles, 0)
         else:
             cold_roles = (roles[0], roles[0], roles[0])
@@ -493,6 +503,74 @@ def _run(request: DualWorkerCommandRequest) -> dict[str, object]:
             if dispatches
             else 0
         )
+        if request.purpose == "concurrent-diagnostic":
+            role_metrics: dict[str, dict[str, float | int]] = {}
+            for role in roles:
+                role_dispatches = [item for item in dispatches if item["workerRole"] == role]
+                role_media = sum(
+                    cast(float, item["durationSeconds"])
+                    for item in role_dispatches
+                    if item["durationSeconds"] is not None
+                )
+                role_generation = sum(
+                    cast(float, item["generationSeconds"])
+                    for item in role_dispatches
+                    if item["generationSeconds"] is not None
+                )
+                role_metrics[role] = {
+                    "completedFirstAttempts": len(role_dispatches),
+                    "mediaSeconds": role_media,
+                    "generationSeconds": role_generation,
+                    "totalRtf": role_generation / role_media if role_media else 0,
+                }
+            samples = memory.samples
+            return {
+                "schemaVersion": "tts-dual-worker-diagnostic-receipt-v1",
+                "resultPurpose": request.purpose,
+                "arm": request.arm,
+                "status": "complete",
+                "diagnosticMaxNewTokens": request.diagnostic_max_new_tokens,
+                "measuredFirstAttempts": len(observation.dispatches),
+                "completedFirstAttempts": len(observation.released),
+                "aggregateRtf": elapsed / media if media else None,
+                "maximumUnitDurationSeconds": max(
+                    (
+                        cast(float, item["durationSeconds"])
+                        for item in dispatches
+                        if item["durationSeconds"] is not None
+                    ),
+                    default=0,
+                ),
+                "workerMetrics": role_metrics,
+                "peakCombinedProcessRamBytes": max(
+                    item["controllerRamBytes"]
+                    + item["gpuWorkerRamBytes"]
+                    + item["cpuWorkerRamBytes"]
+                    for item in samples
+                ),
+                "minimumSystemAvailableRamBytes": min(
+                    item["systemAvailableRamBytes"] for item in samples
+                ),
+                "minimumSystemCommitHeadroomBytes": min(
+                    item["systemCommitLimitBytes"] - item["systemCommitUsedBytes"]
+                    for item in samples
+                ),
+                "peakGpuWorkerDedicatedVramBytes": max(
+                    item["gpuWorkerDedicatedVramBytes"] for item in samples
+                ),
+                "peakGpuWorkerSharedGpuBytes": max(
+                    item["gpuWorkerSharedGpuBytes"] for item in samples
+                ),
+                "peakCpuWorkerDedicatedVramBytes": max(
+                    item["cpuWorkerDedicatedVramBytes"] for item in samples
+                ),
+                "peakCpuWorkerSharedGpuBytes": max(
+                    item["cpuWorkerSharedGpuBytes"] for item in samples
+                ),
+                "privateRawCaptured": False,
+                "eligibleForPromotion": False,
+                "nextStep": "diagnostic-only",
+            }
         if request.purpose == "cpu-solo-pilot":
             peak_cpu_dedicated = max(item["cpuWorkerDedicatedVramBytes"] for item in memory.samples)
             peak_cpu_shared = max(item["cpuWorkerSharedGpuBytes"] for item in memory.samples)
