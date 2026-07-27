@@ -66,13 +66,21 @@ export interface AdaptiveBufferAudioUnitMetadata {
   readonly endOfSegment: true;
 }
 
-/**
- * Metadata-only ownership boundary used by the deterministic scheduler proof.
- * Milestone 3 will provide the payload-owning implementation.
- */
 export interface AdaptiveBufferAudioUnit {
   readonly metadata: AdaptiveBufferAudioUnitMetadata;
+  readonly payload: Uint8Array;
   release(): void;
+}
+
+export interface AdaptiveBufferPlaybackUnit {
+  readonly sequence: number;
+  readonly metadata: AdaptiveBufferAudioUnitMetadata;
+  readonly payload: Uint8Array;
+  readonly consumedSampleFrames: number;
+}
+
+export interface AdaptiveBufferAudioUnitSource {
+  takeAudioUnit(): AdaptiveBufferAudioUnit | undefined;
 }
 
 export type AdaptiveBufferServiceState =
@@ -123,11 +131,13 @@ export interface AdaptiveBufferSchedulerObservation {
   readonly rangeComplete: boolean;
   readonly pendingSegmentCount: number;
   readonly retainedAudioUnitCount: number;
+  readonly discardedAudioUnitCount: number;
   readonly resourceSnapshot: AdaptiveBufferResourceSnapshot;
   readonly nextAction: AdaptiveBufferSchedulerAction;
 }
 
 interface RetainedAudioUnit {
+  readonly sequence: number;
   readonly unit: AdaptiveBufferAudioUnit;
   readonly sampleFrames: number;
   readonly payloadBytes: number;
@@ -205,11 +215,10 @@ function sameIdentity(
   );
 }
 
-function validAudioMetadata(
-  metadata: AdaptiveBufferAudioUnitMetadata,
-): boolean {
+function validAudioUnit(unit: AdaptiveBufferAudioUnit): boolean {
+  const { metadata, payload } = unit;
   const limits = ADAPTIVE_BUFFER_AUTHORITY_V1.audioLimits;
-  return (
+  if (
     metadata.sampleRateHz ===
       ADAPTIVE_BUFFER_AUTHORITY_V1.audioFormat.sampleRateHz &&
     metadata.channelCount ===
@@ -221,8 +230,26 @@ function validAudioMetadata(
     metadata.sampleCountSamples > 0 &&
     metadata.sampleCountSamples <= limits.serviceUnitReservationSampleFrames &&
     metadata.payloadBytes === metadata.sampleCountSamples * BYTES_PER_SAMPLE &&
-    metadata.payloadBytes <= limits.serviceUnitReservationPayloadBytes
-  );
+    metadata.payloadBytes <= limits.serviceUnitReservationPayloadBytes &&
+    payload.byteLength === metadata.payloadBytes
+  ) {
+    const view = new DataView(
+      payload.buffer,
+      payload.byteOffset,
+      payload.byteLength,
+    );
+    for (
+      let offset = 0;
+      offset < payload.byteLength;
+      offset += BYTES_PER_SAMPLE
+    ) {
+      if (!Number.isFinite(view.getFloat32(offset, true))) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
 }
 
 export function canReserveAdaptiveBufferServiceUnit(
@@ -250,6 +277,8 @@ export class AdaptiveBufferScheduler {
   #pendingSegments: AdaptiveBufferPreparedSegment[] = [];
   #activeSynthesis: ActiveSynthesis | undefined;
   #audioUnits: RetainedAudioUnit[] = [];
+  #discardedAudioUnits: RetainedAudioUnit[] = [];
+  #nextAudioSequence = 0;
   #resources = emptyResources();
   #rangeComplete = false;
   #initialPlaybackStarted = false;
@@ -299,7 +328,9 @@ export class AdaptiveBufferScheduler {
           ),
       rangeComplete: this.#rangeComplete,
       pendingSegmentCount: this.#pendingSegments.length,
-      retainedAudioUnitCount: this.#audioUnits.length,
+      retainedAudioUnitCount:
+        this.#audioUnits.length + this.#discardedAudioUnits.length,
+      discardedAudioUnitCount: this.#discardedAudioUnits.length,
       resourceSnapshot: Object.freeze({ ...this.#resources }),
       nextAction: this.#nextAction(),
     });
@@ -453,7 +484,7 @@ export class AdaptiveBufferScheduler {
       unit.release();
       return "stale";
     }
-    if (!validAudioMetadata(unit.metadata)) {
+    if (!validAudioUnit(unit)) {
       unit.release();
       this.#settleActiveSynthesis();
       this.#serviceState = "failed";
@@ -480,15 +511,37 @@ export class AdaptiveBufferScheduler {
     this.#resources = resources;
     this.#activeSynthesis = undefined;
     this.#audioUnits.push({
+      sequence: this.#nextAudioSequence,
       unit,
       sampleFrames: unit.metadata.sampleCountSamples,
       payloadBytes: unit.metadata.payloadBytes,
       consumedSampleFrames: 0,
     });
+    this.#nextAudioSequence += 1;
     this.#serviceState = "ready";
     this.#clearPreparedBatchIfSettled();
     this.#refreshPlaybackState();
     return "accepted";
+  }
+
+  public takeCompletedUnitFrom(
+    source: AdaptiveBufferAudioUnitSource,
+  ): AdaptiveBufferCompletionOutcome | "missing" {
+    const unit = source.takeAudioUnit();
+    return unit === undefined ? "missing" : this.acceptCompletedUnit(unit);
+  }
+
+  public currentPlaybackUnit(): AdaptiveBufferPlaybackUnit | undefined {
+    const retained = this.#audioUnits[0];
+    if (retained === undefined) {
+      return undefined;
+    }
+    return Object.freeze({
+      sequence: retained.sequence,
+      metadata: retained.unit.metadata,
+      payload: retained.unit.payload,
+      consumedSampleFrames: retained.consumedSampleFrames,
+    });
   }
 
   public failActiveSynthesis(): void {
@@ -567,15 +620,52 @@ export class AdaptiveBufferScheduler {
       this.#activeSynthesis === undefined ? "shutdown" : "cancel";
     this.#identity = undefined;
     this.#pendingSegments = [];
-    for (const retained of this.#audioUnits.splice(0)) {
-      retained.unit.release();
-    }
-    this.#resources = emptyResources();
+    this.#discardedAudioUnits.push(...this.#audioUnits.splice(0));
+    const audio = ADAPTIVE_BUFFER_AUTHORITY_V1.audioLimits;
+    const activeReservation = this.#activeSynthesis === undefined ? 0 : 1;
+    this.#resources = {
+      ...emptyResources(),
+      audioSampleFrames:
+        this.#resources.audioSampleFrames -
+        activeReservation * audio.serviceUnitReservationSampleFrames,
+      audioPayloadBytes:
+        this.#resources.audioPayloadBytes -
+        activeReservation * audio.serviceUnitReservationPayloadBytes,
+      completeAudioUnits:
+        this.#resources.completeAudioUnits - activeReservation,
+      audioMetadataEntries:
+        this.#resources.audioMetadataEntries - activeReservation,
+    };
     this.#activeSynthesis = undefined;
     this.#rangeComplete = false;
     this.#playbackState = "stopped";
     this.#serviceState = transition === "cancel" ? "cancelling" : "stopping";
     return transition;
+  }
+
+  public releaseDiscardedAudioUnits(maximumUnits: number): number {
+    if (!Number.isSafeInteger(maximumUnits) || maximumUnits <= 0) {
+      throw new AdaptiveBufferSchedulerError("invalid-state");
+    }
+    let released = 0;
+    while (released < maximumUnits) {
+      const retained = this.#discardedAudioUnits.shift();
+      if (retained === undefined) {
+        break;
+      }
+      retained.unit.release();
+      this.#resources = {
+        ...this.#resources,
+        audioSampleFrames:
+          this.#resources.audioSampleFrames - retained.sampleFrames,
+        audioPayloadBytes:
+          this.#resources.audioPayloadBytes - retained.payloadBytes,
+        completeAudioUnits: this.#resources.completeAudioUnits - 1,
+        audioMetadataEntries: this.#resources.audioMetadataEntries - 1,
+      };
+      released += 1;
+    }
+    return this.#discardedAudioUnits.length;
   }
 
   public settleServiceStop(): void {

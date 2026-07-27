@@ -62,6 +62,7 @@ function ownedUnit(
 ): OwnedUnit {
   const sampleCountSamples = sampleFramesFromPlayableMilliseconds(playableMs);
   let releaseCount = 0;
+  const payload = new Uint8Array(sampleCountSamples * 4);
   return {
     metadata: Object.freeze({
       ...identity,
@@ -73,6 +74,7 @@ function ownedUnit(
       payloadBytes: sampleCountSamples * 4 + payloadByteAdjustment,
       endOfSegment: true,
     }),
+    payload,
     get releaseCount() {
       return releaseCount;
     },
@@ -150,12 +152,22 @@ describe("adaptive buffer scheduler", () => {
     });
     expect(first.releaseCount).toBe(0);
     expect(second.releaseCount).toBe(0);
+    expect(scheduler.currentPlaybackUnit()).toMatchObject({
+      sequence: 0,
+      metadata: { segmentId: segment(1).segmentId },
+      consumedSampleFrames: 0,
+    });
 
     expect(
       scheduler.consumeSampleFrames(first.metadata.sampleCountSamples),
     ).toBe(first.metadata.sampleCountSamples);
     expect(first.releaseCount).toBe(1);
     expect(second.releaseCount).toBe(0);
+    expect(scheduler.currentPlaybackUnit()).toMatchObject({
+      sequence: 1,
+      metadata: { segmentId: segment(2).segmentId },
+      consumedSampleFrames: 0,
+    });
     assertWithinAuthority(scheduler.observe());
   });
 
@@ -223,7 +235,7 @@ describe("adaptive buffer scheduler", () => {
     });
   });
 
-  it("makes queued units stale before cancellation settles and releases every owner once", () => {
+  it("makes queued units stale before cancellation and releases owners in bounded turns", () => {
     const clock = createManualClock(0);
     const scheduler = makeReadyScheduler(clock);
     prepare(scheduler, [segment(1), segment(2), segment(3)]);
@@ -239,13 +251,19 @@ describe("adaptive buffer scheduler", () => {
       serviceState: "cancelling",
       playbackState: "stopped",
       playableDurationMs: 0,
-      retainedAudioUnitCount: 0,
+      retainedAudioUnitCount: 2,
+      discardedAudioUnitCount: 2,
       nextAction: { kind: "none", reason: "invalidated" },
     });
-    expect(first.releaseCount).toBe(1);
-    expect(second.releaseCount).toBe(1);
+    expect(first.releaseCount).toBe(0);
+    expect(second.releaseCount).toBe(0);
     expect(scheduler.acceptCompletedUnit(late)).toBe("stale");
     expect(late.releaseCount).toBe(1);
+    expect(scheduler.releaseDiscardedAudioUnits(1)).toBe(1);
+    expect(first.releaseCount).toBe(1);
+    expect(second.releaseCount).toBe(0);
+    expect(scheduler.releaseDiscardedAudioUnits(1)).toBe(0);
+    expect(second.releaseCount).toBe(1);
     expect(scheduler.observe().resourceSnapshot).toEqual(emptyResources());
 
     scheduler.settleServiceStop();
@@ -272,6 +290,22 @@ describe("adaptive buffer scheduler", () => {
         audioMetadataEntries: 0,
         activeSyntheses: 0,
       },
+    });
+  });
+
+  it("rejects non-finite PCM without making it playable", () => {
+    const scheduler = makeReadyScheduler(createManualClock(0));
+    prepare(scheduler, [segment(1)]);
+    const segmentId = scheduler.beginSynthesis();
+    const invalid = ownedUnit(segmentId, 1_000);
+    new DataView(invalid.payload.buffer).setFloat32(0, Number.NaN, true);
+
+    expect(scheduler.acceptCompletedUnit(invalid)).toBe("invalid");
+    expect(invalid.releaseCount).toBe(1);
+    expect(scheduler.observe()).toMatchObject({
+      playbackState: "failed",
+      playableSampleFrames: 0,
+      retainedAudioUnitCount: 0,
     });
   });
 
