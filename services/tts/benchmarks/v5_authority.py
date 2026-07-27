@@ -474,12 +474,18 @@ def _git_commit_contains_authority(repository_root: Path, commit: str) -> bool:
         SUMMARY_SCHEMA_RELATIVE_PATH: SUMMARY_SCHEMA_SHA256,
     }
     for path, digest in expected.items():
-        completed = subprocess.run(
-            ["git", "show", f"{commit}:{path.as_posix()}"],
-            cwd=repository_root,
-            check=False,
-            capture_output=True,
-        )
+        try:
+            completed = subprocess.run(
+                ["git", "cat-file", "blob", f"{commit}:{path.as_posix()}"],
+                cwd=repository_root,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                check=False,
+                timeout=5,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return False
         if completed.returncode != 0 or hashlib.sha256(completed.stdout).hexdigest() != digest:
             return False
     return True

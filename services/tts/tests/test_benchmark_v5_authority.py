@@ -19,6 +19,7 @@ from benchmarks.v5_authority import (
     RAW_SCHEMA_SHA256,
     SUMMARY_SCHEMA_SHA256,
     V5AuthorityError,
+    _git_commit_contains_authority,
     load_frozen_v5_authority,
     validate_v5_raw_result,
     validate_v5_summary_result,
@@ -472,6 +473,30 @@ def test_v5_authority_is_byte_frozen() -> None:
     assert authority.profile["status"] == (
         "frozen-before-v5-implementation-pilot-and-official-results"
     )
+
+
+def test_v5_authority_commit_uses_raw_git_blobs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    commands: list[list[str]] = []
+
+    def run(
+        args: list[str],
+        **_: object,
+    ) -> subprocess.CompletedProcess[bytes]:
+        commands.append(args)
+        relative_path = args[3].partition(":")[2]
+        return subprocess.CompletedProcess(
+            args,
+            0,
+            stdout=(REPOSITORY_ROOT / relative_path).read_bytes(),
+        )
+
+    monkeypatch.setattr(subprocess, "run", run)
+
+    assert _git_commit_contains_authority(REPOSITORY_ROOT, AUTHORITY_COMMIT)
+    assert len(commands) == 4
+    assert all(command[:3] == ["git", "cat-file", "blob"] for command in commands)
 
 
 def test_committed_v5_summaries_are_schema_valid() -> None:
