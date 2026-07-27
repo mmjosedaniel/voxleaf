@@ -14,6 +14,7 @@ from benchmarks.dual_worker_command import (
     DualWorkerCommandError,
     parse_dual_worker_command,
 )
+from benchmarks.dual_worker_official import DualWorkerOfficialError
 
 GIT_A = "a" * 40
 GIT_B = "b" * 40
@@ -139,3 +140,22 @@ def test_cpu_model_serialization_matches_frozen_host_identity() -> None:
         )
         == "Intel Core Ultra 7 255HX"
     )
+
+
+def test_official_safety_subcode_remains_content_free(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(sys, "argv", ["dual_worker_cli.py", "run"])
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(_payload())))
+    monkeypatch.setattr(
+        dual_worker_cli,
+        "_run",
+        lambda _request: (_ for _ in ()).throw(DualWorkerOfficialError("ram-safety")),
+    )
+
+    assert dual_worker_cli.main() == 2
+    assert json.loads(capsys.readouterr().out) == {
+        "status": "fail",
+        "failureCode": "ram-safety",
+    }

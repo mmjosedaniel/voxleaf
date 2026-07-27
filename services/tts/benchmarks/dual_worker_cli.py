@@ -37,6 +37,7 @@ from benchmarks.dual_worker_official import (
     GIB,
     MAXIMUM_GPU_DEDICATED_BYTES,
     MAXIMUM_GPU_SHARED_BYTES,
+    DualWorkerOfficialError,
     placement_load,
     run_measured_arm,
     serialize_dispatches,
@@ -616,7 +617,10 @@ def main() -> int:
     except Exception as error:
         code = (
             error.code
-            if isinstance(error, DualWorkerCommandError | DualWorkerBenchmarkError)
+            if isinstance(
+                error,
+                DualWorkerCommandError | DualWorkerBenchmarkError | DualWorkerOfficialError,
+            )
             else "internal"
         )
         print(

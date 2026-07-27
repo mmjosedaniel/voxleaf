@@ -442,6 +442,14 @@ The no-model invalid-input smokes are safe:
 Each returns only `{"status":"fail","failureCode":"input"}`. Neither loads Qwen
 or PyTorch.
 
+The Milestone 8 exact-host run produced schema-valid CPU-solo and GPU-solo
+summaries at `dual-worker-result-v5-cpu-solo.json` and
+`dual-worker-result-v5-gpu-solo.json`. CPU solo passed its bounded admission;
+GPU solo remained slower than real time. The hash-bound concurrent arm stopped
+with the frozen `resource-limit` code before promotable raw/result creation,
+so no concurrent summary exists and playback/quality Milestone 9 is not
+admitted. This is a failed feasibility outcome, not a production topology.
+
 ## Disposable blinded quality session
 
 The five `benchmark:tts:quality:*` commands implement the manual listening

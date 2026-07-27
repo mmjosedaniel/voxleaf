@@ -594,11 +594,12 @@ in this milestone.
 
 #### Status
 
-In progress. The reviewed official evidence/derivation implementation is
-committed and the final non-promotable CPU pilot passed. The schema-valid
-official CPU-solo result passes admission, and its ignored raw session is
-deleted. The same-authority GPU-solo baseline and conditional concurrent arm
-remain.
+Complete with a failed concurrent outcome. The final non-promotable CPU pilot
+passed, the schema-valid official CPU-solo result passes admission, and the
+schema-valid same-authority GPU-solo baseline is recorded. The concurrent arm
+ran from the required clean/hash-bound checkpoint but stopped with the frozen
+content-free `resource-limit` failure before promotable raw/result creation.
+Cleanup and sleep restoration passed. Milestone 9 is not admitted.
 
 ### Milestone 9: Evaluate five-minute bounded playback credibility and quality
 
@@ -631,7 +632,10 @@ remain.
 
 #### Status
 
-Not started.
+Not admitted. Milestone 8's concurrent arm stopped at the frozen
+`resource-limit` boundary before a promotable concurrent result. The existing
+GPU-solo replay is diagnostic baseline evidence only; no concurrent
+five-minute playback or quality claim is authorized.
 
 ### Milestone 10: Record the v5 decision and close validation
 
@@ -1129,6 +1133,22 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
   cannot sustain real time alone. The ideal CPU/GPU throughput sum leaves
   little margin, but frozen authority requires the actual concurrent
   contention matrix.
+- 2026-07-26: Ran the hash-bound concurrent GPU-primary/CPU-support arm from
+  clean checkpoint `9cc9517`. Both workers loaded and the fixed first-attempt
+  matrix ran for 759.1 seconds before the live evidence path returned the
+  frozen content-free `resource-limit` stop. The command created no
+  promotable raw session or concurrent summary, performed no retry, left no
+  Python/GPU worker process, restored the 45-minute AC sleep setting, and
+  returned the GPU to zero utilization with 7,810 MiB free.
+- 2026-07-26: The failed run cannot distinguish the exact safety subcode
+  because the initial implementation collapsed live monitor stops to
+  `resource-limit`. The combined solo profiles make RAM/commit reserve the
+  likely cause, but that is an inference and is not promoted as measured fact.
+  Hardened the command so future live stops interrupt at the next completion
+  boundary and preserve the exact content-free subcode. Repeating an arm that
+  already reached a frozen resource boundary is not admitted on this hardware.
+  Milestone 8 therefore completes with CPU admission, a valid GPU baseline,
+  and failed concurrent hardware feasibility; Milestone 9 is skipped.
 
 ## Discoveries and decisions
 

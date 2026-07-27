@@ -75,6 +75,14 @@ class MonitorResult:
     stop_code: str | None
 
 
+class DualWorkerOfficialError(RuntimeError):
+    """Content-free official telemetry or safety-stop failure."""
+
+    def __init__(self, code: str) -> None:
+        super().__init__(f"tts-benchmark-v5-official:{code}")
+        self.code = code
+
+
 class DualWorkerMemoryMonitor:
     """Sample exact worker PIDs and fail closed on the frozen live ceilings."""
 
@@ -283,14 +291,24 @@ def run_measured_arm(
     monitor = DualWorkerMemoryMonitor(runtime, tuple(worker.role for worker in runtime.workers))
     started = time.perf_counter()
     monitor.start()
+
+    def reject_live_stop(_completion: object) -> None:
+        if monitor.stop_code is not None:
+            raise DualWorkerOfficialError(monitor.stop_code)
+
     try:
-        observation = controller.run(arm=arm, runtime=runtime, requests=requests)
+        observation = controller.run(
+            arm=arm,
+            runtime=runtime,
+            requests=requests,
+            before_ordered_release=reject_live_stop,
+        )
         if time.perf_counter() - started > MAXIMUM_ARM_SECONDS:
             raise DualWorkerBenchmarkError("timeout")
     finally:
         result = monitor.finish()
     if result.stop_code is not None:
-        raise DualWorkerBenchmarkError("resource-limit")
+        raise DualWorkerOfficialError(result.stop_code)
     return observation, result
 
 

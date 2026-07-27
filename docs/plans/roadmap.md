@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 6.1 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. ADR-0014 permits that exact profile only for a bounded development demo after one fluent maintainer accepted its audible quality. Milestone 6.2 is in progress: its result-blind `v4` hardware arms both stopped safely before throughput or reviewable audio evidence, and accepted `selection-v4` selects neither placement. The separate result-blind `v5` authority freezes one GPU-primary Qwen worker and one independent CPU-only float32 support worker, approximately 8-16-second complete units, the normal approximately 15-second playable startup gate, and an experimental five-minute bounded maximum. Plan Milestone 7 implements the benchmark-local independent-worker controller, exact CPU/GPU adapter paths, bounded replay, failure matrix, and reviewed non-promotable command surface. No `v5` pilot, official result, or broader demo decision exists. Plan Milestones 8-10 now own hardware execution and the decision; ADR-0014 remains the sole accepted runtime exception, and production completion remains blocked until new evidence or an explicit later acceptance change resolves continuous playback, cancellation, hardware, and packaging. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 6.1 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. ADR-0014 permits that exact profile only for a bounded development demo after one fluent maintainer accepted its audible quality. Milestone 6.2 is in progress: its `v4` arms stopped safely and accepted `selection-v4` selects neither placement. Milestone 8 has now executed the separate `v5` authority. CPU solo passed bounded admission at aggregate RTF 2.999, GPU solo measured aggregate RTF 1.467, and the hash-bound concurrent GPU-primary/CPU-support arm stopped at `resource-limit` before promotable result creation. Milestone 9 is not admitted; Milestone 10 must record the final decision. ADR-0014 remains the sole accepted runtime exception, and production completion remains blocked until new evidence or an explicit later acceptance change resolves continuous playback, cancellation, hardware, and packaging. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -272,7 +272,7 @@ The completed Milestone 6 harness, frozen `v2` evidence, and ADR-0013 remain
 the baseline. The implemented `narration-v1` package boundary supplies bounded
 locator-linked text units. Candidate execution additionally requires an exact
 isolated lock, verified local artifacts, outbound blocking, an authorized
-  built-in-speaker result and pre-result `v3` authority.
+built-in-speaker result and pre-result `v3` authority.
 
 ### Major risks and unknowns
 
@@ -292,7 +292,7 @@ isolated lock, verified local artifacts, outbound blocking, an authorized
 
 ## Milestone 6.2: Prove Qwen short-segment and dual-worker feasibility
 
-**Status:** In progress. Milestones 1 through 6 completed on 2026-07-26. The
+**Status:** In progress. Milestones 1 through 8 completed on 2026-07-26. The
 [Milestone 6.2 ExecPlan](active/M006-002-qwen-short-segment-batch-feasibility.md)
 has the byte-frozen `v4` authority, bounded mechanics, and schema-valid
 full-GPU plus targeted-CPU results. Both official arms observed 79,691,776
@@ -303,10 +303,11 @@ VRAM peak, so Milestone 5 playback/quality review was not admitted.
 `selection-v4` selects neither placement. Milestone 6 freezes the separately
 versioned `v5` authority and model-free guards. Milestone 7 implements the
 independent GPU-primary/CPU-support benchmark mechanics, exact adapter paths,
-bounded replay, and reviewed command surface. Milestones 8-10 now own
-CPU-solo admission, the concurrent hardware matrix, measured
-five-minute-bounded playback replay, and the final decision. This work does
-not change failed batch-one `v3`, frozen `v4`, ADR-0013, or ADR-0014.
+bounded replay, and reviewed command surface. Milestone 8 records passing
+CPU-solo admission, a slower-than-real-time GPU baseline, and a concurrent
+`resource-limit` stop. Milestone 9 is not admitted; Milestone 10 owns the final
+decision. This work does not change failed batch-one `v3`, frozen `v4`,
+ADR-0013, or ADR-0014.
 
 ### Goal
 
@@ -544,7 +545,7 @@ The following decisions should be made when evidence is available, not assumed s
 1. **Desktop stack gate:** validate and adopt the desktop framework, workspace, package manager, and supported development environments during Milestone 1.
 2. **EPUB gate:** validate archive limits, sanitization, rendering isolation, locator round-tripping, and dependency licensing before completing Milestone 3.
 3. **Persistence gate:** ADR-0011 selects bounded WebView `localStorage`, separate versioned position/preference envelopes, save lifecycle, and desktop-owned migration; implement and validate that boundary before completing Milestone 4.
-4. **TTS gate:** the completed Milestone 6 cycle and failed Milestone 6.1 `v3` matrix select no standard passing profile. ADR-0014 permits only an exact constrained development-demo slice. Milestone 6.2's `v4` arms also stopped without usable media; its implemented but unexecuted `v5` dual-worker benchmark is evidence work, not an accepted topology. A production role must still pass every applicable gate or receive a separate explicit acceptance decision before production graduation.
+4. **TTS gate:** the completed Milestone 6 cycle and failed Milestone 6.1 `v3` matrix select no standard passing profile. ADR-0014 permits only an exact constrained development-demo slice. Milestone 6.2's `v4` arms stopped without usable media; its `v5` CPU arm passed bounded admission and GPU baseline completed, but concurrent execution stopped at `resource-limit`. No dual-worker topology is accepted. A production role must still pass every applicable gate or receive a separate explicit acceptance decision before production graduation.
 5. **Protocol gate:** record transport, framing, backpressure, and local exposure decisions before completing Milestone 7.
 6. **Audio gate:** record internal audio format, playback mechanism, speed-control behavior, and the short-range startup rule before completing Milestone 8.
 7. **Interaction gate:** define manual navigation during active narration before completing Milestone 9.

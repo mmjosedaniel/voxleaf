@@ -41,14 +41,13 @@ Implemented and validated:
 
 Remaining:
 
-- Execute the implemented, separately versioned `v5` CPU-solo and concurrent
-  GPU-primary/CPU-support benchmark before claiming that
-  dual-worker generation supports sustainable or continuous narration.
-- Evaluate approximately 8-16-second complete audio targets under the unchanged
-  `narration-v1` boundary, the approximately 15-second playable startup gate,
-  and simultaneous five-minute duration, unit-count, PCM-byte, and active-work
-  limits. The five-minute value is a maximum capacity hypothesis, not a startup
-  wait or continuity guarantee.
+- Record the final `v5` decision from Milestone 8: CPU solo passed its bounded
+  admission, GPU solo remained slower than real time, and concurrent
+  GPU-primary/CPU-support execution stopped at `resource-limit`. Do not claim
+  sustainable or continuous dual-worker narration.
+- Retain approximately 8-16-second complete audio and five-minute bounded
+  playback as unadmitted hypotheses. The concurrent result required to run
+  Milestone 9 playback/quality does not exist.
 - Implement a bounded demonstration excerpt with model prewarming, complete narration units, explicit preparation/buffering, one queued unit, identity-first cancellation, and no generated-audio persistence; do not claim uninterrupted or real-time narration.
 - Select a chapter or paragraph as a narration starting point in a desktop playback flow.
 - Generate speech through a selected supported local TTS engine and voice.
