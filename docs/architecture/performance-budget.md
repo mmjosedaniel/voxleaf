@@ -199,6 +199,15 @@ one-minute prepared arm reached 66.480 playable seconds after 112.895 seconds.
 Peak process working set was 2,828,034,048 bytes and peak dedicated GPU memory
 was 4,882 MiB. These values are observations, not accepted production limits.
 
+M008 Milestone 6 applies those observations without changing the frozen
+arithmetic. Quick mode remains the default because it minimizes the explicit
+wait, while prepared mode remains an opt-in with one minute initially selected.
+Refill/resume stays at one minute, low water stays at 10 seconds, and semantic
+boundary waits remain disabled at `0` ms. The measured 20.91 buffering seconds
+per playback minute exceeds the MVP target of at most 5 seconds, so the exact
+profile remains a constrained development demo. Larger preparation targets may
+extend one listening interval but do not satisfy the sustained-reading budget.
+
 ## Benchmark reporting
 
 Store summarized, reproducible benchmark reports in Git. Do not commit:
@@ -367,5 +376,5 @@ exhaustion; none makes the model real time. Thirty minutes of 24 kHz mono
 float32 PCM is 172,800,000 payload bytes. M008 freezes the complete simultaneous
 duration, unit-count, byte, prepared-text, and active-work bounds in
 `adaptive-buffer-authority-v1`. The Milestone 5 exact-host run confirms the
-model still depletes the quick buffer and therefore retains truthful buffering
-and a zero intentional-wait default pending final policy closeout.
+model still depletes the quick buffer and therefore retains truthful buffering.
+M008 Milestone 6 closes the policy with a zero intentional-wait default.

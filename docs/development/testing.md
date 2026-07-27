@@ -390,6 +390,15 @@ playback. It checks all four prepared choices, content-free timing and resource
 metrics, cleanup, and zero external requests. Generated audio is never written.
 This run is excluded from default checks and CI.
 
+M008 Milestone 6 retains quick mode as the default, one minute as the initial
+prepared and refill target, 10 seconds as low water, and `0` ms as the boundary
+wait. The accepted matrix measured 39.238 seconds command-to-audible, 15.280
+seconds of start lead, one underrun, 20.91 buffering seconds per playback
+minute, 160 ms cancellation, and zero external requests. The buffering result
+fails the MVP target of at most 5 seconds per minute, so tests and documentation
+must keep the exact path development-only and must not assert uninterrupted
+playback or a standard profile.
+
 ## Deferred coverage
 
 The secure EPUB, reader, narration-preparation, M007 service/protocol, and M008

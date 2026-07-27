@@ -465,8 +465,7 @@ Completed on 2026-07-27.
   zero.
 - These measurements prove the constrained exact-host demo path, not a
   standard profile, uninterrupted playback, or general hardware support. The
-  default boundary wait remains zero; Milestone 6 owns the final policy
-  decision.
+  default boundary wait remained zero for Milestone 6's final policy decision.
 
 ### Milestone 6: Record the demo policy and close validation
 
@@ -488,7 +487,33 @@ Completed on 2026-07-27.
 
 #### Status
 
-Not started.
+In progress. The final policy and documentation reconciliation are complete;
+local validation is running. Required pull-request CI remains an external
+completion gate.
+
+#### Actual result
+
+- Selected quick start as the default mode. It begins only at 15 playable
+  seconds or a complete shorter range and remains independent of wall-clock
+  elapsed time.
+- Kept prepared playback explicit with 1, 2, 5, and 10-minute choices and one
+  minute as the initial selected target. Kept refill/resume at one minute and
+  low water at 10 seconds.
+- Retained `0` ms as the semantic-boundary-wait default because the exact-host
+  run supplied no evidence that a hidden or planned pause improves throughput
+  or listening enough to offset added delay. Retained `1.0x`, 100% default
+  volume, and every simultaneous resource ceiling.
+- Recorded that 20.91 buffering seconds per playback minute exceeds the MVP
+  target of at most 5 seconds. The exact Qwen/Serena path therefore remains
+  native-configured and development-only; the standard blocker remains.
+- Added content-safe troubleshooting for missing controls, slow quick start,
+  frontier buffering, invalidation/restart, resource cleanup, and safe
+  diagnostics. The guidance forbids fake-child promotion, outbound-unblocking,
+  automatic retry, audio persistence, and a second model worker.
+- Reconciled product, architecture, performance, dependency, setup, testing,
+  roadmap, decision-index, and canonical system-diagram status without changing
+  a runtime contract, dependency, capability, persistence boundary, or
+  executable default.
 
 ## Testing and benchmark strategy
 
@@ -626,6 +651,19 @@ accepted no-standard-profile decision.
   peak dedicated GPU memory `4,882` MiB, zero intentional wait, and zero
   external requests. This completes Milestone 5 while retaining the standard
   profile blocker.
+- 2026-07-27: Milestone 5 PR #125 merged to `main` at `7f7bbe5`; Ubuntu
+  portable passed while Windows native was still running when Milestone 6
+  began. Created
+  `feat/m008-m6-demo-policy-closeout` from that clean merged base.
+- 2026-07-27: Closed the measured demo policy without changing executable
+  constants: quick mode default, one-minute initial prepared/refill target,
+  10-second low water, zero default boundary wait, `1.0x`, 100% volume, and the
+  simultaneous 30-minute ceiling. Updated ADR-0015 and the frozen authority at
+  checkpoint `42b74b8`.
+- 2026-07-27: Added content-safe exact-demo troubleshooting and reconciled
+  product, architecture, performance, setup, testing, dependency, roadmap, and
+  system-diagram documentation. Local and exact-host validation remained to be
+  executed before the closeout could be committed and offered for PR review.
 
 ## Discoveries and decisions
 
@@ -713,7 +751,21 @@ accepted no-standard-profile decision.
     boolean. Python paths, model paths, prompts, work identities, and audio
     remain outside React state and presentation diagnostics.
 27. The exact matrix does not justify a nonzero semantic-boundary wait. The
-    accepted default remains zero pending Milestone 6's policy closeout.
+    accepted default remains zero in Milestone 6's policy closeout.
+28. Milestone 6 retains the zero boundary-wait default. A slower-than-real-time
+    model cannot gain throughput from planned silence, and the exact evidence
+    does not establish a listening benefit that justifies delaying audio.
+29. Quick mode remains the default because it provides the earliest supported
+    audible start. One minute is the initial prepared choice and refill target,
+    not a mandatory startup wait; larger choices remain explicit.
+30. The measured 20.91 buffering seconds per playback minute fails the MVP
+    target of at most 5 seconds. M008 can close as a constrained-demo
+    implementation while the standard-profile blocker and production gates
+    remain.
+31. Troubleshooting must preserve the product boundary. Missing availability,
+    slow generation, and buffering are not authorization to expose the fake
+    child, disable offline controls, persist audio, add retry, or load another
+    model.
 
 ## Final validation results
 

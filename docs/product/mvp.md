@@ -2,7 +2,7 @@
 
 ## Implementation status
 
-The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestone 5 narration preparation is implemented, documented, and fully validated through `OpenedPublication.prepareNarration`. Milestones 6 through 7 retain the no-standard-profile decision while implementing the constrained local service and exact development-only Qwen/Serena adapter. M008 is in progress through Milestone 5. Its exact-development coordinator now starts at the active visual locator, prepares one bounded batch, dispatches one synthesis at a time, transfers accepted complete units into the bounded Web Audio player, and mounts quick/prepared controls only when the exact native configuration is present. Deterministic tests cover ownership, format/order, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, and privacy. The packaged exact-host run proves audible quick and one-minute prepared flows, all four prepared choices, 160 ms cancellation, bounded resources, and zero external requests. It also measured 39.238 seconds to first audible output and 20.91 buffering seconds per playback minute, so the path remains a constrained development demo rather than a passing standard profile or uninterrupted playback promise. Synchronized highlighting, general hardware profiles, and production packaging remain pending.
+The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is never a startup target. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. The exact-host run measured 39.238 seconds to first audible output and 20.91 buffering seconds per playback minute, which exceeds the MVP target. The path therefore remains a constrained development demo rather than a passing standard profile or uninterrupted-playback promise. Synchronized highlighting, general hardware profiles, and production packaging remain pending.
 
 ## Current implemented flow
 
@@ -61,8 +61,6 @@ Implemented and validated:
 
 Remaining:
 
-- Close M008's measured demo-policy and repository validation without promoting
-  the exact host path to a standard profile.
 - Select a chapter or paragraph as a narration starting point in a desktop playback flow.
 - Pause, resume, seek, and move through a shared visual/playback position.
 - Highlight and keep the active narrated passage on screen.
