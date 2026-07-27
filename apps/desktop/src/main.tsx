@@ -3,6 +3,20 @@ import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
 import "./styles.css";
+import { runTtsProtocolProbe } from "./tts/transport-probe";
+
+declare global {
+  interface Window {
+    readonly __voxleafRunTtsProtocolProbe?: typeof runTtsProtocolProbe;
+  }
+}
+
+Object.defineProperty(globalThis, "__voxleafRunTtsProtocolProbe", {
+  configurable: false,
+  enumerable: false,
+  value: runTtsProtocolProbe,
+  writable: false,
+});
 
 const container = document.getElementById("root");
 

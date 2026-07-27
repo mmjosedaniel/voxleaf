@@ -42,8 +42,10 @@ Until then, the current user-visible product still ends at visual reading.
 - `@voxleaf/shared` implements versioned session, narration-segment,
   audio-frame metadata, capability, buffer-status, and operational-error
   contracts plus runtime TypeScript decoders and deterministic fakes.
-- `apps/desktop` has a minimal Tauri shell with no commands, plugins,
-  capabilities, child-process supervisor, TTS client, or binary audio IPC.
+- `apps/desktop` now has the M007 Milestone 1 model-free Rust-owned
+  standard-stream child probe, one narrow application command, and typed binary
+  WebView response validation. It is not the production supervisor or TTS
+  client, adds no plugin/capability/listener, and accepts no book text.
 - `services/tts` has a dependency-free package/version scaffold, schema
   conformance tests, and development-only benchmark modules. It has no
   production service loop, engine adapter, process protocol, inference, or
@@ -360,7 +362,47 @@ max-plus-one tests are required for every selected dimension.
 
 #### Status
 
-Not started.
+Complete. The deterministic Rust-owned standard-stream and binary-response
+prototype, transport comparison, frozen protocol authority, accepted ADR,
+release parent/child evidence, and packaged WebView2 binary-response evidence
+all pass. Milestone 2 has not started.
+
+#### Selected authority and actual result
+
+- Protocol version: `1`.
+- Frame header: 12 bytes with ASCII `VLTP`, big-endian unsigned 16-bit version,
+  one-byte kind, zero flags, and big-endian unsigned 32-bit payload length.
+- Record kinds: control JSON (`1`) and raw PCM audio (`2`).
+- Maximum control payload: 16,384 bytes.
+- Maximum narration request: 640 Unicode code points and 2,048 UTF-8 bytes.
+- Maximum identifier: 128 Unicode code points and 512 UTF-8 bytes.
+- Audio: 24,000-Hz mono finite IEEE-754 float32 little-endian, one complete
+  record, at most 20 seconds, 480,000 samples, or 1,920,000 bytes.
+- Ownership: one active synthesis, zero queued synthesis requests, one pending
+  control write, one pending audio write, one retained native unit, and one
+  retained renderer unit.
+- Recovery: zero automatic synthesis retries and zero automatic process
+  restarts.
+- Timeouts: handshake 5 seconds; load, warm-up, and synthesis 120 seconds each;
+  health 2 seconds; identity-invalidation settlement 500 milliseconds;
+  worker/process-tree termination 2 seconds; graceful shutdown and final
+  cleanup 5 seconds each.
+- Transport: a Rust-owned redirected-standard-stream child with no listener,
+  discarded standard error, and a narrow Tauri optimized binary `Response`.
+  Local socket and loopback WebSocket alternatives were rejected for version 1.
+- The model-free child emits 4,800 deterministic finite samples (19,200 bytes)
+  only after fixed identity-bearing metadata. Rust validates the complete unit;
+  TypeScript validates the resulting `ArrayBuffer` and retains only a
+  content-free observation.
+- The release executable's native host diagnostic completes with exit code
+  zero. The ordinary release application remains alive during a bounded direct
+  startup observation. The packaged native smoke also passes the child
+  exchange, optimized binary response, exact frontend validation, existing
+  application matrix, and zero runtime-error/external-request assertions.
+- [`tts-service-protocol-v1.md`](../../architecture/tts-service-protocol-v1.md)
+  is the frozen implementation authority.
+  [ADR-0016](../../architecture/decisions/ADR-0016-rust-owned-stdio-tts-protocol.md)
+  is accepted.
 
 ### Milestone 2: Add canonical protocol contracts and a model-free Python service
 
@@ -649,6 +691,57 @@ artifact behind.
   tool-cache/temp-directory ACL failures; rerunning with ignored
   workspace-local uv and pytest temp directories passed without a source
   change.
+- 2026-07-26: Created
+  `feat/m007-1-freeze-service-protocol-authority` from `main` at `d4839a2`.
+  Commit `53ee61f` adds the first model-free transport checkpoint: the release
+  executable can run as a synthetic framed child, Rust owns and validates the
+  process exchange, a narrow Tauri command returns binary PCM, TypeScript
+  validates that response, and the packaged smoke invokes the probe.
+- 2026-07-26: Froze protocol version 1, its closed topology, message/state/
+  identity/capability/error authorities, exact allocation and retention bounds,
+  audio format, timeouts, native-only configuration names, and one-active/
+  no-queue rule. Added the protocol authority and proposed ADR-0016 without
+  adding a Python/model dependency, Tauri plugin, process capability, listener,
+  private configuration, narration text, or generated artifact.
+- 2026-07-26: Focused deterministic validation passes: nine Rust tests, 210
+  desktop Vitest tests, six native-driver client tests, desktop type checking,
+  the Vite production build, Rust formatting, and Clippy. A release build and
+  the hidden release host diagnostic pass with exit code zero; an ordinary
+  release application starts without an immediate crash.
+- 2026-07-26: Three packaged native smoke attempts stopped during WebDriver
+  session creation before VoxLeaf mounted. The installed WebView2 runtime and
+  EdgeDriver share the required first three version components, no stale
+  VoxLeaf/driver process remained, and direct release startup still passed.
+  The binary WebView probe therefore had no packaged acceptance result at that
+  checkpoint. Milestone 1 remained in progress and Milestone 2 had not started.
+- 2026-07-26: After the authority checkpoint, the complete `pnpm.cmd check`
+  passed with ignored workspace-local uv/temporary directories: formatting,
+  ESLint, Clippy, Ruff, TypeScript/Python types, 175 shared tests, 555 EPUB
+  tests, 210 desktop Vitest tests, six native-driver client tests, nine Rust
+  tests, 161 Python tests, package/desktop/Python builds, and the release
+  executable all pass. A fourth native-startup attempt rebuilt the release
+  executable and reached the same fixed WebDriver session-creation failure
+  before application mount. No stale VoxLeaf, Tauri-driver, or EdgeDriver
+  process remained afterward.
+- 2026-07-26: An unrestricted packaged run reached the application and exposed
+  a real transport failure: the frontend rejected a serialized byte array
+  instead of accepting it as binary. The CSP lacked Tauri's documented internal
+  `ipc:` and `http://ipc.localhost` connect sources, so WebView2 blocked the
+  optimized request and Tauri used its serialization fallback. Added only
+  those internal IPC sources, kept external requests prohibited, and taught the
+  smoke to classify the Tauri IPC origin as application-internal. The rerun
+  passed the binary probe and complete native matrix with no runtime errors or
+  external requests. ADR-0016 is accepted and Milestone 1 is complete.
+- 2026-07-26: Final validation passes on the accepted source state.
+  `pnpm.cmd check` passes with a short ignored workspace-local uv/temp root,
+  including 175 shared tests, 555 EPUB tests, 211 desktop Vitest tests, six
+  native-driver client tests, nine Rust tests, 161 Python tests, and all
+  formatting, linting, type checking, package, release-desktop, and Python
+  builds. The first final-check attempt used an overlong Windows temporary path
+  and three quality tests reached fixed generation failures; rerunning the same
+  unchanged source with the shorter ignored temp root made all 161 Python tests
+  pass. The complete `pnpm.cmd test:native-startup` build-and-run command then
+  passed outside the sandbox.
 
 ## Discoveries and decisions
 
@@ -662,17 +755,29 @@ artifact behind.
    termination, not cooperative interruption of the Qwen generation call.
 5. One service-side active request and no hidden scheduling queue keep
    ownership clear. M008 owns later bounded scheduling and buffering.
-6. Rust-owned standard streams plus narrow Tauri commands/binary channels are
-   the first prototype because they avoid a listening endpoint and a
-   renderer-accessible general shell capability. Milestone 1 evidence and an
-   ADR must accept or replace that direction.
+6. The model-free prototype selects Rust-owned standard streams plus a narrow
+   optimized Tauri binary response because they avoid a listening endpoint and
+   a renderer-accessible general shell capability. ADR-0016 accepts this
+   decision after its packaged WebView gate passed.
 7. The historical prototype allowed a much larger output than the later `v5`
-   short-unit authority. Milestone 1 must explicitly choose the service output
-   maximum; it should evaluate the `v5` 20-second/1,920,000-byte reservation
-   rather than inherit the old ceiling accidentally.
+   short-unit authority. Milestone 1 therefore chooses the `v5`
+   20-second/1,920,000-byte service-unit reservation rather than inheriting the
+   old ceiling.
 8. The exact candidate lock and artifacts remain development-only and
    isolated. This plan does not approve production dependency promotion,
    redistribution, or automatic model acquisition.
+9. Tauri `Channel` is not the version-1 delivery primitive. The candidate
+   produces a complete waveform, so one bounded binary `Response` gives an
+   explicit one-command backpressure boundary without claiming model streaming
+   or adding another queued send surface.
+10. The service-unit ceiling is the `v5` 20-second reservation: 480,000 finite
+    24-kHz mono float32-le samples and 1,920,000 payload bytes. This replaces the
+    historical larger prototype ceiling for M007.
+11. Tauri optimized binary responses require the packaged CSP to permit the
+    framework's internal `ipc:` and `http://ipc.localhost` connect sources.
+    These are not an application server or external listener. A serialized
+    array fallback remains invalid, and the native smoke distinguishes internal
+    IPC from external requests.
 
 ## Final validation results
 
@@ -699,6 +804,32 @@ pre-existing user cache/temp directories, and one unrestricted attempt could
 not scan a sandbox-owned ignored temp directory. No repository source or test
 failed; the isolated reruns above are authoritative for this planning change.
 
-All implementation milestones remain not started. This documentation-only
-result makes no runtime, playback, production, native-model-streaming, or
-general-hardware claim.
+Milestone 1 implementation validation on 2026-07-26 currently records:
+
+- `pnpm.cmd --filter @voxleaf/desktop test` passes with 211 Vitest tests and six
+  Node native-driver client tests.
+- `pnpm.cmd --filter @voxleaf/desktop typecheck` passes.
+- `pnpm.cmd --filter @voxleaf/desktop build` passes.
+- `cargo fmt --manifest-path apps/desktop/src-tauri/Cargo.toml --check` passes.
+- `cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets -- -D warnings`
+  passes.
+- `cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml` passes all
+  nine model-free native tests.
+- `cargo build --release --manifest-path apps/desktop/src-tauri/Cargo.toml`
+  passes.
+- The release executable's internal `--voxleaf-tts-protocol-probe-host`
+  diagnostic exits zero after the exact framed parent/child exchange.
+- `pnpm.cmd check` passes with ignored workspace-local uv/temporary
+  directories, including formatting, linting, type checking, 175 shared tests,
+  555 EPUB tests, 211 desktop Vitest tests, six native-driver client tests, nine
+  Rust tests, 161 Python tests, package builds, the Tauri release build, and the
+  Python package build.
+- `pnpm.cmd test:native-startup` passes outside the sandbox. It proves the
+  synthetic child/std-stream exchange, optimized binary response, exact
+  frontend PCM validation, existing packaged application matrix, complete
+  cleanup, zero runtime errors, and zero external requests.
+
+The implementation is model-free and makes no playback, production,
+native-model-streaming, cooperative-cancellation, standard-profile, or
+general-hardware claim. Every Milestone 1 work item and acceptance gate is
+complete; Milestone 2 remains not started.

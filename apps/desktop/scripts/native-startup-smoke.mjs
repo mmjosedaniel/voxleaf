@@ -175,6 +175,30 @@ const FIXED_FAILURE_CODES = new Map([
     "Native application attempted an external request.",
     "external-request-observed",
   ],
+  [
+    "Native TTS protocol probe did not deliver bounded binary audio.",
+    "tts-protocol-probe-failed",
+  ],
+  [
+    "Native TTS protocol probe response was invalid.",
+    "tts-protocol-probe-response-invalid",
+  ],
+  [
+    "Native TTS protocol probe command was unavailable.",
+    "tts-protocol-probe-unavailable",
+  ],
+  [
+    "Native TTS protocol probe returned a serialized array.",
+    "tts-protocol-probe-serialized-array",
+  ],
+  [
+    "Native TTS protocol probe returned an unknown binary object.",
+    "tts-protocol-probe-unknown-binary",
+  ],
+  [
+    "Native TTS protocol probe returned an unsupported binary view.",
+    "tts-protocol-probe-unsupported-view",
+  ],
   ["Native driver logs were invalid.", "native-driver-log-invalid"],
 ]);
 
@@ -372,9 +396,11 @@ function isLocalApplicationUrl(rawUrl) {
     const url = new URL(rawUrl);
     return (
       url.protocol === "tauri:" ||
+      url.protocol === "ipc:" ||
       url.protocol === "data:" ||
       url.protocol === "blob:" ||
-      url.hostname === "tauri.localhost"
+      url.hostname === "tauri.localhost" ||
+      url.hostname === "ipc.localhost"
     );
   } catch {
     return false;
@@ -461,6 +487,86 @@ async function waitForCondition(
   }
 
   throw new WebDriverClientError("webdriver-condition-timeout");
+}
+
+async function exerciseNativeTtsProtocolProbe(driver, setStage) {
+  setStage("native TTS protocol probe dispatch");
+  const started = await driver.execute(
+    `if (typeof globalThis.__voxleafRunTtsProtocolProbe !== "function") {
+       return false;
+     }
+     globalThis.__voxleafTtsProtocolProbeObservation = { status: "pending" };
+     globalThis.__voxleafRunTtsProtocolProbe()
+       .then((observation) => {
+         globalThis.__voxleafTtsProtocolProbeObservation = {
+           status: "complete",
+           observation,
+         };
+       })
+       .catch((error) => {
+         const code =
+           error?.code === "tts-probe-response-invalid" ||
+           error?.code === "tts-probe-unavailable"
+             ? error.code
+             : "tts-probe-unexpected";
+         const detail =
+           error?.detail === "array" ||
+           error?.detail === "binary-object" ||
+           error?.detail === "byte-length" ||
+           error?.detail === "non-finite" ||
+           error?.detail === "other" ||
+           error?.detail === "other-view" ||
+           error?.detail === "prefix" ||
+           error?.detail === "sample-length"
+             ? error.detail
+             : "none";
+         globalThis.__voxleafTtsProtocolProbeObservation = {
+            status: "failed",
+            code,
+            detail,
+          };
+       });
+     return true;`,
+  );
+  assert(
+    started === true,
+    "Native TTS protocol probe did not deliver bounded binary audio.",
+  );
+
+  setStage("native TTS protocol probe binary delivery");
+  await waitForCondition(
+    driver,
+    `return globalThis.__voxleafTtsProtocolProbeObservation?.status !==
+       "pending";`,
+  );
+  const result = await driver.execute(
+    `const result = globalThis.__voxleafTtsProtocolProbeObservation;
+     delete globalThis.__voxleafTtsProtocolProbeObservation;
+     return result;`,
+  );
+  if (result?.status === "failed") {
+    assert(
+      result.code !== "tts-probe-response-invalid",
+      result.detail === "array"
+        ? "Native TTS protocol probe returned a serialized array."
+        : result.detail === "binary-object"
+          ? "Native TTS protocol probe returned an unknown binary object."
+          : result.detail === "other-view"
+            ? "Native TTS protocol probe returned an unsupported binary view."
+            : "Native TTS protocol probe response was invalid.",
+    );
+    assert(
+      result.code !== "tts-probe-unavailable",
+      "Native TTS protocol probe command was unavailable.",
+    );
+  }
+  assert(
+    result?.status === "complete" &&
+      result.observation?.byteLength === 19_200 &&
+      result.observation?.sampleCount === 4_800 &&
+      result.observation?.sampleFormat === "float32-le",
+    "Native TTS protocol probe did not deliver bounded binary audio.",
+  );
 }
 
 async function createSizedDisposableFile(filePath, byteLength) {
@@ -1667,10 +1773,12 @@ async function runNativeReaderPerformanceBenchmark(
        try {
          const url = new URL(entry.name);
          return !(
-           url.protocol === "tauri:" ||
-           url.protocol === "data:" ||
-           url.protocol === "blob:" ||
-           url.hostname === "tauri.localhost"
+            url.protocol === "tauri:" ||
+            url.protocol === "ipc:" ||
+            url.protocol === "data:" ||
+            url.protocol === "blob:" ||
+            url.hostname === "tauri.localhost" ||
+            url.hostname === "ipc.localhost"
          );
        } catch {
          return true;
@@ -1932,6 +2040,10 @@ async function run() {
       return;
     }
 
+    await exerciseNativeTtsProtocolProbe(driver, (nextStage) => {
+      stage = nextStage;
+    });
+
     stage = "synthetic file injection";
     const fileInput = await driver.findElement('input[type="file"]');
     await driver.sendKeys(fileInput, fixturePath);
@@ -2166,10 +2278,12 @@ async function run() {
          try {
            const url = new URL(entry.name);
            return !(
-             url.protocol === "tauri:" ||
-             url.protocol === "data:" ||
-             url.protocol === "blob:" ||
-             url.hostname === "tauri.localhost"
+              url.protocol === "tauri:" ||
+              url.protocol === "ipc:" ||
+              url.protocol === "data:" ||
+              url.protocol === "blob:" ||
+              url.hostname === "tauri.localhost" ||
+              url.hostname === "ipc.localhost"
            );
          } catch {
            return true;
@@ -2202,7 +2316,7 @@ async function run() {
     );
 
     console.log(
-      "Native startup smoke passed: root mounted, local file reselection/cancellation/replacement and exact/max-plus-one boundaries passed, narrow and accessible keyboard reader matrix passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication closed, no errors, no external requests.",
+      "Native startup smoke passed: root mounted, bounded TTS child/std-stream/binary WebView probe passed, local file reselection/cancellation/replacement and exact/max-plus-one boundaries passed, narrow and accessible keyboard reader matrix passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication closed, no errors, no external requests.",
     );
   } catch (error) {
     console.error(

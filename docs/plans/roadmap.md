@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 6.2 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. Completed Milestone 6.2 measured CPU solo at aggregate RTF 2.999 and GPU solo at aggregate RTF 1.467; the official concurrent run stopped at `resource-limit`, and a low-application-load diagnostic later completed both workers at aggregate RTF 1.429 while slowing the GPU worker to RTF 2.329. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains one exact GPU worker only for a constrained development demo. ADR-0015 authorizes that exception without selecting a standard profile. M007 is now the active next plan for the persistent local service, typed process protocol, native supervision, complete-unit delivery, and cancellation containment. M008 remains the dependent plan for quick-start/prepared playback and bounded adaptive buffering. Neither runtime is implemented. M006-002 final local and required pull-request validation pass. No standard profile, production runtime, continuous-playback guarantee, or general hardware support is approved. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 6.2 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. Completed Milestone 6.2 measured CPU solo at aggregate RTF 2.999 and GPU solo at aggregate RTF 1.467; the official concurrent run stopped at `resource-limit`, and a low-application-load diagnostic later completed both workers at aggregate RTF 1.429 while slowing the GPU worker to RTF 2.329. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains one exact GPU worker only for a constrained development demo. ADR-0015 authorizes that exception without selecting a standard profile. M007 is now active and in progress. Its completed first milestone implements the model-free Rust-owned standard-stream transport probe, freezes accepted protocol version 1, and passes packaged WebView binary evidence. The production Python service, exact model adapter, and desktop TTS client remain later M007 work. M008 remains the dependent plan for quick-start/prepared playback and bounded adaptive buffering. No standard profile, production runtime, continuous-playback guarantee, or general hardware support is approved. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -384,8 +384,10 @@ work.
 
 ## Milestone 7: Implement the local TTS service and process protocol
 
-**Status:** Approved ExecPlan; implementation not started; production
-completion blocked. Follow
+**Status:** In progress. Milestone 1 is complete: the deterministic Rust-owned
+standard-stream and binary Tauri-response probe passes, protocol version 1 is
+accepted, and ADR-0016 is accepted. Milestones 2-5 and production completion
+remain unimplemented. Follow
 [`M007-local-tts-service-and-process-protocol.md`](active/M007-local-tts-service-and-process-protocol.md).
 ADR-0015 permits a focused Qwen/Serena demo service around complete bounded
 units and identity-first worker termination. ADR-0013 still records that no
@@ -399,7 +401,7 @@ Run the selected TTS engines behind a secure, typed, cancellable local process b
 ### Expected outcome
 
 - The desktop can start, monitor, use, recover, and stop a persistent local TTS service.
-- Model loading, warm-up, capabilities, synthesis, streamed audio, cancellation, health, recoverable errors, and fatal errors use a versioned protocol.
+- Model loading, warm-up, capabilities, synthesis, complete-unit audio delivery, cancellation, health, recoverable errors, and fatal errors use a versioned protocol.
 - Audio frames and control messages preserve session, generation, segment, format, and locator identity.
 - The selected built-in speaker/instruction configuration has an explicit
   in-memory owner, complete identity key, invalidation rule, and release
@@ -418,12 +420,13 @@ one exact GPU worker only for ADR-0015's constrained demo. It remains evidence
 work before any continuous-playback or standard-profile claim. Milestone 1
 supplies process and packaging foundations.
 
-M008 depends on this milestone for the real service stream, but its
+M008 depends on this milestone for the constrained complete-unit service
+handoff, but its
 model-independent scheduler and playback behavior remain separately owned.
 
 ### Major risks and unknowns
 
-- Select among standard streams, native IPC, a local socket, or loopback WebSocket after a focused prototype.
+- Implement the accepted Rust-owned standard-stream authority consistently across canonical schemas, Python, Rust, and TypeScript.
 - Binary framing, backpressure, service crashes, protocol upgrades, and cancellation acknowledgments must remain observable.
 - Some inference calls may not be immediately interruptible; stale results still must be rejected.
 - Python sidecar and model packaging may be one of the largest installer and support risks.
@@ -466,8 +469,8 @@ Create a model-independent in-memory producer-consumer pipeline that starts prom
 
 Milestone 2 provides audio and session contracts. ADR-0015 and M006-002 provide
 the selected constrained-demo scheduling authority. Milestone 7 provides the
-production audio stream, but most playback behavior should first be proven with
-deterministic fakes.
+constrained complete-unit audio handoff, but most playback behavior should
+first be proven with deterministic fakes.
 
 ### Major risks and unknowns
 

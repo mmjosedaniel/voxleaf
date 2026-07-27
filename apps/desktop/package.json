@@ -17,6 +17,7 @@
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@tauri-apps/api": "2.11.1",
     "@voxleaf/epub": "workspace:*",
     "@voxleaf/shared": "workspace:*",
     "react": "19.2.7",
