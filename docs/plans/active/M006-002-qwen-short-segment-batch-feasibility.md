@@ -9,44 +9,49 @@ Milestone 6.1 completed the exact Qwen3-TTS 12Hz 1.7B CustomVoice/Serena
 batch-one `v3` evaluation. That evaluation passed its resource, offline,
 artifact, license, packaging, and cleanup gates but failed startup, sustained
 throughput, zero-failure, and mid-generation cancellation gates. ADR-0014
-permits the exact profile only for a bounded development demo with explicit
-preparation or buffering. This plan must not modify, rerun, or reinterpret that
-failed authority.
+originally permitted the exact profile only for a bounded development demo.
+ADR-0015 now supersedes that decision's scheduling and buffering details while
+retaining its exact candidate identity and standard-profile blocker. This plan
+must not modify, rerun, or reinterpret the failed `v3` authority.
 
 This is a separate Milestone 6.2 ExecPlan. Its completed `v4` work froze and
 tested a materially different scheduling hypothesis before results: shorter
 ordered audio units and batch size two using one resident model. Both `v4`
 hardware arms stopped safely before usable media.
 
-The plan now continues with a separate result-blind `v5` hypothesis requested
-after those results: one full-GPU Qwen worker as the primary producer and one
-independent CPU-only Qwen worker as a support producer. The `v5` work must use
-new authority, schemas, results, and conclusions; it must not rewrite or
-reinterpret `v4`. Both stages are evaluation work, not the Milestone 7
-production service or Milestone 8 player.
+The separate result-blind `v5` hypothesis then tested one full-GPU Qwen worker
+as the primary producer and one independent CPU-only Qwen worker as a support
+producer. CPU solo and GPU solo completed, the official concurrent arm stopped
+at its frozen resource boundary, and a non-promotable low-application-load
+diagnostic later completed both workers. Accepted `selection-v5` rejects the
+CPU-only and dual-worker alternatives and retains exactly one GPU worker only
+for the constrained demo governed by ADR-0015. Both evaluated stages remain
+development evidence, not the Milestone 7 production service or Milestone 8
+player.
 
 ## Goal
 
 Determine whether the exact already-evaluated Qwen/Serena candidate can produce
-ordered, bounded Spanish narration sustainably on the exact reference host.
+ordered, bounded Spanish narration sustainably on the exact reference host,
+then record which tested topology, if any, may inform later product work.
 
 The completed `v4` stage tested one resident model generating two short
 semantic units in one shared-model batch, followed by the admitted targeted
-speech-tokenizer CPU placement. The new `v5` stage must test a different
-topology: one exact full-GPU worker and one separately loaded, fully CPU-only
-worker producing independently identified short units for one ordered bounded
-consumer.
+speech-tokenizer CPU placement. The completed `v5` hardware work tested a
+different topology: one exact full-GPU worker and one separately loaded, fully
+CPU-only worker producing independently identified short units for one ordered
+bounded consumer. The evidence rejects that dual-worker topology.
 
 ## User-visible outcome
 
 This plan adds no production user-visible behavior.
 
-If the `v5` evidence passes its frozen gates, VoxLeaf gains a measured
-scheduling input for a later bounded demo and for Milestones 7 and 8: an
-independent GPU-primary/CPU-support topology can produce ordered complete
-waveforms quickly enough to keep a bounded playback simulation supplied. If it
-fails, the constrained batch-one demo decision remains available under
-ADR-0014, while continuous-playback and production claims remain blocked.
+The accepted outcome rejects CPU-only generation and the independent
+GPU-primary/CPU-support topology. It retains the exact single-GPU candidate
+only for a later bounded adaptive demonstration under ADR-0015. M008 owns that
+unimplemented follow-up: quick start or explicit prepared playback, continued
+bounded generation during playback-only pause, truthful buffering at the
+generation frontier, and a 30-minute simultaneous in-memory ceiling.
 
 Neither outcome establishes general hardware support, native waveform
 streaming, cooperative mid-call cancellation, production packaging, or a
@@ -106,6 +111,18 @@ selected CPU fallback.
   close the remaining real-time gap, and approximately 1.78 to reach a
   combined effective RTF of 0.8. The new authority must judge directly
   measured concurrent throughput rather than promote this estimate.
+- The `v5` CPU-solo result passed its bounded admission at aggregate RTF
+  `2.999443394476504`, and the same-authority GPU-solo result completed at
+  aggregate RTF `1.467080448861599`.
+- The official concurrent run stopped at the frozen `resource-limit` boundary
+  before a promotable result. The later 256-token diagnostic identified the
+  exact stop as `commit-headroom`.
+- After unrelated applications were closed, a second non-promotable diagnostic
+  completed all 40 units at aggregate RTF `1.4291263397435898`. Its GPU worker
+  slowed to RTF `2.3290592090374167` and its CPU worker measured RTF
+  `3.4522421854976506`; the roughly 2.6% aggregate gain over GPU solo is not
+  enough to justify the additional model, contention, memory, and scheduling
+  complexity.
 
 Primary upstream references:
 
@@ -183,6 +200,7 @@ Primary upstream references:
 - `benchmarks/tts/schemas/dual-worker-raw-v5.schema.json`
 - `benchmarks/tts/schemas/dual-worker-summary-v5.schema.json`
 - `benchmarks/tts/selection-v4.md`
+- `benchmarks/tts/selection-v5.md`
 - `docs/architecture/tts-feasibility-profile-v5.md`
 - `docs/product/mvp.md`
 - `docs/architecture/overview.md`
@@ -192,6 +210,8 @@ Primary upstream references:
 - `docs/architecture/decisions/ADR-0004-start-after-audio-lead.md`
 - `docs/architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md`
 - `docs/architecture/decisions/ADR-0014-constrained-qwen-development-demo.md`
+- `docs/architecture/decisions/ADR-0015-bounded-adaptive-qwen-demo-buffering.md`
+- `docs/plans/active/M008-bounded-adaptive-prebuffering.md`
 - `docs/development/dependencies.md`
 - `docs/development/testing.md`
 - `docs/plans/roadmap.md`
@@ -664,7 +684,9 @@ five-minute playback or quality claim is authorized.
 
 #### Status
 
-Not started.
+In progress. The content-safe `selection-v5` decision, ADR-0015, and the
+follow-up M008 ExecPlan are recorded. Local validation and required
+pull-request CI remain before this plan can move to `docs/plans/completed/`.
 
 ## Testing and benchmark strategy
 
@@ -1183,6 +1205,21 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
   sleep, zero workers, zero GPU use with 7,810 MiB free, and zero raw files.
   Closing applications solves this occurrence of the commit stop but does not
   make the dual-worker schedule real-time or product-viable.
+- 2026-07-26: Recorded accepted `benchmarks/tts/selection-v5.md`. It rejects
+  CPU-only and dual-worker scheduling, retains the same exact GPU identity only
+  for a constrained development demo, preserves every frozen standard failure,
+  and treats both 256-token diagnostics as non-promotable supplementary
+  evidence.
+- 2026-07-26: Accepted ADR-0015, superseding ADR-0014's scheduling and
+  buffering details. The next implementation may use one GPU worker with quick
+  start or an explicit bounded preparation target, continue generation during
+  playback-only pause, represent frontier exhaustion as buffering, and retain
+  at most approximately 30 minutes of playable audio in memory. No such
+  runtime behavior is implemented by this decision.
+- 2026-07-26: Created the M008 bounded adaptive prebuffering ExecPlan and
+  reconciled product, architecture, roadmap, setup, dependency, testing, and
+  system-diagram documentation. Milestone 10 remains open until local
+  validation and required pull-request CI pass.
 
 ## Discoveries and decisions
 
@@ -1351,10 +1388,34 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
     completed all 40 units. Commit feasibility therefore depends on baseline
     host load, while the completed RTF and contention measurements independently
     reject the dual-worker schedule.
+45. The low-load concurrent diagnostic improves aggregate RTF by only about
+    2.6% over GPU solo while slowing the GPU worker by about 58.8%. That trade
+    does not justify a second model instance, its roughly 13-GB combined
+    process-RAM peak, baseline-load sensitivity, or ordered-worker complexity.
+46. The exact GPU candidate remains slower than real time, so a larger buffer
+    changes how long playback can continue before catching the generation
+    frontier; it does not turn the model into a sustainable producer.
+47. Quick start and prepared playback answer different user needs. Quick start
+    preserves ADR-0004's approximately 15-playable-second threshold. Explicit
+    preparation may target 1, 2, 5, or 10 playable minutes, but the UI must
+    show honest progress and an estimate rather than disguise preparation as a
+    fixed startup requirement.
+48. Playback-only pause may continue useful generation within the same active
+    identity and bounds. Explicit stop, seek, chapter change, voice/model
+    change, book/session replacement, and exit still cancel or invalidate work
+    and release obsolete audio.
+49. A 30-minute simultaneous playable-audio ceiling is a capacity limit, not
+    a startup target or uninterrupted-playback guarantee. M008 must freeze the
+    corresponding unit, byte, active-work, and prepared-text limits before
+    implementation.
+50. One- to three-second paragraph/chapter waits may reduce frontier pressure
+    and improve listening cadence, but they cannot compensate for RTF above
+    1.0. M008 must make such waits adaptive, bounded, observable, separately
+    measured, and optional.
 
 ## Final validation results
 
-Milestones 1 through 4, 6, and 7 are complete. Milestone 1 adds result-blind `v4`
+Milestones 1 through 4 and 6 through 8 are complete. Milestone 1 adds result-blind `v4`
 authority; Milestone 2 adds development-only model-free mechanics and reviewed
 execution commands; Milestones 3 and 4 execute the frozen full-GPU and
 targeted-CPU arms; and Milestone 6 records their failed decision and freezes
@@ -1369,8 +1430,9 @@ Milestone 5 is not admitted. Milestone 8 is complete with a failed concurrent
 hardware outcome: CPU solo passed admission, the same-authority GPU-solo
 baseline completed, and the concurrent arm reached the frozen
 `resource-limit` boundary. Milestone 9 is therefore not admitted. Milestone 10
-remains pending to record the durable `v5` decision and close this plan, so the
-plan remains active and must not yet move to `docs/plans/completed/`.
+has recorded the durable `v5` decision and follow-up authority but still
+requires local validation and pull-request CI, so the plan remains active and
+must not yet move to `docs/plans/completed/`.
 
 The earlier `v5` planning amendment changed documentation only. Milestone 6
 now adds separately versioned authority and model-free validation, but still
@@ -1682,3 +1744,10 @@ aggregate RTF `1.4291263397435898`, GPU-worker RTF
 `2.3290592090374167`, and CPU-worker RTF `3.4522421854976506` still fail
 real-time and contention gates. Post-run process, GPU, sleep, raw-tree, and
 temporary-output cleanup passed. Milestone 9 remains not admitted.
+
+Accepted `selection-v5` now rejects CPU-only and dual-worker scheduling and
+retains the exact GPU worker only for ADR-0015's constrained adaptive demo.
+ADR-0015 supersedes ADR-0014's scheduling and buffering details without
+changing the frozen failed `v3` standard result. M008 records the unimplemented
+follow-up. Final local validation and required pull-request CI remain before
+Milestone 10 and this ExecPlan can close.
