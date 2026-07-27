@@ -34,6 +34,11 @@ import {
   ReaderReflowRestorer,
   type ReaderReflowEnvironment,
 } from "./reader-reflow-restoration";
+import {
+  SegmentHighlightController,
+  type ReaderNarrationSource,
+  type SegmentHighlightEnvironment,
+} from "./segment-highlight-controller";
 import { ReaderPreferencesControls } from "./ReaderPreferences";
 import {
   ChapterTooLargeContent,
@@ -146,6 +151,8 @@ export interface ReaderPublicationContentProps {
   readonly domRangeMapper?: SemanticDomRangeMapper;
   readonly visualLocatorEnvironment?: ActiveVisualLocatorEnvironment;
   readonly reflowEnvironment?: ReaderReflowEnvironment;
+  readonly narrationSource?: ReaderNarrationSource;
+  readonly segmentHighlightEnvironment?: SegmentHighlightEnvironment;
 }
 
 export interface ReaderInitialRestorationSettlement {
@@ -165,6 +172,8 @@ export function ReaderPublicationContent({
   domRangeMapper,
   visualLocatorEnvironment,
   reflowEnvironment,
+  narrationSource,
+  segmentHighlightEnvironment,
 }: ReaderPublicationContentProps): ReactElement {
   const [coordinator] = useState(
     () =>
@@ -280,6 +289,50 @@ export function ReaderPublicationContent({
   const resumeProgrammaticNavigationRef = useRef<(() => void) | undefined>(
     undefined,
   );
+  const [segmentHighlightController] = useState(
+    () =>
+      new SegmentHighlightController(
+        publication.locators,
+        activeDomRangeMapper,
+        undefined,
+        segmentHighlightEnvironment,
+      ),
+  );
+  useLayoutEffect(() => {
+    const callbacks = {
+      currentSpineItemIndex: () =>
+        coordinator.state.activeLocator.spineItemIndex,
+      navigateToLocator: (locator: ReadingLocatorV1) => {
+        reflowRestorer.cancel();
+        completeInitialRestoration(
+          Object.freeze({
+            status: "superseded",
+            locator: coordinator.state.activeLocator,
+          }),
+        );
+        pendingPositionSaveRevision.current = undefined;
+        const previousRevision = coordinator.state.navigationRevision;
+        coordinator.navigateToLocator(locator);
+        if (coordinator.state.navigationRevision !== previousRevision) {
+          handledNavigationRevision.current =
+            coordinator.state.navigationRevision;
+        }
+      },
+      settleLocator: (locator: ReadingLocatorV1) => {
+        visualLocatorTracker.setCurrentLocator(locator);
+        coordinator.updateActiveVisualLocator(locator);
+      },
+      suspendVisualSampling: () => visualLocatorTracker.suspend(),
+    };
+    segmentHighlightController.setCallbacks(callbacks);
+    return () => segmentHighlightController.setCallbacks(undefined);
+  }, [
+    completeInitialRestoration,
+    coordinator,
+    reflowRestorer,
+    segmentHighlightController,
+    visualLocatorTracker,
+  ]);
   const attemptInitialRestoration = useCallback((): void => {
     if (
       initialRestorationStatus.current !== "pending" ||
@@ -306,9 +359,15 @@ export function ReaderPublicationContent({
       readerRef.current = element;
       visualLocatorTracker.setRoot(element);
       reflowRestorer.setRoot(element);
+      segmentHighlightController.setRoot(element);
       attemptInitialRestoration();
     },
-    [attemptInitialRestoration, reflowRestorer, visualLocatorTracker],
+    [
+      attemptInitialRestoration,
+      reflowRestorer,
+      segmentHighlightController,
+      visualLocatorTracker,
+    ],
   );
   const finishProgrammaticNavigation = useCallback((): void => {
     visualLocatorTracker.setCurrentLocator(coordinator.state.activeLocator);
@@ -429,6 +488,42 @@ export function ReaderPublicationContent({
     [],
   );
 
+  useEffect(() => {
+    const unsubscribe = activeDomRangeMapper.subscribe(() => {
+      segmentHighlightController.refresh();
+    });
+    segmentHighlightController.refresh();
+    return unsubscribe;
+  }, [activeDomRangeMapper, segmentHighlightController]);
+  useEffect(() => {
+    if (narrationSource === undefined) {
+      segmentHighlightController.clear();
+      return;
+    }
+    const reconcile = (): void => {
+      segmentHighlightController.reconcile(narrationSource.observe());
+    };
+    const unsubscribeState = narrationSource.subscribe(reconcile);
+    const unsubscribeProgress = narrationSource.subscribeAudibleProgress(
+      (observation) => {
+        segmentHighlightController.accept(observation);
+      },
+    );
+    reconcile();
+    return () => {
+      unsubscribeProgress();
+      unsubscribeState();
+      segmentHighlightController.clear();
+    };
+  }, [narrationSource, segmentHighlightController]);
+  useLayoutEffect(() => {
+    segmentHighlightController.refresh();
+  }, [
+    segmentHighlightController,
+    state.activeDocument.id,
+    state.contentStatus,
+    state.preferences,
+  ]);
   useEffect(
     () => () => {
       void rasterImageLoader.close();
@@ -442,9 +537,10 @@ export function ReaderPublicationContent({
       initialVisualLocatorResumeRef.current = undefined;
       resumeProgrammaticNavigationRef.current?.();
       resumeProgrammaticNavigationRef.current = undefined;
+      segmentHighlightController.close();
       visualLocatorTracker.close();
     },
-    [reflowRestorer, visualLocatorTracker],
+    [reflowRestorer, segmentHighlightController, visualLocatorTracker],
   );
   useEffect(
     () => () => {

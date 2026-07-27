@@ -1758,13 +1758,19 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
      ) {
        return { supported: false };
      }
-     const styleSheet = Array.from(document.styleSheets).find((sheet) => {
-       try {
-         return sheet.cssRules !== undefined;
-       } catch {
-         return false;
-       }
-     });
+     const styleRegistered = Array.from(document.styleSheets).some(
+       (sheet) => {
+         try {
+           return Array.from(sheet.cssRules).some((rule) =>
+             rule.cssText.includes(
+               "::highlight(voxleaf-narration-active)",
+             ),
+           );
+         } catch {
+           return false;
+         }
+       },
+     );
      const leaves = Array.from(
        document.querySelectorAll(
          ".semantic-document h1, .semantic-document h2, " +
@@ -1796,7 +1802,6 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
        selectionText.data.length < 2 ||
        targetText.data.length < 2 ||
        selection === null ||
-       styleSheet === undefined ||
        !(theme instanceof HTMLSelectElement)
      ) {
        return { supported: true, fixtureReady: false };
@@ -1819,12 +1824,6 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
      range.setEnd(targetText, targetText.data.length);
      const highlightName = "voxleaf-narration-active";
      const highlight = new Highlight(range);
-     const ruleIndex = styleSheet.insertRule(
-       "::highlight(voxleaf-narration-active) {" +
-       "background-color: rgb(255 214 64);" +
-       "color: rgb(20 20 20);}",
-       styleSheet.cssRules.length,
-     );
      highlights.set(highlightName, highlight);
 
      window.scrollTo(0, 0);
@@ -1847,10 +1846,7 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
        fixtureReady: true,
        registered:
          highlights.has(highlightName) && highlight.has(range),
-       styleRegistered:
-         styleSheet.cssRules[ruleIndex]?.cssText.includes(
-           "::highlight(voxleaf-narration-active)",
-         ) === true,
+       styleRegistered,
        rangeConnected: target.isConnected && !range.collapsed,
        followed:
          outsideBefore &&
@@ -1869,7 +1865,6 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
        urlUnchanged: window.location.href === initialUrl,
      };
      highlights.delete(highlightName);
-     styleSheet.deleteRule(ruleIndex);
      selection.removeAllRanges();
      return result;`,
   );

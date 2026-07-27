@@ -255,6 +255,7 @@ describe("desktop reader lifecycle surface", () => {
     );
     expect(receivedProps?.initialPreferences).toEqual(preferences);
     expect(receivedProps?.restoreInitialLocator).toBe(true);
+    expect(receivedProps?.narrationSource).toBeDefined();
     expect(repository.writePosition).not.toHaveBeenCalled();
     expect(document.body).not.toHaveTextContent("private-restored.epub");
   });

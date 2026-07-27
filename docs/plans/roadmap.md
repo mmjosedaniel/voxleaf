@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 8 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Its final policy selects quick mode by default, one minute as the initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. The final packaged rerun measured 41.312 seconds to audible quick playback and 19.49 buffering seconds per playback minute. Because that exceeds the MVP target, this remains a constrained demo rather than a standard, continuous-playback, production, distribution, or general-hardware profile. Milestone 9 is in progress: its first two implementation milestones freeze and prove the segment-level authority and publish bounded source-range audible progress, while reader highlighting, synchronized interaction, and persistence remain.
+VoxLeaf is pre-alpha. Milestones 1 through 8 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Its final policy selects quick mode by default, one minute as the initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. The final packaged rerun measured 41.312 seconds to audible quick playback and 19.49 buffering seconds per playback minute. Because that exceeds the MVP target, this remains a constrained demo rather than a standard, continuous-playback, production, distribution, or general-hardware profile. Milestone 9 is in progress: its first three implementation milestones freeze and prove segment-level authority, publish bounded source-range audible progress, and connect non-mutating highlight/follow behavior to the reader. Synchronized user interaction and heard-position persistence remain.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -514,7 +514,7 @@ behavior should first be proven with deterministic fakes.
 
 ## Milestone 9: Integrate synchronized reading and narration
 
-**Status:** In progress; ExecPlan Milestones 1 and 2 complete. ADR-0017 and the frozen
+**Status:** In progress; ExecPlan Milestones 1 through 3 complete. ADR-0017 and the frozen
 synchronization authority select segment-level source ranges, CSS Custom
 Highlight decoration, focus-safe following, immediate passive-navigation seek
 with bounded settlement, stable-segment previous/next movement, and
@@ -523,7 +523,10 @@ the mechanism without publication mutation, focus/selection loss, URL changes,
 runtime errors, or external requests. The bounded scheduler/player path now
 retains immutable source ranges while units are eligible and publishes exact
 start/completion plus 250 ms played-frame observations outside React
-snapshots. Reader highlighting, synchronized product behavior, and
+snapshots. The reader now consumes exact transitions through one bounded
+Custom Highlight projection and follows
+outside the 24-pixel comfort region without focus, selection, URL, DOM, or
+passive-tracker feedback side effects. Synchronized user navigation and
 heard-position persistence are not yet implemented. Follow
 [`M009-synchronized-reading-and-narration.md`](active/M009-synchronized-reading-and-narration.md)
 for implementation authority.
@@ -652,7 +655,8 @@ standard profile, or approve model/runtime distribution.
 [`active/M009-synchronized-reading-and-narration.md`](active/M009-synchronized-reading-and-narration.md)
 is the approved focused implementation authority for segment-level audible
 progress, highlighting, focus-safe following, synchronized navigation, and
-heard-position persistence. Its implementation has not started.
+heard-position persistence. Milestones 1 through 3 are implemented and
+validated; later milestones retain synchronized navigation and persistence.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by M009 for the

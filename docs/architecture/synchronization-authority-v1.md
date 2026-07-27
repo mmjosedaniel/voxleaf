@@ -4,10 +4,10 @@
 
 This is the frozen interaction and position authority for M009. Milestone 1
 implements the deterministic authority and proves the selected decoration and
-following mechanism in production Chromium and packaged WebView2. It does not
-claim that runtime audible-position projection, highlighting, synchronized
-navigation, or heard-progress persistence is connected yet; those remain
-M009 Milestones 2 through 5.
+following mechanism in production Chromium and packaged WebView2. Milestones
+2 and 3 connect bounded audible-position projection, segment highlighting,
+and focus-safe automatic following to the reader. Synchronized user
+navigation and heard-progress persistence remain M009 Milestones 4 and 5.
 
 The authority is desktop-local. It does not change the shared schemas, the
 M005 `narration-v1` segmentation policy, or the M007 protocol-v1 service.
@@ -89,6 +89,14 @@ that:
 - the packaged smoke retains zero runtime errors and zero external requests.
 
 No new runtime dependency is required.
+
+The production reader now implements this boundary. It retains at most one
+active structural range projection, remaps through semantic DOM registration
+changes instead of retaining DOM paths or geometry, and holds passive visual
+sampling while a later incremental block or chapter is materialized. Exact
+completion advances the internal projection to the segment end without a
+second follow. Stop, failure, source replacement, and cleanup remove the
+registry entry and release any pending follow.
 
 ## User navigation
 

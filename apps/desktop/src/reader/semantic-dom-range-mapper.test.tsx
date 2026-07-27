@@ -10,7 +10,7 @@ import type {
 import { createIndex } from "@voxleaf/shared";
 import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SemanticDocumentContent } from "./SemanticDocument";
 import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
@@ -372,5 +372,33 @@ describe("semantic DOM range mapping", () => {
 
     first.remove();
     second.remove();
+  });
+
+  it("notifies bounded projection owners when rendered registrations change", () => {
+    const documentId = "document:dom-mapper-notify" as ContentDocumentId;
+    const paragraph = Object.freeze({
+      kind: "paragraph",
+      children: Object.freeze([text("Notify")]),
+    }) satisfies SemanticBlock;
+    const located = locatedBlock(documentId, paragraph, 6);
+    const mapper = new SemanticDomRangeMapper();
+    const listener = vi.fn();
+    const unsubscribe = mapper.subscribe(listener);
+    const rendered = render(
+      <SemanticDocumentContent
+        document={documentWith(documentId, [paragraph])}
+        domRangeMapper={mapper}
+        locatedBlocks={[located]}
+      />,
+    );
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    rendered.unmount();
+    expect(listener).toHaveBeenCalledTimes(2);
+
+    unsubscribe();
+    mapper.clear();
+    expect(listener).toHaveBeenCalledTimes(2);
+    mapper.close();
   });
 });
