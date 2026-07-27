@@ -62,6 +62,15 @@ fn main() {
                 1
             });
         }
+        Some(argument)
+            if argument == std::ffi::OsStr::new(tts_service_supervisor::EXACT_HOST_ARGUMENT) =>
+        {
+            std::process::exit(if tts_service_supervisor::run_exact_host().is_ok() {
+                0
+            } else {
+                1
+            });
+        }
         _ => {}
     }
 

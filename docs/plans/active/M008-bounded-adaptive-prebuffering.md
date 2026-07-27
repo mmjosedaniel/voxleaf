@@ -37,7 +37,9 @@ specific preparation duration.
 - `@voxleaf/epub` exposes bounded locator-linked
   `OpenedPublication.prepareNarration`; the desktop does not call it.
 - M007 is the active prerequisite plan for the constrained local TTS service
-  and process protocol. No service stream exists yet.
+  and process protocol. Its Milestones 1-4 implement the bounded complete-unit
+  service and exact development-only adapter, but its measured handoff matrix
+  and product narration caller remain open. No playback stream exists yet.
 - ADR-0013 selects no standard TTS profile.
 - ADR-0015 permits only the exact one-GPU Qwen/Serena development-demo
   topology with bounded adaptive in-memory preparation.
@@ -307,6 +309,10 @@ accepted no-standard-profile decision.
 - 2026-07-26: Added the focused M007 service/protocol prerequisite. M008 still
   owns scheduler, player, buffer, and preparation UI behavior; its real-model
   integration waits for M007.
+- 2026-07-27: M007 Milestone 4 completed the exact Qwen/Serena adapter and
+  focused host diagnostic. This does not change M008's one-GPU scheduling,
+  preparation, buffer, or playback scope; M007's measured handoff matrix and
+  closeout remain prerequisites.
 
 ## Discoveries and decisions
 

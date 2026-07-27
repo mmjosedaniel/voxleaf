@@ -147,6 +147,16 @@ validation. It adds no model, Torch, CUDA, server, audio-device, or network
 dependency. The model-free service communicates only over supplied binary
 standard streams and emits deterministic synthetic PCM in tests.
 
+M007 Milestone 4 adds no manifest or lockfile edge. The exact adapter remains
+service-owned code, while `qwen-tts`, PyTorch, Torchaudio, NumPy, CUDA, and
+their native graph remain exclusively in the unchanged isolated
+`qwen3_1_7b_customvoice_cuda` environment. The native exact-development child
+adds only the separately locked base service's schema-validation packages to
+its private import path; before load, the adapter verifies that Qwen, Torch,
+and Torchaudio resolve from the candidate environment. This arrangement is a
+development-only bridge, not production dependency promotion, bundling, or
+redistribution approval.
+
 Base voice cloning remains outside the MVP. Whisper is excluded from the
 production graph and from `v3`; VAD/energy analysis is also excluded from
 `v3` so neither auxiliary runtime can affect timed synthesis or selection.

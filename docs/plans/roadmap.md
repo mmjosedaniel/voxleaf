@@ -384,7 +384,7 @@ work.
 
 ## Milestone 7: Implement the local TTS service and process protocol
 
-**Status:** In progress. Milestones 1-3 are complete: the deterministic
+**Status:** In progress. Milestones 1-4 are complete: the deterministic
 Rust-owned standard-stream and binary Tauri-response probe passes, protocol
 version 1 and ADR-0016 are accepted, closed control contracts are canonical
 across TypeScript, Python, and Rust, and a bounded model-free Python service
@@ -394,8 +394,12 @@ restart, process-tree cleanup, narrow commands, and application-exit cleanup.
 A typed desktop client validates lifecycle/identity, owns at most one complete
 binary unit outside React state, and releases or zeroes stale bytes. The
 packaged fake-service matrix passes normal delivery, cancellation, crash
-recovery, descendant cleanup, and zero external requests. Milestones 4-5 and
-production completion remain unimplemented. Follow
+recovery, descendant cleanup, and zero external requests. Milestone 4 adds the
+exact service-owned Qwen/Serena adapter behind frozen native-only
+configuration; its first reviewed exact-host run passes load/warm, bounded
+delivery, busy rejection, termination with zero stale return, clean reload,
+and shutdown. Milestone 5's measured handoff matrix and Milestone 6 closeout
+remain unimplemented. Follow
 [`M007-local-tts-service-and-process-protocol.md`](active/M007-local-tts-service-and-process-protocol.md).
 ADR-0015 permits a focused Qwen/Serena demo service around complete bounded
 units and identity-first worker termination. ADR-0013 still records that no

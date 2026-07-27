@@ -42,19 +42,20 @@ Until then, the current user-visible product still ends at visual reading.
 - `@voxleaf/shared` implements versioned session, narration-segment,
   audio-frame metadata, capability, buffer-status, and operational-error
   contracts plus runtime TypeScript decoders and deterministic fakes.
-- `apps/desktop` now has the M007 Milestone 1 model-free Rust-owned
-  standard-stream child probe, one narrow application command, and typed binary
-  WebView response validation. It is not the production supervisor or TTS
-  client, adds no plugin/capability/listener, and accepts no book text.
+- `apps/desktop` now has the M007 Milestones 1-4 Rust-owned standard-stream
+  transport, native supervisor, narrow typed commands, one-unit desktop
+  client, model-free child, and native-only exact-service activation. It adds
+  no plugin, general process capability, or listener.
 - `@voxleaf/shared` now also owns the closed protocol-v1 control schema,
   fixtures, generated TypeScript predicate, and generated offline Python
   schema registry. Rust, Python, and TypeScript conformance tests consume that
   one authority.
-- `services/tts` now has the bounded model-free protocol decoder/encoder,
-  lifecycle service loop, and deterministic fake engine. It can emit one
-  complete synthetic PCM unit over supplied binary standard streams and prove
-  cancellation/cleanup without a model or device. It has no Qwen adapter,
-  native supervisor, product caller, or real inference.
+- `services/tts` now has the bounded protocol decoder/encoder, lifecycle
+  service loop, common one-active engine boundary, deterministic fake engine,
+  and exact Qwen/Serena adapter. The exact adapter verifies the frozen
+  candidate runtime, revision, major artifacts, CUDA/bfloat16 provider,
+  voice, instruction, generation settings, and complete waveform before
+  publication. The desktop still has no product narration caller or playback.
 - The exact `qwen3-tts-1-7b-customvoice-cuda-bf16-v1` identity is frozen by
   `profile-v3.json`: Qwen3-TTS 12Hz 1.7B CustomVoice revision
   `0c0e3051f131929182e2c023b9537f8b1c68adfe`, `qwen-tts==0.1.1`,
@@ -550,7 +551,42 @@ evidence. The exact Qwen/Serena child replacement is Milestone 4.
 
 #### Status
 
-Not started.
+Complete on 2026-07-27.
+
+#### Actual result
+
+- Added the service-owned `QwenSerenaTtsEngine` behind the existing protocol
+  state machine. It imports no benchmark command, measurement, or result
+  behavior and keeps the base service dependency graph model-free.
+- The adapter byte-matches its frozen constants against `profile-v3.json`,
+  verifies Python 3.12 plus exact `qwen-tts`, PyTorch, and Torchaudio versions
+  from the isolated candidate environment, verifies both major artifact
+  hashes/sizes and Hugging Face revision receipts, and checks the local model
+  configuration before importing Qwen or Torch.
+- Load uses exactly one `cuda:0` bfloat16/SDPA
+  `Qwen3TTSModel.from_pretrained(..., local_files_only=True)` instance.
+  Warm-up and synthesis use Serena, Spanish, the frozen instruction, batch
+  one, and the exact sampling and 2,048-token settings. Model/library standard
+  output is discarded while protocol standard output remains framing-only.
+- The adapter converts only one nonempty one-dimensional finite waveform to
+  little-endian float32 and enforces 24 kHz mono, 20 seconds, 480,000 samples,
+  and 1,920,000 bytes before the existing service and Rust layers independently
+  validate it again.
+- Native activation requires exactly the three frozen development keys. Rust
+  canonicalizes the exact candidate interpreter and model root, byte-verifies
+  the unchanged candidate lock, supplies only the locked base service
+  validation packages through the private child import path, strips the
+  development keys from the child, sets offline controls, discards stderr, and
+  exposes no path or process command to the renderer.
+- Default and portable execution remain on the model-free child and do not
+  import Qwen or Torch. Missing or mismatched exact configuration returns only
+  the fixed unavailable outcome.
+- Added the reviewed `pnpm.cmd test:tts:exact-host` command. Its first execution
+  under the interpreter-bound outbound firewall rule passed: release build,
+  exact load/warm, valid complete-unit delivery, concurrent-request rejection,
+  identity-first process-tree termination with zero returned stale audio,
+  explicit clean reload, another valid unit, and shutdown all completed
+  without an automatic retry.
 
 ### Milestone 5: Validate the constrained service handoff on the exact host
 
@@ -650,9 +686,20 @@ pnpm.cmd check
 uv lock --project services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --check
 ```
 
-Milestone 4 must add and document a narrow exact-host service command before
-using it. Update this section with that exact checked-in command and its safe
-input/output contract; do not invent or run an unreviewed ad hoc invocation.
+Milestone 4 adds the reviewed exact-host command:
+
+```powershell
+$env:VOXLEAF_TTS_DEV_ENABLED = "1"
+$env:VOXLEAF_TTS_DEV_PYTHON = (Resolve-Path "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/.venv/Scripts/python.exe").Path
+$env:VOXLEAF_TTS_DEV_MODEL_ROOT = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda").Path
+pnpm.cmd test:tts:exact-host
+```
+
+It requires the exact interpreter-bound outbound firewall rule and verified
+ignored model root. The checked-in launcher emits only a fixed pass/fail line;
+the native host and child emit no path, narration text, waveform, environment
+value, exception, or process command. The command is Windows/CUDA-only,
+hardware-specific, and excluded from default checks and CI.
 
 Default and CI validation must remain model-free and hardware-free. Exact-host
 validation runs only on native Windows with the frozen candidate environment,
@@ -824,6 +871,27 @@ artifact behind.
   startup matrix. The packaged matrix reports no runtime error or external
   request and the existing visual reader remains functional without TTS
   configuration.
+- 2026-07-27: Created `feat/m007-4-qwen-serena-adapter` from merged `main` at
+  `b34fe98`. Commit `55722cc` adds the common service-engine contract and exact
+  Qwen/Serena adapter with frozen identity, runtime, revision, artifact,
+  provider, waveform, failure, and cleanup tests. The isolated candidate lock
+  remains byte-identical.
+- 2026-07-27: Commit `ca700e4` connects the native supervisor to the exact
+  Python service only behind the three frozen native-only keys, preserves the
+  model-free default, byte-verifies the candidate lock, and adds the reviewed
+  exact-host diagnostic command. Focused Python validation passes 56 tests;
+  mypy, Ruff, 21 Rust tests, Rustfmt, Clippy, Node syntax, and Prettier pass.
+- 2026-07-27: The first complete portable gate found only that the new Node
+  launcher had not imported the repository's explicit `console` and `process`
+  globals. Commit `5d08d74` adds those imports; focused ESLint and Prettier
+  checks and the unchanged complete validation then pass.
+- 2026-07-27: The first reviewed exact-host execution passed under the existing
+  enabled outbound block bound to the exact candidate interpreter. It proved
+  exact load/warm, one resident model per service session, one active request,
+  zero automatic retry, two valid bounded deliveries across an explicit
+  reload, busy rejection, active process-tree termination, zero stale return,
+  and clean shutdown. This is constrained exact-host service evidence only;
+  Milestone 5's measured handoff matrix remains open.
 
 ## Discoveries and decisions
 
@@ -887,6 +955,15 @@ artifact behind.
     rejects another request while generation or retained audio exists, and
     zeroes stale or released bytes. M008, not this client, owns any multi-unit
     playback queue.
+18. The isolated Qwen lock cannot absorb the base service's JSON Schema
+    dependencies without invalidating the evaluated runtime. The exact child
+    therefore uses the candidate interpreter and candidate packages unchanged,
+    while Rust adds only the separately locked base service validation packages
+    to its private import path. The adapter verifies that Qwen, Torch, and
+    Torchaudio still resolve from the candidate environment before load.
+19. Model and native-library standard output is discarded around load and
+    generation because child standard output is protocol-only. Standard error
+    remains attached to the null sink with zero retained bytes.
 
 ## Final validation results
 
@@ -1020,4 +1097,41 @@ The implementation loads no model or audio device, persists no generated
 audio, emits no narration or path in errors/logs, and makes no playback,
 native-model-streaming, standard-profile, production, or general-hardware
 claim. Every Milestone 3 work item and acceptance gate is complete; Milestone
-4 remains open.
+4 completion is recorded below.
+
+Milestone 4 implementation validation completed on 2026-07-27:
+
+- Focused adapter and service validation passes 56 Python tests. Mypy, Ruff,
+  21 Rust supervisor/protocol tests, Rustfmt, Clippy with warnings denied,
+  Node syntax, focused ESLint, and Prettier pass.
+- `pnpm.cmd check:portable` passes with ignored workspace-local uv/temporary
+  directories. It includes formatting, linting, TypeScript/Python type checks,
+  196 shared tests, 555 EPUB tests, 220 desktop Vitest tests, six Node
+  native-driver tests, all 217 Python tests, package builds, the portable
+  desktop build, and Python source/wheel builds.
+- `pnpm.cmd check` passes under the same isolation. It additionally includes
+  Rust formatting and linting, all 21 Rust tests, and the Tauri release build.
+- `pnpm.cmd test:native-startup` passes outside the sandbox with all three
+  exact-adapter override keys absent. The model-free packaged path completes
+  binary delivery, cancellation, crash recovery, restart, process cleanup,
+  reader behavior, zero runtime errors, and zero external requests.
+- `pnpm.cmd test:tts:exact-host` passes outside the sandbox on the final code
+  with the frozen candidate interpreter and model artifacts. The enabled
+  interpreter-bound outbound firewall rule remains in force. The diagnostic
+  proves exact offline load/warm, one resident model, bounded finite PCM,
+  one-active busy rejection, active process-tree termination, zero stale
+  return, explicit reload, a second bounded delivery, and clean shutdown.
+- The candidate `uv lock --check` resolves all 107 locked packages and its
+  SHA-256 remains
+  `1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913`.
+- Markdown formatting passes; every relative link in the 13 changed Markdown
+  files resolves; the changed-content privacy scan finds no private path,
+  personal email, private-key marker, or common webmail address; and
+  `git diff --check` passes.
+
+Milestone 4 adds only the frozen development exact-host adapter and its native
+supervision path. It does not add a prepared-narration caller, scheduler,
+playback, audio persistence, cooperative model cancellation, automatic
+download, installer, production dependency, standard profile, or
+general-hardware support claim. Every Milestone 4 work item and acceptance
+gate is complete; Milestone 5's measured service-handoff matrix remains open.

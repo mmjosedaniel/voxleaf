@@ -7,12 +7,13 @@ from collections.abc import Mapping
 from contextlib import suppress
 from typing import BinaryIO, Final, cast
 
-from .fake_engine import (
-    FakeEngineFailure,
-    FakeEngineFailureCode,
-    FakeTtsEngine,
+from .engine import (
+    EngineFailure,
+    EngineFailureCode,
+    TtsEngine,
     WorkIdentity,
 )
+from .fake_engine import FakeTtsEngine
 from .protocol import (
     CHANNEL_COUNT,
     PROTOCOL_VERSION,
@@ -88,7 +89,7 @@ def _control(message: Mapping[str, object]) -> Frame:
 class ModelFreeTtsService:
     """One-active/no-queue protocol owner around a deterministic fake engine."""
 
-    def __init__(self, engine: FakeTtsEngine | None = None) -> None:
+    def __init__(self, engine: TtsEngine | None = None) -> None:
         self._engine = engine or FakeTtsEngine()
         self._state = ServiceState.STARTING
         self._service_instance_id: str | None = None
@@ -119,17 +120,18 @@ class ModelFreeTtsService:
         return _control(message)
 
     def _capabilities_record(self) -> Frame:
+        capabilities = self._engine.capabilities()
         message = self._base("capabilities")
         message.update(
             {
                 "report": {
                     "schemaVersion": SCHEMA_VERSION,
                     "capabilities": {
-                        "localSpeechGeneration": "unknown",
-                        "streamingGeneration": "unsupported",
-                        "generationCancellation": "unsupported",
-                        "hardwareAcceleration": "unknown",
-                        "cpuFallback": "unsupported",
+                        "localSpeechGeneration": capabilities.local_speech_generation,
+                        "streamingGeneration": capabilities.streaming_generation,
+                        "generationCancellation": capabilities.generation_cancellation,
+                        "hardwareAcceleration": capabilities.hardware_acceleration,
+                        "cpuFallback": capabilities.cpu_fallback,
                     },
                 },
                 "cancellationContainment": ("identity-invalidation-then-worker-termination"),
@@ -175,7 +177,7 @@ class ModelFreeTtsService:
         loading = self._state_record()
         try:
             self._engine.load()
-        except FakeEngineFailure:
+        except EngineFailure:
             return self._fail_engine()
         self._state = ServiceState.WARMING
         return (loading, self._state_record())
@@ -185,7 +187,7 @@ class ModelFreeTtsService:
             return (self._error_record(ProtocolReason.INVALID_STATE),)
         try:
             self._engine.warm()
-        except FakeEngineFailure:
+        except EngineFailure:
             return self._fail_engine()
         self._state = ServiceState.READY
         return (self._state_record(), self._capabilities_record())
@@ -202,7 +204,7 @@ class ModelFreeTtsService:
         segment = cast(Mapping[str, object], message["segment"])
         try:
             identity = self._engine.begin(request_id, segment)
-        except FakeEngineFailure:
+        except EngineFailure:
             return self._fail_engine()
         self._active_identity = identity
         self._state = ServiceState.GENERATING
@@ -222,7 +224,7 @@ class ModelFreeTtsService:
         self._last_request_id = identity.request_id
         try:
             self._engine.cancel(identity)
-        except FakeEngineFailure:
+        except EngineFailure:
             return self._fail_engine(identity)
         cancelled = self._base("cancelled")
         cancelled["workIdentity"] = _work_identity_dict(identity)
@@ -288,11 +290,11 @@ class ModelFreeTtsService:
 
         try:
             completed_identity, result = self._engine.settle()
-        except FakeEngineFailure as error:
+        except EngineFailure as error:
             self._last_request_id = identity.request_id
             reason = (
                 ProtocolReason.ENGINE_TIMEOUT
-                if error.code is FakeEngineFailureCode.TIMEOUT
+                if error.code is EngineFailureCode.TIMEOUT
                 else ProtocolReason.ENGINE_FAILURE
             )
             self._active_identity = None
@@ -378,7 +380,7 @@ def _protocol_rejected(reason: ProtocolReason) -> Frame:
 def run_service(
     reader: BinaryIO,
     writer: BinaryIO,
-    engine: FakeTtsEngine | None = None,
+    engine: TtsEngine | None = None,
 ) -> int:
     """Run the bounded fake service until shutdown, clean EOF, or rejection."""
 
@@ -402,7 +404,7 @@ def run_service(
             _write_records(writer, (_protocol_rejected(error.reason),))
         service.cleanup()
         return 1
-    except (OSError, FakeEngineFailure):
+    except (OSError, EngineFailure):
         service.cleanup()
         return 1
 
