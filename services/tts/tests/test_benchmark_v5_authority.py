@@ -14,12 +14,12 @@ import pytest
 
 from benchmarks.dual_worker_result import derive_v5_summary
 from benchmarks.v5_authority import (
+    AUTHORITY_COMMIT_SHA,
     CORPUS_SHA256,
     PROFILE_SHA256,
     RAW_SCHEMA_SHA256,
     SUMMARY_SCHEMA_SHA256,
     V5AuthorityError,
-    _git_commit_contains_authority,
     load_frozen_v5_authority,
     validate_v5_raw_result,
     validate_v5_summary_result,
@@ -475,28 +475,13 @@ def test_v5_authority_is_byte_frozen() -> None:
     )
 
 
-def test_v5_authority_commit_uses_raw_git_blobs(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    commands: list[list[str]] = []
-
-    def run(
-        args: list[str],
-        **_: object,
-    ) -> subprocess.CompletedProcess[bytes]:
-        commands.append(args)
-        relative_path = args[3].partition(":")[2]
-        return subprocess.CompletedProcess(
-            args,
-            0,
-            stdout=(REPOSITORY_ROOT / relative_path).read_bytes(),
+def test_v5_result_rejects_a_substitute_authority_commit() -> None:
+    with pytest.raises(V5AuthorityError, match="result-before-authority"):
+        validate_v5_summary_result(
+            REPOSITORY_ROOT,
+            _summary_fixture(),
+            ancestry_checker=lambda _authority, _execution: True,
         )
-
-    monkeypatch.setattr(subprocess, "run", run)
-
-    assert _git_commit_contains_authority(REPOSITORY_ROOT, AUTHORITY_COMMIT)
-    assert len(commands) == 4
-    assert all(command[:3] == ["git", "cat-file", "blob"] for command in commands)
 
 
 def test_committed_v5_summaries_are_schema_valid() -> None:
@@ -658,7 +643,7 @@ def test_v5_fixture_mutations_do_not_change_frozen_authority() -> None:
 
 def test_v5_cpu_raw_derives_a_schema_valid_content_safe_summary() -> None:
     raw = _raw_fixture("cpu-solo")
-    raw["authorityCommitSha"] = "fad271150303936625a7c4be348742f36a75f21b"
+    raw["authorityCommitSha"] = AUTHORITY_COMMIT_SHA
     raw["executionCommitSha"] = subprocess.run(
         ("git", "rev-parse", "HEAD"),
         cwd=REPOSITORY_ROOT,

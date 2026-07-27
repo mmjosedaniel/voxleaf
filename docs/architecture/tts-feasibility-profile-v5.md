@@ -213,10 +213,11 @@ identity are forbidden in committed or reviewable results. Raw journals,
 ephemeral audio, and private review material stay below the ignored raw tree
 and are deleted after a schema-valid safe summary is derived.
 
-An official result must name an authority commit that contains the exact
-frozen profile, corpus, and schemas and is a strict ancestor of its clean
-execution commit. A pilot can never be promoted. The three future result paths
-are frozen in `profile-v5.json`; none exists at this authority checkpoint.
+An official result must name the frozen authority commit
+`fad271150303936625a7c4be348742f36a75f21b`, which contains the exact profile,
+corpus, and schemas and must be a strict ancestor of its clean execution
+commit. A pilot can never be promoted. The three future result paths are frozen
+in `profile-v5.json`; none exists at this authority checkpoint.
 
 The model-free validator in
 `services/tts/benchmarks/v5_authority.py` verifies byte identity, schema

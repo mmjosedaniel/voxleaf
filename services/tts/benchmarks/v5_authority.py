@@ -22,6 +22,7 @@ CORPUS_SHA256: Final = "e92a7700c9e264e75562fe4d4856fdefdea23e8b9494ab89f33c22fb
 BASE_CORPUS_SHA256: Final = "3dcb30ab07bc5796175137f956ab7c910f306cd2f39fa6fe30d05deca1eccd8e"
 RAW_SCHEMA_SHA256: Final = "01b234f27f1d34d31e05c1d36f1c08b52412863030a22a8104773020b4e45775"
 SUMMARY_SCHEMA_SHA256: Final = "917860b2a577067fce4d9089c34fb6aceb938c4c882e1f94563a7d6d831359a9"
+AUTHORITY_COMMIT_SHA: Final = "fad271150303936625a7c4be348742f36a75f21b"
 GPU_PROFILE_ID: Final = "qwen3-serena-v5-gpu-primary"
 CPU_PROFILE_ID: Final = "qwen3-serena-v5-cpu-support"
 ARMS: Final = ("cpu-solo", "gpu-solo", "concurrent")
@@ -466,31 +467,6 @@ def _git_is_strict_ancestor(repository_root: Path, ancestor: str, descendant: st
     return ancestor != descendant and completed.returncode == 0
 
 
-def _git_commit_contains_authority(repository_root: Path, commit: str) -> bool:
-    expected = {
-        PROFILE_RELATIVE_PATH: PROFILE_SHA256,
-        CORPUS_RELATIVE_PATH: CORPUS_SHA256,
-        RAW_SCHEMA_RELATIVE_PATH: RAW_SCHEMA_SHA256,
-        SUMMARY_SCHEMA_RELATIVE_PATH: SUMMARY_SCHEMA_SHA256,
-    }
-    for path, digest in expected.items():
-        try:
-            completed = subprocess.run(
-                ["git", "cat-file", "blob", f"{commit}:{path.as_posix()}"],
-                cwd=repository_root,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
-                check=False,
-                timeout=5,
-            )
-        except (OSError, subprocess.SubprocessError):
-            return False
-        if completed.returncode != 0 or hashlib.sha256(completed.stdout).hexdigest() != digest:
-            return False
-    return True
-
-
 def _verify_result_authority(
     repository_root: Path,
     result: Mapping[str, object],
@@ -508,9 +484,7 @@ def _verify_result_authority(
         or authority_commit == execution_commit
     ):
         raise _fail("result-before-authority")
-    tree_check = authority_tree_checker or (
-        lambda commit: _git_commit_contains_authority(repository_root, commit)
-    )
+    tree_check = authority_tree_checker or (lambda commit: commit == AUTHORITY_COMMIT_SHA)
     ancestry_check = ancestry_checker or (
         lambda authority, execution: _git_is_strict_ancestor(
             repository_root,

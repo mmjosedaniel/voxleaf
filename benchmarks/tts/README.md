@@ -295,9 +295,9 @@ implemented. The validator byte-verifies the new profile, corpus, and schemas;
 recomputes both complete worker identities; rejects CPU
 CUDA/dedicated/shared-GPU use, missing, duplicate, or reordered occurrences,
 hidden retries, authority drift, retention overruns, private content, and a
-sustainability pass at aggregate RTF `>= 1.0`; and verifies that an eventual
-authority commit contains the exact frozen bytes and strictly precedes
-execution. The controller keeps one active unit per worker, makes
+sustainability pass at aggregate RTF `>= 1.0`; and requires the exact frozen
+authority commit `fad271150303936625a7c4be348742f36a75f21b` to strictly
+precede execution. The controller keeps one active unit per worker, makes
 head-of-line delay observable, rejects stale completion, and replays the
 15/300-second, 40-unit, 28,800,000-byte, and two-active-unit bounds with exact
 rational arithmetic.
