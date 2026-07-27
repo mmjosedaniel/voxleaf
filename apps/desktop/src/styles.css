@@ -664,6 +664,119 @@ button.semantic-internal-link {
   outline-offset: 0.2rem;
 }
 
+.adaptive-preparation {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid #b7c7b9;
+  border-radius: 1rem;
+  color: #263c30;
+  background: #f4f7f2;
+}
+
+.adaptive-preparation h3,
+.adaptive-preparation p {
+  margin: 0;
+}
+
+.adaptive-preparation-mode {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid #c4d0c5;
+  border-radius: 0.75rem;
+}
+
+.adaptive-preparation-mode > label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.adaptive-preparation-mode label span {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.adaptive-preparation-mode small {
+  color: #405047;
+  line-height: 1.4;
+}
+
+.adaptive-preparation-target {
+  display: grid !important;
+  gap: 0.4rem !important;
+  margin-top: 0.25rem;
+}
+
+.adaptive-preparation-target select,
+.adaptive-preparation-settings select {
+  max-width: 18rem;
+  padding: 0.55rem;
+  border: 1px solid #8da194;
+  border-radius: 0.5rem;
+  color: inherit;
+  background: #fdfefb;
+  font: inherit;
+}
+
+.adaptive-preparation > button,
+.adaptive-preparation-actions button {
+  justify-self: start;
+  padding: 0.7rem 1rem;
+  border: 1px solid #52705e;
+  border-radius: 0.65rem;
+  color: #f8fbf7;
+  background: #24563a;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.adaptive-preparation button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.adaptive-preparation button:focus-visible,
+.adaptive-preparation input:focus-visible,
+.adaptive-preparation select:focus-visible {
+  outline: 0.2rem solid #1d6b43;
+  outline-offset: 0.15rem;
+}
+
+.adaptive-preparation-status {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.875rem;
+  border-left: 0.3rem solid #52705e;
+  background: #fdfefb;
+}
+
+.adaptive-preparation-progress,
+.adaptive-preparation-settings,
+.adaptive-preparation-settings label {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.adaptive-preparation-progress progress,
+.adaptive-preparation-settings input[type="range"] {
+  width: min(100%, 32rem);
+}
+
+.adaptive-preparation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.adaptive-preparation-settings {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .raster-probe {
   display: grid;
   gap: 0.75rem;
@@ -726,6 +839,10 @@ button.semantic-internal-link {
 
 @media (forced-colors: active) {
   .semantic-reader,
+  .adaptive-preparation,
+  .adaptive-preparation-mode,
+  .adaptive-preparation-target select,
+  .adaptive-preparation-settings select,
   .reader-preferences,
   .reader-preference select,
   .reader-toc,
@@ -738,6 +855,9 @@ button.semantic-internal-link {
   }
 
   .reader-preference select:focus-visible,
+  .adaptive-preparation button:focus-visible,
+  .adaptive-preparation input:focus-visible,
+  .adaptive-preparation select:focus-visible,
   .reader-skip-link:focus-visible,
   .reader-return-link:focus-visible,
   .reader-toc:focus,
@@ -783,6 +903,10 @@ button.semantic-internal-link {
   }
 
   .reader-preference-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .adaptive-preparation-settings {
     grid-template-columns: minmax(0, 1fr);
   }
 

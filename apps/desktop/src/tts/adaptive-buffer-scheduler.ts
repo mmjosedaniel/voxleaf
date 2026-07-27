@@ -725,14 +725,14 @@ export class AdaptiveBufferScheduler {
     ) {
       return Object.freeze({ kind: "none", reason: "active-work" });
     }
+    if (!this.#shouldProduce() || !this.#canReserveServiceUnit()) {
+      return Object.freeze({ kind: "none", reason: "backpressure" });
+    }
     if (this.#pendingSegments.length === 0) {
       if (this.#rangeComplete) {
         return Object.freeze({ kind: "none", reason: "complete" });
       }
       return Object.freeze({ kind: "prepare-narration" });
-    }
-    if (!this.#shouldProduce() || !this.#canReserveServiceUnit()) {
-      return Object.freeze({ kind: "none", reason: "backpressure" });
     }
     return Object.freeze({
       kind: "synthesize",
