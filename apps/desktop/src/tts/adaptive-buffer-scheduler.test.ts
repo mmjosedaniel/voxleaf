@@ -1,4 +1,9 @@
-import { createManualClock, type ManualClock } from "@voxleaf/shared/testing";
+import { decodeLocatorRangeV1, decodeReadingLocatorV1 } from "@voxleaf/shared";
+import {
+  createManualClock,
+  VALID_SYNTHETIC_DOCUMENT_FIXTURE,
+  type ManualClock,
+} from "@voxleaf/shared/testing";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -23,6 +28,9 @@ const IDENTITY = Object.freeze({
 const REFERENCE_QWEN_RTF = 1.467080448861599;
 const REFERENCE_RESTART_PREPARE_MS = 16_610;
 const TRACE_UNIT_MS = 250;
+const SOURCE_START = decodeReadingLocatorV1(
+  VALID_SYNTHETIC_DOCUMENT_FIXTURE.spineDocuments[0]!.blocks[0]!.locator,
+);
 
 interface OwnedUnit extends AdaptiveBufferAudioUnit {
   readonly releaseCount: number;
@@ -48,6 +56,18 @@ function emptyResources(): AdaptiveBufferResourceSnapshot {
 function segment(index: number): AdaptiveBufferPreparedSegment {
   return Object.freeze({
     segmentId: `segment:synthetic-${index}`,
+    sequence: index - 1,
+    sourceRange: decodeLocatorRangeV1({
+      schemaVersion: 1,
+      start: {
+        ...SOURCE_START,
+        textOffsetCodePoints: SOURCE_START.textOffsetCodePoints + index,
+      },
+      end: {
+        ...SOURCE_START,
+        textOffsetCodePoints: SOURCE_START.textOffsetCodePoints + index + 1,
+      },
+    }),
     narrationCodePoints: 20,
     narrationUtf8Bytes: 20,
     sentenceCount: 1,
@@ -127,6 +147,33 @@ function assertWithinAuthority(
 }
 
 describe("adaptive buffer scheduler", () => {
+  it("projects immutable source ranges only while their FIFO units are eligible", () => {
+    const clock = createManualClock(0);
+    const scheduler = makeReadyScheduler(clock);
+    const first = segment(1);
+    const second = segment(2);
+    prepare(scheduler, [first, second], true);
+    synthesize(scheduler, ownedUnit(first.segmentId, 16_000));
+
+    expect(scheduler.currentPlaybackUnit()).toMatchObject({
+      sequence: first.sequence,
+      sourceRange: first.sourceRange,
+      metadata: {
+        ...IDENTITY,
+        segmentId: first.segmentId,
+      },
+    });
+    expect(Object.isFrozen(scheduler.currentPlaybackUnit()?.sourceRange)).toBe(
+      true,
+    );
+    expect(JSON.stringify(scheduler.observe())).not.toContain("sourceRange");
+
+    scheduler.invalidate();
+
+    expect(scheduler.currentPlaybackUnit()).toBeUndefined();
+    expect(JSON.stringify(scheduler.observe())).not.toContain("sourceRange");
+  });
+
   it("starts quick playback only from contiguous complete units and fills toward one minute", () => {
     const scheduler = makeReadyScheduler(createManualClock(0));
     prepare(scheduler, [segment(1), segment(2), segment(3)]);

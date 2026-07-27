@@ -24,6 +24,7 @@ import {
 import {
   AdaptivePcmPlayer,
   WebAudioPcmPlaybackBackend,
+  type AdaptivePcmAudibleProgressObservation,
   type AdaptivePcmPlayerObservation,
 } from "./pcm-playback";
 import {
@@ -59,6 +60,9 @@ export interface ProductNarrationSnapshot {
   readonly metrics: ProductNarrationMetrics;
   readonly serviceState: TtsProcessClientObservation["state"];
 }
+
+export type ProductNarrationAudibleProgressObservation =
+  AdaptivePcmAudibleProgressObservation;
 
 export interface ProductNarrationServiceClient extends AdaptiveBufferAudioUnitSource {
   exactDemoAvailability(): Promise<TtsExactDemoAvailability>;
@@ -148,6 +152,9 @@ export class ProductNarrationCoordinator {
     ProductNarrationCoordinatorDependencies["clearInterval"]
   >;
   readonly #listeners = new Set<() => void>();
+  readonly #audibleProgressListeners = new Set<
+    (observation: ProductNarrationAudibleProgressObservation) => void
+  >();
   readonly #estimator = new AdaptivePreparationEstimator();
   readonly #prepared = new Map<string, PreparedSegmentEntry>();
   #availability: ProductNarrationSnapshot["availability"] = "checking";
@@ -158,6 +165,7 @@ export class ProductNarrationCoordinator {
   #identity: AdaptiveBufferWorkIdentity | undefined;
   #scheduler: AdaptiveBufferScheduler | undefined;
   #player: AdaptivePcmPlayer | undefined;
+  #playerAudibleUnsubscribe: (() => void) | undefined;
   #operation: Promise<void> | undefined;
   #tickHandle: unknown;
   #closed = false;
@@ -215,6 +223,15 @@ export class ProductNarrationCoordinator {
 
   public observe(): ProductNarrationSnapshot {
     return this.#snapshot;
+  }
+
+  public subscribeAudibleProgress(
+    listener: (observation: ProductNarrationAudibleProgressObservation) => void,
+  ): () => void {
+    this.#audibleProgressListeners.add(listener);
+    return () => {
+      this.#audibleProgressListeners.delete(listener);
+    };
   }
 
   public async checkAvailability(): Promise<void> {
@@ -287,6 +304,22 @@ export class ProductNarrationCoordinator {
       this.#selection,
     );
     this.#player = this.#createPlayer(this.#scheduler);
+    this.#playerAudibleUnsubscribe = this.#player.subscribeAudibleProgress(
+      (observation) => {
+        if (
+          observation.sessionId === this.#identity?.sessionId &&
+          observation.generationId === this.#identity.generationId
+        ) {
+          for (const listener of this.#audibleProgressListeners) {
+            try {
+              listener(observation);
+            } catch {
+              // A synchronization observer cannot interrupt narration.
+            }
+          }
+        }
+      },
+    );
     this.#tickHandle = this.#setInterval(() => {
       this.#tick(runToken);
     }, TICK_INTERVAL_MS);
@@ -330,6 +363,8 @@ export class ProductNarrationCoordinator {
     this.#preparationAbort?.abort();
     this.#preparationAbort = undefined;
     const transition = this.#player.stop();
+    this.#playerAudibleUnsubscribe?.();
+    this.#playerAudibleUnsubscribe = undefined;
     const stopToken = ++this.#runToken;
     this.#stopTicker();
     this.#prepared.clear();
@@ -370,6 +405,7 @@ export class ProductNarrationCoordinator {
     this.#closed = true;
     await this.stop();
     this.#listeners.clear();
+    this.#audibleProgressListeners.clear();
   }
 
   #requestPump(runToken: number): void {
@@ -526,6 +562,8 @@ export class ProductNarrationCoordinator {
       segments: entries.map(({ contract, prepared }) =>
         Object.freeze({
           segmentId: contract.segmentId,
+          sequence: contract.sequence,
+          sourceRange: contract.sourceRange,
           narrationCodePoints: prepared.measurements.narrationCodePoints,
           narrationUtf8Bytes: prepared.measurements.narrationUtf8Bytes,
           sentenceCount: prepared.measurements.sentenceCount,
@@ -620,6 +658,8 @@ export class ProductNarrationCoordinator {
     this.#terminalState = this.#stateFromActiveOwners();
     const scope = this.#activeScope;
     const transition = this.#player?.close();
+    this.#playerAudibleUnsubscribe?.();
+    this.#playerAudibleUnsubscribe = undefined;
     this.#stopTicker();
     this.#prepared.clear();
     this.#preparationAbort?.abort();

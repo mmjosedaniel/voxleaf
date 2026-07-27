@@ -24,6 +24,7 @@ import {
 } from "./pcm-playback";
 import {
   ProductNarrationCoordinator,
+  type ProductNarrationAudibleProgressObservation,
   type ProductNarrationClock,
   type ProductNarrationCoordinatorDependencies,
   type ProductNarrationServiceClient,
@@ -350,6 +351,10 @@ describe("product narration coordinator", () => {
     const { backend, client, coordinator, prepareNarration } = createHarness({
       result: completeResult(sensitiveText),
     });
+    const audibleProgress: ProductNarrationAudibleProgressObservation[] = [];
+    coordinator.subscribeAudibleProgress((observation) => {
+      audibleProgress.push(observation);
+    });
 
     await coordinator.checkAvailability();
     coordinator.start();
@@ -374,10 +379,34 @@ describe("product narration coordinator", () => {
       commandToAudibleMs: 1_000,
       underrunCount: 0,
     });
+    expect(audibleProgress).toEqual([
+      expect.objectContaining({
+        kind: "segment-started",
+        sessionId: "session:product-test-1",
+        generationId: "generation:product-test-1",
+        segmentId: "segment:product-test-0",
+        sequence: 0,
+        sourceRange: SOURCE_RANGE,
+        playedSampleFrames: 0,
+        sampleCountSamples: 360_000,
+      }),
+    ]);
     const serializedSnapshot = JSON.stringify(coordinator.observe());
     expect(serializedSnapshot).not.toContain(sensitiveText);
     expect(serializedSnapshot).not.toContain("session:product-test");
     expect(serializedSnapshot).not.toContain("segment:product-test");
+    expect(serializedSnapshot).not.toContain("sourceRange");
+
+    backend.finish();
+    expect(audibleProgress.at(-1)).toMatchObject({
+      kind: "segment-completed",
+      segmentId: "segment:product-test-0",
+      sequence: 0,
+      sourceRange: SOURCE_RANGE,
+      playedSampleFrames: 360_000,
+    });
+    expect(JSON.stringify(audibleProgress)).not.toContain(sensitiveText);
+    expect(JSON.stringify(audibleProgress)).not.toContain("payload");
 
     await coordinator.stop();
     expect(client.shutdownCount).toBe(1);
