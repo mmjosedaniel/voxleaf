@@ -5,7 +5,8 @@
 Accepted and frozen by M007 Milestone 1. Deterministic, release parent/child,
 and packaged WebView2 evidence passes. Milestone 2 implements the frozen
 values as canonical cross-language contracts and a bounded model-free Python
-service. Native supervision and the exact model adapter remain later work.
+service. Milestone 3 implements native supervision and typed desktop consumption with a
+model-free Rust child; the exact model adapter remains later work.
 
 This authority applies only to ADR-0015's exact one-GPU
 Qwen3-TTS 12Hz 1.7B CustomVoice/Serena constrained development demo. It does
@@ -356,5 +357,14 @@ transitions with one active synthesis and no queue. The deterministic fake
 models successful complete output, pending work, late completion, failure,
 timeout, crash, invalid audio, cancellation, and cleanup without model
 libraries, CUDA, an audio device, private content, or retained narration text.
-Actual Qwen load/inference, native service supervision, restart orchestration,
-and desktop consumption remain unimplemented.
+Milestone 3 adds a production native supervisor around one persistent
+repository-authored model-free Rust child. Rust owns framed reads/writes,
+strict control/audio validation, lifecycle state, frozen timeouts, one-active
+backpressure, process-tree termination, zero automatic restart, and
+application-exit cleanup. A typed desktop client independently validates
+control order, service/work identity, finite PCM, stale completion, and one
+complete-unit ownership outside React state. Packaged WebView2 evidence covers
+normal binary delivery, cancellation, crash recovery, cleanup, and zero
+external requests. The separate model-free Python service is not yet the
+supervised production child. Actual Qwen load/inference, product narration
+dispatch, and playback remain unimplemented.

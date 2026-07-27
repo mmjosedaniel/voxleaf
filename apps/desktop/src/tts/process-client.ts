@@ -142,7 +142,9 @@ function decodeControls(input: unknown): readonly TtsProtocolControlV1[] {
     throw new TtsProcessClientError("tts-service-invalid-response");
   }
   try {
-    return Object.freeze(input.map((value) => decodeTtsProtocolControlV1(value)));
+    return Object.freeze(
+      input.map((value) => decodeTtsProtocolControlV1(value)),
+    );
   } catch {
     throw new TtsProcessClientError("tts-service-invalid-response");
   }
@@ -215,7 +217,11 @@ function validateAudio(
     payload.byteOffset,
     payload.byteLength,
   );
-  for (let offset = 0; offset < payload.byteLength; offset += BYTES_PER_SAMPLE) {
+  for (
+    let offset = 0;
+    offset < payload.byteLength;
+    offset += BYTES_PER_SAMPLE
+  ) {
     if (!Number.isFinite(view.getFloat32(offset, true))) {
       zero(payload);
       throw new TtsProcessClientError("tts-service-invalid-response");

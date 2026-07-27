@@ -149,6 +149,121 @@ fn valid_work_identity(value: Option<&Value>) -> bool {
         .all(|name| valid_identifier(identity.get(*name)))
 }
 
+fn valid_index(value: Option<&Value>) -> bool {
+    value
+        .and_then(Value::as_u64)
+        .is_some_and(|index| index <= 9_007_199_254_740_991)
+}
+
+fn valid_book_identity(value: Option<&Value>) -> bool {
+    let Some(identity) = value.and_then(Value::as_object) else {
+        return false;
+    };
+    let Some(scheme) = identity.get("scheme").and_then(Value::as_str) else {
+        return false;
+    };
+    let Some(book_id) = identity.get("value").and_then(Value::as_str) else {
+        return false;
+    };
+    exact_keys(identity, &["scheme", "schemeVersion", "value"])
+        && identity.get("schemeVersion").and_then(Value::as_u64) == Some(SCHEMA_VERSION)
+        && (1..=64).contains(&scheme.len())
+        && scheme.bytes().enumerate().all(|(index, byte)| {
+            byte.is_ascii_lowercase() || (index > 0 && (byte.is_ascii_digit() || byte == b'-'))
+        })
+        && valid_identifier(identity.get("value"))
+        && book_id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || b"._~-".contains(&byte))
+}
+
+fn valid_anchor(value: Option<&Value>) -> bool {
+    let Some(anchor) = value.and_then(Value::as_object) else {
+        return false;
+    };
+    let Some(anchor_value) = anchor.get("value").and_then(Value::as_str) else {
+        return false;
+    };
+    exact_keys(anchor, &["kind", "formatVersion", "value", "anchorIndex"])
+        && anchor.get("kind").and_then(Value::as_str) == Some("element-id")
+        && anchor.get("formatVersion").and_then(Value::as_u64) == Some(SCHEMA_VERSION)
+        && (1..=MAX_IDENTIFIER_CODE_POINTS).contains(&anchor_value.chars().count())
+        && anchor_value.len() <= MAX_IDENTIFIER_UTF8_BYTES
+        && anchor_value.bytes().enumerate().all(|(index, byte)| {
+            byte.is_ascii_alphanumeric() || byte == b'_' || (index > 0 && b".:-".contains(&byte))
+        })
+        && valid_index(anchor.get("anchorIndex"))
+}
+
+fn valid_locator(value: Option<&Value>) -> bool {
+    let Some(locator) = value.and_then(Value::as_object) else {
+        return false;
+    };
+    let required = [
+        "schemaVersion",
+        "bookIdentity",
+        "spineItemId",
+        "spineItemIndex",
+        "anchor",
+        "textOffsetCodePoints",
+    ];
+    let with_progression = [
+        "schemaVersion",
+        "bookIdentity",
+        "spineItemId",
+        "spineItemIndex",
+        "anchor",
+        "textOffsetCodePoints",
+        "progression",
+    ];
+    (exact_keys(locator, &required) || exact_keys(locator, &with_progression))
+        && locator.get("schemaVersion").and_then(Value::as_u64) == Some(SCHEMA_VERSION)
+        && valid_book_identity(locator.get("bookIdentity"))
+        && valid_identifier(locator.get("spineItemId"))
+        && valid_index(locator.get("spineItemIndex"))
+        && valid_anchor(locator.get("anchor"))
+        && valid_index(locator.get("textOffsetCodePoints"))
+        && locator.get("progression").is_none_or(|progression| {
+            progression
+                .as_f64()
+                .is_some_and(|value| value.is_finite() && (0.0..=1.0).contains(&value))
+        })
+}
+
+fn locator_position(value: &Value) -> Option<(u64, u64, u64)> {
+    let locator = value.as_object()?;
+    Some((
+        locator.get("spineItemIndex")?.as_u64()?,
+        locator
+            .get("anchor")?
+            .as_object()?
+            .get("anchorIndex")?
+            .as_u64()?,
+        locator.get("textOffsetCodePoints")?.as_u64()?,
+    ))
+}
+
+fn valid_locator_range(value: Option<&Value>, book_identity: Option<&Value>) -> bool {
+    let Some(range) = value.and_then(Value::as_object) else {
+        return false;
+    };
+    let Some(start) = range.get("start") else {
+        return false;
+    };
+    let Some(end) = range.get("end") else {
+        return false;
+    };
+    exact_keys(range, &["schemaVersion", "start", "end"])
+        && range.get("schemaVersion").and_then(Value::as_u64) == Some(SCHEMA_VERSION)
+        && valid_locator(Some(start))
+        && valid_locator(Some(end))
+        && start.get("bookIdentity") == book_identity
+        && end.get("bookIdentity") == book_identity
+        && locator_position(start)
+            .zip(locator_position(end))
+            .is_some_and(|(start_position, end_position)| start_position <= end_position)
+}
+
 fn validate_synthesize(object: &Map<String, Value>) -> bool {
     let Some(segment) = object.get("segment").and_then(Value::as_object) else {
         return false;
@@ -158,9 +273,26 @@ fn validate_synthesize(object: &Map<String, Value>) -> bool {
     };
 
     valid_identifier(object.get("requestId"))
+        && exact_keys(
+            segment,
+            &[
+                "schemaVersion",
+                "segmentId",
+                "bookIdentity",
+                "sessionId",
+                "generationId",
+                "sequence",
+                "sourceRange",
+                "text",
+            ],
+        )
+        && segment.get("schemaVersion").and_then(Value::as_u64) == Some(SCHEMA_VERSION)
         && valid_identifier(segment.get("sessionId"))
         && valid_identifier(segment.get("generationId"))
         && valid_identifier(segment.get("segmentId"))
+        && valid_book_identity(segment.get("bookIdentity"))
+        && valid_index(segment.get("sequence"))
+        && valid_locator_range(segment.get("sourceRange"), segment.get("bookIdentity"))
         && !text.is_empty()
         && text.chars().count() <= MAX_NARRATION_CODE_POINTS
         && text.len() <= MAX_NARRATION_UTF8_BYTES
@@ -173,7 +305,22 @@ fn validate_audio_metadata(object: &Map<String, Value>) -> bool {
     let samples = frame.get("sampleCountSamples").and_then(Value::as_u64);
     let payload_bytes = object.get("payloadBytes").and_then(Value::as_u64);
 
-    valid_identifier(object.get("requestId"))
+    exact_keys(
+        frame,
+        &[
+            "schemaVersion",
+            "frameId",
+            "sessionId",
+            "generationId",
+            "segmentId",
+            "sequence",
+            "sampleRateHz",
+            "sampleCountSamples",
+            "channelCount",
+            "endOfSegment",
+        ],
+    ) && frame.get("schemaVersion").and_then(Value::as_u64) == Some(SCHEMA_VERSION)
+        && valid_identifier(object.get("requestId"))
         && valid_identifier(frame.get("frameId"))
         && valid_identifier(frame.get("sessionId"))
         && valid_identifier(frame.get("generationId"))
@@ -458,4 +605,39 @@ fn rust_fixture_surface_keeps_frozen_maximum_arithmetic() {
     assert_eq!(exact_text.chars().count(), 512);
     assert_eq!(exact_text.len(), MAX_NARRATION_UTF8_BYTES);
     assert_eq!(MAX_AUDIO_SAMPLES * 4, MAX_AUDIO_BYTES);
+}
+
+#[test]
+fn rust_boundary_rejects_nested_narration_and_audio_drift() {
+    let synthesize_source = VALID_FIXTURES
+        .iter()
+        .find_map(|(kind, fixture)| (*kind == "synthesize").then_some(*fixture))
+        .expect("synthesize fixture");
+    let mut synthesize: Value =
+        serde_json::from_str(synthesize_source).expect("valid synthesize fixture");
+    synthesize["segment"]
+        .as_object_mut()
+        .expect("segment object")
+        .insert(
+            "privateDebugText".to_owned(),
+            Value::String("must-not-cross".to_owned()),
+        );
+    assert!(!validate_control_value(&synthesize));
+
+    synthesize = serde_json::from_str(synthesize_source).expect("valid synthesize fixture");
+    synthesize["segment"]["sourceRange"]["end"]["bookIdentity"]["value"] =
+        Value::String("different-book".to_owned());
+    assert!(!validate_control_value(&synthesize));
+
+    let audio_source = VALID_FIXTURES
+        .iter()
+        .find_map(|(kind, fixture)| (*kind == "audioMetadata").then_some(*fixture))
+        .expect("audio metadata fixture");
+    let mut audio: Value =
+        serde_json::from_str(audio_source).expect("valid audio metadata fixture");
+    audio["frame"]
+        .as_object_mut()
+        .expect("frame object")
+        .insert("unknown".to_owned(), Value::Bool(true));
+    assert!(!validate_control_value(&audio));
 }

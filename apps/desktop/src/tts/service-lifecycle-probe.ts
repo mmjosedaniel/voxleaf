@@ -90,15 +90,13 @@ export async function runTtsServiceLifecycleProbe(): Promise<TtsServiceLifecycle
   });
   await client.start();
   await client.prepare();
-  const pending = client
-    .synthesize(syntheticSegment(cancelledScope))
-    .then(
-      () => "unexpected-completion" as const,
-      (error: unknown) =>
-        error instanceof TtsProcessClientError
-          ? error.code
-          : ("unexpected-error" as const),
-    );
+  const pending = client.synthesize(syntheticSegment(cancelledScope)).then(
+    () => "unexpected-completion" as const,
+    (error: unknown) =>
+      error instanceof TtsProcessClientError
+        ? error.code
+        : ("unexpected-error" as const),
+  );
   await delay(CANCELLATION_DISPATCH_DELAY_MS);
   await client.cancel(cancelledScope);
   const cancellationCode = await pending;

@@ -40,8 +40,7 @@ function capabilities() {
         cpuFallback: "unsupported",
       },
     },
-    cancellationContainment:
-      "identity-invalidation-then-worker-termination",
+    cancellationContainment: "identity-invalidation-then-worker-termination",
   };
 }
 
@@ -60,12 +59,7 @@ function startControls() {
 }
 
 function prepareControls() {
-  return [
-    state("loading"),
-    state("warming"),
-    state("ready"),
-    capabilities(),
-  ];
+  return [state("loading"), state("warming"), state("ready"), capabilities()];
 }
 
 function healthControls() {
