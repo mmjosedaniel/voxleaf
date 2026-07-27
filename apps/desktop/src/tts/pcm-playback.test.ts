@@ -451,6 +451,44 @@ describe("adaptive PCM playback", () => {
     },
   );
 
+  it("releases at most four invalidated originals per scheduled cleanup turn", () => {
+    const clock = createManualClock(0);
+    const segments = [
+      segment(1),
+      segment(2),
+      segment(3),
+      segment(4),
+      segment(5),
+    ];
+    const scheduler = readyScheduler(clock, segments, false);
+    const units = segments.map((item) => synthesize(scheduler, item, 4_000));
+    const cleanupTurns: Array<() => void> = [];
+    const player = new AdaptivePcmPlayer(
+      scheduler,
+      new ManualPcmPlaybackBackend(clock),
+      (callback) => {
+        cleanupTurns.push(callback);
+      },
+    );
+    player.synchronize();
+
+    player.stop();
+    expect(cleanupTurns).toHaveLength(1);
+    cleanupTurns.shift()?.();
+    expect(units.map(({ releaseCount }) => releaseCount)).toEqual([
+      1, 1, 1, 1, 0,
+    ]);
+    expect(cleanupTurns).toHaveLength(1);
+    cleanupTurns.shift()?.();
+    expect(units.map(({ releaseCount }) => releaseCount)).toEqual([
+      1, 1, 1, 1, 1,
+    ]);
+    expect(player.synchronize()).toMatchObject({
+      retainedAudioUnitCount: 0,
+      discardedAudioUnitCount: 0,
+    });
+  });
+
   it("admits bounded volume and only the frozen 1.0x playback rate", () => {
     const clock = createManualClock(0);
     const scheduler = readyScheduler(clock, [segment(1)], true);

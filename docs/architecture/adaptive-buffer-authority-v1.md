@@ -4,14 +4,17 @@
 
 Accepted and frozen by M008 Milestone 1. The executable constants and
 exact-bound arithmetic live in
-`apps/desktop/src/tts/adaptive-buffer-authority.ts`. Later M008 milestones must
-implement this authority without silently changing its values or meanings.
+`apps/desktop/src/tts/adaptive-buffer-authority.ts`. Milestone 2 implements
+the deterministic scheduler and Milestone 3 implements its payload-owning FIFO
+and low-level PCM player. Later M008 milestones must preserve this authority
+without silently changing its values or meanings.
 
 This document freezes model-independent scheduling and UX behavior for
 ADR-0015's exact one-GPU Qwen/Serena constrained development demo. It does not
-claim that a scheduler, multi-unit buffer, audio player, product narration
-caller, or UI already exists. It does not select a standard production TTS
-profile, promise uninterrupted playback, or approve general hardware support.
+claim that the implemented scheduler, multi-unit buffer, and player are wired
+to a product narration caller or UI. It does not select a standard production
+TTS profile, promise uninterrupted playback, or approve general hardware
+support.
 
 ## Audio and duration authority
 
@@ -36,6 +39,22 @@ playableMilliseconds = floor(totalSampleFrames * 1000 / 24000)
 It must not sum rounded per-unit durations. Dispatch, elapsed wall time,
 transport metadata, an intentional wait, or an incomplete response contributes
 zero playable duration.
+
+## Playback API implementation
+
+M008 Milestone 3 selects the browser/WebView Web Audio API for the low-level
+MVP PCM device boundary. One dedicated `AudioContext` decodes the current
+unit's little-endian finite float32 samples into one mono 24-kHz
+`AudioBuffer`, connects it through one `GainNode`, and plays it with one
+`AudioBufferSourceNode` at the frozen `1.0x` rate.
+
+The bounded FIFO keeps the original `TtsAudioUnit` as its sole releasable
+owner. Web Audio necessarily receives one transient device buffer for only the
+active unit; it is not another queue, is never persisted or exposed to React,
+and is bounded by the existing 20-second/480,000-frame/1,920,000-byte service
+unit maximum. Completion or invalidation makes that device copy unreachable,
+while the FIFO calls the original unit's `release()` exactly once. This adds no
+package dependency or new codec.
 
 ## Startup, warning, refill, and maximum thresholds
 
@@ -324,3 +343,24 @@ The model-free authority tests prove:
 
 These tests freeze inputs for later scheduler traces. They do not generate,
 retain, or play audio and make no runtime-performance claim.
+
+## Deterministic Milestone 3 evidence
+
+Model-free desktop tests now prove:
+
+- sole transfer from a `takeAudioUnit()` source into the multi-unit FIFO;
+- finite 24-kHz mono float32 little-endian validation and monotonic playback
+  order;
+- exact playable-frame consumption while whole-unit frame/byte ownership
+  remains retained until completion;
+- release exactly once after playback and immediate ineligibility followed by
+  four-unit-at-most cleanup turns after stop, seek, close, or failure;
+- pause/resume timing, zero-volume consumption, bounded volume, `1.0x`-only
+  rate admission, end-of-range completion, and one count per actual underrun;
+  and
+- Web Audio decoding into one active bounded device buffer through a gain
+  node.
+
+The tests use a manual clock and fake device context. They open no audio
+device, load no model, write no generated audio, and make no audible-quality or
+hardware-performance claim.

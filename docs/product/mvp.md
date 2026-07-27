@@ -2,7 +2,7 @@
 
 ## Implementation status
 
-The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestone 5 narration preparation is implemented, documented, and fully validated: `@voxleaf/epub` exhaustively projects semantic source positions, retains Unicode-code-point source spans, applies deterministic source-mapped neutral/Spanish normalization, scans sentence/dialogue/clause/protected-token boundaries, packs bounded block-local semantic units, and exposes immutable canonical locator-linked batches through `OpenedPublication.prepareNarration`. Repository-authored public integration and deterministic exact-bound/resource tests cover continuation, structural gaps, cancellation, close, privacy, and source immutability. Milestone 6 is complete: the validated benchmark harness and explicit no-viable-profile decision reject both original exact profiles for production. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation also failed standard startup, throughput, zero-failure, and mid-generation cancellation gates. Milestone 6.2 then rejected shared-model batching, targeted tokenizer placement, CPU-only generation, and an independent GPU-primary/CPU-support topology. Its accepted `selection-v5` retains exactly one GPU worker only for a constrained development demo; it does not select a passing standard profile. M007 is complete: protocol v1, canonical cross-language controls, the bounded Python service, native supervisor, typed desktop client, one-complete-unit binary handoff, and exact development-only Qwen/Serena adapter are implemented and validated. The measured exact-host service matrix passes complete-unit delivery, retained-unit backpressure, invalidation, process-tree termination, stale suppression, cleanup, and explicit reload. Delivered-unit RTF remains above one. M008 is in progress. Milestone 1 freezes exact adaptive-buffer authority, and Milestone 2 implements deterministic metadata-only scheduler traces for quick/prepared startup, exact reservation backpressure, stale release, slower-than-real-time depletion, and explicit service recovery. The proof is not wired to the package or M007 client and does not own audio payloads. The package prepares ephemeral sensitive text only; the product narration caller, audio buffering/playback, synchronized highlighting, general hardware profiles, and packaging behavior remain pending. The capability and acceptance lists below describe the complete MVP target, not a claim that every item is currently implemented.
+The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestone 5 narration preparation is implemented, documented, and fully validated: `@voxleaf/epub` exhaustively projects semantic source positions, retains Unicode-code-point source spans, applies deterministic source-mapped neutral/Spanish normalization, scans sentence/dialogue/clause/protected-token boundaries, packs bounded block-local semantic units, and exposes immutable canonical locator-linked batches through `OpenedPublication.prepareNarration`. Repository-authored public integration and deterministic exact-bound/resource tests cover continuation, structural gaps, cancellation, close, privacy, and source immutability. Milestone 6 is complete: the validated benchmark harness and explicit no-viable-profile decision reject both original exact profiles for production. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation also failed standard startup, throughput, zero-failure, and mid-generation cancellation gates. Milestone 6.2 then rejected shared-model batching, targeted tokenizer placement, CPU-only generation, and an independent GPU-primary/CPU-support topology. Its accepted `selection-v5` retains exactly one GPU worker only for a constrained development demo; it does not select a passing standard profile. M007 is complete: protocol v1, canonical cross-language controls, the bounded Python service, native supervisor, typed desktop client, one-complete-unit binary handoff, and exact development-only Qwen/Serena adapter are implemented and validated. The measured exact-host service matrix passes complete-unit delivery, retained-unit backpressure, invalidation, process-tree termination, stale suppression, cleanup, and explicit reload. Delivered-unit RTF remains above one. M008 is in progress. Milestone 1 freezes exact adaptive-buffer authority, Milestone 2 implements deterministic scheduler traces, and Milestone 3 implements the scheduler's real payload-owning FIFO and a dedicated Web Audio PCM player. Model-free tests cover sole ownership transfer, format/order, exact consumption, underruns, pause/resume, volume, end-of-range, and bounded identity-first cleanup. These primitives are not wired to the package or M007 client in a production caller. The package prepares ephemeral sensitive text only; the user-visible narration flow, playback UI, synchronized highlighting, general hardware profiles, and packaging behavior remain pending. The capability and acceptance lists below describe the complete MVP target, not a claim that every item is currently implemented.
 
 ## Current implemented flow
 
@@ -42,6 +42,9 @@ Implemented and validated:
 - Run the exact development-only Qwen/Serena adapter through the native
   supervisor with frozen identity/artifact checks, bounded complete-unit
   delivery, identity-first termination, stale suppression, and clean reload.
+- Own complete 24-kHz mono float32 units in one bounded desktop FIFO outside
+  React, consume them through a dedicated low-level Web Audio player, account
+  underruns, and release played or invalidated originals exactly once.
 - Display actionable reader loading, opening, restoration, and error states.
 - Provide documented local setup plus deterministic reader/package validation.
 
@@ -51,10 +54,9 @@ Remaining:
   CPU-only or dual-worker product scheduling.
 - Implement quick start at approximately 15 playable seconds and explicit
   prepared-playback targets of 1, 2, 5, or 10 playable minutes.
-- Implement the frozen simultaneous 43,200,000-sample-frame,
-  172,800,000-byte, 256-unit/metadata-entry ceiling with one prepared batch,
-  16 retained prepared segments, one active synthesis, and zero service-queued
-  synthesis.
+- Apply the implemented simultaneous 43,200,000-sample-frame,
+  172,800,000-byte, 256-unit/metadata-entry ceiling and prepared-text/work
+  limits in the later product caller.
 - Continue same-identity generation during playback-only pause while
   preserving explicit stop and invalidating-action cancellation.
 - Add low-buffer warning, truthful rebuffering, and optional measurable
@@ -65,7 +67,8 @@ Remaining:
   narration.
 - Select a chapter or paragraph as a narration starting point in a desktop playback flow.
 - Generate speech through a selected supported local TTS engine and voice.
-- Buffer and play generated audio in bounded memory.
+- Connect the implemented bounded buffer/player to the product narration
+  caller and audible desktop flow.
 - Apply the approximately 15-second playable-audio startup gate without a fixed wall-clock delay.
 - Continue generation under backpressure while valid buffered audio plays.
 - Pause, resume, seek, and move through a shared visual/playback position.

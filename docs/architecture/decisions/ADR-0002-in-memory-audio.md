@@ -16,6 +16,15 @@ Keep generated audio in a bounded in-memory buffer and discard frames after play
 
 Persistent generated-audio storage is excluded from the MVP.
 
+M008 Milestone 3 implements this decision at the low-level desktop boundary.
+The adaptive scheduler is the sole owner of each original complete
+`TtsAudioUnit`, accounts frames/bytes/units simultaneously, and releases it
+after playback. Invalidation removes eligibility synchronously and zeros
+discarded units in bounded cleanup turns. The selected Web Audio backend holds
+only one transient active-unit device buffer and introduces no persistent
+audio store or new dependency. Product narration dispatch and UI integration
+remain later M008 work.
+
 ## Consequences
 
 - Disk use and retained user content are minimized.

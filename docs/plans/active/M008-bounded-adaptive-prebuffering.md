@@ -30,12 +30,15 @@ specific preparation duration.
 
 ## Current state
 
-- The production desktop has no TTS caller, audio payload queue, player,
-  preparation UI, or synchronization flow.
+- The production desktop has no product TTS caller, preparation/playback UI,
+  or synchronization flow. An unconnected payload-owning queue and low-level
+  Web Audio player now exist outside React.
 - A model-free, manually clocked adaptive scheduler state machine now proves
   M008 ordering, startup, reservation, backpressure, invalidation, release,
-  failure, end-of-range, and service-recovery semantics. It is not connected
-  to the publication, M007 client, an audio payload queue, or an audio device.
+  failure, end-of-range, and service-recovery semantics. Milestone 3 extends
+  that owner with real payload retention and a dedicated Web Audio backend,
+  validated through deterministic fake-device tests. It is not connected to
+  the publication or an M007 product caller and opens no device in tests.
 - Shared session, generation, audio-frame, and buffer-status contracts plus
   deterministic fakes exist.
 - `@voxleaf/epub` exposes bounded locator-linked
@@ -45,7 +48,8 @@ specific preparation duration.
   development-only adapter, packaged lifecycle evidence, and measured
   exact-host matrix are the implemented service boundary M008 must consume.
   M008 owns the product narration caller, scheduling queue, multi-unit audio
-  ownership, and player; none exists yet.
+  ownership, and player. The queue/player now exist; the caller remains later
+  work.
 - ADR-0013 selects no standard TTS profile.
 - ADR-0015 permits only the exact one-GPU Qwen/Serena development-demo
   topology with bounded adaptive in-memory preparation.
@@ -333,7 +337,24 @@ Complete.
 
 #### Status
 
-Not started.
+Completed on 2026-07-27.
+
+- The scheduler now retains each transferred `TtsAudioUnit` payload as the
+  sole original owner, exposes only the current ordered unit to playback, and
+  keeps remaining playable frames separate from whole-unit memory accounting.
+- `takeCompletedUnitFrom()` consumes the M007 `takeAudioUnit()` ownership seam.
+  Stale, wrong-identity, wrong-format, non-finite, and malformed units release
+  once and contribute zero playable duration.
+- `AdaptivePcmPlayer` consumes exact frames, records real
+  playing-to-buffering underruns, handles pause/resume/stop/seek/close,
+  supports integer 0-100% gain, and rejects every rate except `1.0x`.
+- Invalidation removes playback eligibility synchronously. Original payloads
+  then release at most four units per scheduled cleanup turn.
+- `WebAudioPcmPlaybackBackend` uses one dedicated `AudioContext`, one gain
+  node, and one active `AudioBufferSourceNode`. Its necessary device copy is
+  bounded to one 20-second service unit and is not another queue.
+- The implementation remains unconnected to React, publication narration,
+  M007 synthesis dispatch, or a real audio device.
 
 ### Milestone 4: Add adaptive preparation and accessible UI
 
@@ -502,6 +523,17 @@ accepted no-standard-profile decision.
   traversal now excludes those already repository-ignored trees before
   scanning; the exact portable command then passes without weakening source
   coverage.
+- 2026-07-27: Created `feat/m008-m3-bounded-audio-playback` from merged
+  `main` at `3566c8e`. Extended the scheduler from metadata-only proof to sole
+  ownership of actual complete-unit payloads, added the structural
+  `takeAudioUnit()` transfer seam, exact payload validation, monotonic playback
+  views, and bounded post-invalidation cleanup.
+- 2026-07-27: Selected Web Audio as the dependency-free MVP playback API.
+  Added the manual-clock `AdaptivePcmPlayer`, one-active-unit Web Audio backend,
+  deterministic device fake, frame consumption, underrun accounting,
+  pause/resume, bounded volume, `1.0x`-only rate, end-of-range, and
+  stop/seek/close tests. Implementation checkpoint `29fb928` preserves the
+  code/test boundary before documentation closeout.
 
 ## Discoveries and decisions
 
@@ -553,6 +585,19 @@ accepted no-standard-profile decision.
 17. The complete-unit RTF trace reproduces the approximate 47-second quick
     depletion estimate. It does not change the accepted slower-than-real-time
     conclusion or imply uninterrupted playback.
+18. `AudioBufferSourceNode` is a one-shot source, so the player creates one
+    source per complete unit while retaining a single dedicated
+    `AudioContext` and gain node. This preserves order without adding a second
+    queue.
+19. Web Audio must decode the active PCM unit into an `AudioBuffer`. That
+    transient device copy is limited to one 20-second/1,920,000-byte service
+    unit; the scheduler remains the sole releasable owner of the original and
+    includes it in the frozen FIFO counters until playback completes.
+20. Large invalidations cannot zero the 30-minute maximum in one UI turn.
+    Eligibility and playable lead therefore clear synchronously, while no more
+    than four stale original units are released per scheduled cleanup turn.
+    Replacement is not admissible until those retained resource counters reach
+    zero.
 
 ## Final validation results
 
@@ -590,7 +635,31 @@ Milestone 2 validation passes:
   contract, credential/private-path pattern, dependency, protocol, Tauri
   capability, or persistence change; `git diff --check` passes.
 
-Milestone 2 adds only a model-free scheduler state-machine proof and
-metadata-only ownership traces. It makes no audio-payload queue, player,
-product caller, audible playback, continuous-output, production-profile, or
-general-hardware claim. Milestones 3 through 6 remain not started.
+Milestone 3 validation passes:
+
+- `pnpm.cmd --filter @voxleaf/desktop exec vitest run src/tts/adaptive-buffer-authority.test.ts src/tts/adaptive-buffer-scheduler.test.ts src/tts/pcm-playback.test.ts`
+  passes three files/36 tests.
+- `pnpm.cmd --filter @voxleaf/desktop test`,
+  `pnpm.cmd --filter @voxleaf/desktop typecheck`, and
+  `pnpm.cmd lint:typescript` pass. The complete desktop run passes 25 Vitest
+  files/256 tests plus six native-driver client tests.
+- `pnpm.cmd check:portable` passes with task-specific writable UV and Pytest
+  temp roots after the inherited user cache/temp directories returned Windows
+  access-denied errors. It passes Prettier, Ruff format/check, ESLint, mypy,
+  all workspace typechecks, 196 shared tests, 555 EPUB tests, 256 desktop
+  Vitest tests, six native-driver client tests, 233 Python tests, and
+  package/desktop/Python builds.
+- The authoritative Windows `pnpm.cmd check` passes the same checks plus Cargo
+  formatting, Clippy, 24 Rust tests, the release Tauri executable build, and
+  both Python distributions. The existing Vite chunk-size advisory is
+  informational.
+- All 53 Markdown files pass a 265-relative-link audit. The complete 16-file
+  Milestone 3 delta has no private-path/credential-pattern, generated-audio,
+  book, model, archive, dependency, protocol, Tauri capability, persistence
+  API, or binary diff; `git diff --check` passes.
+
+Milestone 3 implements the unconnected payload queue and player without
+persisting generated audio or adding a dependency, capability, protocol, model,
+or private fixture. It makes no product-caller, audible-device,
+continuous-output, production-profile, or general-hardware claim. Milestones
+4 through 6 remain not started.
