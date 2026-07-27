@@ -73,6 +73,10 @@ export interface AppProps {
   readonly openFlow?: LocalPublicationOpenFlow;
   readonly readerPositionRepository?: ReaderPositionRepository;
   readonly readerPositionSaveEnvironment?: ReaderPositionSaveEnvironment;
+  readonly createNarrationCoordinator?: (
+    publication: OpenedPublication,
+    initialLocator: ReadingLocatorV1,
+  ) => ProductNarrationCoordinator;
   readonly ReadyPublicationContent?: ComponentType<ReadyPublicationContentProps>;
   readonly runRasterProbe?: typeof runRasterImageSafetyProbe;
 }
@@ -203,10 +207,18 @@ function rasterStatusForResult(
   return result.status;
 }
 
+function createDefaultNarrationCoordinator(
+  publication: OpenedPublication,
+  initialLocator: ReadingLocatorV1,
+): ProductNarrationCoordinator {
+  return new ProductNarrationCoordinator(publication, initialLocator);
+}
+
 export function App({
   openFlow: suppliedOpenFlow,
   readerPositionRepository: suppliedReaderPositionRepository,
   readerPositionSaveEnvironment,
+  createNarrationCoordinator = createDefaultNarrationCoordinator,
   ReadyPublicationContent = ReaderPublicationContent,
   runRasterProbe = runRasterImageSafetyProbe,
 }: AppProps) {
@@ -257,11 +269,11 @@ export function App({
     () =>
       readyPublication === undefined || readyRestorationResult === undefined
         ? undefined
-        : new ProductNarrationCoordinator(
+        : createNarrationCoordinator(
             readyPublication,
             readyRestorationResult.position.locator,
           ),
-    [readyPublication, readyRestorationResult],
+    [createNarrationCoordinator, readyPublication, readyRestorationResult],
   );
 
   useEffect(
