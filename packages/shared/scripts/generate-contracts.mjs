@@ -24,6 +24,16 @@ const validatorOutputRoot = path.join(
   "generated",
   "validators",
 );
+const pythonSchemaOutputRoot = path.resolve(
+  packageRoot,
+  "..",
+  "..",
+  "services",
+  "tts",
+  "src",
+  "voxleaf_tts",
+  "generated",
+);
 const checkOnly = process.argv.includes("--check");
 
 const bannerComment = `/**
@@ -414,10 +424,55 @@ async function expectedValidatorOutputs(schemasById) {
   ]);
 }
 
+function expectedPythonSchemaOutputs(schemasById) {
+  const serializedRegistry = JSON.stringify(
+    Object.fromEntries(
+      [...schemasById.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([schemaId, schema]) => [schemaId, schema]),
+    ),
+  );
+  const registryChunks = [];
+  for (let offset = 0; offset < serializedRegistry.length; offset += 72) {
+    registryChunks.push(
+      `    ${JSON.stringify(serializedRegistry.slice(offset, offset + 72))}`,
+    );
+  }
+  const registryLiteral = `(\n${registryChunks.join("\n")}\n)`;
+  const initModule = `"""Generated schema resources for the VoxLeaf TTS service."""\n`;
+  const schemaModule = `"""Canonical VoxLeaf schemas embedded for offline Python validation.
+
+This file is generated from packages/shared/schemas.
+DO NOT MODIFY IT BY HAND. Run the @voxleaf/shared generate command instead.
+"""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Mapping
+from types import MappingProxyType
+from typing import Final, cast
+
+# fmt: off
+_SCHEMA_REGISTRY_JSON: Final = ${registryLiteral}
+# fmt: on
+
+SCHEMAS_BY_ID: Final[Mapping[str, Mapping[str, object]]] = MappingProxyType(
+    cast(dict[str, Mapping[str, object]], json.loads(_SCHEMA_REGISTRY_JSON))
+)
+`;
+
+  return new Map([
+    ["__init__.py", initModule],
+    ["protocol_schemas.py", schemaModule],
+  ]);
+}
+
 async function currentGeneratedNames(outputRoot) {
   try {
-    return (await readdir(outputRoot))
-      .filter((fileName) => fileName.endsWith(".ts"))
+    return (await readdir(outputRoot, { withFileTypes: true }))
+      .filter((entry) => entry.isFile())
+      .map((entry) => entry.name)
       .sort();
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") {
@@ -541,6 +596,10 @@ const outputGroups = [
   {
     outputRoot: validatorOutputRoot,
     outputs: await expectedValidatorOutputs(schemasById),
+  },
+  {
+    outputRoot: pythonSchemaOutputRoot,
+    outputs: expectedPythonSchemaOutputs(schemasById),
   },
 ];
 
