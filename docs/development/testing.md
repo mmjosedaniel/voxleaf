@@ -174,9 +174,10 @@ duplicated into multiple evaluator identities.
 
 The browser command requires one prior networked `pnpm.cmd test:browser:install`. Ordinary execution does not download browsers and can run offline after that setup. It uses a fresh isolated context, blocks and counts non-loopback requests, removes its fixed synthetic and reader-state storage keys, and lets Playwright stop the loopback preview server. Failure-only traces and screenshots are ignored artifacts and may contain only repository-authored synthetic test content. The native-startup command requires `tauri-driver` and a Microsoft EdgeDriver matching the installed WebView2 runtime; it uses the standard WebDriver launch path plus proxied CDP logging and creates no browser artifact. Chromium and WebView2 evidence remain complementary.
 
-## M009 synchronization-authority validation
+## M009 synchronization and heard-persistence validation
 
-M009 Milestone 1 adds a model-free deterministic and real-engine proof surface:
+M009 Milestones 1 through 5 add deterministic, browser, and packaged proof
+surfaces:
 
 - `synchronization-authority.test.ts` verifies the closed event table,
   segment-level timing, invalidation-first navigation, bounded progress
@@ -194,10 +195,22 @@ M009 Milestone 1 adds a model-free deterministic and real-engine proof surface:
   WebView2 under the real content-security policy and keeps its zero runtime
   error and zero external-request assertions.
 
+`narration-position-save-bridge.test.ts` proves that only exact starts and
+matching completions reach persistence, periodic frame observations do not,
+pause and buffering flush once per transition, and failure/cleanup finish the
+temporary narration authority. `reader-position-save-coordinator.test.ts`
+adds active-visual suppression, unmatched-completion rejection, start/end
+advancement, hidden/`pagehide` interruption, reflow protection, and
+mid-segment exact-file restoration. `App.test.tsx` proves the application
+wiring: active visual movement cannot overtake the heard checkpoint,
+completion advances it, and a later reflow cannot regress it after stop.
+Existing repository and restore suites continue to prove exact/nearest-valid
+recovery plus preservation of unsupported future envelopes.
+
 The proof uses only repository-authored synthetic EPUB content and returns
 content-free booleans. It does not run Qwen, publish narration text or audio,
-or claim that M009 runtime synchronization is connected. The frozen behavior
-is documented in
+or provide the exact-host evidence assigned to M009 Milestone 6. The frozen
+and implemented behavior is documented in
 [`../architecture/synchronization-authority-v1.md`](../architecture/synchronization-authority-v1.md).
 
 ### Hardware-specific visual-reader benchmark

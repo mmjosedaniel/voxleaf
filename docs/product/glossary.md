@@ -13,6 +13,14 @@ The duration of playable narration held in memory before playback begins.
 Quick start targets approximately 15 seconds of audio; it is not a 15-second
 wall-clock timer.
 
+## Heard checkpoint
+
+The canonical structural reading locator last proved audible. M009 saves a
+segment start when it becomes audible, advances to the range end only after
+matching completion, and flushes that latest checkpoint at bounded
+interruption and lifecycle events. It contains no narration text, PCM,
+rendered geometry, or periodic playback position.
+
 ## Quick start
 
 The implemented exact-development playback mode that starts as soon as
@@ -89,9 +97,9 @@ A bounded nonempty portion of normalized narration text paired with the stable l
 
 The runtime identity joining the active book, position, narrator settings, and
 generation state. The exact-development coordinator implements ephemeral
-session and generation identities so stale work can be discarded. A supported
-production coordinator and synchronized visual/audible position remain later
-work.
+session and generation identities so stale work can be discarded. M009
+connects the visual/audible projection and heard checkpoint for that
+constrained path. A supported production profile remains later work.
 
 ## Reading locator
 
