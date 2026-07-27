@@ -624,7 +624,44 @@ Complete on 2026-07-27.
 
 #### Status
 
-Not started.
+In progress. The result-blind `tts-service-handoff-profile-v1` authority and
+closed content-safe result schema are frozen before the exact-host matrix is
+implemented or run.
+
+#### Frozen matrix authority
+
+- The exact `profile-v3` candidate, isolated lock, protocol v1 limits, Serena
+  voice, Spanish language, batch size one, 2,048-token ceiling, zero retry,
+  and zero automatic restart remain unchanged.
+- The repository-authored corpus has three bounded synthetic Spanish inputs:
+  one neutral-normalization unit and two Spanish-normalization units. It
+  contains no book or user content.
+- The ordered first-attempt matrix has nine cases: cold neutral success, warm
+  Spanish success, blocked-consumer rejection before dispatch,
+  before-dispatch invalidation, after-complete-before-delivery invalidation,
+  accepted-before-output cancellation, one-second mid-generation
+  cancellation, child crash during generation, and application exit during
+  generation.
+- Successful units must be complete, finite, identity-correct 24-kHz mono
+  float32-le payloads within 20 seconds and 1,920,000 bytes. Every other case
+  must publish and deliver zero audio units.
+- Required cancellation, crash, and exit cases terminate the exact process
+  tree. Cancellation and crash cases that declare a restart must then pass an
+  explicit start/load/warm cycle; no operation is retried automatically.
+- The frozen clocks and observations are Windows monotonic timing, 50-ms
+  process-tree RAM sampling, 1,000-ms WDDM dedicated/shared GPU sampling,
+  validated audio metadata as the first transport frame, complete
+  audio/completion/ready as the unit boundary, move plus final validation as
+  the native frame handoff, and nearest-rank p95.
+- The result schema permits only content-free case outcomes, timings, aggregate
+  resources, zero-after-cleanup observations, privacy flags, and explicitly
+  narrow conclusions. It cannot contain narration text, waveform/audio bytes,
+  paths, environment values, process identifiers, exceptions, commands,
+  private identities, production selection, or general-hardware claims.
+- [`service-handoff-profile-v1.json`](../../../benchmarks/tts/service-handoff-profile-v1.json)
+  and its
+  [`result schema`](../../../benchmarks/tts/schemas/service-handoff-result-v1.schema.json)
+  are the pre-result authority.
 
 ### Milestone 6: Record the protocol decision and close validation
 
@@ -892,6 +929,13 @@ artifact behind.
   reload, busy rejection, active process-tree termination, zero stale return,
   and clean shutdown. This is constrained exact-host service evidence only;
   Milestone 5's measured handoff matrix remains open.
+- 2026-07-27: Created
+  `feat/m007-5-exact-host-handoff-validation` from merged `main` at `f4442b0`.
+  Before implementing or running a measured host command, froze
+  `tts-service-handoff-profile-v1`, its three repository-authored synthetic
+  inputs, ordered nine-case matrix, clocks, RAM/VRAM sampling, first-attempt
+  policy, cleanup gates, privacy boundary, and closed result schema. Focused
+  authority validation passes ten tests plus Ruff and strict mypy.
 
 ## Discoveries and decisions
 
@@ -964,6 +1008,12 @@ artifact behind.
 19. Model and native-library standard output is discarded around load and
     generation because child standard output is protocol-only. Standard error
     remains attached to the null sink with zero retained bytes.
+20. Milestone 5 needs timing and resource evidence without turning production
+    control messages into a metrics protocol. A separate hidden native host
+    may emit only closed content-safe diagnostic events to its parent
+    measurement runner. The supervised Qwen child's standard output remains
+    protocol-only, and no measurement field is added to the public Tauri or
+    process protocol surface.
 
 ## Final validation results
 

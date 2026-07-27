@@ -1,0 +1,178 @@
+{
+  "profileVersion": "tts-service-handoff-profile-v1",
+  "status": "frozen-before-exact-host-results",
+  "candidateAuthority": {
+    "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
+    "profilePath": "benchmarks/tts/profile-v3.json",
+    "profileSha256": "7d062a4f662ed95b1cb5ff0a21fc40864f4ac3858cea4314ee612b84c2e08dbe",
+    "candidateLockPath": "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock",
+    "candidateLockSha256": "1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913",
+    "modelRevision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+    "speaker": "Serena",
+    "language": "Spanish",
+    "batchSize": 1,
+    "maxNewTokens": 2048
+  },
+  "protocolAuthority": {
+    "protocolVersion": 1,
+    "transport": "rust-owned-standard-streams-complete-unit",
+    "sampleRateHz": 24000,
+    "channelCount": 1,
+    "sampleFormat": "float32-le",
+    "maximumDurationSeconds": 20,
+    "maximumSampleCount": 480000,
+    "maximumPayloadBytes": 1920000,
+    "activeRequests": 1,
+    "queuedRequests": 0,
+    "retainedNativeUnits": 1,
+    "automaticRetries": 0,
+    "automaticRestarts": 0,
+    "handshakeTimeoutMilliseconds": 5000,
+    "loadTimeoutMilliseconds": 120000,
+    "warmTimeoutMilliseconds": 120000,
+    "synthesisTimeoutMilliseconds": 120000,
+    "terminationTimeoutMilliseconds": 2000,
+    "shutdownTimeoutMilliseconds": 5000
+  },
+  "measurementAuthority": {
+    "clock": "windows-monotonic",
+    "ramSamplingIntervalMilliseconds": 50,
+    "vramSamplingIntervalMilliseconds": 1000,
+    "vramMethod": "wddm-process-tree-dedicated-and-shared",
+    "firstTransportFrame": "validated-audio-metadata-control-frame",
+    "completeUnit": "validated-audio-record-completed-control-and-ready-state",
+    "nativeFrameHandoff": "move-plus-final-validation-without-an-added-rust-clone",
+    "rtfFormula": "command-to-complete-unit-seconds/media-duration-seconds",
+    "percentileMethod": "nearest-rank",
+    "cleanupObservationDelayMilliseconds": 50,
+    "firstAttemptIsAuthoritative": true,
+    "diagnosticRetries": 0
+  },
+  "syntheticInputs": [
+    {
+      "inputId": "neutral-1",
+      "normalizationClass": "neutral",
+      "text": "La lámpara permanece encendida junto a la ventana. Afuera, el viento mueve las hojas con suavidad, mientras una taza de agua descansa sobre la mesa."
+    },
+    {
+      "inputId": "spanish-1",
+      "normalizationClass": "spanish",
+      "text": "Al amanecer, Serena lee con calma: «Primero abrimos la puerta; después cruzamos el patio». La señal número tres aparece al final del corredor, junto al reloj azul."
+    },
+    {
+      "inputId": "spanish-2",
+      "normalizationClass": "spanish",
+      "text": "La lluvia cae despacio sobre el tejado. Cada gota marca un ritmo breve, claro y constante, mientras la habitación permanece en silencio."
+    }
+  ],
+  "matrix": [
+    {
+      "caseId": "cold-neutral-success",
+      "action": "synthesize-and-deliver",
+      "inputId": "neutral-1",
+      "delayAfterAcceptanceMilliseconds": 0,
+      "expectedPublishedAudioUnits": 1,
+      "requiresCleanRestartAfter": false
+    },
+    {
+      "caseId": "warm-spanish-success",
+      "action": "synthesize-and-retain",
+      "inputId": "spanish-1",
+      "delayAfterAcceptanceMilliseconds": 0,
+      "expectedPublishedAudioUnits": 1,
+      "requiresCleanRestartAfter": false
+    },
+    {
+      "caseId": "blocked-consumer-backpressure",
+      "action": "reject-before-dispatch-while-one-unit-retained",
+      "inputId": null,
+      "delayAfterAcceptanceMilliseconds": 0,
+      "expectedPublishedAudioUnits": 0,
+      "requiresCleanRestartAfter": false
+    },
+    {
+      "caseId": "before-dispatch-invalidation",
+      "action": "invalidate-without-dispatch",
+      "inputId": null,
+      "delayAfterAcceptanceMilliseconds": 0,
+      "expectedPublishedAudioUnits": 0,
+      "requiresCleanRestartAfter": false
+    },
+    {
+      "caseId": "after-complete-before-delivery-invalidation",
+      "action": "synthesize-invalidate-and-discard",
+      "inputId": "spanish-2",
+      "delayAfterAcceptanceMilliseconds": 0,
+      "expectedPublishedAudioUnits": 0,
+      "requiresCleanRestartAfter": false
+    },
+    {
+      "caseId": "accepted-before-output-cancellation",
+      "action": "cancel-after-native-acceptance",
+      "inputId": "spanish-2",
+      "delayAfterAcceptanceMilliseconds": 0,
+      "expectedPublishedAudioUnits": 0,
+      "requiresCleanRestartAfter": true
+    },
+    {
+      "caseId": "mid-generation-cancellation",
+      "action": "cancel-during-generation",
+      "inputId": "spanish-2",
+      "delayAfterAcceptanceMilliseconds": 1000,
+      "expectedPublishedAudioUnits": 0,
+      "requiresCleanRestartAfter": true
+    },
+    {
+      "caseId": "child-crash",
+      "action": "terminate-child-during-generation",
+      "inputId": "spanish-2",
+      "delayAfterAcceptanceMilliseconds": 1000,
+      "expectedPublishedAudioUnits": 0,
+      "requiresCleanRestartAfter": true
+    },
+    {
+      "caseId": "application-exit",
+      "action": "force-stop-during-generation",
+      "inputId": "spanish-2",
+      "delayAfterAcceptanceMilliseconds": 1000,
+      "expectedPublishedAudioUnits": 0,
+      "requiresCleanRestartAfter": false
+    }
+  ],
+  "acceptance": {
+    "allFirstAttemptCasesPass": true,
+    "successfulUnitsCompleteOrderedIdentityCorrectAndBounded": true,
+    "invalidatedCasesPublishZeroAudioUnits": true,
+    "secondRequestWhileRetainedRejectedBeforeDispatch": true,
+    "terminationWithinMilliseconds": 2000,
+    "cleanRestartAfterEveryRequiredCase": true,
+    "cleanupProcessTreeRamBytes": 0,
+    "cleanupDedicatedGpuBytes": 0,
+    "cleanupSharedGpuBytes": 0,
+    "listenerCount": 0,
+    "externalConnectionCount": 0,
+    "generatedAudioPersisted": false
+  },
+  "privacy": {
+    "resultMayContainNarrationText": false,
+    "resultMayContainWaveformOrAudioBytes": false,
+    "resultMayContainPathOrEnvironmentValue": false,
+    "resultMayContainProcessIdentifier": false,
+    "resultMayContainExceptionOrProcessCommand": false,
+    "resultMayContainPrivateIdentity": false
+  },
+  "invalidation": {
+    "changesRequireNewProfileVersion": [
+      "candidateAuthority",
+      "protocolAuthority",
+      "measurementAuthority",
+      "syntheticInput",
+      "matrixCase",
+      "caseOrder",
+      "delay",
+      "expectedPublishedAudioUnits",
+      "acceptance",
+      "privacy"
+    ]
+  }
+}
