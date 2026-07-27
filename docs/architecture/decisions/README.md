@@ -27,6 +27,10 @@ ADR-0002-short-description.md
 - [`ADR-0014-constrained-qwen-development-demo.md`](ADR-0014-constrained-qwen-development-demo.md): historical constrained-demo decision, now superseded by ADR-0015 for scheduling and buffering.
 - [`ADR-0015-bounded-adaptive-qwen-demo-buffering.md`](ADR-0015-bounded-adaptive-qwen-demo-buffering.md): retain one exact GPU worker for a bounded adaptive development demo while rejecting CPU-only and dual-worker scheduling and retaining the standard feasibility blocker.
 
+## Proposed decisions
+
+- [`ADR-0016-rust-owned-stdio-tts-protocol.md`](ADR-0016-rust-owned-stdio-tts-protocol.md): Rust-owned standard-stream child supervision, complete-unit float32-le framing, and optimized Tauri binary responses. Deterministic and release parent/child evidence passes; packaged WebView acceptance remains pending.
+
 ## Template
 
 ```markdown
