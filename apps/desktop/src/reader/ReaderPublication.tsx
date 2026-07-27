@@ -144,7 +144,13 @@ export interface ReaderPublicationContentProps {
   readonly restoreInitialLocator?: boolean;
   readonly onPreferencesChange?: (preferences: ReaderPreferencesV1) => void;
   readonly onActiveLocatorChange?: (locator: ReadingLocatorV1) => void;
-  readonly onSettledLocatorChange?: (locator: ReadingLocatorV1) => void;
+  readonly onNavigationIntent?: (
+    event: ReaderUserNavigationEvent,
+  ) => void | Promise<void>;
+  readonly onSettledLocatorChange?: (
+    locator: ReadingLocatorV1,
+    reason: ReaderLocatorSettlementReason,
+  ) => void;
   readonly onInitialRestorationSettled?: (
     settlement: ReaderInitialRestorationSettlement,
   ) => void;
@@ -154,6 +160,12 @@ export interface ReaderPublicationContentProps {
   readonly narrationSource?: ReaderNarrationSource;
   readonly segmentHighlightEnvironment?: SegmentHighlightEnvironment;
 }
+
+export type ReaderUserNavigationEvent =
+  "chapter-navigation" | "narration-boundary";
+
+export type ReaderLocatorSettlementReason =
+  ReaderUserNavigationEvent | "reflow";
 
 export interface ReaderInitialRestorationSettlement {
   readonly status: "settled" | "superseded" | "unavailable";
@@ -167,6 +179,7 @@ export function ReaderPublicationContent({
   restoreInitialLocator = false,
   onPreferencesChange,
   onActiveLocatorChange,
+  onNavigationIntent,
   onSettledLocatorChange,
   onInitialRestorationSettled,
   domRangeMapper,
@@ -245,7 +258,7 @@ export function ReaderPublicationContent({
           currentLocator: () => coordinator.state.activeLocator,
           onRestored: (result) => {
             if (result.reason === "preference") {
-              onSettledLocatorChange?.(result.locator);
+              onSettledLocatorChange?.(result.locator, "reflow");
             } else if (result.reason === "restoration") {
               setPendingInitialSettlement(
                 Object.freeze({
@@ -286,6 +299,10 @@ export function ReaderPublicationContent({
   const destinationRef = useRef<HTMLElement | null>(null);
   const handledNavigationRevision = useRef(0);
   const pendingPositionSaveRevision = useRef<number | undefined>(undefined);
+  const pendingNavigationReason = useRef<ReaderUserNavigationEvent | undefined>(
+    undefined,
+  );
+  const programmaticNavigationRequest = useRef(0);
   const resumeProgrammaticNavigationRef = useRef<(() => void) | undefined>(
     undefined,
   );
@@ -376,7 +393,11 @@ export function ReaderPublicationContent({
       coordinator.state.navigationRevision
     ) {
       pendingPositionSaveRevision.current = undefined;
-      onSettledLocatorChange?.(coordinator.state.activeLocator);
+      const reason = pendingNavigationReason.current;
+      pendingNavigationReason.current = undefined;
+      if (reason !== undefined) {
+        onSettledLocatorChange?.(coordinator.state.activeLocator, reason);
+      }
     }
     const resume = resumeProgrammaticNavigationRef.current;
     resumeProgrammaticNavigationRef.current = undefined;
@@ -420,39 +441,64 @@ export function ReaderPublicationContent({
     [coordinator],
   );
   const runProgrammaticNavigation = useCallback(
-    (navigate: () => void): void => {
-      reflowRestorer.cancel();
-      completeInitialRestoration(
-        Object.freeze({
-          status: "superseded",
-          locator: coordinator.state.activeLocator,
-        }),
-      );
-      resumeProgrammaticNavigationRef.current?.();
-      const resume = visualLocatorTracker.suspend();
-      resumeProgrammaticNavigationRef.current = resume;
-      const revision = coordinator.state.navigationRevision;
-      pendingPositionSaveRevision.current = revision + 1;
-      navigate();
-      const nextRevision = coordinator.state.navigationRevision;
-      if (nextRevision === revision) {
-        pendingPositionSaveRevision.current = undefined;
-        finishProgrammaticNavigation();
-      } else if (handledNavigationRevision.current !== nextRevision) {
-        pendingPositionSaveRevision.current = nextRevision;
+    (navigate: () => void, reason: ReaderUserNavigationEvent): void => {
+      const request = programmaticNavigationRequest.current + 1;
+      programmaticNavigationRequest.current = request;
+      const continueNavigation = (): void => {
+        if (programmaticNavigationRequest.current !== request) {
+          return;
+        }
+        reflowRestorer.cancel();
+        completeInitialRestoration(
+          Object.freeze({
+            status: "superseded",
+            locator: coordinator.state.activeLocator,
+          }),
+        );
+        resumeProgrammaticNavigationRef.current?.();
+        const resume = visualLocatorTracker.suspend();
+        resumeProgrammaticNavigationRef.current = resume;
+        const revision = coordinator.state.navigationRevision;
+        pendingPositionSaveRevision.current = revision + 1;
+        pendingNavigationReason.current = reason;
+        navigate();
+        const nextRevision = coordinator.state.navigationRevision;
+        if (nextRevision === revision) {
+          pendingPositionSaveRevision.current = undefined;
+          pendingNavigationReason.current = undefined;
+          finishProgrammaticNavigation();
+        } else if (handledNavigationRevision.current !== nextRevision) {
+          pendingPositionSaveRevision.current = nextRevision;
+        }
+      };
+      let invalidation: void | Promise<void>;
+      try {
+        invalidation = onNavigationIntent?.(reason);
+      } catch {
+        return;
+      }
+      if (invalidation === undefined) {
+        continueNavigation();
+      } else {
+        void invalidation.then(continueNavigation).catch(() => undefined);
       }
     },
     [
       coordinator,
       completeInitialRestoration,
       finishProgrammaticNavigation,
+      onNavigationIntent,
       reflowRestorer,
       visualLocatorTracker,
     ],
   );
   const activateTarget = useCallback(
-    (target: SemanticDocumentTarget) =>
-      runProgrammaticNavigation(() => coordinator.navigateToTarget(target)),
+    (target: SemanticDocumentTarget) => {
+      runProgrammaticNavigation(
+        () => coordinator.navigateToTarget(target),
+        "chapter-navigation",
+      );
+    },
     [coordinator, runProgrammaticNavigation],
   );
   const updatePreference = useCallback(
@@ -516,6 +562,17 @@ export function ReaderPublicationContent({
       segmentHighlightController.clear();
     };
   }, [narrationSource, segmentHighlightController]);
+  useEffect(() => {
+    if (narrationSource?.subscribeNavigationRequests === undefined) {
+      return;
+    }
+    return narrationSource.subscribeNavigationRequests((request) => {
+      runProgrammaticNavigation(
+        () => coordinator.navigateToLocator(request.locator),
+        "narration-boundary",
+      );
+    });
+  }, [coordinator, narrationSource, runProgrammaticNavigation]);
   useLayoutEffect(() => {
     segmentHighlightController.refresh();
   }, [
@@ -533,6 +590,7 @@ export function ReaderPublicationContent({
   useEffect(
     () => () => {
       reflowRestorer.close();
+      programmaticNavigationRequest.current += 1;
       initialVisualLocatorResumeRef.current?.({ requestSample: false });
       initialVisualLocatorResumeRef.current = undefined;
       resumeProgrammaticNavigationRef.current?.();
@@ -645,7 +703,10 @@ export function ReaderPublicationContent({
               type="button"
               disabled={!state.canGoPrevious}
               onClick={() =>
-                runProgrammaticNavigation(() => coordinator.goPrevious())
+                runProgrammaticNavigation(
+                  () => coordinator.goPrevious(),
+                  "chapter-navigation",
+                )
               }
             >
               Previous chapter
@@ -654,7 +715,10 @@ export function ReaderPublicationContent({
               type="button"
               disabled={!state.canGoNext}
               onClick={() =>
-                runProgrammaticNavigation(() => coordinator.goNext())
+                runProgrammaticNavigation(
+                  () => coordinator.goNext(),
+                  "chapter-navigation",
+                )
               }
             >
               Next chapter

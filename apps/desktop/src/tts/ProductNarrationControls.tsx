@@ -70,6 +70,40 @@ export function ProductNarrationControls({
           coordinator.setVolumePercent(volumePercent)
         }
       />
+      <div
+        className="product-narration-navigation"
+        role="group"
+        aria-label="Narration passage navigation"
+      >
+        <button
+          type="button"
+          disabled={
+            !snapshot.navigation.canGoPrevious || snapshot.navigation.settling
+          }
+          onClick={() => coordinator.goToPreviousBoundary()}
+        >
+          Previous narration passage
+        </button>
+        <button
+          type="button"
+          disabled={
+            !snapshot.navigation.canGoNext || snapshot.navigation.settling
+          }
+          onClick={() => coordinator.goToNextBoundary()}
+        >
+          Next narration passage
+        </button>
+        <button
+          type="button"
+          disabled={
+            snapshot.availability !== "available" ||
+            snapshot.navigation.settling
+          }
+          onClick={() => coordinator.startAtActiveLocator()}
+        >
+          Start narration at visible passage
+        </button>
+      </div>
     </div>
   );
 }

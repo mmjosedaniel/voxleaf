@@ -5,6 +5,7 @@ import type {
 } from "@voxleaf/epub";
 import {
   decodeNarrationSegmentV1,
+  type LocatorRangeV1,
   type NarrationSegmentV1,
   type ReadingLocatorV1,
 } from "@voxleaf/shared";
@@ -36,6 +37,8 @@ import {
 
 const TICK_INTERVAL_MS = 250;
 const PREPARED_BATCH_SEGMENT_LIMIT = 16;
+const NAVIGATION_BOUNDARY_LIMIT = 64;
+const PASSIVE_NAVIGATION_SETTLEMENT_MS = 500;
 
 export type ProductNarrationFailureCode =
   | "audio-playback-failed"
@@ -59,10 +62,31 @@ export interface ProductNarrationSnapshot {
   readonly failure: ProductNarrationFailureCode | undefined;
   readonly metrics: ProductNarrationMetrics;
   readonly serviceState: TtsProcessClientObservation["state"];
+  readonly navigation: ProductNarrationNavigationSnapshot;
 }
 
 export type ProductNarrationAudibleProgressObservation =
   AdaptivePcmAudibleProgressObservation;
+
+export type ProductNarrationPlayIntent = "inactive" | "paused" | "playing";
+
+export interface ProductNarrationNavigationSnapshot {
+  readonly playIntent: ProductNarrationPlayIntent;
+  readonly settling: boolean;
+  readonly canGoPrevious: boolean;
+  readonly canGoNext: boolean;
+}
+
+export type ProductNarrationNavigationEvent =
+  | "chapter-navigation"
+  | "next-segment"
+  | "previous-segment"
+  | "user-visual-navigation";
+
+export interface ProductNarrationNavigationRequest {
+  readonly event: "next-segment" | "previous-segment";
+  readonly locator: ReadingLocatorV1;
+}
 
 export interface ProductNarrationServiceClient extends AdaptiveBufferAudioUnitSource {
   exactDemoAvailability(): Promise<TtsExactDemoAvailability>;
@@ -92,12 +116,23 @@ export interface ProductNarrationCoordinatorDependencies {
   ) => string;
   readonly setInterval?: (callback: () => void, intervalMs: number) => unknown;
   readonly clearInterval?: (handle: unknown) => void;
+  readonly setTimeout?: (callback: () => void, delayMs: number) => unknown;
+  readonly clearTimeout?: (handle: unknown) => void;
 }
 
 type PreparedSegmentEntry = Readonly<{
   contract: NarrationSegmentV1;
   prepared: PreparedNarrationSegment;
 }>;
+
+interface PendingNavigation {
+  readonly revision: number;
+  readonly event: ProductNarrationNavigationEvent;
+  readonly priorIntent: Exclude<ProductNarrationPlayIntent, "inactive">;
+  readonly stop: Promise<void>;
+  restart: boolean;
+  target: ReadingLocatorV1 | undefined;
+}
 
 function defaultIdentifier(
   kind: "generation" | "segment" | "session",
@@ -118,6 +153,35 @@ function sameLocator(left: ReadingLocatorV1, right: ReadingLocatorV1): boolean {
     left.anchor.value === right.anchor.value &&
     left.anchor.anchorIndex === right.anchor.anchorIndex &&
     left.textOffsetCodePoints === right.textOffsetCodePoints
+  );
+}
+
+function compareLocatorPosition(
+  left: ReadingLocatorV1,
+  right: ReadingLocatorV1,
+): number {
+  if (left.spineItemIndex !== right.spineItemIndex) {
+    return left.spineItemIndex - right.spineItemIndex;
+  }
+  if (left.anchor.anchorIndex !== right.anchor.anchorIndex) {
+    return left.anchor.anchorIndex - right.anchor.anchorIndex;
+  }
+  return left.textOffsetCodePoints - right.textOffsetCodePoints;
+}
+
+function sameRange(left: LocatorRangeV1, right: LocatorRangeV1): boolean {
+  return (
+    sameLocator(left.start, right.start) && sameLocator(left.end, right.end)
+  );
+}
+
+function containsLocator(
+  range: LocatorRangeV1,
+  locator: ReadingLocatorV1,
+): boolean {
+  return (
+    compareLocatorPosition(range.start, locator) <= 0 &&
+    compareLocatorPosition(locator, range.end) < 0
   );
 }
 
@@ -151,22 +215,38 @@ export class ProductNarrationCoordinator {
   readonly #clearInterval: NonNullable<
     ProductNarrationCoordinatorDependencies["clearInterval"]
   >;
+  readonly #setTimeout: NonNullable<
+    ProductNarrationCoordinatorDependencies["setTimeout"]
+  >;
+  readonly #clearTimeout: NonNullable<
+    ProductNarrationCoordinatorDependencies["clearTimeout"]
+  >;
   readonly #listeners = new Set<() => void>();
   readonly #audibleProgressListeners = new Set<
     (observation: ProductNarrationAudibleProgressObservation) => void
   >();
+  readonly #navigationListeners = new Set<
+    (request: ProductNarrationNavigationRequest) => void
+  >();
   readonly #estimator = new AdaptivePreparationEstimator();
   readonly #prepared = new Map<string, PreparedSegmentEntry>();
+  readonly #knownBoundaries: LocatorRangeV1[] = [];
   #availability: ProductNarrationSnapshot["availability"] = "checking";
   #selection: AdaptiveBufferStartMode = Object.freeze({ kind: "quick" });
   #activeLocator: ReadingLocatorV1;
-  #narrationStartLocator: ReadingLocatorV1 | undefined;
+  #audibleRange: LocatorRangeV1 | undefined;
+  #playIntent: ProductNarrationPlayIntent = "inactive";
+  #pendingNavigation: PendingNavigation | undefined;
+  #navigationRevision = 0;
+  #navigationSettlementHandle: unknown;
+  #pausedNavigationState: AdaptivePreparationUiState | undefined;
   #continuation: ReadingLocatorV1 | undefined;
   #identity: AdaptiveBufferWorkIdentity | undefined;
   #scheduler: AdaptiveBufferScheduler | undefined;
   #player: AdaptivePcmPlayer | undefined;
   #playerAudibleUnsubscribe: (() => void) | undefined;
   #operation: Promise<void> | undefined;
+  #stopOperation: Promise<void> | undefined;
   #tickHandle: unknown;
   #closed = false;
   #runToken = 0;
@@ -211,6 +291,12 @@ export class ProductNarrationCoordinator {
     this.#clearInterval =
       dependencies.clearInterval ??
       ((handle) => globalThis.clearInterval(handle as number));
+    this.#setTimeout =
+      dependencies.setTimeout ??
+      ((callback, delayMs) => globalThis.setTimeout(callback, delayMs));
+    this.#clearTimeout =
+      dependencies.clearTimeout ??
+      ((handle) => globalThis.clearTimeout(handle as number));
     this.#snapshot = this.#createSnapshot();
   }
 
@@ -231,6 +317,15 @@ export class ProductNarrationCoordinator {
     this.#audibleProgressListeners.add(listener);
     return () => {
       this.#audibleProgressListeners.delete(listener);
+    };
+  }
+
+  public subscribeNavigationRequests(
+    listener: (request: ProductNarrationNavigationRequest) => void,
+  ): () => void {
+    this.#navigationListeners.add(listener);
+    return () => {
+      this.#navigationListeners.delete(listener);
     };
   }
 
@@ -257,16 +352,74 @@ export class ProductNarrationCoordinator {
   }
 
   public updateActiveLocator(locator: ReadingLocatorV1): void {
-    if (this.#closed || sameLocator(locator, this.#activeLocator)) {
+    if (this.#closed) {
+      return;
+    }
+    if (
+      this.#pendingNavigation === undefined &&
+      sameLocator(locator, this.#activeLocator)
+    ) {
+      return;
+    }
+    if (this.#playIntent === "inactive") {
+      this.#activeLocator = locator;
+      return;
+    }
+    const pending = this.#beginNavigation("user-visual-navigation");
+    pending.target = locator;
+    this.#schedulePassiveNavigationSettlement(pending.revision);
+    this.#publish();
+  }
+
+  public async beginExternalNavigation(
+    event: "chapter-navigation",
+  ): Promise<void> {
+    if (this.#closed || this.#playIntent === "inactive") {
+      return;
+    }
+    const pending = this.#beginNavigation(event);
+    await pending.stop;
+  }
+
+  public settleExternalNavigation(locator: ReadingLocatorV1): void {
+    if (this.#closed) {
+      return;
+    }
+    const pending = this.#pendingNavigation;
+    if (pending === undefined) {
+      this.#activeLocator = locator;
+      return;
+    }
+    pending.target = locator;
+    void this.#finishNavigation(pending.revision);
+  }
+
+  public preserveActiveLocator(locator: ReadingLocatorV1): void {
+    if (this.#closed || this.#pendingNavigation !== undefined) {
       return;
     }
     this.#activeLocator = locator;
-    if (
-      this.#narrationStartLocator !== undefined &&
-      isActivePhase(this.#snapshot.state)
-    ) {
-      void this.stop();
+  }
+
+  public startAtActiveLocator(): void {
+    if (this.#closed || this.#availability !== "available") {
+      return;
     }
+    if (this.#playIntent === "inactive") {
+      this.start();
+      return;
+    }
+    const pending = this.#beginNavigation("user-visual-navigation", true);
+    pending.target = this.#activeLocator;
+    void this.#finishNavigation(pending.revision);
+  }
+
+  public goToPreviousBoundary(): void {
+    this.#requestBoundaryNavigation("previous-segment");
+  }
+
+  public goToNextBoundary(): void {
+    this.#requestBoundaryNavigation("next-segment");
   }
 
   public start(): void {
@@ -277,12 +430,15 @@ export class ProductNarrationCoordinator {
     ) {
       return;
     }
+    this.#clearNavigationSettlement();
+    this.#pendingNavigation = undefined;
+    this.#pausedNavigationState = undefined;
+    this.#playIntent = "playing";
     this.#failure = undefined;
     this.#terminalState = undefined;
     this.#estimator.reset();
     this.#prepared.clear();
     this.#continuation = this.#activeLocator;
-    this.#narrationStartLocator = this.#activeLocator;
     this.#nextSequence = 0;
     this.#acceptedAudioUnitCount = 0;
     this.#acceptedAudioSampleFrames = 0;
@@ -310,6 +466,10 @@ export class ProductNarrationCoordinator {
           observation.sessionId === this.#identity?.sessionId &&
           observation.generationId === this.#identity.generationId
         ) {
+          if (observation.kind === "segment-started") {
+            this.#audibleRange = observation.sourceRange;
+            this.#publish();
+          }
           for (const listener of this.#audibleProgressListeners) {
             try {
               listener(observation);
@@ -329,7 +489,11 @@ export class ProductNarrationCoordinator {
 
   public pause(): void {
     try {
+      if (this.#scheduler === undefined || this.#player === undefined) {
+        return;
+      }
       this.#player?.pause();
+      this.#playIntent = "paused";
       this.#tick(this.#runToken);
     } catch {
       this.#fail("audio-playback-failed", this.#runToken);
@@ -338,7 +502,19 @@ export class ProductNarrationCoordinator {
 
   public resume(): void {
     try {
+      if (
+        this.#scheduler === undefined &&
+        this.#playIntent === "paused" &&
+        this.#pendingNavigation === undefined
+      ) {
+        this.#playIntent = "playing";
+        this.start();
+        return;
+      }
       this.#player?.resume();
+      if (this.#scheduler !== undefined) {
+        this.#playIntent = "playing";
+      }
       this.#tick(this.#runToken);
     } catch {
       this.#fail("audio-playback-failed", this.#runToken);
@@ -355,32 +531,62 @@ export class ProductNarrationCoordinator {
   }
 
   public async stop(): Promise<void> {
+    this.#playIntent = "inactive";
+    this.#clearNavigationSettlement();
+    this.#pendingNavigation = undefined;
+    this.#pausedNavigationState = undefined;
+    await this.#stopActiveRun();
+  }
+
+  #stopActiveRun(): Promise<void> {
+    if (this.#stopOperation !== undefined) {
+      return this.#stopOperation;
+    }
+    const stop = this.#performStopActiveRun();
+    this.#stopOperation = stop;
+    void stop.finally(() => {
+      if (this.#stopOperation === stop) {
+        this.#stopOperation = undefined;
+      }
+    });
+    return stop;
+  }
+
+  async #performStopActiveRun(): Promise<void> {
     if (this.#scheduler === undefined || this.#player === undefined) {
+      this.#terminalState = undefined;
+      this.#failure = undefined;
+      this.#publish();
       return;
     }
     const operation = this.#operation;
     const scope = this.#activeScope;
+    const stopToken = ++this.#runToken;
+    this.#identity = undefined;
     this.#preparationAbort?.abort();
     this.#preparationAbort = undefined;
     const transition = this.#player.stop();
     this.#playerAudibleUnsubscribe?.();
     this.#playerAudibleUnsubscribe = undefined;
-    const stopToken = ++this.#runToken;
     this.#stopTicker();
     this.#prepared.clear();
     this.#continuation = undefined;
-    this.#identity = undefined;
     this.#activeScope = undefined;
+    this.#audibleRange = undefined;
     this.#publish();
     try {
       if (transition === "cancel" && scope !== undefined) {
         await this.#client.cancel(scope);
+        await operation?.catch(() => undefined);
       } else {
         await operation?.catch(() => undefined);
         await this.#client.shutdown();
       }
     } catch {
       // Eligibility was invalidated before native containment was attempted.
+    }
+    if (this.#operation === operation) {
+      this.#operation = undefined;
     }
     if (this.#runToken !== stopToken) {
       return;
@@ -392,7 +598,6 @@ export class ProductNarrationCoordinator {
     }
     this.#scheduler = undefined;
     this.#player = undefined;
-    this.#narrationStartLocator = undefined;
     this.#terminalState = undefined;
     this.#failure = undefined;
     this.#publish();
@@ -403,9 +608,172 @@ export class ProductNarrationCoordinator {
       return;
     }
     this.#closed = true;
+    this.#playIntent = "inactive";
+    this.#clearNavigationSettlement();
+    this.#pendingNavigation = undefined;
     await this.stop();
     this.#listeners.clear();
     this.#audibleProgressListeners.clear();
+    this.#navigationListeners.clear();
+  }
+
+  #beginNavigation(
+    event: ProductNarrationNavigationEvent,
+    forceRestart = false,
+  ): PendingNavigation {
+    const existing = this.#pendingNavigation;
+    if (existing !== undefined) {
+      if (forceRestart) {
+        existing.restart = true;
+      }
+      return existing;
+    }
+    if (this.#playIntent === "inactive") {
+      throw new Error("content-free-navigation-state");
+    }
+    this.#clearNavigationSettlement();
+    this.#navigationRevision += 1;
+    const priorIntent = this.#playIntent;
+    this.#pausedNavigationState =
+      priorIntent === "paused"
+        ? this.#pausedStateFrom(this.#snapshot.state)
+        : undefined;
+    const pending: PendingNavigation = {
+      revision: this.#navigationRevision,
+      event,
+      priorIntent,
+      restart: forceRestart || priorIntent === "playing",
+      stop: Promise.resolve(),
+      target: undefined,
+    };
+    const stop = this.#stopActiveRun();
+    const active = Object.assign(pending, { stop });
+    this.#pendingNavigation = active;
+    this.#publish();
+    return active;
+  }
+
+  #schedulePassiveNavigationSettlement(revision: number): void {
+    this.#clearNavigationSettlement();
+    this.#navigationSettlementHandle = this.#setTimeout(() => {
+      this.#navigationSettlementHandle = undefined;
+      void this.#finishNavigation(revision);
+    }, PASSIVE_NAVIGATION_SETTLEMENT_MS);
+  }
+
+  #clearNavigationSettlement(): void {
+    if (this.#navigationSettlementHandle !== undefined) {
+      this.#clearTimeout(this.#navigationSettlementHandle);
+      this.#navigationSettlementHandle = undefined;
+    }
+  }
+
+  async #finishNavigation(revision: number): Promise<void> {
+    const pending = this.#pendingNavigation;
+    if (pending === undefined || pending.revision !== revision) {
+      return;
+    }
+    await pending.stop;
+    if (
+      this.#closed ||
+      this.#pendingNavigation !== pending ||
+      pending.target === undefined
+    ) {
+      return;
+    }
+    this.#clearNavigationSettlement();
+    this.#activeLocator = pending.target;
+    this.#pendingNavigation = undefined;
+    if (pending.restart) {
+      this.#playIntent = "playing";
+      this.start();
+      return;
+    }
+    this.#playIntent = "paused";
+    this.#terminalState = this.#pausedNavigationState;
+    this.#pausedNavigationState = undefined;
+    this.#publish();
+  }
+
+  #pausedStateFrom(
+    state: AdaptivePreparationUiState | undefined,
+  ): AdaptivePreparationUiState | undefined {
+    if (state === undefined) {
+      return undefined;
+    }
+    return Object.freeze({
+      ...state,
+      phase: "paused",
+      canPause: false,
+      canResume: true,
+      canStop: true,
+    });
+  }
+
+  #requestBoundaryNavigation(event: "next-segment" | "previous-segment"): void {
+    if (this.#closed || this.#playIntent === "inactive") {
+      return;
+    }
+    const currentIndex = this.#currentBoundaryIndex();
+    const targetIndex =
+      currentIndex === undefined
+        ? undefined
+        : currentIndex + (event === "previous-segment" ? -1 : 1);
+    const target =
+      targetIndex === undefined
+        ? undefined
+        : this.#knownBoundaries[targetIndex];
+    if (target === undefined) {
+      return;
+    }
+    const pending = this.#beginNavigation(event);
+    pending.target = target.start;
+    void pending.stop.then(() => {
+      if (this.#closed || this.#pendingNavigation !== pending) {
+        return;
+      }
+      const request = Object.freeze({ event, locator: target.start });
+      for (const listener of this.#navigationListeners) {
+        try {
+          listener(request);
+        } catch {
+          // Reader placement failure leaves the invalidated run contained.
+        }
+      }
+    });
+  }
+
+  #currentBoundaryIndex(): number | undefined {
+    if (this.#audibleRange !== undefined) {
+      const exact = this.#knownBoundaries.findIndex((candidate) =>
+        sameRange(candidate, this.#audibleRange!),
+      );
+      if (exact >= 0) {
+        return exact;
+      }
+    }
+    const containing = this.#knownBoundaries.findIndex((candidate) =>
+      containsLocator(candidate, this.#activeLocator),
+    );
+    return containing >= 0 ? containing : undefined;
+  }
+
+  #rememberBoundary(range: LocatorRangeV1): void {
+    if (
+      this.#knownBoundaries.some((candidate) => sameRange(candidate, range))
+    ) {
+      return;
+    }
+    this.#knownBoundaries.push(range);
+    this.#knownBoundaries.sort((left, right) =>
+      compareLocatorPosition(left.start, right.start),
+    );
+    if (this.#knownBoundaries.length > NAVIGATION_BOUNDARY_LIMIT) {
+      this.#knownBoundaries.splice(
+        0,
+        this.#knownBoundaries.length - NAVIGATION_BOUNDARY_LIMIT,
+      );
+    }
   }
 
   #requestPump(runToken: number): void {
@@ -556,6 +924,7 @@ export class ProductNarrationCoordinator {
     });
     for (const entry of entries) {
       this.#prepared.set(entry.contract.segmentId, entry);
+      this.#rememberBoundary(entry.contract.sourceRange);
     }
     scheduler.acceptPreparedBatch({
       complete: result.status === "complete",
@@ -657,6 +1026,11 @@ export class ProductNarrationCoordinator {
     this.#failure = code;
     this.#terminalState = this.#stateFromActiveOwners();
     const scope = this.#activeScope;
+    this.#runToken += 1;
+    this.#identity = undefined;
+    this.#playIntent = "inactive";
+    this.#clearNavigationSettlement();
+    this.#pendingNavigation = undefined;
     const transition = this.#player?.close();
     this.#playerAudibleUnsubscribe?.();
     this.#playerAudibleUnsubscribe = undefined;
@@ -664,10 +1038,9 @@ export class ProductNarrationCoordinator {
     this.#prepared.clear();
     this.#preparationAbort?.abort();
     this.#preparationAbort = undefined;
-    this.#identity = undefined;
     this.#continuation = undefined;
     this.#activeScope = undefined;
-    this.#runToken += 1;
+    this.#audibleRange = undefined;
     this.#publish();
     void (async () => {
       try {
@@ -735,6 +1108,11 @@ export class ProductNarrationCoordinator {
         volumePercent: player.synchronize().volumePercent,
       });
     }
+    const currentBoundaryIndex = this.#currentBoundaryIndex();
+    const navigationActive =
+      this.#playIntent !== "inactive" &&
+      this.#pendingNavigation === undefined &&
+      currentBoundaryIndex !== undefined;
     return Object.freeze({
       availability: this.#availability,
       selection: this.#selection,
@@ -749,6 +1127,14 @@ export class ProductNarrationCoordinator {
         underrunCount: this.#player?.synchronize().underrunCount ?? 0,
         acceptedAudioUnitCount: this.#acceptedAudioUnitCount,
         acceptedAudioSampleFrames: this.#acceptedAudioSampleFrames,
+      }),
+      navigation: Object.freeze({
+        playIntent: this.#playIntent,
+        settling: this.#pendingNavigation !== undefined,
+        canGoPrevious: navigationActive && currentBoundaryIndex > 0,
+        canGoNext:
+          navigationActive &&
+          currentBoundaryIndex < this.#knownBoundaries.length - 1,
       }),
     });
   }

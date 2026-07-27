@@ -3,6 +3,7 @@ import type { LocatorRangeV1, ReadingLocatorV1 } from "@voxleaf/shared";
 
 import type {
   ProductNarrationAudibleProgressObservation,
+  ProductNarrationNavigationRequest,
   ProductNarrationSnapshot,
 } from "../tts/product-narration-coordinator";
 import type { ActiveVisualLocatorResumeOptions } from "./active-visual-locator";
@@ -16,6 +17,9 @@ export interface ReaderNarrationSource {
   observe(): ProductNarrationSnapshot;
   subscribeAudibleProgress(
     listener: (observation: ProductNarrationAudibleProgressObservation) => void,
+  ): () => void;
+  subscribeNavigationRequests?(
+    listener: (request: ProductNarrationNavigationRequest) => void,
   ): () => void;
 }
 

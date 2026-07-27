@@ -781,6 +781,37 @@ button.semantic-internal-link {
   gap: 0.75rem;
 }
 
+.product-narration-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding: 0 1.25rem 1.25rem;
+}
+
+.product-narration-navigation button {
+  min-width: 0;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #52705e;
+  border-radius: 0.65rem;
+  color: #24563a;
+  background: #f4f7f2;
+  font: inherit;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.product-narration-navigation button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.product-narration-navigation button:focus-visible {
+  outline: 0.2rem solid #1d6b43;
+  outline-offset: 0.15rem;
+}
+
 .adaptive-preparation-settings {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -861,6 +892,7 @@ button.semantic-internal-link {
   .reader-preference select,
   .reader-toc,
   .reader-chapter-controls button,
+  .product-narration-navigation button,
   .semantic-raster-placeholder {
     border-color: CanvasText;
     color: CanvasText;
@@ -877,6 +909,7 @@ button.semantic-internal-link {
   .reader-toc:focus,
   .reader-toc-link:focus-visible,
   .reader-chapter-controls button:focus-visible,
+  .product-narration-navigation button:focus-visible,
   .semantic-internal-link:focus-visible,
   .semantic-document:focus,
   .semantic-document [tabindex="-1"]:focus {
@@ -926,5 +959,9 @@ button.semantic-internal-link {
 
   .reader-chapter-controls button {
     flex: 1 1 9rem;
+  }
+
+  .product-narration-navigation button {
+    flex: 1 1 12rem;
   }
 }
