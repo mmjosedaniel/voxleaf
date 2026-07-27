@@ -42,7 +42,7 @@ Until then, the current user-visible product still ends at visual reading.
 - `@voxleaf/shared` implements versioned session, narration-segment,
   audio-frame metadata, capability, buffer-status, and operational-error
   contracts plus runtime TypeScript decoders and deterministic fakes.
-- `apps/desktop` now has the M007 Milestones 1-4 Rust-owned standard-stream
+- `apps/desktop` now has the M007 Milestones 1-5 Rust-owned standard-stream
   transport, native supervisor, narrow typed commands, one-unit desktop
   client, model-free child, and native-only exact-service activation. It adds
   no plugin, general process capability, or listener.
@@ -624,9 +624,9 @@ Complete on 2026-07-27.
 
 #### Status
 
-In progress. The result-blind `tts-service-handoff-profile-v1` authority and
-closed content-safe result schema are frozen before the exact-host matrix is
-implemented or run.
+Complete on 2026-07-27. The result-blind authority was committed before the
+runner, and the first actual nine-case exact-host matrix passed without an
+automatic or diagnostic model retry.
 
 #### Frozen matrix authority
 
@@ -695,6 +695,65 @@ implemented or run.
 
   It is Windows/CUDA-only, requires the existing outbound firewall block, and
   is excluded from portable/default checks and CI.
+
+#### Actual result
+
+- The first command invocation stopped at a runner-only firewall-preflight bug
+  after the release build and before native/model launch. That non-hardware
+  outcome is retained in the progress log. After the isolated preflight fix
+  was committed, the first actual matrix attempt passed all nine cases with
+  `attemptOrdinal: 1` and `automaticRetries: 0`.
+- Service handshake/start took `466.8994` ms. Initial model load took
+  `27,290.1872` ms and warm-up took `5,564.7553` ms. Explicit
+  start/load/warm after termination had a p95 of `16,609.0194` ms.
+- The delivered neutral unit contained `11.28` seconds/`1,082,880` bytes and
+  completed in `16,071.6646` ms at RTF `1.4247929609929078`. The delivered
+  Spanish unit contained `14.88` seconds/`1,428,480` bytes and completed in
+  `21,382.9957` ms at RTF `1.4370292809139784`.
+- Command-to-first-validated-audio-metadata p95 was `21,382.4382` ms;
+  command-to-complete-unit p95 was `21,382.9957` ms. The complete waveform
+  remains the first publishable boundary; these nearly identical values are
+  not native model streaming.
+- Native move plus final validation p95 was `233.5` microseconds, negligible
+  beside generation time. This measurement excludes later WebView/player
+  buffering, which remains M008 work.
+- A third `11.44`-second complete unit was invalidated after completion but
+  before consumer delivery and contributed zero delivered bytes. The retained
+  unit blocked a second dispatch, and before-dispatch invalidation also
+  contributed zero work/audio.
+- Accepted-before-output, one-second mid-generation, child-crash, and
+  application-exit containment all delivered zero audio. Process-tree
+  termination p95 was `5.7038` ms, well inside the frozen two-second bound.
+  Every required cancellation/crash case then passed an explicit clean
+  restart and prepare.
+- Peak exact descendant resources were `4,713,615,360` RAM bytes,
+  `5,137,555,456` WDDM dedicated GPU bytes, and `81,788,928` shared GPU bytes
+  with one GPU-allocating process. All four intermediate cleanup observations
+  and final cleanup returned RAM, dedicated GPU, and shared GPU bytes to zero.
+- The runner observed zero service listeners and zero external connections
+  while the exact interpreter-bound outbound firewall rule remained enabled.
+  It persisted no generated audio or raw journal.
+- The schema-valid content-safe
+  [`service-handoff-result-v1-exact-host.json`](../../../benchmarks/tts/service-handoff-result-v1-exact-host.json)
+  has SHA-256
+  `e1821579d42e1bccf5c2a3ebaa604c8677960d0df2bdc41a96e6a8c5588c68fe`.
+  It contains no narration text, waveform/audio bytes, path, environment
+  value, PID, exception, process command, or private identity.
+- This passes exact-host complete-unit handoff, backpressure, cancellation
+  containment, cleanup, and restart only. RTF remains above one, sustainable
+  playback is not evaluated, and no native-streaming, cooperative-
+  cancellation, production-profile, or general-hardware conclusion changes.
+- Post-result validation passes on the authoritative Windows host:
+  `pnpm.cmd check:portable`, `pnpm.cmd check`, and
+  `pnpm.cmd test:native-startup`. The gates include 233 Python tests, 971
+  TypeScript/Vitest tests, six Node transport tests, 24 Rust tests, strict
+  mypy, Ruff, ESLint, Rustfmt, Clippy with warnings denied, portable builds,
+  the native release build, and the packaged WebView2 lifecycle matrix.
+- `uv lock --project
+services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --check`
+  still resolves the frozen 107-package lock. Formatting, changed-document
+  relative links, changed-content privacy, changed-path artifact, and
+  whitespace checks pass.
 
 ### Milestone 6: Record the protocol decision and close validation
 
@@ -989,6 +1048,15 @@ artifact behind.
   This pre-matrix harness failure is preserved here and is not a failed,
   retried, or hidden model/case observation. The authoritative nine-case
   hardware attempt remains unexecuted.
+- 2026-07-27: After committing the preflight fix, the first actual exact-host
+  matrix passed all nine frozen cases in 159.2 seconds including the release
+  build. Two bounded units were delivered, one complete stale unit was
+  discarded, every invalidated/crashed/exiting path delivered zero audio, all
+  required explicit reloads passed, all cleanup observations were zero, and
+  the runner observed no listener or external connection. The content-safe
+  committed result records exact timing, RTF, RAM, dedicated/shared GPU,
+  backpressure, termination, restart, cleanup, privacy, and narrow
+  conclusions without changing historical `v3`/`v5` results.
 
 ## Discoveries and decisions
 
@@ -1078,6 +1146,18 @@ artifact behind.
     reads that value directly and compares it in Python before querying the
     fixed firewall rule. The initial failure occurred before native/model
     launch and therefore produced no hardware result.
+23. Complete-unit generation dominates the handoff. The exact-host p95 first
+    metadata and complete-unit values differ by less than one millisecond,
+    while native move/final validation p95 is `233.5` microseconds. M008 must
+    schedule whole units and must not model this candidate as a stream.
+24. The two delivered units were `11.28` and `14.88` playable seconds. Either
+    can remain below the approximately 15-second quick-start target, so M008
+    must accumulate contiguous complete units and may need a second unit
+    before quick start. It cannot add a fixed timer after the threshold.
+25. Identity-first termination is fast on the exact host, but model recovery
+    is not: termination p95 is `5.7038` ms while explicit restart/prepare p95
+    is `16,609.0194` ms. M008 must represent recovery honestly rather than
+    retrying or promising immediate resumed audio.
 
 ## Final validation results
 
@@ -1248,4 +1328,5 @@ supervision path. It does not add a prepared-narration caller, scheduler,
 playback, audio persistence, cooperative model cancellation, automatic
 download, installer, production dependency, standard profile, or
 general-hardware support claim. Every Milestone 4 work item and acceptance
-gate is complete; Milestone 5's measured service-handoff matrix remains open.
+gate is complete. Milestone 5 subsequently passed its frozen exact-host
+service-handoff matrix; repository closeout remains.

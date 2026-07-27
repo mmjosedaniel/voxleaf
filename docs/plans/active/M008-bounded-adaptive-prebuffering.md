@@ -37,9 +37,10 @@ specific preparation duration.
 - `@voxleaf/epub` exposes bounded locator-linked
   `OpenedPublication.prepareNarration`; the desktop does not call it.
 - M007 is the active prerequisite plan for the constrained local TTS service
-  and process protocol. Its Milestones 1-4 implement the bounded complete-unit
-  service and exact development-only adapter, but its measured handoff matrix
-  and product narration caller remain open. No playback stream exists yet.
+  and process protocol. Its Milestones 1-5 implement and exact-host validate
+  the bounded complete-unit service and development-only adapter. Repository/
+  protocol closeout and the product narration caller remain open. No playback
+  stream exists yet.
 - ADR-0013 selects no standard TTS profile.
 - ADR-0015 permits only the exact one-GPU Qwen/Serena development-demo
   topology with bounded adaptive in-memory preparation.
@@ -56,6 +57,23 @@ specific preparation duration.
 |            10 minutes |   14.67 minutes |                                         31.4 minutes |
 
 These are exact-host estimates, not accepted UX thresholds or guarantees.
+
+The completed M007 handoff matrix adds narrower service-boundary observations:
+
+- delivered complete units were `11.28` and `14.88` playable seconds at RTF
+  `1.4247929609929078` and `1.4370292809139784`;
+- command-to-first-metadata and command-to-complete-unit p95 were both about
+  `21.38` seconds, confirming that the exact adapter exposes no useful audio
+  before a complete unit;
+- initial load plus warm required about `32.85` seconds, while explicit
+  restart/prepare p95 after termination was about `16.61` seconds;
+- termination p95 was about `5.70` ms, but terminating invalidates readiness
+  and therefore incurs the reload cost before later work; and
+- exact descendant peaks were about `4.71` GB RAM, `5.14` GB dedicated GPU
+  memory, and `81.8` MB shared GPU memory.
+
+These observations refine integration traces only. The longer `v5` aggregate
+RTF remains the planning authority for depletion arithmetic.
 
 ## Scope and non-goals
 
@@ -122,6 +140,12 @@ implemented narration-preparation boundary.
   They must remain bounded, accessible, optional, and separately measurable.
 - No buffer threshold may create an unbounded queue or fixed timer after audio
   is ready.
+- Quick start must accumulate contiguous complete units. Because one accepted
+  exact unit may contain less than 15 playable seconds, the scheduler must be
+  prepared to wait for a second unit; it cannot treat dispatch, metadata, or
+  elapsed wall time as playable lead.
+- Recovery estimates must include the measured explicit restart/prepare cost
+  after worker termination. A fast process kill is not fast model readiness.
 
 ## Milestones
 
@@ -313,6 +337,13 @@ accepted no-standard-profile decision.
   focused host diagnostic. This does not change M008's one-GPU scheduling,
   preparation, buffer, or playback scope; M007's measured handoff matrix and
   closeout remain prerequisites.
+- 2026-07-27: M007 Milestone 5 passed the first actual exact-host nine-case
+  handoff matrix. Complete units arrived only after full generation; delivered
+  units were `11.28` and `14.88` seconds, complete-unit p95 was about `21.38`
+  seconds, and restart/prepare p95 after termination was about `16.61`
+  seconds. M008 must accumulate complete units for quick start, model
+  termination and readiness separately, and retain the longer `v5` RTF for
+  sustained depletion arithmetic. M007 closeout remains a prerequisite.
 
 ## Discoveries and decisions
 
@@ -326,6 +357,12 @@ accepted no-standard-profile decision.
    lifecycle changes may not.
 5. Thirty minutes is a maximum capacity that requires simultaneous duration,
    bytes, frame/unit count, metadata, and active-work limits.
+6. First transport metadata is not playable lead for the exact candidate.
+   Playable duration enters the scheduler only after the complete validated
+   audio unit is accepted.
+7. Worker termination can be prompt while useful recovery remains slow.
+   Cancellation latency and restart/readiness latency require separate state,
+   estimates, and metrics.
 
 ## Final validation results
 
