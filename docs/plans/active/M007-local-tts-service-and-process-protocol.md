@@ -1067,6 +1067,13 @@ artifact behind.
   testing, roadmap, M008, and broad-plan documentation without changing a
   runtime contract, dependency, permission, benchmark authority, or product
   playback behavior.
+- 2026-07-27: Commit `f9d1f59` records that durable decision and the reconciled
+  documentation. Complete portable and native repository checks pass, as do
+  the packaged Windows/WebView2 startup matrix and a diagnostic rerun of the
+  exact-host Qwen/Serena service path. The authoritative Milestone 5
+  first-attempt matrix was validated from its committed result rather than
+  rerun. Final changed-scope audits and this validation record form the second
+  local closeout checkpoint.
 
 ## Discoveries and decisions
 
@@ -1183,6 +1190,12 @@ artifact behind.
 29. M008 owns the first product narration caller and multi-unit playback
     buffer. M007 closes only the one-unit service/process boundary and cannot
     be used to claim audible or sustainable playback.
+30. A first dependency-drift query flagged the expected Milestone 5 root
+    command addition because it treated every `package.json` change as a
+    dependency change. The corrected audit inspected dependency sections,
+    manifests, lockfiles, Tauri configuration, and capabilities directly.
+    It found the one documented hardware-validation script and no undeclared
+    dependency, lock, permission, or runtime-capability drift.
 
 ## Final validation results
 
@@ -1357,3 +1370,48 @@ gate is complete. Milestone 5 subsequently passed its frozen exact-host
 service-handoff matrix. Milestone 6 locally closes the protocol decision and
 repository validation; required final pull-request CI and plan archival
 remain.
+
+Milestone 6 local closeout validation completed on 2026-07-27:
+
+- `pnpm.cmd check:portable` passes with ignored workspace-local uv and
+  temporary directories. It covers formatting, linting, TypeScript/Python
+  typing, 196 shared tests, 555 EPUB tests, 220 desktop Vitest tests, six
+  Node native-driver tests, all 233 Python tests, package builds, the portable
+  desktop build, and Python source/wheel builds.
+- `pnpm.cmd check` passes under the same isolation. It additionally covers
+  Rustfmt, Clippy with warnings denied, all 24 Rust tests, and the Tauri
+  release build. The complete native gate therefore passes 1,234 automated
+  tests. Vite reports only its existing informational chunk-size warning.
+- `pnpm.cmd test:native-startup` passes outside the sandbox. The packaged
+  Windows/WebView2 matrix proves application mount, bounded fake-service
+  binary delivery, cancellation, crash recovery, restart, local-reader
+  behavior, persistence/reselection boundaries, descendant cleanup, zero
+  runtime errors, and zero external requests.
+- `pnpm.cmd test:tts:exact-host` passes outside the sandbox with the frozen
+  candidate interpreter, model root, and interpreter-bound outbound firewall
+  rule. This diagnostic rerun proves exact offline load/warm, bounded finite
+  PCM delivery, one-active rejection, identity-first process termination,
+  zero stale return, explicit reload, second delivery, and clean shutdown.
+  It does not replace or retry the committed Milestone 5 first-attempt matrix.
+- Focused validation passes 73 Python protocol/service/adapter/handoff tests,
+  24 Rust tests, 196 shared tests, and 220 desktop Vitest plus six Node
+  native-driver tests.
+- The candidate `uv lock --check` resolves the unchanged 107-package lock,
+  whose SHA-256 remains
+  `1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913`.
+- A complete M007 audit from pre-plan base `d4839a2` finds 93 changed paths and
+  17,391 added lines with no committed generated audio, model weights, output
+  artifacts, private path, personal email, credential, private-key marker, or
+  book text. All 17 changed Markdown documents have valid relative links.
+  Tauri keeps an empty capability list; historical `profile-v3`,
+  `selection-v5`, and the candidate lock remain byte-unchanged.
+- Prettier, the changed-document link scan, changed-content privacy scan,
+  changed-path artifact scan, and `git diff --check` pass on the closeout
+  documentation.
+
+No protocol version 2, new ADR, dependency, permission, listener, audio-device
+surface, persistence behavior, product narration caller, playback buffer, or
+production/general-hardware claim is justified by this closeout. M007 remains
+active only until the exact final branch head passes both required
+pull-request jobs. After that external evidence is recorded, this plan can
+move to `completed/`.
