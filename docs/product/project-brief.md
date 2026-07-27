@@ -6,7 +6,7 @@ This brief explains the intended VoxLeaf experience and the motivation behind th
 
 The normative MVP scope is in [`mvp.md`](mvp.md). Accepted technical decisions are recorded under [`../architecture/decisions/`](../architecture/decisions/), and current performance targets are in [`../architecture/performance-budget.md`](../architecture/performance-budget.md).
 
-The implemented product boundary currently includes private local EPUB ingestion, semantic visual reading/navigation, bounded display preferences, logical-position persistence, exact/nearest-valid restoration after exact-file reselection, and deterministic bounded narration-text preparation through `OpenedPublication.prepareNarration`. The package-owned narration path exhaustively projects semantic source positions, retains Unicode-code-point source spans, applies source-mapped neutral/Spanish normalization, scans and packs semantic boundaries, and emits immutable canonical locator-linked batches under fixed cancellation, close, privacy, and resource limits. Repository-authored public EPUB-to-segment and deterministic exact-bound/resource evidence validate that boundary. The Milestone 6 benchmark harness and no-viable-profile decision are also implemented as development evidence: the exact Qwen 0.6B CustomVoice and Supertonic compatibility profiles both failed frozen gates, so neither is selected. Milestone 6.1's exact Qwen 1.7B CustomVoice/Serena evaluation completed and also failed standard startup, throughput, zero-failure, and mid-generation cancellation gates. One fluent maintainer accepted its audible quality for a near-term demo. ADR-0014 permits that exact identity only for a bounded development demonstration with explicit preparation/buffering; it does not select a passing production profile, prove native streaming, or make narration currently audible. Milestone 6.2's completed `v4` arms both stopped safely before usable media and accepted `selection-v4` selects neither placement. Its separate result-blind `v5` GPU-primary/CPU-support authority, benchmark-local independent-worker mechanics, exact CPU/GPU adapter paths, and bounded replay now exist; the topology has not been run, measured, or accepted. Production Milestone 7 completion remains blocked; generated audio, playback, synchronized highlighting, general hardware profiles, and installers remain deferred. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
+The implemented product boundary currently includes private local EPUB ingestion, semantic visual reading/navigation, bounded display preferences, logical-position persistence, exact/nearest-valid restoration after exact-file reselection, and deterministic bounded narration-text preparation through `OpenedPublication.prepareNarration`. The package-owned narration path exhaustively projects semantic source positions, retains Unicode-code-point source spans, applies source-mapped neutral/Spanish normalization, scans and packs semantic boundaries, and emits immutable canonical locator-linked batches under fixed cancellation, close, privacy, and resource limits. Repository-authored public EPUB-to-segment and deterministic exact-bound/resource evidence validate that boundary. The Milestone 6 benchmark harness and no-viable-profile decision are also implemented as development evidence. Milestone 6.1's exact Qwen 1.7B CustomVoice/Serena evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates but received one-maintainer quality acceptance for a near-term demo. Milestone 6.2 rejected the shared-batch, targeted-placement, CPU-only, and independent dual-worker alternatives. Accepted `selection-v5` retains one exact GPU worker only for ADR-0015's bounded adaptive development demo; it does not select a passing standard profile, prove native streaming, or make narration currently audible. M008 plans quick-start and explicit prepared-playback modes, bounded same-identity generation during playback-only pause, truthful frontier buffering, and an approximately 30-minute in-memory ceiling. Production TTS, generated audio, playback, synchronized highlighting, general hardware profiles, and installers remain deferred. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
 
 ## Summary
 
@@ -63,15 +63,15 @@ After the user selects an EPUB, VoxLeaf should:
 
 ### Starting and continuing narration
 
-After the user presses play, VoxLeaf should load and warm the selected local model when necessary, normalize a narration-only representation of the text, and generate a bounded initial audio buffer. Playback should start as soon as approximately 15 seconds of playable narration is available. This is a media-duration threshold, not a fixed 15-second timer: if the model produces the initial audio in three seconds, playback should begin in about three seconds.
+After the user presses play, VoxLeaf should load and warm the selected local model when necessary, normalize a narration-only representation of the text, and generate a bounded initial audio buffer. Quick start should begin as soon as approximately 15 seconds of playable narration is available. This is a media-duration threshold, not a fixed 15-second timer. A separate explicit prepared-playback mode may target 1, 2, 5, or 10 playable minutes before starting; its progress and estimate must be visible.
 
-While the reader consumes one segment, later segments should be prepared and generated in the background. Generation should react to buffer health: prioritize responsiveness when audio is low, maintain a useful reserve when healthy, and stop speculative work when the buffer is full.
+While the reader consumes one segment, later segments should be prepared and generated in the background. Generation should react to buffer health: prioritize responsiveness when audio is low, maintain a useful reserve when healthy, and stop speculative work at the simultaneous approximately 30-minute playable-audio ceiling. If the reader nears the generation frontier, the UI should warn before representing exhaustion as buffering. Optional one- to three-second waits at eligible paragraph or chapter boundaries may reduce frontier pressure but must not be presented as real-time generation.
 
 Loading, generating, buffering, playing, paused, and error states should be distinguishable and understandable to a nontechnical user.
 
 ### Pausing and navigating
 
-Pause should stop audible playback promptly and prevent uncontrolled future generation. Resume should continue from retained valid state when possible rather than rebuilding the complete chapter.
+Pause should stop audible playback promptly. A playback-only pause may continue bounded generation for the same active identity so resume can use a larger valid lead. Explicit stop, seek, chapter, voice, model, book, session replacement, and application exit must cancel or supersede invalid work and release obsolete audio.
 
 The user should be able to select a chapter or paragraph, move forward or backward, and return to a saved position. Starting narration should use the active visual reading position. During narration, the page containing the spoken passage should remain visible and the active paragraph should be highlighted. Any position, chapter, voice, model, book, or session change that invalidates queued work must prevent obsolete audio from reaching playback, even if the underlying inference cannot stop immediately.
 
@@ -108,24 +108,27 @@ The implemented persisted reader state retains only bounded exact-byte identity,
 Accepted implementation choices, rejected evaluated profiles, and still-deferred
 directions are separated below:
 
-| Area | Status | Direction or evaluated candidate | Remaining validation |
-| --- | --- | --- | --- |
-| Desktop | Implemented | Tauri 2, React, TypeScript, and Vite | Installer, signing, and release-platform validation remain Milestone 11 |
-| TTS process | Deferred; constrained demo permitted | Future persistent local process | ADR-0014 permits a development-only Qwen demo path; production lifecycle, transport, recovery, and continuous playback still require passing evidence |
-| Balanced model | Rejected exact profile | Qwen3-TTS 0.6B CustomVoice, Aiden, CUDA bfloat16/SDPA | Failed startup, throughput, cancellation, zero-failure, and complete-quality gates |
-| Compatibility model | Rejected exact profile | Supertonic 3, F1, Spanish mode, ONNX Runtime CPU | Failed first-audio, cancellation, zero-failure, and complete-quality gates |
-| Blocker-resolution candidate | Standard `v3` failed; constrained demo direction accepted | Qwen3-TTS 12Hz 1.7B CustomVoice, Serena, neutral Spanish audiobook instruction, CUDA bfloat16/SDPA | Record the exact failure and constrain any demo to complete bounded units, explicit preparation/buffering, one queued unit, identity-first cancellation, and no persistence |
-| Dual-worker scheduling experiment | Authority and model-free benchmark mechanics implemented inside active Milestone 6.2; not accepted runtime | One exact GPU-primary Qwen worker plus one separately loaded CPU-only float32 support worker; approximately 8-16-second complete units; approximately 15-second startup; five-minute bounded maximum | Execute the frozen CPU-solo and concurrent matrices; prove actual CPU-only placement, aggregate RTF, GPU contention, ordered playback, RAM/commit/VRAM safety, cancellation, and cleanup |
-| Built-in speaker and demo quality | Maintainer accepted for demo only | Serena selected by the frozen intake screen; one fluent maintainer later scored the 12-case panel 4.2667/5 with three meaning-changing defects | One maintainer is sufficient for future MVP demo feedback; historical `v3` remains non-promotable and no standard quality pass is claimed |
-| Base voice cloning | Outside current MVP | Qwen3-TTS 1.7B Base ICL/x-vector modes require user reference audio | Retained only as related-runtime prototype evidence; no enrollment, clone prompt, or reference-data path is planned |
-| OpenAI Whisper | Rejected as TTS candidate | Automatic speech recognition: audio input and text output | Optional fully local benchmark-only transcription may be assessed separately; it cannot generate narration or replace human quality review |
-| Process transport | Unselected | Typed local IPC, standard streams, local socket, or loopback WebSocket | Deferred until a viable engine exposes real output and cancellation behavior |
-| Internal audio | Unselected | Streamed PCM with a bounded ring buffer | Browser and platform support, memory, playback quality, and speed control |
-| Playback mechanism | Unselected | AudioWorklet or an equivalent low-level mechanism | Stable streaming, underrun observability, packaging, and testability |
+| Area                              | Status                                                    | Direction or evaluated candidate                                                                                                                  | Remaining validation                                                                                                                                                               |
+| --------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop                           | Implemented                                               | Tauri 2, React, TypeScript, and Vite                                                                                                              | Installer, signing, and release-platform validation remain Milestone 11                                                                                                            |
+| TTS process                       | Deferred; constrained demo planned                        | Future persistent local process                                                                                                                   | ADR-0015 permits a one-GPU bounded adaptive demo path; production lifecycle, transport, recovery, continuous playback, and general hardware support still require passing evidence |
+| Balanced model                    | Rejected exact profile                                    | Qwen3-TTS 0.6B CustomVoice, Aiden, CUDA bfloat16/SDPA                                                                                             | Failed startup, throughput, cancellation, zero-failure, and complete-quality gates                                                                                                 |
+| Compatibility model               | Rejected exact profile                                    | Supertonic 3, F1, Spanish mode, ONNX Runtime CPU                                                                                                  | Failed first-audio, cancellation, zero-failure, and complete-quality gates                                                                                                         |
+| Blocker-resolution candidate      | Standard `v3` failed; constrained demo direction accepted | Qwen3-TTS 12Hz 1.7B CustomVoice, Serena, neutral Spanish audiobook instruction, one CUDA bfloat16/SDPA worker                                     | Implement ADR-0015's quick-start/prepared modes, bounded cancellation, truthful frontier buffering, and no persistence without claiming a passing standard profile                 |
+| Dual-worker scheduling experiment | Rejected by `selection-v5`                                | One GPU-primary Qwen worker plus one separately loaded CPU-only float32 support worker                                                            | CPU solo was too slow; low-load concurrency improved aggregate RTF by only about 2.6%, substantially slowed the GPU worker, and increased memory and operational risk              |
+| Adaptive demo buffering           | Approved plan; not implemented                            | One GPU worker, approximately 8-16-second complete units, quick start or explicit 1-/2-/5-/10-minute preparation, approximately 30-minute ceiling | Freeze exact queue/byte/work thresholds, implement M008, and validate startup, frontier behavior, pause continuation, invalidation, memory, and accessibility                      |
+| Built-in speaker and demo quality | Maintainer accepted for demo only                         | Serena selected by the frozen intake screen; one fluent maintainer later scored the 12-case panel 4.2667/5 with three meaning-changing defects    | One maintainer is sufficient for future MVP demo feedback; historical `v3` remains non-promotable and no standard quality pass is claimed                                          |
+| Base voice cloning                | Outside current MVP                                       | Qwen3-TTS 1.7B Base ICL/x-vector modes require user reference audio                                                                               | Retained only as related-runtime prototype evidence; no enrollment, clone prompt, or reference-data path is planned                                                                |
+| OpenAI Whisper                    | Rejected as TTS candidate                                 | Automatic speech recognition: audio input and text output                                                                                         | Optional fully local benchmark-only transcription may be assessed separately; it cannot generate narration or replace human quality review                                         |
+| Process transport                 | Unselected                                                | Typed local IPC, standard streams, local socket, or loopback WebSocket                                                                            | Deferred until a viable engine exposes real output and cancellation behavior                                                                                                       |
+| Internal audio                    | Unselected                                                | Streamed PCM with a bounded ring buffer                                                                                                           | Browser and platform support, memory, playback quality, and speed control                                                                                                          |
+| Playback mechanism                | Unselected                                                | AudioWorklet or an equivalent low-level mechanism                                                                                                 | Stable streaming, underrun observability, packaging, and testability                                                                                                               |
 
-ADR-0013 records the standard rejection evidence. ADR-0014 permits only the
-exact constrained Qwen development-demo exception while retaining the
-production viability blocker. The
+ADR-0013 records the standard rejection evidence. ADR-0015 supersedes
+ADR-0014's scheduling and buffering details, rejects CPU and dual-worker
+product paths, and permits only the exact one-GPU constrained Qwen
+development-demo exception while retaining the production viability blocker.
+The
 [Milestone 6.1 plan](../plans/completed/M006-001-local-tts-profile-blocker-resolution.md)
 records the official Qwen/Whisper research and completed evaluation. Serena is a
 development-demo direction, not a passing production profile. The MVP uses a
@@ -142,16 +145,19 @@ not from this brief.
 
 ## Concurrency and cancellation principles
 
-The accepted constrained-demo design still assumes one active reading session
-and one TTS inference worker. Pipeline stages may overlap—UI rendering, CPU
-text preparation, model inference, and audio playback—but multiple
-simultaneous model generations must not enter product runtime without evidence
-that they improve the experience. The active Milestone 6.2 ExecPlan now owns
-that evidence attempt: one GPU-primary worker and one fully CPU-only support
-worker under a separately frozen authority. Planning that experiment does not
-amend ADR-0014 or approve the topology.
+The accepted constrained-demo design assumes one active reading session and one
+GPU TTS inference worker. Pipeline stages may overlap—UI rendering, CPU text
+preparation, model inference, and audio playback—but multiple model instances
+must not enter product runtime. Milestone 6.2 found that a CPU support worker
+added only a small aggregate gain while substantially slowing the GPU worker
+and increasing memory sensitivity. ADR-0015 therefore selects one GPU worker
+for the demo plan.
 
-Every request and audio frame must carry enough session and generation identity to reject stale work. Queues and buffers require explicit limits. Closing a book or replacing a session must release its resources.
+Every request and audio frame must carry enough session and generation identity
+to reject stale work. Queues and buffers require explicit limits. A
+playback-only pause may continue bounded same-identity generation, but explicit
+stop, navigation or settings changes, closing a book, replacing a session, and
+application exit must release invalid work and audio.
 
 ## Success measures
 

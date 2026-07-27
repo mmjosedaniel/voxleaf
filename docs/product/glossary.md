@@ -8,9 +8,33 @@ A future bounded in-memory queue of generated audio waiting to be played. Shared
 
 The future duration of playable narration held in memory before playback begins. The MVP target is approximately 15 seconds of audio; it is not a 15-second wall-clock timer.
 
+## Quick start
+
+The planned playback mode that starts as soon as approximately 15 seconds of playable audio is ready, or a complete shorter remaining range is ready. It adds no fixed wall-clock delay.
+
+## Prepared playback
+
+The planned explicit mode that waits for a selected 1-, 2-, 5-, or 10-minute playable-audio preparation target before starting. It must show progress and an estimate and is not the default quick-start behavior.
+
+## Preparation target
+
+The amount of playable audio requested before prepared playback starts. It is distinct from the maximum buffer ceiling and may be shortened by the end of the selected narration range.
+
+## Maximum audio buffer
+
+The greatest simultaneous playable-audio duration that may be retained in memory. ADR-0015 approves an approximately 30-minute ceiling for the constrained demo plan; this is not a startup target or uninterrupted-playback guarantee.
+
 ## Buffer underrun
 
 A moment when playback needs audio but the buffer is empty.
+
+## Adaptive boundary wait
+
+An optional planned one- to three-second intentional pause at an eligible paragraph or chapter boundary when buffer health is low. It is measured separately from involuntary buffering and cannot make a slower-than-real-time model sustainable.
+
+## Playback-only pause
+
+A pause that stops audible playback without invalidating the active narration identity. Under ADR-0015, bounded generation may continue until the buffer ceiling; explicit stop or an invalidating navigation/settings/session action still cancels obsolete work.
 
 ## Chunk
 

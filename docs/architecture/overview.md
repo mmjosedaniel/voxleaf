@@ -2,18 +2,14 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 6 are complete. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop connects its capability-free local-file selection/read boundary to a UI-independent publication-session owner, presents one accessible idle/opening/ready/empty/failure/closing lifecycle surface, contains presentation failures, and renders the active spine document's supported text plus bounded static raster images through an exhaustive application-owned semantic React reader. Its continuous responsive layout, closed display preferences, bounded incremental large-chapter policy, passive logical-position tracking, viewport/preference reflow preservation, versioned bounded local reader-state repository, lifecycle-aware save coordinator, and exact/nearest-valid open restoration are implemented without publisher styling. A user can open, read, navigate, adjust the visual reader without losing the active logical passage, and explicitly close a supported publication; validated position and preference changes are saved locally on the approved bounded lifecycle and restored after exact-file reselection. Milestone 5 narration preparation is implemented and documented: `@voxleaf/epub` owns exhaustive narration source projection, Unicode-code-point source-span tokens, bounded canonical source windows/lifecycle, deterministic source-mapped neutral/Spanish normalization, normalization invariants/privacy tests, sentence/dialogue/clause/protected-token scanning, cancellable profile-bounded block-local semantic packing with oversized-token hardening, immutable canonical locator-linked prepared segments, the public frozen closed `OpenedPublication.prepareNarration` batch operation, repository-authored public EPUB-to-segment integration evidence, and deterministic exact-bound/resource evidence. Task 6.2 records successful local and pull-request validation. Milestone 6 implements and validates the candidate-neutral feasibility harness and accepts ADR-0013's explicit no-viable-profile decision after both exact candidates fail frozen role gates. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation completed and failed startup, throughput, zero-failure, and mid-generation cancellation gates. One fluent maintainer accepted the audible quality for a near-term demo, so ADR-0014 permits only a bounded development-demo exception with complete units, explicit preparation/buffering, and no persistence or real-time claim. Milestone 6.2 is active. Its development-only `v4` full-GPU and targeted speech-tokenizer CPU results both stopped on the frozen zero-shared-GPU-memory rule before producing throughput, playback, or reviewable audio evidence. Accepted `selection-v4` selects neither placement and records that the targeted component move was not an independent CPU worker. The separate result-blind `v5` authority, benchmark-local independent-worker controller, exact CPU/GPU Qwen adapter paths, bounded ordered replay, and reviewed command surface now exist; no pilot or official result exists. Base voice cloning, Whisper, and VAD/energy remain excluded. No production desktop module calls `prepareNarration`; TTS engine integration, buffering, playback, and synchronization require later implementation evidence. The production Python area remains a foundation only. A constrained demo path may now be planned, while standard production graduation remains blocked pending viable evidence.
+Mixed implementation status. Roadmap Milestones 1 through 6 are complete. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop connects its capability-free local-file selection/read boundary to a UI-independent publication-session owner, presents one accessible idle/opening/ready/empty/failure/closing lifecycle surface, contains presentation failures, and renders the active spine document's supported text plus bounded static raster images through an exhaustive application-owned semantic React reader. Its continuous responsive layout, closed display preferences, bounded incremental large-chapter policy, passive logical-position tracking, viewport/preference reflow preservation, versioned bounded local reader-state repository, lifecycle-aware save coordinator, and exact/nearest-valid open restoration are implemented without publisher styling. A user can open, read, navigate, adjust the visual reader without losing the active logical passage, and explicitly close a supported publication; validated position and preference changes are saved locally on the approved bounded lifecycle and restored after exact-file reselection. Milestone 5 narration preparation is implemented and documented: `@voxleaf/epub` owns exhaustive narration source projection, Unicode-code-point source-span tokens, bounded canonical source windows/lifecycle, deterministic source-mapped neutral/Spanish normalization, normalization invariants/privacy tests, sentence/dialogue/clause/protected-token scanning, cancellable profile-bounded block-local semantic packing with oversized-token hardening, immutable canonical locator-linked prepared segments, the public frozen closed `OpenedPublication.prepareNarration` batch operation, repository-authored public EPUB-to-segment integration evidence, and deterministic exact-bound/resource evidence. Milestone 6 implements and validates the candidate-neutral feasibility harness and accepts ADR-0013's explicit no-viable-profile decision after both exact candidates fail frozen role gates. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation completed and failed startup, throughput, zero-failure, and mid-generation cancellation gates. Milestone 6.2 later rejected shared-model batching, targeted tokenizer placement, CPU-only generation, and the independent GPU-primary/CPU-support topology. Accepted `selection-v5` retains the exact single-GPU candidate only for a constrained development demo. ADR-0015 supersedes ADR-0014's scheduling and buffering details and approves planning for quick start or explicit prepared playback, one GPU worker, bounded generation during playback-only pause, truthful frontier buffering, and an approximately 30-minute in-memory ceiling. Base voice cloning, Whisper, and VAD/energy remain excluded. No production desktop module calls `prepareNarration`; TTS engine integration, buffering, playback, and synchronization require later implementation evidence. The production Python area remains a foundation only, and standard production graduation remains blocked pending viable evidence.
 
-Pending Milestone 6.2 work preserves that `v4` failure and executes the
-separately frozen and implemented `v5` evidence path. It will test one GPU-primary model
-process plus one complete CPU-only float32 support process,
-approximately 8-16-second target units, the unchanged approximately 15-second
-startup gate, and an experimental five-minute maximum bounded simultaneously
-by playable duration, complete units, PCM bytes, and active work. The
-authority, model-free enforcement, benchmark mechanics, and non-promotable
-command surface exist; no `v5` pilot, official result, or topology decision
-exists, and the plan does not amend ADR-0014's
-accepted one-worker constrained demo.
+M006-002 remains active only for Milestone 10 validation and required
+pull-request CI. The M008 ExecPlan owns the unimplemented adaptive-buffering
+follow-up. Its approved modes preserve the approximately 15-playable-second
+quick-start rule and add explicit 1-, 2-, 5-, or 10-minute prepared-playback
+targets. The 30-minute value is a simultaneous capacity ceiling, not a startup
+wait, real-time claim, or uninterrupted-playback guarantee.
 
 [`system-diagram.md`](system-diagram.md) is the canonical visual map and status legend. This overview owns the accompanying architectural rationale, invariants, and detailed implemented-boundary notes.
 
@@ -63,8 +59,10 @@ Local TTS service
 |-- Python package/version scaffold [foundation only]
 |-- Candidate-neutral feasibility harness and no-profile decision
 |   [implemented development evidence; not production runtime]
-|-- Shared-model v4 safety results and independent dual-worker v5 benchmark
-|   [development evidence/mechanics only; no product runtime or v5 result]
+|-- Shared-model v4 and independent dual-worker v5 benchmark
+|   [completed development evidence; both scheduling alternatives rejected]
+|-- One-GPU adaptive demo scheduler and bounded playback policy
+|   [approved plan only; not product runtime]
 `-- Engine, process protocol, inference, cancellation,
     audio framing, and metrics [blocked/deferred to Milestone 7]
 ```
@@ -102,8 +100,8 @@ The public EPUB package currently implements the in-memory validation, parsing, 
 6. **Implemented — Milestone 5:** Exhaustively project narratable source units and structural boundaries from immutable located safe semantics, map every source position to an immutable locator-valid Unicode-code-point span, consume that mapping through bounded canonical source windows with close-linked cancellation/continuation, normalize the accepted neutral/Spanish forms, scan deterministic source-offset sentence/dialogue/clause/protected-token boundaries, pack cancellable block-local stable source-offset segments under the accepted profile with fixed oversized-token behavior, and finalize immutable canonical locator-linked prepared segments without changing the displayed representation.
 7. **Implemented — Milestone 5:** Emit bounded public prepared-segment batches with stable locator ranges and deterministic resource evidence.
 8. **Deferred — Milestone 7:** Attach prepared text/ranges to session, generation, and TTS-request identity at the later process boundary.
-9. **Blocked/deferred — Milestones 7-8:** ADR-0013 records that the completed Milestone 6 selection cycle chose no viable engine. A newly frozen evaluation must select one before Milestone 7 can implement local inference and Milestone 8 can start playback immediately when approximately 15 seconds of playable audio is ready.
-10. **Deferred — Milestones 8-9:** Generate later audio while the player consumes buffered frames and the reader keeps the narrated passage visible.
+9. **Approved plan; not implemented — Milestones 7-8:** ADR-0013 retains the standard-profile blocker, while ADR-0015 permits one exact GPU worker only for a constrained demo. Quick start begins at approximately 15 playable seconds; explicit prepared playback may target 1, 2, 5, or 10 minutes.
+10. **Deferred — Milestones 8-9:** Generate later audio while the player consumes buffered frames or is paused without invalidation, stop at the approximately 30-minute ceiling, warn near the generation frontier, and keep the narrated passage visible.
 11. **Deferred — Milestones 8-9:** Discard played frames and stale session work.
 12. **Implemented for reader state:** Persist the logical reading locator, not a rendered page number or generated audio. Generated-audio persistence remains prohibited future behavior unless a separate product/privacy decision approves it.
 
@@ -134,9 +132,12 @@ The accepted limits evidence publishes only measurements and content-free outcom
 - The visible reading location, narration start, highlighting, and saved progress refer to the same logical EPUB position.
 - Reflow does not change the logical reading position.
 - The initial 15-second target represents buffered playable audio, never a fixed startup timer.
+- Explicit prepared playback is distinct from quick start and exposes its target, progress, and estimate.
+- Playback-only pause may continue bounded same-identity generation; explicit stop and invalidating actions still cancel obsolete work.
 - Book text is never written to logs.
 - Derived narration text is not written to logs, analytics, persisted progress, benchmark summaries, or content-bearing diagnostics.
 - The generation queue and audio buffer are bounded.
+- The constrained demo's simultaneous playable-audio ceiling is approximately 30 minutes and must also be bounded by complete units, payload bytes, prepared text, and active work.
 - Network access is not required for normal reading.
 - Cancelled work cannot later re-enter the active playback queue.
 - Generated audio is not persisted unless a future explicit feature and privacy review permit it.

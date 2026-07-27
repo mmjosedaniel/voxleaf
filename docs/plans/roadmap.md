@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 6.1 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. ADR-0014 permits that exact profile only for a bounded development demo after one fluent maintainer accepted its audible quality. Milestone 6.2 is in progress: its `v4` arms stopped safely and accepted `selection-v4` selects neither placement. Milestone 8 has now executed the separate `v5` authority. CPU solo passed bounded admission at aggregate RTF 2.999, GPU solo measured aggregate RTF 1.467, and the hash-bound concurrent GPU-primary/CPU-support arm stopped at `resource-limit` before promotable result creation. Milestone 9 is not admitted; Milestone 10 must record the final decision. ADR-0014 remains the sole accepted runtime exception, and production completion remains blocked until new evidence or an explicit later acceptance change resolves continuous playback, cancellation, hardware, and packaging. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 6.1 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. Milestone 6.2 has reached its local decision checkpoint. CPU solo measured aggregate RTF 2.999, GPU solo measured aggregate RTF 1.467, the official concurrent run stopped at `resource-limit`, and a low-application-load diagnostic later completed both workers at aggregate RTF 1.429 while slowing the GPU worker to RTF 2.329. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains one exact GPU worker only for a constrained development demo. ADR-0015 supersedes ADR-0014's scheduling and buffering details and approves the M008 plan for quick-start or explicit prepared playback, bounded generation during playback-only pause, truthful frontier buffering, and an approximately 30-minute in-memory ceiling. M006-002 remains active until final local validation and required pull-request CI. No standard profile, production runtime, continuous-playback guarantee, or general hardware support is approved. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -221,8 +221,9 @@ Milestone 1 supplies the isolated Python foundation. Milestone 2 supplies capabi
 extended the candidate-neutral benchmark. Milestone 4 completed the official
 matrix: resource/offline/audit gates passed, while startup, throughput,
 zero-failure, and three mid-generation cancellation gates failed. One fluent
-maintainer accepted audible quality for a near-term demo; ADR-0014 permits only
-a constrained development-demo exception. Milestone 5 is complete:
+maintainer accepted audible quality for a near-term demo; ADR-0014 originally
+permitted only a constrained development-demo exception, and ADR-0015 now
+supersedes its scheduling and buffering details. Milestone 5 is complete:
 [`selection-v3`](../../benchmarks/tts/selection-v3.md) retains the failed
 standard blocker and separately records that exact demo exception. Milestone 6
 local deterministic, candidate-import, repository/privacy, portable, and
@@ -263,7 +264,7 @@ or protocol work begins.
   Whisper runtime may be considered only as an optional benchmark ASR aid and
   cannot replace fluent-Spanish human quality review.
 - Preserve the failed standard result and retain the production blocker.
-  ADR-0014 separately permits the exact profile only for a bounded
+  ADR-0015 now permits the exact profile only as one GPU worker for a bounded
   development-demo path with no real-time or continuous-playback claim.
 
 ### Dependencies
@@ -292,7 +293,8 @@ built-in-speaker result and pre-result `v3` authority.
 
 ## Milestone 6.2: Prove Qwen short-segment and dual-worker feasibility
 
-**Status:** In progress. Milestones 1 through 8 completed on 2026-07-26. The
+**Status:** Local decision complete; repository closeout in progress. Milestones
+1 through 8 completed on 2026-07-26. The
 [Milestone 6.2 ExecPlan](active/M006-002-qwen-short-segment-batch-feasibility.md)
 has the byte-frozen `v4` authority, bounded mechanics, and schema-valid
 full-GPU plus targeted-CPU results. Both official arms observed 79,691,776
@@ -305,17 +307,20 @@ versioned `v5` authority and model-free guards. Milestone 7 implements the
 independent GPU-primary/CPU-support benchmark mechanics, exact adapter paths,
 bounded replay, and reviewed command surface. Milestone 8 records passing
 CPU-solo admission, a slower-than-real-time GPU baseline, and a concurrent
-`resource-limit` stop. Milestone 9 is not admitted; Milestone 10 owns the final
-decision. This work does not change failed batch-one `v3`, frozen `v4`,
-ADR-0013, or ADR-0014.
+`resource-limit` stop. The low-load diagnostic later completed but supplied
+only a 2.6% aggregate gain while substantially slowing the GPU worker.
+Milestone 9 is not admitted. Milestone 10 records accepted `selection-v5` and
+ADR-0015; local validation and required pull-request CI remain before the
+ExecPlan moves to completed. This work does not change failed batch-one `v3`,
+frozen `v4`, or ADR-0013.
 
 ### Goal
 
 Determine whether the exact Qwen/Serena candidate can keep a bounded playback
 simulation supplied. The completed `v4` stage tested one resident model
 generating two ordered short semantic units in one shared-model batch. The
-frozen `v5` stage tests one full-GPU primary worker plus one separately loaded
-CPU-only float32 support worker.
+completed `v5` stage tested one full-GPU primary worker plus one separately
+loaded CPU-only float32 support worker. Neither topology is accepted.
 
 ### Expected outcome
 
@@ -341,6 +346,9 @@ CPU-only float32 support worker.
   28,800,000 bytes of 24 kHz mono float32 PCM, and one active unit per worker.
   Five minutes is a capacity ceiling, not a required startup wait or proof of
   sustainable generation.
+- `selection-v5` rejects CPU-only and dual-worker product scheduling. ADR-0015
+  retains one exact GPU worker only for a bounded adaptive development demo and
+  delegates implementation to M008.
 
 ### Dependencies
 
@@ -376,9 +384,10 @@ work.
 
 ## Milestone 7: Implement the local TTS service and process protocol
 
-**Status:** Constrained development demo permitted; production completion
-blocked. ADR-0014 permits a focused Qwen/Serena demo plan around complete
-bounded units and worker termination. ADR-0013 still records that no standard
+**Status:** Constrained one-GPU development demo planned; production completion
+blocked. ADR-0015 permits a focused Qwen/Serena demo plan around complete
+bounded units, explicit preparation, bounded adaptive buffering, and
+identity-first worker termination. ADR-0013 still records that no standard
 profile passed, so continuous playback, general hardware support, packaging,
 and production graduation require later evidence.
 
@@ -402,13 +411,11 @@ Run the selected TTS engines behind a secure, typed, cancellable local process b
 ### Dependencies
 
 Milestone 2 defines shared contracts. Milestone 6 supplies the evaluation
-authority but its first cycle selected no viable engine. Milestone 6.1 permits
-only the constrained ADR-0014 development-demo input. Milestone 6.2 has frozen
-and executed its failed `v4` authority, selected neither placement, and
-implemented the independent `v5` dual-worker benchmark under its frozen
-authority before measurement. It remains evidence work before any
-continuous-playback or standard-profile claim. Milestone 1 supplies process
-and packaging foundations.
+authority but its first cycle selected no viable engine. Milestone 6.2's
+accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains
+one exact GPU worker only for ADR-0015's constrained demo. It remains evidence
+work before any continuous-playback or standard-profile claim. Milestone 1
+supplies process and packaging foundations.
 
 ### Major risks and unknowns
 
@@ -419,7 +426,11 @@ and packaging foundations.
 
 ## Milestone 8: Build bounded audio playback and scheduling
 
-**Status:** Deferred. Shared audio/buffer contracts and deterministic fakes exist, but no production queue, audio payload, player, startup gate, or underrun instrumentation does.
+**Status:** Approved plan; implementation not started. Shared audio/buffer
+contracts and deterministic fakes exist, but no production queue, audio
+payload, player, startup gate, adaptive scheduler, or underrun instrumentation
+does. Follow
+[`M008-bounded-adaptive-prebuffering.md`](active/M008-bounded-adaptive-prebuffering.md).
 
 ### Goal
 
@@ -429,21 +440,41 @@ Create a model-independent in-memory producer-consumer pipeline that starts prom
 
 - A low-level audio player consumes framed PCM or another validated internal format from a bounded buffer outside React state.
 - Initial playback starts immediately when approximately 15 seconds of valid playable audio is ready, or when a complete shorter remaining range is ready.
-- Low, target, and maximum buffer thresholds control generation and backpressure.
+- The user may explicitly request a prepared-playback target of 1, 2, 5, or 10
+  playable minutes with visible progress and an estimate.
+- Low, target, and maximum buffer thresholds control generation and
+  backpressure, with an approximately 30-minute simultaneous playable-audio
+  ceiling.
 - Played, cancelled, and stale frames are discarded and never persisted.
 - Each selected-profile audio unit can enter the bounded queue immediately
   without requiring paragraph/chapter joining or a persistent audio cache.
-- Pause, resume, flush, volume, supported speed control, buffering state, and underrun measurements work with deterministic fake audio before real-model integration.
+- Playback-only pause may continue bounded generation for the same active
+  identity. Explicit stop and navigation, settings, book, session, or exit
+  invalidation cancel obsolete work.
+- Low-buffer warnings, truthful frontier buffering, and optional measurable
+  one- to three-second eligible paragraph/chapter waits work with deterministic
+  fake audio before real-model integration.
+- Pause, resume, flush, volume, supported speed control, buffering state, and
+  underrun measurements work with deterministic fake audio before real-model
+  integration.
 
 ### Dependencies
 
-Milestone 2 provides audio and session contracts. Milestone 7 provides the production audio stream, but most playback behavior should first be proven with deterministic fakes.
+Milestone 2 provides audio and session contracts. ADR-0015 and M006-002 provide
+the selected constrained-demo scheduling authority. Milestone 7 provides the
+production audio stream, but most playback behavior should first be proven with
+deterministic fakes.
 
 ### Major risks and unknowns
 
 - Select and validate AudioWorklet or an equivalent playback mechanism.
 - Choose the internal audio format and conversion ownership.
 - Define the "shorter remaining range" used by the startup gate.
+- Freeze exact low/target/maximum duration, complete-unit, payload-byte,
+  prepared-text, and active-work bounds without treating 30 minutes as a
+  startup target.
+- Ensure adaptive waits never hide involuntary buffering or create an
+  inaccessible playback state.
 - Playback speed may require time stretching rather than changing sample rate.
 - Browser, WebView, native shell, and OS audio behavior may differ under load or background operation.
 
@@ -545,9 +576,9 @@ The following decisions should be made when evidence is available, not assumed s
 1. **Desktop stack gate:** validate and adopt the desktop framework, workspace, package manager, and supported development environments during Milestone 1.
 2. **EPUB gate:** validate archive limits, sanitization, rendering isolation, locator round-tripping, and dependency licensing before completing Milestone 3.
 3. **Persistence gate:** ADR-0011 selects bounded WebView `localStorage`, separate versioned position/preference envelopes, save lifecycle, and desktop-owned migration; implement and validate that boundary before completing Milestone 4.
-4. **TTS gate:** the completed Milestone 6 cycle and failed Milestone 6.1 `v3` matrix select no standard passing profile. ADR-0014 permits only an exact constrained development-demo slice. Milestone 6.2's `v4` arms stopped without usable media; its `v5` CPU arm passed bounded admission and GPU baseline completed, but concurrent execution stopped at `resource-limit`. No dual-worker topology is accepted. A production role must still pass every applicable gate or receive a separate explicit acceptance decision before production graduation.
+4. **TTS gate:** the completed Milestone 6 cycle and failed Milestone 6.1 `v3` matrix select no standard passing profile. Milestone 6.2 rejects CPU-only and dual-worker scheduling. ADR-0015 permits only one exact GPU worker for a bounded adaptive development demo. A production role must still pass every applicable gate or receive a separate explicit acceptance decision before production graduation.
 5. **Protocol gate:** record transport, framing, backpressure, and local exposure decisions before completing Milestone 7.
-6. **Audio gate:** record internal audio format, playback mechanism, speed-control behavior, and the short-range startup rule before completing Milestone 8.
+6. **Audio gate:** before completing Milestone 8, record the internal audio format, playback mechanism, speed-control behavior, quick-start and prepared-playback rules, exact low/target/maximum bounds, playback-only pause semantics, frontier warning/buffering policy, and adaptive-boundary-wait policy.
 7. **Interaction gate:** define manual navigation during active narration before completing Milestone 9.
 8. **Release gate:** define supported hardware and wall-clock startup expectations from measured results before release.
 
@@ -555,7 +586,9 @@ Durable decisions belong in architecture decision records. Temporary implementat
 
 ## Relationship to existing plans
 
-[`completed/M004-reflowable-visual-reader-and-position-restoration.md`](completed/M004-reflowable-visual-reader-and-position-restoration.md), [`completed/M005-narration-text-preparation.md`](completed/M005-narration-text-preparation.md), [`completed/M006-local-tts-feasibility-and-engine-profiles.md`](completed/M006-local-tts-feasibility-and-engine-profiles.md), and [`completed/M006-001-local-tts-profile-blocker-resolution.md`](completed/M006-001-local-tts-profile-blocker-resolution.md) record the implementation authority and validation evidence for Milestones 4 through 6.1. Milestone 6 supplies development evidence and a no-viable-profile decision; Milestone 6.1 retains the standard blocker and permits Serena only under ADR-0014's constrained demo exception. Neither plan implements production TTS.
+[`completed/M004-reflowable-visual-reader-and-position-restoration.md`](completed/M004-reflowable-visual-reader-and-position-restoration.md), [`completed/M005-narration-text-preparation.md`](completed/M005-narration-text-preparation.md), [`completed/M006-local-tts-feasibility-and-engine-profiles.md`](completed/M006-local-tts-feasibility-and-engine-profiles.md), and [`completed/M006-001-local-tts-profile-blocker-resolution.md`](completed/M006-001-local-tts-profile-blocker-resolution.md) record the implementation authority and validation evidence for Milestones 4 through 6.1. Milestone 6 supplies development evidence and a no-viable-profile decision; Milestone 6.1 retains the standard blocker. The active M006-002 closeout records the rejected CPU/dual-worker alternatives and ADR-0015's exact one-GPU constrained-demo exception. None implements production TTS.
+
+[`active/M008-bounded-adaptive-prebuffering.md`](active/M008-bounded-adaptive-prebuffering.md) is the approved implementation plan for ADR-0015. It does not claim that quick-start/prepared playback, the 30-minute ceiling, pause continuation, adaptive waits, or frontier buffering already exist.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or the completed Milestones 4 through 6 plans and does not authorize implementing all of those areas at once.
 

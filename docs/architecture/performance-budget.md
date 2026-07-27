@@ -4,14 +4,16 @@
 
 The initial MVP budget is intentionally practical rather than real-time at all moments.
 
-| Metric | MVP target |
+| Metric                                       |                                      MVP target |
 | -------------------------------------------- | ----------------------------------------------: |
-| Initial playable audio lead | Approximately 15 seconds before playback starts |
-| Artificial wait after initial lead is ready | 0 seconds |
-| Permitted buffering during sustained reading | Up to 5 seconds per minute |
-| Cancellation acknowledgment | Target below 500 ms |
-| Stale audio after seek or chapter change | 0 seconds played |
-| Generated audio persistence | None by default |
+| Quick-start playable audio lead              | Approximately 15 seconds before playback starts |
+| Explicit prepared-playback targets           |                 1, 2, 5, or 10 playable minutes |
+| Constrained-demo simultaneous audio ceiling  |               Approximately 30 playable minutes |
+| Artificial wait after initial lead is ready  |                                       0 seconds |
+| Permitted buffering during sustained reading |                      Up to 5 seconds per minute |
+| Cancellation acknowledgment                  |                             Target below 500 ms |
+| Stale audio after seek or chapter change     |                                0 seconds played |
+| Generated audio persistence                  |                                 None by default |
 
 Hardware requirements must be documented alongside benchmark results.
 
@@ -21,7 +23,11 @@ Hardware requirements must be documented alongside benchmark results.
 
 Measure wall-clock time from the accepted play command until the first audio frame is audible. Record model loading, warm-up, and initial generation separately. Fifteen seconds refers to the duration of playable audio accumulated before playback, not an allowed or required wall-clock delay.
 
-Playback should start immediately when the initial lead threshold is satisfied. Benchmarks must report both wall-clock startup latency and playable buffer depth at that moment so a fast model is not made to wait unnecessarily.
+Quick-start playback should begin immediately when the initial lead threshold
+is satisfied. Prepared playback is a separate explicit choice and may wait for
+1, 2, 5, or 10 playable minutes. Benchmarks must report wall-clock preparation
+time and playable buffer depth so a fast model is not made to wait
+unnecessarily and a slow model's preparation cost remains visible.
 
 ### Real-time factor
 
@@ -39,6 +45,10 @@ Track seconds of playable audio available, not only the number of chunks.
 
 Count each transition from playing to involuntary buffering and record its duration without recording book text.
 
+Record intentional adaptive paragraph/chapter waits separately. They are
+listening-policy time, not underruns and not evidence that generation is real
+time.
+
 ### Cancellation latency
 
 Measure from cancellation request until the generator stops producing frames for the cancelled session.
@@ -55,15 +65,15 @@ The accepted large-chapter policy is one active spine document rendered incremen
 
 On the Task 1.6 reference host, the exact-limit incremental fixture must satisfy:
 
-| Reader metric | Accepted maximum | Observed at 10,000 blocks |
+| Reader metric                          | Accepted maximum | Observed at 10,000 blocks |
 | -------------------------------------- | ---------------: | ------------------------: |
-| First useful 250-block batch | 50 ms | 9.7 ms |
-| Longest batch script work | 16 ms | 12.8 ms |
-| Deep target ready and aligned | 1,000 ms | 587.8 ms |
-| Complete incremental append | 1,000 ms | 654.3 ms |
-| Preference reflow and realignment | 250 ms | 132.5 ms |
-| Live DOM nodes | 80,000 | 78,123 |
-| DOM-only Chromium working-set increase | 144 MiB | 111.8 MiB |
+| First useful 250-block batch           |            50 ms |                    9.7 ms |
+| Longest batch script work              |            16 ms |                   12.8 ms |
+| Deep target ready and aligned          |         1,000 ms |                  587.8 ms |
+| Complete incremental append            |         1,000 ms |                  654.3 ms |
+| Preference reflow and realignment      |           250 ms |                  132.5 ms |
+| Live DOM nodes                         |           80,000 |                    78,123 |
+| DOM-only Chromium working-set increase |          144 MiB |                 111.8 MiB |
 
 Rendering all 10,000 blocks in one operation consumed 124.3 ms of uninterrupted script work, so a complete synchronous commit is rejected even though its total elapsed time was shorter. At 20,000 blocks, incremental rendering reached 156,251 DOM nodes, 20.7 ms maximum batch work, 1,213.4 ms target readiness, 263.8 ms reflow, and 182.7 MiB working-set growth. The 50,000-block stress sample reached 390,623 DOM nodes and 425.9 MiB working-set growth. These measurements support the 10,000/80,000 ceiling; they do not authorize rendering up to the EPUB ingestion package's 200,000-block publication-wide maximum.
 
@@ -147,23 +157,28 @@ model-specific profile requires explicit local TTS evidence and a new
 versioned decision; it must not silently change `narration-v1`, source-range
 semantics, or privacy rules.
 
-## Initial buffering policy
+## Adaptive buffering policy
 
-A starting implementation may use:
+ADR-0015 approves these product-level boundaries for the constrained demo
+plan:
 
-- Initial playable buffer: approximately 15 seconds.
-- Low-water mark: approximately 8 seconds.
-- Target buffer: approximately 30 seconds.
-- Initial single-worker maximum buffer hypothesis: approximately 60 seconds.
+- Quick-start threshold: approximately 15 playable seconds, or a complete
+  shorter remaining range.
+- Explicit prepared-playback targets: 1, 2, 5, or 10 playable minutes.
+- Simultaneous maximum: approximately 30 playable minutes, additionally
+  bounded by complete units, payload bytes, prepared text, and active work.
+- Playback-only pause: generation may continue for the same active identity
+  until backpressure or the maximum applies.
+- Frontier behavior: warn at the frozen low-buffer threshold, then represent
+  exhaustion as buffering rather than freezing or playing stale audio.
+- Optional adaptive waits: one to three seconds only at eligible paragraph or
+  chapter boundaries, measured separately from involuntary buffering.
 
-These are hypotheses. Benchmarks should determine final values.
-
-The initial threshold may eventually adapt to measured inference speed, but the MVP must not implement a fixed 15-second timer or confuse generated audio duration with elapsed generation time.
-
-The active Milestone 6.2 plan separately proposes a five-minute maximum for its
-future `v5` dual-worker simulation. That larger value does not change the
-approximately 15-second startup gate and is not yet an accepted production
-setting.
+M008 must freeze exact low/target/maximum thresholds and all corresponding
+count/byte/work ceilings before implementation. The initial threshold must
+never become a fixed 15-second timer. A prepared target or the 30-minute
+ceiling cannot be described as a required default wait or proof of sustainable
+generation.
 
 ## Benchmark reporting
 
@@ -233,9 +248,10 @@ mid-generation cancellation races failed. Cold start p95
 dual-source VRAM (6,286,802,944 bytes) passed their frozen ceilings. At the
 measured total RTF, producing one minute of speech takes approximately 87
 seconds, so an indefinitely long bounded buffer loses approximately 27 seconds
-per minute. ADR-0014 therefore permits this exact profile only for a bounded
-development demo with explicit preparation/buffering; it does not change the
-normal startup, sustained-throughput, underrun, or cancellation targets above.
+per minute. ADR-0014 originally permitted this exact profile only for a bounded
+development demo. ADR-0015 now supersedes its scheduling and buffering details
+without changing the normal startup, sustained-throughput, underrun, or
+cancellation targets above.
 The content-free
 [`selection-v3`](../../benchmarks/tts/selection-v3.md) record applies those
 failed gates and keeps the constrained demo exception separate from standard
@@ -297,36 +313,38 @@ with all 36 measured first attempts failed and zero retries. This exact
 placement therefore provides no capacity, throughput, startup, playback, or
 quality evidence on the reference host and does not admit the listening arm.
 
-The same Milestone 6.2 ExecPlan now has a separately frozen `v5` authority
-rather than rewriting `v4`. Milestone 7 implements its benchmark-local
-dual-worker controller, exact CPU/GPU adapter placements, isolated worker
-boundary, ordered completion/reordering contracts, and bounded playback
-replay. These mechanics have not loaded the models or produced hardware
-evidence. Milestone 8 will test one complete Qwen instance as a GPU-primary
-worker and one separately loaded complete Qwen instance as a CPU-only support
-worker. CPU solo must pass frozen placement, waveform, RAM/commit, timeout,
-cleanup, and total sustained RTF at or below 3.2 before concurrent work.
-The concurrent matrix must compare with a same-authority GPU-solo baseline and
-report worker-specific RTF, aggregate RTF, GPU slowdown, ordered head-of-line
-delay, failures, cancellation, RAM, dedicated/shared VRAM, and cleanup.
+The same Milestone 6.2 ExecPlan froze and executed a separate `v5` authority
+rather than rewriting `v4`. CPU solo completed at aggregate RTF
+`2.999443394476504`, while the same-authority GPU-solo baseline completed
+446.24 seconds of media at aggregate RTF `1.467080448861599`. The official
+concurrent arm stopped at the frozen `resource-limit` boundary before a
+promotable result. A closed 256-token diagnostic identified the exact category
+as `commit-headroom`.
 
-`v5` targets complete semantic units expected to produce approximately 8-16
-seconds of audio and freezes a hard maximum of 20 seconds before results.
-The playback replay still starts at approximately 15 contiguous playable
-seconds or a complete shorter remainder. After startup, it may grow
-opportunistically but must stop before exceeding any of these simultaneous
-limits:
+After unrelated applications were closed, a second non-promotable diagnostic
+completed all 40 units. It measured aggregate RTF `1.4291263397435898`,
+GPU-worker RTF `2.3290592090374167`, CPU-worker RTF
+`3.4522421854976506`, minimum commit headroom 7,641,972,736 bytes, minimum
+available RAM 9,301,962,752 bytes, and peak combined process RAM
+12,961,947,648 bytes. The approximately 2.6% aggregate improvement over GPU
+solo remains slower than real time and substantially slows the GPU worker.
+Accepted `selection-v5` therefore rejects CPU-only and dual-worker scheduling.
 
-- 300 playable seconds;
-- 40 complete units;
-- 28,800,000 bytes of 24 kHz mono float32 PCM payload; or
-- one active unit per worker, with worst-case active capacity reserved before
-  dispatch.
+ADR-0015 retains one exact GPU worker only for a constrained adaptive demo.
+Using GPU-solo RTF 1.467 as a planning estimate, not a user guarantee:
 
-Five minutes is a maximum in-memory capacity, not a required startup lead and
-not evidence that generation remains ahead. Sustainable scheduling still
-requires directly measured concurrent aggregate RTF below 1.0 and no more than
-five seconds of buffering per minute. The preferred standard margin remains
-aggregate RTF at or below 0.8. Until hardware results and a decision exist,
-this remains an evaluation hypothesis and does not amend ADR-0014's accepted
-one-worker constrained demo.
+| Playable lead | Approximate preparation time | Approximate playback before frontier |
+| ------------: | ---------------------------: | -----------------------------------: |
+|    15 seconds |                   22 seconds |                           47 seconds |
+|      1 minute |                 1.47 minutes |                          3.1 minutes |
+|     2 minutes |                 2.93 minutes |                          6.3 minutes |
+|     5 minutes |                 7.34 minutes |                         15.7 minutes |
+|    10 minutes |                14.67 minutes |                         31.4 minutes |
+
+At this RTF, sustained generation loses about 28 seconds of lead per minute of
+playback. Short segments, a larger buffer, playback-only pauses, or occasional
+one- to three-second boundary waits can improve startup or delay frontier
+exhaustion; none makes the model real time. Thirty minutes of 24 kHz mono
+float32 PCM is 172,800,000 payload bytes. M008 must freeze the complete
+simultaneous duration, unit-count, byte, prepared-text, and active-work bounds
+before implementation.

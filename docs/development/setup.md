@@ -6,7 +6,8 @@ The prerequisite toolchains, TypeScript workspace, framework-independent package
 
 The later official Qwen 1.7B CustomVoice/Serena `v3` matrix failed standard
 startup, throughput, zero-failure, and mid-generation cancellation gates.
-ADR-0014 permits only a future bounded development demo with that exact local
+ADR-0015 now supersedes ADR-0014's scheduling and buffering details and permits
+only a future bounded one-GPU adaptive development demo with that exact local
 profile; it adds no production dependency and does not approve continuous
 playback. TTS inference, transport, audio, playback, synchronization, hardware
 detection, and installers remain unimplemented.
@@ -24,18 +25,16 @@ same measured VRAM/shared-memory boundary. Milestone 5 quality review is not
 admitted. The results contain no reviewable audio or throughput evidence and
 change no production behavior.
 
-The same active ExecPlan now has a frozen result-blind `v5` authority after
-`selection-v4` recorded the failed outcome. Milestone 7 implements its
-development-only dual-worker mechanics and reviewed
-`benchmark:tts:dual-worker` command surface: one GPU-primary worker, one fully
-CPU-only float32 support worker, identity-safe ordered dispatch, bounded
-reordering, and bounded playback replay over approximately 8-16-second target
-units. The command returns a deliberately non-promotable mechanics receipt;
-it does not load either model or claim hardware feasibility. Milestone 8 must
-run the CPU-solo admission and, only if admitted, compare same-authority
-GPU-solo and concurrent execution. The five-minute value is a bounded
-playback-simulation maximum, not a setup requirement, startup delay, accepted
-runtime configuration, or reason to run two model processes manually.
+The same active ExecPlan froze and executed a separate result-blind `v5`
+authority after `selection-v4`. CPU solo measured aggregate RTF 2.999, GPU solo
+measured RTF 1.467, and the official concurrent arm stopped at
+`resource-limit`. A later low-application-load diagnostic completed at
+aggregate RTF 1.429 but substantially slowed the GPU worker. Accepted
+`selection-v5` rejects CPU-only and dual-worker scheduling. M008 now plans one
+GPU worker with quick-start or explicit prepared playback, bounded generation
+during playback-only pause, truthful frontier buffering, and an approximately
+30-minute in-memory ceiling. None of those product behaviors is a setup
+requirement or implemented runtime.
 
 ## Prerequisite version matrix
 
@@ -299,8 +298,8 @@ is in [`selection-v2.md`](../../benchmarks/tts/selection-v2.md).
 The later `v3` cycle also remains failed and non-promotable. A post-result
 maintainer decision accepts one fluent Spanish evaluator for future
 development-demo feedback, but it does not rewrite the frozen `v3` panel or
-change this command's promotion rules. ADR-0014 records the separate
-constrained demo exception.
+change this command's promotion rules. ADR-0015 records the current constrained
+demo exception and supersedes ADR-0014's scheduling and buffering details.
 
 The command fails closed on a dirty or different revision, wrong platform or
 Python, missing environment, wrong artifact hash, missing offline controls,

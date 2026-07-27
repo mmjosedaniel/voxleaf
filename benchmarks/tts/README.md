@@ -59,10 +59,14 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   screen before the same-authority GPU-solo and concurrent arms.
 - `schemas/dual-worker-raw-v5.schema.json` and
   `schemas/dual-worker-summary-v5.schema.json` freeze the closed private and
-  content-safe result shapes. Plan Milestone 7 now implements the
+  content-safe result shapes. Plan Milestone 7 implements the
   benchmark-local controller, exact CPU/GPU adapter paths, bounded replay, and
-  reviewed command surface. No `v5` pilot, official result, audio, or quality
-  finding exists.
+  reviewed command surface. CPU-solo and GPU-solo official results exist; the
+  official concurrent arm stopped at its frozen resource boundary.
+- [`selection-v5.md`](selection-v5.md) is the accepted content-safe final
+  decision. It rejects CPU-only and dual-worker scheduling, retains the exact
+  GPU identity only for ADR-0015's constrained demo, and keeps both
+  diagnostics non-promotable.
 - `incremental-cancellation-prototype-v1.json` freezes the development-only
   prototype topology before results: complete-segment delivery, one resident
   spawned worker, explicit input/output/queue ceilings, identity-first stale
@@ -87,7 +91,8 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   matrix. It rejects both exact evaluated profiles and links ADR-0013.
 - [`selection-v3.md`](selection-v3.md) is the accepted content-free Milestone
   6.1 decision record. It preserves the failed standard Serena `v3` result and
-  separately records ADR-0014's exact constrained development-demo exception.
+  separately records the original ADR-0014 constrained-demo exception;
+  ADR-0015 now governs scheduling and buffering.
 - [`docs/architecture/tts-feasibility-profile-v3.md`](../../docs/architecture/tts-feasibility-profile-v3.md)
   is the active blocker-resolution authority for the selected Serena
   development candidate. `v2` remains the completed first-cycle authority and
@@ -468,6 +473,13 @@ against the required value below `1.0`, and the GPU worker's RTF increased to
 so the 256-token ceiling did not truncate the intended 8-16-second output.
 The official result remains `resource-limit`; both diagnostics remain
 non-promotable and do not admit playback/quality review.
+
+Accepted `selection-v5` concludes the experiment. CPU-only and dual-worker
+product scheduling are rejected; the approximately 2.6% low-load aggregate
+gain does not justify the GPU slowdown, memory sensitivity, or second-model
+complexity. ADR-0015 and M008 retain one GPU worker for a separately bounded
+adaptive demo plan. They do not promote these benchmark mechanics into the
+production dependency graph or runtime.
 
 ## Disposable blinded quality session
 

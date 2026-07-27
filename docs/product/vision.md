@@ -25,11 +25,16 @@ Core reading and speech generation must work without a remote TTS service.
 
 ### Useful before perfect
 
-The MVP may buffer occasionally. Stable reading progress, cancellation, and recoverable playback matter more than eliminating every short pause.
+The MVP may buffer occasionally. Quick start and explicit prepared playback
+should make that trade visible rather than promise real-time generation.
+Stable reading progress, cancellation, and recoverable playback matter more
+than eliminating every short pause.
 
 ### Bounded resources
 
-The application must control memory, queue size, model lifetime, and generated audio retention.
+The application must control memory, queue size, model lifetime, and generated
+audio retention. A larger preparation target or buffer remains a bounded
+capacity choice, not permission to generate or retain a complete audiobook.
 
 ### Observable performance
 
