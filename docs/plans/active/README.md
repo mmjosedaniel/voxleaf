@@ -17,6 +17,5 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`M006-002-qwen-short-segment-batch-feasibility.md`](M006-002-qwen-short-segment-batch-feasibility.md): active Milestone 6.2 closeout. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains one exact GPU worker only for a constrained demo. Final local validation passes; Milestone 10 awaits required pull-request CI.
 - [`M008-bounded-adaptive-prebuffering.md`](M008-bounded-adaptive-prebuffering.md): approved but not implemented plan for one-GPU quick-start and explicit prepared playback, bounded adaptive buffering, playback-only pause continuation, frontier warnings, and a 30-minute in-memory ceiling.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): retained broader context spanning the completed reader work and later narration synchronization/audio startup. It does not supersede the completed Milestones 4 through 6 authorities and does not authorize blocked Milestone 7 or later work.

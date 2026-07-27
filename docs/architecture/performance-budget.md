@@ -267,7 +267,7 @@ official 6,286,802,944-byte peak is therefore the relevant measured capacity
 observation. It is the maximum of baseline-adjusted WDDM dedicated memory and
 PyTorch peak-reserved memory, not a claim that every byte was a live tensor.
 
-[Milestone 6.2](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md)
+[Milestone 6.2](../plans/completed/M006-002-qwen-short-segment-batch-feasibility.md)
 has frozen the separate
 [`v4` authority](tts-feasibility-profile-v4.md) before testing whether one
 resident model can generate two ordered 8–20-second semantic units in a shared

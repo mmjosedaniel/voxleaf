@@ -14,7 +14,7 @@ detection, and installers remain unimplemented.
 The content-free `benchmarks/tts/selection-v3.md` record retains that failed
 standard result and separately identifies the constrained demo input.
 
-Milestone 6.2 is active. Its `v4` authority is frozen and Milestone 2 adds the
+Milestone 6.2 is complete. Its `v4` authority is frozen and Milestone 2 adds the
 reviewed `benchmark:tts:batch` disposable-pilot and official commands,
 `benchmark:tts:batch:derive` safe-summary/cleanup command, and model-free
 one/two-unit, ordering, invalidation, resource, playback, schema, and
@@ -25,7 +25,7 @@ same measured VRAM/shared-memory boundary. Milestone 5 quality review is not
 admitted. The results contain no reviewable audio or throughput evidence and
 change no production behavior.
 
-The same active ExecPlan froze and executed a separate result-blind `v5`
+The same completed ExecPlan froze and executed a separate result-blind `v5`
 authority after `selection-v4`. CPU solo measured aggregate RTF 2.999, GPU solo
 measured RTF 1.467, and the official concurrent arm stopped at
 `resource-limit`. A later low-application-load diagnostic completed at

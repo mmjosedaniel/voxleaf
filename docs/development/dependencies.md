@@ -82,8 +82,8 @@ the production graph or approve distribution. The content-free
 `benchmarks/tts/selection-v3.md` record preserves both conclusions and adds no
 dependency or lock edge.
 
-The active
-[Milestone 6.2 batch-feasibility plan](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md)
+The completed
+[Milestone 6.2 batch-feasibility plan](../plans/completed/M006-002-qwen-short-segment-batch-feasibility.md)
 has frozen its v4 authority, implemented the candidate-neutral batch mechanics,
 Qwen list-call adapter, and reviewed commands, and completed the full-GPU plus
 targeted speech-tokenizer CPU hardware arms without adding a dependency or

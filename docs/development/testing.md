@@ -231,8 +231,8 @@ required foundation jobs on the exact evidence commit. Base voice cloning is
 outside the current MVP. Whisper and VAD/energy analysis are excluded from
 `v3`.
 
-The active
-[Milestone 6.2 plan](../plans/active/M006-002-qwen-short-segment-batch-feasibility.md)
+The completed
+[Milestone 6.2 plan](../plans/completed/M006-002-qwen-short-segment-batch-feasibility.md)
 has a frozen pre-result `v4` profile, normalized eight-unit/four-pair synthetic
 corpus, closed raw and summary schemas, exact full-GPU and conditional
 speech-tokenizer CPU identities, and deterministic authority enforcement.
