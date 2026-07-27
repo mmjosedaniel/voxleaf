@@ -1641,6 +1641,10 @@ and cleanup controls:
 
 - checkpoint `2d84559` passed Ruff formatting/lint, strict mypy over the four
   affected source files, 25 focused tests, and all 160 Python tests;
+- `pnpm.cmd check:portable` passed from a clean detached worktree at
+  checkpoint `5b3da32`, including formatting, lint, type checks, 175 shared,
+  555 EPUB, 204 desktop, six native-client, and 160 Python tests plus all
+  portable builds;
 - the exact hardware command ran only the concurrent GPU-primary/CPU-support
   arm and returned `commit-headroom` after 98.4 seconds;
 - the token override is fixed at 256, cannot enter an official request, emits
