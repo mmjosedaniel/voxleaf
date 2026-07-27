@@ -90,6 +90,23 @@ describe("adaptive preparation estimate", () => {
         serviceState: "preparing",
       }),
     ).toBeUndefined();
+    expect(
+      estimator.estimate({
+        playableSampleFrames: sampleFramesFromPlayableMilliseconds(15_000),
+        targetMs: 15_000,
+        serviceState: "stopped",
+      }),
+    ).toEqual({
+      estimatedWaitMs: 0,
+      timingObservationCount: 1,
+    });
+    expect(
+      estimator.estimate({
+        playableSampleFrames: sampleFramesFromPlayableMilliseconds(5_000),
+        targetMs: 15_000,
+        serviceState: "failed",
+      }),
+    ).toBeUndefined();
   });
 
   it("keeps only eight observations and clears estimates on identity replacement", () => {
@@ -274,5 +291,20 @@ describe("adaptive preparation UI state", () => {
       resourceCeilingReached: true,
       progressValueMs: 5_000,
     });
+  });
+
+  it("rejects contradictory content-free scheduler presentation state", () => {
+    expect(() =>
+      createAdaptivePreparationUiState({
+        mode: { kind: "prepared", targetMs: 120_000 },
+        scheduler: schedulerObservation({ targetBufferMs: 60_000 }),
+      }),
+    ).toThrowError(AdaptivePreparationError);
+    expect(() =>
+      createAdaptivePreparationUiState({
+        mode: { kind: "quick" },
+        scheduler: schedulerObservation({ playableDurationMs: 4_999 }),
+      }),
+    ).toThrowError(AdaptivePreparationError);
   });
 });

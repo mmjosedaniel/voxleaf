@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 7 are complete. The secure EPUB ingestion boundary, immutable document model, reflowable visual reader, bounded locator/preference restoration, and deterministic locator-linked narration preparation are implemented and validated. Completed M007 adds the accepted protocol-v1 local service boundary: canonical cross-language controls, a bounded Python service, persistent native supervision, typed one-unit ownership outside React state, and the exact development-only Qwen/Serena adapter with packaged and exact-host evidence. The desktop still does not call `OpenedPublication.prepareNarration`, and no payload-owning multi-unit audio queue, player, synchronization flow, general-hardware profile, or production distribution exists. ADR-0013 therefore continues to select no standard production profile. ADR-0015 permits only the exact one-GPU constrained demo. M008 is in progress: Milestone 1 freezes exact adaptive-buffer authority and Milestone 2 adds an unconnected, model-free, manually clocked scheduler state machine plus deterministic resource/ownership/depletion/recovery traces. Product calling, audio payload buffering, playback, and UI remain unimplemented.
+Mixed implementation status. Roadmap Milestones 1 through 7 are complete. The secure EPUB ingestion boundary, immutable document model, reflowable visual reader, bounded locator/preference restoration, and deterministic locator-linked narration preparation are implemented and validated. Completed M007 adds the accepted protocol-v1 local service boundary: canonical cross-language controls, a bounded Python service, persistent native supervision, typed one-unit ownership outside React state, and the exact development-only Qwen/Serena adapter with packaged and exact-host evidence. The desktop still does not call `OpenedPublication.prepareNarration`, and no connected audible product flow, synchronization flow, general-hardware profile, or production distribution exists. ADR-0013 therefore continues to select no standard production profile. ADR-0015 permits only the exact one-GPU constrained demo. M008 is in progress: Milestones 1-4 freeze exact adaptive-buffer authority and add the unconnected model-free scheduler, payload-owning FIFO, low-level Web Audio player, content-free preparation estimator/wait coordinator, and reusable accessible narration controls. Product calling and control mounting remain for Milestone 5.
 
 M006-002 final local validation and required pull-request CI pass, and the plan
 is complete. M007 is also complete. Its six milestones implement a model-free
@@ -55,9 +55,11 @@ Desktop application
 |-- Typed TTS process client and one-unit memory sink
 |   [M007 Milestone 3; implemented, no product caller]
 |-- Adaptive buffer/UX authority [M008 Milestone 1; frozen]
-|-- Model-free adaptive scheduler state machine and deterministic traces
-|   [M008 Milestone 2; implemented, not product-connected]
-`-- Payload buffering, playback, and synchronization [deferred to later M008/M009 milestones]
+|-- Model-free adaptive scheduler, payload FIFO, and low-level Web Audio player
+|   [M008 Milestones 2-3; implemented, not product-connected]
+|-- Content-free preparation estimates, optional wait decisions, and controls
+|   [M008 Milestone 4; implemented and tested, not product-mounted]
+`-- Product narration dispatch and synchronization [deferred to later M008/M009 milestones]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]
@@ -103,9 +105,9 @@ Local TTS service
 |-- One-GPU constrained engine, service, process protocol, inference,
 |   cancellation, and complete-unit framing
 |   [M007 Milestones 1-6 implemented, measured, and validated]
-`-- Adaptive demo scheduler and bounded playback policy
-    [M008 authority + model-free scheduler proof implemented;
-     product-connected payload runtime not implemented]
+`-- Adaptive demo scheduler, bounded playback, and accessible control policy
+    [M008 Milestones 1-4 implemented;
+     product-connected narration runtime not implemented]
 ```
 
 ## Approved desktop reader and candidate process model
@@ -202,8 +204,8 @@ or instantiates that player, so no audible product path exists yet.
 6. **Implemented — Milestone 5:** Exhaustively project narratable source units and structural boundaries from immutable located safe semantics, map every source position to an immutable locator-valid Unicode-code-point span, consume that mapping through bounded canonical source windows with close-linked cancellation/continuation, normalize the accepted neutral/Spanish forms, scan deterministic source-offset sentence/dialogue/clause/protected-token boundaries, pack cancellable block-local stable source-offset segments under the accepted profile with fixed oversized-token behavior, and finalize immutable canonical locator-linked prepared segments without changing the displayed representation.
 7. **Implemented — Milestone 5:** Emit bounded public prepared-segment batches with stable locator ranges and deterministic resource evidence.
 8. **Implemented — Milestone 7:** The model-free Rust probe proves the selected parent/child frame boundary and a narrow binary Tauri response. Canonical shared control schemas and the bounded Python service prove strict narration input, lifecycle, complete-unit audio framing, cancellation, and failure behavior. The native shell owns one persistent child, framed read/write bounds, state/timeouts, process-tree termination, zero automatic restart, application-exit cleanup, and narrow Tauri commands. The typed desktop client validates control order and identity, retains one binary unit outside React state, and zeroes released or stale bytes. Native-only configuration selects the implemented exact Qwen/Serena adapter. Its frozen exact-host matrix passes bounded handoff, invalidation, cancellation, crash, application-exit, privacy, RAM, and VRAM cases without retry. The accepted protocol, repository audit, required pull-request CI, and ExecPlan archival are complete. Production narration dispatch and playback remain later work.
-9. **Authority, scheduler, bounded FIFO, and low-level player implemented; product runtime not connected — Milestone 8:** ADR-0013 retains the standard-profile blocker, while ADR-0015 permits one exact GPU worker only for a constrained demo. M008 Milestone 1 freezes a 10-second low-water warning, 15-second quick start, one-minute refill, explicit 1/2/5/10-minute prepared targets, exact simultaneous limits, one desktop queue, 0-100% volume, and `1.0x`-only playback. Milestone 2 implements the deterministic scheduler. Milestone 3 makes it the sole owner of transferred complete-unit payloads, validates finite 24-kHz mono float32 little-endian continuity, consumes and releases units in order, accounts underruns, and drives one dedicated Web Audio context through deterministic backend tests.
-10. **Deferred — Milestones 8-9:** Connect the publication caller and M007 synthesis loop, generate later audio while the player consumes buffered frames or is paused without invalidation, stop at the approximately 30-minute ceiling, expose truthful warnings/UI, and keep the narrated passage visible.
+9. **Authority, scheduler, bounded FIFO, low-level player, and accessible control boundary implemented; product runtime not connected — Milestone 8:** ADR-0013 retains the standard-profile blocker, while ADR-0015 permits one exact GPU worker only for a constrained demo. M008 Milestone 1 freezes a 10-second low-water warning, 15-second quick start, one-minute refill, explicit 1/2/5/10-minute prepared targets, exact simultaneous limits, one desktop queue, 0-100% volume, and `1.0x`-only playback. Milestone 2 implements the deterministic scheduler. Milestone 3 makes it the sole owner of transferred complete-unit payloads, validates finite 24-kHz mono float32 little-endian continuity, consumes and releases units in order, accounts underruns, and drives one dedicated Web Audio context through deterministic backend tests. Milestone 4 adds bounded content-free completed-production estimates, an interruptible semantic-boundary wait coordinator that remains disabled by default, truthful UI-state projection, accessible quick/prepared controls, and target-first paused-generation backpressure.
+10. **Deferred — Milestones 8-9:** Connect the publication caller and M007 synthesis loop, mount the controls with their real owner, generate later audio while the player consumes buffered frames or is paused without invalidation, stop at the approximately 30-minute ceiling, validate truthful exact-host frontier behavior, and keep the narrated passage visible.
 11. **Implemented at the unconnected low-level boundary; product integration deferred — Milestones 8-9:** Played units release exactly once; stop, seek, close, and failure invalidate eligibility before bounded cleanup turns. Later callers must propagate the same identity-first transition across publication, service, player, and synchronized-reader state.
 12. **Implemented for reader state:** Persist the logical reading locator, not a rendered page number or generated audio. Generated-audio persistence remains prohibited future behavior unless a separate product/privacy decision approves it.
 
@@ -342,4 +344,19 @@ dedicated Web Audio context, one gain node, and at most one transient active
 device buffer. Played payloads release once; invalidation makes every old unit
 ineligible synchronously and releases at most four discarded originals per
 scheduled cleanup turn. This implementation is not yet connected to the
-publication, M007 synthesis dispatch, UI, or shared reading position.
+publication, M007 synthesis dispatch, mounted controls, or shared reading
+position.
+
+M008 Milestone 4 implements the adjacent content-free presentation boundary.
+`AdaptivePreparationEstimator` retains at most eight completed elapsed-time
+and accepted-sample-frame pairs, clears them on identity replacement, and
+includes the measured stopped-service restart/prepare cost only after current
+production evidence exists. `AdaptiveBoundaryWaitCoordinator` admits only the
+frozen 0/1/2/3-second choices at an eligible positive-low-lead paragraph or
+chapter boundary and makes interruption/counting explicit; `0` remains the
+default pending exact-host evaluation. `AdaptivePreparationControls` receives
+only content-free state and native callbacks, exposes quick/prepared targets,
+progress, estimates, low/buffering/planned-wait distinctions,
+pause/resume/stop, 5% volume steps, and a disabled `1.0x`-only speed selector.
+It owns no narration text, audio, identity, service call, or player and is not
+mounted in the product until M008 Milestone 5 provides that coordinator.

@@ -57,9 +57,7 @@ function divideRoundUp(numerator: bigint, denominator: bigint): bigint {
 export class AdaptivePreparationEstimator {
   readonly #observations: AdaptivePreparationTimingObservation[] = [];
 
-  public record(
-    observation: AdaptivePreparationTimingObservation,
-  ): AdaptivePreparationEstimate | undefined {
+  public record(observation: AdaptivePreparationTimingObservation): void {
     if (
       !isPositiveSafeInteger(observation.elapsedMs) ||
       !isPositiveSafeInteger(observation.acceptedSampleFrames)
@@ -70,7 +68,6 @@ export class AdaptivePreparationEstimator {
     if (this.#observations.length > ESTIMATE_OBSERVATION_LIMIT) {
       this.#observations.shift();
     }
-    return undefined;
   }
 
   public estimate(
@@ -90,7 +87,14 @@ export class AdaptivePreparationEstimator {
     }
     if (
       this.#observations.length === 0 ||
-      ["starting", "unloaded", "preparing"].includes(input.serviceState)
+      [
+        "cancelling",
+        "failed",
+        "preparing",
+        "starting",
+        "stopping",
+        "unloaded",
+      ].includes(input.serviceState)
     ) {
       return undefined;
     }
@@ -111,7 +115,7 @@ export class AdaptivePreparationEstimator {
       BigInt(remainingSampleFrames) * totals.elapsedMs,
       totals.sampleFrames,
     );
-    if (input.serviceState === "stopped") {
+    if (input.serviceState === "stopped" && remainingSampleFrames > 0) {
       estimatedWaitMs += BigInt(EXACT_HOST_RESTART_PREPARE_ESTIMATE_MS);
     }
     if (estimatedWaitMs > BigInt(Number.MAX_SAFE_INTEGER)) {
@@ -169,6 +173,7 @@ export class AdaptiveBoundaryWaitCoordinator {
     if (
       !Number.isSafeInteger(clock.nowMs) ||
       clock.nowMs < 0 ||
+      clock.nowMs > Number.MAX_SAFE_INTEGER - durationMs ||
       !ADAPTIVE_BUFFER_AUTHORITY_V1.boundaryWait.supportedMs.includes(
         durationMs,
       )
@@ -184,6 +189,7 @@ export class AdaptiveBoundaryWaitCoordinator {
     if (
       this.#durationMs === 0 ||
       this.#activeUntilMs !== undefined ||
+      !["chapter", "paragraph"].includes(request.boundary) ||
       request.playbackState !== "playing" ||
       !Number.isSafeInteger(request.playableDurationMs) ||
       request.playableDurationMs <= 0 ||
@@ -307,6 +313,11 @@ export function createAdaptivePreparationUiState(
       ADAPTIVE_BUFFER_AUTHORITY_V1.playback.minimumVolumePercent ||
     volumePercent >
       ADAPTIVE_BUFFER_AUTHORITY_V1.playback.maximumVolumePercent ||
+    readyMs !== input.scheduler.playableDurationMs ||
+    (input.mode.kind === "quick" &&
+      targetMs !== ADAPTIVE_BUFFER_AUTHORITY_V1.thresholds.quickStartMs &&
+      targetMs !== ADAPTIVE_BUFFER_AUTHORITY_V1.thresholds.refillResumeMs) ||
+    (input.mode.kind === "prepared" && input.mode.targetMs !== targetMs) ||
     (input.estimatedWaitMs !== undefined &&
       (!Number.isSafeInteger(input.estimatedWaitMs) ||
         input.estimatedWaitMs < 0))

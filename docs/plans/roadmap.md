@@ -452,13 +452,15 @@ model-independent scheduler and playback behavior remain separately owned.
 
 ## Milestone 8: Build bounded audio playback and scheduling
 
-**Status:** In progress. M008 Milestone 1 freezes the exact adaptive-buffer and
-UX authority, Milestone 2 implements the model-free scheduler, and Milestone 3
-implements its sole-owner payload FIFO plus a dedicated Web Audio PCM player.
+**Status:** In progress. M008 Milestones 1-4 freeze the exact adaptive-buffer
+and UX authority and implement the model-free scheduler, sole-owner payload
+FIFO, dedicated Web Audio PCM player, bounded content-free preparation
+estimate/wait controller, and reusable accessible quick/prepared controls.
 Deterministic tests cover `takeAudioUnit()` transfer, exact format/order,
-consumption, underruns, pause/resume, volume, end-of-range, and bounded
-identity-first cleanup. No production publication/M007 caller, playback UI, or
-exact-model end-to-end playback exists yet. Follow
+consumption, underruns, target-bounded pause continuation, planned-wait versus
+buffering state, native control semantics, volume, end-of-range, and bounded
+identity-first cleanup. No production publication/M007 caller, mounted
+playback controls, or exact-model end-to-end playback exists yet. Follow
 [`M008-bounded-adaptive-prebuffering.md`](active/M008-bounded-adaptive-prebuffering.md).
 
 ### Goal
@@ -626,7 +628,7 @@ exact Qwen/Serena adapter, complete-unit delivery, and cancellation
 containment. It does not implement playback, promote the candidate to a
 standard profile, or approve model/runtime distribution.
 
-[`active/M008-bounded-adaptive-prebuffering.md`](active/M008-bounded-adaptive-prebuffering.md) is the active implementation plan for ADR-0015. Its first three milestones provide the exact authority, deterministic scheduler, payload-owning multi-unit FIFO, and low-level Web Audio player. Product quick/prepared controls, the publication/M007 caller, pause-generation continuation, adaptive waits, frontier UI, exact-model playback, and closeout remain.
+[`active/M008-bounded-adaptive-prebuffering.md`](active/M008-bounded-adaptive-prebuffering.md) is the active implementation plan for ADR-0015. Its first four milestones provide the exact authority, deterministic scheduler, payload-owning multi-unit FIFO, low-level Web Audio player, bounded content-free estimates/wait decisions, target-bounded pause continuation, and reusable accessible quick/prepared controls. The publication/M007 caller, product mounting, exact-host wait/default decision, exact-model playback, and closeout remain.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or completed Milestones 4 through 7 and does not authorize implementing all of those areas at once.
 
