@@ -1149,6 +1149,21 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
   already reached a frozen resource boundary is not admitted on this hardware.
   Milestone 8 therefore completes with CPU admission, a valid GPU baseline,
   and failed concurrent hardware feasibility; Milestone 9 is skipped.
+- 2026-07-26: A user-requested, explicitly non-promotable follow-up tested
+  whether Qwen's 2048 generated-token ceiling caused the concurrent failure.
+  Checkpoint `2d84559` adds a closed `concurrent-diagnostic` purpose that
+  accepts only 256 tokens, the concurrent arm, and both committed solo-summary
+  hashes. It preserves official authority, writes no raw/result evidence, and
+  returns exact content-free live safety subcodes.
+- 2026-07-26: The 256-token two-worker diagnostic passed preflight with
+  17,632,972,800 bytes free RAM, 7,810 MiB free VRAM, an idle GPU, and the
+  exact outbound firewall block. It stopped after 98.4 seconds with
+  `commit-headroom`. This proves that the earlier `resource-limit` represented
+  Windows commit headroom falling below the frozen 4-GiB floor; reducing the
+  generated-token ceiling did not resolve the two-model residency limit.
+  Cleanup left zero workers, zero GPU use, 7,810 MiB free VRAM,
+  18,012,766,208 bytes available RAM, 21,985,099,776 bytes commit headroom,
+  the restored 45-minute AC sleep setting, and zero raw files.
 
 ## Discoveries and decisions
 
@@ -1311,6 +1326,11 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
 43. The reviewed command receipt is deliberately non-promotable. Milestone 8
     must still collect the frozen cold-load, memory, cancellation, placement,
     cleanup, and private raw evidence and derive a schema-valid safe result.
+44. Qwen's frozen `maxNewTokens: 2048` was not the cause of the concurrent
+    safety stop. A closed 256-token diagnostic reproduced the failure and
+    preserved the exact `commit-headroom` subcode. The two resident processes,
+    rather than permitted output length, exhausted the frozen Windows commit
+    reserve.
 
 ## Final validation results
 
@@ -1615,3 +1635,18 @@ Milestone 8 is complete. Its failed concurrent resource outcome does not admit
 Milestone 9, select a production profile, or change product behavior.
 Milestone 10 remains necessary to record the durable `v5` decision and close
 the ExecPlan.
+
+The post-milestone 256-token concurrent diagnostic also passed its repository
+and cleanup controls:
+
+- checkpoint `2d84559` passed Ruff formatting/lint, strict mypy over the four
+  affected source files, 25 focused tests, and all 160 Python tests;
+- the exact hardware command ran only the concurrent GPU-primary/CPU-support
+  arm and returned `commit-headroom` after 98.4 seconds;
+- the token override is fixed at 256, cannot enter an official request, emits
+  no promotable evidence, and writes no raw result; and
+- post-run process, GPU, RAM/commit, sleep-restoration, raw-tree, and clean
+  working-tree checks passed.
+
+This diagnostic identifies the original safety category but does not
+retroactively promote or replace the frozen failed concurrent result.

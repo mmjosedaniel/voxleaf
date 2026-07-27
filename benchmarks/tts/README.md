@@ -450,6 +450,17 @@ with the frozen `resource-limit` code before promotable raw/result creation,
 so no concurrent summary exists and playback/quality Milestone 9 is not
 admitted. This is a failed feasibility outcome, not a production topology.
 
+A later non-promotable diagnostic answers the original failure's collapsed
+subcode without changing the frozen authority. `resultPurpose:
+concurrent-diagnostic` accepts only the concurrent arm, both committed solo
+summary hashes, and `diagnosticMaxNewTokens: 256`. It uses the same two isolated
+workers and safety monitor, writes no raw/result evidence, and can never be
+promoted. The exact-host diagnostic stopped on `commit-headroom` after about
+98 seconds. Reducing Qwen's generated-token ceiling from 2048 to 256 therefore
+did not make two resident models feasible under the frozen memory boundary.
+The official result remains `resource-limit`; the diagnostic only identifies
+the underlying live safety condition.
+
 ## Disposable blinded quality session
 
 The five `benchmark:tts:quality:*` commands implement the manual listening
