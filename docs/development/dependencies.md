@@ -157,6 +157,15 @@ and Torchaudio resolve from the candidate environment. This arrangement is a
 development-only bridge, not production dependency promotion, bundling, or
 redistribution approval.
 
+M007 Milestone 6 reviewed the complete manifest and lockfile delta from the
+pre-M007 baseline. The only direct dependency decisions are the documented
+`@tauri-apps/api`, `serde`, `serde_json`, Windows Job Object `windows-sys`,
+`jsonschema`, and `referencing` edges above. Milestones 4-5 add no dependency
+or lockfile change, and the exact candidate lock remains byte-identical.
+There is still no shell plugin, listener/server library, audio-device/player
+library, bundled model runtime, installer dependency, or production Qwen
+dependency.
+
 Base voice cloning remains outside the MVP. Whisper is excluded from the
 production graph and from `v3`; VAD/energy analysis is also excluded from
 `v3` so neither auxiliary runtime can affect timed synthesis or selection.

@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 6.2 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. Completed Milestone 6.2 measured CPU solo at aggregate RTF 2.999 and GPU solo at aggregate RTF 1.467; the official concurrent run stopped at `resource-limit`, and a low-application-load diagnostic later completed both workers at aggregate RTF 1.429 while slowing the GPU worker to RTF 2.329. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains one exact GPU worker only for a constrained development demo. ADR-0015 authorizes that exception without selecting a standard profile. M007 is active and in progress. Its completed first five milestones implement the frozen protocol and canonical cross-language controls, bounded Python service, native persistent-child supervision, typed desktop client, one-unit memory sink, exact development-only Qwen/Serena adapter, identity-first cancellation, process-tree cleanup, packaged fake-service lifecycle, and the first measured exact-host handoff matrix. M007 repository/protocol closeout and the product narration caller remain open. M008 remains the dependent plan for quick-start/prepared playback and bounded adaptive buffering. No standard profile, production runtime, continuous-playback guarantee, or general hardware support is approved. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 6.2 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. Completed Milestone 6.2 measured CPU solo at aggregate RTF 2.999 and GPU solo at aggregate RTF 1.467; the official concurrent run stopped at `resource-limit`, and a low-application-load diagnostic later completed both workers at aggregate RTF 1.429 while slowing the GPU worker to RTF 2.329. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains one exact GPU worker only for a constrained development demo. ADR-0015 authorizes that exception without selecting a standard profile. M007 Milestones 1-6 implement and locally validate the frozen protocol and canonical cross-language controls, bounded Python service, native persistent-child supervision, typed desktop client, one-unit memory sink, exact development-only Qwen/Serena adapter, identity-first cancellation, process-tree cleanup, packaged fake-service lifecycle, measured exact-host handoff matrix, and final protocol/dependency/privacy/repository audit. Required final pull-request CI and plan archival remain. M008 is the dependent plan for the first product narration caller, quick-start/prepared playback, and bounded adaptive buffering. No standard profile, production runtime, continuous-playback guarantee, or general hardware support is approved. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -384,7 +384,8 @@ work.
 
 ## Milestone 7: Implement the local TTS service and process protocol
 
-**Status:** In progress. Milestones 1-5 are complete: the deterministic
+**Status:** Locally complete; final pull-request CI and plan archival pending.
+Milestones 1-6 are locally complete: the deterministic
 Rust-owned standard-stream and binary Tauri-response probe passes, protocol
 version 1 and ADR-0016 are accepted, closed control contracts are canonical
 across TypeScript, Python, and Rust, and a bounded model-free Python service
@@ -403,7 +404,10 @@ matrix: complete-unit delivery, retained-unit backpressure, every required
 invalidation, process-tree termination, zero stale audio, cleanup, and
 explicit reload pass on the first actual matrix attempt. Delivered-unit RTF
 remains above one, so no sustainable-playback or production conclusion
-changes. Milestone 6 closeout remains unimplemented. Follow
+changes. Milestone 6 retains ADR-0016 and protocol v1 after the complete
+dependency, permission, privacy, artifact, historical-authority, and
+documentation audit. Required final pull-request Ubuntu portable and Windows
+native jobs must pass before the ExecPlan is archived. Follow
 [`M007-local-tts-service-and-process-protocol.md`](active/M007-local-tts-service-and-process-protocol.md).
 ADR-0015 permits a focused Qwen/Serena demo service around complete bounded
 units and identity-first worker termination. ADR-0013 still records that no

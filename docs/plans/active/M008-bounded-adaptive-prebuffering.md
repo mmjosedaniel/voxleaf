@@ -36,11 +36,12 @@ specific preparation duration.
   deterministic fakes exist.
 - `@voxleaf/epub` exposes bounded locator-linked
   `OpenedPublication.prepareNarration`; the desktop does not call it.
-- M007 is the active prerequisite plan for the constrained local TTS service
-  and process protocol. Its Milestones 1-5 implement and exact-host validate
-  the bounded complete-unit service and development-only adapter. Repository/
-  protocol closeout and the product narration caller remain open. No playback
-  stream exists yet.
+- M007 is the active closeout prerequisite for the constrained local TTS
+  service and process protocol. Its Milestones 1-6 implement and locally
+  validate the bounded complete-unit service, development-only adapter, and
+  protocol/repository decision audit. Required final pull-request CI and plan
+  archival remain. M008 owns the product narration caller; no playback stream
+  exists yet.
 - ADR-0013 selects no standard TTS profile.
 - ADR-0015 permits only the exact one-GPU Qwen/Serena development-demo
   topology with bounded adaptive in-memory preparation.
@@ -344,6 +345,10 @@ accepted no-standard-profile decision.
   seconds. M008 must accumulate complete units for quick start, model
   termination and readiness separately, and retain the longer `v5` RTF for
   sustained depletion arithmetic. M007 closeout remains a prerequisite.
+- 2026-07-27: M007 Milestone 6 retained ADR-0016 and protocol v1 after the
+  complete implementation, dependency, permission, privacy, artifact, and
+  historical-authority audit. Local portable/native/packaged validation passes;
+  required final PR CI and plan archival remain before M008 implementation.
 
 ## Discoveries and decisions
 
