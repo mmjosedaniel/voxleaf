@@ -7,8 +7,10 @@ The initial MVP budget is intentionally practical rather than real-time at all m
 | Metric                                       |                                      MVP target |
 | -------------------------------------------- | ----------------------------------------------: |
 | Quick-start playable audio lead              | Approximately 15 seconds before playback starts |
+| Low-water warning                            |                     10 playable seconds or less |
+| Automatic refill/resume target               |                               1 playable minute |
 | Explicit prepared-playback targets           |                 1, 2, 5, or 10 playable minutes |
-| Constrained-demo simultaneous audio ceiling  |               Approximately 30 playable minutes |
+| Constrained-demo simultaneous audio ceiling  |    Exactly 43,200,000 24-kHz mono sample frames |
 | Artificial wait after initial lead is ready  |                                       0 seconds |
 | Permitted buffering during sustained reading |                      Up to 5 seconds per minute |
 | Cancellation acknowledgment                  |                             Target below 500 ms |
@@ -174,11 +176,15 @@ plan:
 - Optional adaptive waits: one to three seconds only at eligible paragraph or
   chapter boundaries, measured separately from involuntary buffering.
 
-M008 must freeze exact low/target/maximum thresholds and all corresponding
-count/byte/work ceilings before implementation. The initial threshold must
-never become a fixed 15-second timer. A prepared target or the 30-minute
-ceiling cannot be described as a required default wait or proof of sustainable
-generation.
+M008 Milestone 1 freezes the exact values in
+[`adaptive-buffer-authority-v1.md`](adaptive-buffer-authority-v1.md): 10-second
+low water, 15-second quick start, one-minute refill, explicit 1/2/5/10-minute
+prepared targets, and a 43,200,000-frame/172,800,000-byte/256-unit maximum
+alongside prepared-text and active-work bounds. The initial threshold never
+becomes a fixed 15-second timer. A prepared target or the 30-minute ceiling
+cannot be described as a required default wait or proof of sustainable
+generation. The authority constants and exact/max-plus-one tests exist, but
+the scheduler and player do not.
 
 ## Benchmark reporting
 

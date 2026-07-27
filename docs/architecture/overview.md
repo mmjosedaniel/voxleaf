@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 7 are complete. The secure EPUB ingestion boundary, immutable document model, reflowable visual reader, bounded locator/preference restoration, and deterministic locator-linked narration preparation are implemented and validated. Completed M007 adds the accepted protocol-v1 local service boundary: canonical cross-language controls, a bounded Python service, persistent native supervision, typed one-unit ownership outside React state, and the exact development-only Qwen/Serena adapter with packaged and exact-host evidence. The desktop still does not call `OpenedPublication.prepareNarration`, and no multi-unit audio queue, player, synchronization flow, general-hardware profile, or production distribution exists. ADR-0013 therefore continues to select no standard production profile. ADR-0015 permits only the exact one-GPU constrained demo and M008 is the active plan for product narration dispatch, quick/prepared startup, bounded playback-only-pause generation, truthful frontier buffering, and an approximately 30-minute simultaneous in-memory ceiling.
+Mixed implementation status. Roadmap Milestones 1 through 7 are complete. The secure EPUB ingestion boundary, immutable document model, reflowable visual reader, bounded locator/preference restoration, and deterministic locator-linked narration preparation are implemented and validated. Completed M007 adds the accepted protocol-v1 local service boundary: canonical cross-language controls, a bounded Python service, persistent native supervision, typed one-unit ownership outside React state, and the exact development-only Qwen/Serena adapter with packaged and exact-host evidence. The desktop still does not call `OpenedPublication.prepareNarration`, and no multi-unit audio queue, player, synchronization flow, general-hardware profile, or production distribution exists. ADR-0013 therefore continues to select no standard production profile. ADR-0015 permits only the exact one-GPU constrained demo. M008 is in progress: Milestone 1 freezes exact quick/prepared/refill thresholds, simultaneous resource limits, ownership/lifecycle semantics, volume, `1.0x`-only playback speed, and truthful UX language before the product caller, scheduler, buffer, and player are implemented.
 
 M006-002 final local validation and required pull-request CI pass, and the plan
 is complete. M007 is also complete. Its six milestones implement a model-free
@@ -25,11 +25,14 @@ p95 are both about 21.38 seconds. The accepted protocol decision remains
 unchanged after the complete implementation audit, and PR #119 passed the
 required Ubuntu/Windows jobs before the ExecPlan was archived. The product
 narration caller, playback, and distribution remain unimplemented.
-M008 owns the later adaptive scheduler and playback follow-up. Its approved
-modes preserve the approximately 15-playable-second quick-start rule and add
-explicit 1-, 2-, 5-, or 10-minute prepared-playback targets. The 30-minute
-value is a simultaneous capacity ceiling, not a startup wait, real-time claim,
-or uninterrupted-playback guarantee.
+M008 owns the later adaptive scheduler and playback follow-up. Its frozen
+[`adaptive-buffer-authority-v1`](adaptive-buffer-authority-v1.md) uses a
+10-second low-water warning, 15-second quick start, one-minute refill,
+explicit 1-, 2-, 5-, or 10-minute prepared-playback targets, and exact
+43,200,000-frame/172,800,000-byte/256-unit simultaneous maxima. The 30-minute
+value is a capacity ceiling, not a startup wait, real-time claim, or
+uninterrupted-playback guarantee. Only the authority constants and
+deterministic arithmetic tests exist; no product narration runtime is claimed.
 
 [`system-diagram.md`](system-diagram.md) is the canonical visual map and status legend. This overview owns the accompanying architectural rationale, invariants, and detailed implemented-boundary notes.
 
@@ -50,7 +53,8 @@ Desktop application
 |-- Native persistent-child TTS supervisor [M007 Milestones 3-6; implemented]
 |-- Typed TTS process client and one-unit memory sink
 |   [M007 Milestone 3; implemented, no product caller]
-`-- Audio scheduling, playback, and synchronization [deferred to Milestones 8-9]
+|-- Adaptive buffer/UX authority [M008 Milestone 1; frozen, no runtime]
+`-- Audio scheduling, playback, and synchronization [deferred to later M008/M009 milestones]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]
@@ -97,7 +101,7 @@ Local TTS service
 |   cancellation, and complete-unit framing
 |   [M007 Milestones 1-6 implemented, measured, and validated]
 `-- Adaptive demo scheduler and bounded playback policy
-    [approved M008 plan only; desktop-owned and not product runtime]
+    [M008 exact authority frozen; desktop-owned runtime not implemented]
 ```
 
 ## Approved desktop reader and candidate process model
@@ -192,7 +196,7 @@ caller sends prepared narration to it and no playback path consumes its audio.
 6. **Implemented — Milestone 5:** Exhaustively project narratable source units and structural boundaries from immutable located safe semantics, map every source position to an immutable locator-valid Unicode-code-point span, consume that mapping through bounded canonical source windows with close-linked cancellation/continuation, normalize the accepted neutral/Spanish forms, scan deterministic source-offset sentence/dialogue/clause/protected-token boundaries, pack cancellable block-local stable source-offset segments under the accepted profile with fixed oversized-token behavior, and finalize immutable canonical locator-linked prepared segments without changing the displayed representation.
 7. **Implemented — Milestone 5:** Emit bounded public prepared-segment batches with stable locator ranges and deterministic resource evidence.
 8. **Implemented — Milestone 7:** The model-free Rust probe proves the selected parent/child frame boundary and a narrow binary Tauri response. Canonical shared control schemas and the bounded Python service prove strict narration input, lifecycle, complete-unit audio framing, cancellation, and failure behavior. The native shell owns one persistent child, framed read/write bounds, state/timeouts, process-tree termination, zero automatic restart, application-exit cleanup, and narrow Tauri commands. The typed desktop client validates control order and identity, retains one binary unit outside React state, and zeroes released or stale bytes. Native-only configuration selects the implemented exact Qwen/Serena adapter. Its frozen exact-host matrix passes bounded handoff, invalidation, cancellation, crash, application-exit, privacy, RAM, and VRAM cases without retry. The accepted protocol, repository audit, required pull-request CI, and ExecPlan archival are complete. Production narration dispatch and playback remain later work.
-9. **Approved plan; not implemented — Milestone 8:** ADR-0013 retains the standard-profile blocker, while ADR-0015 permits one exact GPU worker only for a constrained demo. Quick start begins at approximately 15 playable seconds; explicit prepared playback may target 1, 2, 5, or 10 minutes.
+9. **Authority frozen; runtime not implemented — Milestone 8:** ADR-0013 retains the standard-profile blocker, while ADR-0015 permits one exact GPU worker only for a constrained demo. M008 Milestone 1 freezes a 10-second low-water warning, 15-second quick start, one-minute refill, explicit 1/2/5/10-minute prepared targets, exact simultaneous limits, one desktop queue, 0-100% volume, and `1.0x`-only playback.
 10. **Deferred — Milestones 8-9:** Generate later audio while the player consumes buffered frames or is paused without invalidation, stop at the approximately 30-minute ceiling, warn near the generation frontier, and keep the narrated passage visible.
 11. **Deferred — Milestones 8-9:** Discard played frames and stale session work.
 12. **Implemented for reader state:** Persist the logical reading locator, not a rendered page number or generated audio. Generated-audio persistence remains prohibited future behavior unless a separate product/privacy decision approves it.
@@ -229,7 +233,7 @@ The accepted limits evidence publishes only measurements and content-free outcom
 - Book text is never written to logs.
 - Derived narration text is not written to logs, analytics, persisted progress, benchmark summaries, or content-bearing diagnostics.
 - The generation queue and audio buffer are bounded.
-- The constrained demo's simultaneous playable-audio ceiling is approximately 30 minutes and must also be bounded by complete units, payload bytes, prepared text, and active work.
+- The constrained demo's simultaneous playable-audio ceiling is exactly 43,200,000 24-kHz mono sample frames, 172,800,000 logical payload bytes, 256 complete units/metadata entries, one prepared batch, 16 retained prepared segments, and one active synthesis with zero service-queued synthesis.
 - Network access is not required for normal reading.
 - Cancelled work cannot later re-enter the active playback queue.
 - Generated audio is not persisted unless a future explicit feature and privacy review permit it.

@@ -452,10 +452,10 @@ model-independent scheduler and playback behavior remain separately owned.
 
 ## Milestone 8: Build bounded audio playback and scheduling
 
-**Status:** Approved plan; implementation not started. Shared audio/buffer
-contracts and deterministic fakes exist, but no production queue, audio
-payload, player, startup gate, adaptive scheduler, or underrun instrumentation
-does. Follow
+**Status:** In progress. M008 Milestone 1 freezes the exact adaptive-buffer and
+UX authority with deterministic exact/max-plus-one arithmetic. No production
+queue, audio payload owner, player, startup gate, adaptive scheduler, or
+underrun instrumentation exists yet. Follow
 [`M008-bounded-adaptive-prebuffering.md`](active/M008-bounded-adaptive-prebuffering.md).
 
 ### Goal
@@ -496,9 +496,10 @@ behavior should first be proven with deterministic fakes.
 - Select and validate AudioWorklet or an equivalent playback mechanism.
 - Choose the internal audio format and conversion ownership.
 - Define the "shorter remaining range" used by the startup gate.
-- Freeze exact low/target/maximum duration, complete-unit, payload-byte,
-  prepared-text, and active-work bounds without treating 30 minutes as a
-  startup target.
+- Implement the frozen 10-second low-water, 15-second quick-start, one-minute
+  refill, 1/2/5/10-minute prepared targets, and simultaneous
+  43,200,000-frame/172,800,000-byte/256-unit plus prepared-text/active-work
+  limits without treating 30 minutes as a startup target.
 - Ensure adaptive waits never hide involuntary buffering or create an
   inaccessible playback state.
 - Playback speed may require time stretching rather than changing sample rate.
@@ -620,7 +621,7 @@ exact Qwen/Serena adapter, complete-unit delivery, and cancellation
 containment. It does not implement playback, promote the candidate to a
 standard profile, or approve model/runtime distribution.
 
-[`active/M008-bounded-adaptive-prebuffering.md`](active/M008-bounded-adaptive-prebuffering.md) is the approved implementation plan for ADR-0015. It does not claim that quick-start/prepared playback, the 30-minute ceiling, pause continuation, adaptive waits, or frontier buffering already exist.
+[`active/M008-bounded-adaptive-prebuffering.md`](active/M008-bounded-adaptive-prebuffering.md) is the active implementation plan for ADR-0015. Its first milestone freezes the exact buffer and UX authority, but quick-start/prepared playback, the multi-unit queue, pause continuation, adaptive waits, and frontier buffering do not yet exist.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or completed Milestones 4 through 7 and does not authorize implementing all of those areas at once.
 
