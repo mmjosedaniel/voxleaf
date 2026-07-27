@@ -5,13 +5,14 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Final, cast
 
 import pytest
 
+import benchmarks.v5_authority as v5_authority
 from benchmarks.dual_worker_result import derive_v5_summary
 from benchmarks.v5_authority import (
     AUTHORITY_COMMIT_SHA,
@@ -28,6 +29,10 @@ from benchmarks.v5_authority import (
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 AUTHORITY_COMMIT: Final = "a" * 40
 EXECUTION_COMMIT: Final = "b" * 40
+COMMITTED_EXECUTION_COMMITS: Final = {
+    "dual-worker-result-v5-cpu-solo.json": "4395ff79f3b8fecdadced60b2662415f92117a5e",
+    "dual-worker-result-v5-gpu-solo.json": "cb751b7cd497426611c7c0ce6611b8496d19e843",
+}
 UNIT_ORDER: Final = (
     "es-v4-arrival",
     "es-v4-dialogue",
@@ -42,6 +47,14 @@ UNIT_ORDER: Final = (
 
 def _sha256(path: str) -> str:
     return hashlib.sha256((REPOSITORY_ROOT / path).read_bytes()).hexdigest()
+
+
+def _committed_ancestry_checker(
+    expected_execution: str,
+) -> Callable[[str, str], bool]:
+    return lambda authority, execution: (
+        authority == AUTHORITY_COMMIT_SHA and execution == expected_execution
+    )
 
 
 def _host() -> dict[str, object]:
@@ -486,11 +499,13 @@ def test_v5_result_rejects_a_substitute_authority_commit() -> None:
 
 def test_committed_v5_summaries_are_schema_valid() -> None:
     paths = sorted((REPOSITORY_ROOT / "benchmarks/tts").glob("dual-worker-result-v5-*.json"))
-    assert paths
+    assert {path.name for path in paths} == set(COMMITTED_EXECUTION_COMMITS)
     for path in paths:
+        expected_execution = COMMITTED_EXECUTION_COMMITS[path.name]
         validate_v5_summary_result(
             REPOSITORY_ROOT,
             json.loads(path.read_text(encoding="utf-8")),
+            ancestry_checker=_committed_ancestry_checker(expected_execution),
         )
 
 
@@ -641,16 +656,19 @@ def test_v5_fixture_mutations_do_not_change_frozen_authority() -> None:
     assert _sha256("benchmarks/tts/profile-v5.json") == PROFILE_SHA256
 
 
-def test_v5_cpu_raw_derives_a_schema_valid_content_safe_summary() -> None:
+def test_v5_cpu_raw_derives_a_schema_valid_content_safe_summary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     raw = _raw_fixture("cpu-solo")
     raw["authorityCommitSha"] = AUTHORITY_COMMIT_SHA
-    raw["executionCommitSha"] = subprocess.run(
-        ("git", "rev-parse", "HEAD"),
-        cwd=REPOSITORY_ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
+    raw["executionCommitSha"] = EXECUTION_COMMIT
+    monkeypatch.setattr(
+        v5_authority,
+        "_git_is_strict_ancestor",
+        lambda _repository, authority, execution: (
+            authority == AUTHORITY_COMMIT_SHA and execution == EXECUTION_COMMIT
+        ),
+    )
 
     summary = derive_v5_summary(REPOSITORY_ROOT, raw)
 
