@@ -4,36 +4,29 @@
 
 Mixed implementation status. Roadmap Milestones 1 through 8 are complete. The secure EPUB boundary, visual reader, bounded restoration, locator-linked narration preparation, M007 service, and exact-development M008 coordinator/player path are implemented and validated within their documented scopes. ADR-0015 closes the demo policy with quick mode default, one-minute initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. The final exact-host rerun measured 19.49 buffering seconds per playback minute, which exceeds the MVP target, so ADR-0013 continues to select no standard production profile. Synchronization, general-hardware support, production distribution, and sustained uninterrupted playback remain deferred.
 
-M006-002 final local validation and required pull-request CI pass, and the plan
-is complete. M007 is also complete. Its six milestones implement a model-free
-Rust-owned parent/child standard-stream probe, freeze accepted transport
-protocol version 1, provide closed generated control contracts across
-TypeScript, Python, and Rust, and prove a bounded model-free Python service
-with deterministic fake complete-waveform generation. The
-native shell now supervises one persistent model-free Rust child, owns framed
-I/O, timeouts, process-tree termination, zero automatic restart, and
-application-exit cleanup, while a typed desktop client validates the lifecycle
-and retains at most one bounded binary unit outside React state. Native-only
-development configuration now activates the exact one-GPU Qwen/Serena adapter;
-frozen runtime/artifact checks, bounded complete-unit delivery, termination,
-stale suppression, and clean reload pass on the exact host. The frozen
-nine-case exact-host handoff matrix also passes with one GPU allocator, bounded
-native ownership, zero stale delivery, no listeners or external connections,
-and zero measured retained RAM/VRAM at every cleanup checkpoint. The exact
-adapter publishes only complete units: its measured first-audio and completion
-p95 are both about 21.38 seconds. The accepted protocol decision remains
-unchanged after the complete implementation audit, and PR #119 passed the
-required Ubuntu/Windows jobs before the ExecPlan was archived. The product
-narration caller, playback, and distribution remain unimplemented.
-M008 owns the adaptive scheduler and playback follow-up. Its frozen
+M007 is complete. Its six milestones implement the accepted protocol v1,
+closed generated contracts, bounded model-free Python service, native
+persistent-child supervision, typed desktop client, and exact one-GPU
+Qwen/Serena adapter. Frozen exact-host evidence proves complete-unit delivery,
+identity-first cancellation, bounded native ownership, clean reload, and zero
+external connections without authorizing a standard production profile.
+
+M008 is also complete. Its frozen
 [`adaptive-buffer-authority-v1`](adaptive-buffer-authority-v1.md) uses a
 10-second low-water warning, 15-second quick start, one-minute refill,
 explicit 1-, 2-, 5-, or 10-minute prepared-playback targets, and exact
 43,200,000-frame/172,800,000-byte/256-unit simultaneous maxima. The 30-minute
 value is a capacity ceiling, not a startup wait, real-time claim, or
-uninterrupted-playback guarantee. The authority constants, deterministic
-arithmetic, and metadata-only scheduler proof exist; no connected product
-narration or audible runtime is claimed.
+uninterrupted-playback guarantee. The exact-development product coordinator
+starts from the active visual locator, prepares a bounded batch, dispatches one
+M007 synthesis at a time, transfers each complete unit into the sole-owner
+FIFO, and plays it through Web Audio. Quick/prepared controls expose only
+content-free state. The final exact-host run measured 41.312 seconds to audible
+quick playback, 19.49 buffering seconds per playback minute, 24 ms
+cancellation, and zero external requests. Source ranges are not yet projected
+back into audible progress, so highlighted following, synchronized seeking,
+and heard-position persistence remain M009 work. Production distribution and
+general-hardware support also remain unimplemented.
 
 [`system-diagram.md`](system-diagram.md) is the canonical visual map and status legend. This overview owns the accompanying architectural rationale, invariants, and detailed implemented-boundary notes.
 

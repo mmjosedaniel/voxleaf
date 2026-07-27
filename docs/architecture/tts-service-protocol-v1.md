@@ -37,7 +37,7 @@ command. No socket, WebSocket, HTTP endpoint, port, discovery file, or network
 listener is created.
 
 The service accepts one active synthesis request. It owns no scheduling queue.
-M008 owns later scheduling and playback buffering.
+Completed M008 owns scheduling and playback buffering outside this protocol.
 
 ## Versioning
 
@@ -253,7 +253,7 @@ rejected immediately as busy; it is not queued. The Rust owner holds at most
 one complete validated audio unit while constructing the response. The typed
 frontend validates the `ArrayBuffer`, transfers it to one in-memory consumer,
 and releases the probe/test bytes after deriving content-free observations.
-M008 may add a separate bounded playback owner without changing the
+M008 adds a separate bounded playback owner without changing the
 one-active-service rule.
 
 The packaged application CSP permits only Tauri's internal custom-protocol
@@ -384,6 +384,6 @@ hardware support remain unimplemented.
 Milestone 6 reviewed the complete implementation and exact-host evidence and
 retains protocol version 1 unchanged. No observed case requires another
 message, field, queue, framing primitive, capability claim, or wider bound.
-M008 may schedule multiple complete units in its separately bounded playback
+M008 schedules multiple complete units in its separately bounded playback
 owner, but the service remains one-active/no-queue and every unit continues to
 cross this exact protocol-v1 boundary.

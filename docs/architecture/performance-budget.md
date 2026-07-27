@@ -203,10 +203,11 @@ M008 Milestone 6 applies those observations without changing the frozen
 arithmetic. Quick mode remains the default because it minimizes the explicit
 wait, while prepared mode remains an opt-in with one minute initially selected.
 Refill/resume stays at one minute, low water stays at 10 seconds, and semantic
-boundary waits remain disabled at `0` ms. The measured 20.91 buffering seconds
-per playback minute exceeds the MVP target of at most 5 seconds, so the exact
-profile remains a constrained development demo. Larger preparation targets may
-extend one listening interval but do not satisfy the sustained-reading budget.
+boundary waits remain disabled at `0` ms. The final closeout rerun measured
+19.49 buffering seconds per playback minute, which exceeds the MVP target of
+at most 5 seconds, so the exact profile remains a constrained development
+demo. Larger preparation targets may extend one listening interval but do not
+satisfy the sustained-reading budget.
 
 ## Benchmark reporting
 

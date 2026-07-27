@@ -105,10 +105,11 @@ M008 Milestone 6 closes the demo policy from that evidence:
 - the exact Qwen/Serena path remains available only behind explicit native
   development configuration.
 
-The measured 20.91 buffering seconds per playback minute exceeds the MVP target
-of at most 5 seconds. Prepared playback may exchange a longer explicit wait for
-more listening time, and playback-only pause may build lead, but neither changes
-the model's real-time factor. The standard-profile blocker therefore remains.
+The final closeout rerun measured 19.49 buffering seconds per playback minute,
+which exceeds the MVP target of at most 5 seconds. Prepared playback may
+exchange a longer explicit wait for more listening time, and playback-only
+pause may build lead, but neither changes the model's real-time factor. The
+standard-profile blocker therefore remains.
 No automatic retry, persistent audio cache, second model worker, CPU fallback,
 nonzero hidden wait, general-hardware claim, or production distribution is
 accepted by this closeout.

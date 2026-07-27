@@ -169,7 +169,7 @@ The exact-development user flow now continues from `VISUAL` through `PREP`,
 active visual locator, retains at most one bounded prepared batch, dispatches
 one synthesis at a time, and transfers sole complete-unit ownership into the
 player. The packaged matrix proves quick and one-minute prepared audio while
-also measuring an underrun and 20.91 buffering seconds per playback minute.
+also measuring an underrun and 19.49 buffering seconds per playback minute.
 The solid edges therefore describe the constrained exact-host demo, not a
 standard engine, continuous-playback guarantee, synchronization flow, or
 general hardware support. The 30-minute value remains a simultaneous ceiling,
