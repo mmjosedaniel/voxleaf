@@ -1,3 +1,6 @@
+import type { LocatorRangeV1 } from "@voxleaf/shared";
+
+import { SYNCHRONIZATION_AUTHORITY_V1 } from "../reader/synchronization-authority";
 import { ADAPTIVE_BUFFER_AUTHORITY_V1 } from "./adaptive-buffer-authority";
 import {
   AdaptiveBufferScheduler,
@@ -75,6 +78,30 @@ export interface AdaptivePcmPlayerObservation {
   readonly discardedAudioUnitCount: number;
 }
 
+export type AdaptivePcmAudibleProgressKind =
+  "segment-started" | "progress" | "segment-completed";
+
+export interface AdaptivePcmAudibleProgressObservation {
+  readonly kind: AdaptivePcmAudibleProgressKind;
+  readonly observedAtMs: number;
+  readonly sessionId: string;
+  readonly generationId: string;
+  readonly segmentId: string;
+  readonly sequence: number;
+  readonly sourceRange: LocatorRangeV1;
+  readonly playedSampleFrames: number;
+  readonly sampleCountSamples: number;
+}
+
+interface ActiveAudibleUnit {
+  readonly sessionId: string;
+  readonly generationId: string;
+  readonly segmentId: string;
+  readonly sequence: number;
+  readonly sourceRange: LocatorRangeV1;
+  readonly sampleCountSamples: number;
+}
+
 export type CleanupTurnScheduler = (callback: () => void) => void;
 
 function defaultCleanupTurnScheduler(callback: () => void): void {
@@ -111,7 +138,12 @@ export class AdaptivePcmPlayer {
   readonly #scheduler: AdaptiveBufferScheduler;
   readonly #backend: PcmPlaybackBackend;
   readonly #scheduleCleanupTurn: CleanupTurnScheduler;
+  readonly #audibleProgressListeners = new Set<
+    (observation: AdaptivePcmAudibleProgressObservation) => void
+  >();
   #handle: PcmPlaybackHandle | undefined;
+  #activeUnit: ActiveAudibleUnit | undefined;
+  #lastProgressObservationAtMs: number | undefined;
   #playbackStartSampleFrame = 0;
   #reportedSampleFrames = 0;
   #underrunCount = 0;
@@ -141,6 +173,15 @@ export class AdaptivePcmPlayer {
       this.#startCurrentUnit();
     }
     return this.#observation();
+  }
+
+  public subscribeAudibleProgress(
+    listener: (observation: AdaptivePcmAudibleProgressObservation) => void,
+  ): () => void {
+    this.#audibleProgressListeners.add(listener);
+    return () => {
+      this.#audibleProgressListeners.delete(listener);
+    };
   }
 
   public pause(): AdaptivePcmPlayerObservation {
@@ -203,6 +244,7 @@ export class AdaptivePcmPlayer {
         ? this.#invalidate("stopped")
         : (this.#invalidationTransition ?? "shutdown");
     this.#backend.close();
+    this.#audibleProgressListeners.clear();
     return transition;
   }
 
@@ -213,17 +255,33 @@ export class AdaptivePcmPlayer {
     }
     this.#playbackStartSampleFrame = unit.consumedSampleFrames;
     this.#reportedSampleFrames = unit.consumedSampleFrames;
+    const sequence = unit.sequence;
     try {
       this.#handle = this.#backend.start(
         requestFrom(unit, this.#volumePercent),
         Object.freeze({
           ended: () => {
-            this.#handleEnded(unit.sequence);
+            this.#handleEnded(sequence);
           },
           failed: () => {
             this.#fail();
           },
         }),
+      );
+      this.#activeUnit = Object.freeze({
+        sessionId: unit.metadata.sessionId,
+        generationId: unit.metadata.generationId,
+        segmentId: unit.metadata.segmentId,
+        sequence: unit.sequence,
+        sourceRange: unit.sourceRange,
+        sampleCountSamples: unit.metadata.sampleCountSamples,
+      });
+      this.#lastProgressObservationAtMs =
+        this.#scheduler.observe().observedAtMs;
+      this.#publishAudibleProgress(
+        "segment-started",
+        this.#activeUnit,
+        unit.consumedSampleFrames,
       );
     } catch {
       this.#fail();
@@ -234,12 +292,21 @@ export class AdaptivePcmPlayer {
   #handleEnded(sequence: number): void {
     if (
       this.#terminalState !== undefined ||
-      this.#handle?.sequence !== sequence
+      this.#handle?.sequence !== sequence ||
+      this.#activeUnit?.sequence !== sequence
     ) {
       return;
     }
+    const completedUnit = this.#activeUnit;
+    this.#publishAudibleProgress(
+      "segment-completed",
+      completedUnit,
+      completedUnit.sampleCountSamples,
+    );
     this.#refreshProgress(true);
     this.#handle = undefined;
+    this.#activeUnit = undefined;
+    this.#lastProgressObservationAtMs = undefined;
     this.#playbackStartSampleFrame = 0;
     this.#reportedSampleFrames = 0;
     const observation = this.#scheduler.observe();
@@ -270,6 +337,17 @@ export class AdaptivePcmPlayer {
     if (delta > 0) {
       this.#scheduler.consumeSampleFrames(delta);
       this.#reportedSampleFrames = observed;
+      const observedAtMs = this.#scheduler.observe().observedAtMs;
+      if (
+        !forceComplete &&
+        this.#activeUnit !== undefined &&
+        (this.#lastProgressObservationAtMs === undefined ||
+          observedAtMs - this.#lastProgressObservationAtMs >=
+            SYNCHRONIZATION_AUTHORITY_V1.observation.maximumProgressIntervalMs)
+      ) {
+        this.#lastProgressObservationAtMs = observedAtMs;
+        this.#publishAudibleProgress("progress", this.#activeUnit, observed);
+      }
     }
   }
 
@@ -282,6 +360,8 @@ export class AdaptivePcmPlayer {
     this.#invalidationTransition = transition;
     const handle = this.#handle;
     this.#handle = undefined;
+    this.#activeUnit = undefined;
+    this.#lastProgressObservationAtMs = undefined;
     handle?.stop();
     this.#scheduleCleanup();
     return transition;
@@ -307,6 +387,31 @@ export class AdaptivePcmPlayer {
         this.#scheduleCleanup();
       }
     });
+  }
+
+  #publishAudibleProgress(
+    kind: AdaptivePcmAudibleProgressKind,
+    unit: ActiveAudibleUnit,
+    playedSampleFrames: number,
+  ): void {
+    const observation = Object.freeze({
+      kind,
+      observedAtMs: this.#scheduler.observe().observedAtMs,
+      sessionId: unit.sessionId,
+      generationId: unit.generationId,
+      segmentId: unit.segmentId,
+      sequence: unit.sequence,
+      sourceRange: unit.sourceRange,
+      playedSampleFrames,
+      sampleCountSamples: unit.sampleCountSamples,
+    });
+    for (const listener of this.#audibleProgressListeners) {
+      try {
+        listener(observation);
+      } catch {
+        // An observer cannot interrupt playback or resource release.
+      }
+    }
   }
 
   #expectActive(): void {

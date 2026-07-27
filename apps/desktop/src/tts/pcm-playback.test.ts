@@ -1,4 +1,9 @@
-import { createManualClock, type ManualClock } from "@voxleaf/shared/testing";
+import { decodeLocatorRangeV1, decodeReadingLocatorV1 } from "@voxleaf/shared";
+import {
+  createManualClock,
+  VALID_SYNTHETIC_DOCUMENT_FIXTURE,
+  type ManualClock,
+} from "@voxleaf/shared/testing";
 import { describe, expect, it } from "vitest";
 
 import { sampleFramesFromPlayableMilliseconds } from "./adaptive-buffer-authority";
@@ -11,6 +16,7 @@ import {
   AdaptivePcmPlayer,
   PcmPlaybackError,
   WebAudioPcmPlaybackBackend,
+  type AdaptivePcmAudibleProgressObservation,
   type PcmPlaybackBackend,
   type PcmPlaybackCallbacks,
   type PcmPlaybackHandle,
@@ -21,6 +27,9 @@ const IDENTITY = Object.freeze({
   sessionId: "session:synthetic-playback-1",
   generationId: "generation:synthetic-playback-1",
 });
+const SOURCE_START = decodeReadingLocatorV1(
+  VALID_SYNTHETIC_DOCUMENT_FIXTURE.spineDocuments[0]!.blocks[0]!.locator,
+);
 
 interface OwnedUnit extends AdaptiveBufferAudioUnit {
   readonly releaseCount: number;
@@ -35,6 +44,7 @@ class ManualPcmPlaybackBackend implements PcmPlaybackBackend {
   readonly observedVolumes: number[] = [];
   closeCount = 0;
   active: FakeHandle | undefined;
+  lastCallbacks: PcmPlaybackCallbacks | undefined;
 
   public constructor(private readonly clock: ManualClock) {}
 
@@ -98,12 +108,18 @@ class ManualPcmPlaybackBackend implements PcmPlaybackBackend {
     };
     this.startedSequences.push(request.sequence);
     this.observedVolumes.push(volumePercent);
+    this.lastCallbacks = callbacks;
     this.active = handle;
     return handle;
   }
 
   public pump(): void {
     this.active?.pump();
+  }
+
+  public fail(): void {
+    this.active = undefined;
+    this.lastCallbacks?.failed();
   }
 
   public close(): void {
@@ -212,6 +228,18 @@ class FakeAudioContext {
 function segment(index: number): AdaptiveBufferPreparedSegment {
   return Object.freeze({
     segmentId: `segment:synthetic-playback-${index}`,
+    sequence: index - 1,
+    sourceRange: decodeLocatorRangeV1({
+      schemaVersion: 1,
+      start: {
+        ...SOURCE_START,
+        textOffsetCodePoints: SOURCE_START.textOffsetCodePoints + index,
+      },
+      end: {
+        ...SOURCE_START,
+        textOffsetCodePoints: SOURCE_START.textOffsetCodePoints + index + 1,
+      },
+    }),
     narrationCodePoints: 20,
     narrationUtf8Bytes: 20,
     sentenceCount: 1,
@@ -295,6 +323,74 @@ function runCleanupTurns(turns: Array<() => void>): void {
 }
 
 describe("adaptive PCM playback", () => {
+  it("publishes exact FIFO transitions and progress no more often than every 250 ms", () => {
+    const clock = createManualClock(0);
+    const segments = [segment(1), segment(2)];
+    const scheduler = readyScheduler(clock, segments, true);
+    synthesize(scheduler, segments[0]!, 8_000);
+    synthesize(scheduler, segments[1]!, 8_000);
+    const backend = new ManualPcmPlaybackBackend(clock);
+    const player = new AdaptivePcmPlayer(scheduler, backend);
+    const events: AdaptivePcmAudibleProgressObservation[] = [];
+    player.subscribeAudibleProgress((event) => events.push(event));
+
+    player.synchronize();
+    expect(events).toEqual([
+      expect.objectContaining({
+        kind: "segment-started",
+        sequence: 0,
+        sourceRange: segments[0]!.sourceRange,
+        playedSampleFrames: 0,
+      }),
+    ]);
+
+    clock.advanceBy(249);
+    player.synchronize();
+    expect(events).toHaveLength(1);
+    clock.advanceBy(1);
+    player.synchronize();
+    expect(events.at(-1)).toMatchObject({
+      kind: "progress",
+      observedAtMs: 250,
+      sequence: 0,
+      playedSampleFrames: 6_000,
+    });
+
+    player.pause();
+    const pausedEventCount = events.length;
+    clock.advanceBy(1_000);
+    player.synchronize();
+    expect(events).toHaveLength(pausedEventCount);
+
+    player.resume();
+    clock.advanceBy(250);
+    player.synchronize();
+    expect(events.at(-1)).toMatchObject({
+      kind: "progress",
+      observedAtMs: 1_500,
+      sequence: 0,
+      playedSampleFrames: 12_000,
+    });
+
+    clock.advanceBy(7_500);
+    backend.pump();
+    expect(events.slice(-2)).toEqual([
+      expect.objectContaining({
+        kind: "segment-completed",
+        sequence: 0,
+        playedSampleFrames: 192_000,
+      }),
+      expect.objectContaining({
+        kind: "segment-started",
+        sequence: 1,
+        sourceRange: segments[1]!.sourceRange,
+        playedSampleFrames: 0,
+      }),
+    ]);
+    expect(JSON.stringify(events)).not.toContain("payload");
+    expect(JSON.stringify(events)).not.toContain("narration");
+  });
+
   it("plays complete units in order and releases each original payload once", () => {
     const clock = createManualClock(0);
     const segments = [segment(1), segment(2)];
@@ -381,6 +477,8 @@ describe("adaptive PCM playback", () => {
     synthesize(scheduler, segments[1]!, 8_000);
     const backend = new ManualPcmPlaybackBackend(clock);
     const player = new AdaptivePcmPlayer(scheduler, backend);
+    const events: AdaptivePcmAudibleProgressObservation[] = [];
+    player.subscribeAudibleProgress((event) => events.push(event));
 
     player.synchronize();
     clock.advanceBy(8_000);
@@ -391,6 +489,10 @@ describe("adaptive PCM playback", () => {
       state: "buffering",
       underrunCount: 1,
       playableDurationMs: 0,
+    });
+    expect(events.at(-1)).toMatchObject({
+      kind: "segment-completed",
+      sequence: 1,
     });
 
     synthesize(scheduler, segments[2]!, 20_000);
@@ -407,6 +509,36 @@ describe("adaptive PCM playback", () => {
       playableDurationMs: 60_000,
       activeSequence: 2,
     });
+    expect(events.at(-1)).toMatchObject({
+      kind: "segment-started",
+      sequence: 2,
+    });
+  });
+
+  it("suppresses late transitions after failure while cleanup releases the unit", () => {
+    const clock = createManualClock(0);
+    const prepared = segment(1);
+    const scheduler = readyScheduler(clock, [prepared], true);
+    const unit = synthesize(scheduler, prepared, 8_000);
+    const backend = new ManualPcmPlaybackBackend(clock);
+    const cleanupTurns: Array<() => void> = [];
+    const player = new AdaptivePcmPlayer(scheduler, backend, (callback) => {
+      cleanupTurns.push(callback);
+    });
+    const events: AdaptivePcmAudibleProgressObservation[] = [];
+    player.subscribeAudibleProgress((event) => events.push(event));
+    player.synchronize();
+    const lateCallbacks = backend.lastCallbacks;
+
+    backend.fail();
+
+    expect(player.synchronize().state).toBe("failed");
+    expect(events.map(({ kind }) => kind)).toEqual(["segment-started"]);
+    lateCallbacks?.ended();
+    lateCallbacks?.failed();
+    expect(events.map(({ kind }) => kind)).toEqual(["segment-started"]);
+    runCleanupTurns(cleanupTurns);
+    expect(unit.releaseCount).toBe(1);
   });
 
   it.each(["stop", "seek", "close"] as const)(
@@ -422,7 +554,10 @@ describe("adaptive PCM playback", () => {
       const player = new AdaptivePcmPlayer(scheduler, backend, (callback) => {
         cleanupTurns.push(callback);
       });
+      const events: AdaptivePcmAudibleProgressObservation[] = [];
+      player.subscribeAudibleProgress((event) => events.push(event));
       player.synchronize();
+      const lateCallbacks = backend.lastCallbacks;
 
       if (operation === "stop") {
         expect(player.stop()).toBe("shutdown");
@@ -439,6 +574,9 @@ describe("adaptive PCM playback", () => {
       });
       expect(first.releaseCount).toBe(0);
       expect(second.releaseCount).toBe(0);
+      lateCallbacks?.ended();
+      lateCallbacks?.failed();
+      expect(events.map(({ kind }) => kind)).toEqual(["segment-started"]);
 
       runCleanupTurns(cleanupTurns);
       expect(first.releaseCount).toBe(1);

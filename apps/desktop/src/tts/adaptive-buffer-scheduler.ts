@@ -1,3 +1,5 @@
+import { decodeLocatorRangeV1, type LocatorRangeV1 } from "@voxleaf/shared";
+
 import {
   ADAPTIVE_BUFFER_AUTHORITY_V1,
   createAdaptiveBufferThresholds,
@@ -44,6 +46,8 @@ export type AdaptiveBufferStartMode =
 
 export interface AdaptiveBufferPreparedSegment {
   readonly segmentId: string;
+  readonly sequence: number;
+  readonly sourceRange: LocatorRangeV1;
   readonly narrationCodePoints: number;
   readonly narrationUtf8Bytes: number;
   readonly sentenceCount: number;
@@ -74,6 +78,7 @@ export interface AdaptiveBufferAudioUnit {
 
 export interface AdaptiveBufferPlaybackUnit {
   readonly sequence: number;
+  readonly sourceRange: LocatorRangeV1;
   readonly metadata: AdaptiveBufferAudioUnitMetadata;
   readonly payload: Uint8Array;
   readonly consumedSampleFrames: number;
@@ -138,10 +143,17 @@ export interface AdaptiveBufferSchedulerObservation {
 
 interface RetainedAudioUnit {
   readonly sequence: number;
+  readonly sourceRange: LocatorRangeV1;
   readonly unit: AdaptiveBufferAudioUnit;
   readonly sampleFrames: number;
   readonly payloadBytes: number;
   consumedSampleFrames: number;
+}
+
+interface DiscardedAudioUnit {
+  readonly unit: AdaptiveBufferAudioUnit;
+  readonly sampleFrames: number;
+  readonly payloadBytes: number;
 }
 
 interface ActiveSynthesis {
@@ -187,9 +199,12 @@ function emptyResources(): AdaptiveBufferResourceSnapshot {
   };
 }
 
-function validatePreparedSegment(segment: AdaptiveBufferPreparedSegment): void {
+function freezePreparedSegment(
+  segment: AdaptiveBufferPreparedSegment,
+): AdaptiveBufferPreparedSegment {
   if (
     segment.segmentId.length === 0 ||
+    !isCount(segment.sequence) ||
     !isCount(segment.narrationCodePoints) ||
     segment.narrationCodePoints === 0 ||
     !isCount(segment.narrationUtf8Bytes) ||
@@ -199,6 +214,13 @@ function validatePreparedSegment(segment: AdaptiveBufferPreparedSegment): void {
   ) {
     throw new AdaptiveBufferSchedulerError("invalid-prepared-batch");
   }
+  let sourceRange: LocatorRangeV1;
+  try {
+    sourceRange = decodeLocatorRangeV1(segment.sourceRange);
+  } catch {
+    throw new AdaptiveBufferSchedulerError("invalid-prepared-batch");
+  }
+  return Object.freeze({ ...segment, sourceRange });
 }
 
 function sameIdentity(
@@ -277,8 +299,8 @@ export class AdaptiveBufferScheduler {
   #pendingSegments: AdaptiveBufferPreparedSegment[] = [];
   #activeSynthesis: ActiveSynthesis | undefined;
   #audioUnits: RetainedAudioUnit[] = [];
-  #discardedAudioUnits: RetainedAudioUnit[] = [];
-  #nextAudioSequence = 0;
+  #discardedAudioUnits: DiscardedAudioUnit[] = [];
+  #lastAcceptedSequence: number | undefined;
   #resources = emptyResources();
   #rangeComplete = false;
   #initialPlaybackStarted = false;
@@ -389,16 +411,21 @@ export class AdaptiveBufferScheduler {
     ) {
       throw new AdaptiveBufferSchedulerError("invalid-state");
     }
-    for (const segment of batch.segments) {
-      validatePreparedSegment(segment);
-    }
+    const frozenSegments = batch.segments.map(freezePreparedSegment);
     const segmentIds = new Set(
-      batch.segments.map(({ segmentId }) => segmentId),
+      frozenSegments.map(({ segmentId }) => segmentId),
     );
-    if (segmentIds.size !== batch.segments.length) {
+    let previousSequence = this.#lastAcceptedSequence;
+    const invalidSequence = frozenSegments.some(({ sequence }) => {
+      const invalid =
+        previousSequence !== undefined && sequence <= previousSequence;
+      previousSequence = sequence;
+      return invalid;
+    });
+    if (segmentIds.size !== frozenSegments.length || invalidSequence) {
       throw new AdaptiveBufferSchedulerError("invalid-prepared-batch");
     }
-    const totals = batch.segments.reduce(
+    const totals = frozenSegments.reduce(
       (result, segment) => ({
         codePoints: result.codePoints + segment.narrationCodePoints,
         utf8Bytes: result.utf8Bytes + segment.narrationUtf8Bytes,
@@ -416,7 +443,7 @@ export class AdaptiveBufferScheduler {
     const resources: AdaptiveBufferResourceSnapshot = {
       ...this.#resources,
       retainedPreparedBatches: 1,
-      retainedPreparedSegments: batch.segments.length,
+      retainedPreparedSegments: frozenSegments.length,
       retainedNarrationCodePoints: totals.codePoints,
       retainedNarrationUtf8Bytes: totals.utf8Bytes,
       retainedNarrationSentences: totals.sentences,
@@ -424,9 +451,8 @@ export class AdaptiveBufferScheduler {
     };
     this.#assertResources(resources);
     this.#resources = resources;
-    this.#pendingSegments = batch.segments.map((segment) =>
-      Object.freeze({ ...segment }),
-    );
+    this.#pendingSegments = frozenSegments;
+    this.#lastAcceptedSequence = frozenSegments.at(-1)!.sequence;
     this.#rangeComplete = batch.complete;
   }
 
@@ -490,7 +516,11 @@ export class AdaptiveBufferScheduler {
   public acceptCompletedUnit(
     unit: AdaptiveBufferAudioUnit,
   ): AdaptiveBufferCompletionOutcome {
-    if (!sameIdentity(unit.metadata, this.#identity, this.#activeSynthesis)) {
+    const activeSynthesis = this.#activeSynthesis;
+    if (
+      activeSynthesis === undefined ||
+      !sameIdentity(unit.metadata, this.#identity, activeSynthesis)
+    ) {
       unit.release();
       return "stale";
     }
@@ -505,6 +535,7 @@ export class AdaptiveBufferScheduler {
     }
 
     const audio = ADAPTIVE_BUFFER_AUTHORITY_V1.audioLimits;
+    const completedSegment = activeSynthesis.segment;
     const resources = this.#settleActivePromptResources({
       ...this.#resources,
       audioSampleFrames:
@@ -521,13 +552,13 @@ export class AdaptiveBufferScheduler {
     this.#resources = resources;
     this.#activeSynthesis = undefined;
     this.#audioUnits.push({
-      sequence: this.#nextAudioSequence,
+      sequence: completedSegment.sequence,
+      sourceRange: completedSegment.sourceRange,
       unit,
       sampleFrames: unit.metadata.sampleCountSamples,
       payloadBytes: unit.metadata.payloadBytes,
       consumedSampleFrames: 0,
     });
-    this.#nextAudioSequence += 1;
     this.#serviceState = "ready";
     this.#clearPreparedBatchIfSettled();
     this.#refreshPlaybackState();
@@ -548,6 +579,7 @@ export class AdaptiveBufferScheduler {
     }
     return Object.freeze({
       sequence: retained.sequence,
+      sourceRange: retained.sourceRange,
       metadata: retained.unit.metadata,
       payload: retained.unit.payload,
       consumedSampleFrames: retained.consumedSampleFrames,
@@ -630,7 +662,15 @@ export class AdaptiveBufferScheduler {
       this.#activeSynthesis === undefined ? "shutdown" : "cancel";
     this.#identity = undefined;
     this.#pendingSegments = [];
-    this.#discardedAudioUnits.push(...this.#audioUnits.splice(0));
+    this.#discardedAudioUnits.push(
+      ...this.#audioUnits
+        .splice(0)
+        .map(({ unit, sampleFrames, payloadBytes }) => ({
+          unit,
+          sampleFrames,
+          payloadBytes,
+        })),
+    );
     const audio = ADAPTIVE_BUFFER_AUTHORITY_V1.audioLimits;
     const activeReservation = this.#activeSynthesis === undefined ? 0 : 1;
     this.#resources = {
