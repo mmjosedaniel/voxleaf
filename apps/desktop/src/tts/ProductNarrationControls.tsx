@@ -46,6 +46,8 @@ export function ProductNarrationControls({
       data-narration-service-state={snapshot.serviceState}
       data-narration-underruns={snapshot.metrics.underrunCount}
       data-narration-buffering-ms={snapshot.metrics.bufferingMs}
+      data-narration-intentional-wait-ms={snapshot.metrics.intentionalWaitMs}
+      data-narration-playback-ms={snapshot.metrics.playbackMs}
       data-narration-command-to-audible-ms={
         snapshot.metrics.commandToAudibleMs ?? ""
       }

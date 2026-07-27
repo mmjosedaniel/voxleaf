@@ -15,6 +15,7 @@
     "test:native-driver-client": "node --test scripts/native-webdriver-client.node-test.mjs",
     "test:native-startup": "tauri build && node scripts/native-startup-smoke.mjs",
     "test:tts:exact-host": "tauri build && node scripts/exact-tts-host.mjs",
+    "test:tts:adaptive-exact-host": "tauri build && node scripts/native-startup-smoke.mjs --adaptive-tts-exact-host",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
