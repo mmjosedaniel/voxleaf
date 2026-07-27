@@ -338,12 +338,12 @@ returned all three measures to zero. The committed content-safe result is
 This matrix does not evaluate sustainable playback or select a production
 profile.
 
-## Milestone 8 deterministic buffer and playback validation
+## Milestone 8 deterministic buffer, playback, and control validation
 
-The M008 Milestone 3 desktop tests remain model-free and device-free:
+The M008 Milestones 3-4 desktop tests remain model-free and device-free:
 
 ```powershell
-pnpm.cmd --filter @voxleaf/desktop exec vitest run src/tts/adaptive-buffer-authority.test.ts src/tts/adaptive-buffer-scheduler.test.ts src/tts/pcm-playback.test.ts
+pnpm.cmd --filter @voxleaf/desktop exec vitest run src/tts/adaptive-buffer-authority.test.ts src/tts/adaptive-buffer-scheduler.test.ts src/tts/pcm-playback.test.ts src/tts/adaptive-preparation.test.ts src/tts/AdaptivePreparationControls.test.tsx
 ```
 
 The authority and scheduler tests retain exact/max-plus-one resource,
@@ -356,9 +356,20 @@ context verifies little-endian float32 decoding into one active mono 24-kHz
 device buffer and opens no real audio device. These tests persist no payload,
 read no private book content, and load no candidate or model.
 
+`adaptive-preparation.test.ts` proves the bounded eight-observation
+elapsed-time/sample-frame estimator, stopped-service estimate input, identity
+reset, and the disabled-by-default interruptible 0/1/2/3-second
+semantic-boundary wait decision. The scheduler matrix separately proves
+target-bounded paused generation.
+`AdaptivePreparationControls.test.tsx` verifies native labeled quick/prepared
+selection, all admitted targets, progress and estimate announcements, planned
+wait versus buffering messages, low-buffer warning, pause/resume/stop
+availability, 5% volume steps, and the disabled `1.0x`-only speed selector.
+The component receives no narration text, identity, or audio payload.
+
 ## Deferred coverage
 
-The secure EPUB ingestion scenario and boundary matrix is implemented with repository-authored synthetic inputs; deterministic desktop tests prove the bounded repository, approved save lifecycle, and exact/recovered open coordination; the real-browser smoke proves preference plus exact/nearest-valid locator restoration through production React reload/reselection; the packaged native smoke proves save/restore across a WebView2 application restart; the two hardware-specific benchmarks cover accepted prototype, production React, repeated lifecycle, and packaged WebView2 reader limits; and the test-only narration corpus/limits plus production source projector, normalizer, boundary scanner, packer, canonical prepared-segment finalizer, public batch operation, public neutral/Spanish EPUB-to-segment integration matrix, and deterministic resource matrix have evidence. Milestones 5 through 7 are complete. M007 adds passing model-free process framing, optimized binary response, canonical cross-language contracts, Python service/fake engine, native supervisor, typed client, one-unit handoff, process-tree containment, cancellation, crash recovery, packaged WebView tests, the exact development-only Qwen/Serena adapter, its focused host diagnostic, the frozen exact-host service-handoff matrix, and the protocol/dependency/privacy/repository/CI closeout audit. M008 Milestones 2-3 add model-free manually clocked scheduler and payload-player tests for exact reservation, quick/prepared targets, FIFO ownership/release, identity-first invalidation, RTF depletion, failures, end-of-range, recovery, format decoding, playback timing, underruns, volume, and bounded cleanup. Default tests and CI still load no candidate or model. No product caller prepares narration for the service, dispatches its segments to M007, instantiates audible playback, detects general supported hardware, builds an installer, or exercises those later end-to-end flows. The examples below are requirements for later roadmap milestones, not claims about current coverage.
+The secure EPUB ingestion scenario and boundary matrix is implemented with repository-authored synthetic inputs; deterministic desktop tests prove the bounded repository, approved save lifecycle, and exact/recovered open coordination; the real-browser smoke proves preference plus exact/nearest-valid locator restoration through production React reload/reselection; the packaged native smoke proves save/restore across a WebView2 application restart; the two hardware-specific benchmarks cover accepted prototype, production React, repeated lifecycle, and packaged WebView2 reader limits; and the test-only narration corpus/limits plus production source projector, normalizer, boundary scanner, packer, canonical prepared-segment finalizer, public batch operation, public neutral/Spanish EPUB-to-segment integration matrix, and deterministic resource matrix have evidence. Milestones 5 through 7 are complete. M007 adds passing model-free process framing, optimized binary response, canonical cross-language contracts, Python service/fake engine, native supervisor, typed client, one-unit handoff, process-tree containment, cancellation, crash recovery, packaged WebView tests, the exact development-only Qwen/Serena adapter, its focused host diagnostic, the frozen exact-host service-handoff matrix, and the protocol/dependency/privacy/repository/CI closeout audit. M008 Milestones 2-4 add model-free manually clocked scheduler, payload-player, preparation-estimate/wait, and accessible-control tests for exact reservation, quick/prepared targets, FIFO ownership/release, identity-first invalidation, RTF depletion, failures, end-of-range, recovery, format decoding, playback timing, underruns, pause continuation, truthful state presentation, volume, and bounded cleanup. Default tests and CI still load no candidate or model. No product caller prepares narration for the service, dispatches its segments to M007, mounts the controls with an audible player, detects general supported hardware, builds an installer, or exercises those later end-to-end flows. The examples below are requirements for later roadmap milestones, not claims about current coverage.
 
 ## Test levels
 

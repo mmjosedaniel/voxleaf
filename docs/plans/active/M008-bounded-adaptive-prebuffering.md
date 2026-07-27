@@ -30,9 +30,12 @@ specific preparation duration.
 
 ## Current state
 
-- The production desktop has no product TTS caller, preparation/playback UI,
-  or synchronization flow. An unconnected payload-owning queue and low-level
-  Web Audio player now exist outside React.
+- The production desktop has no product TTS caller or synchronization flow.
+  An unconnected payload-owning queue, low-level Web Audio player,
+  content-free adaptive preparation presenter, and reusable accessible
+  narration control surface now exist. The control surface is deliberately
+  not mounted with a fake product runtime; Milestone 5 owns its connection to
+  publication narration and M007.
 - A model-free, manually clocked adaptive scheduler state machine now proves
   M008 ordering, startup, reservation, backpressure, invalidation, release,
   failure, end-of-range, and service-recovery semantics. Milestone 3 extends
@@ -378,7 +381,30 @@ Completed on 2026-07-27.
 
 #### Status
 
-Not started.
+Completed on 2026-07-27.
+
+- Added a bounded estimator that retains only the eight latest completed
+  elapsed-time/sample-frame observations, reports no estimate before current
+  evidence exists, and includes the measured 16.61-second stopped-service
+  restart/prepare cost without accepting narration text, identity, or audio.
+- Added an interruptible semantic-boundary wait coordinator for the frozen
+  `0`, `1`, `2`, or `3` second choices. Deterministic evidence distinguishes
+  planned waits from buffering and proves the positive-low-lead eligibility
+  gate. The default remains `0`; a nonzero default is not accepted without
+  Milestone 5 exact-host listening and timing evidence.
+- Added a content-free UI-state projection plus a reusable accessible React
+  control surface for quick/prepared selection, explicit prepared targets,
+  truthful progress/estimates, pause/resume/stop, low-buffer and buffering
+  messages, integer 5% volume steps, and an explicitly disabled `1.0x`-only
+  speed selector.
+- Fixed scheduler action ordering so paused quick-mode preparation stops
+  requesting narration batches when its one-minute continuing target is
+  reached. The same pre-preparation backpressure protects independent resource
+  ceilings.
+- Kept narration text, PCM payloads, paths, and work identities out of React
+  state and presentation diagnostics. The component is tested through
+  content-free synthetic observations and remains unmounted until Milestone 5
+  supplies the real product owner.
 
 ### Milestone 5: Integrate the exact one-GPU constrained demo
 
@@ -534,6 +560,17 @@ accepted no-standard-profile decision.
   pause/resume, bounded volume, `1.0x`-only rate, end-of-range, and
   stop/seek/close tests. Implementation checkpoint `29fb928` preserves the
   code/test boundary before documentation closeout.
+- 2026-07-27: Created `feat/m008-m4-adaptive-preparation-ui` from merged
+  `main` at `eaa26fb`. Added the content-free rolling estimator, optional
+  interruptible semantic-boundary wait coordinator, adaptive UI-state
+  projection, and accessible reusable quick/prepared narration controls.
+- 2026-07-27: The paused-generation matrix exposed and fixed a scheduler
+  ordering defect: a full continuing target could request another narration
+  batch before checking backpressure. Focused controller/UI/scheduler
+  validation initially passed 21 tests; the final focused matrix passes 48
+  tests, desktop type checking passes, and the full desktop suite passes 268
+  Vitest plus six native-driver client tests.
+  Implementation checkpoint `4f0ec62` retains the code and focused evidence.
 
 ## Discoveries and decisions
 
@@ -598,6 +635,22 @@ accepted no-standard-profile decision.
     than four stale original units are released per scheduled cleanup turn.
     Replacement is not admissible until those retained resource counters reach
     zero.
+21. Preparation estimates can remain useful and private by retaining only a
+    bounded window of completed elapsed-time/sample-frame pairs. Before one
+    such observation exists, “Calculating preparation time…” is more truthful
+    than applying the benchmark RTF as a promise.
+22. A nonzero semantic-boundary wait is mechanically safe and independently
+    observable under deterministic tests, but its listening benefit cannot be
+    established without the exact model and playback path. M008 therefore
+    keeps `0` ms as the default and defers any nonzero default decision to
+    Milestone 5 evidence.
+23. The accessible narration surface must not imply a working product path
+    before one exists. Milestone 4 implements and tests the reusable controls
+    against content-free state; Milestone 5 owns mounting them with the real
+    publication, service, scheduler, and player coordinator.
+24. Scheduler target backpressure must run before requesting another
+    narration batch. Otherwise a playback-only pause at its target can retain
+    sensitive prepared text that cannot produce useful audio.
 
 ## Final validation results
 
@@ -662,4 +715,30 @@ Milestone 3 implements the unconnected payload queue and player without
 persisting generated audio or adding a dependency, capability, protocol, model,
 or private fixture. It makes no product-caller, audible-device,
 continuous-output, production-profile, or general-hardware claim. Milestones
-4 through 6 remain not started.
+5 and 6 remain not started.
+
+Milestone 4 validation passes:
+
+- `pnpm.cmd --filter @voxleaf/desktop exec vitest run src/tts/adaptive-buffer-authority.test.ts src/tts/adaptive-buffer-scheduler.test.ts src/tts/pcm-playback.test.ts src/tts/adaptive-preparation.test.ts src/tts/AdaptivePreparationControls.test.tsx`
+  passes five files/48 tests.
+- `pnpm.cmd --filter @voxleaf/desktop typecheck` and
+  `pnpm.cmd --filter @voxleaf/desktop test` pass. The complete desktop run
+  passes 27 Vitest files/268 tests plus six native-driver client tests.
+- `pnpm.cmd check:portable` passes Prettier, Ruff format/check, ESLint, mypy,
+  all workspace typechecks, 196 shared tests, 555 EPUB tests, 268 desktop
+  Vitest tests, six native-driver client tests, 233 Python tests, and
+  package/desktop/Python builds.
+- The authoritative Windows `pnpm.cmd check` passes the same checks plus Cargo
+  formatting, Clippy, 24 Rust tests, the release Tauri executable build, and
+  both Python distributions. The existing Vite chunk-size advisory and denied
+  Pytest cache write warning are informational; every commanded gate exits
+  successfully.
+- All 53 Markdown files pass the 265-relative-link audit. The complete 16-file
+  Milestone 4 delta has no binary, generated-audio, book, model, archive,
+  build-artifact, private-path/email/credential-pattern, dependency, protocol,
+  Tauri-capability, or persistence change; `git diff --check` passes.
+
+Milestone 4 adds no dependency, shared/public protocol, Tauri capability,
+model, audio fixture, book content, persistence, or network behavior. Its
+React surface receives only content-free preparation state and remains
+unmounted until Milestone 5 supplies the real product coordinator.

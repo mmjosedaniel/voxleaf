@@ -171,6 +171,35 @@ describe("adaptive buffer scheduler", () => {
     assertWithinAuthority(scheduler.observe());
   });
 
+  it("continues bounded quick-mode generation while playback alone is paused", () => {
+    const scheduler = makeReadyScheduler(createManualClock(0));
+    prepare(scheduler, [segment(1), segment(2), segment(3), segment(4)]);
+
+    synthesize(scheduler, ownedUnit(segment(1).segmentId, 15_000));
+    expect(scheduler.observe().playbackState).toBe("playing");
+    scheduler.pausePlayback();
+    expect(scheduler.observe()).toMatchObject({
+      playbackState: "paused",
+      targetBufferMs: 60_000,
+      nextAction: {
+        kind: "synthesize",
+        segmentId: segment(2).segmentId,
+      },
+    });
+
+    synthesize(scheduler, ownedUnit(segment(2).segmentId, 15_000));
+    synthesize(scheduler, ownedUnit(segment(3).segmentId, 15_000));
+    synthesize(scheduler, ownedUnit(segment(4).segmentId, 15_000));
+    expect(scheduler.observe()).toMatchObject({
+      playbackState: "paused",
+      playableDurationMs: 60_000,
+      nextAction: { kind: "none", reason: "backpressure" },
+    });
+
+    scheduler.resumePlayback();
+    expect(scheduler.observe().playbackState).toBe("playing");
+  });
+
   it("honors prepared targets and starts a shorter complete remaining range", () => {
     const preparedScheduler = makeReadyScheduler(createManualClock(0), {
       kind: "prepared",
