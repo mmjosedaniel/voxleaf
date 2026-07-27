@@ -14,6 +14,7 @@
     "test:browser:install": "playwright install chromium",
     "test:native-driver-client": "node --test scripts/native-webdriver-client.node-test.mjs",
     "test:native-startup": "tauri build && node scripts/native-startup-smoke.mjs",
+    "test:tts:exact-host": "tauri build && node scripts/exact-tts-host.mjs",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {

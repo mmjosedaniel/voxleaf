@@ -1,4 +1,6 @@
 use std::{
+    fs,
+    path::{Path, PathBuf},
     process::{Child, ChildStdin, Command, Stdio},
     sync::{
         Arc, Mutex, TryLockError,
@@ -15,8 +17,8 @@ use tauri::{State, ipc::Response};
 
 use crate::{
     tts_protocol_contract::{
-        MAX_IDENTIFIER_CODE_POINTS, MAX_IDENTIFIER_UTF8_BYTES, MAX_NARRATION_CODE_POINTS,
-        MAX_NARRATION_UTF8_BYTES, valid_identifier,
+        MAX_AUDIO_BYTES, MAX_IDENTIFIER_CODE_POINTS, MAX_IDENTIFIER_UTF8_BYTES,
+        MAX_NARRATION_CODE_POINTS, MAX_NARRATION_UTF8_BYTES, valid_identifier,
     },
     tts_service_fake_child::{
         CRASH_SCENARIO, DESCENDANT_SCENARIO, NORMAL_SCENARIO, PENDING_SCENARIO,
@@ -28,6 +30,14 @@ use crate::{
 };
 
 pub const HOST_ARGUMENT: &str = "--voxleaf-tts-service-supervisor-host";
+pub const EXACT_HOST_ARGUMENT: &str = "--voxleaf-tts-exact-service-host";
+
+const DEV_ENABLED_KEY: &str = "VOXLEAF_TTS_DEV_ENABLED";
+const DEV_PYTHON_KEY: &str = "VOXLEAF_TTS_DEV_PYTHON";
+const DEV_MODEL_ROOT_KEY: &str = "VOXLEAF_TTS_DEV_MODEL_ROOT";
+const CANDIDATE_LOCK_BYTES: &[u8] = include_bytes!(
+    "../../../../services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock"
+);
 
 const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(5);
 const LOAD_TIMEOUT: Duration = Duration::from_secs(120);
@@ -40,6 +50,132 @@ const POLL_INTERVAL: Duration = Duration::from_millis(5);
 
 static SERVICE_COUNTER: AtomicU64 = AtomicU64::new(1);
 static REQUEST_COUNTER: AtomicU64 = AtomicU64::new(1);
+
+#[derive(Clone)]
+struct ExactRuntime {
+    python: PathBuf,
+    model_root: PathBuf,
+    service_source: PathBuf,
+    service_site_packages: PathBuf,
+}
+
+impl ExactRuntime {
+    fn from_environment() -> Result<Self, TtsNativeFailure> {
+        if std::env::var_os(DEV_ENABLED_KEY).as_deref() != Some(std::ffi::OsStr::new("1")) {
+            return Err(TtsNativeFailure::ChildUnavailable);
+        }
+        let repository_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../..")
+            .canonicalize()
+            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        let expected_python = repository_root
+            .join(
+                "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/.venv/Scripts/python.exe",
+            )
+            .canonicalize()
+            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        let configured_python = absolute_existing_path(DEV_PYTHON_KEY, false)?;
+        if configured_python != expected_python {
+            return Err(TtsNativeFailure::ChildUnavailable);
+        }
+        let candidate_lock = repository_root
+            .join("services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock");
+        if fs::read(candidate_lock).map_err(|_| TtsNativeFailure::ChildUnavailable)?
+            != CANDIDATE_LOCK_BYTES
+        {
+            return Err(TtsNativeFailure::ChildUnavailable);
+        }
+        let service_source = repository_root
+            .join("services/tts/src")
+            .canonicalize()
+            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        let service_site_packages = repository_root
+            .join("services/tts/.venv/Lib/site-packages")
+            .canonicalize()
+            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        for dependency in ["jsonschema", "referencing"] {
+            if !service_site_packages.join(dependency).is_dir() {
+                return Err(TtsNativeFailure::ChildUnavailable);
+            }
+        }
+        Ok(Self {
+            python: configured_python,
+            model_root: absolute_existing_path(DEV_MODEL_ROOT_KEY, true)?,
+            service_source,
+            service_site_packages,
+        })
+    }
+
+    fn command(&self) -> Result<Command, TtsNativeFailure> {
+        let python_path = std::env::join_paths([&self.service_source, &self.service_site_packages])
+            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        let mut command = Command::new(&self.python);
+        command
+            .arg("-s")
+            .arg("-m")
+            .arg("voxleaf_tts.qwen_service")
+            .current_dir(&self.model_root)
+            .env("PYTHONPATH", python_path)
+            .env("PYTHONNOUSERSITE", "1")
+            .env("PYTHONUTF8", "1")
+            .env("HF_HUB_OFFLINE", "1")
+            .env("TRANSFORMERS_OFFLINE", "1")
+            .env("HF_HUB_DISABLE_TELEMETRY", "1")
+            .env_remove(DEV_ENABLED_KEY)
+            .env_remove(DEV_PYTHON_KEY)
+            .env_remove(DEV_MODEL_ROOT_KEY);
+        Ok(command)
+    }
+}
+
+fn absolute_existing_path(key: &str, directory: bool) -> Result<PathBuf, TtsNativeFailure> {
+    let value = std::env::var_os(key).ok_or(TtsNativeFailure::ChildUnavailable)?;
+    let configured = PathBuf::from(value);
+    if !configured.is_absolute() {
+        return Err(TtsNativeFailure::ChildUnavailable);
+    }
+    let resolved = configured
+        .canonicalize()
+        .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+    if (directory && !resolved.is_dir()) || (!directory && !resolved.is_file()) {
+        return Err(TtsNativeFailure::ChildUnavailable);
+    }
+    Ok(resolved)
+}
+
+#[derive(Clone)]
+enum ServiceChild {
+    Fake(&'static str),
+    Exact(ExactRuntime),
+    Unavailable,
+}
+
+impl ServiceChild {
+    fn configured() -> Self {
+        if std::env::var_os(DEV_ENABLED_KEY).as_deref() == Some(std::ffi::OsStr::new("1")) {
+            return ExactRuntime::from_environment()
+                .map(Self::Exact)
+                .unwrap_or(Self::Unavailable);
+        }
+        Self::Fake(NORMAL_SCENARIO)
+    }
+
+    fn command(&self) -> Result<Command, TtsNativeFailure> {
+        match self {
+            Self::Fake(scenario) => {
+                let executable =
+                    std::env::current_exe().map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+                let mut command = Command::new(executable);
+                command
+                    .arg(crate::tts_service_fake_child::CHILD_ARGUMENT)
+                    .arg(scenario);
+                Ok(command)
+            }
+            Self::Exact(runtime) => runtime.command(),
+            Self::Unavailable => Err(TtsNativeFailure::ChildUnavailable),
+        }
+    }
+}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct WorkIdentity {
@@ -77,11 +213,9 @@ struct ChildProcess {
 }
 
 impl ChildProcess {
-    fn spawn(scenario: &'static str) -> Result<Self, TtsNativeFailure> {
-        let executable = std::env::current_exe().map_err(|_| TtsNativeFailure::ChildUnavailable)?;
-        let child = Command::new(executable)
-            .arg(crate::tts_service_fake_child::CHILD_ARGUMENT)
-            .arg(scenario)
+    fn spawn(child_configuration: &ServiceChild) -> Result<Self, TtsNativeFailure> {
+        let child = child_configuration
+            .command()?
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -204,10 +338,10 @@ struct ServiceSession {
 
 impl ServiceSession {
     fn spawn(
-        scenario: &'static str,
+        child_configuration: &ServiceChild,
         service_instance_id: String,
     ) -> Result<Arc<Self>, TtsNativeFailure> {
-        let mut process = ChildProcess::spawn(scenario)?;
+        let mut process = ChildProcess::spawn(child_configuration)?;
         let input = process
             .child
             .stdin
@@ -292,17 +426,21 @@ pub struct TtsServiceSupervisor {
     operation: Mutex<()>,
     lifecycle: Mutex<Lifecycle>,
     session: Mutex<Option<Arc<ServiceSession>>>,
-    scenario: &'static str,
+    child_configuration: ServiceChild,
 }
 
 impl Default for TtsServiceSupervisor {
     fn default() -> Self {
-        Self::new(NORMAL_SCENARIO)
+        Self::with_child(ServiceChild::configured())
     }
 }
 
 impl TtsServiceSupervisor {
     fn new(scenario: &'static str) -> Self {
+        Self::with_child(ServiceChild::Fake(scenario))
+    }
+
+    fn with_child(child_configuration: ServiceChild) -> Self {
         Self {
             operation: Mutex::new(()),
             lifecycle: Mutex::new(Lifecycle {
@@ -310,7 +448,7 @@ impl TtsServiceSupervisor {
                 active: None,
             }),
             session: Mutex::new(None),
-            scenario,
+            child_configuration,
         }
     }
 
@@ -395,7 +533,8 @@ impl TtsServiceSupervisor {
             "service:native-{}",
             SERVICE_COUNTER.fetch_add(1, Ordering::Relaxed)
         );
-        let session = ServiceSession::spawn(self.scenario, service_instance_id.clone())?;
+        let session =
+            ServiceSession::spawn(&self.child_configuration, service_instance_id.clone())?;
         self.set_state("starting")?;
         *self
             .session
@@ -892,6 +1031,116 @@ pub fn run_host() -> Result<(), &'static str> {
             thread::sleep(POLL_INTERVAL);
         }
         let _ = worker.join();
+    }
+    Ok(())
+}
+
+pub fn run_exact_host() -> Result<(), &'static str> {
+    let runtime = ExactRuntime::from_environment().map_err(TtsNativeFailure::code)?;
+    let segment: Value = serde_json::from_str::<Value>(include_str!(
+        "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json"
+    ))
+    .map_err(|_| TtsNativeFailure::InternalFailure.code())?
+    .get("segment")
+    .cloned()
+    .ok_or(TtsNativeFailure::InternalFailure.code())?;
+    let supervisor = Arc::new(TtsServiceSupervisor::with_child(ServiceChild::Exact(
+        runtime,
+    )));
+
+    supervisor.start().map_err(TtsNativeFailure::code)?;
+    let prepared = supervisor.prepare().map_err(TtsNativeFailure::code)?;
+    verify_exact_capabilities(&prepared)?;
+    let first = supervisor
+        .synthesize(segment.clone())
+        .map_err(TtsNativeFailure::code)?;
+    verify_exact_audio(&first)?;
+    drop(first);
+    supervisor.health().map_err(TtsNativeFailure::code)?;
+
+    let generation = Arc::clone(&supervisor);
+    let pending_segment = segment.clone();
+    let worker = thread::spawn(move || generation.synthesize(pending_segment));
+    let deadline = Instant::now() + HANDSHAKE_TIMEOUT;
+    let active = loop {
+        if let Some(identity) = supervisor
+            .lifecycle
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure.code())?
+            .active
+            .clone()
+        {
+            break identity;
+        }
+        if Instant::now() >= deadline {
+            return Err(TtsNativeFailure::TimedOut.code());
+        }
+        thread::sleep(POLL_INTERVAL);
+    };
+    if supervisor.synthesize(segment.clone()) != Err(TtsNativeFailure::Busy) {
+        return Err(TtsNativeFailure::ProtocolRejected.code());
+    }
+    supervisor
+        .cancel(CancelScope {
+            session_id: active.session_id,
+            generation_id: active.generation_id,
+            segment_id: active.segment_id,
+        })
+        .map_err(TtsNativeFailure::code)?;
+    if worker
+        .join()
+        .map_err(|_| TtsNativeFailure::InternalFailure.code())?
+        != Err(TtsNativeFailure::Cancelled)
+    {
+        return Err(TtsNativeFailure::ProtocolRejected.code());
+    }
+
+    supervisor.start().map_err(TtsNativeFailure::code)?;
+    let reloaded = supervisor.prepare().map_err(TtsNativeFailure::code)?;
+    verify_exact_capabilities(&reloaded)?;
+    let after_reload = supervisor
+        .synthesize(segment)
+        .map_err(TtsNativeFailure::code)?;
+    verify_exact_audio(&after_reload)?;
+    drop(after_reload);
+    supervisor.shutdown().map_err(TtsNativeFailure::code)?;
+    Ok(())
+}
+
+fn verify_exact_capabilities(records: &[Value]) -> Result<(), &'static str> {
+    let supported = records.iter().any(|record| {
+        record.get("kind").and_then(Value::as_str) == Some("capabilities")
+            && record
+                .pointer("/report/capabilities/localSpeechGeneration")
+                .and_then(Value::as_str)
+                == Some("supported")
+            && record
+                .pointer("/report/capabilities/hardwareAcceleration")
+                .and_then(Value::as_str)
+                == Some("supported")
+            && record
+                .pointer("/report/capabilities/streamingGeneration")
+                .and_then(Value::as_str)
+                == Some("unsupported")
+            && record
+                .pointer("/report/capabilities/generationCancellation")
+                .and_then(Value::as_str)
+                == Some("unsupported")
+            && record
+                .pointer("/report/capabilities/cpuFallback")
+                .and_then(Value::as_str)
+                == Some("unsupported")
+    });
+    if supported {
+        Ok(())
+    } else {
+        Err(TtsNativeFailure::ProtocolRejected.code())
+    }
+}
+
+fn verify_exact_audio(audio: &[u8]) -> Result<(), &'static str> {
+    if audio.is_empty() || !audio.len().is_multiple_of(4) || audio.len() as u64 > MAX_AUDIO_BYTES {
+        return Err(TtsNativeFailure::ProtocolRejected.code());
     }
     Ok(())
 }

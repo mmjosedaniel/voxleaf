@@ -48,6 +48,7 @@
     "test:browser": "pnpm run build:packages && pnpm --filter @voxleaf/desktop test:browser",
     "test:browser:install": "pnpm --filter @voxleaf/desktop test:browser:install",
     "test:native-startup": "pnpm --filter @voxleaf/desktop test:native-startup",
+    "test:tts:exact-host": "pnpm --filter @voxleaf/desktop test:tts:exact-host",
     "test:python": "uv run --project services/tts --locked pytest services/tts",
     "test:rust": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml",
     "test:typescript": "pnpm --recursive --if-present test",
