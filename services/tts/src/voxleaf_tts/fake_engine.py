@@ -8,6 +8,13 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final, cast
 
+from .engine import (
+    EngineCapabilities,
+    EngineFailure,
+    EngineFailureCode,
+    EngineResult,
+    WorkIdentity,
+)
 from .protocol import (
     BYTES_PER_SAMPLE,
     MAX_AUDIO_PAYLOAD_BYTES,
@@ -29,42 +36,6 @@ class FakeEngineOutcome(StrEnum):
     CRASH = "crash"
     NON_FINITE = "non-finite"
     OVERSIZED = "oversized"
-
-
-class FakeEngineFailureCode(StrEnum):
-    """Fixed failure codes without exception or input details."""
-
-    INVALID_STATE = "invalid-state"
-    FAILURE = "failure"
-    TIMEOUT = "timeout"
-    CRASH = "crash"
-
-
-class FakeEngineFailure(Exception):
-    """A fixed fake-engine failure that retains no sensitive input."""
-
-    def __init__(self, code: FakeEngineFailureCode) -> None:
-        super().__init__("The model-free TTS engine operation failed.")
-        self.code = code
-
-
-@dataclass(frozen=True, slots=True)
-class WorkIdentity:
-    """Only opaque work identity retained while fake generation is active."""
-
-    request_id: str
-    session_id: str
-    generation_id: str
-    segment_id: str
-
-
-@dataclass(frozen=True, slots=True)
-class FakeEngineResult:
-    """One complete model-free waveform and its fixed format."""
-
-    sample_rate_hz: int
-    channel_count: int
-    payload: bytes
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,7 +72,7 @@ class FakeTtsEngine:
         self._active: _Operation | None = None
         self._late: _Operation | None = None
         self._pending_released = False
-        self._retained_result: FakeEngineResult | None = None
+        self._retained_result: EngineResult | None = None
         self._load_count = 0
         self._warm_count = 0
         self._generation_count = 0
@@ -121,21 +92,24 @@ class FakeTtsEngine:
     def set_next_outcome(self, outcome: FakeEngineOutcome) -> None:
         self._next_outcome = outcome
 
+    def capabilities(self) -> EngineCapabilities:
+        return EngineCapabilities(local_speech_generation="unknown")
+
     def load(self) -> None:
         if self._loaded or self._active is not None:
-            raise FakeEngineFailure(FakeEngineFailureCode.INVALID_STATE)
+            raise EngineFailure(EngineFailureCode.INVALID_STATE)
         self._loaded = True
         self._load_count += 1
 
     def warm(self) -> None:
         if not self._loaded or self._warmed or self._active is not None:
-            raise FakeEngineFailure(FakeEngineFailureCode.INVALID_STATE)
+            raise EngineFailure(EngineFailureCode.INVALID_STATE)
         self._warmed = True
         self._warm_count += 1
 
     def begin(self, request_id: str, segment: Mapping[str, object]) -> WorkIdentity:
         if not self._warmed or self._active is not None:
-            raise FakeEngineFailure(FakeEngineFailureCode.INVALID_STATE)
+            raise EngineFailure(EngineFailureCode.INVALID_STATE)
         identity = WorkIdentity(
             request_id=request_id,
             session_id=cast(str, segment["sessionId"]),
@@ -149,22 +123,22 @@ class FakeTtsEngine:
 
     def release_pending(self) -> None:
         if self._active is None or self._active.outcome is not FakeEngineOutcome.PENDING_SUCCESS:
-            raise FakeEngineFailure(FakeEngineFailureCode.INVALID_STATE)
+            raise EngineFailure(EngineFailureCode.INVALID_STATE)
         self._pending_released = True
 
-    def settle(self) -> tuple[WorkIdentity, FakeEngineResult]:
+    def settle(self) -> tuple[WorkIdentity, EngineResult]:
         operation = self._active
         if operation is None or not self.can_settle:
-            raise FakeEngineFailure(FakeEngineFailureCode.INVALID_STATE)
+            raise EngineFailure(EngineFailureCode.INVALID_STATE)
         self._active = None
         self._pending_released = False
 
         if operation.outcome is FakeEngineOutcome.FAILURE:
-            raise FakeEngineFailure(FakeEngineFailureCode.FAILURE)
+            raise EngineFailure(EngineFailureCode.FAILURE)
         if operation.outcome is FakeEngineOutcome.TIMEOUT:
-            raise FakeEngineFailure(FakeEngineFailureCode.TIMEOUT)
+            raise EngineFailure(EngineFailureCode.TIMEOUT)
         if operation.outcome is FakeEngineOutcome.CRASH:
-            raise FakeEngineFailure(FakeEngineFailureCode.CRASH)
+            raise EngineFailure(EngineFailureCode.CRASH)
 
         if operation.outcome is FakeEngineOutcome.NON_FINITE:
             payload = struct.pack("<f", float("nan"))
@@ -173,7 +147,7 @@ class FakeTtsEngine:
         else:
             payload = _fixed_audio()
 
-        result = FakeEngineResult(
+        result = EngineResult(
             sample_rate_hz=SAMPLE_RATE_HZ,
             channel_count=1,
             payload=payload,
@@ -183,7 +157,7 @@ class FakeTtsEngine:
 
     def cancel(self, identity: WorkIdentity) -> None:
         if self._active is None or self._active.identity != identity:
-            raise FakeEngineFailure(FakeEngineFailureCode.INVALID_STATE)
+            raise EngineFailure(EngineFailureCode.INVALID_STATE)
         if self._active.outcome is FakeEngineOutcome.LATE_SUCCESS:
             self._late = self._active
         self._active = None
@@ -193,14 +167,14 @@ class FakeTtsEngine:
         self._retained_result = None
         self._cancellation_count += 1
 
-    def take_late_result(self) -> tuple[WorkIdentity, FakeEngineResult] | None:
+    def take_late_result(self) -> tuple[WorkIdentity, EngineResult] | None:
         operation = self._late
         self._late = None
         if operation is None:
             return None
         return (
             operation.identity,
-            FakeEngineResult(
+            EngineResult(
                 sample_rate_hz=SAMPLE_RATE_HZ,
                 channel_count=1,
                 payload=_fixed_audio(),
@@ -229,3 +203,8 @@ class FakeTtsEngine:
             active_count=int(self._active is not None),
             retained_audio_units=int(self._retained_result is not None),
         )
+
+
+FakeEngineFailure = EngineFailure
+FakeEngineFailureCode = EngineFailureCode
+FakeEngineResult = EngineResult
