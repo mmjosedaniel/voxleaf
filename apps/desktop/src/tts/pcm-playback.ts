@@ -93,6 +93,15 @@ export interface AdaptivePcmAudibleProgressObservation {
   readonly sampleCountSamples: number;
 }
 
+interface ActiveAudibleUnit {
+  readonly sessionId: string;
+  readonly generationId: string;
+  readonly segmentId: string;
+  readonly sequence: number;
+  readonly sourceRange: LocatorRangeV1;
+  readonly sampleCountSamples: number;
+}
+
 export type CleanupTurnScheduler = (callback: () => void) => void;
 
 function defaultCleanupTurnScheduler(callback: () => void): void {
@@ -133,7 +142,7 @@ export class AdaptivePcmPlayer {
     (observation: AdaptivePcmAudibleProgressObservation) => void
   >();
   #handle: PcmPlaybackHandle | undefined;
-  #activeUnit: AdaptiveBufferPlaybackUnit | undefined;
+  #activeUnit: ActiveAudibleUnit | undefined;
   #lastProgressObservationAtMs: number | undefined;
   #playbackStartSampleFrame = 0;
   #reportedSampleFrames = 0;
@@ -246,24 +255,32 @@ export class AdaptivePcmPlayer {
     }
     this.#playbackStartSampleFrame = unit.consumedSampleFrames;
     this.#reportedSampleFrames = unit.consumedSampleFrames;
+    const sequence = unit.sequence;
     try {
       this.#handle = this.#backend.start(
         requestFrom(unit, this.#volumePercent),
         Object.freeze({
           ended: () => {
-            this.#handleEnded(unit.sequence);
+            this.#handleEnded(sequence);
           },
           failed: () => {
             this.#fail();
           },
         }),
       );
-      this.#activeUnit = unit;
+      this.#activeUnit = Object.freeze({
+        sessionId: unit.metadata.sessionId,
+        generationId: unit.metadata.generationId,
+        segmentId: unit.metadata.segmentId,
+        sequence: unit.sequence,
+        sourceRange: unit.sourceRange,
+        sampleCountSamples: unit.metadata.sampleCountSamples,
+      });
       this.#lastProgressObservationAtMs =
         this.#scheduler.observe().observedAtMs;
       this.#publishAudibleProgress(
         "segment-started",
-        unit,
+        this.#activeUnit,
         unit.consumedSampleFrames,
       );
     } catch {
@@ -281,12 +298,12 @@ export class AdaptivePcmPlayer {
       return;
     }
     const completedUnit = this.#activeUnit;
-    this.#refreshProgress(true);
     this.#publishAudibleProgress(
       "segment-completed",
       completedUnit,
-      completedUnit.metadata.sampleCountSamples,
+      completedUnit.sampleCountSamples,
     );
+    this.#refreshProgress(true);
     this.#handle = undefined;
     this.#activeUnit = undefined;
     this.#lastProgressObservationAtMs = undefined;
@@ -374,19 +391,19 @@ export class AdaptivePcmPlayer {
 
   #publishAudibleProgress(
     kind: AdaptivePcmAudibleProgressKind,
-    unit: AdaptiveBufferPlaybackUnit,
+    unit: ActiveAudibleUnit,
     playedSampleFrames: number,
   ): void {
     const observation = Object.freeze({
       kind,
       observedAtMs: this.#scheduler.observe().observedAtMs,
-      sessionId: unit.metadata.sessionId,
-      generationId: unit.metadata.generationId,
-      segmentId: unit.metadata.segmentId,
+      sessionId: unit.sessionId,
+      generationId: unit.generationId,
+      segmentId: unit.segmentId,
       sequence: unit.sequence,
       sourceRange: unit.sourceRange,
       playedSampleFrames,
-      sampleCountSamples: unit.metadata.sampleCountSamples,
+      sampleCountSamples: unit.sampleCountSamples,
     });
     for (const listener of this.#audibleProgressListeners) {
       try {
