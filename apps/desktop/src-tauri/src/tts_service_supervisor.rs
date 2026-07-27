@@ -1,0 +1,962 @@
+use std::{
+    process::{Child, ChildStdin, Command, Stdio},
+    sync::{
+        Arc, Mutex, TryLockError,
+        atomic::{AtomicU64, Ordering},
+        mpsc::{self, Receiver, RecvTimeoutError},
+    },
+    thread,
+    time::{Duration, Instant},
+};
+
+use serde::Deserialize;
+use serde_json::{Value, json};
+use tauri::{State, ipc::Response};
+
+use crate::{
+    tts_protocol_contract::{
+        MAX_IDENTIFIER_CODE_POINTS, MAX_IDENTIFIER_UTF8_BYTES, MAX_NARRATION_CODE_POINTS,
+        MAX_NARRATION_UTF8_BYTES, valid_identifier,
+    },
+    tts_service_fake_child::{
+        CRASH_SCENARIO, DESCENDANT_SCENARIO, NORMAL_SCENARIO, PENDING_SCENARIO,
+    },
+    tts_service_protocol::{
+        Frame, FrameKind, TtsNativeFailure, control_kind, decode_control, encode_control,
+        read_frame, validate_audio, write_frame,
+    },
+};
+
+pub const HOST_ARGUMENT: &str = "--voxleaf-tts-service-supervisor-host";
+
+const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(5);
+const LOAD_TIMEOUT: Duration = Duration::from_secs(120);
+const WARM_TIMEOUT: Duration = Duration::from_secs(120);
+const SYNTHESIS_TIMEOUT: Duration = Duration::from_secs(120);
+const HEALTH_TIMEOUT: Duration = Duration::from_secs(2);
+const TERMINATION_TIMEOUT: Duration = Duration::from_secs(2);
+const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
+const POLL_INTERVAL: Duration = Duration::from_millis(5);
+
+static SERVICE_COUNTER: AtomicU64 = AtomicU64::new(1);
+static REQUEST_COUNTER: AtomicU64 = AtomicU64::new(1);
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct WorkIdentity {
+    request_id: String,
+    session_id: String,
+    generation_id: String,
+    segment_id: String,
+}
+
+impl WorkIdentity {
+    fn as_value(&self) -> Value {
+        json!({
+            "requestId": self.request_id,
+            "sessionId": self.session_id,
+            "generationId": self.generation_id,
+            "segmentId": self.segment_id,
+        })
+    }
+
+    fn matches_value(&self, value: Option<&Value>) -> bool {
+        value.is_some_and(|candidate| candidate == &self.as_value())
+    }
+}
+
+#[derive(Default)]
+struct Lifecycle {
+    state: String,
+    active: Option<WorkIdentity>,
+}
+
+struct ChildProcess {
+    child: Child,
+    #[cfg(windows)]
+    job: usize,
+}
+
+impl ChildProcess {
+    fn spawn(scenario: &'static str) -> Result<Self, TtsNativeFailure> {
+        let executable = std::env::current_exe().map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        let child = Command::new(executable)
+            .arg(crate::tts_service_fake_child::CHILD_ARGUMENT)
+            .arg(scenario)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()
+            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        #[cfg(windows)]
+        let job = assign_kill_on_close_job(&child)? as usize;
+        Ok(Self {
+            child,
+            #[cfg(windows)]
+            job,
+        })
+    }
+
+    fn terminate(&mut self) -> Result<(), TtsNativeFailure> {
+        #[cfg(windows)]
+        {
+            if self.job != 0 {
+                unsafe {
+                    windows_sys::Win32::Foundation::CloseHandle(
+                        self.job as windows_sys::Win32::Foundation::HANDLE,
+                    );
+                }
+                self.job = 0;
+            } else {
+                let _ = self.child.kill();
+            }
+        }
+        #[cfg(not(windows))]
+        {
+            let _ = self.child.kill();
+        }
+        self.wait_until(TERMINATION_TIMEOUT)
+    }
+
+    fn wait_until(&mut self, timeout: Duration) -> Result<(), TtsNativeFailure> {
+        let started = Instant::now();
+        loop {
+            match self.child.try_wait() {
+                Ok(Some(_)) => return Ok(()),
+                Ok(None) if started.elapsed() < timeout => thread::sleep(POLL_INTERVAL),
+                Ok(None) => return Err(TtsNativeFailure::TimedOut),
+                Err(_) => return Err(TtsNativeFailure::ChildUnavailable),
+            }
+        }
+    }
+}
+
+impl Drop for ChildProcess {
+    fn drop(&mut self) {
+        let _ = self.terminate();
+    }
+}
+
+#[cfg(windows)]
+fn assign_kill_on_close_job(
+    child: &Child,
+) -> Result<windows_sys::Win32::Foundation::HANDLE, TtsNativeFailure> {
+    use std::{mem::size_of, ptr};
+
+    use windows_sys::Win32::{
+        Foundation::{CloseHandle, HANDLE},
+        System::{
+            JobObjects::{
+                AssignProcessToJobObject, CreateJobObjectW, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+                JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JobObjectExtendedLimitInformation,
+                SetInformationJobObject,
+            },
+            Threading::{
+                OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SET_QUOTA,
+                PROCESS_TERMINATE,
+            },
+        },
+    };
+
+    unsafe {
+        let job = CreateJobObjectW(ptr::null(), ptr::null());
+        if job.is_null() {
+            return Err(TtsNativeFailure::ChildUnavailable);
+        }
+
+        let mut information: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = std::mem::zeroed();
+        information.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        if SetInformationJobObject(
+            job,
+            JobObjectExtendedLimitInformation,
+            (&raw const information).cast(),
+            size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32,
+        ) == 0
+        {
+            CloseHandle(job);
+            return Err(TtsNativeFailure::ChildUnavailable);
+        }
+
+        let process: HANDLE = OpenProcess(
+            PROCESS_SET_QUOTA | PROCESS_TERMINATE | PROCESS_QUERY_LIMITED_INFORMATION,
+            0,
+            child.id(),
+        );
+        if process.is_null() {
+            CloseHandle(job);
+            return Err(TtsNativeFailure::ChildUnavailable);
+        }
+        let assigned = AssignProcessToJobObject(job, process);
+        CloseHandle(process);
+        if assigned == 0 {
+            CloseHandle(job);
+            return Err(TtsNativeFailure::ChildUnavailable);
+        }
+        Ok(job)
+    }
+}
+
+struct ServiceSession {
+    service_instance_id: String,
+    input: Mutex<Option<ChildStdin>>,
+    frames: Mutex<Receiver<Result<Frame, TtsNativeFailure>>>,
+    process: Mutex<Option<ChildProcess>>,
+}
+
+impl ServiceSession {
+    fn spawn(
+        scenario: &'static str,
+        service_instance_id: String,
+    ) -> Result<Arc<Self>, TtsNativeFailure> {
+        let mut process = ChildProcess::spawn(scenario)?;
+        let input = process
+            .child
+            .stdin
+            .take()
+            .ok_or(TtsNativeFailure::ChildUnavailable)?;
+        let mut output = process
+            .child
+            .stdout
+            .take()
+            .ok_or(TtsNativeFailure::ChildUnavailable)?;
+        let (sender, frames) = mpsc::sync_channel(1);
+        thread::spawn(move || {
+            loop {
+                let frame = read_frame(&mut output);
+                let failed = frame.is_err();
+                if sender.send(frame).is_err() || failed {
+                    break;
+                }
+            }
+        });
+        Ok(Arc::new(Self {
+            service_instance_id,
+            input: Mutex::new(Some(input)),
+            frames: Mutex::new(frames),
+            process: Mutex::new(Some(process)),
+        }))
+    }
+
+    fn write_control(&self, value: &Value) -> Result<(), TtsNativeFailure> {
+        let payload = encode_control(value)?;
+        let mut input = self
+            .input
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        let writer = input.as_mut().ok_or(TtsNativeFailure::ChildUnavailable)?;
+        write_frame(writer, FrameKind::Control, &payload)?;
+        use std::io::Write;
+        writer
+            .flush()
+            .map_err(|_| TtsNativeFailure::ChildUnavailable)
+    }
+
+    fn receive(&self, timeout: Duration) -> Result<Frame, TtsNativeFailure> {
+        let receiver = self
+            .frames
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        match receiver.recv_timeout(timeout) {
+            Ok(frame) => frame,
+            Err(RecvTimeoutError::Timeout) => Err(TtsNativeFailure::TimedOut),
+            Err(RecvTimeoutError::Disconnected) => Err(TtsNativeFailure::ChildUnavailable),
+        }
+    }
+
+    fn terminate(&self) -> Result<(), TtsNativeFailure> {
+        if let Ok(mut input) = self.input.lock() {
+            input.take();
+        }
+        let mut process = self
+            .process
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        process.as_mut().map_or(Ok(()), ChildProcess::terminate)?;
+        process.take();
+        Ok(())
+    }
+
+    fn wait_for_exit(&self, timeout: Duration) -> Result<(), TtsNativeFailure> {
+        let mut process = self
+            .process
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?;
+        process
+            .as_mut()
+            .map_or(Ok(()), |child| child.wait_until(timeout))?;
+        process.take();
+        Ok(())
+    }
+}
+
+pub struct TtsServiceSupervisor {
+    operation: Mutex<()>,
+    lifecycle: Mutex<Lifecycle>,
+    session: Mutex<Option<Arc<ServiceSession>>>,
+    scenario: &'static str,
+}
+
+impl Default for TtsServiceSupervisor {
+    fn default() -> Self {
+        Self::new(NORMAL_SCENARIO)
+    }
+}
+
+impl TtsServiceSupervisor {
+    fn new(scenario: &'static str) -> Self {
+        Self {
+            operation: Mutex::new(()),
+            lifecycle: Mutex::new(Lifecycle {
+                state: "stopped".to_owned(),
+                active: None,
+            }),
+            session: Mutex::new(None),
+            scenario,
+        }
+    }
+
+    fn acquire_operation(&self) -> Result<std::sync::MutexGuard<'_, ()>, TtsNativeFailure> {
+        match self.operation.try_lock() {
+            Ok(guard) => Ok(guard),
+            Err(TryLockError::WouldBlock) => Err(TtsNativeFailure::Busy),
+            Err(TryLockError::Poisoned(_)) => Err(TtsNativeFailure::InternalFailure),
+        }
+    }
+
+    fn active_session(&self) -> Result<Arc<ServiceSession>, TtsNativeFailure> {
+        self.session
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?
+            .clone()
+            .ok_or(TtsNativeFailure::InvalidState)
+    }
+
+    fn set_state(&self, state: &str) -> Result<(), TtsNativeFailure> {
+        self.lifecycle
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?
+            .state = state.to_owned();
+        Ok(())
+    }
+
+    fn receive_control(
+        &self,
+        session: &ServiceSession,
+        timeout: Duration,
+        expected_kind: &str,
+    ) -> Result<Value, TtsNativeFailure> {
+        let frame = session.receive(timeout)?;
+        if frame.kind != FrameKind::Control {
+            return Err(TtsNativeFailure::ProtocolRejected);
+        }
+        let control = decode_control(&frame.payload)?;
+        if control_kind(&control)? != expected_kind {
+            return Err(TtsNativeFailure::ProtocolRejected);
+        }
+        if expected_kind != "protocolRejected"
+            && control.get("serviceInstanceId").and_then(Value::as_str)
+                != Some(session.service_instance_id.as_str())
+        {
+            return Err(TtsNativeFailure::ProtocolRejected);
+        }
+        if expected_kind == "state" {
+            let state = control
+                .get("state")
+                .and_then(Value::as_str)
+                .ok_or(TtsNativeFailure::ProtocolRejected)?;
+            self.set_state(state)?;
+        }
+        Ok(control)
+    }
+
+    fn fail_session(&self, failure: TtsNativeFailure) -> TtsNativeFailure {
+        if let Ok(mut lifecycle) = self.lifecycle.lock() {
+            lifecycle.active = None;
+            lifecycle.state = "failed".to_owned();
+        }
+        if let Ok(mut session) = self.session.lock()
+            && let Some(active) = session.take()
+        {
+            let _ = active.terminate();
+        }
+        failure
+    }
+
+    pub fn start(&self) -> Result<Vec<Value>, TtsNativeFailure> {
+        let _operation = self.acquire_operation()?;
+        if self
+            .session
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?
+            .is_some()
+        {
+            return Err(TtsNativeFailure::InvalidState);
+        }
+        let service_instance_id = format!(
+            "service:native-{}",
+            SERVICE_COUNTER.fetch_add(1, Ordering::Relaxed)
+        );
+        let session = ServiceSession::spawn(self.scenario, service_instance_id.clone())?;
+        self.set_state("starting")?;
+        *self
+            .session
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)? = Some(session.clone());
+        let handshake = json!({
+            "schemaVersion": 1,
+            "protocolVersion": 1,
+            "kind": "handshake",
+            "serviceInstanceId": service_instance_id,
+        });
+        if let Err(failure) = session.write_control(&handshake) {
+            return Err(self.fail_session(failure));
+        }
+        let result = (|| {
+            let handshaking = self.receive_control(&session, HANDSHAKE_TIMEOUT, "state")?;
+            if handshaking.get("state").and_then(Value::as_str) != Some("handshaking") {
+                return Err(TtsNativeFailure::ProtocolRejected);
+            }
+            let accepted =
+                self.receive_control(&session, HANDSHAKE_TIMEOUT, "handshakeAccepted")?;
+            let unloaded = self.receive_control(&session, HANDSHAKE_TIMEOUT, "state")?;
+            if unloaded.get("state").and_then(Value::as_str) != Some("unloaded") {
+                return Err(TtsNativeFailure::ProtocolRejected);
+            }
+            let capabilities = self.receive_control(&session, HANDSHAKE_TIMEOUT, "capabilities")?;
+            Ok(vec![handshaking, accepted, unloaded, capabilities])
+        })();
+        result.map_err(|failure| self.fail_session(failure))
+    }
+
+    pub fn prepare(&self) -> Result<Vec<Value>, TtsNativeFailure> {
+        let _operation = self.acquire_operation()?;
+        let session = self.active_session()?;
+        let result = (|| {
+            session.write_control(&service_control("load", &session.service_instance_id))?;
+            let loading = self.receive_control(&session, LOAD_TIMEOUT, "state")?;
+            if loading.get("state").and_then(Value::as_str) != Some("loading") {
+                return Err(TtsNativeFailure::ProtocolRejected);
+            }
+            let warming = self.receive_control(&session, LOAD_TIMEOUT, "state")?;
+            if warming.get("state").and_then(Value::as_str) != Some("warming") {
+                return Err(TtsNativeFailure::ProtocolRejected);
+            }
+            session.write_control(&service_control("warm", &session.service_instance_id))?;
+            let ready = self.receive_control(&session, WARM_TIMEOUT, "state")?;
+            if ready.get("state").and_then(Value::as_str) != Some("ready") {
+                return Err(TtsNativeFailure::ProtocolRejected);
+            }
+            let capabilities = self.receive_control(&session, WARM_TIMEOUT, "capabilities")?;
+            Ok(vec![loading, warming, ready, capabilities])
+        })();
+        result.map_err(|failure| self.fail_session(failure))
+    }
+
+    pub fn health(&self) -> Result<Vec<Value>, TtsNativeFailure> {
+        let _operation = self.acquire_operation()?;
+        let session = self.active_session()?;
+        let result = (|| {
+            session.write_control(&service_control("health", &session.service_instance_id))?;
+            let state = self.receive_control(&session, HEALTH_TIMEOUT, "state")?;
+            let capabilities = self.receive_control(&session, HEALTH_TIMEOUT, "capabilities")?;
+            Ok(vec![state, capabilities])
+        })();
+        result.map_err(|failure| self.fail_session(failure))
+    }
+
+    pub fn synthesize(&self, segment: Value) -> Result<Vec<u8>, TtsNativeFailure> {
+        let _operation = self.acquire_operation()?;
+        let session = self.active_session()?;
+        let identity = build_work_identity(&segment)?;
+        {
+            let mut lifecycle = self
+                .lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            if lifecycle.state != "ready" || lifecycle.active.is_some() {
+                return Err(TtsNativeFailure::InvalidState);
+            }
+            lifecycle.active = Some(identity.clone());
+        }
+        let synthesize = json!({
+            "schemaVersion": 1,
+            "protocolVersion": 1,
+            "kind": "synthesize",
+            "serviceInstanceId": session.service_instance_id,
+            "requestId": identity.request_id,
+            "segment": segment,
+        });
+        let result = (|| {
+            session.write_control(&synthesize)?;
+            let generating = self.receive_control(&session, SYNTHESIS_TIMEOUT, "state")?;
+            if generating.get("state").and_then(Value::as_str) != Some("generating") {
+                return Err(TtsNativeFailure::ProtocolRejected);
+            }
+            let metadata = self.receive_control(&session, SYNTHESIS_TIMEOUT, "audioMetadata")?;
+            if metadata.get("requestId").and_then(Value::as_str)
+                != Some(identity.request_id.as_str())
+                || !metadata_frame_matches(&metadata, &identity)
+            {
+                return Err(TtsNativeFailure::ProtocolRejected);
+            }
+            let audio = session.receive(SYNTHESIS_TIMEOUT)?;
+            if audio.kind != FrameKind::Audio {
+                return Err(TtsNativeFailure::ProtocolRejected);
+            }
+            validate_audio(&audio.payload, &metadata)?;
+            let completed = self.receive_control(&session, SYNTHESIS_TIMEOUT, "completed")?;
+            if !identity.matches_value(completed.get("workIdentity")) {
+                return Err(TtsNativeFailure::ProtocolRejected);
+            }
+            let ready = self.receive_control(&session, SYNTHESIS_TIMEOUT, "state")?;
+            if ready.get("state").and_then(Value::as_str) != Some("ready") {
+                return Err(TtsNativeFailure::ProtocolRejected);
+            }
+            let still_active = self
+                .lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?
+                .active
+                .as_ref()
+                == Some(&identity);
+            if !still_active {
+                return Err(TtsNativeFailure::Cancelled);
+            }
+            Ok(audio.payload)
+        })();
+        let cancelled = self
+            .lifecycle
+            .lock()
+            .map(|mut lifecycle| {
+                let cancelled = lifecycle.active.as_ref() != Some(&identity);
+                if !cancelled {
+                    lifecycle.active = None;
+                }
+                cancelled
+            })
+            .unwrap_or(false);
+        result.map_err(|failure| {
+            if cancelled || failure == TtsNativeFailure::Cancelled {
+                TtsNativeFailure::Cancelled
+            } else {
+                self.fail_session(failure)
+            }
+        })
+    }
+
+    pub fn cancel(&self, scope: CancelScope) -> Result<Vec<Value>, TtsNativeFailure> {
+        validate_scope(&scope)?;
+        let session = self.active_session()?;
+        let identity = {
+            let mut lifecycle = self
+                .lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            let active = lifecycle
+                .active
+                .as_ref()
+                .ok_or(TtsNativeFailure::InvalidState)?;
+            if active.session_id != scope.session_id
+                || active.generation_id != scope.generation_id
+                || active.segment_id != scope.segment_id
+            {
+                return Err(TtsNativeFailure::InvalidInput);
+            }
+            let identity = active.clone();
+            lifecycle.active = None;
+            lifecycle.state = "cancelling".to_owned();
+            identity
+        };
+        let cancel = json!({
+            "schemaVersion": 1,
+            "protocolVersion": 1,
+            "kind": "cancel",
+            "serviceInstanceId": session.service_instance_id,
+            "workIdentity": identity.as_value(),
+        });
+        let _ = session.write_control(&cancel);
+        session.terminate()?;
+        *self
+            .session
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)? = None;
+        self.set_state("stopped")?;
+        Ok(vec![
+            state_control(&session.service_instance_id, "cancelling"),
+            json!({
+                "schemaVersion": 1,
+                "protocolVersion": 1,
+                "kind": "cancelled",
+                "serviceInstanceId": session.service_instance_id,
+                "workIdentity": identity.as_value(),
+            }),
+            state_control(&session.service_instance_id, "stopped"),
+        ])
+    }
+
+    pub fn shutdown(&self) -> Result<Vec<Value>, TtsNativeFailure> {
+        let _operation = self.acquire_operation()?;
+        let session = self.active_session()?;
+        {
+            let mut lifecycle = self
+                .lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure)?;
+            lifecycle.active = None;
+            lifecycle.state = "stopping".to_owned();
+        }
+        let result = (|| {
+            session.write_control(&service_control("shutdown", &session.service_instance_id))?;
+            let stopping = self.receive_control(&session, SHUTDOWN_TIMEOUT, "state")?;
+            if stopping.get("state").and_then(Value::as_str) != Some("stopping") {
+                return Err(TtsNativeFailure::ProtocolRejected);
+            }
+            let stopped = self.receive_control(&session, SHUTDOWN_TIMEOUT, "state")?;
+            if stopped.get("state").and_then(Value::as_str) != Some("stopped") {
+                return Err(TtsNativeFailure::ProtocolRejected);
+            }
+            session.wait_for_exit(SHUTDOWN_TIMEOUT)?;
+            Ok(vec![stopping, stopped])
+        })();
+        *self
+            .session
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)? = None;
+        result.map_err(|failure| self.fail_session(failure))
+    }
+
+    pub fn force_stop(&self) {
+        if let Ok(mut lifecycle) = self.lifecycle.lock() {
+            lifecycle.active = None;
+            lifecycle.state = "stopped".to_owned();
+        }
+        if let Ok(mut session) = self.session.lock()
+            && let Some(active) = session.take()
+        {
+            let _ = active.terminate();
+        }
+    }
+}
+
+impl Drop for TtsServiceSupervisor {
+    fn drop(&mut self) {
+        self.force_stop();
+    }
+}
+
+fn service_control(kind: &str, service_instance_id: &str) -> Value {
+    json!({
+        "schemaVersion": 1,
+        "protocolVersion": 1,
+        "kind": kind,
+        "serviceInstanceId": service_instance_id,
+    })
+}
+
+fn state_control(service_instance_id: &str, state: &str) -> Value {
+    json!({
+        "schemaVersion": 1,
+        "protocolVersion": 1,
+        "kind": "state",
+        "serviceInstanceId": service_instance_id,
+        "state": state,
+    })
+}
+
+fn build_work_identity(segment: &Value) -> Result<WorkIdentity, TtsNativeFailure> {
+    let object = segment.as_object().ok_or(TtsNativeFailure::InvalidInput)?;
+    let text = object
+        .get("text")
+        .and_then(Value::as_str)
+        .ok_or(TtsNativeFailure::InvalidInput)?;
+    if text.is_empty()
+        || text.chars().count() > MAX_NARRATION_CODE_POINTS
+        || text.len() > MAX_NARRATION_UTF8_BYTES
+    {
+        return Err(TtsNativeFailure::ResourceLimit);
+    }
+    for name in ["sessionId", "generationId", "segmentId"] {
+        if !valid_identifier(object.get(name)) {
+            return Err(TtsNativeFailure::InvalidInput);
+        }
+    }
+    let request_id = format!(
+        "request:native-{}",
+        REQUEST_COUNTER.fetch_add(1, Ordering::Relaxed)
+    );
+    if request_id.chars().count() > MAX_IDENTIFIER_CODE_POINTS
+        || request_id.len() > MAX_IDENTIFIER_UTF8_BYTES
+    {
+        return Err(TtsNativeFailure::InternalFailure);
+    }
+    Ok(WorkIdentity {
+        request_id,
+        session_id: object["sessionId"]
+            .as_str()
+            .ok_or(TtsNativeFailure::InvalidInput)?
+            .to_owned(),
+        generation_id: object["generationId"]
+            .as_str()
+            .ok_or(TtsNativeFailure::InvalidInput)?
+            .to_owned(),
+        segment_id: object["segmentId"]
+            .as_str()
+            .ok_or(TtsNativeFailure::InvalidInput)?
+            .to_owned(),
+    })
+}
+
+fn metadata_frame_matches(metadata: &Value, identity: &WorkIdentity) -> bool {
+    let Some(frame) = metadata.get("frame").and_then(Value::as_object) else {
+        return false;
+    };
+    frame.get("frameId").and_then(Value::as_str) == Some(identity.request_id.as_str())
+        && frame.get("sessionId").and_then(Value::as_str) == Some(identity.session_id.as_str())
+        && frame.get("generationId").and_then(Value::as_str)
+            == Some(identity.generation_id.as_str())
+        && frame.get("segmentId").and_then(Value::as_str) == Some(identity.segment_id.as_str())
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CancelScope {
+    session_id: String,
+    generation_id: String,
+    segment_id: String,
+}
+
+fn validate_scope(scope: &CancelScope) -> Result<(), TtsNativeFailure> {
+    for identifier in [&scope.session_id, &scope.generation_id, &scope.segment_id] {
+        if !valid_identifier(Some(&Value::String(identifier.clone()))) {
+            return Err(TtsNativeFailure::InvalidInput);
+        }
+    }
+    Ok(())
+}
+
+async fn blocking<T: Send + 'static>(
+    operation: impl FnOnce() -> Result<T, TtsNativeFailure> + Send + 'static,
+) -> Result<T, &'static str> {
+    tauri::async_runtime::spawn_blocking(operation)
+        .await
+        .map_err(|_| TtsNativeFailure::InternalFailure.code())?
+        .map_err(TtsNativeFailure::code)
+}
+
+#[tauri::command]
+pub async fn start_tts_service(
+    supervisor: State<'_, Arc<TtsServiceSupervisor>>,
+) -> Result<Vec<Value>, &'static str> {
+    let supervisor = Arc::clone(supervisor.inner());
+    blocking(move || supervisor.start()).await
+}
+
+#[tauri::command]
+pub async fn prepare_tts_service(
+    supervisor: State<'_, Arc<TtsServiceSupervisor>>,
+) -> Result<Vec<Value>, &'static str> {
+    let supervisor = Arc::clone(supervisor.inner());
+    blocking(move || supervisor.prepare()).await
+}
+
+#[tauri::command]
+pub async fn health_tts_service(
+    supervisor: State<'_, Arc<TtsServiceSupervisor>>,
+) -> Result<Vec<Value>, &'static str> {
+    let supervisor = Arc::clone(supervisor.inner());
+    blocking(move || supervisor.health()).await
+}
+
+#[tauri::command]
+pub async fn synthesize_tts_segment(
+    supervisor: State<'_, Arc<TtsServiceSupervisor>>,
+    segment: Value,
+) -> Result<Response, &'static str> {
+    let supervisor = Arc::clone(supervisor.inner());
+    blocking(move || supervisor.synthesize(segment))
+        .await
+        .map(Response::new)
+}
+
+#[tauri::command]
+pub async fn cancel_tts_generation(
+    supervisor: State<'_, Arc<TtsServiceSupervisor>>,
+    scope: CancelScope,
+) -> Result<Vec<Value>, &'static str> {
+    let supervisor = Arc::clone(supervisor.inner());
+    blocking(move || supervisor.cancel(scope)).await
+}
+
+#[tauri::command]
+pub async fn shutdown_tts_service(
+    supervisor: State<'_, Arc<TtsServiceSupervisor>>,
+) -> Result<Vec<Value>, &'static str> {
+    let supervisor = Arc::clone(supervisor.inner());
+    blocking(move || supervisor.shutdown()).await
+}
+
+pub fn run_host() -> Result<(), &'static str> {
+    let segment: Value = serde_json::from_str::<Value>(include_str!(
+        "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json"
+    ))
+    .map_err(|_| TtsNativeFailure::InternalFailure.code())?
+    .get("segment")
+    .cloned()
+    .ok_or(TtsNativeFailure::InternalFailure.code())?;
+
+    let normal = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+    normal.start().map_err(TtsNativeFailure::code)?;
+    normal.prepare().map_err(TtsNativeFailure::code)?;
+    let audio = normal
+        .synthesize(segment.clone())
+        .map_err(TtsNativeFailure::code)?;
+    if audio.len() != 19_200 {
+        return Err(TtsNativeFailure::ProtocolRejected.code());
+    }
+    normal.health().map_err(TtsNativeFailure::code)?;
+    normal.shutdown().map_err(TtsNativeFailure::code)?;
+
+    let pending = Arc::new(TtsServiceSupervisor::new(PENDING_SCENARIO));
+    pending.start().map_err(TtsNativeFailure::code)?;
+    pending.prepare().map_err(TtsNativeFailure::code)?;
+    let generation = Arc::clone(&pending);
+    let pending_segment = segment.clone();
+    let worker = thread::spawn(move || generation.synthesize(pending_segment));
+    let deadline = Instant::now() + HANDSHAKE_TIMEOUT;
+    loop {
+        let active = pending
+            .lifecycle
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure.code())?
+            .active
+            .clone();
+        if let Some(identity) = active {
+            pending
+                .cancel(CancelScope {
+                    session_id: identity.session_id,
+                    generation_id: identity.generation_id,
+                    segment_id: identity.segment_id,
+                })
+                .map_err(TtsNativeFailure::code)?;
+            break;
+        }
+        if Instant::now() >= deadline {
+            return Err(TtsNativeFailure::TimedOut.code());
+        }
+        thread::sleep(POLL_INTERVAL);
+    }
+    if worker
+        .join()
+        .map_err(|_| TtsNativeFailure::InternalFailure.code())?
+        != Err(TtsNativeFailure::Cancelled)
+    {
+        return Err(TtsNativeFailure::ProtocolRejected.code());
+    }
+
+    let crash = TtsServiceSupervisor::new(CRASH_SCENARIO);
+    crash.start().map_err(TtsNativeFailure::code)?;
+    crash.prepare().map_err(TtsNativeFailure::code)?;
+    if crash.synthesize(segment.clone()).is_ok() {
+        return Err(TtsNativeFailure::ProtocolRejected.code());
+    }
+    crash.start().map_err(TtsNativeFailure::code)?;
+    crash.shutdown().map_err(TtsNativeFailure::code)?;
+
+    #[cfg(windows)]
+    {
+        let descendant = Arc::new(TtsServiceSupervisor::new(DESCENDANT_SCENARIO));
+        descendant.start().map_err(TtsNativeFailure::code)?;
+        descendant.prepare().map_err(TtsNativeFailure::code)?;
+        let generation = Arc::clone(&descendant);
+        let worker = thread::spawn(move || generation.synthesize(segment));
+        let deadline = Instant::now() + HANDSHAKE_TIMEOUT;
+        loop {
+            let active = descendant
+                .lifecycle
+                .lock()
+                .map_err(|_| TtsNativeFailure::InternalFailure.code())?
+                .active
+                .clone();
+            if let Some(identity) = active {
+                descendant
+                    .cancel(CancelScope {
+                        session_id: identity.session_id,
+                        generation_id: identity.generation_id,
+                        segment_id: identity.segment_id,
+                    })
+                    .map_err(TtsNativeFailure::code)?;
+                break;
+            }
+            if Instant::now() >= deadline {
+                return Err(TtsNativeFailure::TimedOut.code());
+            }
+            thread::sleep(POLL_INTERVAL);
+        }
+        let _ = worker.join();
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fixture_segment() -> Value {
+        serde_json::from_str::<Value>(include_str!(
+            "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json"
+        ))
+        .expect("fixture should parse")["segment"]
+            .clone()
+    }
+
+    #[test]
+    fn validates_segment_and_generates_native_owned_request_identity() {
+        let identity = build_work_identity(&fixture_segment()).expect("segment should validate");
+        assert!(identity.request_id.starts_with("request:native-"));
+        assert_eq!(identity.session_id, "session:synthetic-1");
+    }
+
+    #[test]
+    fn rejects_text_and_identity_bounds_before_dispatch() {
+        let mut segment = fixture_segment();
+        segment["text"] = Value::String("a".repeat(MAX_NARRATION_CODE_POINTS + 1));
+        assert_eq!(
+            build_work_identity(&segment),
+            Err(TtsNativeFailure::ResourceLimit)
+        );
+        segment = fixture_segment();
+        segment["sessionId"] = Value::String(String::new());
+        assert_eq!(
+            build_work_identity(&segment),
+            Err(TtsNativeFailure::InvalidInput)
+        );
+    }
+
+    #[test]
+    fn fixed_failure_surface_contains_no_dynamic_input() {
+        assert_eq!(
+            [
+                TtsNativeFailure::Busy,
+                TtsNativeFailure::Cancelled,
+                TtsNativeFailure::ChildUnavailable,
+                TtsNativeFailure::InternalFailure,
+                TtsNativeFailure::InvalidInput,
+                TtsNativeFailure::InvalidState,
+                TtsNativeFailure::ProtocolRejected,
+                TtsNativeFailure::ResourceLimit,
+                TtsNativeFailure::TimedOut,
+            ]
+            .map(TtsNativeFailure::code),
+            [
+                "tts-service-busy",
+                "tts-service-cancelled",
+                "tts-service-unavailable",
+                "tts-service-internal-failure",
+                "tts-service-invalid-input",
+                "tts-service-invalid-state",
+                "tts-service-protocol-rejected",
+                "tts-service-resource-limit",
+                "tts-service-timeout",
+            ]
+        );
+    }
+}

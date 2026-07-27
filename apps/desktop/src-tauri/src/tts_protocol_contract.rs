@@ -2,15 +2,16 @@ use std::collections::BTreeSet;
 
 use serde_json::{Map, Value};
 
-const PROTOCOL_VERSION: u64 = 1;
-const SCHEMA_VERSION: u64 = 1;
-const MAX_IDENTIFIER_CODE_POINTS: usize = 128;
-const MAX_IDENTIFIER_UTF8_BYTES: usize = 512;
-const MAX_NARRATION_CODE_POINTS: usize = 640;
-const MAX_NARRATION_UTF8_BYTES: usize = 2_048;
-const MAX_AUDIO_SAMPLES: u64 = 480_000;
-const MAX_AUDIO_BYTES: u64 = 1_920_000;
+pub const PROTOCOL_VERSION: u64 = 1;
+pub const SCHEMA_VERSION: u64 = 1;
+pub const MAX_IDENTIFIER_CODE_POINTS: usize = 128;
+pub const MAX_IDENTIFIER_UTF8_BYTES: usize = 512;
+pub const MAX_NARRATION_CODE_POINTS: usize = 640;
+pub const MAX_NARRATION_UTF8_BYTES: usize = 2_048;
+pub const MAX_AUDIO_SAMPLES: u64 = 480_000;
+pub const MAX_AUDIO_BYTES: u64 = 1_920_000;
 
+#[cfg(test)]
 const VALID_FIXTURES: [(&str, &str); 15] = [
     (
         "handshake",
@@ -104,6 +105,7 @@ const VALID_FIXTURES: [(&str, &str); 15] = [
     ),
 ];
 
+#[cfg(test)]
 const INVALID_FIXTURES: [&str; 3] = [
     include_str!(
         "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/invalid-unknown-field.json"
@@ -124,7 +126,7 @@ fn exact_keys(object: &Map<String, Value>, names: &[&str]) -> bool {
     object.keys().cloned().collect::<BTreeSet<_>>() == keys(names)
 }
 
-fn valid_identifier(value: Option<&Value>) -> bool {
+pub fn valid_identifier(value: Option<&Value>) -> bool {
     value.and_then(Value::as_str).is_some_and(|identifier| {
         let code_points = identifier.chars().count();
         code_points > 0
@@ -185,8 +187,93 @@ fn validate_audio_metadata(object: &Map<String, Value>) -> bool {
         && payload_bytes == samples.map(|value| value * 4)
 }
 
-fn validate_control_fixture(source: &str) -> bool {
-    let Ok(Value::Object(object)) = serde_json::from_str::<Value>(source) else {
+fn valid_capabilities(value: Option<&Value>) -> bool {
+    let Some(report) = value.and_then(Value::as_object) else {
+        return false;
+    };
+    let Some(capabilities) = report.get("capabilities").and_then(Value::as_object) else {
+        return false;
+    };
+    exact_keys(report, &["schemaVersion", "capabilities"])
+        && report.get("schemaVersion").and_then(Value::as_u64) == Some(SCHEMA_VERSION)
+        && exact_keys(
+            capabilities,
+            &[
+                "localSpeechGeneration",
+                "streamingGeneration",
+                "generationCancellation",
+                "hardwareAcceleration",
+                "cpuFallback",
+            ],
+        )
+        && capabilities.values().all(|status| {
+            status
+                .as_str()
+                .is_some_and(|value| matches!(value, "supported" | "unsupported" | "unknown"))
+        })
+}
+
+fn valid_reason(value: Option<&Value>) -> bool {
+    value.and_then(Value::as_str).is_some_and(|reason| {
+        matches!(
+            reason,
+            "malformed-frame"
+                | "unsupported-protocol-version"
+                | "unknown-record-kind"
+                | "invalid-flags"
+                | "empty-payload"
+                | "over-limit"
+                | "invalid-utf8"
+                | "malformed-json"
+                | "unknown-message-kind"
+                | "unsupported-schema-version"
+                | "invalid-message"
+                | "invalid-state"
+                | "identity-mismatch"
+                | "duplicate-identity"
+                | "sequence-gap"
+                | "format-mismatch"
+                | "busy"
+                | "engine-failure"
+                | "engine-timeout"
+                | "operation-cancelled"
+                | "resource-exhausted"
+        )
+    })
+}
+
+fn expected_error(reason: &str) -> (&'static str, &'static str, &'static str) {
+    match reason {
+        "unsupported-protocol-version" | "unsupported-schema-version" => {
+            ("unsupported-input", "input", "recoverable")
+        }
+        "operation-cancelled" => ("operation-cancelled", "cancellation", "recoverable"),
+        "busy" | "resource-exhausted" => ("resource-exhausted", "resource", "recoverable"),
+        "engine-failure" | "engine-timeout" | "format-mismatch" | "sequence-gap" => {
+            ("internal-failure", "internal", "fatal")
+        }
+        _ => ("invalid-input", "input", "recoverable"),
+    }
+}
+
+fn valid_error(object: &Map<String, Value>) -> bool {
+    let Some(reason) = object.get("reason").and_then(Value::as_str) else {
+        return false;
+    };
+    let Some(error) = object.get("error").and_then(Value::as_object) else {
+        return false;
+    };
+    let expected = expected_error(reason);
+    valid_reason(object.get("reason"))
+        && exact_keys(error, &["schemaVersion", "code", "category", "severity"])
+        && error.get("schemaVersion").and_then(Value::as_u64) == Some(SCHEMA_VERSION)
+        && error.get("code").and_then(Value::as_str) == Some(expected.0)
+        && error.get("category").and_then(Value::as_str) == Some(expected.1)
+        && error.get("severity").and_then(Value::as_str) == Some(expected.2)
+}
+
+pub fn validate_control_value(value: &Value) -> bool {
+    let Some(object) = value.as_object() else {
         return false;
     };
     if object.get("schemaVersion").and_then(Value::as_u64) != Some(SCHEMA_VERSION)
@@ -208,11 +295,11 @@ fn validate_control_fixture(source: &str) -> bool {
 
     match kind {
         "handshake" | "load" | "warm" | "health" | "shutdown" | "handshakeAccepted" => {
-            exact_keys(&object, &service_keys) && service_identity_valid()
+            exact_keys(object, &service_keys) && service_identity_valid()
         }
         "synthesize" => {
             exact_keys(
-                &object,
+                object,
                 &[
                     "schemaVersion",
                     "protocolVersion",
@@ -222,11 +309,11 @@ fn validate_control_fixture(source: &str) -> bool {
                     "segment",
                 ],
             ) && service_identity_valid()
-                && validate_synthesize(&object)
+                && validate_synthesize(object)
         }
         "cancel" | "completed" | "cancelled" => {
             exact_keys(
-                &object,
+                object,
                 &[
                     "schemaVersion",
                     "protocolVersion",
@@ -239,7 +326,7 @@ fn validate_control_fixture(source: &str) -> bool {
         }
         "state" => {
             exact_keys(
-                &object,
+                object,
                 &[
                     "schemaVersion",
                     "protocolVersion",
@@ -270,7 +357,7 @@ fn validate_control_fixture(source: &str) -> bool {
         }
         "capabilities" => {
             exact_keys(
-                &object,
+                object,
                 &[
                     "schemaVersion",
                     "protocolVersion",
@@ -280,7 +367,7 @@ fn validate_control_fixture(source: &str) -> bool {
                     "cancellationContainment",
                 ],
             ) && service_identity_valid()
-                && object.get("report").is_some_and(Value::is_object)
+                && valid_capabilities(object.get("report"))
                 && object
                     .get("cancellationContainment")
                     .and_then(Value::as_str)
@@ -288,7 +375,7 @@ fn validate_control_fixture(source: &str) -> bool {
         }
         "audioMetadata" => {
             exact_keys(
-                &object,
+                object,
                 &[
                     "schemaVersion",
                     "protocolVersion",
@@ -301,7 +388,7 @@ fn validate_control_fixture(source: &str) -> bool {
                 ],
             ) && service_identity_valid()
                 && object.get("sampleFormat").and_then(Value::as_str) == Some("float32-le")
-                && validate_audio_metadata(&object)
+                && validate_audio_metadata(object)
         }
         "error" => {
             let required = [
@@ -321,22 +408,26 @@ fn validate_control_fixture(source: &str) -> bool {
                 "error",
                 "workIdentity",
             ];
-            (exact_keys(&object, &required) || exact_keys(&object, &with_identity))
+            (exact_keys(object, &required) || exact_keys(object, &with_identity))
                 && service_identity_valid()
-                && object.get("reason").is_some_and(Value::is_string)
-                && object.get("error").is_some_and(Value::is_object)
+                && valid_error(object)
                 && object
                     .get("workIdentity")
                     .is_none_or(|value| valid_work_identity(Some(value)))
         }
         "protocolRejected" => {
             exact_keys(
-                &object,
+                object,
                 &["schemaVersion", "protocolVersion", "kind", "reason"],
-            ) && object.get("reason").is_some_and(Value::is_string)
+            ) && valid_reason(object.get("reason"))
         }
         _ => false,
     }
+}
+
+#[cfg(test)]
+fn validate_control_fixture(source: &str) -> bool {
+    serde_json::from_str::<Value>(source).is_ok_and(|value| validate_control_value(&value))
 }
 
 #[test]
