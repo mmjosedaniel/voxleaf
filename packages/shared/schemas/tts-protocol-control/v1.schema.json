@@ -1,0 +1,608 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:schema:tts-protocol-control:v1",
+  "title": "TtsProtocolControlV1Wire",
+  "description": "Closed JSON control messages for VoxLeaf local TTS process protocol version 1. Raw PCM is carried only in a separate bounded audio record.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/handshake"
+    },
+    {
+      "$ref": "#/$defs/load"
+    },
+    {
+      "$ref": "#/$defs/warm"
+    },
+    {
+      "$ref": "#/$defs/synthesize"
+    },
+    {
+      "$ref": "#/$defs/cancel"
+    },
+    {
+      "$ref": "#/$defs/health"
+    },
+    {
+      "$ref": "#/$defs/shutdown"
+    },
+    {
+      "$ref": "#/$defs/handshakeAccepted"
+    },
+    {
+      "$ref": "#/$defs/state"
+    },
+    {
+      "$ref": "#/$defs/capabilities"
+    },
+    {
+      "$ref": "#/$defs/audioMetadata"
+    },
+    {
+      "$ref": "#/$defs/completed"
+    },
+    {
+      "$ref": "#/$defs/cancelled"
+    },
+    {
+      "$ref": "#/$defs/error"
+    },
+    {
+      "$ref": "#/$defs/protocolRejected"
+    }
+  ],
+  "$defs": {
+    "schemaVersion": {
+      "allOf": [
+        {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"
+        },
+        {
+          "const": 1
+        }
+      ]
+    },
+    "protocolVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "serviceInstanceId": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/identifier"
+    },
+    "requestId": {
+      "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/identifier"
+    },
+    "serviceState": {
+      "type": "string",
+      "enum": [
+        "starting",
+        "handshaking",
+        "unloaded",
+        "loading",
+        "warming",
+        "ready",
+        "generating",
+        "cancelling",
+        "stopping",
+        "stopped",
+        "failed"
+      ]
+    },
+    "protocolReason": {
+      "type": "string",
+      "enum": [
+        "malformed-frame",
+        "unsupported-protocol-version",
+        "unknown-record-kind",
+        "invalid-flags",
+        "empty-payload",
+        "over-limit",
+        "invalid-utf8",
+        "malformed-json",
+        "unknown-message-kind",
+        "unsupported-schema-version",
+        "invalid-message",
+        "invalid-state",
+        "identity-mismatch",
+        "duplicate-identity",
+        "sequence-gap",
+        "format-mismatch",
+        "busy",
+        "engine-failure",
+        "engine-timeout",
+        "operation-cancelled",
+        "resource-exhausted"
+      ]
+    },
+    "workIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requestId", "sessionId", "generationId", "segmentId"],
+      "properties": {
+        "requestId": {
+          "$ref": "#/$defs/requestId"
+        },
+        "sessionId": {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/sessionId"
+        },
+        "generationId": {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/generationId"
+        },
+        "segmentId": {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/segmentId"
+        }
+      }
+    },
+    "handshake": {
+      "title": "TtsHandshakeV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "protocolVersion",
+        "kind",
+        "serviceInstanceId"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "protocolVersion": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "kind": {
+          "const": "handshake"
+        },
+        "serviceInstanceId": {
+          "$ref": "#/$defs/serviceInstanceId"
+        }
+      }
+    },
+    "load": {
+      "title": "TtsLoadV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "protocolVersion",
+        "kind",
+        "serviceInstanceId"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "protocolVersion": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "kind": {
+          "const": "load"
+        },
+        "serviceInstanceId": {
+          "$ref": "#/$defs/serviceInstanceId"
+        }
+      }
+    },
+    "warm": {
+      "title": "TtsWarmV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "protocolVersion",
+        "kind",
+        "serviceInstanceId"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "protocolVersion": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "kind": {
+          "const": "warm"
+        },
+        "serviceInstanceId": {
+          "$ref": "#/$defs/serviceInstanceId"
+        }
+      }
+    },
+    "synthesize": {
+      "title": "TtsSynthesizeV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "protocolVersion",
+        "kind",
+        "serviceInstanceId",
+        "requestId",
+        "segment"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "protocolVersion": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "kind": {
+          "const": "synthesize"
+        },
+        "serviceInstanceId": {
+          "$ref": "#/$defs/serviceInstanceId"
+        },
+        "requestId": {
+          "$ref": "#/$defs/requestId"
+        },
+        "segment": {
+          "allOf": [
+            {
+              "$ref": "urn:voxleaf:schema:narration-segment:v1"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 640
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "cancel": {
+      "title": "TtsCancelV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "protocolVersion",
+        "kind",
+        "serviceInstanceId",
+        "workIdentity"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "protocolVersion": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "kind": {
+          "const": "cancel"
+        },
+        "serviceInstanceId": {
+          "$ref": "#/$defs/serviceInstanceId"
+        },
+        "workIdentity": {
+          "$ref": "#/$defs/workIdentity"
+        }
+      }
+    },
+    "health": {
+      "title": "TtsHealthV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "protocolVersion",
+        "kind",
+        "serviceInstanceId"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "protocolVersion": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "kind": {
+          "const": "health"
+        },
+        "serviceInstanceId": {
+          "$ref": "#/$defs/serviceInstanceId"
+        }
+      }
+    },
+    "shutdown": {
+      "title": "TtsShutdownV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "protocolVersion",
+        "kind",
+        "serviceInstanceId"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "protocolVersion": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "kind": {
+          "const": "shutdown"
+        },
+        "serviceInstanceId": {
+          "$ref": "#/$defs/serviceInstanceId"
+        }
+      }
+    },
+    "handshakeAccepted": {
+      "title": "TtsHandshakeAcceptedV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "protocolVersion",
+        "kind",
+        "serviceInstanceId"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "protocolVersion": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "kind": {
+          "const": "handshakeAccepted"
+        },
+        "serviceInstanceId": {
+          "$ref": "#/$defs/serviceInstanceId"
+        }
+      }
+    },
+    "state": {
+      "title": "TtsStateV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "protocolVersion",
+        "kind",
+        "serviceInstanceId",
+        "state"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "protocolVersion": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "kind": {
+          "const": "state"
+        },
+        "serviceInstanceId": {
+          "$ref": "#/$defs/serviceInstanceId"
+        },
+        "state": {
+          "$ref": "#/$defs/serviceState"
+        }
+      }
+    },
+    "capabilities": {
+      "title": "TtsCapabilitiesV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "protocolVersion",
+        "kind",
+        "serviceInstanceId",
+        "report",
+        "cancellationContainment"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "protocolVersion": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "kind": {
+          "const": "capabilities"
+        },
+        "serviceInstanceId": {
+          "$ref": "#/$defs/serviceInstanceId"
+        },
+        "report": {
+          "$ref": "urn:voxleaf:schema:capability-report:v1"
+        },
+        "cancellationContainment": {
+          "const": "identity-invalidation-then-worker-termination"
+        }
+      }
+    },
+    "audioMetadata": {
+      "title": "TtsAudioMetadataV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "protocolVersion",
+        "kind",
+        "serviceInstanceId",
+        "requestId",
+        "frame",
+        "sampleFormat",
+        "payloadBytes"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "protocolVersion": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "kind": {
+          "const": "audioMetadata"
+        },
+        "serviceInstanceId": {
+          "$ref": "#/$defs/serviceInstanceId"
+        },
+        "requestId": {
+          "$ref": "#/$defs/requestId"
+        },
+        "frame": {
+          "allOf": [
+            {
+              "$ref": "urn:voxleaf:schema:audio-frame:v1"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "sequence": {
+                  "const": 0
+                },
+                "sampleRateHz": {
+                  "const": 24000
+                },
+                "sampleCountSamples": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 480000
+                },
+                "channelCount": {
+                  "const": 1
+                },
+                "endOfSegment": {
+                  "const": true
+                }
+              }
+            }
+          ]
+        },
+        "sampleFormat": {
+          "const": "float32-le"
+        },
+        "payloadBytes": {
+          "type": "integer",
+          "minimum": 4,
+          "maximum": 1920000,
+          "multipleOf": 4
+        }
+      }
+    },
+    "completed": {
+      "title": "TtsCompletedV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "protocolVersion",
+        "kind",
+        "serviceInstanceId",
+        "workIdentity"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "protocolVersion": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "kind": {
+          "const": "completed"
+        },
+        "serviceInstanceId": {
+          "$ref": "#/$defs/serviceInstanceId"
+        },
+        "workIdentity": {
+          "$ref": "#/$defs/workIdentity"
+        }
+      }
+    },
+    "cancelled": {
+      "title": "TtsCancelledV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "protocolVersion",
+        "kind",
+        "serviceInstanceId",
+        "workIdentity"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "protocolVersion": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "kind": {
+          "const": "cancelled"
+        },
+        "serviceInstanceId": {
+          "$ref": "#/$defs/serviceInstanceId"
+        },
+        "workIdentity": {
+          "$ref": "#/$defs/workIdentity"
+        }
+      }
+    },
+    "error": {
+      "title": "TtsErrorV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "protocolVersion",
+        "kind",
+        "serviceInstanceId",
+        "reason",
+        "error"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "protocolVersion": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "kind": {
+          "const": "error"
+        },
+        "serviceInstanceId": {
+          "$ref": "#/$defs/serviceInstanceId"
+        },
+        "reason": {
+          "$ref": "#/$defs/protocolReason"
+        },
+        "error": {
+          "$ref": "urn:voxleaf:schema:operational-error:v1"
+        },
+        "workIdentity": {
+          "$ref": "#/$defs/workIdentity"
+        }
+      }
+    },
+    "protocolRejected": {
+      "title": "TtsProtocolRejectedV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "protocolVersion", "kind", "reason"],
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/schemaVersion"
+        },
+        "protocolVersion": {
+          "$ref": "#/$defs/protocolVersion"
+        },
+        "kind": {
+          "const": "protocolRejected"
+        },
+        "reason": {
+          "$ref": "#/$defs/protocolReason"
+        }
+      }
+    }
+  }
+}

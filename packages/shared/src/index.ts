@@ -9,6 +9,7 @@ export {
   OperationalErrorContractError,
   PersistedReadingStateContractError,
   ReadingSessionContractError,
+  TtsProtocolControlContractError,
   calculateAudioFrameDurationMs,
   calculateContiguousAudioDurationMs,
   classifyGenerationWorkEligibility,
@@ -24,6 +25,7 @@ export {
   decodePersistedReadingStateV1,
   decodeReadingLocatorV1,
   decodeReadingSessionV1,
+  decodeTtsProtocolControlV1,
   getAudioFrameWorkIdentity,
   getBufferStatusWorkIdentity,
   getNarrationSegmentWorkIdentity,
@@ -75,6 +77,10 @@ export type {
   SpineItemV1,
   StructuralAnchorV1,
   StructuralAnchorValue,
+  TtsProtocolControlContractErrorCode,
+  TtsProtocolControlV1,
+  TtsProtocolReasonV1,
+  TtsServiceStateV1,
 } from "./contracts/index.js";
 
 export {

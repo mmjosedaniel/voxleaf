@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "kind": "handshake",
+  "serviceInstanceId": "service:synthetic-1",
+  "details": "must be rejected"
+}

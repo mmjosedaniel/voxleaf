@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "kind": "error",
+  "serviceInstanceId": "service:synthetic-1",
+  "reason": "busy",
+  "error": {
+    "schemaVersion": 1,
+    "code": "resource-exhausted",
+    "category": "resource",
+    "severity": "recoverable"
+  },
+  "workIdentity": {
+    "requestId": "request:synthetic-1",
+    "sessionId": "session:synthetic-1",
+    "generationId": "generation:synthetic-1",
+    "segmentId": "segment:synthetic-1"
+  }
+}

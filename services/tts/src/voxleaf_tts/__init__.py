@@ -1,4 +1,4 @@
-"""Dependency-free foundation for the local VoxLeaf TTS service."""
+"""Local VoxLeaf TTS service foundation."""
 
 __all__ = ["service_version"]
 

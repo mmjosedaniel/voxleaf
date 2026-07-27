@@ -13,6 +13,7 @@ import {
   validateOperationalErrorV1Wire as standaloneValidateOperationalErrorV1Wire,
   validatePersistedReadingStateV1Wire as standaloneValidatePersistedReadingStateV1Wire,
   validateReadingSessionV1Wire as standaloneValidateReadingSessionV1Wire,
+  validateTtsProtocolControlV1Wire as standaloneValidateTtsProtocolControlV1Wire,
 } from "./standalone.js";
 
 import type { AudioFrameV1Wire } from "../contracts/audio-frame-v1.js";
@@ -25,6 +26,7 @@ import type { NarrationSegmentV1Wire } from "../contracts/narration-segment-v1.j
 import type { OperationalErrorV1Wire } from "../contracts/operational-error-v1.js";
 import type { PersistedReadingStateV1Wire } from "../contracts/persisted-reading-state-v1.js";
 import type { ReadingSessionV1Wire } from "../contracts/reading-session-v1.js";
+import type { TtsProtocolControlV1Wire } from "../contracts/tts-protocol-control-v1.js";
 
 type ContractValidator<T> = (input: unknown) => input is T;
 
@@ -57,3 +59,6 @@ export const validatePersistedReadingStateV1Wire =
 
 export const validateReadingSessionV1Wire =
   standaloneValidateReadingSessionV1Wire as unknown as ContractValidator<ReadingSessionV1Wire>;
+
+export const validateTtsProtocolControlV1Wire =
+  standaloneValidateTtsProtocolControlV1Wire as unknown as ContractValidator<TtsProtocolControlV1Wire>;

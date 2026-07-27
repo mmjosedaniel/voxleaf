@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "kind": "state",
+  "serviceInstanceId": "service:synthetic-1",
+  "state": "ready"
+}
