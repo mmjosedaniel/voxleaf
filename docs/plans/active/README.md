@@ -17,4 +17,11 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): retained broader context spanning the completed reader/service/playback work and later narration synchronization. It does not supersede completed Milestones 4 through 8.
+- [`M009-synchronized-reading-and-narration.md`](M009-synchronized-reading-and-narration.md):
+  approved focused ExecPlan for segment-level audible progress, highlighting,
+  focus-safe following, synchronized navigation, and heard-position
+  persistence. Implementation has not started.
+- [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
+  retained broad historical context. M009 supersedes its remaining
+  synchronization work; it does not supersede completed Milestones 4 through
+  8.

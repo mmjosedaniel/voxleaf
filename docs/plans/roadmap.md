@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 8 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Its final policy selects quick mode by default, one minute as the initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. The final packaged rerun measured 41.312 seconds to audible quick playback and 19.49 buffering seconds per playback minute. Because that exceeds the MVP target, this remains a constrained demo rather than a standard, continuous-playback, production, distribution, or general-hardware profile.
+VoxLeaf is pre-alpha. Milestones 1 through 8 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Its final policy selects quick mode by default, one minute as the initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. The final packaged rerun measured 41.312 seconds to audible quick playback and 19.49 buffering seconds per playback minute. Because that exceeds the MVP target, this remains a constrained demo rather than a standard, continuous-playback, production, distribution, or general-hardware profile. Milestone 9 is now approved and has a focused ExecPlan, but its synchronization implementation has not started.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -147,7 +147,7 @@ Milestone 3 provides sanitized content and stable locators. Milestone 2 provides
 - The expanded packaged native reselection, picker/active-read cancellation, replacement, and exact/max-plus-one size-boundary matrix passes locally and in pull-request CI.
 - Successful focused, browser, packaged native, benchmark, root, portable, and CI evidence is retained in the completed plan; accepted reference-host measurements are not universal hardware guarantees.
 - Reconfirm that ADR-0009 file ingress, ADR-0010 raster decode/lifetime, ADR-0011 bounded persistence, the 250-block scheduler, and the 10,000-block/80,000-node fallback remain intact.
-- Keep Milestone 5 narration preparation outside the completed Milestone 4 reader boundary; TTS, audio, highlighting, synchronization, and manual-navigation-during-narration policy remain deferred to their later roadmap milestones.
+- Keep Milestone 5 narration preparation outside the completed Milestone 4 reader boundary; TTS, audio, highlighting, synchronization, and manual-navigation-during-narration policy remain owned by their later roadmap milestones.
 
 ## Milestone 5: Prepare text for natural narration
 
@@ -514,10 +514,12 @@ behavior should first be proven with deterministic fakes.
 
 ## Milestone 9: Integrate synchronized reading and narration
 
-**Status:** Deferred. The visual reader and exact-development narration caller
-now share the active locator at narration start and invalidation, but no spoken
-timing, synchronized highlighting, following, seek, or shared playback
-position is implemented.
+**Status:** Approved; implementation not started. The visual reader and
+exact-development narration caller share the active locator at narration start
+and invalidation, but no spoken timing, synchronized highlighting, following,
+seek, or shared playback position is implemented. Follow
+[`M009-synchronized-reading-and-narration.md`](active/M009-synchronized-reading-and-narration.md)
+for implementation authority.
 
 ### Goal
 
@@ -534,7 +536,9 @@ Join the visual reader, narration pipeline, TTS service, and player into the cor
 
 ### Dependencies
 
-Milestones 4, 5, 7, and 8 provide the visual reader, locator-linked segments, production TTS stream, and playback pipeline.
+Milestones 4, 5, 7, and 8 provide the visual reader, locator-linked segments,
+constrained exact-development TTS service, and playback pipeline. M009 does not
+resolve the standard-profile blocker.
 
 ### Major risks and unknowns
 
@@ -637,9 +641,19 @@ standard profile, or approve model/runtime distribution.
 
 [`completed/M008-bounded-adaptive-prebuffering.md`](completed/M008-bounded-adaptive-prebuffering.md) records the exact authority, scheduler, payload-owning FIFO, Web Audio player, estimates/wait decisions, pause continuation, controls, exact-development coordinator, measured packaged playback, final demo policy, and repository/privacy/CI validation. The standard blocker remains.
 
-[`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or completed Milestones 4 through 8 and does not authorize implementing all of those areas at once.
+[`active/M009-synchronized-reading-and-narration.md`](active/M009-synchronized-reading-and-narration.md)
+is the approved focused implementation authority for segment-level audible
+progress, highlighting, focus-safe following, synchronized navigation, and
+heard-position persistence. Its implementation has not started.
 
-Milestones 1 through 8 are complete, with their evidence retained under [`completed/`](completed/). Use the synchronized-reader plan only as later-milestone context; it does not supersede completed authority or turn the failed `v3` profile into a standard production selection.
+[`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
+is retained only as broad historical context and is superseded by M009 for the
+remaining synchronization work. Neither active plan supersedes completed
+authority or turns the failed `v3` profile into a standard production
+selection.
+
+Milestones 1 through 8 are complete, with their evidence retained under
+[`completed/`](completed/).
 
 ## MVP completion boundary
 

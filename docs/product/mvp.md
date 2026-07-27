@@ -2,7 +2,7 @@
 
 ## Implementation status
 
-The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is never a startup target. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. The exact-host run measured 39.238 seconds to first audible output and 20.91 buffering seconds per playback minute, which exceeds the MVP target. The path therefore remains a constrained development demo rather than a passing standard profile or uninterrupted-playback promise. Synchronized highlighting, general hardware profiles, and production packaging remain pending.
+The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is never a startup target. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. The final exact-host run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute, which exceeds the MVP target. The path therefore remains a constrained development demo rather than a passing standard profile or uninterrupted-playback promise. M009 synchronized highlighting is approved and planned but not implemented. General hardware profiles and production packaging remain pending.
 
 ## Current implemented flow
 
@@ -23,15 +23,20 @@ runtime profile.
 
 ## Remaining target user flow
 
-1. The user selects an available local voice and starts narration from the active visual locator.
-2. The user chooses quick start or an explicit prepared-playback target.
-3. VoxLeaf requests local TTS for prepared segments and builds a bounded audio lead in memory.
-4. Quick-start playback begins immediately when approximately 15 seconds of playable audio is ready, or when a complete shorter remaining range is ready; there is no fixed timer.
-5. Prepared playback begins when its explicit 1-, 2-, 5-, or 10-minute target is ready, unless a complete shorter remaining range finishes first. The UI shows preparation progress and an estimate.
-6. Later valid audio is generated while playback consumes the buffer, and the visible passage follows the narration. Playback-only pause may continue bounded useful generation for the same active identity.
-7. If playback approaches the generation frontier, VoxLeaf shows a low-buffer warning and represents exhaustion as buffering. Optional one- to three-second waits may be inserted only at eligible paragraph or chapter boundaries and must remain observable.
-8. Explicit stop, seek, chapter, voice, model, book, session, and application-exit changes cancel or supersede obsolete work.
-9. VoxLeaf retains no more than approximately 30 minutes of playable generated audio at once and persists neither narration text nor generated audio.
+1. While narration is active, the audible prepared segment becomes the single
+   shared reading-position authority at segment granularity.
+2. The reader highlights that segment's source range and follows it without
+   moving keyboard or assistive-technology focus.
+3. User chapter or passage navigation explicitly seeks narration: obsolete
+   work becomes ineligible before bounded cancellation and playback restarts
+   from the canonical selected locator.
+4. Pause, resume, previous/next movement, reflow, and chapter transitions keep
+   the visual and audible position synchronized without inventing word timing.
+5. VoxLeaf persists only canonical heard progress at bounded lifecycle
+   checkpoints and never persists narration text, generated audio, or rendered
+   geometry.
+6. Later work selects a supported production TTS profile, validates broader
+   hardware, and packages an end-user distribution.
 
 ## MVP capability status
 

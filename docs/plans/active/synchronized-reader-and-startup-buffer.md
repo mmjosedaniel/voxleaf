@@ -2,7 +2,7 @@
 
 ## Relationship to the roadmap and completed milestone plans
 
-This broad plan predates the milestone-specific implementation plans and intentionally spans visual reading, narration synchronization, and audio startup work. The completed [`M004-reflowable-visual-reader-and-position-restoration.md`](../completed/M004-reflowable-visual-reader-and-position-restoration.md), [`M005-narration-text-preparation.md`](../completed/M005-narration-text-preparation.md), [`M006-local-tts-feasibility-and-engine-profiles.md`](../completed/M006-local-tts-feasibility-and-engine-profiles.md), [`M006-001-local-tts-profile-blocker-resolution.md`](../completed/M006-001-local-tts-profile-blocker-resolution.md), [`M006-002-qwen-short-segment-batch-feasibility.md`](../completed/M006-002-qwen-short-segment-batch-feasibility.md), [`M007-local-tts-service-and-process-protocol.md`](../completed/M007-local-tts-service-and-process-protocol.md), and [`M008-bounded-adaptive-prebuffering.md`](../completed/M008-bounded-adaptive-prebuffering.md) plans record the implementation authority and evidence for roadmap Milestones 4 through 8. Retain this document as context for later roadmap Milestone 9; it does not supersede those completed authorities.
+This broad plan predates the milestone-specific implementation plans and intentionally spans visual reading, narration synchronization, and audio startup work. The completed [`M004-reflowable-visual-reader-and-position-restoration.md`](../completed/M004-reflowable-visual-reader-and-position-restoration.md), [`M005-narration-text-preparation.md`](../completed/M005-narration-text-preparation.md), [`M006-local-tts-feasibility-and-engine-profiles.md`](../completed/M006-local-tts-feasibility-and-engine-profiles.md), [`M006-001-local-tts-profile-blocker-resolution.md`](../completed/M006-001-local-tts-profile-blocker-resolution.md), [`M006-002-qwen-short-segment-batch-feasibility.md`](../completed/M006-002-qwen-short-segment-batch-feasibility.md), [`M007-local-tts-service-and-process-protocol.md`](../completed/M007-local-tts-service-and-process-protocol.md), and [`M008-bounded-adaptive-prebuffering.md`](../completed/M008-bounded-adaptive-prebuffering.md) plans record the implementation authority and evidence for roadmap Milestones 4 through 8. The focused [`M009-synchronized-reading-and-narration.md`](M009-synchronized-reading-and-narration.md) plan now supersedes this document for the remaining synchronization implementation. Retain this document only as broad historical context.
 
 ADR-0015,
 the completed
@@ -14,7 +14,7 @@ preserve this plan's approximately 15-playable-second quick-start rule and add
 explicit prepared playback, bounded generation during playback-only pause,
 truthful frontier buffering, optional adaptive boundary waits, and an
 approximately 30-minute simultaneous ceiling. This older cross-milestone plan
-does not override those decisions.
+does not override those decisions or the focused M009 authority.
 
 ## Goal
 
@@ -31,9 +31,9 @@ Implement a normal reflowable EPUB reading surface that shares one stable readin
 
 ## Current state
 
-Roadmap Milestones 1 through 6 are complete. The repository now has a reproducible cross-language workspace and CI, canonical shared schemas and runtime decoders, deterministic test fakes, a React/Tauri desktop application, a dependency-free Python service scaffold, an implemented framework-independent `@voxleaf/epub` boundary for bounded in-memory ingestion, immutable semantic documents, lazy raster reads, deterministic locator creation/resolution, and bounded locator-linked narration preparation, plus completed local TTS feasibility evidence that selects no viable production profile.
+Roadmap Milestones 1 through 8 are complete. The repository now has a reproducible cross-language workspace and CI, canonical shared schemas and runtime decoders, deterministic test fakes, a React/Tauri desktop application, an implemented framework-independent `@voxleaf/epub` boundary for bounded in-memory ingestion, immutable semantic documents, lazy raster reads, deterministic locator creation/resolution, and bounded locator-linked narration preparation. The completed TTS feasibility work selects no viable standard production profile while permitting the exact-development constrained demo.
 
-The desktop implements capability-free local EPUB selection, publication lifecycle, safe semantic text/static-image rendering, TOC/internal/chapter navigation, continuous reflowable layout and closed preferences, keyboard/focus behavior, bounded large-chapter rendering, semantic code-point/DOM mapping, passive visual-locator tracking, reflow preservation, bounded Web Storage persistence, and exact/nearest-valid restoration after exact-file reselection. The EPUB package implements bounded source-mapped narration preparation and exposes `OpenedPublication.prepareNarration`, but no production desktop module calls it. Completed M007 implements and validates the constrained development-only Qwen/Serena engine, versioned process protocol, native supervisor, and typed one-unit handoff. There is still no product runtime generation queue, multi-unit audio buffer/player, speech highlighting/following, general hardware detection, or installer. The visual reader, saved-position, package preparation, and constrained service portions of this broad plan work independently; the integrated reader-to-playback flow does not.
+The desktop implements capability-free local EPUB selection, publication lifecycle, safe semantic text/static-image rendering, TOC/internal/chapter navigation, continuous reflowable layout and closed preferences, keyboard/focus behavior, bounded large-chapter rendering, semantic code-point/DOM mapping, passive visual-locator tracking, reflow preservation, bounded Web Storage persistence, and exact/nearest-valid restoration after exact-file reselection. Completed M007 implements and validates the constrained development-only Qwen/Serena engine, versioned process protocol, native supervisor, and typed one-unit handoff. Completed M008 calls `OpenedPublication.prepareNarration` from the active visual locator and connects one-at-a-time synthesis to a bounded multi-unit FIFO, Web Audio player, and quick/prepared controls. Speech highlighting/following, synchronized seek and persistence, general hardware detection, and an installer remain unimplemented.
 
 ## Scope and non-goals
 
@@ -185,7 +185,11 @@ Not started
 
 - Commands: run the existing root quality surface and add exact integration, end-to-end, accessibility, and benchmark commands only when repository configuration defines them.
 - Expected result: all deterministic checks pass; hardware-specific results are reported separately; stale audio played is zero; generated audio persistence is zero.
-- Actual result: reader, persistence, accessibility, browser/native interaction, and reader performance/resource coverage exist and pass their Milestone 4 matrices. TTS, audio, synchronization, hardware, packaging, and the complete product journey remain unimplemented, so this broad final milestone cannot close.
+- Actual result: reader, persistence, accessibility, browser/native interaction,
+  reader performance/resource coverage, constrained TTS, and bounded audio
+  playback exist within completed Milestones 4 through 8. Synchronization,
+  general hardware support, packaging, and the complete product journey remain
+  unimplemented, so this broad final milestone cannot close.
 
 ### Status
 
@@ -244,4 +248,4 @@ Initial documentation validation completed on 2026-07-20:
 - No documentation retains the obsolete allowance of a fixed or maximum 15-second startup wait.
 - `git diff --check` passed for tracked changes, with only informational line-ending warnings.
 
-The implementation toolchain, shared contracts, secure EPUB package, visual reader, bounded position persistence/restoration, and Milestone 5 narration-preparation boundary now exist. Completed M007 provides the bounded protocol, native supervision, typed client, exact development-only Qwen/Serena adapter, and frozen exact-host service-handoff evidence. Completed M008 provides the constrained product narration caller, bounded in-memory FIFO, Web Audio playback, quick/prepared controls, and measured exact-host demo evidence. ADR-0013 still selects no standard production profile, and spoken highlighting, playback-following synchronization, general hardware support, and production distribution remain unimplemented. Retain this broad plan as later-milestone context, and do not use it to claim that those remaining systems work.
+The implementation toolchain, shared contracts, secure EPUB package, visual reader, bounded position persistence/restoration, and Milestone 5 narration-preparation boundary now exist. Completed M007 provides the bounded protocol, native supervision, typed client, exact development-only Qwen/Serena adapter, and frozen exact-host service-handoff evidence. Completed M008 provides the constrained product narration caller, bounded in-memory FIFO, Web Audio playback, quick/prepared controls, and measured exact-host demo evidence. ADR-0013 still selects no standard production profile, and spoken highlighting, playback-following synchronization, general hardware support, and production distribution remain unimplemented. Retain this broad plan as historical context; use the focused M009 ExecPlan for synchronization implementation and do not use either plan to claim that planned systems work.

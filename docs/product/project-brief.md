@@ -6,7 +6,7 @@ This brief explains the intended VoxLeaf experience and the motivation behind th
 
 The normative MVP scope is in [`mvp.md`](mvp.md). Accepted technical decisions are recorded under [`../architecture/decisions/`](../architecture/decisions/), and current performance targets are in [`../architecture/performance-budget.md`](../architecture/performance-budget.md).
 
-The implemented product boundary currently includes private local EPUB ingestion, semantic visual reading/navigation, bounded restoration, deterministic locator-linked narration preparation, the M007 local service, and M008's exact-development narration coordinator, buffer, player, and controls. M008's final demo policy selects quick mode by default, one minute as the initial prepared/refill target, a 10-second warning, zero default boundary wait, `1.0x` playback, and a simultaneous 30-minute ceiling. The packaged matrix proves an audible constrained demo with cancellation, bounded resources, and zero external requests, while measuring 20.91 buffering seconds per playback minute. The standard-profile blocker therefore remains. Production TTS support, synchronized highlighting, general hardware profiles, and installers remain deferred. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
+The implemented product boundary currently includes private local EPUB ingestion, semantic visual reading/navigation, bounded restoration, deterministic locator-linked narration preparation, the M007 local service, and M008's exact-development narration coordinator, buffer, player, and controls. M008's final demo policy selects quick mode by default, one minute as the initial prepared/refill target, a 10-second warning, zero default boundary wait, `1.0x` playback, and a simultaneous 30-minute ceiling. The final packaged matrix proves an audible constrained demo with cancellation, bounded resources, and zero external requests, while measuring 19.49 buffering seconds per playback minute. The standard-profile blocker therefore remains. M009 synchronized highlighting is approved and planned but not implemented. A supported production TTS profile, general hardware profiles, and installers remain deferred. The rest of this brief describes the intended complete product unless it explicitly identifies implemented behavior.
 
 ## Summary
 
@@ -135,11 +135,12 @@ development-demo direction, not a passing production profile. The MVP uses a
 built-in default narrator; user
 voice cloning, enrollment, consent, ownership, impersonation safeguards, and
 reference-data persistence remain outside scope and would require a separate
-accepted product/privacy decision. Audio
-encoding, transport, process ownership, and buffer thresholds still require
-prototypes, benchmarks,
-and—where durable—an architecture decision record. Current buffer and latency
-targets come from
+accepted product/privacy decision. M007 and M008 now own the constrained
+complete-unit transport, process supervision, internal audio representation,
+bounded buffering, playback, and demo thresholds. Reader/narration
+synchronization, a supported production profile, general-hardware validation,
+and distribution still require later implementation and evidence. Current
+buffer and latency targets come from
 [`../architecture/performance-budget.md`](../architecture/performance-budget.md),
 not from this brief.
 

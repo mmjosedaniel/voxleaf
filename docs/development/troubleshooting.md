@@ -36,8 +36,8 @@ must remain offline after artifact preparation.
 ### Quick start takes longer than expected
 
 Quick start means playback begins when approximately 15 playable seconds are
-ready; it is not a 15-second wall-clock promise. The accepted exact-host run
-took 39.238 seconds from command to audible playback. Cold load, complete-unit
+ready; it is not a 15-second wall-clock promise. The final accepted exact-host
+rerun took 41.312 seconds from command to audible playback. Cold load, complete-unit
 generation, and the need for a second unit can all increase wall time.
 
 Do not replace the playable-audio threshold with a timer. Use explicit prepared
@@ -46,8 +46,8 @@ minute; the other admitted choices are 2, 5, and 10 minutes.
 
 ### Playback reaches the generation frontier
 
-The exact worker is slower than real time. The accepted run observed one
-underrun and 20.91 buffering seconds per playback minute, above the MVP target
+The exact worker is slower than real time. The final accepted rerun observed one
+underrun and 19.49 buffering seconds per playback minute, above the MVP target
 of at most 5 seconds. VoxLeaf must warn below 10 playable seconds and show
 buffering when audio reaches zero.
 
