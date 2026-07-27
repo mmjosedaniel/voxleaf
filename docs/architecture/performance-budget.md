@@ -187,7 +187,12 @@ generation. Milestone 2 adds a model-free scheduler proof: the frozen RTF
 `1.467080448861599` depletes an exact 15-second synthetic lead after 47
 playback seconds, while an RTF `0.5` trace remains supplied for 120 seconds
 under the one-minute target. These deterministic traces do not load a model or
-establish a real-time claim. The payload-owning buffer and player do not exist.
+establish a real-time claim. Milestone 3 implements the payload-owning FIFO and
+low-level Web Audio player without a model or product caller. Its deterministic
+manual-clock tests measure exact frame consumption and underrun transitions;
+the selected device boundary adds at most one transient 20-second/480,000-frame
+active audio buffer beyond the original FIFO-owned payload. Packaged audible
+latency, device memory, and exact-model playback remain unmeasured.
 
 ## Benchmark reporting
 

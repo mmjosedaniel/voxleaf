@@ -338,9 +338,27 @@ returned all three measures to zero. The committed content-safe result is
 This matrix does not evaluate sustainable playback or select a production
 profile.
 
+## Milestone 8 deterministic buffer and playback validation
+
+The M008 Milestone 3 desktop tests remain model-free and device-free:
+
+```powershell
+pnpm.cmd --filter @voxleaf/desktop exec vitest run src/tts/adaptive-buffer-authority.test.ts src/tts/adaptive-buffer-scheduler.test.ts src/tts/pcm-playback.test.ts
+```
+
+The authority and scheduler tests retain exact/max-plus-one resource,
+quick/prepared startup, refill, ordering, depletion, stale-output, and recovery
+coverage. `pcm-playback.test.ts` adds one-unit-sink transfer, real payload
+format validation, ordered Web Audio requests, manual-clock consumption,
+pause/resume, zero-volume progress, `1.0x`-only admission, underrun counting,
+end-of-range completion, and stop/seek/close cleanup. Its fake Web Audio
+context verifies little-endian float32 decoding into one active mono 24-kHz
+device buffer and opens no real audio device. These tests persist no payload,
+read no private book content, and load no candidate or model.
+
 ## Deferred coverage
 
-The secure EPUB ingestion scenario and boundary matrix is implemented with repository-authored synthetic inputs; deterministic desktop tests prove the bounded repository, approved save lifecycle, and exact/recovered open coordination; the real-browser smoke proves preference plus exact/nearest-valid locator restoration through production React reload/reselection; the packaged native smoke proves save/restore across a WebView2 application restart; the two hardware-specific benchmarks cover accepted prototype, production React, repeated lifecycle, and packaged WebView2 reader limits; and the test-only narration corpus/limits plus production source projector, normalizer, boundary scanner, packer, canonical prepared-segment finalizer, public batch operation, public neutral/Spanish EPUB-to-segment integration matrix, and deterministic resource matrix have evidence. Milestones 5 through 7 are complete. M007 adds passing model-free process framing, optimized binary response, canonical cross-language contracts, Python service/fake engine, native supervisor, typed client, one-unit handoff, process-tree containment, cancellation, crash recovery, packaged WebView tests, the exact development-only Qwen/Serena adapter, its focused host diagnostic, the frozen exact-host service-handoff matrix, and the protocol/dependency/privacy/repository/CI closeout audit. M008 Milestone 2 adds model-free manually clocked scheduler tests for exact complete-unit reservation, quick/prepared targets, FIFO ownership/release, identity-first invalidation, RTF depletion, faster production, bursts, failures, end-of-range, and explicit stopped-service recovery. Default tests and CI still load no candidate or model. No product caller prepares narration for the service, owns an audio payload queue, plays audio, detects general supported hardware, builds an installer, or exercises those later end-to-end flows. The examples below are requirements for later roadmap milestones, not claims about current coverage.
+The secure EPUB ingestion scenario and boundary matrix is implemented with repository-authored synthetic inputs; deterministic desktop tests prove the bounded repository, approved save lifecycle, and exact/recovered open coordination; the real-browser smoke proves preference plus exact/nearest-valid locator restoration through production React reload/reselection; the packaged native smoke proves save/restore across a WebView2 application restart; the two hardware-specific benchmarks cover accepted prototype, production React, repeated lifecycle, and packaged WebView2 reader limits; and the test-only narration corpus/limits plus production source projector, normalizer, boundary scanner, packer, canonical prepared-segment finalizer, public batch operation, public neutral/Spanish EPUB-to-segment integration matrix, and deterministic resource matrix have evidence. Milestones 5 through 7 are complete. M007 adds passing model-free process framing, optimized binary response, canonical cross-language contracts, Python service/fake engine, native supervisor, typed client, one-unit handoff, process-tree containment, cancellation, crash recovery, packaged WebView tests, the exact development-only Qwen/Serena adapter, its focused host diagnostic, the frozen exact-host service-handoff matrix, and the protocol/dependency/privacy/repository/CI closeout audit. M008 Milestones 2-3 add model-free manually clocked scheduler and payload-player tests for exact reservation, quick/prepared targets, FIFO ownership/release, identity-first invalidation, RTF depletion, failures, end-of-range, recovery, format decoding, playback timing, underruns, volume, and bounded cleanup. Default tests and CI still load no candidate or model. No product caller prepares narration for the service, dispatches its segments to M007, instantiates audible playback, detects general supported hardware, builds an installer, or exercises those later end-to-end flows. The examples below are requirements for later roadmap milestones, not claims about current coverage.
 
 ## Test levels
 
