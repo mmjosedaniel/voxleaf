@@ -2,14 +2,17 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 6 are complete. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop connects its capability-free local-file selection/read boundary to a UI-independent publication-session owner, presents one accessible idle/opening/ready/empty/failure/closing lifecycle surface, contains presentation failures, and renders the active spine document's supported text plus bounded static raster images through an exhaustive application-owned semantic React reader. Its continuous responsive layout, closed display preferences, bounded incremental large-chapter policy, passive logical-position tracking, viewport/preference reflow preservation, versioned bounded local reader-state repository, lifecycle-aware save coordinator, and exact/nearest-valid open restoration are implemented without publisher styling. A user can open, read, navigate, adjust the visual reader without losing the active logical passage, and explicitly close a supported publication; validated position and preference changes are saved locally on the approved bounded lifecycle and restored after exact-file reselection. Milestone 5 narration preparation is implemented and documented: `@voxleaf/epub` owns exhaustive narration source projection, Unicode-code-point source-span tokens, bounded canonical source windows/lifecycle, deterministic source-mapped neutral/Spanish normalization, normalization invariants/privacy tests, sentence/dialogue/clause/protected-token scanning, cancellable profile-bounded block-local semantic packing with oversized-token hardening, immutable canonical locator-linked prepared segments, the public frozen closed `OpenedPublication.prepareNarration` batch operation, repository-authored public EPUB-to-segment integration evidence, and deterministic exact-bound/resource evidence. Milestone 6 implements and validates the candidate-neutral feasibility harness and accepts ADR-0013's explicit no-viable-profile decision after both exact candidates fail frozen role gates. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation completed and failed startup, throughput, zero-failure, and mid-generation cancellation gates. Milestone 6.2 later rejected shared-model batching, targeted tokenizer placement, CPU-only generation, and the independent GPU-primary/CPU-support topology. Accepted `selection-v5` retains the exact single-GPU candidate only for a constrained development demo. ADR-0015 supersedes ADR-0014's scheduling and buffering details and approves planning for quick start or explicit prepared playback, one GPU worker, bounded generation during playback-only pause, truthful frontier buffering, and an approximately 30-minute in-memory ceiling. Base voice cloning, Whisper, and VAD/energy remain excluded. No production desktop module calls `prepareNarration`; TTS engine integration, buffering, playback, and synchronization require later implementation evidence. The production Python area remains a foundation only, and standard production graduation remains blocked pending viable evidence.
+Mixed implementation status. Roadmap Milestones 1 through 6.2 are complete. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop connects its capability-free local-file selection/read boundary to a UI-independent publication-session owner, presents one accessible idle/opening/ready/empty/failure/closing lifecycle surface, contains presentation failures, and renders the active spine document's supported text plus bounded static raster images through an exhaustive application-owned semantic React reader. Its continuous responsive layout, closed display preferences, bounded incremental large-chapter policy, passive logical-position tracking, viewport/preference reflow preservation, versioned bounded local reader-state repository, lifecycle-aware save coordinator, and exact/nearest-valid open restoration are implemented without publisher styling. A user can open, read, navigate, adjust the visual reader without losing the active logical passage, and explicitly close a supported publication; validated position and preference changes are saved locally on the approved bounded lifecycle and restored after exact-file reselection. Milestone 5 narration preparation is implemented and documented: `@voxleaf/epub` owns exhaustive narration source projection, Unicode-code-point source-span tokens, bounded canonical source windows/lifecycle, deterministic source-mapped neutral/Spanish normalization, normalization invariants/privacy tests, sentence/dialogue/clause/protected-token scanning, cancellable profile-bounded block-local semantic packing with oversized-token hardening, immutable canonical locator-linked prepared segments, the public frozen closed `OpenedPublication.prepareNarration` batch operation, repository-authored public EPUB-to-segment integration evidence, and deterministic exact-bound/resource evidence. Milestone 6 implements and validates the candidate-neutral feasibility harness and accepts ADR-0013's explicit no-viable-profile decision after both exact candidates fail frozen role gates. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation completed and failed startup, throughput, zero-failure, and mid-generation cancellation gates. Milestone 6.2 later rejected shared-model batching, targeted tokenizer placement, CPU-only generation, and the independent GPU-primary/CPU-support topology. Accepted `selection-v5` retains the exact single-GPU candidate only for a constrained development demo. ADR-0015 supersedes ADR-0014's scheduling and buffering details and approves planning for quick start or explicit prepared playback, one GPU worker, bounded generation during playback-only pause, truthful frontier buffering, and an approximately 30-minute in-memory ceiling. Base voice cloning, Whisper, and VAD/energy remain excluded. No production desktop module calls `prepareNarration`; TTS engine integration, buffering, playback, and synchronization require later implementation evidence. The production Python area remains a foundation only, and standard production graduation remains blocked pending viable evidence.
 
 M006-002 final local validation and required pull-request CI pass, and the plan
-is complete. The M008 ExecPlan owns the unimplemented adaptive-buffering
-follow-up. Its approved modes preserve the approximately 15-playable-second
-quick-start rule and add explicit 1-, 2-, 5-, or 10-minute prepared-playback
-targets. The 30-minute value is a simultaneous capacity ceiling, not a startup
-wait, real-time claim, or uninterrupted-playback guarantee.
+is complete. M007 is the next implementation authority and owns the
+unimplemented constrained local service, native supervision, versioned process
+protocol, complete-unit audio delivery, and exact one-GPU Qwen/Serena adapter.
+M008 owns the later adaptive scheduler and playback follow-up. Its approved
+modes preserve the approximately 15-playable-second quick-start rule and add
+explicit 1-, 2-, 5-, or 10-minute prepared-playback targets. The 30-minute
+value is a simultaneous capacity ceiling, not a startup wait, real-time claim,
+or uninterrupted-playback guarantee.
 
 [`system-diagram.md`](system-diagram.md) is the canonical visual map and status legend. This overview owns the accompanying architectural rationale, invariants, and detailed implemented-boundary notes.
 
@@ -26,7 +29,7 @@ Desktop application
 |-- Cancellable publication-session lifecycle [implemented]
 |-- Accessible visual reader, navigation, reflow, and restoration [implemented]
 |-- Versioned bounded Web Storage repository [implemented]
-|-- Local TTS process client [deferred to Milestone 7]
+|-- Local TTS process client [approved plan: Milestone 7; not implemented]
 `-- Audio scheduling, playback, and synchronization [deferred to Milestones 8-9]
 
 EPUB package
@@ -61,10 +64,11 @@ Local TTS service
 |   [implemented development evidence; not production runtime]
 |-- Shared-model v4 and independent dual-worker v5 benchmark
 |   [completed development evidence; both scheduling alternatives rejected]
-|-- One-GPU adaptive demo scheduler and bounded playback policy
-|   [approved plan only; not product runtime]
-`-- Engine, process protocol, inference, cancellation,
-    audio framing, and metrics [blocked/deferred to Milestone 7]
+|-- One-GPU constrained engine, service, process protocol, inference,
+|   cancellation, audio framing, and metrics
+|   [approved M007 plan only; not product runtime]
+`-- Adaptive demo scheduler and bounded playback policy
+    [approved M008 plan only; desktop-owned and not product runtime]
 ```
 
 ## Approved desktop reader and candidate process model
@@ -86,7 +90,12 @@ Reasons:
 - The desktop UI should remain responsive during inference.
 - The service can expose explicit cancellation and health state.
 
-The protocol may use Tauri IPC, standard input/output, a local socket, or loopback WebSocket. The final choice requires an ADR after a small prototype.
+M007 will prototype a Rust-owned child process over redirected standard input
+and output first, while retaining a local socket and loopback WebSocket as
+explicit comparison alternatives. It must record the selected transport,
+framing, allocation bounds, backpressure, local exposure, supervision, and
+crash behavior in an ADR before Milestone 7 can complete. No choice is
+implemented or accepted merely because it appears in the plan.
 
 ## Core data flow
 
@@ -99,7 +108,7 @@ The public EPUB package currently implements the in-memory validation, parsing, 
 5. **Implemented:** Reconstruct the visible passage from the locator and current scrolling layout.
 6. **Implemented — Milestone 5:** Exhaustively project narratable source units and structural boundaries from immutable located safe semantics, map every source position to an immutable locator-valid Unicode-code-point span, consume that mapping through bounded canonical source windows with close-linked cancellation/continuation, normalize the accepted neutral/Spanish forms, scan deterministic source-offset sentence/dialogue/clause/protected-token boundaries, pack cancellable block-local stable source-offset segments under the accepted profile with fixed oversized-token behavior, and finalize immutable canonical locator-linked prepared segments without changing the displayed representation.
 7. **Implemented — Milestone 5:** Emit bounded public prepared-segment batches with stable locator ranges and deterministic resource evidence.
-8. **Deferred — Milestone 7:** Attach prepared text/ranges to session, generation, and TTS-request identity at the later process boundary.
+8. **Approved plan; not implemented — Milestone 7:** Attach prepared text/ranges to session, generation, segment, and request identity at the local process boundary; validate and deliver only complete bounded audio for the constrained demo.
 9. **Approved plan; not implemented — Milestones 7-8:** ADR-0013 retains the standard-profile blocker, while ADR-0015 permits one exact GPU worker only for a constrained demo. Quick start begins at approximately 15 playable seconds; explicit prepared playback may target 1, 2, 5, or 10 minutes.
 10. **Deferred — Milestones 8-9:** Generate later audio while the player consumes buffered frames or is paused without invalidation, stop at the approximately 30-minute ceiling, warn near the generation frontier, and keep the narrated passage visible.
 11. **Deferred — Milestones 8-9:** Discard played frames and stale session work.

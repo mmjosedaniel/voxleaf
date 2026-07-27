@@ -17,5 +17,6 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
+- [`M007-local-tts-service-and-process-protocol.md`](M007-local-tts-service-and-process-protocol.md): active next plan for the constrained one-GPU local service, versioned process protocol, native supervision, complete-unit audio delivery, cancellation containment, and exact-host validation. Production and general-hardware support remain blocked.
 - [`M008-bounded-adaptive-prebuffering.md`](M008-bounded-adaptive-prebuffering.md): approved but not implemented plan for one-GPU quick-start and explicit prepared playback, bounded adaptive buffering, playback-only pause continuation, frontier warnings, and a 30-minute in-memory ceiling.
-- [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): retained broader context spanning the completed reader work and later narration synchronization/audio startup. It does not supersede the completed Milestones 4 through 6 authorities and does not authorize blocked Milestone 7 or later work.
+- [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md): retained broader context spanning the completed reader work and later narration synchronization/audio startup. It does not supersede the completed Milestones 4 through 6.2 or the focused M007/M008 authorities.
