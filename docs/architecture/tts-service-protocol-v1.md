@@ -2,15 +2,10 @@
 
 ## Status
 
-Accepted and frozen by M007 Milestone 1. Deterministic, release parent/child,
-and packaged WebView2 evidence passes. Milestone 2 implements the frozen
-values as canonical cross-language contracts and a bounded Python service.
-Milestone 3 implements native supervision and typed desktop consumption with a
-model-free Rust child. Milestone 4 implements the exact Qwen/Serena adapter
-behind native-only development configuration and passes its reviewed
-exact-host delivery, termination, stale-suppression, reload, and shutdown
-diagnostic. Milestone 5 passes the frozen nine-case exact-host handoff matrix
-through the same release supervisor and adapter.
+Accepted, frozen, implemented, and locally validated by M007 Milestones 1-6.
+Deterministic, release parent/child, packaged WebView2, exact-adapter, and
+exact-host handoff evidence passes. The required final pull-request CI and
+ExecPlan archival remain the repository closeout gate.
 
 This authority applies only to ADR-0015's exact one-GPU
 Qwen3-TTS 12Hz 1.7B CustomVoice/Serena constrained development demo. It does
@@ -320,7 +315,7 @@ unverified, or mismatched values produce the fixed unavailable state. This is
 a development-only configuration boundary, not an installer or distribution
 decision.
 
-## Model-free implementation evidence and remaining gate
+## Implementation evidence and remaining product work
 
 The Milestone 1 prototype uses the packaged VoxLeaf executable as a
 repository-authored synthetic child. The parent sends one framed control
@@ -386,3 +381,10 @@ cleanup checkpoint. The adapter still exposes only complete units, with
 first-audio and completion p95 both about 21.38 seconds on the exact host.
 Product narration dispatch, playback, production packaging, and general
 hardware support remain unimplemented.
+
+Milestone 6 reviewed the complete implementation and exact-host evidence and
+retains protocol version 1 unchanged. No observed case requires another
+message, field, queue, framing primitive, capability claim, or wider bound.
+M008 may schedule multiple complete units in its separately bounded playback
+owner, but the service remains one-active/no-queue and every unit continues to
+cross this exact protocol-v1 boundary.

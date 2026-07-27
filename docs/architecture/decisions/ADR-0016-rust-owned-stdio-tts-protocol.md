@@ -2,8 +2,10 @@
 
 ## Status
 
-Accepted. Deterministic, release parent/child, and packaged WebView2
-binary-response evidence passes.
+Accepted and implemented for ADR-0015's constrained development service.
+Deterministic, packaged WebView2, exact-adapter, and exact-host handoff
+evidence passes. This does not approve production distribution, sustainable
+playback, native model streaming, or general hardware support.
 
 ## Context
 
@@ -111,7 +113,7 @@ that authority and cannot maintain permissive independent message models.
   Windows `windows-sys` Job Object surface for process-tree termination. No
   Tauri plugin, capability, model package, or listener is added.
 
-## Prototype evidence
+## Implementation and validation evidence
 
 - Nine Rust tests pass for minimum/exact/maximum-plus-one framing and authority
   dimensions, pre-allocation rejection, truncated/unknown/mutated records,
@@ -138,6 +140,33 @@ that authority and cannot maintain permissive independent message models.
   cleanup. The packaged WebView2 matrix additionally passes normal binary
   handoff and cancellation through the typed desktop client with no runtime
   errors or external requests.
+- Milestone 4 connects the same supervisor to the exact Qwen/Serena Python
+  service only behind the three native-owned development configuration keys.
+  The adapter verifies the frozen runtime, lock, model revision and artifacts,
+  CUDA bfloat16/SDPA provider, Serena configuration, generation parameters,
+  and complete waveform before publication. The model-free default remains
+  available when that exact configuration is absent.
+- The first reviewed exact-host diagnostic passes load/warm, one active
+  request with zero queue, complete bounded delivery, busy rejection,
+  identity-first process-tree termination, zero stale return, explicit reload,
+  a second valid delivery, and shutdown without automatic retry.
+- Milestone 5's frozen nine-case exact-host matrix passes on its first actual
+  attempt. It covers cold neutral and warm Spanish delivery, retained-consumer
+  backpressure, invalidation before dispatch and after completion, accepted
+  and mid-generation cancellation, child crash, and application exit.
+- The exact adapter exposes complete units only. First validated metadata and
+  complete-unit p95 are both about 21.38 seconds; native handoff p95 is about
+  0.234 ms. Termination p95 is about 5.70 ms, while explicit restart plus
+  prepare p95 is about 16.61 seconds.
+- Peak descendants use about 4.71 GB RAM, 5.14 GB dedicated GPU memory, and
+  81.8 MB shared GPU memory with one GPU allocator. Every intermediate and
+  final cleanup observation returns those measures to zero. The runner
+  observes no listener or external connection and persists no generated
+  audio.
+- The measured evidence does not justify protocol version 2. M008 must consume
+  ordered complete units behind protocol v1's one-active/no-service-queue
+  boundary. Any new message, field, framing rule, streaming primitive, or
+  bound requires a separately reviewed protocol version.
 
 ## Alternatives considered
 

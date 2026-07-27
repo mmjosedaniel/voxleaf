@@ -42,7 +42,7 @@ Until then, the current user-visible product still ends at visual reading.
 - `@voxleaf/shared` implements versioned session, narration-segment,
   audio-frame metadata, capability, buffer-status, and operational-error
   contracts plus runtime TypeScript decoders and deterministic fakes.
-- `apps/desktop` now has the M007 Milestones 1-5 Rust-owned standard-stream
+- `apps/desktop` now has the M007 Milestones 1-6 Rust-owned standard-stream
   transport, native supervisor, narrow typed commands, one-unit desktop
   client, model-free child, and native-only exact-service activation. It adds
   no plugin, general process capability, or listener.
@@ -788,7 +788,10 @@ services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --check`
 
 #### Status
 
-Not started.
+In progress. The durable decision, documentation reconciliation, complete
+implementation audit, and local validation are complete on 2026-07-27.
+Required pull-request Ubuntu portable and Windows native jobs must pass on the
+exact final head before this plan moves to `completed/`.
 
 ## Testing and benchmark strategy
 
@@ -1057,6 +1060,13 @@ artifact behind.
   committed result records exact timing, RTF, RAM, dedicated/shared GPU,
   backpressure, termination, restart, cleanup, privacy, and narrow
   conclusions without changing historical `v3`/`v5` results.
+- 2026-07-27: Created `feat/m007-6-protocol-decision-closeout` from merged
+  Milestone 5 `main` at `ac16bc7`. Reaffirmed ADR-0016 and frozen protocol v1
+  after reviewing the complete M007 implementation and exact-host evidence.
+  Reconciled product, architecture, system-diagram, setup, dependency,
+  testing, roadmap, M008, and broad-plan documentation without changing a
+  runtime contract, dependency, permission, benchmark authority, or product
+  playback behavior.
 
 ## Discoveries and decisions
 
@@ -1158,6 +1168,21 @@ artifact behind.
     is not: termination p95 is `5.7038` ms while explicit restart/prepare p95
     is `16,609.0194` ms. M008 must represent recovery honestly rather than
     retrying or promising immediate resumed audio.
+26. The exact-host result does not justify protocol version 2. Complete-unit
+    standard-stream framing, one active synthesis, zero service queue, one
+    optimized binary response, and identity-first process-tree containment
+    remain the smallest accepted boundary.
+27. The complete M007 manifest/capability audit finds only the previously
+    documented direct dependency additions. Milestones 4-6 add no manifest,
+    lockfile, Tauri plugin, shell/process capability, listener, audio-device
+    library, production model dependency, or installer surface.
+28. Historical `profile-v3`, `selection-v5`, and the isolated candidate lock
+    remain byte-unchanged. M007 adds its separate result-blind handoff
+    authority and content-safe result without rewriting prior evaluation
+    conclusions.
+29. M008 owns the first product narration caller and multi-unit playback
+    buffer. M007 closes only the one-unit service/process boundary and cannot
+    be used to claim audible or sustainable playback.
 
 ## Final validation results
 
@@ -1329,4 +1354,6 @@ playback, audio persistence, cooperative model cancellation, automatic
 download, installer, production dependency, standard profile, or
 general-hardware support claim. Every Milestone 4 work item and acceptance
 gate is complete. Milestone 5 subsequently passed its frozen exact-host
-service-handoff matrix; repository closeout remains.
+service-handoff matrix. Milestone 6 locally closes the protocol decision and
+repository validation; required final pull-request CI and plan archival
+remain.
