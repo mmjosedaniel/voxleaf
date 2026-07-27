@@ -28,6 +28,8 @@ import { ReaderErrorBoundary } from "./reader/ReaderErrorBoundary";
 import {
   ReaderPublicationContent,
   type ReaderInitialRestorationSettlement,
+  type ReaderLocatorSettlementReason,
+  type ReaderUserNavigationEvent,
 } from "./reader/ReaderPublication";
 import {
   createReaderLifecycle,
@@ -53,7 +55,13 @@ export interface ReadyPublicationContentProps {
   readonly restoreInitialLocator?: boolean;
   readonly onPreferencesChange?: (preferences: ReaderPreferencesV1) => void;
   readonly onActiveLocatorChange?: (locator: ReadingLocatorV1) => void;
-  readonly onSettledLocatorChange?: (locator: ReadingLocatorV1) => void;
+  readonly onNavigationIntent?: (
+    event: ReaderUserNavigationEvent,
+  ) => void | Promise<void>;
+  readonly onSettledLocatorChange?: (
+    locator: ReadingLocatorV1,
+    reason: ReaderLocatorSettlementReason,
+  ) => void;
   readonly onInitialRestorationSettled?: (
     settlement: ReaderInitialRestorationSettlement,
   ) => void;
@@ -454,9 +462,23 @@ export function App({
     },
     [narrationCoordinator, positionSaveCoordinator],
   );
+  const handleNavigationIntent = useCallback(
+    (event: ReaderUserNavigationEvent): void | Promise<void> =>
+      event === "chapter-navigation"
+        ? narrationCoordinator?.beginExternalNavigation("chapter-navigation")
+        : undefined,
+    [narrationCoordinator],
+  );
   const handleSettledLocatorChange = useCallback(
-    (locator: ReadingLocatorV1): void => {
-      narrationCoordinator?.updateActiveLocator(locator);
+    (
+      locator: ReadingLocatorV1,
+      reason: ReaderLocatorSettlementReason,
+    ): void => {
+      if (reason === "reflow") {
+        narrationCoordinator?.preserveActiveLocator(locator);
+      } else {
+        narrationCoordinator?.settleExternalNavigation(locator);
+      }
       positionSaveCoordinator?.scheduleImmediate(locator);
     },
     [narrationCoordinator, positionSaveCoordinator],
@@ -617,6 +639,7 @@ export function App({
                     }
                     onPreferencesChange={handleReaderPreferencesChange}
                     onActiveLocatorChange={handleActiveLocatorChange}
+                    onNavigationIntent={handleNavigationIntent}
                     onSettledLocatorChange={handleSettledLocatorChange}
                     onInitialRestorationSettled={
                       handleInitialRestorationSettled

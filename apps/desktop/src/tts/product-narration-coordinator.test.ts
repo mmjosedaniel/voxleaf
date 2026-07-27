@@ -9,6 +9,7 @@ import {
   decodeOperationalErrorV1,
   decodeReadingLocatorV1,
   type NarrationSegmentV1,
+  type ReadingLocatorV1,
   type TtsServiceStateV1,
 } from "@voxleaf/shared";
 import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
@@ -212,10 +213,27 @@ const SOURCE_RANGE = decodeLocatorRangeV1({
   end: END_LOCATOR,
 });
 
-function preparedSegment(text: string): PreparedNarrationSegment {
+function sourceRange(startOffset: number, endOffset: number) {
+  return decodeLocatorRangeV1({
+    schemaVersion: 1,
+    start: {
+      ...START_LOCATOR,
+      textOffsetCodePoints: startOffset,
+    },
+    end: {
+      ...START_LOCATOR,
+      textOffsetCodePoints: endOffset,
+    },
+  });
+}
+
+function preparedSegment(
+  text: string,
+  range = SOURCE_RANGE,
+): PreparedNarrationSegment {
   return Object.freeze({
     text: text as PreparedNarrationSegment["text"],
-    sourceRange: SOURCE_RANGE,
+    sourceRange: range,
     boundaryReason: "sentence",
     measurements: Object.freeze({
       sourceCodePoints: createIndex(12),
@@ -226,28 +244,42 @@ function preparedSegment(text: string): PreparedNarrationSegment {
   });
 }
 
-function completeResult(
-  text = "Private synthetic narration.",
+function completeSegments(
+  segments: readonly PreparedNarrationSegment[],
 ): NarrationPreparationResult {
-  const segment = preparedSegment(text);
+  const narrationCodePoints = segments.reduce(
+    (total, segment) => total + segment.measurements.narrationCodePoints,
+    0,
+  );
+  const narrationUtf8Bytes = segments.reduce(
+    (total, segment) => total + segment.measurements.narrationUtf8Bytes,
+    0,
+  );
   return Object.freeze({
     status: "complete",
     start: Object.freeze({
-      canonicalLocator: START_LOCATOR,
+      canonicalLocator: segments[0]?.sourceRange.start ?? START_LOCATOR,
       resolutionStatus: "exact",
       resolutionReason: "exact",
       segmentRelation: "at-segment-start",
     }),
-    segments: Object.freeze([segment]),
+    segments: Object.freeze([...segments]),
     measurements: Object.freeze({
-      sourceCodePointsInspected: createIndex(12),
-      narrationCodePoints: segment.measurements.narrationCodePoints,
-      narrationUtf8Bytes: segment.measurements.narrationUtf8Bytes,
-      segmentCount: createIndex(1),
-      sentenceCount: createIndex(1),
-      checkpointCount: createIndex(1),
+      sourceCodePointsInspected: createIndex(segments.length * 12),
+      narrationCodePoints: createIndex(narrationCodePoints),
+      narrationUtf8Bytes: createIndex(narrationUtf8Bytes),
+      segmentCount: createIndex(segments.length),
+      sentenceCount: createIndex(segments.length),
+      checkpointCount: createIndex(segments.length),
     }),
   });
+}
+
+function completeResult(
+  text = "Private synthetic narration.",
+): NarrationPreparationResult {
+  const segment = preparedSegment(text);
+  return completeSegments([segment]);
 }
 
 function createPublication(
@@ -287,6 +319,10 @@ function createHarness(
   );
   const publication = createPublication(prepareNarration);
   const intervals: Array<() => void> = [];
+  const timeouts: Array<{
+    readonly callback: () => void;
+    readonly delay: number;
+  }> = [];
   const dependencies: ProductNarrationCoordinatorDependencies = {
     client,
     clock,
@@ -304,6 +340,19 @@ function createHarness(
         intervals.splice(index, 1);
       }
     },
+    setTimeout: (callback, delay) => {
+      const timeout = { callback, delay };
+      timeouts.push(timeout);
+      return timeout;
+    },
+    clearTimeout: (handle) => {
+      const index = timeouts.indexOf(
+        handle as { readonly callback: () => void; readonly delay: number },
+      );
+      if (index >= 0) {
+        timeouts.splice(index, 1);
+      }
+    },
   };
   const coordinator = new ProductNarrationCoordinator(
     publication,
@@ -316,6 +365,7 @@ function createHarness(
     clock,
     coordinator,
     intervals,
+    timeouts,
     prepareNarration,
   };
 }
@@ -467,21 +517,172 @@ describe("product narration coordinator", () => {
     expect(coordinator.observe().state).toBeUndefined();
   });
 
-  it("treats an active visual-locator change as an invalidating seek", async () => {
-    const { client, coordinator } = createHarness({ blockSynthesis: true });
+  it("invalidates on the first passive visual change and restarts only after the trailing 500 ms settlement", async () => {
+    const { client, coordinator, prepareNarration, timeouts } = createHarness({
+      blockSynthesis: true,
+    });
     await coordinator.checkAvailability();
     coordinator.start();
     await settleUntil(() => client.state === "generating");
+    const firstReplacement = decodeReadingLocatorV1({
+      ...START_LOCATOR,
+      textOffsetCodePoints: START_LOCATOR.textOffsetCodePoints + 1,
+    });
+    const settledReplacement = decodeReadingLocatorV1({
+      ...START_LOCATOR,
+      textOffsetCodePoints: START_LOCATOR.textOffsetCodePoints + 2,
+    });
+
+    coordinator.updateActiveLocator(firstReplacement);
+
+    expect(coordinator.observe().navigation).toMatchObject({
+      playIntent: "playing",
+      settling: true,
+    });
+    expect(timeouts).toEqual([
+      expect.objectContaining({
+        delay: 500,
+      }),
+    ]);
+    coordinator.updateActiveLocator(settledReplacement);
+    expect(timeouts).toHaveLength(1);
+    await settleUntil(() => client.cancelled.length === 1);
+    expect(coordinator.observe().metrics.acceptedAudioUnitCount).toBe(0);
+
+    timeouts[0]?.callback();
+    await settleUntil(() => prepareNarration.mock.calls.length === 2);
+
+    expect(prepareNarration.mock.calls[1]?.[0]).toEqual(
+      expect.objectContaining({
+        startLocator: settledReplacement,
+      }),
+    );
+    await settleUntil(() => client.synthesized.length === 2);
+    expect(client.synthesized[1]).toMatchObject({
+      sessionId: "session:product-test-3",
+      generationId: "generation:product-test-3",
+    });
+    await coordinator.close();
+  });
+
+  it("keeps paused intent at the settled passage and resumes from that locator", async () => {
+    const { coordinator, prepareNarration, timeouts } = createHarness();
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+    coordinator.pause();
     const replacement = decodeReadingLocatorV1({
       ...START_LOCATOR,
       textOffsetCodePoints: START_LOCATOR.textOffsetCodePoints + 1,
     });
 
     coordinator.updateActiveLocator(replacement);
-    await settleUntil(() => coordinator.observe().state === undefined);
+    await settleUntil(() => timeouts.length === 1);
+    timeouts[0]?.callback();
+    await settleUntil(
+      () =>
+        coordinator.observe().navigation.settling === false &&
+        coordinator.observe().state?.phase === "paused",
+    );
 
-    expect(client.cancelled).toHaveLength(1);
-    expect(coordinator.observe().metrics.acceptedAudioUnitCount).toBe(0);
+    expect(coordinator.observe().navigation.playIntent).toBe("paused");
+    expect(prepareNarration).toHaveBeenCalledTimes(1);
+
+    coordinator.resume();
+    await settleUntil(() => prepareNarration.mock.calls.length === 2);
+    expect(prepareNarration.mock.calls[1]?.[0]).toEqual(
+      expect.objectContaining({ startLocator: replacement }),
+    );
+    await coordinator.close();
+  });
+
+  it("moves by bounded stable prepared-segment boundaries after containment", async () => {
+    const ranges = [
+      sourceRange(0, 12),
+      sourceRange(12, 24),
+      sourceRange(24, 36),
+    ] as const;
+    const result = completeSegments(
+      ranges.map((range, index) =>
+        preparedSegment(`Synthetic segment ${String(index)}.`, range),
+      ),
+    );
+    const { coordinator, prepareNarration } = createHarness({ result });
+    const navigationRequests: Array<{
+      readonly event: "next-segment" | "previous-segment";
+      readonly locator: ReadingLocatorV1;
+    }> = [];
+    coordinator.subscribeNavigationRequests((request) => {
+      navigationRequests.push(request);
+    });
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+
+    expect(coordinator.observe().navigation).toMatchObject({
+      canGoPrevious: false,
+      canGoNext: true,
+    });
+    coordinator.goToNextBoundary();
+    await settleUntil(() => navigationRequests.length === 1);
+
+    expect(navigationRequests[0]).toEqual({
+      event: "next-segment",
+      locator: ranges[1].start,
+    });
+    expect(coordinator.observe().navigation.settling).toBe(true);
+
+    coordinator.settleExternalNavigation(ranges[1].start);
+    await settleUntil(() => prepareNarration.mock.calls.length === 2);
+    expect(prepareNarration.mock.calls[1]?.[0]).toEqual(
+      expect.objectContaining({ startLocator: ranges[1].start }),
+    );
+    await coordinator.close();
+  });
+
+  it("contains the old session on close and cannot publish stale audible progress into a replacement", async () => {
+    const first = createHarness({ blockSynthesis: true });
+    const second = createHarness();
+    const firstProgress: ProductNarrationAudibleProgressObservation[] = [];
+    first.coordinator.subscribeAudibleProgress((observation) => {
+      firstProgress.push(observation);
+    });
+    await first.coordinator.checkAvailability();
+    first.coordinator.start();
+    await settleUntil(() => first.client.state === "generating");
+
+    await first.coordinator.close();
+    first.client.completeBlockedSynthesis();
+    await Promise.resolve();
+
+    expect(first.client.cancelled).toHaveLength(1);
+    expect(firstProgress).toEqual([]);
+    expect(first.coordinator.observe().navigation).toMatchObject({
+      playIntent: "inactive",
+      settling: false,
+    });
+    expect(first.coordinator.observe().metrics.acceptedAudioUnitCount).toBe(0);
+
+    await second.coordinator.checkAvailability();
+    second.coordinator.start();
+    await settleUntil(
+      () => second.coordinator.observe().state?.phase === "playing",
+    );
+    expect(second.coordinator.observe().metrics.acceptedAudioUnitCount).toBe(1);
+    expect(first.coordinator.observe().metrics.acceptedAudioUnitCount).toBe(0);
+    await second.coordinator.close();
+  });
+
+  it("freezes quick or prepared selection while a session is active", async () => {
+    const { coordinator } = createHarness();
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+
+    coordinator.setSelection({ kind: "prepared", targetMs: 60_000 });
+
+    expect(coordinator.observe().selection).toEqual({ kind: "quick" });
+    await coordinator.close();
   });
 
   it("publishes only a fixed failure when narration preparation is rejected", async () => {

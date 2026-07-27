@@ -41,6 +41,7 @@ import type {
 import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
 import type {
   ProductNarrationAudibleProgressObservation,
+  ProductNarrationNavigationRequest,
   ProductNarrationSnapshot,
 } from "../tts/product-narration-coordinator";
 
@@ -221,6 +222,12 @@ function narrationSnapshot(
       acceptedAudioSampleFrames: 0,
     }),
     serviceState: phase === "playing" ? "ready" : "stopped",
+    navigation: Object.freeze({
+      playIntent: phase === "playing" ? "playing" : "inactive",
+      settling: false,
+      canGoPrevious: false,
+      canGoNext: false,
+    }),
   });
 }
 
@@ -228,6 +235,9 @@ class ManualReaderNarrationSource implements ReaderNarrationSource {
   readonly #listeners = new Set<() => void>();
   readonly #progressListeners = new Set<
     (observation: ProductNarrationAudibleProgressObservation) => void
+  >();
+  readonly #navigationListeners = new Set<
+    (request: ProductNarrationNavigationRequest) => void
   >();
   #snapshot = narrationSnapshot(undefined);
 
@@ -245,6 +255,19 @@ class ManualReaderNarrationSource implements ReaderNarrationSource {
   ): () => void {
     this.#progressListeners.add(listener);
     return () => this.#progressListeners.delete(listener);
+  }
+
+  subscribeNavigationRequests(
+    listener: (request: ProductNarrationNavigationRequest) => void,
+  ): () => void {
+    this.#navigationListeners.add(listener);
+    return () => this.#navigationListeners.delete(listener);
+  }
+
+  requestNavigation(request: ProductNarrationNavigationRequest): void {
+    for (const listener of this.#navigationListeners) {
+      listener(request);
+    }
   }
 
   start(
@@ -779,6 +802,114 @@ describe("navigable publication reader", () => {
     ).toHaveFocus();
   });
 
+  it("waits for narration invalidation before chapter placement and reports the settled reason", async () => {
+    let releaseInvalidation: (() => void) | undefined;
+    const onNavigationIntent = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseInvalidation = resolve;
+        }),
+    );
+    const onSettledLocatorChange = vi.fn();
+    render(
+      <ReaderPublicationContent
+        publication={createPublication()}
+        onNavigationIntent={onNavigationIntent}
+        onSettledLocatorChange={onSettledLocatorChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Next chapter" }));
+
+    expect(onNavigationIntent).toHaveBeenCalledWith("chapter-navigation");
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Opening" }),
+    ).toBeInTheDocument();
+    expect(onSettledLocatorChange).not.toHaveBeenCalled();
+
+    await act(async () => {
+      releaseInvalidation?.();
+      await Promise.resolve();
+    });
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Continuation" }),
+    ).toHaveFocus();
+    expect(onSettledLocatorChange).toHaveBeenCalledWith(
+      CONTINUATION_LOCATED_BLOCK.startLocator,
+      "chapter-navigation",
+    );
+  });
+
+  it("routes narration-boundary requests through the same focus-safe reader placement", () => {
+    const narrationSource = new ManualReaderNarrationSource();
+    const onNavigationIntent = vi.fn();
+    const onSettledLocatorChange = vi.fn();
+    render(
+      <ReaderPublicationContent
+        publication={createPublication()}
+        narrationSource={narrationSource}
+        onNavigationIntent={onNavigationIntent}
+        onSettledLocatorChange={onSettledLocatorChange}
+      />,
+    );
+
+    act(() => {
+      narrationSource.requestNavigation(
+        Object.freeze({
+          event: "next-segment",
+          locator: CONTINUATION_LOCATED_BLOCK.startLocator,
+        }),
+      );
+    });
+
+    expect(onNavigationIntent).toHaveBeenCalledWith("narration-boundary");
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Continuation" }),
+    ).toHaveFocus();
+    expect(onSettledLocatorChange).toHaveBeenCalledWith(
+      CONTINUATION_LOCATED_BLOCK.startLocator,
+      "narration-boundary",
+    );
+  });
+
+  it("settles an invalidated narration request even when its target is unavailable", () => {
+    const narrationSource = new ManualReaderNarrationSource();
+    const onNavigationIntent = vi.fn();
+    const onSettledLocatorChange = vi.fn();
+    const unavailableLocator = decodeReadingLocatorV1({
+      ...OPENING_LOCATED_BLOCK.startLocator,
+      spineItemId: "spine:missing",
+      spineItemIndex: 99,
+    });
+    render(
+      <ReaderPublicationContent
+        publication={createPublication()}
+        narrationSource={narrationSource}
+        onNavigationIntent={onNavigationIntent}
+        onSettledLocatorChange={onSettledLocatorChange}
+      />,
+    );
+
+    act(() => {
+      narrationSource.requestNavigation(
+        Object.freeze({
+          event: "next-segment",
+          locator: unavailableLocator,
+        }),
+      );
+    });
+
+    expect(onNavigationIntent).toHaveBeenCalledWith("narration-boundary");
+    expect(onSettledLocatorChange).toHaveBeenCalledWith(
+      OPENING_LOCATED_BLOCK.startLocator,
+      "narration-boundary",
+    );
+    expect(
+      screen.getByText("Navigation could not be completed."),
+    ).toBeVisible();
+  });
+
   it("provides content-free keyboard skip and return links without changing browser history", () => {
     const initialUrl = window.location.href;
     render(<ReaderPublicationContent publication={createPublication()} />);
@@ -940,6 +1071,7 @@ describe("navigable publication reader", () => {
     expect(onSettledLocatorChange).toHaveBeenCalledTimes(1);
     expect(onSettledLocatorChange).toHaveBeenCalledWith(
       CONTINUATION_LOCATED_BLOCK.startLocator,
+      "chapter-navigation",
     );
     expect(storageWrite).not.toHaveBeenCalled();
   });
@@ -965,6 +1097,7 @@ describe("navigable publication reader", () => {
     expect(onSettledLocatorChange).toHaveBeenCalledTimes(1);
     expect(onSettledLocatorChange).toHaveBeenCalledWith(
       OPENING_LOCATED_BLOCK.startLocator,
+      "reflow",
     );
   });
 

@@ -474,11 +474,20 @@ Complete.
 - Expected result: all interaction transitions preserve one logical position
   and zero stale playback while controls remain keyboard-operable and
   content-free.
-- Actual result: Not run.
+- Actual result: Passed on 2026-07-27. Focused coordinator/control/reader
+  coverage passes 30 tests. The full desktop command passes 296 Vitest tests
+  plus six native WebDriver-client tests. All six production Chromium tests
+  pass with zero external requests, and the packaged WebView2 startup matrix
+  passes its TTS cancellation/replacement, accessible keyboard reader,
+  synchronization feasibility, cleanup, zero-error, and zero-external-request
+  checks. `pnpm.cmd check:portable` also passes formatting, lint, TypeScript
+  and Python type checks, generated-contract verification, 1,047 Vitest
+  tests, six Node WebDriver-client tests, 233 Python tests, and portable
+  builds.
 
 ### Status
 
-Not started.
+Complete.
 
 ## Milestone 5: Persist heard progress and prove lifecycle behavior
 
@@ -675,6 +684,28 @@ persistence. Do not use destructive storage migration as rollback.
   1,039 Vitest tests, six Node WebDriver-client tests, 233 Python tests,
   formatting, lint, TypeScript/Python type checks, generated-contract
   verification, and portable builds all pass.
+- 2026-07-27: Implemented M009 Milestone 4. The product coordinator now
+  invalidates its work identity before playback/preparation/queue/synthesis
+  cleanup, settles passive visual movement at the frozen trailing 500 ms
+  boundary, preserves active or paused intent, and restarts only after the
+  canonical target settles.
+- 2026-07-27: Chapter and stable prepared-segment actions now wait for
+  containment before using the reader's existing focus-safe canonical
+  placement. The exact profile is immutable while active, the recent
+  structural boundary history is capped at 64 ranges outside React state, and
+  fixed previous/next/visible-passage controls expose no narration text, PCM,
+  work identity, path, or model artifact.
+- 2026-07-27: The focused 30-test interaction suite, desktop typecheck,
+  TypeScript lint, all 296 desktop Vitest tests, six Node WebDriver-client
+  tests, all six production Chromium tests, and the packaged WebView2
+  startup/synchronization matrix pass. The sandboxed browser run completed all
+  assertions but could not terminate its preview child; the unrestricted
+  rerun exited zero.
+- 2026-07-27: The final Milestone 4 `pnpm.cmd check:portable` gate passes:
+  formatting, lint, TypeScript/Python type checks, generated-contract
+  verification, 1,047 Vitest tests, six Node WebDriver-client tests, 233
+  Python tests, and portable builds all pass. The only Python warning is the
+  sandbox-denied optional pytest cache write; all tests pass.
 
 ## Discoveries and decisions
 
@@ -717,6 +748,18 @@ persistence. Do not use destructive storage migration as rollback.
 - Treating automatic next-chapter materialization as handled programmatic
   navigation prevents the existing destination-focus policy and passive
   tracker from reinterpreting narration following as user input.
+- Waiting for the old synthesis operation to settle after cancellation is
+  necessary before starting a replacement run. Without that join, the stale
+  promise can still occupy the single pump slot and leave the replacement
+  scheduler idle even though its identity is correct.
+- Previous/next needs bounded structural history after synthesized entries
+  leave the preparation map. Retaining at most 64 immutable source ranges is
+  sufficient for recent navigation without retaining narration text, PCM, DOM
+  paths, geometry, or unbounded book state.
+- The current exact Qwen/Serena model and voice are fixed configuration rather
+  than mutable product controls. Active quick/prepared selection is also
+  frozen. A future voice/model setting must close and replace the coordinator
+  so the implemented book/session replacement invariant remains authoritative.
 - A completed segment advances the internal audible projection to its range
   end while retaining the last-heard highlight and performing no second
   follow, matching the frozen transition table.
@@ -730,12 +773,13 @@ persistence. Do not use destructive storage migration as rollback.
 
 ## Final validation results
 
-M009 Milestones 1 through 3 are complete. Authority, source-range projection,
-reader highlighting/following, focused unit/component, full desktop,
-six-test Chromium, packaged WebView2, and portable repository validation pass
-through the recorded checkpoints. Synchronized user
-navigation, heard-position persistence, exact-host synchronization evidence,
-pull-request CI, and final M009 validation are not yet available.
+M009 Milestones 1 through 4 are complete. Authority, source-range projection,
+reader highlighting/following, synchronized user navigation, focused
+unit/component, full desktop, six-test Chromium, packaged WebView2, and
+portable repository validation pass through the recorded checkpoints.
+Heard-position persistence,
+exact-host synchronization evidence, pull-request CI for the current
+milestone, and final M009 validation are not yet available.
 
 When the plan completes, record:
 

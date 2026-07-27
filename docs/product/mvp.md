@@ -2,7 +2,7 @@
 
 ## Implementation status
 
-The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is never a startup target. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. The final exact-host run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute, which exceeds the MVP target. The path therefore remains a constrained development demo rather than a passing standard profile or uninterrupted-playback promise. M009 Milestones 1 through 3 now connect exact audible segment transitions to one non-mutating semantic source-range highlight and focus-safe automatic following across incremental and chapter rendering. Manual synchronized seek/restart and heard-position persistence remain pending. General hardware profiles and production packaging also remain pending.
+The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is never a startup target. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. The final exact-host run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute, which exceeds the MVP target. The path therefore remains a constrained development demo rather than a passing standard profile or uninterrupted-playback promise. M009 Milestones 1 through 4 connect exact audible segment transitions to one non-mutating semantic source-range highlight, focus-safe automatic following, and identity-first synchronized user navigation. Passive visual movement settles for 500 ms before an authorized restart; chapter and stable prepared-segment controls contain the old run before reader placement; paused intent stays paused at the target. Heard-position persistence remains pending. General hardware profiles and production packaging also remain pending.
 
 ## Current implemented flow
 
@@ -14,7 +14,11 @@ The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is
 6. On the exact configured development host, the user can start quick or
    prepared local narration from the active visual locator and hear complete
    units through the bounded in-memory player.
-7. VoxLeaf saves the canonical logical reading locator and display preferences
+7. The reader highlights and follows the audible stable segment. Passive
+   movement, chapter navigation, and previous/next narration-passage controls
+   invalidate obsolete audio before a bounded restart from the canonical
+   target; a paused session remains paused there.
+8. VoxLeaf saves the canonical logical reading locator and display preferences
    on the approved bounded lifecycle.
 
 The narration path is deliberately hidden when the exact native development
@@ -23,19 +27,10 @@ runtime profile.
 
 ## Remaining target user flow
 
-1. While narration is active, the audible prepared segment becomes the single
-   shared reading-position authority at segment granularity.
-2. The reader highlights that segment's source range and follows it without
-   moving keyboard or assistive-technology focus.
-3. User chapter or passage navigation explicitly seeks narration: obsolete
-   work becomes ineligible before bounded cancellation and playback restarts
-   from the canonical selected locator.
-4. Pause, resume, previous/next movement, reflow, and chapter transitions keep
-   the visual and audible position synchronized without inventing word timing.
-5. VoxLeaf persists only canonical heard progress at bounded lifecycle
+1. VoxLeaf persists only canonical heard progress at bounded lifecycle
    checkpoints and never persists narration text, generated audio, or rendered
    geometry.
-6. Later work selects a supported production TTS profile, validates broader
+2. Later work selects a supported production TTS profile, validates broader
    hardware, and packages an end-user distribution.
 
 ## MVP capability status
@@ -59,6 +54,12 @@ Implemented and validated:
 - Connect the active visual locator to bounded narration preparation, the M007
   client, and audible quick/prepared playback under the exact-development
   availability gate.
+- Highlight and follow the active prepared segment without mutating publication
+  DOM or moving keyboard focus.
+- Treat passive visual movement as a seek after 500 ms settlement, route
+  chapter and stable prepared-segment navigation through identity-first
+  cancellation, preserve paused intent at the target, and expose fixed
+  content-free keyboard controls.
 - Reject stale work before cancellation, abort preparation, keep sensitive
   prompts and PCM outside React state, and expose only content-free status.
 - Display actionable reader loading, opening, restoration, and error states.
@@ -66,9 +67,8 @@ Implemented and validated:
 
 Remaining:
 
-- Select a chapter or paragraph as a narration starting point in a desktop playback flow.
-- Pause, resume, seek, and move through a shared visual/playback position.
-- Highlight and keep the active narrated passage on screen.
+- Persist the latest canonical heard segment checkpoint without advancing over
+  unheard content.
 - Detect relevant acceleration, publish measured hardware profiles, and provide a validated CPU-compatible fallback.
 - Graduate a measured engine/voice to a supported production profile, or record
   a separate explicit product decision.

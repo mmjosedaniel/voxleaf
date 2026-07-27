@@ -6,8 +6,9 @@ This is the frozen interaction and position authority for M009. Milestone 1
 implements the deterministic authority and proves the selected decoration and
 following mechanism in production Chromium and packaged WebView2. Milestones
 2 and 3 connect bounded audible-position projection, segment highlighting,
-and focus-safe automatic following to the reader. Synchronized user
-navigation and heard-progress persistence remain M009 Milestones 4 and 5.
+and focus-safe automatic following to the reader. Milestone 4 connects
+identity-first synchronized user navigation. Heard-progress persistence
+remains M009 Milestone 5.
 
 The authority is desktop-local. It does not change the shared schemas, the
 M005 `narration-v1` segmentation policy, or the M007 protocol-v1 service.
@@ -109,6 +110,13 @@ Programmatic following is excluded by the sampling-suspension token.
 An addressable passage is the existing active visual locator. Publication
 prose is not turned into a button and DOM paths, quotations, page numbers, and
 rendered geometry are not persisted.
+
+The production path now implements this boundary. It retains at most 64 recent
+stable prepared source ranges for previous/next movement, waits for active
+synthesis containment before explicit reader placement, and exposes fixed
+previous, next, and visible-passage actions. Active quick/prepared selection
+cannot change, and the exact voice/model profile is not mutable, while a
+session is active.
 
 ## Heard progress
 

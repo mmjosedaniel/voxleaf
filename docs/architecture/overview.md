@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 8 are complete. The secure EPUB boundary, visual reader, bounded restoration, locator-linked narration preparation, M007 service, and exact-development M008 coordinator/player path are implemented and validated within their documented scopes. ADR-0015 closes the demo policy with quick mode default, one-minute initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. The final exact-host rerun measured 19.49 buffering seconds per playback minute, which exceeds the MVP target, so ADR-0013 continues to select no standard production profile. M009 is in progress: Milestones 1 through 3 implement the segment-level authority, bounded audible source-range projection, and reader-owned non-mutating highlight/follow projection. Synchronized user navigation and heard-position persistence remain unimplemented. General-hardware support, production distribution, and sustained uninterrupted playback remain deferred.
+Mixed implementation status. Roadmap Milestones 1 through 8 are complete. The secure EPUB boundary, visual reader, bounded restoration, locator-linked narration preparation, M007 service, and exact-development M008 coordinator/player path are implemented and validated within their documented scopes. ADR-0015 closes the demo policy with quick mode default, one-minute initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. The final exact-host rerun measured 19.49 buffering seconds per playback minute, which exceeds the MVP target, so ADR-0013 continues to select no standard production profile. M009 is in progress: Milestones 1 through 4 implement the segment-level authority, bounded audible source-range projection, reader-owned non-mutating highlight/follow projection, and identity-first synchronized user navigation. Heard-position persistence remains unimplemented. General-hardware support, production distribution, and sustained uninterrupted playback remain deferred.
 
 M007 is complete. Its six milestones implement the accepted protocol v1,
 closed generated contracts, bounded model-free Python service, native
@@ -30,8 +30,14 @@ coordinator subscription. M009 Milestone 3 connects that subscription to one
 reader-owned semantic source-range projection. It registers the production
 Custom Highlight, follows only outside the frozen comfort region, suspends
 passive visual sampling across incremental and chapter rendering, preserves
-focus and selection, and clears on stop/failure/cleanup. Later milestones
-still own synchronized seeking and heard-position persistence. Production
+focus and selection, and clears on stop/failure/cleanup. M009 Milestone 4
+invalidates work identity before playback/preparation/queue/synthesis cleanup,
+settles passive visual movement for 500 ms, preserves active versus paused
+intent, and routes chapter, visible-passage, and stable prepared-boundary
+actions through canonical reader placement. At most 64 recent structural
+ranges are retained outside React state; no narration text, PCM, or work
+identity enters the snapshot. Milestone 5 still owns heard-position
+persistence. Production
 distribution and general-hardware support also remain unimplemented.
 
 M009 Milestone 1 implements the closed desktop-local transition table and
@@ -44,8 +50,9 @@ following, 500 ms passive-navigation settlement, 250 ms maximum observation
 cadence, and non-skipping segment checkpoints. These are implementation and
 feasibility evidence for the authority only; the coordinator, scheduler,
 player, reader, and persistence runtime paths are not connected by the first
-milestone. Milestone 2 connects the coordinator, scheduler, and player
-projection path only. The reader and persistence consumers remain unconnected.
+milestone. Milestones 2 through 4 connect the coordinator, scheduler, player,
+reader projection, and user-navigation paths. Persistence remains
+unconnected.
 
 [`system-diagram.md`](system-diagram.md) is the canonical visual map and status legend. This overview owns the accompanying architectural rationale, invariants, and detailed implemented-boundary notes.
 
@@ -72,8 +79,8 @@ Desktop application
 |-- Content-free preparation estimates, optional wait decisions, and controls
 |   [M008 Milestone 4; mounted only for exact native configuration]
 |-- Product narration coordinator [M008 Milestone 5; exact demo implemented]
-`-- Reader/narration segment projection and focus-safe following
-    [M009 Milestones 1-3 implemented; synchronized interaction pending]
+`-- Reader/narration projection, following, and synchronized navigation
+    [M009 Milestones 1-4 implemented; heard persistence pending]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]
@@ -210,9 +217,11 @@ locator, dispatches one segment through M007, transfers each validated complete
 unit into the bounded FIFO, and drives the Web Audio player. Sensitive text and
 PCM remain outside React state. M008 by itself does not supply synchronized
 highlighting; M009 Milestones 2-3 now project eligible source ranges into one
-reader-owned segment highlight and focus-safe follow. This still does not
-supply synchronized user seek, heard persistence, a standard profile,
-uninterrupted output, general hardware support, or distribution.
+reader-owned segment highlight and focus-safe follow. Milestone 4 adds
+identity-first passive, chapter, visible-passage, and stable-boundary
+navigation while retaining active/paused intent. This still does not supply
+heard persistence, a standard profile, uninterrupted output, general hardware
+support, or distribution.
 
 1. **Implemented:** Validate the selected EPUB as an untrusted archive.
 2. **Implemented:** Parse metadata, navigation, and spine order.
@@ -224,7 +233,7 @@ uninterrupted output, general hardware support, or distribution.
 8. **Implemented — Milestone 7:** The model-free Rust probe proves the selected parent/child frame boundary and a narrow binary Tauri response. Canonical shared control schemas and the bounded Python service prove strict narration input, lifecycle, complete-unit audio framing, cancellation, and failure behavior. The native shell owns one persistent child, framed read/write bounds, state/timeouts, process-tree termination, zero automatic restart, application-exit cleanup, and narrow Tauri commands. The typed desktop client validates control order and identity, retains one binary unit outside React state, and zeroes released or stale bytes. Native-only configuration selects the implemented exact Qwen/Serena adapter.
 9. **Constrained exact-host product path implemented — Milestone 8:** Milestones 1-4 implement the frozen authority, scheduler, sole-owner FIFO, Web Audio player, content-free estimator/wait decisions, and accessible controls. Milestone 5 adds the application coordinator, active-locator preparation, one-at-a-time M007 dispatch, mounted exact-development controls, stale-first cancellation, and packaged quick/prepared hardware evidence. The matrix observes real depletion and buffering instead of treating the worker as real-time.
 10. **Policy closed; synchronization authority frozen — Milestones 8-9:** Milestone 6 retains the frozen quick/prepared/refill defaults and zero boundary wait from measured evidence without promoting the profile. M009 Milestone 1 selects honest segment-level timing, CSS Custom Highlight decoration, focus-safe following, and a 500 ms settled passive-navigation seek.
-11. **Implemented for segment projection; synchronized interaction pending — Milestones 8-9:** Played units release exactly once; stop, locator change, close, and failure invalidate eligibility before bounded cleanup. M009 Milestone 2 carries immutable source ranges only with eligible FIFO ownership and emits identity-keyed start, bounded progress, and completion observations without text or PCM. Milestone 3 maps the active half-open range through the existing semantic DOM boundary, owns one production Custom Highlight, follows without focus or selection changes, and suppresses passive tracker feedback across incremental and chapter rendering. ADR-0017 freezes later identity-first seek and non-skipping heard checkpoints; M009 Milestones 4-5 still own synchronized user interaction and persistence.
+11. **Implemented through synchronized interaction; heard persistence pending — Milestones 8-9:** Played units release exactly once; stop, locator change, close, and failure invalidate eligibility before bounded cleanup. M009 Milestone 2 carries immutable source ranges only with eligible FIFO ownership and emits identity-keyed start, bounded progress, and completion observations without text or PCM. Milestone 3 maps the active half-open range through the existing semantic DOM boundary, owns one production Custom Highlight, follows without focus or selection changes, and suppresses passive tracker feedback across incremental and chapter rendering. Milestone 4 implements the frozen identity-first seek, 500 ms passive settlement, stable prepared-boundary movement, canonical reader placement, active/paused intent preservation, and fixed accessible actions. M009 Milestone 5 still owns non-skipping heard checkpoints.
 12. **Implemented for reader state:** Persist the logical reading locator, not a rendered page number or generated audio. Generated-audio persistence remains prohibited future behavior unless a separate product/privacy decision approves it.
 
 ## Implemented narration-preparation boundary

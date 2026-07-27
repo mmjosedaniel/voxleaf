@@ -2,10 +2,10 @@
 
 ## Status
 
-Accepted for M009. Milestones 1 through 3 freeze the authority, project exact
-audible source ranges, and implement reader highlighting/following. Runtime
-user-navigation and heard-progress persistence remain assigned to M009
-Milestones 4 and 5.
+Accepted for M009. Milestones 1 through 4 freeze the authority, project exact
+audible source ranges, implement reader highlighting/following, and connect
+identity-first synchronized user navigation. Heard-progress persistence
+remains assigned to M009 Milestone 5.
 
 ## Context
 
@@ -51,6 +51,14 @@ intent restarts from the settled active visual locator; paused intent remains
 paused there. All invalidation revokes eligibility before playback stop,
 preparation cleanup, queue release, and synthesis containment.
 
+The implementation retains at most 64 recent stable prepared source ranges for
+previous/next movement and keeps that structural history outside React state.
+Chapter and narration-boundary placement wait for containment before using the
+reader's existing canonical navigation and focus policy. The exact
+Qwen/Serena voice/model profile is fixed; quick/prepared selection cannot
+change during an active session, and any future voice/model replacement must
+close the old coordinator first.
+
 Persistence saves segment start at audible start, segment end after audible
 completion, and the latest heard checkpoint on interruption. Mid-segment
 restore replays from segment start. Periodic progress writes are prohibited.
@@ -71,9 +79,9 @@ change is authorized.
   existing work identities.
 - A later timestamp-capable engine requires a new authority before word-level
   highlighting or inside-segment clipping can be implemented.
-- The implemented reader projection does not improve Qwen throughput, resolve
-  ADR-0013's standard profile blocker, or make synchronized user navigation
-  and heard-progress persistence complete.
+- The implemented reader projection and navigation do not improve Qwen
+  throughput, resolve ADR-0013's standard profile blocker, or make
+  heard-progress persistence complete.
 
 ## Alternatives considered
 
