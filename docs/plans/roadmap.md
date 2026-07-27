@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 7 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. Completed Milestone 6.2 measured CPU solo at aggregate RTF 2.999 and GPU solo at aggregate RTF 1.467; the official concurrent run stopped at `resource-limit`, and a low-application-load diagnostic later completed both workers at aggregate RTF 1.429 while slowing the GPU worker to RTF 2.329. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains one exact GPU worker only for a constrained development demo. ADR-0015 authorizes that exception without selecting a standard profile. Completed M007 validates the frozen protocol and canonical cross-language controls, bounded Python service, native persistent-child supervision, typed desktop client, one-unit memory handoff, exact development-only Qwen/Serena adapter, identity-first cancellation, process-tree cleanup, packaged fake-service lifecycle, measured exact-host handoff matrix, and final protocol/dependency/privacy/repository/CI closeout. M008 is now the active plan for the first product narration caller, quick-start/prepared playback, and bounded adaptive buffering. No standard profile, production runtime, continuous-playback guarantee, or general hardware support is approved. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 7 are complete. Completed Milestone 6.2 rejects CPU-only and dual-worker scheduling and retains one exact GPU worker only for the ADR-0015 constrained development demo; no standard profile is selected. Completed M007 validates protocol v1, the bounded Python service, native supervision, typed one-unit ownership, and exact Qwen/Serena integration. M008 is active through Milestone 5: the desktop now connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible quick/prepared controls only under exact native development configuration. The packaged exact-host matrix passes, but measured quick startup is 39.238 seconds and buffering is 20.91 seconds per playback minute. This is a constrained audible demo, not a continuous-playback, production, distribution, or general-hardware claim. Milestone 6 policy and repository closeout remain.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -452,15 +452,16 @@ model-independent scheduler and playback behavior remain separately owned.
 
 ## Milestone 8: Build bounded audio playback and scheduling
 
-**Status:** In progress. M008 Milestones 1-4 freeze the exact adaptive-buffer
-and UX authority and implement the model-free scheduler, sole-owner payload
-FIFO, dedicated Web Audio PCM player, bounded content-free preparation
-estimate/wait controller, and reusable accessible quick/prepared controls.
-Deterministic tests cover `takeAudioUnit()` transfer, exact format/order,
-consumption, underruns, target-bounded pause continuation, planned-wait versus
-buffering state, native control semantics, volume, end-of-range, and bounded
-identity-first cleanup. No production publication/M007 caller, mounted
-playback controls, or exact-model end-to-end playback exists yet. Follow
+**Status:** In progress through Milestone 5. M008 freezes the exact
+adaptive-buffer/UX authority and implements the scheduler, sole-owner payload
+FIFO, Web Audio player, preparation presenter, controls, and exact-development
+application coordinator. Deterministic tests cover active-locator preparation,
+one-at-a-time dispatch, ownership, format/order, cancellation, stale
+suppression, lifecycle, pause continuation, truthful buffering, and privacy.
+The packaged exact-host matrix passes quick and one-minute prepared playback,
+all prepared choices, bounded resources, 160 ms cancellation, and zero
+external requests while honestly recording one underrun and slower-than-real-
+time buffering. Milestone 6 policy/repository closeout remains. Follow
 [`M008-bounded-adaptive-prebuffering.md`](active/M008-bounded-adaptive-prebuffering.md).
 
 ### Goal
@@ -628,7 +629,7 @@ exact Qwen/Serena adapter, complete-unit delivery, and cancellation
 containment. It does not implement playback, promote the candidate to a
 standard profile, or approve model/runtime distribution.
 
-[`active/M008-bounded-adaptive-prebuffering.md`](active/M008-bounded-adaptive-prebuffering.md) is the active implementation plan for ADR-0015. Its first four milestones provide the exact authority, deterministic scheduler, payload-owning multi-unit FIFO, low-level Web Audio player, bounded content-free estimates/wait decisions, target-bounded pause continuation, and reusable accessible quick/prepared controls. The publication/M007 caller, product mounting, exact-host wait/default decision, exact-model playback, and closeout remain.
+[`active/M008-bounded-adaptive-prebuffering.md`](active/M008-bounded-adaptive-prebuffering.md) is the active implementation plan for ADR-0015. Its first five milestones provide the exact authority, deterministic scheduler, payload-owning multi-unit FIFO, Web Audio player, bounded content-free estimates/wait decisions, target-bounded pause continuation, accessible controls, exact-development product coordinator, and measured packaged quick/prepared playback. The standard blocker remains; Milestone 6 owns final demo policy, repository validation, pull-request evidence, and plan closeout.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or completed Milestones 4 through 7 and does not authorize implementing all of those areas at once.
 

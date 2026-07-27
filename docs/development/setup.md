@@ -2,7 +2,7 @@
 
 ## Current status
 
-The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, minimal Tauri 2 native shell, isolated Python service foundation, aggregate root quality commands, deterministic Playwright Chromium smoke, and continuous integration are initialized. The version, focused, development-server, and root commands identified as Windows commands in this document have been run successfully in Windows PowerShell. Secure in-memory EPUB 3 ingestion, immutable semantic documents, bounded local raster reads, deterministic locator/target resolution, and bounded locator-linked narration preparation are implemented in `@voxleaf/epub`. The desktop passes one bounded local-file read to the publication session, presents accessible open/close lifecycle states, renders one active spine document's supported semantic text and bounded static raster images through application-owned React elements, and navigates hierarchical TOC entries, internal targets, and readable previous/next chapters through one desktop coordinator and canonical package locators. Publication images are loaded near the viewport through one serialized, eight-request-bounded reader loader and the existing preflight/decode manager; they use only application-created `blob:` sources, clear caller-owned bytes, abort stale work, release on document/book change, and fall back locally. Passive visual-position tracking, viewport/preference reflow restoration, bounded large-chapter rendering, keyboard/focus behavior, content-free persistence, and exact/nearest-valid restoration after exact-file reselection are implemented and validated in Chromium and packaged WebView2. Generated standalone contract validators run under a CSP with no `unsafe-eval` or network image origin. The development-only Milestone 6 harness evaluated both exact TTS profiles, but ADR-0013 selected neither one and no production TTS dependency was added. Milestone 6.1 is complete: its bounded Spanish intake screen selected Serena, `tts-feasibility-profile-v3` froze the exact Qwen3-TTS 1.7B CustomVoice development identity, the exact-host prototype passed its bounded complete-segment delivery and worker-termination cancellation stop gate, the official matrix retained the standard blocker, and repository/privacy plus pull-request validation passed. The ignored model setup and manual prototype command exist, but no production profile is approved; Base voice cloning, Whisper, and VAD/energy are excluded from `v3`. The desktop does not call `OpenedPublication.prepareNarration`. Completed M007 implements and validates the frozen standard-stream transport, canonical cross-language control contracts, bounded Python service, native persistent-child supervisor, typed desktop client, one-complete-unit memory handoff, exact development-only Qwen/Serena adapter, and frozen exact-host service-handoff matrix. Packaged model-free evidence covers normal binary delivery, cancellation, crash recovery, process-tree cleanup, and zero external requests; exact-host evidence covers load/warm, bounded cold and warm delivery, backpressure, invalidation, cancellation, crash, application exit, cleanup, privacy, and resource bounds without retry. Required pull-request CI passed and the ExecPlan is archived. M008 Milestones 3-4 now provide an unconnected bounded payload FIFO, Web Audio player, content-free preparation estimator, disabled-by-default semantic-boundary wait coordinator, and reusable accessible quick/prepared controls with no added dependency. The controls are not mounted with a fake runtime; the prepared-narration/M007 product caller, audible product playback, synchronization, general hardware detection, and installers remain unimplemented.
+The prerequisite toolchains, TypeScript workspace, framework-independent packages, React web shell, minimal Tauri 2 native shell, isolated Python service foundation, aggregate root quality commands, deterministic Playwright Chromium smoke, and continuous integration are initialized. The version, focused, development-server, and root commands identified as Windows commands in this document have been run successfully in Windows PowerShell. Secure in-memory EPUB 3 ingestion, immutable semantic documents, bounded local raster reads, deterministic locator/target resolution, and bounded locator-linked narration preparation are implemented in `@voxleaf/epub`. The desktop passes one bounded local-file read to the publication session, presents accessible open/close lifecycle states, renders one active spine document's supported semantic text and bounded static raster images through application-owned React elements, and navigates hierarchical TOC entries, internal targets, and readable previous/next chapters through one desktop coordinator and canonical package locators. Publication images are loaded near the viewport through one serialized, eight-request-bounded reader loader and the existing preflight/decode manager; they use only application-created `blob:` sources, clear caller-owned bytes, abort stale work, release on document/book change, and fall back locally. Passive visual-position tracking, viewport/preference reflow restoration, bounded large-chapter rendering, keyboard/focus behavior, content-free persistence, and exact/nearest-valid restoration after exact-file reselection are implemented and validated in Chromium and packaged WebView2. Generated standalone contract validators run under a CSP with no `unsafe-eval` or network image origin. ADR-0013 still selects no standard TTS profile. Completed M007 implements the protocol-v1 service, native supervision, typed client, one-unit ownership, and exact development-only Qwen/Serena adapter. M008 is in progress through Milestone 5: an application-level coordinator now calls `OpenedPublication.prepareNarration` from the active visual locator, dispatches one exact request at a time, transfers complete units into the bounded Web Audio player, and mounts accessible quick/prepared controls only when exact native configuration is available. The packaged exact-host matrix passes audible quick/prepared flows, cancellation, bounded resource sampling, cleanup, and zero external requests. Synchronization, general hardware detection, production distribution, and final M008 policy closeout remain unimplemented.
 
 The later official Qwen 1.7B CustomVoice/Serena `v3` matrix failed standard
 startup, throughput, zero-failure, and mid-generation cancellation gates.
@@ -32,14 +32,12 @@ authority after `selection-v4`. CPU solo measured aggregate RTF 2.999, GPU solo
 measured RTF 1.467, and the official concurrent arm stopped at
 `resource-limit`. A later low-application-load diagnostic completed at
 aggregate RTF 1.429 but substantially slowed the GPU worker. Accepted
-`selection-v5` rejects CPU-only and dual-worker scheduling. M008 now plans one
+`selection-v5` rejects CPU-only and dual-worker scheduling. M008 implements one
 GPU worker with quick-start or explicit prepared playback, bounded generation
 during playback-only pause, truthful frontier buffering, and an approximately
-30-minute in-memory ceiling. None of those product behaviors is a setup
-requirement or implemented runtime. Completed M007 validates the constrained
-service boundary. M008 is now the active plan for product narration and
-playback; its low-level scheduler, FIFO, and player exist, while application
-integration remains.
+30-minute in-memory ceiling only for the exact development host. Completed
+M007 supplies the constrained service boundary; M008 Milestone 5 supplies its
+application coordinator and audible player connection.
 
 ## Prerequisite version matrix
 
@@ -257,6 +255,22 @@ sampling descendant RAM, dedicated/shared GPU memory, cleanup, listeners, and
 external connections. It never writes generated audio. A pass is constrained
 host evidence only; it does not approve production playback or generalize to
 other hardware.
+
+The M008 Milestone 5 packaged adaptive-demo matrix uses the same exact
+configuration and firewall rule:
+
+```powershell
+pnpm.cmd test:tts:adaptive-exact-host
+```
+
+It creates a disposable synthetic Spanish EPUB, starts narration through the
+production React/coordinator/client/player path, and validates quick start,
+depletion and truthful buffering, active cancellation, a one-minute prepared
+run, acceptance of the 1/2/5/10-minute choices, bounded RAM/VRAM observations,
+cleanup, and zero external requests. It persists neither source text nor
+generated audio. The command is Windows/CUDA/WebView2 hardware validation,
+excluded from root checks and CI, and is not a standard-profile or
+general-hardware test.
 
 `pnpm.cmd test:browser:install` is the explicit networked setup step for the Chromium revision coupled to the pinned Playwright package. It installs to Playwright's per-user cache and may also acquire matching headless-shell/support binaries. `pnpm.cmd test:browser` first builds `@voxleaf/shared` and `@voxleaf/epub`, then builds the Vite application, starts a loopback-only preview server on `http://127.0.0.1:4173`, runs the fixed Chromium smoke, and shuts the server and isolated browser context down. Building the workspace packages inside this root command keeps it valid after a clean frozen install where ignored `dist` outputs do not exist. Once installation succeeds, the test command is offline and never downloads a browser. If the matching browser is absent, it fails with setup guidance rather than acquiring it implicitly. Browser reports, traces, screenshots, and test results are ignored generated artifacts and must use only repository-authored synthetic content.
 

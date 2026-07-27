@@ -188,11 +188,16 @@ generation. Milestone 2 adds a model-free scheduler proof: the frozen RTF
 playback seconds, while an RTF `0.5` trace remains supplied for 120 seconds
 under the one-minute target. These deterministic traces do not load a model or
 establish a real-time claim. Milestone 3 implements the payload-owning FIFO and
-low-level Web Audio player without a model or product caller. Its deterministic
-manual-clock tests measure exact frame consumption and underrun transitions;
-the selected device boundary adds at most one transient 20-second/480,000-frame
-active audio buffer beyond the original FIFO-owned payload. Packaged audible
-latency, device memory, and exact-model playback remain unmeasured.
+low-level Web Audio player; its deterministic manual-clock tests measure exact
+frame consumption and underrun transitions. The selected device boundary adds
+at most one transient 20-second/480,000-frame active audio buffer beyond the
+original FIFO-owned payload. Milestone 5 connects that boundary on the exact
+development host. Its packaged matrix measured 39.238-second
+command-to-audible time with 15.280 seconds of start lead, one underrun, 20.91
+buffering seconds per playback minute, and 160 ms active cancellation. The
+one-minute prepared arm reached 66.480 playable seconds after 112.895 seconds.
+Peak process working set was 2,828,034,048 bytes and peak dedicated GPU memory
+was 4,882 MiB. These values are observations, not accepted production limits.
 
 ## Benchmark reporting
 
@@ -359,6 +364,8 @@ At this RTF, sustained generation loses about 28 seconds of lead per minute of
 playback. Short segments, a larger buffer, playback-only pauses, or occasional
 one- to three-second boundary waits can improve startup or delay frontier
 exhaustion; none makes the model real time. Thirty minutes of 24 kHz mono
-float32 PCM is 172,800,000 payload bytes. M008 must freeze the complete
-simultaneous duration, unit-count, byte, prepared-text, and active-work bounds
-before implementation.
+float32 PCM is 172,800,000 payload bytes. M008 freezes the complete simultaneous
+duration, unit-count, byte, prepared-text, and active-work bounds in
+`adaptive-buffer-authority-v1`. The Milestone 5 exact-host run confirms the
+model still depletes the quick buffer and therefore retains truthful buffering
+and a zero intentional-wait default pending final policy closeout.

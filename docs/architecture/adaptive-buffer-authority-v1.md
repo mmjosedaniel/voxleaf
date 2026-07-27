@@ -5,8 +5,9 @@
 Accepted and frozen by M008 Milestone 1. The executable constants and
 exact-bound arithmetic live in
 `apps/desktop/src/tts/adaptive-buffer-authority.ts`. Milestone 2 implements
-the deterministic scheduler and Milestone 3 implements its payload-owning FIFO
-and low-level PCM player. Later M008 milestones must preserve this authority
+the deterministic scheduler, Milestone 3 implements its payload-owning FIFO
+and low-level PCM player, and Milestone 5 connects them through the
+exact-development product coordinator. Later work must preserve this authority
 without silently changing its values or meanings.
 
 This document freezes model-independent scheduling and UX behavior for
@@ -265,8 +266,9 @@ boundary only when:
 
 The wait is interruptible by pause, stop, invalidation, or exit. It contributes
 zero playable frames, is reported separately from buffering, and cannot delay
-the transition to `buffering` after valid lead reaches zero. M008 Milestone 4
-must validate a nonzero choice before enabling it by default.
+the transition to `buffering` after valid lead reaches zero. The M008 Milestone
+5 exact-host matrix used zero intentional wait and did not justify enabling a
+nonzero default; Milestone 6 owns any final policy change.
 
 ## Buffer-status and UX language
 

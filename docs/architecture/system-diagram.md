@@ -26,7 +26,7 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 | -------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Desktop visual reader                                    | **Implemented**                         | Local byte selection, publication lifecycle, safe semantic React rendering, navigation, reflow, preferences, logical-locator tracking, and bounded restoration.                                                                                                                                                                                                          |
 | EPUB ingestion                                           | **Implemented**                         | Bounded in-memory open, archive/package/navigation validation, immutable safe semantics, lazy bounded raster access, and deterministic locators.                                                                                                                                                                                                                         |
-| Narration preparation                                    | **Implemented**                         | `@voxleaf/epub` exposes bounded, cancellable, locator-linked `OpenedPublication.prepareNarration` batches. The desktop has no production caller.                                                                                                                                                                                                                         |
+| Narration preparation                                    | **Implemented**                         | `@voxleaf/epub` exposes bounded, cancellable, locator-linked `OpenedPublication.prepareNarration` batches. The exact-development coordinator calls it from the active visual locator; synchronization remains separate.                                                                                                                                                   |
 | Shared contracts and fakes                               | **Implemented**                         | Versioned contracts, runtime decoders, conformance fixtures, deterministic fakes, and the closed protocol-v1 control family exist. They do not implement real TTS, playback, or synchronization.                                                                                                                                                                         |
 | Tauri native shell                                       | **Implemented**                         | Completed M007 implements and validates the narrow binary-response boundary, persistent child supervision, framed standard streams, fixed timeouts, process-tree termination, zero automatic restart, typed commands, native-only exact-service activation, measured handoff diagnostics, and exit cleanup. No plugin, general shell capability, or listener is granted. |
 | Python TTS area                                          | **Implemented**                         | Completed M007 implements and validates the offline framed service, bounded fake engine, common one-active adapter boundary, exact development-only Qwen/Serena adapter, and content-safe exact-host measurement runner. Default tests remain model-free.                                                                                                                |
@@ -35,7 +35,7 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 | Short-unit and dual-worker feasibility                   | **Complete; alternatives rejected**     | Milestone 6.2 rejects shared batching, targeted tokenizer placement, CPU-only generation, and dual-worker scheduling. The official concurrent arm stopped at `resource-limit`; a later low-load diagnostic completed but improved aggregate RTF by only about 2.6% while substantially slowing the GPU worker. Local and required PR validation pass.                    |
 | Constrained local TTS service and process protocol       | **Implemented**                         | Completed M007 validates frozen transport limits, canonical contracts, bounded Python service, native supervision, typed desktop consumption, one-unit ownership, exact Qwen/Serena integration, model-free packaged evidence, and measured exact-host handoff/cancellation/cleanup. Product narration, the multi-unit queue, and playback belong to M008.               |
 | Standard production TTS profile and distribution         | **Blocked**                             | ADR-0013 still selects no passing standard profile. Continuous playback, CPU fallback, general hardware support, model/runtime distribution, and production graduation require later evidence and decisions.                                                                                                                                                             |
-| Adaptive audio scheduling and playback                   | **In progress**                         | M008 Milestones 1-4 provide the frozen authority, model-free scheduler, sole-owner payload FIFO, dedicated Web Audio PCM player, content-free preparation presenter, and reusable accessible narration controls. Deterministic tests cover exact format/order, consumption, underruns, bounded pause continuation, truthful planned-wait/buffering state, volume, end-of-range, and bounded cleanup. No publication/M007 product caller or mounted audible flow exists. |
+| Adaptive audio scheduling and playback                   | **In progress**                         | M008 Milestones 1-5 provide the frozen authority, scheduler, sole-owner payload FIFO, Web Audio player, preparation presenter, controls, and exact-development application coordinator. The packaged exact-host quick/prepared matrix passes with honest depletion/buffering, bounded resources, cancellation, and zero external requests. M008 policy closeout and M009 synchronization remain. |
 | Synchronization, hardware support, and release packaging | **Deferred**                            | Milestones 9–11 remain future work; no production dependency or general hardware claim exists.                                                                                                                                                                                                                                                                           |
 
 ## Component and trust-boundary map
@@ -51,7 +51,7 @@ flowchart LR
     classDef external fill:#dcecff,stroke:#356aa0,color:#13253a
 
     EPUB["Local EPUB selected by user<br/>External"]:::external
-    AUDIO["OS audio device<br/>External; player unconnected"]:::external
+    AUDIO["OS audio device<br/>External; exact demo connected"]:::external
     GPU["Exact configured CUDA GPU<br/>External development host"]:::external
 
     subgraph DEVICE["User device / local-only trust boundary"]
@@ -61,14 +61,14 @@ flowchart LR
             READER["Semantic React reader<br/>navigation, reflow, locator tracking<br/>Implemented"]:::implemented
             STORE["WebView localStorage<br/>locator + display preferences only<br/>Implemented"]:::implemented
             SHELL["Tauri native supervisor<br/>model-free default or native-configured exact child<br/>M7 complete"]:::implemented
-            CLIENT["Typed TTS client + one-unit handoff sink<br/>M7 complete<br/>outside React; no product caller"]:::implemented
-            PLAYBACK["Adaptive scheduler + payload FIFO<br/>Web Audio PCM player + accessible controls<br/>M8 Milestones 1-4 implemented; unconnected"]:::implemented
+            CLIENT["Typed TTS client + one-unit handoff sink<br/>M7 complete<br/>consumed outside React"]:::implemented
+            PLAYBACK["Product narration coordinator + adaptive scheduler<br/>payload FIFO, Web Audio player, controls<br/>M8 Milestones 1-5 exact demo"]:::implemented
             SYNC["Playback/reader synchronization<br/>highlighting and following<br/>Deferred: M9"]:::deferred
         end
 
         subgraph PACKAGES["TypeScript packages"]
             EPUBCORE["@voxleaf/epub<br/>ingestion, safe semantics, rasters, locators<br/>Implemented"]:::implemented
-            PREP["@voxleaf/epub narration preparation<br/>bounded locator-linked batches<br/>Implemented; no desktop caller"]:::implemented
+            PREP["@voxleaf/epub narration preparation<br/>bounded locator-linked batches<br/>Exact-demo caller implemented"]:::implemented
             SHARED["@voxleaf/shared<br/>contracts, protocol-v1 control schema,<br/>generated validators and fixtures"]:::implemented
         end
 
@@ -103,7 +103,7 @@ flowchart LR
     PROFILE_CYCLE -.-> BATCH_PROBE
     BATCH_PROBE -.->|"selection-v5 + ADR-0015:<br/>one GPU demo only"| TTS
     TTS -.->|"does not establish production viability"| PROD_TTS
-    PREP -.->|"future ephemeral prepared text"| TTS
+    PREP -->|"ephemeral prepared text;<br/>exact demo only"| PLAYBACK
     SHARED -->|"generated protocol contracts"| PYTHON
     PYTHON -->|"model-free service evidence"| TTS
     PYTHON -->|"one active exact request"| QWEN
@@ -111,13 +111,19 @@ flowchart LR
     QWEN -->|"validated complete unit"| TTS
     FAKE_CHILD -->|"supervised lifecycle evidence"| TTS
     CLIENT -->|"validated one-unit handoff"| TTS
-    TTS -.->|"typed takeAudioUnit seam;<br/>no product caller"| PLAYBACK
-    PLAYBACK -.->|"unconnected Web Audio backend"| AUDIO
+    PLAYBACK -->|"one typed request at a time"| CLIENT
+    TTS -->|"validated takeAudioUnit transfer"| PLAYBACK
+    PLAYBACK -->|"bounded Web Audio playback"| AUDIO
     PLAYBACK -.-> SYNC
     SYNC -.-> READER
 ```
 
-The diagram deliberately has no solid edge from the desktop session to narration preparation: the API is implemented and validated at the package boundary, but the production desktop does not call it. M007 Milestone 1 contains the Rust-owned synthetic child/std-stream and optimized binary-response probe. Milestone 2 adds the canonical control contracts and Python protocol loop. Milestone 3 adds the native supervisor, supervised model-free child, typed client, and one-unit sink used by packaged validation. Milestone 4 makes that supervisor start the exact Python/Qwen path only behind native-only development configuration. Milestone 5 measures complete-unit handoff, retained-unit backpressure, invalidation, process-tree termination, cleanup, and explicit reload on the exact host. The default path remains model-free, and there is still no product caller.
+M008 Milestone 5 adds the solid exact-demo path from active publication
+preparation through the application coordinator, M007 client/service, bounded
+FIFO, and Web Audio device. Native configuration must explicitly select the
+exact Qwen/Serena child; the model-free default cannot expose a fake
+user-facing narration path. No solid synchronization edge exists because M009
+still owns timing, highlighting, following, and shared reading position.
 
 ## EPUB-to-audio flow
 
@@ -141,23 +147,33 @@ flowchart TD
     BATCH_PROBE["Short-unit and dual-worker probe<br/>Complete: M6.2<br/>CPU + dual worker rejected"]:::implemented
     INFER["Constrained local inference + protocol<br/>M7 complete and exact-host measured"]:::implemented
     PROD["Standard production TTS<br/>Blocked: no passing profile"]:::blocked
-    BUFFER["Bounded adaptive scheduler + payload FIFO<br/>Web Audio player + accessible controls implemented<br/>not product-connected"]:::implemented
+    BUFFER["Exact-demo product coordinator<br/>bounded scheduler/FIFO, Web Audio player,<br/>accessible controls implemented"]:::implemented
     FOLLOW["Playback, highlighting, reader following,<br/>and shared-position persistence<br/>Deferred: M9"]:::deferred
     DEVICE["OS audio device<br/>External"]:::external
 
     FILE --> READ --> OPEN --> SAFE --> VISUAL
     SAFE --> PREP
-    PREP -.->|"future ephemeral prepared text"| INFER
+    PREP -->|"ephemeral prepared text<br/>exact demo"| BUFFER
     PROFILE -.-> NEXT_PROFILE
     NEXT_PROFILE -.-> BATCH_PROBE
     BATCH_PROBE -.->|"selection-v5 + ADR-0015:<br/>one GPU demo only"| INFER
     INFER -.->|"no production promotion"| PROD
-    INFER -.-> BUFFER
+    BUFFER -->|"one active request"| INFER
+    INFER -->|"validated complete unit"| BUFFER
     BUFFER -.-> FOLLOW
-    BUFFER -.->|"unconnected playback backend"| DEVICE
+    BUFFER -->|"bounded playback"| DEVICE
 ```
 
-The current user-visible flow ends at `VISUAL`. `PREP` is usable by package callers and tests but is not wired into the desktop. `NEXT_PROFILE` and `BATCH_PROBE` are completed development evidence. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains the exact GPU candidate only for ADR-0015's constrained demo. Completed M007 provides the model-free transport, protocol authority, canonical contracts, Python service, native supervisor, typed client, one-unit handoff, exact development-only Qwen/Serena adapter, measured exact-host handoff/cancellation/cleanup matrix, and repository decision audit. M008 Milestones 1-4 now provide the model-independent authority, scheduler, payload-owning bounded FIFO, low-level Web Audio player, content-free preparation estimates, disabled-by-default semantic-boundary wait policy, and reusable accessible controls. The controls are not mounted with a fake owner, and the dashed TTS/player/device edges remain unconnected: no desktop product caller instantiates the path, so audible product runtime still does not exist and no production engine is selected. The 30-minute in-memory value is a simultaneous ceiling, not a startup target or uninterrupted-playback guarantee.
+The exact-development user flow now continues from `VISUAL` through `PREP`,
+`BUFFER`, `INFER`, and `DEVICE`. The application coordinator starts at the
+active visual locator, retains at most one bounded prepared batch, dispatches
+one synthesis at a time, and transfers sole complete-unit ownership into the
+player. The packaged matrix proves quick and one-minute prepared audio while
+also measuring an underrun and 20.91 buffering seconds per playback minute.
+The solid edges therefore describe the constrained exact-host demo, not a
+standard engine, continuous-playback guarantee, synchronization flow, or
+general hardware support. The 30-minute value remains a simultaneous ceiling,
+not a startup target.
 
 ## Privacy, persistence, cancellation, and bounds
 
@@ -179,7 +195,7 @@ The current user-visible flow ends at `VISUAL`. `PREP` is usable by package call
 | Visual reader and local restoration                    | [Milestone 4 completed plan](../plans/completed/M004-reflowable-visual-reader-and-position-restoration.md), [ADR-0008](decisions/ADR-0008-visual-reader-architecture.md), [ADR-0011](decisions/ADR-0011-bounded-web-storage-reader-state.md)                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Native Windows startup evidence                        | [Milestone 4 native smoke closeout](../plans/completed/M004-001-native-webdriver-startup-smoke.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | Narration preparation                                  | [Milestone 5 completed plan](../plans/completed/M005-narration-text-preparation.md), [ADR-0012](decisions/ADR-0012-bounded-narration-preparation.md), [narration normalization](narration-normalization-v1.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| Playable-audio startup and adaptive buffering policy   | [ADR-0004](decisions/ADR-0004-start-after-audio-lead.md), [ADR-0015](decisions/ADR-0015-bounded-adaptive-qwen-demo-buffering.md), frozen [adaptive buffer v1 authority](adaptive-buffer-authority-v1.md), and [M008](../plans/active/M008-bounded-adaptive-prebuffering.md). Milestones 1-4 provide authority, arithmetic, scheduler traces, sole-owner payload buffering, deterministic low-level Web Audio playback, bounded content-free estimates/wait decisions, and reusable accessible-control evidence; the publication/M007 caller and mounted audible flow remain unimplemented. |
+| Playable-audio startup and adaptive buffering policy   | [ADR-0004](decisions/ADR-0004-start-after-audio-lead.md), [ADR-0015](decisions/ADR-0015-bounded-adaptive-qwen-demo-buffering.md), frozen [adaptive buffer v1 authority](adaptive-buffer-authority-v1.md), and [M008](../plans/active/M008-bounded-adaptive-prebuffering.md). Milestones 1-5 provide authority, scheduler, sole-owner payload buffering, Web Audio playback, estimates/wait decisions, controls, the exact-development application caller, and measured packaged quick/prepared evidence. |
 | Local TTS feasibility authority                        | [Milestone 6 completed plan](../plans/completed/M006-local-tts-feasibility-and-engine-profiles.md), [current v2 feasibility profile](tts-feasibility-profile-v2.md), [selection matrix](../../benchmarks/tts/selection-v2.md), and [ADR-0013](decisions/ADR-0013-no-viable-local-tts-engine-profile.md); both exact roles rejected and no production profile selected                                                                                                                                                                                                                                                                                                                   |
 | Local TTS profile blocker resolution                   | [Milestone 6.1 completed plan](../plans/completed/M006-001-local-tts-profile-blocker-resolution.md), [Serena intake result](../../benchmarks/tts/customvoice-spanish-screen-result-v2.json), machine-readable [`profile-v3.json`](../../benchmarks/tts/profile-v3.json), [v3 authority](tts-feasibility-profile-v3.md), [passing exact-host prototype result](../../benchmarks/tts/incremental-cancellation-prototype-result-v1.json), [candidate-neutral `selection-v3`](../../benchmarks/tts/selection-v3.md), historical [ADR-0014](decisions/ADR-0014-constrained-qwen-development-demo.md), and superseding [ADR-0015](decisions/ADR-0015-bounded-adaptive-qwen-demo-buffering.md) |
 | Short-unit and dual-worker feasibility                 | [Milestone 6.2 completed plan](../plans/completed/M006-002-qwen-short-segment-batch-feasibility.md), [v4 authority](tts-feasibility-profile-v4.md), both stopped `v4` results, accepted [`selection-v4`](../../benchmarks/tts/selection-v4.md), frozen [v5 authority](tts-feasibility-profile-v5.md), schema-valid [`v5` CPU admission](../../benchmarks/tts/dual-worker-result-v5-cpu-solo.json), schema-valid [`v5` GPU baseline](../../benchmarks/tts/dual-worker-result-v5-gpu-solo.json), the completed-plan diagnostic record, and accepted [`selection-v5`](../../benchmarks/tts/selection-v5.md). CPU and dual-worker scheduling are rejected; no product runtime exists.       |
@@ -189,7 +205,7 @@ The current user-visible flow ends at `VISUAL`. `PREP` is usable by package call
 
 ## Remaining gates
 
-1. **Milestone 8 — In progress:** Milestones 1-4 freeze the authority and implement the model-free scheduler, bounded payload FIFO, low-level player, bounded estimate/wait controller, and reusable accessible controls. Continue M008 by connecting those controls to the product narration caller and exact one-GPU service, then validate truthful frontier buffering and the disabled-by-default boundary-wait choice. Consume M007 protocol v1 without adding a service-side queue or automatic retry.
+1. **Milestone 8 — In progress through Milestone 5:** the exact-development caller and packaged quick/prepared path are connected and measured without a service queue or retry. Complete Milestone 6 by recording the measured demo policy, retaining or revising the zero boundary-wait default explicitly, and closing repository/privacy/native/CI validation.
 2. **Milestone 9 — Deferred:** connect one stable logical position across the visual reader, prepared narration, playback progress, highlighting, following, seek, and restoration.
 3. **Milestones 10–11 — Deferred:** validate hardware profiles and CPU fallback, then complete installer/signing/distribution and full MVP closeout.
 
