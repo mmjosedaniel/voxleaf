@@ -473,6 +473,10 @@ impl TtsServiceSupervisor {
         )))
     }
 
+    fn exact_demo_available(&self) -> bool {
+        matches!(self.child_configuration, ServiceChild::Exact(_))
+    }
+
     fn acquire_operation(&self) -> Result<std::sync::MutexGuard<'_, ()>, TtsNativeFailure> {
         match self.operation.try_lock() {
             Ok(guard) => Ok(guard),
@@ -953,6 +957,13 @@ async fn blocking<T: Send + 'static>(
 }
 
 #[tauri::command]
+pub async fn exact_tts_demo_available(
+    supervisor: State<'_, Arc<TtsServiceSupervisor>>,
+) -> Result<bool, &'static str> {
+    Ok(supervisor.exact_demo_available())
+}
+
+#[tauri::command]
 pub async fn start_tts_service(
     supervisor: State<'_, Arc<TtsServiceSupervisor>>,
 ) -> Result<Vec<Value>, &'static str> {
@@ -1277,6 +1288,14 @@ mod tests {
                 "tts-service-resource-limit",
                 "tts-service-timeout",
             ]
+        );
+    }
+
+    #[test]
+    fn exact_demo_availability_does_not_promote_the_model_free_child() {
+        assert!(!TtsServiceSupervisor::new(NORMAL_SCENARIO).exact_demo_available());
+        assert!(
+            !TtsServiceSupervisor::with_child(ServiceChild::Unavailable).exact_demo_available()
         );
     }
 }

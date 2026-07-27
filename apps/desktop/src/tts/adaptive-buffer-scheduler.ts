@@ -360,6 +360,16 @@ export class AdaptiveBufferScheduler {
     this.#serviceState = "ready";
   }
 
+  public failServiceTransition(): void {
+    if (!["starting", "preparing"].includes(this.#serviceState)) {
+      throw new AdaptiveBufferSchedulerError("invalid-state");
+    }
+    this.#serviceState = "failed";
+    if (this.#playableSampleFrames() === 0) {
+      this.#playbackState = "failed";
+    }
+  }
+
   public beginNarrationPreparation(): void {
     this.#expectAction("prepare-narration");
     this.#resources = {

@@ -39,6 +39,8 @@ import {
   runRasterImageSafetyProbe,
   type RasterImageProbeResult,
 } from "./reader/raster-image-probe";
+import { ProductNarrationControls } from "./tts/ProductNarrationControls";
+import { ProductNarrationCoordinator } from "./tts/product-narration-coordinator";
 
 type RasterImageProbeStatus =
   "accepted" | "cancelled" | "idle" | "rejected" | "running";
@@ -240,6 +242,23 @@ export function App({
   const readyRestoration =
     activeRestoration?.status === "ready" ? activeRestoration : undefined;
   const readyRestorationResult = readyRestoration?.result;
+  const narrationCoordinator = useMemo(
+    () =>
+      readyPublication === undefined || readyRestorationResult === undefined
+        ? undefined
+        : new ProductNarrationCoordinator(
+            readyPublication,
+            readyRestorationResult.position.locator,
+          ),
+    [readyPublication, readyRestorationResult],
+  );
+
+  useEffect(
+    () => () => {
+      void narrationCoordinator?.close();
+    },
+    [narrationCoordinator],
+  );
 
   useEffect(() => {
     if (
@@ -416,6 +435,7 @@ export function App({
 
     closeActivePositionSaveCoordinator();
     readerPositionRestoreCoordinator.cancel();
+    void narrationCoordinator?.close();
     void readerLifecycle.open(file);
   };
   const handleReaderPreferencesChange = useCallback(
@@ -427,15 +447,17 @@ export function App({
   );
   const handleActiveLocatorChange = useCallback(
     (locator: ReadingLocatorV1): void => {
+      narrationCoordinator?.updateActiveLocator(locator);
       positionSaveCoordinator?.schedulePassive(locator);
     },
-    [positionSaveCoordinator],
+    [narrationCoordinator, positionSaveCoordinator],
   );
   const handleSettledLocatorChange = useCallback(
     (locator: ReadingLocatorV1): void => {
+      narrationCoordinator?.updateActiveLocator(locator);
       positionSaveCoordinator?.scheduleImmediate(locator);
     },
-    [positionSaveCoordinator],
+    [narrationCoordinator, positionSaveCoordinator],
   );
   const handleInitialRestorationSettled = useCallback(
     (settlement: ReaderInitialRestorationSettlement): void => {
@@ -456,18 +478,22 @@ export function App({
   const handleClosePublication = useCallback((): void => {
     readerPositionRestoreCoordinator.cancel();
     closeActivePositionSaveCoordinator();
+    void narrationCoordinator?.close();
     void readerLifecycle.close();
   }, [
     closeActivePositionSaveCoordinator,
+    narrationCoordinator,
     readerLifecycle,
     readerPositionRestoreCoordinator,
   ]);
   const handleRenderingFailure = useCallback((): void => {
     readerPositionRestoreCoordinator.cancel();
     closeActivePositionSaveCoordinator();
+    void narrationCoordinator?.close();
     readerLifecycle.failRendering();
   }, [
     closeActivePositionSaveCoordinator,
+    narrationCoordinator,
     readerLifecycle,
     readerPositionRestoreCoordinator,
   ]);
@@ -570,6 +596,11 @@ export function App({
                       </button>
                     </aside>
                   ) : null}
+                  {narrationCoordinator === undefined ? null : (
+                    <ProductNarrationControls
+                      coordinator={narrationCoordinator}
+                    />
+                  )}
                   <ReadyPublicationContent
                     publication={viewState.publication}
                     initialPreferences={readyRestoration.result.preferences}

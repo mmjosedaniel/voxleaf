@@ -158,6 +158,17 @@ describe("typed native TTS process client", () => {
     mockedInvoke.mockReset();
   });
 
+  it("reports only the content-free exact-demo availability flag", async () => {
+    mockedInvoke.mockResolvedValueOnce(true).mockRejectedValueOnce({
+      privatePath: "must-not-escape",
+    });
+    const client = new TtsProcessClient();
+
+    await expect(client.exactDemoAvailability()).resolves.toBe("available");
+    await expect(client.exactDemoAvailability()).resolves.toBe("unavailable");
+    expect(mockedInvoke).toHaveBeenNthCalledWith(1, "exact_tts_demo_available");
+  });
+
   it("accepts the exact lifecycle, owns one binary unit, and zeroes it on release", async () => {
     const buffer = audioBuffer();
     mockedInvoke

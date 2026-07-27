@@ -71,6 +71,8 @@ export interface TtsProcessClientObservation {
   readonly retainedAudioUnits: 0 | 1;
 }
 
+export type TtsExactDemoAvailability = "available" | "unavailable";
+
 export interface TtsGenerationScope {
   readonly sessionId: string;
   readonly generationId: string;
@@ -260,6 +262,22 @@ export class TtsProcessClient {
       hasActiveGeneration: this.active !== undefined,
       retainedAudioUnits: this.sink.retainedCount,
     });
+  }
+
+  /**
+   * Returns only whether the native owner selected the exact reviewed
+   * development child. Runtime and model paths remain native-private.
+   */
+  public async exactDemoAvailability(): Promise<TtsExactDemoAvailability> {
+    try {
+      return (await this.invokePort<boolean>(
+        "exact_tts_demo_available",
+      )) === true
+        ? "available"
+        : "unavailable";
+    } catch {
+      return "unavailable";
+    }
   }
 
   public async start(): Promise<TtsProcessClientObservation> {
