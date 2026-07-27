@@ -20,6 +20,8 @@ export interface AdaptivePreparationControlsProps {
   readonly onResume: () => void;
   readonly onStop: () => void;
   readonly onVolumeChange: (volumePercent: number) => void;
+  readonly startDisabled?: boolean;
+  readonly startHint?: string;
 }
 
 function formatDuration(durationMs: number): string {
@@ -78,6 +80,8 @@ export function AdaptivePreparationControls({
   onResume,
   onStop,
   onVolumeChange,
+  startDisabled = false,
+  startHint,
 }: AdaptivePreparationControlsProps): ReactElement {
   const active = state !== undefined && state.phase !== "stopped";
   const targetMs = selection.kind === "prepared" ? selection.targetMs : 60_000;
@@ -157,11 +161,18 @@ export function AdaptivePreparationControls({
       </fieldset>
 
       {state === undefined ? (
-        <button type="button" onClick={onStart}>
-          {selection.kind === "quick"
-            ? "Start quick playback"
-            : `Prepare ${targetLabel(selection.targetMs)} of audio`}
-        </button>
+        <>
+          {startHint === undefined ? null : (
+            <p className="adaptive-preparation-availability" aria-live="polite">
+              {startHint}
+            </p>
+          )}
+          <button type="button" disabled={startDisabled} onClick={onStart}>
+            {selection.kind === "quick"
+              ? "Start quick playback"
+              : `Prepare ${targetLabel(selection.targetMs)} of audio`}
+          </button>
+        </>
       ) : (
         <>
           <div

@@ -27,6 +27,9 @@ const STARTUP_TIMEOUT_MS = 90_000;
 const INTERACTION_TIMEOUT_MS = 15_000;
 const OBSERVATION_WINDOW_MS = 500;
 const READER_PERFORMANCE_MODE = process.argv.includes("--reader-performance");
+const ADAPTIVE_TTS_EXACT_HOST_MODE = process.argv.includes(
+  "--adaptive-tts-exact-host",
+);
 const MEBIBYTE = 1_048_576;
 const MAX_LOCAL_EPUB_FILE_BYTES = 100 * MEBIBYTE;
 const NATIVE_BATCH_SCRIPT_LIMIT_MS = 16;
@@ -308,6 +311,339 @@ async function nativeMemorySnapshot(driver, rootProcessId, setStage, label) {
     jsHeapBytes: Math.round(jsHeapBytes),
     workingSetBytes: await processWorkingSetBytes(rootProcessId),
   });
+}
+
+async function nvidiaSnapshot() {
+  const output = await executeText("nvidia-smi.exe", [
+    "--query-gpu=memory.used,temperature.gpu,power.draw,pstate,utilization.gpu",
+    "--format=csv,noheader,nounits",
+  ]);
+  const fields = output
+    .trim()
+    .split(/\r?\n/u)[0]
+    ?.split(",")
+    .map((field) => field.trim());
+  const dedicatedMemoryMiB = Number(fields?.[0]);
+  const temperatureCelsius = Number(fields?.[1]);
+  const powerWatts = Number(fields?.[2]);
+  const utilizationPercent = Number(fields?.[4]);
+  assert(
+    Number.isFinite(dedicatedMemoryMiB) &&
+      Number.isFinite(temperatureCelsius) &&
+      Number.isFinite(powerWatts) &&
+      Number.isFinite(utilizationPercent) &&
+      typeof fields?.[3] === "string" &&
+      fields[3].length > 0,
+    "Native reader performance metrics were unavailable.",
+  );
+  return Object.freeze({
+    dedicatedMemoryMiB,
+    temperatureCelsius,
+    powerWatts: rounded(powerWatts),
+    powerState: fields[3],
+    utilizationPercent,
+  });
+}
+
+async function runAdaptiveTtsExactHostMatrix(
+  driver,
+  fixturePath,
+  rootProcessId,
+  setStage,
+) {
+  setStage("adaptive exact-host synthetic publication injection");
+  await injectNativeFile(driver, fixturePath);
+  await waitForCondition(
+    driver,
+    `return document.querySelector('[role="status"]')?.textContent ===
+       "The EPUB opened successfully.";`,
+  );
+  setStage("adaptive exact-host availability");
+  await waitForCondition(
+    driver,
+    `return document.querySelector(".product-narration")
+       ?.getAttribute("data-narration-availability") === "available";`,
+  );
+
+  setStage("adaptive exact-host prepared-option selection");
+  const optionsAccepted = await driver.execute(
+    `const target = document.querySelector(
+       ".adaptive-preparation-target select",
+     );
+     if (!(target instanceof HTMLSelectElement)) {
+       return false;
+     }
+     return JSON.stringify(
+       Array.from(target.options, (option) => Number(option.value)),
+     ) === JSON.stringify([60000, 120000, 300000, 600000]);`,
+  );
+  assert(
+    optionsAccepted === true,
+    "Native application main landmark is not visible.",
+  );
+
+  const baselineWorkingSetBytes = await processWorkingSetBytes(rootProcessId);
+  const baselineGpu = await nvidiaSnapshot();
+  setStage("adaptive exact-host quick start");
+  const quickCommandAtMs = Date.now();
+  await driver.execute(
+    `Array.from(document.querySelectorAll("button")).find(
+       (button) => button.textContent === "Start quick playback",
+     )?.click();
+     return true;`,
+  );
+  await waitForCondition(
+    driver,
+    `return document.querySelector(".product-narration")
+       ?.getAttribute("data-narration-phase") === "playing";`,
+    3 * STARTUP_TIMEOUT_MS,
+  );
+  const quickObservation = await driver.execute(
+    `const owner = document.querySelector(".product-narration");
+     return owner === null ? null : {
+       acceptedSampleFrames: Number(
+         owner.getAttribute("data-narration-accepted-sample-frames"),
+       ),
+       acceptedUnits: Number(
+         owner.getAttribute("data-narration-accepted-units"),
+       ),
+       commandToAudibleMs: Number(
+         owner.getAttribute("data-narration-command-to-audible-ms"),
+       ),
+       playableMs: Number(
+         owner.getAttribute("data-narration-playable-ms"),
+       ),
+     };`,
+  );
+  assert(
+    quickObservation?.acceptedUnits > 0 &&
+      quickObservation.acceptedSampleFrames > 0 &&
+      quickObservation.commandToAudibleMs > 0 &&
+      quickObservation.commandToAudibleMs <=
+        Date.now() - quickCommandAtMs + 1_000 &&
+      quickObservation.playableMs > 0,
+    "Native application root did not mount.",
+  );
+
+  setStage("adaptive exact-host depletion");
+  await waitForCondition(
+    driver,
+    `return document.querySelector(".product-narration")
+       ?.getAttribute("data-narration-phase") === "buffering";`,
+    3 * STARTUP_TIMEOUT_MS,
+  );
+  const depletedAtMs = Date.now();
+  await delay(5_000);
+  const quickResourceWorkingSetBytes =
+    await processWorkingSetBytes(rootProcessId);
+  const quickGpu = await nvidiaSnapshot();
+  const quickMetrics = await driver.execute(
+    `const owner = document.querySelector(".product-narration");
+     return owner === null ? null : {
+       bufferingMs: Number(
+         owner.getAttribute("data-narration-buffering-ms"),
+       ),
+       intentionalWaitMs: Number(
+         owner.getAttribute("data-narration-intentional-wait-ms"),
+       ),
+       playbackMs: Number(
+         owner.getAttribute("data-narration-playback-ms"),
+       ),
+       underruns: Number(
+         owner.getAttribute("data-narration-underruns"),
+       ),
+     };`,
+  );
+  assert(
+    quickMetrics?.bufferingMs > 0 &&
+      quickMetrics.intentionalWaitMs === 0 &&
+      quickMetrics.playbackMs > 0 &&
+      quickMetrics.underruns > 0,
+    "Native application root did not mount.",
+  );
+
+  setStage("adaptive exact-host active cancellation");
+  await waitForCondition(
+    driver,
+    `return document.querySelector(".product-narration")
+       ?.getAttribute("data-narration-service-state") === "generating";`,
+    STARTUP_TIMEOUT_MS,
+  );
+  const cancellationAtMs = Date.now();
+  await driver.execute(
+    `Array.from(document.querySelectorAll("button")).find(
+       (button) => button.textContent === "Stop",
+     )?.click();
+     return true;`,
+  );
+  await waitForCondition(
+    driver,
+    `return document.querySelector(".product-narration")
+       ?.getAttribute("data-narration-phase") === "idle";`,
+    STARTUP_TIMEOUT_MS,
+  );
+  const cancellationMs = Date.now() - cancellationAtMs;
+
+  setStage("adaptive exact-host one-minute prepared playback");
+  await driver.execute(
+    `document.querySelector(
+       'input[name="adaptive-preparation-mode"][value="prepared"]',
+     )?.click();
+     return true;`,
+  );
+  await waitForCondition(
+    driver,
+    `return Array.from(document.querySelectorAll("button")).some(
+       (button) =>
+         button.textContent === "Prepare 1 minute of audio",
+     );`,
+  );
+  await driver.execute(
+    `const target = document.querySelector(
+       ".adaptive-preparation-target select",
+     );
+     if (target instanceof HTMLSelectElement) {
+       target.value = "60000";
+       target.dispatchEvent(new Event("change", { bubbles: true }));
+     }
+     return true;`,
+  );
+  await driver.execute(
+    `Array.from(document.querySelectorAll("button")).find(
+       (button) =>
+         button.textContent === "Prepare 1 minute of audio",
+     )?.click();
+     return true;`,
+  );
+  await waitForCondition(
+    driver,
+    `return document.querySelector(".product-narration")
+       ?.getAttribute("data-narration-phase") === "playing";`,
+    5 * STARTUP_TIMEOUT_MS,
+  );
+  const preparedObservation = await driver.execute(
+    `const owner = document.querySelector(".product-narration");
+     return owner === null ? null : {
+       commandToAudibleMs: Number(
+         owner.getAttribute("data-narration-command-to-audible-ms"),
+       ),
+       playableMs: Number(
+         owner.getAttribute("data-narration-playable-ms"),
+       ),
+       targetMs: Number(
+         owner.getAttribute("data-narration-target-ms"),
+       ),
+     };`,
+  );
+  assert(
+    preparedObservation?.targetMs === 60_000 &&
+      preparedObservation.playableMs >= 60_000 &&
+      preparedObservation.commandToAudibleMs > 0,
+    "Native application root did not mount.",
+  );
+  const preparedWorkingSetBytes = await processWorkingSetBytes(rootProcessId);
+  const preparedGpu = await nvidiaSnapshot();
+  await driver.execute(
+    `Array.from(document.querySelectorAll("button")).find(
+       (button) => button.textContent === "Stop",
+     )?.click();
+     return true;`,
+  );
+  await waitForCondition(
+    driver,
+    `return document.querySelector(".product-narration")
+       ?.getAttribute("data-narration-phase") === "idle";`,
+    STARTUP_TIMEOUT_MS,
+  );
+
+  setStage("adaptive exact-host privacy and network assertions");
+  const bodyIsContentSafe = await driver.execute(
+    `return !document.body.textContent?.includes(
+       "VOXLEAF_TTS_DEV_MODEL_ROOT",
+     ) && !document.body.textContent?.includes("\\\\Users\\\\");`,
+  );
+  assert(
+    bodyIsContentSafe === true,
+    "Native application exposed the synthetic fixture filename.",
+  );
+  const externalLoadedResourceCount = await driver.execute(
+    `return performance.getEntriesByType("resource").filter((entry) => {
+       try {
+         const url = new URL(entry.name);
+         return !(
+           url.protocol === "tauri:" ||
+           url.protocol === "ipc:" ||
+           url.protocol === "data:" ||
+           url.protocol === "blob:" ||
+           url.hostname === "tauri.localhost" ||
+           url.hostname === "ipc.localhost"
+         );
+       } catch {
+         return true;
+       }
+     }).length;`,
+  );
+  assert(
+    externalLoadedResourceCount === 0,
+    "Native application attempted an external request.",
+  );
+  const browserLogs = await driver.getLogs("browser");
+  const performanceLogs = inspectPerformanceLogs(
+    await driver.getLogs("performance"),
+  );
+  assert(
+    browserLogs.every((entry) => entry?.level !== "SEVERE") &&
+      performanceLogs.runtimeErrorCount === 0,
+    "Native application emitted a page or console error.",
+  );
+  assert(
+    performanceLogs.externalRequestCount === 0,
+    "Native application attempted an external request.",
+  );
+
+  const peakGpu = [baselineGpu, quickGpu, preparedGpu].reduce(
+    (peak, observation) => ({
+      dedicatedMemoryMiB: Math.max(
+        peak.dedicatedMemoryMiB,
+        observation.dedicatedMemoryMiB,
+      ),
+      temperatureCelsius: Math.max(
+        peak.temperatureCelsius,
+        observation.temperatureCelsius,
+      ),
+      powerWatts: Math.max(peak.powerWatts, observation.powerWatts),
+      powerState: observation.powerState,
+      utilizationPercent: Math.max(
+        peak.utilizationPercent,
+        observation.utilizationPercent,
+      ),
+    }),
+  );
+  console.log(
+    `Adaptive exact-host TTS matrix passed: ${JSON.stringify({
+      quick: {
+        commandToAudibleMs: quickObservation.commandToAudibleMs,
+        playableLeadAtStartMs: quickObservation.playableMs,
+        depletionObserved: true,
+        bufferingObservationWallMs: Date.now() - depletedAtMs,
+        bufferingSecondsPerPlaybackMinute: rounded(
+          quickMetrics.bufferingMs / 1_000 / (quickMetrics.playbackMs / 60_000),
+        ),
+        underruns: quickMetrics.underruns,
+        intentionalWaitMs: quickMetrics.intentionalWaitMs,
+      },
+      prepared: preparedObservation,
+      cancellationMs,
+      processTreeWorkingSetBytes: {
+        baseline: baselineWorkingSetBytes,
+        quick: quickResourceWorkingSetBytes,
+        prepared: preparedWorkingSetBytes,
+      },
+      gpu: { baseline: baselineGpu, peak: peakGpu },
+      preparedOptionsAcceptedMs: [60_000, 120_000, 300_000, 600_000],
+      externalRequests: 0,
+    })}`,
+  );
 }
 
 async function installNativeResourceInstrumentation(driver) {
@@ -1968,7 +2304,9 @@ async function stopChild(child) {
 async function run() {
   const runLabel = READER_PERFORMANCE_MODE
     ? "Native reader performance benchmark"
-    : "Native startup smoke";
+    : ADAPTIVE_TTS_EXACT_HOST_MODE
+      ? "Adaptive exact-host TTS matrix"
+      : "Native startup smoke";
   assert(
     process.platform === "win32",
     "Native startup smoke must run on Windows.",
@@ -2003,6 +2341,7 @@ async function run() {
     ),
   );
   const {
+    buildMinimalEpubFixture,
     buildReaderLongChapterEpubFixture,
     buildReaderNavigationEpubFixture,
     buildReaderReflowEpubFixture,
@@ -2026,6 +2365,17 @@ async function run() {
         flag: "wx",
       }),
     ]);
+  } else if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
+    const syntheticParagraph =
+      "Esta narraci&#243;n sint&#233;tica describe una biblioteca tranquila y una lectura local. Cada frase valida transiciones naturales, memoria limitada y orden.";
+    const adaptiveFixture = await buildMinimalEpubFixture({
+      chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="es"><head><title>Demostraci&#243;n local</title></head><body><h1 id="chapter-one">Demostraci&#243;n local</h1>${Array.from(
+        { length: 12 },
+        (_, index) =>
+          `<p>${syntheticParagraph} Secci&#243;n ${String(index + 1)}.</p>`,
+      ).join("")}</body></html>`,
+    });
+    await writeFile(fixturePath, adaptiveFixture, { flag: "wx" });
   } else {
     const [primaryFixture, replacementFixture] = await Promise.all([
       buildReaderNavigationEpubFixture(),
@@ -2089,8 +2439,10 @@ async function run() {
   const collectedPerformanceLogs = [];
 
   try {
-    stage = "native TTS supervisor host matrix";
-    await exerciseNativeTtsSupervisorHost();
+    if (!ADAPTIVE_TTS_EXACT_HOST_MODE) {
+      stage = "native TTS supervisor host matrix";
+      await exerciseNativeTtsSupervisorHost();
+    }
     stage = "WebDriver startup";
     await waitForDriver(endpoint, child, spawnState);
     stage = "native WebView session creation";
@@ -2113,6 +2465,17 @@ async function run() {
     const rootMounted = await driver.execute(
       `return document.querySelector("#root")?.childElementCount > 0;`,
     );
+    if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
+      await runAdaptiveTtsExactHostMatrix(
+        driver,
+        fixturePath,
+        child.pid,
+        (nextStage) => {
+          stage = nextStage;
+        },
+      );
+      return;
+    }
     if (READER_PERFORMANCE_MODE) {
       stage = "native reader performance and resource benchmark";
       await runNativeReaderPerformanceBenchmark(

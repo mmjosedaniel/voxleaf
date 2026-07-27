@@ -340,10 +340,10 @@ profile.
 
 ## Milestone 8 deterministic buffer, playback, and control validation
 
-The M008 Milestones 3-4 desktop tests remain model-free and device-free:
+The M008 deterministic desktop tests remain model-free and device-free:
 
 ```powershell
-pnpm.cmd --filter @voxleaf/desktop exec vitest run src/tts/adaptive-buffer-authority.test.ts src/tts/adaptive-buffer-scheduler.test.ts src/tts/pcm-playback.test.ts src/tts/adaptive-preparation.test.ts src/tts/AdaptivePreparationControls.test.tsx
+pnpm.cmd --filter @voxleaf/desktop exec vitest run src/tts/adaptive-buffer-authority.test.ts src/tts/adaptive-buffer-scheduler.test.ts src/tts/pcm-playback.test.ts src/tts/adaptive-preparation.test.ts src/tts/AdaptivePreparationControls.test.tsx src/tts/product-narration-coordinator.test.ts
 ```
 
 The authority and scheduler tests retain exact/max-plus-one resource,
@@ -367,9 +367,38 @@ wait versus buffering messages, low-buffer warning, pause/resume/stop
 availability, 5% volume steps, and the disabled `1.0x`-only speed selector.
 The component receives no narration text, identity, or audio payload.
 
+`product-narration-coordinator.test.ts` validates the application seam with
+synthetic prepared segments and fake client/player boundaries: the model-free
+runtime is not exposed, preparation starts at the active visual locator with an
+abort signal, only one request is active, sole audio ownership transfers to the
+player, locator changes make work stale before cancellation, preparation
+failures are fixed/content-free, and snapshots contain no text, paths, or work
+identities. Process-client and Rust supervisor tests cover the narrow
+content-free exact-configuration availability result.
+
+The hardware-specific packaged path is:
+
+```powershell
+pnpm.cmd test:tts:adaptive-exact-host
+```
+
+It requires the exact native Qwen/Serena environment, prepared artifacts,
+outbound-blocking firewall rule, Tauri driver, and matching EdgeDriver. The
+runner creates and deletes a synthetic Spanish EPUB, exercises quick
+depletion/buffering and cancellation, then reloads for one-minute prepared
+playback. It checks all four prepared choices, content-free timing and resource
+metrics, cleanup, and zero external requests. Generated audio is never written.
+This run is excluded from default checks and CI.
+
 ## Deferred coverage
 
-The secure EPUB ingestion scenario and boundary matrix is implemented with repository-authored synthetic inputs; deterministic desktop tests prove the bounded repository, approved save lifecycle, and exact/recovered open coordination; the real-browser smoke proves preference plus exact/nearest-valid locator restoration through production React reload/reselection; the packaged native smoke proves save/restore across a WebView2 application restart; the two hardware-specific benchmarks cover accepted prototype, production React, repeated lifecycle, and packaged WebView2 reader limits; and the test-only narration corpus/limits plus production source projector, normalizer, boundary scanner, packer, canonical prepared-segment finalizer, public batch operation, public neutral/Spanish EPUB-to-segment integration matrix, and deterministic resource matrix have evidence. Milestones 5 through 7 are complete. M007 adds passing model-free process framing, optimized binary response, canonical cross-language contracts, Python service/fake engine, native supervisor, typed client, one-unit handoff, process-tree containment, cancellation, crash recovery, packaged WebView tests, the exact development-only Qwen/Serena adapter, its focused host diagnostic, the frozen exact-host service-handoff matrix, and the protocol/dependency/privacy/repository/CI closeout audit. M008 Milestones 2-4 add model-free manually clocked scheduler, payload-player, preparation-estimate/wait, and accessible-control tests for exact reservation, quick/prepared targets, FIFO ownership/release, identity-first invalidation, RTF depletion, failures, end-of-range, recovery, format decoding, playback timing, underruns, pause continuation, truthful state presentation, volume, and bounded cleanup. Default tests and CI still load no candidate or model. No product caller prepares narration for the service, dispatches its segments to M007, mounts the controls with an audible player, detects general supported hardware, builds an installer, or exercises those later end-to-end flows. The examples below are requirements for later roadmap milestones, not claims about current coverage.
+The secure EPUB, reader, narration-preparation, M007 service/protocol, and M008
+exact-development quick/prepared flows now have their scoped evidence. Default
+tests and CI still load no candidate or model. Reader/narration timing,
+highlighting and following, general supported-hardware detection, standard
+profile selection, installer behavior, and complete MVP end-to-end coverage
+remain deferred. The examples below are requirements for those later roadmap
+milestones, not claims about current coverage.
 
 ## Test levels
 

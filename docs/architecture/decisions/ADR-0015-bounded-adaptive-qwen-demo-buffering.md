@@ -78,8 +78,17 @@ M008 Milestone 1 resolves the remaining exact policy in
 10-second low water, 15-second quick start, one-minute refill/resume, explicit
 1/2/5/10-minute prepared targets, exact simultaneous frame/byte/unit/text/work
 limits, one pending desktop queue, 0-100% volume, and `1.0x`-only MVP playback.
-This authority freezes later implementation inputs; it does not claim that the
-scheduler, player, caller, or UI exists.
+This authority froze the implementation inputs. M008 Milestones 2-5 now
+implement the scheduler, player, exact-development caller, and UI without
+changing those values.
+
+The Milestone 5 packaged exact-host matrix measured quick command-to-audible
+at 39.238 seconds with 15.280 seconds of playable lead, one underrun, and 20.91
+buffering seconds per playback minute. Cancellation completed in 160 ms; the
+one-minute prepared arm reached 66.480 playable seconds; peak dedicated GPU
+memory was 4,882 MiB; and external requests were zero. This evidence confirms
+the constrained demo is audible but not real time. It does not promote the
+profile or justify a nonzero boundary-wait default.
 
 This remains a development-demo exception. ADR-0013 continues to block a
 standard production-profile claim. ADR-0002's memory-only rule and ADR-0004's

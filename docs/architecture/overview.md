@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 7 are complete. The secure EPUB ingestion boundary, immutable document model, reflowable visual reader, bounded locator/preference restoration, and deterministic locator-linked narration preparation are implemented and validated. Completed M007 adds the accepted protocol-v1 local service boundary: canonical cross-language controls, a bounded Python service, persistent native supervision, typed one-unit ownership outside React state, and the exact development-only Qwen/Serena adapter with packaged and exact-host evidence. The desktop still does not call `OpenedPublication.prepareNarration`, and no connected audible product flow, synchronization flow, general-hardware profile, or production distribution exists. ADR-0013 therefore continues to select no standard production profile. ADR-0015 permits only the exact one-GPU constrained demo. M008 is in progress: Milestones 1-4 freeze exact adaptive-buffer authority and add the unconnected model-free scheduler, payload-owning FIFO, low-level Web Audio player, content-free preparation estimator/wait coordinator, and reusable accessible narration controls. Product calling and control mounting remain for Milestone 5.
+Mixed implementation status. Roadmap Milestones 1 through 7 are complete. The secure EPUB ingestion boundary, immutable document model, reflowable visual reader, bounded locator/preference restoration, and deterministic locator-linked narration preparation are implemented and validated. Completed M007 adds the accepted protocol-v1 local service boundary: canonical cross-language controls, a bounded Python service, persistent native supervision, typed one-unit ownership outside React state, and the exact development-only Qwen/Serena adapter with packaged and exact-host evidence. ADR-0013 continues to select no standard production profile, while ADR-0015 permits only the exact one-GPU constrained demo. M008 is in progress through Milestone 5: the model-independent scheduler, payload-owning FIFO, Web Audio player, preparation presenter, controls, and a new application-level coordinator are connected from the active visual locator to audible complete units only when the exact native development configuration is present. The exact-host quick/prepared matrix passes with honest underrun and buffering measurements. Synchronization, general-hardware support, production distribution, and final M008 policy closeout remain.
 
 M006-002 final local validation and required pull-request CI pass, and the plan
 is complete. M007 is also complete. Its six milestones implement a model-free
@@ -53,13 +53,14 @@ Desktop application
 |-- Model-free binary TTS transport probe [M007 Milestone 1; implemented]
 |-- Native persistent-child TTS supervisor [M007 Milestones 3-6; implemented]
 |-- Typed TTS process client and one-unit memory sink
-|   [M007 Milestone 3; implemented, no product caller]
+|   [M007 Milestone 3; consumed by exact-demo coordinator]
 |-- Adaptive buffer/UX authority [M008 Milestone 1; frozen]
-|-- Model-free adaptive scheduler, payload FIFO, and low-level Web Audio player
-|   [M008 Milestones 2-3; implemented, not product-connected]
+|-- Adaptive scheduler, payload FIFO, and low-level Web Audio player
+|   [M008 Milestones 2-3; exact-demo path connected]
 |-- Content-free preparation estimates, optional wait decisions, and controls
-|   [M008 Milestone 4; implemented and tested, not product-mounted]
-`-- Product narration dispatch and synchronization [deferred to later M008/M009 milestones]
+|   [M008 Milestone 4; mounted only for exact native configuration]
+|-- Product narration coordinator [M008 Milestone 5; exact demo implemented]
+`-- Reader/narration synchronization [deferred to M009]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]
@@ -105,9 +106,8 @@ Local TTS service
 |-- One-GPU constrained engine, service, process protocol, inference,
 |   cancellation, and complete-unit framing
 |   [M007 Milestones 1-6 implemented, measured, and validated]
-`-- Adaptive demo scheduler, bounded playback, and accessible control policy
-    [M008 Milestones 1-4 implemented;
-     product-connected narration runtime not implemented]
+`-- Adaptive demo scheduler, bounded playback, product coordinator, and controls
+    [M008 Milestones 1-5 implemented for the exact development host]
 ```
 
 ## Approved desktop reader and candidate process model
@@ -188,13 +188,16 @@ is archived.
 
 ## Core data flow
 
-The public EPUB package currently implements the in-memory validation, parsing, semantic projection, resource-descriptor, locator, and target-resolution portions of this flow. Task 2.1 adds a package-internal pure source projector that consumes the immutable located semantic blocks, walks every current block and inline member in locator order, and emits immutable leaf/source-unit and structural-boundary values without reading raster resources. Task 2.2 maps each leaf source position into an immutable Unicode-code-point token with a compact half-open block-local span, uses one position for semantic line breaks and raster placeholders, and validates locator endpoints through the package locator index and shared range decoder. Task 2.3 adds a package-internal asynchronous source-window coordinator that resolves an untrusted locator structurally, lazily retains only the approved token/event window, publishes the final token end as a canonical continuation, checks linked cancellation around deterministic injected yields, rejects concurrent narration work, and participates in publication close independently of raster reads. Tasks 3.1-3.4 implement and validate the pure block-local source-mapped neutral/Spanish normalizer. Task 4.1 consumes those normalized units through a two-pass scanner that emits immutable source-offset sentence, dialogue-turn, clause, and protected-token boundaries, carries terminal clusters through closing punctuation, applies deterministic block-final fallback, and enforces the 256-code-point protected-token ceiling. Task 4.2 consumes one block scan through a package-internal packer that preserves semantic boundary priority, recognizes only the closed top-level scene-break forms, enforces independent per-segment source/code-point/UTF-8-byte/sentence limits, and retains at most 17 stable source-offset segments without accepting a batch size. Task 4.3 makes that packer cooperatively asynchronous under the same deterministic work controller as source-window preparation, bounds all temporary and retained scan collections before indexing, splits an oversized unprotected token only at the latest legal Unicode-safe hard boundary, and returns the fixed content-free limit outcome when one indivisible protected, combining, or expansion unit cannot fit. Task 4.4 validates the complete packed block before publishing immutable sensitive text with canonical half-open `LocatorRangeV1` values, closed boundary metadata, content-free measurements, completion, and an exact continuation locator; synthetic test-only work identities prove compatibility with the unchanged `NarrationSegmentV1` decoder. Task 5.1 exposes those stages as public bounded batches. Task 5.2 proves the complete public opener-to-segment path with short neutral/Spanish EPUB bytes, stable ranges across batch sizes, exact/recovered starts, structural gaps, spine transitions, source immutability, shared-contract wrapping, image-read isolation, and zero external capability use. Task 5.3 proves production/profile limit alignment, exact checkpoint/yield cadence, independent public batch plus one-lookahead retention, repeated bounded continuation, numeric-only high-water state, and cancellation/close without stale result publication. The desktop file-open coordinator passes one bounded local-file read to the publication-session module, which owns cancellation, replacement, late-result rejection, and publication cleanup. A separate application lifecycle controller exposes only immutable idle/opening/ready/empty/failure/closing states, clears the prior publication reference before non-ready states, and maps zero located blocks to the recoverable empty state. In ready state, the restore coordinator first reads validated app-global display preferences and exact-identity position state. The production reader activates the exact/recovered spine document or first canonical located block, lazily renders its admitted local static raster images, materializes and aligns a restored semantic range before settlement, can replace the document through package-resolved TOC, internal-link and chapter-step navigation, applies validated preferences through application-owned CSS, maintains content-free located-block/DOM-range associations, updates its canonical in-memory locator from settled passive viewport geometry, and restores that locator after viewport or preference reflow. The application save coordinator accepts only locators that resolve exactly back to themselves through the active publication, bounds passive writes with a trailing timer, coalesces immediate position/preference saves, serializes each latest-only write stream, and flushes before close/replacement and on hidden/`pagehide` lifecycle signals without awaiting storage before publication cleanup. The repository atomically replaces validated bounded envelopes. The Milestone 5 path branches from the immutable semantic model rather than from rendered DOM or displayed text; TTS synthesis, buffering, and playback remain unimplemented.
+The public EPUB package implements the in-memory validation, parsing, semantic projection, resource-descriptor, locator, target-resolution, and bounded narration-preparation portions of this flow. The desktop file-open and reader coordinators own publication lifecycle, safe rendering, navigation, restoration, and the active visual locator. Under exact native development configuration, the M008 application coordinator branches from that immutable safe model, calls `prepareNarration` from the active locator, attaches ephemeral work identities, dispatches one segment through M007, transfers each validated complete unit into the bounded FIFO, and drives the Web Audio player. Sensitive prepared text is retained only by the bounded preparation/synthesis path and dropped when settled; PCM stays outside React state and is released after playback or invalidation. The default model-free runtime exposes no user-facing narration path.
 
-The final sentence above describes the user-visible product data flow: locally
-closed M007 service and exact-host handoff evidence now exists, and M008
-Milestone 3 adds an unconnected payload-owning FIFO plus low-level Web Audio
-player. No desktop publication caller sends prepared narration to the service
-or instantiates that player, so no audible product path exists yet.
+The historical Milestone 5 description above ends at prepared text. M008
+Milestone 5 now connects that immutable safe model to an exact-development-only
+audible path: an application coordinator prepares from the active visual
+locator, dispatches one segment through M007, transfers each validated complete
+unit into the bounded FIFO, and drives the Web Audio player. Sensitive text and
+PCM remain outside React state. This does not supply synchronized highlighting,
+a standard profile, uninterrupted output, general hardware support, or
+distribution.
 
 1. **Implemented:** Validate the selected EPUB as an untrusted archive.
 2. **Implemented:** Parse metadata, navigation, and spine order.
@@ -203,10 +206,10 @@ or instantiates that player, so no audible product path exists yet.
 5. **Implemented:** Reconstruct the visible passage from the locator and current scrolling layout.
 6. **Implemented — Milestone 5:** Exhaustively project narratable source units and structural boundaries from immutable located safe semantics, map every source position to an immutable locator-valid Unicode-code-point span, consume that mapping through bounded canonical source windows with close-linked cancellation/continuation, normalize the accepted neutral/Spanish forms, scan deterministic source-offset sentence/dialogue/clause/protected-token boundaries, pack cancellable block-local stable source-offset segments under the accepted profile with fixed oversized-token behavior, and finalize immutable canonical locator-linked prepared segments without changing the displayed representation.
 7. **Implemented — Milestone 5:** Emit bounded public prepared-segment batches with stable locator ranges and deterministic resource evidence.
-8. **Implemented — Milestone 7:** The model-free Rust probe proves the selected parent/child frame boundary and a narrow binary Tauri response. Canonical shared control schemas and the bounded Python service prove strict narration input, lifecycle, complete-unit audio framing, cancellation, and failure behavior. The native shell owns one persistent child, framed read/write bounds, state/timeouts, process-tree termination, zero automatic restart, application-exit cleanup, and narrow Tauri commands. The typed desktop client validates control order and identity, retains one binary unit outside React state, and zeroes released or stale bytes. Native-only configuration selects the implemented exact Qwen/Serena adapter. Its frozen exact-host matrix passes bounded handoff, invalidation, cancellation, crash, application-exit, privacy, RAM, and VRAM cases without retry. The accepted protocol, repository audit, required pull-request CI, and ExecPlan archival are complete. Production narration dispatch and playback remain later work.
-9. **Authority, scheduler, bounded FIFO, low-level player, and accessible control boundary implemented; product runtime not connected — Milestone 8:** ADR-0013 retains the standard-profile blocker, while ADR-0015 permits one exact GPU worker only for a constrained demo. M008 Milestone 1 freezes a 10-second low-water warning, 15-second quick start, one-minute refill, explicit 1/2/5/10-minute prepared targets, exact simultaneous limits, one desktop queue, 0-100% volume, and `1.0x`-only playback. Milestone 2 implements the deterministic scheduler. Milestone 3 makes it the sole owner of transferred complete-unit payloads, validates finite 24-kHz mono float32 little-endian continuity, consumes and releases units in order, accounts underruns, and drives one dedicated Web Audio context through deterministic backend tests. Milestone 4 adds bounded content-free completed-production estimates, an interruptible semantic-boundary wait coordinator that remains disabled by default, truthful UI-state projection, accessible quick/prepared controls, and target-first paused-generation backpressure.
-10. **Deferred — Milestones 8-9:** Connect the publication caller and M007 synthesis loop, mount the controls with their real owner, generate later audio while the player consumes buffered frames or is paused without invalidation, stop at the approximately 30-minute ceiling, validate truthful exact-host frontier behavior, and keep the narrated passage visible.
-11. **Implemented at the unconnected low-level boundary; product integration deferred — Milestones 8-9:** Played units release exactly once; stop, seek, close, and failure invalidate eligibility before bounded cleanup turns. Later callers must propagate the same identity-first transition across publication, service, player, and synchronized-reader state.
+8. **Implemented — Milestone 7:** The model-free Rust probe proves the selected parent/child frame boundary and a narrow binary Tauri response. Canonical shared control schemas and the bounded Python service prove strict narration input, lifecycle, complete-unit audio framing, cancellation, and failure behavior. The native shell owns one persistent child, framed read/write bounds, state/timeouts, process-tree termination, zero automatic restart, application-exit cleanup, and narrow Tauri commands. The typed desktop client validates control order and identity, retains one binary unit outside React state, and zeroes released or stale bytes. Native-only configuration selects the implemented exact Qwen/Serena adapter.
+9. **Constrained exact-host product path implemented — Milestone 8:** Milestones 1-4 implement the frozen authority, scheduler, sole-owner FIFO, Web Audio player, content-free estimator/wait decisions, and accessible controls. Milestone 5 adds the application coordinator, active-locator preparation, one-at-a-time M007 dispatch, mounted exact-development controls, stale-first cancellation, and packaged quick/prepared hardware evidence. The matrix observes real depletion and buffering instead of treating the worker as real-time.
+10. **Deferred — Milestones 8-9:** Close the M008 measured policy, then keep the narrated passage visible and synchronize playback location with reader navigation.
+11. **Implemented for the constrained demo; synchronization deferred — Milestones 8-9:** Played units release exactly once; stop, locator change, close, and failure invalidate eligibility before bounded cleanup. M009 still owns spoken timing, highlighting, following, and shared visual/playback position.
 12. **Implemented for reader state:** Persist the logical reading locator, not a rendered page number or generated audio. Generated-audio persistence remains prohibited future behavior unless a separate product/privacy decision approves it.
 
 ## Implemented narration-preparation boundary
@@ -343,9 +346,10 @@ separately from whole retained-unit memory. The low-level player uses one
 dedicated Web Audio context, one gain node, and at most one transient active
 device buffer. Played payloads release once; invalidation makes every old unit
 ineligible synchronously and releases at most four discarded originals per
-scheduled cleanup turn. This implementation is not yet connected to the
-publication, M007 synthesis dispatch, mounted controls, or shared reading
-position.
+scheduled cleanup turn. Milestone 5 connects this boundary to publication
+preparation, M007 synthesis, mounted controls, and the audio device only under
+the exact native development gate. It remains independent of the shared
+reading position.
 
 M008 Milestone 4 implements the adjacent content-free presentation boundary.
 `AdaptivePreparationEstimator` retains at most eight completed elapsed-time
@@ -353,10 +357,21 @@ and accepted-sample-frame pairs, clears them on identity replacement, and
 includes the measured stopped-service restart/prepare cost only after current
 production evidence exists. `AdaptiveBoundaryWaitCoordinator` admits only the
 frozen 0/1/2/3-second choices at an eligible positive-low-lead paragraph or
-chapter boundary and makes interruption/counting explicit; `0` remains the
-default pending exact-host evaluation. `AdaptivePreparationControls` receives
+chapter boundary and makes interruption/counting explicit; the exact-host
+matrix did not justify changing the `0` default before Milestone 6 policy
+closeout. `AdaptivePreparationControls` receives
 only content-free state and native callbacks, exposes quick/prepared targets,
 progress, estimates, low/buffering/planned-wait distinctions,
 pause/resume/stop, 5% volume steps, and a disabled `1.0x`-only speed selector.
-It owns no narration text, audio, identity, service call, or player and is not
-mounted in the product until M008 Milestone 5 provides that coordinator.
+It owns no narration text, audio, identity, service call, or player. Milestone
+5 mounts it as the content-free view of `ProductNarrationCoordinator` only when
+the exact development service is available.
+
+M008 Milestone 5's coordinator remains outside React state and owns at most one
+prepared batch, one active synthesis, the scheduler, and the player. It starts
+from the active visual locator, attaches ephemeral identities, transfers sole
+complete-unit ownership, and drops prepared references after each request.
+Locator changes and lifecycle transitions make work stale before cancellation.
+The exact-host matrix measured audible quick/prepared flows, one underrun and
+truthful buffering, 160 ms cancellation, bounded RAM/VRAM, and zero external
+requests. It retains the standard-profile blocker.

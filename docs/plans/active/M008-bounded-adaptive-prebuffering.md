@@ -30,29 +30,32 @@ specific preparation duration.
 
 ## Current state
 
-- The production desktop has no product TTS caller or synchronization flow.
-  An unconnected payload-owning queue, low-level Web Audio player,
-  content-free adaptive preparation presenter, and reusable accessible
-  narration control surface now exist. The control surface is deliberately
-  not mounted with a fake product runtime; Milestone 5 owns its connection to
-  publication narration and M007.
+- The desktop now has a development-only product narration coordinator outside
+  React state. When the exact native Qwen/Serena configuration is available, it
+  starts from the active visual locator, prepares bounded narration batches,
+  dispatches one segment at a time through M007, transfers each accepted unit
+  into the adaptive player, and mounts the accessible controls. The model-free
+  default does not expose a fake narration experience. Reader highlighting and
+  following remain future M009 work.
 - A model-free, manually clocked adaptive scheduler state machine now proves
   M008 ordering, startup, reservation, backpressure, invalidation, release,
   failure, end-of-range, and service-recovery semantics. Milestone 3 extends
   that owner with real payload retention and a dedicated Web Audio backend,
-  validated through deterministic fake-device tests. It is not connected to
-  the publication or an M007 product caller and opens no device in tests.
+  validated through deterministic fake-device tests. Milestone 5 connects
+  these boundaries only for the exact development host; deterministic tests
+  still open no device.
 - Shared session, generation, audio-frame, and buffer-status contracts plus
   deterministic fakes exist.
 - `@voxleaf/epub` exposes bounded locator-linked
-  `OpenedPublication.prepareNarration`; the desktop does not call it.
+  `OpenedPublication.prepareNarration`; the exact-demo coordinator now calls it
+  from the active visual locator.
 - M007 is complete. Its accepted protocol v1, bounded complete-unit service,
   native supervisor, typed `TtsProcessClient`, one-unit handoff sink, exact
   development-only adapter, packaged lifecycle evidence, and measured
   exact-host matrix are the implemented service boundary M008 must consume.
   M008 owns the product narration caller, scheduling queue, multi-unit audio
-  ownership, and player. The queue/player now exist; the caller remains later
-  work.
+  ownership, and player. All four are now connected under the exact
+  development-only availability gate.
 - ADR-0013 selects no standard TTS profile.
 - ADR-0015 permits only the exact one-GPU Qwen/Serena development-demo
   topology with bounded adaptive in-memory preparation.
@@ -428,7 +431,42 @@ Completed on 2026-07-27.
 
 #### Status
 
-Not started.
+Completed on 2026-07-27.
+
+#### Actual result
+
+- Added an application-level `ProductNarrationCoordinator` outside React state.
+  It owns session/generation/segment identities, prepares at most one
+  16-segment narration batch from the active visual locator, dispatches at most
+  one synthesis, transfers sole payload ownership through `takeAudioUnit()`,
+  and releases settled prompt references immediately.
+- Mounted the existing accessible quick/prepared controls only when the native
+  supervisor reports the exact development configuration. The default
+  model-free child remains test infrastructure and cannot appear as a
+  user-facing voice.
+- Active-locator changes, stop, publication replacement/close, preparation
+  failure, and application teardown make old work stale before cancelling the
+  active identity or shutting the service down. There is no automatic retry or
+  service-side queue.
+- Added deterministic coordinator, process-client, native-supervisor, player,
+  cancellation, preparation-abort, stale-output, privacy, and lifecycle tests.
+- Added `pnpm.cmd test:tts:adaptive-exact-host`, which uses a disposable
+  synthetic Spanish EPUB through the packaged application and verifies quick
+  start, depletion/buffering, cancellation, prepared playback, all four
+  prepared options, resource sampling, cleanup, and zero external requests.
+- The corrected first complete exact-host matrix passed with quick
+  command-to-audible `39,238` ms, `15,280` ms playable lead at start, one
+  observed underrun, `20.91` buffering seconds per playback minute, no
+  intentional wait, and identity cancellation in `160` ms. The one-minute
+  prepared arm reached `66,480` playable ms after `112,895` ms. Peak process
+  tree working set was `2,828,034,048` bytes and peak dedicated GPU memory was
+  `4,882` MiB; the observed GPU maximum was `70` degrees Celsius and `40.13`
+  watts. All 1/2/5/10-minute choices were accepted, and external requests were
+  zero.
+- These measurements prove the constrained exact-host demo path, not a
+  standard profile, uninterrupted playback, or general hardware support. The
+  default boundary wait remains zero; Milestone 6 owns the final policy
+  decision.
 
 ### Milestone 6: Record the demo policy and close validation
 
@@ -571,6 +609,23 @@ accepted no-standard-profile decision.
   tests, desktop type checking passes, and the full desktop suite passes 268
   Vitest plus six native-driver client tests.
   Implementation checkpoint `4f0ec62` retains the code and focused evidence.
+- 2026-07-27: Created `feat/m008-m5-one-gpu-demo` from merged `main`. Added the
+  product coordinator, exact-development availability gate, mounted narration
+  controls, one-at-a-time publication-to-M007 dispatch, sole audio ownership,
+  and identity-first cancellation. Implementation checkpoint `522e066`
+  preserves the product path.
+- 2026-07-27: Added the packaged exact-host adaptive matrix at checkpoint
+  `1c51be1`. Its first run reached real synthesis and depletion but incorrectly
+  demanded recovery to `playing` while the slower-than-real-time model was
+  expected to remain buffering. Checkpoint `8b4b17b` corrected the assertion to
+  observe and measure that honest buffering state rather than hide it.
+- 2026-07-27: The corrected exact-host matrix passed on the authoritative PC:
+  quick command-to-audible `39,238` ms, start lead `15,280` ms, one underrun,
+  `20.91` buffering seconds/minute, cancellation `160` ms, one-minute prepared
+  lead `66,480` ms after `112,895` ms, peak working set `2,828,034,048` bytes,
+  peak dedicated GPU memory `4,882` MiB, zero intentional wait, and zero
+  external requests. This completes Milestone 5 while retaining the standard
+  profile blocker.
 
 ## Discoveries and decisions
 
@@ -651,6 +706,14 @@ accepted no-standard-profile decision.
 24. Scheduler target backpressure must run before requesting another
     narration batch. Otherwise a playback-only pause at its target can retain
     sensitive prepared text that cannot produce useful audio.
+25. Exact-host depletion is an expected constrained-demo state at the measured
+    RTF. Validation must measure honest buffering instead of requiring the
+    slower-than-real-time worker to recover while playback continues.
+26. The exact configuration may be exposed through one content-free native
+    boolean. Python paths, model paths, prompts, work identities, and audio
+    remain outside React state and presentation diagnostics.
+27. The exact matrix does not justify a nonzero semantic-boundary wait. The
+    accepted default remains zero pending Milestone 6's policy closeout.
 
 ## Final validation results
 
@@ -742,3 +805,34 @@ Milestone 4 adds no dependency, shared/public protocol, Tauri capability,
 model, audio fixture, book content, persistence, or network behavior. Its
 React surface receives only content-free preparation state and remains
 unmounted until Milestone 5 supplies the real product coordinator.
+
+Milestone 5 validation currently passes:
+
+- Focused coordinator, scheduler, player, controls, client, and application
+  tests pass; the final focused run passes seven files/74 tests, and the full
+  desktop run passes 28 Vitest files/275 tests plus six
+  native-driver client tests.
+- `uv lock --project
+  services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --check`
+  resolves the unchanged isolated 107-package lock.
+- `pnpm.cmd check:portable` passes Prettier, Ruff format/check, ESLint, mypy,
+  all workspace typechecks, 196 shared tests, 555 EPUB tests, 275 desktop
+  Vitest tests, six native-driver client tests, 233 Python tests, and
+  package/desktop/Python builds.
+- The authoritative Windows `pnpm.cmd check` passes the same surface plus Cargo
+  formatting, Clippy, 25 Rust tests, the release Tauri build, and both Python
+  distributions.
+- `pnpm.cmd test:native-startup` passes the packaged model-free lifecycle,
+  local-file, reader, image, restoration, cleanup, and zero-external-request
+  matrix after the product coordinator was mounted.
+- `pnpm.cmd test:tts:adaptive-exact-host` passes the packaged exact one-GPU
+  matrix with the measurements recorded above and zero external requests.
+- All 53 Markdown documents pass the relative-link audit. The 26-file
+  milestone delta has no generated audio, private book, model weight, archive,
+  private-path/email/credential pattern, dependency, shared protocol version,
+  Tauri capability, or persistence addition; `git diff --check` passes.
+
+Milestone 5 introduces no dependency, shared protocol version, Tauri
+capability, persistence boundary, model artifact, generated-audio fixture,
+private book, or automatic retry. Required pull-request CI and the final demo
+policy/plan closeout remain Milestone 6 work.

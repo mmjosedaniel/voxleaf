@@ -129,8 +129,10 @@ those questions: CPU-only generation is too slow for the selected role, the
 official concurrent arm reached a resource stop, and a low-load diagnostic
 provided only about 2.6% aggregate improvement while substantially slowing the
 GPU worker. `selection-v5` therefore rejects the dual-worker product topology.
-ADR-0015 and M008 add no dependency; they retain the unchanged isolated
-candidate only for later one-GPU demo work.
+ADR-0015 and M008 add no dependency. Milestone 5 connects the unchanged
+isolated candidate to the existing Web Audio platform API and M007 client only
+for the exact one-GPU development demo; it adds no package, plugin, model
+artifact, install script, or production runtime dependency.
 
 M007 Milestone 1 adds exactly pinned `@tauri-apps/api@2.11.1` for the typed
 frontend invoke and optimized binary-response boundary. The Rust prototype
