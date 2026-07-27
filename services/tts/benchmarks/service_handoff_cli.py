@@ -95,8 +95,10 @@ def _parse_event(line: str) -> Mapping[str, object]:
 
 
 def _verify_firewall(candidate_python: str) -> None:
+    if os.environ.get("VOXLEAF_TTS_DEV_PYTHON") != candidate_python:
+        raise _fail("firewall")
     script = (
-        "$candidate=$args[0];"
+        "$candidate=$env:VOXLEAF_TTS_DEV_PYTHON;"
         f"$rule=Get-NetFirewallRule -DisplayName '{FIREWALL_RULE_NAME}' "
         "-ErrorAction SilentlyContinue | "
         "Where-Object {$_.Enabled -eq 'True' -and $_.Direction -eq 'Outbound' "
@@ -113,7 +115,6 @@ def _verify_firewall(candidate_python: str) -> None:
             "-NonInteractive",
             "-Command",
             script,
-            candidate_python,
         ],
         check=False,
         stdout=subprocess.DEVNULL,

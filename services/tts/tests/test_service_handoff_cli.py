@@ -14,6 +14,7 @@ from benchmarks.service_handoff_cli import (
     _final_result,
     _numeric_values,
     _parse_event,
+    _verify_firewall,
 )
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
@@ -121,3 +122,11 @@ def test_numeric_values_ignores_null_and_boolean_values() -> None:
         ),
         "metric",
     ) == (1.0, 2.5)
+
+
+def test_firewall_preflight_rejects_a_value_other_than_the_frozen_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("VOXLEAF_TTS_DEV_PYTHON", "candidate-python")
+    with pytest.raises(ServiceHandoffRunError, match="firewall"):
+        _verify_firewall("different-python")

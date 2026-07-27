@@ -980,6 +980,15 @@ artifact behind.
   Rust tests and 22 focused Python authority/runner/memory tests plus Rustfmt,
   Clippy with warnings denied, Ruff, and strict mypy. The hardware command has
   not yet been executed.
+- 2026-07-27: The first reviewed command invocation completed the release
+  build, then stopped at the runner's firewall preflight before the native host
+  or Qwen process started. The firewall was enabled and correctly bound; the
+  runner incorrectly assumed a value following PowerShell `-Command` would
+  appear in `$args[0]`. Changed only that preflight to read the already-frozen
+  native-only environment key directly and added a mismatch regression test.
+  This pre-matrix harness failure is preserved here and is not a failed,
+  retried, or hidden model/case observation. The authoritative nine-case
+  hardware attempt remains unexecuted.
 
 ## Discoveries and decisions
 
@@ -1063,6 +1072,12 @@ artifact behind.
     dedicated/shared memory to the release host's descendant tree, checks
     bound/external endpoints without retaining PIDs, and rejects a result
     unless all four post-termination observations and final cleanup are zero.
+22. A PowerShell command-string argument is not a reliable `$args[0]` carrier
+    for the firewall preflight in this invocation shape. The runner already
+    owns the exact native-only interpreter environment value, so the preflight
+    reads that value directly and compares it in Python before querying the
+    fixed firewall rule. The initial failure occurred before native/model
+    launch and therefore produced no hardware result.
 
 ## Final validation results
 
