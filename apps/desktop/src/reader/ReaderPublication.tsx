@@ -467,6 +467,7 @@ export function ReaderPublicationContent({
           pendingPositionSaveRevision.current = undefined;
           pendingNavigationReason.current = undefined;
           finishProgrammaticNavigation();
+          onSettledLocatorChange?.(coordinator.state.activeLocator, reason);
         } else if (handledNavigationRevision.current !== nextRevision) {
           pendingPositionSaveRevision.current = nextRevision;
         }
@@ -488,6 +489,7 @@ export function ReaderPublicationContent({
       completeInitialRestoration,
       finishProgrammaticNavigation,
       onNavigationIntent,
+      onSettledLocatorChange,
       reflowRestorer,
       visualLocatorTracker,
     ],

@@ -873,6 +873,43 @@ describe("navigable publication reader", () => {
     );
   });
 
+  it("settles an invalidated narration request even when its target is unavailable", () => {
+    const narrationSource = new ManualReaderNarrationSource();
+    const onNavigationIntent = vi.fn();
+    const onSettledLocatorChange = vi.fn();
+    const unavailableLocator = decodeReadingLocatorV1({
+      ...OPENING_LOCATED_BLOCK.startLocator,
+      spineItemId: "spine:missing",
+      spineItemIndex: 99,
+    });
+    render(
+      <ReaderPublicationContent
+        publication={createPublication()}
+        narrationSource={narrationSource}
+        onNavigationIntent={onNavigationIntent}
+        onSettledLocatorChange={onSettledLocatorChange}
+      />,
+    );
+
+    act(() => {
+      narrationSource.requestNavigation(
+        Object.freeze({
+          event: "next-segment",
+          locator: unavailableLocator,
+        }),
+      );
+    });
+
+    expect(onNavigationIntent).toHaveBeenCalledWith("narration-boundary");
+    expect(onSettledLocatorChange).toHaveBeenCalledWith(
+      OPENING_LOCATED_BLOCK.startLocator,
+      "narration-boundary",
+    );
+    expect(
+      screen.getByText("Navigation could not be completed."),
+    ).toBeVisible();
+  });
+
   it("provides content-free keyboard skip and return links without changing browser history", () => {
     const initialUrl = window.location.href;
     render(<ReaderPublicationContent publication={createPublication()} />);

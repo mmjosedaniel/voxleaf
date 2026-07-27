@@ -468,6 +468,7 @@ export class ProductNarrationCoordinator {
         ) {
           if (observation.kind === "segment-started") {
             this.#audibleRange = observation.sourceRange;
+            this.#activeLocator = observation.sourceRange.start;
             this.#publish();
           }
           for (const listener of this.#audibleProgressListeners) {
