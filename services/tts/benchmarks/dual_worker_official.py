@@ -28,6 +28,7 @@ from benchmarks.memory import (
     GPU_PROCESS_SHARED_MEMORY_COUNTER,
     WindowsGpuProcessMemorySampler,
     WindowsProcessResourceSampler,
+    _load_windows_dll,
 )
 
 GIB: Final = 1024**3
@@ -61,7 +62,7 @@ def windows_system_memory() -> tuple[int, int, int]:
         raise DualWorkerBenchmarkError("resource-limit")
     status = _MemoryStatusEx()
     status.dwLength = ctypes.sizeof(_MemoryStatusEx)
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32 = _load_windows_dll("kernel32")
     if not kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):
         raise DualWorkerBenchmarkError("resource-limit")
     commit_limit = int(status.ullTotalPageFile)
