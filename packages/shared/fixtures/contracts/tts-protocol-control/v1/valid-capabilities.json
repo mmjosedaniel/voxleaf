@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "kind": "capabilities",
+  "serviceInstanceId": "service:synthetic-1",
+  "report": {
+    "schemaVersion": 1,
+    "capabilities": {
+      "localSpeechGeneration": "supported",
+      "streamingGeneration": "unsupported",
+      "generationCancellation": "unsupported",
+      "hardwareAcceleration": "supported",
+      "cpuFallback": "unsupported"
+    }
+  },
+  "cancellationContainment": "identity-invalidation-then-worker-termination"
+}

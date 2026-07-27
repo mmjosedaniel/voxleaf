@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+#[cfg(test)]
+mod tts_protocol_contract;
 mod tts_protocol_probe;
 
 fn main() {

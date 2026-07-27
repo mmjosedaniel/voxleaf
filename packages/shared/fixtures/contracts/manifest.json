@@ -102,6 +102,115 @@
       "fixture": "buffer-status/v1/invalid-unsupported-version.json",
       "schemaId": "urn:voxleaf:schema:buffer-status:v1",
       "expected": "invalid"
+    },
+    {
+      "id": "tts-protocol-control-v1-handshake",
+      "fixture": "tts-protocol-control/v1/valid-handshake.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "tts-protocol-control-v1-load",
+      "fixture": "tts-protocol-control/v1/valid-load.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "tts-protocol-control-v1-warm",
+      "fixture": "tts-protocol-control/v1/valid-warm.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "tts-protocol-control-v1-synthesize",
+      "fixture": "tts-protocol-control/v1/valid-synthesize.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "valid",
+      "containsSensitiveNarrationText": true
+    },
+    {
+      "id": "tts-protocol-control-v1-cancel",
+      "fixture": "tts-protocol-control/v1/valid-cancel.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "tts-protocol-control-v1-health",
+      "fixture": "tts-protocol-control/v1/valid-health.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "tts-protocol-control-v1-shutdown",
+      "fixture": "tts-protocol-control/v1/valid-shutdown.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "tts-protocol-control-v1-handshake-accepted",
+      "fixture": "tts-protocol-control/v1/valid-handshake-accepted.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "tts-protocol-control-v1-state",
+      "fixture": "tts-protocol-control/v1/valid-state.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "tts-protocol-control-v1-capabilities",
+      "fixture": "tts-protocol-control/v1/valid-capabilities.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "tts-protocol-control-v1-audio-metadata",
+      "fixture": "tts-protocol-control/v1/valid-audio-metadata.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "tts-protocol-control-v1-completed",
+      "fixture": "tts-protocol-control/v1/valid-completed.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "tts-protocol-control-v1-cancelled",
+      "fixture": "tts-protocol-control/v1/valid-cancelled.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "tts-protocol-control-v1-error",
+      "fixture": "tts-protocol-control/v1/valid-error.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "tts-protocol-control-v1-protocol-rejected",
+      "fixture": "tts-protocol-control/v1/valid-protocol-rejected.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "tts-protocol-control-v1-rejects-unknown-field",
+      "fixture": "tts-protocol-control/v1/invalid-unknown-field.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "invalid"
+    },
+    {
+      "id": "tts-protocol-control-v1-rejects-unsupported-protocol",
+      "fixture": "tts-protocol-control/v1/invalid-unsupported-protocol.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "invalid"
+    },
+    {
+      "id": "tts-protocol-control-v1-rejects-unknown-kind",
+      "fixture": "tts-protocol-control/v1/invalid-unknown-kind.json",
+      "schemaId": "urn:voxleaf:schema:tts-protocol-control:v1",
+      "expected": "invalid"
     }
   ]
 }

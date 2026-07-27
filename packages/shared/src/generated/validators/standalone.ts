@@ -5335,3 +5335,3668 @@ validate56.errors = vErrors;
 return errors === 0;
 }
 validate56.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+export const validateTtsProtocolControlV1Wire = validate59;
+const schema130 = {"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"urn:voxleaf:schema:tts-protocol-control:v1","title":"TtsProtocolControlV1Wire","description":"Closed JSON control messages for VoxLeaf local TTS process protocol version 1. Raw PCM is carried only in a separate bounded audio record.","oneOf":[{"$ref":"#/$defs/handshake"},{"$ref":"#/$defs/load"},{"$ref":"#/$defs/warm"},{"$ref":"#/$defs/synthesize"},{"$ref":"#/$defs/cancel"},{"$ref":"#/$defs/health"},{"$ref":"#/$defs/shutdown"},{"$ref":"#/$defs/handshakeAccepted"},{"$ref":"#/$defs/state"},{"$ref":"#/$defs/capabilities"},{"$ref":"#/$defs/audioMetadata"},{"$ref":"#/$defs/completed"},{"$ref":"#/$defs/cancelled"},{"$ref":"#/$defs/error"},{"$ref":"#/$defs/protocolRejected"}],"$defs":{"schemaVersion":{"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]},"protocolVersion":{"type":"integer","const":1},"serviceInstanceId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/identifier"},"requestId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/identifier"},"serviceState":{"type":"string","enum":["starting","handshaking","unloaded","loading","warming","ready","generating","cancelling","stopping","stopped","failed"]},"protocolReason":{"type":"string","enum":["malformed-frame","unsupported-protocol-version","unknown-record-kind","invalid-flags","empty-payload","over-limit","invalid-utf8","malformed-json","unknown-message-kind","unsupported-schema-version","invalid-message","invalid-state","identity-mismatch","duplicate-identity","sequence-gap","format-mismatch","busy","engine-failure","engine-timeout","operation-cancelled","resource-exhausted"]},"workIdentity":{"type":"object","additionalProperties":false,"required":["requestId","sessionId","generationId","segmentId"],"properties":{"requestId":{"$ref":"#/$defs/requestId"},"sessionId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/sessionId"},"generationId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/generationId"},"segmentId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/segmentId"}}},"handshake":{"title":"TtsHandshakeV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"handshake"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"load":{"title":"TtsLoadV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"load"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"warm":{"title":"TtsWarmV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"warm"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"synthesize":{"title":"TtsSynthesizeV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","requestId","segment"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"synthesize"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"requestId":{"$ref":"#/$defs/requestId"},"segment":{"allOf":[{"$ref":"urn:voxleaf:schema:narration-segment:v1"},{"type":"object","properties":{"text":{"type":"string","minLength":1,"maxLength":640}}}]}}},"cancel":{"title":"TtsCancelV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"cancel"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}},"health":{"title":"TtsHealthV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"health"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"shutdown":{"title":"TtsShutdownV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"shutdown"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"handshakeAccepted":{"title":"TtsHandshakeAcceptedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"handshakeAccepted"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}},"state":{"title":"TtsStateV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","state"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"state"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"state":{"$ref":"#/$defs/serviceState"}}},"capabilities":{"title":"TtsCapabilitiesV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","report","cancellationContainment"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"capabilities"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"report":{"$ref":"urn:voxleaf:schema:capability-report:v1"},"cancellationContainment":{"const":"identity-invalidation-then-worker-termination"}}},"audioMetadata":{"title":"TtsAudioMetadataV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","requestId","frame","sampleFormat","payloadBytes"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"audioMetadata"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"requestId":{"$ref":"#/$defs/requestId"},"frame":{"allOf":[{"$ref":"urn:voxleaf:schema:audio-frame:v1"},{"type":"object","properties":{"sequence":{"const":0},"sampleRateHz":{"const":24000},"sampleCountSamples":{"type":"integer","minimum":1,"maximum":480000},"channelCount":{"const":1},"endOfSegment":{"const":true}}}]},"sampleFormat":{"const":"float32-le"},"payloadBytes":{"type":"integer","minimum":4,"maximum":1920000,"multipleOf":4}}},"completed":{"title":"TtsCompletedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"completed"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}},"cancelled":{"title":"TtsCancelledV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"cancelled"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}},"error":{"title":"TtsErrorV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","reason","error"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"error"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"reason":{"$ref":"#/$defs/protocolReason"},"error":{"$ref":"urn:voxleaf:schema:operational-error:v1"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}},"protocolRejected":{"title":"TtsProtocolRejectedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","reason"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"protocolRejected"},"reason":{"$ref":"#/$defs/protocolReason"}}}}};
+const schema131 = {"title":"TtsHandshakeV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"handshake"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
+const schema134 = {"type":"integer","const":1};
+const schema132 = {"allOf":[{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"},{"const":1}]};
+
+function validate61(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate61.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(!(((typeof data == "number") && (!(data % 1) && !isNaN(data))) && (isFinite(data)))){
+const err0 = {instancePath,schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if((typeof data == "number") && (isFinite(data))){
+if(data > 9007199254740991 || isNaN(data)){
+const err1 = {instancePath,schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion/maximum",keyword:"maximum",params:{comparison: "<=", limit: 9007199254740991},message:"must be <= 9007199254740991"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data < 1 || isNaN(data)){
+const err2 = {instancePath,schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1},message:"must be >= 1"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+}
+if(1 !== data){
+const err3 = {instancePath,schemaPath:"#/allOf/1/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+validate61.errors = vErrors;
+return errors === 0;
+}
+validate61.evaluated = {"dynamicProps":false,"dynamicItems":false};
+
+
+function validate60(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate60.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.schemaVersion === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "schemaVersion"},message:"must have required property '"+"schemaVersion"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.protocolVersion === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "protocolVersion"},message:"must have required property '"+"protocolVersion"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.kind === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "kind"},message:"must have required property '"+"kind"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.serviceInstanceId === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "serviceInstanceId"},message:"must have required property '"+"serviceInstanceId"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+for(const key0 in data){
+if(!((((key0 === "schemaVersion") || (key0 === "protocolVersion")) || (key0 === "kind")) || (key0 === "serviceInstanceId"))){
+const err4 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+}
+if(data.schemaVersion !== undefined){
+if(!(validate61(data.schemaVersion, {instancePath:instancePath+"/schemaVersion",parentData:data,parentDataProperty:"schemaVersion",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate61.errors : vErrors.concat(validate61.errors);
+errors = vErrors.length;
+}
+}
+if(data.protocolVersion !== undefined){
+let data1 = data.protocolVersion;
+if(!(((typeof data1 == "number") && (!(data1 % 1) && !isNaN(data1))) && (isFinite(data1)))){
+const err5 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+if(1 !== data1){
+const err6 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+}
+if(data.kind !== undefined){
+if("handshake" !== data.kind){
+const err7 = {instancePath:instancePath+"/kind",schemaPath:"#/properties/kind/const",keyword:"const",params:{allowedValue: "handshake"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+}
+if(data.serviceInstanceId !== undefined){
+let data3 = data.serviceInstanceId;
+if(typeof data3 === "string"){
+if(func2(data3) > 128){
+const err8 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+if(func2(data3) < 1){
+const err9 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+if(!pattern4.test(data3)){
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+}
+else {
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err11];
+}
+else {
+vErrors.push(err11);
+}
+errors++;
+}
+}
+}
+else {
+const err12 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err12];
+}
+else {
+vErrors.push(err12);
+}
+errors++;
+}
+validate60.errors = vErrors;
+return errors === 0;
+}
+validate60.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+const schema136 = {"title":"TtsLoadV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"load"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
+
+function validate64(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate64.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.schemaVersion === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "schemaVersion"},message:"must have required property '"+"schemaVersion"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.protocolVersion === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "protocolVersion"},message:"must have required property '"+"protocolVersion"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.kind === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "kind"},message:"must have required property '"+"kind"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.serviceInstanceId === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "serviceInstanceId"},message:"must have required property '"+"serviceInstanceId"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+for(const key0 in data){
+if(!((((key0 === "schemaVersion") || (key0 === "protocolVersion")) || (key0 === "kind")) || (key0 === "serviceInstanceId"))){
+const err4 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+}
+if(data.schemaVersion !== undefined){
+if(!(validate61(data.schemaVersion, {instancePath:instancePath+"/schemaVersion",parentData:data,parentDataProperty:"schemaVersion",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate61.errors : vErrors.concat(validate61.errors);
+errors = vErrors.length;
+}
+}
+if(data.protocolVersion !== undefined){
+let data1 = data.protocolVersion;
+if(!(((typeof data1 == "number") && (!(data1 % 1) && !isNaN(data1))) && (isFinite(data1)))){
+const err5 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+if(1 !== data1){
+const err6 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+}
+if(data.kind !== undefined){
+if("load" !== data.kind){
+const err7 = {instancePath:instancePath+"/kind",schemaPath:"#/properties/kind/const",keyword:"const",params:{allowedValue: "load"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+}
+if(data.serviceInstanceId !== undefined){
+let data3 = data.serviceInstanceId;
+if(typeof data3 === "string"){
+if(func2(data3) > 128){
+const err8 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+if(func2(data3) < 1){
+const err9 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+if(!pattern4.test(data3)){
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+}
+else {
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err11];
+}
+else {
+vErrors.push(err11);
+}
+errors++;
+}
+}
+}
+else {
+const err12 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err12];
+}
+else {
+vErrors.push(err12);
+}
+errors++;
+}
+validate64.errors = vErrors;
+return errors === 0;
+}
+validate64.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+const schema139 = {"title":"TtsWarmV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"warm"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
+
+function validate67(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate67.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.schemaVersion === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "schemaVersion"},message:"must have required property '"+"schemaVersion"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.protocolVersion === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "protocolVersion"},message:"must have required property '"+"protocolVersion"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.kind === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "kind"},message:"must have required property '"+"kind"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.serviceInstanceId === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "serviceInstanceId"},message:"must have required property '"+"serviceInstanceId"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+for(const key0 in data){
+if(!((((key0 === "schemaVersion") || (key0 === "protocolVersion")) || (key0 === "kind")) || (key0 === "serviceInstanceId"))){
+const err4 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+}
+if(data.schemaVersion !== undefined){
+if(!(validate61(data.schemaVersion, {instancePath:instancePath+"/schemaVersion",parentData:data,parentDataProperty:"schemaVersion",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate61.errors : vErrors.concat(validate61.errors);
+errors = vErrors.length;
+}
+}
+if(data.protocolVersion !== undefined){
+let data1 = data.protocolVersion;
+if(!(((typeof data1 == "number") && (!(data1 % 1) && !isNaN(data1))) && (isFinite(data1)))){
+const err5 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+if(1 !== data1){
+const err6 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+}
+if(data.kind !== undefined){
+if("warm" !== data.kind){
+const err7 = {instancePath:instancePath+"/kind",schemaPath:"#/properties/kind/const",keyword:"const",params:{allowedValue: "warm"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+}
+if(data.serviceInstanceId !== undefined){
+let data3 = data.serviceInstanceId;
+if(typeof data3 === "string"){
+if(func2(data3) > 128){
+const err8 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+if(func2(data3) < 1){
+const err9 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+if(!pattern4.test(data3)){
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+}
+else {
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err11];
+}
+else {
+vErrors.push(err11);
+}
+errors++;
+}
+}
+}
+else {
+const err12 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err12];
+}
+else {
+vErrors.push(err12);
+}
+errors++;
+}
+validate67.errors = vErrors;
+return errors === 0;
+}
+validate67.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+const schema142 = {"title":"TtsSynthesizeV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","requestId","segment"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"synthesize"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"requestId":{"$ref":"#/$defs/requestId"},"segment":{"allOf":[{"$ref":"urn:voxleaf:schema:narration-segment:v1"},{"type":"object","properties":{"text":{"type":"string","minLength":1,"maxLength":640}}}]}}};
+
+function validate70(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate70.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.schemaVersion === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "schemaVersion"},message:"must have required property '"+"schemaVersion"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.protocolVersion === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "protocolVersion"},message:"must have required property '"+"protocolVersion"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.kind === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "kind"},message:"must have required property '"+"kind"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.serviceInstanceId === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "serviceInstanceId"},message:"must have required property '"+"serviceInstanceId"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+if(data.requestId === undefined){
+const err4 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "requestId"},message:"must have required property '"+"requestId"+"'"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+if(data.segment === undefined){
+const err5 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "segment"},message:"must have required property '"+"segment"+"'"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+for(const key0 in data){
+if(!((((((key0 === "schemaVersion") || (key0 === "protocolVersion")) || (key0 === "kind")) || (key0 === "serviceInstanceId")) || (key0 === "requestId")) || (key0 === "segment"))){
+const err6 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+}
+if(data.schemaVersion !== undefined){
+if(!(validate61(data.schemaVersion, {instancePath:instancePath+"/schemaVersion",parentData:data,parentDataProperty:"schemaVersion",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate61.errors : vErrors.concat(validate61.errors);
+errors = vErrors.length;
+}
+}
+if(data.protocolVersion !== undefined){
+let data1 = data.protocolVersion;
+if(!(((typeof data1 == "number") && (!(data1 % 1) && !isNaN(data1))) && (isFinite(data1)))){
+const err7 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+if(1 !== data1){
+const err8 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+}
+if(data.kind !== undefined){
+if("synthesize" !== data.kind){
+const err9 = {instancePath:instancePath+"/kind",schemaPath:"#/properties/kind/const",keyword:"const",params:{allowedValue: "synthesize"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+}
+if(data.serviceInstanceId !== undefined){
+let data3 = data.serviceInstanceId;
+if(typeof data3 === "string"){
+if(func2(data3) > 128){
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+if(func2(data3) < 1){
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err11];
+}
+else {
+vErrors.push(err11);
+}
+errors++;
+}
+if(!pattern4.test(data3)){
+const err12 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err12];
+}
+else {
+vErrors.push(err12);
+}
+errors++;
+}
+}
+else {
+const err13 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err13];
+}
+else {
+vErrors.push(err13);
+}
+errors++;
+}
+}
+if(data.requestId !== undefined){
+let data4 = data.requestId;
+if(typeof data4 === "string"){
+if(func2(data4) > 128){
+const err14 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err14];
+}
+else {
+vErrors.push(err14);
+}
+errors++;
+}
+if(func2(data4) < 1){
+const err15 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err15];
+}
+else {
+vErrors.push(err15);
+}
+errors++;
+}
+if(!pattern4.test(data4)){
+const err16 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err16];
+}
+else {
+vErrors.push(err16);
+}
+errors++;
+}
+}
+else {
+const err17 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err17];
+}
+else {
+vErrors.push(err17);
+}
+errors++;
+}
+}
+if(data.segment !== undefined){
+let data5 = data.segment;
+if(!(validate45(data5, {instancePath:instancePath+"/segment",parentData:data,parentDataProperty:"segment",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate45.errors : vErrors.concat(validate45.errors);
+errors = vErrors.length;
+}
+if(data5 && typeof data5 == "object" && !Array.isArray(data5)){
+if(data5.text !== undefined){
+let data6 = data5.text;
+if(typeof data6 === "string"){
+if(func2(data6) > 640){
+const err18 = {instancePath:instancePath+"/segment/text",schemaPath:"#/properties/segment/allOf/1/properties/text/maxLength",keyword:"maxLength",params:{limit: 640},message:"must NOT have more than 640 characters"};
+if(vErrors === null){
+vErrors = [err18];
+}
+else {
+vErrors.push(err18);
+}
+errors++;
+}
+if(func2(data6) < 1){
+const err19 = {instancePath:instancePath+"/segment/text",schemaPath:"#/properties/segment/allOf/1/properties/text/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err19];
+}
+else {
+vErrors.push(err19);
+}
+errors++;
+}
+}
+else {
+const err20 = {instancePath:instancePath+"/segment/text",schemaPath:"#/properties/segment/allOf/1/properties/text/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err20];
+}
+else {
+vErrors.push(err20);
+}
+errors++;
+}
+}
+}
+else {
+const err21 = {instancePath:instancePath+"/segment",schemaPath:"#/properties/segment/allOf/1/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err21];
+}
+else {
+vErrors.push(err21);
+}
+errors++;
+}
+}
+}
+else {
+const err22 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err22];
+}
+else {
+vErrors.push(err22);
+}
+errors++;
+}
+validate70.errors = vErrors;
+return errors === 0;
+}
+validate70.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+const schema146 = {"title":"TtsCancelV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"cancel"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}};
+const schema149 = {"type":"object","additionalProperties":false,"required":["requestId","sessionId","generationId","segmentId"],"properties":{"requestId":{"$ref":"#/$defs/requestId"},"sessionId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/sessionId"},"generationId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/generationId"},"segmentId":{"$ref":"urn:voxleaf:schema:primitives:v1#/$defs/segmentId"}}};
+
+function validate76(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate76.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.requestId === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "requestId"},message:"must have required property '"+"requestId"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.sessionId === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "sessionId"},message:"must have required property '"+"sessionId"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.generationId === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "generationId"},message:"must have required property '"+"generationId"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.segmentId === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "segmentId"},message:"must have required property '"+"segmentId"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+for(const key0 in data){
+if(!((((key0 === "requestId") || (key0 === "sessionId")) || (key0 === "generationId")) || (key0 === "segmentId"))){
+const err4 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+}
+if(data.requestId !== undefined){
+let data0 = data.requestId;
+if(typeof data0 === "string"){
+if(func2(data0) > 128){
+const err5 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+if(func2(data0) < 1){
+const err6 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+if(!pattern4.test(data0)){
+const err7 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+}
+else {
+const err8 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+}
+if(data.sessionId !== undefined){
+let data1 = data.sessionId;
+if(typeof data1 === "string"){
+if(func2(data1) > 128){
+const err9 = {instancePath:instancePath+"/sessionId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/sessionId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+if(func2(data1) < 1){
+const err10 = {instancePath:instancePath+"/sessionId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/sessionId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+if(!pattern4.test(data1)){
+const err11 = {instancePath:instancePath+"/sessionId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/sessionId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err11];
+}
+else {
+vErrors.push(err11);
+}
+errors++;
+}
+}
+else {
+const err12 = {instancePath:instancePath+"/sessionId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/sessionId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err12];
+}
+else {
+vErrors.push(err12);
+}
+errors++;
+}
+}
+if(data.generationId !== undefined){
+let data2 = data.generationId;
+if(typeof data2 === "string"){
+if(func2(data2) > 128){
+const err13 = {instancePath:instancePath+"/generationId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/generationId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err13];
+}
+else {
+vErrors.push(err13);
+}
+errors++;
+}
+if(func2(data2) < 1){
+const err14 = {instancePath:instancePath+"/generationId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/generationId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err14];
+}
+else {
+vErrors.push(err14);
+}
+errors++;
+}
+if(!pattern4.test(data2)){
+const err15 = {instancePath:instancePath+"/generationId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/generationId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err15];
+}
+else {
+vErrors.push(err15);
+}
+errors++;
+}
+}
+else {
+const err16 = {instancePath:instancePath+"/generationId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/generationId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err16];
+}
+else {
+vErrors.push(err16);
+}
+errors++;
+}
+}
+if(data.segmentId !== undefined){
+let data3 = data.segmentId;
+if(typeof data3 === "string"){
+if(func2(data3) > 128){
+const err17 = {instancePath:instancePath+"/segmentId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/segmentId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err17];
+}
+else {
+vErrors.push(err17);
+}
+errors++;
+}
+if(func2(data3) < 1){
+const err18 = {instancePath:instancePath+"/segmentId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/segmentId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err18];
+}
+else {
+vErrors.push(err18);
+}
+errors++;
+}
+if(!pattern4.test(data3)){
+const err19 = {instancePath:instancePath+"/segmentId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/segmentId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err19];
+}
+else {
+vErrors.push(err19);
+}
+errors++;
+}
+}
+else {
+const err20 = {instancePath:instancePath+"/segmentId",schemaPath:"urn:voxleaf:schema:primitives:v1#/$defs/segmentId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err20];
+}
+else {
+vErrors.push(err20);
+}
+errors++;
+}
+}
+}
+else {
+const err21 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err21];
+}
+else {
+vErrors.push(err21);
+}
+errors++;
+}
+validate76.errors = vErrors;
+return errors === 0;
+}
+validate76.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+
+function validate74(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate74.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.schemaVersion === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "schemaVersion"},message:"must have required property '"+"schemaVersion"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.protocolVersion === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "protocolVersion"},message:"must have required property '"+"protocolVersion"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.kind === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "kind"},message:"must have required property '"+"kind"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.serviceInstanceId === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "serviceInstanceId"},message:"must have required property '"+"serviceInstanceId"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+if(data.workIdentity === undefined){
+const err4 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "workIdentity"},message:"must have required property '"+"workIdentity"+"'"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+for(const key0 in data){
+if(!(((((key0 === "schemaVersion") || (key0 === "protocolVersion")) || (key0 === "kind")) || (key0 === "serviceInstanceId")) || (key0 === "workIdentity"))){
+const err5 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+}
+if(data.schemaVersion !== undefined){
+if(!(validate61(data.schemaVersion, {instancePath:instancePath+"/schemaVersion",parentData:data,parentDataProperty:"schemaVersion",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate61.errors : vErrors.concat(validate61.errors);
+errors = vErrors.length;
+}
+}
+if(data.protocolVersion !== undefined){
+let data1 = data.protocolVersion;
+if(!(((typeof data1 == "number") && (!(data1 % 1) && !isNaN(data1))) && (isFinite(data1)))){
+const err6 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+if(1 !== data1){
+const err7 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+}
+if(data.kind !== undefined){
+if("cancel" !== data.kind){
+const err8 = {instancePath:instancePath+"/kind",schemaPath:"#/properties/kind/const",keyword:"const",params:{allowedValue: "cancel"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+}
+if(data.serviceInstanceId !== undefined){
+let data3 = data.serviceInstanceId;
+if(typeof data3 === "string"){
+if(func2(data3) > 128){
+const err9 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+if(func2(data3) < 1){
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+if(!pattern4.test(data3)){
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err11];
+}
+else {
+vErrors.push(err11);
+}
+errors++;
+}
+}
+else {
+const err12 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err12];
+}
+else {
+vErrors.push(err12);
+}
+errors++;
+}
+}
+if(data.workIdentity !== undefined){
+if(!(validate76(data.workIdentity, {instancePath:instancePath+"/workIdentity",parentData:data,parentDataProperty:"workIdentity",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate76.errors : vErrors.concat(validate76.errors);
+errors = vErrors.length;
+}
+}
+}
+else {
+const err13 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err13];
+}
+else {
+vErrors.push(err13);
+}
+errors++;
+}
+validate74.errors = vErrors;
+return errors === 0;
+}
+validate74.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+const schema154 = {"title":"TtsHealthV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"health"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
+
+function validate79(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate79.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.schemaVersion === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "schemaVersion"},message:"must have required property '"+"schemaVersion"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.protocolVersion === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "protocolVersion"},message:"must have required property '"+"protocolVersion"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.kind === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "kind"},message:"must have required property '"+"kind"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.serviceInstanceId === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "serviceInstanceId"},message:"must have required property '"+"serviceInstanceId"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+for(const key0 in data){
+if(!((((key0 === "schemaVersion") || (key0 === "protocolVersion")) || (key0 === "kind")) || (key0 === "serviceInstanceId"))){
+const err4 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+}
+if(data.schemaVersion !== undefined){
+if(!(validate61(data.schemaVersion, {instancePath:instancePath+"/schemaVersion",parentData:data,parentDataProperty:"schemaVersion",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate61.errors : vErrors.concat(validate61.errors);
+errors = vErrors.length;
+}
+}
+if(data.protocolVersion !== undefined){
+let data1 = data.protocolVersion;
+if(!(((typeof data1 == "number") && (!(data1 % 1) && !isNaN(data1))) && (isFinite(data1)))){
+const err5 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+if(1 !== data1){
+const err6 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+}
+if(data.kind !== undefined){
+if("health" !== data.kind){
+const err7 = {instancePath:instancePath+"/kind",schemaPath:"#/properties/kind/const",keyword:"const",params:{allowedValue: "health"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+}
+if(data.serviceInstanceId !== undefined){
+let data3 = data.serviceInstanceId;
+if(typeof data3 === "string"){
+if(func2(data3) > 128){
+const err8 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+if(func2(data3) < 1){
+const err9 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+if(!pattern4.test(data3)){
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+}
+else {
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err11];
+}
+else {
+vErrors.push(err11);
+}
+errors++;
+}
+}
+}
+else {
+const err12 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err12];
+}
+else {
+vErrors.push(err12);
+}
+errors++;
+}
+validate79.errors = vErrors;
+return errors === 0;
+}
+validate79.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+const schema157 = {"title":"TtsShutdownV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"shutdown"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
+
+function validate82(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate82.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.schemaVersion === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "schemaVersion"},message:"must have required property '"+"schemaVersion"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.protocolVersion === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "protocolVersion"},message:"must have required property '"+"protocolVersion"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.kind === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "kind"},message:"must have required property '"+"kind"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.serviceInstanceId === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "serviceInstanceId"},message:"must have required property '"+"serviceInstanceId"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+for(const key0 in data){
+if(!((((key0 === "schemaVersion") || (key0 === "protocolVersion")) || (key0 === "kind")) || (key0 === "serviceInstanceId"))){
+const err4 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+}
+if(data.schemaVersion !== undefined){
+if(!(validate61(data.schemaVersion, {instancePath:instancePath+"/schemaVersion",parentData:data,parentDataProperty:"schemaVersion",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate61.errors : vErrors.concat(validate61.errors);
+errors = vErrors.length;
+}
+}
+if(data.protocolVersion !== undefined){
+let data1 = data.protocolVersion;
+if(!(((typeof data1 == "number") && (!(data1 % 1) && !isNaN(data1))) && (isFinite(data1)))){
+const err5 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+if(1 !== data1){
+const err6 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+}
+if(data.kind !== undefined){
+if("shutdown" !== data.kind){
+const err7 = {instancePath:instancePath+"/kind",schemaPath:"#/properties/kind/const",keyword:"const",params:{allowedValue: "shutdown"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+}
+if(data.serviceInstanceId !== undefined){
+let data3 = data.serviceInstanceId;
+if(typeof data3 === "string"){
+if(func2(data3) > 128){
+const err8 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+if(func2(data3) < 1){
+const err9 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+if(!pattern4.test(data3)){
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+}
+else {
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err11];
+}
+else {
+vErrors.push(err11);
+}
+errors++;
+}
+}
+}
+else {
+const err12 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err12];
+}
+else {
+vErrors.push(err12);
+}
+errors++;
+}
+validate82.errors = vErrors;
+return errors === 0;
+}
+validate82.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+const schema160 = {"title":"TtsHandshakeAcceptedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"handshakeAccepted"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"}}};
+
+function validate85(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate85.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.schemaVersion === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "schemaVersion"},message:"must have required property '"+"schemaVersion"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.protocolVersion === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "protocolVersion"},message:"must have required property '"+"protocolVersion"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.kind === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "kind"},message:"must have required property '"+"kind"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.serviceInstanceId === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "serviceInstanceId"},message:"must have required property '"+"serviceInstanceId"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+for(const key0 in data){
+if(!((((key0 === "schemaVersion") || (key0 === "protocolVersion")) || (key0 === "kind")) || (key0 === "serviceInstanceId"))){
+const err4 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+}
+if(data.schemaVersion !== undefined){
+if(!(validate61(data.schemaVersion, {instancePath:instancePath+"/schemaVersion",parentData:data,parentDataProperty:"schemaVersion",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate61.errors : vErrors.concat(validate61.errors);
+errors = vErrors.length;
+}
+}
+if(data.protocolVersion !== undefined){
+let data1 = data.protocolVersion;
+if(!(((typeof data1 == "number") && (!(data1 % 1) && !isNaN(data1))) && (isFinite(data1)))){
+const err5 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+if(1 !== data1){
+const err6 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+}
+if(data.kind !== undefined){
+if("handshakeAccepted" !== data.kind){
+const err7 = {instancePath:instancePath+"/kind",schemaPath:"#/properties/kind/const",keyword:"const",params:{allowedValue: "handshakeAccepted"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+}
+if(data.serviceInstanceId !== undefined){
+let data3 = data.serviceInstanceId;
+if(typeof data3 === "string"){
+if(func2(data3) > 128){
+const err8 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+if(func2(data3) < 1){
+const err9 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+if(!pattern4.test(data3)){
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+}
+else {
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err11];
+}
+else {
+vErrors.push(err11);
+}
+errors++;
+}
+}
+}
+else {
+const err12 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err12];
+}
+else {
+vErrors.push(err12);
+}
+errors++;
+}
+validate85.errors = vErrors;
+return errors === 0;
+}
+validate85.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+const schema163 = {"title":"TtsStateV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","state"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"state"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"state":{"$ref":"#/$defs/serviceState"}}};
+const schema166 = {"type":"string","enum":["starting","handshaking","unloaded","loading","warming","ready","generating","cancelling","stopping","stopped","failed"]};
+
+function validate88(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate88.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.schemaVersion === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "schemaVersion"},message:"must have required property '"+"schemaVersion"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.protocolVersion === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "protocolVersion"},message:"must have required property '"+"protocolVersion"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.kind === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "kind"},message:"must have required property '"+"kind"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.serviceInstanceId === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "serviceInstanceId"},message:"must have required property '"+"serviceInstanceId"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+if(data.state === undefined){
+const err4 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "state"},message:"must have required property '"+"state"+"'"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+for(const key0 in data){
+if(!(((((key0 === "schemaVersion") || (key0 === "protocolVersion")) || (key0 === "kind")) || (key0 === "serviceInstanceId")) || (key0 === "state"))){
+const err5 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+}
+if(data.schemaVersion !== undefined){
+if(!(validate61(data.schemaVersion, {instancePath:instancePath+"/schemaVersion",parentData:data,parentDataProperty:"schemaVersion",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate61.errors : vErrors.concat(validate61.errors);
+errors = vErrors.length;
+}
+}
+if(data.protocolVersion !== undefined){
+let data1 = data.protocolVersion;
+if(!(((typeof data1 == "number") && (!(data1 % 1) && !isNaN(data1))) && (isFinite(data1)))){
+const err6 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+if(1 !== data1){
+const err7 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+}
+if(data.kind !== undefined){
+if("state" !== data.kind){
+const err8 = {instancePath:instancePath+"/kind",schemaPath:"#/properties/kind/const",keyword:"const",params:{allowedValue: "state"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+}
+if(data.serviceInstanceId !== undefined){
+let data3 = data.serviceInstanceId;
+if(typeof data3 === "string"){
+if(func2(data3) > 128){
+const err9 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+if(func2(data3) < 1){
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+if(!pattern4.test(data3)){
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err11];
+}
+else {
+vErrors.push(err11);
+}
+errors++;
+}
+}
+else {
+const err12 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err12];
+}
+else {
+vErrors.push(err12);
+}
+errors++;
+}
+}
+if(data.state !== undefined){
+let data4 = data.state;
+if(typeof data4 !== "string"){
+const err13 = {instancePath:instancePath+"/state",schemaPath:"#/$defs/serviceState/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err13];
+}
+else {
+vErrors.push(err13);
+}
+errors++;
+}
+if(!(((((((((((data4 === "starting") || (data4 === "handshaking")) || (data4 === "unloaded")) || (data4 === "loading")) || (data4 === "warming")) || (data4 === "ready")) || (data4 === "generating")) || (data4 === "cancelling")) || (data4 === "stopping")) || (data4 === "stopped")) || (data4 === "failed"))){
+const err14 = {instancePath:instancePath+"/state",schemaPath:"#/$defs/serviceState/enum",keyword:"enum",params:{allowedValues: schema166.enum},message:"must be equal to one of the allowed values"};
+if(vErrors === null){
+vErrors = [err14];
+}
+else {
+vErrors.push(err14);
+}
+errors++;
+}
+}
+}
+else {
+const err15 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err15];
+}
+else {
+vErrors.push(err15);
+}
+errors++;
+}
+validate88.errors = vErrors;
+return errors === 0;
+}
+validate88.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+const schema167 = {"title":"TtsCapabilitiesV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","report","cancellationContainment"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"capabilities"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"report":{"$ref":"urn:voxleaf:schema:capability-report:v1"},"cancellationContainment":{"const":"identity-invalidation-then-worker-termination"}}};
+
+function validate91(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate91.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.schemaVersion === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "schemaVersion"},message:"must have required property '"+"schemaVersion"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.protocolVersion === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "protocolVersion"},message:"must have required property '"+"protocolVersion"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.kind === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "kind"},message:"must have required property '"+"kind"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.serviceInstanceId === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "serviceInstanceId"},message:"must have required property '"+"serviceInstanceId"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+if(data.report === undefined){
+const err4 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "report"},message:"must have required property '"+"report"+"'"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+if(data.cancellationContainment === undefined){
+const err5 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "cancellationContainment"},message:"must have required property '"+"cancellationContainment"+"'"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+for(const key0 in data){
+if(!((((((key0 === "schemaVersion") || (key0 === "protocolVersion")) || (key0 === "kind")) || (key0 === "serviceInstanceId")) || (key0 === "report")) || (key0 === "cancellationContainment"))){
+const err6 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+}
+if(data.schemaVersion !== undefined){
+if(!(validate61(data.schemaVersion, {instancePath:instancePath+"/schemaVersion",parentData:data,parentDataProperty:"schemaVersion",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate61.errors : vErrors.concat(validate61.errors);
+errors = vErrors.length;
+}
+}
+if(data.protocolVersion !== undefined){
+let data1 = data.protocolVersion;
+if(!(((typeof data1 == "number") && (!(data1 % 1) && !isNaN(data1))) && (isFinite(data1)))){
+const err7 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+if(1 !== data1){
+const err8 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+}
+if(data.kind !== undefined){
+if("capabilities" !== data.kind){
+const err9 = {instancePath:instancePath+"/kind",schemaPath:"#/properties/kind/const",keyword:"const",params:{allowedValue: "capabilities"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+}
+if(data.serviceInstanceId !== undefined){
+let data3 = data.serviceInstanceId;
+if(typeof data3 === "string"){
+if(func2(data3) > 128){
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+if(func2(data3) < 1){
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err11];
+}
+else {
+vErrors.push(err11);
+}
+errors++;
+}
+if(!pattern4.test(data3)){
+const err12 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err12];
+}
+else {
+vErrors.push(err12);
+}
+errors++;
+}
+}
+else {
+const err13 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err13];
+}
+else {
+vErrors.push(err13);
+}
+errors++;
+}
+}
+if(data.report !== undefined){
+if(!(validate36(data.report, {instancePath:instancePath+"/report",parentData:data,parentDataProperty:"report",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate36.errors : vErrors.concat(validate36.errors);
+errors = vErrors.length;
+}
+}
+if(data.cancellationContainment !== undefined){
+if("identity-invalidation-then-worker-termination" !== data.cancellationContainment){
+const err14 = {instancePath:instancePath+"/cancellationContainment",schemaPath:"#/properties/cancellationContainment/const",keyword:"const",params:{allowedValue: "identity-invalidation-then-worker-termination"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err14];
+}
+else {
+vErrors.push(err14);
+}
+errors++;
+}
+}
+}
+else {
+const err15 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err15];
+}
+else {
+vErrors.push(err15);
+}
+errors++;
+}
+validate91.errors = vErrors;
+return errors === 0;
+}
+validate91.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+const schema170 = {"title":"TtsAudioMetadataV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","requestId","frame","sampleFormat","payloadBytes"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"audioMetadata"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"requestId":{"$ref":"#/$defs/requestId"},"frame":{"allOf":[{"$ref":"urn:voxleaf:schema:audio-frame:v1"},{"type":"object","properties":{"sequence":{"const":0},"sampleRateHz":{"const":24000},"sampleCountSamples":{"type":"integer","minimum":1,"maximum":480000},"channelCount":{"const":1},"endOfSegment":{"const":true}}}]},"sampleFormat":{"const":"float32-le"},"payloadBytes":{"type":"integer","minimum":4,"maximum":1920000,"multipleOf":4}}};
+
+function validate95(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate95.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.schemaVersion === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "schemaVersion"},message:"must have required property '"+"schemaVersion"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.protocolVersion === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "protocolVersion"},message:"must have required property '"+"protocolVersion"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.kind === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "kind"},message:"must have required property '"+"kind"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.serviceInstanceId === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "serviceInstanceId"},message:"must have required property '"+"serviceInstanceId"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+if(data.requestId === undefined){
+const err4 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "requestId"},message:"must have required property '"+"requestId"+"'"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+if(data.frame === undefined){
+const err5 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "frame"},message:"must have required property '"+"frame"+"'"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+if(data.sampleFormat === undefined){
+const err6 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "sampleFormat"},message:"must have required property '"+"sampleFormat"+"'"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+if(data.payloadBytes === undefined){
+const err7 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "payloadBytes"},message:"must have required property '"+"payloadBytes"+"'"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+for(const key0 in data){
+if(!((((((((key0 === "schemaVersion") || (key0 === "protocolVersion")) || (key0 === "kind")) || (key0 === "serviceInstanceId")) || (key0 === "requestId")) || (key0 === "frame")) || (key0 === "sampleFormat")) || (key0 === "payloadBytes"))){
+const err8 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+}
+if(data.schemaVersion !== undefined){
+if(!(validate61(data.schemaVersion, {instancePath:instancePath+"/schemaVersion",parentData:data,parentDataProperty:"schemaVersion",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate61.errors : vErrors.concat(validate61.errors);
+errors = vErrors.length;
+}
+}
+if(data.protocolVersion !== undefined){
+let data1 = data.protocolVersion;
+if(!(((typeof data1 == "number") && (!(data1 % 1) && !isNaN(data1))) && (isFinite(data1)))){
+const err9 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+if(1 !== data1){
+const err10 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+}
+if(data.kind !== undefined){
+if("audioMetadata" !== data.kind){
+const err11 = {instancePath:instancePath+"/kind",schemaPath:"#/properties/kind/const",keyword:"const",params:{allowedValue: "audioMetadata"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err11];
+}
+else {
+vErrors.push(err11);
+}
+errors++;
+}
+}
+if(data.serviceInstanceId !== undefined){
+let data3 = data.serviceInstanceId;
+if(typeof data3 === "string"){
+if(func2(data3) > 128){
+const err12 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err12];
+}
+else {
+vErrors.push(err12);
+}
+errors++;
+}
+if(func2(data3) < 1){
+const err13 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err13];
+}
+else {
+vErrors.push(err13);
+}
+errors++;
+}
+if(!pattern4.test(data3)){
+const err14 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err14];
+}
+else {
+vErrors.push(err14);
+}
+errors++;
+}
+}
+else {
+const err15 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err15];
+}
+else {
+vErrors.push(err15);
+}
+errors++;
+}
+}
+if(data.requestId !== undefined){
+let data4 = data.requestId;
+if(typeof data4 === "string"){
+if(func2(data4) > 128){
+const err16 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err16];
+}
+else {
+vErrors.push(err16);
+}
+errors++;
+}
+if(func2(data4) < 1){
+const err17 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err17];
+}
+else {
+vErrors.push(err17);
+}
+errors++;
+}
+if(!pattern4.test(data4)){
+const err18 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err18];
+}
+else {
+vErrors.push(err18);
+}
+errors++;
+}
+}
+else {
+const err19 = {instancePath:instancePath+"/requestId",schemaPath:"#/$defs/requestId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err19];
+}
+else {
+vErrors.push(err19);
+}
+errors++;
+}
+}
+if(data.frame !== undefined){
+let data5 = data.frame;
+if(!(validate20(data5, {instancePath:instancePath+"/frame",parentData:data,parentDataProperty:"frame",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate20.errors : vErrors.concat(validate20.errors);
+errors = vErrors.length;
+}
+if(data5 && typeof data5 == "object" && !Array.isArray(data5)){
+if(data5.sequence !== undefined){
+if(0 !== data5.sequence){
+const err20 = {instancePath:instancePath+"/frame/sequence",schemaPath:"#/properties/frame/allOf/1/properties/sequence/const",keyword:"const",params:{allowedValue: 0},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err20];
+}
+else {
+vErrors.push(err20);
+}
+errors++;
+}
+}
+if(data5.sampleRateHz !== undefined){
+if(24000 !== data5.sampleRateHz){
+const err21 = {instancePath:instancePath+"/frame/sampleRateHz",schemaPath:"#/properties/frame/allOf/1/properties/sampleRateHz/const",keyword:"const",params:{allowedValue: 24000},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err21];
+}
+else {
+vErrors.push(err21);
+}
+errors++;
+}
+}
+if(data5.sampleCountSamples !== undefined){
+let data8 = data5.sampleCountSamples;
+if(!(((typeof data8 == "number") && (!(data8 % 1) && !isNaN(data8))) && (isFinite(data8)))){
+const err22 = {instancePath:instancePath+"/frame/sampleCountSamples",schemaPath:"#/properties/frame/allOf/1/properties/sampleCountSamples/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err22];
+}
+else {
+vErrors.push(err22);
+}
+errors++;
+}
+if((typeof data8 == "number") && (isFinite(data8))){
+if(data8 > 480000 || isNaN(data8)){
+const err23 = {instancePath:instancePath+"/frame/sampleCountSamples",schemaPath:"#/properties/frame/allOf/1/properties/sampleCountSamples/maximum",keyword:"maximum",params:{comparison: "<=", limit: 480000},message:"must be <= 480000"};
+if(vErrors === null){
+vErrors = [err23];
+}
+else {
+vErrors.push(err23);
+}
+errors++;
+}
+if(data8 < 1 || isNaN(data8)){
+const err24 = {instancePath:instancePath+"/frame/sampleCountSamples",schemaPath:"#/properties/frame/allOf/1/properties/sampleCountSamples/minimum",keyword:"minimum",params:{comparison: ">=", limit: 1},message:"must be >= 1"};
+if(vErrors === null){
+vErrors = [err24];
+}
+else {
+vErrors.push(err24);
+}
+errors++;
+}
+}
+}
+if(data5.channelCount !== undefined){
+if(1 !== data5.channelCount){
+const err25 = {instancePath:instancePath+"/frame/channelCount",schemaPath:"#/properties/frame/allOf/1/properties/channelCount/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err25];
+}
+else {
+vErrors.push(err25);
+}
+errors++;
+}
+}
+if(data5.endOfSegment !== undefined){
+if(true !== data5.endOfSegment){
+const err26 = {instancePath:instancePath+"/frame/endOfSegment",schemaPath:"#/properties/frame/allOf/1/properties/endOfSegment/const",keyword:"const",params:{allowedValue: true},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err26];
+}
+else {
+vErrors.push(err26);
+}
+errors++;
+}
+}
+}
+else {
+const err27 = {instancePath:instancePath+"/frame",schemaPath:"#/properties/frame/allOf/1/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err27];
+}
+else {
+vErrors.push(err27);
+}
+errors++;
+}
+}
+if(data.sampleFormat !== undefined){
+if("float32-le" !== data.sampleFormat){
+const err28 = {instancePath:instancePath+"/sampleFormat",schemaPath:"#/properties/sampleFormat/const",keyword:"const",params:{allowedValue: "float32-le"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err28];
+}
+else {
+vErrors.push(err28);
+}
+errors++;
+}
+}
+if(data.payloadBytes !== undefined){
+let data12 = data.payloadBytes;
+if(!(((typeof data12 == "number") && (!(data12 % 1) && !isNaN(data12))) && (isFinite(data12)))){
+const err29 = {instancePath:instancePath+"/payloadBytes",schemaPath:"#/properties/payloadBytes/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err29];
+}
+else {
+vErrors.push(err29);
+}
+errors++;
+}
+if((typeof data12 == "number") && (isFinite(data12))){
+if(data12 > 1920000 || isNaN(data12)){
+const err30 = {instancePath:instancePath+"/payloadBytes",schemaPath:"#/properties/payloadBytes/maximum",keyword:"maximum",params:{comparison: "<=", limit: 1920000},message:"must be <= 1920000"};
+if(vErrors === null){
+vErrors = [err30];
+}
+else {
+vErrors.push(err30);
+}
+errors++;
+}
+if(data12 < 4 || isNaN(data12)){
+const err31 = {instancePath:instancePath+"/payloadBytes",schemaPath:"#/properties/payloadBytes/minimum",keyword:"minimum",params:{comparison: ">=", limit: 4},message:"must be >= 4"};
+if(vErrors === null){
+vErrors = [err31];
+}
+else {
+vErrors.push(err31);
+}
+errors++;
+}
+let res0;
+if((4 === 0 || (res0 = data12/4, res0 !== parseInt(res0)))){
+const err32 = {instancePath:instancePath+"/payloadBytes",schemaPath:"#/properties/payloadBytes/multipleOf",keyword:"multipleOf",params:{multipleOf: 4},message:"must be multiple of 4"};
+if(vErrors === null){
+vErrors = [err32];
+}
+else {
+vErrors.push(err32);
+}
+errors++;
+}
+}
+}
+}
+else {
+const err33 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err33];
+}
+else {
+vErrors.push(err33);
+}
+errors++;
+}
+validate95.errors = vErrors;
+return errors === 0;
+}
+validate95.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+const schema174 = {"title":"TtsCompletedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"completed"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}};
+
+function validate99(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate99.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.schemaVersion === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "schemaVersion"},message:"must have required property '"+"schemaVersion"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.protocolVersion === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "protocolVersion"},message:"must have required property '"+"protocolVersion"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.kind === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "kind"},message:"must have required property '"+"kind"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.serviceInstanceId === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "serviceInstanceId"},message:"must have required property '"+"serviceInstanceId"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+if(data.workIdentity === undefined){
+const err4 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "workIdentity"},message:"must have required property '"+"workIdentity"+"'"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+for(const key0 in data){
+if(!(((((key0 === "schemaVersion") || (key0 === "protocolVersion")) || (key0 === "kind")) || (key0 === "serviceInstanceId")) || (key0 === "workIdentity"))){
+const err5 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+}
+if(data.schemaVersion !== undefined){
+if(!(validate61(data.schemaVersion, {instancePath:instancePath+"/schemaVersion",parentData:data,parentDataProperty:"schemaVersion",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate61.errors : vErrors.concat(validate61.errors);
+errors = vErrors.length;
+}
+}
+if(data.protocolVersion !== undefined){
+let data1 = data.protocolVersion;
+if(!(((typeof data1 == "number") && (!(data1 % 1) && !isNaN(data1))) && (isFinite(data1)))){
+const err6 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+if(1 !== data1){
+const err7 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+}
+if(data.kind !== undefined){
+if("completed" !== data.kind){
+const err8 = {instancePath:instancePath+"/kind",schemaPath:"#/properties/kind/const",keyword:"const",params:{allowedValue: "completed"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+}
+if(data.serviceInstanceId !== undefined){
+let data3 = data.serviceInstanceId;
+if(typeof data3 === "string"){
+if(func2(data3) > 128){
+const err9 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+if(func2(data3) < 1){
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+if(!pattern4.test(data3)){
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err11];
+}
+else {
+vErrors.push(err11);
+}
+errors++;
+}
+}
+else {
+const err12 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err12];
+}
+else {
+vErrors.push(err12);
+}
+errors++;
+}
+}
+if(data.workIdentity !== undefined){
+if(!(validate76(data.workIdentity, {instancePath:instancePath+"/workIdentity",parentData:data,parentDataProperty:"workIdentity",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate76.errors : vErrors.concat(validate76.errors);
+errors = vErrors.length;
+}
+}
+}
+else {
+const err13 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err13];
+}
+else {
+vErrors.push(err13);
+}
+errors++;
+}
+validate99.errors = vErrors;
+return errors === 0;
+}
+validate99.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+const schema177 = {"title":"TtsCancelledV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","workIdentity"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"cancelled"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}};
+
+function validate103(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate103.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.schemaVersion === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "schemaVersion"},message:"must have required property '"+"schemaVersion"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.protocolVersion === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "protocolVersion"},message:"must have required property '"+"protocolVersion"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.kind === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "kind"},message:"must have required property '"+"kind"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.serviceInstanceId === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "serviceInstanceId"},message:"must have required property '"+"serviceInstanceId"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+if(data.workIdentity === undefined){
+const err4 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "workIdentity"},message:"must have required property '"+"workIdentity"+"'"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+for(const key0 in data){
+if(!(((((key0 === "schemaVersion") || (key0 === "protocolVersion")) || (key0 === "kind")) || (key0 === "serviceInstanceId")) || (key0 === "workIdentity"))){
+const err5 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+}
+if(data.schemaVersion !== undefined){
+if(!(validate61(data.schemaVersion, {instancePath:instancePath+"/schemaVersion",parentData:data,parentDataProperty:"schemaVersion",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate61.errors : vErrors.concat(validate61.errors);
+errors = vErrors.length;
+}
+}
+if(data.protocolVersion !== undefined){
+let data1 = data.protocolVersion;
+if(!(((typeof data1 == "number") && (!(data1 % 1) && !isNaN(data1))) && (isFinite(data1)))){
+const err6 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+if(1 !== data1){
+const err7 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+}
+if(data.kind !== undefined){
+if("cancelled" !== data.kind){
+const err8 = {instancePath:instancePath+"/kind",schemaPath:"#/properties/kind/const",keyword:"const",params:{allowedValue: "cancelled"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+}
+if(data.serviceInstanceId !== undefined){
+let data3 = data.serviceInstanceId;
+if(typeof data3 === "string"){
+if(func2(data3) > 128){
+const err9 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+if(func2(data3) < 1){
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+if(!pattern4.test(data3)){
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err11];
+}
+else {
+vErrors.push(err11);
+}
+errors++;
+}
+}
+else {
+const err12 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err12];
+}
+else {
+vErrors.push(err12);
+}
+errors++;
+}
+}
+if(data.workIdentity !== undefined){
+if(!(validate76(data.workIdentity, {instancePath:instancePath+"/workIdentity",parentData:data,parentDataProperty:"workIdentity",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate76.errors : vErrors.concat(validate76.errors);
+errors = vErrors.length;
+}
+}
+}
+else {
+const err13 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err13];
+}
+else {
+vErrors.push(err13);
+}
+errors++;
+}
+validate103.errors = vErrors;
+return errors === 0;
+}
+validate103.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+const schema180 = {"title":"TtsErrorV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","serviceInstanceId","reason","error"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"error"},"serviceInstanceId":{"$ref":"#/$defs/serviceInstanceId"},"reason":{"$ref":"#/$defs/protocolReason"},"error":{"$ref":"urn:voxleaf:schema:operational-error:v1"},"workIdentity":{"$ref":"#/$defs/workIdentity"}}};
+const schema183 = {"type":"string","enum":["malformed-frame","unsupported-protocol-version","unknown-record-kind","invalid-flags","empty-payload","over-limit","invalid-utf8","malformed-json","unknown-message-kind","unsupported-schema-version","invalid-message","invalid-state","identity-mismatch","duplicate-identity","sequence-gap","format-mismatch","busy","engine-failure","engine-timeout","operation-cancelled","resource-exhausted"]};
+
+function validate107(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate107.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.schemaVersion === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "schemaVersion"},message:"must have required property '"+"schemaVersion"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.protocolVersion === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "protocolVersion"},message:"must have required property '"+"protocolVersion"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.kind === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "kind"},message:"must have required property '"+"kind"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.serviceInstanceId === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "serviceInstanceId"},message:"must have required property '"+"serviceInstanceId"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+if(data.reason === undefined){
+const err4 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "reason"},message:"must have required property '"+"reason"+"'"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+if(data.error === undefined){
+const err5 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "error"},message:"must have required property '"+"error"+"'"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+for(const key0 in data){
+if(!(((((((key0 === "schemaVersion") || (key0 === "protocolVersion")) || (key0 === "kind")) || (key0 === "serviceInstanceId")) || (key0 === "reason")) || (key0 === "error")) || (key0 === "workIdentity"))){
+const err6 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+}
+if(data.schemaVersion !== undefined){
+if(!(validate61(data.schemaVersion, {instancePath:instancePath+"/schemaVersion",parentData:data,parentDataProperty:"schemaVersion",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate61.errors : vErrors.concat(validate61.errors);
+errors = vErrors.length;
+}
+}
+if(data.protocolVersion !== undefined){
+let data1 = data.protocolVersion;
+if(!(((typeof data1 == "number") && (!(data1 % 1) && !isNaN(data1))) && (isFinite(data1)))){
+const err7 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+if(1 !== data1){
+const err8 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+}
+if(data.kind !== undefined){
+if("error" !== data.kind){
+const err9 = {instancePath:instancePath+"/kind",schemaPath:"#/properties/kind/const",keyword:"const",params:{allowedValue: "error"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+}
+if(data.serviceInstanceId !== undefined){
+let data3 = data.serviceInstanceId;
+if(typeof data3 === "string"){
+if(func2(data3) > 128){
+const err10 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/maxLength",keyword:"maxLength",params:{limit: 128},message:"must NOT have more than 128 characters"};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+if(func2(data3) < 1){
+const err11 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/minLength",keyword:"minLength",params:{limit: 1},message:"must NOT have fewer than 1 characters"};
+if(vErrors === null){
+vErrors = [err11];
+}
+else {
+vErrors.push(err11);
+}
+errors++;
+}
+if(!pattern4.test(data3)){
+const err12 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/pattern",keyword:"pattern",params:{pattern: "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"},message:"must match pattern \""+"^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001F\\u007F]+$"+"\""};
+if(vErrors === null){
+vErrors = [err12];
+}
+else {
+vErrors.push(err12);
+}
+errors++;
+}
+}
+else {
+const err13 = {instancePath:instancePath+"/serviceInstanceId",schemaPath:"#/$defs/serviceInstanceId/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err13];
+}
+else {
+vErrors.push(err13);
+}
+errors++;
+}
+}
+if(data.reason !== undefined){
+let data4 = data.reason;
+if(typeof data4 !== "string"){
+const err14 = {instancePath:instancePath+"/reason",schemaPath:"#/$defs/protocolReason/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err14];
+}
+else {
+vErrors.push(err14);
+}
+errors++;
+}
+if(!(((((((((((((((((((((data4 === "malformed-frame") || (data4 === "unsupported-protocol-version")) || (data4 === "unknown-record-kind")) || (data4 === "invalid-flags")) || (data4 === "empty-payload")) || (data4 === "over-limit")) || (data4 === "invalid-utf8")) || (data4 === "malformed-json")) || (data4 === "unknown-message-kind")) || (data4 === "unsupported-schema-version")) || (data4 === "invalid-message")) || (data4 === "invalid-state")) || (data4 === "identity-mismatch")) || (data4 === "duplicate-identity")) || (data4 === "sequence-gap")) || (data4 === "format-mismatch")) || (data4 === "busy")) || (data4 === "engine-failure")) || (data4 === "engine-timeout")) || (data4 === "operation-cancelled")) || (data4 === "resource-exhausted"))){
+const err15 = {instancePath:instancePath+"/reason",schemaPath:"#/$defs/protocolReason/enum",keyword:"enum",params:{allowedValues: schema183.enum},message:"must be equal to one of the allowed values"};
+if(vErrors === null){
+vErrors = [err15];
+}
+else {
+vErrors.push(err15);
+}
+errors++;
+}
+}
+if(data.error !== undefined){
+if(!(validate49(data.error, {instancePath:instancePath+"/error",parentData:data,parentDataProperty:"error",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate49.errors : vErrors.concat(validate49.errors);
+errors = vErrors.length;
+}
+}
+if(data.workIdentity !== undefined){
+if(!(validate76(data.workIdentity, {instancePath:instancePath+"/workIdentity",parentData:data,parentDataProperty:"workIdentity",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate76.errors : vErrors.concat(validate76.errors);
+errors = vErrors.length;
+}
+}
+}
+else {
+const err16 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err16];
+}
+else {
+vErrors.push(err16);
+}
+errors++;
+}
+validate107.errors = vErrors;
+return errors === 0;
+}
+validate107.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+const schema184 = {"title":"TtsProtocolRejectedV1Wire","type":"object","additionalProperties":false,"required":["schemaVersion","protocolVersion","kind","reason"],"properties":{"schemaVersion":{"$ref":"#/$defs/schemaVersion"},"protocolVersion":{"$ref":"#/$defs/protocolVersion"},"kind":{"const":"protocolRejected"},"reason":{"$ref":"#/$defs/protocolReason"}}};
+
+function validate112(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate112.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+if(data && typeof data == "object" && !Array.isArray(data)){
+if(data.schemaVersion === undefined){
+const err0 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "schemaVersion"},message:"must have required property '"+"schemaVersion"+"'"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+if(data.protocolVersion === undefined){
+const err1 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "protocolVersion"},message:"must have required property '"+"protocolVersion"+"'"};
+if(vErrors === null){
+vErrors = [err1];
+}
+else {
+vErrors.push(err1);
+}
+errors++;
+}
+if(data.kind === undefined){
+const err2 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "kind"},message:"must have required property '"+"kind"+"'"};
+if(vErrors === null){
+vErrors = [err2];
+}
+else {
+vErrors.push(err2);
+}
+errors++;
+}
+if(data.reason === undefined){
+const err3 = {instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: "reason"},message:"must have required property '"+"reason"+"'"};
+if(vErrors === null){
+vErrors = [err3];
+}
+else {
+vErrors.push(err3);
+}
+errors++;
+}
+for(const key0 in data){
+if(!((((key0 === "schemaVersion") || (key0 === "protocolVersion")) || (key0 === "kind")) || (key0 === "reason"))){
+const err4 = {instancePath,schemaPath:"#/additionalProperties",keyword:"additionalProperties",params:{additionalProperty: key0},message:"must NOT have additional properties"};
+if(vErrors === null){
+vErrors = [err4];
+}
+else {
+vErrors.push(err4);
+}
+errors++;
+}
+}
+if(data.schemaVersion !== undefined){
+if(!(validate61(data.schemaVersion, {instancePath:instancePath+"/schemaVersion",parentData:data,parentDataProperty:"schemaVersion",rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate61.errors : vErrors.concat(validate61.errors);
+errors = vErrors.length;
+}
+}
+if(data.protocolVersion !== undefined){
+let data1 = data.protocolVersion;
+if(!(((typeof data1 == "number") && (!(data1 % 1) && !isNaN(data1))) && (isFinite(data1)))){
+const err5 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/type",keyword:"type",params:{type: "integer"},message:"must be integer"};
+if(vErrors === null){
+vErrors = [err5];
+}
+else {
+vErrors.push(err5);
+}
+errors++;
+}
+if(1 !== data1){
+const err6 = {instancePath:instancePath+"/protocolVersion",schemaPath:"#/$defs/protocolVersion/const",keyword:"const",params:{allowedValue: 1},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err6];
+}
+else {
+vErrors.push(err6);
+}
+errors++;
+}
+}
+if(data.kind !== undefined){
+if("protocolRejected" !== data.kind){
+const err7 = {instancePath:instancePath+"/kind",schemaPath:"#/properties/kind/const",keyword:"const",params:{allowedValue: "protocolRejected"},message:"must be equal to constant"};
+if(vErrors === null){
+vErrors = [err7];
+}
+else {
+vErrors.push(err7);
+}
+errors++;
+}
+}
+if(data.reason !== undefined){
+let data3 = data.reason;
+if(typeof data3 !== "string"){
+const err8 = {instancePath:instancePath+"/reason",schemaPath:"#/$defs/protocolReason/type",keyword:"type",params:{type: "string"},message:"must be string"};
+if(vErrors === null){
+vErrors = [err8];
+}
+else {
+vErrors.push(err8);
+}
+errors++;
+}
+if(!(((((((((((((((((((((data3 === "malformed-frame") || (data3 === "unsupported-protocol-version")) || (data3 === "unknown-record-kind")) || (data3 === "invalid-flags")) || (data3 === "empty-payload")) || (data3 === "over-limit")) || (data3 === "invalid-utf8")) || (data3 === "malformed-json")) || (data3 === "unknown-message-kind")) || (data3 === "unsupported-schema-version")) || (data3 === "invalid-message")) || (data3 === "invalid-state")) || (data3 === "identity-mismatch")) || (data3 === "duplicate-identity")) || (data3 === "sequence-gap")) || (data3 === "format-mismatch")) || (data3 === "busy")) || (data3 === "engine-failure")) || (data3 === "engine-timeout")) || (data3 === "operation-cancelled")) || (data3 === "resource-exhausted"))){
+const err9 = {instancePath:instancePath+"/reason",schemaPath:"#/$defs/protocolReason/enum",keyword:"enum",params:{allowedValues: schema183.enum},message:"must be equal to one of the allowed values"};
+if(vErrors === null){
+vErrors = [err9];
+}
+else {
+vErrors.push(err9);
+}
+errors++;
+}
+}
+}
+else {
+const err10 = {instancePath,schemaPath:"#/type",keyword:"type",params:{type: "object"},message:"must be object"};
+if(vErrors === null){
+vErrors = [err10];
+}
+else {
+vErrors.push(err10);
+}
+errors++;
+}
+validate112.errors = vErrors;
+return errors === 0;
+}
+validate112.evaluated = {"props":true,"dynamicProps":false,"dynamicItems":false};
+
+
+function validate59(data, {instancePath="", parentData, parentDataProperty, rootData=data, dynamicAnchors={}}={}){
+/*# sourceURL="urn:voxleaf:schema:tts-protocol-control:v1" */;
+let vErrors = null;
+let errors = 0;
+const evaluated0 = validate59.evaluated;
+if(evaluated0.dynamicProps){
+evaluated0.props = undefined;
+}
+if(evaluated0.dynamicItems){
+evaluated0.items = undefined;
+}
+const _errs0 = errors;
+let valid0 = false;
+let passing0 = null;
+const _errs1 = errors;
+if(!(validate60(data, {instancePath,parentData,parentDataProperty,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate60.errors : vErrors.concat(validate60.errors);
+errors = vErrors.length;
+}
+var _valid0 = _errs1 === errors;
+if(_valid0){
+valid0 = true;
+passing0 = 0;
+var props0 = true;
+}
+const _errs2 = errors;
+if(!(validate64(data, {instancePath,parentData,parentDataProperty,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate64.errors : vErrors.concat(validate64.errors);
+errors = vErrors.length;
+}
+var _valid0 = _errs2 === errors;
+if(_valid0 && valid0){
+valid0 = false;
+passing0 = [passing0, 1];
+}
+else {
+if(_valid0){
+valid0 = true;
+passing0 = 1;
+if(props0 !== true){
+props0 = true;
+}
+}
+const _errs3 = errors;
+if(!(validate67(data, {instancePath,parentData,parentDataProperty,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate67.errors : vErrors.concat(validate67.errors);
+errors = vErrors.length;
+}
+var _valid0 = _errs3 === errors;
+if(_valid0 && valid0){
+valid0 = false;
+passing0 = [passing0, 2];
+}
+else {
+if(_valid0){
+valid0 = true;
+passing0 = 2;
+if(props0 !== true){
+props0 = true;
+}
+}
+const _errs4 = errors;
+if(!(validate70(data, {instancePath,parentData,parentDataProperty,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate70.errors : vErrors.concat(validate70.errors);
+errors = vErrors.length;
+}
+var _valid0 = _errs4 === errors;
+if(_valid0 && valid0){
+valid0 = false;
+passing0 = [passing0, 3];
+}
+else {
+if(_valid0){
+valid0 = true;
+passing0 = 3;
+if(props0 !== true){
+props0 = true;
+}
+}
+const _errs5 = errors;
+if(!(validate74(data, {instancePath,parentData,parentDataProperty,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate74.errors : vErrors.concat(validate74.errors);
+errors = vErrors.length;
+}
+var _valid0 = _errs5 === errors;
+if(_valid0 && valid0){
+valid0 = false;
+passing0 = [passing0, 4];
+}
+else {
+if(_valid0){
+valid0 = true;
+passing0 = 4;
+if(props0 !== true){
+props0 = true;
+}
+}
+const _errs6 = errors;
+if(!(validate79(data, {instancePath,parentData,parentDataProperty,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate79.errors : vErrors.concat(validate79.errors);
+errors = vErrors.length;
+}
+var _valid0 = _errs6 === errors;
+if(_valid0 && valid0){
+valid0 = false;
+passing0 = [passing0, 5];
+}
+else {
+if(_valid0){
+valid0 = true;
+passing0 = 5;
+if(props0 !== true){
+props0 = true;
+}
+}
+const _errs7 = errors;
+if(!(validate82(data, {instancePath,parentData,parentDataProperty,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate82.errors : vErrors.concat(validate82.errors);
+errors = vErrors.length;
+}
+var _valid0 = _errs7 === errors;
+if(_valid0 && valid0){
+valid0 = false;
+passing0 = [passing0, 6];
+}
+else {
+if(_valid0){
+valid0 = true;
+passing0 = 6;
+if(props0 !== true){
+props0 = true;
+}
+}
+const _errs8 = errors;
+if(!(validate85(data, {instancePath,parentData,parentDataProperty,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate85.errors : vErrors.concat(validate85.errors);
+errors = vErrors.length;
+}
+var _valid0 = _errs8 === errors;
+if(_valid0 && valid0){
+valid0 = false;
+passing0 = [passing0, 7];
+}
+else {
+if(_valid0){
+valid0 = true;
+passing0 = 7;
+if(props0 !== true){
+props0 = true;
+}
+}
+const _errs9 = errors;
+if(!(validate88(data, {instancePath,parentData,parentDataProperty,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate88.errors : vErrors.concat(validate88.errors);
+errors = vErrors.length;
+}
+var _valid0 = _errs9 === errors;
+if(_valid0 && valid0){
+valid0 = false;
+passing0 = [passing0, 8];
+}
+else {
+if(_valid0){
+valid0 = true;
+passing0 = 8;
+if(props0 !== true){
+props0 = true;
+}
+}
+const _errs10 = errors;
+if(!(validate91(data, {instancePath,parentData,parentDataProperty,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate91.errors : vErrors.concat(validate91.errors);
+errors = vErrors.length;
+}
+var _valid0 = _errs10 === errors;
+if(_valid0 && valid0){
+valid0 = false;
+passing0 = [passing0, 9];
+}
+else {
+if(_valid0){
+valid0 = true;
+passing0 = 9;
+if(props0 !== true){
+props0 = true;
+}
+}
+const _errs11 = errors;
+if(!(validate95(data, {instancePath,parentData,parentDataProperty,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate95.errors : vErrors.concat(validate95.errors);
+errors = vErrors.length;
+}
+var _valid0 = _errs11 === errors;
+if(_valid0 && valid0){
+valid0 = false;
+passing0 = [passing0, 10];
+}
+else {
+if(_valid0){
+valid0 = true;
+passing0 = 10;
+if(props0 !== true){
+props0 = true;
+}
+}
+const _errs12 = errors;
+if(!(validate99(data, {instancePath,parentData,parentDataProperty,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate99.errors : vErrors.concat(validate99.errors);
+errors = vErrors.length;
+}
+var _valid0 = _errs12 === errors;
+if(_valid0 && valid0){
+valid0 = false;
+passing0 = [passing0, 11];
+}
+else {
+if(_valid0){
+valid0 = true;
+passing0 = 11;
+if(props0 !== true){
+props0 = true;
+}
+}
+const _errs13 = errors;
+if(!(validate103(data, {instancePath,parentData,parentDataProperty,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate103.errors : vErrors.concat(validate103.errors);
+errors = vErrors.length;
+}
+var _valid0 = _errs13 === errors;
+if(_valid0 && valid0){
+valid0 = false;
+passing0 = [passing0, 12];
+}
+else {
+if(_valid0){
+valid0 = true;
+passing0 = 12;
+if(props0 !== true){
+props0 = true;
+}
+}
+const _errs14 = errors;
+if(!(validate107(data, {instancePath,parentData,parentDataProperty,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate107.errors : vErrors.concat(validate107.errors);
+errors = vErrors.length;
+}
+var _valid0 = _errs14 === errors;
+if(_valid0 && valid0){
+valid0 = false;
+passing0 = [passing0, 13];
+}
+else {
+if(_valid0){
+valid0 = true;
+passing0 = 13;
+if(props0 !== true){
+props0 = true;
+}
+}
+const _errs15 = errors;
+if(!(validate112(data, {instancePath,parentData,parentDataProperty,rootData,dynamicAnchors}))){
+vErrors = vErrors === null ? validate112.errors : vErrors.concat(validate112.errors);
+errors = vErrors.length;
+}
+var _valid0 = _errs15 === errors;
+if(_valid0 && valid0){
+valid0 = false;
+passing0 = [passing0, 14];
+}
+else {
+if(_valid0){
+valid0 = true;
+passing0 = 14;
+if(props0 !== true){
+props0 = true;
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+if(!valid0){
+const err0 = {instancePath,schemaPath:"#/oneOf",keyword:"oneOf",params:{passingSchemas: passing0},message:"must match exactly one schema in oneOf"};
+if(vErrors === null){
+vErrors = [err0];
+}
+else {
+vErrors.push(err0);
+}
+errors++;
+}
+else {
+errors = _errs0;
+if(vErrors !== null){
+if(_errs0){
+vErrors.length = _errs0;
+}
+else {
+vErrors = null;
+}
+}
+}
+validate59.errors = vErrors;
+evaluated0.props = props0;
+return errors === 0;
+}
+validate59.evaluated = {"dynamicProps":true,"dynamicItems":false};

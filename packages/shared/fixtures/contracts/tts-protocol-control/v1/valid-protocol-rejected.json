@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "kind": "protocolRejected",
+  "reason": "unsupported-protocol-version"
+}

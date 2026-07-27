@@ -16,6 +16,7 @@ import {
   validatePersistedReadingStateV1Wire,
   validateReadingLocatorV1Wire,
   validateReadingSessionV1Wire,
+  validateTtsProtocolControlV1Wire,
 } from "../generated/validators/index.js";
 
 const CONTRACT_ROOT = resolve(
@@ -39,6 +40,7 @@ const SCHEMA_FILES = [
   "capability-report/v1.schema.json",
   "audio-frame/v1.schema.json",
   "buffer-status/v1.schema.json",
+  "tts-protocol-control/v1.schema.json",
 ] as const;
 
 type FixtureExpectation = "valid" | "invalid";
@@ -71,6 +73,8 @@ const STANDALONE_VALIDATORS_BY_SCHEMA_ID: Readonly<
   "urn:voxleaf:schema:persisted-reading-state:v1":
     validatePersistedReadingStateV1Wire,
   "urn:voxleaf:schema:reading-session:v1": validateReadingSessionV1Wire,
+  "urn:voxleaf:schema:tts-protocol-control:v1":
+    validateTtsProtocolControlV1Wire,
 });
 
 function readRecord(value: unknown): Record<string, unknown> {
@@ -186,7 +190,10 @@ describe("canonical serialized contract fixtures", () => {
       manifest.cases
         .filter((fixtureCase) => fixtureCase.containsSensitiveNarrationText)
         .map((fixtureCase) => fixtureCase.id),
-    ).toEqual(["narration-segment-v1-sensitive-valid"]);
+    ).toEqual([
+      "narration-segment-v1-sensitive-valid",
+      "tts-protocol-control-v1-synthesize",
+    ]);
     expect(
       new Set(manifest.cases.map((fixtureCase) => fixtureCase.schemaId)),
     ).toEqual(
@@ -201,6 +208,7 @@ describe("canonical serialized contract fixtures", () => {
         "urn:voxleaf:schema:capability-report:v1",
         "urn:voxleaf:schema:audio-frame:v1",
         "urn:voxleaf:schema:buffer-status:v1",
+        "urn:voxleaf:schema:tts-protocol-control:v1",
       ]),
     );
   });

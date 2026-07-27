@@ -27,6 +27,7 @@ SCHEMA_FILES: Final = (
     "capability-report/v1.schema.json",
     "audio-frame/v1.schema.json",
     "buffer-status/v1.schema.json",
+    "tts-protocol-control/v1.schema.json",
 )
 REQUIRED_SCHEMA_IDS: Final = frozenset(
     {
@@ -40,6 +41,7 @@ REQUIRED_SCHEMA_IDS: Final = frozenset(
         "urn:voxleaf:schema:capability-report:v1",
         "urn:voxleaf:schema:audio-frame:v1",
         "urn:voxleaf:schema:buffer-status:v1",
+        "urn:voxleaf:schema:tts-protocol-control:v1",
     }
 )
 
@@ -138,5 +140,8 @@ def test_fixture_manifest_marks_sensitive_narration_and_required_contract_famili
         fixture_case.case_id
         for fixture_case in fixture_cases
         if fixture_case.contains_sensitive_narration_text
-    ] == ["narration-segment-v1-sensitive-valid"]
+    ] == [
+        "narration-segment-v1-sensitive-valid",
+        "tts-protocol-control-v1-synthesize",
+    ]
     assert {fixture_case.schema_id for fixture_case in fixture_cases} == REQUIRED_SCHEMA_IDS

@@ -33,6 +33,7 @@ describe("@voxleaf/shared", () => {
     expect(typeof sharedPackage.decodeOperationalErrorV1).toBe("function");
     expect(typeof sharedPackage.decodePersistedReadingStateV1).toBe("function");
     expect(typeof sharedPackage.decodeReadingSessionV1).toBe("function");
+    expect(typeof sharedPackage.decodeTtsProtocolControlV1).toBe("function");
     expect(typeof sharedPackage.isGenerationWorkEligible).toBe("function");
     expect(Object.hasOwn(sharedPackage, "FIXED_TEST_IDENTIFIERS")).toBe(false);
   });

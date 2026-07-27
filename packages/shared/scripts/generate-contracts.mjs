@@ -92,6 +92,12 @@ const validatorDefinitions = Object.freeze([
     typeName: "ReadingSessionV1Wire",
     typeModule: "reading-session-v1.js",
   },
+  {
+    exportName: "validateTtsProtocolControlV1Wire",
+    schemaId: "urn:voxleaf:schema:tts-protocol-control:v1",
+    typeName: "TtsProtocolControlV1Wire",
+    typeModule: "tts-protocol-control-v1.js",
+  },
 ]);
 
 const standaloneRuntimeHelpers = Object.freeze([

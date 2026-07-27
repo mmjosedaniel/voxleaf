@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "kind": "audioMetadata",
+  "serviceInstanceId": "service:synthetic-1",
+  "requestId": "request:synthetic-1",
+  "frame": {
+    "schemaVersion": 1,
+    "frameId": "frame:synthetic-1",
+    "sessionId": "session:synthetic-1",
+    "generationId": "generation:synthetic-1",
+    "segmentId": "segment:synthetic-1",
+    "sequence": 0,
+    "sampleRateHz": 24000,
+    "sampleCountSamples": 4800,
+    "channelCount": 1,
+    "endOfSegment": true
+  },
+  "sampleFormat": "float32-le",
+  "payloadBytes": 19200
+}

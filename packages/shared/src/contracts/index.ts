@@ -43,6 +43,10 @@ export {
   getGenerationWorkIdentity,
   isGenerationWorkEligible,
 } from "./reading-session.js";
+export {
+  TtsProtocolControlContractError,
+  decodeTtsProtocolControlV1,
+} from "./tts-protocol-control.js";
 
 export type {
   AudioFrameContractErrorCode,
@@ -113,3 +117,10 @@ export type {
   ReadingSessionContractErrorCode,
   ReadingSessionV1,
 } from "./reading-session.js";
+
+export type {
+  TtsProtocolControlContractErrorCode,
+  TtsProtocolControlV1,
+  TtsProtocolReasonV1,
+  TtsServiceStateV1,
+} from "./tts-protocol-control.js";
