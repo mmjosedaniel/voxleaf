@@ -69,13 +69,17 @@ test("proves segment decoration and focus-safe following without DOM or selectio
         ) {
           return { supported: false as const };
         }
-        const styleSheet = Array.from(document.styleSheets).find((sheet) => {
-          try {
-            return sheet.cssRules !== undefined;
-          } catch {
-            return false;
-          }
-        });
+        const styleRegistered = Array.from(document.styleSheets).some(
+          (sheet) => {
+            try {
+              return Array.from(sheet.cssRules).some((rule) =>
+                rule.cssText.includes(`::highlight(${highlightName})`),
+              );
+            } catch {
+              return false;
+            }
+          },
+        );
         const leaves = Array.from(
           document.querySelectorAll<HTMLElement>(
             ".semantic-document h1, .semantic-document h2, .semantic-document h3, .semantic-document h4, .semantic-document h5, .semantic-document h6, .semantic-document p",
@@ -106,7 +110,7 @@ test("proves segment decoration and focus-safe following without DOM or selectio
         }
 
         const selection = document.getSelection();
-        if (selection === null || styleSheet === undefined) {
+        if (selection === null) {
           return { supported: true as const, fixtureReady: false as const };
         }
         const selected = document.createRange();
@@ -123,10 +127,6 @@ test("proves segment decoration and focus-safe following without DOM or selectio
         range.setStart(targetText, 0);
         range.setEnd(targetText, targetText.data.length);
         const highlight = new Highlight(range);
-        const ruleIndex = styleSheet.insertRule(
-          `::highlight(${highlightName}) { background-color: rgb(255 214 64); color: rgb(20 20 20); }`,
-          styleSheet.cssRules.length,
-        );
         highlights.set(highlightName, highlight);
 
         window.scrollTo(0, document.documentElement.scrollHeight);
@@ -148,10 +148,7 @@ test("proves segment decoration and focus-safe following without DOM or selectio
           supported: true as const,
           fixtureReady: true as const,
           registered: highlights.has(highlightName) && highlight.has(range),
-          styleRegistered:
-            styleSheet.cssRules[ruleIndex]?.cssText.includes(
-              `::highlight(${highlightName})`,
-            ) === true,
+          styleRegistered,
           rangeConnected: target.isConnected && !range.collapsed,
           followed:
             outsideBefore &&
@@ -170,7 +167,6 @@ test("proves segment decoration and focus-safe following without DOM or selectio
           ),
         };
         highlights.delete(highlightName);
-        styleSheet.deleteRule(ruleIndex);
         selection.removeAllRanges();
         return result;
       },

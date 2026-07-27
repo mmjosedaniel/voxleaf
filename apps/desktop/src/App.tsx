@@ -39,6 +39,7 @@ import {
   runRasterImageSafetyProbe,
   type RasterImageProbeResult,
 } from "./reader/raster-image-probe";
+import type { ReaderNarrationSource } from "./reader/segment-highlight-controller";
 import { ProductNarrationControls } from "./tts/ProductNarrationControls";
 import { ProductNarrationCoordinator } from "./tts/product-narration-coordinator";
 
@@ -56,6 +57,7 @@ export interface ReadyPublicationContentProps {
   readonly onInitialRestorationSettled?: (
     settlement: ReaderInitialRestorationSettlement,
   ) => void;
+  readonly narrationSource?: ReaderNarrationSource;
 }
 
 export interface AppProps {
@@ -619,6 +621,9 @@ export function App({
                     onInitialRestorationSettled={
                       handleInitialRestorationSettled
                     }
+                    {...(narrationCoordinator === undefined
+                      ? {}
+                      : { narrationSource: narrationCoordinator })}
                   />
                 </>
               )}

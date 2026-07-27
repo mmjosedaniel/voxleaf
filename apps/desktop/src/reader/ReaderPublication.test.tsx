@@ -11,6 +11,7 @@ import type {
 } from "@voxleaf/epub";
 import {
   createIndex,
+  decodeLocatorRangeV1,
   decodeReadingLocatorV1,
   type ReadingLocatorV1,
 } from "@voxleaf/shared";
@@ -32,7 +33,16 @@ import type {
 import type { ReaderReflowEnvironment } from "./reader-reflow-restoration";
 import { ReaderPublicationContent } from "./ReaderPublication";
 import { ReaderNavigationCoordinator } from "./reader-navigation";
+import type {
+  ReaderNarrationSource,
+  SegmentHighlightEnvironment,
+  SegmentHighlightRect,
+} from "./segment-highlight-controller";
 import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
+import type {
+  ProductNarrationAudibleProgressObservation,
+  ProductNarrationSnapshot,
+} from "../tts/product-narration-coordinator";
 
 const OPENING_DOCUMENT_ID = "document:opening" as ContentDocumentId;
 const CONTINUATION_DOCUMENT_ID = "document:continuation" as ContentDocumentId;
@@ -126,6 +136,145 @@ class ManualReaderReflowEnvironment implements ReaderReflowEnvironment {
   flushAll(): void {
     while (this.#scheduled.length > 0) {
       this.#scheduled.shift()?.();
+    }
+  }
+}
+
+class ManualSegmentHighlightEnvironment implements SegmentHighlightEnvironment {
+  highlighted: Range | undefined;
+  range: SegmentHighlightRect | undefined = { top: 24, bottom: 40 };
+  readonly scrolls: number[] = [];
+  readonly scheduled: Array<() => void> = [];
+
+  replaceHighlight(_name: string, range: Range): boolean {
+    this.highlighted = range;
+    return true;
+  }
+
+  clearHighlight(): void {
+    this.highlighted = undefined;
+  }
+
+  viewportRect(): SegmentHighlightRect {
+    return { top: 0, bottom: 100 };
+  }
+
+  rangeRect(): SegmentHighlightRect | undefined {
+    return this.range;
+  }
+
+  scrollBy(_root: HTMLElement, top: number): void {
+    this.scrolls.push(top);
+  }
+
+  schedule(_root: HTMLElement, callback: () => void): () => void {
+    this.scheduled.push(callback);
+    return () => {
+      const index = this.scheduled.indexOf(callback);
+      if (index >= 0) {
+        this.scheduled.splice(index, 1);
+      }
+    };
+  }
+
+  flushAll(): void {
+    while (this.scheduled.length > 0) {
+      this.scheduled.shift()?.();
+    }
+  }
+}
+
+function narrationSnapshot(
+  phase: "playing" | "stopped" | undefined,
+): ProductNarrationSnapshot {
+  return Object.freeze({
+    availability: "available",
+    selection: Object.freeze({ kind: "quick" }),
+    state:
+      phase === undefined
+        ? undefined
+        : Object.freeze({
+            mode: Object.freeze({ kind: "quick" }),
+            phase,
+            readyMs: phase === "playing" ? 15_000 : 0,
+            targetMs: 15_000,
+            progressValueMs: phase === "playing" ? 15_000 : 0,
+            estimatedWaitMs: undefined,
+            lowBuffer: false,
+            allRemainingAudioReady: false,
+            resourceCeilingReached: false,
+            pauseContinuesPreparation: false,
+            canPause: phase === "playing",
+            canResume: false,
+            canStop: phase === "playing",
+            volumePercent: 100,
+            playbackRate: 1,
+          }),
+    failure: undefined,
+    metrics: Object.freeze({
+      commandToAudibleMs: undefined,
+      bufferingMs: 0,
+      intentionalWaitMs: 0,
+      playbackMs: 0,
+      underrunCount: 0,
+      acceptedAudioUnitCount: 0,
+      acceptedAudioSampleFrames: 0,
+    }),
+    serviceState: phase === "playing" ? "ready" : "stopped",
+  });
+}
+
+class ManualReaderNarrationSource implements ReaderNarrationSource {
+  readonly #listeners = new Set<() => void>();
+  readonly #progressListeners = new Set<
+    (observation: ProductNarrationAudibleProgressObservation) => void
+  >();
+  #snapshot = narrationSnapshot(undefined);
+
+  subscribe(listener: () => void): () => void {
+    this.#listeners.add(listener);
+    return () => this.#listeners.delete(listener);
+  }
+
+  observe(): ProductNarrationSnapshot {
+    return this.#snapshot;
+  }
+
+  subscribeAudibleProgress(
+    listener: (observation: ProductNarrationAudibleProgressObservation) => void,
+  ): () => void {
+    this.#progressListeners.add(listener);
+    return () => this.#progressListeners.delete(listener);
+  }
+
+  start(
+    sourceRange: ProductNarrationAudibleProgressObservation["sourceRange"],
+    sequence: number,
+  ): void {
+    this.#snapshot = narrationSnapshot("playing");
+    for (const listener of this.#listeners) {
+      listener();
+    }
+    const observation = Object.freeze({
+      kind: "segment-started" as const,
+      observedAtMs: sequence * 250,
+      sessionId: "session:reader-highlight",
+      generationId: "generation:reader-highlight",
+      segmentId: `segment:reader-highlight-${String(sequence)}`,
+      sequence,
+      sourceRange,
+      playedSampleFrames: 0,
+      sampleCountSamples: 24_000,
+    });
+    for (const listener of this.#progressListeners) {
+      listener(observation);
+    }
+  }
+
+  stop(): void {
+    this.#snapshot = narrationSnapshot("stopped");
+    for (const listener of this.#listeners) {
+      listener();
     }
   }
 }
@@ -330,6 +479,19 @@ function createPublication(
     prepareNarration: vi.fn<OpenedPublication["prepareNarration"]>(),
     close: vi.fn(() => Promise.resolve()),
   };
+}
+
+function entireLocatedBlockRange(
+  locatedBlock: PublicationLocatedBlock,
+): ProductNarrationAudibleProgressObservation["sourceRange"] {
+  return decodeLocatorRangeV1({
+    schemaVersion: 1,
+    start: locatedBlock.startLocator,
+    end: {
+      ...locatedBlock.startLocator,
+      textOffsetCodePoints: locatedBlock.textLengthCodePoints,
+    },
+  });
 }
 
 afterEach(() => {
@@ -659,6 +821,47 @@ describe("navigable publication reader", () => {
 
     rendered.unmount();
     expect(mapper.registrationCount).toBe(0);
+  });
+
+  it("projects audible segments across chapters without stealing focus or invoking user navigation", () => {
+    const initialUrl = window.location.href;
+    const narrationSource = new ManualReaderNarrationSource();
+    const highlightEnvironment = new ManualSegmentHighlightEnvironment();
+    render(
+      <ReaderPublicationContent
+        publication={createPublication()}
+        narrationSource={narrationSource}
+        segmentHighlightEnvironment={highlightEnvironment}
+      />,
+    );
+    const focusOwner = screen.getByLabelText("Theme");
+    focusOwner.focus();
+
+    act(() => {
+      narrationSource.start(entireLocatedBlockRange(OPENING_LOCATED_BLOCK), 0);
+    });
+
+    expect(highlightEnvironment.highlighted?.toString()).toBe("Opening");
+    expect(focusOwner).toHaveFocus();
+    expect(scrollIntoView).not.toHaveBeenCalled();
+
+    act(() => {
+      narrationSource.start(
+        entireLocatedBlockRange(CONTINUATION_LOCATED_BLOCK),
+        1,
+      );
+    });
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Continuation" }),
+    ).toBeInTheDocument();
+    expect(highlightEnvironment.highlighted?.toString()).toBe("Continuation");
+    expect(focusOwner).toHaveFocus();
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(window.location.href).toBe(initialUrl);
+
+    act(() => narrationSource.stop());
+    expect(highlightEnvironment.highlighted).toBeUndefined();
   });
 
   it("publishes passive canonical positions without focus or storage side effects", () => {

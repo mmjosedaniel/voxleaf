@@ -259,6 +259,17 @@ export class ReaderNavigationCoordinator {
     this.commitResolution(resolution);
   }
 
+  public navigateToLocator(locator: ReadingLocatorV1): void {
+    let resolution: PublicationLocatorResolution;
+    try {
+      resolution = this.#publication.resolveLocator(locator);
+    } catch {
+      this.announce(NAVIGATION_FAILURE_MESSAGE);
+      return;
+    }
+    this.commitResolution(resolution);
+  }
+
   public goPrevious(): void {
     this.navigateByChapter(-1);
   }

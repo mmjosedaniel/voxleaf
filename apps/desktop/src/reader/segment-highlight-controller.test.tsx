@@ -1,0 +1,327 @@
+import type {
+  ContentDocumentId,
+  PublicationLocatedBlock,
+  SemanticBlock,
+  SensitivePublicationText,
+} from "@voxleaf/epub";
+import {
+  createIndex,
+  decodeLocatorRangeV1,
+  decodeReadingLocatorV1,
+  type LocatorRangeV1,
+  type ReadingLocatorV1,
+} from "@voxleaf/shared";
+import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
+import { cleanup, render } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import type { ProductNarrationAudibleProgressObservation } from "../tts/product-narration-coordinator";
+import { SemanticDocumentContent } from "./SemanticDocument";
+import {
+  SegmentHighlightController,
+  type SegmentHighlightEnvironment,
+  type SegmentHighlightRect,
+} from "./segment-highlight-controller";
+import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
+import { SYNCHRONIZATION_AUTHORITY_V1 } from "./synchronization-authority";
+
+function sensitive(value: string): SensitivePublicationText {
+  return value as SensitivePublicationText;
+}
+
+function paragraph(value: string): SemanticBlock {
+  return Object.freeze({
+    kind: "paragraph",
+    children: Object.freeze([
+      Object.freeze({ kind: "text", text: sensitive(value) }),
+    ]),
+  });
+}
+
+function locatedBlock(
+  spineIndex: 0 | 1,
+  block: SemanticBlock,
+  length: number,
+): PublicationLocatedBlock {
+  return Object.freeze({
+    documentId: `document:highlight-${String(spineIndex)}` as ContentDocumentId,
+    block,
+    startLocator:
+      VALID_SYNTHETIC_DOCUMENT_FIXTURE.spineDocuments[spineIndex]!.blocks[0]!
+        .locator,
+    textLengthCodePoints: createIndex(length),
+  });
+}
+
+function sourceRange(
+  block: PublicationLocatedBlock,
+  start: number,
+  end: number,
+): LocatorRangeV1 {
+  return decodeLocatorRangeV1({
+    schemaVersion: 1,
+    start: {
+      ...block.startLocator,
+      textOffsetCodePoints: start,
+    },
+    end: {
+      ...block.startLocator,
+      textOffsetCodePoints: end,
+    },
+  });
+}
+
+function observation(
+  kind: ProductNarrationAudibleProgressObservation["kind"],
+  range: LocatorRangeV1,
+  sequence = 0,
+): ProductNarrationAudibleProgressObservation {
+  return Object.freeze({
+    kind,
+    observedAtMs: sequence * 250,
+    sessionId: "session:highlight-test",
+    generationId: "generation:highlight-test",
+    segmentId: `segment:highlight-test-${String(sequence)}`,
+    sequence,
+    sourceRange: range,
+    playedSampleFrames: kind === "segment-completed" ? 24_000 : 0,
+    sampleCountSamples: 24_000,
+  });
+}
+
+class ManualHighlightEnvironment implements SegmentHighlightEnvironment {
+  viewport: SegmentHighlightRect | undefined = { top: 0, bottom: 100 };
+  range: SegmentHighlightRect | undefined = { top: 140, bottom: 160 };
+  highlighted: Range | undefined;
+  readonly scrolls: number[] = [];
+  readonly scheduled: Array<() => void> = [];
+  clearCount = 0;
+
+  public replaceHighlight(_name: string, range: Range): boolean {
+    this.highlighted = range;
+    return true;
+  }
+
+  public clearHighlight(): void {
+    this.highlighted = undefined;
+    this.clearCount += 1;
+  }
+
+  public viewportRect(): SegmentHighlightRect | undefined {
+    return this.viewport;
+  }
+
+  public rangeRect(): SegmentHighlightRect | undefined {
+    return this.range;
+  }
+
+  public scrollBy(_root: HTMLElement, top: number): void {
+    this.scrolls.push(top);
+  }
+
+  public schedule(_root: HTMLElement, callback: () => void): () => void {
+    this.scheduled.push(callback);
+    return () => {
+      const index = this.scheduled.indexOf(callback);
+      if (index >= 0) {
+        this.scheduled.splice(index, 1);
+      }
+    };
+  }
+
+  public flush(): void {
+    this.scheduled.shift()?.();
+  }
+}
+
+afterEach(() => {
+  cleanup();
+});
+
+describe("segment highlight controller", () => {
+  it("highlights and follows one range without changing focus, selection, or publication DOM", () => {
+    const block = paragraph("Synthetic audible passage.");
+    const located = locatedBlock(0, block, 26);
+    const mapper = new SemanticDomRangeMapper();
+    const rendered = render(
+      <>
+        <input aria-label="Focus owner" />
+        <SemanticDocumentContent
+          document={Object.freeze({
+            id: located.documentId,
+            location: Object.freeze({
+              kind: "spine",
+              spineItemId: located.startLocator.spineItemId,
+              spineItemIndex: located.startLocator.spineItemIndex,
+            }),
+            blocks: Object.freeze([block]),
+          })}
+          domRangeMapper={mapper}
+          locatedBlocks={[located]}
+        />
+      </>,
+    );
+    const root = rendered.container.querySelector(".semantic-document");
+    const focusOwner = rendered.getByLabelText("Focus owner");
+    const textNode = rendered.getByText(
+      "Synthetic audible passage.",
+    ).firstChild;
+    if (!(root instanceof HTMLElement) || !(textNode instanceof Text)) {
+      throw new Error("synthetic highlight fixture is unavailable");
+    }
+    focusOwner.focus();
+    const selection = document.getSelection()!;
+    const selected = document.createRange();
+    selected.setStart(textNode, 10);
+    selected.setEnd(textNode, 17);
+    selection.removeAllRanges();
+    selection.addRange(selected);
+    const descendantCount = root.querySelectorAll("*").length;
+    const textContent = root.textContent;
+    const environment = new ManualHighlightEnvironment();
+    const settled: number[] = [];
+    const resume = vi.fn();
+    const controller = new SegmentHighlightController(
+      [located],
+      mapper,
+      {
+        currentSpineItemIndex: () => 0,
+        navigateToLocator: vi.fn(),
+        settleLocator: (locator) => {
+          settled.push(locator.textOffsetCodePoints);
+        },
+        suspendVisualSampling: () => resume,
+      },
+      environment,
+    );
+    controller.setRoot(root);
+    const range = sourceRange(located, 0, 9);
+
+    controller.accept(observation("segment-started", range));
+
+    expect(environment.highlighted?.collapsed).toBe(false);
+    expect(environment.highlighted?.toString()).toBe("Synthetic");
+    expect(environment.scrolls).toEqual([
+      140 - SYNCHRONIZATION_AUTHORITY_V1.following.comfortInsetPx,
+    ]);
+    expect(settled).toEqual([]);
+    expect(document.activeElement).toBe(focusOwner);
+    expect(selection.rangeCount).toBe(1);
+    expect(selection.getRangeAt(0).toString()).toBe("audible");
+    expect(selection.getRangeAt(0).startContainer).toBe(textNode);
+    expect(selection.getRangeAt(0).startOffset).toBe(10);
+    expect(selection.getRangeAt(0).endContainer).toBe(textNode);
+    expect(selection.getRangeAt(0).endOffset).toBe(17);
+    expect(root.querySelectorAll("*")).toHaveLength(descendantCount);
+    expect(root.textContent).toBe(textContent);
+
+    environment.flush();
+    expect(settled).toEqual([0]);
+    expect(resume).toHaveBeenCalledWith({ requestSample: false });
+
+    controller.accept(observation("progress", range));
+    controller.accept(observation("segment-completed", range));
+    expect(environment.highlighted?.toString()).toBe("Synthetic");
+    expect(settled).toEqual([0, 9]);
+
+    controller.clear();
+    expect(environment.highlighted).toBeUndefined();
+    controller.close();
+    mapper.close();
+  });
+
+  it("holds sampling across chapter rendering and suppresses stale transitions", () => {
+    const opening = locatedBlock(0, paragraph("Opening"), 7);
+    const continuationBlock = paragraph("Continuation");
+    const continuation = locatedBlock(1, continuationBlock, 12);
+    const mapper = new SemanticDomRangeMapper();
+    const environment = new ManualHighlightEnvironment();
+    environment.range = { top: 24, bottom: 40 };
+    const navigated: number[] = [];
+    const settled: number[] = [];
+    let currentSpine = 0;
+    const resume = vi.fn();
+    const controller = new SegmentHighlightController(
+      [opening, continuation],
+      mapper,
+      {
+        currentSpineItemIndex: () => currentSpine,
+        navigateToLocator: (locator) => {
+          navigated.push(locator.spineItemIndex);
+          currentSpine = locator.spineItemIndex;
+        },
+        settleLocator: (locator) => {
+          settled.push(locator.spineItemIndex);
+        },
+        suspendVisualSampling: () => resume,
+      },
+      environment,
+    );
+    const root = document.createElement("article");
+    const continuationElement = document.createElement("p");
+    continuationElement.textContent = "Continuation";
+    document.body.append(root);
+    controller.setRoot(root);
+    const range = sourceRange(continuation, 0, 12);
+    controller.accept(observation("segment-started", range, 1));
+    controller.refresh();
+
+    expect(navigated).toEqual([1]);
+    expect(settled).toEqual([]);
+
+    root.append(continuationElement);
+    const unsubscribe = mapper.subscribe(() => controller.refresh());
+    const unregister = mapper.registerBlock(continuationElement, continuation);
+
+    expect(environment.highlighted?.toString()).toBe("Continuation");
+    expect(settled).toEqual([1]);
+    expect(resume).toHaveBeenCalledWith({ requestSample: false });
+
+    controller.accept(
+      observation("segment-completed", sourceRange(opening, 0, 7), 0),
+    );
+    expect(environment.highlighted?.toString()).toBe("Continuation");
+
+    unregister();
+    unsubscribe();
+    controller.close();
+    mapper.close();
+    root.remove();
+  });
+
+  it("keeps highlight-only behavior when usable geometry is unavailable", () => {
+    const block = paragraph("Geometry");
+    const located = locatedBlock(0, block, 8);
+    const mapper = new SemanticDomRangeMapper();
+    const element = document.createElement("p");
+    element.textContent = "Geometry";
+    document.body.append(element);
+    mapper.registerBlock(element, located);
+    const environment = new ManualHighlightEnvironment();
+    environment.range = undefined;
+    const settled: ReadingLocatorV1[] = [];
+    const controller = new SegmentHighlightController(
+      [located],
+      mapper,
+      {
+        currentSpineItemIndex: () => 0,
+        navigateToLocator: vi.fn(),
+        settleLocator: (locator) => settled.push(locator),
+        suspendVisualSampling: vi.fn(),
+      },
+      environment,
+    );
+    controller.setRoot(element);
+
+    controller.accept(
+      observation("segment-started", sourceRange(located, 0, 8)),
+    );
+
+    expect(environment.highlighted?.toString()).toBe("Geometry");
+    expect(environment.scrolls).toEqual([]);
+    expect(settled).toEqual([decodeReadingLocatorV1(located.startLocator)]);
+    controller.close();
+    mapper.close();
+    element.remove();
+  });
+});

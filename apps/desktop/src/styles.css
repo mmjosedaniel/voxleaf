@@ -180,6 +180,14 @@ h1 {
   scroll-behavior: auto;
 }
 
+::highlight(voxleaf-narration-active) {
+  color: #141414;
+  background-color: #ffd640;
+  text-decoration: underline;
+  text-decoration-color: #765b00;
+  text-decoration-thickness: 0.08em;
+}
+
 .reader-skip-link {
   position: absolute;
   z-index: 1;
@@ -838,6 +846,12 @@ button.semantic-internal-link {
 }
 
 @media (forced-colors: active) {
+  ::highlight(voxleaf-narration-active) {
+    color: HighlightText;
+    background-color: Highlight;
+    text-decoration-color: HighlightText;
+  }
+
   .semantic-reader,
   .adaptive-preparation,
   .adaptive-preparation-mode,

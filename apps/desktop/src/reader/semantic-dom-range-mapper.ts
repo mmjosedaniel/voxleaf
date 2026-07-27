@@ -579,6 +579,7 @@ function offsetForRange(
  * immutable package locators. It performs no geometry, navigation, or storage.
  */
 export class SemanticDomRangeMapper {
+  readonly #listeners = new Set<() => void>();
   #registrations = new Set<RegisteredBlock>();
   #registrationsByBlock = new WeakMap<
     PublicationLocatedBlock,
@@ -591,6 +592,16 @@ export class SemanticDomRangeMapper {
 
   public get registrationCount(): number {
     return this.#registrations.size;
+  }
+
+  public subscribe(listener: () => void): () => void {
+    if (this.#closed) {
+      return () => undefined;
+    }
+    this.#listeners.add(listener);
+    return () => {
+      this.#listeners.delete(listener);
+    };
   }
 
   public registerBlock(
@@ -627,6 +638,7 @@ export class SemanticDomRangeMapper {
       boundaries.registration = registration;
       this.#containerBoundariesByNode.set(boundaries.node, boundaries);
     }
+    this.#emit();
 
     return () => this.#remove(registration);
   }
@@ -697,6 +709,7 @@ export class SemanticDomRangeMapper {
   }
 
   public clear(): void {
+    const hadRegistrations = this.#registrations.size > 0;
     for (const registration of this.#registrations) {
       registration.active = false;
     }
@@ -705,6 +718,9 @@ export class SemanticDomRangeMapper {
     this.#registrationsByElement = new WeakMap();
     this.#textSegmentsByNode = new WeakMap();
     this.#containerBoundariesByNode = new WeakMap();
+    if (hadRegistrations) {
+      this.#emit();
+    }
   }
 
   public close(): void {
@@ -713,6 +729,7 @@ export class SemanticDomRangeMapper {
     }
     this.#closed = true;
     this.clear();
+    this.#listeners.clear();
   }
 
   #remove(registration: RegisteredBlock): void {
@@ -748,6 +765,16 @@ export class SemanticDomRangeMapper {
         }
         boundaries.registration = undefined;
       }
+    }
+    this.#emit();
+  }
+
+  #emit(): void {
+    if (this.#closed) {
+      return;
+    }
+    for (const listener of this.#listeners) {
+      listener();
     }
   }
 }
