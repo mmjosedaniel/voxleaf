@@ -314,9 +314,33 @@ shutdown. It emits only a fixed pass/fail line and retains no narration text or
 audio. This is constrained exact-host service evidence, not playback,
 sustainable throughput, distribution, or general hardware support.
 
+## Exact M007 service-handoff matrix
+
+`pnpm.cmd test:tts:handoff-host` is the frozen Windows/CUDA-only M007
+Milestone 5 matrix. It uses the same exact environment and firewall
+requirements as the focused diagnostic, builds the release host, and executes
+the nine authority-ordered cases once with no retries. The matrix covers cold
+neutral and warm Spanish delivery, blocked-consumer backpressure, invalidation
+before dispatch and after completion, accepted and mid-generation
+cancellation, child crash, and application exit. Its runner samples descendant
+RAM and dedicated/shared GPU memory, confirms one GPU allocator, checks
+intermediate and final cleanup, and rejects listeners, external connections,
+audio persistence, and content-bearing output.
+
+The first authoritative run passed. Delivered units were 11.28 and 14.88
+playable seconds at RTF 1.425 and 1.437; first-audio and completion p95 were
+both about 21.38 seconds because this adapter publishes complete units only.
+Native handoff p95 was about 0.234 ms, termination p95 about 5.70 ms, and
+restart plus prepare p95 about 16.61 seconds. Peak descendants used about 4.71
+GB RAM, 5.14 GB dedicated GPU memory, and 81.8 MB shared GPU memory; cleanup
+returned all three measures to zero. The committed content-safe result is
+[`service-handoff-result-v1-exact-host.json`](../../benchmarks/tts/service-handoff-result-v1-exact-host.json).
+This matrix does not evaluate sustainable playback or select a production
+profile.
+
 ## Deferred coverage
 
-The secure EPUB ingestion scenario and boundary matrix is implemented with repository-authored synthetic inputs; deterministic desktop tests prove the bounded repository, approved save lifecycle, and exact/recovered open coordination; the real-browser smoke proves preference plus exact/nearest-valid locator restoration through production React reload/reselection; the packaged native smoke proves save/restore across a WebView2 application restart; the two hardware-specific benchmarks cover accepted prototype, production React, repeated lifecycle, and packaged WebView2 reader limits; and the test-only narration corpus/limits plus production source projector, normalizer, boundary scanner, packer, canonical prepared-segment finalizer, public batch operation, public neutral/Spanish EPUB-to-segment integration matrix, and deterministic resource matrix have evidence. Milestones 5 through 6.2 are complete. M007 Milestones 1-4 add passing model-free process framing, optimized binary response, canonical cross-language contracts, Python service/fake engine, native supervisor, typed client, one-unit sink, process-tree containment, cancellation, crash recovery, packaged WebView tests, and the exact development-only Qwen/Serena adapter plus its focused host diagnostic. Default tests and CI still load no candidate or model. No product caller prepares narration for the service, plays audio, detects general supported hardware, builds an installer, or exercises those later end-to-end flows. The examples below are requirements for later roadmap milestones, not claims about current coverage.
+The secure EPUB ingestion scenario and boundary matrix is implemented with repository-authored synthetic inputs; deterministic desktop tests prove the bounded repository, approved save lifecycle, and exact/recovered open coordination; the real-browser smoke proves preference plus exact/nearest-valid locator restoration through production React reload/reselection; the packaged native smoke proves save/restore across a WebView2 application restart; the two hardware-specific benchmarks cover accepted prototype, production React, repeated lifecycle, and packaged WebView2 reader limits; and the test-only narration corpus/limits plus production source projector, normalizer, boundary scanner, packer, canonical prepared-segment finalizer, public batch operation, public neutral/Spanish EPUB-to-segment integration matrix, and deterministic resource matrix have evidence. Milestones 5 through 6.2 are complete. M007 Milestones 1-5 add passing model-free process framing, optimized binary response, canonical cross-language contracts, Python service/fake engine, native supervisor, typed client, one-unit sink, process-tree containment, cancellation, crash recovery, packaged WebView tests, the exact development-only Qwen/Serena adapter, its focused host diagnostic, and the frozen exact-host service-handoff matrix. Default tests and CI still load no candidate or model. No product caller prepares narration for the service, plays audio, detects general supported hardware, builds an installer, or exercises those later end-to-end flows. The examples below are requirements for later roadmap milestones, not claims about current coverage.
 
 ## Test levels
 

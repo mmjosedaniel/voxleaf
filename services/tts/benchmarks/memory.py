@@ -385,6 +385,13 @@ class WindowsProcessResourceSampler:
                 changed = True
         return frozenset(descendants)
 
+    def process_tree_ids(self, root_pid: int) -> frozenset[int]:
+        """Return one root and every currently observable descendant PID."""
+
+        if root_pid <= 0:
+            raise RuntimeError("tts-benchmark-memory:invalid-root")
+        return self._descendants(root_pid, self._parent_by_pid()) | frozenset((root_pid,))
+
     def _working_set_bytes(self, pid: int) -> int:
         access = _PROCESS_QUERY_INFORMATION | _PROCESS_QUERY_LIMITED_INFORMATION | _PROCESS_VM_READ
         process = self._kernel32.OpenProcess(access, False, pid)
@@ -407,7 +414,7 @@ class WindowsProcessResourceSampler:
     def sample(self, root_pid: int) -> ProcessResourceSample:
         if root_pid <= 0:
             raise RuntimeError("tts-benchmark-memory:invalid-root")
-        process_ids = self._descendants(root_pid, self._parent_by_pid())
+        process_ids = self.process_tree_ids(root_pid) - frozenset((root_pid,))
         ram_bytes = sum(self._working_set_bytes(pid) for pid in process_ids)
         vram_bytes, allocations = self._vram_sampler.sample(process_ids)
         return ProcessResourceSample(

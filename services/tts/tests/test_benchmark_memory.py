@@ -112,6 +112,18 @@ def test_descendant_resolution_is_transitive_and_excludes_owner() -> None:
     ) == frozenset((11, 12, 14))
 
 
+def test_process_tree_ids_includes_owner_and_transitive_descendants(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sampler = object.__new__(WindowsProcessResourceSampler)
+    monkeypatch.setattr(
+        sampler,
+        "_parent_by_pid",
+        lambda: {10: 1, 11: 10, 12: 11, 13: 1},
+    )
+    assert sampler.process_tree_ids(10) == frozenset((10, 11, 12))
+
+
 def test_wddm_counter_aggregation_sums_adapter_instances_by_numeric_pid() -> None:
     assert WindowsGpuProcessMemorySampler._aggregate(
         (

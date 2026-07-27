@@ -1,0 +1,371 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://voxleaf.local/schemas/service-handoff-result-v1.schema.json",
+  "title": "VoxLeaf exact-host service handoff result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "profileVersion",
+    "profileSha256",
+    "authorityCommitSha",
+    "executionCommitSha",
+    "attemptOrdinal",
+    "automaticRetries",
+    "status",
+    "candidateId",
+    "protocolVersion",
+    "cases",
+    "timings",
+    "resources",
+    "cleanup",
+    "privacy",
+    "conclusions"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "profileVersion": {
+      "const": "tts-service-handoff-profile-v1"
+    },
+    "profileSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "authorityCommitSha": {
+      "$ref": "#/$defs/gitSha"
+    },
+    "executionCommitSha": {
+      "$ref": "#/$defs/gitSha"
+    },
+    "attemptOrdinal": {
+      "const": 1
+    },
+    "automaticRetries": {
+      "const": 0
+    },
+    "status": {
+      "enum": ["pass", "fail"]
+    },
+    "candidateId": {
+      "const": "qwen3-tts-1-7b-customvoice-cuda-bf16-v1"
+    },
+    "protocolVersion": {
+      "const": 1
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    },
+    "timings": {
+      "$ref": "#/$defs/timings"
+    },
+    "resources": {
+      "$ref": "#/$defs/resources"
+    },
+    "cleanup": {
+      "$ref": "#/$defs/cleanup"
+    },
+    "privacy": {
+      "$ref": "#/$defs/privacy"
+    },
+    "conclusions": {
+      "$ref": "#/$defs/conclusions"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "nonnegativeNumber": {
+      "type": "number",
+      "minimum": 0
+    },
+    "nullableNonnegativeNumber": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "caseId",
+        "outcome",
+        "publishedAudioUnits",
+        "deliveredAudioBytes",
+        "elapsedMilliseconds",
+        "mediaDurationSeconds",
+        "commandToFirstTransportFrameMilliseconds",
+        "commandToCompleteUnitMilliseconds",
+        "nativeFrameHandoffMicroseconds",
+        "rtf",
+        "terminationMilliseconds",
+        "failureCode"
+      ],
+      "properties": {
+        "caseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "outcome": {
+          "enum": ["pass", "fail"]
+        },
+        "publishedAudioUnits": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "deliveredAudioBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1920000
+        },
+        "elapsedMilliseconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "mediaDurationSeconds": {
+          "$ref": "#/$defs/nullableNonnegativeNumber"
+        },
+        "commandToFirstTransportFrameMilliseconds": {
+          "$ref": "#/$defs/nullableNonnegativeNumber"
+        },
+        "commandToCompleteUnitMilliseconds": {
+          "$ref": "#/$defs/nullableNonnegativeNumber"
+        },
+        "nativeFrameHandoffMicroseconds": {
+          "$ref": "#/$defs/nullableNonnegativeNumber"
+        },
+        "rtf": {
+          "$ref": "#/$defs/nullableNonnegativeNumber"
+        },
+        "terminationMilliseconds": {
+          "$ref": "#/$defs/nullableNonnegativeNumber"
+        },
+        "failureCode": {
+          "anyOf": [
+            {
+              "enum": [
+                "busy",
+                "cancelled",
+                "child-unavailable",
+                "internal-failure",
+                "invalid-state",
+                "protocol-rejected",
+                "resource-limit",
+                "timed-out"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "timings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "serviceStartMilliseconds",
+        "initialLoadMilliseconds",
+        "initialWarmMilliseconds",
+        "commandToFirstTransportFrameP95Milliseconds",
+        "commandToCompleteUnitP95Milliseconds",
+        "nativeFrameHandoffP95Microseconds",
+        "terminationP95Milliseconds",
+        "restartPrepareP95Milliseconds"
+      ],
+      "properties": {
+        "serviceStartMilliseconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "initialLoadMilliseconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "initialWarmMilliseconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "commandToFirstTransportFrameP95Milliseconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "commandToCompleteUnitP95Milliseconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "nativeFrameHandoffP95Microseconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "terminationP95Milliseconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        },
+        "restartPrepareP95Milliseconds": {
+          "$ref": "#/$defs/nonnegativeNumber"
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ramSamplingIntervalMilliseconds",
+        "vramSamplingIntervalMilliseconds",
+        "vramMethod",
+        "peakProcessTreeRamBytes",
+        "peakDedicatedGpuBytes",
+        "peakSharedGpuBytes",
+        "peakGpuAllocatingProcesses"
+      ],
+      "properties": {
+        "ramSamplingIntervalMilliseconds": {
+          "const": 50
+        },
+        "vramSamplingIntervalMilliseconds": {
+          "const": 1000
+        },
+        "vramMethod": {
+          "const": "wddm-process-tree-dedicated-and-shared"
+        },
+        "peakProcessTreeRamBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "peakDedicatedGpuBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "peakSharedGpuBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "peakGpuAllocatingProcesses": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "processTreeRamBytes",
+        "dedicatedGpuBytes",
+        "sharedGpuBytes",
+        "listenerCount",
+        "externalConnectionCount",
+        "generatedAudioPersisted"
+      ],
+      "properties": {
+        "processTreeRamBytes": {
+          "const": 0
+        },
+        "dedicatedGpuBytes": {
+          "const": 0
+        },
+        "sharedGpuBytes": {
+          "const": 0
+        },
+        "listenerCount": {
+          "const": 0
+        },
+        "externalConnectionCount": {
+          "const": 0
+        },
+        "generatedAudioPersisted": {
+          "const": false
+        }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "containsNarrationText",
+        "containsWaveformOrAudioBytes",
+        "containsPathOrEnvironmentValue",
+        "containsProcessIdentifier",
+        "containsExceptionOrProcessCommand",
+        "containsPrivateIdentity"
+      ],
+      "properties": {
+        "containsNarrationText": {
+          "const": false
+        },
+        "containsWaveformOrAudioBytes": {
+          "const": false
+        },
+        "containsPathOrEnvironmentValue": {
+          "const": false
+        },
+        "containsProcessIdentifier": {
+          "const": false
+        },
+        "containsExceptionOrProcessCommand": {
+          "const": false
+        },
+        "containsPrivateIdentity": {
+          "const": false
+        }
+      }
+    },
+    "conclusions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "completeUnitHandoff",
+        "backpressure",
+        "cancellationContainment",
+        "cleanupAndRestart",
+        "nativeModelStreaming",
+        "cooperativeCancellation",
+        "sustainablePlayback",
+        "productionProfile",
+        "generalHardwareSupport"
+      ],
+      "properties": {
+        "completeUnitHandoff": {
+          "enum": ["pass", "fail"]
+        },
+        "backpressure": {
+          "enum": ["pass", "fail"]
+        },
+        "cancellationContainment": {
+          "enum": ["pass", "fail"]
+        },
+        "cleanupAndRestart": {
+          "enum": ["pass", "fail"]
+        },
+        "nativeModelStreaming": {
+          "const": "unsupported"
+        },
+        "cooperativeCancellation": {
+          "const": "unsupported"
+        },
+        "sustainablePlayback": {
+          "const": "not-evaluated"
+        },
+        "productionProfile": {
+          "const": "not-selected"
+        },
+        "generalHardwareSupport": {
+          "const": "not-claimed"
+        }
+      }
+    }
+  }
+}

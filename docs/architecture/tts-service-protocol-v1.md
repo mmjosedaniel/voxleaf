@@ -9,7 +9,8 @@ Milestone 3 implements native supervision and typed desktop consumption with a
 model-free Rust child. Milestone 4 implements the exact Qwen/Serena adapter
 behind native-only development configuration and passes its reviewed
 exact-host delivery, termination, stale-suppression, reload, and shutdown
-diagnostic.
+diagnostic. Milestone 5 passes the frozen nine-case exact-host handoff matrix
+through the same release supervisor and adapter.
 
 This authority applies only to ADR-0015's exact one-GPU
 Qwen3-TTS 12Hz 1.7B CustomVoice/Serena constrained development demo. It does
@@ -376,6 +377,12 @@ verifies runtime versions, artifact hashes and sizes, revision receipts, CUDA
 bfloat16 support, Serena, and the complete bounded waveform before delivery.
 The first reviewed exact-host run passes valid delivery, concurrent rejection,
 identity-first process-tree termination with zero stale return, explicit clean
-reload, and shutdown. Product narration dispatch, playback, measured Milestone
-5 handoff evidence, production packaging, and general hardware support remain
-unimplemented.
+reload, and shutdown. The frozen Milestone 5 matrix then passes cold and warm
+delivery, bounded backpressure, before- and after-completion invalidation,
+accepted and mid-generation cancellation, child crash, and application exit
+without retry. It measures one allocator, zero listeners or external
+connections, zero persisted audio, and zero descendant RAM/VRAM at each
+cleanup checkpoint. The adapter still exposes only complete units, with
+first-audio and completion p95 both about 21.38 seconds on the exact host.
+Product narration dispatch, playback, production packaging, and general
+hardware support remain unimplemented.
