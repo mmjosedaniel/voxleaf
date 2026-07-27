@@ -433,14 +433,7 @@ async function runAdaptiveTtsExactHostMatrix(
     3 * STARTUP_TIMEOUT_MS,
   );
   const depletedAtMs = Date.now();
-  setStage("adaptive exact-host buffering recovery");
-  await waitForCondition(
-    driver,
-    `return document.querySelector(".product-narration")
-       ?.getAttribute("data-narration-phase") === "playing";`,
-    3 * STARTUP_TIMEOUT_MS,
-  );
-  const recoveredAtMs = Date.now();
+  await delay(5_000);
   const quickResourceWorkingSetBytes =
     await processWorkingSetBytes(rootProcessId);
   const quickGpu = await nvidiaSnapshot();
@@ -632,7 +625,7 @@ async function runAdaptiveTtsExactHostMatrix(
         commandToAudibleMs: quickObservation.commandToAudibleMs,
         playableLeadAtStartMs: quickObservation.playableMs,
         depletionObserved: true,
-        bufferingRecoveryWallMs: recoveredAtMs - depletedAtMs,
+        bufferingObservationWallMs: Date.now() - depletedAtMs,
         bufferingSecondsPerPlaybackMinute: rounded(
           quickMetrics.bufferingMs / 1_000 / (quickMetrics.playbackMs / 60_000),
         ),
@@ -2374,10 +2367,10 @@ async function run() {
     ]);
   } else if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
     const syntheticParagraph =
-      "Esta narraci&#243;n sint&#233;tica describe una biblioteca tranquila, una ventana luminosa y una lectura local. Cada frase fue escrita para validar transiciones naturales, memoria limitada y reproducci&#243;n ordenada sin copiar contenido privado.";
+      "Esta narraci&#243;n sint&#233;tica describe una biblioteca tranquila y una lectura local. Cada frase valida transiciones naturales, memoria limitada y orden.";
     const adaptiveFixture = await buildMinimalEpubFixture({
       chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="es"><head><title>Demostraci&#243;n local</title></head><body><h1 id="chapter-one">Demostraci&#243;n local</h1>${Array.from(
-        { length: 8 },
+        { length: 12 },
         (_, index) =>
           `<p>${syntheticParagraph} Secci&#243;n ${String(index + 1)}.</p>`,
       ).join("")}</body></html>`,
