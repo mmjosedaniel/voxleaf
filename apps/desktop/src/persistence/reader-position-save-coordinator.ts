@@ -30,6 +30,18 @@ export interface ReaderPositionSaveCoordinatorOptions {
   readonly persistInitialLocatorOnFlush?: boolean;
 }
 
+export type HeardPositionCheckpoint =
+  | Readonly<{
+      kind: "segment-started";
+      segmentId: string;
+      locator: ReadingLocatorV1;
+    }>
+  | Readonly<{
+      kind: "segment-completed";
+      segmentId: string;
+      locator: ReadingLocatorV1;
+    }>;
+
 const EMPTY_READING_PREFERENCES = Object.freeze({});
 
 function scheduleBrowserTimer(
@@ -149,6 +161,10 @@ export class ReaderPositionSaveCoordinator {
   #preferencesDrain: Promise<void> | undefined;
   #cancelPreferencesSchedule: (() => void) | undefined;
   #unsubscribeLifecycle: (() => void) | undefined;
+  #activeHeardSegmentId: string | undefined;
+  #narrationActive = false;
+  #narrationCheckpointed = false;
+  #protectHeardCheckpoint = false;
   #started = false;
   #closed = false;
   #closePromise: Promise<void> | undefined;
@@ -186,11 +202,91 @@ export class ReaderPositionSaveCoordinator {
   }
 
   public schedulePassive(locator: ReadingLocatorV1): boolean {
-    return this.#schedulePosition(locator, "passive");
+    if (this.#narrationActive) {
+      return false;
+    }
+    const scheduled = this.#schedulePosition(locator, "passive");
+    if (scheduled) {
+      this.#protectHeardCheckpoint = false;
+    }
+    return scheduled;
   }
 
   public scheduleImmediate(locator: ReadingLocatorV1): boolean {
+    if (this.#narrationActive) {
+      return false;
+    }
+    const scheduled = this.#schedulePosition(locator, "immediate");
+    if (scheduled) {
+      this.#protectHeardCheckpoint = false;
+    }
+    return scheduled;
+  }
+
+  public scheduleReflow(locator: ReadingLocatorV1): boolean {
+    if (this.#narrationActive || this.#protectHeardCheckpoint) {
+      return false;
+    }
     return this.#schedulePosition(locator, "immediate");
+  }
+
+  public beginNarration(): boolean {
+    if (this.#closed || this.#narrationActive) {
+      return false;
+    }
+
+    this.#narrationActive = true;
+    this.#narrationCheckpointed = false;
+    this.#activeHeardSegmentId = undefined;
+    this.#cancelPositionSchedule?.();
+    this.#cancelPositionSchedule = undefined;
+    this.#scheduledPositionKind = undefined;
+    this.#queuedLocator = undefined;
+    this.#lastRequestedLocator = undefined;
+    this.#positionSaveRequested = false;
+    return true;
+  }
+
+  public recordHeardCheckpoint(checkpoint: HeardPositionCheckpoint): boolean {
+    if (this.#closed || !this.#narrationActive) {
+      return false;
+    }
+    const canonical = this.#validatedCanonicalLocator(checkpoint.locator);
+    if (canonical === undefined) {
+      return false;
+    }
+    if (
+      checkpoint.kind === "segment-completed" &&
+      checkpoint.segmentId !== this.#activeHeardSegmentId
+    ) {
+      return false;
+    }
+
+    if (checkpoint.kind === "segment-started") {
+      this.#activeHeardSegmentId = checkpoint.segmentId;
+    } else {
+      this.#activeHeardSegmentId = undefined;
+    }
+    this.#narrationCheckpointed = true;
+    this.#protectHeardCheckpoint = true;
+    return this.#schedulePosition(canonical, "immediate");
+  }
+
+  public finishNarration(): Promise<void> {
+    if (this.#closed) {
+      return this.#closePromise ?? Promise.resolve();
+    }
+    if (!this.#narrationActive) {
+      return this.flush();
+    }
+
+    this.#narrationActive = false;
+    this.#activeHeardSegmentId = undefined;
+    if (this.#narrationCheckpointed) {
+      this.#protectHeardCheckpoint = true;
+    }
+    this.#narrationCheckpointed = false;
+    return this.flush();
   }
 
   public savePreferences(preferences: ReaderPreferencesV1): boolean {

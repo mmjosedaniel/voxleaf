@@ -2,10 +2,10 @@
 
 ## Status
 
-Accepted for M009. Milestones 1 through 4 freeze the authority, project exact
+Accepted for M009. Milestones 1 through 5 freeze the authority, project exact
 audible source ranges, implement reader highlighting/following, and connect
-identity-first synchronized user navigation. Heard-progress persistence
-remains assigned to M009 Milestone 5.
+identity-first synchronized user navigation plus non-skipping heard-progress
+persistence. Exact-host synchronization and final closeout remain.
 
 ## Context
 
@@ -63,6 +63,15 @@ Persistence saves segment start at audible start, segment end after audible
 completion, and the latest heard checkpoint on interruption. Mid-segment
 restore replays from segment start. Periodic progress writes are prohibited.
 
+The implemented persistence bridge uses the existing
+`PersistedReadingStateV1` and bounded Web Storage repository without adding a
+schema or migration. Narration start cancels a pending visual save; exact
+audible boundaries become temporary persistence authority; pause, buffering,
+stop, failure, hidden-document, `pagehide`, replacement, close, and cleanup
+flush the latest heard checkpoint. Reflow and programmatic following cannot
+regress that checkpoint, while later genuine user navigation returns
+authority to the existing visual save policy.
+
 No shared-schema, M005 segmentation, M007 protocol, or production dependency
 change is authorized.
 
@@ -79,9 +88,8 @@ change is authorized.
   existing work identities.
 - A later timestamp-capable engine requires a new authority before word-level
   highlighting or inside-segment clipping can be implemented.
-- The implemented reader projection and navigation do not improve Qwen
-  throughput, resolve ADR-0013's standard profile blocker, or make
-  heard-progress persistence complete.
+- The implemented reader projection, navigation, and persistence do not
+  improve Qwen throughput or resolve ADR-0013's standard profile blocker.
 
 ## Alternatives considered
 

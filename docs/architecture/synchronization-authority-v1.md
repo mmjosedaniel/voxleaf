@@ -7,8 +7,9 @@ implements the deterministic authority and proves the selected decoration and
 following mechanism in production Chromium and packaged WebView2. Milestones
 2 and 3 connect bounded audible-position projection, segment highlighting,
 and focus-safe automatic following to the reader. Milestone 4 connects
-identity-first synchronized user navigation. Heard-progress persistence
-remains M009 Milestone 5.
+identity-first synchronized user navigation. Milestone 5 implements
+non-skipping heard-progress persistence through the existing bounded reader
+state envelope.
 
 The authority is desktop-local. It does not change the shared schemas, the
 M005 `narration-v1` segmentation policy, or the M007 protocol-v1 service.
@@ -132,3 +133,14 @@ Persistence remains structural and bounded:
 
 Prepared text, PCM, highlight geometry, DOM ranges, user selections, and
 publication prose never enter persistence or diagnostics.
+
+The production path now implements this boundary. One desktop-local bridge
+temporarily makes exact `segment-started` and matching `segment-completed`
+observations authoritative over visual persistence while narration is active.
+It cancels pending visual saves at narration start, ignores periodic
+played-frame observations, flushes at pause, buffering, stop, failure,
+hidden-document, `pagehide`, replacement, close, and cleanup, and protects
+the last heard checkpoint from reflow until later genuine user movement
+returns authority to the visual locator. A mid-segment restart therefore
+restores the segment start. Existing exact/nearest-valid locator recovery and
+unsupported future-envelope preservation remain unchanged.

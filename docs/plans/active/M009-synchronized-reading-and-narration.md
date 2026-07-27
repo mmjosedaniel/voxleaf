@@ -83,12 +83,16 @@ decoration gaps:
   incremental or next-chapter rendering and resumes without synthesizing a
   user seek.
 
-The remaining synchronization gap is explicit:
+M009 Milestones 4 and 5 now close the interaction and persistence gaps:
 
-- passive visual movement currently stops narration instead of participating
-  in a frozen synchronized-seek policy; and
-- persisted progress follows the visual locator, not an explicit heard
-  segment-boundary checkpoint.
+- passive visual movement follows the frozen identity-first synchronized-seek
+  policy; and
+- one desktop-local bridge gives exact audible segment boundaries temporary
+  persistence authority over visual, reflow, and programmatic-follow updates.
+
+The remaining M009 work is the exact-host synchronized demo in Milestone 6
+and final documentation, repository, privacy, and pull-request validation in
+Milestone 7.
 
 ## Scope and non-goals
 
@@ -509,11 +513,22 @@ Complete.
 - Expected result: saved position never advances beyond completed audible
   content, model failure cannot corrupt it, and restart restores a canonical
   non-skipping position.
-- Actual result: Not run.
+- Actual result: Passed on 2026-07-27. The focused persistence/repository
+  matrix passes 62 tests across the save, restore, repository, and narration
+  bridge suites. The application integration subset passes 49 tests and the
+  full desktop command passes 304 Vitest tests plus six Node
+  WebDriver-client tests. Desktop typecheck, TypeScript formatting, ESLint,
+  and `git diff --check` pass. All six production Chromium tests pass,
+  including reflow/restoration and synchronization proofs. The packaged
+  WebView2 matrix passes exact-position restart/reselection, lifecycle
+  cleanup, synchronization, zero runtime errors, and zero external requests.
+  Exact audible start and matching completion are the only new checkpoints;
+  periodic progress, active visual movement, programmatic following, and
+  reflow cannot advance or regress them.
 
 ### Status
 
-Not started.
+Complete.
 
 ## Milestone 6: Validate the exact-host synchronized demo
 
@@ -706,6 +721,29 @@ persistence. Do not use destructive storage migration as rollback.
   verification, 1,047 Vitest tests, six Node WebDriver-client tests, 233
   Python tests, and portable builds all pass. The only Python warning is the
   sandbox-denied optional pytest cache write; all tests pass.
+- 2026-07-27: Implemented M009 Milestone 5. A desktop-local bridge temporarily
+  assigns persistence authority to exact audible segment boundaries, cancels
+  pending visual saves when narration starts, flushes the latest heard
+  checkpoint at pause, buffering, stop, failure, hidden-document, `pagehide`,
+  replacement, close, and cleanup, and protects it from reflow until genuine
+  user navigation resumes visual authority.
+- 2026-07-27: Segment starts persist their canonical source-range start;
+  matching completions advance to the canonical range end. Played-frame
+  progress produces no write, unmatched completion is rejected, mid-segment
+  interruption restores the segment start, and existing unsupported-version
+  storage preservation remains unchanged.
+- 2026-07-27: The focused 62-test persistence matrix, 49-test application
+  integration subset, desktop typecheck, formatting, ESLint, all 304 desktop
+  Vitest tests, six Node WebDriver-client tests, all six Chromium tests, and
+  the packaged WebView2 restart/reselection/lifecycle matrix pass. The
+  packaged run retains zero runtime errors and zero external requests.
+- 2026-07-27: The final Milestone 5 `pnpm.cmd check:portable` and
+  `pnpm.cmd check` gates pass outside the filesystem sandbox: formatting,
+  TypeScript/Rust/Python lint and type checks, generated-contract
+  verification, 1,055 Vitest tests, six Node WebDriver-client tests, 25 Rust
+  tests, 233 Python tests, portable builds, the native release build, and
+  Python source/wheel builds pass. Pytest alone warns that its optional cache
+  cannot be written; the test run itself passes.
 
 ## Discoveries and decisions
 
@@ -734,6 +772,17 @@ persistence. Do not use destructive storage migration as rollback.
   skipping unheard content after interruption: save segment start when
   audible, advance only on completion, and restore a mid-segment interruption
   from segment start.
+- Existing `PersistedReadingStateV1` and its two-key Web Storage envelope are
+  sufficient. Heard progress is still one canonical `ReadingLocatorV1`; no
+  shared schema, storage migration, narration text, PCM, DOM range, geometry,
+  timestamp, or protocol field is required.
+- Narration temporarily suppresses both passive and explicit visual saves.
+  After interruption, the last heard checkpoint remains protected from
+  reflow; the first later genuine visual navigation returns authority to the
+  existing bounded visual save policy.
+- Matching completion to the currently audible segment prevents an
+  out-of-order or stale completion from advancing persistence even though the
+  product coordinator already filters work identity before publishing.
 - The CSS Custom Highlight API accepts real DOM ranges in both supported proof
   engines. Adding a test-only inline style is rejected by the packaged CSP;
   inserting and removing the proof rule through the existing same-origin
@@ -773,13 +822,13 @@ persistence. Do not use destructive storage migration as rollback.
 
 ## Final validation results
 
-M009 Milestones 1 through 4 are complete. Authority, source-range projection,
-reader highlighting/following, synchronized user navigation, focused
-unit/component, full desktop, six-test Chromium, packaged WebView2, and
-portable repository validation pass through the recorded checkpoints.
-Heard-position persistence,
-exact-host synchronization evidence, pull-request CI for the current
-milestone, and final M009 validation are not yet available.
+M009 Milestones 1 through 5 are complete. Authority, source-range projection,
+reader highlighting/following, synchronized user navigation, non-skipping
+heard-position persistence, focused unit/component, full desktop, six-test
+Chromium, packaged WebView2, native/portable repository, and privacy
+validation pass through the recorded checkpoints. Exact-host synchronization
+evidence, pull-request CI for the current milestone, and final M009 validation
+are not yet available.
 
 When the plan completes, record:
 

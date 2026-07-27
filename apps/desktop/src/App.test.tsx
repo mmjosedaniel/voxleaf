@@ -8,6 +8,7 @@ import type {
 } from "@voxleaf/epub";
 import {
   createSchemaVersion,
+  decodeLocatorRangeV1,
   decodePersistedReadingStateV1,
   decodeReadingLocatorV1,
   type ReadingLocatorV1,
@@ -32,6 +33,11 @@ import type {
   LocalPublicationOpenFlow,
   LocalPublicationOpenResult,
 } from "./publication/local-publication-open";
+import type {
+  ProductNarrationAudibleProgressObservation,
+  ProductNarrationCoordinator,
+  ProductNarrationSnapshot,
+} from "./tts/product-narration-coordinator";
 
 afterEach(() => {
   cleanup();
@@ -143,6 +149,144 @@ function selectEpub(name = "private.epub"): void {
   fireEvent.change(screen.getByLabelText("Open a local EPUB"), {
     target: { files: [new File(["book"], name)] },
   });
+}
+
+function testLocatorAt(textOffsetCodePoints: number): ReadingLocatorV1 {
+  return decodeReadingLocatorV1({
+    ...TEST_LOCATED_BLOCK.startLocator,
+    textOffsetCodePoints,
+  });
+}
+
+function narrationSnapshot(
+  playIntent: ProductNarrationSnapshot["navigation"]["playIntent"],
+): ProductNarrationSnapshot {
+  return Object.freeze({
+    availability: "available",
+    selection: Object.freeze({ kind: "quick" }),
+    state: undefined,
+    failure: undefined,
+    metrics: Object.freeze({
+      commandToAudibleMs: undefined,
+      bufferingMs: 0,
+      intentionalWaitMs: 0,
+      playbackMs: 0,
+      underrunCount: 0,
+      acceptedAudioUnitCount: 0,
+      acceptedAudioSampleFrames: 0,
+    }),
+    serviceState: "ready",
+    navigation: Object.freeze({
+      playIntent,
+      settling: false,
+      canGoPrevious: false,
+      canGoNext: false,
+    }),
+  });
+}
+
+class ControlledNarrationCoordinator {
+  #snapshot = narrationSnapshot("inactive");
+  readonly #listeners = new Set<() => void>();
+  readonly #audibleListeners = new Set<
+    (observation: ProductNarrationAudibleProgressObservation) => void
+  >();
+
+  public subscribe(listener: () => void): () => void {
+    this.#listeners.add(listener);
+    return () => this.#listeners.delete(listener);
+  }
+
+  public observe(): ProductNarrationSnapshot {
+    return this.#snapshot;
+  }
+
+  public subscribeAudibleProgress(
+    listener: (observation: ProductNarrationAudibleProgressObservation) => void,
+  ): () => void {
+    this.#audibleListeners.add(listener);
+    return () => this.#audibleListeners.delete(listener);
+  }
+
+  public subscribeNavigationRequests(): () => void {
+    return () => undefined;
+  }
+
+  public checkAvailability(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  public setSelection(): void {}
+
+  public start(): void {
+    this.#publish(narrationSnapshot("playing"));
+  }
+
+  public pause(): void {}
+
+  public resume(): void {}
+
+  public stop(): Promise<void> {
+    this.#publish(narrationSnapshot("inactive"));
+    return Promise.resolve();
+  }
+
+  public close(): Promise<void> {
+    return this.stop();
+  }
+
+  public setVolumePercent(): void {}
+
+  public updateActiveLocator(): void {}
+
+  public beginExternalNavigation(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  public settleExternalNavigation(): void {}
+
+  public preserveActiveLocator(): void {}
+
+  public startAtActiveLocator(): void {}
+
+  public goToPreviousBoundary(): void {}
+
+  public goToNextBoundary(): void {}
+
+  public publishAudible(
+    kind: ProductNarrationAudibleProgressObservation["kind"],
+  ): void {
+    const sourceRange = decodeLocatorRangeV1({
+      schemaVersion: 1,
+      start: testLocatorAt(10),
+      end: testLocatorAt(20),
+    });
+    const observation = Object.freeze({
+      kind,
+      observedAtMs: 1,
+      sessionId: "session:app-test",
+      generationId: "generation:app-test",
+      segmentId: "segment:app-test",
+      sequence: 0,
+      sourceRange,
+      playedSampleFrames: kind === "segment-completed" ? 24_000 : 0,
+      sampleCountSamples: 24_000,
+    }) satisfies ProductNarrationAudibleProgressObservation;
+    for (const listener of this.#audibleListeners) {
+      listener(observation);
+    }
+  }
+
+  public get audibleListenerCount(): number {
+    return this.#audibleListeners.size;
+  }
+
+  #publish(snapshot: ProductNarrationSnapshot): void {
+    this.#snapshot = snapshot;
+    for (const listener of this.#listeners) {
+      listener();
+    }
+  }
 }
 
 describe("desktop reader lifecycle surface", () => {
@@ -544,6 +688,73 @@ describe("desktop reader lifecycle surface", () => {
         "No local EPUB is open.",
       ),
     );
+  });
+
+  it("persists heard boundaries without letting active visual movement advance them", async () => {
+    const publication = createTestPublication("Heard progress book");
+    const flow = createTestFlow(() =>
+      Promise.resolve({ status: "ready", publication }),
+    );
+    const repository = createTestReaderPositionRepository();
+    const writePosition = vi.mocked(repository.writePosition);
+    const narration = new ControlledNarrationCoordinator();
+    let readerProps: ReadyPublicationContentProps | undefined;
+
+    function ControlledReader(props: ReadyPublicationContentProps) {
+      readerProps = props;
+      useEffect(() => {
+        props.onInitialRestorationSettled?.({
+          status: "settled",
+          locator:
+            props.initialLocator ?? props.publication.locators[0]!.startLocator,
+        });
+      }, [props]);
+      return <div>Controlled heard-progress reader</div>;
+    }
+
+    render(
+      <App
+        openFlow={flow}
+        readerPositionRepository={repository}
+        createNarrationCoordinator={() =>
+          narration as unknown as ProductNarrationCoordinator
+        }
+        ReadyPublicationContent={ControlledReader}
+      />,
+    );
+    selectEpub("heard-progress.epub");
+    await screen.findByRole("heading", { name: "Heard progress book" });
+    await waitFor(() => expect(narration.audibleListenerCount).toBe(1));
+
+    act(() => narration.start());
+    act(() => narration.publishAudible("segment-started"));
+    await waitFor(() => expect(writePosition).toHaveBeenCalledTimes(1));
+    expect(writePosition.mock.calls[0]?.[0].locator.textOffsetCodePoints).toBe(
+      10,
+    );
+
+    act(() => readerProps?.onActiveLocatorChange?.(testLocatorAt(80)));
+    act(() => narration.publishAudible("progress"));
+    await Promise.resolve();
+    expect(writePosition).toHaveBeenCalledTimes(1);
+
+    act(() => narration.publishAudible("segment-completed"));
+    await waitFor(() => expect(writePosition).toHaveBeenCalledTimes(2));
+    expect(writePosition.mock.calls[1]?.[0].locator.textOffsetCodePoints).toBe(
+      20,
+    );
+
+    await act(async () => narration.stop());
+    act(() =>
+      readerProps?.onSettledLocatorChange?.(testLocatorAt(4), "reflow"),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Close EPUB" }));
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "No local EPUB is open.",
+      ),
+    );
+    expect(writePosition).toHaveBeenCalledTimes(2);
   });
 
   it("shows a fixed terminal state when publication cleanup fails", async () => {

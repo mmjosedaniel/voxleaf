@@ -16,6 +16,7 @@ import {
   createWebStorageReaderPositionRepository,
   type ReaderPositionRepository,
 } from "./persistence/reader-position-repository";
+import { bindNarrationPositionPersistence } from "./persistence/narration-position-save-bridge";
 import {
   ReaderPositionRestoreCoordinator,
   type ReadyReaderOpenRestoration,
@@ -72,6 +73,10 @@ export interface AppProps {
   readonly openFlow?: LocalPublicationOpenFlow;
   readonly readerPositionRepository?: ReaderPositionRepository;
   readonly readerPositionSaveEnvironment?: ReaderPositionSaveEnvironment;
+  readonly createNarrationCoordinator?: (
+    publication: OpenedPublication,
+    initialLocator: ReadingLocatorV1,
+  ) => ProductNarrationCoordinator;
   readonly ReadyPublicationContent?: ComponentType<ReadyPublicationContentProps>;
   readonly runRasterProbe?: typeof runRasterImageSafetyProbe;
 }
@@ -202,10 +207,18 @@ function rasterStatusForResult(
   return result.status;
 }
 
+function createDefaultNarrationCoordinator(
+  publication: OpenedPublication,
+  initialLocator: ReadingLocatorV1,
+): ProductNarrationCoordinator {
+  return new ProductNarrationCoordinator(publication, initialLocator);
+}
+
 export function App({
   openFlow: suppliedOpenFlow,
   readerPositionRepository: suppliedReaderPositionRepository,
   readerPositionSaveEnvironment,
+  createNarrationCoordinator = createDefaultNarrationCoordinator,
   ReadyPublicationContent = ReaderPublicationContent,
   runRasterProbe = runRasterImageSafetyProbe,
 }: AppProps) {
@@ -256,11 +269,11 @@ export function App({
     () =>
       readyPublication === undefined || readyRestorationResult === undefined
         ? undefined
-        : new ProductNarrationCoordinator(
+        : createNarrationCoordinator(
             readyPublication,
             readyRestorationResult.position.locator,
           ),
-    [readyPublication, readyRestorationResult],
+    [createNarrationCoordinator, readyPublication, readyRestorationResult],
   );
 
   useEffect(
@@ -384,6 +397,19 @@ export function App({
 
   useEffect(() => {
     if (
+      narrationCoordinator === undefined ||
+      positionSaveCoordinator === undefined
+    ) {
+      return;
+    }
+    return bindNarrationPositionPersistence(
+      narrationCoordinator,
+      positionSaveCoordinator,
+    );
+  }, [narrationCoordinator, positionSaveCoordinator]);
+
+  useEffect(() => {
+    if (
       positionSaveCoordinator !== undefined &&
       readyRestorationResult?.position.mode === "recovered" &&
       readyRestoration?.settlement === "settled"
@@ -476,10 +502,11 @@ export function App({
     ): void => {
       if (reason === "reflow") {
         narrationCoordinator?.preserveActiveLocator(locator);
+        positionSaveCoordinator?.scheduleReflow(locator);
       } else {
         narrationCoordinator?.settleExternalNavigation(locator);
+        positionSaveCoordinator?.scheduleImmediate(locator);
       }
-      positionSaveCoordinator?.scheduleImmediate(locator);
     },
     [narrationCoordinator, positionSaveCoordinator],
   );
