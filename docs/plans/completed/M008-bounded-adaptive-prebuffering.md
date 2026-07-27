@@ -487,8 +487,10 @@ Completed on 2026-07-27.
 
 #### Status
 
-Local implementation and validation complete. Required pull-request CI remains
-the external completion gate before this plan can be archived.
+Complete. Local deterministic, portable, native, packaged, exact-host,
+privacy, artifact, and documentation validation passed. PR #126 then passed
+the required Ubuntu portable and Windows native foundation jobs on commit
+`14ccf0d`.
 
 #### Actual result
 
@@ -674,7 +676,10 @@ accepted no-standard-profile decision.
   candidate-lock, portable, authoritative Windows, packaged model-free,
   exact-host, Markdown-link, privacy, artifact, and diff checks all pass. The
   exact rerun independently reproduced slower-than-real-time buffering and
-  clean shutdown. Required pull-request CI remains before archival.
+  clean shutdown.
+- 2026-07-27: PR #126 passed the required Ubuntu portable foundation and
+  Windows native foundation jobs on commit `14ccf0d`. Marked Milestone 6
+  complete and moved this ExecPlan from `active/` to `completed/`.
 
 ## Discoveries and decisions
 
@@ -927,5 +932,6 @@ Milestone 6 local validation passes:
 
 Milestone 6 changes only policy/documentation and adds no dependency, protocol,
 capability, persistence, model, audio, private fixture, retry, or network
-behavior. Required pull-request CI has not yet run for this branch, so the
-ExecPlan remains active and is not archived.
+behavior. PR #126 passed the required Ubuntu portable and Windows native
+foundation jobs on commit `14ccf0d`; the completion gate is satisfied and this
+ExecPlan is archived.

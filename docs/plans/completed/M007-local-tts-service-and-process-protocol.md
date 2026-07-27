@@ -132,7 +132,7 @@ Until then, the current user-visible product still ends at visual reading.
 - `docs/plans/completed/M005-narration-text-preparation.md`
 - `docs/plans/completed/M006-001-local-tts-profile-blocker-resolution.md`
 - `docs/plans/completed/M006-002-qwen-short-segment-batch-feasibility.md`
-- `docs/plans/active/M008-bounded-adaptive-prebuffering.md`
+- `docs/plans/completed/M008-bounded-adaptive-prebuffering.md`
 - `docs/architecture/system-diagram.md`
 - `docs/architecture/overview.md`
 - `docs/architecture/narration-preparation-limits-v1.md`
