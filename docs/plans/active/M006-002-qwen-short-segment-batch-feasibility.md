@@ -685,8 +685,9 @@ five-minute playback or quality claim is authorized.
 #### Status
 
 In progress. The content-safe `selection-v5` decision, ADR-0015, and the
-follow-up M008 ExecPlan are recorded. Local validation and required
-pull-request CI remain before this plan can move to `docs/plans/completed/`.
+follow-up M008 ExecPlan are recorded, and final local validation passes.
+Required pull-request CI remains before this plan can move to
+`docs/plans/completed/`.
 
 ## Testing and benchmark strategy
 
@@ -1218,8 +1219,17 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
   runtime behavior is implemented by this decision.
 - 2026-07-26: Created the M008 bounded adaptive prebuffering ExecPlan and
   reconciled product, architecture, roadmap, setup, dependency, testing, and
-  system-diagram documentation. Milestone 10 remains open until local
-  validation and required pull-request CI pass.
+  system-diagram documentation.
+- 2026-07-26: Final local validation passed from clean detached checkpoint
+  `1727e03`. `pnpm.cmd check:portable` passed in 78.0 seconds and
+  `pnpm.cmd check` passed on authoritative Windows in 159.9 seconds. Both
+  included 175 shared, 555 EPUB, 204 desktop, six native-client, and 160 Python
+  tests; the native aggregate additionally passed Rust formatting, Clippy,
+  crate tests, the Tauri release build, and Python source/wheel builds. The
+  unchanged 107-package candidate lock and exact Qwen/Torch/Torchaudio import
+  smoke passed. Prettier, 274 relative links, `git diff --check`, and the
+  changed-document private-pattern scan also passed. Milestone 10 remains open
+  only for required pull-request CI.
 
 ## Discoveries and decisions
 
@@ -1431,8 +1441,8 @@ hardware outcome: CPU solo passed admission, the same-authority GPU-solo
 baseline completed, and the concurrent arm reached the frozen
 `resource-limit` boundary. Milestone 9 is therefore not admitted. Milestone 10
 has recorded the durable `v5` decision and follow-up authority but still
-requires local validation and pull-request CI, so the plan remains active and
-must not yet move to `docs/plans/completed/`.
+requires pull-request CI, so the plan remains active and must not yet move to
+`docs/plans/completed/`.
 
 The earlier `v5` planning amendment changed documentation only. Milestone 6
 now adds separately versioned authority and model-free validation, but still
@@ -1749,5 +1759,5 @@ Accepted `selection-v5` now rejects CPU-only and dual-worker scheduling and
 retains the exact GPU worker only for ADR-0015's constrained adaptive demo.
 ADR-0015 supersedes ADR-0014's scheduling and buffering details without
 changing the frozen failed `v3` standard result. M008 records the unimplemented
-follow-up. Final local validation and required pull-request CI remain before
-Milestone 10 and this ExecPlan can close.
+follow-up. Final local validation passes; required pull-request CI remains
+before Milestone 10 and this ExecPlan can close.

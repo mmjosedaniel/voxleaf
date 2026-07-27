@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 6.1 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. Milestone 6.2 has reached its local decision checkpoint. CPU solo measured aggregate RTF 2.999, GPU solo measured aggregate RTF 1.467, the official concurrent run stopped at `resource-limit`, and a low-application-load diagnostic later completed both workers at aggregate RTF 1.429 while slowing the GPU worker to RTF 2.329. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains one exact GPU worker only for a constrained development demo. ADR-0015 supersedes ADR-0014's scheduling and buffering details and approves the M008 plan for quick-start or explicit prepared playback, bounded generation during playback-only pause, truthful frontier buffering, and an approximately 30-minute in-memory ceiling. M006-002 remains active until final local validation and required pull-request CI. No standard profile, production runtime, continuous-playback guarantee, or general hardware support is approved. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 6.1 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. Milestone 6.2 has reached its local decision checkpoint. CPU solo measured aggregate RTF 2.999, GPU solo measured aggregate RTF 1.467, the official concurrent run stopped at `resource-limit`, and a low-application-load diagnostic later completed both workers at aggregate RTF 1.429 while slowing the GPU worker to RTF 2.329. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains one exact GPU worker only for a constrained development demo. ADR-0015 supersedes ADR-0014's scheduling and buffering details and approves the M008 plan for quick-start or explicit prepared playback, bounded generation during playback-only pause, truthful frontier buffering, and an approximately 30-minute in-memory ceiling. M006-002 final local validation passes; required pull-request CI remains before closeout. No standard profile, production runtime, continuous-playback guarantee, or general hardware support is approved. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -310,8 +310,8 @@ CPU-solo admission, a slower-than-real-time GPU baseline, and a concurrent
 `resource-limit` stop. The low-load diagnostic later completed but supplied
 only a 2.6% aggregate gain while substantially slowing the GPU worker.
 Milestone 9 is not admitted. Milestone 10 records accepted `selection-v5` and
-ADR-0015; local validation and required pull-request CI remain before the
-ExecPlan moves to completed. This work does not change failed batch-one `v3`,
+ADR-0015; final local validation passes, and required pull-request CI remains
+before the ExecPlan moves to completed. This work does not change failed batch-one `v3`,
 frozen `v4`, or ADR-0013.
 
 ### Goal

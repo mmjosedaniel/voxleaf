@@ -44,7 +44,7 @@ Implemented and validated:
 
 Remaining:
 
-- Close M006-002 after final local validation and required pull-request CI.
+- Close M006-002 after required pull-request CI; final local validation passes.
 - Implement ADR-0015 through the M008 ExecPlan using one GPU worker; do not add
   CPU-only or dual-worker product scheduling.
 - Implement quick start at approximately 15 playable seconds and explicit

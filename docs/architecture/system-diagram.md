@@ -169,7 +169,7 @@ The current user-visible flow ends at `VISUAL`. `PREP` is usable by package call
 
 ## Remaining gates
 
-1. **Milestone 6.2 — Closeout in progress:** the local decision is complete; finish Milestone 10 local validation and required pull-request CI, then move the plan to completed.
+1. **Milestone 6.2 — Closeout in progress:** the local decision and final local validation are complete; required pull-request CI remains before moving the plan to completed.
 2. **Milestone 7 — Constrained demo planned; production blocked:** implement at most one bounded GPU Qwen development-demo vertical slice under ADR-0015. Do not claim passing performance, continuous playback, native streaming, general hardware support, or production transport.
 3. **Milestone 8 — Approved planned:** follow M008 to implement bounded audio framing, one-GPU scheduling, quick/prepared startup, playback-only pause continuation, adaptive boundary waits, truthful frontier buffering, and the 30-minute ceiling.
 4. **Milestone 9 — Deferred:** connect one stable logical position across the visual reader, prepared narration, playback progress, highlighting, following, seek, and restoration.
