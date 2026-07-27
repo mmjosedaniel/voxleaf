@@ -174,6 +174,32 @@ duplicated into multiple evaluator identities.
 
 The browser command requires one prior networked `pnpm.cmd test:browser:install`. Ordinary execution does not download browsers and can run offline after that setup. It uses a fresh isolated context, blocks and counts non-loopback requests, removes its fixed synthetic and reader-state storage keys, and lets Playwright stop the loopback preview server. Failure-only traces and screenshots are ignored artifacts and may contain only repository-authored synthetic test content. The native-startup command requires `tauri-driver` and a Microsoft EdgeDriver matching the installed WebView2 runtime; it uses the standard WebDriver launch path plus proxied CDP logging and creates no browser artifact. Chromium and WebView2 evidence remain complementary.
 
+## M009 synchronization-authority validation
+
+M009 Milestone 1 adds a model-free deterministic and real-engine proof surface:
+
+- `synchronization-authority.test.ts` verifies the closed event table,
+  segment-level timing, invalidation-first navigation, bounded progress
+  cadence, non-skipping persistence checkpoints, and the 24-pixel follow
+  comfort region;
+- `semantic-dom-range-mapper.test.tsx` verifies noncollapsed ranges across
+  nested markup and Unicode code-point offsets without changing publication
+  nodes;
+- `synchronization-feasibility.smoke.spec.ts` proves production Chromium
+  accepts the CSS Custom Highlight registry and CSSOM style rule, follows the
+  target range, preserves focus and an independent user selection, leaves
+  publication content and URL unchanged, and performs no external request;
+  and
+- the ordinary packaged native-startup smoke repeats the critical proof in
+  WebView2 under the real content-security policy and keeps its zero runtime
+  error and zero external-request assertions.
+
+The proof uses only repository-authored synthetic EPUB content and returns
+content-free booleans. It does not run Qwen, publish narration text or audio,
+or claim that M009 runtime synchronization is connected. The frozen behavior
+is documented in
+[`../architecture/synchronization-authority-v1.md`](../architecture/synchronization-authority-v1.md).
+
 ### Hardware-specific visual-reader benchmark
 
 Run `pnpm.cmd benchmark:reader` only from native Windows after `pnpm.cmd test:browser:install`. The benchmark launches fresh pinned Chromium processes and queries their numeric process IDs through CDP so a fixed PowerShell query can record aggregate working set. It emits only fixed fixture labels, block/image/node counts, durations, heap values, pixel counts, and byte totals. It disables trace, screenshot, and video capture; uses only repository-authored synthetic content and an in-memory generated EPUB for the production case; makes no external network request; and writes only ignored Playwright result artifacts.

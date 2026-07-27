@@ -27,6 +27,7 @@ ADR-0002-short-description.md
 - [`ADR-0014-constrained-qwen-development-demo.md`](ADR-0014-constrained-qwen-development-demo.md): historical constrained-demo decision, now superseded by ADR-0015 for scheduling and buffering.
 - [`ADR-0015-bounded-adaptive-qwen-demo-buffering.md`](ADR-0015-bounded-adaptive-qwen-demo-buffering.md): retain one exact GPU worker for a bounded adaptive development demo, with quick mode default, explicit prepared playback, one-minute refill, zero default boundary wait, and the standard feasibility blocker retained.
 - [`ADR-0016-rust-owned-stdio-tts-protocol.md`](ADR-0016-rust-owned-stdio-tts-protocol.md): Rust-owned standard-stream child supervision, complete-unit float32-le framing, internal-only IPC CSP sources, and optimized Tauri binary responses.
+- [`ADR-0017-segment-level-reader-narration-synchronization.md`](ADR-0017-segment-level-reader-narration-synchronization.md): segment-level audible-position authority, CSS Custom Highlight decoration, focus-safe following, synchronized manual navigation, and non-skipping heard-progress persistence.
 
 ## Template
 

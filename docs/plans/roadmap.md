@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 8 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Its final policy selects quick mode by default, one minute as the initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. The final packaged rerun measured 41.312 seconds to audible quick playback and 19.49 buffering seconds per playback minute. Because that exceeds the MVP target, this remains a constrained demo rather than a standard, continuous-playback, production, distribution, or general-hardware profile. Milestone 9 is now approved and has a focused ExecPlan, but its synchronization implementation has not started.
+VoxLeaf is pre-alpha. Milestones 1 through 8 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Its final policy selects quick mode by default, one minute as the initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. The final packaged rerun measured 41.312 seconds to audible quick playback and 19.49 buffering seconds per playback minute. Because that exceeds the MVP target, this remains a constrained demo rather than a standard, continuous-playback, production, distribution, or general-hardware profile. Milestone 9 is in progress: its first implementation milestone freezes and proves the segment-level synchronization authority, while audible-progress projection and product integration remain.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -514,10 +514,15 @@ behavior should first be proven with deterministic fakes.
 
 ## Milestone 9: Integrate synchronized reading and narration
 
-**Status:** Approved; implementation not started. The visual reader and
-exact-development narration caller share the active locator at narration start
-and invalidation, but no spoken timing, synchronized highlighting, following,
-seek, or shared playback position is implemented. Follow
+**Status:** In progress; ExecPlan Milestone 1 complete. ADR-0017 and the frozen
+synchronization authority select segment-level source ranges, CSS Custom
+Highlight decoration, focus-safe following, immediate passive-navigation seek
+with bounded settlement, stable-segment previous/next movement, and
+non-skipping persistence checkpoints. Chromium and packaged WebView2 prove
+the mechanism without publication mutation, focus/selection loss, URL changes,
+runtime errors, or external requests. Audible-progress projection,
+synchronized product behavior, and heard-position persistence are not yet
+implemented. Follow
 [`M009-synchronized-reading-and-narration.md`](active/M009-synchronized-reading-and-narration.md)
 for implementation authority.
 
@@ -542,7 +547,8 @@ resolve the standard-profile blocker.
 
 ### Major risks and unknowns
 
-- Define whether manual scrolling while narration is active seeks playback, pauses automatic following, or temporarily separates the viewport.
+- Implement the frozen identity-first seek after user-originated passive
+  navigation and prove that programmatic following cannot feed back into it.
 - Cancellation must be correct across UI, coordinator, transport, inference queue, and audio buffer—not only within one component.
 - Segment-level timing may be sufficient for paragraph highlighting but not future word-level synchronization.
 - Automatic following must not disorient keyboard or assistive-technology users.

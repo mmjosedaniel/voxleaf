@@ -1,0 +1,118 @@
+# Synchronization authority v1
+
+## Status and scope
+
+This is the frozen interaction and position authority for M009. Milestone 1
+implements the deterministic authority and proves the selected decoration and
+following mechanism in production Chromium and packaged WebView2. It does not
+claim that runtime audible-position projection, highlighting, synchronized
+navigation, or heard-progress persistence is connected yet; those remain
+M009 Milestones 2 through 5.
+
+The authority is desktop-local. It does not change the shared schemas, the
+M005 `narration-v1` segmentation policy, or the M007 protocol-v1 service.
+
+## Position and timing
+
+VoxLeaf owns one logical reading position with visual and audible projections.
+When narration is inactive, the active visual locator is authoritative. When
+a complete prepared unit becomes audible, its existing source
+`LocatorRangeV1` is the audible projection.
+
+Synchronization is segment-level:
+
+- the complete prepared segment is highlighted while it is active;
+- `segment-started` and `segment-completed` are exact transitions;
+- optional played-frame observations occur no more often than every 250 ms;
+- word timing is unsupported and must not be inferred from elapsed samples;
+- a start or seek inside a segment replays the containing stable segment from
+  its beginning; and
+- previous and next move by stable prepared-segment boundaries.
+
+## Frozen transition table
+
+The executable table is
+`apps/desktop/src/reader/synchronization-authority.ts`. Every event has one
+closed row:
+
+| Event | Resulting phase | Position/persistence authority | Highlight/follow | Work |
+| --- | --- | --- | --- | --- |
+| `start` | `preparing` | visual / none | clear / none | start new |
+| `segment-started` | `playing` | segment start / save start | active segment / follow if outside comfort region | preserve |
+| `segment-completed` | `playing` | segment end / save end | retain last heard / none | preserve |
+| `pause` | `paused` | latest heard / save latest heard | retain / none | preserve |
+| `resume` | by play intent | latest heard / none | retain / follow if required | preserve |
+| `buffer-exhausted` | `buffering` | latest heard / save latest heard | retain / none | preserve |
+| `buffer-refilled` | `playing` | latest heard / none | retain / preserve | preserve |
+| user visual navigation | by play intent | target visual / save latest heard | clear / none | invalidate first |
+| previous or next segment | by play intent | target visual / save latest heard | clear / none | invalidate first |
+| chapter navigation | by play intent | target visual / save latest heard | clear / reader navigation policy | invalidate first |
+| reflow | preserve | preserve / preserve | preserve / follow if required | preserve |
+| `stop` | `inactive` | latest heard / save latest heard | clear / none | invalidate first |
+| publication or settings replacement | `inactive` | latest heard / save latest heard | clear / none | invalidate first |
+| service failure | `failed` | latest heard / save latest heard | clear / none | invalidate first |
+| application cleanup | `inactive` | latest heard / save latest heard | clear / none | invalidate first |
+
+For every invalidating event, eligibility changes before cleanup:
+
+1. replace the work identity;
+2. stop playback;
+3. abort preparation;
+4. release queued units;
+5. contain active synthesis;
+6. settle the canonical target; and
+7. restart only when prior play intent authorizes it.
+
+## Highlighting and following
+
+The selected decoration is the CSS Custom Highlight API using the fixed name
+`voxleaf-narration-active`. It accepts a real noncollapsed DOM `Range` without
+wrapping, replacing, or annotating publication nodes. The application owns the
+style and registry entry; it clears the entry on invalidation and cleanup.
+
+The reader follows only when the audible range is outside the viewport's
+24-pixel top/bottom comfort inset. Placement uses `behavior: "auto"`, preserves
+the current focus and user selection, and suspends passive visual sampling
+until placement settles. If usable geometry is unavailable, VoxLeaf keeps the
+highlight but does not scroll.
+
+The model-free proof confirms in production Chromium and packaged WebView2
+that:
+
+- the registry and `::highlight()` style rule are accepted under the packaged
+  content-security policy;
+- the range is noncollapsed and connected;
+- following reaches the comfort region;
+- keyboard focus and an independent user selection remain unchanged;
+- publication descendant and text counts remain unchanged;
+- the URL remains unchanged; and
+- the packaged smoke retains zero runtime errors and zero external requests.
+
+No new runtime dependency is required.
+
+## User navigation
+
+Passive wheel, touch, or scrollbar movement is a seek when its first canonical
+visual-locator change is observed. VoxLeaf immediately invalidates old work,
+then waits 500 ms for visual settlement. Active play intent restarts at the
+settled active visual locator; paused intent remains paused at that target.
+Programmatic following is excluded by the sampling-suspension token.
+
+An addressable passage is the existing active visual locator. Publication
+prose is not turned into a button and DOM paths, quotations, page numbers, and
+rendered geometry are not persisted.
+
+## Heard progress
+
+Persistence remains structural and bounded:
+
+- save the segment start when that segment becomes audible;
+- save the canonical segment end only after completion;
+- pause, stop, failure, replacement, and cleanup save the latest heard
+  checkpoint;
+- a mid-segment restart resumes from the segment start, preferring replay over
+  skipping unheard content; and
+- periodic callback or animation-frame writes are prohibited.
+
+Prepared text, PCM, highlight geometry, DOM ranges, user selections, and
+publication prose never enter persistence or diagnostics.
