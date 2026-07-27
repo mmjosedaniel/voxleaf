@@ -457,9 +457,17 @@ summary hashes, and `diagnosticMaxNewTokens: 256`. It uses the same two isolated
 workers and safety monitor, writes no raw/result evidence, and can never be
 promoted. The exact-host diagnostic stopped on `commit-headroom` after about
 98 seconds. Reducing Qwen's generated-token ceiling from 2048 to 256 therefore
-did not make two resident models feasible under the frozen memory boundary.
-The official result remains `resource-limit`; the diagnostic only identifies
-the underlying live safety condition.
+did not remove the original memory pressure.
+
+A repeat after closing other applications completed all 40 first attempts.
+This proves the commit failure depends on the host's baseline application load,
+not on an unavoidable two-model allocation alone. The completed diagnostic
+still failed scheduling feasibility: aggregate RTF was `1.4291263397435898`
+against the required value below `1.0`, and the GPU worker's RTF increased to
+`2.3290592090374167` under CPU contention. The maximum unit was 14.16 seconds,
+so the 256-token ceiling did not truncate the intended 8-16-second output.
+The official result remains `resource-limit`; both diagnostics remain
+non-promotable and do not admit playback/quality review.
 
 ## Disposable blinded quality session
 

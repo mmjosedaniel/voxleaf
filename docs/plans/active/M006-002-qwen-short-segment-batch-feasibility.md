@@ -1164,6 +1164,25 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
   Cleanup left zero workers, zero GPU use, 7,810 MiB free VRAM,
   18,012,766,208 bytes available RAM, 21,985,099,776 bytes commit headroom,
   the restored 45-minute AC sleep setting, and zero raw files.
+- 2026-07-26: Repeated the same non-promotable 256-token diagnostic after the
+  user closed other applications. Preflight improved to 21,443,198,976 bytes
+  available RAM and 30,360,735,744 bytes commit headroom. All 40 first
+  attempts completed and produced 452.4 media seconds without a safety stop,
+  failure, retry, raw journal, or promotable result.
+- 2026-07-26: The completed repeat reached aggregate RTF
+  `1.4291263397435898`, versus GPU-solo `1.467080448861599`. This small
+  throughput improvement remains slower than real time. The GPU worker slowed
+  to RTF `2.3290592090374167` under contention while the CPU worker reached
+  RTF `3.4522421854976506`; the GPU slowdown exceeds the frozen 25-percent
+  ceiling. Peak combined process RAM was 12,961,947,648 bytes, minimum
+  available RAM was 9,301,962,752 bytes, and minimum commit headroom was
+  7,641,972,736 bytes.
+- 2026-07-26: The repeat's maximum unit duration was 14.16 seconds, peak GPU
+  dedicated/shared memory was 5,351,464,960 / 81,788,928 bytes, and CPU
+  dedicated/shared GPU use remained zero. Cleanup restored 45-minute AC
+  sleep, zero workers, zero GPU use with 7,810 MiB free, and zero raw files.
+  Closing applications solves this occurrence of the commit stop but does not
+  make the dual-worker schedule real-time or product-viable.
 
 ## Discoveries and decisions
 
@@ -1327,10 +1346,11 @@ decision evidence. Never delete or rewrite `v2`, failed batch-one `v3`, frozen
     must still collect the frozen cold-load, memory, cancellation, placement,
     cleanup, and private raw evidence and derive a schema-valid safe result.
 44. Qwen's frozen `maxNewTokens: 2048` was not the cause of the concurrent
-    safety stop. A closed 256-token diagnostic reproduced the failure and
-    preserved the exact `commit-headroom` subcode. The two resident processes,
-    rather than permitted output length, exhausted the frozen Windows commit
-    reserve.
+    safety stop. A closed 256-token diagnostic reproduced the exact
+    `commit-headroom` subcode; repeating it after closing applications
+    completed all 40 units. Commit feasibility therefore depends on baseline
+    host load, while the completed RTF and contention measurements independently
+    reject the dual-worker schedule.
 
 ## Final validation results
 
@@ -1654,3 +1674,11 @@ and cleanup controls:
 
 This diagnostic identifies the original safety category but does not
 retroactively promote or replace the frozen failed concurrent result.
+
+The same diagnostic was repeated after closing applications. It completed all
+40 units with minimum commit headroom 7,641,972,736 bytes and no safety stop,
+confirming that the earlier commit failure was baseline-load dependent. Its
+aggregate RTF `1.4291263397435898`, GPU-worker RTF
+`2.3290592090374167`, and CPU-worker RTF `3.4522421854976506` still fail
+real-time and contention gates. Post-run process, GPU, sleep, raw-tree, and
+temporary-output cleanup passed. Milestone 9 remains not admitted.
