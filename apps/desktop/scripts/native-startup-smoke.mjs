@@ -179,6 +179,26 @@ const FIXED_FAILURE_CODES = new Map([
     "Native TTS protocol probe did not deliver bounded binary audio.",
     "tts-protocol-probe-failed",
   ],
+  [
+    "Native TTS protocol probe response was invalid.",
+    "tts-protocol-probe-response-invalid",
+  ],
+  [
+    "Native TTS protocol probe command was unavailable.",
+    "tts-protocol-probe-unavailable",
+  ],
+  [
+    "Native TTS protocol probe returned a serialized array.",
+    "tts-protocol-probe-serialized-array",
+  ],
+  [
+    "Native TTS protocol probe returned an unknown binary object.",
+    "tts-protocol-probe-unknown-binary",
+  ],
+  [
+    "Native TTS protocol probe returned an unsupported binary view.",
+    "tts-protocol-probe-unsupported-view",
+  ],
   ["Native driver logs were invalid.", "native-driver-log-invalid"],
 ]);
 
@@ -376,9 +396,11 @@ function isLocalApplicationUrl(rawUrl) {
     const url = new URL(rawUrl);
     return (
       url.protocol === "tauri:" ||
+      url.protocol === "ipc:" ||
       url.protocol === "data:" ||
       url.protocol === "blob:" ||
-      url.hostname === "tauri.localhost"
+      url.hostname === "tauri.localhost" ||
+      url.hostname === "ipc.localhost"
     );
   } catch {
     return false;
@@ -481,10 +503,28 @@ async function exerciseNativeTtsProtocolProbe(driver, setStage) {
            observation,
          };
        })
-       .catch(() => {
+       .catch((error) => {
+         const code =
+           error?.code === "tts-probe-response-invalid" ||
+           error?.code === "tts-probe-unavailable"
+             ? error.code
+             : "tts-probe-unexpected";
+         const detail =
+           error?.detail === "array" ||
+           error?.detail === "binary-object" ||
+           error?.detail === "byte-length" ||
+           error?.detail === "non-finite" ||
+           error?.detail === "other" ||
+           error?.detail === "other-view" ||
+           error?.detail === "prefix" ||
+           error?.detail === "sample-length"
+             ? error.detail
+             : "none";
          globalThis.__voxleafTtsProtocolProbeObservation = {
-           status: "failed",
-         };
+            status: "failed",
+            code,
+            detail,
+          };
        });
      return true;`,
   );
@@ -504,6 +544,22 @@ async function exerciseNativeTtsProtocolProbe(driver, setStage) {
      delete globalThis.__voxleafTtsProtocolProbeObservation;
      return result;`,
   );
+  if (result?.status === "failed") {
+    assert(
+      result.code !== "tts-probe-response-invalid",
+      result.detail === "array"
+        ? "Native TTS protocol probe returned a serialized array."
+        : result.detail === "binary-object"
+          ? "Native TTS protocol probe returned an unknown binary object."
+          : result.detail === "other-view"
+            ? "Native TTS protocol probe returned an unsupported binary view."
+            : "Native TTS protocol probe response was invalid.",
+    );
+    assert(
+      result.code !== "tts-probe-unavailable",
+      "Native TTS protocol probe command was unavailable.",
+    );
+  }
   assert(
     result?.status === "complete" &&
       result.observation?.byteLength === 19_200 &&
@@ -1717,10 +1773,12 @@ async function runNativeReaderPerformanceBenchmark(
        try {
          const url = new URL(entry.name);
          return !(
-           url.protocol === "tauri:" ||
-           url.protocol === "data:" ||
-           url.protocol === "blob:" ||
-           url.hostname === "tauri.localhost"
+            url.protocol === "tauri:" ||
+            url.protocol === "ipc:" ||
+            url.protocol === "data:" ||
+            url.protocol === "blob:" ||
+            url.hostname === "tauri.localhost" ||
+            url.hostname === "ipc.localhost"
          );
        } catch {
          return true;
@@ -2220,10 +2278,12 @@ async function run() {
          try {
            const url = new URL(entry.name);
            return !(
-             url.protocol === "tauri:" ||
-             url.protocol === "data:" ||
-             url.protocol === "blob:" ||
-             url.hostname === "tauri.localhost"
+              url.protocol === "tauri:" ||
+              url.protocol === "ipc:" ||
+              url.protocol === "data:" ||
+              url.protocol === "blob:" ||
+              url.hostname === "tauri.localhost" ||
+              url.hostname === "ipc.localhost"
            );
          } catch {
            return true;

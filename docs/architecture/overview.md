@@ -5,12 +5,11 @@
 Mixed implementation status. Roadmap Milestones 1 through 6.2 are complete. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop connects its capability-free local-file selection/read boundary to a UI-independent publication-session owner, presents one accessible idle/opening/ready/empty/failure/closing lifecycle surface, contains presentation failures, and renders the active spine document's supported text plus bounded static raster images through an exhaustive application-owned semantic React reader. Its continuous responsive layout, closed display preferences, bounded incremental large-chapter policy, passive logical-position tracking, viewport/preference reflow preservation, versioned bounded local reader-state repository, lifecycle-aware save coordinator, and exact/nearest-valid open restoration are implemented without publisher styling. A user can open, read, navigate, adjust the visual reader without losing the active logical passage, and explicitly close a supported publication; validated position and preference changes are saved locally on the approved bounded lifecycle and restored after exact-file reselection. Milestone 5 narration preparation is implemented and documented: `@voxleaf/epub` owns exhaustive narration source projection, Unicode-code-point source-span tokens, bounded canonical source windows/lifecycle, deterministic source-mapped neutral/Spanish normalization, normalization invariants/privacy tests, sentence/dialogue/clause/protected-token scanning, cancellable profile-bounded block-local semantic packing with oversized-token hardening, immutable canonical locator-linked prepared segments, the public frozen closed `OpenedPublication.prepareNarration` batch operation, repository-authored public EPUB-to-segment integration evidence, and deterministic exact-bound/resource evidence. Milestone 6 implements and validates the candidate-neutral feasibility harness and accepts ADR-0013's explicit no-viable-profile decision after both exact candidates fail frozen role gates. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation completed and failed startup, throughput, zero-failure, and mid-generation cancellation gates. Milestone 6.2 later rejected shared-model batching, targeted tokenizer placement, CPU-only generation, and the independent GPU-primary/CPU-support topology. Accepted `selection-v5` retains the exact single-GPU candidate only for a constrained development demo. ADR-0015 supersedes ADR-0014's scheduling and buffering details and approves planning for quick start or explicit prepared playback, one GPU worker, bounded generation during playback-only pause, truthful frontier buffering, and an approximately 30-minute in-memory ceiling. Base voice cloning, Whisper, and VAD/energy remain excluded. No production desktop module calls `prepareNarration`; TTS engine integration, buffering, playback, and synchronization require later implementation evidence. The production Python area remains a foundation only, and standard production graduation remains blocked pending viable evidence.
 
 M006-002 final local validation and required pull-request CI pass, and the plan
-is complete. M007 is now in progress. Its first milestone implements a
-model-free Rust-owned parent/child standard-stream probe, freezes a provisional
-transport protocol, and records the selection in
-[ADR-0016](decisions/ADR-0016-rust-owned-stdio-tts-protocol.md). The packaged
-WebView binary-delivery gate remains required before that transport is
-accepted. The production Python service, exact one-GPU Qwen/Serena adapter,
+is complete. M007 is now in progress. Its completed first milestone implements
+a model-free Rust-owned parent/child standard-stream probe, freezes accepted
+transport protocol version 1, and records the selection in
+[ADR-0016](decisions/ADR-0016-rust-owned-stdio-tts-protocol.md). The production
+Python service, exact one-GPU Qwen/Serena adapter,
 desktop TTS client, and generated-audio runtime remain unimplemented.
 M008 owns the later adaptive scheduler and playback follow-up. Its approved
 modes preserve the approximately 15-playable-second quick-start rule and add
@@ -33,7 +32,7 @@ Desktop application
 |-- Cancellable publication-session lifecycle [implemented]
 |-- Accessible visual reader, navigation, reflow, and restoration [implemented]
 |-- Versioned bounded Web Storage repository [implemented]
-|-- Model-free binary TTS transport probe [M007 Milestone 1; in progress]
+|-- Model-free binary TTS transport probe [M007 Milestone 1; implemented]
 |-- Typed production TTS process client [M007 Milestones 2-5; not implemented]
 `-- Audio scheduling, playback, and synchronization [deferred to Milestones 8-9]
 
@@ -66,7 +65,7 @@ EPUB package
 Local TTS service
 |-- Python package/version scaffold [foundation only]
 |-- Rust-owned model-free standard-stream child and binary WebView probe
-|   [M007 Milestone 1; implemented, packaged acceptance pending]
+|   [M007 Milestone 1; implemented and packaged-validated]
 |-- Candidate-neutral feasibility harness and no-profile decision
 |   [implemented development evidence; not production runtime]
 |-- Shared-model v4 and independent dual-worker v5 benchmark
@@ -97,16 +96,16 @@ Reasons:
 - The desktop UI should remain responsive during inference.
 - The service can expose explicit cancellation and health state.
 
-M007 Milestone 1 implemented the result-blind model-free prototype and
-provisionally selects a Rust-owned child process over redirected standard input
-and output. A local socket and loopback WebSocket were evaluated and rejected
+M007 Milestone 1 implemented the result-blind model-free prototype and selects
+a Rust-owned child process over redirected standard input and output. A local
+socket and loopback WebSocket were evaluated and rejected
 for this boundary because they add listener exposure and endpoint/authentication
 ownership without improving the one-child topology. The frozen framing,
 allocation bounds, backpressure, local exposure, supervision, and crash
 behavior are defined by
-[`tts-service-protocol-v1.md`](tts-service-protocol-v1.md) and proposed
-[ADR-0016](decisions/ADR-0016-rust-owned-stdio-tts-protocol.md). The decision
-remains provisional until the packaged WebView binary-delivery smoke passes.
+[`tts-service-protocol-v1.md`](tts-service-protocol-v1.md) and accepted
+[ADR-0016](decisions/ADR-0016-rust-owned-stdio-tts-protocol.md). The packaged
+WebView binary-delivery smoke passes.
 
 ## Core data flow
 
@@ -231,7 +230,7 @@ The implemented boundary uses exactly pinned `@zip.js/zip.js@2.8.30` and `saxes@
 
 The same deterministic generator now emits committed typed standalone validators for every root contract family. Ajv is development-only: it compiles the canonical schemas during generation and independently checks serialized fixtures during tests, while production decoders import only the generated type guards. Generation rejects unexpected runtime helpers and dynamic code, fixture conformance compares generated and freshly compiled results, and the desktop build rejects any Ajv module or runtime code-generation expression before producing an asset.
 
-Schema-family versions govern persisted or cross-process payload shapes and remain separate from process transport version 1. Runtime decoding occurs at persistence and process trust boundaries before data can affect domain or playback state. M007 Milestone 1 provisionally selects the Rust-owned standard-stream transport and freezes its framing and limits in [`tts-service-protocol-v1.md`](tts-service-protocol-v1.md); canonical shared schemas and fixtures remain Milestone 2 work, and packaged WebView evidence remains the transport acceptance gate.
+Schema-family versions govern persisted or cross-process payload shapes and remain separate from process transport version 1. Runtime decoding occurs at persistence and process trust boundaries before data can affect domain or playback state. M007 Milestone 1 selects the Rust-owned standard-stream transport and freezes its framing and limits in [`tts-service-protocol-v1.md`](tts-service-protocol-v1.md); canonical shared schemas and fixtures remain Milestone 2 work. The packaged WebView binary-response gate passes through Tauri's internal-only `ipc:`/`ipc.localhost` CSP boundary.
 
 The implemented book v1 boundary validates raw input against its canonical Draft 2020-12 schema with offline-registered references, then constructs branded domain values and checks relationships that the schema cannot express directly. Validation errors distinguish malformed input from unsupported versions without including book metadata or raw values.
 

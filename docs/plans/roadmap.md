@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 6.2 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. Completed Milestone 6.2 measured CPU solo at aggregate RTF 2.999 and GPU solo at aggregate RTF 1.467; the official concurrent run stopped at `resource-limit`, and a low-application-load diagnostic later completed both workers at aggregate RTF 1.429 while slowing the GPU worker to RTF 2.329. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains one exact GPU worker only for a constrained development demo. ADR-0015 authorizes that exception without selecting a standard profile. M007 is now active and in progress. Its first milestone has implemented the model-free Rust-owned standard-stream transport probe and frozen a provisional version-1 authority; packaged WebView binary evidence remains required before transport acceptance. The production Python service, exact model adapter, and desktop TTS client remain later M007 work. M008 remains the dependent plan for quick-start/prepared playback and bounded adaptive buffering. No standard profile, production runtime, continuous-playback guarantee, or general hardware support is approved. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 6.2 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. Completed Milestone 6.2 measured CPU solo at aggregate RTF 2.999 and GPU solo at aggregate RTF 1.467; the official concurrent run stopped at `resource-limit`, and a low-application-load diagnostic later completed both workers at aggregate RTF 1.429 while slowing the GPU worker to RTF 2.329. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains one exact GPU worker only for a constrained development demo. ADR-0015 authorizes that exception without selecting a standard profile. M007 is now active and in progress. Its completed first milestone implements the model-free Rust-owned standard-stream transport probe, freezes accepted protocol version 1, and passes packaged WebView binary evidence. The production Python service, exact model adapter, and desktop TTS client remain later M007 work. M008 remains the dependent plan for quick-start/prepared playback and bounded adaptive buffering. No standard profile, production runtime, continuous-playback guarantee, or general hardware support is approved. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -384,11 +384,10 @@ work.
 
 ## Milestone 7: Implement the local TTS service and process protocol
 
-**Status:** In progress. Milestone 1 implements the deterministic Rust-owned
-standard-stream and binary Tauri-response probe, freezes provisional protocol
-version 1, and proposes ADR-0016. Packaged WebView evidence remains the
-transport-acceptance gate; Milestones 2-5 and production completion remain
-unimplemented. Follow
+**Status:** In progress. Milestone 1 is complete: the deterministic Rust-owned
+standard-stream and binary Tauri-response probe passes, protocol version 1 is
+accepted, and ADR-0016 is accepted. Milestones 2-5 and production completion
+remain unimplemented. Follow
 [`M007-local-tts-service-and-process-protocol.md`](active/M007-local-tts-service-and-process-protocol.md).
 ADR-0015 permits a focused Qwen/Serena demo service around complete bounded
 units and identity-first worker termination. ADR-0013 still records that no
@@ -427,7 +426,7 @@ model-independent scheduler and playback behavior remain separately owned.
 
 ### Major risks and unknowns
 
-- Confirm the provisionally selected Rust-owned standard-stream transport through packaged WebView evidence.
+- Implement the accepted Rust-owned standard-stream authority consistently across canonical schemas, Python, Rust, and TypeScript.
 - Binary framing, backpressure, service crashes, protocol upgrades, and cancellation acknowledgments must remain observable.
 - Some inference calls may not be immediately interruptible; stale results still must be rejected.
 - Python sidecar and model packaging may be one of the largest installer and support risks.

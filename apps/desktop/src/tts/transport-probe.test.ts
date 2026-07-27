@@ -40,6 +40,16 @@ describe("native TTS protocol transport probe", () => {
     expect(mockedInvoke).toHaveBeenCalledWith("run_tts_protocol_probe");
   });
 
+  it("accepts the packaged Uint8Array binary view without JSON conversion", async () => {
+    mockedInvoke.mockResolvedValue(new Uint8Array(createProbeBuffer()));
+
+    await expect(runTtsProtocolProbe()).resolves.toEqual({
+      byteLength: PROTOCOL_PROBE_AUDIO_BYTES,
+      sampleCount: PROTOCOL_PROBE_SAMPLE_COUNT,
+      sampleFormat: "float32-le",
+    });
+  });
+
   it.each([
     ["serialized array", Array.from(new Uint8Array(16))],
     ["truncated response", new ArrayBuffer(PROTOCOL_PROBE_AUDIO_BYTES - 1)],

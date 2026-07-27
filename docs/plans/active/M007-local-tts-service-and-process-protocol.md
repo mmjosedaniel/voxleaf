@@ -362,12 +362,10 @@ max-plus-one tests are required for every selected dimension.
 
 #### Status
 
-In progress. The deterministic Rust-owned standard-stream and binary-response
-prototype, transport comparison, frozen protocol authority, proposed ADR, and
-focused release-mode evidence are complete. Acceptance remains blocked on the
-required packaged WebView2 smoke reaching the application and passing the
-binary-response probe; three local attempts failed during WebDriver session
-creation before application mount. Milestone 2 has not started.
+Complete. The deterministic Rust-owned standard-stream and binary-response
+prototype, transport comparison, frozen protocol authority, accepted ADR,
+release parent/child evidence, and packaged WebView2 binary-response evidence
+all pass. Milestone 2 has not started.
 
 #### Selected authority and actual result
 
@@ -398,12 +396,13 @@ creation before application mount. Milestone 2 has not started.
   content-free observation.
 - The release executable's native host diagnostic completes with exit code
   zero. The ordinary release application remains alive during a bounded direct
-  startup observation. This proves the parent/child process path but does not
-  replace the pending packaged WebView evidence.
+  startup observation. The packaged native smoke also passes the child
+  exchange, optimized binary response, exact frontend validation, existing
+  application matrix, and zero runtime-error/external-request assertions.
 - [`tts-service-protocol-v1.md`](../../architecture/tts-service-protocol-v1.md)
   is the frozen implementation authority.
   [ADR-0016](../../architecture/decisions/ADR-0016-rust-owned-stdio-tts-protocol.md)
-  remains proposed until the packaged gate passes.
+  is accepted.
 
 ### Milestone 2: Add canonical protocol contracts and a model-free Python service
 
@@ -713,8 +712,36 @@ artifact behind.
   session creation before VoxLeaf mounted. The installed WebView2 runtime and
   EdgeDriver share the required first three version components, no stale
   VoxLeaf/driver process remained, and direct release startup still passed.
-  The binary WebView probe therefore has no packaged acceptance result yet.
-  Milestone 1 remains in progress and Milestone 2 has not started.
+  The binary WebView probe therefore had no packaged acceptance result at that
+  checkpoint. Milestone 1 remained in progress and Milestone 2 had not started.
+- 2026-07-26: After the authority checkpoint, the complete `pnpm.cmd check`
+  passed with ignored workspace-local uv/temporary directories: formatting,
+  ESLint, Clippy, Ruff, TypeScript/Python types, 175 shared tests, 555 EPUB
+  tests, 210 desktop Vitest tests, six native-driver client tests, nine Rust
+  tests, 161 Python tests, package/desktop/Python builds, and the release
+  executable all pass. A fourth native-startup attempt rebuilt the release
+  executable and reached the same fixed WebDriver session-creation failure
+  before application mount. No stale VoxLeaf, Tauri-driver, or EdgeDriver
+  process remained afterward.
+- 2026-07-26: An unrestricted packaged run reached the application and exposed
+  a real transport failure: the frontend rejected a serialized byte array
+  instead of accepting it as binary. The CSP lacked Tauri's documented internal
+  `ipc:` and `http://ipc.localhost` connect sources, so WebView2 blocked the
+  optimized request and Tauri used its serialization fallback. Added only
+  those internal IPC sources, kept external requests prohibited, and taught the
+  smoke to classify the Tauri IPC origin as application-internal. The rerun
+  passed the binary probe and complete native matrix with no runtime errors or
+  external requests. ADR-0016 is accepted and Milestone 1 is complete.
+- 2026-07-26: Final validation passes on the accepted source state.
+  `pnpm.cmd check` passes with a short ignored workspace-local uv/temp root,
+  including 175 shared tests, 555 EPUB tests, 211 desktop Vitest tests, six
+  native-driver client tests, nine Rust tests, 161 Python tests, and all
+  formatting, linting, type checking, package, release-desktop, and Python
+  builds. The first final-check attempt used an overlong Windows temporary path
+  and three quality tests reached fixed generation failures; rerunning the same
+  unchanged source with the shorter ignored temp root made all 161 Python tests
+  pass. The complete `pnpm.cmd test:native-startup` build-and-run command then
+  passed outside the sandbox.
 
 ## Discoveries and decisions
 
@@ -730,12 +757,12 @@ artifact behind.
    ownership clear. M008 owns later bounded scheduling and buffering.
 6. The model-free prototype selects Rust-owned standard streams plus a narrow
    optimized Tauri binary response because they avoid a listening endpoint and
-   a renderer-accessible general shell capability. The decision remains
-   provisional in ADR-0016 until its packaged WebView acceptance gate passes.
+   a renderer-accessible general shell capability. ADR-0016 accepts this
+   decision after its packaged WebView gate passed.
 7. The historical prototype allowed a much larger output than the later `v5`
-   short-unit authority. Milestone 1 must explicitly choose the service output
-   maximum; it should evaluate the `v5` 20-second/1,920,000-byte reservation
-   rather than inherit the old ceiling accidentally.
+   short-unit authority. Milestone 1 therefore chooses the `v5`
+   20-second/1,920,000-byte service-unit reservation rather than inheriting the
+   old ceiling.
 8. The exact candidate lock and artifacts remain development-only and
    isolated. This plan does not approve production dependency promotion,
    redistribution, or automatic model acquisition.
@@ -746,6 +773,11 @@ artifact behind.
 10. The service-unit ceiling is the `v5` 20-second reservation: 480,000 finite
     24-kHz mono float32-le samples and 1,920,000 payload bytes. This replaces the
     historical larger prototype ceiling for M007.
+11. Tauri optimized binary responses require the packaged CSP to permit the
+    framework's internal `ipc:` and `http://ipc.localhost` connect sources.
+    These are not an application server or external listener. A serialized
+    array fallback remains invalid, and the native smoke distinguishes internal
+    IPC from external requests.
 
 ## Final validation results
 
@@ -774,7 +806,7 @@ failed; the isolated reruns above are authoritative for this planning change.
 
 Milestone 1 implementation validation on 2026-07-26 currently records:
 
-- `pnpm.cmd --filter @voxleaf/desktop test` passes with 210 Vitest tests and six
+- `pnpm.cmd --filter @voxleaf/desktop test` passes with 211 Vitest tests and six
   Node native-driver client tests.
 - `pnpm.cmd --filter @voxleaf/desktop typecheck` passes.
 - `pnpm.cmd --filter @voxleaf/desktop build` passes.
@@ -787,13 +819,17 @@ Milestone 1 implementation validation on 2026-07-26 currently records:
   passes.
 - The release executable's internal `--voxleaf-tts-protocol-probe-host`
   diagnostic exits zero after the exact framed parent/child exchange.
-- `pnpm.cmd test:native-startup` was attempted twice and the already-built
-  smoke once. Each failed with fixed
-  `webdriver-session-not-created` state before application mount, so none is
-  accepted as packaged binary-delivery evidence.
+- `pnpm.cmd check` passes with ignored workspace-local uv/temporary
+  directories, including formatting, linting, type checking, 175 shared tests,
+  555 EPUB tests, 211 desktop Vitest tests, six native-driver client tests, nine
+  Rust tests, 161 Python tests, package builds, the Tauri release build, and the
+  Python package build.
+- `pnpm.cmd test:native-startup` passes outside the sandbox. It proves the
+  synthetic child/std-stream exchange, optimized binary response, exact
+  frontend PCM validation, existing packaged application matrix, complete
+  cleanup, zero runtime errors, and zero external requests.
 
 The implementation is model-free and makes no playback, production,
 native-model-streaming, cooperative-cancellation, standard-profile, or
-general-hardware claim. The only unresolved Milestone 1 acceptance criterion is
-the packaged WebView binary path; the final full validation and milestone
-completion record must follow that result.
+general-hardware claim. Every Milestone 1 work item and acceptance gate is
+complete; Milestone 2 remains not started.

@@ -26,10 +26,7 @@ ADR-0002-short-description.md
 - [`ADR-0013-no-viable-local-tts-engine-profile.md`](ADR-0013-no-viable-local-tts-engine-profile.md): no balanced or compatibility profile selected from the frozen v2 evaluation; the standard production profile remains blocked, while ADR-0015 permits only the exact constrained one-GPU demo exception.
 - [`ADR-0014-constrained-qwen-development-demo.md`](ADR-0014-constrained-qwen-development-demo.md): historical constrained-demo decision, now superseded by ADR-0015 for scheduling and buffering.
 - [`ADR-0015-bounded-adaptive-qwen-demo-buffering.md`](ADR-0015-bounded-adaptive-qwen-demo-buffering.md): retain one exact GPU worker for a bounded adaptive development demo while rejecting CPU-only and dual-worker scheduling and retaining the standard feasibility blocker.
-
-## Proposed decisions
-
-- [`ADR-0016-rust-owned-stdio-tts-protocol.md`](ADR-0016-rust-owned-stdio-tts-protocol.md): Rust-owned standard-stream child supervision, complete-unit float32-le framing, and optimized Tauri binary responses. Deterministic and release parent/child evidence passes; packaged WebView acceptance remains pending.
+- [`ADR-0016-rust-owned-stdio-tts-protocol.md`](ADR-0016-rust-owned-stdio-tts-protocol.md): Rust-owned standard-stream child supervision, complete-unit float32-le framing, internal-only IPC CSP sources, and optimized Tauri binary responses.
 
 ## Template
 

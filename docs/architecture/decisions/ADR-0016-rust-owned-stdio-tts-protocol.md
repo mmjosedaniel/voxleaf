@@ -2,10 +2,8 @@
 
 ## Status
 
-Proposed. The deterministic prototype and packaged native parent/child path
-pass. Acceptance is blocked only on the packaged WebView2 binary-response
-smoke reaching the application; three local attempts failed during WebDriver
-session creation before application mount.
+Accepted. Deterministic, release parent/child, and packaged WebView2
+binary-response evidence passes.
 
 ## Context
 
@@ -54,11 +52,23 @@ publishes zero audio.
 The native/frontend boundary uses Tauri's optimized binary `Response`, which
 arrives as one `ArrayBuffer`. It does not serialize audio as JSON or base64.
 One in-flight command acts as the native/frontend backpressure boundary.
+[Tauri's command documentation](https://v2.tauri.app/develop/calling-rust/#returning-array-buffers)
+identifies `Response` as its optimized array-buffer return path.
 
 A Tauri `Channel` is not selected for protocol v1. Channels are designed for
 streamed data, while this exact model exposes only a complete bounded waveform.
 Framing a complete waveform into channel messages would add a second queue and
 copy surface without improving model startup or cancellation.
+
+The packaged CSP permits Tauri's internal `ipc:` and
+`http://ipc.localhost` connect sources. The initial packaged result showed why
+this is required: with those sources absent, WebView2 blocked the optimized
+custom-protocol request, Tauri fell back to a serialized byte array, and the
+typed client rejected it. With the narrow internal sources present, the binary
+response passes while the native smoke continues to report zero external
+requests. No HTTP server or network listener is created.
+[Tauri's CSP guidance](https://v2.tauri.app/security/csp/) documents these
+sources for its application-internal IPC custom protocol.
 
 ### Cancellation is containment, not a model capability
 
@@ -106,7 +116,7 @@ that authority and cannot maintain permissive independent message models.
   dimensions, pre-allocation rejection, truncated/unknown/mutated records,
   stale identity, non-finite audio, one-active/no-queue behavior, and fixed
   content-free failures.
-- The desktop suite passes 210 Vitest tests and six Node WebDriver-client
+- The desktop suite passes 211 Vitest tests and six Node WebDriver-client
   tests, including binary-response type, exact length, finiteness, and safe
   error mapping.
 - The release executable's hidden native host mode spawns the synthetic child,
@@ -114,9 +124,9 @@ that authority and cannot maintain permissive independent message models.
   zero.
 - The ordinary release executable remains running during a bounded direct
   startup observation.
-- The packaged WebView2 smoke contains the binary probe but has not reached
-  application mount locally because WebDriver session creation failed three
-  times. This is an acceptance gate, not passing evidence.
+- The packaged WebView2 smoke passes the standard-stream child exchange,
+  optimized binary response, exact frontend PCM validation, existing
+  application matrix, and zero external-request/runtime-error assertions.
 
 ## Alternatives considered
 

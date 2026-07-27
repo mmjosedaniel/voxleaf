@@ -2,10 +2,9 @@
 
 ## Status
 
-Frozen by M007 Milestone 1 for deterministic implementation. Transport
-acceptance remains provisional until the packaged WebView2 smoke reaches the
-application and passes the binary-response probe. Milestone 2 must not change
-these values silently or begin while that native gate remains unresolved.
+Accepted and frozen by M007 Milestone 1. Deterministic, release parent/child,
+and packaged WebView2 evidence passes. Milestone 2 must implement these values
+without changing them silently.
 
 This authority applies only to ADR-0015's exact one-GPU
 Qwen3-TTS 12Hz 1.7B CustomVoice/Serena constrained development demo. It does
@@ -246,6 +245,14 @@ and releases the probe/test bytes after deriving content-free observations.
 M008 may add a separate bounded playback owner without changing the
 one-active-service rule.
 
+The packaged application CSP permits only Tauri's internal custom-protocol
+connect sources, `ipc:` and `http://ipc.localhost`. Without that directive,
+WebView2 blocks the optimized response request and Tauri falls back to a
+serialized byte array. The typed frontend rejects that array. The allowed
+sources are application-internal IPC rather than an HTTP server or external
+network endpoint, and the packaged smoke classifies them separately from
+external requests.
+
 ## Capability semantics
 
 For this exact constrained service:
@@ -319,7 +326,10 @@ Deterministic evidence currently proves:
 - typed frontend binary-response validation and release; and
 - direct packaged application startup without a crash.
 
-Three local packaged WebView2 smoke attempts failed during WebDriver session
-creation before the application mounted, so they did not execute the binary
-probe. This environmental native gate remains required before ADR-0016 may be
-accepted and Milestone 1 may be marked complete.
+Early sandboxed attempts did not create a WebDriver session. The first
+unrestricted packaged run reached the application and correctly rejected a
+serialized byte-array fallback. That result exposed the missing internal IPC
+CSP source. After adding only `ipc:` and `http://ipc.localhost`, the optimized
+response arrived as binary data and the authoritative packaged smoke passed
+the probe, the existing application matrix, zero runtime-error checks, and zero
+external-request checks.
