@@ -99,7 +99,7 @@ improves performance.
 
 The frozen `v5` authority in the same ExecPlan specified a second complete
 Qwen process loaded CPU-only beside the existing GPU-primary process. It reuses
-the unchanged isolated candidate graph. Milestone 7 adds only benchmark-local
+the unchanged isolated candidate graph. Milestone 7 of that completed plan adds only benchmark-local
 adapter, controller, worker-process, playback, and command code, so it adds no
 dependency or lock edge. Its CPU adapter hides CUDA before importing Torch,
 requires CPU float32 placement, and fixes the reviewed thread policy; its GPU
@@ -113,6 +113,13 @@ provided only about 2.6% aggregate improvement while substantially slowing the
 GPU worker. `selection-v5` therefore rejects the dual-worker product topology.
 ADR-0015 and M008 add no dependency; they retain the unchanged isolated
 candidate only for later one-GPU demo work.
+
+The active M007 service/process ExecPlan also adds no dependency at plan
+creation. It requires a transport and supervision ADR plus an exact dependency
+review before implementation adds any Rust, TypeScript, Python, Tauri-plugin,
+or runtime edge. The frozen Qwen candidate remains in its isolated development
+environment; M007 does not approve moving it into the base service graph,
+bundling it, or redistributing it.
 
 Base voice cloning remains outside the MVP. Whisper is excluded from the
 production graph and from `v3`; VAD/energy analysis is also excluded from

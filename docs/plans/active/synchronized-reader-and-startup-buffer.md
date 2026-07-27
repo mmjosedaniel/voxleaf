@@ -2,11 +2,13 @@
 
 ## Relationship to the roadmap and completed milestone plans
 
-This broad plan predates the milestone-specific implementation plans and intentionally spans visual reading, narration synchronization, and audio startup work. The completed [`M004-reflowable-visual-reader-and-position-restoration.md`](../completed/M004-reflowable-visual-reader-and-position-restoration.md), [`M005-narration-text-preparation.md`](../completed/M005-narration-text-preparation.md), and [`M006-local-tts-feasibility-and-engine-profiles.md`](../completed/M006-local-tts-feasibility-and-engine-profiles.md) plans record the implementation authority and evidence for roadmap Milestones 4 through 6. Retain this document as context for later roadmap Milestones 8 and 9; it does not supersede those completed authorities, authorize blocked Milestone 7, or bring narration/audio work into an earlier milestone.
+This broad plan predates the milestone-specific implementation plans and intentionally spans visual reading, narration synchronization, and audio startup work. The completed [`M004-reflowable-visual-reader-and-position-restoration.md`](../completed/M004-reflowable-visual-reader-and-position-restoration.md), [`M005-narration-text-preparation.md`](../completed/M005-narration-text-preparation.md), [`M006-local-tts-feasibility-and-engine-profiles.md`](../completed/M006-local-tts-feasibility-and-engine-profiles.md), [`M006-001-local-tts-profile-blocker-resolution.md`](../completed/M006-001-local-tts-profile-blocker-resolution.md), and [`M006-002-qwen-short-segment-batch-feasibility.md`](../completed/M006-002-qwen-short-segment-batch-feasibility.md) plans record the implementation authority and evidence for roadmap Milestones 4 through 6.2. Retain this document as context for later roadmap Milestones 8 and 9; it does not supersede those completed authorities or the focused M007/M008 plans.
 
-ADR-0015 and
+ADR-0015,
+[`M007-local-tts-service-and-process-protocol.md`](M007-local-tts-service-and-process-protocol.md),
+and
 [`M008-bounded-adaptive-prebuffering.md`](M008-bounded-adaptive-prebuffering.md)
-now own Milestone 8's detailed scheduling authority. They preserve this plan's
+now own the detailed service/protocol and scheduling work. They preserve this plan's
 approximately 15-playable-second quick-start rule and add explicit prepared
 playback, bounded generation during playback-only pause, truthful frontier
 buffering, optional adaptive boundary waits, and an approximately 30-minute
@@ -214,6 +216,10 @@ Documentation-only changes can be rolled back independently. Persisted locator c
 - 2026-07-24: Reconciled current state with Milestone 4 implementation. Visual reading, navigation, bounded persistence, exact/nearest restoration, accessibility interaction, and reader performance/resource evidence are implemented; narration, TTS, audio, synchronization, hardware, and packaging remain deferred.
 - 2026-07-25: Reconciled current state with completed Milestone 5. Bounded locator-linked narration preparation is implemented and validated in `@voxleaf/epub`; the desktop caller, TTS, audio, synchronization, hardware, and packaging remain unimplemented.
 - 2026-07-25: Reconciled current state with completed Milestone 6. The candidate-neutral feasibility harness, both exact candidate runs, and the no-viable-profile decision are complete; Milestone 7 is blocked pending a newly frozen evaluation that selects a viable profile.
+- 2026-07-26: Reconciled current state with completed Milestones 6.1 and 6.2.
+  ADR-0015 permits only the exact one-GPU constrained demo, M007 now owns its
+  unimplemented service/process boundary, and M008 owns later adaptive
+  playback. Standard production TTS remains blocked.
 
 ## Discoveries and decisions
 
@@ -232,4 +238,4 @@ Initial documentation validation completed on 2026-07-20:
 - No documentation retains the obsolete allowance of a fixed or maximum 15-second startup wait.
 - `git diff --check` passed for tracked changes, with only informational line-ending warnings.
 
-The implementation toolchain, shared contracts, secure EPUB package, visual reader, bounded position persistence/restoration, and Milestone 5 narration-preparation boundary now exist. The completed Milestone 5 evidence is retained in [`../completed/M005-narration-text-preparation.md`](../completed/M005-narration-text-preparation.md). The completed Milestone 6 evidence and explicit no-viable-profile decision are retained in [`../completed/M006-local-tts-feasibility-and-engine-profiles.md`](../completed/M006-local-tts-feasibility-and-engine-profiles.md) and [ADR-0013](../../architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md). Production TTS, audio, spoken highlighting, and integrated synchronization remain unimplemented, and Milestone 7 remains blocked. Retain this broad plan as later-milestone context, and do not use it to claim that those remaining systems work.
+The implementation toolchain, shared contracts, secure EPUB package, visual reader, bounded position persistence/restoration, and Milestone 5 narration-preparation boundary now exist. The completed Milestone 5 evidence is retained in [`../completed/M005-narration-text-preparation.md`](../completed/M005-narration-text-preparation.md). The completed Milestones 6 through 6.2 and standard no-viable-profile decision remain authoritative. ADR-0015 permits only the exact constrained demo; M007 and M008 are approved plans, not runtime evidence. Production TTS, audio playback, spoken highlighting, and integrated synchronization remain unimplemented. Retain this broad plan as later-milestone context, and do not use it to claim that those remaining systems work.

@@ -23,7 +23,7 @@ ADR-0002-short-description.md
 - [`ADR-0010-bounded-raster-image-decode.md`](ADR-0010-bounded-raster-image-decode.md): predecode metadata limits, static-only browser decoding, and bounded object-URL lifetime.
 - [`ADR-0011-bounded-web-storage-reader-state.md`](ADR-0011-bounded-web-storage-reader-state.md): bounded Web Storage envelopes, display-preference ownership, save lifecycle, and explicit migration.
 - [`ADR-0012-bounded-narration-preparation.md`](ADR-0012-bounded-narration-preparation.md): publication-owned bounded narration preparation, stable source ranges, continuation, cancellation, and closed outcomes.
-- [`ADR-0013-no-viable-local-tts-engine-profile.md`](ADR-0013-no-viable-local-tts-engine-profile.md): no balanced or compatibility profile selected from the frozen v2 evaluation; Milestone 7 remains blocked pending a new candidate cycle.
+- [`ADR-0013-no-viable-local-tts-engine-profile.md`](ADR-0013-no-viable-local-tts-engine-profile.md): no balanced or compatibility profile selected from the frozen v2 evaluation; the standard production profile remains blocked, while ADR-0015 permits only the exact constrained one-GPU demo exception.
 - [`ADR-0014-constrained-qwen-development-demo.md`](ADR-0014-constrained-qwen-development-demo.md): historical constrained-demo decision, now superseded by ADR-0015 for scheduling and buffering.
 - [`ADR-0015-bounded-adaptive-qwen-demo-buffering.md`](ADR-0015-bounded-adaptive-qwen-demo-buffering.md): retain one exact GPU worker for a bounded adaptive development demo while rejecting CPU-only and dual-worker scheduling and retaining the standard feasibility blocker.
 
