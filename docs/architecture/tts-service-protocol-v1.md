@@ -2,10 +2,9 @@
 
 ## Status
 
-Accepted, frozen, implemented, and locally validated by M007 Milestones 1-6.
-Deterministic, release parent/child, packaged WebView2, exact-adapter, and
-exact-host handoff evidence passes. The required final pull-request CI and
-ExecPlan archival remain the repository closeout gate.
+Accepted, frozen, implemented, and validated by completed M007. Deterministic,
+release parent/child, packaged WebView2, exact-adapter, exact-host handoff, and
+required pull-request CI evidence passes.
 
 This authority applies only to ADR-0015's exact one-GPU
 Qwen3-TTS 12Hz 1.7B CustomVoice/Serena constrained development demo. It does

@@ -2,14 +2,14 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 6.2 are complete. The Milestone 3 secure EPUB ingestion boundary and framework-independent document model are implemented and validated. The desktop connects its capability-free local-file selection/read boundary to a UI-independent publication-session owner, presents one accessible idle/opening/ready/empty/failure/closing lifecycle surface, contains presentation failures, and renders the active spine document's supported text plus bounded static raster images through an exhaustive application-owned semantic React reader. Its continuous responsive layout, closed display preferences, bounded incremental large-chapter policy, passive logical-position tracking, viewport/preference reflow preservation, versioned bounded local reader-state repository, lifecycle-aware save coordinator, and exact/nearest-valid open restoration are implemented without publisher styling. A user can open, read, navigate, adjust the visual reader without losing the active logical passage, and explicitly close a supported publication; validated position and preference changes are saved locally on the approved bounded lifecycle and restored after exact-file reselection. Milestone 5 narration preparation is implemented and documented: `@voxleaf/epub` owns exhaustive narration source projection, Unicode-code-point source-span tokens, bounded canonical source windows/lifecycle, deterministic source-mapped neutral/Spanish normalization, normalization invariants/privacy tests, sentence/dialogue/clause/protected-token scanning, cancellable profile-bounded block-local semantic packing with oversized-token hardening, immutable canonical locator-linked prepared segments, the public frozen closed `OpenedPublication.prepareNarration` batch operation, repository-authored public EPUB-to-segment integration evidence, and deterministic exact-bound/resource evidence. Milestone 6 implements and validates the candidate-neutral feasibility harness and accepts ADR-0013's explicit no-viable-profile decision after both exact candidates fail frozen role gates. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation completed and failed startup, throughput, zero-failure, and mid-generation cancellation gates. Milestone 6.2 later rejected shared-model batching, targeted tokenizer placement, CPU-only generation, and the independent GPU-primary/CPU-support topology. Accepted `selection-v5` retains the exact single-GPU candidate only for a constrained development demo. ADR-0015 supersedes ADR-0014's scheduling and buffering details and approves planning for quick start or explicit prepared playback, one GPU worker, bounded generation during playback-only pause, truthful frontier buffering, and an approximately 30-minute in-memory ceiling. Base voice cloning, Whisper, and VAD/energy remain excluded. No production desktop module calls `prepareNarration`; product dispatch, buffering, playback, and synchronization require later implementation evidence. The exact development-only adapter is implemented, while standard production graduation remains blocked pending viable evidence.
+Mixed implementation status. Roadmap Milestones 1 through 7 are complete. The secure EPUB ingestion boundary, immutable document model, reflowable visual reader, bounded locator/preference restoration, and deterministic locator-linked narration preparation are implemented and validated. Completed M007 adds the accepted protocol-v1 local service boundary: canonical cross-language controls, a bounded Python service, persistent native supervision, typed one-unit ownership outside React state, and the exact development-only Qwen/Serena adapter with packaged and exact-host evidence. The desktop still does not call `OpenedPublication.prepareNarration`, and no multi-unit audio queue, player, synchronization flow, general-hardware profile, or production distribution exists. ADR-0013 therefore continues to select no standard production profile. ADR-0015 permits only the exact one-GPU constrained demo and M008 is the active plan for product narration dispatch, quick/prepared startup, bounded playback-only-pause generation, truthful frontier buffering, and an approximately 30-minute simultaneous in-memory ceiling.
 
 M006-002 final local validation and required pull-request CI pass, and the plan
-is complete. M007 Milestones 1-6 are locally complete. They
-implement a model-free Rust-owned parent/child standard-stream probe, freeze
-accepted transport protocol version 1, provide closed generated control
-contracts across TypeScript, Python, and Rust, and prove a bounded model-free
-Python service with deterministic fake complete-waveform generation. The
+is complete. M007 is also complete. Its six milestones implement a model-free
+Rust-owned parent/child standard-stream probe, freeze accepted transport
+protocol version 1, provide closed generated control contracts across
+TypeScript, Python, and Rust, and prove a bounded model-free Python service
+with deterministic fake complete-waveform generation. The
 native shell now supervises one persistent model-free Rust child, owns framed
 I/O, timeouts, process-tree termination, zero automatic restart, and
 application-exit cleanup, while a typed desktop client validates the lifecycle
@@ -22,9 +22,9 @@ native ownership, zero stale delivery, no listeners or external connections,
 and zero measured retained RAM/VRAM at every cleanup checkpoint. The exact
 adapter publishes only complete units: its measured first-audio and completion
 p95 are both about 21.38 seconds. The accepted protocol decision remains
-unchanged after the complete implementation audit. Required final pull-request
-CI and plan archival remain. The product narration caller, playback, and
-distribution remain unimplemented.
+unchanged after the complete implementation audit, and PR #119 passed the
+required Ubuntu/Windows jobs before the ExecPlan was archived. The product
+narration caller, playback, and distribution remain unimplemented.
 M008 owns the later adaptive scheduler and playback follow-up. Its approved
 modes preserve the approximately 15-playable-second quick-start rule and add
 explicit 1-, 2-, 5-, or 10-minute prepared-playback targets. The 30-minute
@@ -88,14 +88,14 @@ Local TTS service
 |-- Native supervisor, typed client, process-tree containment, and one-unit sink
 |   [M007 Milestone 3; implemented and packaged-validated with a Rust fake child]
 |-- Exact Qwen/Serena one-GPU adapter and native-only activation
-|   [M007 Milestones 4-6; exact-host handoff and closeout locally validated]
+|   [M007 Milestones 4-6; exact-host handoff and closeout validated]
 |-- Candidate-neutral feasibility harness and no-profile decision
 |   [implemented development evidence; not production runtime]
 |-- Shared-model v4 and independent dual-worker v5 benchmark
 |   [completed development evidence; both scheduling alternatives rejected]
 |-- One-GPU constrained engine, service, process protocol, inference,
 |   cancellation, and complete-unit framing
-|   [M007 Milestones 1-6 implemented, measured, and locally validated]
+|   [M007 Milestones 1-6 implemented, measured, and validated]
 `-- Adaptive demo scheduler and bounded playback policy
     [approved M008 plan only; desktop-owned and not product runtime]
 ```
@@ -173,8 +173,8 @@ one bounded optimized binary response, one active synthesis, no service queue,
 and identity-first worker-termination containment. The dependency, native
 permission, privacy, artifact, historical-authority, and documentation audits
 introduce no wider runtime surface. Local portable, native, packaged, and
-exact-host validation passes; required final pull-request CI and ExecPlan
-archival remain.
+exact-host validation plus the required pull-request CI pass, and the ExecPlan
+is archived.
 
 ## Core data flow
 
@@ -191,8 +191,8 @@ caller sends prepared narration to it and no playback path consumes its audio.
 5. **Implemented:** Reconstruct the visible passage from the locator and current scrolling layout.
 6. **Implemented — Milestone 5:** Exhaustively project narratable source units and structural boundaries from immutable located safe semantics, map every source position to an immutable locator-valid Unicode-code-point span, consume that mapping through bounded canonical source windows with close-linked cancellation/continuation, normalize the accepted neutral/Spanish forms, scan deterministic source-offset sentence/dialogue/clause/protected-token boundaries, pack cancellable block-local stable source-offset segments under the accepted profile with fixed oversized-token behavior, and finalize immutable canonical locator-linked prepared segments without changing the displayed representation.
 7. **Implemented — Milestone 5:** Emit bounded public prepared-segment batches with stable locator ranges and deterministic resource evidence.
-8. **Locally complete; final CI pending — Milestone 7:** The model-free Rust probe proves the selected parent/child frame boundary and a narrow binary Tauri response. Canonical shared control schemas and the bounded Python service prove strict narration input, lifecycle, complete-unit audio framing, cancellation, and failure behavior. The native shell owns one persistent child, framed read/write bounds, state/timeouts, process-tree termination, zero automatic restart, application-exit cleanup, and narrow Tauri commands. The typed desktop client validates control order and identity, retains one binary unit outside React state, and zeroes released or stale bytes. Native-only configuration selects the implemented exact Qwen/Serena adapter. Its frozen exact-host matrix passes bounded handoff, invalidation, cancellation, crash, application-exit, privacy, RAM, and VRAM cases without retry. The protocol decision and repository audit are locally closed; required final pull-request CI and plan archival remain. Production narration dispatch and playback remain later work.
-9. **Approved plan; not implemented — Milestones 7-8:** ADR-0013 retains the standard-profile blocker, while ADR-0015 permits one exact GPU worker only for a constrained demo. Quick start begins at approximately 15 playable seconds; explicit prepared playback may target 1, 2, 5, or 10 minutes.
+8. **Implemented — Milestone 7:** The model-free Rust probe proves the selected parent/child frame boundary and a narrow binary Tauri response. Canonical shared control schemas and the bounded Python service prove strict narration input, lifecycle, complete-unit audio framing, cancellation, and failure behavior. The native shell owns one persistent child, framed read/write bounds, state/timeouts, process-tree termination, zero automatic restart, application-exit cleanup, and narrow Tauri commands. The typed desktop client validates control order and identity, retains one binary unit outside React state, and zeroes released or stale bytes. Native-only configuration selects the implemented exact Qwen/Serena adapter. Its frozen exact-host matrix passes bounded handoff, invalidation, cancellation, crash, application-exit, privacy, RAM, and VRAM cases without retry. The accepted protocol, repository audit, required pull-request CI, and ExecPlan archival are complete. Production narration dispatch and playback remain later work.
+9. **Approved plan; not implemented — Milestone 8:** ADR-0013 retains the standard-profile blocker, while ADR-0015 permits one exact GPU worker only for a constrained demo. Quick start begins at approximately 15 playable seconds; explicit prepared playback may target 1, 2, 5, or 10 minutes.
 10. **Deferred — Milestones 8-9:** Generate later audio while the player consumes buffered frames or is paused without invalidation, stop at the approximately 30-minute ceiling, warn near the generation frontier, and keep the narrated passage visible.
 11. **Deferred — Milestones 8-9:** Discard played frames and stale session work.
 12. **Implemented for reader state:** Persist the logical reading locator, not a rendered page number or generated audio. Generated-audio persistence remains prohibited future behavior unless a separate product/privacy decision approves it.

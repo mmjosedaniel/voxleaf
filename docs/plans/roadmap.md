@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 6.2 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. Completed Milestone 6.2 measured CPU solo at aggregate RTF 2.999 and GPU solo at aggregate RTF 1.467; the official concurrent run stopped at `resource-limit`, and a low-application-load diagnostic later completed both workers at aggregate RTF 1.429 while slowing the GPU worker to RTF 2.329. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains one exact GPU worker only for a constrained development demo. ADR-0015 authorizes that exception without selecting a standard profile. M007 Milestones 1-6 implement and locally validate the frozen protocol and canonical cross-language controls, bounded Python service, native persistent-child supervision, typed desktop client, one-unit memory sink, exact development-only Qwen/Serena adapter, identity-first cancellation, process-tree cleanup, packaged fake-service lifecycle, measured exact-host handoff matrix, and final protocol/dependency/privacy/repository audit. Required final pull-request CI and plan archival remain. M008 is the dependent plan for the first product narration caller, quick-start/prepared playback, and bounded adaptive buffering. No standard profile, production runtime, continuous-playback guarantee, or general hardware support is approved. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
+VoxLeaf is pre-alpha. Milestones 1 through 7 are complete. Milestone 6.1's exact Qwen3-TTS 1.7B CustomVoice/Serena `v3` evaluation failed standard startup, throughput, zero-failure, and mid-generation cancellation gates; repository/privacy validation and required pull-request CI passed. Completed Milestone 6.2 measured CPU solo at aggregate RTF 2.999 and GPU solo at aggregate RTF 1.467; the official concurrent run stopped at `resource-limit`, and a low-application-load diagnostic later completed both workers at aggregate RTF 1.429 while slowing the GPU worker to RTF 2.329. Accepted `selection-v5` rejects CPU-only and dual-worker scheduling and retains one exact GPU worker only for a constrained development demo. ADR-0015 authorizes that exception without selecting a standard profile. Completed M007 validates the frozen protocol and canonical cross-language controls, bounded Python service, native persistent-child supervision, typed desktop client, one-unit memory handoff, exact development-only Qwen/Serena adapter, identity-first cancellation, process-tree cleanup, packaged fake-service lifecycle, measured exact-host handoff matrix, and final protocol/dependency/privacy/repository/CI closeout. M008 is now the active plan for the first product narration caller, quick-start/prepared playback, and bounded adaptive buffering. No standard profile, production runtime, continuous-playback guarantee, or general hardware support is approved. This roadmap defines the sequence from the original documentation-only repository to a validated MVP without replacing the detailed ExecPlans required for complex work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -384,8 +384,7 @@ work.
 
 ## Milestone 7: Implement the local TTS service and process protocol
 
-**Status:** Locally complete; final pull-request CI and plan archival pending.
-Milestones 1-6 are locally complete: the deterministic
+**Status:** Complete as of 2026-07-27. Milestones 1-6 are complete: the deterministic
 Rust-owned standard-stream and binary Tauri-response probe passes, protocol
 version 1 and ADR-0016 are accepted, closed control contracts are canonical
 across TypeScript, Python, and Rust, and a bounded model-free Python service
@@ -406,9 +405,9 @@ explicit reload pass on the first actual matrix attempt. Delivered-unit RTF
 remains above one, so no sustainable-playback or production conclusion
 changes. Milestone 6 retains ADR-0016 and protocol v1 after the complete
 dependency, permission, privacy, artifact, historical-authority, and
-documentation audit. Required final pull-request Ubuntu portable and Windows
-native jobs must pass before the ExecPlan is archived. Follow
-[`M007-local-tts-service-and-process-protocol.md`](active/M007-local-tts-service-and-process-protocol.md).
+documentation audit. PR #119 passed the required Ubuntu portable and Windows
+native jobs and merged the exact final head. Follow the completed
+[`M007-local-tts-service-and-process-protocol.md`](completed/M007-local-tts-service-and-process-protocol.md).
 ADR-0015 permits a focused Qwen/Serena demo service around complete bounded
 units and identity-first worker termination. ADR-0013 still records that no
 standard profile passed, so continuous playback, general hardware support,
@@ -488,9 +487,9 @@ Create a model-independent in-memory producer-consumer pipeline that starts prom
 ### Dependencies
 
 Milestone 2 provides audio and session contracts. ADR-0015 and M006-002 provide
-the selected constrained-demo scheduling authority. Milestone 7 provides the
-constrained complete-unit audio handoff, but most playback behavior should
-first be proven with deterministic fakes.
+the selected constrained-demo scheduling authority. Completed Milestone 7
+provides the constrained complete-unit audio handoff, but most playback
+behavior should first be proven with deterministic fakes.
 
 ### Major risks and unknowns
 
@@ -613,20 +612,19 @@ Durable decisions belong in architecture decision records. Temporary implementat
 
 ## Relationship to existing plans
 
-[`completed/M004-reflowable-visual-reader-and-position-restoration.md`](completed/M004-reflowable-visual-reader-and-position-restoration.md), [`completed/M005-narration-text-preparation.md`](completed/M005-narration-text-preparation.md), [`completed/M006-local-tts-feasibility-and-engine-profiles.md`](completed/M006-local-tts-feasibility-and-engine-profiles.md), [`completed/M006-001-local-tts-profile-blocker-resolution.md`](completed/M006-001-local-tts-profile-blocker-resolution.md), and [`completed/M006-002-qwen-short-segment-batch-feasibility.md`](completed/M006-002-qwen-short-segment-batch-feasibility.md) record the implementation authority and validation evidence for Milestones 4 through 6.2. Milestone 6 supplies development evidence and a no-viable-profile decision; Milestone 6.1 retains the standard blocker; and Milestone 6.2 records the rejected CPU/dual-worker alternatives plus ADR-0015's exact one-GPU constrained-demo exception. None implements production TTS.
+[`completed/M004-reflowable-visual-reader-and-position-restoration.md`](completed/M004-reflowable-visual-reader-and-position-restoration.md), [`completed/M005-narration-text-preparation.md`](completed/M005-narration-text-preparation.md), [`completed/M006-local-tts-feasibility-and-engine-profiles.md`](completed/M006-local-tts-feasibility-and-engine-profiles.md), [`completed/M006-001-local-tts-profile-blocker-resolution.md`](completed/M006-001-local-tts-profile-blocker-resolution.md), [`completed/M006-002-qwen-short-segment-batch-feasibility.md`](completed/M006-002-qwen-short-segment-batch-feasibility.md), and [`completed/M007-local-tts-service-and-process-protocol.md`](completed/M007-local-tts-service-and-process-protocol.md) record the implementation authority and validation evidence for Milestones 4 through 7. Milestone 6 supplies development evidence and a no-viable-profile decision; Milestone 6.1 retains the standard blocker; Milestone 6.2 records the rejected CPU/dual-worker alternatives plus ADR-0015's exact one-GPU constrained-demo exception; and M007 implements only that constrained service boundary. None selects production TTS.
 
-[`active/M007-local-tts-service-and-process-protocol.md`](active/M007-local-tts-service-and-process-protocol.md)
-is the active next implementation plan. It owns the constrained local service,
-protocol, native supervision, exact Qwen/Serena adapter, complete-unit
-delivery, and cancellation containment. It does not implement playback,
-promote the candidate to a standard profile, or approve model/runtime
-distribution.
+[`completed/M007-local-tts-service-and-process-protocol.md`](completed/M007-local-tts-service-and-process-protocol.md)
+records the completed constrained local service, protocol, native supervision,
+exact Qwen/Serena adapter, complete-unit delivery, and cancellation
+containment. It does not implement playback, promote the candidate to a
+standard profile, or approve model/runtime distribution.
 
 [`active/M008-bounded-adaptive-prebuffering.md`](active/M008-bounded-adaptive-prebuffering.md) is the approved implementation plan for ADR-0015. It does not claim that quick-start/prepared playback, the 30-minute ceiling, pause continuation, adaptive waits, or frontier buffering already exist.
 
-[`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or the completed Milestones 4 through 6 plans and does not authorize implementing all of those areas at once.
+[`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md) contains broader planning relevant to the visual reader, position restoration, bounded playback, and synchronized narration. It does not supersede this roadmap or completed Milestones 4 through 7 and does not authorize implementing all of those areas at once.
 
-Milestones 1 through 6.2 are complete, with their evidence retained under [`completed/`](completed/). Use the synchronized-reader plan only as later-milestone context; it does not supersede completed authority or turn the failed `v3` profile into a standard production selection.
+Milestones 1 through 7 are complete, with their evidence retained under [`completed/`](completed/). Use the synchronized-reader plan only as later-milestone context; it does not supersede completed authority or turn the failed `v3` profile into a standard production selection.
 
 ## MVP completion boundary
 
