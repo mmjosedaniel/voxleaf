@@ -1325,10 +1325,12 @@ media on the frozen shared-memory rule. No completed milestone changes a
 production contract/runtime, makes a support claim, or selects a production
 profile.
 
-Milestone 5 is not admitted. Milestones 8 through 10 are pending: run CPU-solo
-and concurrent hardware evidence, replay the measured five-minute-bounded
-queue and quality workflow, and record the resulting decision. The plan is
-therefore active and must not yet move to `docs/plans/completed/`.
+Milestone 5 is not admitted. Milestone 8 is complete with a failed concurrent
+hardware outcome: CPU solo passed admission, the same-authority GPU-solo
+baseline completed, and the concurrent arm reached the frozen
+`resource-limit` boundary. Milestone 9 is therefore not admitted. Milestone 10
+remains pending to record the durable `v5` decision and close this plan, so the
+plan remains active and must not yet move to `docs/plans/completed/`.
 
 The earlier `v5` planning amendment changed documentation only. Milestone 6
 now adds separately versioned authority and model-free validation, but still
@@ -1559,3 +1561,57 @@ import warnings and the existing Vite chunk-size advisory remain
 informational. Milestone 7 is complete. Milestone 8 owns the first CPU-solo
 pilot, every official hardware run, private raw evidence and cleanup, and
 schema-valid safe result derivation.
+
+Milestone 8 hardware and result validation completed on 2026-07-26:
+
+- the final CPU-only pilot at clean checkpoint `4395ff7` completed both
+  first attempts with aggregate RTF `3.0556705734323426` and exact zero
+  dedicated/shared GPU memory;
+- the official CPU-solo arm completed all eight first attempts without a retry
+  or failure, produced 97.04 seconds of media at aggregate RTF
+  `2.999443394476504`, passed both cancellation trials and cleanup, and derived
+  schema-valid `dual-worker-result-v5-cpu-solo.json` with SHA-256
+  `43ed927e2a765cf39214bc8937398c1c454993cc23bd6485596aa591fe5224a2`;
+- the same-authority GPU-solo arm completed all forty first attempts without a
+  retry or failure, produced 446.24 seconds of media at aggregate RTF
+  `1.467080448861599`, passed both cancellation trials and cleanup, and derived
+  schema-valid `dual-worker-result-v5-gpu-solo.json` with SHA-256
+  `2f12e3542038ff9d7b566dc662495a08187163ecf4ccb71ad6d9601b43d64fdb`;
+- the hash-bound concurrent arm at clean checkpoint `9cc9517` ran its fixed
+  first-attempt matrix for 759.1 seconds and stopped at the frozen
+  `resource-limit` boundary. It performed no retry, created no promotable raw
+  session or concurrent result, left no worker process, restored the
+  45-minute AC sleep setting, and returned the GPU to zero utilization;
+- because the first implementation collapsed live safety subcodes to
+  `resource-limit`, RAM/commit pressure is only an inference, not a measured
+  exact cause. The runner now preserves a future exact content-free subcode,
+  but the frozen authority does not permit repeating an arm that already
+  reached a resource boundary on this hardware; and
+- successful derivations deleted their ignored raw sessions. The final raw
+  tree contains zero files, and no generated audio, model weight, book,
+  credential, or private benchmark evidence is tracked.
+
+Final Milestone 8 repository validation passed at committed checkpoint
+`a8f4397`:
+
+- Ruff formatting/lint passed, strict mypy passed over 75 source files, all
+  154 Python tests passed, Prettier accepted the tracked source, and both
+  committed `v5` summaries passed their frozen schema and authority checks;
+- `pnpm.cmd check:portable` passed in 40.1 seconds in a clean detached
+  worktree, including 175 shared, 555 EPUB, 204 desktop, six native-client,
+  and 154 Python tests plus all portable builds;
+- `pnpm.cmd check` passed on native Windows in 153.1 seconds in the same
+  worktree, including Rust formatting, Clippy, crate tests, the Tauri release
+  build, and Python package builds;
+- the unchanged 107-package isolated Qwen lock passed `uv lock --check`, and
+  exact `qwen_tts`, `torch==2.9.1+cu128`, and
+  `torchaudio==2.9.1+cu128` imports passed without loading model weights; and
+- the primary-checkout portable command was blocked only by its pre-existing
+  deny-ACL pytest directory under `tmp`. The clean worktree supplied the
+  authoritative passing result. Optional FlashAttention/SoX import notices and
+  the existing Vite chunk-size advisory remain informational.
+
+Milestone 8 is complete. Its failed concurrent resource outcome does not admit
+Milestone 9, select a production profile, or change product behavior.
+Milestone 10 remains necessary to record the durable `v5` decision and close
+the ExecPlan.
