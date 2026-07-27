@@ -487,9 +487,8 @@ Completed on 2026-07-27.
 
 #### Status
 
-In progress. The final policy and documentation reconciliation are complete;
-local validation is running. Required pull-request CI remains an external
-completion gate.
+Local implementation and validation complete. Required pull-request CI remains
+the external completion gate before this plan can be archived.
 
 #### Actual result
 
@@ -514,6 +513,13 @@ completion gate.
   roadmap, decision-index, and canonical system-diagram status without changing
   a runtime contract, dependency, capability, persistence boundary, or
   executable default.
+- Re-ran the packaged exact-host matrix under the interpreter-bound outbound
+  firewall rule. It passed with quick command-to-audible `41,312` ms,
+  `16,480` ms start lead, one underrun, `19.49` buffering seconds per playback
+  minute, `0` ms intentional wait, `24` ms cancellation, and a `64,320` ms
+  prepared lead after `110,219` ms. Peak dedicated GPU memory remained `4,882`
+  MiB, all prepared options were accepted, external requests were zero, and
+  the exact worker/GPU allocation returned to zero after cleanup.
 
 ## Testing and benchmark strategy
 
@@ -664,6 +670,11 @@ accepted no-standard-profile decision.
   product, architecture, performance, setup, testing, dependency, roadmap, and
   system-diagram documentation. Local and exact-host validation remained to be
   executed before the closeout could be committed and offered for PR review.
+- 2026-07-27: Completed the local closeout matrix. Focused deterministic,
+  candidate-lock, portable, authoritative Windows, packaged model-free,
+  exact-host, Markdown-link, privacy, artifact, and diff checks all pass. The
+  exact rerun independently reproduced slower-than-real-time buffering and
+  clean shutdown. Required pull-request CI remains before archival.
 
 ## Discoveries and decisions
 
@@ -887,4 +898,34 @@ Milestone 5 validation currently passes:
 Milestone 5 introduces no dependency, shared protocol version, Tauri
 capability, persistence boundary, model artifact, generated-audio fixture,
 private book, or automatic retry. Required pull-request CI and the final demo
-policy/plan closeout remain Milestone 6 work.
+policy/plan closeout were assigned to Milestone 6.
+
+Milestone 6 local validation passes:
+
+- The focused authority/scheduler/player/preparation/controls/coordinator/client
+  and application matrix passes eight files/84 tests.
+- `uv lock --project
+  services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --check`
+  resolves the unchanged isolated 107-package lock.
+- `pnpm.cmd check:portable` passes Prettier, Ruff format/check, ESLint, mypy,
+  all workspace typechecks, 196 shared tests, 555 EPUB tests, 275 desktop
+  Vitest tests, six native-driver client tests, 233 Python tests, and
+  package/desktop/Python builds.
+- The authoritative Windows `pnpm.cmd check` passes the same surface plus Cargo
+  formatting, Clippy, 25 Rust tests, the release Tauri build, and both Python
+  distributions.
+- `pnpm.cmd test:native-startup` passes the packaged model-free lifecycle,
+  local-file, reader, raster, restoration, cleanup, and zero-external-request
+  matrix.
+- `pnpm.cmd test:tts:adaptive-exact-host` passes from the exact ignored
+  candidate/model configuration under the outbound firewall rule with the
+  content-safe measurements recorded in Milestone 6's actual result.
+- All 54 Markdown documents pass the relative-link audit. The 15-file branch
+  delta has zero generated-audio, book, model-weight, archive, private-path,
+  email, credential, or other forbidden-artifact findings, and
+  `git diff --check main` passes.
+
+Milestone 6 changes only policy/documentation and adds no dependency, protocol,
+capability, persistence, model, audio, private fixture, retry, or network
+behavior. Required pull-request CI has not yet run for this branch, so the
+ExecPlan remains active and is not archived.
