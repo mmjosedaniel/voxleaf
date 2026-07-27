@@ -270,9 +270,8 @@ export class TtsProcessClient {
    */
   public async exactDemoAvailability(): Promise<TtsExactDemoAvailability> {
     try {
-      return (await this.invokePort<boolean>(
-        "exact_tts_demo_available",
-      )) === true
+      return (await this.invokePort<boolean>("exact_tts_demo_available")) ===
+        true
         ? "available"
         : "unavailable";
     } catch {

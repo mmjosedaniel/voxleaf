@@ -809,15 +809,30 @@ unmounted until Milestone 5 supplies the real product coordinator.
 Milestone 5 validation currently passes:
 
 - Focused coordinator, scheduler, player, controls, client, and application
-  tests pass; the full desktop run passes 28 Vitest files/274 tests plus six
+  tests pass; the final focused run passes seven files/74 tests, and the full
+  desktop run passes 28 Vitest files/275 tests plus six
   native-driver client tests.
-- Desktop type checking passes.
-- `cargo fmt --all --check` and `cargo test` pass; the native suite contains 25
-  tests.
+- `uv lock --project
+  services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --check`
+  resolves the unchanged isolated 107-package lock.
+- `pnpm.cmd check:portable` passes Prettier, Ruff format/check, ESLint, mypy,
+  all workspace typechecks, 196 shared tests, 555 EPUB tests, 275 desktop
+  Vitest tests, six native-driver client tests, 233 Python tests, and
+  package/desktop/Python builds.
+- The authoritative Windows `pnpm.cmd check` passes the same surface plus Cargo
+  formatting, Clippy, 25 Rust tests, the release Tauri build, and both Python
+  distributions.
+- `pnpm.cmd test:native-startup` passes the packaged model-free lifecycle,
+  local-file, reader, image, restoration, cleanup, and zero-external-request
+  matrix after the product coordinator was mounted.
 - `pnpm.cmd test:tts:adaptive-exact-host` passes the packaged exact one-GPU
   matrix with the measurements recorded above and zero external requests.
+- All 53 Markdown documents pass the relative-link audit. The 26-file
+  milestone delta has no generated audio, private book, model weight, archive,
+  private-path/email/credential pattern, dependency, shared protocol version,
+  Tauri capability, or persistence addition; `git diff --check` passes.
 
 Milestone 5 introduces no dependency, shared protocol version, Tauri
 capability, persistence boundary, model artifact, generated-audio fixture,
-private book, or automatic retry. Repository-wide and final native validation
-remain Milestone 6 work.
+private book, or automatic retry. Required pull-request CI and the final demo
+policy/plan closeout remain Milestone 6 work.

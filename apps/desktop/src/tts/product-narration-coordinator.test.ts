@@ -9,7 +9,6 @@ import {
   decodeOperationalErrorV1,
   decodeReadingLocatorV1,
   type NarrationSegmentV1,
-  type ReadingLocatorV1,
   type TtsServiceStateV1,
 } from "@voxleaf/shared";
 import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
