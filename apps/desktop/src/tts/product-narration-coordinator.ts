@@ -38,7 +38,6 @@ import {
 const TICK_INTERVAL_MS = 250;
 const PREPARED_BATCH_SEGMENT_LIMIT = 16;
 const NAVIGATION_BOUNDARY_LIMIT = 64;
-const PASSIVE_NAVIGATION_SETTLEMENT_MS = 500;
 
 export type ProductNarrationFailureCode =
   | "audio-playback-failed"
@@ -81,9 +80,9 @@ export interface ProductNarrationNavigationSnapshot {
 
 export type ProductNarrationNavigationEvent =
   | "chapter-navigation"
+  | "explicit-visual-navigation"
   | "next-segment"
-  | "previous-segment"
-  | "user-visual-navigation";
+  | "previous-segment";
 
 export interface ProductNarrationNavigationRequest {
   readonly event: "next-segment" | "paragraph-leaf" | "previous-segment";
@@ -118,8 +117,6 @@ export interface ProductNarrationCoordinatorDependencies {
   ) => string;
   readonly setInterval?: (callback: () => void, intervalMs: number) => unknown;
   readonly clearInterval?: (handle: unknown) => void;
-  readonly setTimeout?: (callback: () => void, delayMs: number) => unknown;
-  readonly clearTimeout?: (handle: unknown) => void;
 }
 
 type PreparedSegmentEntry = Readonly<{
@@ -228,12 +225,6 @@ export class ProductNarrationCoordinator {
   readonly #clearInterval: NonNullable<
     ProductNarrationCoordinatorDependencies["clearInterval"]
   >;
-  readonly #setTimeout: NonNullable<
-    ProductNarrationCoordinatorDependencies["setTimeout"]
-  >;
-  readonly #clearTimeout: NonNullable<
-    ProductNarrationCoordinatorDependencies["clearTimeout"]
-  >;
   readonly #listeners = new Set<() => void>();
   readonly #audibleProgressListeners = new Set<
     (observation: ProductNarrationAudibleProgressObservation) => void
@@ -247,11 +238,11 @@ export class ProductNarrationCoordinator {
   #availability: ProductNarrationSnapshot["availability"] = "checking";
   #selection: AdaptiveBufferStartMode = Object.freeze({ kind: "quick" });
   #activeLocator: ReadingLocatorV1;
+  #visibleLocator: ReadingLocatorV1;
   #audibleRange: LocatorRangeV1 | undefined;
   #playIntent: ProductNarrationPlayIntent = "inactive";
   #pendingNavigation: PendingNavigation | undefined;
   #navigationRevision = 0;
-  #navigationSettlementHandle: unknown;
   #pausedNavigationState: AdaptivePreparationUiState | undefined;
   #continuation: ReadingLocatorV1 | undefined;
   #identity: AdaptiveBufferWorkIdentity | undefined;
@@ -285,6 +276,7 @@ export class ProductNarrationCoordinator {
   ) {
     this.#publication = publication;
     this.#activeLocator = initialLocator;
+    this.#visibleLocator = initialLocator;
     this.#client = dependencies.client ?? new TtsProcessClient();
     this.#clock =
       dependencies.clock ??
@@ -304,12 +296,6 @@ export class ProductNarrationCoordinator {
     this.#clearInterval =
       dependencies.clearInterval ??
       ((handle) => globalThis.clearInterval(handle as number));
-    this.#setTimeout =
-      dependencies.setTimeout ??
-      ((callback, delayMs) => globalThis.setTimeout(callback, delayMs));
-    this.#clearTimeout =
-      dependencies.clearTimeout ??
-      ((handle) => globalThis.clearTimeout(handle as number));
     this.#snapshot = this.#createSnapshot();
   }
 
@@ -364,27 +350,18 @@ export class ProductNarrationCoordinator {
     this.#publish();
   }
 
-  public updateActiveLocator(locator: ReadingLocatorV1): void {
-    if (this.#closed) {
-      return;
-    }
+  public updateVisibleLocator(locator: ReadingLocatorV1): void {
     if (
-      this.#pendingNavigation === undefined &&
-      (sameLocator(locator, this.#activeLocator) ||
-        (this.#playIntent === "playing" &&
-          this.#audibleRange !== undefined &&
-          containsLocator(this.#audibleRange, locator)))
+      this.#closed ||
+      this.#pendingNavigation !== undefined ||
+      sameLocator(locator, this.#visibleLocator)
     ) {
       return;
     }
+    this.#visibleLocator = locator;
     if (this.#playIntent === "inactive") {
       this.#activeLocator = locator;
-      return;
     }
-    const pending = this.#beginNavigation("user-visual-navigation");
-    pending.target = locator;
-    this.#schedulePassiveNavigationSettlement(pending.revision);
-    this.#publish();
   }
 
   public async beginExternalNavigation(
@@ -404,6 +381,7 @@ export class ProductNarrationCoordinator {
     const pending = this.#pendingNavigation;
     if (pending === undefined) {
       this.#activeLocator = locator;
+      this.#visibleLocator = locator;
       return;
     }
     pending.target = locator;
@@ -415,18 +393,20 @@ export class ProductNarrationCoordinator {
       return;
     }
     this.#activeLocator = locator;
+    this.#visibleLocator = locator;
   }
 
-  public startAtActiveLocator(): void {
+  public startAtVisibleLocator(): void {
     if (this.#closed || this.#availability !== "available") {
       return;
     }
     if (this.#playIntent === "inactive") {
+      this.#activeLocator = this.#visibleLocator;
       this.start();
       return;
     }
-    const pending = this.#beginNavigation("user-visual-navigation", true);
-    pending.target = this.#activeLocator;
+    const pending = this.#beginNavigation("explicit-visual-navigation", true);
+    pending.target = this.#visibleLocator;
     void this.#finishNavigation(pending.revision);
   }
 
@@ -449,11 +429,10 @@ export class ProductNarrationCoordinator {
 
     let pending: PendingNavigation;
     if (this.#playIntent === "inactive") {
-      this.#clearNavigationSettlement();
       this.#navigationRevision += 1;
       pending = {
         revision: this.#navigationRevision,
-        event: "user-visual-navigation",
+        event: "explicit-visual-navigation",
         priorIntent: "playing",
         restart: true,
         stop: Promise.resolve(),
@@ -463,7 +442,7 @@ export class ProductNarrationCoordinator {
       this.#pendingNavigation = pending;
       this.#publish();
     } else {
-      pending = this.#beginNavigation("user-visual-navigation", true);
+      pending = this.#beginNavigation("explicit-visual-navigation", true);
       pending.target = target;
     }
     void pending.stop.then(() => {
@@ -501,7 +480,6 @@ export class ProductNarrationCoordinator {
     ) {
       return;
     }
-    this.#clearNavigationSettlement();
     this.#pendingNavigation = undefined;
     this.#pausedNavigationState = undefined;
     this.#playIntent = "playing";
@@ -540,6 +518,7 @@ export class ProductNarrationCoordinator {
           if (observation.kind === "segment-started") {
             this.#audibleRange = observation.sourceRange;
             this.#activeLocator = observation.sourceRange.start;
+            this.#visibleLocator = observation.sourceRange.start;
             this.#publish();
           }
           for (const listener of this.#audibleProgressListeners) {
@@ -604,7 +583,6 @@ export class ProductNarrationCoordinator {
 
   public async stop(): Promise<void> {
     this.#playIntent = "inactive";
-    this.#clearNavigationSettlement();
     this.#pendingNavigation = undefined;
     this.#pausedNavigationState = undefined;
     await this.#stopActiveRun();
@@ -681,7 +659,6 @@ export class ProductNarrationCoordinator {
     }
     this.#closed = true;
     this.#playIntent = "inactive";
-    this.#clearNavigationSettlement();
     this.#pendingNavigation = undefined;
     await this.stop();
     this.#listeners.clear();
@@ -703,7 +680,6 @@ export class ProductNarrationCoordinator {
     if (this.#playIntent === "inactive") {
       throw new Error("content-free-navigation-state");
     }
-    this.#clearNavigationSettlement();
     this.#navigationRevision += 1;
     const priorIntent = this.#playIntent;
     this.#pausedNavigationState =
@@ -725,21 +701,6 @@ export class ProductNarrationCoordinator {
     return active;
   }
 
-  #schedulePassiveNavigationSettlement(revision: number): void {
-    this.#clearNavigationSettlement();
-    this.#navigationSettlementHandle = this.#setTimeout(() => {
-      this.#navigationSettlementHandle = undefined;
-      void this.#finishNavigation(revision);
-    }, PASSIVE_NAVIGATION_SETTLEMENT_MS);
-  }
-
-  #clearNavigationSettlement(): void {
-    if (this.#navigationSettlementHandle !== undefined) {
-      this.#clearTimeout(this.#navigationSettlementHandle);
-      this.#navigationSettlementHandle = undefined;
-    }
-  }
-
   async #finishNavigation(revision: number): Promise<void> {
     const pending = this.#pendingNavigation;
     if (pending === undefined || pending.revision !== revision) {
@@ -753,8 +714,8 @@ export class ProductNarrationCoordinator {
     ) {
       return;
     }
-    this.#clearNavigationSettlement();
     this.#activeLocator = pending.target;
+    this.#visibleLocator = pending.target;
     this.#pendingNavigation = undefined;
     if (pending.restart) {
       this.#playIntent = "playing";
@@ -1101,7 +1062,6 @@ export class ProductNarrationCoordinator {
     this.#runToken += 1;
     this.#identity = undefined;
     this.#playIntent = "inactive";
-    this.#clearNavigationSettlement();
     this.#pendingNavigation = undefined;
     const transition = this.#player?.close();
     this.#playerAudibleUnsubscribe?.();

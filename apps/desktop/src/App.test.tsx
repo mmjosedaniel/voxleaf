@@ -239,7 +239,7 @@ class ControlledNarrationCoordinator {
 
   public setVolumePercent(): void {}
 
-  public updateActiveLocator(): void {}
+  public updateVisibleLocator(): void {}
 
   public beginExternalNavigation(): Promise<void> {
     return Promise.resolve();
@@ -249,7 +249,7 @@ class ControlledNarrationCoordinator {
 
   public preserveActiveLocator(): void {}
 
-  public startAtActiveLocator(): void {}
+  public startAtVisibleLocator(): void {}
 
   public goToPreviousBoundary(): void {}
 

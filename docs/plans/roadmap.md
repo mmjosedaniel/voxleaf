@@ -4,6 +4,13 @@
 
 VoxLeaf is pre-alpha. Milestones 1 through 9 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Its final policy selects quick mode by default, one minute as the initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. Completed M009 freezes and proves segment-level authority, publishes bounded source-range audible progress, connects non-mutating highlight/follow behavior to the reader, implements identity-first synchronized user navigation, persists non-skipping heard checkpoints, validates the packaged synchronized loop on the exact host, and passes repository/privacy/CI closeout. The final run observed six transitions, no stale playback, one natural underrun/refill, 190 ms cancellation, bounded cleanup, zero audio persistence, zero external requests, and 378.46 buffering seconds per playback minute. A later real-publication manual run did not show the documented audible highlight and exposed an opened-book layout in which application controls can push the reader below the viewport. M009.1 is therefore the active bounded follow-up: Milestones 1-4 reconcile highlight visibility, give the reader one dedicated scroll owner, add a locator-backed paragraph leaf, make narration compact/collapsible, and replace the ambiguous preparation bar with truthful loaded-duration text. It does not change TTS, segmentation, protocol, or buffer policy. Exact-host confirmation and closeout remain before M010 hardware profiles, fallback, and operational resilience.
 
+M009.1 exact-host use has since exposed and corrected one additional reader
+defect: passive viewport scrolling must not replace active narration. The
+visible-passage target and narration locator are now separate; only explicit
+leaf, visible-passage, passage-boundary, and chapter actions trigger
+identity-first replacement. Corrective exact-host confirmation and closeout
+remain before M010.
+
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
 ## Guiding constraints
@@ -515,11 +522,12 @@ behavior should first be proven with deterministic fakes.
 
 ## Milestone 9: Integrate synchronized reading and narration
 
-**Status:** Complete as of 2026-07-27. All seven ExecPlan milestones pass. ADR-0017 and the frozen
+**Status:** Complete as of 2026-07-27 and amended by active M009.1 exact-host
+stabilization. All seven original ExecPlan milestones pass. ADR-0017 and the
 synchronization authority select segment-level source ranges, CSS Custom
-Highlight decoration, focus-safe following, immediate passive-navigation seek
-with bounded settlement, stable-segment previous/next movement, and
-non-skipping persistence checkpoints. Chromium and packaged WebView2 prove
+Highlight decoration, focus-safe following, explicit identity-first navigation,
+stable-segment previous/next movement, and non-skipping persistence
+checkpoints. Chromium and packaged WebView2 prove
 the mechanism without publication mutation, focus/selection loss, URL changes,
 runtime errors, or external requests. The bounded scheduler/player path now
 retains immutable source ranges while units are eligible and publishes exact
@@ -527,10 +535,11 @@ start/completion plus 250 ms played-frame observations outside React
 snapshots. The reader now consumes exact transitions through one bounded
 Custom Highlight projection and follows outside the 24-pixel comfort region
 without focus, selection, URL, DOM, or passive-tracker feedback side effects.
-The coordinator now invalidates identity before cleanup, debounces passive
-visual movement for 500 ms, preserves active or paused intent, and routes
-chapter, visible-passage, and stable prepared-segment actions through the
-reader's canonical focus policy. It retains at most 64 recent structural
+The coordinator now invalidates identity before cleanup for explicit targets,
+preserves active or paused intent, and routes leaf, chapter, visible-passage,
+and stable prepared-segment actions through the reader's canonical focus
+policy. M009.1 separates ordinary viewport inspection from narration so it
+cannot cancel or restart active work. It retains at most 64 recent structural
 ranges and exposes no prose, PCM, or work identity in React state.
 The persistence bridge now saves exact audible starts, advances only on
 matching completion, flushes bounded interruption/lifecycle checkpoints, and

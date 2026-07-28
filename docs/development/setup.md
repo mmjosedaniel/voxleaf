@@ -4,6 +4,10 @@
 
 The prerequisite toolchains, TypeScript workspace, React/Tauri desktop, isolated Python service, quality commands, browser/native smokes, secure EPUB reader, bounded restoration, locator-linked narration preparation, and segment-level synchronized reader projection are initialized and validated within their documented boundaries. Completed M007 provides protocol v1, native supervision, typed one-unit ownership, and the exact development-only Qwen/Serena adapter. Completed M008 connects the active visual locator to bounded preparation, one-at-a-time synthesis, the sole-owner FIFO, Web Audio playback, and accessible quick/prepared controls. Completed M009 adds exact segment transitions, focus-safe highlight/follow, synchronized user navigation, heard-position persistence, exact-host packaged evidence, and repository/CI closeout. Quick mode is the default; prepared playback initially selects one minute; refill remains one minute; low water is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target. The synchronized exact-host run passes but records 378.46 buffering seconds per playback minute, so ADR-0013 still selects no standard profile. General hardware detection, validated fallback and recovery, production distribution, and installers remain unimplemented.
 
+M009.1 keeps passive viewport inspection separate from the active narration
+locator. Scrolling does not cancel or restart narration; explicit leaf,
+visible-passage, passage-boundary, and chapter actions remain narration seeks.
+
 The later official Qwen 1.7B CustomVoice/Serena `v3` matrix failed standard
 startup, throughput, zero-failure, and mid-generation cancellation gates.
 ADR-0015 now supersedes ADR-0014's scheduling and buffering details and permits

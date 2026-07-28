@@ -1197,7 +1197,7 @@ async function runAdaptiveTtsExactHostMatrix(
   let firstHighlightProof;
   let nextHighlightProof;
   let leafReplacementMs;
-  let passiveRestartMs;
+  let passiveIsolationMs;
   let seekRestartMs;
   let chapterRestartMs;
   let refillMs;
@@ -1446,7 +1446,12 @@ async function runAdaptiveTtsExactHostMatrix(
     );
 
     setStage("adaptive exact-host passive reader navigation");
-    const passiveMarker = await markCurrentAdaptiveHighlightStale(driver);
+    const passiveMarker = await adaptiveSynchronizationObservation(driver);
+    assert(
+      passiveMarker?.highlightPresent === true &&
+        Number.isSafeInteger(passiveMarker.clearCount),
+      "Native synchronized narration proof failed.",
+    );
     const passiveStartedAtMs = Date.now();
     const passiveScrollPrepared = await driver.execute(
       `const readerViewport = document.querySelector(
@@ -1469,15 +1474,32 @@ async function runAdaptiveTtsExactHostMatrix(
          Math.max(0, activeIndex) + 12,
        );
        const target = paragraphs[targetIndex];
+       const owner = document.querySelector(".product-narration");
        if (
-         !(readerViewport instanceof HTMLElement) ||
-         !(article instanceof HTMLElement) ||
-         !(target instanceof HTMLElement) ||
-         activeIndex < 0 ||
-         targetIndex === activeIndex
+          !(readerViewport instanceof HTMLElement) ||
+          !(article instanceof HTMLElement) ||
+          !(target instanceof HTMLElement) ||
+          !(owner instanceof HTMLElement) ||
+          activeIndex < 0 ||
+          targetIndex === activeIndex
        ) {
          return false;
        }
+       const isolation = {
+         sawSettling: false,
+         startedAt: performance.now(),
+       };
+       const observeSettling = () => {
+         isolation.sawSettling ||= owner?.getAttribute(
+           "data-narration-navigation-settling",
+         ) === "true";
+       };
+       observeSettling();
+       isolation.observer = new MutationObserver(observeSettling);
+       isolation.observer.observe(owner, {
+         attributeFilter: ["data-narration-navigation-settling"],
+       });
+       globalThis.__voxleafAdaptivePassiveIsolation = isolation;
        globalThis.__voxleafAdaptivePassiveNavigationStartY =
          readerViewport.scrollTop;
        article.dispatchEvent(
@@ -1507,37 +1529,31 @@ async function runAdaptiveTtsExactHostMatrix(
             globalThis.__voxleafAdaptivePassiveNavigationStartY;`,
       2 * STARTUP_TIMEOUT_MS,
     );
-    setStage("adaptive exact-host passive reader navigation invalidation");
+    setStage("adaptive exact-host passive reader navigation isolation");
     await waitForCondition(
       driver,
-      `const state =
-         globalThis.__voxleafAdaptiveSynchronizationInstrumentation;
-       return state?.clearCount > ${String(passiveMarker.clearCount)};`,
+      `const isolation = globalThis.__voxleafAdaptivePassiveIsolation;
+       return performance.now() - isolation.startedAt >= 750;`,
       2 * STARTUP_TIMEOUT_MS,
     );
-    setStage("adaptive exact-host passive reader navigation restart");
-    await waitForCondition(
-      driver,
-      `const owner = document.querySelector(".product-narration");
-       const state =
-         globalThis.__voxleafAdaptiveSynchronizationInstrumentation;
-       return owner?.getAttribute("data-narration-phase") === "playing" &&
-         owner.getAttribute("data-narration-navigation-settling") === "false" &&
-         state?.transitionCount > ${String(passiveMarker.transitionCount)} &&
-         typeof state.currentKey === "string" &&
-         state.currentKey !== ${JSON.stringify(passiveMarker.currentKey)};`,
-      4 * STARTUP_TIMEOUT_MS,
-    );
-    passiveRestartMs = Date.now() - passiveStartedAtMs;
+    passiveIsolationMs = Date.now() - passiveStartedAtMs;
     const afterPassiveNavigation =
       await adaptiveSynchronizationObservation(driver);
-    await driver.execute(
-      `delete globalThis.__voxleafAdaptivePassiveNavigationStartY;
-       return true;`,
+    const passiveIsolation = await driver.execute(
+      `const isolation = globalThis.__voxleafAdaptivePassiveIsolation;
+       isolation?.observer?.disconnect();
+       const observation = {
+         sawSettling: isolation?.sawSettling === true,
+       };
+       delete globalThis.__voxleafAdaptivePassiveIsolation;
+       delete globalThis.__voxleafAdaptivePassiveNavigationStartY;
+       return observation;`,
     );
     assert(
       afterPassiveNavigation?.stalePlaybackObserved === false &&
-        afterPassiveNavigation.rangeValid === true,
+        afterPassiveNavigation.rangeValid === true &&
+        afterPassiveNavigation.clearCount === passiveMarker.clearCount &&
+        passiveIsolation.sawSettling === false,
       "Native synchronized narration proof failed.",
     );
 
@@ -2010,7 +2026,7 @@ async function runAdaptiveTtsExactHostMatrix(
         leafStartValidated:
           leafStartObservation.leafState === "audible" &&
           leafStartObservation.leafAriaCurrent === true,
-        passiveRestartMs,
+        passiveIsolationMs,
         checkpointAfterStop:
           checkpointObservation.leafState === "checkpoint" &&
           checkpointObservation.leafAriaCurrent === false,

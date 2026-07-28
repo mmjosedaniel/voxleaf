@@ -14,7 +14,9 @@ tracks narration through existing stable locators.
 
 The work preserves completed M005 narration segmentation, M007 protocol and
 service ownership, M008 buffer thresholds and bounds, and M009 segment-level
-timing, invalidation, following, and heard-position authority.
+timing, explicit identity-first invalidation, following, and heard-position
+authority. Exact-host validation may amend interaction authority when actual
+reader behavior contradicts the intended reader-first experience.
 
 ## User-visible outcome
 
@@ -25,6 +27,9 @@ path can:
   without scrolling past the application controls;
 - scroll the EPUB text inside one dedicated reader viewport while compact
   application and narration controls remain available;
+- inspect another passage by scrolling without cancelling, restarting, or
+  retargeting active narration; only an explicit leaf or navigation action
+  replaces the active narration point;
 - see an unmistakable but non-disruptive highlight for the currently audible
   stable narration segment;
 - see one leaf marker beside the relevant paragraph: translucent when the
@@ -108,6 +113,8 @@ that is already scheduled to change.
 - Extend deterministic, browser, packaged WebView2, and exact-host coverage for
   focus, selection, scrolling, cancellation, stale suppression, cleanup,
   forced colors, reduced motion, keyboard, pointer, and touch behavior.
+- Keep passive viewport inspection independent from narration replacement while
+  retaining explicit leaf, passage, and chapter identity-first cancellation.
 - Reconcile product, architecture, development, roadmap, and plan
   documentation with actual results.
 
@@ -214,7 +221,7 @@ Changing the scroll owner must preserve:
 - the active visual locator and 24-pixel reading line;
 - reflow and exact/nearest-valid restoration;
 - Custom Highlight range mapping and following geometry;
-- 500 ms user-originated passive navigation settlement;
+- bounded user-input classification without passive narration replacement;
 - programmatic-follow sampling suppression;
 - chapter and incremental-render materialization;
 - focus, selection, reduced motion, and forced-colors behavior; and
@@ -449,7 +456,7 @@ Complete as of 2026-07-28.
 - Extend the existing packaged exact-host synthetic path with visible
   highlight assertions under the final reader scroll root.
 - Exercise leaf start/replacement, first and next audible markers, compact and
-  expanded narration views, pause/resume, passive navigation, chapter
+  expanded narration views, pause/resume, passive viewport isolation, chapter
   transition, buffering or stable-buffer observation, stop, saved checkpoint,
   and cleanup. Retain the packaged model-free crash-recovery proof rather than
   bypassing native supervision to force an exact-model failure.
@@ -471,7 +478,7 @@ Complete as of 2026-07-28.
   Qwen/Serena CUDA profile and outbound-blocking firewall rule. It proved the
   final scroll root, compact/expanded narration, leaf-originated start and
   identity-first replacement, first/next two-frame highlight perceivability,
-  pause/resume, passive reader navigation, chapter transition, a stable
+  pause/resume, the then-frozen passive reader restart, chapter transition, a stable
   60-second playback observation without depletion, prepared playback, normal
   stop, saved checkpoint projection, and bounded cleanup. Quick playback
   became audible in `45,179 ms` with `16,880 ms` playable; prepared playback
@@ -497,12 +504,17 @@ Complete as of 2026-07-28.
   playback, generated audio, or external requests; GPU memory returned from a
   `5,069 MiB` peak to `14 MiB`, and bounded resource release completed in
   `588 ms`. These timing differences are observation-only and do not alter the
-  frozen engine-profile decision.
+  frozen engine-profile decision. A later private-EPUB run showed that the
+  accepted passive restart was a product defect: scrolling changed the
+  narration point. The amended implementation now preserves narration during
+  viewport inspection, and the deterministic and packaged proof expectations
+  have been changed accordingly.
 
 ### Status
 
-Automated exact-host validation complete as of 2026-07-28; ephemeral
-private-EPUB confirmation remains pending.
+The original automated exact-host validation is complete. The first ephemeral
+private-EPUB run exposed passive-scroll retargeting; the corrective
+private-EPUB confirmation and amended exact-host rerun remain pending.
 
 ## Milestone 6: Record the stabilization decision and close validation
 
@@ -750,6 +762,16 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   196 tests, 34 EPUB files / 555 tests, 34 desktop files / 328 tests plus 7
   native-client/harness tests, 25 Rust tests, 234 Python tests, and
   native/portable builds.
+- 2026-07-28: A private-EPUB manual run reached active narration but showed that
+  scrolling the dedicated reader viewport automatically cancelled and
+  retargeted narration. This was the implemented ADR-0017 passive-seek policy,
+  not a random model or rendering failure.
+- 2026-07-28: Separated visible-locator observation from narration authority in
+  `ProductNarrationCoordinator`. Passive movement no longer settles a
+  navigation or cancels synthesis; the explicit visible-passage control and
+  paragraph leaf still replace work through the original invalidation order.
+  Focused reader/coordinator regressions pass, and the packaged exact-host
+  script now checks passive isolation instead of the obsolete restart.
 
 ## Discoveries and decisions
 
@@ -784,6 +806,12 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
 - M009.1 uses one retargeted contextual leaf rather than one persistent focus
   target per paragraph. It retains at most one preview, preparing, audible,
   and checkpoint state.
+- Private-EPUB exact-host use exposed that the original passive-scroll seek
+  authority was itself disruptive: ordinary viewport inspection cancelled
+  active work and changed the narration start. The selected correction keeps a
+  separate visible-passage target and active narration locator. Passive
+  scrolling updates only the former; explicit leaf, visible-passage,
+  previous/next, and chapter actions retain identity-first replacement.
 - The authority and stronger proof remain desktop-local. No M005 segmentation,
   M007 protocol, M008 threshold, shared contract, storage migration, native
   capability, CSP, or dependency change is required.
@@ -995,8 +1023,19 @@ confirmation and repository/privacy/pull-request closeout.
   prose, title, author, private path, PCM, generated audio, raw model output,
   model artifact, secret, or new dependency. Observations are content-free and
   retained-unit/resource measurements remain bounded.
-- Remaining gate: one ephemeral private-EPUB interaction confirmation under
-  the stabilized shell, recorded only as content-free booleans.
+- Passive-isolation amendment focused tests: passed, 3 files / 44 tests.
+- `pnpm.cmd --filter @voxleaf/desktop test`: passed, 34 files / 328 tests plus
+  7 native WebDriver-client/harness tests.
+- Model-free exact-host preflight: passed, 3 files / 32 tests plus 7 native
+  harness tests.
+- Final `pnpm.cmd check:portable`: passed outside the sandbox, including
+  formatting, TypeScript/Python lint and typecheck, 19 shared files / 196
+  tests, 34 EPUB files / 555 tests, 34 desktop files / 328 tests plus 7 native
+  tests, 234 Python tests, and portable builds. Pytest emitted one non-failing
+  cache-write warning; no product assertion failed.
+- Remaining gate: rerun the amended exact-host passive-isolation matrix and
+  repeat the ephemeral private-EPUB scroll confirmation without recording
+  private content.
 
 ## Final validation results
 

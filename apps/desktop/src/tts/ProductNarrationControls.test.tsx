@@ -53,7 +53,7 @@ describe("product narration controls", () => {
       setVolumePercent: vi.fn(),
       goToPreviousBoundary: vi.fn(),
       goToNextBoundary: vi.fn(),
-      startAtActiveLocator: vi.fn(),
+      startAtVisibleLocator: vi.fn(),
     } as unknown as ProductNarrationCoordinator;
 
     render(<ProductNarrationControls coordinator={coordinator} />);
@@ -127,7 +127,7 @@ describe("product narration controls", () => {
 
     expect(coordinator.goToPreviousBoundary).toHaveBeenCalledOnce();
     expect(coordinator.goToNextBoundary).toHaveBeenCalledOnce();
-    expect(coordinator.startAtActiveLocator).toHaveBeenCalledOnce();
+    expect(coordinator.startAtVisibleLocator).toHaveBeenCalledOnce();
     expect(group.textContent).not.toContain("Private");
   });
 
@@ -165,7 +165,7 @@ describe("product narration controls", () => {
       setVolumePercent: vi.fn(),
       goToPreviousBoundary: vi.fn(),
       goToNextBoundary: vi.fn(),
-      startAtActiveLocator: vi.fn(),
+      startAtVisibleLocator: vi.fn(),
     } as unknown as ProductNarrationCoordinator;
 
     render(<ProductNarrationControls coordinator={coordinator} />);

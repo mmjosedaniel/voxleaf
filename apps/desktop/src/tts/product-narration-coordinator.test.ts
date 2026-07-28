@@ -329,10 +329,6 @@ function createHarness(
   );
   const publication = createPublication(prepareNarration);
   const intervals: Array<() => void> = [];
-  const timeouts: Array<{
-    readonly callback: () => void;
-    readonly delay: number;
-  }> = [];
   const dependencies: ProductNarrationCoordinatorDependencies = {
     client,
     clock,
@@ -350,19 +346,6 @@ function createHarness(
         intervals.splice(index, 1);
       }
     },
-    setTimeout: (callback, delay) => {
-      const timeout = { callback, delay };
-      timeouts.push(timeout);
-      return timeout;
-    },
-    clearTimeout: (handle) => {
-      const index = timeouts.indexOf(
-        handle as { readonly callback: () => void; readonly delay: number },
-      );
-      if (index >= 0) {
-        timeouts.splice(index, 1);
-      }
-    },
   };
   const coordinator = new ProductNarrationCoordinator(
     publication,
@@ -375,7 +358,6 @@ function createHarness(
     clock,
     coordinator,
     intervals,
-    timeouts,
     prepareNarration,
   };
 }
@@ -457,7 +439,7 @@ describe("product narration coordinator", () => {
     expect(serializedSnapshot).not.toContain("segment:product-test");
     expect(serializedSnapshot).not.toContain("sourceRange");
 
-    coordinator.updateActiveLocator(
+    coordinator.updateVisibleLocator(
       decodeReadingLocatorV1({
         ...START_LOCATOR,
         textOffsetCodePoints: START_LOCATOR.textOffsetCodePoints + 6,
@@ -536,8 +518,8 @@ describe("product narration coordinator", () => {
     expect(coordinator.observe().state).toBeUndefined();
   });
 
-  it("invalidates on the first passive visual change and restarts only after the trailing 500 ms settlement", async () => {
-    const { client, coordinator, prepareNarration, timeouts } = createHarness({
+  it("keeps passive viewport movement independent until the visible-passage action is explicit", async () => {
+    const { client, coordinator, prepareNarration } = createHarness({
       blockSynthesis: true,
     });
     await coordinator.checkAvailability();
@@ -552,23 +534,20 @@ describe("product narration coordinator", () => {
       textOffsetCodePoints: START_LOCATOR.textOffsetCodePoints + 2,
     });
 
-    coordinator.updateActiveLocator(firstReplacement);
+    coordinator.updateVisibleLocator(firstReplacement);
 
     expect(coordinator.observe().navigation).toMatchObject({
       playIntent: "playing",
-      settling: true,
+      settling: false,
     });
-    expect(timeouts).toEqual([
-      expect.objectContaining({
-        delay: 500,
-      }),
-    ]);
-    coordinator.updateActiveLocator(settledReplacement);
-    expect(timeouts).toHaveLength(1);
-    await settleUntil(() => client.cancelled.length === 1);
+    coordinator.updateVisibleLocator(settledReplacement);
+    await Promise.resolve();
+    expect(client.cancelled).toHaveLength(0);
     expect(coordinator.observe().metrics.acceptedAudioUnitCount).toBe(0);
+    expect(prepareNarration).toHaveBeenCalledTimes(1);
 
-    timeouts[0]?.callback();
+    coordinator.startAtVisibleLocator();
+    await settleUntil(() => client.cancelled.length === 1);
     await settleUntil(() => prepareNarration.mock.calls.length === 2);
 
     expect(prepareNarration.mock.calls[1]?.[0]).toEqual(
@@ -584,8 +563,8 @@ describe("product narration coordinator", () => {
     await coordinator.close();
   });
 
-  it("keeps paused intent at the settled passage and resumes from that locator", async () => {
-    const { coordinator, prepareNarration, timeouts } = createHarness();
+  it("keeps paused narration stable across passive movement until an explicit visible-passage start", async () => {
+    const { coordinator, prepareNarration } = createHarness();
     await coordinator.checkAvailability();
     coordinator.start();
     await settleUntil(() => coordinator.observe().state?.phase === "playing");
@@ -595,19 +574,20 @@ describe("product narration coordinator", () => {
       textOffsetCodePoints: START_LOCATOR.textOffsetCodePoints + 1,
     });
 
-    coordinator.updateActiveLocator(replacement);
-    await settleUntil(() => timeouts.length === 1);
-    timeouts[0]?.callback();
-    await settleUntil(
-      () =>
-        coordinator.observe().navigation.settling === false &&
-        coordinator.observe().state?.phase === "paused",
-    );
-
+    coordinator.updateVisibleLocator(replacement);
+    await Promise.resolve();
     expect(coordinator.observe().navigation.playIntent).toBe("paused");
     expect(prepareNarration).toHaveBeenCalledTimes(1);
 
     coordinator.resume();
+    await settleUntil(
+      () =>
+        coordinator.observe().navigation.playIntent === "playing" &&
+        coordinator.observe().state?.phase === "playing",
+    );
+    expect(prepareNarration).toHaveBeenCalledTimes(1);
+
+    coordinator.startAtVisibleLocator();
     await settleUntil(() => prepareNarration.mock.calls.length === 2);
     expect(prepareNarration.mock.calls[1]?.[0]).toEqual(
       expect.objectContaining({ startLocator: replacement }),

@@ -448,10 +448,11 @@ The component receives no narration text, identity, or audio payload.
 
 `product-narration-coordinator.test.ts` validates the application seam with
 synthetic prepared segments and fake client/player boundaries: the model-free
-runtime is not exposed, preparation starts at the active visual locator with an
-abort signal, only one request is active, sole audio ownership transfers to the
-player, locator changes make work stale before cancellation, preparation
-failures are fixed/content-free, and snapshots contain no text, paths, or work
+runtime is not exposed, preparation starts at the active narration locator with
+an abort signal, only one request is active, sole audio ownership transfers to
+the player, passive visible-locator changes preserve active and paused work,
+explicit targets make old work stale before cancellation, preparation failures
+are fixed/content-free, and snapshots contain no text, paths, or work
 identities. Process-client and Rust supervisor tests cover the narrow
 content-free exact-configuration availability result.
 
@@ -472,10 +473,12 @@ synthetic Spanish EPUB, exercises either quick depletion/buffering or a
 one-minute prepared playback. M009 Milestone 6 additionally verifies exact audible transitions,
 valid half-open ranges, readable focus-safe following, keyboard pause/resume,
 passage seek, chapter restart, stale suppression, reduced motion, forced
-colors, retained/discarded-unit bounds, and generated-audio cleanup. Late
-programmatic visual samples are suppressed during active narration; bounded
-wheel, touch, pointer, or reading-navigation-key intent still authorizes the
-frozen passive seek. It checks all four prepared choices, content-free timing
+  colors, retained/discarded-unit bounds, and generated-audio cleanup. Late
+  programmatic visual samples are suppressed during active narration; bounded
+  wheel-driven viewport inspection is now required to preserve the active
+  identity, highlight, leaf, and play intent. Explicit leaf, passage, and
+  chapter actions still prove identity-first replacement. It checks all four
+  prepared choices, content-free timing
 and resource metrics, cleanup, and zero external requests. Cleanup samples RAM
 and VRAM until they return within the frozen bound or a 15-second deadline;
 it does not assume a fixed one-second release time. Generated audio is never

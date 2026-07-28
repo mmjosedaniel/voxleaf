@@ -1139,7 +1139,7 @@ describe("navigable publication reader", () => {
     expect(storageWrite).not.toHaveBeenCalled();
   });
 
-  it("suppresses programmatic visual samples during narration but accepts user keyboard intent", () => {
+  it("reports the actual viewport during narration without input classification", () => {
     const mapper = new SemanticDomRangeMapper();
     const environment = new ManualVisualLocatorEnvironment();
     const narrationSource = new ManualReaderNarrationSource();
@@ -1180,7 +1180,10 @@ describe("navigable publication reader", () => {
       environment.notify();
       environment.flush();
     });
-    expect(onActiveLocatorChange).not.toHaveBeenCalled();
+    expect(onActiveLocatorChange).toHaveBeenCalledOnce();
+    expect(onActiveLocatorChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ textOffsetCodePoints: 4 }),
+    );
 
     fireEvent.keyDown(container.querySelector(".reader-content")!, {
       key: "PageDown",
@@ -1190,8 +1193,8 @@ describe("navigable publication reader", () => {
       environment.notify();
       environment.flush();
     });
-    expect(onActiveLocatorChange).toHaveBeenCalledOnce();
-    expect(onActiveLocatorChange).toHaveBeenCalledWith(
+    expect(onActiveLocatorChange).toHaveBeenCalledTimes(2);
+    expect(onActiveLocatorChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ textOffsetCodePoints: 6 }),
     );
   });

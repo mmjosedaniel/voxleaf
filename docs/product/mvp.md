@@ -14,12 +14,13 @@ Completed M009 connects exact audible segment transitions to one non-mutating se
 4. VoxLeaf opens at the user's last saved passage, or the beginning for a new book.
 5. The user reads and navigates the EPUB in a continuous reflowable reader, adjusts closed display preferences, and can close or replace the publication.
 6. On the exact configured development host, the user can start quick or
-   prepared local narration from the active visual locator and hear complete
+   prepared local narration from the active narration leaf or visible target and hear complete
    units through the bounded in-memory player.
-7. The reader highlights and follows the audible stable segment. Passive
-   movement, chapter navigation, and previous/next narration-passage controls
-   invalidate obsolete audio before a bounded restart from the canonical
-   target; a paused session remains paused there.
+7. The reader highlights and follows the audible stable segment. Ordinary
+   viewport movement may inspect the book without changing narration. An
+   explicit paragraph leaf, visible-passage, chapter, or previous/next passage
+   action invalidates obsolete audio before a bounded restart from its
+   canonical target.
 8. When exact-development narration is available, one contextual leaf can
    replace obsolete narration and start at its canonical paragraph. The leaf
    reinforces preparing, audible, and saved states while ordinary text clicks
@@ -68,7 +69,7 @@ Implemented and validated:
 - Own complete 24-kHz mono float32 units in one bounded desktop FIFO outside
   React, consume them through a dedicated low-level Web Audio player, account
   underruns, and release played or invalidated originals exactly once.
-- Connect the active visual locator to bounded narration preparation, the M007
+- Connect the active narration locator or explicit visible target to bounded narration preparation, the M007
   client, and audible quick/prepared playback under the exact-development
   availability gate.
 - Keep ready-publication application, book, and compact narration chrome
@@ -77,9 +78,10 @@ Implemented and validated:
   with exact text rather than a progress bar.
 - Highlight and follow the active prepared segment without mutating publication
   DOM or moving keyboard focus.
-- Treat passive visual movement as a seek after 500 ms settlement, route
-  chapter and stable prepared-segment navigation through identity-first
-  cancellation, preserve paused intent at the target, and expose fixed
+- Let passive visual movement inspect the publication without replacing active
+  narration; route only explicit leaf, visible-passage, chapter, and stable
+  prepared-segment navigation through identity-first cancellation, preserve
+  paused intent until an explicit target is selected, and expose fixed
   content-free keyboard controls.
 - Persist the audible segment start when playback begins, advance only after
   matching completion, flush the latest heard checkpoint on interruption and

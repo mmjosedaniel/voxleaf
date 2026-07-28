@@ -89,10 +89,11 @@ EPUB scrolling. Compact publication and narration controls remain outside that
 viewport. Nested reader scroll owners are prohibited.
 
 Empty, opening, loading, and error views may use the normal application page.
-Stable locators, the 24-pixel reading line, 500 ms passive-navigation
-settlement, follow sampling suppression, focus, selection, reflow,
-restoration, incremental rendering, chapter navigation, and cleanup remain
-governed by existing authorities.
+Stable locators, the 24-pixel reading line, follow sampling suppression, focus,
+selection, reflow, restoration, incremental rendering, chapter navigation, and
+cleanup remain governed by existing authorities. While narration owns
+position, ordinary viewport movement is an independent inspection and only an
+explicit leaf, passage, or chapter action may replace narration.
 
 ## Text-only loaded duration
 

@@ -233,7 +233,7 @@ export function ProductNarrationControls({
                 snapshot.availability !== "available" ||
                 snapshot.navigation.settling
               }
-              onClick={() => coordinator.startAtActiveLocator()}
+              onClick={() => coordinator.startAtVisibleLocator()}
             >
               Start narration at visible passage
             </button>

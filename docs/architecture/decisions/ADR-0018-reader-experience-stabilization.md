@@ -8,7 +8,9 @@ and pass clean-host validation. Milestone 3 implements the fixed reader shell,
 sole EPUB scroll root, compact/collapsible narration, and exact text-only
 loaded status; clean-host packaged validation remains pending. Milestone 4
 implements and validates the bounded paragraph leaf. Exact-host confirmation
-and closeout remain for Milestones 5-6.
+and closeout remain for Milestones 5-6. Exact-host Milestone 5 validation
+exposed and corrected passive-scroll narration retargeting; this ADR therefore
+amends the passive-navigation portion of ADR-0017.
 
 ## Context
 
@@ -60,8 +62,11 @@ audible, and checkpoint state. Ordinary paragraph clicks remain inert. Every
 state has a non-colour cue, visible focus, and keyboard/touch parity.
 
 The existing M005 segmentation, M007 protocol, M008 thresholds and bounds,
-M009 synchronization and invalidation, shared contracts, storage schema,
-native capabilities, CSP, and dependency graph remain unchanged.
+explicit M009 identity-first invalidation, shared contracts, storage schema,
+native capabilities, CSP, and dependency graph remain unchanged. Passive
+viewport movement no longer invokes that invalidation: the audible leaf remains
+the narration authority until an explicit leaf, passage, or chapter action
+replaces it.
 
 ## Consequences
 
@@ -73,6 +78,8 @@ native capabilities, CSP, and dependency graph remain unchanged.
 - Compact UI cannot hide failure, buffering, low-water, or required recovery.
 - The paragraph leaf remains a location/action marker; it cannot imply word or
   whole-paragraph audible timing.
+- A user may inspect another part of the chapter without cancelling or
+  retargeting active narration.
 - Production code still needs Milestones 5-6 before the stabilized
   user-visible outcome is complete.
 
