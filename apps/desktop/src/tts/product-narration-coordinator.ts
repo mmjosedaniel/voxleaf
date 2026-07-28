@@ -53,6 +53,8 @@ export interface ProductNarrationMetrics {
   readonly underrunCount: number;
   readonly acceptedAudioUnitCount: number;
   readonly acceptedAudioSampleFrames: number;
+  readonly retainedAudioUnitCount: number;
+  readonly discardedAudioUnitCount: number;
 }
 
 export interface ProductNarrationSnapshot {
@@ -357,7 +359,10 @@ export class ProductNarrationCoordinator {
     }
     if (
       this.#pendingNavigation === undefined &&
-      sameLocator(locator, this.#activeLocator)
+      (sameLocator(locator, this.#activeLocator) ||
+        (this.#playIntent === "playing" &&
+          this.#audibleRange !== undefined &&
+          containsLocator(this.#audibleRange, locator)))
     ) {
       return;
     }
@@ -1128,6 +1133,8 @@ export class ProductNarrationCoordinator {
         underrunCount: this.#player?.synchronize().underrunCount ?? 0,
         acceptedAudioUnitCount: this.#acceptedAudioUnitCount,
         acceptedAudioSampleFrames: this.#acceptedAudioSampleFrames,
+        retainedAudioUnitCount: scheduler?.retainedAudioUnitCount ?? 0,
+        discardedAudioUnitCount: scheduler?.discardedAudioUnitCount ?? 0,
       }),
       navigation: Object.freeze({
         playIntent: this.#playIntent,

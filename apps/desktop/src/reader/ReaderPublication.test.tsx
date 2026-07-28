@@ -220,6 +220,8 @@ function narrationSnapshot(
       underrunCount: 0,
       acceptedAudioUnitCount: 0,
       acceptedAudioSampleFrames: 0,
+      retainedAudioUnitCount: 0,
+      discardedAudioUnitCount: 0,
     }),
     serviceState: phase === "playing" ? "ready" : "stopped",
     navigation: Object.freeze({
@@ -1074,6 +1076,63 @@ describe("navigable publication reader", () => {
       "chapter-navigation",
     );
     expect(storageWrite).not.toHaveBeenCalled();
+  });
+
+  it("suppresses programmatic visual samples during narration but accepts user keyboard intent", () => {
+    const mapper = new SemanticDomRangeMapper();
+    const environment = new ManualVisualLocatorEnvironment();
+    const narrationSource = new ManualReaderNarrationSource();
+    const onActiveLocatorChange = vi.fn();
+    const publication = createPublication();
+    publication.resolveLocator = vi.fn((input: unknown) => {
+      const locator = decodeReadingLocatorV1(input);
+      return Object.freeze({
+        status: "exact",
+        reason: "exact",
+        locator,
+        locatedBlock: OPENING_LOCATED_BLOCK,
+      });
+    });
+    const { container } = render(
+      <ReaderPublicationContent
+        publication={publication}
+        domRangeMapper={mapper}
+        visualLocatorEnvironment={environment}
+        narrationSource={narrationSource}
+        segmentHighlightEnvironment={new ManualSegmentHighlightEnvironment()}
+        onActiveLocatorChange={onActiveLocatorChange}
+      />,
+    );
+    environment.rects.set("Opening", {
+      top: 10,
+      right: 210,
+      bottom: 50,
+      left: 10,
+    });
+    act(() => {
+      environment.flush();
+      narrationSource.start(entireLocatedBlockRange(OPENING_LOCATED_BLOCK), 0);
+    });
+    environment.range = mapper.rangeFor(OPENING_LOCATED_BLOCK, 4);
+
+    act(() => {
+      environment.notify();
+      environment.flush();
+    });
+    expect(onActiveLocatorChange).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(container.querySelector(".reader-content")!, {
+      key: "PageDown",
+    });
+    environment.range = mapper.rangeFor(OPENING_LOCATED_BLOCK, 6);
+    act(() => {
+      environment.notify();
+      environment.flush();
+    });
+    expect(onActiveLocatorChange).toHaveBeenCalledOnce();
+    expect(onActiveLocatorChange).toHaveBeenCalledWith(
+      expect.objectContaining({ textOffsetCodePoints: 6 }),
+    );
   });
 
   it("publishes the canonical locator only after preference reflow settles", () => {

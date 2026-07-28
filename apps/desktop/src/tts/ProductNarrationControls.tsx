@@ -41,6 +41,7 @@ export function ProductNarrationControls({
       className="product-narration"
       data-narration-availability={snapshot.availability}
       data-narration-phase={snapshot.state?.phase ?? "idle"}
+      data-narration-failure={snapshot.failure ?? "none"}
       data-narration-playable-ms={snapshot.state?.readyMs ?? 0}
       data-narration-target-ms={snapshot.state?.targetMs ?? 0}
       data-narration-service-state={snapshot.serviceState}
@@ -55,6 +56,10 @@ export function ProductNarrationControls({
       data-narration-accepted-sample-frames={
         snapshot.metrics.acceptedAudioSampleFrames
       }
+      data-narration-retained-units={snapshot.metrics.retainedAudioUnitCount}
+      data-narration-discarded-units={snapshot.metrics.discardedAudioUnitCount}
+      data-narration-play-intent={snapshot.navigation.playIntent}
+      data-narration-navigation-settling={String(snapshot.navigation.settling)}
     >
       <AdaptivePreparationControls
         selection={snapshot.selection}

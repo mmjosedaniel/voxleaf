@@ -145,11 +145,20 @@ function scheduleBrowserFrame(
   }
   let active = true;
   if (typeof view.requestAnimationFrame === "function") {
-    const frame = view.requestAnimationFrame(() => {
-      if (active) {
-        active = false;
-        callback();
+    let frame = view.requestAnimationFrame(() => {
+      if (!active) {
+        return;
       }
+      // WebView2 may deliver the scroll observation after the frame that
+      // performed instant placement. Keep passive sampling suspended through
+      // a second frame so that late programmatic callbacks cannot become
+      // user-navigation seeks.
+      frame = view.requestAnimationFrame(() => {
+        if (active) {
+          active = false;
+          callback();
+        }
+      });
     });
     return () => {
       if (active) {

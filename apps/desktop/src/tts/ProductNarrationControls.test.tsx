@@ -21,6 +21,8 @@ function snapshot(): ProductNarrationSnapshot {
       underrunCount: 0,
       acceptedAudioUnitCount: 0,
       acceptedAudioSampleFrames: 0,
+      retainedAudioUnitCount: 2,
+      discardedAudioUnitCount: 1,
     }),
     serviceState: "stopped",
     navigation: Object.freeze({
@@ -71,6 +73,26 @@ describe("product narration controls", () => {
     expect(previous).toBeEnabled();
     expect(next).toBeEnabled();
     expect(startHere).toBeEnabled();
+    expect(group.parentElement).toHaveAttribute(
+      "data-narration-retained-units",
+      "2",
+    );
+    expect(group.parentElement).toHaveAttribute(
+      "data-narration-discarded-units",
+      "1",
+    );
+    expect(group.parentElement).toHaveAttribute(
+      "data-narration-play-intent",
+      "playing",
+    );
+    expect(group.parentElement).toHaveAttribute(
+      "data-narration-navigation-settling",
+      "false",
+    );
+    expect(group.parentElement).toHaveAttribute(
+      "data-narration-failure",
+      "none",
+    );
 
     fireEvent.click(previous);
     fireEvent.click(next);
