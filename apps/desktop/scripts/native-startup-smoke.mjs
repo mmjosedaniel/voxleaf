@@ -21,6 +21,11 @@ import {
   WebDriverClient,
   WebDriverClientError,
 } from "./native-webdriver-client.mjs";
+import {
+  assertNativeSmokeInvariant,
+  assertNativeSmokeInvariants,
+  nativeSmokeInvariantFailureCode,
+} from "./native-smoke-invariants.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.resolve(scriptDirectory, "..");
@@ -247,6 +252,10 @@ function failureCode(error) {
   if (error instanceof WebDriverClientError) {
     return error.code;
   }
+  const invariantCode = nativeSmokeInvariantFailureCode(error);
+  if (invariantCode !== undefined) {
+    return invariantCode;
+  }
   if (!(error instanceof Error)) {
     return "unexpected-error";
   }
@@ -419,6 +428,47 @@ async function nvidiaSnapshot() {
     powerState: fields[3],
     utilizationPercent,
   });
+}
+
+async function waitForAdaptiveResourceCleanup(
+  rootProcessId,
+  baselineWorkingSetBytes,
+  baselineGpu,
+) {
+  const startedAtMs = Date.now();
+  const deadline = startedAtMs + INTERACTION_TIMEOUT_MS;
+  let workingSetBytes;
+  let gpu;
+
+  do {
+    [workingSetBytes, gpu] = await Promise.all([
+      processWorkingSetBytes(rootProcessId),
+      nvidiaSnapshot(),
+    ]);
+    if (
+      gpu.dedicatedMemoryMiB <= baselineGpu.dedicatedMemoryMiB + 512 &&
+      workingSetBytes <= baselineWorkingSetBytes + 512 * MEBIBYTE
+    ) {
+      return Object.freeze({
+        gpu,
+        releaseMs: Date.now() - startedAtMs,
+        workingSetBytes,
+      });
+    }
+    await delay(250);
+  } while (Date.now() < deadline);
+
+  assertNativeSmokeInvariants([
+    [
+      "cleanup-gpu-released",
+      gpu?.dedicatedMemoryMiB <= baselineGpu.dedicatedMemoryMiB + 512,
+    ],
+    [
+      "cleanup-working-set-released",
+      workingSetBytes <= baselineWorkingSetBytes + 512 * MEBIBYTE,
+    ],
+  ]);
+  throw new Error("Native synchronized narration cleanup failed.");
 }
 
 function startAdaptiveResourceSampler(rootProcessId) {
@@ -761,7 +811,7 @@ async function adaptiveReaderExperienceObservation(driver) {
      );
      const compact = document.querySelector(".product-narration-compact");
      const detailToggle = document.querySelector(
-       ".product-narration-compact-actions button[aria-controls]",
+       '[data-narration-action="details-toggle"]',
      );
      const detail =
        detailToggle instanceof HTMLButtonElement
@@ -903,22 +953,27 @@ async function assertAdaptiveActiveHighlightPerceivable(driver) {
     adaptiveActiveHighlightPerceivability(driver),
     adaptiveSynchronizationObservation(driver),
   ]);
-  assert(
-    highlight?.available === true &&
-      highlight.registeredAcrossRenderingOpportunity === true &&
-      highlight.registeredAnimationFrames >= 2 &&
-      highlight.rangeConnected === true &&
-      highlight.hasNonzeroClientGeometry === true &&
-      highlight.insideReaderViewport === true &&
-      highlight.focusPreserved === true &&
-      highlight.selectionPreserved === true &&
-      highlight.publicationDomUnchanged === true &&
-      highlight.urlUnchanged === true &&
-      synchronization?.readableHighlight === true &&
-      synchronization.highlightPresent === true &&
-      synchronization.rangeValid === true,
-    "Native synchronized narration proof failed.",
-  );
+  assertNativeSmokeInvariants([
+    ["highlight-available", highlight?.available === true],
+    [
+      "highlight-registered",
+      highlight?.registeredAcrossRenderingOpportunity === true,
+    ],
+    ["highlight-animation-frames", highlight?.registeredAnimationFrames >= 2],
+    ["highlight-range-connected", highlight?.rangeConnected === true],
+    [
+      "highlight-nonzero-geometry",
+      highlight?.hasNonzeroClientGeometry === true,
+    ],
+    ["highlight-in-reader-viewport", highlight?.insideReaderViewport === true],
+    ["highlight-focus-preserved", highlight?.focusPreserved === true],
+    ["highlight-selection-preserved", highlight?.selectionPreserved === true],
+    ["highlight-dom-preserved", highlight?.publicationDomUnchanged === true],
+    ["highlight-url-preserved", highlight?.urlUnchanged === true],
+    ["highlight-readable", synchronization?.readableHighlight === true],
+    ["highlight-present", synchronization?.highlightPresent === true],
+    ["highlight-range-valid", synchronization?.rangeValid === true],
+  ]);
   return Object.freeze({
     focusPreserved: highlight.focusPreserved,
     insideReaderViewport: highlight.insideReaderViewport,
@@ -998,8 +1053,14 @@ async function runAdaptiveTtsExactHostMatrix(
   await injectNativeFile(driver, fixturePath);
   await waitForCondition(
     driver,
-    `return document.querySelector('[role="status"]')?.textContent ===
-       "The EPUB opened successfully.";`,
+    `const viewport = document.querySelector(
+       '[data-reader-scroll-owner="true"]',
+     );
+     const article = document.querySelector("article.semantic-document");
+     return viewport instanceof HTMLElement &&
+       viewport.getClientRects().length > 0 &&
+       article instanceof HTMLElement &&
+       article.getClientRects().length > 0;`,
   );
   setStage("adaptive exact-host availability");
   await waitForCondition(
@@ -1047,13 +1108,13 @@ async function runAdaptiveTtsExactHostMatrix(
 
   setStage("adaptive exact-host expanded reader experience");
   const detailToggle = await driver.findElement(
-    ".product-narration-compact-actions button[aria-controls]",
+    '[data-narration-action="details-toggle"]',
   );
   await driver.sendKeys(detailToggle, WEBDRIVER_SPACE);
   await waitForCondition(
     driver,
     `return document.querySelector(
-       ".product-narration-compact-actions button[aria-controls]",
+       '[data-narration-action="details-toggle"]',
      )?.getAttribute("aria-expanded") === "true" &&
        document.querySelector(".product-narration-detail")
          ?.getClientRects().length > 0;`,
@@ -1069,6 +1130,32 @@ async function runAdaptiveTtsExactHostMatrix(
       expandedReaderExperience.leafCount === 1,
     "Native synchronized narration proof failed.",
   );
+
+  setStage("adaptive exact-host pre-inference action contract");
+  const actionContractValid = await driver.execute(
+    `const narrationActions = [
+       "details-toggle",
+       "next-passage",
+       "play",
+       "previous-passage",
+       "visible-passage",
+     ];
+     const readerActions = ["next-chapter", "previous-chapter"];
+     return narrationActions.every(
+       (action) =>
+         document.querySelectorAll(
+           '[data-narration-action="' + action + '"]',
+         ).length === 1,
+     ) &&
+       readerActions.every(
+         (action) =>
+           document.querySelectorAll(
+             '[data-reader-action="' + action + '"]',
+           ).length === 1,
+       ) &&
+       document.querySelectorAll(".paragraph-leaf").length === 1;`,
+  );
+  assertNativeSmokeInvariant(actionContractValid === true, "action-contract");
 
   setStage("adaptive exact-host prepared-option selection");
   const optionsAccepted = await driver.execute(
@@ -1090,7 +1177,7 @@ async function runAdaptiveTtsExactHostMatrix(
   await waitForCondition(
     driver,
     `return document.querySelector(
-       ".product-narration-compact-actions button[aria-controls]",
+       '[data-narration-action="details-toggle"]',
      )?.getAttribute("aria-expanded") === "false" &&
        document.querySelector(".product-narration-detail") === null;`,
   );
@@ -1123,6 +1210,7 @@ async function runAdaptiveTtsExactHostMatrix(
   let cleanupReaderExperience;
   let cleanupWorkingSetBytes;
   let cleanupGpu;
+  let cleanupResourceReleaseMs;
   let resourceSamples;
   let generatedAudioFiles;
   try {
@@ -1245,7 +1333,7 @@ async function runAdaptiveTtsExactHostMatrix(
 
     setStage("adaptive exact-host keyboard pause and resume");
     const pauseButton = await driver.findElement(
-      ".product-narration-compact-actions button:nth-child(1)",
+      '[data-narration-action="pause"]',
     );
     await driver.sendKeys(pauseButton, WEBDRIVER_SPACE);
     await waitForCondition(
@@ -1264,7 +1352,7 @@ async function runAdaptiveTtsExactHostMatrix(
       "Native synchronized narration proof failed.",
     );
     const resumeButton = await driver.findElement(
-      ".product-narration-compact-actions button:nth-child(1)",
+      '[data-narration-action="resume"]',
     );
     await driver.sendKeys(resumeButton, WEBDRIVER_SPACE);
     await waitForCondition(
@@ -1287,13 +1375,13 @@ async function runAdaptiveTtsExactHostMatrix(
 
     setStage("adaptive exact-host expanded active narration");
     const activeDetailToggle = await driver.findElement(
-      ".product-narration-compact-actions button[aria-controls]",
+      '[data-narration-action="details-toggle"]',
     );
     await driver.sendKeys(activeDetailToggle, WEBDRIVER_SPACE);
     await waitForCondition(
       driver,
       `return document.querySelector(
-         ".product-narration-compact-actions button[aria-controls]",
+         '[data-narration-action="details-toggle"]',
        )?.getAttribute("aria-expanded") === "true" &&
          document.querySelector(".product-narration-detail")
            ?.getClientRects().length > 0;`,
@@ -1313,21 +1401,16 @@ async function runAdaptiveTtsExactHostMatrix(
     setStage("adaptive exact-host next-segment seek");
     await waitForCondition(
       driver,
-      `return Array.from(
-         document.querySelectorAll(
-           ".product-narration-navigation button",
-         ),
-       ).some(
-         (button) =>
-           button.textContent === "Next narration passage" &&
-           !button.disabled,
-       );`,
+      `const next = document.querySelector(
+         '[data-narration-action="next-passage"]',
+       );
+       return next instanceof HTMLButtonElement && !next.disabled;`,
       3 * STARTUP_TIMEOUT_MS,
     );
     const seekMarker = await markCurrentAdaptiveHighlightStale(driver);
     const seekStartedAtMs = Date.now();
     const nextPassageButton = await driver.findElement(
-      ".product-narration-navigation button:nth-child(2)",
+      '[data-narration-action="next-passage"]',
     );
     await driver.sendKeys(nextPassageButton, WEBDRIVER_SPACE);
     await waitForCondition(
@@ -1462,7 +1545,7 @@ async function runAdaptiveTtsExactHostMatrix(
     const chapterMarker = await markCurrentAdaptiveHighlightStale(driver);
     const chapterStartedAtMs = Date.now();
     const nextChapterButton = await driver.findElement(
-      ".reader-chapter-controls button:last-child",
+      '[data-reader-action="next-chapter"]',
     );
     await driver.sendKeys(nextChapterButton, WEBDRIVER_SPACE);
     await waitForCondition(
@@ -1570,7 +1653,7 @@ async function runAdaptiveTtsExactHostMatrix(
     );
     const cancellationAtMs = Date.now();
     const stopButton = await driver.findElement(
-      ".product-narration-compact-actions button:nth-child(2)",
+      '[data-narration-action="stop"]',
     );
     await driver.sendKeys(stopButton, WEBDRIVER_SPACE);
     await waitForCondition(
@@ -1675,7 +1758,7 @@ async function runAdaptiveTtsExactHostMatrix(
     setStage("adaptive exact-host prepared playback final stop");
     const finalStopStartedAtMs = Date.now();
     const finalStopButton = await driver.findElement(
-      ".product-narration-compact-actions button:nth-child(2)",
+      '[data-narration-action="stop"]',
     );
     await driver.click(finalStopButton);
     await waitForCondition(
@@ -1700,13 +1783,13 @@ async function runAdaptiveTtsExactHostMatrix(
       "Native synchronized narration proof failed.",
     );
     const finalDetailToggle = await driver.findElement(
-      ".product-narration-compact-actions button[aria-controls]",
+      '[data-narration-action="details-toggle"]',
     );
     await driver.sendKeys(finalDetailToggle, WEBDRIVER_SPACE);
     await waitForCondition(
       driver,
       `return document.querySelector(
-         ".product-narration-compact-actions button[aria-controls]",
+         '[data-narration-action="details-toggle"]',
        )?.getAttribute("aria-expanded") === "false" &&
          document.querySelector(".product-narration-detail") === null;`,
     );
@@ -1718,24 +1801,55 @@ async function runAdaptiveTtsExactHostMatrix(
     );
 
     setStage("adaptive exact-host cleanup observation");
-    await delay(1_000);
-    cleanupWorkingSetBytes = await processWorkingSetBytes(rootProcessId);
-    cleanupGpu = await nvidiaSnapshot();
     cleanupObservation = await adaptiveSynchronizationObservation(driver);
     cleanupReaderExperience = await adaptiveReaderExperienceObservation(driver);
-    assert(
-      cleanupObservation?.highlightPresent === false &&
-        cleanupObservation.stalePlaybackObserved === false &&
-        cleanupReaderExperience?.readerScrollOwnerCount === 1 &&
-        cleanupReaderExperience.compactVisible === true &&
-        cleanupReaderExperience.detailExpanded === false &&
-        cleanupReaderExperience.detailVisible === false &&
-        cleanupReaderExperience.progressBarCount === 0 &&
-        cleanupReaderExperience.leafCount === 1 &&
-        ["checkpoint", "preview"].includes(cleanupReaderExperience.leafState) &&
-        cleanupReaderExperience.leafAriaCurrent === false,
-      "Native synchronized narration cleanup failed.",
+    assertNativeSmokeInvariants([
+      [
+        "cleanup-highlight-cleared",
+        cleanupObservation?.highlightPresent === false,
+      ],
+      [
+        "cleanup-no-stale-playback",
+        cleanupObservation?.stalePlaybackObserved === false,
+      ],
+      [
+        "cleanup-reader-scroll-owner",
+        cleanupReaderExperience?.readerScrollOwnerCount === 1,
+      ],
+      [
+        "cleanup-compact-visible",
+        cleanupReaderExperience?.compactVisible === true,
+      ],
+      [
+        "cleanup-detail-collapsed",
+        cleanupReaderExperience?.detailExpanded === false &&
+          cleanupReaderExperience?.detailVisible === false,
+      ],
+      [
+        "cleanup-progressbar-absent",
+        cleanupReaderExperience?.progressBarCount === 0,
+      ],
+      [
+        "cleanup-leaf-bounded",
+        cleanupReaderExperience?.leafCount === 1 &&
+          ["checkpoint", "preview"].includes(
+            cleanupReaderExperience?.leafState,
+          ),
+      ],
+      [
+        "cleanup-leaf-inactive",
+        cleanupReaderExperience?.leafAriaCurrent === false,
+      ],
+    ]);
+    setStage("adaptive exact-host bounded resource cleanup");
+    const cleanupResources = await waitForAdaptiveResourceCleanup(
+      rootProcessId,
+      baselineWorkingSetBytes,
+      baselineGpu,
     );
+    cleanupWorkingSetBytes = cleanupResources.workingSetBytes;
+    cleanupGpu = cleanupResources.gpu;
+    cleanupResourceReleaseMs = cleanupResources.releaseMs;
 
     setStage("adaptive exact-host privacy and network assertions");
     const bodyIsContentSafe = await driver.execute(
@@ -1824,11 +1938,6 @@ async function runAdaptiveTtsExactHostMatrix(
     preparedWorkingSetBytes,
     cleanupWorkingSetBytes,
   );
-  assert(
-    cleanupGpu.dedicatedMemoryMiB <= baselineGpu.dedicatedMemoryMiB + 512 &&
-      cleanupWorkingSetBytes <= baselineWorkingSetBytes + 512 * MEBIBYTE,
-    "Native synchronized narration cleanup failed.",
-  );
   console.log(
     `Adaptive exact-host TTS matrix passed: ${JSON.stringify({
       quick: {
@@ -1915,6 +2024,7 @@ async function runAdaptiveTtsExactHostMatrix(
         retainedUnits: 0,
         discardedUnits: 0,
         generatedAudioFiles,
+        resourceReleaseMs: cleanupResourceReleaseMs,
       },
       preparedOptionsAcceptedMs: [60_000, 120_000, 300_000, 600_000],
       externalRequests: 0,
@@ -2926,7 +3036,7 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
   await runNativeReaderInteraction({
     action: async () => {
       const previousChapter = await driver.findElement(
-        ".reader-chapter-controls button:first-child",
+        '[data-reader-action="previous-chapter"]',
       );
       await driver.sendKeys(previousChapter, WEBDRIVER_SPACE);
     },

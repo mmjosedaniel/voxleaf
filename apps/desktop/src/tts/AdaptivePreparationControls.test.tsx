@@ -105,11 +105,11 @@ describe("adaptive preparation controls", () => {
       kind: "prepared",
       targetMs: 600_000,
     });
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Prepare 5 minutes of audio",
-      }),
-    );
+    const start = screen.getByRole("button", {
+      name: "Prepare 5 minutes of audio",
+    });
+    expect(start).toHaveAttribute("data-narration-action", "start");
+    fireEvent.click(start);
     expect(callbacks.onStart).toHaveBeenCalledOnce();
   });
 
@@ -136,9 +136,15 @@ describe("adaptive preparation controls", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /Quick start/ })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Pause" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Resume" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Stop" })).toBeEnabled();
+    const pause = screen.getByRole("button", { name: "Pause" });
+    const resume = screen.getByRole("button", { name: "Resume" });
+    const stop = screen.getByRole("button", { name: "Stop" });
+    expect(pause).toBeDisabled();
+    expect(resume).toBeDisabled();
+    expect(stop).toBeEnabled();
+    expect(pause).toHaveAttribute("data-narration-action", "pause");
+    expect(resume).toHaveAttribute("data-narration-action", "resume");
+    expect(stop).toHaveAttribute("data-narration-action", "stop");
 
     const volume = screen.getByRole("slider", { name: "Volume: 75%" });
     expect(volume).toHaveAttribute("step", "5");

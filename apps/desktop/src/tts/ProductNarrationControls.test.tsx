@@ -71,7 +71,13 @@ describe("product narration controls", () => {
       }),
     ).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+    const play = screen.getByRole("button", { name: "Play" });
+    expect(play).toHaveAttribute("data-narration-action", "play");
+    expect(detailToggle).toHaveAttribute(
+      "data-narration-action",
+      "details-toggle",
+    );
+    fireEvent.click(play);
     expect(coordinator.start).toHaveBeenCalledOnce();
     fireEvent.click(detailToggle);
     expect(
@@ -94,6 +100,15 @@ describe("product narration controls", () => {
     expect(group).toContainElement(previous);
     expect(group).toContainElement(next);
     expect(group).toContainElement(startHere);
+    expect(previous).toHaveAttribute(
+      "data-narration-action",
+      "previous-passage",
+    );
+    expect(next).toHaveAttribute("data-narration-action", "next-passage");
+    expect(startHere).toHaveAttribute(
+      "data-narration-action",
+      "visible-passage",
+    );
     expect(previous).toBeEnabled();
     expect(next).toBeEnabled();
     expect(startHere).toBeEnabled();
@@ -179,7 +194,9 @@ describe("product narration controls", () => {
     expect(coordinator.start).not.toHaveBeenCalled();
     expect(coordinator.stop).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Stop" }));
+    const stop = screen.getByRole("button", { name: "Stop" });
+    expect(stop).toHaveAttribute("data-narration-action", "stop");
+    fireEvent.click(stop);
     expect(coordinator.stop).toHaveBeenCalledOnce();
   });
 });

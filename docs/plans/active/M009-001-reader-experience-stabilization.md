@@ -486,7 +486,18 @@ Complete as of 2026-07-28.
   passed its supported child-crash recovery path. An unsafe direct exact-model
   service shutdown was rejected as a validation technique because it bypassed
   native supervision and created an unsupported split-brain state. Ephemeral
-  private-EPUB confirmation remains pending.
+  private-EPUB confirmation remains pending. A preventive hardening rerun also
+  passed after a `3.1-second` model-free UI-contract preflight. It used stable
+  action identities instead of button order or presentation copy, emitted
+  fixed invariant codes, and polled bounded cleanup instead of sleeping for a
+  fixed second. This run became audible in `62,873 ms` with `29,600 ms`
+  playable, naturally depleted once, refilled in `87,101 ms`, and observed
+  `291.3` buffering seconds per playback minute. Prepared playback became
+  audible in `123,689 ms` with `70,549 ms` playable. It retained no stale
+  playback, generated audio, or external requests; GPU memory returned from a
+  `5,069 MiB` peak to `14 MiB`, and bounded resource release completed in
+  `588 ms`. These timing differences are observation-only and do not alter the
+  frozen engine-profile decision.
 
 ### Status
 
@@ -717,6 +728,28 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   native-client tests, 25 Rust tests, 234 Python tests, and native/portable
   builds. The Python test run emitted one non-failing sandbox-cache write
   warning; the outside-sandbox gate itself exited successfully.
+- 2026-07-28: Audited the exact-host harness for assumptions similar to the
+  removed prepared-button, passive-scroll, shutdown-bypass, and post-stop
+  cleanup assumptions. Positional narration/chapter selectors, grouped generic
+  highlight/cleanup failures, a model-time-only selector check, and a fixed
+  one-second resource sample were confirmed as preventive maintenance risks.
+- 2026-07-28: Added stable narration/chapter action identities with component
+  regressions, a model-free exact-host UI-contract preflight, allowlisted
+  content-safe invariant failure codes, and bounded RAM/VRAM cleanup polling.
+  The preflight passed 3 files / 32 tests plus 7 native harness tests in
+  `3.1 seconds`; all 34 desktop files / 328 tests, lint, typecheck, formatting,
+  and Node syntax checks pass.
+- 2026-07-28: The hardened exact-host matrix passed in `530.4 seconds`. It
+  exercised natural depletion and successful refill, first/next visible
+  highlights, leaf and chapter/passage navigation, prepared playback, stop,
+  checkpoint projection, zero stale audio/files/external requests, and
+  resource release within `588 ms`. The observed buffering remains above the
+  MVP allowance but is not a new performance-profile decision.
+- 2026-07-28: Final `pnpm.cmd check` passed in `64.2 seconds`, covering
+  formatting, TypeScript/Rust/Python lint and type checks, 19 shared files /
+  196 tests, 34 EPUB files / 555 tests, 34 desktop files / 328 tests plus 7
+  native-client/harness tests, 25 Rust tests, 234 Python tests, and
+  native/portable builds.
 
 ## Discoveries and decisions
 
@@ -806,6 +839,14 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   continuous 60-second stable-playback observation with zero underruns is the
   exact-host result, while deterministic/model-free tests remain authoritative
   for buffering, low-water, depletion, and refill transitions.
+- Exact-host automation must select controls through stable action identity,
+  not DOM position or presentation copy. A model-free contract preflight must
+  run before Qwen inference, and content-safe invariant codes must identify
+  the failed boundary without exposing observed values.
+- Resource release is asynchronous and hardware-dependent. Exact-host cleanup
+  polls RAM and VRAM against the frozen bounds for at most 15 seconds and
+  records the actual release duration; it neither assumes one second nor
+  relaxes the memory ceilings.
 
 ## Milestone 1 validation results
 
@@ -936,10 +977,20 @@ confirmation and repository/privacy/pull-request closeout.
   exact frozen Qwen/Serena CUDA profile and outbound firewall isolation. It
   produced no stale playback, generated-audio files, or external requests and
   returned GPU memory to its `14 MiB` baseline.
+- Model-free exact-host preflight
+  (`pnpm.cmd --filter @voxleaf/desktop test:tts:adaptive-exact-host:preflight`):
+  passed in `3.1 seconds`, 3 Vitest files / 32 tests plus 7 native harness
+  tests.
+- Hardened `pnpm.cmd test:tts:adaptive-exact-host`: passed in `530.4 seconds`
+  after the model-free preflight. One natural underrun/refill was observed;
+  fixed invariant checks, semantic action selection, bounded state, privacy,
+  and cleanup passed, with resource release in `588 ms`.
 - `pnpm.cmd check`: passed in `76.8 seconds`, including formatting,
-  TypeScript/Rust/Python lint and type checks, 1,113 TypeScript tests, 25 Rust
-  tests, 234 Python tests, the desktop release build, and the Python package
-  build.
+  TypeScript/Rust/Python lint and type checks, 1,079 Vitest tests plus 6
+  native-client tests, 25 Rust tests, 234 Python tests, the desktop release
+  build, and the Python package build.
+- Final hardened `pnpm.cmd check`: passed in `64.2 seconds` with the same
+  repository-wide coverage plus the seventh native harness regression.
 - Privacy/bounds review: the committed harness and this result contain no EPUB
   prose, title, author, private path, PCM, generated audio, raw model output,
   model artifact, secret, or new dependency. Observations are content-free and

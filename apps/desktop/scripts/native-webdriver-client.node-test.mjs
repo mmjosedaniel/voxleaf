@@ -9,6 +9,12 @@ import {
   WebDriverClient,
   WebDriverClientError,
 } from "./native-webdriver-client.mjs";
+import {
+  assertNativeSmokeInvariant,
+  assertNativeSmokeInvariants,
+  nativeSmokeInvariantFailureCode,
+  NativeSmokeInvariantError,
+} from "./native-smoke-invariants.mjs";
 
 const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
 
@@ -266,4 +272,29 @@ test("stops after the second timed-out interaction", async () => {
     [1, 2],
     [2, 2],
   ]);
+});
+
+test("reports only fixed content-safe native smoke invariant codes", () => {
+  assert.doesNotThrow(() =>
+    assertNativeSmokeInvariants([
+      ["action-contract", true],
+      ["cleanup-highlight-cleared", true],
+    ]),
+  );
+
+  assert.throws(
+    () => assertNativeSmokeInvariant(false, "cleanup-gpu-released"),
+    (error) =>
+      error instanceof NativeSmokeInvariantError &&
+      error.message === "Native smoke invariant failed." &&
+      nativeSmokeInvariantFailureCode(error) ===
+        "native-invariant-cleanup-gpu-released",
+  );
+  assert.throws(
+    () => assertNativeSmokeInvariant(false, "private publication text"),
+    (error) =>
+      error instanceof TypeError &&
+      error.message === "Unknown native smoke invariant." &&
+      nativeSmokeInvariantFailureCode(error) === undefined,
+  );
 });

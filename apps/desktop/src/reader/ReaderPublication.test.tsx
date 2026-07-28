@@ -826,10 +826,19 @@ describe("navigable publication reader", () => {
       "Supplement — This destination is outside the readable spine.",
     );
 
-    expect(
-      screen.getByRole("button", { name: "Previous chapter" }),
-    ).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Next chapter" })).toBeEnabled();
+    const previousChapter = screen.getByRole("button", {
+      name: "Previous chapter",
+    });
+    const nextChapter = screen.getByRole("button", {
+      name: "Next chapter",
+    });
+    expect(previousChapter).toBeDisabled();
+    expect(nextChapter).toBeEnabled();
+    expect(previousChapter).toHaveAttribute(
+      "data-reader-action",
+      "previous-chapter",
+    );
+    expect(nextChapter).toHaveAttribute("data-reader-action", "next-chapter");
 
     fireEvent.click(within(toc).getByRole("button", { name: "Continuation" }));
 

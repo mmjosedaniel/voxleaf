@@ -816,6 +816,7 @@ export function ReaderPublicationContent({
             >
               <button
                 type="button"
+                data-reader-action="previous-chapter"
                 disabled={!state.canGoPrevious}
                 onClick={() =>
                   runProgrammaticNavigation(
@@ -828,6 +829,7 @@ export function ReaderPublicationContent({
               </button>
               <button
                 type="button"
+                data-reader-action="next-chapter"
                 disabled={!state.canGoNext}
                 onClick={() =>
                   runProgrammaticNavigation(
