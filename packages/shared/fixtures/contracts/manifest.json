@@ -80,6 +80,24 @@
       "expected": "invalid"
     },
     {
+      "id": "host-profile-compatibility-report-v1-valid-synthetic",
+      "fixture": "host-profile-compatibility-report/v1/valid-synthetic.json",
+      "schemaId": "urn:voxleaf:schema:host-profile-compatibility-report:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "host-profile-compatibility-report-v1-valid-unknown",
+      "fixture": "host-profile-compatibility-report/v1/valid-unknown.json",
+      "schemaId": "urn:voxleaf:schema:host-profile-compatibility-report:v1",
+      "expected": "valid"
+    },
+    {
+      "id": "host-profile-compatibility-report-v1-rejects-max-memory-plus-one",
+      "fixture": "host-profile-compatibility-report/v1/invalid-max-memory.json",
+      "schemaId": "urn:voxleaf:schema:host-profile-compatibility-report:v1",
+      "expected": "invalid"
+    },
+    {
       "id": "audio-frame-v1-valid",
       "fixture": "audio-frame/v1/valid.json",
       "schemaId": "urn:voxleaf:schema:audio-frame:v1",

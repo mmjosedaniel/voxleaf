@@ -7,6 +7,7 @@ import {
   validateBookV1Wire as standaloneValidateBookV1Wire,
   validateBufferStatusV1Wire as standaloneValidateBufferStatusV1Wire,
   validateCapabilityReportV1Wire as standaloneValidateCapabilityReportV1Wire,
+  validateHostProfileCompatibilityReportV1Wire as standaloneValidateHostProfileCompatibilityReportV1Wire,
   validateLocatorRangeV1Wire as standaloneValidateLocatorRangeV1Wire,
   validateReadingLocatorV1Wire as standaloneValidateReadingLocatorV1Wire,
   validateNarrationSegmentV1Wire as standaloneValidateNarrationSegmentV1Wire,
@@ -20,6 +21,7 @@ import type { AudioFrameV1Wire } from "../contracts/audio-frame-v1.js";
 import type { BookV1Wire } from "../contracts/book-v1.js";
 import type { BufferStatusV1Wire } from "../contracts/buffer-status-v1.js";
 import type { CapabilityReportV1Wire } from "../contracts/capability-report-v1.js";
+import type { HostProfileCompatibilityReportV1Wire } from "../contracts/host-profile-compatibility-report-v1.js";
 import type { LocatorRangeV1Wire } from "../contracts/locator-range-v1.js";
 import type { ReadingLocatorV1Wire } from "../contracts/locator-v1.js";
 import type { NarrationSegmentV1Wire } from "../contracts/narration-segment-v1.js";
@@ -41,6 +43,9 @@ export const validateBufferStatusV1Wire =
 
 export const validateCapabilityReportV1Wire =
   standaloneValidateCapabilityReportV1Wire as unknown as ContractValidator<CapabilityReportV1Wire>;
+
+export const validateHostProfileCompatibilityReportV1Wire =
+  standaloneValidateHostProfileCompatibilityReportV1Wire as unknown as ContractValidator<HostProfileCompatibilityReportV1Wire>;
 
 export const validateLocatorRangeV1Wire =
   standaloneValidateLocatorRangeV1Wire as unknown as ContractValidator<LocatorRangeV1Wire>;

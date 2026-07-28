@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:schema:host-profile-compatibility-report:v1",
+  "title": "HostProfileCompatibilityReportV1Wire",
+  "description": "A bounded privacy-safe snapshot of local host facts needed for conservative TTS profile matching. It contains no host identity, raw platform output, path, recommendation, or support claim.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "probeStatus",
+    "platform",
+    "processor",
+    "memory",
+    "storage",
+    "providers"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "allOf": [
+        {
+          "$ref": "urn:voxleaf:schema:primitives:v1#/$defs/schemaVersion"
+        },
+        {
+          "const": 1
+        }
+      ]
+    },
+    "probeStatus": {
+      "type": "string",
+      "enum": ["complete", "partial", "permission-denied", "unavailable"]
+    },
+    "platform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operatingSystem", "architecture"],
+      "properties": {
+        "operatingSystem": {
+          "type": "string",
+          "enum": ["windows", "linux", "macos", "other", "unknown"]
+        },
+        "architecture": {
+          "type": "string",
+          "enum": ["x86_64", "aarch64", "other", "unknown"]
+        }
+      }
+    },
+    "processor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["logicalProcessorCount"],
+      "properties": {
+        "logicalProcessorCount": {
+          "$ref": "#/$defs/knownLogicalProcessorCount"
+        }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["totalPhysicalMiB", "availablePhysicalMiB"],
+      "properties": {
+        "totalPhysicalMiB": {
+          "$ref": "#/$defs/knownPositiveMebibytes"
+        },
+        "availablePhysicalMiB": {
+          "$ref": "#/$defs/knownNonNegativeMebibytes"
+        }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applicationVolumeAvailableMiB"],
+      "properties": {
+        "applicationVolumeAvailableMiB": {
+          "$ref": "#/$defs/knownNonNegativeMebibytes"
+        }
+      }
+    },
+    "providers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cpu", "cuda", "directml", "rocm", "metal"],
+      "properties": {
+        "cpu": {
+          "$ref": "#/$defs/providerCapability"
+        },
+        "cuda": {
+          "$ref": "#/$defs/providerCapability"
+        },
+        "directml": {
+          "$ref": "#/$defs/providerCapability"
+        },
+        "rocm": {
+          "$ref": "#/$defs/providerCapability"
+        },
+        "metal": {
+          "$ref": "#/$defs/providerCapability"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "availabilityStatus": {
+      "title": "HostFactAvailabilityV1Wire",
+      "type": "string",
+      "enum": ["available", "unavailable", "unknown"]
+    },
+    "knownLogicalProcessorCount": {
+      "title": "KnownLogicalProcessorCountV1Wire",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "value"],
+          "properties": {
+            "status": {
+              "const": "known"
+            },
+            "value": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1024
+            }
+          }
+        },
+        {
+          "$ref": "#/$defs/unknownQuantity"
+        }
+      ]
+    },
+    "knownPositiveMebibytes": {
+      "title": "KnownPositiveMebibytesV1Wire",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "value"],
+          "properties": {
+            "status": {
+              "const": "known"
+            },
+            "value": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16777216
+            }
+          }
+        },
+        {
+          "$ref": "#/$defs/unknownQuantity"
+        }
+      ]
+    },
+    "knownNonNegativeMebibytes": {
+      "title": "KnownNonNegativeMebibytesV1Wire",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "value"],
+          "properties": {
+            "status": {
+              "const": "known"
+            },
+            "value": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 16777216
+            }
+          }
+        },
+        {
+          "$ref": "#/$defs/unknownQuantity"
+        }
+      ]
+    },
+    "unknownQuantity": {
+      "title": "UnknownHostQuantityV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "const": "unknown"
+        }
+      }
+    },
+    "providerCapability": {
+      "title": "HostProviderCapabilityV1Wire",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "availability",
+        "deviceClass",
+        "dedicatedMemoryMiB",
+        "availableDedicatedMemoryMiB",
+        "precisions"
+      ],
+      "properties": {
+        "availability": {
+          "$ref": "#/$defs/availabilityStatus"
+        },
+        "deviceClass": {
+          "type": "string",
+          "enum": [
+            "cpu",
+            "discrete-gpu",
+            "integrated-gpu",
+            "software",
+            "unknown"
+          ]
+        },
+        "dedicatedMemoryMiB": {
+          "$ref": "#/$defs/knownNonNegativeMebibytes"
+        },
+        "availableDedicatedMemoryMiB": {
+          "$ref": "#/$defs/knownNonNegativeMebibytes"
+        },
+        "precisions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["float32", "float16", "bfloat16", "int8"],
+          "properties": {
+            "float32": {
+              "$ref": "#/$defs/availabilityStatus"
+            },
+            "float16": {
+              "$ref": "#/$defs/availabilityStatus"
+            },
+            "bfloat16": {
+              "$ref": "#/$defs/availabilityStatus"
+            },
+            "int8": {
+              "$ref": "#/$defs/availabilityStatus"
+            }
+          }
+        }
+      }
+    }
+  }
+}

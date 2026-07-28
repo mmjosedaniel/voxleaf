@@ -29,6 +29,7 @@ ADR-0002-short-description.md
 - [`ADR-0016-rust-owned-stdio-tts-protocol.md`](ADR-0016-rust-owned-stdio-tts-protocol.md): Rust-owned standard-stream child supervision, complete-unit float32-le framing, internal-only IPC CSP sources, and optimized Tauri binary responses.
 - [`ADR-0017-segment-level-reader-narration-synchronization.md`](ADR-0017-segment-level-reader-narration-synchronization.md): segment-level audible-position authority, CSS Custom Highlight decoration, focus-safe following, synchronized manual navigation, and non-skipping heard-progress persistence.
 - [`ADR-0018-reader-experience-stabilization.md`](ADR-0018-reader-experience-stabilization.md): paint-aware highlight proof, one reader scroll owner, compact/collapsible narration, text-only loaded duration, and one bounded locator-backed leaf.
+- [`ADR-0019-privacy-safe-hardware-profiles-and-recovery.md`](ADR-0019-privacy-safe-hardware-profiles-and-recovery.md): privacy-safe host facts, evidence-backed profile matching, no admitted CPU fallback, and identity-first explicit recovery.
 
 ## Template
 
