@@ -654,6 +654,11 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   size, stale-work, and cleanup coverage in commit `1cedac1`. The full desktop
   suite and typecheck pass, all six Chromium tests report passing, and the
   packaged native startup smoke passes on this Windows host.
+- 2026-07-28: The aggregate lint gate rejected a synchronous React state
+  update in the leaf positioning effect and one type-only hook dependency.
+  Positioning now mutates only the application-owned leaf host as the effect's
+  external DOM synchronization target, and the callback uses the exported
+  located-block type. Lint and the 39-test focused suite pass.
 
 ## Discoveries and decisions
 
@@ -822,10 +827,14 @@ passes.
 
 ## Milestone 4 validation results
 
-- Focused coordinator/reader command: passed, 2 files / 35 tests.
+- Focused coordinator/reader command: passed, 2 files / 39 tests.
 - `pnpm.cmd --filter @voxleaf/desktop test`: passed, 34 Vitest files / 328
   tests plus 6 native WebDriver-client tests.
 - `pnpm.cmd --filter @voxleaf/desktop typecheck`: passed.
+- `pnpm.cmd check:portable`: passed, including formatting, TypeScript/Python
+  lint and typecheck, 19 shared files / 196 tests, 34 EPUB files / 555 tests,
+  34 desktop files / 328 tests plus 6 native-client tests, 234 Python tests,
+  and portable package/desktop/Python builds.
 - `pnpm.cmd test:browser`: all 6 Playwright tests reported passing, including
   forced-colors, focus visibility, 44-pixel target size, touch parity, and the
   unavailable-narration case. The known Windows preview child remained alive

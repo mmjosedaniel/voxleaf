@@ -2,17 +2,13 @@ import type { PublicationLocatedBlock } from "@voxleaf/epub";
 import {
   useCallback,
   useLayoutEffect,
-  useState,
+  useRef,
   useSyncExternalStore,
 } from "react";
-import type { CSSProperties, ReactElement } from "react";
+import type { ReactElement } from "react";
 
 import type { ReaderExperienceLeafState } from "./reader-experience-authority";
 import type { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
-
-interface ParagraphLeafPosition {
-  readonly top: number;
-}
 
 export interface ParagraphLeafProps {
   readonly contentRoot: HTMLElement | null;
@@ -42,24 +38,15 @@ const VISIBLE_STATES: Readonly<
 function positionFor(
   root: HTMLElement,
   target: HTMLElement,
-): ParagraphLeafPosition | undefined {
+): number | undefined {
   try {
     const rootRect = root.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
     const top = targetRect.top - rootRect.top;
-    return Number.isFinite(top)
-      ? Object.freeze({ top: Math.max(0, top) })
-      : undefined;
+    return Number.isFinite(top) ? Math.max(0, top) : undefined;
   } catch {
     return undefined;
   }
-}
-
-function samePosition(
-  left: ParagraphLeafPosition | undefined,
-  right: ParagraphLeafPosition | undefined,
-): boolean {
-  return left?.top === right?.top;
 }
 
 export function ParagraphLeaf({
@@ -83,10 +70,12 @@ export function ParagraphLeaf({
     getRegistrationCount,
     () => 0,
   );
-  const [position, setPosition] = useState<ParagraphLeafPosition | undefined>(
-    undefined,
-  );
+  const hostRef = useRef<HTMLDivElement>(null);
   const updatePosition = useCallback((): void => {
+    const host = hostRef.current;
+    if (host === null) {
+      return;
+    }
     const target =
       locatedBlock === undefined
         ? undefined
@@ -95,7 +84,13 @@ export function ParagraphLeaf({
       contentRoot === null || target === undefined
         ? undefined
         : positionFor(contentRoot, target);
-    setPosition((current) => (samePosition(current, next) ? current : next));
+    if (next === undefined) {
+      host.hidden = true;
+      host.style.removeProperty("--paragraph-leaf-top");
+      return;
+    }
+    host.style.setProperty("--paragraph-leaf-top", `${String(next)}px`);
+    host.hidden = false;
   }, [contentRoot, domRangeMapper, locatedBlock]);
 
   useLayoutEffect(() => {
@@ -130,20 +125,13 @@ export function ParagraphLeaf({
     updatePosition,
   ]);
 
-  if (
-    locatedBlock === undefined ||
-    state === undefined ||
-    position === undefined
-  ) {
+  if (locatedBlock === undefined || state === undefined) {
     return null;
   }
-  const style = {
-    "--paragraph-leaf-top": `${String(position.top)}px`,
-  } as CSSProperties;
   const visibleState = VISIBLE_STATES[state];
 
   return (
-    <div className="paragraph-leaf-host" style={style}>
+    <div ref={hostRef} className="paragraph-leaf-host" hidden>
       <button
         type="button"
         className="paragraph-leaf"

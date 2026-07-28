@@ -1,5 +1,6 @@
 import type {
   OpenedPublication,
+  PublicationLocatedBlock,
   PublicationNavigationNode,
   SemanticDocumentTarget,
 } from "@voxleaf/epub";
@@ -577,13 +578,13 @@ export function ReaderPublicationContent({
     [coordinator, runProgrammaticNavigation],
   );
   const activateParagraphLeaf = useCallback(
-    (locatedBlock: (typeof publication.locators)[number]): void => {
+    (locatedBlock: PublicationLocatedBlock): void => {
       const target = locatedBlock.startLocator;
       if (narrationSource?.startAtLocator?.(target) === true) {
         paragraphLeafController.beginPreparation(target);
       }
     },
-    [narrationSource, paragraphLeafController, publication.locators],
+    [narrationSource, paragraphLeafController],
   );
   const updatePreference = useCallback(
     (preference: ReaderPreferenceName, value: string): void => {
