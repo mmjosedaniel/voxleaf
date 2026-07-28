@@ -465,11 +465,18 @@ Complete as of 2026-07-28.
   highlight and leaf marker, preserves one coherent locator, produces zero
   stale audio, releases bounded state, persists no generated audio, and makes
   zero external requests.
-- Actual result: Not yet available.
+- Actual result: The packaged synthetic matrix now exercises the final scroll
+  root, compact/expanded narration views, leaf-originated start and
+  identity-first replacement, first/next two-frame highlight perceivability,
+  pause/resume, passive navigation, chapter transition, buffering, controlled
+  service failure, stop/reset, saved checkpoint projection, and cleanup. Its
+  model-free native smoke, focused desktop suite, typecheck, lint, and syntax
+  checks pass. The exact Qwen/GPU run and ephemeral private-EPUB confirmation
+  remain pending.
 
 ### Status
 
-Not started.
+In progress as of 2026-07-28.
 
 ## Milestone 6: Record the stabilization decision and close validation
 
@@ -657,6 +664,20 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   Positioning now mutates only the application-owned leaf host as the effect's
   external DOM synchronization target, and the callback uses the exported
   located-block type. Lint and the 39-test focused suite pass.
+- 2026-07-28: Extended the existing packaged exact-host matrix over the final
+  reader shell. The content-safe assertions now cover the sole reader scroll
+  owner, compact and expanded narration, leaf start/replacement and checkpoint
+  states, first/next visible highlights across two rendering frames,
+  pause/resume, passive navigation, chapter and buffering transitions,
+  controlled service failure, reset, cleanup, bounded resources, and zero
+  external requests without recording publication text, paths, audio, or raw
+  model output.
+- 2026-07-28: The extended harness passes Node syntax, Prettier, TypeScript
+  lint, 34 desktop test files / 328 tests plus 6 native-client tests,
+  TypeScript typecheck, and the model-free packaged native startup smoke. All
+  six Chromium smokes also report passing; the known Windows preview child
+  remained attached after the passing list and the bounded wrapper ended by
+  timeout.
 
 ## Discoveries and decisions
 
