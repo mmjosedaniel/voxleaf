@@ -249,13 +249,21 @@ unavailable. The packaged smoke covers the same bounded reader and
 synchronization regression path without claiming a dedicated native leaf
 assertion; no model is loaded by default.
 
-The Milestone 4 packaged smoke passed on the current Windows host after its
-release build. A `webdriver-session-not-created` failure remains a known
-host-automation boundary on affected runs and is not evidence about an
-application assertion; required clean-host pull-request validation remains the
-authoritative final packaged gate. On Windows, all six Playwright tests can
-report passing before the preview child remains attached and the bounded
-wrapper times out; this is the documented M004 post-test teardown issue.
+The Milestone 4 packaged smoke and the final Milestone 6 local closeout smoke
+pass on the current Windows host after their release builds. A
+`webdriver-session-not-created` failure remains a known host-automation
+boundary on affected runs and is not evidence about an application assertion;
+required clean-host pull-request validation remains the authoritative final
+packaged gate. On Windows, all six Playwright tests can report passing before
+the preview child remains attached and the bounded wrapper times out; this is
+the documented M004 post-test teardown issue.
+
+The final closeout also keeps synchronization perception independent from
+deferred raster presentation. The comprehensive synthetic EPUB's last
+paragraph owns a lazy local image, so the packaged proof selects a text-only
+narration target before asserting stable publication DOM and follow geometry.
+This prevents a legitimate raster mount from being misclassified as a
+highlight mutation while preserving separate local-raster decode coverage.
 
 ### Hardware-specific visual-reader benchmark
 

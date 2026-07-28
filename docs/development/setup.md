@@ -7,6 +7,10 @@ The prerequisite toolchains, TypeScript workspace, React/Tauri desktop, isolated
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
 visible-passage, passage-boundary, and chapter actions remain narration seeks.
+Its fixed reader viewport, compact narration, truthful loaded-duration text,
+bounded paragraph leaf, private-EPUB correction, exact-host matrix, and local
+repository/package validation pass. Required Ubuntu and Windows checks on the
+final closeout pull request remain before the plan is archived and M010 starts.
 
 The later official Qwen 1.7B CustomVoice/Serena `v3` matrix failed standard
 startup, throughput, zero-failure, and mid-generation cancellation gates.
