@@ -187,9 +187,20 @@ function observeBrowserViewport(
   }
   view.addEventListener("resize", callback, { passive: true });
   view.visualViewport?.addEventListener("resize", callback, { passive: true });
+  let observedWidth = root.clientWidth;
+  let observedHeight = root.clientHeight;
   const resizeObserver =
     typeof view.ResizeObserver === "function"
-      ? new view.ResizeObserver(callback)
+      ? new view.ResizeObserver(() => {
+          const nextWidth = root.clientWidth;
+          const nextHeight = root.clientHeight;
+          if (nextWidth === observedWidth && nextHeight === observedHeight) {
+            return;
+          }
+          observedWidth = nextWidth;
+          observedHeight = nextHeight;
+          callback();
+        })
       : undefined;
   resizeObserver?.observe(root);
   return () => {

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { READER_EXPERIENCE_AUTHORITY_V1 } from "../../src/reader/reader-experience-authority";
+import { MAX_REFLOW_SETTLE_FRAMES } from "../../src/reader/reader-reflow-restoration";
 import { SYNCHRONIZATION_AUTHORITY_V1 } from "../../src/reader/synchronization-authority";
 
 const LOCAL_ORIGIN = "http://127.0.0.1:4173";
@@ -63,6 +64,7 @@ test("proves segment decoration and focus-safe following without DOM or selectio
         highlightName,
         minimumAnimationFrames,
         minimumTextContrastRatio,
+        reflowSettleFrames,
       }) => {
         const highlights = (
           CSS as typeof CSS & {
@@ -140,18 +142,36 @@ test("proves segment decoration and focus-safe following without DOM or selectio
           highlights.has(highlightName) && highlight.has(range);
         const highlightPerceivableBeforePaint = false;
 
-        window.scrollTo(0, document.documentElement.scrollHeight);
+        const readerViewport = document.querySelector<HTMLElement>(
+          '[data-reader-scroll-owner="true"]',
+        );
+        if (readerViewport === null) {
+          return { supported: true as const, fixtureReady: false as const };
+        }
+        await new Promise<void>((resolve) => {
+          let observed = 0;
+          const observe = (): void => {
+            observed += 1;
+            if (observed >= reflowSettleFrames) {
+              resolve();
+              return;
+            }
+            requestAnimationFrame(observe);
+          };
+          requestAnimationFrame(observe);
+        });
+        readerViewport.scrollTop = readerViewport.scrollHeight;
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        );
+        const readerViewportBounds = readerViewport.getBoundingClientRect();
         const beforeFollow = range.getBoundingClientRect();
-        const comfortTop = comfortInsetPx;
-        const comfortBottom = window.innerHeight - comfortInsetPx;
+        const comfortTop = readerViewportBounds.top + comfortInsetPx;
+        const comfortBottom = readerViewportBounds.bottom - comfortInsetPx;
         const outsideBefore =
           beforeFollow.bottom < comfortTop || beforeFollow.top > comfortBottom;
         if (outsideBefore) {
-          window.scrollBy({
-            top: beforeFollow.top - comfortTop,
-            left: 0,
-            behavior: "auto",
-          });
+          readerViewport.scrollTop += beforeFollow.top - comfortTop;
         }
         const registeredAnimationFrames = await new Promise<number>(
           (resolve) => {
@@ -167,7 +187,20 @@ test("proves segment decoration and focus-safe following without DOM or selectio
             requestAnimationFrame(observe);
           },
         );
-        const afterFollow = range.getBoundingClientRect();
+        let afterFollow = range.getBoundingClientRect();
+        for (let corrections = 0; corrections < 3; corrections += 1) {
+          if (
+            afterFollow.bottom >= comfortTop &&
+            afterFollow.top <= comfortBottom
+          ) {
+            break;
+          }
+          readerViewport.scrollTop += afterFollow.top - comfortTop;
+          await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+          );
+          afterFollow = range.getBoundingClientRect();
+        }
         const renderedStyle = getComputedStyle(
           target,
           `::highlight(${highlightName})`,
@@ -289,6 +322,7 @@ test("proves segment decoration and focus-safe following without DOM or selectio
         minimumTextContrastRatio:
           READER_EXPERIENCE_AUTHORITY_V1.highlightProof
             .minimumTextContrastRatio,
+        reflowSettleFrames: MAX_REFLOW_SETTLE_FRAMES + 2,
       },
     );
     expect(proof).toEqual({

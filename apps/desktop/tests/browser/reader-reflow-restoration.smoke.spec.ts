@@ -41,7 +41,14 @@ async function buildNavigationFixture(): Promise<Uint8Array> {
 async function passageAtReadingLine(
   page: Page,
 ): Promise<PassageSignature | undefined> {
-  return page.evaluate((readingLine) => {
+  return page.evaluate((readingLineInset) => {
+    const viewport = document.querySelector<HTMLElement>(
+      '[data-reader-scroll-owner="true"]',
+    );
+    if (viewport === null) {
+      return undefined;
+    }
+    const readingLine = viewport.getBoundingClientRect().top + readingLineInset;
     const blocks = Array.from(
       document.querySelectorAll<HTMLElement>(
         ".semantic-document h1, .semantic-document h2, .semantic-document h3, .semantic-document h4, .semantic-document h5, .semantic-document h6, .semantic-document p",
@@ -93,7 +100,15 @@ async function restoredRangeSample(page: Page): Promise<ReflowRangeSample> {
   let sample: ReflowRangeSample | undefined;
   await expect
     .poll(async () => {
-      sample = await page.evaluate((readingLine) => {
+      sample = await page.evaluate((readingLineInset) => {
+        const viewport = document.querySelector<HTMLElement>(
+          '[data-reader-scroll-owner="true"]',
+        );
+        if (viewport === null) {
+          return undefined;
+        }
+        const readingLine =
+          viewport.getBoundingClientRect().top + readingLineInset;
         const samples = (
           globalThis as typeof globalThis & {
             __voxleafReflowRangeSamples: ReflowRangeSample[];
@@ -195,13 +210,18 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
       .locator(".semantic-document p")
       .filter({ hasText: "Preserved synthetic passage" });
     await expect(passage).toBeVisible();
-    await passage.evaluate((element, readingLine) => {
+    await passage.evaluate((element, readingLineInset) => {
+      const viewport = document.querySelector<HTMLElement>(
+        '[data-reader-scroll-owner="true"]',
+      )!;
       const bounds = element.getBoundingClientRect();
       const lineHeight = Number.parseFloat(
         getComputedStyle(element).lineHeight,
       );
+      const readingLine =
+        viewport.getBoundingClientRect().top + readingLineInset;
       const desiredTop = readingLine - lineHeight * 1.25;
-      window.scrollTo(0, window.scrollY + bounds.top - desiredTop);
+      viewport.scrollTop += bounds.top - desiredTop;
     }, ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX);
     await page.evaluate(
       () =>
@@ -529,12 +549,21 @@ test("operates reader landmarks, skip links, preferences, and navigation by keyb
     await expect(readerArticle).toBeFocused();
     await expect(page).toHaveURL(initialUrl);
 
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
-    const initialScrollY = await page.evaluate(() => window.scrollY);
+    const readerViewport = page.getByRole("region", {
+      name: "Publication reading viewport",
+    });
+    await readerViewport.evaluate((element) => {
+      element.scrollTop = 0;
+    });
+    await expect
+      .poll(() => readerViewport.evaluate((element) => element.scrollTop))
+      .toBe(0);
+    const initialScrollY = await readerViewport.evaluate(
+      (element) => element.scrollTop,
+    );
     await page.keyboard.press("PageDown");
     await expect
-      .poll(() => page.evaluate(() => window.scrollY))
+      .poll(() => readerViewport.evaluate((element) => element.scrollTop))
       .toBeGreaterThan(initialScrollY);
     await expect(readerArticle).toBeFocused();
 

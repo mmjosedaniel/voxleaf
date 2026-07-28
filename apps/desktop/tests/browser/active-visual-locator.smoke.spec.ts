@@ -97,27 +97,41 @@ test("tracks real top, partial, between-block, and document-end geometry without
     await focusOwner.focus();
     await expect(focusOwner).toBeFocused();
 
-    const readingLine = ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX;
+    const readingLineInset = ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX;
+    const readerViewport = page.getByRole("region", {
+      name: "Publication reading viewport",
+    });
     const first = leaves.first();
-    await first.evaluate((element, line) => {
+    await first.evaluate((element, lineInset) => {
+      const viewport = document.querySelector<HTMLElement>(
+        '[data-reader-scroll-owner="true"]',
+      )!;
       const bounds = element.getBoundingClientRect();
-      window.scrollTo(0, window.scrollY + bounds.top - (line + 12));
-    }, readingLine);
+      const viewportBounds = viewport.getBoundingClientRect();
+      viewport.scrollTop += bounds.top - (viewportBounds.top + lineInset + 12);
+    }, readingLineInset);
     await page.evaluate(
       () =>
         new Promise<void>((resolve) =>
           requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
         ),
     );
-    const topGeometry = await first.evaluate((element, line) => {
+    const topGeometry = await first.evaluate((element, lineInset) => {
+      const viewport = document.querySelector<HTMLElement>(
+        '[data-reader-scroll-owner="true"]',
+      )!;
       const bounds = element.getBoundingClientRect();
+      const viewportBounds = viewport.getBoundingClientRect();
+      const line = viewportBounds.top + lineInset;
       return {
         top: bounds.top,
         bottom: bounds.bottom,
-        visible: bounds.bottom >= 0 && bounds.top <= window.innerHeight,
+        visible:
+          bounds.bottom >= viewportBounds.top &&
+          bounds.top <= viewportBounds.bottom,
         line,
       };
-    }, readingLine);
+    }, readingLineInset);
     expect(topGeometry.visible).toBe(true);
     expect(topGeometry.top).toBeGreaterThan(topGeometry.line);
     await expect(focusOwner).toBeFocused();
@@ -131,16 +145,24 @@ test("tracks real top, partial, between-block, and document-end geometry without
           }
         ).__voxleafCaretQueryCount,
     );
-    await partial.evaluate((element, line) => {
+    await partial.evaluate((element, lineInset) => {
+      const viewport = document.querySelector<HTMLElement>(
+        '[data-reader-scroll-owner="true"]',
+      )!;
       const bounds = element.getBoundingClientRect();
-      window.scrollTo(0, window.scrollY + bounds.top - (line - 8));
-    }, readingLine);
+      const viewportBounds = viewport.getBoundingClientRect();
+      viewport.scrollTop += bounds.top - (viewportBounds.top + lineInset - 8);
+    }, readingLineInset);
     await expect
       .poll(() =>
-        partial.evaluate((element, line) => {
+        partial.evaluate((element, lineInset) => {
+          const viewport = document.querySelector<HTMLElement>(
+            '[data-reader-scroll-owner="true"]',
+          )!;
           const bounds = element.getBoundingClientRect();
+          const line = viewport.getBoundingClientRect().top + lineInset;
           return bounds.top <= line && bounds.bottom >= line;
-        }, readingLine),
+        }, readingLineInset),
       )
       .toBe(true);
     await expect
@@ -157,7 +179,12 @@ test("tracks real top, partial, between-block, and document-end geometry without
       .toBeGreaterThan(caretCountBeforePartial);
     await expect(focusOwner).toBeFocused();
 
-    const between = await page.evaluate((line) => {
+    const between = await page.evaluate((lineInset) => {
+      const viewport = document.querySelector<HTMLElement>(
+        '[data-reader-scroll-owner="true"]',
+      )!;
+      const viewportBounds = viewport.getBoundingClientRect();
+      const line = viewportBounds.top + lineInset;
       const elements = Array.from(
         document.querySelectorAll<HTMLElement>(
           ".semantic-document h1, .semantic-document h2, .semantic-document h3, .semantic-document h4, .semantic-document h5, .semantic-document h6, .semantic-document p",
@@ -165,7 +192,7 @@ test("tracks real top, partial, between-block, and document-end geometry without
       );
       const maximumScroll = Math.max(
         0,
-        document.documentElement.scrollHeight - window.innerHeight,
+        viewport.scrollHeight - viewport.clientHeight,
       );
       let selected:
         | {
@@ -179,7 +206,7 @@ test("tracks real top, partial, between-block, and document-end geometry without
         const next = elements[index + 1]!.getBoundingClientRect();
         const gap = next.top - current.bottom;
         const midpoint = current.bottom + gap / 2;
-        const scrollTop = window.scrollY + midpoint - line;
+        const scrollTop = viewport.scrollTop + midpoint - line;
         if (
           gap > 1 &&
           scrollTop >= 0 &&
@@ -190,10 +217,10 @@ test("tracks real top, partial, between-block, and document-end geometry without
         }
       }
       if (selected !== undefined) {
-        window.scrollTo(0, selected.scrollTop);
+        viewport.scrollTop = selected.scrollTop;
       }
       return selected;
-    }, readingLine);
+    }, readingLineInset);
     expect(between).toBeDefined();
     await page.evaluate(
       () =>
@@ -212,32 +239,49 @@ test("tracks real top, partial, between-block, and document-end geometry without
           line,
         };
       },
-      { line: readingLine, nextIndex: between!.index + 1 },
+      {
+        line: await readerViewport.evaluate(
+          (element, inset) => element.getBoundingClientRect().top + inset,
+          readingLineInset,
+        ),
+        nextIndex: between!.index + 1,
+      },
     );
     expect(betweenGeometry.previousBottom).toBeLessThan(betweenGeometry.line);
     expect(betweenGeometry.nextTop).toBeGreaterThan(betweenGeometry.line);
     await expect(focusOwner).toBeFocused();
 
     const last = leaves.last();
-    await last.evaluate((element, line) => {
+    await last.evaluate((element, lineInset) => {
+      const viewport = document.querySelector<HTMLElement>(
+        '[data-reader-scroll-owner="true"]',
+      )!;
       const bounds = element.getBoundingClientRect();
-      window.scrollTo(0, window.scrollY + bounds.bottom - (line - 4));
-    }, readingLine);
+      const line = viewport.getBoundingClientRect().top + lineInset;
+      viewport.scrollTop += bounds.top - (line + 8);
+    }, readingLineInset);
     await page.evaluate(
       () =>
         new Promise<void>((resolve) =>
           requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
         ),
     );
-    const endGeometry = await last.evaluate((element, line) => {
+    const endGeometry = await last.evaluate((element, lineInset) => {
+      const viewport = document.querySelector<HTMLElement>(
+        '[data-reader-scroll-owner="true"]',
+      )!;
       const bounds = element.getBoundingClientRect();
+      const viewportBounds = viewport.getBoundingClientRect();
+      const line = viewportBounds.top + lineInset;
       return {
         top: bounds.top,
         bottom: bounds.bottom,
-        visible: bounds.bottom >= 0 && bounds.top <= window.innerHeight,
+        visible:
+          bounds.bottom >= viewportBounds.top &&
+          bounds.top <= viewportBounds.bottom,
         line,
       };
-    }, readingLine);
+    }, readingLineInset);
     expect(endGeometry.visible).toBe(true);
     expect(endGeometry.top).toBeGreaterThan(endGeometry.line);
     await expect(focusOwner).toBeFocused();

@@ -779,19 +779,7 @@ export function App({
             </button>
           </section>
         ) : null}
-        {ready ? (
-          <details className="raster-probe raster-probe-compact">
-            <summary>Development raster check</summary>
-            <button
-              type="button"
-              disabled={rasterStatus === "running"}
-              onClick={() => void handleRasterProbe()}
-            >
-              Run synthetic raster safety probe
-            </button>
-            <p aria-live="polite">{RASTER_STATUS_MESSAGE[rasterStatus]}</p>
-          </details>
-        ) : (
+        {!ready ? (
           <div className="raster-probe">
             <button
               type="button"
@@ -802,7 +790,7 @@ export function App({
             </button>
             <p aria-live="polite">{RASTER_STATUS_MESSAGE[rasterStatus]}</p>
           </div>
-        )}
+        ) : null}
       </section>
     </main>
   );

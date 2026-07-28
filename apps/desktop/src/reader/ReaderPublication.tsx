@@ -733,7 +733,7 @@ export function ReaderPublicationContent({
         className="reader-viewport"
         data-reader-scroll-owner="true"
         role="region"
-        tabIndex={0}
+        tabIndex={-1}
         aria-label="Publication reading viewport"
         onWheelCapture={() => visualNavigationIntent.mark()}
         onTouchStartCapture={() => visualNavigationIntent.mark()}

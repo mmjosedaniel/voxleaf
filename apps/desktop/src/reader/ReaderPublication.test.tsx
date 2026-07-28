@@ -749,7 +749,7 @@ describe("navigable publication reader", () => {
     expect(focusOwner).toHaveFocus();
   });
 
-  it("assigns continuous publication scrolling to exactly one keyboard-operable viewport", () => {
+  it("assigns continuous publication scrolling to exactly one focusable viewport", () => {
     const { container } = render(
       <ReaderPublicationContent publication={createPublication()} />,
     );
@@ -762,7 +762,7 @@ describe("navigable publication reader", () => {
       name: "Publication reading viewport",
     });
     expect(viewport).toBe(scrollOwners[0]);
-    expect(viewport).toHaveAttribute("tabindex", "0");
+    expect(viewport).toHaveAttribute("tabindex", "-1");
     expect(viewport).toContainElement(
       screen.getByRole("article", { name: "Current reading section" }),
     );

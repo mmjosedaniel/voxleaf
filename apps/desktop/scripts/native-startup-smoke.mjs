@@ -551,8 +551,16 @@ async function installAdaptiveSynchronizationInstrumentation(driver) {
          state.rangeValid = false;
          return;
        }
-       const comfortTop = 24;
-       const comfortBottom = window.innerHeight - 24;
+       const readerViewport = details.article.closest(
+         '[data-reader-scroll-owner="true"]',
+       );
+       const viewportBounds = readerViewport?.getBoundingClientRect();
+       if (viewportBounds === undefined) {
+         state.rangeValid = false;
+         return;
+       }
+       const comfortTop = viewportBounds.top + 24;
+       const comfortBottom = viewportBounds.bottom - 24;
        const inside =
          Number.isFinite(rect.top) &&
          Number.isFinite(rect.bottom) &&
@@ -2038,6 +2046,9 @@ async function nativeReaderInteractionObservation(driver) {
   try {
     return await driver.execute(
       `const activeElement = document.activeElement;
+       const readerViewport = document.querySelector(
+         '[data-reader-scroll-owner="true"]',
+       );
        const controls = Object.fromEntries(
          Array.from(
            document.querySelectorAll(".reader-preferences select[name]"),
@@ -2069,12 +2080,13 @@ async function nativeReaderInteractionObservation(driver) {
          readerPresent:
            document.querySelector(".semantic-reader") !== null,
          scroll: {
-           maximumY: Math.max(
-             0,
-             document.documentElement.scrollHeight - window.innerHeight,
-           ),
-           y: window.scrollY,
-         },
+            maximumY: Math.max(
+              0,
+              (readerViewport?.scrollHeight ?? 0) -
+                (readerViewport?.clientHeight ?? 0),
+            ),
+            y: readerViewport?.scrollTop ?? 0,
+          },
          viewport: {
            height: window.innerHeight,
            scale: window.visualViewport?.scale ?? 1,
@@ -2141,6 +2153,11 @@ async function observeSavedPositionRestoration(driver) {
          (heading) => heading.textContent === "Continuation",
        );
        const continuationTop = continuation?.getBoundingClientRect().top;
+       const readerViewport = document.querySelector(
+         '[data-reader-scroll-owner="true"]',
+       );
+       const readerViewportTop =
+         readerViewport?.getBoundingClientRect().top;
        const status =
          statusText === "Reading position restored."
            ? "exact"
@@ -2158,9 +2175,10 @@ async function observeSavedPositionRestoration(driver) {
        return {
          continuationAligned:
            typeof continuationTop === "number" &&
-           Math.abs(continuationTop - 24) <= 1,
+           typeof readerViewportTop === "number" &&
+           Math.abs(continuationTop - (readerViewportTop + 24)) <= 1,
          continuationVisible,
-         documentScrolled: window.scrollY > 0,
+         documentScrolled: (readerViewport?.scrollTop ?? 0) > 0,
          readerBusy:
            document.querySelector(".semantic-reader")
              ?.getAttribute("aria-busy") === "true",
@@ -2195,11 +2213,27 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
     `const reader = document.querySelector(".semantic-reader");
      const article = document.querySelector(".semantic-document");
      const controls = document.querySelector(".reader-preferences");
+     const scrollOwners = Array.from(
+       document.querySelectorAll('[data-reader-scroll-owner="true"]'),
+     );
+     const scrollOwner = scrollOwners[0];
+     const narrationDetailsButton = Array.from(
+       document.querySelectorAll(".product-narration button"),
+     ).find((button) =>
+       button.textContent?.includes("narration details"),
+     );
      const bounds = [reader, article, controls].map((element) =>
        element?.getBoundingClientRect(),
      );
      return {
        innerWidth: window.innerWidth,
+       compactNarration:
+         narrationDetailsButton?.getAttribute("aria-expanded") === "false" &&
+         document.querySelector('progress') === null,
+       fixedReaderShell:
+         scrollOwners.length === 1 &&
+         scrollOwner?.scrollHeight > scrollOwner?.clientHeight &&
+         document.documentElement.scrollHeight <= window.innerHeight + 1,
        fits:
          window.innerWidth >= 300 &&
          document.documentElement.scrollWidth <= window.innerWidth &&
@@ -2212,7 +2246,9 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
      };`,
   );
   assert(
-    narrowLayout?.fits === true,
+    narrowLayout?.fits === true &&
+      narrowLayout.compactNarration === true &&
+      narrowLayout.fixedReaderShell === true,
     "Native reader did not fit the approved narrow viewport.",
   );
 
@@ -2240,15 +2276,21 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
       const article = await driver.findElement("article.semantic-document");
       await driver.execute(
         `const article = document.querySelector("article.semantic-document");
-         if (!(article instanceof HTMLElement)) {
+         const readerViewport = document.querySelector(
+           '[data-reader-scroll-owner="true"]',
+         );
+         if (
+           !(article instanceof HTMLElement) ||
+           !(readerViewport instanceof HTMLElement)
+         ) {
            return false;
          }
-         window.scrollTo(0, 0);
+         readerViewport.scrollTop = 0;
          article.focus({ preventScroll: true });
          const state = {
            defaultPrevented: undefined,
            keyObserved: false,
-           startY: window.scrollY,
+           startY: readerViewport.scrollTop,
          };
          globalThis.__voxleafNativePageDownInteraction = state;
          article.addEventListener(
@@ -2273,7 +2315,9 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
      return state?.startY === 0 &&
        state.keyObserved === true &&
        state.defaultPrevented === false &&
-       window.scrollY > state.startY;`,
+       document.querySelector(
+         '[data-reader-scroll-owner="true"]',
+       )?.scrollTop > state.startY;`,
     driver,
     label: "PageDown scrolling",
     setStage,
@@ -2550,13 +2594,17 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
      const targetText = firstText(target);
      const selection = document.getSelection();
      const theme = document.querySelector('select[name="theme"]');
+     const readerViewport = document.querySelector(
+       '[data-reader-scroll-owner="true"]',
+     );
      if (
        selectionText === undefined ||
        targetText === undefined ||
        selectionText.data.length < 2 ||
        targetText.data.length < 2 ||
        selection === null ||
-       !(theme instanceof HTMLSelectElement)
+       !(theme instanceof HTMLSelectElement) ||
+       !(readerViewport instanceof HTMLElement)
      ) {
        return { supported: true, fixtureReady: false };
      }
@@ -2583,19 +2631,17 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
        highlights.has(highlightName) && highlight.has(range);
      const highlightPerceivableBeforePaint = false;
 
-     window.scrollTo(0, 0);
+     readerViewport.scrollTop = 0;
+     const readerViewportBounds = readerViewport.getBoundingClientRect();
      const beforeFollow = range.getBoundingClientRect();
      const comfortInsetPx = 24;
-     const comfortBottom = window.innerHeight - comfortInsetPx;
+     const comfortTop = readerViewportBounds.top + comfortInsetPx;
+     const comfortBottom = readerViewportBounds.bottom - comfortInsetPx;
      const outsideBefore =
-       beforeFollow.bottom < comfortInsetPx ||
+       beforeFollow.bottom < comfortTop ||
        beforeFollow.top > comfortBottom;
      if (outsideBefore) {
-       window.scrollBy({
-         top: beforeFollow.top - comfortInsetPx,
-         left: 0,
-         behavior: "auto",
-       });
+       readerViewport.scrollTop += beforeFollow.top - comfortTop;
      }
      return new Promise((resolve) => {
        let registeredAnimationFrames = 0;
@@ -2664,7 +2710,7 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
          const hasNonzeroClientGeometry =
            afterFollow.width > 0 && afterFollow.height > 0;
          const insideReaderViewport =
-           afterFollow.bottom >= comfortInsetPx - 1 &&
+           afterFollow.bottom >= comfortTop - 1 &&
            afterFollow.top <= comfortBottom + 1;
          const hasNonColorUnderline =
            renderedStyle.textDecorationLine.includes("underline") ||
