@@ -436,9 +436,7 @@ Implementation complete; clean-host packaged validation pending.
   preview/preparing/audible/checkpoint state, and routes activation through
   identity-first replacement and settled placement. Ordinary text remains
   inert. Focused coordinator/reader tests, the full desktop suite, typecheck,
-  all six Chromium tests, and the packaged native startup smoke passed. The
-  Chromium assertions finish successfully before the already documented
-  Windows preview-process teardown hang.
+  all six Chromium tests, and the packaged native startup smoke passed.
 
 ### Status
 
@@ -835,10 +833,10 @@ passes.
   lint and typecheck, 19 shared files / 196 tests, 34 EPUB files / 555 tests,
   34 desktop files / 328 tests plus 6 native-client tests, 234 Python tests,
   and portable package/desktop/Python builds.
-- `pnpm.cmd test:browser`: all 6 Playwright tests reported passing, including
+- `pnpm.cmd test:browser`: all 6 Playwright tests passed and exited normally,
+  including
   forced-colors, focus visibility, 44-pixel target size, touch parity, and the
-  unavailable-narration case. The known Windows preview child remained alive
-  after the passing summary, so the bounded wrapper ended by timeout.
+  unavailable-narration case.
 - `pnpm.cmd test:native-startup`: passed after a release build, including the
   packaged narrow/accessibility reader matrix, synchronization feasibility
   proof, binary delivery/cancellation/crash recovery, local file lifecycle,
