@@ -7,9 +7,10 @@ decision, strengthen paint-aware proof, repair active-range materialization,
 and pass clean-host validation. Milestone 3 implements the fixed reader shell,
 sole EPUB scroll root, compact/collapsible narration, and exact text-only
 loaded status; clean-host packaged validation remains pending. Milestone 4
-implements and validates the bounded paragraph leaf. Exact-host confirmation
-and closeout remain for Milestones 5-6. Exact-host Milestone 5 validation
-exposed and corrected passive-scroll narration retargeting; this ADR therefore
+implements and validates the bounded paragraph leaf. Exact-host Milestone 5
+validation exposed and corrected passive-scroll narration retargeting; the
+corrected private-EPUB interaction and amended matrix pass. Milestone 6
+repository, clean-host, and pull-request closeout remains. This ADR therefore
 amends the passive-navigation portion of ADR-0017.
 
 ## Context
@@ -89,7 +90,8 @@ passage, or chapter action replaces narration.
   whole-paragraph audible timing.
 - A user may inspect another part of the chapter without cancelling or
   retargeting active narration.
-- Production code still needs Milestones 5-6 before the stabilized
+- Milestone 5 exact-host validation passes; Milestone 6 repository,
+  clean-host, and pull-request closeout remains before the stabilized
   user-visible outcome is complete.
 
 ## Alternatives considered

@@ -514,13 +514,18 @@ Complete as of 2026-07-28.
   have been changed accordingly. The subsequent private-EPUB correction cycle
   confirmed that scrolling no longer retargets narration and that an inactive
   paragraph leaf remains reachable across the reader gutter and can be
-  activated. No private publication content or identifying data was retained.
+  activated. The operator then reran
+  `pnpm.cmd test:tts:adaptive-exact-host` against the final correction and
+  reported the complete matrix passing. No replacement timing or resource
+  measurements were supplied, so the earlier content-safe measurements remain
+  the recorded observations. No private publication content or identifying
+  data was retained.
 
 ### Status
 
-The original automated exact-host validation is complete. The corrective
-private-EPUB scroll and paragraph-leaf interaction is confirmed. The amended
-exact-host rerun remains pending before this milestone can close.
+Complete as of 2026-07-28. The original and amended automated exact-host
+matrices pass, and the corrective private-EPUB scroll and paragraph-leaf
+interaction is confirmed.
 
 ## Milestone 6: Record the stabilization decision and close validation
 
@@ -1131,15 +1136,16 @@ confirmation and repository/privacy/pull-request closeout.
 - Private-EPUB scroll/leaf confirmation: passed without recording private
   content. Passive scrolling preserves narration, and the inactive paragraph
   leaf remains reachable and activates the selected paragraph.
-- Remaining Milestone 5 gate: rerun the amended exact-host passive-isolation
-  and leaf-retarget matrix.
+- Amended exact-host passive-isolation and leaf-retarget matrix: operator
+  reported `pnpm.cmd test:tts:adaptive-exact-host` passing against the final
+  correction. No new raw log, private content, timing, or resource result was
+  committed.
 
 ## Final validation results
 
-Not yet available. This plan is active with Milestones 1-2 and 4 complete and
-Milestone 3 implemented pending its clean-host packaged validation. It is
-complete only when the user-observed highlight discrepancy is confirmed
-closed; the fixed reader viewport, compact narration UI, text-only loaded
-duration, and bounded leaf interaction are implemented and validated;
-exact-host privacy and cleanup evidence passes; documentation matches actual
-behavior; and required pull-request checks pass.
+Not yet available. Milestones 1-5 have completed their implementation,
+deterministic, browser, manual private-EPUB, and exact-host gates within the
+recorded scopes. Milestone 3's clean-host packaged validation and Milestone 6's
+final repository, privacy, documentation, and required pull-request closeout
+remain. The plan is complete only when those final gates pass and the plan is
+moved to `docs/plans/completed/`.
