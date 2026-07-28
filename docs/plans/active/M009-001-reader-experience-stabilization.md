@@ -511,13 +511,16 @@ Complete as of 2026-07-28.
   accepted passive restart was a product defect: scrolling changed the
   narration point. The amended implementation now preserves narration during
   viewport inspection, and the deterministic and packaged proof expectations
-  have been changed accordingly.
+  have been changed accordingly. The subsequent private-EPUB correction cycle
+  confirmed that scrolling no longer retargets narration and that an inactive
+  paragraph leaf remains reachable across the reader gutter and can be
+  activated. No private publication content or identifying data was retained.
 
 ### Status
 
-The original automated exact-host validation is complete. The first ephemeral
-private-EPUB run exposed passive-scroll retargeting; the corrective
-private-EPUB confirmation and amended exact-host rerun remain pending.
+The original automated exact-host validation is complete. The corrective
+private-EPUB scroll and paragraph-leaf interaction is confirmed. The amended
+exact-host rerun remains pending before this milestone can close.
 
 ## Milestone 6: Record the stabilization decision and close validation
 
@@ -809,6 +812,11 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   restores the visual-line default. This keeps one bounded control and avoids
   the visual clutter and unbounded keyboard stops already rejected for
   permanent per-paragraph leaves.
+- 2026-07-28: The user confirmed with the private EPUB that the inactive leaf
+  remains visible while crossing the gutter and can be clicked. Together with
+  the earlier scroll confirmation, the manual interaction correction is
+  closed without retaining publication content, identity, paths, screenshots,
+  audio, or model output.
 
 ## Discoveries and decisions
 
@@ -1120,9 +1128,11 @@ confirmation and repository/privacy/pull-request closeout.
   tests plus 7 native tests, 234 Python tests, and portable builds. Pytest
   emitted the known non-failing cache-write warning; no product assertion
   failed.
-- Remaining gate: rerun the amended exact-host passive-isolation and leaf
-  retarget matrix, then repeat the ephemeral private-EPUB scroll/leaf
-  confirmation without recording private content.
+- Private-EPUB scroll/leaf confirmation: passed without recording private
+  content. Passive scrolling preserves narration, and the inactive paragraph
+  leaf remains reachable and activates the selected paragraph.
+- Remaining Milestone 5 gate: rerun the amended exact-host passive-isolation
+  and leaf-retarget matrix.
 
 ## Final validation results
 
