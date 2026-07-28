@@ -97,8 +97,8 @@ exact-host validation gaps:
   pause/resume, passage seek, chapter restart, natural underrun/refill,
   cancellation, bounded cleanup, and the offline boundary.
 
-The remaining M009 work is final documentation, repository, privacy, and
-pull-request validation in Milestone 7.
+Milestone 7 closed the final documentation, repository, privacy, and
+pull-request validation. M009 is complete.
 
 ## Scope and non-goals
 
@@ -602,15 +602,22 @@ Complete.
 - Expected result: all deterministic repository checks pass on the development
   host, portable checks pass, required Ubuntu and Windows pull-request checks
   pass, and the documentation claims no more than the retained evidence.
-- Actual result: Current-status documentation was reconciled on 2026-07-27 and
-  `git diff --check` passed. Full `pnpm.cmd check`,
-  `pnpm.cmd check:portable`, complete-diff privacy review, and required
-  pull-request CI have not yet run for Milestone 7.
+- Actual result: Passed. The implementation checkpoints recorded successful
+  `pnpm.cmd check`, `pnpm.cmd check:portable`, six-test production Chromium,
+  packaged WebView2, and exact-host synchronized runs. The final closeout
+  reran `git diff --check` successfully and reviewed the complete M009 diff:
+  all 26 changed files belong to the synchronization implementation,
+  validation, or documentation boundary; no generated audio, model weights,
+  raw benchmark output, logs, private paths, secrets, or unrelated changes
+  were committed. Pull request
+  [#133](https://github.com/mmjosedaniel/voxleaf/pull/133) merged as
+  `35de3c76d830801dfe3ba9f10e9ccf639d9b45a2`. GitHub Actions run
+  `30320789239` passed both required jobs: Ubuntu portable foundation and
+  Windows native foundation.
 
 ### Status
 
-In progress. Documentation reconciliation is complete; complete-diff
-repository/privacy review, full checks, and required pull-request CI remain.
+Complete.
 
 ## Testing and benchmark strategy
 
@@ -799,8 +806,16 @@ persistence. Do not use destructive storage migration as rollback.
 - 2026-07-27: Reconciled the product brief, MVP status, architecture overview,
   canonical system diagram, testing guidance, broad historical plan, and this
   final-validation section with the accepted Milestone 6 exact-host evidence.
-  Every current-status surface now records Milestones 1-6 complete, keeps M009
-  Milestone 7 open, and retains the standard TTS performance blocker.
+  Every current-status surface records the implemented synchronization
+  boundary and retains the standard TTS performance blocker.
+- 2026-07-27: Closed Milestone 7 after a complete-diff repository/privacy
+  review found only 26 synchronization implementation, validation, and
+  documentation files and no generated audio, model artifacts, raw results,
+  logs, secrets, private paths, or unrelated changes. Pull request
+  [#133](https://github.com/mmjosedaniel/voxleaf/pull/133) merged as
+  `35de3c76d830801dfe3ba9f10e9ccf639d9b45a2`; GitHub Actions run
+  `30320789239` passed the required Ubuntu portable and Windows native
+  foundation jobs. M009 is complete and this plan is archived.
 
 ## Discoveries and decisions
 
@@ -882,29 +897,23 @@ persistence. Do not use destructive storage migration as rollback.
   follow, matching the frozen transition table.
 - Chromium and packaged WebView2 both accept the selected proof. Browser and
   native GUI suites must run outside the Codex filesystem/process sandbox on
-  this Windows host so their child process trees can terminate normally;
-  required pull-request checks remain final closeout evidence.
+  this Windows host so their child process trees can terminate normally. The
+  required pull-request checks passed against the merged implementation.
 - The existing exact-development profile remains slower than the MVP
   sustained-buffering target. Synchronization work can improve coherence and
   accessibility, but it cannot claim real-time or uninterrupted narration.
 
 ## Final validation results
 
-M009 Milestones 1 through 6 are complete. Authority, source-range projection,
+M009 Milestones 1 through 7 are complete. Authority, source-range projection,
 reader highlighting/following, synchronized user navigation, non-skipping
 heard-position persistence, focused unit/component, full desktop, six-test
 Chromium, packaged WebView2, native/portable repository, privacy, and exact-host
 synchronization validation pass through the recorded checkpoints. The accepted
-exact-host result is recorded under Milestone 6 and in the progress log. M009
-Milestone 7 documentation/repository/privacy reconciliation and its required
-pull-request CI remain.
-
-Milestone 7 must record:
-
-- the accepted ADR and any amendments;
-- focused unit/component/browser/native command results;
-- exact-host content-safe synchronization and resource observations;
-- privacy, accessibility, cancellation, stale-audio, and persistence evidence;
-- root and portable repository results;
-- required pull-request CI results; and
-- the final supported/deferred product claims.
+exact-host result is recorded under Milestone 6 and in the progress log.
+Milestone 7 confirms the complete-diff repository/privacy audit and the
+required pull-request CI. The synchronized exact-development path is complete
+within its approved scope. Its measured buffering remains outside the MVP
+target, so this result does not select a standard production profile, promise
+uninterrupted playback, establish general hardware support, or approve
+distribution.

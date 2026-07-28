@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 8 are complete. The secure EPUB boundary, visual reader, bounded restoration, locator-linked narration preparation, M007 service, and exact-development M008 coordinator/player path are implemented and validated within their documented scopes. ADR-0015 closes the demo policy with quick mode default, one-minute initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. ADR-0013 continues to select no standard production profile. M009 is in progress: Milestones 1 through 6 implement the segment-level authority, bounded audible source-range projection, reader-owned non-mutating highlight/follow projection, identity-first synchronized user navigation, bounded non-skipping heard-position persistence, and an exact-host packaged synchronization proof. That proof observed six transitions, no stale playback, one natural underrun/refill, 190 ms cancellation, bounded cleanup, and zero external requests, but 378.46 buffering seconds per playback minute. General-hardware support, production distribution, sustained uninterrupted playback, and M009 final closeout remain deferred.
+Mixed implementation status. Roadmap Milestones 1 through 9 are complete. The secure EPUB boundary, visual reader, bounded restoration, locator-linked narration preparation, M007 service, exact-development M008 coordinator/player path, and M009 segment-level synchronized reader are implemented and validated within their documented scopes. ADR-0015 closes the demo policy with quick mode default, one-minute initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. ADR-0013 continues to select no standard production profile. Completed M009 implements the segment-level authority, bounded audible source-range projection, reader-owned non-mutating highlight/follow projection, identity-first synchronized user navigation, bounded non-skipping heard-position persistence, and an exact-host packaged synchronization proof. That proof observed six transitions, no stale playback, one natural underrun/refill, 190 ms cancellation, bounded cleanup, and zero external requests, but 378.46 buffering seconds per playback minute. M010 now has an approved plan for privacy-safe hardware reporting, measured profile matching, conditional fallback admission, and operational recovery; implementation has not started. General-hardware support, validated fallback, production distribution, and sustained uninterrupted playback therefore remain unimplemented.
 
 M007 is complete. Its six milestones implement the accepted protocol v1,
 closed generated contracts, bounded model-free Python service, native
@@ -82,7 +82,7 @@ Desktop application
 |   [M008 Milestone 4; mounted only for exact native configuration]
 |-- Product narration coordinator [M008 Milestone 5; exact demo implemented]
 `-- Reader/narration projection, following, navigation, and heard persistence
-    [M009 Milestones 1-6 implemented and exact-host validated; final closeout pending]
+    [M009 Milestones 1-7 complete and exact-host validated]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]

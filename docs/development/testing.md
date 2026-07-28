@@ -176,8 +176,8 @@ The browser command requires one prior networked `pnpm.cmd test:browser:install`
 
 ## M009 synchronization and heard-persistence validation
 
-M009 Milestones 1 through 6 add deterministic, browser, packaged, and exact-host proof
-surfaces:
+Completed M009 adds deterministic, browser, packaged, exact-host, and
+repository/CI proof surfaces:
 
 - `synchronization-authority.test.ts` verifies the closed event table,
   segment-level timing, invalidation-first navigation, bounded progress
@@ -210,7 +210,8 @@ recovery plus preservation of unsupported future envelopes.
 The default proof uses only repository-authored synthetic EPUB content and
 returns content-free booleans. It does not run Qwen or publish narration text
 or audio. The separately invoked exact-host matrix described below supplies
-M009 Milestone 6 evidence. The frozen and implemented behavior is documented in
+M009 Milestone 6 evidence. Milestone 7 records complete-diff privacy/repository
+review and passing required Ubuntu/Windows CI. The frozen and implemented behavior is documented in
 [`../architecture/synchronization-authority-v1.md`](../architecture/synchronization-authority-v1.md).
 
 ### Hardware-specific visual-reader benchmark

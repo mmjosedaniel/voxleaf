@@ -17,12 +17,12 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`M009-synchronized-reading-and-narration.md`](M009-synchronized-reading-and-narration.md):
-  approved focused ExecPlan for segment-level audible progress, highlighting,
-  focus-safe following, synchronized navigation, and heard-position
-  persistence. Milestones 1 through 6 are implemented and exact-host
-  synchronization passes; final closeout remains.
+- [`M010-hardware-profiles-fallback-and-operational-resilience.md`](M010-hardware-profiles-fallback-and-operational-resilience.md):
+  approved focused ExecPlan for privacy-safe host detection, evidence-backed
+  profile matching, fallback admission, and identity-safe operational
+  recovery. Implementation has not started; CPU fallback remains a hard
+  measured-evidence gate.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
-  retained broad historical context. M009 supersedes its remaining
+  retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through
-  8.
+  9.
