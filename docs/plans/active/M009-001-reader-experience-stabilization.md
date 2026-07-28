@@ -303,7 +303,10 @@ target, estimate, low-water, buffering, or complete-shorter-range information.
 
 ### Status
 
-Not started.
+Blocked on local packaged-WebView2 validation. The result-blind authority,
+deterministic state table, and paint-aware browser/packaged proof are
+implemented. The desktop and Chromium assertions pass, but the current Windows
+host cannot create a WebDriver session; exact evidence is recorded below.
 
 ## Milestone 2: Restore visible segment highlighting and following
 
@@ -549,6 +552,22 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   decision.
 - 2026-07-28: Created this ExecPlan and sequenced M010 after its closeout. No
   production stabilization implementation has started.
+- 2026-07-28: Created a fresh branch from updated `main`, reproduced the
+  existing proof boundary, and froze executable reader-experience authority
+  before production changes.
+- 2026-07-28: Strengthened the repository-authored Chromium and packaged
+  WebView2 checks so accepted range registration is distinct from perceivability
+  across two rendering frames, nonzero visible geometry, `4.5:1` contrast, and
+  an underline.
+- 2026-07-28: Confirmed all six Chromium assertions and all desktop tests pass.
+  On this Windows host the Playwright preview child remains alive after its
+  passing summary, so the bounded command terminates by timeout.
+- 2026-07-28: Built the release executable and refreshed the test-only
+  EdgeDriver from `150.0.4078.83` to the installed WebView2
+  `150.0.4078.105`. The release executable stays healthy when launched
+  directly, but three WebDriver attempts fail before application mount with
+  `session not created: chrome not reachable`. Packaged proof validation
+  therefore remains blocked by the local WebView2 automation handshake.
 
 ## Discoveries and decisions
 
@@ -575,6 +594,44 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   must test leaf-originated invalidation. Complete generation settings must be
   part of future profile identity so a later natural/stable narration
   comparison cannot become an untracked mutable temperature toggle.
+- The old Chromium and packaged scripts registered, inspected, and deleted the
+  Custom Highlight inside one synchronous evaluation. They could prove
+  registry/range acceptance but could not prove a rendering opportunity. This
+  is the exact bounded condition under which the prior synthetic evidence
+  differed from the later manual observation; it does not yet establish the
+  private-publication production root cause.
+- M009.1 uses one retargeted contextual leaf rather than one persistent focus
+  target per paragraph. It retains at most one preview, preparing, audible,
+  and checkpoint state.
+- The authority and stronger proof remain desktop-local. No M005 segmentation,
+  M007 protocol, M008 threshold, shared contract, storage migration, native
+  capability, CSP, or dependency change is required.
+- The native failure occurs before application mount and before the
+  perceivability script. It is not evidence that the highlight assertion
+  failed. A matching EdgeDriver and a direct healthy release launch rule out
+  stale driver version and application startup as sufficient explanations.
+
+## Milestone 1 validation results
+
+- `pnpm.cmd --filter @voxleaf/desktop typecheck`: passed.
+- `pnpm.cmd --filter @voxleaf/desktop test`: passed, 34 Vitest files / 316
+  tests plus 6 native WebDriver-client tests.
+- `pnpm.cmd test:browser`: all 6 Playwright tests passed, including the
+  paint-aware synchronization proof. On this Windows host the preview child
+  did not exit after the passing summary, and the bounded command ended after
+  300 seconds.
+- `pnpm.cmd test:native-startup`: the Tauri release build passed; WebDriver
+  session creation failed before mount. Two direct smoke retries with the
+  matching test-only EdgeDriver failed at the same stage. A content-safe local
+  diagnostic reported `session not created: chrome not reachable`.
+- `pnpm.cmd lint:typescript`: passed.
+- `pnpm.cmd format:check:typescript`: passed.
+- Privacy/bounds review: only repository-authored synthetic EPUBs are used;
+  no EPUB text, private path, PCM, generated audio, runtime log, model file,
+  native capability, dependency, or persistence field was added.
+
+Milestone 1 cannot be marked complete until the packaged-WebView2 proof runs
+to its assertions on a working Windows automation host.
 
 ## Final validation results
 

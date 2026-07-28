@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { READER_EXPERIENCE_AUTHORITY_V1 } from "../../src/reader/reader-experience-authority";
 import { SYNCHRONIZATION_AUTHORITY_V1 } from "../../src/reader/synchronization-authority";
 
 const LOCAL_ORIGIN = "http://127.0.0.1:4173";
@@ -57,7 +58,12 @@ test("proves segment decoration and focus-safe following without DOM or selectio
     const initialUrl = page.url();
 
     const proof = await page.evaluate(
-      ({ comfortInsetPx, highlightName }) => {
+      async ({
+        comfortInsetPx,
+        highlightName,
+        minimumAnimationFrames,
+        minimumTextContrastRatio,
+      }) => {
         const highlights = (
           CSS as typeof CSS & {
             highlights?: HighlightRegistry;
@@ -69,17 +75,19 @@ test("proves segment decoration and focus-safe following without DOM or selectio
         ) {
           return { supported: false as const };
         }
-        const styleRegistered = Array.from(document.styleSheets).some(
-          (sheet) => {
+        const styleRule = Array.from(document.styleSheets)
+          .flatMap((sheet) => {
             try {
-              return Array.from(sheet.cssRules).some((rule) =>
-                rule.cssText.includes(`::highlight(${highlightName})`),
-              );
+              return Array.from(sheet.cssRules);
             } catch {
-              return false;
+              return [];
             }
-          },
-        );
+          })
+          .find(
+            (rule): rule is CSSStyleRule =>
+              rule instanceof CSSStyleRule &&
+              rule.selectorText === `::highlight(${highlightName})`,
+          );
         const leaves = Array.from(
           document.querySelectorAll<HTMLElement>(
             ".semantic-document h1, .semantic-document h2, .semantic-document h3, .semantic-document h4, .semantic-document h5, .semantic-document h6, .semantic-document p",
@@ -128,6 +136,9 @@ test("proves segment decoration and focus-safe following without DOM or selectio
         range.setEnd(targetText, targetText.data.length);
         const highlight = new Highlight(range);
         highlights.set(highlightName, highlight);
+        const rangeAcceptedBeforePaint =
+          highlights.has(highlightName) && highlight.has(range);
+        const highlightPerceivableBeforePaint = false;
 
         window.scrollTo(0, document.documentElement.scrollHeight);
         const beforeFollow = range.getBoundingClientRect();
@@ -142,18 +153,118 @@ test("proves segment decoration and focus-safe following without DOM or selectio
             behavior: "auto",
           });
         }
+        const registeredAnimationFrames = await new Promise<number>(
+          (resolve) => {
+            let observed = 0;
+            const observe = (): void => {
+              observed += 1;
+              if (observed >= minimumAnimationFrames) {
+                resolve(observed);
+                return;
+              }
+              requestAnimationFrame(observe);
+            };
+            requestAnimationFrame(observe);
+          },
+        );
         const afterFollow = range.getBoundingClientRect();
+        const renderedStyle = getComputedStyle(
+          target,
+          `::highlight(${highlightName})`,
+        );
+        const parseColor = (
+          value: string,
+        ): readonly [number, number, number] | undefined => {
+          const rgb = value.match(
+            /^rgba?\(\s*(\d+(?:\.\d+)?)\s*,?\s*(\d+(?:\.\d+)?)\s*,?\s*(\d+(?:\.\d+)?)/u,
+          );
+          if (rgb !== null) {
+            return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])] as const;
+          }
+          const hex = value.match(/^#([\da-f]{6})$/iu);
+          if (hex === null) {
+            return undefined;
+          }
+          const hexValue = hex[1];
+          if (hexValue === undefined) {
+            return undefined;
+          }
+          const packed = Number.parseInt(hexValue, 16);
+          return [
+            (packed >> 16) & 255,
+            (packed >> 8) & 255,
+            packed & 255,
+          ] as const;
+        };
+        const luminance = (
+          color: readonly [number, number, number],
+        ): number => {
+          const channelLuminance = (channel: number): number => {
+            const normalized = channel / 255;
+            return normalized <= 0.04045
+              ? normalized / 12.92
+              : ((normalized + 0.055) / 1.055) ** 2.4;
+          };
+          return (
+            channelLuminance(color[0]) * 0.2126 +
+            channelLuminance(color[1]) * 0.7152 +
+            channelLuminance(color[2]) * 0.0722
+          );
+        };
+        const foreground = parseColor(renderedStyle.color);
+        const background = parseColor(renderedStyle.backgroundColor);
+        const foregroundLuminance =
+          foreground === undefined ? undefined : luminance(foreground);
+        const backgroundLuminance =
+          background === undefined ? undefined : luminance(background);
+        const textContrastRatio =
+          foregroundLuminance === undefined || backgroundLuminance === undefined
+            ? 0
+            : (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) /
+              (Math.min(foregroundLuminance, backgroundLuminance) + 0.05);
+        const hasNonzeroClientGeometry =
+          afterFollow.width > 0 && afterFollow.height > 0;
+        const insideReaderViewport =
+          afterFollow.bottom >= comfortTop - 1 &&
+          afterFollow.top <= comfortBottom + 1;
+        const hasNonColorUnderline =
+          renderedStyle.textDecorationLine.includes("underline") ||
+          renderedStyle.textDecoration.includes("underline") ||
+          styleRule?.style.textDecorationLine.includes("underline") === true ||
+          styleRule?.style.textDecoration.includes("underline") === true;
+        const hasExplicitForegroundAndBackground =
+          styleRule?.style.color.length !== 0 &&
+          styleRule?.style.backgroundColor.length !== 0 &&
+          foreground !== undefined &&
+          background !== undefined;
+        const highlightVisiblyPerceivable =
+          rangeAcceptedBeforePaint &&
+          highlights.has(highlightName) &&
+          highlight.has(range) &&
+          registeredAnimationFrames >= minimumAnimationFrames &&
+          hasNonzeroClientGeometry &&
+          insideReaderViewport &&
+          hasExplicitForegroundAndBackground &&
+          textContrastRatio >= minimumTextContrastRatio &&
+          hasNonColorUnderline;
         const activeElement = document.activeElement;
         const result = {
           supported: true as const,
           fixtureReady: true as const,
-          registered: highlights.has(highlightName) && highlight.has(range),
-          styleRegistered,
+          rangeAcceptedBeforePaint,
+          highlightPerceivableBeforePaint,
+          registeredAcrossRenderingOpportunity:
+            highlights.has(highlightName) && highlight.has(range),
+          registeredAnimationFrames,
+          styleRegistered: styleRule !== undefined,
           rangeConnected: target.isConnected && !range.collapsed,
-          followed:
-            outsideBefore &&
-            afterFollow.bottom >= comfortTop - 1 &&
-            afterFollow.top <= comfortBottom + 1,
+          hasNonzeroClientGeometry,
+          insideReaderViewport,
+          hasExplicitForegroundAndBackground,
+          textContrastRatio,
+          hasNonColorUnderline,
+          highlightVisiblyPerceivable,
+          followed: outsideBefore && insideReaderViewport,
           focusPreserved: activeElement?.getAttribute("name") === "theme",
           selectionPreserved:
             selection.rangeCount === 1 &&
@@ -173,20 +284,43 @@ test("proves segment decoration and focus-safe following without DOM or selectio
       {
         comfortInsetPx: SYNCHRONIZATION_AUTHORITY_V1.following.comfortInsetPx,
         highlightName: SYNCHRONIZATION_AUTHORITY_V1.highlighting.name,
+        minimumAnimationFrames:
+          READER_EXPERIENCE_AUTHORITY_V1.highlightProof.minimumAnimationFrames,
+        minimumTextContrastRatio:
+          READER_EXPERIENCE_AUTHORITY_V1.highlightProof
+            .minimumTextContrastRatio,
       },
     );
     expect(proof).toEqual({
       supported: true,
       fixtureReady: true,
-      registered: true,
+      rangeAcceptedBeforePaint: true,
+      highlightPerceivableBeforePaint: false,
+      registeredAcrossRenderingOpportunity: true,
+      registeredAnimationFrames: 2,
       styleRegistered: true,
       rangeConnected: true,
+      hasNonzeroClientGeometry: true,
+      insideReaderViewport: true,
+      hasExplicitForegroundAndBackground: true,
+      textContrastRatio: expect.any(Number),
+      hasNonColorUnderline: true,
+      highlightVisiblyPerceivable: true,
       followed: true,
       focusPreserved: true,
       selectionPreserved: true,
       publicationDomUnchanged: true,
       contentFreeUrl: true,
     });
+    if (
+      !("textContrastRatio" in proof) ||
+      typeof proof.textContrastRatio !== "number"
+    ) {
+      throw new Error("The highlight contrast observation was unavailable.");
+    }
+    expect(proof.textContrastRatio).toBeGreaterThanOrEqual(
+      READER_EXPERIENCE_AUTHORITY_V1.highlightProof.minimumTextContrastRatio,
+    );
 
     await page.setViewportSize({ width: 360, height: 640 });
     await expect(focusOwner).toBeFocused();
