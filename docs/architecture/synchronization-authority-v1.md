@@ -9,7 +9,9 @@ following mechanism in production Chromium and packaged WebView2. Milestones
 and focus-safe automatic following to the reader. Milestone 4 connects
 identity-first synchronized user navigation. Milestone 5 implements
 non-skipping heard-progress persistence through the existing bounded reader
-state envelope.
+state envelope. Milestone 6 validates the complete packaged loop on the exact
+Windows/CUDA host and proves that bounded user input, rather than late
+programmatic samples, authorizes passive visual seeks.
 
 The authority is desktop-local. It does not change the shared schemas, the
 M005 `narration-v1` segmentation policy, or the M007 protocol-v1 service.

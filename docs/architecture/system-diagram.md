@@ -65,7 +65,7 @@ flowchart LR
             CLIENT["Typed TTS client + one-unit handoff sink<br/>M7 complete<br/>consumed outside React"]:::implemented
             PLAYBACK["Product narration coordinator + adaptive scheduler<br/>payload FIFO, Web Audio player, controls<br/>M8 Milestones 1-6 exact demo + policy"]:::implemented
             PROJECTION["Bounded audible range projection<br/>exact start/completion + played frames<br/>M9 Milestone 2 implemented"]:::implemented
-            SYNC["Reader segment projection, following,<br/>and synchronized user navigation<br/>M9 Milestones 3-4 implemented"]:::implemented
+            SYNC["Reader segment projection, following,<br/>and synchronized user navigation<br/>M9 Milestones 3-4 implemented; M6 exact-host validated"]:::implemented
             HEARD_STORE["Heard-position persistence bridge<br/>exact boundaries + lifecycle flush<br/>M9 Milestone 5 implemented"]:::implemented
         end
 
@@ -143,8 +143,10 @@ waits for containment, and only prior active play intent restarts. The overall
 M009 Milestone 5 makes the projection-to-persistence path solid: exact starts
 save segment starts, matching completions advance to range ends, and bounded
 interruption/lifecycle flushes retain the latest heard checkpoint without
-periodic writes or reflow regression. The overall synchronization area remains
-in progress pending exact-host evidence and final M009 closeout.
+periodic writes or reflow regression. M009 Milestone 6 validates the packaged
+loop on the exact host and distinguishes bounded user wheel/touch/pointer/key
+intent from late programmatic samples. The overall synchronization area remains
+in progress pending final M009 closeout.
 
 ## EPUB-to-audio flow
 
@@ -198,13 +200,16 @@ The exact-development user flow now continues from `VISUAL` through `PREP`,
 `BUFFER`, `INFER`, and `DEVICE`. The application coordinator starts at the
 active visual locator, retains at most one bounded prepared batch, dispatches
 one synthesis at a time, and transfers sole complete-unit ownership into the
-player. The packaged matrix proves quick and one-minute prepared audio while
-also measuring an underrun and 19.49 buffering seconds per playback minute.
+player. The M009 packaged matrix proves synchronized quick and one-minute
+prepared audio while measuring nine segment transitions, one natural
+underrun/refill, 188 ms cancellation, and 97.76 buffering seconds per playback
+minute.
 The solid edges include the content-free audible projection, its segment-level
 reader highlight/follow consumer, and the user-originated synchronized
 seek/restart loop. Exact audible boundary persistence and bounded lifecycle
-flushes are now solid as well. Exact-host synchronization evidence and final
-M009 validation still prevent the overall milestone from being complete. The
+flushes are now solid as well. Exact-host synchronization evidence now passes;
+final M009 repository and pull-request validation still prevents the overall
+milestone from being complete. The
 path remains a constrained exact-host demo, not a standard engine,
 continuous-playback guarantee, or general hardware profile. The 30-minute
 value remains a simultaneous ceiling, not a startup target.
@@ -234,14 +239,14 @@ value remains a simultaneous ceiling, not a startup target.
 | Local TTS profile blocker resolution                   | [Milestone 6.1 completed plan](../plans/completed/M006-001-local-tts-profile-blocker-resolution.md), [Serena intake result](../../benchmarks/tts/customvoice-spanish-screen-result-v2.json), machine-readable [`profile-v3.json`](../../benchmarks/tts/profile-v3.json), [v3 authority](tts-feasibility-profile-v3.md), [passing exact-host prototype result](../../benchmarks/tts/incremental-cancellation-prototype-result-v1.json), [candidate-neutral `selection-v3`](../../benchmarks/tts/selection-v3.md), historical [ADR-0014](decisions/ADR-0014-constrained-qwen-development-demo.md), and superseding [ADR-0015](decisions/ADR-0015-bounded-adaptive-qwen-demo-buffering.md)         |
 | Short-unit and dual-worker feasibility                 | [Milestone 6.2 completed plan](../plans/completed/M006-002-qwen-short-segment-batch-feasibility.md), [v4 authority](tts-feasibility-profile-v4.md), both stopped `v4` results, accepted [`selection-v4`](../../benchmarks/tts/selection-v4.md), frozen [v5 authority](tts-feasibility-profile-v5.md), schema-valid [`v5` CPU admission](../../benchmarks/tts/dual-worker-result-v5-cpu-solo.json), schema-valid [`v5` GPU baseline](../../benchmarks/tts/dual-worker-result-v5-gpu-solo.json), the completed-plan diagnostic record, and accepted [`selection-v5`](../../benchmarks/tts/selection-v5.md). CPU and dual-worker scheduling are rejected; no standard product runtime is selected. |
 | Constrained local TTS service and process protocol     | [M007 completed ExecPlan](../plans/completed/M007-local-tts-service-and-process-protocol.md), accepted frozen [protocol v1 authority](tts-service-protocol-v1.md), accepted [ADR-0016](decisions/ADR-0016-rust-owned-stdio-tts-protocol.md), and the schema-valid [exact-host handoff result](../../benchmarks/tts/service-handoff-result-v1-exact-host.json). M007 validates transport, canonical contracts, Python service, native supervision, typed client, exact Qwen/Serena integration, model-free packaged evidence, and measured exact-host delivery/backpressure/invalidation/termination/cleanup/reload evidence.                                                                    |
-| Reader/narration synchronization                       | [M009 active ExecPlan](../plans/active/M009-synchronized-reading-and-narration.md), frozen [synchronization authority v1](synchronization-authority-v1.md), and accepted [ADR-0017](decisions/ADR-0017-segment-level-reader-narration-synchronization.md). Milestones 1-5 implement the authority/proof, bounded audible projection, reader highlight/follow consumer, identity-first synchronized navigation, and non-skipping heard persistence; exact-host evidence and final closeout remain.                                                                                  |
+| Reader/narration synchronization                       | [M009 active ExecPlan](../plans/active/M009-synchronized-reading-and-narration.md), frozen [synchronization authority v1](synchronization-authority-v1.md), and accepted [ADR-0017](decisions/ADR-0017-segment-level-reader-narration-synchronization.md). Milestones 1-6 implement the authority/proof, bounded audible projection, reader highlight/follow consumer, identity-first synchronized navigation, non-skipping heard persistence, and exact-host packaged proof; final closeout remains.                                                                                  |
 | Local-first desktop and future local process direction | [ADR-0001](decisions/ADR-0001-local-first-desktop.md); ADR-0015 permits a constrained one-GPU development demo while the production profile and distribution boundary remain unresolved                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | Roadmap status                                         | [Roadmap](../plans/roadmap.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 ## Remaining gates
 
 1. **Milestone 8 — Complete:** all six M008 milestones are implemented, locally validated, and covered by passing required Ubuntu and Windows pull-request checks. Quick is default; prepared playback initially selects one minute; refill is one minute; low water is 10 seconds; boundary wait is `0` ms; playback is `1.0x`; the 30-minute ceiling remains simultaneous.
-2. **Milestone 9 — In progress; Milestones 1-5 complete:** follow the [M009 ExecPlan](../plans/active/M009-synchronized-reading-and-narration.md) and [frozen authority](synchronization-authority-v1.md) to add exact-host synchronized-demo evidence and final validation to the implemented highlight/follow/navigation/persistence path.
+2. **Milestone 9 — In progress; Milestones 1-6 complete:** follow the [M009 ExecPlan](../plans/active/M009-synchronized-reading-and-narration.md) and [frozen authority](synchronization-authority-v1.md) to close final repository and pull-request validation for the exact-host-validated highlight/follow/navigation/persistence path.
 3. **Milestones 10–11 — Deferred:** validate hardware profiles and CPU fallback, then complete installer/signing/distribution and full MVP closeout.
 
 Update this document whenever a major component boundary, process/package dependency, trust boundary, persistence owner, external interaction, runtime flow, or roadmap implementation status changes. A completed plan may advance a node or arrow only when its definition of done and validation evidence are present.

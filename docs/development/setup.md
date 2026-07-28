@@ -2,7 +2,7 @@
 
 ## Current status
 
-The prerequisite toolchains, TypeScript workspace, React/Tauri desktop, isolated Python service, quality commands, browser/native smokes, secure EPUB reader, bounded restoration, and locator-linked narration preparation are initialized and validated within their documented boundaries. Completed M007 provides protocol v1, native supervision, typed one-unit ownership, and the exact development-only Qwen/Serena adapter. Completed M008 connects the active visual locator to bounded preparation, one-at-a-time synthesis, the sole-owner FIFO, Web Audio playback, and accessible quick/prepared controls. Quick mode is the default; prepared playback initially selects one minute; refill remains one minute; low water is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target. The final exact-host rerun passes but records 19.49 buffering seconds per playback minute, so ADR-0013 still selects no standard profile. Synchronization, general hardware detection, production distribution, and installers remain unimplemented.
+The prerequisite toolchains, TypeScript workspace, React/Tauri desktop, isolated Python service, quality commands, browser/native smokes, secure EPUB reader, bounded restoration, locator-linked narration preparation, and segment-level synchronized reader projection are initialized and validated within their documented boundaries. Completed M007 provides protocol v1, native supervision, typed one-unit ownership, and the exact development-only Qwen/Serena adapter. Completed M008 connects the active visual locator to bounded preparation, one-at-a-time synthesis, the sole-owner FIFO, Web Audio playback, and accessible quick/prepared controls. M009 Milestones 1 through 6 add exact segment transitions, focus-safe highlight/follow, synchronized user navigation, heard-position persistence, and exact-host packaged evidence. Quick mode is the default; prepared playback initially selects one minute; refill remains one minute; low water is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target. The synchronized exact-host run passes but records 97.76 buffering seconds per playback minute, so ADR-0013 still selects no standard profile. General hardware detection, production distribution, installers, and M009 final closeout remain unimplemented.
 
 The later official Qwen 1.7B CustomVoice/Serena `v3` matrix failed standard
 startup, throughput, zero-failure, and mid-generation cancellation gates.
@@ -10,9 +10,9 @@ ADR-0015 now supersedes ADR-0014's scheduling and buffering details and permits
 only a bounded one-GPU adaptive development demo with that exact local
 profile; it adds no production dependency and does not approve continuous
 playback. The constrained development inference, transport, narration
-dispatch, and audio playback path is implemented and exact-host validated.
-Synchronization, general hardware detection, and installers remain
-unimplemented.
+dispatch, audio playback, and segment-level synchronization path is implemented
+and exact-host validated. General hardware detection, installers, and final
+M009 closeout remain unimplemented.
 The content-free `benchmarks/tts/selection-v3.md` record retains that failed
 standard result and separately identifies the constrained demo input.
 
@@ -271,12 +271,14 @@ pnpm.cmd test:tts:adaptive-exact-host
 
 It creates a disposable synthetic Spanish EPUB, starts narration through the
 production React/coordinator/client/player path, and validates quick start,
-depletion and truthful buffering, active cancellation, a one-minute prepared
-run, acceptance of the 1/2/5/10-minute choices, bounded RAM/VRAM observations,
-cleanup, and zero external requests. It persists neither source text nor
-generated audio. The command is Windows/CUDA/WebView2 hardware validation,
-excluded from root checks and CI, and is not a standard-profile or
-general-hardware test.
+depletion and truthful buffering, exact audible highlighting/following,
+keyboard pause/resume, passage seek, chapter restart, stale suppression,
+active cancellation, a one-minute prepared run, acceptance of the
+1/2/5/10-minute choices, bounded RAM/VRAM and unit ownership, accessibility
+media, generated-audio cleanup, and zero external requests. It persists
+neither source text nor generated audio. The command is Windows/CUDA/WebView2
+hardware validation, excluded from root checks and CI, and is not a
+standard-profile or general-hardware test.
 
 `pnpm.cmd test:browser:install` is the explicit networked setup step for the Chromium revision coupled to the pinned Playwright package. It installs to Playwright's per-user cache and may also acquire matching headless-shell/support binaries. `pnpm.cmd test:browser` first builds `@voxleaf/shared` and `@voxleaf/epub`, then builds the Vite application, starts a loopback-only preview server on `http://127.0.0.1:4173`, runs the fixed Chromium smoke, and shuts the server and isolated browser context down. Building the workspace packages inside this root command keeps it valid after a clean frozen install where ignored `dist` outputs do not exist. Once installation succeeds, the test command is offline and never downloads a browser. If the matching browser is absent, it fails with setup guidance rather than acquiring it implicitly. Browser reports, traces, screenshots, and test results are ignored generated artifacts and must use only repository-authored synthetic content.
 

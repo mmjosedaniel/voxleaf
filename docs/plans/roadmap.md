@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 8 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Its final policy selects quick mode by default, one minute as the initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. The final packaged rerun measured 41.312 seconds to audible quick playback and 19.49 buffering seconds per playback minute. Because that exceeds the MVP target, this remains a constrained demo rather than a standard, continuous-playback, production, distribution, or general-hardware profile. Milestone 9 is in progress: its first five implementation milestones freeze and prove segment-level authority, publish bounded source-range audible progress, connect non-mutating highlight/follow behavior to the reader, implement identity-first synchronized user navigation, and persist non-skipping heard checkpoints. Exact-host synchronization evidence and final closeout remain.
+VoxLeaf is pre-alpha. Milestones 1 through 8 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Its final policy selects quick mode by default, one minute as the initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. Because exact-host buffering exceeds the MVP target, this remains a constrained demo rather than a standard, continuous-playback, production, distribution, or general-hardware profile. Milestone 9 is in progress: its first six implementation milestones freeze and prove segment-level authority, publish bounded source-range audible progress, connect non-mutating highlight/follow behavior to the reader, implement identity-first synchronized user navigation, persist non-skipping heard checkpoints, and validate the packaged synchronized loop on the exact host. The final run observed nine transitions, no stale playback, one natural underrun/refill, 188 ms cancellation, bounded cleanup, zero audio persistence, zero external requests, and 97.76 buffering seconds per playback minute. Final closeout remains.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -514,7 +514,7 @@ behavior should first be proven with deterministic fakes.
 
 ## Milestone 9: Integrate synchronized reading and narration
 
-**Status:** In progress; ExecPlan Milestones 1 through 5 complete. ADR-0017 and the frozen
+**Status:** In progress; ExecPlan Milestones 1 through 6 complete. ADR-0017 and the frozen
 synchronization authority select segment-level source ranges, CSS Custom
 Highlight decoration, focus-safe following, immediate passive-navigation seek
 with bounded settlement, stable-segment previous/next movement, and
@@ -533,8 +533,9 @@ reader's canonical focus policy. It retains at most 64 recent structural
 ranges and exposes no prose, PCM, or work identity in React state.
 The persistence bridge now saves exact audible starts, advances only on
 matching completion, flushes bounded interruption/lifecycle checkpoints, and
-prevents visual or reflow updates from skipping unheard content. Exact-host
-synchronization evidence and final closeout remain. Follow
+prevents visual or reflow updates from skipping unheard content. The exact-host
+synchronized matrix passes with late programmatic samples suppressed and
+genuine user intent preserved; final closeout remains. Follow
 [`M009-synchronized-reading-and-narration.md`](active/M009-synchronized-reading-and-narration.md)
 for implementation authority.
 
@@ -645,11 +646,12 @@ The following decisions should be made when evidence is available, not assumed s
    rules, low/target/maximum bounds, playback-only pause behavior, truthful
    frontier buffering, and zero default boundary wait are recorded, and the
    required Ubuntu and Windows pull-request checks passed.
-7. **Interaction gate:** satisfied through M009 Milestone 5 by the frozen 500 ms
+7. **Interaction gate:** satisfied through M009 Milestone 6 by the frozen 500 ms
    passive settlement, identity-first chapter/visible-passage/stable-boundary
    path, paused-intent preservation, accessible controls, and exact
-   segment-boundary non-skipping persistence. Exact-host synchronization and
-   final validation remain the next Milestone 9 gates.
+   segment-boundary non-skipping persistence plus exact-host synchronized
+   highlight/follow/navigation evidence. Final repository and pull-request
+   validation remains the next Milestone 9 gate.
 8. **Release gate:** define supported hardware and wall-clock startup expectations from measured results before release.
 
 Durable decisions belong in architecture decision records. Temporary implementation detail belongs in the active ExecPlan. Benchmark results and discovered constraints should update later milestones rather than forcing the project to follow an obsolete roadmap.
@@ -669,9 +671,8 @@ standard profile, or approve model/runtime distribution.
 [`active/M009-synchronized-reading-and-narration.md`](active/M009-synchronized-reading-and-narration.md)
 is the approved focused implementation authority for segment-level audible
 progress, highlighting, focus-safe following, synchronized navigation, and
-heard-position persistence. Milestones 1 through 5 are implemented and
-validated; later milestones retain exact-host synchronization evidence and
-closeout.
+heard-position persistence. Milestones 1 through 6 are implemented and
+validated; the final milestone retains repository and pull-request closeout.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by M009 for the

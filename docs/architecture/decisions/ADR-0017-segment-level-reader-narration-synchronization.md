@@ -2,10 +2,10 @@
 
 ## Status
 
-Accepted for M009. Milestones 1 through 5 freeze the authority, project exact
+Accepted for M009. Milestones 1 through 6 freeze the authority, project exact
 audible source ranges, implement reader highlighting/following, and connect
 identity-first synchronized user navigation plus non-skipping heard-progress
-persistence. Exact-host synchronization and final closeout remain.
+persistence. The exact-host synchronized demo passes; final closeout remains.
 
 ## Context
 

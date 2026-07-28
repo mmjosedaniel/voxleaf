@@ -83,16 +83,22 @@ decoration gaps:
   incremental or next-chapter rendering and resumes without synthesizing a
   user seek.
 
-M009 Milestones 4 and 5 now close the interaction and persistence gaps:
+M009 Milestones 4 through 6 now close the interaction, persistence, and
+exact-host validation gaps:
 
 - passive visual movement follows the frozen identity-first synchronized-seek
   policy; and
 - one desktop-local bridge gives exact audible segment boundaries temporary
   persistence authority over visual, reflow, and programmatic-follow updates.
+- the packaged exact-development path distinguishes genuine wheel, touch,
+  pointer, and reading-navigation-key intent from late programmatic visual
+  samples, preventing automatic follow from creating a seek loop; and
+- the exact Windows/CUDA host validates synchronized highlight/follow,
+  pause/resume, passage seek, chapter restart, natural underrun/refill,
+  cancellation, bounded cleanup, and the offline boundary.
 
-The remaining M009 work is the exact-host synchronized demo in Milestone 6
-and final documentation, repository, privacy, and pull-request validation in
-Milestone 7.
+The remaining M009 work is final documentation, repository, privacy, and
+pull-request validation in Milestone 7.
 
 ## Scope and non-goals
 
@@ -555,11 +561,25 @@ Complete.
   resources, prompt cancellation, zero generated-audio persistence, and zero
   external requests. Performance remains an observation, not a production
   claim.
-- Actual result: Not run; requires the documented Windows/CUDA host.
+- Actual result: Passed on 2026-07-27 on the documented RTX 5060 Laptop GPU
+  Windows/CUDA host with the outbound-blocking rule enabled. The packaged
+  synthetic matrix observed nine audible transitions, valid segment ranges,
+  0.7 ms p95 follow latency, focus-safe keyboard pause/resume, a 60.823-second
+  passage restart, a 61.691-second chapter restart, no stale playback, and
+  one natural underrun followed by refill after 91.748 seconds. Quick
+  command-to-audible was 49.139 seconds with 18.640 seconds of playable lead;
+  the one-minute prepared mode reached 73.760 seconds of playable audio and
+  became audible after 129.246 seconds. Cancellation completed in 188 ms.
+  Peak process-tree working set was 5,288,587,264 bytes and peak dedicated GPU
+  memory was 5,276 MiB. Cleanup returned retained/discarded units and
+  generated-audio files to zero, dedicated GPU memory to zero, and observed
+  zero external requests. Performance remains exact-host evidence only:
+  97.76 buffering seconds per playback minute is above the MVP allowance and
+  does not promote a standard production profile.
 
 ### Status
 
-Not started.
+Complete.
 
 ## Milestone 7: Record the synchronization decision and close validation
 
@@ -744,6 +764,25 @@ persistence. Do not use destructive storage migration as rollback.
   tests, 233 Python tests, portable builds, the native release build, and
   Python source/wheel builds pass. Pytest alone warns that its optional cache
   cannot be written; the test run itself passes.
+- 2026-07-27: Extended the packaged exact-host matrix with real audible
+  transition, highlight/follow, keyboard pause/resume, passage seek, chapter
+  restart, natural depletion/refill, active cancellation, RAM/VRAM, bounded
+  ownership, accessibility-media, generated-audio cleanup, and external-request
+  observations. All output remains synthetic and content-free.
+- 2026-07-27: Exact-host diagnosis found that a late passive visual sample
+  after automatic following could be misclassified as a user seek and restart
+  narration. The reader now accepts passive locator movement during active
+  narration only after bounded wheel, touch, pointer, or reading-navigation-key
+  intent; follow settlement also retains its suppression token for two browser
+  frames. A coordinator guard ignores samples inside the current audible
+  half-open range.
+- 2026-07-27: `pnpm.cmd test:tts:adaptive-exact-host` passed on the documented
+  Windows/CUDA host. It measured nine segment transitions, 0.7 ms p95 follow,
+  zero stale playback, one natural underrun/refill, 188 ms cancellation,
+  5,276 MiB peak dedicated GPU memory, zero retained units/audio files after
+  cleanup, and zero external requests. The observed 97.76 buffering seconds
+  per playback minute remains a performance limitation, not a production
+  claim.
 
 ## Discoveries and decisions
 
@@ -788,6 +827,17 @@ persistence. Do not use destructive storage migration as rollback.
   inserting and removing the proof rule through the existing same-origin
   stylesheet's CSSOM validates the real security boundary without weakening
   it.
+- Exact WebView2 playback exposed a late-observer feedback loop that
+  deterministic one-frame follow tests did not reproduce. Programmatic visual
+  samples and user-originated passive movement therefore require distinct
+  authority: background samples are ignored while narration is active, while
+  bounded wheel, touch, pointer, and reading-navigation-key intent authorizes
+  the existing 500 ms synchronized seek. This preserves ADR-0017 rather than
+  weakening passive-scroll behavior.
+- Natural underrun/refill is hardware- and text-dependent. The exact matrix
+  observes it when it occurs instead of injecting artificial service delay;
+  this run depleted once and refilled after 91.748 seconds. Deterministic
+  scheduler/player tests remain the exhaustive transition authority.
 - The existing reader's 24-pixel visual-locator inset is sufficient as the
   synchronization comfort region, avoiding a second geometry policy.
 - Mapper registration notifications are the required bridge for incremental
