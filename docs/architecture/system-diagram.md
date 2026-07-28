@@ -201,8 +201,8 @@ The exact-development user flow now continues from `VISUAL` through `PREP`,
 active visual locator, retains at most one bounded prepared batch, dispatches
 one synthesis at a time, and transfers sole complete-unit ownership into the
 player. The M009 packaged matrix proves synchronized quick and one-minute
-prepared audio while measuring nine segment transitions, one natural
-underrun/refill, 188 ms cancellation, and 97.76 buffering seconds per playback
+prepared audio while measuring six segment transitions, one natural
+underrun/refill, 190 ms cancellation, and 378.46 buffering seconds per playback
 minute.
 The solid edges include the content-free audible projection, its segment-level
 reader highlight/follow consumer, and the user-originated synchronized

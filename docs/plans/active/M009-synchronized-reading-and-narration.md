@@ -563,18 +563,18 @@ Complete.
   claim.
 - Actual result: Passed on 2026-07-27 on the documented RTX 5060 Laptop GPU
   Windows/CUDA host with the outbound-blocking rule enabled. The packaged
-  synthetic matrix observed nine audible transitions, valid segment ranges,
-  0.7 ms p95 follow latency, focus-safe keyboard pause/resume, a 60.823-second
-  passage restart, a 61.691-second chapter restart, no stale playback, and
-  one natural underrun followed by refill after 91.748 seconds. Quick
-  command-to-audible was 49.139 seconds with 18.640 seconds of playable lead;
-  the one-minute prepared mode reached 73.760 seconds of playable audio and
-  became audible after 129.246 seconds. Cancellation completed in 188 ms.
-  Peak process-tree working set was 5,288,587,264 bytes and peak dedicated GPU
-  memory was 5,276 MiB. Cleanup returned retained/discarded units and
+  synthetic matrix observed six audible transitions, valid segment ranges,
+  0.7 ms p95 follow latency, focus-safe keyboard pause/resume, a 40.815-second
+  passage restart, a 40.913-second chapter restart, no stale playback, and
+  one natural underrun followed by refill after 100.148 seconds. Quick
+  command-to-audible was 42.621 seconds with 16.240 seconds of playable lead;
+  the one-minute prepared mode reached 74.640 seconds of playable audio and
+  became audible after 135.522 seconds. Cancellation completed in 190 ms.
+  Peak process-tree working set was 3,398,922,240 bytes and peak dedicated GPU
+  memory was 5,178 MiB. Cleanup returned retained/discarded units and
   generated-audio files to zero, dedicated GPU memory to zero, and observed
   zero external requests. Performance remains exact-host evidence only:
-  97.76 buffering seconds per playback minute is above the MVP allowance and
+  378.46 buffering seconds per playback minute is above the MVP allowance and
   does not promote a standard production profile.
 
 ### Status
@@ -777,12 +777,21 @@ persistence. Do not use destructive storage migration as rollback.
   frames. A coordinator guard ignores samples inside the current audible
   half-open range.
 - 2026-07-27: `pnpm.cmd test:tts:adaptive-exact-host` passed on the documented
-  Windows/CUDA host. It measured nine segment transitions, 0.7 ms p95 follow,
-  zero stale playback, one natural underrun/refill, 188 ms cancellation,
-  5,276 MiB peak dedicated GPU memory, zero retained units/audio files after
-  cleanup, and zero external requests. The observed 97.76 buffering seconds
+  Windows/CUDA host. It measured six segment transitions, 0.7 ms p95 follow,
+  zero stale playback, one natural underrun/refill, 190 ms cancellation,
+  5,178 MiB peak dedicated GPU memory, zero retained units/audio files after
+  cleanup, and zero external requests. The observed 378.46 buffering seconds
   per playback minute remains a performance limitation, not a production
   claim.
+- 2026-07-27: Final validation on the implementation branch passes:
+  `pnpm.cmd test:browser` (six Chromium scenarios),
+  `pnpm.cmd test:native-startup` (packaged WebView2 lifecycle and
+  synchronization), `pnpm.cmd check:portable`, and `pnpm.cmd check`.
+  The aggregate gates pass 196 shared, 555 EPUB, 305 desktop, six Node
+  WebDriver-client, 25 Rust, and 233 Python tests plus all formatting, lint,
+  type, generated-contract, portable, native, and Python distribution builds.
+  Pytest reports only the previously documented optional cache-write warning;
+  all tests pass.
 
 ## Discoveries and decisions
 
@@ -836,7 +845,7 @@ persistence. Do not use destructive storage migration as rollback.
   weakening passive-scroll behavior.
 - Natural underrun/refill is hardware- and text-dependent. The exact matrix
   observes it when it occurs instead of injecting artificial service delay;
-  this run depleted once and refilled after 91.748 seconds. Deterministic
+  this run depleted once and refilled after 100.148 seconds. Deterministic
   scheduler/player tests remain the exhaustive transition authority.
 - The existing reader's 24-pixel visual-locator inset is sufficient as the
   synchronization comfort region, avoiding a second geometry policy.

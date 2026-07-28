@@ -444,11 +444,11 @@ fails the MVP target of at most 5 seconds per minute, so tests and documentation
 must keep the exact path development-only and must not assert uninterrupted
 playback or a standard profile.
 
-The accepted M009 exact-host run measured nine audible transitions, 0.7 ms p95
-follow latency, a 60.823-second passage restart, a 61.691-second chapter
-restart, no stale playback, one natural underrun/refill, 188 ms cancellation,
-5,276 MiB peak dedicated GPU memory, zero retained units and audio files after
-cleanup, and zero external requests. Its 97.76 buffering seconds per playback
+The accepted M009 exact-host run measured six audible transitions, 0.7 ms p95
+follow latency, a 40.815-second passage restart, a 40.913-second chapter
+restart, no stale playback, one natural underrun/refill, 190 ms cancellation,
+5,178 MiB peak dedicated GPU memory, zero retained units and audio files after
+cleanup, and zero external requests. Its 378.46 buffering seconds per playback
 minute is observation-only and remains above the MVP allowance.
 
 ## Deferred coverage
