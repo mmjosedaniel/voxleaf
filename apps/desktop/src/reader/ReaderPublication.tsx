@@ -49,6 +49,7 @@ import {
   type ReaderTargetAvailability,
 } from "./reader-navigation";
 import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
+import { SYNCHRONIZATION_AUTHORITY_V1 } from "./synchronization-authority";
 
 function unreachable(value: never): never {
   void value;
@@ -172,6 +173,36 @@ export interface ReaderInitialRestorationSettlement {
   readonly locator: ReadingLocatorV1;
 }
 
+class UserVisualNavigationIntentGate {
+  #active = false;
+  #timeout: number | undefined;
+
+  public mark(): void {
+    this.clear();
+    this.#active = true;
+    this.#timeout = window.setTimeout(
+      () => this.clear(),
+      SYNCHRONIZATION_AUTHORITY_V1.manualNavigation.settlementMs,
+    );
+  }
+
+  public accept(narrationActive: boolean): boolean {
+    if (narrationActive && !this.#active) {
+      return false;
+    }
+    this.clear();
+    return true;
+  }
+
+  public clear(): void {
+    this.#active = false;
+    if (this.#timeout !== undefined) {
+      window.clearTimeout(this.#timeout);
+      this.#timeout = undefined;
+    }
+  }
+}
+
 export function ReaderPublicationContent({
   publication,
   initialPreferences = DEFAULT_READER_PREFERENCES,
@@ -203,6 +234,9 @@ export function ReaderPublicationContent({
   const activeDomRangeMapper = domRangeMapper ?? ownedDomRangeMapper;
   const initialRestorationRequired =
     restoreInitialLocator && initialLocator !== undefined;
+  const [visualNavigationIntent] = useState(
+    () => new UserVisualNavigationIntentGate(),
+  );
   const [visualLocatorTracker] = useState(
     () =>
       new ActiveVisualLocatorTracker(publication, activeDomRangeMapper, {
@@ -211,6 +245,14 @@ export function ReaderPublicationContent({
           : { environment: visualLocatorEnvironment }),
         initialLocator: coordinator.state.activeLocator,
         onLocator: (locator) => {
+          if (
+            !visualNavigationIntent.accept(
+              narrationSource !== undefined &&
+                narrationSource.observe().navigation.playIntent !== "inactive",
+            )
+          ) {
+            return;
+          }
           if (coordinator.updateActiveVisualLocator(locator)) {
             onActiveLocatorChange?.(locator);
           }
@@ -320,6 +362,7 @@ export function ReaderPublicationContent({
       currentSpineItemIndex: () =>
         coordinator.state.activeLocator.spineItemIndex,
       navigateToLocator: (locator: ReadingLocatorV1) => {
+        visualNavigationIntent.clear();
         reflowRestorer.cancel();
         completeInitialRestoration(
           Object.freeze({
@@ -336,6 +379,7 @@ export function ReaderPublicationContent({
         }
       },
       settleLocator: (locator: ReadingLocatorV1) => {
+        visualNavigationIntent.clear();
         visualLocatorTracker.setCurrentLocator(locator);
         coordinator.updateActiveVisualLocator(locator);
       },
@@ -348,6 +392,7 @@ export function ReaderPublicationContent({
     coordinator,
     reflowRestorer,
     segmentHighlightController,
+    visualNavigationIntent,
     visualLocatorTracker,
   ]);
   const attemptInitialRestoration = useCallback((): void => {
@@ -591,6 +636,7 @@ export function ReaderPublicationContent({
   );
   useEffect(
     () => () => {
+      visualNavigationIntent.clear();
       reflowRestorer.close();
       programmaticNavigationRequest.current += 1;
       initialVisualLocatorResumeRef.current?.({ requestSample: false });
@@ -600,7 +646,12 @@ export function ReaderPublicationContent({
       segmentHighlightController.close();
       visualLocatorTracker.close();
     },
-    [reflowRestorer, segmentHighlightController, visualLocatorTracker],
+    [
+      reflowRestorer,
+      segmentHighlightController,
+      visualNavigationIntent,
+      visualLocatorTracker,
+    ],
   );
   useEffect(
     () => () => {
@@ -740,7 +791,28 @@ export function ReaderPublicationContent({
           >
             Back to table of contents
           </a>
-          <div id={contentId} className="reader-content">
+          <div
+            id={contentId}
+            className="reader-content"
+            onWheelCapture={() => visualNavigationIntent.mark()}
+            onTouchStartCapture={() => visualNavigationIntent.mark()}
+            onPointerDownCapture={() => visualNavigationIntent.mark()}
+            onKeyDownCapture={(event) => {
+              if (
+                [
+                  "ArrowDown",
+                  "ArrowUp",
+                  "End",
+                  "Home",
+                  "PageDown",
+                  "PageUp",
+                  " ",
+                ].includes(event.key)
+              ) {
+                visualNavigationIntent.mark();
+              }
+            }}
+          >
             {state.contentStatus === "chapter-too-large" ? (
               <ChapterTooLargeContent readerRef={setReaderRef} />
             ) : (

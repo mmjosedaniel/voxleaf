@@ -209,6 +209,17 @@ at most 5 seconds, so the exact profile remains a constrained development
 demo. Larger preparation targets may extend one listening interval but do not
 satisfy the sustained-reading budget.
 
+M009 Milestone 6 measures the complete synchronized path rather than replacing
+the M008 policy run. Its accepted exact-host matrix observed six audible
+transitions, no stale playback, one natural underrun/refill, 42.621 seconds
+command-to-audible with 16.240 playable seconds at start, 190 ms cancellation,
+3,398,922,240 bytes peak process-tree working set, 5,178 MiB peak dedicated GPU
+memory, bounded cleanup, zero generated-audio files, zero external requests,
+and 378.46 buffering seconds per playback minute. The cancellation and
+correctness gates pass, but the buffering result remains far above the
+five-seconds-per-minute MVP target and does not authorize uninterrupted,
+production, or general-hardware narration.
+
 ## Benchmark reporting
 
 Store summarized, reproducible benchmark reports in Git. Do not commit:

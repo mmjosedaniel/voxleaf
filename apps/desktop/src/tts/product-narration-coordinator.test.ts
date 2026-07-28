@@ -447,6 +447,15 @@ describe("product narration coordinator", () => {
     expect(serializedSnapshot).not.toContain("segment:product-test");
     expect(serializedSnapshot).not.toContain("sourceRange");
 
+    coordinator.updateActiveLocator(
+      decodeReadingLocatorV1({
+        ...START_LOCATOR,
+        textOffsetCodePoints: START_LOCATOR.textOffsetCodePoints + 6,
+      }),
+    );
+    expect(coordinator.observe().navigation.settling).toBe(false);
+    expect(prepareNarration).toHaveBeenCalledTimes(1);
+
     backend.finish();
     expect(audibleProgress.at(-1)).toMatchObject({
       kind: "segment-completed",

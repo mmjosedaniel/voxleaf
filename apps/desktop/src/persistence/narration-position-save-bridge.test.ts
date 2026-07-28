@@ -66,6 +66,8 @@ function snapshot(
       underrunCount: 0,
       acceptedAudioUnitCount: 0,
       acceptedAudioSampleFrames: 0,
+      retainedAudioUnitCount: 0,
+      discardedAudioUnitCount: 0,
     }),
     serviceState: phase === "failed" ? "failed" : "ready",
     navigation: Object.freeze({

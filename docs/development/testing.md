@@ -176,7 +176,7 @@ The browser command requires one prior networked `pnpm.cmd test:browser:install`
 
 ## M009 synchronization and heard-persistence validation
 
-M009 Milestones 1 through 5 add deterministic, browser, and packaged proof
+M009 Milestones 1 through 6 add deterministic, browser, packaged, and exact-host proof
 surfaces:
 
 - `synchronization-authority.test.ts` verifies the closed event table,
@@ -207,10 +207,10 @@ completion advances it, and a later reflow cannot regress it after stop.
 Existing repository and restore suites continue to prove exact/nearest-valid
 recovery plus preservation of unsupported future envelopes.
 
-The proof uses only repository-authored synthetic EPUB content and returns
-content-free booleans. It does not run Qwen, publish narration text or audio,
-or provide the exact-host evidence assigned to M009 Milestone 6. The frozen
-and implemented behavior is documented in
+The default proof uses only repository-authored synthetic EPUB content and
+returns content-free booleans. It does not run Qwen or publish narration text
+or audio. The separately invoked exact-host matrix described below supplies
+M009 Milestone 6 evidence. The frozen and implemented behavior is documented in
 [`../architecture/synchronization-authority-v1.md`](../architecture/synchronization-authority-v1.md).
 
 ### Hardware-specific visual-reader benchmark
@@ -425,9 +425,15 @@ It requires the exact native Qwen/Serena environment, prepared artifacts,
 outbound-blocking firewall rule, Tauri driver, and matching EdgeDriver. The
 runner creates and deletes a synthetic Spanish EPUB, exercises quick
 depletion/buffering and cancellation, then reloads for one-minute prepared
-playback. It checks all four prepared choices, content-free timing and resource
-metrics, cleanup, and zero external requests. Generated audio is never written.
-This run is excluded from default checks and CI.
+playback. M009 Milestone 6 additionally verifies exact audible transitions,
+valid half-open ranges, readable focus-safe following, keyboard pause/resume,
+passage seek, chapter restart, stale suppression, reduced motion, forced
+colors, retained/discarded-unit bounds, and generated-audio cleanup. Late
+programmatic visual samples are suppressed during active narration; bounded
+wheel, touch, pointer, or reading-navigation-key intent still authorizes the
+frozen passive seek. It checks all four prepared choices, content-free timing
+and resource metrics, cleanup, and zero external requests. Generated audio is
+never written. This run is excluded from default checks and CI.
 
 M008 Milestone 6 retains quick mode as the default, one minute as the initial
 prepared and refill target, 10 seconds as low water, and `0` ms as the boundary
@@ -438,15 +444,24 @@ fails the MVP target of at most 5 seconds per minute, so tests and documentation
 must keep the exact path development-only and must not assert uninterrupted
 playback or a standard profile.
 
+The accepted M009 exact-host run measured six audible transitions, 0.7 ms p95
+follow latency, a 40.815-second passage restart, a 40.913-second chapter
+restart, no stale playback, one natural underrun/refill, 190 ms cancellation,
+5,178 MiB peak dedicated GPU memory, zero retained units and audio files after
+cleanup, and zero external requests. Its 378.46 buffering seconds per playback
+minute is observation-only and remains above the MVP allowance.
+
 ## Deferred coverage
 
-The secure EPUB, reader, narration-preparation, M007 service/protocol, and M008
-exact-development quick/prepared flows now have their scoped evidence. Default
-tests and CI still load no candidate or model. Reader/narration timing,
-highlighting and following, general supported-hardware detection, standard
-profile selection, installer behavior, and complete MVP end-to-end coverage
-remain deferred. The examples below are requirements for those later roadmap
-milestones, not claims about current coverage.
+The secure EPUB, reader, narration-preparation, M007 service/protocol, M008
+exact-development quick/prepared flows, and M009 segment synchronization now
+have their scoped deterministic, packaged, and exact-host evidence. Default
+tests and CI still load no candidate or model; the model-backed M009 timing,
+highlight/follow, navigation, persistence, and cleanup matrix remains a
+separate exact-host command. General supported-hardware detection, standard
+profile selection, installer behavior, and complete production-profile MVP
+end-to-end coverage remain deferred. The examples below are requirements for
+those later roadmap milestones, not claims about current coverage.
 
 ## Test levels
 

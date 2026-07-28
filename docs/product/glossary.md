@@ -91,7 +91,11 @@ A separate sensitive, ephemeral representation prepared for speech by determinis
 
 ## Prepared narration segment
 
-A bounded nonempty portion of normalized narration text paired with the stable locator range of its source. Milestone 5 prepares this package-local representation; later milestones attach session and generation identity for TTS.
+A bounded nonempty portion of normalized narration text paired with the stable
+locator range of its source. Milestone 5 prepares this package-local
+representation, M007/M008 attach ephemeral session and generation identity for
+TTS and playback, and M009 projects the existing source range into synchronized
+highlighting and heard progress.
 
 ## Reading session
 

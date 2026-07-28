@@ -174,6 +174,8 @@ function narrationSnapshot(
       underrunCount: 0,
       acceptedAudioUnitCount: 0,
       acceptedAudioSampleFrames: 0,
+      retainedAudioUnitCount: 0,
+      discardedAudioUnitCount: 0,
     }),
     serviceState: "ready",
     navigation: Object.freeze({

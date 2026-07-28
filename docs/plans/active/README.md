@@ -20,8 +20,8 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 - [`M009-synchronized-reading-and-narration.md`](M009-synchronized-reading-and-narration.md):
   approved focused ExecPlan for segment-level audible progress, highlighting,
   focus-safe following, synchronized navigation, and heard-position
-  persistence. Milestones 1 through 5 are implemented; exact-host
-  synchronization evidence and closeout remain.
+  persistence. Milestones 1 through 6 are implemented and exact-host
+  synchronization passes; final closeout remains.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. M009 supersedes its remaining
   synchronization work; it does not supersede completed Milestones 4 through

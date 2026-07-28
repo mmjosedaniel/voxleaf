@@ -83,16 +83,22 @@ decoration gaps:
   incremental or next-chapter rendering and resumes without synthesizing a
   user seek.
 
-M009 Milestones 4 and 5 now close the interaction and persistence gaps:
+M009 Milestones 4 through 6 now close the interaction, persistence, and
+exact-host validation gaps:
 
 - passive visual movement follows the frozen identity-first synchronized-seek
   policy; and
 - one desktop-local bridge gives exact audible segment boundaries temporary
   persistence authority over visual, reflow, and programmatic-follow updates.
+- the packaged exact-development path distinguishes genuine wheel, touch,
+  pointer, and reading-navigation-key intent from late programmatic visual
+  samples, preventing automatic follow from creating a seek loop; and
+- the exact Windows/CUDA host validates synchronized highlight/follow,
+  pause/resume, passage seek, chapter restart, natural underrun/refill,
+  cancellation, bounded cleanup, and the offline boundary.
 
-The remaining M009 work is the exact-host synchronized demo in Milestone 6
-and final documentation, repository, privacy, and pull-request validation in
-Milestone 7.
+The remaining M009 work is final documentation, repository, privacy, and
+pull-request validation in Milestone 7.
 
 ## Scope and non-goals
 
@@ -555,11 +561,25 @@ Complete.
   resources, prompt cancellation, zero generated-audio persistence, and zero
   external requests. Performance remains an observation, not a production
   claim.
-- Actual result: Not run; requires the documented Windows/CUDA host.
+- Actual result: Passed on 2026-07-27 on the documented RTX 5060 Laptop GPU
+  Windows/CUDA host with the outbound-blocking rule enabled. The packaged
+  synthetic matrix observed six audible transitions, valid segment ranges,
+  0.7 ms p95 follow latency, focus-safe keyboard pause/resume, a 40.815-second
+  passage restart, a 40.913-second chapter restart, no stale playback, and
+  one natural underrun followed by refill after 100.148 seconds. Quick
+  command-to-audible was 42.621 seconds with 16.240 seconds of playable lead;
+  the one-minute prepared mode reached 74.640 seconds of playable audio and
+  became audible after 135.522 seconds. Cancellation completed in 190 ms.
+  Peak process-tree working set was 3,398,922,240 bytes and peak dedicated GPU
+  memory was 5,178 MiB. Cleanup returned retained/discarded units and
+  generated-audio files to zero, dedicated GPU memory to zero, and observed
+  zero external requests. Performance remains exact-host evidence only:
+  378.46 buffering seconds per playback minute is above the MVP allowance and
+  does not promote a standard production profile.
 
 ### Status
 
-Not started.
+Complete.
 
 ## Milestone 7: Record the synchronization decision and close validation
 
@@ -582,11 +602,15 @@ Not started.
 - Expected result: all deterministic repository checks pass on the development
   host, portable checks pass, required Ubuntu and Windows pull-request checks
   pass, and the documentation claims no more than the retained evidence.
-- Actual result: Not run.
+- Actual result: Current-status documentation was reconciled on 2026-07-27 and
+  `git diff --check` passed. Full `pnpm.cmd check`,
+  `pnpm.cmd check:portable`, complete-diff privacy review, and required
+  pull-request CI have not yet run for Milestone 7.
 
 ### Status
 
-Not started.
+In progress. Documentation reconciliation is complete; complete-diff
+repository/privacy review, full checks, and required pull-request CI remain.
 
 ## Testing and benchmark strategy
 
@@ -744,6 +768,39 @@ persistence. Do not use destructive storage migration as rollback.
   tests, 233 Python tests, portable builds, the native release build, and
   Python source/wheel builds pass. Pytest alone warns that its optional cache
   cannot be written; the test run itself passes.
+- 2026-07-27: Extended the packaged exact-host matrix with real audible
+  transition, highlight/follow, keyboard pause/resume, passage seek, chapter
+  restart, natural depletion/refill, active cancellation, RAM/VRAM, bounded
+  ownership, accessibility-media, generated-audio cleanup, and external-request
+  observations. All output remains synthetic and content-free.
+- 2026-07-27: Exact-host diagnosis found that a late passive visual sample
+  after automatic following could be misclassified as a user seek and restart
+  narration. The reader now accepts passive locator movement during active
+  narration only after bounded wheel, touch, pointer, or reading-navigation-key
+  intent; follow settlement also retains its suppression token for two browser
+  frames. A coordinator guard ignores samples inside the current audible
+  half-open range.
+- 2026-07-27: `pnpm.cmd test:tts:adaptive-exact-host` passed on the documented
+  Windows/CUDA host. It measured six segment transitions, 0.7 ms p95 follow,
+  zero stale playback, one natural underrun/refill, 190 ms cancellation,
+  5,178 MiB peak dedicated GPU memory, zero retained units/audio files after
+  cleanup, and zero external requests. The observed 378.46 buffering seconds
+  per playback minute remains a performance limitation, not a production
+  claim.
+- 2026-07-27: Final validation on the implementation branch passes:
+  `pnpm.cmd test:browser` (six Chromium scenarios),
+  `pnpm.cmd test:native-startup` (packaged WebView2 lifecycle and
+  synchronization), `pnpm.cmd check:portable`, and `pnpm.cmd check`.
+  The aggregate gates pass 196 shared, 555 EPUB, 305 desktop, six Node
+  WebDriver-client, 25 Rust, and 233 Python tests plus all formatting, lint,
+  type, generated-contract, portable, native, and Python distribution builds.
+  Pytest reports only the previously documented optional cache-write warning;
+  all tests pass.
+- 2026-07-27: Reconciled the product brief, MVP status, architecture overview,
+  canonical system diagram, testing guidance, broad historical plan, and this
+  final-validation section with the accepted Milestone 6 exact-host evidence.
+  Every current-status surface now records Milestones 1-6 complete, keeps M009
+  Milestone 7 open, and retains the standard TTS performance blocker.
 
 ## Discoveries and decisions
 
@@ -788,6 +845,17 @@ persistence. Do not use destructive storage migration as rollback.
   inserting and removing the proof rule through the existing same-origin
   stylesheet's CSSOM validates the real security boundary without weakening
   it.
+- Exact WebView2 playback exposed a late-observer feedback loop that
+  deterministic one-frame follow tests did not reproduce. Programmatic visual
+  samples and user-originated passive movement therefore require distinct
+  authority: background samples are ignored while narration is active, while
+  bounded wheel, touch, pointer, and reading-navigation-key intent authorizes
+  the existing 500 ms synchronized seek. This preserves ADR-0017 rather than
+  weakening passive-scroll behavior.
+- Natural underrun/refill is hardware- and text-dependent. The exact matrix
+  observes it when it occurs instead of injecting artificial service delay;
+  this run depleted once and refilled after 100.148 seconds. Deterministic
+  scheduler/player tests remain the exhaustive transition authority.
 - The existing reader's 24-pixel visual-locator inset is sufficient as the
   synchronization comfort region, avoiding a second geometry policy.
 - Mapper registration notifications are the required bridge for incremental
@@ -822,15 +890,16 @@ persistence. Do not use destructive storage migration as rollback.
 
 ## Final validation results
 
-M009 Milestones 1 through 5 are complete. Authority, source-range projection,
+M009 Milestones 1 through 6 are complete. Authority, source-range projection,
 reader highlighting/following, synchronized user navigation, non-skipping
 heard-position persistence, focused unit/component, full desktop, six-test
-Chromium, packaged WebView2, native/portable repository, and privacy
-validation pass through the recorded checkpoints. Exact-host synchronization
-evidence, pull-request CI for the current milestone, and final M009 validation
-are not yet available.
+Chromium, packaged WebView2, native/portable repository, privacy, and exact-host
+synchronization validation pass through the recorded checkpoints. The accepted
+exact-host result is recorded under Milestone 6 and in the progress log. M009
+Milestone 7 documentation/repository/privacy reconciliation and its required
+pull-request CI remain.
 
-When the plan completes, record:
+Milestone 7 must record:
 
 - the accepted ADR and any amendments;
 - focused unit/component/browser/native command results;

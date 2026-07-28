@@ -1,7 +1,15 @@
 import console from "node:console";
 import { execFile, spawn } from "node:child_process";
 import { once } from "node:events";
-import { access, mkdir, mkdtemp, open, rm, writeFile } from "node:fs/promises";
+import {
+  access,
+  mkdir,
+  mkdtemp,
+  open,
+  readdir,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
@@ -154,6 +162,18 @@ const FIXED_FAILURE_CODES = new Map([
     "synchronization-feasibility-failed",
   ],
   [
+    "Native synchronized narration proof failed.",
+    "synchronized-narration-proof-failed",
+  ],
+  [
+    "Native synchronized narration cleanup failed.",
+    "synchronized-narration-cleanup-failed",
+  ],
+  [
+    "Native generated audio persistence was detected.",
+    "generated-audio-persistence-detected",
+  ],
+  [
     "Native reader performance metrics were unavailable.",
     "reader-performance-metrics-unavailable",
   ],
@@ -249,6 +269,58 @@ function executeText(file, args) {
 
 function rounded(value) {
   return Math.round(value * 100) / 100;
+}
+
+function percentile95(values) {
+  assert(
+    Array.isArray(values) &&
+      values.length > 0 &&
+      values.every((value) => Number.isFinite(value) && value >= 0),
+    "Native synchronized narration proof failed.",
+  );
+  const sorted = [...values].sort((left, right) => left - right);
+  return sorted[Math.ceil(sorted.length * 0.95) - 1];
+}
+
+async function generatedAudioFileCount(rootPath) {
+  const audioExtensions = new Set([
+    ".aac",
+    ".flac",
+    ".m4a",
+    ".mp3",
+    ".ogg",
+    ".pcm",
+    ".wav",
+  ]);
+  let count = 0;
+  const pending = [rootPath];
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (current === undefined) {
+      continue;
+    }
+    let entries;
+    try {
+      entries = await readdir(current, { withFileTypes: true });
+    } catch (error) {
+      if (error?.code === "ENOENT") {
+        continue;
+      }
+      throw error;
+    }
+    for (const entry of entries) {
+      const entryPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        pending.push(entryPath);
+      } else if (
+        entry.isFile() &&
+        audioExtensions.has(path.extname(entry.name).toLowerCase())
+      ) {
+        count += 1;
+      }
+    }
+  }
+  return count;
 }
 
 function memoryDelta(baseline, final) {
@@ -349,12 +421,398 @@ async function nvidiaSnapshot() {
   });
 }
 
+function startAdaptiveResourceSampler(rootProcessId) {
+  let failure;
+  const samples = [];
+  const activeSamples = new Set();
+  const sample = async () => {
+    try {
+      const [workingSetBytes, gpu] = await Promise.all([
+        processWorkingSetBytes(rootProcessId),
+        nvidiaSnapshot(),
+      ]);
+      samples.push(
+        Object.freeze({
+          workingSetBytes,
+          gpu,
+        }),
+      );
+    } catch (error) {
+      failure = error;
+    }
+  };
+  const startSample = sample();
+  activeSamples.add(startSample);
+  void startSample.finally(() => activeSamples.delete(startSample));
+  const timer = globalThis.setInterval(() => {
+    const pending = sample();
+    activeSamples.add(pending);
+    void pending.finally(() => activeSamples.delete(pending));
+  }, 5_000);
+  timer.unref();
+  return Object.freeze({
+    async stop() {
+      globalThis.clearInterval(timer);
+      await Promise.allSettled([...activeSamples]);
+      if (failure !== undefined) {
+        throw failure;
+      }
+      assert(
+        samples.length > 0,
+        "Native reader performance metrics were unavailable.",
+      );
+      return Object.freeze([...samples]);
+    },
+  });
+}
+
+async function installAdaptiveSynchronizationInstrumentation(driver) {
+  const installed = await driver.execute(
+    `const registry = CSS.highlights;
+     if (
+       registry === undefined ||
+       typeof globalThis.Highlight !== "function"
+     ) {
+       return false;
+     }
+     globalThis.__voxleafAdaptiveSynchronizationInstrumentation?.stop?.();
+     const documentIds = new WeakMap();
+     let nextDocumentId = 1;
+     const state = {
+       active: true,
+       clearCount: 0,
+       currentDocumentId: undefined,
+       currentKey: undefined,
+       focusPreserved: true,
+       followLatenciesMs: [],
+       forbiddenKeys: new Set(),
+       lastHighlight: undefined,
+       maxDiscardedUnits: 0,
+       maxRetainedUnits: 0,
+       rangeValid: true,
+       stalePlaybackObserved: false,
+       transitionCount: 0,
+       frame: 0,
+     };
+     const leafSelector =
+       "h1, h2, h3, h4, h5, h6, p, blockquote, li";
+     const containingElement = (node) =>
+       node instanceof Element ? node : node?.parentElement;
+     const rangeDetails = (highlight) => {
+       const range = Array.from(highlight)[0];
+       if (!(range instanceof Range) || range.collapsed) {
+         return undefined;
+       }
+       const startElement = containingElement(range.startContainer);
+       const endElement = containingElement(range.endContainer);
+       const article = startElement?.closest(".semantic-document");
+       if (
+         !(article instanceof HTMLElement) ||
+         endElement?.closest(".semantic-document") !== article ||
+         !range.startContainer.isConnected ||
+         !range.endContainer.isConnected
+       ) {
+         return undefined;
+       }
+       let documentId = documentIds.get(article);
+       if (documentId === undefined) {
+         documentId = nextDocumentId;
+         nextDocumentId += 1;
+         documentIds.set(article, documentId);
+       }
+       const leaves = Array.from(article.querySelectorAll(leafSelector));
+       const startLeaf = startElement?.closest(leafSelector);
+       const endLeaf = endElement?.closest(leafSelector);
+       const startIndex = leaves.indexOf(startLeaf);
+       const endIndex = leaves.indexOf(endLeaf);
+       if (startIndex < 0 || endIndex < 0) {
+         return undefined;
+       }
+       return {
+         article,
+         documentId,
+         key:
+           String(documentId) + ":" +
+           String(startIndex) + ":" +
+           String(range.startOffset) + ":" +
+           String(endIndex) + ":" +
+           String(range.endOffset),
+         range,
+       };
+     };
+     const observeFollow = (details, focusOwner, startedAt, attempts = 0) => {
+       if (!state.active) {
+         return;
+       }
+       let rect;
+       try {
+         rect = details.range.getBoundingClientRect();
+       } catch {
+         state.rangeValid = false;
+         return;
+       }
+       const comfortTop = 24;
+       const comfortBottom = window.innerHeight - 24;
+       const inside =
+         Number.isFinite(rect.top) &&
+         Number.isFinite(rect.bottom) &&
+         rect.bottom >= comfortTop - 1 &&
+         rect.top <= comfortBottom + 1;
+       if (inside || attempts >= 60) {
+         if (state.followLatenciesMs.length < 64) {
+           state.followLatenciesMs.push(performance.now() - startedAt);
+         }
+         state.rangeValid &&= inside;
+         state.focusPreserved &&= document.activeElement === focusOwner;
+         return;
+       }
+       requestAnimationFrame(() =>
+         observeFollow(details, focusOwner, startedAt, attempts + 1),
+       );
+     };
+     const sample = () => {
+       if (!state.active) {
+         return;
+       }
+       const owner = document.querySelector(".product-narration");
+       state.maxRetainedUnits = Math.max(
+         state.maxRetainedUnits,
+         Number(owner?.getAttribute("data-narration-retained-units")) || 0,
+       );
+       state.maxDiscardedUnits = Math.max(
+         state.maxDiscardedUnits,
+         Number(owner?.getAttribute("data-narration-discarded-units")) || 0,
+       );
+       const highlight = registry.get("voxleaf-narration-active");
+       if (highlight !== state.lastHighlight) {
+         state.lastHighlight = highlight;
+         if (highlight === undefined) {
+           state.clearCount += 1;
+           state.currentDocumentId = undefined;
+           state.currentKey = undefined;
+         } else {
+           const details = rangeDetails(highlight);
+           state.transitionCount += 1;
+           if (details === undefined) {
+             state.rangeValid = false;
+           } else {
+             state.currentDocumentId = details.documentId;
+             state.currentKey = details.key;
+             if (state.forbiddenKeys.has(details.key)) {
+               state.stalePlaybackObserved = true;
+             }
+             observeFollow(
+               details,
+               document.activeElement,
+               performance.now(),
+             );
+           }
+         }
+       }
+       state.frame = requestAnimationFrame(sample);
+     };
+     state.stop = () => {
+       state.active = false;
+       cancelAnimationFrame(state.frame);
+     };
+     Object.defineProperty(
+       globalThis,
+       "__voxleafAdaptiveSynchronizationInstrumentation",
+       { configurable: true, value: state },
+     );
+     state.frame = requestAnimationFrame(sample);
+     return true;`,
+  );
+  assert(installed === true, "Native synchronized narration proof failed.");
+}
+
+async function markCurrentAdaptiveHighlightStale(driver) {
+  const marker = await driver.execute(
+    `const state =
+       globalThis.__voxleafAdaptiveSynchronizationInstrumentation;
+     if (
+       state?.active !== true ||
+       typeof state.currentKey !== "string"
+     ) {
+       return undefined;
+     }
+     state.forbiddenKeys.add(state.currentKey);
+     return {
+       clearCount: state.clearCount,
+       currentDocumentId: state.currentDocumentId,
+       currentKey: state.currentKey,
+       transitionCount: state.transitionCount,
+     };`,
+  );
+  assert(
+    typeof marker?.currentKey === "string" &&
+      Number.isSafeInteger(marker.currentDocumentId) &&
+      Number.isSafeInteger(marker.transitionCount) &&
+      Number.isSafeInteger(marker.clearCount),
+    "Native synchronized narration proof failed.",
+  );
+  return marker;
+}
+
+async function adaptiveSynchronizationObservation(driver) {
+  return await driver.execute(
+    `const state =
+       globalThis.__voxleafAdaptiveSynchronizationInstrumentation;
+     const styleRules = [];
+     const collectRules = (rules) => {
+       for (const rule of Array.from(rules ?? [])) {
+         if ("cssRules" in rule) {
+           try {
+             collectRules(rule.cssRules);
+           } catch {}
+         }
+         if (
+           rule.selectorText ===
+           "::highlight(voxleaf-narration-active)"
+         ) {
+           styleRules.push(rule);
+         }
+       }
+     };
+     for (const sheet of Array.from(document.styleSheets)) {
+       try {
+         collectRules(sheet.cssRules);
+       } catch {}
+     }
+     const mainRule = styleRules.find(
+       (rule) =>
+         rule.style?.backgroundColor === "#ffd640" ||
+         rule.style?.backgroundColor === "rgb(255, 214, 64)",
+     );
+     const parseColor = (value) => {
+       const hex = /^#([0-9a-f]{6})$/iu.exec(value);
+       if (hex !== null) {
+         return [0, 2, 4].map((offset) =>
+           Number.parseInt(hex[1].slice(offset, offset + 2), 16),
+         );
+       }
+       const rgb = /^rgb\\((\\d+),\\s*(\\d+),\\s*(\\d+)\\)$/u.exec(value);
+       return rgb === null
+         ? undefined
+         : [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+     };
+     const luminance = (channels) =>
+       channels
+         .map((channel) => channel / 255)
+         .map((channel) =>
+           channel <= 0.04045
+             ? channel / 12.92
+             : ((channel + 0.055) / 1.055) ** 2.4,
+         )
+         .reduce(
+           (sum, channel, index) =>
+             sum + channel * [0.2126, 0.7152, 0.0722][index],
+           0,
+         );
+     const foreground = parseColor(mainRule?.style?.color ?? "");
+     const background = parseColor(
+       mainRule?.style?.backgroundColor ?? "",
+     );
+     const contrastRatio =
+       foreground === undefined || background === undefined
+         ? 0
+         : (Math.max(luminance(foreground), luminance(background)) + 0.05) /
+           (Math.min(luminance(foreground), luminance(background)) + 0.05);
+     return state?.active !== true
+       ? undefined
+       : {
+           clearCount: state.clearCount,
+           contrastRatio,
+           currentDocumentId: state.currentDocumentId,
+           currentKey: state.currentKey,
+           focusPreserved: state.focusPreserved,
+           followLatenciesMs: [...state.followLatenciesMs],
+           forcedColors: matchMedia("(forced-colors: active)").matches,
+           highlightPresent:
+             CSS.highlights?.has("voxleaf-narration-active") === true,
+           maxDiscardedUnits: state.maxDiscardedUnits,
+           maxRetainedUnits: state.maxRetainedUnits,
+           rangeValid: state.rangeValid,
+           readableHighlight:
+             contrastRatio >= 4.5 &&
+             mainRule?.style?.textDecorationLine.includes("underline") ===
+               true,
+           reducedMotion: matchMedia(
+             "(prefers-reduced-motion: reduce)",
+           ).matches,
+           stalePlaybackObserved: state.stalePlaybackObserved,
+           transitionCount: state.transitionCount,
+         };`,
+  );
+}
+
+async function stopAdaptiveSynchronizationInstrumentation(driver) {
+  await driver.execute(
+    `globalThis.__voxleafAdaptiveSynchronizationInstrumentation?.stop?.();
+     delete globalThis.__voxleafAdaptiveSynchronizationInstrumentation;
+     return true;`,
+  );
+}
+
+async function observeAdaptiveDepletionOrStablePlayback(driver) {
+  const timeoutAt = Date.now() + 2 * STARTUP_TIMEOUT_MS;
+  let observation;
+  while (Date.now() < timeoutAt) {
+    observation = await driver.execute(
+      `const owner = document.querySelector(".product-narration");
+       return owner === null ? undefined : {
+         bufferingMs: Number(
+           owner.getAttribute("data-narration-buffering-ms"),
+         ),
+         intentionalWaitMs: Number(
+           owner.getAttribute("data-narration-intentional-wait-ms"),
+         ),
+         failure: owner.getAttribute("data-narration-failure"),
+         phase: owner.getAttribute("data-narration-phase"),
+         playIntent: owner.getAttribute("data-narration-play-intent"),
+         navigationSettling:
+           owner.getAttribute("data-narration-navigation-settling"),
+         playbackMs: Number(
+           owner.getAttribute("data-narration-playback-ms"),
+         ),
+         retainedUnits: Number(
+           owner.getAttribute("data-narration-retained-units"),
+         ),
+         serviceState: owner.getAttribute("data-narration-service-state"),
+         underruns: Number(
+           owner.getAttribute("data-narration-underruns"),
+         ),
+       };`,
+    );
+    if (observation?.phase === "buffering") {
+      return Object.freeze({ kind: "depleted", observation });
+    }
+    if (observation?.phase === "complete") {
+      return Object.freeze({ kind: "range-complete", observation });
+    }
+    if (observation?.phase === "playing" && observation.playbackMs >= 60_000) {
+      return Object.freeze({ kind: "stable", observation });
+    }
+    assert(
+      observation?.phase !== "failed" &&
+        !(
+          ["idle", "stopped"].includes(observation?.phase) &&
+          observation.playIntent !== "playing"
+        ),
+      "Native synchronized narration proof failed.",
+    );
+    await delay(250);
+  }
+  throw new Error("Native synchronized narration proof failed.");
+}
+
 async function runAdaptiveTtsExactHostMatrix(
   driver,
   fixturePath,
   rootProcessId,
   setStage,
 ) {
+  const temporaryDirectory = path.dirname(fixturePath);
   setStage("adaptive exact-host synthetic publication injection");
   await injectNativeFile(driver, fixturePath);
   await waitForCondition(
@@ -367,6 +825,26 @@ async function runAdaptiveTtsExactHostMatrix(
     driver,
     `return document.querySelector(".product-narration")
        ?.getAttribute("data-narration-availability") === "available";`,
+  );
+
+  setStage("adaptive exact-host synchronization instrumentation");
+  await driver.setWindowRect(800, 480);
+  await driver.executeCdp("Emulation.setEmulatedMedia", {
+    media: "",
+    features: [
+      { name: "prefers-reduced-motion", value: "reduce" },
+      { name: "forced-colors", value: "active" },
+    ],
+  });
+  await installAdaptiveSynchronizationInstrumentation(driver);
+  const accessibilityObservation =
+    await adaptiveSynchronizationObservation(driver);
+  assert(
+    accessibilityObservation?.forcedColors === true &&
+      accessibilityObservation.reducedMotion === true &&
+      accessibilityObservation.readableHighlight === true &&
+      accessibilityObservation.contrastRatio >= 4.5,
+    "Native synchronized narration proof failed.",
   );
 
   setStage("adaptive exact-host prepared-option selection");
@@ -388,225 +866,456 @@ async function runAdaptiveTtsExactHostMatrix(
 
   const baselineWorkingSetBytes = await processWorkingSetBytes(rootProcessId);
   const baselineGpu = await nvidiaSnapshot();
-  setStage("adaptive exact-host quick start");
-  const quickCommandAtMs = Date.now();
-  await driver.execute(
-    `Array.from(document.querySelectorAll("button")).find(
-       (button) => button.textContent === "Start quick playback",
-     )?.click();
-     return true;`,
-  );
-  await waitForCondition(
-    driver,
-    `return document.querySelector(".product-narration")
-       ?.getAttribute("data-narration-phase") === "playing";`,
-    3 * STARTUP_TIMEOUT_MS,
-  );
-  const quickObservation = await driver.execute(
-    `const owner = document.querySelector(".product-narration");
-     return owner === null ? null : {
-       acceptedSampleFrames: Number(
-         owner.getAttribute("data-narration-accepted-sample-frames"),
-       ),
-       acceptedUnits: Number(
-         owner.getAttribute("data-narration-accepted-units"),
-       ),
-       commandToAudibleMs: Number(
-         owner.getAttribute("data-narration-command-to-audible-ms"),
-       ),
-       playableMs: Number(
-         owner.getAttribute("data-narration-playable-ms"),
-       ),
-     };`,
-  );
-  assert(
-    quickObservation?.acceptedUnits > 0 &&
-      quickObservation.acceptedSampleFrames > 0 &&
-      quickObservation.commandToAudibleMs > 0 &&
-      quickObservation.commandToAudibleMs <=
-        Date.now() - quickCommandAtMs + 1_000 &&
-      quickObservation.playableMs > 0,
-    "Native application root did not mount.",
-  );
+  const resourceSampler = startAdaptiveResourceSampler(rootProcessId);
+  let quickObservation;
+  let quickMetrics;
+  let quickResourceWorkingSetBytes;
+  let quickGpu;
+  let preparedObservation;
+  let preparedWorkingSetBytes;
+  let preparedGpu;
+  let cancellationMs;
+  let pauseResumeObservation;
+  let seekRestartMs;
+  let chapterRestartMs;
+  let refillMs;
+  let depletionObservation;
+  let synchronizationObservation;
+  let cleanupObservation;
+  let cleanupWorkingSetBytes;
+  let cleanupGpu;
+  let resourceSamples;
+  let generatedAudioFiles;
+  try {
+    setStage("adaptive exact-host keyboard quick start");
+    const quickCommandAtMs = Date.now();
+    const quickStartButton = await driver.findElement(
+      ".adaptive-preparation > button",
+    );
+    await driver.sendKeys(quickStartButton, WEBDRIVER_SPACE);
+    await driver.execute(
+      `document.querySelector('select[name="theme"]')
+         ?.focus({ preventScroll: true });
+       return true;`,
+    );
+    await waitForCondition(
+      driver,
+      `return document.querySelector(".product-narration")
+         ?.getAttribute("data-narration-phase") === "playing";`,
+      3 * STARTUP_TIMEOUT_MS,
+    );
+    await waitForCondition(
+      driver,
+      `return globalThis
+         .__voxleafAdaptiveSynchronizationInstrumentation
+         ?.transitionCount >= 1;`,
+      STARTUP_TIMEOUT_MS,
+    );
+    quickObservation = await driver.execute(
+      `const owner = document.querySelector(".product-narration");
+       return owner === null ? null : {
+         acceptedSampleFrames: Number(
+           owner.getAttribute("data-narration-accepted-sample-frames"),
+         ),
+         acceptedUnits: Number(
+           owner.getAttribute("data-narration-accepted-units"),
+         ),
+         commandToAudibleMs: Number(
+           owner.getAttribute("data-narration-command-to-audible-ms"),
+         ),
+         playableMs: Number(
+           owner.getAttribute("data-narration-playable-ms"),
+         ),
+         retainedUnits: Number(
+           owner.getAttribute("data-narration-retained-units"),
+         ),
+       };`,
+    );
+    synchronizationObservation =
+      await adaptiveSynchronizationObservation(driver);
+    assert(
+      quickObservation?.acceptedUnits > 0 &&
+        quickObservation.acceptedSampleFrames > 0 &&
+        quickObservation.commandToAudibleMs > 0 &&
+        quickObservation.commandToAudibleMs <=
+          Date.now() - quickCommandAtMs + 1_000 &&
+        quickObservation.playableMs > 0 &&
+        quickObservation.retainedUnits > 0 &&
+        synchronizationObservation?.transitionCount >= 1 &&
+        synchronizationObservation.highlightPresent === true &&
+        synchronizationObservation.rangeValid === true &&
+        synchronizationObservation.focusPreserved === true &&
+        synchronizationObservation.followLatenciesMs.length >= 1,
+      "Native synchronized narration proof failed.",
+    );
 
-  setStage("adaptive exact-host depletion");
-  await waitForCondition(
-    driver,
-    `return document.querySelector(".product-narration")
-       ?.getAttribute("data-narration-phase") === "buffering";`,
-    3 * STARTUP_TIMEOUT_MS,
-  );
-  const depletedAtMs = Date.now();
-  await delay(5_000);
-  const quickResourceWorkingSetBytes =
-    await processWorkingSetBytes(rootProcessId);
-  const quickGpu = await nvidiaSnapshot();
-  const quickMetrics = await driver.execute(
-    `const owner = document.querySelector(".product-narration");
-     return owner === null ? null : {
-       bufferingMs: Number(
-         owner.getAttribute("data-narration-buffering-ms"),
-       ),
-       intentionalWaitMs: Number(
-         owner.getAttribute("data-narration-intentional-wait-ms"),
-       ),
-       playbackMs: Number(
-         owner.getAttribute("data-narration-playback-ms"),
-       ),
-       underruns: Number(
-         owner.getAttribute("data-narration-underruns"),
-       ),
-     };`,
-  );
-  assert(
-    quickMetrics?.bufferingMs > 0 &&
-      quickMetrics.intentionalWaitMs === 0 &&
-      quickMetrics.playbackMs > 0 &&
-      quickMetrics.underruns > 0,
-    "Native application root did not mount.",
-  );
+    setStage("adaptive exact-host keyboard pause and resume");
+    const pauseButton = await driver.findElement(
+      ".adaptive-preparation-actions button:nth-child(1)",
+    );
+    await driver.sendKeys(pauseButton, WEBDRIVER_SPACE);
+    await waitForCondition(
+      driver,
+      `const owner = document.querySelector(".product-narration");
+       return owner?.getAttribute("data-narration-phase") === "paused" &&
+         owner.getAttribute("data-narration-play-intent") === "paused";`,
+    );
+    const pausedAtStart = await adaptiveSynchronizationObservation(driver);
+    await delay(750);
+    const pausedObservation = await adaptiveSynchronizationObservation(driver);
+    assert(
+      pausedObservation?.highlightPresent === true &&
+        pausedObservation.currentKey === pausedAtStart?.currentKey &&
+        pausedObservation.transitionCount === pausedAtStart?.transitionCount,
+      "Native synchronized narration proof failed.",
+    );
+    const resumeButton = await driver.findElement(
+      ".adaptive-preparation-actions button:nth-child(2)",
+    );
+    await driver.sendKeys(resumeButton, WEBDRIVER_SPACE);
+    await waitForCondition(
+      driver,
+      `const owner = document.querySelector(".product-narration");
+       return owner?.getAttribute("data-narration-phase") === "playing" &&
+         owner.getAttribute("data-narration-play-intent") === "playing";`,
+    );
+    const resumedObservation = await adaptiveSynchronizationObservation(driver);
+    pauseResumeObservation = Object.freeze({
+      highlightRetained:
+        resumedObservation?.currentKey === pausedObservation.currentKey &&
+        resumedObservation.highlightPresent === true,
+      keyboardOperable: true,
+    });
+    assert(
+      pauseResumeObservation.highlightRetained,
+      "Native synchronized narration proof failed.",
+    );
 
-  setStage("adaptive exact-host active cancellation");
-  await waitForCondition(
-    driver,
-    `return document.querySelector(".product-narration")
-       ?.getAttribute("data-narration-service-state") === "generating";`,
-    STARTUP_TIMEOUT_MS,
-  );
-  const cancellationAtMs = Date.now();
-  await driver.execute(
-    `Array.from(document.querySelectorAll("button")).find(
-       (button) => button.textContent === "Stop",
-     )?.click();
-     return true;`,
-  );
-  await waitForCondition(
-    driver,
-    `return document.querySelector(".product-narration")
-       ?.getAttribute("data-narration-phase") === "idle";`,
-    STARTUP_TIMEOUT_MS,
-  );
-  const cancellationMs = Date.now() - cancellationAtMs;
+    setStage("adaptive exact-host next-segment seek");
+    await waitForCondition(
+      driver,
+      `return Array.from(
+         document.querySelectorAll(
+           ".product-narration-navigation button",
+         ),
+       ).some(
+         (button) =>
+           button.textContent === "Next narration passage" &&
+           !button.disabled,
+       );`,
+      3 * STARTUP_TIMEOUT_MS,
+    );
+    const seekMarker = await markCurrentAdaptiveHighlightStale(driver);
+    const seekStartedAtMs = Date.now();
+    const nextPassageButton = await driver.findElement(
+      ".product-narration-navigation button:nth-child(2)",
+    );
+    await driver.sendKeys(nextPassageButton, WEBDRIVER_SPACE);
+    await waitForCondition(
+      driver,
+      `const state =
+         globalThis.__voxleafAdaptiveSynchronizationInstrumentation;
+       return state?.clearCount > ${String(seekMarker.clearCount)};`,
+      STARTUP_TIMEOUT_MS,
+    );
+    await waitForCondition(
+      driver,
+      `const owner = document.querySelector(".product-narration");
+       const state =
+         globalThis.__voxleafAdaptiveSynchronizationInstrumentation;
+       return owner?.getAttribute("data-narration-phase") === "playing" &&
+         state?.transitionCount > ${String(seekMarker.transitionCount)} &&
+         typeof state.currentKey === "string" &&
+         state.currentKey !== ${JSON.stringify(seekMarker.currentKey)};`,
+      4 * STARTUP_TIMEOUT_MS,
+    );
+    seekRestartMs = Date.now() - seekStartedAtMs;
+    const afterSeek = await adaptiveSynchronizationObservation(driver);
+    assert(
+      afterSeek?.currentDocumentId === seekMarker.currentDocumentId &&
+        afterSeek.stalePlaybackObserved === false &&
+        afterSeek.rangeValid === true,
+      "Native synchronized narration proof failed.",
+    );
 
-  setStage("adaptive exact-host one-minute prepared playback");
-  await driver.execute(
-    `document.querySelector(
-       'input[name="adaptive-preparation-mode"][value="prepared"]',
-     )?.click();
-     return true;`,
-  );
-  await waitForCondition(
-    driver,
-    `return Array.from(document.querySelectorAll("button")).some(
-       (button) =>
-         button.textContent === "Prepare 1 minute of audio",
-     );`,
-  );
-  await driver.execute(
-    `const target = document.querySelector(
-       ".adaptive-preparation-target select",
-     );
-     if (target instanceof HTMLSelectElement) {
-       target.value = "60000";
-       target.dispatchEvent(new Event("change", { bubbles: true }));
-     }
-     return true;`,
-  );
-  await driver.execute(
-    `Array.from(document.querySelectorAll("button")).find(
-       (button) =>
-         button.textContent === "Prepare 1 minute of audio",
-     )?.click();
-     return true;`,
-  );
-  await waitForCondition(
-    driver,
-    `return document.querySelector(".product-narration")
-       ?.getAttribute("data-narration-phase") === "playing";`,
-    5 * STARTUP_TIMEOUT_MS,
-  );
-  const preparedObservation = await driver.execute(
-    `const owner = document.querySelector(".product-narration");
-     return owner === null ? null : {
-       commandToAudibleMs: Number(
-         owner.getAttribute("data-narration-command-to-audible-ms"),
-       ),
-       playableMs: Number(
-         owner.getAttribute("data-narration-playable-ms"),
-       ),
-       targetMs: Number(
-         owner.getAttribute("data-narration-target-ms"),
-       ),
-     };`,
-  );
-  assert(
-    preparedObservation?.targetMs === 60_000 &&
-      preparedObservation.playableMs >= 60_000 &&
-      preparedObservation.commandToAudibleMs > 0,
-    "Native application root did not mount.",
-  );
-  const preparedWorkingSetBytes = await processWorkingSetBytes(rootProcessId);
-  const preparedGpu = await nvidiaSnapshot();
-  await driver.execute(
-    `Array.from(document.querySelectorAll("button")).find(
-       (button) => button.textContent === "Stop",
-     )?.click();
-     return true;`,
-  );
-  await waitForCondition(
-    driver,
-    `return document.querySelector(".product-narration")
-       ?.getAttribute("data-narration-phase") === "idle";`,
-    STARTUP_TIMEOUT_MS,
-  );
+    setStage("adaptive exact-host chapter transition");
+    const chapterMarker = await markCurrentAdaptiveHighlightStale(driver);
+    const chapterStartedAtMs = Date.now();
+    const nextChapterButton = await driver.findElement(
+      ".reader-chapter-controls button:last-child",
+    );
+    await driver.sendKeys(nextChapterButton, WEBDRIVER_SPACE);
+    await waitForCondition(
+      driver,
+      `const state =
+         globalThis.__voxleafAdaptiveSynchronizationInstrumentation;
+       return state?.clearCount > ${String(chapterMarker.clearCount)};`,
+      STARTUP_TIMEOUT_MS,
+    );
+    await waitForCondition(
+      driver,
+      `const owner = document.querySelector(".product-narration");
+       return owner?.getAttribute("data-narration-navigation-settling") ===
+           "true" ||
+         owner?.getAttribute("data-narration-phase") !== "playing";`,
+      STARTUP_TIMEOUT_MS,
+    );
+    await waitForCondition(
+      driver,
+      `const owner = document.querySelector(".product-narration");
+       const state =
+         globalThis.__voxleafAdaptiveSynchronizationInstrumentation;
+       return owner?.getAttribute("data-narration-phase") === "playing" &&
+         owner.getAttribute("data-narration-navigation-settling") === "false" &&
+         state?.transitionCount > ${String(chapterMarker.transitionCount)} &&
+         Number.isSafeInteger(state.currentDocumentId) &&
+         state.currentDocumentId !== ${String(
+           chapterMarker.currentDocumentId,
+         )};`,
+      4 * STARTUP_TIMEOUT_MS,
+    );
+    chapterRestartMs = Date.now() - chapterStartedAtMs;
+    const afterChapter = await adaptiveSynchronizationObservation(driver);
+    assert(
+      afterChapter?.stalePlaybackObserved === false &&
+        afterChapter.rangeValid === true,
+      "Native synchronized narration proof failed.",
+    );
 
-  setStage("adaptive exact-host privacy and network assertions");
-  const bodyIsContentSafe = await driver.execute(
-    `return !document.body.textContent?.includes(
-       "VOXLEAF_TTS_DEV_MODEL_ROOT",
-     ) && !document.body.textContent?.includes("\\\\Users\\\\");`,
-  );
-  assert(
-    bodyIsContentSafe === true,
-    "Native application exposed the synthetic fixture filename.",
-  );
-  const externalLoadedResourceCount = await driver.execute(
-    `return performance.getEntriesByType("resource").filter((entry) => {
-       try {
-         const url = new URL(entry.name);
-         return !(
-           url.protocol === "tauri:" ||
-           url.protocol === "ipc:" ||
-           url.protocol === "data:" ||
-           url.protocol === "blob:" ||
-           url.hostname === "tauri.localhost" ||
-           url.hostname === "ipc.localhost"
-         );
-       } catch {
-         return true;
-       }
-     }).length;`,
-  );
-  assert(
-    externalLoadedResourceCount === 0,
-    "Native application attempted an external request.",
-  );
-  const browserLogs = await driver.getLogs("browser");
-  const performanceLogs = inspectPerformanceLogs(
-    await driver.getLogs("performance"),
-  );
-  assert(
-    browserLogs.every((entry) => entry?.level !== "SEVERE") &&
-      performanceLogs.runtimeErrorCount === 0,
-    "Native application emitted a page or console error.",
-  );
-  assert(
-    performanceLogs.externalRequestCount === 0,
-    "Native application attempted an external request.",
-  );
+    setStage("adaptive exact-host depletion");
+    depletionObservation =
+      await observeAdaptiveDepletionOrStablePlayback(driver);
+    quickResourceWorkingSetBytes = await processWorkingSetBytes(rootProcessId);
+    quickGpu = await nvidiaSnapshot();
+    if (depletionObservation.kind === "depleted") {
+      const depletedAtMs = Date.now();
+      assert(
+        depletionObservation.observation.intentionalWaitMs === 0 &&
+          depletionObservation.observation.playbackMs > 0 &&
+          depletionObservation.observation.underruns > 0,
+        "Native synchronized narration proof failed.",
+      );
+      setStage("adaptive exact-host refill");
+      await waitForCondition(
+        driver,
+        `return document.querySelector(".product-narration")
+           ?.getAttribute("data-narration-phase") === "playing";`,
+        5 * STARTUP_TIMEOUT_MS,
+      );
+      refillMs = Date.now() - depletedAtMs;
+      await delay(500);
+      quickMetrics = await driver.execute(
+        `const owner = document.querySelector(".product-narration");
+         return owner === null ? null : {
+           bufferingMs: Number(
+             owner.getAttribute("data-narration-buffering-ms"),
+           ),
+           intentionalWaitMs: Number(
+             owner.getAttribute("data-narration-intentional-wait-ms"),
+           ),
+           playbackMs: Number(
+             owner.getAttribute("data-narration-playback-ms"),
+           ),
+           underruns: Number(
+             owner.getAttribute("data-narration-underruns"),
+           ),
+         };`,
+      );
+      assert(
+        quickMetrics?.bufferingMs > 0 &&
+          quickMetrics.intentionalWaitMs === 0 &&
+          quickMetrics.playbackMs > 0 &&
+          quickMetrics.underruns > 0,
+        "Native synchronized narration proof failed.",
+      );
+    } else {
+      quickMetrics = depletionObservation.observation;
+      assert(
+        quickMetrics.bufferingMs === 0 &&
+          quickMetrics.intentionalWaitMs === 0 &&
+          quickMetrics.playbackMs > 0 &&
+          (depletionObservation.kind === "range-complete" ||
+            quickMetrics.playbackMs >= 60_000) &&
+          quickMetrics.underruns === 0,
+        "Native synchronized narration proof failed.",
+      );
+    }
 
-  const peakGpu = [baselineGpu, quickGpu, preparedGpu].reduce(
-    (peak, observation) => ({
+    setStage("adaptive exact-host active cancellation");
+    await waitForCondition(
+      driver,
+      `return document.querySelector(".product-narration")
+         ?.getAttribute("data-narration-service-state") === "generating";`,
+      STARTUP_TIMEOUT_MS,
+    );
+    const cancellationAtMs = Date.now();
+    const stopButton = await driver.findElement(
+      ".adaptive-preparation-actions button:nth-child(3)",
+    );
+    await driver.sendKeys(stopButton, WEBDRIVER_SPACE);
+    await waitForCondition(
+      driver,
+      `const owner = document.querySelector(".product-narration");
+       return owner?.getAttribute("data-narration-phase") === "idle" &&
+         owner.getAttribute("data-narration-retained-units") === "0" &&
+         owner.getAttribute("data-narration-discarded-units") === "0";`,
+      STARTUP_TIMEOUT_MS,
+    );
+    cancellationMs = Date.now() - cancellationAtMs;
+    await waitForCondition(
+      driver,
+      `return CSS.highlights?.has(
+         "voxleaf-narration-active",
+       ) !== true;`,
+    );
+
+    setStage("adaptive exact-host one-minute prepared playback");
+    await driver.execute(
+      `document.querySelector(
+         'input[name="adaptive-preparation-mode"][value="prepared"]',
+       )?.click();
+       return true;`,
+    );
+    await waitForCondition(
+      driver,
+      `return Array.from(document.querySelectorAll("button")).some(
+         (button) =>
+           button.textContent === "Prepare 1 minute of audio",
+       );`,
+    );
+    const preparedButton = await driver.findElement(
+      ".adaptive-preparation > button",
+    );
+    await driver.sendKeys(preparedButton, WEBDRIVER_SPACE);
+    await waitForCondition(
+      driver,
+      `return document.querySelector(".product-narration")
+         ?.getAttribute("data-narration-phase") === "playing";`,
+      5 * STARTUP_TIMEOUT_MS,
+    );
+    preparedObservation = await driver.execute(
+      `const owner = document.querySelector(".product-narration");
+       return owner === null ? null : {
+         commandToAudibleMs: Number(
+           owner.getAttribute("data-narration-command-to-audible-ms"),
+         ),
+         playableMs: Number(
+           owner.getAttribute("data-narration-playable-ms"),
+         ),
+         retainedUnits: Number(
+           owner.getAttribute("data-narration-retained-units"),
+         ),
+         targetMs: Number(
+           owner.getAttribute("data-narration-target-ms"),
+         ),
+       };`,
+    );
+    assert(
+      preparedObservation?.targetMs === 60_000 &&
+        preparedObservation.playableMs >= 60_000 &&
+        preparedObservation.retainedUnits > 0 &&
+        preparedObservation.commandToAudibleMs > 0,
+      "Native application root did not mount.",
+    );
+    preparedWorkingSetBytes = await processWorkingSetBytes(rootProcessId);
+    preparedGpu = await nvidiaSnapshot();
+    const preparedStopButton = await driver.findElement(
+      ".adaptive-preparation-actions button:nth-child(3)",
+    );
+    await driver.sendKeys(preparedStopButton, WEBDRIVER_SPACE);
+    await waitForCondition(
+      driver,
+      `const owner = document.querySelector(".product-narration");
+       return owner?.getAttribute("data-narration-phase") === "idle" &&
+         owner.getAttribute("data-narration-retained-units") === "0" &&
+         owner.getAttribute("data-narration-discarded-units") === "0";`,
+      STARTUP_TIMEOUT_MS,
+    );
+    await waitForCondition(
+      driver,
+      `return CSS.highlights?.has(
+         "voxleaf-narration-active",
+       ) !== true;`,
+    );
+
+    setStage("adaptive exact-host cleanup observation");
+    await delay(1_000);
+    cleanupWorkingSetBytes = await processWorkingSetBytes(rootProcessId);
+    cleanupGpu = await nvidiaSnapshot();
+    cleanupObservation = await adaptiveSynchronizationObservation(driver);
+    assert(
+      cleanupObservation?.highlightPresent === false &&
+        cleanupObservation.stalePlaybackObserved === false &&
+        cleanupObservation.rangeValid === true &&
+        cleanupObservation.focusPreserved === true,
+      "Native synchronized narration cleanup failed.",
+    );
+
+    setStage("adaptive exact-host privacy and network assertions");
+    const bodyIsContentSafe = await driver.execute(
+      `return !document.body.textContent?.includes(
+         "VOXLEAF_TTS_DEV_MODEL_ROOT",
+       ) && !document.body.textContent?.includes("\\\\Users\\\\");`,
+    );
+    assert(
+      bodyIsContentSafe === true,
+      "Native application exposed the synthetic fixture filename.",
+    );
+    generatedAudioFiles = await generatedAudioFileCount(temporaryDirectory);
+    assert(
+      generatedAudioFiles === 0,
+      "Native generated audio persistence was detected.",
+    );
+    const externalLoadedResourceCount = await driver.execute(
+      `return performance.getEntriesByType("resource").filter((entry) => {
+         try {
+           const url = new URL(entry.name);
+           return !(
+             url.protocol === "tauri:" ||
+             url.protocol === "ipc:" ||
+             url.protocol === "data:" ||
+             url.protocol === "blob:" ||
+             url.hostname === "tauri.localhost" ||
+             url.hostname === "ipc.localhost"
+           );
+         } catch {
+           return true;
+         }
+       }).length;`,
+    );
+    assert(
+      externalLoadedResourceCount === 0,
+      "Native application attempted an external request.",
+    );
+    const browserLogs = await driver.getLogs("browser");
+    const performanceLogs = inspectPerformanceLogs(
+      await driver.getLogs("performance"),
+    );
+    assert(
+      browserLogs.every((entry) => entry?.level !== "SEVERE") &&
+        performanceLogs.runtimeErrorCount === 0,
+      "Native application emitted a page or console error.",
+    );
+    assert(
+      performanceLogs.externalRequestCount === 0,
+      "Native application attempted an external request.",
+    );
+    synchronizationObservation =
+      await adaptiveSynchronizationObservation(driver);
+  } finally {
+    resourceSamples = await resourceSampler.stop();
+    await stopAdaptiveSynchronizationInstrumentation(driver);
+    await driver.executeCdp("Emulation.setEmulatedMedia", {
+      media: "",
+      features: [],
+    });
+    await driver.setWindowRect(960, 720);
+  }
+
+  const peakGpu = resourceSamples
+    .map((sample) => sample.gpu)
+    .concat([baselineGpu, quickGpu, preparedGpu, cleanupGpu])
+    .reduce((peak, observation) => ({
       dedicatedMemoryMiB: Math.max(
         peak.dedicatedMemoryMiB,
         observation.dedicatedMemoryMiB,
@@ -621,20 +1330,39 @@ async function runAdaptiveTtsExactHostMatrix(
         peak.utilizationPercent,
         observation.utilizationPercent,
       ),
-    }),
+    }));
+  const peakWorkingSetBytes = Math.max(
+    ...resourceSamples.map((sample) => sample.workingSetBytes),
+    baselineWorkingSetBytes,
+    quickResourceWorkingSetBytes,
+    preparedWorkingSetBytes,
+    cleanupWorkingSetBytes,
+  );
+  assert(
+    cleanupGpu.dedicatedMemoryMiB <= baselineGpu.dedicatedMemoryMiB + 512 &&
+      cleanupWorkingSetBytes <= baselineWorkingSetBytes + 512 * MEBIBYTE,
+    "Native synchronized narration cleanup failed.",
   );
   console.log(
     `Adaptive exact-host TTS matrix passed: ${JSON.stringify({
       quick: {
         commandToAudibleMs: quickObservation.commandToAudibleMs,
         playableLeadAtStartMs: quickObservation.playableMs,
-        depletionObserved: true,
-        bufferingObservationWallMs: Date.now() - depletedAtMs,
+        depletionObserved: depletionObservation.kind === "depleted",
+        rangeCompleteObserved:
+          depletionObservation.kind === "range-complete",
+        bufferingObservationWallMs: refillMs ?? 0,
         bufferingSecondsPerPlaybackMinute: rounded(
           quickMetrics.bufferingMs / 1_000 / (quickMetrics.playbackMs / 60_000),
         ),
         underruns: quickMetrics.underruns,
         intentionalWaitMs: quickMetrics.intentionalWaitMs,
+        refillObserved: depletionObservation.kind === "depleted",
+        refillMs: refillMs ?? null,
+        stablePlaybackObservationMs:
+          depletionObservation.kind === "stable"
+            ? depletionObservation.observation.playbackMs
+            : null,
       },
       prepared: preparedObservation,
       cancellationMs,
@@ -642,8 +1370,34 @@ async function runAdaptiveTtsExactHostMatrix(
         baseline: baselineWorkingSetBytes,
         quick: quickResourceWorkingSetBytes,
         prepared: preparedWorkingSetBytes,
+        peak: peakWorkingSetBytes,
+        cleanup: cleanupWorkingSetBytes,
       },
-      gpu: { baseline: baselineGpu, peak: peakGpu },
+      gpu: { baseline: baselineGpu, peak: peakGpu, cleanup: cleanupGpu },
+      synchronization: {
+        segmentTransitions: synchronizationObservation.transitionCount,
+        followLatencyP95Ms: rounded(
+          percentile95(synchronizationObservation.followLatenciesMs),
+        ),
+        pauseResume: pauseResumeObservation,
+        seekRestartMs,
+        chapterRestartMs,
+        stalePlaybackObserved: synchronizationObservation.stalePlaybackObserved,
+        rangeValid: synchronizationObservation.rangeValid,
+        focusPreserved: synchronizationObservation.focusPreserved,
+        reducedMotion: accessibilityObservation.reducedMotion,
+        forcedColors: accessibilityObservation.forcedColors,
+        readableHighlight: accessibilityObservation.readableHighlight,
+        highlightClearedAtCleanup:
+          cleanupObservation.highlightPresent === false,
+        retainedUnitsPeak: synchronizationObservation.maxRetainedUnits,
+        discardedUnitsPeak: synchronizationObservation.maxDiscardedUnits,
+      },
+      cleanup: {
+        retainedUnits: 0,
+        discardedUnits: 0,
+        generatedAudioFiles,
+      },
       preparedOptionsAcceptedMs: [60_000, 120_000, 300_000, 600_000],
       externalRequests: 0,
     })}`,
@@ -2527,12 +3281,31 @@ async function run() {
   } else if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
     const syntheticParagraph =
       "Esta narraci&#243;n sint&#233;tica describe una biblioteca tranquila y una lectura local. Cada frase valida transiciones naturales, memoria limitada y orden.";
-    const adaptiveFixture = await buildMinimalEpubFixture({
-      chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="es"><head><title>Demostraci&#243;n local</title></head><body><h1 id="chapter-one">Demostraci&#243;n local</h1>${Array.from(
-        { length: 12 },
+    const chapterParagraphs = (chapter) =>
+      Array.from(
+        { length: 96 },
         (_, index) =>
-          `<p>${syntheticParagraph} Secci&#243;n ${String(index + 1)}.</p>`,
-      ).join("")}</body></html>`,
+          `<p>${syntheticParagraph} Cap&#237;tulo ${String(
+            chapter,
+          )}, secci&#243;n ${String(index + 1)}.</p>`,
+      ).join("");
+    const adaptiveFixture = await buildMinimalEpubFixture({
+      packageDocument:
+        '<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:adaptive-synchronization</dc:identifier><dc:title>Synthetic synchronized narration</dc:title><dc:language>es</dc:language><meta property="dcterms:modified">2026-07-27T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter-one" href="text/chapter.xhtml" media-type="application/xhtml+xml"/><item id="chapter-two" href="text/chapter-two.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="chapter-one"/><itemref idref="chapter-two"/></spine></package>',
+      navigationDocument:
+        '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><h2>Contents</h2><ol><li><a href="text/chapter.xhtml#chapter-one">First synthetic section</a></li><li><a href="text/chapter-two.xhtml#chapter-two">Second synthetic section</a></li></ol></nav></body></html>',
+      chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="es"><head><title>Primera secci&#243;n</title></head><body><h1 id="chapter-one">Primera secci&#243;n</h1>${chapterParagraphs(
+        1,
+      )}</body></html>`,
+      additionalEntries: [
+        Object.freeze({
+          name: "EPUB/text/chapter-two.xhtml",
+          content: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="es"><head><title>Segunda secci&#243;n</title></head><body><h1 id="chapter-two">Segunda secci&#243;n</h1>${chapterParagraphs(
+            2,
+          )}</body></html>`,
+          compression: "deflate",
+        }),
+      ],
     });
     await writeFile(fixturePath, adaptiveFixture, { flag: "wx" });
   } else {
