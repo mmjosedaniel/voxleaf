@@ -22,7 +22,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { useEffect } from "react";
+import { StrictMode, useEffect } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App, type ReadyPublicationContentProps } from "./App";
@@ -343,6 +343,37 @@ describe("desktop reader lifecycle surface", () => {
     expect(screen.getByRole("button", { name: "Close EPUB" })).toBeEnabled();
     expect(document.body).not.toHaveTextContent("private-title.epub");
     expect(screen.getByLabelText("Open a local EPUB")).toHaveValue("");
+  });
+
+  it("does not cancel restoration during the React StrictMode mount probe", async () => {
+    const publication = createTestPublication("Strict mode reader book");
+    const flow = createTestFlow(() =>
+      Promise.resolve({ status: "ready", publication }),
+    );
+    const repository = createTestReaderPositionRepository();
+
+    render(
+      <StrictMode>
+        <App
+          openFlow={flow}
+          readerPositionRepository={repository}
+          ReadyPublicationContent={() => (
+            <article aria-label="Strict mode reader">Reader</article>
+          )}
+        />
+      </StrictMode>,
+    );
+
+    selectEpub("strict-mode-private.epub");
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "The EPUB opened successfully.",
+      ),
+    );
+    expect(
+      screen.getByRole("article", { name: "Strict mode reader" }),
+    ).toBeInTheDocument();
   });
 
   it("loads exact saved position and display preferences before settling the reader", async () => {
@@ -889,11 +920,14 @@ describe("desktop reader lifecycle surface", () => {
     });
   });
 
-  it("cleans publication ownership when the application unmounts", () => {
+  it("cleans publication ownership when the application unmounts", async () => {
     const flow = createTestFlow(() => Promise.resolve({ status: "cancelled" }));
     const { unmount } = render(<App openFlow={flow} />);
 
     unmount();
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     expect(flow.close).toHaveBeenCalledTimes(1);
   });
