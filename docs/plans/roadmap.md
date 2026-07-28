@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 9 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Its final policy selects quick mode by default, one minute as the initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. Completed M009 freezes and proves segment-level authority, publishes bounded source-range audible progress, connects non-mutating highlight/follow behavior to the reader, implements identity-first synchronized user navigation, persists non-skipping heard checkpoints, validates the packaged synchronized loop on the exact host, and passes repository/privacy/CI closeout. The final run observed six transitions, no stale playback, one natural underrun/refill, 190 ms cancellation, bounded cleanup, zero audio persistence, zero external requests, and 378.46 buffering seconds per playback minute. Because exact-host buffering exceeds the MVP target, this remains a constrained demo rather than a standard, continuous-playback, production, distribution, or general-hardware profile. M010 hardware profiles, fallback, and operational resilience is next.
+VoxLeaf is pre-alpha. Milestones 1 through 9 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Its final policy selects quick mode by default, one minute as the initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. Completed M009 freezes and proves segment-level authority, publishes bounded source-range audible progress, connects non-mutating highlight/follow behavior to the reader, implements identity-first synchronized user navigation, persists non-skipping heard checkpoints, validates the packaged synchronized loop on the exact host, and passes repository/privacy/CI closeout. The final run observed six transitions, no stale playback, one natural underrun/refill, 190 ms cancellation, bounded cleanup, zero audio persistence, zero external requests, and 378.46 buffering seconds per playback minute. A later real-publication manual run did not show the documented audible highlight and exposed an opened-book layout in which application controls can push the reader below the viewport. M009.1 is therefore the next approved bounded follow-up: it reconciles highlight visibility, gives the reader one dedicated scroll owner, adds a locator-backed paragraph leaf, makes narration compact/collapsible, and replaces the ambiguous preparation bar with truthful loaded-duration text. It does not change TTS, segmentation, protocol, or buffer policy. M010 hardware profiles, fallback, and operational resilience follows M009.1.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -33,6 +33,7 @@ Every milestone must preserve the product's defining constraints:
     -> 7. Local TTS service and process protocol
     -> 8. Bounded audio playback and scheduling
     -> 9. Synchronized reading and narration
+    -> 9.1. Reader experience stabilization
     -> 10. Hardware profiles, fallback, and resilience
     -> 11. Packaging and MVP validation
 ```
@@ -571,9 +572,83 @@ resolve the standard-profile blocker.
 - Segment-level timing may be sufficient for paragraph highlighting but not future word-level synchronization.
 - Automatic following must not disorient keyboard or assistive-technology users.
 
-## Milestone 10: Add hardware profiles, fallback, and operational resilience
+## Milestone 9.1: Stabilize the synchronized reader experience
 
 **Status:** Approved planned. Follow
+[`M009-001-reader-experience-stabilization.md`](active/M009-001-reader-experience-stabilization.md).
+Implementation has not started. Completed M009 remains the synchronization
+authority and evidence baseline; this follow-up exists because a later manual
+real-publication run did not visibly show the active segment highlight and the
+current outer-page layout can hide the reader below application controls.
+
+### Goal
+
+Make the implemented constrained narration demo visibly coherent and
+reader-first before M010 adds compatibility and recovery state.
+
+### Expected outcome
+
+- A repository-authored failing/perceivability proof reconciles the observed
+  missing highlight with the previously passing M009 synthetic evidence.
+- The active audible segment remains honestly highlighted at whole-segment
+  granularity and follows without moving focus or selection.
+- One dedicated reader viewport owns EPUB scrolling while compact book and
+  narration controls remain available.
+- A bounded application-owned leaf starts narration from a canonical paragraph
+  locator and reinforces preview, preparing, audible, and saved-checkpoint
+  states without making ordinary paragraph text interactive.
+- The detailed narration panel can collapse without hiding buffering, failure,
+  or required actions.
+- Preparation shows exact loaded playable duration and target as text without
+  a growing bar that resembles book or playback progress.
+- Existing M005, M007, M008, and M009 authorities, bounds, privacy, and
+  cancellation behavior remain unchanged.
+
+### Dependencies
+
+Completed M004 supplies the visual reader, stable locator, reflow, and one
+continuous semantic layout. Completed M008 supplies content-free preparation
+state and controls. Completed M009 supplies exact segment transitions, range
+mapping, identity-first navigation, following, and non-skipping persistence.
+M009.1 must complete before M010 adds compatibility and recovery UI to the
+same application shell.
+
+### Major risks and unknowns
+
+- The private-EPUB observation may depend on structure or styling not covered
+  by current synthetic fixtures; no private content may enter committed tests.
+- Changing the scroll owner can regress locator sampling, restoration,
+  automatic following, or keyboard behavior.
+- Per-paragraph controls can create unbounded DOM/tab-order state unless the
+  implementation uses one bounded contextual or roving leaf.
+- A paragraph marker can imply timing more precise than the exact segment
+  authority; the text-range highlight remains authoritative.
+
+### Sequencing decision for the discussed refinements
+
+- **Before M010:** implement only M009.1's visible-highlight reconciliation,
+  dedicated reader viewport, bounded paragraph leaf, compact/collapsible
+  narration surface, and text-only loaded-duration status. These are blocking
+  reader-experience defects or shell decisions that M010 recovery UI would
+  otherwise have to rework.
+- **During M010:** bind every admitted profile to its complete generation
+  configuration or canonical hash. Do not expose a free-form temperature
+  control. This keeps a possible future natural/stable choice measurable,
+  reproducible, and identity-safe.
+- **After M010 and before M011, if separately admitted:** evaluate a closed
+  natural-versus-stable narration profile, optional 0.5- to 1-second eligible
+  boundary pauses, a 20- or 30-second quick-start target, clearer reopen/resume
+  choices, and approximate book/chapter progress. None of these changes is
+  authorized by M009.1 because each changes generation identity, buffer policy,
+  timing, persistence UX, or progress semantics.
+- **After the MVP:** consider a full native application menu bar, expanded
+  table-of-contents shell, voice-cloning controls, advanced pause rules, and
+  automatic retry. They are useful refinements but do not block the current
+  reader, resilience, or packaging sequence.
+
+## Milestone 10: Add hardware profiles, fallback, and operational resilience
+
+**Status:** Approved planned after M009.1. Follow
 [`M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md).
 Implementation has not started. Capability contracts exist, but production
 hardware detection, measured product profiles, a validated CPU fallback,
@@ -600,10 +675,12 @@ Make the integrated reader usable across documented supported hardware and recov
 ### Dependencies
 
 Milestone 6 defines the evaluation authority and retains the no-standard-profile
-decision. Completed M007-M009 now provide the constrained integrated
+decision. Completed M007-M009 provide the constrained integrated
 lifecycle, identity-first cancellation, bounded playback, synchronized
 navigation, heard-position recovery authority, and observable metrics needed
-to test compatibility and recovery. A CPU fallback still requires a new
+to test compatibility and recovery. M009.1 must first stabilize the reader
+shell, visible segment projection, and locator-backed paragraph action that
+M010 recovery will exercise. A CPU fallback still requires a new
 result-blind frozen candidate cycle and passing measured evidence before
 product admission.
 
@@ -683,11 +760,19 @@ records the completed segment-level audible progress, highlighting,
 focus-safe following, synchronized navigation, heard-position persistence,
 exact-host validation, and repository/CI closeout.
 
+[`active/M009-001-reader-experience-stabilization.md`](active/M009-001-reader-experience-stabilization.md)
+is the approved bounded follow-up for the user-observed highlight discrepancy,
+dedicated reader scroll owner, compact/collapsible narration surface,
+text-only loaded-duration presentation, and locator-backed paragraph leaf. It
+does not reopen M009 timing authority or change M005 segmentation, M007
+protocol, M008 buffer policy, or the TTS profile.
+
 [`active/M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md)
 is the approved implementation authority for privacy-safe host detection,
 evidence-backed profile matching, conditional CPU-fallback admission, and
-identity-safe operational recovery. It does not itself establish hardware
-support or admit a fallback.
+identity-safe operational recovery after M009.1 stabilizes the application
+surface those states will use. It does not itself establish hardware support
+or admit a fallback.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by M009 for the
@@ -696,7 +781,8 @@ authority or turns the failed `v3` profile into a standard production
 selection.
 
 Milestones 1 through 9 are complete, with their evidence retained under
-[`completed/`](completed/).
+[`completed/`](completed/). M009.1 and M010 are approved active plans in that
+order.
 
 ## MVP completion boundary
 

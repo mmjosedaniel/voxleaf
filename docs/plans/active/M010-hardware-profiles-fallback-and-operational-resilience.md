@@ -8,6 +8,10 @@ profile recommendations, explain unavailable configurations, recover from
 classified local-service failures without replaying stale audio, and use a
 CPU-compatible fallback only if a separately frozen evaluation proves one.
 
+M010 starts only after M009.1 stabilizes the reader shell, visible
+synchronization projection, compact narration status, and locator-backed
+paragraph action that compatibility and recovery UI must preserve.
+
 M010 must not turn the current exact-development Qwen/Serena path into a
 standard profile by implication. Hardware detection, profile admission,
 fallback selection, and recovery policy must be frozen before result-bearing
@@ -43,7 +47,8 @@ the milestone.
 
 ## Current state
 
-Roadmap Milestones 1 through 9 are complete.
+Roadmap Milestones 1 through 9 are complete. M009.1 is approved and sequenced
+before this plan; its implementation has not started.
 
 Completed M006 and its two blocker-resolution plans provide the
 candidate-neutral benchmark authority and measured evidence:
@@ -97,8 +102,8 @@ machine, or support matrix.
 - Represent `supported`, `development-only`, `unsupported`, and `unknown`
   separately so uncertainty cannot become support.
 - Register profiles only with immutable engine/model/voice/runtime identity,
-  measured resource requirements, evidence provenance, conservative safety
-  margin, and a support state.
+  complete generation-configuration identity, measured resource requirements,
+  evidence provenance, conservative safety margin, and a support state.
 - Match profiles conservatively and fail closed on missing, conflicting,
   partial, permission-denied, or malformed probe results.
 - Add accessible compatibility, selection, degraded-buffering, failure, and
@@ -144,6 +149,7 @@ machine, or support matrix.
 - `docs/plans/completed/M007-local-tts-service-and-process-protocol.md`
 - `docs/plans/completed/M008-bounded-adaptive-prebuffering.md`
 - `docs/plans/completed/M009-synchronized-reading-and-narration.md`
+- `docs/plans/active/M009-001-reader-experience-stabilization.md`
 - `docs/architecture/tts-service-protocol-v1.md`
 - `docs/architecture/adaptive-buffer-authority-v1.md`
 - `docs/architecture/synchronization-authority-v1.md`
@@ -191,7 +197,8 @@ process command lines, and arbitrary vendor output. Unknown data remains
 
 Each profile entry must bind:
 
-- an immutable profile and engine/model/voice/runtime identity;
+- an immutable profile and engine/model/voice/runtime identity plus the
+  complete bounded generation configuration or its canonical hash;
 - required OS/architecture, provider, precision, RAM, VRAM, and disk/resource
   conditions;
 - measured startup, throughput, cancellation, memory, quality, offline, and
@@ -259,8 +266,9 @@ separate frozen limits and evidence.
   crosses the native boundary; leave `CapabilityReportV1` and protocol v1
   unchanged.
 - Freeze the profile registry shape, support-state meanings, evidence
-  provenance, memory safety margins, deterministic matching order, tie
-  behavior, user-selection constraints, and persisted-preference limits.
+  provenance, complete generation-configuration identity, memory safety
+  margins, deterministic matching order, tie behavior, user-selection
+  constraints, and persisted-preference limits.
 - Freeze a closed failure taxonomy and transition table for unavailable
   provider, model load/warm failure, service crash, protocol failure, resource
   exhaustion, cancellation timeout, playback failure, and repeated recovery
@@ -363,6 +371,8 @@ Not started.
 - Add fake-child scenarios for load/warm failure, crash, hang, cancellation
   timeout, malformed response, resource exhaustion, playback failure, and
   failed restart.
+- Prove recovery and profile changes remain correct from both the compact
+  narration surface and an M009.1 leaf-originated narration replacement.
 
 ### Validation
 
@@ -425,7 +435,7 @@ Not started. This is a hard evidence gate for claiming CPU fallback.
   memory/audio/text/diagnostic state, and non-skipping heard-position resume.
 - Run a sustained session covering play, pause, navigation, underrun/refill,
   resource pressure, service crash, explicit restart, fallback selection,
-  publication replacement, and application exit.
+  leaf-originated replacement, publication replacement, and application exit.
 - Measure startup, RTF, buffering seconds per playback minute, RAM, VRAM,
   cancellation/restart latency, underruns, failures, and cleanup separately
   for each profile. Do not average incompatible profiles into a support claim.
@@ -545,6 +555,11 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-28: Sequenced M009.1 before M010 so compatibility and recovery state
+  is implemented against the stabilized reader shell. Required future profile
+  identity to include complete generation settings, so a later
+  natural-versus-stable narration comparison cannot become an untracked
+  temperature toggle.
 - 2026-07-27: Verified M009 completion from exact-host evidence, complete-diff
   repository/privacy review, and passing pull request #133 Ubuntu/Windows
   checks; archived M009 before planning M010.
@@ -570,13 +585,20 @@ rewrite unrelated reader state.
   not admitted by current evidence.
 - M009's non-skipping heard checkpoint is the recovery resume authority. A
   model/service failure must never advance it.
+- M009.1 owns the reader-visible stabilization work. M010 must preserve its
+  dedicated reader viewport, compact/collapsible status, and leaf-originated
+  identity replacement rather than reintroduce a second UI path.
+- Natural and stable narration modes, if later admitted, must be evidence-backed
+  profiles with complete generation-configuration identity. M010 must not
+  expose a free-form temperature control.
 - Raw host inventories need not enter React state or persistence. Closed
   compatibility and reason codes are sufficient for product UI.
 
 ## Final validation results
 
-Not yet available. M010 is approved for sequential implementation, but all
-seven milestones are not started. The plan is complete only when:
+Not yet available. M010 is approved for sequential implementation after
+M009.1, but all seven milestones are not started. The plan is complete only
+when:
 
 - hardware/profile/recovery authority is frozen before results;
 - privacy-safe detection and deterministic matching pass;
