@@ -568,6 +568,12 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   directly, but three WebDriver attempts fail before application mount with
   `session not created: chrome not reachable`. Packaged proof validation
   therefore remains blocked by the local WebView2 automation handshake.
+- 2026-07-28: Rebooted Windows and retried with the exact
+  WebView2/EdgeDriver `150.0.4078.105` pair; session creation failed at the
+  same boundary. During the automated attempt the packaged application process
+  existed but created no WebView2 child. A direct launch stayed healthy and
+  created six WebView2 processes. The installed `tauri-driver` `2.0.6` is also
+  the current crates.io release.
 
 ## Discoveries and decisions
 
@@ -610,6 +616,12 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   perceivability script. It is not evidence that the highlight assertion
   failed. A matching EdgeDriver and a direct healthy release launch rule out
   stale driver version and application startup as sufficient explanations.
+- A clean reboot did not change the result. The remaining failing boundary is
+  the external `tauri-driver`/WebView2 automation launch: it starts the native
+  executable but does not create the WebView child that EdgeDriver must reach.
+  Replacing the harness with Tauri's newer embedded WebDriver-provider approach
+  would add native plugins and dependencies, so it is not authorized by this
+  frozen milestone merely to bypass a local validation-host failure.
 
 ## Milestone 1 validation results
 
@@ -621,9 +633,10 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   did not exit after the passing summary, and the bounded command ended after
   300 seconds.
 - `pnpm.cmd test:native-startup`: the Tauri release build passed; WebDriver
-  session creation failed before mount. Two direct smoke retries with the
-  matching test-only EdgeDriver failed at the same stage. A content-safe local
-  diagnostic reported `session not created: chrome not reachable`.
+  session creation failed before mount. Direct smoke retries before and after a
+  Windows reboot, using the matching test-only EdgeDriver, failed at the same
+  stage. A content-safe local diagnostic reported
+  `session not created: chrome not reachable`.
 - `pnpm.cmd lint:typescript`: passed.
 - `pnpm.cmd format:check:typescript`: passed.
 - Privacy/bounds review: only repository-authored synthetic EPUBs are used;
