@@ -136,6 +136,7 @@ export function ProductNarrationControls({
           {showStart ? (
             <button
               type="button"
+              data-narration-action="play"
               disabled={snapshot.availability !== "available"}
               onClick={() => coordinator.start()}
             >
@@ -143,22 +144,35 @@ export function ProductNarrationControls({
             </button>
           ) : null}
           {showPause ? (
-            <button type="button" onClick={() => coordinator.pause()}>
+            <button
+              type="button"
+              data-narration-action="pause"
+              onClick={() => coordinator.pause()}
+            >
               Pause
             </button>
           ) : null}
           {showResume ? (
-            <button type="button" onClick={() => coordinator.resume()}>
+            <button
+              type="button"
+              data-narration-action="resume"
+              onClick={() => coordinator.resume()}
+            >
               Resume
             </button>
           ) : null}
           {showStop ? (
-            <button type="button" onClick={() => void coordinator.stop()}>
+            <button
+              type="button"
+              data-narration-action="stop"
+              onClick={() => void coordinator.stop()}
+            >
               Stop
             </button>
           ) : null}
           <button
             type="button"
+            data-narration-action="details-toggle"
             aria-expanded={detailOpen}
             aria-controls={detailId}
             onClick={() => setDetailOpen((open) => !open)}
@@ -193,6 +207,7 @@ export function ProductNarrationControls({
           >
             <button
               type="button"
+              data-narration-action="previous-passage"
               disabled={
                 !snapshot.navigation.canGoPrevious ||
                 snapshot.navigation.settling
@@ -203,6 +218,7 @@ export function ProductNarrationControls({
             </button>
             <button
               type="button"
+              data-narration-action="next-passage"
               disabled={
                 !snapshot.navigation.canGoNext || snapshot.navigation.settling
               }
@@ -212,11 +228,12 @@ export function ProductNarrationControls({
             </button>
             <button
               type="button"
+              data-narration-action="visible-passage"
               disabled={
                 snapshot.availability !== "available" ||
                 snapshot.navigation.settling
               }
-              onClick={() => coordinator.startAtActiveLocator()}
+              onClick={() => coordinator.startAtVisibleLocator()}
             >
               Start narration at visible passage
             </button>

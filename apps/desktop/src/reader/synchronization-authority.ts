@@ -21,12 +21,10 @@ export const SYNCHRONIZATION_AUTHORITY_V1 = Object.freeze({
     visualSampling: "suspend-until-follow-settled" as const,
   }),
   manualNavigation: Object.freeze({
-    passiveScroll:
-      "invalidate-on-first-change-restart-after-settlement" as const,
-    settlementMs: 500,
-    addressablePassage: "active-visual-locator" as const,
-    activePlayIntent: "restart-after-settlement" as const,
-    pausedIntent: "remain-paused-at-target" as const,
+    passiveScroll: "inspect-without-replacing-narration" as const,
+    addressablePassage: "explicit-visible-locator-or-leaf" as const,
+    activePlayIntent: "preserve-until-explicit-target" as const,
+    pausedIntent: "preserve-until-explicit-target" as const,
   }),
   observation: Object.freeze({
     maximumProgressIntervalMs: 250,
@@ -71,7 +69,7 @@ export type SynchronizationAuthorityEvent =
   | "resume"
   | "buffer-exhausted"
   | "buffer-refilled"
-  | "user-visual-navigation"
+  | "explicit-visual-navigation"
   | "previous-segment"
   | "next-segment"
   | "chapter-navigation"
@@ -236,7 +234,7 @@ export const SYNCHRONIZATION_TRANSITION_TABLE_V1 = Object.freeze([
     visualSampling: "active",
   }),
   transition({
-    event: "user-visual-navigation",
+    event: "explicit-visual-navigation",
     from: ACTIVE_PHASES,
     nextPhase: "by-play-intent",
     positionAuthority: "target-visual",

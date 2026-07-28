@@ -4,7 +4,7 @@
 
 The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is never a startup target. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. M008's final policy run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute, which exceeds the MVP target.
 
-Completed M009 connects exact audible segment transitions to one non-mutating semantic source-range highlight, focus-safe automatic following, identity-first synchronized user navigation, and bounded non-skipping heard-position persistence, then validates the complete synchronized loop on the exact host. Segment start is saved when audible, completion advances to the canonical range end, and interruption retains the latest heard checkpoint without periodic playback writes. The accepted synchronized run observed six transitions, no stale playback, one natural underrun/refill, 190 ms cancellation, bounded cleanup, zero external requests, and 378.46 buffering seconds per playback minute. A later manual real-publication run produced narration without a visible active-segment highlight and confirmed that the outer application scroll could place the reader below the controls. M009.1 Milestone 2 repairs the proven same-chapter materialization gap and passed clean-host validation. Milestone 3 gives ready publications one dedicated reader scroll viewport, stable compact application/publication/narration chrome, collapsible narration detail, and exact loaded/target/estimate text without a progress bar. Milestone 4 adds one bounded paragraph leaf that starts narration only from a canonical block locator and reinforces preview, preparing, current audible paragraph, and saved checkpoint state without making text interactive. Desktop and Chromium evidence pass for the leaf, and the packaged native regression smoke remains green; Milestone 3's clean-host packaged gate and M009.1 exact-host closeout remain. The path therefore remains a constrained development demo rather than a passing standard profile or uninterrupted-playback promise. General hardware profiles, a validated fallback, operational resilience, and production packaging remain pending.
+Completed M009 connects exact audible segment transitions to one non-mutating semantic source-range highlight, focus-safe automatic following, identity-first synchronized user navigation, and bounded non-skipping heard-position persistence, then validates the complete synchronized loop on the exact host. Segment start is saved when audible, completion advances to the canonical range end, and interruption retains the latest heard checkpoint without periodic playback writes. The accepted synchronized run observed six transitions, no stale playback, one natural underrun/refill, 190 ms cancellation, bounded cleanup, zero external requests, and 378.46 buffering seconds per playback minute. A later manual real-publication run produced narration without a visible active-segment highlight and confirmed that the outer application scroll could place the reader below the controls. M009.1 Milestone 2 repairs the proven same-chapter materialization gap and passed clean-host validation. Milestone 3 gives ready publications one dedicated reader scroll viewport, stable compact application/publication/narration chrome, collapsible narration detail, and exact loaded/target/estimate text without a progress bar. Milestone 4 adds one bounded paragraph leaf that starts narration only from a canonical block locator and reinforces preview, preparing, current audible paragraph, and saved checkpoint state without making text interactive. Milestone 5's corrected private-EPUB interaction and amended exact-host matrix pass. Milestone 6 repository, clean-host, and pull-request closeout remains. The path therefore remains a constrained development demo rather than a passing standard profile or uninterrupted-playback promise. General hardware profiles, a validated fallback, operational resilience, and production packaging remain pending.
 
 ## Current implemented flow
 
@@ -14,16 +14,20 @@ Completed M009 connects exact audible segment transitions to one non-mutating se
 4. VoxLeaf opens at the user's last saved passage, or the beginning for a new book.
 5. The user reads and navigates the EPUB in a continuous reflowable reader, adjusts closed display preferences, and can close or replace the publication.
 6. On the exact configured development host, the user can start quick or
-   prepared local narration from the active visual locator and hear complete
+   prepared local narration from the active narration leaf or visible target and hear complete
    units through the bounded in-memory player.
-7. The reader highlights and follows the audible stable segment. Passive
-   movement, chapter navigation, and previous/next narration-passage controls
-   invalidate obsolete audio before a bounded restart from the canonical
-   target; a paused session remains paused there.
+7. The reader highlights and follows the audible stable segment. Ordinary
+   viewport movement may inspect the book without changing narration. An
+   explicit paragraph leaf, visible-passage, chapter, or previous/next passage
+   action invalidates obsolete audio before a bounded restart from its
+   canonical target.
 8. When exact-development narration is available, one contextual leaf can
    replace obsolete narration and start at its canonical paragraph. The leaf
-   reinforces preparing, audible, and saved states while ordinary text clicks
-   remain inert.
+   defaults to the paragraph at the active visual line and temporarily moves
+   beside an eligible heading or paragraph when the pointer hovers it. It
+   reinforces preparing, audible, and saved states when they match that
+   paragraph, otherwise it becomes a selectable preview without restarting
+   narration. Ordinary text clicks remain inert.
 9. VoxLeaf saves the canonical heard segment start/end checkpoint while
    narration owns position, otherwise saves the canonical visual locator, and
    retains display preferences on the approved bounded lifecycle.
@@ -68,7 +72,7 @@ Implemented and validated:
 - Own complete 24-kHz mono float32 units in one bounded desktop FIFO outside
   React, consume them through a dedicated low-level Web Audio player, account
   underruns, and release played or invalidated originals exactly once.
-- Connect the active visual locator to bounded narration preparation, the M007
+- Connect the active narration locator or explicit visible target to bounded narration preparation, the M007
   client, and audible quick/prepared playback under the exact-development
   availability gate.
 - Keep ready-publication application, book, and compact narration chrome
@@ -77,9 +81,10 @@ Implemented and validated:
   with exact text rather than a progress bar.
 - Highlight and follow the active prepared segment without mutating publication
   DOM or moving keyboard focus.
-- Treat passive visual movement as a seek after 500 ms settlement, route
-  chapter and stable prepared-segment navigation through identity-first
-  cancellation, preserve paused intent at the target, and expose fixed
+- Let passive visual movement inspect the publication without replacing active
+  narration; route only explicit leaf, visible-passage, chapter, and stable
+  prepared-segment navigation through identity-first cancellation, preserve
+  paused intent until an explicit target is selected, and expose fixed
   content-free keyboard controls.
 - Persist the audible segment start when playback begins, advance only after
   matching completion, flush the latest heard checkpoint on interruption and

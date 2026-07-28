@@ -17,6 +17,7 @@ import {
 } from "react";
 import type {
   MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
   ReactElement,
   ReactNode,
 } from "react";
@@ -53,7 +54,6 @@ import {
 import { ParagraphLeafController } from "./paragraph-leaf-controller";
 import { ParagraphLeaf } from "./ParagraphLeaf";
 import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
-import { SYNCHRONIZATION_AUTHORITY_V1 } from "./synchronization-authority";
 
 function unreachable(value: never): never {
   void value;
@@ -177,36 +177,6 @@ export interface ReaderInitialRestorationSettlement {
   readonly locator: ReadingLocatorV1;
 }
 
-class UserVisualNavigationIntentGate {
-  #active = false;
-  #timeout: number | undefined;
-
-  public mark(): void {
-    this.clear();
-    this.#active = true;
-    this.#timeout = window.setTimeout(
-      () => this.clear(),
-      SYNCHRONIZATION_AUTHORITY_V1.manualNavigation.settlementMs,
-    );
-  }
-
-  public accept(narrationActive: boolean): boolean {
-    if (narrationActive && !this.#active) {
-      return false;
-    }
-    this.clear();
-    return true;
-  }
-
-  public clear(): void {
-    this.#active = false;
-    if (this.#timeout !== undefined) {
-      window.clearTimeout(this.#timeout);
-      this.#timeout = undefined;
-    }
-  }
-}
-
 export function ReaderPublicationContent({
   publication,
   initialPreferences = DEFAULT_READER_PREFERENCES,
@@ -243,9 +213,6 @@ export function ReaderPublicationContent({
   useStrictModeSafeResourceCleanup(paragraphLeafController);
   const initialRestorationRequired =
     restoreInitialLocator && initialLocator !== undefined;
-  const [visualNavigationIntent] = useState(
-    () => new UserVisualNavigationIntentGate(),
-  );
   const [visualLocatorTracker] = useState(
     () =>
       new ActiveVisualLocatorTracker(publication, activeDomRangeMapper, {
@@ -254,14 +221,6 @@ export function ReaderPublicationContent({
           : { environment: visualLocatorEnvironment }),
         initialLocator: coordinator.state.activeLocator,
         onLocator: (locator) => {
-          if (
-            !visualNavigationIntent.accept(
-              narrationSource !== undefined &&
-                narrationSource.observe().navigation.playIntent !== "inactive",
-            )
-          ) {
-            return;
-          }
           if (coordinator.updateActiveVisualLocator(locator)) {
             onActiveLocatorChange?.(locator);
           }
@@ -383,7 +342,6 @@ export function ReaderPublicationContent({
   useLayoutEffect(() => {
     const callbacks = {
       navigateToLocator: (locator: ReadingLocatorV1) => {
-        visualNavigationIntent.clear();
         reflowRestorer.cancel();
         completeInitialRestoration(
           Object.freeze({
@@ -400,7 +358,6 @@ export function ReaderPublicationContent({
         }
       },
       settleLocator: (locator: ReadingLocatorV1) => {
-        visualNavigationIntent.clear();
         visualLocatorTracker.setCurrentLocator(locator);
         coordinator.updateActiveVisualLocator(locator);
       },
@@ -413,7 +370,6 @@ export function ReaderPublicationContent({
     coordinator,
     reflowRestorer,
     segmentHighlightController,
-    visualNavigationIntent,
     visualLocatorTracker,
   ]);
   const attemptInitialRestoration = useCallback((): void => {
@@ -586,6 +542,33 @@ export function ReaderPublicationContent({
     },
     [narrationSource, paragraphLeafController],
   );
+  const restoreVisualParagraphLeaf = useCallback((): void => {
+    paragraphLeafController.setPreviewLocator(state.activeLocator);
+  }, [paragraphLeafController, state.activeLocator]);
+  const previewParagraphLeafAtPointer = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>): void => {
+      const target = event.target;
+      if (!(target instanceof Node)) {
+        return;
+      }
+      const targetElement =
+        target instanceof Element ? target : target.parentElement;
+      if (
+        targetElement !== null &&
+        targetElement.closest(".paragraph-leaf-host") !== null
+      ) {
+        return;
+      }
+      const locatedBlock = activeDomRangeMapper.locatedBlockForNode(target);
+      if (
+        locatedBlock?.block.kind === "heading" ||
+        locatedBlock?.block.kind === "paragraph"
+      ) {
+        paragraphLeafController.setPreviewLocator(locatedBlock.startLocator);
+      }
+    },
+    [activeDomRangeMapper, paragraphLeafController],
+  );
   const updatePreference = useCallback(
     (preference: ReaderPreferenceName, value: string): void => {
       if (initialRestorationPending) {
@@ -688,14 +671,13 @@ export function ReaderPublicationContent({
   ]);
   useEffect(
     () => () => {
-      visualNavigationIntent.clear();
       programmaticNavigationRequest.current += 1;
       initialVisualLocatorResumeRef.current?.({ requestSample: false });
       initialVisualLocatorResumeRef.current = undefined;
       resumeProgrammaticNavigationRef.current?.();
       resumeProgrammaticNavigationRef.current = undefined;
     },
-    [visualNavigationIntent],
+    [],
   );
 
   useLayoutEffect(() => {
@@ -764,24 +746,6 @@ export function ReaderPublicationContent({
         role="region"
         tabIndex={-1}
         aria-label="Publication reading viewport"
-        onWheelCapture={() => visualNavigationIntent.mark()}
-        onTouchStartCapture={() => visualNavigationIntent.mark()}
-        onPointerDownCapture={() => visualNavigationIntent.mark()}
-        onKeyDownCapture={(event) => {
-          if (
-            [
-              "ArrowDown",
-              "ArrowUp",
-              "End",
-              "Home",
-              "PageDown",
-              "PageUp",
-              " ",
-            ].includes(event.key)
-          ) {
-            visualNavigationIntent.mark();
-          }
-        }}
       >
         <ReaderPreferencesControls
           disabled={initialRestorationPending}
@@ -816,6 +780,7 @@ export function ReaderPublicationContent({
             >
               <button
                 type="button"
+                data-reader-action="previous-chapter"
                 disabled={!state.canGoPrevious}
                 onClick={() =>
                   runProgrammaticNavigation(
@@ -828,6 +793,7 @@ export function ReaderPublicationContent({
               </button>
               <button
                 type="button"
+                data-reader-action="next-chapter"
                 disabled={!state.canGoNext}
                 onClick={() =>
                   runProgrammaticNavigation(
@@ -857,6 +823,9 @@ export function ReaderPublicationContent({
               ref={setReaderContentRoot}
               id={contentId}
               className="reader-content"
+              onPointerOver={previewParagraphLeafAtPointer}
+              onPointerLeave={restoreVisualParagraphLeaf}
+              onPointerCancel={restoreVisualParagraphLeaf}
             >
               <ParagraphLeaf
                 contentRoot={readerContentRoot}

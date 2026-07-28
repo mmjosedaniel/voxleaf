@@ -7,8 +7,11 @@ decision, strengthen paint-aware proof, repair active-range materialization,
 and pass clean-host validation. Milestone 3 implements the fixed reader shell,
 sole EPUB scroll root, compact/collapsible narration, and exact text-only
 loaded status; clean-host packaged validation remains pending. Milestone 4
-implements and validates the bounded paragraph leaf. Exact-host confirmation
-and closeout remain for Milestones 5-6.
+implements and validates the bounded paragraph leaf. Exact-host Milestone 5
+validation exposed and corrected passive-scroll narration retargeting; the
+corrected private-EPUB interaction and amended matrix pass. Milestone 6
+repository, clean-host, and pull-request closeout remains. This ADR therefore
+amends the passive-navigation portion of ADR-0017.
 
 ## Context
 
@@ -58,10 +61,22 @@ Paragraph narration uses one retargeted contextual leaf control. It targets a
 canonical block-start locator and keeps at most one preview, preparing,
 audible, and checkpoint state. Ordinary paragraph clicks remain inert. Every
 state has a non-colour cue, visible focus, and keyboard/touch parity.
+The projected control defaults to the block at the active visual line.
+Pointer hover over an eligible registered heading or paragraph temporarily
+projects the same control beside that exact block and preserves it while the
+pointer crosses the reader gutter onto the leaf. Non-block space inside the
+reader cannot replace that preview; leaving the reader restores the
+visual-line default. It uses a retained preparing, audible, or checkpoint
+treatment only when that state belongs to the projected block; otherwise it
+presents the inspected block as an explicit selectable preview.
 
 The existing M005 segmentation, M007 protocol, M008 thresholds and bounds,
-M009 synchronization and invalidation, shared contracts, storage schema,
-native capabilities, CSP, and dependency graph remain unchanged.
+explicit M009 identity-first invalidation, shared contracts, storage schema,
+native capabilities, CSP, and dependency graph remain unchanged. Passive
+viewport movement no longer invokes that invalidation: narration identity and
+the exact highlight remain authoritative while the contextual leaf may
+retarget as a visual-line or pointer-hover preview. Only an explicit leaf,
+passage, or chapter action replaces narration.
 
 ## Consequences
 
@@ -73,7 +88,10 @@ native capabilities, CSP, and dependency graph remain unchanged.
 - Compact UI cannot hide failure, buffering, low-water, or required recovery.
 - The paragraph leaf remains a location/action marker; it cannot imply word or
   whole-paragraph audible timing.
-- Production code still needs Milestones 5-6 before the stabilized
+- A user may inspect another part of the chapter without cancelling or
+  retargeting active narration.
+- Milestone 5 exact-host validation passes; Milestone 6 repository,
+  clean-host, and pull-request closeout remains before the stabilized
   user-visible outcome is complete.
 
 ## Alternatives considered

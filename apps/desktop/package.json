@@ -15,7 +15,8 @@
     "test:native-driver-client": "node --test scripts/native-webdriver-client.node-test.mjs",
     "test:native-startup": "tauri build && node scripts/native-startup-smoke.mjs",
     "test:tts:exact-host": "tauri build && node scripts/exact-tts-host.mjs",
-    "test:tts:adaptive-exact-host": "tauri build && node scripts/native-startup-smoke.mjs --adaptive-tts-exact-host",
+    "test:tts:adaptive-exact-host": "pnpm run test:tts:adaptive-exact-host:preflight && tauri build && node scripts/native-startup-smoke.mjs --adaptive-tts-exact-host",
+    "test:tts:adaptive-exact-host:preflight": "vitest run src/tts/ProductNarrationControls.test.tsx src/tts/AdaptivePreparationControls.test.tsx src/reader/ReaderPublication.test.tsx && node --test scripts/native-webdriver-client.node-test.mjs",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {

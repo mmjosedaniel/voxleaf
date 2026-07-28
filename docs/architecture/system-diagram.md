@@ -37,7 +37,7 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 | Standard production TTS profile and distribution   | **Blocked**                             | ADR-0013 still selects no passing standard profile. Continuous playback, CPU fallback, general hardware support, model/runtime distribution, and production graduation require later evidence and decisions.                                                                                                                                                                                                                 |
 | Adaptive audio scheduling and playback             | **Implemented and validated**           | Completed M008 provides the frozen authority, scheduler, sole-owner payload FIFO, Web Audio player, preparation presenter, controls, exact-development application coordinator, measured packaged quick/prepared matrix, final demo policy, and passing required CI. M009 Milestone 2 adds bounded source-range projection without changing PCM ownership.                                                                   |
 | Reader/narration synchronization                   | **Implemented and validated**           | Completed M009 implements the frozen segment authority, bounded content-free audible projection, one reader-owned Custom Highlight, focus-safe following, identity-first navigation, non-skipping heard-position persistence, passing exact-host proof, and repository/CI closeout.                                                                                                                                          |
-| Reader experience stabilization                    | **In progress**                         | M009.1 Milestones 1-2 freeze paint-aware authority, repair same-chapter active-range materialization, and pass clean-host validation. Milestone 3 implements one reader scroll owner, stable compact chrome, collapsible narration detail, and text-only loaded/target/estimate status. Milestone 4 implements one bounded canonical paragraph leaf with identity-first replacement and preview/preparing/audible/checkpoint state. Exact-host and final closeout remain. |
+| Reader experience stabilization                    | **In progress**                         | M009.1 Milestones 1-2 freeze paint-aware authority, repair same-chapter active-range materialization, and pass clean-host validation. Milestone 3 implements one reader scroll owner, stable compact chrome, collapsible narration detail, and text-only loaded/target/estimate status. Milestone 4 implements one bounded canonical paragraph leaf with identity-first replacement and preview/preparing/audible/checkpoint state. Milestone 5 exact-host use separates passive viewport inspection from explicit narration replacement; the corrected private-EPUB interaction and amended exact-host matrix pass. Milestone 6 repository, clean-host, and pull-request closeout remains. |
 | Hardware profiles, fallback, and resilience        | **Approved planned**                    | The active M010 ExecPlan follows M009.1. No general hardware inventory, measured product profile, validated CPU fallback, automatic recovery policy, production dependency, or support claim exists yet.                                                                                                                                                                                                                     |
 | Release packaging                                  | **Deferred**                            | M011 remains future work; installer bundling, signing, model/runtime distribution, updater policy, and complete-MVP validation are not implemented.                                                                                                                                                                                                                                                                          |
 
@@ -70,7 +70,7 @@ flowchart LR
             PROJECTION["Bounded audible range projection<br/>exact start/completion + played frames<br/>M9 complete"]:::implemented
             SYNC["Reader segment projection, following,<br/>and synchronized user navigation<br/>M9 complete; M9.1 M2 materialization repair"]:::implemented
             HEARD_STORE["Heard-position persistence bridge<br/>exact boundaries + lifecycle flush<br/>M9 complete"]:::implemented
-            STABILIZE["Reader experience stabilization<br/>highlight repair + fixed reader viewport;<br/>compact narration + bounded leaf implemented<br/>M9.1 exact-host/closeout remain"]:::progress
+            STABILIZE["Reader experience stabilization<br/>highlight repair + fixed reader viewport;<br/>compact narration + bounded leaf + passive isolation<br/>M9.1 final closeout remains"]:::progress
             COMPAT["Privacy-safe host report +<br/>evidence-backed profile matcher<br/>M10 approved planned"]:::planned
             RECOVERY["Identity-safe recovery controller<br/>M10 approved planned"]:::planned
         end
@@ -132,7 +132,8 @@ flowchart LR
     PLAYBACK -->|"content-free identities,<br/>source range + played frames"| PROJECTION
     PROJECTION --> SYNC
     SYNC -->|"semantic range highlight +<br/>focus-safe placement"| READER
-    READER -->|"passive/chapter/passage intent"| SYNC
+    READER -->|"explicit leaf/chapter/passage intent"| SYNC
+    READER -->|"passive viewport inspection"| READER
     SYNC -->|"identity-first cancel + restart"| PLAYBACK
     SYNC -->|"existing range + locator authority"| STABILIZE
     PLAYBACK -->|"existing content-free status"| STABILIZE
@@ -152,15 +153,16 @@ M009 Milestone 3 makes the projection-to-reader edge solid: the reader maps
 the active source range, owns one production Custom Highlight entry, and
 performs focus-safe placement without creating passive-seek feedback. The
 M009 Milestone 4 makes the reader-to-synchronization-to-playback loop solid:
-the first passive canonical change invalidates the old identity, trailing
-movement settles for 500 ms, explicit chapter and stable-boundary placement
-waits for containment, and only prior active play intent restarts. The overall
+explicit leaf, chapter, visible-passage, and stable-boundary placement waits
+for containment, and only prior active play intent restarts. M009.1 exact-host
+validation amends the loop so passive viewport inspection preserves the active
+narration identity, highlight, and play intent while retargeting the
+contextual leaf as a selectable visual-line or pointer-hover preview. The overall
 M009 Milestone 5 makes the projection-to-persistence path solid: exact starts
 save segment starts, matching completions advance to range ends, and bounded
 interruption/lifecycle flushes retain the latest heard checkpoint without
 periodic writes or reflow regression. M009 Milestone 6 validates the packaged
-loop on the exact host and distinguishes bounded user wheel/touch/pointer/key
-intent from late programmatic samples. Milestone 7 closes repository, privacy,
+loop on the exact host. Milestone 7 closes repository, privacy,
 documentation, and required pull-request validation. The synchronization area
 is complete within the constrained exact-development boundary.
 
@@ -227,7 +229,8 @@ flowchart TD
     BUFFER --> AUDIBLE
     AUDIBLE --> FOLLOW
     FOLLOW --> VISUAL
-    VISUAL -->|"passive/chapter/passage intent"| INTERACTION
+    VISUAL -->|"explicit leaf/chapter/passage intent"| INTERACTION
+    VISUAL -->|"passive viewport inspection"| VISUAL
     INTERACTION -->|"identity-first restart"| BUFFER
     AUDIBLE --> HEARD
     HEARD --> VISUAL
@@ -236,15 +239,16 @@ flowchart TD
 
 The exact-development user flow now continues from `VISUAL` through `PREP`,
 `BUFFER`, `INFER`, and `DEVICE`. The application coordinator starts at the
-active visual locator, retains at most one bounded prepared batch, dispatches
+active narration locator, retains at most one bounded prepared batch, dispatches
 one synthesis at a time, and transfers sole complete-unit ownership into the
 player. The M009 packaged matrix proves synchronized quick and one-minute
 prepared audio while measuring six segment transitions, one natural
 underrun/refill, 190 ms cancellation, and 378.46 buffering seconds per playback
 minute.
 The solid edges include the content-free audible projection, its segment-level
-reader highlight/follow consumer, and the user-originated synchronized
-seek/restart loop. Exact audible boundary persistence and bounded lifecycle
+reader highlight/follow consumer, and the explicit synchronized seek/restart
+loop. Passive viewport inspection stays within the visual reader and does not
+enter that loop. Exact audible boundary persistence and bounded lifecycle
 flushes are now solid as well. Exact-host synchronization and required
 repository/pull-request evidence pass. The
 path remains a constrained exact-host demo, not a standard engine,
@@ -277,7 +281,7 @@ value remains a simultaneous ceiling, not a startup target.
 | Short-unit and dual-worker feasibility                  | [Milestone 6.2 completed plan](../plans/completed/M006-002-qwen-short-segment-batch-feasibility.md), [v4 authority](tts-feasibility-profile-v4.md), both stopped `v4` results, accepted [`selection-v4`](../../benchmarks/tts/selection-v4.md), frozen [v5 authority](tts-feasibility-profile-v5.md), schema-valid [`v5` CPU admission](../../benchmarks/tts/dual-worker-result-v5-cpu-solo.json), schema-valid [`v5` GPU baseline](../../benchmarks/tts/dual-worker-result-v5-gpu-solo.json), the completed-plan diagnostic record, and accepted [`selection-v5`](../../benchmarks/tts/selection-v5.md). CPU and dual-worker scheduling are rejected; no standard product runtime is selected. |
 | Constrained local TTS service and process protocol      | [M007 completed ExecPlan](../plans/completed/M007-local-tts-service-and-process-protocol.md), accepted frozen [protocol v1 authority](tts-service-protocol-v1.md), accepted [ADR-0016](decisions/ADR-0016-rust-owned-stdio-tts-protocol.md), and the schema-valid [exact-host handoff result](../../benchmarks/tts/service-handoff-result-v1-exact-host.json). M007 validates transport, canonical contracts, Python service, native supervision, typed client, exact Qwen/Serena integration, model-free packaged evidence, and measured exact-host delivery/backpressure/invalidation/termination/cleanup/reload evidence.                                                                    |
 | Reader/narration synchronization                        | [M009 completed ExecPlan](../plans/completed/M009-synchronized-reading-and-narration.md), frozen [synchronization authority v1](synchronization-authority-v1.md), and accepted [ADR-0017](decisions/ADR-0017-segment-level-reader-narration-synchronization.md). Milestones 1-7 implement and validate the authority/proof, bounded audible projection, reader highlight/follow consumer, identity-first synchronized navigation, non-skipping heard persistence, exact-host packaged proof, and repository/CI closeout.                                                                                                                                                                        |
-| Reader experience stabilization                         | [M009.1 active ExecPlan](../plans/active/M009-001-reader-experience-stabilization.md), frozen [reader-experience authority v1](reader-experience-authority-v1.md), and accepted [ADR-0018](decisions/ADR-0018-reader-experience-stabilization.md). Milestones 1-2 freeze paint-aware authority, repair same-chapter materialization, and pass clean-host validation. Milestone 3 implements the fixed shell, sole reader scroll root, compact/collapsible narration, and exact loaded/target/estimate text. Milestone 4 implements and validates the bounded paragraph leaf; exact-host confirmation and Milestones 5-6 closeout remain. |
+| Reader experience stabilization                         | [M009.1 active ExecPlan](../plans/active/M009-001-reader-experience-stabilization.md), frozen [reader-experience authority v1](reader-experience-authority-v1.md), and accepted [ADR-0018](decisions/ADR-0018-reader-experience-stabilization.md). Milestones 1-2 freeze paint-aware authority, repair same-chapter materialization, and pass clean-host validation. Milestones 3-4 implement the fixed shell and bounded paragraph leaf. Milestone 5's corrected private-EPUB interaction and amended exact-host matrix pass; Milestone 6 final closeout remains. |
 | Hardware profiles, fallback, and operational resilience | [M010 active ExecPlan](../plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md). Sequenced after M009.1, the plan separates model-independent capability, privacy-safe host compatibility, evidence-backed profile admission, conditional CPU fallback, and identity-safe recovery; it is planning authority, not implementation evidence.                                                                                                                                                                                                                                                                                                                                |
 | Local-first desktop and future local process direction  | [ADR-0001](decisions/ADR-0001-local-first-desktop.md); ADR-0015 permits a constrained one-GPU development demo while the production profile and distribution boundary remain unresolved                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | Roadmap status                                          | [Roadmap](../plans/roadmap.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -285,7 +289,7 @@ value remains a simultaneous ceiling, not a startup target.
 ## Remaining gates
 
 1. **Milestone 9 — Complete:** all seven M009 milestones are implemented, exact-host validated, and covered by passing required Ubuntu and Windows pull-request checks.
-2. **Milestone 9.1 — In progress:** Milestones 1-2 freeze the [reader-experience authority v1](reader-experience-authority-v1.md), strengthen the paint-aware proof, repair the proven same-chapter materialization gap, and pass clean-host validation. Milestone 3 implements the fixed compact reader shell with repository and Chromium evidence; its clean-host packaged check remains pending. Milestone 4 implements the bounded paragraph leaf with desktop and Chromium evidence while the packaged native regression smoke remains green. Continue with Milestones 5-6 for exact-host confirmation and closeout without changing completed synchronization, protocol, segmentation, or buffer authority.
+2. **Milestone 9.1 — In progress:** Milestones 1-2 freeze the [reader-experience authority v1](reader-experience-authority-v1.md), strengthen the paint-aware proof, repair the proven same-chapter materialization gap, and pass clean-host validation. Milestones 3-4 implement the fixed compact reader shell and bounded paragraph leaf. Milestone 5's corrected private-EPUB interaction and amended exact-host matrix pass. Continue with Milestone 6 repository, clean-host, and pull-request closeout without changing completed synchronization, protocol, segmentation, or buffer authority.
 3. **Milestone 10 — Approved planned after M009.1:** follow the [M010 ExecPlan](../plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md) to freeze and implement privacy-safe hardware reporting, measured profile selection, fallback admission, and identity-safe operational recovery without promoting the current exact-development profile.
 4. **Milestone 11 — Deferred:** complete installer/signing/distribution and full MVP closeout only after M010 establishes supportable hardware and recovery claims.
 

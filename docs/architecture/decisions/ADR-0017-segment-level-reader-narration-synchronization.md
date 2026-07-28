@@ -2,11 +2,14 @@
 
 ## Status
 
-Accepted and implemented. M009 Milestones 1 through 7 freeze the authority, project exact
-audible source ranges, implement reader highlighting/following, and connect
-identity-first synchronized user navigation plus non-skipping heard-progress
-persistence. The exact-host synchronized demo and required Ubuntu/Windows
-closeout checks pass.
+Accepted, implemented, and amended by ADR-0018 during M009.1 exact-host
+validation. M009 Milestones 1 through 7 freeze the original authority, project
+exact audible source ranges, implement reader highlighting/following, and
+connect identity-first synchronized user navigation plus non-skipping
+heard-progress persistence. The original exact-host demo and required
+Ubuntu/Windows closeout checks pass. The later amendment limits narration seeks
+to explicit actions because ordinary viewport movement must not restart
+narration.
 
 ## Context
 
@@ -46,10 +49,11 @@ instant placement. It runs only when the audible range is outside that region,
 preserves focus, and suspends passive visual sampling while it settles. Missing
 geometry produces highlight-only behavior.
 
-User-originated passive visual movement immediately invalidates active work on
-the first canonical locator change. After 500 ms settlement, active play
-intent restarts from the settled active visual locator; paused intent remains
-paused there. All invalidation revokes eligibility before playback stop,
+Explicit leaf, visible-passage, previous/next, and chapter actions invalidate
+active work before replacing the narration target. Ordinary wheel, touch,
+keyboard, and scrollbar movement may inspect another visual passage without
+clearing the highlight, changing play intent, or replacing narration. All
+authorized invalidation still revokes eligibility before playback stop,
 preparation cleanup, queue release, and synthesis containment.
 
 The implementation retains at most 64 recent stable prepared source ranges for
@@ -83,8 +87,10 @@ change is authorized.
 - Highlighting survives semantic markup and reflow without changing
   publication text or user selection.
 - Coarse segments can produce coarse visual movement and partial replay.
-- Passive scrolling during active narration is an explicit seek, not a
-  temporarily independent viewport.
+- Passive scrolling may temporarily separate the inspected viewport from the
+  active narration. The exact highlight and active narration locator retain
+  narration authority while the contextual leaf may preview the inspected
+  paragraph.
 - Progress observations and metadata can remain desktop-local and bounded to
   existing work identities.
 - A later timestamp-capable engine requires a new authority before word-level
@@ -117,14 +123,14 @@ Rejected because normalized text and waveform offsets have no authoritative
 alignment. Replaying the stable containing segment is deterministic and
 non-skipping.
 
-### Let passive scrolling temporarily separate reading and narration
+### Treat every passive scroll as an automatic seek
 
-Rejected because it creates two competing reading positions. Immediate
-identity-first seek plus bounded settlement retains one authority and makes
-stale playback ineligible.
+Originally selected, then superseded by the M009.1 exact-host finding. It made
+ordinary viewport inspection cancel active generation and unexpectedly restart
+from the visible passage.
 
-### Require an explicit action after every passive scroll
+### Require an explicit action to replace narration
 
-Not selected for the MVP because the existing active visual locator already
-provides a deterministic addressable target. The 500 ms settlement window
-limits restart churn while preserving prior play intent.
+Selected by the amendment. The contextual paragraph leaf avoids accidental
+text activation, while the existing visible-passage, previous/next, and chapter
+controls keep intentional navigation available.

@@ -130,22 +130,22 @@ Capture only content-free state, timing, counts, and fixed error codes. Never
 attach book text, prepared narration, audio, model paths, process command lines,
 or private raw logs to an issue.
 
-### Narration restarts while automatic following moves the reader
+### Narration restarts while scrolling or automatic following moves the reader
 
-M009's exact-host diagnosis found that WebView2 could publish a late passive
-visual-locator sample after automatic following. Treating that sample as user
-navigation caused identity-first cancellation and repeated preparation. The
-implemented reader now ignores background visual samples while narration is
-active, accepts passive seeks only after bounded wheel, touch, pointer, or
-reading-navigation-key intent, keeps follow sampling suspended for two browser
-frames, and defensively ignores playing-state samples inside the current
-audible range.
+M009's exact-host diagnosis found that WebView2 could publish a late visual-
+locator sample after automatic following. M009.1 exact-host use then confirmed
+that treating intentional scrolling as automatic narration navigation was
+also disruptive: inspecting another passage cancelled active work and restarted
+preparation. The implemented reader now ignores background follow samples and
+keeps ordinary wheel, touch, pointer, keyboard, and scrollbar inspection
+separate from narration. Only an explicit paragraph leaf, visible-passage,
+previous/next passage, or chapter action replaces narration.
 
 If narration still restarts without user input, run the focused desktop
 regressions before repeating the expensive exact-host matrix. Record only the
 content-free phase, play intent, navigation-settling flag, service state,
-retained/discarded counts, and fixed failure code. Do not weaken identity-first
-cancellation or suppress a genuine user seek to hide the defect.
+retained/discarded counts, and fixed failure code. Identity-first cancellation
+must still occur for every explicit narration target.
 
 ### Memory, temperature, or cleanup looks abnormal
 

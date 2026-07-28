@@ -16,7 +16,7 @@ const ALL_EVENTS: readonly SynchronizationAuthorityEvent[] = Object.freeze([
   "resume",
   "buffer-exhausted",
   "buffer-refilled",
-  "user-visual-navigation",
+  "explicit-visual-navigation",
   "previous-segment",
   "next-segment",
   "chapter-navigation",
@@ -50,11 +50,10 @@ describe("synchronization authority v1", () => {
         visualSampling: "suspend-until-follow-settled",
       },
       manualNavigation: {
-        passiveScroll: "invalidate-on-first-change-restart-after-settlement",
-        settlementMs: 500,
-        addressablePassage: "active-visual-locator",
-        activePlayIntent: "restart-after-settlement",
-        pausedIntent: "remain-paused-at-target",
+        passiveScroll: "inspect-without-replacing-narration",
+        addressablePassage: "explicit-visible-locator-or-leaf",
+        activePlayIntent: "preserve-until-explicit-target",
+        pausedIntent: "preserve-until-explicit-target",
       },
       observation: {
         maximumProgressIntervalMs: 250,
@@ -111,7 +110,7 @@ describe("synchronization authority v1", () => {
 
   it("invalidates before cleanup for every navigation and terminal event", () => {
     for (const event of [
-      "user-visual-navigation",
+      "explicit-visual-navigation",
       "previous-segment",
       "next-segment",
       "chapter-navigation",
@@ -125,9 +124,9 @@ describe("synchronization authority v1", () => {
       expect(entry.highlight).toBe("clear");
       expect(entry.persistence).toBe("latest-heard");
     }
-    expect(synchronizationTransitionFor("user-visual-navigation").restart).toBe(
-      "if-play-intent",
-    );
+    expect(
+      synchronizationTransitionFor("explicit-visual-navigation").restart,
+    ).toBe("if-play-intent");
     expect(synchronizationTransitionFor("chapter-navigation").focus).toBe(
       "reader-navigation-policy",
     );

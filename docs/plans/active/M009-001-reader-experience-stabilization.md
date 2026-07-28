@@ -14,7 +14,9 @@ tracks narration through existing stable locators.
 
 The work preserves completed M005 narration segmentation, M007 protocol and
 service ownership, M008 buffer thresholds and bounds, and M009 segment-level
-timing, invalidation, following, and heard-position authority.
+timing, explicit identity-first invalidation, following, and heard-position
+authority. Exact-host validation may amend interaction authority when actual
+reader behavior contradicts the intended reader-first experience.
 
 ## User-visible outcome
 
@@ -25,6 +27,9 @@ path can:
   without scrolling past the application controls;
 - scroll the EPUB text inside one dedicated reader viewport while compact
   application and narration controls remain available;
+- inspect another passage by scrolling without cancelling, restarting, or
+  retargeting active narration; only an explicit leaf or navigation action
+  replaces the active narration point;
 - see an unmistakable but non-disruptive highlight for the currently audible
   stable narration segment;
 - see one leaf marker beside the relevant paragraph: translucent when the
@@ -108,6 +113,8 @@ that is already scheduled to change.
 - Extend deterministic, browser, packaged WebView2, and exact-host coverage for
   focus, selection, scrolling, cancellation, stale suppression, cleanup,
   forced colors, reduced motion, keyboard, pointer, and touch behavior.
+- Keep passive viewport inspection independent from narration replacement while
+  retaining explicit leaf, passage, and chapter identity-first cancellation.
 - Reconcile product, architecture, development, roadmap, and plan
   documentation with actual results.
 
@@ -214,7 +221,7 @@ Changing the scroll owner must preserve:
 - the active visual locator and 24-pixel reading line;
 - reflow and exact/nearest-valid restoration;
 - Custom Highlight range mapping and following geometry;
-- 500 ms user-originated passive navigation settlement;
+- bounded user-input classification without passive narration replacement;
 - programmatic-follow sampling suppression;
 - chapter and incremental-render materialization;
 - focus, selection, reduced motion, and forced-colors behavior; and
@@ -434,9 +441,12 @@ Implementation complete; clean-host packaged validation pending.
 - Actual result: One retargeted application-owned leaf maps the relevant
   registered block to its canonical block-start locator, retains bounded
   preview/preparing/audible/checkpoint state, and routes activation through
-  identity-first replacement and settled placement. Ordinary text remains
-  inert. Focused coordinator/reader tests, the full desktop suite, typecheck,
-  all six Chromium tests, and the packaged native startup smoke passed.
+  identity-first replacement and settled placement. The current visual-line
+  block is its passive default; pointer hover can temporarily preview the exact
+  eligible registered heading or paragraph without turning ordinary text into
+  an action. Focused coordinator/reader tests, the full desktop suite,
+  typecheck, all six Chromium tests, and the packaged native startup smoke
+  passed.
 
 ### Status
 
@@ -449,8 +459,10 @@ Complete as of 2026-07-28.
 - Extend the existing packaged exact-host synthetic path with visible
   highlight assertions under the final reader scroll root.
 - Exercise leaf start/replacement, first and next audible markers, compact and
-  expanded narration views, pause/resume, passive navigation, chapter
-  transition, buffering, failure, stop, saved checkpoint, and cleanup.
+  expanded narration views, pause/resume, passive viewport isolation, chapter
+  transition, buffering or stable-buffer observation, stop, saved checkpoint,
+  and cleanup. Retain the packaged model-free crash-recovery proof rather than
+  bypassing native supervision to force an exact-model failure.
 - Retain the outbound-blocking firewall rule and content-safe result boundary.
 - Run a manual private-EPUB confirmation without recording private content,
   path, screenshots, audio, or raw model output.
@@ -465,11 +477,55 @@ Complete as of 2026-07-28.
   highlight and leaf marker, preserves one coherent locator, produces zero
   stale audio, releases bounded state, persists no generated audio, and makes
   zero external requests.
-- Actual result: Not yet available.
+- Actual result: The packaged exact-host matrix passed with the frozen local
+  Qwen/Serena CUDA profile and outbound-blocking firewall rule. It proved the
+  final scroll root, compact/expanded narration, leaf-originated start and
+  identity-first replacement, first/next two-frame highlight perceivability,
+  pause/resume, the then-frozen passive reader restart, chapter transition, a stable
+  60-second playback observation without depletion, prepared playback, normal
+  stop, saved checkpoint projection, and bounded cleanup. Quick playback
+  became audible in `45,179 ms` with `16,880 ms` playable; prepared playback
+  became audible in `135,468 ms` with `75,280 ms` playable. Follow latency p95
+  was `299.9 ms`, identity cancellation was `170 ms`, and final stop completed
+  in `1,187 ms`. The run observed 10 segment transitions, no underrun, no stale
+  playback, zero generated-audio files, and zero external requests. It retained
+  at most 5 playable and 5 discarded units. GPU memory rose from `14 MiB` to a
+  `5,159 MiB` peak and returned to `14 MiB`; process-tree working set rose from
+  `541,937,664` bytes to a `2,903,855,104`-byte peak and returned to
+  `668,168,192` bytes. The existing packaged model-free smoke separately
+  passed its supported child-crash recovery path. An unsafe direct exact-model
+  service shutdown was rejected as a validation technique because it bypassed
+  native supervision and created an unsupported split-brain state. Ephemeral
+  private-EPUB confirmation remains pending. A preventive hardening rerun also
+  passed after a `3.1-second` model-free UI-contract preflight. It used stable
+  action identities instead of button order or presentation copy, emitted
+  fixed invariant codes, and polled bounded cleanup instead of sleeping for a
+  fixed second. This run became audible in `62,873 ms` with `29,600 ms`
+  playable, naturally depleted once, refilled in `87,101 ms`, and observed
+  `291.3` buffering seconds per playback minute. Prepared playback became
+  audible in `123,689 ms` with `70,549 ms` playable. It retained no stale
+  playback, generated audio, or external requests; GPU memory returned from a
+  `5,069 MiB` peak to `14 MiB`, and bounded resource release completed in
+  `588 ms`. These timing differences are observation-only and do not alter the
+  frozen engine-profile decision. A later private-EPUB run showed that the
+  accepted passive restart was a product defect: scrolling changed the
+  narration point. The amended implementation now preserves narration during
+  viewport inspection, and the deterministic and packaged proof expectations
+  have been changed accordingly. The subsequent private-EPUB correction cycle
+  confirmed that scrolling no longer retargets narration and that an inactive
+  paragraph leaf remains reachable across the reader gutter and can be
+  activated. The operator then reran
+  `pnpm.cmd test:tts:adaptive-exact-host` against the final correction and
+  reported the complete matrix passing. No replacement timing or resource
+  measurements were supplied, so the earlier content-safe measurements remain
+  the recorded observations. No private publication content or identifying
+  data was retained.
 
 ### Status
 
-Not started.
+Complete as of 2026-07-28. The original and amended automated exact-host
+matrices pass, and the corrective private-EPUB scroll and paragraph-leaf
+interaction is confirmed.
 
 ## Milestone 6: Record the stabilization decision and close validation
 
@@ -657,6 +713,115 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   Positioning now mutates only the application-owned leaf host as the effect's
   external DOM synchronization target, and the callback uses the exported
   located-block type. Lint and the 39-test focused suite pass.
+- 2026-07-28: Extended the existing packaged exact-host matrix over the final
+  reader shell. The content-safe assertions now cover the sole reader scroll
+  owner, compact and expanded narration, leaf start/replacement and checkpoint
+  states, first/next visible highlights across two rendering frames,
+  pause/resume, passive navigation, chapter and buffering transitions,
+  controlled service failure, reset, cleanup, bounded resources, and zero
+  external requests without recording publication text, paths, audio, or raw
+  model output.
+- 2026-07-28: The extended harness passes Node syntax, Prettier, TypeScript
+  lint, 34 desktop test files / 328 tests plus 6 native-client tests,
+  TypeScript typecheck, and the model-free packaged native startup smoke. All
+  six Chromium smokes also report passing; the known Windows preview child
+  remained attached after the passing list and the bounded wrapper ended by
+  timeout.
+- 2026-07-28: Corrected three obsolete exact-host harness assumptions instead
+  of changing production behavior. Passive reader navigation now uses bounded
+  wheel/scroll intent inside the sole reader viewport; prepared-mode proof
+  inspects the stable radio/select state rather than a removed button label;
+  and post-stop cleanup no longer requires an active range after the highlight
+  has intentionally been cleared.
+- 2026-07-28: Rejected direct `shutdown_tts_service` injection after it proved
+  to bypass the native supervisor and leave the typed client and process
+  authority out of sync. Failure recovery remains covered by the existing
+  supported model-free packaged child-crash test and deterministic coordinator
+  tests. The exact-model path validates the supported normal lifecycle.
+- 2026-07-28: The final exact Qwen/Serena run passed in `513.9 seconds`.
+  Quick and prepared playback, visible first/next highlights, leaf
+  replacement, passive navigation, chapter change, pause/resume, stable
+  playback, checkpoint projection, stop, bounded memory cleanup, zero
+  generated audio, and zero external requests all passed. Because generation
+  stayed ahead for the full 60-second observation, natural depletion,
+  buffering, and refill were not entered.
+- 2026-07-28: `pnpm.cmd check` passed after the exact-host result, covering
+  formatting, TypeScript/Rust/Python lint and type checks, 19 shared files /
+  196 tests, 34 EPUB files / 555 tests, 34 desktop files / 328 tests plus 6
+  native-client tests, 25 Rust tests, 234 Python tests, and native/portable
+  builds. The Python test run emitted one non-failing sandbox-cache write
+  warning; the outside-sandbox gate itself exited successfully.
+- 2026-07-28: Audited the exact-host harness for assumptions similar to the
+  removed prepared-button, passive-scroll, shutdown-bypass, and post-stop
+  cleanup assumptions. Positional narration/chapter selectors, grouped generic
+  highlight/cleanup failures, a model-time-only selector check, and a fixed
+  one-second resource sample were confirmed as preventive maintenance risks.
+- 2026-07-28: Added stable narration/chapter action identities with component
+  regressions, a model-free exact-host UI-contract preflight, allowlisted
+  content-safe invariant failure codes, and bounded RAM/VRAM cleanup polling.
+  The preflight passed 3 files / 32 tests plus 7 native harness tests in
+  `3.1 seconds`; all 34 desktop files / 328 tests, lint, typecheck, formatting,
+  and Node syntax checks pass.
+- 2026-07-28: The hardened exact-host matrix passed in `530.4 seconds`. It
+  exercised natural depletion and successful refill, first/next visible
+  highlights, leaf and chapter/passage navigation, prepared playback, stop,
+  checkpoint projection, zero stale audio/files/external requests, and
+  resource release within `588 ms`. The observed buffering remains above the
+  MVP allowance but is not a new performance-profile decision.
+- 2026-07-28: Final `pnpm.cmd check` passed in `64.2 seconds`, covering
+  formatting, TypeScript/Rust/Python lint and type checks, 19 shared files /
+  196 tests, 34 EPUB files / 555 tests, 34 desktop files / 328 tests plus 7
+  native-client/harness tests, 25 Rust tests, 234 Python tests, and
+  native/portable builds.
+- 2026-07-28: A private-EPUB manual run reached active narration but showed that
+  scrolling the dedicated reader viewport automatically cancelled and
+  retargeted narration. This was the implemented ADR-0017 passive-seek policy,
+  not a random model or rendering failure.
+- 2026-07-28: Separated visible-locator observation from narration authority in
+  `ProductNarrationCoordinator`. Passive movement no longer settles a
+  navigation or cancels synthesis; the explicit visible-passage control and
+  paragraph leaf still replace work through the original invalidation order.
+  Focused reader/coordinator regressions pass, and the packaged exact-host
+  script now checks passive isolation instead of the obsolete restart.
+- 2026-07-28: The private-EPUB follow-up confirmed narration no longer
+  restarted on scroll, but exposed that the single contextual leaf stayed
+  projected at the off-screen audible block. A repository-authored two-block
+  regression reproduced the condition: passive movement preserved the active
+  generation but left the inspected block without a selectable leaf.
+- 2026-07-28: Corrected the bounded projection so preparing, audible, and
+  checkpoint styling wins only when that retained state matches the active
+  visual block. Otherwise the same single control retargets to the inspected
+  block as a preview. Clicking it still enters the existing identity-first
+  replacement path; passive movement alone remains inert.
+- 2026-07-28: The visual-line correction preserved passive narration but
+  exposed a follow-up interaction regression: moving the pointer over a
+  different paragraph no longer retargeted the contextual leaf, so the reader
+  appeared to expose only one document-wide section. A two-block component
+  regression failed against the audible-only leaf and reproduced the missing
+  paragraph-hover preview.
+- 2026-07-28: Restored delegated pointer preview through the existing semantic
+  DOM-range registry. Hovering an eligible registered heading or paragraph now
+  retargets the single leaf to that exact block; moving from the text onto the
+  leaf preserves the target, and leaving the reader restores the visual-line
+  default. Pointer movement and scrolling issue no narration command. Only
+  explicit leaf activation enters identity-first replacement.
+- 2026-07-28: Private-EPUB use exposed one remaining pointer-transfer gap. The
+  empty gutter between prose and the absolutely positioned leaf emitted a
+  non-block pointer event, which restored the audible/default projection before
+  the pointer could reach the preview button. The earlier synthetic test moved
+  directly from paragraph to button and therefore missed this intermediate
+  event.
+- 2026-07-28: A corrected regression now traverses paragraph, reader gutter,
+  and leaf. Non-block space within the reader preserves the last eligible
+  pointer preview; another eligible block retargets it, and leaving the reader
+  restores the visual-line default. This keeps one bounded control and avoids
+  the visual clutter and unbounded keyboard stops already rejected for
+  permanent per-paragraph leaves.
+- 2026-07-28: The user confirmed with the private EPUB that the inactive leaf
+  remains visible while crossing the gutter and can be clicked. Together with
+  the earlier scroll confirmation, the manual interaction correction is
+  closed without retaining publication content, identity, paths, screenshots,
+  audio, or model output.
 
 ## Discoveries and decisions
 
@@ -691,6 +856,31 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
 - M009.1 uses one retargeted contextual leaf rather than one persistent focus
   target per paragraph. It retains at most one preview, preparing, audible,
   and checkpoint state.
+- Private-EPUB exact-host use exposed that the original passive-scroll seek
+  authority was itself disruptive: ordinary viewport inspection cancelled
+  active work and changed the narration start. The selected correction keeps a
+  separate visible-passage target and active narration locator. Passive
+  scrolling updates only the former; explicit leaf, visible-passage,
+  previous/next, and chapter actions retain identity-first replacement.
+- Keeping the audible state as unconditional leaf-presentation priority made
+  the single control stay beside an off-screen paragraph after passive
+  inspection. That prevented the visible paragraph from exposing the only
+  approved narration-start action. The exact segment highlight and active
+  narration locator, not an off-screen leaf, are the durable audible
+  authorities. Retargeting the single control as a preview restores explicit
+  selection without adding per-paragraph tab stops or a second leaf.
+- Milestone 4 already froze one bounded hover/focus preview, and Milestone 5
+  owns exact-host interaction corrections. Restoring exact paragraph hover is
+  therefore a direct Milestone 5 regression fix, not a new milestone or new
+  product scope.
+- Delegating pointer preview through the existing semantic block registry
+  preserves inert publication prose and bounded state: no paragraph gains an
+  event listener or tab stop, and the application still owns only one leaf.
+- The leaf and paragraph are separated by an intentional reader gutter. A
+  direct paragraph-to-button event test cannot prove reachability because real
+  pointer movement emits an event over that non-block space. The interaction
+  must retain the eligible preview across the gutter and restore it only on
+  reader exit or a new eligible target.
 - The authority and stronger proof remain desktop-local. No M005 segmentation,
   M007 protocol, M008 threshold, shared contract, storage migration, native
   capability, CSP, or dependency change is required.
@@ -737,6 +927,23 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
 - The Windows `test:browser` wrapper can retain its Vite preview child after
   Playwright reports all six tests passing. This is the existing M004
   post-test teardown issue, not a failed leaf assertion.
+- Exact-host failure injection must not call the native shutdown command behind
+  the typed client. That bypasses the supervisor/client lifecycle and tests an
+  unsupported split-brain state rather than product recovery. The supported
+  packaged crash-recovery matrix remains the failure authority; the exact
+  model matrix proves normal supervised lifecycle and cleanup.
+- A fast exact-model run may never deplete its playable lead. In that case a
+  continuous 60-second stable-playback observation with zero underruns is the
+  exact-host result, while deterministic/model-free tests remain authoritative
+  for buffering, low-water, depletion, and refill transitions.
+- Exact-host automation must select controls through stable action identity,
+  not DOM position or presentation copy. A model-free contract preflight must
+  run before Qwen inference, and content-safe invariant codes must identify
+  the failed boundary without exposing observed values.
+- Resource release is asynchronous and hardware-dependent. Exact-host cleanup
+  polls RAM and VRAM against the frozen bounds for at most 15 seconds and
+  records the actual release duration; it neither assumes one second nor
+  relaxes the memory ceilings.
 
 ## Milestone 1 validation results
 
@@ -850,12 +1057,95 @@ passes.
 Milestone 4 is complete. Milestones 5-6 retain exact-host stabilized-reader
 confirmation and repository/privacy/pull-request closeout.
 
+## Milestone 5 validation results
+
+- `node --check apps/desktop/scripts/native-startup-smoke.mjs`: passed.
+- `pnpm.cmd lint:typescript`: passed.
+- `pnpm.cmd --filter @voxleaf/desktop typecheck`: passed.
+- `pnpm.cmd --filter @voxleaf/desktop test`: passed, 34 Vitest files / 328
+  tests plus 6 native WebDriver-client tests.
+- `pnpm.cmd test:browser`: all 6 Playwright tests passed. The known Windows
+  preview child remained attached after the passing summary, so the bounded
+  wrapper ended by timeout.
+- `pnpm.cmd test:native-startup`: passed after the release build, including
+  supported child-crash recovery, lifecycle, reader geometry, cleanup, zero
+  application errors, and zero external requests.
+- `pnpm.cmd test:tts:adaptive-exact-host`: passed in `513.9 seconds` with the
+  exact frozen Qwen/Serena CUDA profile and outbound firewall isolation. It
+  produced no stale playback, generated-audio files, or external requests and
+  returned GPU memory to its `14 MiB` baseline.
+- Model-free exact-host preflight
+  (`pnpm.cmd --filter @voxleaf/desktop test:tts:adaptive-exact-host:preflight`):
+  passed in `3.1 seconds`, 3 Vitest files / 32 tests plus 7 native harness
+  tests.
+- Hardened `pnpm.cmd test:tts:adaptive-exact-host`: passed in `530.4 seconds`
+  after the model-free preflight. One natural underrun/refill was observed;
+  fixed invariant checks, semantic action selection, bounded state, privacy,
+  and cleanup passed, with resource release in `588 ms`.
+- `pnpm.cmd check`: passed in `76.8 seconds`, including formatting,
+  TypeScript/Rust/Python lint and type checks, 1,079 Vitest tests plus 6
+  native-client tests, 25 Rust tests, 234 Python tests, the desktop release
+  build, and the Python package build.
+- Final hardened `pnpm.cmd check`: passed in `64.2 seconds` with the same
+  repository-wide coverage plus the seventh native harness regression.
+- Privacy/bounds review: the committed harness and this result contain no EPUB
+  prose, title, author, private path, PCM, generated audio, raw model output,
+  model artifact, secret, or new dependency. Observations are content-free and
+  retained-unit/resource measurements remain bounded.
+- Passive-isolation amendment focused tests: passed, 3 files / 44 tests.
+- `pnpm.cmd --filter @voxleaf/desktop test`: passed, 34 files / 328 tests plus
+  7 native WebDriver-client/harness tests.
+- Model-free exact-host preflight: passed, 3 files / 32 tests plus 7 native
+  harness tests.
+- Final `pnpm.cmd check:portable`: passed outside the sandbox, including
+  formatting, TypeScript/Python lint and typecheck, 19 shared files / 196
+  tests, 34 EPUB files / 555 tests, 34 desktop files / 328 tests plus 7 native
+  tests, 234 Python tests, and portable builds. Pytest emitted one non-failing
+  cache-write warning; no product assertion failed.
+- Leaf-retarget regression command: passed, 1 file / 28 tests. The test proves
+  that passive inspection does not issue a second narration start, the single
+  leaf becomes an actionable preview for the visible block, and activating it
+  supplies that block's canonical start locator.
+- Post-correction desktop typecheck passed. The full desktop suite passed, 34
+  files / 329 tests plus 7 native WebDriver-client/harness tests.
+- Post-correction `pnpm.cmd check:portable` passed outside the sandbox,
+  including formatting, TypeScript/Python lint and typecheck, 19 shared files /
+  196 tests, 34 EPUB files / 555 tests, 34 desktop files / 329 tests plus 7
+  native tests, 234 Python tests, and portable builds. Pytest emitted the known
+  non-failing cache-write warning; no product assertion failed.
+- All six Chromium smokes passed. The known Windows preview child remained
+  attached after the passing summary, so the bounded wrapper ended by timeout.
+- The model-free exact-host preflight passed, 3 Vitest files / 33 tests plus 7
+  native harness tests.
+- Pointer-hover leaf regression command: passed, 2 files / 35 tests. The
+  component proof covers exact registered-paragraph preview, pointer transfer
+  from prose through the reader gutter to the leaf, leave restoration, no
+  narration command from pointer movement, and explicit activation at the
+  hovered block's canonical locator.
+- Post-hover/gutter-correction desktop typecheck passed.
+- Post-hover/gutter-correction full desktop suite: passed, 34 files / 330 tests
+  plus 7 native WebDriver-client/harness tests.
+- Post-hover/gutter-correction model-free exact-host preflight: passed, 3
+  Vitest files / 34 tests plus 7 native harness tests.
+- Post-hover/gutter-correction `pnpm.cmd check:portable`: passed outside the
+  sandbox, including formatting, TypeScript/Python lint and typecheck, 19
+  shared files / 196 tests, 34 EPUB files / 555 tests, 34 desktop files / 330
+  tests plus 7 native tests, 234 Python tests, and portable builds. Pytest
+  emitted the known non-failing cache-write warning; no product assertion
+  failed.
+- Private-EPUB scroll/leaf confirmation: passed without recording private
+  content. Passive scrolling preserves narration, and the inactive paragraph
+  leaf remains reachable and activates the selected paragraph.
+- Amended exact-host passive-isolation and leaf-retarget matrix: operator
+  reported `pnpm.cmd test:tts:adaptive-exact-host` passing against the final
+  correction. No new raw log, private content, timing, or resource result was
+  committed.
+
 ## Final validation results
 
-Not yet available. This plan is active with Milestones 1-2 and 4 complete and
-Milestone 3 implemented pending its clean-host packaged validation. It is
-complete only when the user-observed highlight discrepancy is confirmed
-closed; the fixed reader viewport, compact narration UI, text-only loaded
-duration, and bounded leaf interaction are implemented and validated;
-exact-host privacy and cleanup evidence passes; documentation matches actual
-behavior; and required pull-request checks pass.
+Not yet available. Milestones 1-5 have completed their implementation,
+deterministic, browser, manual private-EPUB, and exact-host gates within the
+recorded scopes. Milestone 3's clean-host packaged validation and Milestone 6's
+final repository, privacy, documentation, and required pull-request closeout
+remain. The plan is complete only when those final gates pass and the plan is
+moved to `docs/plans/completed/`.

@@ -506,7 +506,7 @@ export function App({
   );
   const handleActiveLocatorChange = useCallback(
     (locator: ReadingLocatorV1): void => {
-      narrationCoordinator?.updateActiveLocator(locator);
+      narrationCoordinator?.updateVisibleLocator(locator);
       positionSaveCoordinator?.schedulePassive(locator);
     },
     [narrationCoordinator, positionSaveCoordinator],

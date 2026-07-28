@@ -1,5 +1,11 @@
 # M009 synchronized reading and narration
 
+> Historical authority note (2026-07-28): M009.1 exact-host validation amended
+> the passive-navigation decision recorded in this completed plan. Ordinary
+> viewport scrolling now inspects the publication without replacing narration;
+> explicit leaf, visible-passage, previous/next, and chapter actions retain the
+> identity-first seek behavior. See ADR-0018 and the active M009.1 ExecPlan.
+
 ## Goal
 
 Integrate the implemented visual reader, locator-linked narration preparation,

@@ -153,7 +153,12 @@ export function AdaptivePreparationControls({
             </p>
           )}
           {showPlaybackControls ? (
-            <button type="button" disabled={startDisabled} onClick={onStart}>
+            <button
+              type="button"
+              data-narration-action="start"
+              disabled={startDisabled}
+              onClick={onStart}
+            >
               {selection.kind === "quick"
                 ? "Start quick playback"
                 : `Prepare ${preparationTargetLabel(selection.targetMs)} of audio`}
@@ -195,6 +200,7 @@ export function AdaptivePreparationControls({
             >
               <button
                 type="button"
+                data-narration-action="pause"
                 disabled={!state.canPause}
                 onClick={onPause}
               >
@@ -202,12 +208,18 @@ export function AdaptivePreparationControls({
               </button>
               <button
                 type="button"
+                data-narration-action="resume"
                 disabled={!state.canResume}
                 onClick={onResume}
               >
                 Resume
               </button>
-              <button type="button" disabled={!state.canStop} onClick={onStop}>
+              <button
+                type="button"
+                data-narration-action="stop"
+                disabled={!state.canStop}
+                onClick={onStop}
+              >
                 {state.phase === "paused" && state.pauseContinuesPreparation
                   ? "Stop preparing"
                   : "Stop"}

@@ -10,18 +10,21 @@ and focus-safe automatic following to the reader. Milestone 4 connects
 identity-first synchronized user navigation. Milestone 5 implements
 non-skipping heard-progress persistence through the existing bounded reader
 state envelope. Milestone 6 validates the complete packaged loop on the exact
-Windows/CUDA host and proves that bounded user input, rather than late
-programmatic samples, authorizes passive visual seeks.
+Windows/CUDA host. M009.1 exact-host validation later showed that treating
+ordinary scrolling as a seek made viewport inspection cancel and restart
+narration. The authority is therefore amended: only an explicit navigation
+action authorizes a narration seek.
 
 The authority is desktop-local. It does not change the shared schemas, the
 M005 `narration-v1` segmentation policy, or the M007 protocol-v1 service.
 
 ## Position and timing
 
-VoxLeaf owns one logical reading position with visual and audible projections.
-When narration is inactive, the active visual locator is authoritative. When
-a complete prepared unit becomes audible, its existing source
-`LocatorRangeV1` is the audible projection.
+VoxLeaf owns one narration position plus a visual projection. When narration is
+inactive, the active visual locator is authoritative. When a complete prepared
+unit becomes audible, its existing source `LocatorRangeV1` is the narration
+authority. The user may temporarily inspect another visual passage without
+changing that authority.
 
 Synchronization is segment-level:
 
@@ -48,7 +51,8 @@ closed row:
 | `resume` | by play intent | latest heard / none | retain / follow if required | preserve |
 | `buffer-exhausted` | `buffering` | latest heard / save latest heard | retain / none | preserve |
 | `buffer-refilled` | `playing` | latest heard / none | retain / preserve | preserve |
-| user visual navigation | by play intent | target visual / save latest heard | clear / none | invalidate first |
+| explicit visible-passage or paragraph-leaf navigation | by play intent | explicit target / save latest heard | clear / none | invalidate first |
+| passive viewport movement | preserve | latest heard / preserve | retain / none | preserve |
 | previous or next segment | by play intent | target visual / save latest heard | clear / none | invalidate first |
 | chapter navigation | by play intent | target visual / save latest heard | clear / reader navigation policy | invalidate first |
 | reflow | preserve | preserve / preserve | preserve / follow if required | preserve |
@@ -104,13 +108,15 @@ registry entry and release any pending follow.
 
 ## User navigation
 
-Passive wheel, touch, or scrollbar movement is a seek when its first canonical
-visual-locator change is observed. VoxLeaf immediately invalidates old work,
-then waits 500 ms for visual settlement. Active play intent restarts at the
-settled active visual locator; paused intent remains paused at that target.
-Programmatic following is excluded by the sampling-suspension token.
+Passive wheel, touch, keyboard, or scrollbar movement updates the visual
+projection but is not a narration seek. It does not clear the audible
+highlight, invalidate work, change play intent, or replace the active narration
+locator. Programmatic following remains excluded from user-viewport sampling by
+the sampling-suspension token.
 
-An addressable passage is the existing active visual locator. Publication
+An explicit paragraph leaf, previous/next passage control, chapter action, or
+the fixed visible-passage action supplies an addressable target. Those actions
+retain identity-first invalidation and prior play-intent behavior. Publication
 prose is not turned into a button and DOM paths, quotations, page numbers, and
 rendered geometry are not persisted.
 
@@ -142,7 +148,8 @@ observations authoritative over visual persistence while narration is active.
 It cancels pending visual saves at narration start, ignores periodic
 played-frame observations, flushes at pause, buffering, stop, failure,
 hidden-document, `pagehide`, replacement, close, and cleanup, and protects
-the last heard checkpoint from reflow until later genuine user movement
-returns authority to the visual locator. A mid-segment restart therefore
-restores the segment start. Existing exact/nearest-valid locator recovery and
-unsupported future-envelope preservation remain unchanged.
+the last heard checkpoint from reflow and passive viewport inspection.
+Narration end or an explicit narration target returns authority to the
+appropriate structural locator. A mid-segment restart therefore restores the
+segment start. Existing exact/nearest-valid locator recovery and unsupported
+future-envelope preservation remain unchanged.

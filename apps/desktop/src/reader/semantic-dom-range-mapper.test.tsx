@@ -118,6 +118,12 @@ describe("semantic DOM range mapping", () => {
     if (!(firstText instanceof Text)) {
       throw new Error("expected the initial publication text node");
     }
+    const nestedElement = paragraphElement?.querySelector("em");
+    if (nestedElement === null || nestedElement === undefined) {
+      throw new Error("expected the nested publication element");
+    }
+    expect(mapper.locatedBlockForNode(nestedElement)).toBe(located);
+    expect(mapper.locatedBlockForNode(nestedElement.firstChild!)).toBe(located);
     expect(firstText.data).toBe("A😀e\u0301");
     expect(mapper.rangeFor(located, 1)?.startOffset).toBe(1);
     expect(mapper.rangeFor(located, 2)?.startOffset).toBe(3);
@@ -334,10 +340,12 @@ describe("semantic DOM range mapping", () => {
     unregisterWrongLength();
 
     const staleRange = mapper.rangeFor(located, 3)!;
+    expect(mapper.locatedBlockForNode(paragraphText)).toBe(located);
     rendered.unmount();
     expect(mapper.registrationCount).toBe(0);
     expect(mapper.rangeFor(located, 3)).toBeUndefined();
     expect(mapper.positionFor(staleRange)).toBeUndefined();
+    expect(mapper.locatedBlockForNode(paragraphText)).toBeUndefined();
 
     mapper.clear();
     mapper.clear();

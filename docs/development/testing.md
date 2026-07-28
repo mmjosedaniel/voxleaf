@@ -236,8 +236,12 @@ matrix. These tests use only repository-authored synthetic publications.
 Milestone 4 extends those surfaces with one retargeted application-owned
 paragraph leaf. Reader and coordinator tests prove canonical block-start
 resolution, ordinary-text click inertness, identity-first replacement,
-settled placement, rapid-action rejection, stale-completion suppression,
-restored checkpoints, StrictMode-safe cleanup, and a single retained control.
+settled placement, passive retargeting from an audible paragraph to an
+actionable visible preview without an automatic restart, exact registered-block
+pointer-hover preview, stable pointer transfer through the reader gutter from
+publication text to the leaf, pointer-leave restoration, rapid-action
+rejection, stale-completion suppression, restored checkpoints,
+StrictMode-safe cleanup, and a single retained control.
 Keyboard, pointer, and touch activation share the same action. Browser
 foundation coverage checks a 44-pixel target, visible focus, forced-colors,
 non-colour state text, touch behavior, and absence when narration is
@@ -448,10 +452,11 @@ The component receives no narration text, identity, or audio payload.
 
 `product-narration-coordinator.test.ts` validates the application seam with
 synthetic prepared segments and fake client/player boundaries: the model-free
-runtime is not exposed, preparation starts at the active visual locator with an
-abort signal, only one request is active, sole audio ownership transfers to the
-player, locator changes make work stale before cancellation, preparation
-failures are fixed/content-free, and snapshots contain no text, paths, or work
+runtime is not exposed, preparation starts at the active narration locator with
+an abort signal, only one request is active, sole audio ownership transfers to
+the player, passive visible-locator changes preserve active and paused work,
+explicit targets make old work stale before cancellation, preparation failures
+are fixed/content-free, and snapshots contain no text, paths, or work
 identities. Process-client and Rust supervisor tests cover the narrow
 content-free exact-configuration availability result.
 
@@ -463,17 +468,25 @@ pnpm.cmd test:tts:adaptive-exact-host
 
 It requires the exact native Qwen/Serena environment, prepared artifacts,
 outbound-blocking firewall rule, Tauri driver, and matching EdgeDriver. The
-runner creates and deletes a synthetic Spanish EPUB, exercises quick
-depletion/buffering and cancellation, then reloads for one-minute prepared
-playback. M009 Milestone 6 additionally verifies exact audible transitions,
+runner first executes a model-free UI-contract preflight. That preflight
+verifies stable narration/chapter action identities and fixed content-safe
+invariant codes before the release build or model inference, so presentation
+copy and button order are not test authority. It then creates and deletes a
+synthetic Spanish EPUB, exercises either quick depletion/buffering or a
+60-second stable-playback observation plus cancellation, then reloads for
+one-minute prepared playback. M009 Milestone 6 additionally verifies exact audible transitions,
 valid half-open ranges, readable focus-safe following, keyboard pause/resume,
 passage seek, chapter restart, stale suppression, reduced motion, forced
-colors, retained/discarded-unit bounds, and generated-audio cleanup. Late
-programmatic visual samples are suppressed during active narration; bounded
-wheel, touch, pointer, or reading-navigation-key intent still authorizes the
-frozen passive seek. It checks all four prepared choices, content-free timing
-and resource metrics, cleanup, and zero external requests. Generated audio is
-never written. This run is excluded from default checks and CI.
+  colors, retained/discarded-unit bounds, and generated-audio cleanup. Late
+  programmatic visual samples are suppressed during active narration; bounded
+  wheel-driven viewport inspection is now required to preserve the active
+  identity, highlight, leaf, and play intent. Explicit leaf, passage, and
+  chapter actions still prove identity-first replacement. It checks all four
+  prepared choices, content-free timing
+and resource metrics, cleanup, and zero external requests. Cleanup samples RAM
+and VRAM until they return within the frozen bound or a 15-second deadline;
+it does not assume a fixed one-second release time. Generated audio is never
+written. This run is excluded from default checks and CI.
 
 M008 Milestone 6 retains quick mode as the default, one minute as the initial
 prepared and refill target, 10 seconds as low water, and `0` ms as the boundary
@@ -490,6 +503,15 @@ restart, no stale playback, one natural underrun/refill, 190 ms cancellation,
 5,178 MiB peak dedicated GPU memory, zero retained units and audio files after
 cleanup, and zero external requests. Its 378.46 buffering seconds per playback
 minute is observation-only and remains above the MVP allowance.
+
+The hardened M009.1 exact-host rerun passed after its 3.1-second model-free
+preflight. It measured eight audible transitions, 296.1 ms p95 follow latency,
+one natural underrun followed by refill, no stale playback, 172 ms
+cancellation, 5,069 MiB peak dedicated GPU memory, resource release within
+588 ms, zero retained units or audio files after cleanup, and zero external
+requests. Its observed 291.3 buffering seconds per playback minute is
+observation-only, confirms substantial run-to-run throughput variation, and
+does not select or reject a new engine profile.
 
 ## Deferred coverage
 

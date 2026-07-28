@@ -89,10 +89,11 @@ EPUB scrolling. Compact publication and narration controls remain outside that
 viewport. Nested reader scroll owners are prohibited.
 
 Empty, opening, loading, and error views may use the normal application page.
-Stable locators, the 24-pixel reading line, 500 ms passive-navigation
-settlement, follow sampling suppression, focus, selection, reflow,
-restoration, incremental rendering, chapter navigation, and cleanup remain
-governed by existing authorities.
+Stable locators, the 24-pixel reading line, follow sampling suppression, focus,
+selection, reflow, restoration, incremental rendering, chapter navigation, and
+cleanup remain governed by existing authorities. While narration owns
+position, ordinary viewport movement is an independent inspection and only an
+explicit leaf, passage, or chapter action may replace narration.
 
 ## Text-only loaded duration
 
@@ -111,6 +112,16 @@ The selected presentation is one retargeted contextual application-owned
 control, not one permanent keyboard tab stop per paragraph. It targets a
 canonical addressable block-start locator. Ordinary paragraph activation
 remains inert.
+
+The control defaults to the canonical block at the reader's active visual
+line. Pointer hover over an eligible registered heading or paragraph
+temporarily retargets that same control beside the exact block; moving onto the
+leaf across the reader gutter preserves the preview, and leaving the reader
+content restores the visual line target. Non-block space inside the reader
+cannot replace the preview. Preparing, audible, or checkpoint treatment
+appears only when that retained state belongs to the projected block. Hover
+and passive inspection never change narration; the exact highlight and
+narration locator remain authoritative until the user activates the preview.
 
 At most one state of each kind may be retained:
 
