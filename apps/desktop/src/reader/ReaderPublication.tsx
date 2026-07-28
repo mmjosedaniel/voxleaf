@@ -20,6 +20,7 @@ import type {
   ReactNode,
 } from "react";
 
+import { useStrictModeSafeResourceCleanup } from "../strict-mode-resource-cleanup";
 import {
   ActiveVisualLocatorTracker,
   type ActiveVisualLocatorEnvironment,
@@ -48,6 +49,8 @@ import {
   ReaderNavigationCoordinator,
   type ReaderTargetAvailability,
 } from "./reader-navigation";
+import { ParagraphLeafController } from "./paragraph-leaf-controller";
+import { ParagraphLeaf } from "./ParagraphLeaf";
 import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
 import { SYNCHRONIZATION_AUTHORITY_V1 } from "./synchronization-authority";
 
@@ -230,8 +233,13 @@ export function ReaderPublicationContent({
     () => new PublicationRasterImageLoader(publication),
     [publication],
   );
+  useStrictModeSafeResourceCleanup(rasterImageLoader);
   const [ownedDomRangeMapper] = useState(() => new SemanticDomRangeMapper());
   const activeDomRangeMapper = domRangeMapper ?? ownedDomRangeMapper;
+  const [paragraphLeafController] = useState(
+    () => new ParagraphLeafController(publication, initialLocator),
+  );
+  useStrictModeSafeResourceCleanup(paragraphLeafController);
   const initialRestorationRequired =
     restoreInitialLocator && initialLocator !== undefined;
   const [visualNavigationIntent] = useState(
@@ -259,6 +267,7 @@ export function ReaderPublicationContent({
         },
       }),
   );
+  useStrictModeSafeResourceCleanup(visualLocatorTracker);
   const [initialVisualLocatorResume] = useState(() =>
     initialRestorationRequired ? visualLocatorTracker.suspend() : undefined,
   );
@@ -316,6 +325,7 @@ export function ReaderPublicationContent({
         },
       ),
   );
+  useStrictModeSafeResourceCleanup(reflowRestorer);
   useLayoutEffect(() => {
     if (pendingInitialSettlement !== undefined) {
       completeInitialRestoration(pendingInitialSettlement);
@@ -327,6 +337,11 @@ export function ReaderPublicationContent({
   );
   const getSnapshot = useCallback(() => coordinator.state, [coordinator]);
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const leafSnapshot = useSyncExternalStore(
+    paragraphLeafController.subscribe,
+    paragraphLeafController.getSnapshot,
+    paragraphLeafController.getSnapshot,
+  );
   const navigationId = useId();
   const contentId = useId();
   const activeLocatedBlocks = useMemo(
@@ -338,6 +353,8 @@ export function ReaderPublicationContent({
   );
   const readerDocumentRef = useRef<HTMLElement | null>(null);
   const readerViewportRef = useRef<HTMLDivElement | null>(null);
+  const [readerContentRoot, setReaderContentRoot] =
+    useState<HTMLDivElement | null>(null);
   const navigationRef = useRef<HTMLElement | null>(null);
   const destinationRef = useRef<HTMLElement | null>(null);
   const handledNavigationRevision = useRef(0);
@@ -357,6 +374,10 @@ export function ReaderPublicationContent({
         undefined,
         segmentHighlightEnvironment,
       ),
+  );
+  useStrictModeSafeResourceCleanup(segmentHighlightController);
+  useStrictModeSafeResourceCleanup(
+    domRangeMapper === undefined ? ownedDomRangeMapper : undefined,
   );
   useLayoutEffect(() => {
     const callbacks = {
@@ -555,6 +576,15 @@ export function ReaderPublicationContent({
     },
     [coordinator, runProgrammaticNavigation],
   );
+  const activateParagraphLeaf = useCallback(
+    (locatedBlock: (typeof publication.locators)[number]): void => {
+      const target = locatedBlock.startLocator;
+      if (narrationSource?.startAtLocator?.(target) === true) {
+        paragraphLeafController.beginPreparation(target);
+      }
+    },
+    [narrationSource, paragraphLeafController, publication.locators],
+  );
   const updatePreference = useCallback(
     (preference: ReaderPreferenceName, value: string): void => {
       if (initialRestorationPending) {
@@ -595,6 +625,26 @@ export function ReaderPublicationContent({
     segmentHighlightController.refresh();
     return unsubscribe;
   }, [activeDomRangeMapper, segmentHighlightController]);
+  useLayoutEffect(() => {
+    paragraphLeafController.setPreviewLocator(state.activeLocator);
+  }, [paragraphLeafController, state.activeLocator]);
+  useEffect(() => {
+    if (narrationSource === undefined) {
+      return;
+    }
+    const reconcile = (): void => {
+      paragraphLeafController.reconcile(narrationSource.observe());
+    };
+    const unsubscribeState = narrationSource.subscribe(reconcile);
+    const unsubscribeProgress = narrationSource.subscribeAudibleProgress(
+      (observation) => paragraphLeafController.accept(observation),
+    );
+    reconcile();
+    return () => {
+      unsubscribeProgress();
+      unsubscribeState();
+    };
+  }, [narrationSource, paragraphLeafController]);
   useEffect(() => {
     if (narrationSource === undefined) {
       segmentHighlightController.clear();
@@ -637,36 +687,14 @@ export function ReaderPublicationContent({
   ]);
   useEffect(
     () => () => {
-      void rasterImageLoader.close();
-    },
-    [rasterImageLoader],
-  );
-  useEffect(
-    () => () => {
       visualNavigationIntent.clear();
-      reflowRestorer.close();
       programmaticNavigationRequest.current += 1;
       initialVisualLocatorResumeRef.current?.({ requestSample: false });
       initialVisualLocatorResumeRef.current = undefined;
       resumeProgrammaticNavigationRef.current?.();
       resumeProgrammaticNavigationRef.current = undefined;
-      segmentHighlightController.close();
-      visualLocatorTracker.close();
     },
-    [
-      reflowRestorer,
-      segmentHighlightController,
-      visualNavigationIntent,
-      visualLocatorTracker,
-    ],
-  );
-  useEffect(
-    () => () => {
-      if (domRangeMapper === undefined) {
-        ownedDomRangeMapper.close();
-      }
-    },
-    [domRangeMapper, ownedDomRangeMapper],
+    [visualNavigationIntent],
   );
 
   useLayoutEffect(() => {
@@ -824,7 +852,24 @@ export function ReaderPublicationContent({
             >
               Back to table of contents
             </a>
-            <div id={contentId} className="reader-content">
+            <div
+              ref={setReaderContentRoot}
+              id={contentId}
+              className="reader-content"
+            >
+              <ParagraphLeaf
+                contentRoot={readerContentRoot}
+                domRangeMapper={activeDomRangeMapper}
+                locatedBlock={leafSnapshot.locatedBlock}
+                state={leafSnapshot.state}
+                layoutRevision={[
+                  state.activeDocument.id,
+                  state.preferences.textScale,
+                  state.preferences.lineSpacing,
+                  state.preferences.contentWidth,
+                ].join(":")}
+                onActivate={activateParagraphLeaf}
+              />
               {state.contentStatus === "chapter-too-large" ? (
                 <ChapterTooLargeContent readerRef={setReaderDocumentRef} />
               ) : (

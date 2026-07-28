@@ -574,9 +574,82 @@ h1 {
 }
 
 .reader-content {
+  position: relative;
   width: min(100%, var(--reader-content-measure));
   max-width: 100%;
   margin-inline: auto;
+  padding-inline-start: 3.25rem;
+  box-sizing: border-box;
+}
+
+.paragraph-leaf-host {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: var(--paragraph-leaf-top);
+  inset-inline-start: 0;
+  transform: translateY(-0.15rem);
+}
+
+.paragraph-leaf {
+  display: inline-flex;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.35rem;
+  justify-content: center;
+  padding: 0.35rem;
+  border: 0.12rem solid transparent;
+  border-radius: 999px;
+  color: var(--reader-link);
+  background: var(--reader-surface);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.58;
+  touch-action: manipulation;
+}
+
+.paragraph-leaf:hover,
+.paragraph-leaf:focus-visible {
+  opacity: 1;
+}
+
+.paragraph-leaf:focus-visible {
+  outline: 0.2rem solid var(--reader-focus);
+  outline-offset: 0.15rem;
+}
+
+.paragraph-leaf-icon {
+  width: 1.45rem;
+  height: 1.45rem;
+  flex: 0 0 auto;
+  fill: currentcolor;
+}
+
+.paragraph-leaf-state {
+  padding-inline-end: 0.25rem;
+}
+
+.paragraph-leaf[data-leaf-state="preparing"] {
+  border-style: dashed;
+  border-color: var(--reader-focus);
+  opacity: 1;
+}
+
+.paragraph-leaf[data-leaf-state="audible"] {
+  border-color: var(--reader-focus);
+  color: var(--reader-surface);
+  background: var(--reader-focus);
+  opacity: 1;
+}
+
+.paragraph-leaf[data-leaf-state="checkpoint"] {
+  border-color: var(--reader-focus);
+  color: var(--reader-focus);
+  background: transparent;
+  opacity: 1;
 }
 
 .reader-rendering-status {
@@ -1124,6 +1197,7 @@ button.semantic-internal-link {
   }
 
   .reader-preference select:focus-visible,
+  .paragraph-leaf:focus-visible,
   .product-narration-compact-actions button:focus-visible,
   .adaptive-preparation button:focus-visible,
   .adaptive-preparation input:focus-visible,
@@ -1138,6 +1212,16 @@ button.semantic-internal-link {
   .semantic-document:focus,
   .semantic-document [tabindex="-1"]:focus {
     outline-color: Highlight;
+  }
+
+  .paragraph-leaf,
+  .paragraph-leaf[data-leaf-state="preparing"],
+  .paragraph-leaf[data-leaf-state="audible"],
+  .paragraph-leaf[data-leaf-state="checkpoint"] {
+    border-color: ButtonText;
+    color: ButtonText;
+    background: ButtonFace;
+    forced-color-adjust: auto;
   }
 }
 
@@ -1238,6 +1322,10 @@ button.semantic-internal-link {
 
   .reader-viewport {
     padding-inline: 0.25rem;
+  }
+
+  .reader-content {
+    padding-inline-start: 2.75rem;
   }
 
   .reader-preference-grid {

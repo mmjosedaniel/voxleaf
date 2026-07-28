@@ -22,6 +22,7 @@ export interface ReaderNarrationSource {
   subscribeNavigationRequests?(
     listener: (request: ProductNarrationNavigationRequest) => void,
   ): () => void;
+  startAtLocator?(locator: ReadingLocatorV1): boolean;
 }
 
 export interface SegmentHighlightRect {

@@ -43,6 +43,7 @@ import {
   type RasterImageProbeResult,
 } from "./reader/raster-image-probe";
 import type { ReaderNarrationSource } from "./reader/segment-highlight-controller";
+import { useStrictModeSafeResourceCleanup } from "./strict-mode-resource-cleanup";
 import { ProductNarrationControls } from "./tts/ProductNarrationControls";
 import { ProductNarrationCoordinator } from "./tts/product-narration-coordinator";
 
@@ -107,43 +108,6 @@ const RASTER_STATUS_MESSAGE: Readonly<Record<RasterImageProbeStatus, string>> =
 
 type ReaderRestorationSettlement =
   "pending" | ReaderInitialRestorationSettlement["status"];
-
-/**
- * React StrictMode runs an effect's cleanup immediately during its development
- * mount probe. Deferring ownership cleanup by one microtask lets the matching
- * second setup supersede that probe without closing a live resource. A real
- * unmount has no second setup, so the resource is still released promptly.
- */
-function useStrictModeSafeResourceCleanup<
-  Resource extends { readonly close: () => void | Promise<void> },
->(resource: Resource | undefined): void {
-  const activeResource = useRef<Resource | undefined>(undefined);
-  const cleanupToken = useRef<{ superseded: boolean } | undefined>(undefined);
-
-  useEffect(() => {
-    if (cleanupToken.current !== undefined) {
-      cleanupToken.current.superseded = true;
-    }
-    const currentCleanup = { superseded: false };
-    cleanupToken.current = currentCleanup;
-    const previous = activeResource.current;
-    if (previous !== undefined && previous !== resource) {
-      activeResource.current = undefined;
-      void previous.close();
-    }
-    activeResource.current = resource;
-
-    return () => {
-      queueMicrotask(() => {
-        if (currentCleanup.superseded || activeResource.current !== resource) {
-          return;
-        }
-        activeResource.current = undefined;
-        void resource?.close();
-      });
-    };
-  }, [resource]);
-}
 
 interface LoadingReaderRestoration {
   readonly status: "loading";

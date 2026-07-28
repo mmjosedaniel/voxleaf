@@ -28,6 +28,7 @@ import {
   type ProductNarrationAudibleProgressObservation,
   type ProductNarrationClock,
   type ProductNarrationCoordinatorDependencies,
+  type ProductNarrationNavigationRequest,
   type ProductNarrationServiceClient,
 } from "./product-narration-coordinator";
 import type {
@@ -293,7 +294,16 @@ function createPublication(
     resources: Object.freeze([]),
     closed: false,
     readResource: vi.fn(),
-    resolveLocator: vi.fn(),
+    resolveLocator: vi.fn((input: unknown) =>
+      Object.freeze({
+        status: "exact" as const,
+        reason: "exact" as const,
+        locator: input as ReadingLocatorV1,
+        locatedBlock: Object.freeze({
+          startLocator: START_LOCATOR,
+        }) as ReturnType<OpenedPublication["resolveLocator"]>["locatedBlock"],
+      }),
+    ),
     resolveTarget: vi.fn(),
     prepareNarration,
     close: vi.fn(async () => undefined),
@@ -618,7 +628,7 @@ describe("product narration coordinator", () => {
     );
     const { coordinator, prepareNarration } = createHarness({ result });
     const navigationRequests: Array<{
-      readonly event: "next-segment" | "previous-segment";
+      readonly event: "next-segment" | "paragraph-leaf" | "previous-segment";
       readonly locator: ReadingLocatorV1;
     }> = [];
     coordinator.subscribeNavigationRequests((request) => {
@@ -645,6 +655,60 @@ describe("product narration coordinator", () => {
     await settleUntil(() => prepareNarration.mock.calls.length === 2);
     expect(prepareNarration.mock.calls[1]?.[0]).toEqual(
       expect.objectContaining({ startLocator: ranges[1].start }),
+    );
+    await coordinator.close();
+  });
+
+  it("places an explicit paragraph leaf target before starting an inactive run", async () => {
+    const { coordinator, prepareNarration } = createHarness();
+    const requests: ProductNarrationNavigationRequest[] = [];
+    coordinator.subscribeNavigationRequests((request) => {
+      requests.push(request);
+    });
+    await coordinator.checkAvailability();
+
+    expect(coordinator.startAtLocator(END_LOCATOR)).toBe(true);
+    expect(coordinator.observe().navigation).toMatchObject({
+      playIntent: "playing",
+      settling: true,
+    });
+    expect(prepareNarration).not.toHaveBeenCalled();
+    await settleUntil(() => requests.length === 1);
+    expect(requests[0]).toEqual({
+      event: "paragraph-leaf",
+      locator: START_LOCATOR,
+    });
+
+    coordinator.settleExternalNavigation(START_LOCATOR);
+    await settleUntil(() => prepareNarration.mock.calls.length === 1);
+    expect(prepareNarration.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ startLocator: START_LOCATOR }),
+    );
+    await coordinator.close();
+  });
+
+  it("invalidates active work before requesting a paragraph leaf replacement", async () => {
+    const { client, coordinator, prepareNarration } = createHarness();
+    const requests: ProductNarrationNavigationRequest[] = [];
+    coordinator.subscribeNavigationRequests((request) => {
+      requests.push(request);
+      expect(client.shutdownCount).toBe(1);
+      expect(coordinator.observe().metrics.retainedAudioUnitCount).toBe(0);
+    });
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+
+    expect(coordinator.startAtLocator(END_LOCATOR)).toBe(true);
+    expect(coordinator.startAtLocator(START_LOCATOR)).toBe(false);
+    await settleUntil(() => requests.length === 1);
+    expect(coordinator.observe().navigation.settling).toBe(true);
+    expect(prepareNarration).toHaveBeenCalledTimes(1);
+
+    coordinator.settleExternalNavigation(requests[0]!.locator);
+    await settleUntil(() => prepareNarration.mock.calls.length === 2);
+    expect(prepareNarration.mock.calls[1]?.[0]).toEqual(
+      expect.objectContaining({ startLocator: START_LOCATOR }),
     );
     await coordinator.close();
   });
