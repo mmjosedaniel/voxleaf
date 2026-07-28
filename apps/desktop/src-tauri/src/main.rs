@@ -4,6 +4,8 @@ use std::sync::Arc;
 
 use tauri::Manager;
 
+#[cfg(test)]
+mod hardware_profile_authority;
 mod tts_protocol_contract;
 mod tts_protocol_probe;
 mod tts_service_fake_child;

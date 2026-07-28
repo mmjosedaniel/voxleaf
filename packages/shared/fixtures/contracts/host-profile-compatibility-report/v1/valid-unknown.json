@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "probeStatus": "unavailable",
+  "platform": {
+    "operatingSystem": "unknown",
+    "architecture": "unknown"
+  },
+  "processor": {
+    "logicalProcessorCount": {
+      "status": "unknown"
+    }
+  },
+  "memory": {
+    "totalPhysicalMiB": {
+      "status": "unknown"
+    },
+    "availablePhysicalMiB": {
+      "status": "unknown"
+    }
+  },
+  "storage": {
+    "applicationVolumeAvailableMiB": {
+      "status": "unknown"
+    }
+  },
+  "providers": {
+    "cpu": {
+      "availability": "unknown",
+      "deviceClass": "unknown",
+      "dedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "availableDedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "precisions": {
+        "float32": "unknown",
+        "float16": "unknown",
+        "bfloat16": "unknown",
+        "int8": "unknown"
+      }
+    },
+    "cuda": {
+      "availability": "unknown",
+      "deviceClass": "unknown",
+      "dedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "availableDedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "precisions": {
+        "float32": "unknown",
+        "float16": "unknown",
+        "bfloat16": "unknown",
+        "int8": "unknown"
+      }
+    },
+    "directml": {
+      "availability": "unknown",
+      "deviceClass": "unknown",
+      "dedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "availableDedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "precisions": {
+        "float32": "unknown",
+        "float16": "unknown",
+        "bfloat16": "unknown",
+        "int8": "unknown"
+      }
+    },
+    "rocm": {
+      "availability": "unknown",
+      "deviceClass": "unknown",
+      "dedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "availableDedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "precisions": {
+        "float32": "unknown",
+        "float16": "unknown",
+        "bfloat16": "unknown",
+        "int8": "unknown"
+      }
+    },
+    "metal": {
+      "availability": "unknown",
+      "deviceClass": "unknown",
+      "dedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "availableDedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "precisions": {
+        "float32": "unknown",
+        "float16": "unknown",
+        "bfloat16": "unknown",
+        "int8": "unknown"
+      }
+    }
+  }
+}

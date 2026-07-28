@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 9 and M009.1 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Completed M009 freezes and proves segment-level authority, publishes bounded source-range audible progress, connects non-mutating highlight/follow behavior to the reader, implements identity-first synchronized user navigation, persists non-skipping heard checkpoints, and validates the packaged synchronized loop. Completed M009.1 repairs the later reproduced highlight-materialization defect, implements one dedicated reader viewport, compact/collapsible narration, truthful loaded-duration text, a bounded canonical paragraph leaf, and passive-scroll isolation without changing TTS, segmentation, protocol, or buffer policy. Its deterministic, Chromium, packaged WebView2, private-EPUB, exact-host, repository, privacy, portable, and required Ubuntu/Windows checks pass; pull request #142 merged the final closeout. M010 hardware profiles, fallback, and operational resilience is the next approved active plan.
+VoxLeaf is pre-alpha. Milestones 1 through 9 and M009.1 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Completed M009 freezes and proves segment-level authority, publishes bounded source-range audible progress, connects non-mutating highlight/follow behavior to the reader, implements identity-first synchronized user navigation, persists non-skipping heard checkpoints, and validates the packaged synchronized loop. Completed M009.1 repairs the later reproduced highlight-materialization defect, implements one dedicated reader viewport, compact/collapsible narration, truthful loaded-duration text, a bounded canonical paragraph leaf, and passive-scroll isolation without changing TTS, segmentation, protocol, or buffer policy. Its deterministic, Chromium, packaged WebView2, private-EPUB, exact-host, repository, privacy, portable, and required Ubuntu/Windows checks pass; pull request #142 merged the final closeout. M010 is in progress. Its first milestone freezes the privacy-safe host report, immutable evidence-backed profile shape, conservative result-blind resource margins, deterministic selection, and explicit identity-first recovery policy without implementing detection or making a support/fallback claim.
 
 M009.1 exact-host use also exposed and corrected one additional reader defect:
 passive viewport scrolling must not replace active narration. The
@@ -672,12 +672,16 @@ stabilized application shell.
 
 ## Milestone 10: Add hardware profiles, fallback, and operational resilience
 
-**Status:** Next approved active plan; implementation has not started. Follow
+**Status:** In progress; Milestone 1 authority is complete. Follow
 [`M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md).
-Implementation has not started. Capability contracts exist, but production
-hardware detection, measured product profiles, a validated CPU fallback,
-model recovery, and support claims do not. CPU fallback is a hard evidence
-gate: rejected candidates cannot be silently re-admitted.
+The canonical privacy-safe host compatibility report, profile/evidence shape,
+matching/preference rules, fixed resource margins, failure taxonomy, and
+identity-first explicit recovery authority are frozen by
+[`hardware-profile-recovery-authority-v1.md`](../architecture/hardware-profile-recovery-authority-v1.md)
+and ADR-0019. Production hardware detection, registry entries, product
+matching, a validated CPU fallback, model recovery, and support claims do not
+exist. CPU fallback is a hard evidence gate: rejected candidates cannot be
+silently re-admitted.
 
 ### Goal
 
@@ -794,10 +798,12 @@ and repository/CI closeout. It does not reopen M009 timing authority or change
 M005 segmentation, M007 protocol, M008 buffer policy, or the TTS profile.
 
 [`active/M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md)
-is the next approved implementation authority for privacy-safe host detection,
+is the active implementation authority for privacy-safe host detection,
 evidence-backed profile matching, conditional CPU-fallback admission, and
 identity-safe operational recovery on the stabilized M009.1 application
-surface. It does not itself establish hardware support or admit a fallback.
+surface. Milestone 1 freezes the result-blind contract and policy. No runtime
+probe, registry selection, hardware support, fallback, or recovery path is
+implemented yet.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by completed
@@ -806,7 +812,7 @@ supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
 Milestones 1 through 9 and M009.1 are complete, with their evidence retained
-under [`completed/`](completed/). M010 is the next approved active plan.
+under [`completed/`](completed/). M010 is active with Milestone 1 complete.
 
 ## MVP completion boundary
 

@@ -47,9 +47,12 @@ the milestone.
 
 ## Current state
 
-Roadmap Milestones 1 through 9 and M009.1 are complete. M009.1 pull request
-#142 passed the required Ubuntu portable and Windows native foundation checks
-and merged, so this plan is unblocked. No M010 implementation has started.
+Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestone 1 is
+complete. Commit `8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
+result-blind hardware/profile/recovery authority, canonical compatibility
+report, executable desktop tables, native API/permission audit, and ADR-0019
+before any M010 host measurement. Runtime host detection, profile matching,
+fallback admission, recovery behavior, and support claims have not started.
 
 Completed M006 and its two blocker-resolution plans provide the
 candidate-neutral benchmark authority and measured evidence:
@@ -158,10 +161,12 @@ machine, or support matrix.
 - `docs/architecture/adaptive-buffer-authority-v1.md`
 - `docs/architecture/synchronization-authority-v1.md`
 - `docs/architecture/reader-experience-authority-v1.md`
+- `docs/architecture/hardware-profile-recovery-authority-v1.md`
 - `docs/architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md`
 - `docs/architecture/decisions/ADR-0015-bounded-adaptive-qwen-demo-buffering.md`
 - `docs/architecture/decisions/ADR-0016-rust-owned-stdio-tts-protocol.md`
 - `docs/architecture/decisions/ADR-0018-reader-experience-stabilization.md`
+- `docs/architecture/decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md`
 - `benchmarks/tts/selection-v5.md`
 
 ### Expected implementation areas
@@ -287,16 +292,43 @@ separate frozen limits and evidence.
 
 ### Validation
 
-- Run focused shared-contract, native, and desktop authority tests introduced
-  by this milestone.
-- Run `pnpm.cmd typecheck`.
-- Run `git diff --check`.
-- Confirm the authority contains no measured result values chosen after
-  seeing host outcomes and makes no support/fallback claim.
+- Focused shared contract command:
+  `pnpm.cmd --filter @voxleaf/shared test`
+  - Actual: passed; 20 files and 209 tests. The generator check verified 17
+    generated contract files.
+- Focused native command:
+  `cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml hardware_profile_authority`
+  - Actual: passed; 4 authority/audit tests.
+- Focused desktop command:
+  `pnpm.cmd --filter @voxleaf/desktop exec vitest run src/tts/hardware-profile-authority.test.ts`
+  - Actual: passed; 1 file and 8 tests.
+- TypeScript command: `pnpm.cmd typecheck:typescript`
+  - Actual: passed for shared, EPUB, and desktop packages.
+- Python command: `pnpm.cmd typecheck:python`
+  - Actual: passed; mypy checked 90 source files. The command was rerun
+    outside the sandbox after its first attempt was denied access to uv's
+    normal AppData cache.
+- Full repository command: `pnpm.cmd check`
+  - Actual: passed after adding the new schema ID to the Python fixture
+    conformance inventory. Formatting, linting, TypeScript/Python typechecks,
+    20 shared test files with 209 tests, 34 EPUB test files with 555 tests, 35
+    desktop test files with 338 tests, 29 Rust tests, 234 Python tests, and all
+    production builds passed.
+  - Existing non-failing warnings remained for the CSS Custom Highlight
+    pseudo-element, the desktop bundle-size advisory, and pytest's inability
+    to write its optional cache in the local checkout.
+- Command: `git diff --check`
+  - Actual: passed.
+- Authority review:
+  - Actual: passed. No M010 host probe or result-bearing measurement ran.
+    Fixtures are repository-authored synthetic/unknown values. No supported
+    profile, CPU fallback, recommendation, or automatic retry/restart was
+    admitted.
 
 ### Status
 
-Not started.
+Complete on 2026-07-28. The pre-result authority checkpoint is
+`8b7e153abef0639c54f148684ec1bab7e2d34a10`.
 
 ## Milestone 2: Implement privacy-safe host detection
 
@@ -561,6 +593,14 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-28: Completed Milestone 1 before any M010 host measurement. Added
+  canonical `HostProfileCompatibilityReportV1`, strict fixtures/generated
+  validators/runtime decoder, exact enum/unit/max/unknown semantics, the
+  executable profile and recovery authority, a native API/permission audit,
+  the detailed authority document, and ADR-0019. Focused shared/native/desktop
+  tests, TypeScript and Python typechecks, and `git diff --check` pass. The
+  result-blind checkpoint is
+  `8b7e153abef0639c54f148684ec1bab7e2d34a10`.
 - 2026-07-28: Verified completed M009.1 closeout. Pull request #142 passed the
   required Ubuntu portable and Windows native foundation checks and merged as
   `e1b3b7d80696027e511f44236d12e7168d85f927`. M010 is now the next approved
@@ -581,6 +621,21 @@ rewrite unrelated reader state.
 
 ## Discoveries and decisions
 
+- The existing Tauri configuration grants no renderer capability and uses no
+  shell/process/OS/HTTP plugin. Milestone 1 therefore adds no dependency or
+  permission. Milestone 2 must use reviewed direct Windows/provider APIs
+  behind a native injected port and must not parse PowerShell, WMI query text,
+  `wmic`, `nvidia-smi`, registry inventory, or arbitrary vendor output.
+- The native boundary does not need a raw adapter list. The frozen report
+  exposes one conservative identity-free capability slot for each closed
+  provider and discards names, IDs, LUIDs, paths, and raw errors.
+- Fixed result-blind capacity margins are now 25%/2,048 MiB for RAM,
+  20%/1,024 MiB for VRAM, and 10%/2,048 MiB for storage, plus 4,096 MiB total
+  physical RAM reserve. Unknown or non-complete host facts cannot match.
+- Recovery now has a closed ten-code failure taxonomy, zero automatic
+  attempts, at most one explicit action for an admitted recoverable episode,
+  identity-first cleanup, M009 latest-heard resume authority, and fixed
+  in-memory observation/diagnostic bounds.
 - `CapabilityReportV1` is the wrong place for hardware inventory and profile
   recommendation: it is deliberately model-independent and part of frozen
   protocol v1. M010 requires a separate contract if host data crosses Tauri.
@@ -607,8 +662,10 @@ rewrite unrelated reader state.
 
 ## Final validation results
 
-Not yet available. M010 is unblocked and is the next approved active plan, but
-none of its seven milestones has started. The plan is complete only when:
+Milestone 1 validation is complete and recorded above. M010 remains in
+progress with Milestones 2 through 7 not started. No runtime compatibility,
+fallback, recovery, or support claim is available. The plan is complete only
+when:
 
 - hardware/profile/recovery authority is frozen before results;
 - privacy-safe detection and deterministic matching pass;

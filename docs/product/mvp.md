@@ -4,7 +4,7 @@
 
 The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is never a startup target. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. M008's final policy run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute, which exceeds the MVP target.
 
-Completed M009 connects exact audible segment transitions to one non-mutating semantic source-range highlight, focus-safe automatic following, identity-first synchronized user navigation, and bounded non-skipping heard-position persistence, then validates the complete synchronized loop on the exact host. M009.1 repairs the proven same-chapter materialization gap, gives ready publications one dedicated reader scroll viewport with stable compact chrome, adds collapsible narration detail and exact loaded/target/estimate text without a progress bar, provides one bounded canonical paragraph leaf without making text interactive, and keeps passive scrolling independent from narration replacement. Its corrected private-EPUB interaction, amended exact-host matrix, repository/privacy audit, portable checks, release-packaged smoke, and required Ubuntu/Windows checks pass; pull request #142 merged the completed closeout. The narration path remains a constrained development demo rather than a passing standard profile or uninterrupted-playback promise. General hardware profiles, a validated fallback, operational resilience, and production packaging remain pending.
+Completed M009 connects exact audible segment transitions to one non-mutating semantic source-range highlight, focus-safe automatic following, identity-first synchronized user navigation, and bounded non-skipping heard-position persistence, then validates the complete synchronized loop on the exact host. M009.1 repairs the proven same-chapter materialization gap, gives ready publications one dedicated reader scroll viewport with stable compact chrome, adds collapsible narration detail and exact loaded/target/estimate text without a progress bar, provides one bounded canonical paragraph leaf without making text interactive, and keeps passive scrolling independent from narration replacement. Its corrected private-EPUB interaction, amended exact-host matrix, repository/privacy audit, portable checks, release-packaged smoke, and required Ubuntu/Windows checks pass; pull request #142 merged the completed closeout. M010 Milestone 1 now freezes a separate privacy-safe host report, immutable evidence-backed profile shape, conservative result-blind resource margins, deterministic selection, and identity-first explicit recovery policy. It implements no host probe, product matcher, supported profile, CPU fallback, automatic retry, or recovery controller. The narration path therefore remains a constrained development demo rather than a passing standard profile or uninterrupted-playback promise.
 
 ## Current implemented flow
 
@@ -46,8 +46,9 @@ authority.
 
 ## Remaining target user flow
 
-1. M010 adds privacy-safe compatibility reporting, evidence-backed profile
-   selection, conditional fallback admission, and identity-safe recovery.
+1. M010 implements its frozen privacy-safe compatibility authority through
+   native host detection, evidence-backed profile selection, conditional
+   fallback admission, and identity-safe recovery.
 2. M011 packages and validates an end-user distribution after those boundaries
    close.
 
@@ -94,9 +95,6 @@ Implemented and validated:
 
 Remaining:
 
-- Close private-publication confirmation of the repaired highlight path,
-  clean-host packaged validation of the fixed shell, and the approved bounded
-  paragraph action.
 - Detect relevant acceleration, publish measured hardware profiles, and provide a validated CPU-compatible fallback.
 - Graduate a measured engine/voice to a supported production profile, or record
   a separate explicit product decision.

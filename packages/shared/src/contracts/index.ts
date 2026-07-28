@@ -17,6 +17,10 @@ export {
   decodeCapabilityReportV1,
 } from "./capability-report.js";
 export {
+  decodeHostProfileCompatibilityReportV1,
+  HostProfileCompatibilityReportContractError,
+} from "./host-profile-compatibility-report.js";
+export {
   LocatorContractError,
   decodeLocatorRangeV1,
   decodeReadingLocatorV1,
@@ -79,6 +83,19 @@ export type {
   CapabilitySetV1,
   CapabilityStatusV1,
 } from "./capability-report.js";
+
+export type {
+  HostArchitectureV1,
+  HostDeviceClassV1,
+  HostFactAvailabilityV1,
+  HostKnownQuantityV1,
+  HostOperatingSystemV1,
+  HostProbeStatusV1,
+  HostProfileCompatibilityReportContractErrorCode,
+  HostProfileCompatibilityReportV1,
+  HostProviderCapabilityV1,
+  HostProviderNameV1,
+} from "./host-profile-compatibility-report.js";
 
 export type {
   LocatorContractErrorCode,

@@ -67,6 +67,12 @@ const validatorDefinitions = Object.freeze([
     typeModule: "capability-report-v1.js",
   },
   {
+    exportName: "validateHostProfileCompatibilityReportV1Wire",
+    schemaId: "urn:voxleaf:schema:host-profile-compatibility-report:v1",
+    typeName: "HostProfileCompatibilityReportV1Wire",
+    typeModule: "host-profile-compatibility-report-v1.js",
+  },
+  {
     exportName: "validateLocatorRangeV1Wire",
     schemaId: "urn:voxleaf:schema:locator-range:v1",
     typeName: "LocatorRangeV1Wire",

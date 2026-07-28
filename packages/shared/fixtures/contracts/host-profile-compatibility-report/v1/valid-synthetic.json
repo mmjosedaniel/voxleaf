@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "probeStatus": "complete",
+  "platform": {
+    "operatingSystem": "windows",
+    "architecture": "x86_64"
+  },
+  "processor": {
+    "logicalProcessorCount": {
+      "status": "known",
+      "value": 12
+    }
+  },
+  "memory": {
+    "totalPhysicalMiB": {
+      "status": "known",
+      "value": 24576
+    },
+    "availablePhysicalMiB": {
+      "status": "known",
+      "value": 16384
+    }
+  },
+  "storage": {
+    "applicationVolumeAvailableMiB": {
+      "status": "known",
+      "value": 40960
+    }
+  },
+  "providers": {
+    "cpu": {
+      "availability": "available",
+      "deviceClass": "cpu",
+      "dedicatedMemoryMiB": {
+        "status": "known",
+        "value": 0
+      },
+      "availableDedicatedMemoryMiB": {
+        "status": "known",
+        "value": 0
+      },
+      "precisions": {
+        "float32": "available",
+        "float16": "unknown",
+        "bfloat16": "unknown",
+        "int8": "unknown"
+      }
+    },
+    "cuda": {
+      "availability": "available",
+      "deviceClass": "discrete-gpu",
+      "dedicatedMemoryMiB": {
+        "status": "known",
+        "value": 12288
+      },
+      "availableDedicatedMemoryMiB": {
+        "status": "known",
+        "value": 9216
+      },
+      "precisions": {
+        "float32": "available",
+        "float16": "available",
+        "bfloat16": "available",
+        "int8": "unknown"
+      }
+    },
+    "directml": {
+      "availability": "unknown",
+      "deviceClass": "unknown",
+      "dedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "availableDedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "precisions": {
+        "float32": "unknown",
+        "float16": "unknown",
+        "bfloat16": "unknown",
+        "int8": "unknown"
+      }
+    },
+    "rocm": {
+      "availability": "unavailable",
+      "deviceClass": "unknown",
+      "dedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "availableDedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "precisions": {
+        "float32": "unavailable",
+        "float16": "unavailable",
+        "bfloat16": "unavailable",
+        "int8": "unavailable"
+      }
+    },
+    "metal": {
+      "availability": "unavailable",
+      "deviceClass": "unknown",
+      "dedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "availableDedicatedMemoryMiB": {
+        "status": "unknown"
+      },
+      "precisions": {
+        "float32": "unavailable",
+        "float16": "unavailable",
+        "bfloat16": "unavailable",
+        "int8": "unavailable"
+      }
+    }
+  }
+}
