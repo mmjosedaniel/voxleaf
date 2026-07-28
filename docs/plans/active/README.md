@@ -17,6 +17,11 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
+- [`M010-hardware-profiles-fallback-and-operational-resilience.md`](M010-hardware-profiles-fallback-and-operational-resilience.md):
+  approved focused ExecPlan for privacy-safe host detection, evidence-backed
+  profile matching, fallback admission, and identity-safe operational
+  recovery. Implementation has not started; CPU fallback remains a hard
+  measured-evidence gate.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through

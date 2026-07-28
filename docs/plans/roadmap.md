@@ -573,7 +573,12 @@ resolve the standard-profile blocker.
 
 ## Milestone 10: Add hardware profiles, fallback, and operational resilience
 
-**Status:** Deferred. Capability contracts exist, but production hardware detection, measured profiles, CPU fallback, model recovery, and support claims do not.
+**Status:** Approved planned. Follow
+[`M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md).
+Implementation has not started. Capability contracts exist, but production
+hardware detection, measured product profiles, a validated CPU fallback,
+model recovery, and support claims do not. CPU fallback is a hard evidence
+gate: rejected candidates cannot be silently re-admitted.
 
 ### Goal
 
@@ -594,10 +599,13 @@ Make the integrated reader usable across documented supported hardware and recov
 
 ### Dependencies
 
-Milestone 6 defines the evaluation authority, but its first cycle selected no
-supported profile. A future frozen cycle must supply that input before
-Milestones 7 through 9 can provide the integrated lifecycle and observable
-metrics required here.
+Milestone 6 defines the evaluation authority and retains the no-standard-profile
+decision. Completed M007-M009 now provide the constrained integrated
+lifecycle, identity-first cancellation, bounded playback, synchronized
+navigation, heard-position recovery authority, and observable metrics needed
+to test compatibility and recovery. A CPU fallback still requires a new
+result-blind frozen candidate cycle and passing measured evidence before
+product admission.
 
 ### Major risks and unknowns
 
@@ -674,6 +682,12 @@ standard profile, or approve model/runtime distribution.
 records the completed segment-level audible progress, highlighting,
 focus-safe following, synchronized navigation, heard-position persistence,
 exact-host validation, and repository/CI closeout.
+
+[`active/M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md)
+is the approved implementation authority for privacy-safe host detection,
+evidence-backed profile matching, conditional CPU-fallback admission, and
+identity-safe operational recovery. It does not itself establish hardware
+support or admit a fallback.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by M009 for the
