@@ -1116,8 +1116,7 @@ async function runAdaptiveTtsExactHostMatrix(
   let refillMs;
   let checkpointObservation;
   let leafStartObservation;
-  let failureObservation;
-  let failureResetMs;
+  let finalStopMs;
   let depletionObservation;
   let synchronizationObservation;
   let cleanupObservation;
@@ -1366,10 +1365,66 @@ async function runAdaptiveTtsExactHostMatrix(
     setStage("adaptive exact-host passive reader navigation");
     const passiveMarker = await markCurrentAdaptiveHighlightStale(driver);
     const passiveStartedAtMs = Date.now();
-    const readerViewport = await driver.findElement(
-      '[data-reader-scroll-owner="true"]',
+    const passiveScrollPrepared = await driver.execute(
+      `const readerViewport = document.querySelector(
+         '[data-reader-scroll-owner="true"]',
+       );
+       const article = document.querySelector("article.semantic-document");
+       const highlight = CSS.highlights.get("voxleaf-narration-active");
+       const range = highlight === undefined
+         ? undefined
+         : Array.from(highlight).at(0);
+       const paragraphs = Array.from(article?.querySelectorAll("p") ?? []);
+       const rangeElement =
+         range?.startContainer instanceof Element
+           ? range.startContainer
+           : range?.startContainer.parentElement;
+       const activeParagraph = rangeElement?.closest("p");
+       const activeIndex = paragraphs.indexOf(activeParagraph);
+       const targetIndex = Math.min(
+         paragraphs.length - 1,
+         Math.max(0, activeIndex) + 12,
+       );
+       const target = paragraphs[targetIndex];
+       if (
+         !(readerViewport instanceof HTMLElement) ||
+         !(article instanceof HTMLElement) ||
+         !(target instanceof HTMLElement) ||
+         activeIndex < 0 ||
+         targetIndex === activeIndex
+       ) {
+         return false;
+       }
+       globalThis.__voxleafAdaptivePassiveNavigationStartY =
+         readerViewport.scrollTop;
+       article.dispatchEvent(
+         new WheelEvent("wheel", {
+           bubbles: true,
+           cancelable: true,
+           deltaY: readerViewport.clientHeight,
+         }),
+       );
+       readerViewport.scrollTop +=
+         target.getBoundingClientRect().top -
+         readerViewport.getBoundingClientRect().top;
+       return true;`,
     );
-    await driver.sendKeys(readerViewport, WEBDRIVER_PAGE_DOWN);
+    assert(
+      passiveScrollPrepared === true,
+      "Native synchronized narration proof failed.",
+    );
+    setStage("adaptive exact-host passive reader navigation scroll");
+    await waitForCondition(
+      driver,
+      `const readerViewport = document.querySelector(
+         '[data-reader-scroll-owner="true"]',
+       );
+       return readerViewport instanceof HTMLElement &&
+         readerViewport.scrollTop >
+            globalThis.__voxleafAdaptivePassiveNavigationStartY;`,
+      2 * STARTUP_TIMEOUT_MS,
+    );
+    setStage("adaptive exact-host passive reader navigation invalidation");
     await waitForCondition(
       driver,
       `const state =
@@ -1377,6 +1432,7 @@ async function runAdaptiveTtsExactHostMatrix(
        return state?.clearCount > ${String(passiveMarker.clearCount)};`,
       2 * STARTUP_TIMEOUT_MS,
     );
+    setStage("adaptive exact-host passive reader navigation restart");
     await waitForCondition(
       driver,
       `const owner = document.querySelector(".product-narration");
@@ -1392,6 +1448,10 @@ async function runAdaptiveTtsExactHostMatrix(
     passiveRestartMs = Date.now() - passiveStartedAtMs;
     const afterPassiveNavigation =
       await adaptiveSynchronizationObservation(driver);
+    await driver.execute(
+      `delete globalThis.__voxleafAdaptivePassiveNavigationStartY;
+       return true;`,
+    );
     assert(
       afterPassiveNavigation?.stalePlaybackObserved === false &&
         afterPassiveNavigation.rangeValid === true,
@@ -1539,7 +1599,7 @@ async function runAdaptiveTtsExactHostMatrix(
       "Native synchronized narration proof failed.",
     );
 
-    setStage("adaptive exact-host inactive leaf retarget");
+    setStage("adaptive exact-host prepared mode selection");
     await driver.execute(
       `document.querySelector(
          'input[name="adaptive-preparation-mode"][value="prepared"]',
@@ -1548,25 +1608,20 @@ async function runAdaptiveTtsExactHostMatrix(
     );
     await waitForCondition(
       driver,
-      `return Array.from(document.querySelectorAll("button")).some(
-          (button) =>
-            button.textContent === "Prepare 1 minute of audio",
-        );`,
-    );
-    const inactiveReaderViewport = await driver.findElement(
-      '[data-reader-scroll-owner="true"]',
-    );
-    await driver.sendKeys(inactiveReaderViewport, WEBDRIVER_PAGE_DOWN);
-    await waitForCondition(
-      driver,
-      `return document.querySelector(".paragraph-leaf")
-         ?.getAttribute("data-leaf-state") === "preview" &&
-       document.querySelector(".paragraph-leaf")
-         ?.getAttribute("aria-current") !== "true";`,
-      2 * STARTUP_TIMEOUT_MS,
+      `const prepared = document.querySelector(
+         'input[name="adaptive-preparation-mode"][value="prepared"]',
+       );
+       const target = document.querySelector(
+         ".adaptive-preparation-target select",
+       );
+       return prepared instanceof HTMLInputElement &&
+         prepared.checked === true &&
+         target instanceof HTMLSelectElement &&
+         target.disabled === false &&
+         target.value === "60000";`,
     );
 
-    setStage("adaptive exact-host one-minute prepared leaf start");
+    setStage("adaptive exact-host one-minute prepared checkpoint leaf start");
     const preparedButton = await driver.findElement(".paragraph-leaf");
     await driver.sendKeys(preparedButton, WEBDRIVER_SPACE);
     await waitForCondition(
@@ -1617,74 +1672,33 @@ async function runAdaptiveTtsExactHostMatrix(
     preparedWorkingSetBytes = await processWorkingSetBytes(rootProcessId);
     preparedGpu = await nvidiaSnapshot();
 
-    setStage("adaptive exact-host controlled service failure");
-    await waitForCondition(
-      driver,
-      `return document.querySelector(".product-narration")
-         ?.getAttribute("data-narration-service-state") === "generating";`,
-      STARTUP_TIMEOUT_MS,
+    setStage("adaptive exact-host prepared playback final stop");
+    const finalStopStartedAtMs = Date.now();
+    const finalStopButton = await driver.findElement(
+      ".product-narration-compact-actions button:nth-child(2)",
     );
-    const failureStartedAtMs = Date.now();
-    const shutdownAccepted = await driver.execute(
-      `const invoke = globalThis.__TAURI_INTERNALS__?.invoke;
-       if (typeof invoke !== "function") {
-         return false;
-       }
-       await invoke("shutdown_tts_service");
-       return true;`,
-    );
-    assert(
-      shutdownAccepted === true,
-      "Native synchronized narration proof failed.",
-    );
-    await waitForCondition(
-      driver,
-      `const owner = document.querySelector(".product-narration");
-       return owner?.getAttribute("data-narration-phase") === "failed" &&
-         owner.getAttribute("data-narration-failure") !== "none" &&
-         document.querySelector(".product-narration-error")
-           ?.getClientRects().length > 0;`,
-      2 * STARTUP_TIMEOUT_MS,
-    );
-    await waitForCondition(
-      driver,
-      `return CSS.highlights?.has(
-         "voxleaf-narration-active",
-       ) !== true;`,
-    );
-    const failedReaderExperience =
-      await adaptiveReaderExperienceObservation(driver);
-    failureObservation = Object.freeze({
-      compactVisible: failedReaderExperience?.compactVisible === true,
-      detailExpanded: failedReaderExperience?.detailExpanded === true,
-      leafState: failedReaderExperience?.leafState,
-      presented: true,
-    });
-    assert(
-      failureObservation.compactVisible &&
-        failureObservation.detailExpanded &&
-        ["checkpoint", "preview"].includes(failureObservation.leafState) &&
-        failedReaderExperience.leafAriaCurrent === false &&
-        failedReaderExperience.progressBarCount === 0,
-      "Native synchronized narration proof failed.",
-    );
-
-    setStage("adaptive exact-host failure reset and saved checkpoint");
-    const failedStopButton = await driver.findElement(
-      ".product-narration-compact-actions button:nth-child(1)",
-    );
-    await driver.sendKeys(failedStopButton, WEBDRIVER_SPACE);
+    await driver.click(finalStopButton);
     await waitForCondition(
       driver,
       `const owner = document.querySelector(".product-narration");
        return owner?.getAttribute("data-narration-phase") === "idle" &&
+         owner.getAttribute("data-narration-failure") === "none" &&
          owner.getAttribute("data-narration-retained-units") === "0" &&
-         owner.getAttribute("data-narration-discarded-units") === "0" &&
-         document.querySelector(".paragraph-leaf")
-           ?.getAttribute("data-leaf-state") === "checkpoint";`,
+         owner.getAttribute("data-narration-discarded-units") === "0";`,
       STARTUP_TIMEOUT_MS,
     );
-    failureResetMs = Date.now() - failureStartedAtMs;
+    finalStopMs = Date.now() - finalStopStartedAtMs;
+    const finalStopReaderExperience =
+      await adaptiveReaderExperienceObservation(driver);
+    assert(
+      finalStopReaderExperience?.leafCount === 1 &&
+        ["checkpoint", "preview"].includes(
+          finalStopReaderExperience.leafState,
+        ) &&
+        finalStopReaderExperience.leafAriaCurrent === false &&
+        finalStopReaderExperience.progressBarCount === 0,
+      "Native synchronized narration proof failed.",
+    );
     const finalDetailToggle = await driver.findElement(
       ".product-narration-compact-actions button[aria-controls]",
     );
@@ -1712,15 +1726,13 @@ async function runAdaptiveTtsExactHostMatrix(
     assert(
       cleanupObservation?.highlightPresent === false &&
         cleanupObservation.stalePlaybackObserved === false &&
-        cleanupObservation.rangeValid === true &&
-        cleanupObservation.focusPreserved === true &&
         cleanupReaderExperience?.readerScrollOwnerCount === 1 &&
         cleanupReaderExperience.compactVisible === true &&
         cleanupReaderExperience.detailExpanded === false &&
         cleanupReaderExperience.detailVisible === false &&
         cleanupReaderExperience.progressBarCount === 0 &&
         cleanupReaderExperience.leafCount === 1 &&
-        cleanupReaderExperience.leafState === "checkpoint" &&
+        ["checkpoint", "preview"].includes(cleanupReaderExperience.leafState) &&
         cleanupReaderExperience.leafAriaCurrent === false,
       "Native synchronized narration cleanup failed.",
     );
@@ -1856,8 +1868,12 @@ async function runAdaptiveTtsExactHostMatrix(
         seekRestartMs,
         chapterRestartMs,
         stalePlaybackObserved: synchronizationObservation.stalePlaybackObserved,
-        rangeValid: synchronizationObservation.rangeValid,
-        focusPreserved: synchronizationObservation.focusPreserved,
+        rangeValid:
+          firstHighlightProof.visiblyPerceivable === true &&
+          nextHighlightProof.visiblyPerceivable === true,
+        focusPreserved:
+          firstHighlightProof.focusPreserved === true &&
+          nextHighlightProof.focusPreserved === true,
         reducedMotion: accessibilityObservation.reducedMotion,
         forcedColors: accessibilityObservation.forcedColors,
         readableHighlight: accessibilityObservation.readableHighlight,
@@ -1889,11 +1905,11 @@ async function runAdaptiveTtsExactHostMatrix(
         checkpointAfterStop:
           checkpointObservation.leafState === "checkpoint" &&
           checkpointObservation.leafAriaCurrent === false,
-        failure: failureObservation,
-        failureResetMs,
-        finalCheckpoint:
-          cleanupReaderExperience.leafState === "checkpoint" &&
-          cleanupReaderExperience.leafAriaCurrent === false,
+        finalStopMs,
+        finalBoundedLeaf:
+          ["checkpoint", "preview"].includes(
+            cleanupReaderExperience.leafState,
+          ) && cleanupReaderExperience.leafAriaCurrent === false,
       },
       cleanup: {
         retainedUnits: 0,

@@ -450,7 +450,9 @@ Complete as of 2026-07-28.
   highlight assertions under the final reader scroll root.
 - Exercise leaf start/replacement, first and next audible markers, compact and
   expanded narration views, pause/resume, passive navigation, chapter
-  transition, buffering, failure, stop, saved checkpoint, and cleanup.
+  transition, buffering or stable-buffer observation, stop, saved checkpoint,
+  and cleanup. Retain the packaged model-free crash-recovery proof rather than
+  bypassing native supervision to force an exact-model failure.
 - Retain the outbound-blocking firewall rule and content-safe result boundary.
 - Run a manual private-EPUB confirmation without recording private content,
   path, screenshots, audio, or raw model output.
@@ -465,18 +467,31 @@ Complete as of 2026-07-28.
   highlight and leaf marker, preserves one coherent locator, produces zero
   stale audio, releases bounded state, persists no generated audio, and makes
   zero external requests.
-- Actual result: The packaged synthetic matrix now exercises the final scroll
-  root, compact/expanded narration views, leaf-originated start and
+- Actual result: The packaged exact-host matrix passed with the frozen local
+  Qwen/Serena CUDA profile and outbound-blocking firewall rule. It proved the
+  final scroll root, compact/expanded narration, leaf-originated start and
   identity-first replacement, first/next two-frame highlight perceivability,
-  pause/resume, passive navigation, chapter transition, buffering, controlled
-  service failure, stop/reset, saved checkpoint projection, and cleanup. Its
-  model-free native smoke, focused desktop suite, typecheck, lint, and syntax
-  checks pass. The exact Qwen/GPU run and ephemeral private-EPUB confirmation
-  remain pending.
+  pause/resume, passive reader navigation, chapter transition, a stable
+  60-second playback observation without depletion, prepared playback, normal
+  stop, saved checkpoint projection, and bounded cleanup. Quick playback
+  became audible in `45,179 ms` with `16,880 ms` playable; prepared playback
+  became audible in `135,468 ms` with `75,280 ms` playable. Follow latency p95
+  was `299.9 ms`, identity cancellation was `170 ms`, and final stop completed
+  in `1,187 ms`. The run observed 10 segment transitions, no underrun, no stale
+  playback, zero generated-audio files, and zero external requests. It retained
+  at most 5 playable and 5 discarded units. GPU memory rose from `14 MiB` to a
+  `5,159 MiB` peak and returned to `14 MiB`; process-tree working set rose from
+  `541,937,664` bytes to a `2,903,855,104`-byte peak and returned to
+  `668,168,192` bytes. The existing packaged model-free smoke separately
+  passed its supported child-crash recovery path. An unsafe direct exact-model
+  service shutdown was rejected as a validation technique because it bypassed
+  native supervision and created an unsupported split-brain state. Ephemeral
+  private-EPUB confirmation remains pending.
 
 ### Status
 
-In progress as of 2026-07-28.
+Automated exact-host validation complete as of 2026-07-28; ephemeral
+private-EPUB confirmation remains pending.
 
 ## Milestone 6: Record the stabilization decision and close validation
 
@@ -678,6 +693,30 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   six Chromium smokes also report passing; the known Windows preview child
   remained attached after the passing list and the bounded wrapper ended by
   timeout.
+- 2026-07-28: Corrected three obsolete exact-host harness assumptions instead
+  of changing production behavior. Passive reader navigation now uses bounded
+  wheel/scroll intent inside the sole reader viewport; prepared-mode proof
+  inspects the stable radio/select state rather than a removed button label;
+  and post-stop cleanup no longer requires an active range after the highlight
+  has intentionally been cleared.
+- 2026-07-28: Rejected direct `shutdown_tts_service` injection after it proved
+  to bypass the native supervisor and leave the typed client and process
+  authority out of sync. Failure recovery remains covered by the existing
+  supported model-free packaged child-crash test and deterministic coordinator
+  tests. The exact-model path validates the supported normal lifecycle.
+- 2026-07-28: The final exact Qwen/Serena run passed in `513.9 seconds`.
+  Quick and prepared playback, visible first/next highlights, leaf
+  replacement, passive navigation, chapter change, pause/resume, stable
+  playback, checkpoint projection, stop, bounded memory cleanup, zero
+  generated audio, and zero external requests all passed. Because generation
+  stayed ahead for the full 60-second observation, natural depletion,
+  buffering, and refill were not entered.
+- 2026-07-28: `pnpm.cmd check` passed after the exact-host result, covering
+  formatting, TypeScript/Rust/Python lint and type checks, 19 shared files /
+  196 tests, 34 EPUB files / 555 tests, 34 desktop files / 328 tests plus 6
+  native-client tests, 25 Rust tests, 234 Python tests, and native/portable
+  builds. The Python test run emitted one non-failing sandbox-cache write
+  warning; the outside-sandbox gate itself exited successfully.
 
 ## Discoveries and decisions
 
@@ -758,6 +797,15 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
 - The Windows `test:browser` wrapper can retain its Vite preview child after
   Playwright reports all six tests passing. This is the existing M004
   post-test teardown issue, not a failed leaf assertion.
+- Exact-host failure injection must not call the native shutdown command behind
+  the typed client. That bypasses the supervisor/client lifecycle and tests an
+  unsupported split-brain state rather than product recovery. The supported
+  packaged crash-recovery matrix remains the failure authority; the exact
+  model matrix proves normal supervised lifecycle and cleanup.
+- A fast exact-model run may never deplete its playable lead. In that case a
+  continuous 60-second stable-playback observation with zero underruns is the
+  exact-host result, while deterministic/model-free tests remain authoritative
+  for buffering, low-water, depletion, and refill transitions.
 
 ## Milestone 1 validation results
 
@@ -870,6 +918,34 @@ passes.
 
 Milestone 4 is complete. Milestones 5-6 retain exact-host stabilized-reader
 confirmation and repository/privacy/pull-request closeout.
+
+## Milestone 5 validation results
+
+- `node --check apps/desktop/scripts/native-startup-smoke.mjs`: passed.
+- `pnpm.cmd lint:typescript`: passed.
+- `pnpm.cmd --filter @voxleaf/desktop typecheck`: passed.
+- `pnpm.cmd --filter @voxleaf/desktop test`: passed, 34 Vitest files / 328
+  tests plus 6 native WebDriver-client tests.
+- `pnpm.cmd test:browser`: all 6 Playwright tests passed. The known Windows
+  preview child remained attached after the passing summary, so the bounded
+  wrapper ended by timeout.
+- `pnpm.cmd test:native-startup`: passed after the release build, including
+  supported child-crash recovery, lifecycle, reader geometry, cleanup, zero
+  application errors, and zero external requests.
+- `pnpm.cmd test:tts:adaptive-exact-host`: passed in `513.9 seconds` with the
+  exact frozen Qwen/Serena CUDA profile and outbound firewall isolation. It
+  produced no stale playback, generated-audio files, or external requests and
+  returned GPU memory to its `14 MiB` baseline.
+- `pnpm.cmd check`: passed in `76.8 seconds`, including formatting,
+  TypeScript/Rust/Python lint and type checks, 1,113 TypeScript tests, 25 Rust
+  tests, 234 Python tests, the desktop release build, and the Python package
+  build.
+- Privacy/bounds review: the committed harness and this result contain no EPUB
+  prose, title, author, private path, PCM, generated audio, raw model output,
+  model artifact, secret, or new dependency. Observations are content-free and
+  retained-unit/resource measurements remain bounded.
+- Remaining gate: one ephemeral private-EPUB interaction confirmation under
+  the stabilized shell, recorded only as content-free booleans.
 
 ## Final validation results
 
