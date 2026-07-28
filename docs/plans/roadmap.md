@@ -581,9 +581,12 @@ Milestone 1 freezes the result-blind
 and [ADR-0018](../architecture/decisions/ADR-0018-reader-experience-stabilization.md).
 It distinguishes accepted range registration from paint-aware perceivability
 and selects one reader scroll owner, compact narration, text-only loaded
-duration, and a bounded leaf before production implementation. Completed M009
-remains the synchronization authority and evidence baseline; M009.1
-Milestones 2 through 6 remain.
+duration, and a bounded leaf before production implementation. Milestone 2
+repairs the proven same-chapter DOM-materialization gap and retains one
+focus-safe Custom Highlight with deterministic and Chromium evidence;
+clean-host packaged validation remains pending. Completed M009 remains the
+synchronization authority and evidence baseline; M009.1 Milestones 3 through
+6 remain.
 
 ### Goal
 

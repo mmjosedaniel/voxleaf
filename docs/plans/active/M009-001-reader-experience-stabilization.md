@@ -331,11 +331,26 @@ packaged WebView2, Ubuntu portable, and Windows native validation pass.
 - Expected result: every accepted audible start produces exactly one visible
   active range in the correct document, following remains focus-safe, and all
   invalidating paths clear it without stale UI.
-- Actual result: Not yet available.
+- Actual result: A same-spine audible range whose DOM had not yet
+  materialized remained accepted but invisible because the controller only
+  requested canonical materialization when the target spine differed from the
+  current spine. A failing repository-authored regression reproduced that
+  condition. The controller now requests the active range start exactly once
+  whenever mapping is missing or collapsed, then the existing mapper
+  subscription refreshes the one Custom Highlight after materialization.
+  Focus, selection, URL, publication DOM, timing authority, and bounded state
+  remain unchanged. Focused tests pass for first/next segments, same-spine and
+  chapter materialization, pause/buffering retention, failure, stop, cleanup,
+  and geometry-free highlight fallback. All six Chromium smokes pass,
+  including rendered-pixel evidence with selected text in dark and
+  forced-colors modes. The local native build passes, but this host still
+  fails before application mount at the previously documented
+  `webdriver-session-not-created` boundary; clean-host packaged validation is
+  pending the pull request.
 
 ### Status
 
-Not started.
+Implementation complete; clean-host packaged validation pending.
 
 ## Milestone 3: Implement the fixed reader shell and compact narration UI
 
@@ -577,6 +592,21 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   smoke successfully, and Ubuntu portable foundation also passed. This closes
   the packaged proof and confirms the earlier `chrome not reachable` result
   was specific to the local automation host rather than the implementation.
+- 2026-07-28: Traced accepted audible progress through
+  `ProductNarrationCoordinator`, `ReaderPublication`, the semantic range
+  mapper, the Custom Highlight registry, stylesheet, materialization, and
+  focus-safe follow geometry. A new failing synthetic regression proved that
+  missing same-spine DOM materialization was a production gap capable of
+  producing the reported symptom.
+- 2026-07-28: Removed the spine-change restriction from the existing
+  one-request materialization gate. The mapper now refreshes the same active
+  range after same-chapter content materializes; no second clock, wrapper,
+  persisted state, or retained text was added.
+- 2026-07-28: Added first/next and lifecycle cleanup regressions plus
+  dark/forced-colors selected-text pixel evidence. Focused reader tests,
+  desktop tests, type checking, linting, formatting, and all six Chromium
+  smokes pass. The local native build passes and the known pre-mount WebView2
+  session handshake still fails; clean-host pull-request validation remains.
 
 ## Discoveries and decisions
 
@@ -619,6 +649,19 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   perceivability script. It is not evidence that the highlight assertion
   failed. A matching EdgeDriver and a direct healthy release launch rule out
   stale driver version and application startup as sufficient explanations.
+- The reproduced same-spine failure does not require an audible-progress
+  timing, M005 segmentation, Custom Highlight styling, or chapter-navigation
+  defect. The controller deliberately withheld materialization when a target
+  was absent from the current spine, so later same-chapter audible content
+  could have no DOM range to register or follow. Reusing the existing one-shot
+  navigation gate and mapper refresh is the smallest correction. An ephemeral
+  private-publication confirmation remains necessary before claiming this was
+  the only condition in the original manual observation.
+- Selected text can obscure color-only highlighting even when the Custom
+  Highlight remains registered. The retained underline supplies the required
+  non-color cue; browser screenshots prove the decorated and selection-only
+  renderings differ in dark and forced-colors modes without moving focus or
+  selection.
 - A clean reboot did not change the result. The remaining failing boundary is
   the external `tauri-driver`/WebView2 automation launch: it starts the native
   executable but does not create the WebView child that EdgeDriver must reach.
@@ -653,10 +696,39 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
 Milestone 1 is complete. Production highlight repair and reader-shell behavior
 remain scoped to Milestones 2 through 6.
 
+## Milestone 2 validation results
+
+- Focused reader command: passed, 3 files / 31 tests.
+- `pnpm.cmd --filter @voxleaf/desktop test`: passed, 34 Vitest files / 318
+  tests plus 6 native WebDriver-client tests.
+- `pnpm.cmd --filter @voxleaf/desktop typecheck`: passed.
+- `pnpm.cmd lint:typescript`: passed.
+- `pnpm.cmd format:check:typescript`: passed.
+- `pnpm.cmd test:browser`: all 6 Playwright tests passed, including
+  rendered-pixel visibility with selected text in dark and forced-colors
+  modes. The already documented Windows preview child remained alive after
+  the passing summary, so the bounded command ended by timeout.
+- `pnpm.cmd test:native-startup`: the Vite and release Tauri builds passed;
+  WebDriver session creation failed before application mount with the same
+  local `webdriver-session-not-created` boundary documented in Milestone 1.
+  Retrying with the matching test-only WebView2/EdgeDriver
+  `150.0.4078.105` pair reached the same boundary. Clean-host Windows
+  pull-request validation remains pending.
+- Privacy/bounds review: fixtures remain repository-authored and synthetic;
+  the controller retains one active source range and one one-shot
+  materialization flag; no EPUB text, private path, PCM, generated audio,
+  model artifact, persistence field, dependency, DOM wrapper, or external
+  request was added.
+
+Milestone 2 production behavior and repository/browser validation are
+implemented. Its status becomes complete only after the clean-host packaged
+check passes.
+
 ## Final validation results
 
-Not yet available. This plan is approved and not started. It is complete only
-when the user-observed highlight discrepancy is reconciled; the fixed reader
+Not yet available. This plan is active with Milestone 1 complete and Milestone
+2 implemented pending clean-host packaged validation. It is complete only when
+the user-observed highlight discrepancy is confirmed closed; the fixed reader
 viewport, compact narration UI, text-only loaded duration, and bounded leaf
 interaction are implemented and validated; exact-host privacy and cleanup
 evidence passes; documentation matches actual behavior; and required

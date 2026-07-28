@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 9 are complete. The secure EPUB boundary, visual reader, bounded restoration, locator-linked narration preparation, M007 service, exact-development M008 coordinator/player path, and M009 segment-level synchronized reader are implemented and validated within their documented scopes. ADR-0015 closes the demo policy with quick mode default, one-minute initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. ADR-0013 continues to select no standard production profile. Completed M009 implements the segment-level authority, bounded audible source-range projection, reader-owned non-mutating highlight/follow projection, identity-first synchronized user navigation, bounded non-skipping heard-position persistence, and an exact-host packaged synchronization proof. That proof observed six transitions, no stale playback, one natural underrun/refill, 190 ms cancellation, bounded cleanup, and zero external requests, but 378.46 buffering seconds per playback minute. A later manual real-publication run produced narration without a visible active-segment highlight and exposed an outer-page layout that can push the reader below application controls. M009.1 Milestone 1 now freezes the [`reader-experience-authority-v1`](reader-experience-authority-v1.md) and [ADR-0018](decisions/ADR-0018-reader-experience-stabilization.md): accepted range registration is not visible evidence until the highlight survives a rendering opportunity with visible geometry, contrast, and an underline. The same authority selects one dedicated reader scroll owner, a bounded locator-backed paragraph leaf, compact/collapsible narration, and exact text-only loaded duration without changing M005, M007, M008, or M009 boundaries. Product implementation remains planned in M009.1 Milestones 2 through 6. M010 hardware reporting, measured profile matching, conditional fallback admission, and operational recovery follows M009.1. General-hardware support, validated fallback, production distribution, and sustained uninterrupted playback therefore remain unimplemented.
+Mixed implementation status. Roadmap Milestones 1 through 9 are complete. The secure EPUB boundary, visual reader, bounded restoration, locator-linked narration preparation, M007 service, exact-development M008 coordinator/player path, and M009 segment-level synchronized reader are implemented and validated within their documented scopes. ADR-0015 closes the demo policy with quick mode default, one-minute initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. ADR-0013 continues to select no standard production profile. Completed M009 implements the segment-level authority, bounded audible source-range projection, reader-owned non-mutating highlight/follow projection, identity-first synchronized user navigation, bounded non-skipping heard-position persistence, and an exact-host packaged synchronization proof. That proof observed six transitions, no stale playback, one natural underrun/refill, 190 ms cancellation, bounded cleanup, and zero external requests, but 378.46 buffering seconds per playback minute. A later manual real-publication run produced narration without a visible active-segment highlight and exposed an outer-page layout that can push the reader below application controls. M009.1 Milestone 1 freezes the [`reader-experience-authority-v1`](reader-experience-authority-v1.md) and [ADR-0018](decisions/ADR-0018-reader-experience-stabilization.md): accepted range registration is not visible evidence until the highlight survives a rendering opportunity with visible geometry, contrast, and an underline. Milestone 2 now repairs the proven same-spine materialization gap by issuing the existing one-shot canonical navigation request whenever the active range is not mapped; the mapper refresh then registers the same single Custom Highlight. No second timing source, DOM wrapper, persisted state, or protocol field is introduced. Deterministic and Chromium evidence pass, including selected text in dark and forced-colors modes; clean-host packaged validation is pending. The authority also selects one dedicated reader scroll owner, a bounded locator-backed paragraph leaf, compact/collapsible narration, and exact text-only loaded duration without changing M005, M007, M008, or M009 boundaries. Those presentation changes remain planned in M009.1 Milestones 3 through 6. M010 hardware reporting, measured profile matching, conditional fallback admission, and operational recovery follows M009.1. General-hardware support, validated fallback, production distribution, and sustained uninterrupted playback therefore remain unimplemented.
 
 M007 is complete. Its six milestones implement the accepted protocol v1,
 closed generated contracts, bounded model-free Python service, native
@@ -84,7 +84,7 @@ Desktop application
 |-- Reader/narration projection, following, navigation, and heard persistence
 |   [M009 Milestones 1-7 complete and exact-host validated]
 `-- Reader experience stabilization
-    [M009.1 approved planned; implementation has not started]
+    [M009.1 in progress; Milestones 1-2 implemented]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]
@@ -146,14 +146,17 @@ The visual tracker measures registered application elements at a fixed reading l
 
 The current opened-book application still uses the outer page as the scroll
 owner, keeps detailed narration controls expanded, and renders a preparation
-`<progress>` element beside exact loaded/target text. M009.1 plans a layout and
-presentation refinement, not a new document or narration boundary: one
-dedicated EPUB viewport will own reading scroll; compact controls and required
-status will remain outside its collapsible detail; one bounded contextual or
-roving leaf will target canonical paragraph locators; and exact loaded/target
-duration text will replace the ambiguous bar. The exact segment text range
-remains audible authority, and completed focus, selection, cancellation,
-restoration, persistence, memory, and privacy invariants remain binding.
+`<progress>` element beside exact loaded/target text. M009.1 Milestone 2
+repairs same-chapter active-range materialization while retaining the exact
+segment text range as audible authority, one Custom Highlight, focus-safe
+following, and existing lifecycle cleanup. Milestones 3-4 plan presentation
+refinement, not a new document or narration boundary: one dedicated EPUB
+viewport will own reading scroll; compact controls and required status will
+remain outside its collapsible detail; one bounded contextual or roving leaf
+will target canonical paragraph locators; and exact loaded/target duration
+text will replace the ambiguous bar. Completed focus, selection,
+cancellation, restoration, persistence, memory, and privacy invariants remain
+binding.
 
 The desktop application and TTS inference should run in separate local processes.
 
