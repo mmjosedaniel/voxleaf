@@ -1,5 +1,45 @@
 # Troubleshooting
 
+## Native development loop
+
+### Tauri development exits with an `EBUSY` watcher error
+
+On Windows, the native executable under
+`apps/desktop/src-tauri/target/debug/deps` is locked while Cargo runs it. Vite
+must not watch that native tree. The committed Vite configuration ignores
+`apps/desktop/src-tauri/**`; Tauri and Cargo watch Rust sources independently.
+
+Run the native loop from the repository root:
+
+```powershell
+pnpm.cmd build:packages
+pnpm.cmd --filter @voxleaf/desktop tauri dev
+```
+
+If the error still appears, stop every older VoxLeaf/Vite development session
+with `Ctrl+C` and start one fresh session. Do not delete the native target tree
+while an application or compiler process owns it.
+
+### An opened EPUB remains on “Preparing the saved reader state”
+
+React StrictMode intentionally performs an extra setup/cleanup probe in
+development. Closing application-owned narration, position, restoration, or
+publication resources during that probe leaves the second setup with closed
+state and can strand restoration.
+
+The application defers final ownership cleanup by one microtask and lets the
+matching StrictMode setup supersede the probe cleanup. A real unmount has no
+replacement setup, so resources are still closed promptly. If the reader
+remains stuck with the current implementation, restart the development session
+and run:
+
+```powershell
+pnpm.cmd --filter @voxleaf/desktop test
+```
+
+Treat another persistent restoration stall as a regression; do not bypass
+restoration or clear private reader data merely to make the UI advance.
+
 ## Exact one-GPU narration demo
 
 The M008 narration path and M009 synchronized reader integration form a
@@ -60,6 +100,22 @@ Prepared playback and playback-only pause may build more lead, but they do not
 improve model throughput. Semantic-boundary waits remain disabled at `0` ms.
 Do not hide buffering, claim continuous playback, or enable a second CPU/GPU
 model worker.
+
+### Preparation stops after one or more playable units
+
+One bounded cause is an exact Qwen call that does not emit its codec stop token.
+Its historical benchmark authority retains `maxNewTokens: 2048` so that
+evaluation record remains unchanged, but that allowance can decode far beyond
+protocol v1's 20-second unit ceiling. The product adapter therefore clamps
+generation to 250 codec tokens: the pinned tokenizer expands each token to
+1,920 samples, so the call cannot produce more than 480,000 samples at 24 kHz.
+
+This clamp prevents a runaway call from continuing toward the native synthesis
+timeout or returning an oversized waveform. It does not add automatic retry,
+change the frozen benchmark result, or make the exact development profile a
+production profile. A genuine engine failure still invalidates the active
+identity and requires a fresh narration start; bounded explicit recovery is
+owned by M010.
 
 ### Stop, navigation, or close interrupts narration
 

@@ -16,13 +16,16 @@ import pytest
 from voxleaf_tts.engine import EngineFailure, EngineFailureCode
 from voxleaf_tts.qwen_adapter import (
     CANDIDATE_ID,
+    CODEC_SAMPLES_PER_TOKEN,
     ENGINE_VERSION,
     GENERATION_SETTINGS,
     INSTRUCTION,
     LANGUAGE,
     MAJOR_ARTIFACTS,
+    MAX_SERVICE_CODEC_TOKENS,
     MODEL_REPOSITORY,
     MODEL_REVISION,
+    SERVICE_GENERATION_SETTINGS,
     SPEAKER,
     TORCH_VERSION,
     TORCHAUDIO_VERSION,
@@ -302,11 +305,21 @@ def test_exact_load_warm_and_complete_generation_use_frozen_identity(
         "language": LANGUAGE,
         "speaker": SPEAKER,
         "instruct": INSTRUCTION,
-        **GENERATION_SETTINGS,
+        **SERVICE_GENERATION_SETTINGS,
     }
     adapter.release_result()
     adapter.cleanup()
     assert calls["cleaned"] is True
+
+
+def test_product_generation_is_clamped_to_the_protocol_audio_ceiling() -> None:
+    assert GENERATION_SETTINGS["max_new_tokens"] == 2_048
+    assert SERVICE_GENERATION_SETTINGS == {
+        **GENERATION_SETTINGS,
+        "max_new_tokens": MAX_SERVICE_CODEC_TOKENS,
+    }
+    assert MAX_SERVICE_CODEC_TOKENS * CODEC_SAMPLES_PER_TOKEN == 480_000
+    assert (MAX_SERVICE_CODEC_TOKENS + 1) * CODEC_SAMPLES_PER_TOKEN > 480_000
 
 
 @pytest.mark.parametrize(

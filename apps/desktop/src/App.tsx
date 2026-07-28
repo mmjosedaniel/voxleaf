@@ -108,6 +108,43 @@ const RASTER_STATUS_MESSAGE: Readonly<Record<RasterImageProbeStatus, string>> =
 type ReaderRestorationSettlement =
   "pending" | ReaderInitialRestorationSettlement["status"];
 
+/**
+ * React StrictMode runs an effect's cleanup immediately during its development
+ * mount probe. Deferring ownership cleanup by one microtask lets the matching
+ * second setup supersede that probe without closing a live resource. A real
+ * unmount has no second setup, so the resource is still released promptly.
+ */
+function useStrictModeSafeResourceCleanup<
+  Resource extends { readonly close: () => void | Promise<void> },
+>(resource: Resource | undefined): void {
+  const activeResource = useRef<Resource | undefined>(undefined);
+  const cleanupToken = useRef<{ superseded: boolean } | undefined>(undefined);
+
+  useEffect(() => {
+    if (cleanupToken.current !== undefined) {
+      cleanupToken.current.superseded = true;
+    }
+    const currentCleanup = { superseded: false };
+    cleanupToken.current = currentCleanup;
+    const previous = activeResource.current;
+    if (previous !== undefined && previous !== resource) {
+      activeResource.current = undefined;
+      void previous.close();
+    }
+    activeResource.current = resource;
+
+    return () => {
+      queueMicrotask(() => {
+        if (currentCleanup.superseded || activeResource.current !== resource) {
+          return;
+        }
+        activeResource.current = undefined;
+        void resource?.close();
+      });
+    };
+  }, [resource]);
+}
+
 interface LoadingReaderRestoration {
   readonly status: "loading";
   readonly publication: OpenedPublication;
@@ -276,12 +313,7 @@ export function App({
     [createNarrationCoordinator, readyPublication, readyRestorationResult],
   );
 
-  useEffect(
-    () => () => {
-      void narrationCoordinator?.close();
-    },
-    [narrationCoordinator],
-  );
+  useStrictModeSafeResourceCleanup(narrationCoordinator);
 
   useEffect(() => {
     if (
@@ -375,6 +407,9 @@ export function App({
   const activePositionSaveCoordinator = useRef<
     ReaderPositionSaveCoordinator | undefined
   >(undefined);
+  const positionSaveCleanupToken = useRef<{ superseded: boolean } | undefined>(
+    undefined,
+  );
   const closeActivePositionSaveCoordinator = useCallback((): void => {
     const coordinator = activePositionSaveCoordinator.current;
     activePositionSaveCoordinator.current = undefined;
@@ -382,16 +417,28 @@ export function App({
   }, []);
 
   useEffect(() => {
-    if (positionSaveCoordinator === undefined) {
-      return;
+    if (positionSaveCleanupToken.current !== undefined) {
+      positionSaveCleanupToken.current.superseded = true;
+    }
+    const currentCleanup = { superseded: false };
+    positionSaveCleanupToken.current = currentCleanup;
+    const previous = activePositionSaveCoordinator.current;
+    if (previous !== undefined && previous !== positionSaveCoordinator) {
+      activePositionSaveCoordinator.current = undefined;
+      void previous.close();
     }
     activePositionSaveCoordinator.current = positionSaveCoordinator;
-    positionSaveCoordinator.start();
+    positionSaveCoordinator?.start();
     return () => {
-      if (activePositionSaveCoordinator.current === positionSaveCoordinator) {
-        activePositionSaveCoordinator.current = undefined;
-      }
-      void positionSaveCoordinator.close();
+      queueMicrotask(() => {
+        if (currentCleanup.superseded) {
+          return;
+        }
+        if (activePositionSaveCoordinator.current === positionSaveCoordinator) {
+          activePositionSaveCoordinator.current = undefined;
+        }
+        void positionSaveCoordinator?.close();
+      });
     };
   }, [positionSaveCoordinator]);
 
@@ -424,20 +471,32 @@ export function App({
     readyRestorationResult,
   ]);
 
-  useEffect(
-    () => () => {
-      activeRasterProbe.current?.abort();
-      activeRasterProbe.current = undefined;
-      readerPositionRestoreCoordinator.close();
-      closeActivePositionSaveCoordinator();
-      void readerLifecycle.cleanup();
-    },
-    [
-      closeActivePositionSaveCoordinator,
-      readerLifecycle,
-      readerPositionRestoreCoordinator,
-    ],
+  const applicationCleanupToken = useRef<{ superseded: boolean } | undefined>(
+    undefined,
   );
+  useEffect(() => {
+    if (applicationCleanupToken.current !== undefined) {
+      applicationCleanupToken.current.superseded = true;
+    }
+    const currentCleanup = { superseded: false };
+    applicationCleanupToken.current = currentCleanup;
+    return () => {
+      queueMicrotask(() => {
+        if (currentCleanup.superseded) {
+          return;
+        }
+        activeRasterProbe.current?.abort();
+        activeRasterProbe.current = undefined;
+        readerPositionRestoreCoordinator.close();
+        closeActivePositionSaveCoordinator();
+        void readerLifecycle.cleanup();
+      });
+    };
+  }, [
+    closeActivePositionSaveCoordinator,
+    readerLifecycle,
+    readerPositionRestoreCoordinator,
+  ]);
 
   const handleRasterProbe = async (): Promise<void> => {
     activeRasterProbe.current?.abort();

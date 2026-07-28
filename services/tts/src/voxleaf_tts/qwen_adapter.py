@@ -83,6 +83,19 @@ GENERATION_SETTINGS: Final = {
     "max_new_tokens": 2048,
 }
 
+# The frozen benchmark permits 2,048 codec tokens so result-bearing evaluation
+# can observe a runaway generation. Product service output is narrower: the
+# pinned 12 Hz tokenizer decodes every codec token to 1,920 samples, while
+# protocol v1 admits at most 480,000 samples (20 seconds at 24 kHz). Clamp only
+# the product call at that existing transport boundary; successful generations
+# that emit EOS before the boundary retain the frozen sampling configuration.
+CODEC_SAMPLES_PER_TOKEN: Final = 1_920
+MAX_SERVICE_CODEC_TOKENS: Final = MAX_AUDIO_SAMPLE_COUNT // CODEC_SAMPLES_PER_TOKEN
+SERVICE_GENERATION_SETTINGS: Final = {
+    **GENERATION_SETTINGS,
+    "max_new_tokens": MAX_SERVICE_CODEC_TOKENS,
+}
+
 
 @dataclass(frozen=True, slots=True)
 class _ActiveOperation:
@@ -337,7 +350,7 @@ class QwenSerenaTtsEngine:
                     language=LANGUAGE,
                     speaker=SPEAKER,
                     instruct=INSTRUCTION,
-                    **GENERATION_SETTINGS,
+                    **SERVICE_GENERATION_SETTINGS,
                 )
             if (
                 type(sample_rate) is not int

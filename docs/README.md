@@ -42,7 +42,10 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 
 - [`development/setup.md`](development/setup.md): pinned prerequisites, reproducible setup, environment boundaries, and verified commands.
 - [`development/testing.md`](development/testing.md): test strategy.
-- [`development/troubleshooting.md`](development/troubleshooting.md): content-safe exact-demo availability, startup, buffering, cancellation, resource, and recovery guidance.
+- [`development/troubleshooting.md`](development/troubleshooting.md): native
+  development watcher/restoration diagnostics plus content-safe exact-demo
+  availability, startup, buffering, cancellation, resource, and recovery
+  guidance.
 - [`development/dependencies.md`](development/dependencies.md): dependency ownership, purpose, alternatives, and review policy.
 - [`development/git-workflow.md`](development/git-workflow.md): branches, commits, and pull requests.
 
