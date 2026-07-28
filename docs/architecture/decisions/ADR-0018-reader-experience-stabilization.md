@@ -63,9 +63,11 @@ state has a non-colour cue, visible focus, and keyboard/touch parity.
 The projected control defaults to the block at the active visual line.
 Pointer hover over an eligible registered heading or paragraph temporarily
 projects the same control beside that exact block and preserves it while the
-pointer moves onto the leaf. It uses a retained preparing, audible, or
-checkpoint treatment only when that state belongs to the projected block;
-otherwise it presents the inspected block as an explicit selectable preview.
+pointer crosses the reader gutter onto the leaf. Non-block space inside the
+reader cannot replace that preview; leaving the reader restores the
+visual-line default. It uses a retained preparing, audible, or checkpoint
+treatment only when that state belongs to the projected block; otherwise it
+presents the inspected block as an explicit selectable preview.
 
 The existing M005 segmentation, M007 protocol, M008 thresholds and bounds,
 explicit M009 identity-first invalidation, shared contracts, storage schema,

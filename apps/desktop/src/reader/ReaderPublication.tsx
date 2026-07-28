@@ -565,11 +565,9 @@ export function ReaderPublicationContent({
         locatedBlock?.block.kind === "paragraph"
       ) {
         paragraphLeafController.setPreviewLocator(locatedBlock.startLocator);
-        return;
       }
-      restoreVisualParagraphLeaf();
     },
-    [activeDomRangeMapper, paragraphLeafController, restoreVisualParagraphLeaf],
+    [activeDomRangeMapper, paragraphLeafController],
   );
   const updatePreference = useCallback(
     (preference: ReaderPreferenceName, value: string): void => {

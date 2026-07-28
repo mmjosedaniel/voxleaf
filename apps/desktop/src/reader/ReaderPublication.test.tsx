@@ -1498,6 +1498,8 @@ describe("navigable publication reader", () => {
     const previewLeaf = screen.getByRole("button", {
       name: "Start narration at this paragraph",
     });
+    fireEvent.pointerOver(readerContent);
+    expect(previewLeaf).toHaveAttribute("data-leaf-state", "preview");
     fireEvent.pointerOver(previewLeaf);
     expect(previewLeaf).toHaveAttribute("data-leaf-state", "preview");
     fireEvent.click(previewLeaf);

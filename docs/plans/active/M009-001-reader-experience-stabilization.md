@@ -797,6 +797,18 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   leaf preserves the target, and leaving the reader restores the visual-line
   default. Pointer movement and scrolling issue no narration command. Only
   explicit leaf activation enters identity-first replacement.
+- 2026-07-28: Private-EPUB use exposed one remaining pointer-transfer gap. The
+  empty gutter between prose and the absolutely positioned leaf emitted a
+  non-block pointer event, which restored the audible/default projection before
+  the pointer could reach the preview button. The earlier synthetic test moved
+  directly from paragraph to button and therefore missed this intermediate
+  event.
+- 2026-07-28: A corrected regression now traverses paragraph, reader gutter,
+  and leaf. Non-block space within the reader preserves the last eligible
+  pointer preview; another eligible block retargets it, and leaving the reader
+  restores the visual-line default. This keeps one bounded control and avoids
+  the visual clutter and unbounded keyboard stops already rejected for
+  permanent per-paragraph leaves.
 
 ## Discoveries and decisions
 
@@ -851,6 +863,11 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
 - Delegating pointer preview through the existing semantic block registry
   preserves inert publication prose and bounded state: no paragraph gains an
   event listener or tab stop, and the application still owns only one leaf.
+- The leaf and paragraph are separated by an intentional reader gutter. A
+  direct paragraph-to-button event test cannot prove reachability because real
+  pointer movement emits an event over that non-block space. The interaction
+  must retain the eligible preview across the gutter and restore it only on
+  reader exit or a new eligible target.
 - The authority and stronger proof remain desktop-local. No M005 segmentation,
   M007 protocol, M008 threshold, shared contract, storage migration, native
   capability, CSP, or dependency change is required.
@@ -1089,18 +1106,20 @@ confirmation and repository/privacy/pull-request closeout.
   native harness tests.
 - Pointer-hover leaf regression command: passed, 2 files / 35 tests. The
   component proof covers exact registered-paragraph preview, pointer transfer
-  from prose to the leaf, leave restoration, no narration command from pointer
-  movement, and explicit activation at the hovered block's canonical locator.
-- Post-hover-correction desktop typecheck passed.
-- Post-hover-correction full desktop suite: passed, 34 files / 330 tests plus 7
-  native WebDriver-client/harness tests.
-- Post-hover-correction model-free exact-host preflight: passed, 3 Vitest files
-  / 34 tests plus 7 native harness tests.
-- Post-hover-correction `pnpm.cmd check:portable`: passed outside the sandbox,
-  including formatting, TypeScript/Python lint and typecheck, 19 shared files /
-  196 tests, 34 EPUB files / 555 tests, 34 desktop files / 330 tests plus 7
-  native tests, 234 Python tests, and portable builds. Pytest emitted the known
-  non-failing cache-write warning; no product assertion failed.
+  from prose through the reader gutter to the leaf, leave restoration, no
+  narration command from pointer movement, and explicit activation at the
+  hovered block's canonical locator.
+- Post-hover/gutter-correction desktop typecheck passed.
+- Post-hover/gutter-correction full desktop suite: passed, 34 files / 330 tests
+  plus 7 native WebDriver-client/harness tests.
+- Post-hover/gutter-correction model-free exact-host preflight: passed, 3
+  Vitest files / 34 tests plus 7 native harness tests.
+- Post-hover/gutter-correction `pnpm.cmd check:portable`: passed outside the
+  sandbox, including formatting, TypeScript/Python lint and typecheck, 19
+  shared files / 196 tests, 34 EPUB files / 555 tests, 34 desktop files / 330
+  tests plus 7 native tests, 234 Python tests, and portable builds. Pytest
+  emitted the known non-failing cache-write warning; no product assertion
+  failed.
 - Remaining gate: rerun the amended exact-host passive-isolation and leaf
   retarget matrix, then repeat the ephemeral private-EPUB scroll/leaf
   confirmation without recording private content.

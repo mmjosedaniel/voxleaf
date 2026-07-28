@@ -116,11 +116,12 @@ remains inert.
 The control defaults to the canonical block at the reader's active visual
 line. Pointer hover over an eligible registered heading or paragraph
 temporarily retargets that same control beside the exact block; moving onto the
-leaf preserves the preview, and leaving the reader content restores the visual
-line target. Preparing, audible, or checkpoint treatment appears only when
-that retained state belongs to the projected block. Hover and passive
-inspection never change narration; the exact highlight and narration locator
-remain authoritative until the user activates the preview.
+leaf across the reader gutter preserves the preview, and leaving the reader
+content restores the visual line target. Non-block space inside the reader
+cannot replace the preview. Preparing, audible, or checkpoint treatment
+appears only when that retained state belongs to the projected block. Hover
+and passive inspection never change narration; the exact highlight and
+narration locator remain authoritative until the user activates the preview.
 
 At most one state of each kind may be retained:
 

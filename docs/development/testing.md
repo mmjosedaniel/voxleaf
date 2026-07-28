@@ -238,10 +238,10 @@ paragraph leaf. Reader and coordinator tests prove canonical block-start
 resolution, ordinary-text click inertness, identity-first replacement,
 settled placement, passive retargeting from an audible paragraph to an
 actionable visible preview without an automatic restart, exact registered-block
-pointer-hover preview, stable pointer transfer from publication text to the
-leaf, pointer-leave restoration, rapid-action rejection, stale-completion
-suppression, restored checkpoints, StrictMode-safe cleanup, and a single
-retained control.
+pointer-hover preview, stable pointer transfer through the reader gutter from
+publication text to the leaf, pointer-leave restoration, rapid-action
+rejection, stale-completion suppression, restored checkpoints,
+StrictMode-safe cleanup, and a single retained control.
 Keyboard, pointer, and touch activation share the same action. Browser
 foundation coverage checks a 44-pixel target, visible focus, forced-colors,
 non-colour state text, touch behavior, and absence when narration is
