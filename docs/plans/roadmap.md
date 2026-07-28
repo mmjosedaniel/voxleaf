@@ -574,12 +574,16 @@ resolve the standard-profile blocker.
 
 ## Milestone 9.1: Stabilize the synchronized reader experience
 
-**Status:** Approved planned. Follow
+**Status:** In progress. Follow
 [`M009-001-reader-experience-stabilization.md`](active/M009-001-reader-experience-stabilization.md).
-Implementation has not started. Completed M009 remains the synchronization
-authority and evidence baseline; this follow-up exists because a later manual
-real-publication run did not visibly show the active segment highlight and the
-current outer-page layout can hide the reader below application controls.
+Milestone 1 freezes the result-blind
+[`reader-experience-authority-v1`](../architecture/reader-experience-authority-v1.md)
+and [ADR-0018](../architecture/decisions/ADR-0018-reader-experience-stabilization.md).
+It distinguishes accepted range registration from paint-aware perceivability
+and selects one reader scroll owner, compact narration, text-only loaded
+duration, and a bounded leaf before production implementation. Completed M009
+remains the synchronization authority and evidence baseline; M009.1
+Milestones 2 through 6 remain.
 
 ### Goal
 
@@ -764,8 +768,10 @@ exact-host validation, and repository/CI closeout.
 is the approved bounded follow-up for the user-observed highlight discrepancy,
 dedicated reader scroll owner, compact/collapsible narration surface,
 text-only loaded-duration presentation, and locator-backed paragraph leaf. It
-does not reopen M009 timing authority or change M005 segmentation, M007
-protocol, M008 buffer policy, or the TTS profile.
+now contains a frozen Milestone 1 authority and paint-aware proof but does not
+yet implement the production UI. It does not reopen M009 timing authority or
+change M005 segmentation, M007 protocol, M008 buffer policy, or the TTS
+profile.
 
 [`active/M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md)
 is the approved implementation authority for privacy-safe host detection,

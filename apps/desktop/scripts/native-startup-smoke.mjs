@@ -1349,8 +1349,7 @@ async function runAdaptiveTtsExactHostMatrix(
         commandToAudibleMs: quickObservation.commandToAudibleMs,
         playableLeadAtStartMs: quickObservation.playableMs,
         depletionObserved: depletionObservation.kind === "depleted",
-        rangeCompleteObserved:
-          depletionObservation.kind === "range-complete",
+        rangeCompleteObserved: depletionObservation.kind === "range-complete",
         bufferingObservationWallMs: refillMs ?? 0,
         bufferingSecondsPerPlaybackMinute: rounded(
           quickMetrics.bufferingMs / 1_000 / (quickMetrics.playbackMs / 60_000),
@@ -2512,19 +2511,20 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
      ) {
        return { supported: false };
      }
-     const styleRegistered = Array.from(document.styleSheets).some(
-       (sheet) => {
+     const styleRule = Array.from(document.styleSheets)
+       .flatMap((sheet) => {
          try {
-           return Array.from(sheet.cssRules).some((rule) =>
-             rule.cssText.includes(
-               "::highlight(voxleaf-narration-active)",
-             ),
-           );
+           return Array.from(sheet.cssRules);
          } catch {
-           return false;
+           return [];
          }
-       },
-     );
+       })
+       .find(
+         (rule) =>
+           rule instanceof CSSStyleRule &&
+           rule.selectorText ===
+             "::highlight(voxleaf-narration-active)",
+       );
      const leaves = Array.from(
        document.querySelectorAll(
          ".semantic-document h1, .semantic-document h2, " +
@@ -2579,6 +2579,9 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
      const highlightName = "voxleaf-narration-active";
      const highlight = new Highlight(range);
      highlights.set(highlightName, highlight);
+     const rangeAcceptedBeforePaint =
+       highlights.has(highlightName) && highlight.has(range);
+     const highlightPerceivableBeforePaint = false;
 
      window.scrollTo(0, 0);
      const beforeFollow = range.getBoundingClientRect();
@@ -2594,33 +2597,130 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
          behavior: "auto",
        });
      }
-     const afterFollow = range.getBoundingClientRect();
-     const result = {
-       supported: true,
-       fixtureReady: true,
-       registered:
-         highlights.has(highlightName) && highlight.has(range),
-       styleRegistered,
-       rangeConnected: target.isConnected && !range.collapsed,
-       followed:
-         outsideBefore &&
-         afterFollow.bottom >= comfortInsetPx - 1 &&
-         afterFollow.top <= comfortBottom + 1,
-       focusPreserved:
-         document.activeElement?.getAttribute("name") === "theme",
-       selectionPreserved:
-         selection.rangeCount === 1 &&
-         selection.toString() === selectionBefore &&
-         selection.getRangeAt(0) === selected,
-       publicationDomUnchanged:
-         article?.querySelectorAll("*").length ===
-           descendantCountBefore &&
-         article?.textContent?.length === textLengthBefore,
-       urlUnchanged: window.location.href === initialUrl,
-     };
-     highlights.delete(highlightName);
-     selection.removeAllRanges();
-     return result;`,
+     return new Promise((resolve) => {
+       let registeredAnimationFrames = 0;
+       const observeRenderingOpportunity = () => {
+         registeredAnimationFrames += 1;
+         if (registeredAnimationFrames < 2) {
+           requestAnimationFrame(observeRenderingOpportunity);
+           return;
+         }
+         const afterFollow = range.getBoundingClientRect();
+         const renderedStyle = getComputedStyle(
+           target,
+           "::highlight(voxleaf-narration-active)",
+         );
+         const parseColor = (value) => {
+           const rgb = value.match(
+             /^rgba?\\(\\s*(\\d+(?:\\.\\d+)?)\\s*,?\\s*(\\d+(?:\\.\\d+)?)\\s*,?\\s*(\\d+(?:\\.\\d+)?)/u,
+           );
+           if (rgb !== null) {
+             return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+           }
+           const hex = value.match(/^#([\\da-f]{6})$/iu);
+           if (hex === null) {
+             return undefined;
+           }
+           const packed = Number.parseInt(hex[1], 16);
+           return [
+             (packed >> 16) & 255,
+             (packed >> 8) & 255,
+             packed & 255,
+           ];
+         };
+         const luminance = (color) => {
+           const channels = color.map((channel) => {
+             const normalized = channel / 255;
+             return normalized <= 0.04045
+               ? normalized / 12.92
+               : ((normalized + 0.055) / 1.055) ** 2.4;
+           });
+           return (
+             channels[0] * 0.2126 +
+             channels[1] * 0.7152 +
+             channels[2] * 0.0722
+           );
+         };
+         const foreground = parseColor(renderedStyle.color);
+         const background = parseColor(renderedStyle.backgroundColor);
+         const foregroundLuminance =
+           foreground === undefined ? undefined : luminance(foreground);
+         const backgroundLuminance =
+           background === undefined ? undefined : luminance(background);
+         const textContrastRatio =
+           foregroundLuminance === undefined ||
+           backgroundLuminance === undefined
+             ? 0
+             : (Math.max(
+                 foregroundLuminance,
+                 backgroundLuminance,
+               ) +
+                 0.05) /
+               (Math.min(
+                 foregroundLuminance,
+                 backgroundLuminance,
+               ) +
+                 0.05);
+         const hasNonzeroClientGeometry =
+           afterFollow.width > 0 && afterFollow.height > 0;
+         const insideReaderViewport =
+           afterFollow.bottom >= comfortInsetPx - 1 &&
+           afterFollow.top <= comfortBottom + 1;
+         const hasNonColorUnderline =
+           renderedStyle.textDecorationLine.includes("underline") ||
+           renderedStyle.textDecoration.includes("underline") ||
+           styleRule?.style.textDecorationLine.includes("underline") === true ||
+           styleRule?.style.textDecoration.includes("underline") === true;
+         const hasExplicitForegroundAndBackground =
+           styleRule?.style.color.length !== 0 &&
+           styleRule?.style.backgroundColor.length !== 0 &&
+           foreground !== undefined &&
+           background !== undefined;
+         const registeredAcrossRenderingOpportunity =
+           highlights.has(highlightName) && highlight.has(range);
+         const highlightVisiblyPerceivable =
+           rangeAcceptedBeforePaint &&
+           registeredAcrossRenderingOpportunity &&
+           registeredAnimationFrames >= 2 &&
+           hasNonzeroClientGeometry &&
+           insideReaderViewport &&
+           hasExplicitForegroundAndBackground &&
+           textContrastRatio >= 4.5 &&
+           hasNonColorUnderline;
+         const result = {
+           supported: true,
+           fixtureReady: true,
+           rangeAcceptedBeforePaint,
+           highlightPerceivableBeforePaint,
+           registeredAcrossRenderingOpportunity,
+           registeredAnimationFrames,
+           styleRegistered: styleRule !== undefined,
+           rangeConnected: target.isConnected && !range.collapsed,
+           hasNonzeroClientGeometry,
+           insideReaderViewport,
+           hasExplicitForegroundAndBackground,
+           textContrastRatio,
+           hasNonColorUnderline,
+           highlightVisiblyPerceivable,
+           followed: outsideBefore && insideReaderViewport,
+           focusPreserved:
+             document.activeElement?.getAttribute("name") === "theme",
+           selectionPreserved:
+             selection.rangeCount === 1 &&
+             selection.toString() === selectionBefore &&
+             selection.getRangeAt(0) === selected,
+           publicationDomUnchanged:
+             article?.querySelectorAll("*").length ===
+               descendantCountBefore &&
+             article?.textContent?.length === textLengthBefore,
+           urlUnchanged: window.location.href === initialUrl,
+         };
+         highlights.delete(highlightName);
+         selection.removeAllRanges();
+         resolve(result);
+       };
+       requestAnimationFrame(observeRenderingOpportunity);
+     });`,
   );
   await driver.setWindowRect(960, 720);
 
@@ -2628,9 +2728,18 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
   if (
     proof?.supported !== true ||
     proof.fixtureReady !== true ||
-    proof.registered !== true ||
+    proof.rangeAcceptedBeforePaint !== true ||
+    proof.highlightPerceivableBeforePaint !== false ||
+    proof.registeredAcrossRenderingOpportunity !== true ||
+    proof.registeredAnimationFrames < 2 ||
     proof.styleRegistered !== true ||
     proof.rangeConnected !== true ||
+    proof.hasNonzeroClientGeometry !== true ||
+    proof.insideReaderViewport !== true ||
+    proof.hasExplicitForegroundAndBackground !== true ||
+    proof.textContrastRatio < 4.5 ||
+    proof.hasNonColorUnderline !== true ||
+    proof.highlightVisiblyPerceivable !== true ||
     proof.followed !== true ||
     proof.focusPreserved !== true ||
     proof.selectionPreserved !== true ||
@@ -2644,9 +2753,18 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
   assert(
     proof?.supported === true &&
       proof.fixtureReady === true &&
-      proof.registered === true &&
+      proof.rangeAcceptedBeforePaint === true &&
+      proof.highlightPerceivableBeforePaint === false &&
+      proof.registeredAcrossRenderingOpportunity === true &&
+      proof.registeredAnimationFrames >= 2 &&
       proof.styleRegistered === true &&
       proof.rangeConnected === true &&
+      proof.hasNonzeroClientGeometry === true &&
+      proof.insideReaderViewport === true &&
+      proof.hasExplicitForegroundAndBackground === true &&
+      proof.textContrastRatio >= 4.5 &&
+      proof.hasNonColorUnderline === true &&
+      proof.highlightVisiblyPerceivable === true &&
       proof.followed === true &&
       proof.focusPreserved === true &&
       proof.selectionPreserved === true &&
