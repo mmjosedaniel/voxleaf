@@ -8,9 +8,11 @@ M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
 the visible-passage target separate from the active narration locator: passive
 scrolling preserves generation, playback, highlight, and play intent while the
-single contextual leaf retargets to the inspected paragraph as a selectable
-preview. Explicit leaf, visible-passage, passage-boundary, and chapter actions
-retain identity-first replacement. Corrective exact-host confirmation remains.
+single contextual leaf defaults to the inspected visual-line paragraph.
+Pointer hover temporarily projects it beside the exact eligible block. Both
+paths are preview-only; explicit leaf, visible-passage, passage-boundary, and
+chapter actions retain identity-first replacement. Corrective exact-host
+confirmation remains.
 
 M007 is complete. Its six milestones implement the accepted protocol v1,
 closed generated contracts, bounded model-free Python service, native
@@ -170,8 +172,9 @@ eligible block start, replaces obsolete narration identity before settled
 placement, and projects bounded preview, preparing, audible, and checkpoint
 state without adding publication buttons, text interactivity, timing
 authority, or persistence. The one projected leaf follows the active visual
-block; retained preparing, audible, or checkpoint styling applies only when
-that state matches the visible block, so passive inspection exposes an
+block by default and temporarily follows the exact eligible pointer-hovered
+block. Retained preparing, audible, or checkpoint styling applies only when
+that state matches the projected block, so passive inspection exposes an
 actionable preview while narration continues unchanged. Completed focus,
 selection, cancellation, restoration, persistence, memory, and privacy
 invariants remain binding.

@@ -441,9 +441,12 @@ Implementation complete; clean-host packaged validation pending.
 - Actual result: One retargeted application-owned leaf maps the relevant
   registered block to its canonical block-start locator, retains bounded
   preview/preparing/audible/checkpoint state, and routes activation through
-  identity-first replacement and settled placement. Ordinary text remains
-  inert. Focused coordinator/reader tests, the full desktop suite, typecheck,
-  all six Chromium tests, and the packaged native startup smoke passed.
+  identity-first replacement and settled placement. The current visual-line
+  block is its passive default; pointer hover can temporarily preview the exact
+  eligible registered heading or paragraph without turning ordinary text into
+  an action. Focused coordinator/reader tests, the full desktop suite,
+  typecheck, all six Chromium tests, and the packaged native startup smoke
+  passed.
 
 ### Status
 
@@ -782,6 +785,18 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   visual block. Otherwise the same single control retargets to the inspected
   block as a preview. Clicking it still enters the existing identity-first
   replacement path; passive movement alone remains inert.
+- 2026-07-28: The visual-line correction preserved passive narration but
+  exposed a follow-up interaction regression: moving the pointer over a
+  different paragraph no longer retargeted the contextual leaf, so the reader
+  appeared to expose only one document-wide section. A two-block component
+  regression failed against the audible-only leaf and reproduced the missing
+  paragraph-hover preview.
+- 2026-07-28: Restored delegated pointer preview through the existing semantic
+  DOM-range registry. Hovering an eligible registered heading or paragraph now
+  retargets the single leaf to that exact block; moving from the text onto the
+  leaf preserves the target, and leaving the reader restores the visual-line
+  default. Pointer movement and scrolling issue no narration command. Only
+  explicit leaf activation enters identity-first replacement.
 
 ## Discoveries and decisions
 
@@ -829,6 +844,13 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   narration locator, not an off-screen leaf, are the durable audible
   authorities. Retargeting the single control as a preview restores explicit
   selection without adding per-paragraph tab stops or a second leaf.
+- Milestone 4 already froze one bounded hover/focus preview, and Milestone 5
+  owns exact-host interaction corrections. Restoring exact paragraph hover is
+  therefore a direct Milestone 5 regression fix, not a new milestone or new
+  product scope.
+- Delegating pointer preview through the existing semantic block registry
+  preserves inert publication prose and bounded state: no paragraph gains an
+  event listener or tab stop, and the application still owns only one leaf.
 - The authority and stronger proof remain desktop-local. No M005 segmentation,
   M007 protocol, M008 threshold, shared contract, storage migration, native
   capability, CSP, or dependency change is required.
@@ -1065,6 +1087,20 @@ confirmation and repository/privacy/pull-request closeout.
   attached after the passing summary, so the bounded wrapper ended by timeout.
 - The model-free exact-host preflight passed, 3 Vitest files / 33 tests plus 7
   native harness tests.
+- Pointer-hover leaf regression command: passed, 2 files / 35 tests. The
+  component proof covers exact registered-paragraph preview, pointer transfer
+  from prose to the leaf, leave restoration, no narration command from pointer
+  movement, and explicit activation at the hovered block's canonical locator.
+- Post-hover-correction desktop typecheck passed.
+- Post-hover-correction full desktop suite: passed, 34 files / 330 tests plus 7
+  native WebDriver-client/harness tests.
+- Post-hover-correction model-free exact-host preflight: passed, 3 Vitest files
+  / 34 tests plus 7 native harness tests.
+- Post-hover-correction `pnpm.cmd check:portable`: passed outside the sandbox,
+  including formatting, TypeScript/Python lint and typecheck, 19 shared files /
+  196 tests, 34 EPUB files / 555 tests, 34 desktop files / 330 tests plus 7
+  native tests, 234 Python tests, and portable builds. Pytest emitted the known
+  non-failing cache-write warning; no product assertion failed.
 - Remaining gate: rerun the amended exact-host passive-isolation and leaf
   retarget matrix, then repeat the ephemeral private-EPUB scroll/leaf
   confirmation without recording private content.

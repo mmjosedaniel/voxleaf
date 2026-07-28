@@ -17,6 +17,7 @@ import {
 } from "react";
 import type {
   MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
   ReactElement,
   ReactNode,
 } from "react";
@@ -541,6 +542,35 @@ export function ReaderPublicationContent({
     },
     [narrationSource, paragraphLeafController],
   );
+  const restoreVisualParagraphLeaf = useCallback((): void => {
+    paragraphLeafController.setPreviewLocator(state.activeLocator);
+  }, [paragraphLeafController, state.activeLocator]);
+  const previewParagraphLeafAtPointer = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>): void => {
+      const target = event.target;
+      if (!(target instanceof Node)) {
+        return;
+      }
+      const targetElement =
+        target instanceof Element ? target : target.parentElement;
+      if (
+        targetElement !== null &&
+        targetElement.closest(".paragraph-leaf-host") !== null
+      ) {
+        return;
+      }
+      const locatedBlock = activeDomRangeMapper.locatedBlockForNode(target);
+      if (
+        locatedBlock?.block.kind === "heading" ||
+        locatedBlock?.block.kind === "paragraph"
+      ) {
+        paragraphLeafController.setPreviewLocator(locatedBlock.startLocator);
+        return;
+      }
+      restoreVisualParagraphLeaf();
+    },
+    [activeDomRangeMapper, paragraphLeafController, restoreVisualParagraphLeaf],
+  );
   const updatePreference = useCallback(
     (preference: ReaderPreferenceName, value: string): void => {
       if (initialRestorationPending) {
@@ -795,6 +825,9 @@ export function ReaderPublicationContent({
               ref={setReaderContentRoot}
               id={contentId}
               className="reader-content"
+              onPointerOver={previewParagraphLeafAtPointer}
+              onPointerLeave={restoreVisualParagraphLeaf}
+              onPointerCancel={restoreVisualParagraphLeaf}
             >
               <ParagraphLeaf
                 contentRoot={readerContentRoot}

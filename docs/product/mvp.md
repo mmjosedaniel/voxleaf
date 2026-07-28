@@ -23,10 +23,11 @@ Completed M009 connects exact audible segment transitions to one non-mutating se
    canonical target.
 8. When exact-development narration is available, one contextual leaf can
    replace obsolete narration and start at its canonical paragraph. The leaf
-   follows the paragraph at the active visual line: it reinforces preparing,
-   audible, and saved states when they match that paragraph, otherwise it
-   becomes a selectable preview without restarting narration. Ordinary text
-   clicks remain inert.
+   defaults to the paragraph at the active visual line and temporarily moves
+   beside an eligible heading or paragraph when the pointer hovers it. It
+   reinforces preparing, audible, and saved states when they match that
+   paragraph, otherwise it becomes a selectable preview without restarting
+   narration. Ordinary text clicks remain inert.
 9. VoxLeaf saves the canonical heard segment start/end checkpoint while
    narration owns position, otherwise saves the canonical visual locator, and
    retains display preferences on the approved bounded lifecycle.

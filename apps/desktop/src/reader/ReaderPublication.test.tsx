@@ -1453,6 +1453,60 @@ describe("navigable publication reader", () => {
     ]);
   });
 
+  it("previews a hovered paragraph leaf without treating pointer movement as narration", () => {
+    const narrationSource = new ManualReaderNarrationSource();
+    const { container } = render(
+      <ReaderPublicationContent
+        publication={createPublication({ includeOpeningLinkLocator: true })}
+        narrationSource={narrationSource}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Start narration at this paragraph",
+      }),
+    );
+    act(() => {
+      narrationSource.start(entireLocatedBlockRange(OPENING_LOCATED_BLOCK), 0);
+    });
+    const paragraph = container.querySelector(".semantic-document p");
+    const readerContent = container.querySelector(".reader-content");
+    if (paragraph === null || readerContent === null) {
+      throw new Error("expected the synthetic reader paragraph");
+    }
+
+    fireEvent.pointerOver(paragraph);
+
+    expect(narrationSource.startLocators).toEqual([
+      OPENING_LOCATED_BLOCK.startLocator,
+    ]);
+    expect(
+      screen.getByRole("button", {
+        name: "Start narration at this paragraph",
+      }),
+    ).toHaveAttribute("data-leaf-state", "preview");
+
+    fireEvent.pointerLeave(readerContent);
+    expect(
+      screen.getByRole("button", {
+        name: "Narrating this paragraph",
+      }),
+    ).toHaveAttribute("aria-current", "true");
+
+    fireEvent.pointerOver(paragraph);
+    const previewLeaf = screen.getByRole("button", {
+      name: "Start narration at this paragraph",
+    });
+    fireEvent.pointerOver(previewLeaf);
+    expect(previewLeaf).toHaveAttribute("data-leaf-state", "preview");
+    fireEvent.click(previewLeaf);
+    expect(narrationSource.startLocators).toEqual([
+      OPENING_LOCATED_BLOCK.startLocator,
+      OPENING_LINK_LOCATED_BLOCK.startLocator,
+    ]);
+  });
+
   it("projects a restored stable locator as the bounded stopped checkpoint", () => {
     render(
       <ReaderPublicationContent

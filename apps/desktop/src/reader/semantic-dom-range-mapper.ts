@@ -677,6 +677,23 @@ export class SemanticDomRangeMapper {
       : undefined;
   }
 
+  public locatedBlockForNode(node: Node): PublicationLocatedBlock | undefined {
+    if (this.#closed) {
+      return undefined;
+    }
+    let element = node.nodeType === 1 ? (node as Element) : node.parentElement;
+    while (element !== null) {
+      if (element instanceof HTMLElement) {
+        const registration = this.#registrationsByElement.get(element);
+        if (registration !== undefined && isCurrent(registration)) {
+          return registration.locatedBlock;
+        }
+      }
+      element = element.parentElement;
+    }
+    return undefined;
+  }
+
   public positionFor(range: Range): SemanticDomPosition | undefined {
     if (this.#closed || !range.collapsed) {
       return undefined;
