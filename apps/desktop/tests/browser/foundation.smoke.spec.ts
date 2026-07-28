@@ -122,6 +122,7 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
       })),
     ).toEqual({ overflowY: "auto", containsArticle: true });
     await expect(page.getByRole("progressbar")).toHaveCount(0);
+    await expect(page.locator(".paragraph-leaf")).toHaveCount(0);
     const narrationDetail = page.getByRole("button", {
       name: "Show narration details",
     });
@@ -196,6 +197,62 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     expect(forcedColorFocus.forcedColors).toBe(true);
     expect(forcedColorFocus.outlineStyle).not.toBe("none");
     expect(forcedColorFocus.outlineWidth).toBeGreaterThan(0);
+    await page.evaluate(() => {
+      const root = document.querySelector(".reader-content");
+      if (root === null) {
+        return;
+      }
+      const sentinel = document.createElement("button");
+      const host = document.createElement("div");
+      const leaf = document.createElement("button");
+      sentinel.dataset.browserLeafSentinel = "true";
+      sentinel.type = "button";
+      sentinel.style.position = "absolute";
+      sentinel.style.opacity = "0";
+      host.className = "paragraph-leaf-host";
+      leaf.className = "paragraph-leaf";
+      leaf.dataset.browserLeafProbe = "true";
+      leaf.dataset.leafState = "audible";
+      leaf.type = "button";
+      leaf.setAttribute("aria-label", "Narrating this paragraph");
+      leaf.setAttribute("aria-current", "true");
+      host.append(leaf);
+      root.prepend(host);
+      root.prepend(sentinel);
+    });
+    await page.locator("[data-browser-leaf-sentinel]").focus();
+    await page.keyboard.press("Tab");
+    const leafProbe = page.locator("[data-browser-leaf-probe]");
+    await expect(leafProbe).toBeFocused();
+    const forcedColorLeaf = await leafProbe.evaluate((leaf) => {
+      const style = getComputedStyle(leaf);
+      return {
+        ariaCurrent: leaf.getAttribute("aria-current"),
+        borderStyle: style.borderStyle,
+        forcedColors: matchMedia("(forced-colors: active)").matches,
+        minimumHeight: Number.parseFloat(style.minHeight),
+        minimumWidth: Number.parseFloat(style.minWidth),
+        outlineStyle: style.outlineStyle,
+        outlineWidth: Number.parseFloat(style.outlineWidth),
+        touchAction: style.touchAction,
+      };
+    });
+    await page.evaluate(() => {
+      document
+        .querySelector("[data-browser-leaf-probe]")
+        ?.parentElement?.remove();
+      document.querySelector("[data-browser-leaf-sentinel]")?.remove();
+    });
+    expect(forcedColorLeaf).toMatchObject({
+      ariaCurrent: "true",
+      forcedColors: true,
+      touchAction: "manipulation",
+    });
+    expect(forcedColorLeaf.borderStyle).not.toBe("none");
+    expect(forcedColorLeaf.minimumHeight).toBeGreaterThanOrEqual(40);
+    expect(forcedColorLeaf.minimumWidth).toBeGreaterThanOrEqual(40);
+    expect(forcedColorLeaf.outlineStyle).not.toBe("none");
+    expect(forcedColorLeaf.outlineWidth).toBeGreaterThan(0);
     await page.emulateMedia({ forcedColors: "none" });
 
     await expect

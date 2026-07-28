@@ -1368,6 +1368,36 @@ describe("navigable publication reader", () => {
     ).toHaveAttribute("data-leaf-state", "checkpoint");
   });
 
+  it.each(["keyboard", "pointer", "touch"] as const)(
+    "offers the same canonical leaf action to %s input",
+    (input) => {
+      const narrationSource = new ManualReaderNarrationSource();
+      render(
+        <ReaderPublicationContent
+          publication={createPublication()}
+          narrationSource={narrationSource}
+        />,
+      );
+      const leaf = screen.getByRole("button", {
+        name: "Start narration at this paragraph",
+      });
+
+      if (input === "keyboard") {
+        leaf.focus();
+        fireEvent.keyDown(leaf, { key: "Enter" });
+      } else if (input === "pointer") {
+        fireEvent.pointerDown(leaf);
+      } else {
+        fireEvent.touchStart(leaf);
+      }
+      fireEvent.click(leaf);
+
+      expect(narrationSource.startLocators).toEqual([
+        OPENING_LOCATED_BLOCK.startLocator,
+      ]);
+    },
+  );
+
   it("keeps the bounded leaf available through the StrictMode mount probe", () => {
     render(
       <StrictMode>
