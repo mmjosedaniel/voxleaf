@@ -86,7 +86,7 @@ export type ProductNarrationNavigationEvent =
   | "user-visual-navigation";
 
 export interface ProductNarrationNavigationRequest {
-  readonly event: "next-segment" | "previous-segment";
+  readonly event: "next-segment" | "paragraph-leaf" | "previous-segment";
   readonly locator: ReadingLocatorV1;
 }
 
@@ -155,6 +155,17 @@ function sameLocator(left: ReadingLocatorV1, right: ReadingLocatorV1): boolean {
     left.anchor.value === right.anchor.value &&
     left.anchor.anchorIndex === right.anchor.anchorIndex &&
     left.textOffsetCodePoints === right.textOffsetCodePoints
+  );
+}
+
+function sameBookIdentity(
+  left: ReadingLocatorV1["bookIdentity"],
+  right: ReadingLocatorV1["bookIdentity"],
+): boolean {
+  return (
+    left.scheme === right.scheme &&
+    left.schemeVersion === right.schemeVersion &&
+    left.value === right.value
   );
 }
 
@@ -417,6 +428,61 @@ export class ProductNarrationCoordinator {
     const pending = this.#beginNavigation("user-visual-navigation", true);
     pending.target = this.#activeLocator;
     void this.#finishNavigation(pending.revision);
+  }
+
+  public startAtLocator(locator: ReadingLocatorV1): boolean {
+    if (
+      this.#closed ||
+      this.#availability !== "available" ||
+      this.#pendingNavigation !== undefined ||
+      !sameBookIdentity(locator.bookIdentity, this.#publication.book.identity)
+    ) {
+      return false;
+    }
+    let target: ReadingLocatorV1;
+    try {
+      target =
+        this.#publication.resolveLocator(locator).locatedBlock.startLocator;
+    } catch {
+      return false;
+    }
+
+    let pending: PendingNavigation;
+    if (this.#playIntent === "inactive") {
+      this.#clearNavigationSettlement();
+      this.#navigationRevision += 1;
+      pending = {
+        revision: this.#navigationRevision,
+        event: "user-visual-navigation",
+        priorIntent: "playing",
+        restart: true,
+        stop: Promise.resolve(),
+        target,
+      };
+      this.#playIntent = "playing";
+      this.#pendingNavigation = pending;
+      this.#publish();
+    } else {
+      pending = this.#beginNavigation("user-visual-navigation", true);
+      pending.target = target;
+    }
+    void pending.stop.then(() => {
+      if (this.#closed || this.#pendingNavigation !== pending) {
+        return;
+      }
+      const request = Object.freeze({
+        event: "paragraph-leaf" as const,
+        locator: target,
+      });
+      for (const listener of this.#navigationListeners) {
+        try {
+          listener(request);
+        } catch {
+          // Reader placement failure leaves the invalidated run contained.
+        }
+      }
+    });
+    return true;
   }
 
   public goToPreviousBoundary(): void {

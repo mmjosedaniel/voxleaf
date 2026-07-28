@@ -219,7 +219,7 @@ M009 Milestone 6 evidence. Milestone 7 records complete-diff privacy/repository
 review and passing required Ubuntu/Windows CI. The frozen and implemented behavior is documented in
 [`../architecture/synchronization-authority-v1.md`](../architecture/synchronization-authority-v1.md).
 
-## M009.1 fixed-reader-shell validation
+## M009.1 reader-experience validation
 
 Milestone 3 extends the same deterministic, Chromium, and packaged proof
 surfaces for the fixed ready-publication shell. Component tests require one
@@ -233,11 +233,25 @@ close behavior. The packaged smoke repeats the sole-scroll-owner and compact
 presentation assertions before its existing interaction and synchronization
 matrix. These tests use only repository-authored synthetic publications.
 
-On the current local Windows host, the release build succeeds but
-`tauri-driver` can still fail before application mount with
-`webdriver-session-not-created`. Record that as a host automation boundary,
-not an application pass or failure; required clean-host pull-request
-validation supplies the packaged result.
+Milestone 4 extends those surfaces with one retargeted application-owned
+paragraph leaf. Reader and coordinator tests prove canonical block-start
+resolution, ordinary-text click inertness, identity-first replacement,
+settled placement, rapid-action rejection, stale-completion suppression,
+restored checkpoints, StrictMode-safe cleanup, and a single retained control.
+Keyboard, pointer, and touch activation share the same action. Browser
+foundation coverage checks a 44-pixel target, visible focus, forced-colors,
+non-colour state text, touch behavior, and absence when narration is
+unavailable. The packaged smoke covers the same bounded reader and
+synchronization regression path without claiming a dedicated native leaf
+assertion; no model is loaded by default.
+
+The Milestone 4 packaged smoke passed on the current Windows host after its
+release build. A `webdriver-session-not-created` failure remains a known
+host-automation boundary on affected runs and is not evidence about an
+application assertion; required clean-host pull-request validation remains the
+authoritative final packaged gate. On Windows, all six Playwright tests can
+report passing before the preview child remains attached and the bounded
+wrapper times out; this is the documented M004 post-test teardown issue.
 
 ### Hardware-specific visual-reader benchmark
 

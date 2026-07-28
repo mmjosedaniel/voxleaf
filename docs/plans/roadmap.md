@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 9 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Its final policy selects quick mode by default, one minute as the initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. Completed M009 freezes and proves segment-level authority, publishes bounded source-range audible progress, connects non-mutating highlight/follow behavior to the reader, implements identity-first synchronized user navigation, persists non-skipping heard checkpoints, validates the packaged synchronized loop on the exact host, and passes repository/privacy/CI closeout. The final run observed six transitions, no stale playback, one natural underrun/refill, 190 ms cancellation, bounded cleanup, zero audio persistence, zero external requests, and 378.46 buffering seconds per playback minute. A later real-publication manual run did not show the documented audible highlight and exposed an opened-book layout in which application controls can push the reader below the viewport. M009.1 is therefore the next approved bounded follow-up: it reconciles highlight visibility, gives the reader one dedicated scroll owner, adds a locator-backed paragraph leaf, makes narration compact/collapsible, and replaces the ambiguous preparation bar with truthful loaded-duration text. It does not change TTS, segmentation, protocol, or buffer policy. M010 hardware profiles, fallback, and operational resilience follows M009.1.
+VoxLeaf is pre-alpha. Milestones 1 through 9 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Its final policy selects quick mode by default, one minute as the initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. Completed M009 freezes and proves segment-level authority, publishes bounded source-range audible progress, connects non-mutating highlight/follow behavior to the reader, implements identity-first synchronized user navigation, persists non-skipping heard checkpoints, validates the packaged synchronized loop on the exact host, and passes repository/privacy/CI closeout. The final run observed six transitions, no stale playback, one natural underrun/refill, 190 ms cancellation, bounded cleanup, zero audio persistence, zero external requests, and 378.46 buffering seconds per playback minute. A later real-publication manual run did not show the documented audible highlight and exposed an opened-book layout in which application controls can push the reader below the viewport. M009.1 is therefore the active bounded follow-up: Milestones 1-4 reconcile highlight visibility, give the reader one dedicated scroll owner, add a locator-backed paragraph leaf, make narration compact/collapsible, and replace the ambiguous preparation bar with truthful loaded-duration text. It does not change TTS, segmentation, protocol, or buffer policy. Exact-host confirmation and closeout remain before M010 hardware profiles, fallback, and operational resilience.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -587,8 +587,11 @@ validation. Milestone 3 implements the fixed ready-publication shell, sole
 reader scroll root, compact/collapsible narration, and exact
 loaded/target/estimate text without a progress bar; deterministic and Chromium
 evidence pass while clean-host packaged validation remains pending. Completed
-M009 remains the synchronization authority and evidence baseline; M009.1
-Milestones 4 through 6 remain.
+M009 remains the synchronization authority and evidence baseline. Milestone 4
+implements one retargeted locator-backed leaf with canonical block-start,
+identity-first replacement, and bounded preview/preparing/audible/checkpoint
+state; desktop and Chromium leaf evidence passes, and the packaged native
+regression smoke remains green. M009.1 Milestones 5-6 remain.
 
 ### Goal
 
@@ -770,13 +773,14 @@ focus-safe following, synchronized navigation, heard-position persistence,
 exact-host validation, and repository/CI closeout.
 
 [`active/M009-001-reader-experience-stabilization.md`](active/M009-001-reader-experience-stabilization.md)
-is the approved bounded follow-up for the user-observed highlight discrepancy,
+is the active bounded follow-up for the user-observed highlight discrepancy,
 dedicated reader scroll owner, compact/collapsible narration surface,
 text-only loaded-duration presentation, and locator-backed paragraph leaf. It
-now contains completed authority and highlight-repair milestones plus the
-implemented fixed compact reader shell. The bounded paragraph leaf and final
-validation remain. It does not reopen M009 timing authority or change M005
-segmentation, M007 protocol, M008 buffer policy, or the TTS profile.
+now contains completed authority, highlight-repair, and paragraph-leaf
+milestones plus the implemented fixed compact reader shell. Exact-host
+confirmation and final validation remain. It does not reopen M009 timing
+authority or change M005 segmentation, M007 protocol, M008 buffer policy, or
+the TTS profile.
 
 [`active/M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md)
 is the approved implementation authority for privacy-safe host detection,

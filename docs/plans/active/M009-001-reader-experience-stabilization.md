@@ -62,15 +62,18 @@ same-chapter materialization gap with repository-authored synthetic content,
 repaired the one-shot canonical materialization path, and passed clean-host
 pull-request validation.
 
-Milestone 3 now gives the ready-publication state one dedicated reader scroll
+Milestone 3 gives the ready-publication state one dedicated reader scroll
 viewport while keeping application, publication, and compact narration chrome
 stable. Narration detail defaults closed without hiding playback, phase,
 loaded duration, low-water, buffering, failure, or recovery state. Preparation
 uses exact loaded/target/estimate text and no `<progress>` element. No-book,
-loading, empty, and error states retain the normal responsive page. Starting
-at an arbitrary paragraph still requires moving the visible locator and using
-the general visible-passage action; the bounded paragraph leaf remains
-Milestone 4 work.
+loading, empty, and error states retain the normal responsive page.
+
+Milestone 4 implements one application-owned contextual leaf beside the
+canonical registered block. It is the only paragraph-start action; ordinary
+text remains inert. The same bounded control projects preview, preparing,
+current audible paragraph, and saved checkpoint state while the existing CSS
+Custom Highlight remains exact segment-level audible authority.
 
 M010 is approved but not started. It will add compatibility and recovery state
 to the application. Stabilizing the shell and its canonical narration
@@ -428,11 +431,16 @@ Implementation complete; clean-host packaged validation pending.
   paragraph, old work becomes ineligible first, the active marker follows
   accepted audible segments, ordinary text clicks remain inert, and
   accessibility/resource bounds pass.
-- Actual result: Not yet available.
+- Actual result: One retargeted application-owned leaf maps the relevant
+  registered block to its canonical block-start locator, retains bounded
+  preview/preparing/audible/checkpoint state, and routes activation through
+  identity-first replacement and settled placement. Ordinary text remains
+  inert. Focused coordinator/reader tests, the full desktop suite, typecheck,
+  all six Chromium tests, and the packaged native startup smoke passed.
 
 ### Status
 
-Not started.
+Complete as of 2026-07-28.
 
 ## Milestone 5: Validate the stabilized exact-host reader
 
@@ -635,6 +643,20 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   Chromium smokes pass. The release build passes; this host still stops before
   application mount at `webdriver-session-not-created`, so clean-host packaged
   validation remains for the pull request.
+- 2026-07-28: Implemented the one-control paragraph leaf, canonical block-start
+  resolution, identity-first narration replacement, and bounded
+  preview/preparing/audible/checkpoint projection in commit `edffe5b`.
+  Ordinary paragraph text remains inert and exact segment highlighting remains
+  the audible timing authority.
+- 2026-07-28: Expanded keyboard, pointer, touch, forced-colors, focus, target
+  size, stale-work, and cleanup coverage in commit `1cedac1`. The full desktop
+  suite and typecheck pass, all six Chromium tests report passing, and the
+  packaged native startup smoke passes on this Windows host.
+- 2026-07-28: The aggregate lint gate rejected a synchronous React state
+  update in the leaf positioning effect and one type-only hook dependency.
+  Positioning now mutates only the application-owned leaf host as the effect's
+  external DOM synchronization target, and the callback uses the exported
+  located-block type. Lint and the 39-test focused suite pass.
 
 ## Discoveries and decisions
 
@@ -703,6 +725,18 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   One bounded range recheck/correction keeps the audible segment inside the
   reader comfort region without introducing polling, focus movement, or a
   second locator authority.
+- The canonical block registration already owned by `SemanticDomRangeMapper`
+  supplies both the leaf anchor and block-start locator. Reusing it permits one
+  absolutely positioned application control without adding buttons or
+  wrappers to publication content.
+- React StrictMode's development mount probe exposed that immediate effect
+  cleanup could close publication-scoped reader resources before the second
+  setup reused them. One shared microtask-deferred cleanup hook now lets the
+  second setup supersede the probe while still closing exactly once on a real
+  unmount; a regression test covers the leaf in StrictMode.
+- The Windows `test:browser` wrapper can retain its Vite preview child after
+  Playwright reports all six tests passing. This is the existing M004
+  post-test teardown issue, not a failed leaf assertion.
 
 ## Milestone 1 validation results
 
@@ -789,12 +823,39 @@ Milestone 3 production behavior and repository/browser validation are
 implemented. Its status becomes complete after the clean-host packaged check
 passes.
 
+## Milestone 4 validation results
+
+- Focused coordinator/reader command: passed, 2 files / 39 tests.
+- `pnpm.cmd --filter @voxleaf/desktop test`: passed, 34 Vitest files / 328
+  tests plus 6 native WebDriver-client tests.
+- `pnpm.cmd --filter @voxleaf/desktop typecheck`: passed.
+- `pnpm.cmd check:portable`: passed, including formatting, TypeScript/Python
+  lint and typecheck, 19 shared files / 196 tests, 34 EPUB files / 555 tests,
+  34 desktop files / 328 tests plus 6 native-client tests, 234 Python tests,
+  and portable package/desktop/Python builds.
+- `pnpm.cmd test:browser`: all 6 Playwright tests passed and exited normally,
+  including
+  forced-colors, focus visibility, 44-pixel target size, touch parity, and the
+  unavailable-narration case.
+- `pnpm.cmd test:native-startup`: passed after a release build, including the
+  packaged narrow/accessibility reader matrix, synchronization feasibility
+  proof, binary delivery/cancellation/crash recovery, local file lifecycle,
+  restoration, close, zero errors, and zero external requests.
+- Privacy/bounds review: the controller retains at most one preview,
+  preparing, audible, and checkpoint locator. It stores no text, timing,
+  geometry, PCM, path, or new persisted value; adds no protocol, native
+  capability, dependency, CSP, M005 segmentation, or M008 buffer-policy change;
+  and removes every subscription/resource on real unmount.
+
+Milestone 4 is complete. Milestones 5-6 retain exact-host stabilized-reader
+confirmation and repository/privacy/pull-request closeout.
+
 ## Final validation results
 
-Not yet available. This plan is active with Milestones 1-2 complete and
-Milestone 3 implemented pending clean-host packaged validation. It is complete
-only when the user-observed highlight discrepancy is confirmed closed; the
-fixed reader viewport, compact narration UI, text-only loaded duration, and
-bounded leaf interaction are implemented and validated; exact-host privacy and
-cleanup evidence passes; documentation matches actual behavior; and required
-pull-request checks pass.
+Not yet available. This plan is active with Milestones 1-2 and 4 complete and
+Milestone 3 implemented pending its clean-host packaged validation. It is
+complete only when the user-observed highlight discrepancy is confirmed
+closed; the fixed reader viewport, compact narration UI, text-only loaded
+duration, and bounded leaf interaction are implemented and validated;
+exact-host privacy and cleanup evidence passes; documentation matches actual
+behavior; and required pull-request checks pass.

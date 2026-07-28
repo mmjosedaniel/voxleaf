@@ -4,7 +4,7 @@
 
 The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is never a startup target. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. M008's final policy run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute, which exceeds the MVP target.
 
-Completed M009 connects exact audible segment transitions to one non-mutating semantic source-range highlight, focus-safe automatic following, identity-first synchronized user navigation, and bounded non-skipping heard-position persistence, then validates the complete synchronized loop on the exact host. Segment start is saved when audible, completion advances to the canonical range end, and interruption retains the latest heard checkpoint without periodic playback writes. The accepted synchronized run observed six transitions, no stale playback, one natural underrun/refill, 190 ms cancellation, bounded cleanup, zero external requests, and 378.46 buffering seconds per playback minute. A later manual real-publication run produced narration without a visible active-segment highlight and confirmed that the outer application scroll could place the reader below the controls. M009.1 Milestone 2 repairs the proven same-chapter materialization gap and passed clean-host validation. Milestone 3 now gives ready publications one dedicated reader scroll viewport, stable compact application/publication/narration chrome, collapsible narration detail, and exact loaded/target/estimate text without a progress bar. Repository and Chromium evidence pass; its clean-host packaged check and the paragraph leaf remain pending. The path therefore remains a constrained development demo rather than a passing standard profile or uninterrupted-playback promise. General hardware profiles, a validated fallback, operational resilience, and production packaging remain pending.
+Completed M009 connects exact audible segment transitions to one non-mutating semantic source-range highlight, focus-safe automatic following, identity-first synchronized user navigation, and bounded non-skipping heard-position persistence, then validates the complete synchronized loop on the exact host. Segment start is saved when audible, completion advances to the canonical range end, and interruption retains the latest heard checkpoint without periodic playback writes. The accepted synchronized run observed six transitions, no stale playback, one natural underrun/refill, 190 ms cancellation, bounded cleanup, zero external requests, and 378.46 buffering seconds per playback minute. A later manual real-publication run produced narration without a visible active-segment highlight and confirmed that the outer application scroll could place the reader below the controls. M009.1 Milestone 2 repairs the proven same-chapter materialization gap and passed clean-host validation. Milestone 3 gives ready publications one dedicated reader scroll viewport, stable compact application/publication/narration chrome, collapsible narration detail, and exact loaded/target/estimate text without a progress bar. Milestone 4 adds one bounded paragraph leaf that starts narration only from a canonical block locator and reinforces preview, preparing, current audible paragraph, and saved checkpoint state without making text interactive. Desktop and Chromium evidence pass for the leaf, and the packaged native regression smoke remains green; Milestone 3's clean-host packaged gate and M009.1 exact-host closeout remain. The path therefore remains a constrained development demo rather than a passing standard profile or uninterrupted-playback promise. General hardware profiles, a validated fallback, operational resilience, and production packaging remain pending.
 
 ## Current implemented flow
 
@@ -20,7 +20,11 @@ Completed M009 connects exact audible segment transitions to one non-mutating se
    movement, chapter navigation, and previous/next narration-passage controls
    invalidate obsolete audio before a bounded restart from the canonical
    target; a paused session remains paused there.
-8. VoxLeaf saves the canonical heard segment start/end checkpoint while
+8. When exact-development narration is available, one contextual leaf can
+   replace obsolete narration and start at its canonical paragraph. The leaf
+   reinforces preparing, audible, and saved states while ordinary text clicks
+   remain inert.
+9. VoxLeaf saves the canonical heard segment start/end checkpoint while
    narration owns position, otherwise saves the canonical visual locator, and
    retains display preferences on the approved bounded lifecycle.
 
@@ -38,9 +42,9 @@ the completed M009 synchronization authority.
 
 ## Remaining target user flow
 
-1. M009.1 adds the bounded locator-backed paragraph leaf and closes exact-host,
-   private-publication, repository, and pull-request validation for the
-   implemented visible-highlight repair and fixed compact reader shell.
+1. M009.1 closes exact-host, private-publication, repository, and pull-request
+   validation for the implemented visible-highlight repair, fixed compact
+   reader shell, and bounded locator-backed paragraph leaf.
 2. M010 adds privacy-safe compatibility reporting, evidence-backed profile
    selection, conditional fallback admission, and identity-safe recovery.
 3. M011 packages and validates an end-user distribution after those boundaries

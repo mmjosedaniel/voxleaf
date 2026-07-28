@@ -16,6 +16,7 @@ import {
   type ReadingLocatorV1,
 } from "@voxleaf/shared";
 import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
+import { StrictMode } from "react";
 import {
   act,
   cleanup,
@@ -186,7 +187,7 @@ class ManualSegmentHighlightEnvironment implements SegmentHighlightEnvironment {
 }
 
 function narrationSnapshot(
-  phase: "playing" | "stopped" | undefined,
+  phase: "playing" | "preparing" | "stopped" | undefined,
 ): ProductNarrationSnapshot {
   return Object.freeze({
     availability: "available",
@@ -207,7 +208,7 @@ function narrationSnapshot(
             pauseContinuesPreparation: false,
             canPause: phase === "playing",
             canResume: false,
-            canStop: phase === "playing",
+            canStop: phase === "playing" || phase === "preparing",
             volumePercent: 100,
             playbackRate: 1,
           }),
@@ -223,10 +224,16 @@ function narrationSnapshot(
       retainedAudioUnitCount: 0,
       discardedAudioUnitCount: 0,
     }),
-    serviceState: phase === "playing" ? "ready" : "stopped",
+    serviceState:
+      phase === "playing"
+        ? "ready"
+        : phase === "preparing"
+          ? "loading"
+          : "stopped",
     navigation: Object.freeze({
-      playIntent: phase === "playing" ? "playing" : "inactive",
-      settling: false,
+      playIntent:
+        phase === "playing" || phase === "preparing" ? "playing" : "inactive",
+      settling: phase === "preparing",
       canGoPrevious: false,
       canGoNext: false,
     }),
@@ -242,6 +249,15 @@ class ManualReaderNarrationSource implements ReaderNarrationSource {
     (request: ProductNarrationNavigationRequest) => void
   >();
   #snapshot = narrationSnapshot(undefined);
+  readonly startLocators: ReadingLocatorV1[] = [];
+
+  get stateListenerCount(): number {
+    return this.#listeners.size;
+  }
+
+  get progressListenerCount(): number {
+    return this.#progressListeners.size;
+  }
 
   subscribe(listener: () => void): () => void {
     this.#listeners.add(listener);
@@ -272,6 +288,16 @@ class ManualReaderNarrationSource implements ReaderNarrationSource {
     }
   }
 
+  startAtLocator(locator: ReadingLocatorV1): boolean {
+    this.startLocators.push(locator);
+    this.#snapshot = narrationSnapshot("preparing");
+    for (const listener of this.#listeners) {
+      listener();
+    }
+    this.requestNavigation(Object.freeze({ event: "paragraph-leaf", locator }));
+    return true;
+  }
+
   start(
     sourceRange: ProductNarrationAudibleProgressObservation["sourceRange"],
     sequence: number,
@@ -291,6 +317,10 @@ class ManualReaderNarrationSource implements ReaderNarrationSource {
       playedSampleFrames: 0,
       sampleCountSamples: 24_000,
     });
+    this.emit(observation);
+  }
+
+  emit(observation: ProductNarrationAudibleProgressObservation): void {
     for (const listener of this.#progressListeners) {
       listener(observation);
     }
@@ -1248,6 +1278,141 @@ describe("navigable publication reader", () => {
     expect(reader).toHaveAttribute("data-reader-theme", "dark");
     expect(reader).not.toHaveAttribute("style");
     expect(storageWrite).not.toHaveBeenCalled();
+  });
+
+  it("uses one explicit canonical leaf action while ordinary publication clicks remain inert", () => {
+    const narrationSource = new ManualReaderNarrationSource();
+    const { container, unmount } = render(
+      <ReaderPublicationContent
+        publication={createPublication()}
+        narrationSource={narrationSource}
+      />,
+    );
+
+    const preview = screen.getByRole("button", {
+      name: "Start narration at this paragraph",
+    });
+    expect(container.querySelectorAll(".paragraph-leaf")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("heading", { name: "Opening" }));
+    expect(narrationSource.startLocators).toEqual([]);
+
+    preview.focus();
+    fireEvent.click(preview);
+
+    expect(narrationSource.startLocators).toEqual([
+      OPENING_LOCATED_BLOCK.startLocator,
+    ]);
+    expect(
+      screen.getByRole("button", {
+        name: "Preparing narration at this paragraph",
+      }),
+    ).toHaveTextContent("Preparing");
+    expect(container.querySelectorAll(".paragraph-leaf")).toHaveLength(1);
+
+    act(() => {
+      narrationSource.start(entireLocatedBlockRange(OPENING_LOCATED_BLOCK), 0);
+    });
+    const audible = screen.getByRole("button", {
+      name: "Narrating this paragraph",
+    });
+    expect(audible).toHaveAttribute("aria-current", "true");
+    expect(audible).toHaveTextContent("Current");
+
+    act(() => {
+      narrationSource.emit(
+        Object.freeze({
+          kind: "segment-completed",
+          observedAtMs: 500,
+          sessionId: "session:reader-highlight",
+          generationId: "generation:reader-highlight",
+          segmentId: "segment:stale",
+          sequence: 1,
+          sourceRange: entireLocatedBlockRange(CONTINUATION_LOCATED_BLOCK),
+          playedSampleFrames: 24_000,
+          sampleCountSamples: 24_000,
+        }),
+      );
+    });
+    expect(
+      screen.getByRole("button", { name: "Narrating this paragraph" }),
+    ).toHaveAttribute("aria-current", "true");
+
+    act(() => narrationSource.stop());
+    const checkpoint = screen.getByRole("button", {
+      name: "Resume narration at saved checkpoint",
+    });
+    expect(checkpoint).not.toHaveAttribute("aria-current");
+    expect(checkpoint).toHaveTextContent("Saved");
+    expect(container.querySelectorAll(".paragraph-leaf")).toHaveLength(1);
+
+    expect(narrationSource.stateListenerCount).toBe(2);
+    expect(narrationSource.progressListenerCount).toBe(2);
+    unmount();
+    expect(narrationSource.stateListenerCount).toBe(0);
+    expect(narrationSource.progressListenerCount).toBe(0);
+  });
+
+  it("projects a restored stable locator as the bounded stopped checkpoint", () => {
+    render(
+      <ReaderPublicationContent
+        publication={createPublication()}
+        initialLocator={CONTINUATION_LOCATED_BLOCK.startLocator}
+        narrationSource={new ManualReaderNarrationSource()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", {
+        name: "Resume narration at saved checkpoint",
+      }),
+    ).toHaveAttribute("data-leaf-state", "checkpoint");
+  });
+
+  it.each(["keyboard", "pointer", "touch"] as const)(
+    "offers the same canonical leaf action to %s input",
+    (input) => {
+      const narrationSource = new ManualReaderNarrationSource();
+      render(
+        <ReaderPublicationContent
+          publication={createPublication()}
+          narrationSource={narrationSource}
+        />,
+      );
+      const leaf = screen.getByRole("button", {
+        name: "Start narration at this paragraph",
+      });
+
+      if (input === "keyboard") {
+        leaf.focus();
+        fireEvent.keyDown(leaf, { key: "Enter" });
+      } else if (input === "pointer") {
+        fireEvent.pointerDown(leaf);
+      } else {
+        fireEvent.touchStart(leaf);
+      }
+      fireEvent.click(leaf);
+
+      expect(narrationSource.startLocators).toEqual([
+        OPENING_LOCATED_BLOCK.startLocator,
+      ]);
+    },
+  );
+
+  it("keeps the bounded leaf available through the StrictMode mount probe", () => {
+    render(
+      <StrictMode>
+        <ReaderPublicationContent
+          publication={createPublication()}
+          narrationSource={new ManualReaderNarrationSource()}
+        />
+      </StrictMode>,
+    );
+
+    expect(
+      screen.getByRole("button", {
+        name: "Start narration at this paragraph",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("shows a focusable fixed fallback for an oversized chapter and keeps recovery navigation available", () => {

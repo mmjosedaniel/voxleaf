@@ -6,8 +6,9 @@ Accepted as M009.1 implementation authority. Milestones 1-2 freeze the
 decision, strengthen paint-aware proof, repair active-range materialization,
 and pass clean-host validation. Milestone 3 implements the fixed reader shell,
 sole EPUB scroll root, compact/collapsible narration, and exact text-only
-loaded status; clean-host packaged validation remains pending. The bounded
-paragraph leaf and closeout remain planned for Milestones 4-6.
+loaded status; clean-host packaged validation remains pending. Milestone 4
+implements and validates the bounded paragraph leaf. Exact-host confirmation
+and closeout remain for Milestones 5-6.
 
 ## Context
 
@@ -72,8 +73,8 @@ native capabilities, CSP, and dependency graph remain unchanged.
 - Compact UI cannot hide failure, buffering, low-water, or required recovery.
 - The paragraph leaf remains a location/action marker; it cannot imply word or
   whole-paragraph audible timing.
-- Production code still needs Milestones 2 through 6 before the user-visible
-  outcome is complete.
+- Production code still needs Milestones 5-6 before the stabilized
+  user-visible outcome is complete.
 
 ## Alternatives considered
 
