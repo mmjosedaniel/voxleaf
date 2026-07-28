@@ -453,13 +453,15 @@ minute is observation-only and remains above the MVP allowance.
 
 ## Deferred coverage
 
-The secure EPUB, reader, narration-preparation, M007 service/protocol, and M008
-exact-development quick/prepared flows now have their scoped evidence. Default
-tests and CI still load no candidate or model. Reader/narration timing,
-highlighting and following, general supported-hardware detection, standard
-profile selection, installer behavior, and complete MVP end-to-end coverage
-remain deferred. The examples below are requirements for those later roadmap
-milestones, not claims about current coverage.
+The secure EPUB, reader, narration-preparation, M007 service/protocol, M008
+exact-development quick/prepared flows, and M009 segment synchronization now
+have their scoped deterministic, packaged, and exact-host evidence. Default
+tests and CI still load no candidate or model; the model-backed M009 timing,
+highlight/follow, navigation, persistence, and cleanup matrix remains a
+separate exact-host command. General supported-hardware detection, standard
+profile selection, installer behavior, and complete production-profile MVP
+end-to-end coverage remain deferred. The examples below are requirements for
+those later roadmap milestones, not claims about current coverage.
 
 ## Test levels
 

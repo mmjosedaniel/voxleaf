@@ -2,10 +2,11 @@
 
 ## Exact one-GPU narration demo
 
-The M008 narration path is a constrained development demo, not a production or
-general-hardware profile. It is intentionally absent unless the native process
-starts with the exact verified Qwen3-TTS 12Hz 1.7B CustomVoice/Serena
-configuration documented in [`setup.md`](setup.md).
+The M008 narration path and M009 synchronized reader integration form a
+constrained development demo, not a production or general-hardware profile.
+They are intentionally absent unless the native process starts with the exact
+verified Qwen3-TTS 12Hz 1.7B CustomVoice/Serena configuration documented in
+[`setup.md`](setup.md).
 
 ### Narration controls are unavailable
 
@@ -36,9 +37,11 @@ must remain offline after artifact preparation.
 ### Quick start takes longer than expected
 
 Quick start means playback begins when approximately 15 playable seconds are
-ready; it is not a 15-second wall-clock promise. The final accepted exact-host
-rerun took 41.312 seconds from command to audible playback. Cold load, complete-unit
-generation, and the need for a second unit can all increase wall time.
+ready; it is not a 15-second wall-clock promise. The final M008 policy rerun
+took 41.312 seconds from command to audible playback, while the later M009
+synchronized matrix took 42.621 seconds with 16.240 playable seconds at start.
+Cold load, complete-unit generation, navigation/restart work, and the need for
+a second unit can all increase wall time.
 
 Do not replace the playable-audio threshold with a timer. Use explicit prepared
 playback when a longer initial wait is acceptable. Its initial selection is one
@@ -46,10 +49,12 @@ minute; the other admitted choices are 2, 5, and 10 minutes.
 
 ### Playback reaches the generation frontier
 
-The exact worker is slower than real time. The final accepted rerun observed one
-underrun and 19.49 buffering seconds per playback minute, above the MVP target
-of at most 5 seconds. VoxLeaf must warn below 10 playable seconds and show
-buffering when audio reaches zero.
+The exact worker is slower than real time. The final M008 policy rerun observed
+one underrun and 19.49 buffering seconds per playback minute. The longer M009
+synchronized matrix also observed one natural underrun/refill and measured
+378.46 buffering seconds per playback minute. Both exceed the MVP target of at
+most 5 seconds. VoxLeaf must warn below 10 playable seconds and show buffering
+when audio reaches zero.
 
 Prepared playback and playback-only pause may build more lead, but they do not
 improve model throughput. Semantic-boundary waits remain disabled at `0` ms.
@@ -69,11 +74,30 @@ Capture only content-free state, timing, counts, and fixed error codes. Never
 attach book text, prepared narration, audio, model paths, process command lines,
 or private raw logs to an issue.
 
+### Narration restarts while automatic following moves the reader
+
+M009's exact-host diagnosis found that WebView2 could publish a late passive
+visual-locator sample after automatic following. Treating that sample as user
+navigation caused identity-first cancellation and repeated preparation. The
+implemented reader now ignores background visual samples while narration is
+active, accepts passive seeks only after bounded wheel, touch, pointer, or
+reading-navigation-key intent, keeps follow sampling suspended for two browser
+frames, and defensively ignores playing-state samples inside the current
+audible range.
+
+If narration still restarts without user input, run the focused desktop
+regressions before repeating the expensive exact-host matrix. Record only the
+content-free phase, play intent, navigation-settling flag, service state,
+retained/discarded counts, and fixed failure code. Do not weaken identity-first
+cancellation or suppress a genuine user seek to hide the defect.
+
 ### Memory, temperature, or cleanup looks abnormal
 
-The accepted matrix peaked at 2,828,034,048 process-tree working-set bytes,
+The accepted M008 matrix peaked at 2,828,034,048 process-tree working-set bytes,
 4,882 MiB dedicated GPU memory, 70 degrees Celsius, and 40.13 watts on the
-reference PC. These are observations, not universal limits.
+reference PC. The later synchronized M009 matrix peaked at 3,398,922,240 bytes
+and 5,178 MiB dedicated GPU memory. These are observations, not universal
+limits.
 
 Stop the application and verify the supervised process tree and GPU allocation
 return to zero. Do not run a second model instance, persist generated audio, or

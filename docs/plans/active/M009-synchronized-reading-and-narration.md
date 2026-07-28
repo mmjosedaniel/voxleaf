@@ -602,11 +602,15 @@ Complete.
 - Expected result: all deterministic repository checks pass on the development
   host, portable checks pass, required Ubuntu and Windows pull-request checks
   pass, and the documentation claims no more than the retained evidence.
-- Actual result: Not run.
+- Actual result: Current-status documentation was reconciled on 2026-07-27 and
+  `git diff --check` passed. Full `pnpm.cmd check`,
+  `pnpm.cmd check:portable`, complete-diff privacy review, and required
+  pull-request CI have not yet run for Milestone 7.
 
 ### Status
 
-Not started.
+In progress. Documentation reconciliation is complete; complete-diff
+repository/privacy review, full checks, and required pull-request CI remain.
 
 ## Testing and benchmark strategy
 
@@ -792,6 +796,11 @@ persistence. Do not use destructive storage migration as rollback.
   type, generated-contract, portable, native, and Python distribution builds.
   Pytest reports only the previously documented optional cache-write warning;
   all tests pass.
+- 2026-07-27: Reconciled the product brief, MVP status, architecture overview,
+  canonical system diagram, testing guidance, broad historical plan, and this
+  final-validation section with the accepted Milestone 6 exact-host evidence.
+  Every current-status surface now records Milestones 1-6 complete, keeps M009
+  Milestone 7 open, and retains the standard TTS performance blocker.
 
 ## Discoveries and decisions
 
@@ -881,15 +890,16 @@ persistence. Do not use destructive storage migration as rollback.
 
 ## Final validation results
 
-M009 Milestones 1 through 5 are complete. Authority, source-range projection,
+M009 Milestones 1 through 6 are complete. Authority, source-range projection,
 reader highlighting/following, synchronized user navigation, non-skipping
 heard-position persistence, focused unit/component, full desktop, six-test
-Chromium, packaged WebView2, native/portable repository, and privacy
-validation pass through the recorded checkpoints. Exact-host synchronization
-evidence, pull-request CI for the current milestone, and final M009 validation
-are not yet available.
+Chromium, packaged WebView2, native/portable repository, privacy, and exact-host
+synchronization validation pass through the recorded checkpoints. The accepted
+exact-host result is recorded under Milestone 6 and in the progress log. M009
+Milestone 7 documentation/repository/privacy reconciliation and its required
+pull-request CI remain.
 
-When the plan completes, record:
+Milestone 7 must record:
 
 - the accepted ADR and any amendments;
 - focused unit/component/browser/native command results;
