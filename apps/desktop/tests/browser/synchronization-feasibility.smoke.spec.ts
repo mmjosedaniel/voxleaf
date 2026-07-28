@@ -322,6 +322,108 @@ test("proves segment decoration and focus-safe following without DOM or selectio
       READER_EXPERIENCE_AUTHORITY_V1.highlightProof.minimumTextContrastRatio,
     );
 
+    const selectedPassage = page.locator(".semantic-document p").first();
+    await expect(selectedPassage).toBeVisible();
+    const proveSelectedTextDecoration = async (): Promise<void> => {
+      const registered = await page.evaluate(
+        async ({ highlightName, minimumAnimationFrames }) => {
+          const highlights = (
+            CSS as typeof CSS & {
+              highlights?: HighlightRegistry;
+            }
+          ).highlights;
+          const target = document.querySelector<HTMLElement>(
+            ".semantic-document p",
+          );
+          if (
+            highlights === undefined ||
+            typeof globalThis.Highlight !== "function" ||
+            target === null
+          ) {
+            return false;
+          }
+          const walker = document.createTreeWalker(
+            target,
+            NodeFilter.SHOW_TEXT,
+          );
+          const textNode = walker.nextNode();
+          const selection = document.getSelection();
+          if (!(textNode instanceof Text) || selection === null) {
+            return false;
+          }
+          const range = document.createRange();
+          range.setStart(textNode, 0);
+          range.setEnd(textNode, textNode.data.length);
+          selection.removeAllRanges();
+          selection.addRange(range.cloneRange());
+          const highlight = new Highlight(range);
+          highlights.set(highlightName, highlight);
+          await new Promise<void>((resolve) => {
+            let observed = 0;
+            const observe = (): void => {
+              observed += 1;
+              if (observed >= minimumAnimationFrames) {
+                resolve();
+                return;
+              }
+              requestAnimationFrame(observe);
+            };
+            requestAnimationFrame(observe);
+          });
+          return highlights.has(highlightName) && highlight.has(range);
+        },
+        {
+          highlightName: SYNCHRONIZATION_AUTHORITY_V1.highlighting.name,
+          minimumAnimationFrames:
+            READER_EXPERIENCE_AUTHORITY_V1.highlightProof
+              .minimumAnimationFrames,
+        },
+      );
+      expect(registered).toBe(true);
+      const highlightedSelection = await selectedPassage.screenshot({
+        animations: "disabled",
+      });
+      await page.evaluate(
+        async ({ highlightName, minimumAnimationFrames }) => {
+          (
+            CSS as typeof CSS & {
+              highlights?: HighlightRegistry;
+            }
+          ).highlights?.delete(highlightName);
+          await new Promise<void>((resolve) => {
+            let observed = 0;
+            const observe = (): void => {
+              observed += 1;
+              if (observed >= minimumAnimationFrames) {
+                resolve();
+                return;
+              }
+              requestAnimationFrame(observe);
+            };
+            requestAnimationFrame(observe);
+          });
+        },
+        {
+          highlightName: SYNCHRONIZATION_AUTHORITY_V1.highlighting.name,
+          minimumAnimationFrames:
+            READER_EXPERIENCE_AUTHORITY_V1.highlightProof
+              .minimumAnimationFrames,
+        },
+      );
+      const selectionOnly = await selectedPassage.screenshot({
+        animations: "disabled",
+      });
+      expect(Buffer.compare(highlightedSelection, selectionOnly)).not.toBe(0);
+      await expect(focusOwner).toBeFocused();
+    };
+
+    await focusOwner.selectOption("dark");
+    await proveSelectedTextDecoration();
+    await page.emulateMedia({ forcedColors: "active" });
+    await proveSelectedTextDecoration();
+    await page.emulateMedia({ forcedColors: "none" });
+    await page.evaluate(() => document.getSelection()?.removeAllRanges());
+
     await page.setViewportSize({ width: 360, height: 640 });
     await expect(focusOwner).toBeFocused();
     await expect(page).toHaveURL(initialUrl);

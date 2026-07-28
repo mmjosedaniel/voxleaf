@@ -38,7 +38,6 @@ export interface SegmentHighlightEnvironment {
 }
 
 export interface SegmentHighlightControllerCallbacks {
-  readonly currentSpineItemIndex: () => number;
   readonly navigateToLocator: (locator: ReadingLocatorV1) => void;
   readonly settleLocator: (locator: ReadingLocatorV1) => void;
   readonly suspendVisualSampling: () => (
@@ -358,10 +357,7 @@ export class SegmentHighlightController {
     );
     if (range === undefined || range.collapsed) {
       this.#ensureVisualSamplingSuspended();
-      if (
-        callbacks.currentSpineItemIndex() !== start.spineItemIndex &&
-        !active.navigationRequested
-      ) {
+      if (!active.navigationRequested) {
         active.navigationRequested = true;
         callbacks.navigateToLocator(start);
       }

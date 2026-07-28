@@ -359,8 +359,6 @@ export function ReaderPublicationContent({
   );
   useLayoutEffect(() => {
     const callbacks = {
-      currentSpineItemIndex: () =>
-        coordinator.state.activeLocator.spineItemIndex,
       navigateToLocator: (locator: ReadingLocatorV1) => {
         visualNavigationIntent.clear();
         reflowRestorer.cancel();
