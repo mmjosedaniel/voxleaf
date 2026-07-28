@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 9 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Its final policy selects quick mode by default, one minute as the initial prepared/refill target, 10-second low water, zero default boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. Completed M009 freezes and proves segment-level authority, publishes bounded source-range audible progress, connects non-mutating highlight/follow behavior to the reader, implements identity-first synchronized user navigation, persists non-skipping heard checkpoints, validates the packaged synchronized loop on the exact host, and passes repository/privacy/CI closeout. M009.1 repairs the later reproduced highlight-materialization defect, implements one dedicated reader viewport, compact/collapsible narration, truthful loaded-duration text, a bounded canonical paragraph leaf, and passive-scroll isolation without changing TTS, segmentation, protocol, or buffer policy. Its implementation and local deterministic, Chromium, packaged WebView2, private-EPUB, exact-host, repository, privacy, and portable closeout pass. Required Ubuntu and Windows checks on the final M009.1 closeout pull request remain before archival and M010 hardware profiles, fallback, and operational resilience.
+VoxLeaf is pre-alpha. Milestones 1 through 9 and M009.1 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Completed M009 freezes and proves segment-level authority, publishes bounded source-range audible progress, connects non-mutating highlight/follow behavior to the reader, implements identity-first synchronized user navigation, persists non-skipping heard checkpoints, and validates the packaged synchronized loop. Completed M009.1 repairs the later reproduced highlight-materialization defect, implements one dedicated reader viewport, compact/collapsible narration, truthful loaded-duration text, a bounded canonical paragraph leaf, and passive-scroll isolation without changing TTS, segmentation, protocol, or buffer policy. Its deterministic, Chromium, packaged WebView2, private-EPUB, exact-host, repository, privacy, portable, and required Ubuntu/Windows checks pass; pull request #142 merged the final closeout. M010 hardware profiles, fallback, and operational resilience is the next approved active plan.
 
 M009.1 exact-host use also exposed and corrected one additional reader defect:
 passive viewport scrolling must not replace active narration. The
@@ -521,7 +521,7 @@ behavior should first be proven with deterministic fakes.
 
 ## Milestone 9: Integrate synchronized reading and narration
 
-**Status:** Complete as of 2026-07-27 and amended by active M009.1 exact-host
+**Status:** Complete as of 2026-07-27 and amended by completed M009.1 exact-host
 stabilization. All seven original ExecPlan milestones pass. ADR-0017 and the
 synchronization authority select segment-level source ranges, CSS Custom
 Highlight decoration, focus-safe following, explicit identity-first navigation,
@@ -582,9 +582,8 @@ resolve the standard-profile blocker.
 
 ## Milestone 9.1: Stabilize the synchronized reader experience
 
-**Status:** Implemented and locally closed; required final pull-request checks
-remain. Follow
-[`M009-001-reader-experience-stabilization.md`](active/M009-001-reader-experience-stabilization.md).
+**Status:** Complete as of 2026-07-28. Follow
+[`M009-001-reader-experience-stabilization.md`](completed/M009-001-reader-experience-stabilization.md).
 Milestone 1 freezes the result-blind
 [`reader-experience-authority-v1`](../architecture/reader-experience-authority-v1.md)
 and [ADR-0018](../architecture/decisions/ADR-0018-reader-experience-stabilization.md).
@@ -600,9 +599,9 @@ implements one retargeted locator-backed leaf with canonical block-start,
 identity-first replacement, and bounded preview/preparing/audible/checkpoint
 state; desktop and Chromium leaf evidence passes, and the packaged native
 regression smoke remains green. Milestone 5's corrected private-EPUB
-interaction and amended exact-host matrix pass. Milestone 6 implementation and
-local repository/privacy/portable/release-packaged closeout pass; required
-Ubuntu and Windows checks on its final pull request remain before archival.
+interaction and amended exact-host matrix pass. Milestone 6 repository,
+privacy, portable, release-packaged, and required Ubuntu/Windows closeout pass;
+pull request #142 merged the completed implementation and evidence.
 
 ### Goal
 
@@ -635,8 +634,8 @@ Completed M004 supplies the visual reader, stable locator, reflow, and one
 continuous semantic layout. Completed M008 supplies content-free preparation
 state and controls. Completed M009 supplies exact segment transitions, range
 mapping, identity-first navigation, following, and non-skipping persistence.
-M009.1 must complete before M010 adds compatibility and recovery UI to the
-same application shell.
+M009.1 is complete, so M010 may add compatibility and recovery UI to the
+stabilized application shell.
 
 ### Major risks and unknowns
 
@@ -673,7 +672,7 @@ same application shell.
 
 ## Milestone 10: Add hardware profiles, fallback, and operational resilience
 
-**Status:** Approved planned after M009.1's final pull-request checks. Follow
+**Status:** Next approved active plan; implementation has not started. Follow
 [`M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md).
 Implementation has not started. Capability contracts exist, but production
 hardware detection, measured product profiles, a validated CPU fallback,
@@ -689,11 +688,11 @@ Make the integrated reader usable across documented supported hardware and recov
 - VoxLeaf detects relevant OS, CPU, RAM, GPU, VRAM, CUDA, ONNX providers, and supported precision without sending telemetry.
 - The UI recommends a measured engine profile while retaining user control and avoiding unsafe memory use.
 - CPU-compatible fallback, model-load failure recovery, service restart, cancellation timeout, and degraded buffering behavior are tested.
-- Any automatic segment retry is bounded, observable, identity-safe, and based
-  on classified recoverable failures; it cannot replay stale audio or hide
-  reliability metrics.
-- Production VAD/energy monitoring is added only if measured false-positive,
-  latency, memory, dependency, and quality evidence justifies it.
+- The initial recovery path permits one explicit user-triggered restart only
+  after identity-first cleanup; automatic segment retry remains unapproved.
+- Production VAD/energy monitoring remains outside M010 unless a separate
+  authority first justifies its false-positive, latency, memory, dependency,
+  licensing, and quality costs.
 - Long sessions keep memory, queues, GPU work, logs, and persisted state bounded.
 - Diagnostics and benchmark summaries contain no book text, narration, secrets, or unnecessary private paths.
 
@@ -703,9 +702,9 @@ Milestone 6 defines the evaluation authority and retains the no-standard-profile
 decision. Completed M007-M009 provide the constrained integrated
 lifecycle, identity-first cancellation, bounded playback, synchronized
 navigation, heard-position recovery authority, and observable metrics needed
-to test compatibility and recovery. M009.1 must first stabilize the reader
-shell, visible segment projection, and locator-backed paragraph action that
-M010 recovery will exercise. A CPU fallback still requires a new
+to test compatibility and recovery. Completed M009.1 supplies the stabilized
+reader shell, visible segment projection, and locator-backed paragraph action
+that M010 recovery will exercise. A CPU fallback still requires a new
 result-blind frozen candidate cycle and passing measured evidence before
 product admission.
 
@@ -758,12 +757,14 @@ The following decisions should be made when evidence is available, not assumed s
    rules, low/target/maximum bounds, playback-only pause behavior, truthful
    frontier buffering, and zero default boundary wait are recorded, and the
    required Ubuntu and Windows pull-request checks passed.
-7. **Interaction gate:** satisfied by completed M009 through the frozen 500 ms
+7. **Interaction gate:** satisfied by completed M009 and M009.1 through the
+   frozen 500 ms
    passive settlement, identity-first chapter/visible-passage/stable-boundary
    path, paused-intent preservation, accessible controls, and exact
    segment-boundary non-skipping persistence plus exact-host synchronized
    highlight/follow/navigation evidence plus passing repository, privacy, and
-   required pull-request validation.
+   required pull-request validation, plus the fixed reader viewport, compact
+   narration surface, bounded paragraph leaf, and passive-scroll isolation.
 8. **Release gate:** define supported hardware and wall-clock startup expectations from measured results before release.
 
 Durable decisions belong in architecture decision records. Temporary implementation detail belongs in the active ExecPlan. Benchmark results and discovered constraints should update later milestones rather than forcing the project to follow an obsolete roadmap.
@@ -785,32 +786,27 @@ records the completed segment-level audible progress, highlighting,
 focus-safe following, synchronized navigation, heard-position persistence,
 exact-host validation, and repository/CI closeout.
 
-[`active/M009-001-reader-experience-stabilization.md`](active/M009-001-reader-experience-stabilization.md)
-is the active bounded follow-up for the user-observed highlight discrepancy,
-dedicated reader scroll owner, compact/collapsible narration surface,
-text-only loaded-duration presentation, and locator-backed paragraph leaf. It
-now contains completed authority, highlight-repair, and paragraph-leaf
-milestones plus the implemented fixed compact reader shell. Exact-host
-confirmation and final validation remain. It does not reopen M009 timing
-authority or change M005 segmentation, M007 protocol, M008 buffer policy, or
-the TTS profile.
+[`completed/M009-001-reader-experience-stabilization.md`](completed/M009-001-reader-experience-stabilization.md)
+records the completed highlight repair, dedicated reader scroll owner,
+compact/collapsible narration surface, truthful loaded-duration presentation,
+locator-backed paragraph leaf, passive-scroll isolation, exact-host evidence,
+and repository/CI closeout. It does not reopen M009 timing authority or change
+M005 segmentation, M007 protocol, M008 buffer policy, or the TTS profile.
 
 [`active/M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md)
-is the approved implementation authority for privacy-safe host detection,
+is the next approved implementation authority for privacy-safe host detection,
 evidence-backed profile matching, conditional CPU-fallback admission, and
-identity-safe operational recovery after M009.1 stabilizes the application
-surface those states will use. It does not itself establish hardware support
-or admit a fallback.
+identity-safe operational recovery on the stabilized M009.1 application
+surface. It does not itself establish hardware support or admit a fallback.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
-is retained only as broad historical context and is superseded by M009 for the
-remaining synchronization work. Neither active plan supersedes completed
-authority or turns the failed `v3` profile into a standard production
-selection.
+is retained only as broad historical context and is superseded by completed
+M009/M009.1 for synchronization and reader stabilization. It does not
+supersede completed authority or turn the failed `v3` profile into a standard
+production selection.
 
-Milestones 1 through 9 are complete, with their evidence retained under
-[`completed/`](completed/). M009.1 and M010 are approved active plans in that
-order.
+Milestones 1 through 9 and M009.1 are complete, with their evidence retained
+under [`completed/`](completed/). M010 is the next approved active plan.
 
 ## MVP completion boundary
 

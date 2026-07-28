@@ -253,8 +253,9 @@ The Milestone 4 packaged smoke and the final Milestone 6 local closeout smoke
 pass on the current Windows host after their release builds. A
 `webdriver-session-not-created` failure remains a known host-automation
 boundary on affected runs and is not evidence about an application assertion;
-required clean-host pull-request validation remains the authoritative final
-packaged gate. On Windows, all six Playwright tests can report passing before
+required clean-host pull-request validation remains the authoritative packaged
+gate. Pull request #142 passed both required foundation jobs and closes M009.1.
+On Windows, all six Playwright tests can report passing before
 the preview child remains attached and the bounded wrapper times out; this is
 the documented M004 post-test teardown issue.
 

@@ -1,5 +1,8 @@
 # M009-001 reader experience stabilization
 
+> Completed on 2026-07-28 after merged pull request #142 passed the required
+> Ubuntu portable and Windows native foundation checks.
+
 ## Goal
 
 Stabilize the completed M009 synchronized-reading experience before M010 adds
@@ -560,14 +563,14 @@ interaction is confirmed.
   tracked-artifact, private-path, secret, dependency, binary, and cumulative
   scope reviews pass. The release packaged WebView2 startup smoke passes after
   its synchronization proof was isolated from the fixture's independently
-  lazy-loaded raster paragraph. Required pull-request checks for this final
-  closeout branch remain pending.
+  lazy-loaded raster paragraph. Pull request #142 passed both required
+  foundation checks and merged as `e1b3b7d80696027e511f44236d12e7168d85f927`.
 
 ### Status
 
-Implementation and local validation complete as of 2026-07-28. Required Ubuntu
-and Windows pull-request checks remain before this milestone and plan can be
-marked complete and moved to `docs/plans/completed/`.
+Complete as of 2026-07-28. Pull request #142 passed the required Ubuntu
+portable and Windows native foundation checks and merged; this plan is archived
+under `docs/plans/completed/`.
 
 ## Testing and benchmark strategy
 
@@ -1172,17 +1175,21 @@ confirmation and repository/privacy/pull-request closeout.
   requests.
 - 2026-07-28: Final local `pnpm.cmd check` and `pnpm.cmd check:portable` pass
   with the recorded repository-wide coverage. The cumulative diff and
-  privacy/artifact/dependency audits are clean. Required Ubuntu and Windows
-  checks on the final closeout pull request remain the only completion gate.
+  privacy/artifact/dependency audits are clean.
+- 2026-07-28: Pull request #142 passed Ubuntu portable and Windows native
+  foundation checks in Actions run `30404702384` on exact head
+  `e5567f3e8ac06202c12d7fb42d35f77d1b2baeef`, then merged as
+  `e1b3b7d80696027e511f44236d12e7168d85f927`. Milestone 6 and M009.1 are
+  complete.
 
 ## Final validation results
 
-Milestones 1-5 and Milestone 6 implementation/local closeout are complete
-within their recorded scopes. Deterministic, Chromium, release-packaged
-WebView2, manual private-EPUB, exact-host, repository, privacy, artifact,
-dependency, scope, and portable checks pass. A Windows clean-host failure in
-the merged Milestone 5 pull request was traced to the test selecting a
-lazy-raster paragraph for an otherwise independent synchronization proof; the
-text-only correction passes the same packaged smoke locally. Required Ubuntu
-and Windows checks on the final closeout pull request remain. The plan moves to
-`docs/plans/completed/` only after those checks pass.
+Complete. Deterministic, Chromium, release-packaged WebView2, manual
+private-EPUB, exact-host, repository, privacy, artifact, dependency, scope, and
+portable checks pass. A Windows clean-host failure in the merged Milestone 5
+pull request was traced to the test selecting a lazy-raster paragraph for an
+otherwise independent synchronization proof; the text-only correction passed
+the same packaged smoke locally and both required foundation jobs in pull
+request #142. The exact PR head, Actions run, and merge commit are recorded
+above. No completion gate remains, and this plan is archived under
+`docs/plans/completed/`.
