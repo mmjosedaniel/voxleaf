@@ -1,5 +1,45 @@
 # Troubleshooting
 
+## Native development loop
+
+### Tauri development exits with an `EBUSY` watcher error
+
+On Windows, the native executable under
+`apps/desktop/src-tauri/target/debug/deps` is locked while Cargo runs it. Vite
+must not watch that native tree. The committed Vite configuration ignores
+`apps/desktop/src-tauri/**`; Tauri and Cargo watch Rust sources independently.
+
+Run the native loop from the repository root:
+
+```powershell
+pnpm.cmd build:packages
+pnpm.cmd --filter @voxleaf/desktop tauri dev
+```
+
+If the error still appears, stop every older VoxLeaf/Vite development session
+with `Ctrl+C` and start one fresh session. Do not delete the native target tree
+while an application or compiler process owns it.
+
+### An opened EPUB remains on “Preparing the saved reader state”
+
+React StrictMode intentionally performs an extra setup/cleanup probe in
+development. Closing application-owned narration, position, restoration, or
+publication resources during that probe leaves the second setup with closed
+state and can strand restoration.
+
+The application defers final ownership cleanup by one microtask and lets the
+matching StrictMode setup supersede the probe cleanup. A real unmount has no
+replacement setup, so resources are still closed promptly. If the reader
+remains stuck with the current implementation, restart the development session
+and run:
+
+```powershell
+pnpm.cmd --filter @voxleaf/desktop test
+```
+
+Treat another persistent restoration stall as a regression; do not bypass
+restoration or clear private reader data merely to make the UI advance.
+
 ## Exact one-GPU narration demo
 
 The M008 narration path and M009 synchronized reader integration form a

@@ -180,6 +180,8 @@ Run the following verified commands from the repository root in native Windows P
 pnpm.cmd install --frozen-lockfile
 uv sync --project services/tts --locked
 pnpm.cmd --filter @voxleaf/desktop dev
+pnpm.cmd build:packages
+pnpm.cmd --filter @voxleaf/desktop tauri dev
 pnpm.cmd --filter @voxleaf/desktop typecheck
 pnpm.cmd --filter @voxleaf/desktop test
 pnpm.cmd test:browser:install
@@ -199,7 +201,38 @@ uv run --project services/tts --locked pytest services/tts
 uv build services/tts
 ```
 
-`pnpm.cmd --filter @voxleaf/desktop dev` starts the browser-only Vite development server on `http://127.0.0.1:5173`; it was verified with a successful local HTTP response. Stop it with `Ctrl+C`. It does not exercise the native Tauri runtime. `pnpm.cmd test:native-startup` performs the authoritative packaged startup/CSP regression: it builds the release executable, runs the content-free supervisor host matrix, launches an isolated disposable WebView2 profile, verifies root/main mount, invokes both the low-level protocol probe and typed model-free service lifecycle, proves bounded binary delivery and cancellation, runs the disposable-file reselection/cancellation/replacement/exact/max-plus-one/recovery matrix, opens the deterministic comprehensive EPUB fixture, decodes its repository-authored PNG from an application-created Blob URL, proves keyboard/focus and restart/restoration behavior, closes the publication, observes zero page/console errors and external requests, and removes its temporary data. It requires native Windows but does not require the Playwright-managed Chromium download.
+`pnpm.cmd --filter @voxleaf/desktop dev` starts the browser-only Vite
+development server on `http://127.0.0.1:5173`; it was verified with a
+successful local HTTP response. Stop it with `Ctrl+C`. It does not exercise the
+native Tauri runtime.
+
+For an optional native development loop, build the workspace packages and then
+start Tauri from the repository root:
+
+```powershell
+pnpm.cmd build:packages
+pnpm.cmd --filter @voxleaf/desktop tauri dev
+```
+
+Vite deliberately ignores `apps/desktop/src-tauri/**`. Tauri and Cargo retain
+ownership of the native source/build watch, while Vite watches the renderer.
+This prevents Node's Windows watcher from trying to inspect a locked
+`target/debug/deps/voxleaf_desktop.exe` and terminating `beforeDevCommand` with
+`EBUSY`. Rust changes remain handled by Tauri's native watcher.
+
+`pnpm.cmd test:native-startup` performs the authoritative packaged startup/CSP
+regression: it builds the release executable, runs the content-free supervisor
+host matrix, launches an isolated disposable WebView2 profile, verifies
+root/main mount, invokes both the low-level protocol probe and typed model-free
+service lifecycle, proves bounded binary delivery and cancellation, runs the
+disposable-file
+reselection/cancellation/replacement/exact/max-plus-one/recovery matrix, opens
+the deterministic comprehensive EPUB fixture, decodes its repository-authored
+PNG from an application-created Blob URL, proves keyboard/focus and
+restart/restoration behavior, closes the publication, observes zero
+page/console errors and external requests, and removes its temporary data. It
+requires native Windows but does not require the Playwright-managed Chromium
+download.
 
 For a content-free native diagnostic that isolates the release parent/child
 standard-stream boundary from WebDriver, build the release executable and run:
