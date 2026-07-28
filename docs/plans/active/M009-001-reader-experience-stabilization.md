@@ -303,10 +303,9 @@ target, estimate, low-water, buffering, or complete-shorter-range information.
 
 ### Status
 
-Blocked on local packaged-WebView2 validation. The result-blind authority,
-deterministic state table, and paint-aware browser/packaged proof are
-implemented. The desktop and Chromium assertions pass, but the current Windows
-host cannot create a WebDriver session; exact evidence is recorded below.
+Completed. The result-blind authority, deterministic state table, and
+paint-aware browser/packaged proof are implemented. Desktop, Chromium,
+packaged WebView2, Ubuntu portable, and Windows native validation pass.
 
 ## Milestone 2: Restore visible segment highlighting and following
 
@@ -574,6 +573,10 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   existed but created no WebView2 child. A direct launch stayed healthy and
   created six WebView2 processes. The installed `tauri-driver` `2.0.6` is also
   the current crates.io release.
+- 2026-07-28: PR #137's clean Windows native foundation executed the packaged
+  smoke successfully, and Ubuntu portable foundation also passed. This closes
+  the packaged proof and confirms the earlier `chrome not reachable` result
+  was specific to the local automation host rather than the implementation.
 
 ## Discoveries and decisions
 
@@ -636,15 +639,19 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   session creation failed before mount. Direct smoke retries before and after a
   Windows reboot, using the matching test-only EdgeDriver, failed at the same
   stage. A content-safe local diagnostic reported
-  `session not created: chrome not reachable`.
+  `session not created: chrome not reachable`. PR #137's clean Windows native
+  foundation subsequently ran the same packaged smoke successfully.
 - `pnpm.cmd lint:typescript`: passed.
 - `pnpm.cmd format:check:typescript`: passed.
+- PR #137 `Ubuntu portable foundation`: passed in 1 minute 54 seconds.
+- PR #137 `Windows native foundation`: passed in 13 minutes 4 seconds,
+  including `pnpm.cmd test:native-startup`.
 - Privacy/bounds review: only repository-authored synthetic EPUBs are used;
   no EPUB text, private path, PCM, generated audio, runtime log, model file,
   native capability, dependency, or persistence field was added.
 
-Milestone 1 cannot be marked complete until the packaged-WebView2 proof runs
-to its assertions on a working Windows automation host.
+Milestone 1 is complete. Production highlight repair and reader-shell behavior
+remain scoped to Milestones 2 through 6.
 
 ## Final validation results
 

@@ -3,9 +3,8 @@
 ## Status
 
 Frozen before M009.1 production implementation. Milestone 1 records the
-result-blind interaction, layout, and proof rules below. Desktop and Chromium
-evidence pass against repository-authored synthetic content; packaged-WebView2
-execution remains blocked by the current local automation handshake.
+result-blind interaction, layout, and proof rules below. Desktop, Chromium, and
+packaged-WebView2 evidence pass against repository-authored synthetic content.
 Milestones 2 through 6 remain responsible for changing and validating the
 product UI.
 

@@ -3,9 +3,8 @@
 ## Status
 
 Accepted as M009.1 implementation authority. Milestone 1 freezes the decision,
-and desktop/Chromium authority evidence passes. Packaged-WebView2 execution is
-blocked by the current local automation handshake; production behavior remains
-planned for Milestones 2 through 6.
+and desktop, Chromium, and packaged-WebView2 authority evidence passes.
+Production behavior remains planned for Milestones 2 through 6.
 
 ## Context
 
