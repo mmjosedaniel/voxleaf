@@ -181,8 +181,11 @@ configuration keys resolve to the reviewed isolated interpreter and local
 artifact root. The candidate lock remains byte-identical; Qwen, Torch,
 Torchaudio, and NumPy remain outside the base service dependency graph. The
 adapter verifies exact runtime ownership, revision receipts, artifact hashes
-and sizes, CUDA bfloat16 support, frozen load/generation parameters, and the
-complete waveform before publication. The first reviewed exact-host command
+and sizes, CUDA bfloat16 support, the frozen load and benchmark-generation
+parameters, and the complete waveform before publication. The product call
+adds one narrower safety constraint: its 250-codec-token ceiling matches
+protocol v1's existing 480,000-sample/20-second unit maximum without rewriting
+the historical benchmark authority. The first reviewed exact-host command
 passes valid delivery, busy rejection, identity-first process-tree
 termination with zero returned stale audio, explicit reload, another valid
 delivery, and shutdown. This is not product playback or general hardware

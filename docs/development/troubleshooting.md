@@ -61,6 +61,22 @@ improve model throughput. Semantic-boundary waits remain disabled at `0` ms.
 Do not hide buffering, claim continuous playback, or enable a second CPU/GPU
 model worker.
 
+### Preparation stops after one or more playable units
+
+One bounded cause is an exact Qwen call that does not emit its codec stop token.
+Its historical benchmark authority retains `maxNewTokens: 2048` so that
+evaluation record remains unchanged, but that allowance can decode far beyond
+protocol v1's 20-second unit ceiling. The product adapter therefore clamps
+generation to 250 codec tokens: the pinned tokenizer expands each token to
+1,920 samples, so the call cannot produce more than 480,000 samples at 24 kHz.
+
+This clamp prevents a runaway call from continuing toward the native synthesis
+timeout or returning an oversized waveform. It does not add automatic retry,
+change the frozen benchmark result, or make the exact development profile a
+production profile. A genuine engine failure still invalidates the active
+identity and requires a fresh narration start; bounded explicit recovery is
+owned by M010.
+
 ### Stop, navigation, or close interrupts narration
 
 Explicit stop, locator changes, publication replacement/close, and application

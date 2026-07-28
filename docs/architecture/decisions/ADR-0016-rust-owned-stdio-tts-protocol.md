@@ -167,6 +167,12 @@ that authority and cannot maintain permissive independent message models.
   ordered complete units behind protocol v1's one-active/no-service-queue
   boundary. Any new message, field, framing rule, streaming primitive, or
   bound requires a separately reviewed protocol version.
+- A post-completion adapter correction aligns Qwen's generation allowance with
+  the already accepted service-unit bound. Historical benchmark evidence keeps
+  `maxNewTokens: 2048`; the product call uses at most 250 codec tokens because
+  the pinned tokenizer decodes 1,920 samples per token and protocol v1 admits
+  at most 480,000 samples. This narrows implementation beneath the existing
+  bound and therefore does not change framing or require protocol version 2.
 
 ## Alternatives considered
 
