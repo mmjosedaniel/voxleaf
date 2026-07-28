@@ -33,6 +33,15 @@ The current tests are deterministic and layered by ownership:
 - `packages/shared/src/contracts/narration-segment.test.ts` verifies synthetic locator-linked narration segments, stable segment/session/generation identities, ordered source ranges, strict nonempty text and sequence validation, nested-version handling, and errors that do not expose sensitive narration text. It does not select normalization, segmentation, language, or prosody behavior.
 - `packages/shared/src/contracts/operational-error.test.ts` verifies the closed operational-error taxonomy, fixed category and recoverable/fatal semantics, version handling, and rejection of free-form messages, content, audio, stacks, and private paths.
 - `packages/shared/src/contracts/capability-report.test.ts` verifies explicit supported, unsupported, and unknown states for every model-independent v1 feature, closed-field compatibility, version handling, and rejection of model, device, vendor, path, or content details without probing real hardware.
+- `packages/shared/src/contracts/host-profile-compatibility-report.test.ts`,
+  `apps/desktop/src/tts/hardware-profile-authority.test.ts`, and the test-only
+  Rust `hardware_profile_authority` module freeze M010's separate privacy-safe
+  host report, exact MiB/count maxima, provider and precision set, unknown and
+  unsupported-version behavior, synthetic fixture conformance,
+  result-blind profile margins/matching/preference policy, closed failure and
+  recovery tables, zero automatic attempts, bounded diagnostics, selected
+  native API families, and the existing zero-plugin/zero-renderer-capability
+  boundary. They collect no host facts and make no support or fallback claim.
 - `packages/shared/src/contracts/audio-frame.test.ts` verifies payload-free frame metadata, branded ownership identities, exact sample-derived whole-millisecond calculations, aggregate-before-truncation behavior, numeric and duration-overflow boundaries, contiguous sequencing, unique frame IDs, stable format, segment termination, and content-free errors without audio devices or payloads.
 - `packages/shared/src/contracts/buffer-status.test.ts` verifies payload-free, session-bound buffer snapshots; explicit playable-duration units; low/target/maximum ordering; below/exactly-at/above-target states; bounded duration; underrun counts; and rejection of invalid state combinations, payload fields, fixed waits, and private text without implementing a buffer or player.
 - `packages/shared/src/testing/manual-clock.test.ts` verifies an explicit-start, manually advanced test clock; deterministic first-scheduled ordering for equal-time callbacks; pending-work inspection and cleanup; invalid-input rejection; and safe millisecond overflow handling without reading real time or scheduling real timers.
