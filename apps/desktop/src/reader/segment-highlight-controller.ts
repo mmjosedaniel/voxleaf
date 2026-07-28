@@ -11,6 +11,7 @@ import { SemanticDomRangeMapper } from "./semantic-dom-range-mapper";
 import { SYNCHRONIZATION_AUTHORITY_V1 } from "./synchronization-authority";
 
 const NOOP = (): void => undefined;
+const FOLLOW_LAYOUT_CORRECTION_LIMIT = 1;
 
 export interface ReaderNarrationSource {
   subscribe(listener: () => void): () => void;
@@ -68,14 +69,16 @@ function finiteRect(value: {
 function browserViewportRect(
   root: HTMLElement,
 ): SegmentHighlightRect | undefined {
-  const view = root.ownerDocument.defaultView;
-  if (view === null) {
+  try {
+    const rect = root.getBoundingClientRect();
+    const top = rect.top + root.clientTop;
+    if (root.clientHeight <= 0) {
+      return undefined;
+    }
+    return finiteRect({ top, bottom: top + root.clientHeight });
+  } catch {
     return undefined;
   }
-  const viewport = view.visualViewport;
-  const top = viewport?.offsetTop ?? 0;
-  const height = viewport?.height ?? view.innerHeight;
-  return finiteRect({ top, bottom: top + height });
 }
 
 function browserRangeRect(range: Range): SegmentHighlightRect | undefined {
@@ -123,12 +126,11 @@ function clearBrowserHighlight(name: string): void {
 }
 
 function browserScrollBy(root: HTMLElement, top: number): void {
-  const view = root.ownerDocument.defaultView;
-  if (view === null || !Number.isFinite(top)) {
+  if (!Number.isFinite(top)) {
     return;
   }
   try {
-    view.scrollBy({ top, left: 0, behavior: "auto" });
+    root.scrollBy({ top, left: 0, behavior: "auto" });
   } catch {
     // Missing geometry or scrolling support leaves highlight-only behavior.
   }
@@ -398,12 +400,13 @@ export class SegmentHighlightController {
     this.#cancelScheduledSettle?.();
     this.#environment.scrollBy(root, rect.top - comfortTop);
     const expectedKey = this.#activeKey;
-    this.#cancelScheduledSettle = this.#environment.schedule(root, () => {
-      this.#cancelScheduledSettle = undefined;
-      if (this.#activeKey === expectedKey) {
-        this.#settleActive(start);
-      }
-    });
+    this.#scheduleFollowSettlement(
+      root,
+      range,
+      start,
+      expectedKey,
+      FOLLOW_LAYOUT_CORRECTION_LIMIT,
+    );
   }
 
   public clear(): void {
@@ -430,6 +433,46 @@ export class SegmentHighlightController {
 
   #ensureVisualSamplingSuspended(): void {
     this.#resumeVisualSampling ??= this.#callbacks?.suspendVisualSampling();
+  }
+
+  #scheduleFollowSettlement(
+    root: HTMLElement,
+    range: Range,
+    locator: ReadingLocatorV1,
+    expectedKey: string | undefined,
+    correctionsRemaining: number,
+  ): void {
+    this.#cancelScheduledSettle = this.#environment.schedule(root, () => {
+      this.#cancelScheduledSettle = undefined;
+      if (this.#activeKey !== expectedKey) {
+        return;
+      }
+      const viewport = this.#environment.viewportRect(root);
+      const rect = this.#environment.rangeRect(range);
+      if (
+        correctionsRemaining > 0 &&
+        viewport !== undefined &&
+        rect !== undefined
+      ) {
+        const comfortTop =
+          viewport.top + SYNCHRONIZATION_AUTHORITY_V1.following.comfortInsetPx;
+        const comfortBottom =
+          viewport.bottom -
+          SYNCHRONIZATION_AUTHORITY_V1.following.comfortInsetPx;
+        if (rect.bottom < comfortTop || rect.top > comfortBottom) {
+          this.#environment.scrollBy(root, rect.top - comfortTop);
+          this.#scheduleFollowSettlement(
+            root,
+            range,
+            locator,
+            expectedKey,
+            correctionsRemaining - 1,
+          );
+          return;
+        }
+      }
+      this.#settleActive(locator);
+    });
   }
 
   #settleActive(locator: ReadingLocatorV1): void {

@@ -60,16 +60,19 @@ function finiteRect(
 }
 
 function browserViewportRect(root: HTMLElement): VisualLocatorRect | undefined {
-  const view = root.ownerDocument.defaultView;
-  if (view === null) {
+  try {
+    const rect = root.getBoundingClientRect();
+    const top = rect.top + root.clientTop;
+    const left = rect.left + root.clientLeft;
+    const width = root.clientWidth;
+    const height = root.clientHeight;
+    if (width <= 0 || height <= 0) {
+      return undefined;
+    }
+    return finiteRect(top, left + width, top + height, left);
+  } catch {
     return undefined;
   }
-  const viewport = view.visualViewport;
-  const top = viewport?.offsetTop ?? 0;
-  const left = viewport?.offsetLeft ?? 0;
-  const width = viewport?.width ?? view.innerWidth;
-  const height = viewport?.height ?? view.innerHeight;
-  return finiteRect(top, left + width, top + height, left);
 }
 
 function browserBlockRect(element: HTMLElement): VisualLocatorRect | undefined {
@@ -155,10 +158,7 @@ function observeBrowserChanges(
   if (view === null) {
     return NOOP;
   }
-  view.addEventListener("scroll", callback, {
-    capture: true,
-    passive: true,
-  });
+  root.addEventListener("scroll", callback, { passive: true });
   view.addEventListener("resize", callback, { passive: true });
   view.visualViewport?.addEventListener("scroll", callback, { passive: true });
   view.visualViewport?.addEventListener("resize", callback, { passive: true });
@@ -169,7 +169,7 @@ function observeBrowserChanges(
   resizeObserver?.observe(root);
 
   return () => {
-    view.removeEventListener("scroll", callback, true);
+    root.removeEventListener("scroll", callback);
     view.removeEventListener("resize", callback);
     view.visualViewport?.removeEventListener("scroll", callback);
     view.visualViewport?.removeEventListener("resize", callback);

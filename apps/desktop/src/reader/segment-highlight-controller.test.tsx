@@ -175,6 +175,12 @@ class ManualHighlightEnvironment implements SegmentHighlightEnvironment {
 
   public scrollBy(_root: HTMLElement, top: number): void {
     this.scrolls.push(top);
+    if (this.range !== undefined) {
+      this.range = {
+        top: this.range.top - top,
+        bottom: this.range.bottom - top,
+      };
+    }
   }
 
   public schedule(_root: HTMLElement, callback: () => void): () => void {

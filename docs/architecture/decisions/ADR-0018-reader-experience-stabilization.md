@@ -2,9 +2,12 @@
 
 ## Status
 
-Accepted as M009.1 implementation authority. Milestone 1 freezes the decision,
-and desktop, Chromium, and packaged-WebView2 authority evidence passes.
-Production behavior remains planned for Milestones 2 through 6.
+Accepted as M009.1 implementation authority. Milestones 1-2 freeze the
+decision, strengthen paint-aware proof, repair active-range materialization,
+and pass clean-host validation. Milestone 3 implements the fixed reader shell,
+sole EPUB scroll root, compact/collapsible narration, and exact text-only
+loaded status; clean-host packaged validation remains pending. The bounded
+paragraph leaf and closeout remain planned for Milestones 4-6.
 
 ## Context
 

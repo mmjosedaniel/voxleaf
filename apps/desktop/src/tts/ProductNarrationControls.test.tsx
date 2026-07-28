@@ -1,11 +1,15 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ProductNarrationControls } from "./ProductNarrationControls";
 import type {
   ProductNarrationCoordinator,
   ProductNarrationSnapshot,
 } from "./product-narration-coordinator";
+
+afterEach(() => {
+  cleanup();
+});
 
 function snapshot(): ProductNarrationSnapshot {
   return Object.freeze({
@@ -54,6 +58,26 @@ describe("product narration controls", () => {
 
     render(<ProductNarrationControls coordinator={coordinator} />);
 
+    const narration = screen.getByRole("region", {
+      name: "Local narration",
+    });
+    const detailToggle = screen.getByRole("button", {
+      name: "Show narration details",
+    });
+    expect(detailToggle).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.queryByRole("group", {
+        name: "Narration passage navigation",
+      }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+    expect(coordinator.start).toHaveBeenCalledOnce();
+    fireEvent.click(detailToggle);
+    expect(
+      screen.getByRole("button", { name: "Hide narration details" }),
+    ).toHaveAttribute("aria-expanded", "true");
+
     const group = screen.getByRole("group", {
       name: "Narration passage navigation",
     });
@@ -73,26 +97,14 @@ describe("product narration controls", () => {
     expect(previous).toBeEnabled();
     expect(next).toBeEnabled();
     expect(startHere).toBeEnabled();
-    expect(group.parentElement).toHaveAttribute(
-      "data-narration-retained-units",
-      "2",
-    );
-    expect(group.parentElement).toHaveAttribute(
-      "data-narration-discarded-units",
-      "1",
-    );
-    expect(group.parentElement).toHaveAttribute(
-      "data-narration-play-intent",
-      "playing",
-    );
-    expect(group.parentElement).toHaveAttribute(
+    expect(narration).toHaveAttribute("data-narration-retained-units", "2");
+    expect(narration).toHaveAttribute("data-narration-discarded-units", "1");
+    expect(narration).toHaveAttribute("data-narration-play-intent", "playing");
+    expect(narration).toHaveAttribute(
       "data-narration-navigation-settling",
       "false",
     );
-    expect(group.parentElement).toHaveAttribute(
-      "data-narration-failure",
-      "none",
-    );
+    expect(narration).toHaveAttribute("data-narration-failure", "none");
 
     fireEvent.click(previous);
     fireEvent.click(next);
@@ -102,5 +114,72 @@ describe("product narration controls", () => {
     expect(coordinator.goToNextBoundary).toHaveBeenCalledOnce();
     expect(coordinator.startAtActiveLocator).toHaveBeenCalledOnce();
     expect(group.textContent).not.toContain("Private");
+  });
+
+  it("keeps active failure recovery and exact loaded duration on the compact surface", () => {
+    const current: ProductNarrationSnapshot = Object.freeze({
+      ...snapshot(),
+      state: Object.freeze({
+        mode: Object.freeze({ kind: "quick" }),
+        phase: "failed",
+        readyMs: 12_000,
+        targetMs: 15_000,
+        progressValueMs: 12_000,
+        estimatedWaitMs: undefined,
+        lowBuffer: true,
+        allRemainingAudioReady: false,
+        resourceCeilingReached: false,
+        pauseContinuesPreparation: false,
+        canPause: false,
+        canResume: false,
+        canStop: false,
+        volumePercent: 100,
+        playbackRate: 1,
+      }),
+      failure: "tts-service-failed",
+    });
+    const coordinator = {
+      subscribe: vi.fn(() => () => undefined),
+      observe: vi.fn(() => current),
+      checkAvailability: vi.fn(async () => undefined),
+      setSelection: vi.fn(),
+      start: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(async () => undefined),
+      setVolumePercent: vi.fn(),
+      goToPreviousBoundary: vi.fn(),
+      goToNextBoundary: vi.fn(),
+      startAtActiveLocator: vi.fn(),
+    } as unknown as ProductNarrationCoordinator;
+
+    render(<ProductNarrationControls coordinator={coordinator} />);
+
+    expect(screen.getByText("Local narration failed.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Playable audio loaded: 12 seconds. Active target: 15 seconds.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Audio is running low and may briefly buffer."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Stop narration to reset it, then try again."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+
+    const toggle = screen.getByRole("button", {
+      name: "Show narration details",
+    });
+    fireEvent.click(toggle);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Hide narration details" }),
+    );
+    expect(coordinator.start).not.toHaveBeenCalled();
+    expect(coordinator.stop).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Stop" }));
+    expect(coordinator.stop).toHaveBeenCalledOnce();
   });
 });

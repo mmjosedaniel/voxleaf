@@ -336,7 +336,8 @@ export function ReaderPublicationContent({
       ),
     [publication.locators, state.activeDocument.id],
   );
-  const readerRef = useRef<HTMLElement | null>(null);
+  const readerDocumentRef = useRef<HTMLElement | null>(null);
+  const readerViewportRef = useRef<HTMLDivElement | null>(null);
   const navigationRef = useRef<HTMLElement | null>(null);
   const destinationRef = useRef<HTMLElement | null>(null);
   const handledNavigationRevision = useRef(0);
@@ -397,7 +398,8 @@ export function ReaderPublicationContent({
     if (
       initialRestorationStatus.current !== "pending" ||
       initialRestorationStarted.current ||
-      readerRef.current === null ||
+      readerDocumentRef.current === null ||
+      readerViewportRef.current === null ||
       destinationRef.current === null
     ) {
       return;
@@ -414,9 +416,9 @@ export function ReaderPublicationContent({
       );
     }
   }, [completeInitialRestoration, coordinator, reflowRestorer]);
-  const setReaderRef = useCallback(
-    (element: HTMLElement | null): void => {
-      readerRef.current = element;
+  const setReaderViewportRef = useCallback(
+    (element: HTMLDivElement | null): void => {
+      readerViewportRef.current = element;
       visualLocatorTracker.setRoot(element);
       reflowRestorer.setRoot(element);
       segmentHighlightController.setRoot(element);
@@ -428,6 +430,13 @@ export function ReaderPublicationContent({
       segmentHighlightController,
       visualLocatorTracker,
     ],
+  );
+  const setReaderDocumentRef = useCallback(
+    (element: HTMLElement | null): void => {
+      readerDocumentRef.current = element;
+      attemptInitialRestoration();
+    },
+    [attemptInitialRestoration],
   );
   const finishProgrammaticNavigation = useCallback((): void => {
     visualLocatorTracker.setCurrentLocator(coordinator.state.activeLocator);
@@ -453,7 +462,7 @@ export function ReaderPublicationContent({
         destination.focus({ preventScroll: true });
         return;
       }
-      readerRef.current?.focus({ preventScroll: true });
+      readerDocumentRef.current?.focus({ preventScroll: true });
     },
     [state.destinationBlock.kind],
   );
@@ -567,7 +576,7 @@ export function ReaderPublicationContent({
   const focusReaderContent = useCallback(
     (event: ReactMouseEvent<HTMLAnchorElement>): void => {
       event.preventDefault();
-      readerRef.current?.focus({ preventScroll: true });
+      readerDocumentRef.current?.focus({ preventScroll: true });
     },
     [],
   );
@@ -682,7 +691,7 @@ export function ReaderPublicationContent({
 
     if (state.contentStatus === "chapter-too-large") {
       handledNavigationRevision.current = state.navigationRevision;
-      readerRef.current?.focus({ preventScroll: true });
+      readerDocumentRef.current?.focus({ preventScroll: true });
       finishProgrammaticNavigation();
       return;
     }
@@ -719,115 +728,121 @@ export function ReaderPublicationContent({
       >
         Skip to reader content
       </a>
-      <ReaderPreferencesControls
-        disabled={initialRestorationPending}
-        preferences={state.preferences}
-        onChange={updatePreference}
-      />
-      <div className="reader-layout">
-        <nav
-          ref={navigationRef}
-          id={navigationId}
-          className="reader-toc"
-          aria-label="Table of contents"
-          tabIndex={-1}
-        >
-          <h3>Table of contents</h3>
-          {publication.navigation.length === 0 ? (
-            <p className="reader-toc-empty">
-              No table of contents is available.
-            </p>
-          ) : (
-            <NavigationTree
-              nodes={publication.navigation}
-              coordinator={coordinator}
-              onNavigateTarget={activateTarget}
-            />
-          )}
-        </nav>
-        <div className="reader-reading-pane">
-          <div
-            className="reader-chapter-controls"
-            aria-label="Chapter navigation"
+      <div
+        ref={setReaderViewportRef}
+        className="reader-viewport"
+        data-reader-scroll-owner="true"
+        role="region"
+        tabIndex={-1}
+        aria-label="Publication reading viewport"
+        onWheelCapture={() => visualNavigationIntent.mark()}
+        onTouchStartCapture={() => visualNavigationIntent.mark()}
+        onPointerDownCapture={() => visualNavigationIntent.mark()}
+        onKeyDownCapture={(event) => {
+          if (
+            [
+              "ArrowDown",
+              "ArrowUp",
+              "End",
+              "Home",
+              "PageDown",
+              "PageUp",
+              " ",
+            ].includes(event.key)
+          ) {
+            visualNavigationIntent.mark();
+          }
+        }}
+      >
+        <ReaderPreferencesControls
+          disabled={initialRestorationPending}
+          preferences={state.preferences}
+          onChange={updatePreference}
+        />
+        <div className="reader-layout">
+          <nav
+            ref={navigationRef}
+            id={navigationId}
+            className="reader-toc"
+            aria-label="Table of contents"
+            tabIndex={-1}
           >
-            <button
-              type="button"
-              disabled={!state.canGoPrevious}
-              onClick={() =>
-                runProgrammaticNavigation(
-                  () => coordinator.goPrevious(),
-                  "chapter-navigation",
-                )
-              }
-            >
-              Previous chapter
-            </button>
-            <button
-              type="button"
-              disabled={!state.canGoNext}
-              onClick={() =>
-                runProgrammaticNavigation(
-                  () => coordinator.goNext(),
-                  "chapter-navigation",
-                )
-              }
-            >
-              Next chapter
-            </button>
-          </div>
-          <p
-            className="reader-navigation-status"
-            aria-live="polite"
-            aria-atomic="true"
-          >
-            {state.message}
-          </p>
-          <a
-            className="reader-return-link"
-            href={`#${navigationId}`}
-            onClick={focusTableOfContents}
-          >
-            Back to table of contents
-          </a>
-          <div
-            id={contentId}
-            className="reader-content"
-            onWheelCapture={() => visualNavigationIntent.mark()}
-            onTouchStartCapture={() => visualNavigationIntent.mark()}
-            onPointerDownCapture={() => visualNavigationIntent.mark()}
-            onKeyDownCapture={(event) => {
-              if (
-                [
-                  "ArrowDown",
-                  "ArrowUp",
-                  "End",
-                  "Home",
-                  "PageDown",
-                  "PageUp",
-                  " ",
-                ].includes(event.key)
-              ) {
-                visualNavigationIntent.mark();
-              }
-            }}
-          >
-            {state.contentStatus === "chapter-too-large" ? (
-              <ChapterTooLargeContent readerRef={setReaderRef} />
+            <h3>Table of contents</h3>
+            {publication.navigation.length === 0 ? (
+              <p className="reader-toc-empty">
+                No table of contents is available.
+              </p>
             ) : (
-              <SemanticDocumentContent
-                key={state.activeLocator.spineItemIndex}
-                document={state.activeDocument}
-                targetAvailability={targetAvailability}
-                onActivateTarget={activateTarget}
-                destinationBlock={state.destinationBlock}
-                destinationRef={setDestinationRef}
-                readerRef={setReaderRef}
-                rasterImageLoader={rasterImageLoader}
-                domRangeMapper={activeDomRangeMapper}
-                visualLocatorTracker={visualLocatorTracker}
-                locatedBlocks={activeLocatedBlocks}
+              <NavigationTree
+                nodes={publication.navigation}
+                coordinator={coordinator}
+                onNavigateTarget={activateTarget}
               />
             )}
+          </nav>
+          <div className="reader-reading-pane">
+            <div
+              className="reader-chapter-controls"
+              aria-label="Chapter navigation"
+            >
+              <button
+                type="button"
+                disabled={!state.canGoPrevious}
+                onClick={() =>
+                  runProgrammaticNavigation(
+                    () => coordinator.goPrevious(),
+                    "chapter-navigation",
+                  )
+                }
+              >
+                Previous chapter
+              </button>
+              <button
+                type="button"
+                disabled={!state.canGoNext}
+                onClick={() =>
+                  runProgrammaticNavigation(
+                    () => coordinator.goNext(),
+                    "chapter-navigation",
+                  )
+                }
+              >
+                Next chapter
+              </button>
+            </div>
+            <p
+              className="reader-navigation-status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {state.message}
+            </p>
+            <a
+              className="reader-return-link"
+              href={`#${navigationId}`}
+              onClick={focusTableOfContents}
+            >
+              Back to table of contents
+            </a>
+            <div id={contentId} className="reader-content">
+              {state.contentStatus === "chapter-too-large" ? (
+                <ChapterTooLargeContent readerRef={setReaderDocumentRef} />
+              ) : (
+                <SemanticDocumentContent
+                  key={state.activeLocator.spineItemIndex}
+                  document={state.activeDocument}
+                  targetAvailability={targetAvailability}
+                  onActivateTarget={activateTarget}
+                  destinationBlock={state.destinationBlock}
+                  destinationRef={setDestinationRef}
+                  readerRef={setReaderDocumentRef}
+                  rasterImageLoader={rasterImageLoader}
+                  domRangeMapper={activeDomRangeMapper}
+                  visualLocatorTracker={visualLocatorTracker}
+                  locatedBlocks={activeLocatedBlocks}
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>

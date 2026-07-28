@@ -341,6 +341,18 @@ describe("desktop reader lifecycle surface", () => {
     expect(publication.readResource).not.toHaveBeenCalled();
     expect(publication.resolveTarget).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Close EPUB" })).toBeEnabled();
+    expect(screen.getByRole("main")).toHaveClass("app-shell-reader");
+    expect(
+      document.querySelectorAll('[data-reader-scroll-owner="true"]'),
+    ).toHaveLength(1);
+    expect(
+      screen.getByRole("region", {
+        name: "Publication reading viewport",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Show narration details" }),
+    ).toHaveAttribute("aria-expanded", "false");
     expect(document.body).not.toHaveTextContent("private-title.epub");
     expect(screen.getByLabelText("Open a local EPUB")).toHaveValue("");
   });

@@ -132,10 +132,9 @@ describe("adaptive preparation controls", () => {
       "Preparing audio — 5 seconds of 1 minute ready. Calculating preparation time…",
     );
     expect(
-      screen.getByRole("progressbar", {
-        name: "Playable audio: 5 seconds of 1 minute",
-      }),
-    ).toHaveAttribute("value", "5000");
+      screen.getByText("Playable audio loaded: 5 seconds. Starts at 1 minute."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /Quick start/ })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Pause" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Resume" })).toBeDisabled();

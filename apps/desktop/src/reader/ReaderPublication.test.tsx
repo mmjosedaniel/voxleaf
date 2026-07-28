@@ -749,6 +749,28 @@ describe("navigable publication reader", () => {
     expect(focusOwner).toHaveFocus();
   });
 
+  it("assigns continuous publication scrolling to exactly one focusable viewport", () => {
+    const { container } = render(
+      <ReaderPublicationContent publication={createPublication()} />,
+    );
+
+    const scrollOwners = container.querySelectorAll(
+      '[data-reader-scroll-owner="true"]',
+    );
+    expect(scrollOwners).toHaveLength(1);
+    const viewport = screen.getByRole("region", {
+      name: "Publication reading viewport",
+    });
+    expect(viewport).toBe(scrollOwners[0]);
+    expect(viewport).toHaveAttribute("tabindex", "-1");
+    expect(viewport).toContainElement(
+      screen.getByRole("article", { name: "Current reading section" }),
+    );
+    expect(container.querySelector(".reader-content")).not.toHaveAttribute(
+      "data-reader-scroll-owner",
+    );
+  });
+
   it("preserves TOC order, explains unavailable entries, and navigates with one set of controls", () => {
     render(<ReaderPublicationContent publication={createPublication()} />);
 

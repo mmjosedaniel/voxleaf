@@ -4,7 +4,7 @@
 
 The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is never a startup target. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. M008's final policy run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute, which exceeds the MVP target.
 
-Completed M009 connects exact audible segment transitions to one non-mutating semantic source-range highlight, focus-safe automatic following, identity-first synchronized user navigation, and bounded non-skipping heard-position persistence, then validates the complete synchronized loop on the exact host. Segment start is saved when audible, completion advances to the canonical range end, and interruption retains the latest heard checkpoint without periodic playback writes. The accepted synchronized run observed six transitions, no stale playback, one natural underrun/refill, 190 ms cancellation, bounded cleanup, zero external requests, and 378.46 buffering seconds per playback minute. A later manual real-publication run produced narration without a visible active-segment highlight and confirmed that the outer application scroll can place the reader below the controls. M009.1 Milestone 2 now repairs the proven same-chapter materialization gap: when the active semantic range is not yet in the DOM, the existing one-shot canonical navigation path materializes it and the mapper refreshes the single focus-safe highlight. Deterministic and Chromium evidence pass; clean-host packaged validation and the remaining reader-shell stabilization remain pending. The path therefore remains a constrained development demo rather than a passing standard profile or uninterrupted-playback promise. General hardware profiles, a validated fallback, operational resilience, and production packaging remain pending.
+Completed M009 connects exact audible segment transitions to one non-mutating semantic source-range highlight, focus-safe automatic following, identity-first synchronized user navigation, and bounded non-skipping heard-position persistence, then validates the complete synchronized loop on the exact host. Segment start is saved when audible, completion advances to the canonical range end, and interruption retains the latest heard checkpoint without periodic playback writes. The accepted synchronized run observed six transitions, no stale playback, one natural underrun/refill, 190 ms cancellation, bounded cleanup, zero external requests, and 378.46 buffering seconds per playback minute. A later manual real-publication run produced narration without a visible active-segment highlight and confirmed that the outer application scroll could place the reader below the controls. M009.1 Milestone 2 repairs the proven same-chapter materialization gap and passed clean-host validation. Milestone 3 now gives ready publications one dedicated reader scroll viewport, stable compact application/publication/narration chrome, collapsible narration detail, and exact loaded/target/estimate text without a progress bar. Repository and Chromium evidence pass; its clean-host packaged check and the paragraph leaf remain pending. The path therefore remains a constrained development demo rather than a passing standard profile or uninterrupted-playback promise. General hardware profiles, a validated fallback, operational resilience, and production packaging remain pending.
 
 ## Current implemented flow
 
@@ -29,19 +29,18 @@ configuration is unavailable. It is not a standard or generally supported
 runtime profile.
 
 The highlight/follow path above passed repository-authored synthetic,
-Chromium, packaged WebView2, and exact-host validation. M009.1 reproduced and
-repaired the same-chapter materialization condition that could leave an
-accepted audible range without a DOM target. A clean-host packaged check and
-ephemeral private-publication confirmation remain before that discrepancy is
-closed; neither may commit the user's EPUB or weaken the completed M009
-synchronization authority.
+Chromium, packaged WebView2, exact-host, and M009.1 clean-host validation.
+M009.1 reproduced and repaired the same-chapter materialization condition that
+could leave an accepted audible range without a DOM target. Ephemeral
+private-publication confirmation remains before declaring that defect the only
+cause of the original observation; it may not commit the user's EPUB or weaken
+the completed M009 synchronization authority.
 
 ## Remaining target user flow
 
-1. M009.1 stabilizes visible synchronization, gives EPUB content one dedicated
-   scroll viewport, adds a bounded locator-backed paragraph leaf, makes
-   narration compact/collapsible, and replaces the preparation bar with exact
-   loaded-duration text.
+1. M009.1 adds the bounded locator-backed paragraph leaf and closes exact-host,
+   private-publication, repository, and pull-request validation for the
+   implemented visible-highlight repair and fixed compact reader shell.
 2. M010 adds privacy-safe compatibility reporting, evidence-backed profile
    selection, conditional fallback admission, and identity-safe recovery.
 3. M011 packages and validates an end-user distribution after those boundaries
@@ -68,6 +67,10 @@ Implemented and validated:
 - Connect the active visual locator to bounded narration preparation, the M007
   client, and audible quick/prepared playback under the exact-development
   availability gate.
+- Keep ready-publication application, book, and compact narration chrome
+  stable around exactly one EPUB scroll viewport; allow narration detail to
+  collapse without hiding required state or recovery, and report loaded audio
+  with exact text rather than a progress bar.
 - Highlight and follow the active prepared segment without mutating publication
   DOM or moving keyboard focus.
 - Treat passive visual movement as a seek after 500 ms settlement, route
@@ -85,8 +88,8 @@ Implemented and validated:
 
 Remaining:
 
-- Close clean-host/private-publication confirmation of the repaired highlight
-  path and implement the approved M009.1 reader-first shell and bounded
+- Close private-publication confirmation of the repaired highlight path,
+  clean-host packaged validation of the fixed shell, and the approved bounded
   paragraph action.
 - Detect relevant acceleration, publish measured hardware profiles, and provide a validated CPU-compatible fallback.
 - Graduate a measured engine/voice to a supported production profile, or record
