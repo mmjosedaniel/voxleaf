@@ -1,0 +1,586 @@
+# M009-001 reader experience stabilization
+
+## Goal
+
+Stabilize the completed M009 synchronized-reading experience before M010 adds
+hardware compatibility and operational recovery UI.
+
+This follow-up must reconcile the user-observed absence of a visible audible
+segment highlight, keep the EPUB text continuously visible in one dedicated
+scrolling viewport, make narration controls compact without hiding important
+state, replace the ambiguous preparation progress bar with truthful loaded
+audio text, and add an explicit paragraph-level leaf control that starts and
+tracks narration through existing stable locators.
+
+The work preserves completed M005 narration segmentation, M007 protocol and
+service ownership, M008 buffer thresholds and bounds, and M009 segment-level
+timing, invalidation, following, and heard-position authority.
+
+## User-visible outcome
+
+After this plan is complete, a reader using the constrained exact-development
+path can:
+
+- open an EPUB and see the book text as the primary application surface
+  without scrolling past the application controls;
+- scroll the EPUB text inside one dedicated reader viewport while compact
+  application and narration controls remain available;
+- see an unmistakable but non-disruptive highlight for the currently audible
+  stable narration segment;
+- see one leaf marker beside the relevant paragraph: translucent when the
+  paragraph is an available start target, distinct while that target is
+  preparing, solid and non-colour-coded when it is currently audible, and
+  separately outlined when it represents a saved stopped checkpoint;
+- activate the leaf to replace obsolete narration and start from that
+  paragraph without making ordinary paragraph clicks interactive;
+- collapse the detailed local-narration panel while retaining a compact player,
+  buffering state, active errors, and required recovery actions; and
+- read exact loaded playable-audio duration as text without mistaking a growing
+  buffer bar for book or playback progress.
+
+The user can operate every new action with keyboard and touch equivalents.
+Automatic following never moves focus or selection. This plan does not make
+the development TTS profile supported, continuous, real-time, or
+distributable.
+
+## Current state
+
+Roadmap Milestones 1 through 9 are complete.
+
+Completed M009 carries each eligible prepared segment's immutable
+`LocatorRangeV1` through the scheduler/player, publishes exact audible
+start/completion observations, maps one active range through
+`SemanticDomRangeMapper`, installs the `voxleaf-narration-active` CSS Custom
+Highlight, follows outside the frozen 24-pixel comfort region, routes
+navigation through identity-first cancellation, and persists non-skipping
+heard checkpoints. Deterministic, Chromium, packaged WebView2, exact-host, and
+pull-request validation passed on the recorded implementation.
+
+A later manual run with a real local EPUB produced audible narration but did
+not show a visible active segment highlight. This observation does not erase
+the earlier synthetic evidence, and it does not establish a root cause. It is
+a product-visible discrepancy that must be reproduced with repository-authored
+synthetic content and corrected before M010 recovery relies on the same
+projection.
+
+The current opened-book UI remains one vertically scrolling application page.
+File selection, branding, publication metadata, narration configuration,
+controls, and reader content share the outer scroll, so the reading surface can
+start below the visible window. `AdaptivePreparationControls` renders both
+loaded/target text and a `<progress>` element. The detailed narration panel is
+always expanded. Starting at an arbitrary paragraph currently requires moving
+the visible locator and using the general visible-passage action; publication
+prose itself is intentionally not interactive.
+
+M010 is approved but not started. It will add compatibility and recovery state
+to the application. Stabilizing the shell and its canonical narration
+navigation before M010 avoids building those new states around a reader layout
+that is already scheduled to change.
+
+## Scope and non-goals
+
+### In scope
+
+- Freeze one result-blind stabilization authority before implementation,
+  including the exact failing highlight proof, reader scroll ownership,
+  compact/collapsed narration states, loaded-audio language, leaf states,
+  locator targeting, and accessibility behavior.
+- Reproduce the missing visible-highlight observation without committing the
+  user's EPUB, book text, generated audio, private paths, or raw logs.
+- Correct the reader-owned active segment decoration/follow integration while
+  retaining CSS Custom Highlight and honest whole-segment timing.
+- Introduce one fixed opened-book shell with one dedicated reader scroll owner;
+  avoid nested reader scroll regions.
+- Keep the open-book empty/loading/error flows responsive and usable at narrow
+  sizes and high text scale.
+- Add a compact narration surface and collapsible detail panel without hiding
+  failure, buffering, low-water, preparation, or recovery state.
+- Remove the growing preparation `<progress>` presentation and show exact
+  loaded playable time and the active target in text.
+- Add an application-owned paragraph leaf interaction tied only to canonical
+  locators and existing narration replacement behavior.
+- Use the same bounded leaf marker to reinforce the current audible paragraph
+  and the saved stopped checkpoint without replacing the exact text-range
+  highlight.
+- Extend deterministic, browser, packaged WebView2, and exact-host coverage for
+  focus, selection, scrolling, cancellation, stale suppression, cleanup,
+  forced colors, reduced motion, keyboard, pointer, and touch behavior.
+- Reconcile product, architecture, development, roadmap, and plan
+  documentation with actual results.
+
+### Non-goals
+
+- Changing M005 normalization, semantic segmentation, chunk sizes, source
+  ranges, or prepared-text limits.
+- Changing M007 protocol v1, process topology, framing, service queues,
+  complete-unit delivery, or Qwen adapter behavior.
+- Changing M008's 15-second quick target, one-minute refill, prepared choices,
+  10-second low water, 30-minute simultaneous ceiling, `1.0x` playback, or
+  zero boundary-wait default.
+- Adding lower-temperature or stable narration, x-vector-only cloning, a new
+  model, voice selection, hardware detection, fallback, or service recovery.
+- Adding word timing, inferred intra-segment progress, a chapter-duration seek
+  bar, or a rendered page-number authority.
+- Adding a full native File/Edit/View/Narration/Help menu, a new table-of-
+  contents sidebar, automatic retry, telemetry, cloud processing, or remote
+  requests.
+- Persisting panel geometry, leaf hover state, rendered coordinates, DOM
+  paths, quotations, prepared text, generated audio, or a new reader-state
+  envelope.
+- Treating the private real EPUB used during manual observation as a fixture or
+  repository artifact.
+
+## Relevant files and documentation
+
+Read these authorities before implementation:
+
+- [`.agents/PLANS.md`](../../../.agents/PLANS.md)
+- [`../../README.md`](../../README.md)
+- [`../../product/mvp.md`](../../product/mvp.md)
+- [`../../product/project-brief.md`](../../product/project-brief.md)
+- [`../../architecture/system-diagram.md`](../../architecture/system-diagram.md)
+- [`../../architecture/overview.md`](../../architecture/overview.md)
+- [`../../architecture/adaptive-buffer-authority-v1.md`](../../architecture/adaptive-buffer-authority-v1.md)
+- [`../../architecture/synchronization-authority-v1.md`](../../architecture/synchronization-authority-v1.md)
+- [`../../architecture/decisions/ADR-0008-visual-reader-architecture.md`](../../architecture/decisions/ADR-0008-visual-reader-architecture.md)
+- [`../../architecture/decisions/ADR-0011-bounded-web-storage-reader-state.md`](../../architecture/decisions/ADR-0011-bounded-web-storage-reader-state.md)
+- [`../../architecture/decisions/ADR-0012-bounded-narration-preparation.md`](../../architecture/decisions/ADR-0012-bounded-narration-preparation.md)
+- [`../../architecture/decisions/ADR-0015-bounded-adaptive-qwen-demo-buffering.md`](../../architecture/decisions/ADR-0015-bounded-adaptive-qwen-demo-buffering.md)
+- [`../../architecture/decisions/ADR-0017-segment-level-reader-narration-synchronization.md`](../../architecture/decisions/ADR-0017-segment-level-reader-narration-synchronization.md)
+- [`../completed/M005-narration-text-preparation.md`](../completed/M005-narration-text-preparation.md)
+- [`../completed/M008-bounded-adaptive-prebuffering.md`](../completed/M008-bounded-adaptive-prebuffering.md)
+- [`../completed/M009-synchronized-reading-and-narration.md`](../completed/M009-synchronized-reading-and-narration.md)
+
+Expected implementation areas:
+
+- `apps/desktop/src/App.tsx`
+- `apps/desktop/src/styles.css`
+- `apps/desktop/src/reader/ReaderPublication.tsx`
+- `apps/desktop/src/reader/SemanticDocument.tsx`
+- `apps/desktop/src/reader/semantic-dom-range-mapper.ts`
+- `apps/desktop/src/reader/segment-highlight-controller.ts`
+- `apps/desktop/src/reader/synchronization-authority.ts`
+- `apps/desktop/src/tts/AdaptivePreparationControls.tsx`
+- `apps/desktop/src/tts/product-narration-coordinator.ts`
+- `apps/desktop/src/persistence/reader-position-save-coordinator.ts`
+- adjacent focused unit and component tests;
+- `apps/desktop/tests/browser/`;
+- `apps/desktop/scripts/native-startup-smoke.mjs`; and
+- applicable product, architecture, development, and roadmap documentation.
+
+Do not add a shared schema, Python/Rust protocol field, package dependency, or
+native capability unless a failing proof demonstrates that the existing
+desktop-local locator and narration boundaries cannot express the requirement.
+Amend this plan and the applicable authority before such an expansion.
+
+## Architecture and constraints
+
+### Preserve one position and honest timing
+
+The stable logical locator remains the sole reading-position authority. The
+complete active `LocatorRangeV1` remains the only audible timing authority.
+The text highlight shows the exact active segment. The leaf supplements that
+highlight at paragraph granularity; it must not simulate word timing or imply
+that an entire paragraph is already audible.
+
+The leaf target is a canonical paragraph or addressable block-start locator.
+Selecting it follows the existing M009 invalidation order:
+
+1. replace the old work identity;
+2. stop old playback;
+3. abort preparation;
+4. release old queued units;
+5. contain active synthesis;
+6. settle the selected canonical locator; and
+7. start only under the explicit new leaf action.
+
+Ordinary paragraph clicks remain inert. A leaf selection that is still
+preparing must not use the audible state. The solid active marker moves only
+on an accepted `segment-started` observation, and completion/checkpoint
+transitions remain governed by M009.
+
+### One dedicated reader scroll owner
+
+When a publication is ready, the application shell keeps compact book and
+narration controls outside one reader viewport. Only that viewport owns
+continuous EPUB scrolling. The empty/open/loading/error screens may retain the
+normal page layout.
+
+Changing the scroll owner must preserve:
+
+- the active visual locator and 24-pixel reading line;
+- reflow and exact/nearest-valid restoration;
+- Custom Highlight range mapping and following geometry;
+- 500 ms user-originated passive navigation settlement;
+- programmatic-follow sampling suppression;
+- chapter and incremental-render materialization;
+- focus, selection, reduced motion, and forced-colors behavior; and
+- bounded cleanup on publication replacement and application close.
+
+Nested competing scrolling regions are prohibited. Browser history, URL,
+rendered page numbers, geometry, and DOM paths remain non-authoritative.
+
+### Bounded leaf presentation
+
+Do not create a permanently visible keyboard tab stop for every paragraph in a
+long chapter. Milestone 1 must prove and freeze one bounded presentation, such
+as a single retargeted application-owned margin control or an equivalent
+roving/contextual control. At most one hover/focus preview, one preparing
+target, one active marker, and one saved-checkpoint marker may be retained.
+
+States cannot be communicated by green alone:
+
+- available/preview uses translucent treatment plus an accessible name;
+- preparing has a distinct label/state;
+- audible uses solid treatment plus `aria-current` or an equivalent
+  non-colour cue;
+- saved stopped checkpoint uses a distinct outline/non-solid treatment; and
+- keyboard focus remains independently visible.
+
+Touch and keyboard users must be able to discover and activate the same
+action. Appearance/disappearance must not move focus or expand the semantic
+publication text exposed to narration, selection, or persistence.
+
+### Compact narration and truthful loaded duration
+
+The detailed narration configuration may collapse, but the compact surface
+must keep play/pause, stop, current phase, loaded playable duration,
+buffering/low-water warning, active error, and expansion action available as
+appropriate. Collapsing does not stop or restart narration and does not alter
+work identity, buffer thresholds, or ownership.
+
+The UI removes the growing preparation bar. It presents content-free exact
+accepted duration in text, for example, “Playable audio loaded: 12 seconds.
+Starts at 15 seconds.” Actual playback position and approximate book progress
+remain separate future concerns. Removing the bar does not remove truthful
+target, estimate, low-water, buffering, or complete-shorter-range information.
+
+### Privacy, bounds, and accessibility
+
+- Keep EPUB bytes, text, prepared narration, PCM, and model output local.
+- Keep narration text and PCM out of React snapshots, UI state, logs,
+  diagnostics, persistence, and test artifacts.
+- Retain one active highlight range and the existing bounded structural
+  history; leaf state must not create an unbounded locator registry.
+- Preserve one active synthesis, zero service queue, one retained prepared
+  batch, and all M008 text/audio ceilings.
+- Use repository-authored synthetic EPUBs for automated and committed evidence.
+- Private manual EPUBs may be used only for local confirmation; do not capture
+  or commit their title, text, path, screenshots, audio, or raw output.
+- Preserve semantic controls, visible focus, accessible names, screen-reader
+  state, forced colors, high text scale, reduced motion, and narrow-window
+  operation.
+
+## Milestone 1: Freeze stabilization authority and reproduce the discrepancy
+
+### Work
+
+- Add a deterministic reader-experience state table covering closed/open
+  narration detail, leaf preview/preparing/audible/checkpoint states, highlight
+  presence, and inactive/preparing/playing/paused/buffering/failed phases.
+- Build a repository-authored browser and packaged-WebView2 proof that
+  distinguishes “range accepted” from “highlight visibly perceivable.”
+- Reproduce the user-observed missing highlight or record the exact bounded
+  condition under which the current synthetic proof differs.
+- Freeze one reader scroll owner, compact/collapsed information hierarchy,
+  text-only loaded-duration language, and bounded leaf presentation.
+- Record the decision as an ADR-0017 amendment or the next ADR, and add
+  result-blind authority tests before implementation.
+- Prove that no M005 segmentation, M007 protocol, M008 threshold, shared
+  contract, storage migration, native capability, or dependency change is
+  required, or amend scope explicitly before making one.
+
+### Validation
+
+- Command: `pnpm.cmd --filter @voxleaf/desktop typecheck`
+- Command: `pnpm.cmd --filter @voxleaf/desktop test`
+- Command: `pnpm.cmd test:browser`
+- Command: `pnpm.cmd test:native-startup`
+- Expected result: the failing/perceivability proof is deterministic and
+  content-safe; the selected layout and leaf authority preserve focus,
+  selection, locator behavior, URL, CSP, and zero external requests.
+- Actual result: Not yet available.
+
+### Status
+
+Not started.
+
+## Milestone 2: Restore visible segment highlighting and following
+
+### Work
+
+- Trace exact audible observations through the coordinator subscription,
+  active range mapping, Custom Highlight registry, stylesheet, current
+  document materialization, and follow geometry.
+- Correct the smallest proven production defect without introducing a second
+  timing source or publication DOM wrappers.
+- Make the active range perceivable in normal, dark, high-contrast,
+  forced-colors, and selected-text conditions.
+- Retain highlight-only fallback when geometry is unavailable and never move
+  focus or selection during following.
+- Add regression coverage for the reproduced condition, first/next segment,
+  pause/resume, buffering, chapter transition, failure, stop, and cleanup.
+
+### Validation
+
+- Command: `pnpm.cmd --filter @voxleaf/desktop exec vitest run src/reader/segment-highlight-controller.test.tsx src/reader/semantic-dom-range-mapper.test.tsx src/reader/ReaderPublication.test.tsx`
+- Command: `pnpm.cmd test:browser`
+- Command: `pnpm.cmd test:native-startup`
+- Expected result: every accepted audible start produces exactly one visible
+  active range in the correct document, following remains focus-safe, and all
+  invalidating paths clear it without stale UI.
+- Actual result: Not yet available.
+
+### Status
+
+Not started.
+
+## Milestone 3: Implement the fixed reader shell and compact narration UI
+
+### Work
+
+- Refactor the ready-publication layout so one dedicated reader viewport owns
+  text scrolling and compact application/book/narration chrome remains stable.
+- Preserve normal responsive page behavior for no-book, loading, error, and
+  unsupported states.
+- Add a collapsible detailed narration panel and compact persistent player with
+  bounded content-free state.
+- Replace the preparation `<progress>` element with exact loaded-duration,
+  target, and estimate text while retaining truthful low-water, buffering,
+  complete-range, and failure messages.
+- Update highlight/follow viewport calculations, locator tracking, reflow, and
+  restoration for the new scroll root.
+- Add component and browser coverage for narrow windows, zoom/high text scale,
+  keyboard scrolling, touch/wheel input, reduced motion, forced colors, and
+  publication replacement/close.
+
+### Validation
+
+- Command: `pnpm.cmd --filter @voxleaf/desktop exec vitest run src/App.test.tsx src/reader/ReaderPublication.test.tsx src/tts/AdaptivePreparationControls.test.tsx`
+- Command: `pnpm.cmd --filter @voxleaf/desktop typecheck`
+- Command: `pnpm.cmd test:browser`
+- Command: `pnpm.cmd test:native-startup`
+- Expected result: the book remains the primary visible surface, exactly one
+  reader scroll owner controls locators, collapsing preserves narration and
+  errors, and loaded audio is represented truthfully without a progress bar.
+- Actual result: Not yet available.
+
+### Status
+
+Not started.
+
+## Milestone 4: Add paragraph leaf navigation and progress reinforcement
+
+### Work
+
+- Implement the frozen bounded leaf presentation without turning all
+  publication paragraphs into permanent tab stops.
+- Map eligible paragraph/block starts to canonical locators through existing
+  application-owned structural registration.
+- Route leaf activation through identity-first narration replacement and
+  settled reader placement.
+- Project preview, preparing, current audible paragraph, and saved stopped
+  checkpoint states without exposing text or creating a second persisted
+  position.
+- Keep the leaf and exact segment highlight synchronized across pause/resume,
+  completion, buffering, chapter changes, reflow, failure, explicit stop,
+  restoration, and publication replacement.
+- Add keyboard, pointer, touch, screen-reader, forced-colors, focus, race,
+  stale-work, and cleanup tests.
+
+### Validation
+
+- Command: `pnpm.cmd --filter @voxleaf/desktop test`
+- Command: `pnpm.cmd test:browser`
+- Command: `pnpm.cmd test:native-startup`
+- Expected result: activating only the leaf starts from its canonical
+  paragraph, old work becomes ineligible first, the active marker follows
+  accepted audible segments, ordinary text clicks remain inert, and
+  accessibility/resource bounds pass.
+- Actual result: Not yet available.
+
+### Status
+
+Not started.
+
+## Milestone 5: Validate the stabilized exact-host reader
+
+### Work
+
+- Extend the existing packaged exact-host synthetic path with visible
+  highlight assertions under the final reader scroll root.
+- Exercise leaf start/replacement, first and next audible markers, compact and
+  expanded narration views, pause/resume, passive navigation, chapter
+  transition, buffering, failure, stop, saved checkpoint, and cleanup.
+- Retain the outbound-blocking firewall rule and content-safe result boundary.
+- Run a manual private-EPUB confirmation without recording private content,
+  path, screenshots, audio, or raw model output.
+- Measure content-free command-to-audible, follow/marker transition,
+  cancellation, retained unit, cleanup, runtime-error, and external-request
+  observations without treating them as a new TTS performance profile.
+
+### Validation
+
+- Command: `pnpm.cmd test:tts:adaptive-exact-host`
+- Expected result: the final packaged shell shows an unmistakable synchronized
+  highlight and leaf marker, preserves one coherent locator, produces zero
+  stale audio, releases bounded state, persists no generated audio, and makes
+  zero external requests.
+- Actual result: Not yet available.
+
+### Status
+
+Not started.
+
+## Milestone 6: Record the stabilization decision and close validation
+
+### Work
+
+- Reconcile the final implementation with the frozen authority and record any
+  amendments.
+- Update product requirements, architecture overview, canonical system
+  diagram, testing/troubleshooting guidance, roadmap, M010 dependency notes,
+  and this ExecPlan with actual results.
+- Review the complete diff for unrelated changes, sensitive EPUB content,
+  generated audio, private paths, model artifacts, raw logs/results, new
+  dependencies, unbounded locator state, and unsupported claims.
+- Move this plan to `docs/plans/completed/` only after deterministic,
+  browser, packaged, exact-host, privacy, repository, and required
+  pull-request validation passes.
+
+### Validation
+
+- Command: `pnpm.cmd check`
+- Command: `pnpm.cmd check:portable`
+- Command: `git diff --check`
+- Expected result: all applicable repository checks pass; required Ubuntu and
+  Windows pull-request checks pass; documentation distinguishes implemented
+  stabilization from deferred M010/M011 and later narration experiments.
+- Actual result: Not yet available.
+
+### Status
+
+Not started.
+
+## Testing and benchmark strategy
+
+### Deterministic tests
+
+- State-table tests for leaf, highlight, panel, and narration phase
+  combinations.
+- Component tests for one scroll root, fixed shell, collapsed/expanded
+  controls, exact loaded-duration text, and removal of the preparation
+  `<progress>` element.
+- Locator/range tests for paragraph targets, active segment-to-paragraph
+  mapping, chapter/reflow changes, saved checkpoint projection, and
+  exact/nearest-valid restoration.
+- Manual-clock identity tests for leaf replacement, late preparation,
+  late synthesis, stale audible transitions, pause/resume, buffering,
+  failure, stop, and cleanup.
+- Exact and max-plus-one resource tests proving leaf/marker state remains
+  bounded independently of chapter size.
+- Privacy tests rejecting narration text, quotations, audio, filenames,
+  paths, work identities, and raw model errors from UI snapshots,
+  diagnostics, and persistence.
+
+### Browser and packaged tests
+
+- Production Chromium covers actual CSS Custom Highlight perception, the final
+  scroll owner, geometry/following, leaf hover/focus/activation, keyboard and
+  touch equivalents, focus/selection preservation, reflow, narrow/high-scale
+  layouts, forced colors, and zero non-loopback requests.
+- Packaged WebView2 repeats highlight/leaf visibility, fixed-shell scrolling,
+  narration replacement, restoration, lifecycle cleanup, CSP, runtime-error,
+  and zero-external-request paths.
+- All committed fixtures use repository-authored synthetic EPUBs and
+  generated synthetic PCM.
+
+### Exact-host validation
+
+- Run only after deterministic/browser/packaged model-free evidence passes.
+- Use the existing exact Windows/CUDA Qwen/Serena development configuration
+  and firewall isolation.
+- Report interaction correctness separately from TTS speed. This plan does
+  not re-evaluate the engine profile or change M008 buffer policy.
+- Keep manual private-EPUB confirmation ephemeral and content-free.
+
+## Risks and rollback
+
+- The missing highlight may be an exact publication/range/style interaction
+  not reproduced by current synthetic fixtures. Add only content-safe
+  structural fixtures; never copy private prose or publisher markup into the
+  repository.
+- Changing the scroll root may break locator tracking, restoration, following,
+  or keyboard scrolling. Freeze one owner, reuse existing mapper/restorer
+  boundaries, and retain the old ready-layout path until each focused proof
+  passes.
+- A leaf per paragraph can create visual clutter, thousands of tab stops, or
+  retained locator state proportional to the chapter. Use one bounded
+  contextual/roving control and retain only active states.
+- Leaf activation can race with active synthesis and replay stale audio. Route
+  it through the existing identity-first replacement path and reject late
+  callbacks before UI delivery.
+- A solid paragraph marker may imply paragraph-level timing. Keep the exact
+  segment text highlight as timing authority and label the leaf as the current
+  paragraph only.
+- Collapsing narration UI may hide failures or required recovery. Keep compact
+  error/status/recovery presentation outside the collapsible detail.
+- Removing the bar may make target progress less scannable. Preserve exact
+  loaded/target text and accessible live status; do not remove buffering and
+  low-water warnings.
+- Reader-shell CSS may regress small windows, zoom, high text scale, or forced
+  colors. Validate each explicitly before replacing the current layout.
+
+Each milestone must remain independently reversible. Highlight fixes may
+revert to the accepted M009 Custom Highlight path; the fixed shell may revert
+to the current outer-scroll layout; leaf UI may be removed while retaining the
+existing visible-passage action; and compact controls may return to the
+expanded presentation. Rollback must never weaken identity invalidation,
+release bounds, heard checkpoints, exact-byte restoration, or privacy.
+
+## Progress log
+
+- 2026-07-28: Reviewed the ignored reader/narration discussion, completed
+  M008/M009 authorities, current product/architecture documentation, roadmap,
+  relevant desktop implementation, and M010 dependency.
+- 2026-07-28: Prioritized a bounded M009.1 stabilization before M010; retained
+  lower-temperature narration, boundary timing, startup tuning, reopen-resume,
+  and approximate book progress for a later post-M010/pre-M011 refinement
+  decision.
+- 2026-07-28: Created this ExecPlan and sequenced M010 after its closeout. No
+  production stabilization implementation has started.
+
+## Discoveries and decisions
+
+- The M009 code and synthetic validation prove an active Custom Highlight
+  path, but the later private-EPUB manual observation did not show a visible
+  highlight. The plan must reproduce and explain that discrepancy rather than
+  silently claim either side is definitive.
+- `AdaptivePreparationControls` currently renders exact loaded/target text and
+  a `<progress>` element. Removing the visual bar is a presentation change;
+  it does not require a buffer-status contract or threshold change.
+- The current application uses the outer page as its scroll owner. A dedicated
+  reader viewport changes geometry and layout responsibilities but not stable
+  locator authority.
+- The existing visible-passage, previous/next, chapter, identity-first
+  invalidation, and audible-progress boundaries should be extended for leaf
+  targeting rather than replaced.
+- A permanent focusable leaf for every paragraph would violate practical
+  accessibility and bounded-state goals. Milestone 1 must select a bounded
+  contextual or roving implementation.
+- A leaf is a paragraph-level location/action marker, while CSS Custom
+  Highlight remains the exact segment-level audible marker. Combining them
+  must not become fake word or paragraph timing.
+- M010 recovery UI should be built after the final reader shell exists and
+  must test leaf-originated invalidation. Complete generation settings must be
+  part of future profile identity so a later natural/stable narration
+  comparison cannot become an untracked mutable temperature toggle.
+
+## Final validation results
+
+Not yet available. This plan is approved and not started. It is complete only
+when the user-observed highlight discrepancy is reconciled; the fixed reader
+viewport, compact narration UI, text-only loaded duration, and bounded leaf
+interaction are implemented and validated; exact-host privacy and cleanup
+evidence passes; documentation matches actual behavior; and required
+pull-request checks pass.
