@@ -82,21 +82,22 @@ function finiteRect(rect: {
 }
 
 function browserViewportRect(root: HTMLElement): VisualLocatorRect | undefined {
-  const view = root.ownerDocument.defaultView;
-  if (view === null) {
+  try {
+    const rect = root.getBoundingClientRect();
+    const top = rect.top + root.clientTop;
+    const left = rect.left + root.clientLeft;
+    if (root.clientWidth <= 0 || root.clientHeight <= 0) {
+      return undefined;
+    }
+    return finiteRect({
+      top,
+      right: left + root.clientWidth,
+      bottom: top + root.clientHeight,
+      left,
+    });
+  } catch {
     return undefined;
   }
-  const viewport = view.visualViewport;
-  const top = viewport?.offsetTop ?? 0;
-  const left = viewport?.offsetLeft ?? 0;
-  const width = viewport?.width ?? view.innerWidth;
-  const height = viewport?.height ?? view.innerHeight;
-  return finiteRect({
-    top,
-    right: left + width,
-    bottom: top + height,
-    left,
-  });
 }
 
 function browserRangeRect(range: Range): VisualLocatorRect | undefined {
@@ -127,12 +128,11 @@ function browserElementRect(
 }
 
 function browserScrollBy(root: HTMLElement, top: number): void {
-  const view = root.ownerDocument.defaultView;
-  if (view === null || !Number.isFinite(top)) {
+  if (!Number.isFinite(top)) {
     return;
   }
   try {
-    view.scrollBy({ top, left: 0, behavior: "auto" });
+    root.scrollBy({ top, left: 0, behavior: "auto" });
   } catch {
     // A failed visual adjustment must not make reading unavailable.
   }
@@ -187,9 +187,15 @@ function observeBrowserViewport(
   }
   view.addEventListener("resize", callback, { passive: true });
   view.visualViewport?.addEventListener("resize", callback, { passive: true });
+  const resizeObserver =
+    typeof view.ResizeObserver === "function"
+      ? new view.ResizeObserver(callback)
+      : undefined;
+  resizeObserver?.observe(root);
   return () => {
     view.removeEventListener("resize", callback);
     view.visualViewport?.removeEventListener("resize", callback);
+    resizeObserver?.disconnect();
   };
 }
 

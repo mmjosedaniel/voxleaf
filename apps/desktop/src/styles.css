@@ -23,6 +23,14 @@ body {
   min-height: 100vh;
 }
 
+.app-shell.app-shell-reader {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  padding: 1rem;
+  overflow: hidden;
+}
+
 .app-shell {
   display: grid;
   min-height: 100vh;
@@ -40,8 +48,61 @@ body {
 }
 
 .shell-card-reader {
-  width: min(100%, 80rem);
-  padding: clamp(1.25rem, 4vw, 3rem);
+  display: flex;
+  width: min(100%, 100rem);
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  padding: clamp(0.75rem, 2vw, 1.25rem);
+  overflow: hidden;
+}
+
+.shell-header-reader {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: auto minmax(18rem, 1fr);
+  gap: 1rem;
+  align-items: center;
+}
+
+.shell-header-reader .shell-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.shell-header-reader .shell-label,
+.shell-header-reader .shell-description {
+  display: none;
+}
+
+.shell-header-reader h1 {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.shell-header-reader .shell-open-controls {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(14rem, 1fr) minmax(12rem, auto);
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.shell-header-reader .file-picker {
+  margin: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.shell-header-reader .file-picker input {
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+}
+
+.shell-header-reader .open-status {
+  min-height: 0;
+  margin: 0;
+  font-size: 0.875rem;
 }
 
 .shell-label {
@@ -111,6 +172,30 @@ h1 {
   border-top: 1px solid #d7dfd7;
 }
 
+.shell-card-reader .publication-summary {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  overflow: hidden;
+}
+
+.publication-header {
+  display: flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.publication-heading {
+  min-width: 0;
+}
+
 .publication-summary-label {
   margin: 0 0 0.5rem;
   color: #466151;
@@ -128,10 +213,26 @@ h1 {
   line-height: 1.15;
 }
 
+.shell-card-reader .publication-summary h2 {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: clamp(1.15rem, 3vw, 1.65rem);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .publication-authors {
   margin: 0.75rem 0 0;
   color: #405047;
   line-height: 1.5;
+}
+
+.shell-card-reader .publication-authors {
+  margin-top: 0.25rem;
+  overflow: hidden;
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .reader-restoring-state,
@@ -171,13 +272,33 @@ h1 {
   --reader-focus: #1d6b43;
   color-scheme: light;
   position: relative;
-  margin-top: 1.5rem;
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  margin-top: 0;
   padding: clamp(0.75rem, 2vw, 1.5rem);
   border: 1px solid var(--reader-border);
   border-radius: 1rem;
   color: var(--reader-text);
   background: var(--reader-surface);
+  overflow: hidden;
   scroll-behavior: auto;
+}
+
+.reader-viewport {
+  min-height: 0;
+  flex: 1 1 auto;
+  padding: 0.15rem 0.75rem 2rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scroll-behavior: auto;
+}
+
+.reader-viewport:focus-visible {
+  outline: 0.2rem solid var(--reader-focus);
+  outline-offset: -0.2rem;
 }
 
 ::highlight(voxleaf-narration-active) {
@@ -672,13 +793,106 @@ button.semantic-internal-link {
   outline-offset: 0.2rem;
 }
 
+.publication-header .close-publication {
+  flex: 0 0 auto;
+  margin-top: 0;
+}
+
+.product-narration {
+  flex: 0 0 auto;
+  border: 1px solid #b7c7b9;
+  border-radius: 0.75rem;
+  color: #263c30;
+  background: #f4f7f2;
+}
+
+.product-narration-compact {
+  display: flex;
+  min-width: 0;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.75rem;
+}
+
+.product-narration-summary {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.75rem;
+  align-items: baseline;
+}
+
+.product-narration-summary h3,
+.product-narration-summary p {
+  margin: 0;
+}
+
+.product-narration-summary h3 {
+  color: #183d2a;
+  font-size: 1rem;
+}
+
+.product-narration-summary p {
+  color: #405047;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.product-narration-summary .product-narration-warning {
+  color: #694c00;
+  font-weight: 700;
+}
+
+.product-narration-summary .product-narration-error {
+  color: #8a2f24;
+  font-weight: 700;
+}
+
+.product-narration-compact-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.product-narration-compact-actions button {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #52705e;
+  border-radius: 0.55rem;
+  color: #24563a;
+  background: #fdfefb;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.product-narration-compact-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.product-narration-compact-actions button:focus-visible {
+  outline: 0.2rem solid #1d6b43;
+  outline-offset: 0.15rem;
+}
+
+.product-narration-detail {
+  max-height: min(24rem, 45vh);
+  border-top: 1px solid #b7c7b9;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .adaptive-preparation {
   display: grid;
   gap: 1rem;
-  margin-top: 1.5rem;
+  margin-top: 0;
   padding: 1.25rem;
-  border: 1px solid #b7c7b9;
-  border-radius: 1rem;
+  border: 0;
+  border-radius: 0;
   color: #263c30;
   background: #f4f7f2;
 }
@@ -763,14 +977,13 @@ button.semantic-internal-link {
   background: #fdfefb;
 }
 
-.adaptive-preparation-progress,
+.adaptive-preparation-loaded,
 .adaptive-preparation-settings,
 .adaptive-preparation-settings label {
   display: grid;
   gap: 0.5rem;
 }
 
-.adaptive-preparation-progress progress,
 .adaptive-preparation-settings input[type="range"] {
   width: min(100%, 32rem);
 }
@@ -852,6 +1065,27 @@ button.semantic-internal-link {
   color: #405047;
 }
 
+.raster-probe-compact {
+  display: block;
+  flex: 0 0 auto;
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.raster-probe-compact summary {
+  color: #405047;
+  cursor: pointer;
+}
+
+.raster-probe-compact[open] {
+  display: grid;
+}
+
+.raster-probe-compact button {
+  padding: 0.45rem 0.65rem;
+}
+
 @media (prefers-color-scheme: dark) {
   .semantic-reader[data-reader-theme="system"] {
     --reader-surface: #14201a;
@@ -888,6 +1122,8 @@ button.semantic-internal-link {
   .adaptive-preparation-mode,
   .adaptive-preparation-target select,
   .adaptive-preparation-settings select,
+  .product-narration,
+  .product-narration-compact-actions button,
   .reader-preferences,
   .reader-preference select,
   .reader-toc,
@@ -901,6 +1137,7 @@ button.semantic-internal-link {
   }
 
   .reader-preference select:focus-visible,
+  .product-narration-compact-actions button:focus-visible,
   .adaptive-preparation button:focus-visible,
   .adaptive-preparation input:focus-visible,
   .adaptive-preparation select:focus-visible,
@@ -931,6 +1168,14 @@ button.semantic-internal-link {
   .reader-toc {
     position: static;
   }
+
+  .shell-header-reader {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .shell-header-reader .shell-brand {
+    display: none;
+  }
 }
 
 @media (max-width: 32rem) {
@@ -947,6 +1192,65 @@ button.semantic-internal-link {
     border: 0;
     border-radius: 0;
     box-shadow: none;
+  }
+
+  .app-shell.app-shell-reader {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .shell-card-reader {
+    min-height: 0;
+    padding: 0.5rem;
+  }
+
+  .shell-header-reader .shell-open-controls {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.35rem;
+  }
+
+  .shell-header-reader .file-picker {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.25rem;
+  }
+
+  .shell-header-reader .open-status {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .publication-header {
+    align-items: flex-start;
+  }
+
+  .shell-card-reader .publication-summary h2 {
+    font-size: 1.05rem;
+  }
+
+  .publication-header .close-publication {
+    padding: 0.5rem 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  .product-narration-compact {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .product-narration-compact-actions {
+    justify-content: flex-start;
+  }
+
+  .semantic-reader {
+    padding: 0.5rem;
+  }
+
+  .reader-viewport {
+    padding-inline: 0.25rem;
   }
 
   .reader-preference-grid {

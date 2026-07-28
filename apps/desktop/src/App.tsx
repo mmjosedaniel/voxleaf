@@ -628,44 +628,52 @@ export function App({
   const showRestorationNotice =
     activeRestorationNotice !== undefined &&
     dismissedRestorationSequence !== readyPublicationSequence;
+  const ready = viewState.status === "ready";
 
   return (
-    <main className="app-shell">
+    <main className={ready ? "app-shell app-shell-reader" : "app-shell"}>
       <section
-        className={
-          viewState.status === "ready"
-            ? "shell-card shell-card-reader"
-            : "shell-card"
-        }
+        className={ready ? "shell-card shell-card-reader" : "shell-card"}
         aria-labelledby="shell-title"
         aria-busy={isBusy}
       >
-        <p className="shell-label">Private local EPUB reader</p>
-        <h1 id="shell-title">VoxLeaf</h1>
-        <p className="shell-description">
-          Choose a local EPUB to validate and open it entirely on this device.
-          VoxLeaf does not retain a filesystem path or upload the book.
-        </p>
-        <label className="file-picker">
-          <span>Open a local EPUB</span>
-          <input
-            type="file"
-            accept=".epub,application/epub+zip"
-            aria-describedby="open-status"
-            disabled={openDisabled}
-            onChange={handleSelection}
-          />
-        </label>
-        <p
-          id="open-status"
-          className={statusClassName}
-          role="status"
-          aria-live="polite"
+        <header
+          className={
+            ready ? "shell-header shell-header-reader" : "shell-header"
+          }
         >
-          {viewState.status === "ready"
-            ? readyStatusMessage(activeRestoration)
-            : statusMessage(viewState)}
-        </p>
+          <div className="shell-brand">
+            <p className="shell-label">Private local EPUB reader</p>
+            <h1 id="shell-title">VoxLeaf</h1>
+            <p className="shell-description">
+              Choose a local EPUB to validate and open it entirely on this
+              device. VoxLeaf does not retain a filesystem path or upload the
+              book.
+            </p>
+          </div>
+          <div className="shell-open-controls">
+            <label className="file-picker">
+              <span>Open a local EPUB</span>
+              <input
+                type="file"
+                accept=".epub,application/epub+zip"
+                aria-describedby="open-status"
+                disabled={openDisabled}
+                onChange={handleSelection}
+              />
+            </label>
+            <p
+              id="open-status"
+              className={statusClassName}
+              role="status"
+              aria-live="polite"
+            >
+              {ready
+                ? readyStatusMessage(activeRestoration)
+                : statusMessage(viewState)}
+            </p>
+          </div>
+        </header>
         {viewState.status === "ready" ? (
           <ReaderErrorBoundary
             key={viewState.publicationSequence}
@@ -675,13 +683,26 @@ export function App({
               className="publication-summary"
               aria-labelledby="publication-title"
             >
-              <p className="publication-summary-label">Opened publication</p>
-              <h2 id="publication-title">{viewState.summary.title}</h2>
-              <p className="publication-authors">
-                {viewState.summary.authors.length === 0
-                  ? "Author not provided"
-                  : `By ${viewState.summary.authors.join(", ")}`}
-              </p>
+              <header className="publication-header">
+                <div className="publication-heading">
+                  <p className="publication-summary-label">
+                    Opened publication
+                  </p>
+                  <h2 id="publication-title">{viewState.summary.title}</h2>
+                  <p className="publication-authors">
+                    {viewState.summary.authors.length === 0
+                      ? "Author not provided"
+                      : `By ${viewState.summary.authors.join(", ")}`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="close-publication"
+                  onClick={handleClosePublication}
+                >
+                  Close EPUB
+                </button>
+              </header>
               {readyRestoration === undefined ? (
                 <p className="reader-restoring-state">
                   Preparing the saved reader state.
@@ -736,13 +757,6 @@ export function App({
                   />
                 </>
               )}
-              <button
-                type="button"
-                className="close-publication"
-                onClick={handleClosePublication}
-              >
-                Close EPUB
-              </button>
             </section>
           </ReaderErrorBoundary>
         ) : null}
@@ -765,16 +779,30 @@ export function App({
             </button>
           </section>
         ) : null}
-        <div className="raster-probe">
-          <button
-            type="button"
-            disabled={rasterStatus === "running"}
-            onClick={() => void handleRasterProbe()}
-          >
-            Run synthetic raster safety probe
-          </button>
-          <p aria-live="polite">{RASTER_STATUS_MESSAGE[rasterStatus]}</p>
-        </div>
+        {ready ? (
+          <details className="raster-probe raster-probe-compact">
+            <summary>Development raster check</summary>
+            <button
+              type="button"
+              disabled={rasterStatus === "running"}
+              onClick={() => void handleRasterProbe()}
+            >
+              Run synthetic raster safety probe
+            </button>
+            <p aria-live="polite">{RASTER_STATUS_MESSAGE[rasterStatus]}</p>
+          </details>
+        ) : (
+          <div className="raster-probe">
+            <button
+              type="button"
+              disabled={rasterStatus === "running"}
+              onClick={() => void handleRasterProbe()}
+            >
+              Run synthetic raster safety probe
+            </button>
+            <p aria-live="polite">{RASTER_STATUS_MESSAGE[rasterStatus]}</p>
+          </div>
+        )}
       </section>
     </main>
   );

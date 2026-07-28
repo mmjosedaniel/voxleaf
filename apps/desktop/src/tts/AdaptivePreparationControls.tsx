@@ -3,13 +3,12 @@ import type { ChangeEvent, ReactElement } from "react";
 import { ADAPTIVE_BUFFER_AUTHORITY_V1 } from "./adaptive-buffer-authority";
 import type { AdaptiveBufferStartMode } from "./adaptive-buffer-scheduler";
 import type { AdaptivePreparationUiState } from "./adaptive-preparation";
-
-const PREPARED_TARGET_OPTIONS = Object.freeze([
-  Object.freeze({ targetMs: 60_000 as const, label: "1 minute" }),
-  Object.freeze({ targetMs: 120_000 as const, label: "2 minutes" }),
-  Object.freeze({ targetMs: 300_000 as const, label: "5 minutes" }),
-  Object.freeze({ targetMs: 600_000 as const, label: "10 minutes" }),
-]);
+import {
+  formatPreparationDuration,
+  loadedAudioStatusText,
+  preparationTargetLabel,
+  PREPARED_TARGET_OPTIONS,
+} from "./adaptive-preparation-presentation";
 
 export interface AdaptivePreparationControlsProps {
   readonly selection: AdaptiveBufferStartMode;
@@ -22,33 +21,18 @@ export interface AdaptivePreparationControlsProps {
   readonly onVolumeChange: (volumePercent: number) => void;
   readonly startDisabled?: boolean;
   readonly startHint?: string;
-}
-
-function formatDuration(durationMs: number): string {
-  if (durationMs < 60_000) {
-    const seconds = Math.max(0, Math.ceil(durationMs / 1_000));
-    return `${seconds} ${seconds === 1 ? "second" : "seconds"}`;
-  }
-  const minutes = Math.ceil(durationMs / 60_000);
-  return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
-}
-
-function targetLabel(targetMs: number): string {
-  const match = PREPARED_TARGET_OPTIONS.find(
-    (option) => option.targetMs === targetMs,
-  );
-  return match?.label ?? formatDuration(targetMs);
+  readonly showPlaybackControls?: boolean;
 }
 
 function estimateText(estimatedWaitMs: number | undefined): string {
   return estimatedWaitMs === undefined
     ? "Calculating preparation time…"
-    : `Estimated wait: about ${formatDuration(estimatedWaitMs)}.`;
+    : `Estimated wait: about ${formatPreparationDuration(estimatedWaitMs)}.`;
 }
 
 function primaryStatus(state: AdaptivePreparationUiState): string {
-  const ready = formatDuration(state.readyMs);
-  const target = targetLabel(state.targetMs);
+  const ready = formatPreparationDuration(state.readyMs);
+  const target = preparationTargetLabel(state.targetMs);
   switch (state.phase) {
     case "buffering":
       return `Playback paused while VoxLeaf generates more audio — ${ready} of 1 minute ready. ${estimateText(state.estimatedWaitMs)}`;
@@ -82,6 +66,7 @@ export function AdaptivePreparationControls({
   onVolumeChange,
   startDisabled = false,
   startHint,
+  showPlaybackControls = true,
 }: AdaptivePreparationControlsProps): ReactElement {
   const active = state !== undefined && state.phase !== "stopped";
   const targetMs = selection.kind === "prepared" ? selection.targetMs : 60_000;
@@ -167,11 +152,13 @@ export function AdaptivePreparationControls({
               {startHint}
             </p>
           )}
-          <button type="button" disabled={startDisabled} onClick={onStart}>
-            {selection.kind === "quick"
-              ? "Start quick playback"
-              : `Prepare ${targetLabel(selection.targetMs)} of audio`}
-          </button>
+          {showPlaybackControls ? (
+            <button type="button" disabled={startDisabled} onClick={onStart}>
+              {selection.kind === "quick"
+                ? "Start quick playback"
+                : `Prepare ${preparationTargetLabel(selection.targetMs)} of audio`}
+            </button>
+          ) : null}
         </>
       ) : (
         <>
@@ -196,35 +183,37 @@ export function AdaptivePreparationControls({
             ) : null}
           </div>
 
-          <label className="adaptive-preparation-progress">
-            <span>
-              Playable audio: {formatDuration(state.readyMs)} of{" "}
-              {targetLabel(state.targetMs)}
-            </span>
-            <progress max={state.targetMs} value={state.progressValueMs} />
-          </label>
+          <p className="adaptive-preparation-loaded">
+            {loadedAudioStatusText(state)}
+          </p>
 
-          <div
-            className="adaptive-preparation-actions"
-            aria-label="Narration playback controls"
-            role="group"
-          >
-            <button type="button" disabled={!state.canPause} onClick={onPause}>
-              Pause
-            </button>
-            <button
-              type="button"
-              disabled={!state.canResume}
-              onClick={onResume}
+          {showPlaybackControls ? (
+            <div
+              className="adaptive-preparation-actions"
+              aria-label="Narration playback controls"
+              role="group"
             >
-              Resume
-            </button>
-            <button type="button" disabled={!state.canStop} onClick={onStop}>
-              {state.phase === "paused" && state.pauseContinuesPreparation
-                ? "Stop preparing"
-                : "Stop"}
-            </button>
-          </div>
+              <button
+                type="button"
+                disabled={!state.canPause}
+                onClick={onPause}
+              >
+                Pause
+              </button>
+              <button
+                type="button"
+                disabled={!state.canResume}
+                onClick={onResume}
+              >
+                Resume
+              </button>
+              <button type="button" disabled={!state.canStop} onClick={onStop}>
+                {state.phase === "paused" && state.pauseContinuesPreparation
+                  ? "Stop preparing"
+                  : "Stop"}
+              </button>
+            </div>
+          ) : null}
 
           <div className="adaptive-preparation-settings">
             <label>

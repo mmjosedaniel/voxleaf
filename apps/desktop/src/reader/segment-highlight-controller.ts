@@ -68,14 +68,16 @@ function finiteRect(value: {
 function browserViewportRect(
   root: HTMLElement,
 ): SegmentHighlightRect | undefined {
-  const view = root.ownerDocument.defaultView;
-  if (view === null) {
+  try {
+    const rect = root.getBoundingClientRect();
+    const top = rect.top + root.clientTop;
+    if (root.clientHeight <= 0) {
+      return undefined;
+    }
+    return finiteRect({ top, bottom: top + root.clientHeight });
+  } catch {
     return undefined;
   }
-  const viewport = view.visualViewport;
-  const top = viewport?.offsetTop ?? 0;
-  const height = viewport?.height ?? view.innerHeight;
-  return finiteRect({ top, bottom: top + height });
 }
 
 function browserRangeRect(range: Range): SegmentHighlightRect | undefined {
@@ -123,12 +125,11 @@ function clearBrowserHighlight(name: string): void {
 }
 
 function browserScrollBy(root: HTMLElement, top: number): void {
-  const view = root.ownerDocument.defaultView;
-  if (view === null || !Number.isFinite(top)) {
+  if (!Number.isFinite(top)) {
     return;
   }
   try {
-    view.scrollBy({ top, left: 0, behavior: "auto" });
+    root.scrollBy({ top, left: 0, behavior: "auto" });
   } catch {
     // Missing geometry or scrolling support leaves highlight-only behavior.
   }

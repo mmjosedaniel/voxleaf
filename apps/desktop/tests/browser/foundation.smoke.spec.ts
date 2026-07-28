@@ -105,6 +105,39 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     );
 
     const reader = page.locator(".semantic-reader");
+    const readerViewport = page.getByRole("region", {
+      name: "Publication reading viewport",
+    });
+    await expect(page.locator('[data-reader-scroll-owner="true"]')).toHaveCount(
+      1,
+    );
+    await expect(readerViewport).toHaveAttribute(
+      "data-reader-scroll-owner",
+      "true",
+    );
+    expect(
+      await readerViewport.evaluate((element) => ({
+        overflowY: getComputedStyle(element).overflowY,
+        containsArticle: element.querySelector(".semantic-document") !== null,
+      })),
+    ).toEqual({ overflowY: "auto", containsArticle: true });
+    await expect(page.getByRole("progressbar")).toHaveCount(0);
+    const narrationDetail = page.getByRole("button", {
+      name: "Show narration details",
+    });
+    await expect(narrationDetail).toHaveAttribute("aria-expanded", "false");
+    const narrationPhase = await page
+      .locator(".product-narration")
+      .getAttribute("data-narration-phase");
+    await narrationDetail.click();
+    await expect(
+      page.getByRole("button", { name: "Hide narration details" }),
+    ).toHaveAttribute("aria-expanded", "true");
+    await page.getByRole("button", { name: "Hide narration details" }).click();
+    await expect(page.locator(".product-narration")).toHaveAttribute(
+      "data-narration-phase",
+      narrationPhase ?? "idle",
+    );
     const appearance = page.getByRole("group", {
       name: "Reader appearance",
     });
@@ -338,6 +371,62 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     );
     await page.evaluate(() => {
       document.documentElement.style.fontSize = "";
+    });
+
+    const stableChromeBeforeScroll = await page.evaluate(() => {
+      const bounds = (selector: string): number => {
+        const element = document.querySelector(selector);
+        return element?.getBoundingClientRect().top ?? Number.NaN;
+      };
+      return {
+        application: bounds(".shell-header-reader"),
+        publication: bounds(".publication-header"),
+        narration: bounds(".product-narration"),
+      };
+    });
+    await readerViewport.focus();
+    await page.keyboard.press("End");
+    await expect
+      .poll(() => readerViewport.evaluate((element) => element.scrollTop))
+      .toBeGreaterThan(0);
+    const viewportBounds = await readerViewport.boundingBox();
+    if (viewportBounds !== null) {
+      await page.mouse.move(
+        viewportBounds.x + viewportBounds.width / 2,
+        viewportBounds.y + viewportBounds.height / 2,
+      );
+      await page.mouse.wheel(0, -120);
+    }
+    await readerViewport.dispatchEvent("touchstart", {
+      touches: [],
+      changedTouches: [],
+      targetTouches: [],
+    });
+    expect(
+      await page.evaluate((before) => {
+        const bounds = (selector: string): number => {
+          const element = document.querySelector(selector);
+          return element?.getBoundingClientRect().top ?? Number.NaN;
+        };
+        return {
+          applicationStable:
+            Math.abs(bounds(".shell-header-reader") - before.application) < 0.5,
+          publicationStable:
+            Math.abs(bounds(".publication-header") - before.publication) < 0.5,
+          narrationStable:
+            Math.abs(bounds(".product-narration") - before.narration) < 0.5,
+          applicationScrollTop: window.scrollY,
+          readerScrollOwnerCount: document.querySelectorAll(
+            '[data-reader-scroll-owner="true"]',
+          ).length,
+        };
+      }, stableChromeBeforeScroll),
+    ).toEqual({
+      applicationStable: true,
+      publicationStable: true,
+      narrationStable: true,
+      applicationScrollTop: 0,
+      readerScrollOwnerCount: 1,
     });
 
     await page.evaluate(
