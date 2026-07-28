@@ -15,7 +15,11 @@ import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ProductNarrationAudibleProgressObservation } from "../tts/product-narration-coordinator";
+import type {
+  ProductNarrationAudibleProgressObservation,
+  ProductNarrationFailureCode,
+  ProductNarrationSnapshot,
+} from "../tts/product-narration-coordinator";
 import { SemanticDocumentContent } from "./SemanticDocument";
 import {
   SegmentHighlightController,
@@ -86,6 +90,60 @@ function observation(
     sourceRange: range,
     playedSampleFrames: kind === "segment-completed" ? 24_000 : 0,
     sampleCountSamples: 24_000,
+  });
+}
+
+function narrationSnapshot(
+  phase: "buffering" | "failed" | "paused" | "playing" | "stopped" | undefined,
+  failure?: ProductNarrationFailureCode,
+): ProductNarrationSnapshot {
+  return Object.freeze({
+    availability: "available",
+    selection: Object.freeze({ kind: "quick" }),
+    state:
+      phase === undefined
+        ? undefined
+        : Object.freeze({
+            mode: Object.freeze({ kind: "quick" }),
+            phase,
+            readyMs: phase === "playing" ? 15_000 : 0,
+            targetMs: 15_000,
+            progressValueMs: phase === "playing" ? 15_000 : 0,
+            estimatedWaitMs: undefined,
+            lowBuffer: phase === "buffering",
+            allRemainingAudioReady: false,
+            resourceCeilingReached: false,
+            pauseContinuesPreparation: phase === "paused",
+            canPause: phase === "playing",
+            canResume: phase === "paused",
+            canStop: !["failed", "stopped"].includes(phase),
+            volumePercent: 100,
+            playbackRate: 1,
+          }),
+    failure,
+    metrics: Object.freeze({
+      commandToAudibleMs: undefined,
+      bufferingMs: 0,
+      intentionalWaitMs: 0,
+      playbackMs: 0,
+      underrunCount: 0,
+      acceptedAudioUnitCount: 0,
+      acceptedAudioSampleFrames: 0,
+      retainedAudioUnitCount: 0,
+      discardedAudioUnitCount: 0,
+    }),
+    serviceState: phase === "playing" ? "ready" : "stopped",
+    navigation: Object.freeze({
+      playIntent:
+        phase === "playing"
+          ? "playing"
+          : phase === "paused"
+            ? "paused"
+            : "inactive",
+      settling: false,
+      canGoPrevious: false,
+      canGoNext: false,
+    }),
   });
 }
 
@@ -185,7 +243,6 @@ describe("segment highlight controller", () => {
       [located],
       mapper,
       {
-        currentSpineItemIndex: () => 0,
         navigateToLocator: vi.fn(),
         settleLocator: (locator) => {
           settled.push(locator.textOffsetCodePoints);
@@ -224,6 +281,15 @@ describe("segment highlight controller", () => {
     expect(environment.highlighted?.toString()).toBe("Synthetic");
     expect(settled).toEqual([0, 9]);
 
+    environment.range = { top: 24, bottom: 40 };
+    controller.accept(
+      observation("segment-started", sourceRange(located, 10, 17), 1),
+    );
+    expect(environment.highlighted?.toString()).toBe("audible");
+    expect(settled).toEqual([0, 9, 10]);
+    expect(document.activeElement).toBe(focusOwner);
+    expect(selection.getRangeAt(0).toString()).toBe("audible");
+
     controller.clear();
     expect(environment.highlighted).toBeUndefined();
     controller.close();
@@ -239,16 +305,13 @@ describe("segment highlight controller", () => {
     environment.range = { top: 24, bottom: 40 };
     const navigated: number[] = [];
     const settled: number[] = [];
-    let currentSpine = 0;
     const resume = vi.fn();
     const controller = new SegmentHighlightController(
       [opening, continuation],
       mapper,
       {
-        currentSpineItemIndex: () => currentSpine,
         navigateToLocator: (locator) => {
           navigated.push(locator.spineItemIndex);
-          currentSpine = locator.spineItemIndex;
         },
         settleLocator: (locator) => {
           settled.push(locator.spineItemIndex);
@@ -289,6 +352,105 @@ describe("segment highlight controller", () => {
     root.remove();
   });
 
+  it("requests materialization when an audible range is missing in the current chapter", () => {
+    const block = paragraph("Later passage");
+    const located = locatedBlock(0, block, 13);
+    const mapper = new SemanticDomRangeMapper();
+    const environment = new ManualHighlightEnvironment();
+    environment.range = { top: 24, bottom: 40 };
+    const navigated: ReadingLocatorV1[] = [];
+    const settled: ReadingLocatorV1[] = [];
+    const resume = vi.fn();
+    const controller = new SegmentHighlightController(
+      [located],
+      mapper,
+      {
+        navigateToLocator: (locator) => navigated.push(locator),
+        settleLocator: (locator) => settled.push(locator),
+        suspendVisualSampling: () => resume,
+      },
+      environment,
+    );
+    const root = document.createElement("article");
+    const paragraphElement = document.createElement("p");
+    paragraphElement.textContent = "Later passage";
+    document.body.append(root);
+    controller.setRoot(root);
+    const unsubscribe = mapper.subscribe(() => controller.refresh());
+
+    controller.accept(
+      observation("segment-started", sourceRange(located, 0, 13)),
+    );
+
+    expect(navigated).toEqual([located.startLocator]);
+    expect(environment.highlighted).toBeUndefined();
+    expect(settled).toEqual([]);
+
+    root.append(paragraphElement);
+    const unregister = mapper.registerBlock(paragraphElement, located);
+
+    expect(environment.highlighted?.toString()).toBe("Later passage");
+    expect(settled).toEqual([located.startLocator]);
+    expect(resume).toHaveBeenCalledWith({ requestSample: false });
+
+    unregister();
+    unsubscribe();
+    controller.close();
+    mapper.close();
+    root.remove();
+  });
+
+  it("retains the latest heard highlight while paused or buffering and clears every terminal path", () => {
+    const block = paragraph("Lifecycle");
+    const located = locatedBlock(0, block, 9);
+    const mapper = new SemanticDomRangeMapper();
+    const element = document.createElement("p");
+    element.textContent = "Lifecycle";
+    document.body.append(element);
+    mapper.registerBlock(element, located);
+    const environment = new ManualHighlightEnvironment();
+    environment.range = { top: 24, bottom: 40 };
+    const controller = new SegmentHighlightController(
+      [located],
+      mapper,
+      {
+        navigateToLocator: vi.fn(),
+        settleLocator: vi.fn(),
+        suspendVisualSampling: vi.fn(),
+      },
+      environment,
+    );
+    controller.setRoot(element);
+    const range = sourceRange(located, 0, 9);
+
+    controller.accept(observation("segment-started", range));
+    controller.reconcile(narrationSnapshot("paused"));
+    expect(environment.highlighted?.toString()).toBe("Lifecycle");
+    controller.reconcile(narrationSnapshot("buffering"));
+    expect(environment.highlighted?.toString()).toBe("Lifecycle");
+
+    controller.reconcile(narrationSnapshot("failed"));
+    expect(environment.highlighted).toBeUndefined();
+
+    controller.accept(observation("segment-started", range, 1));
+    controller.reconcile(narrationSnapshot("stopped"));
+    expect(environment.highlighted).toBeUndefined();
+
+    controller.accept(observation("segment-started", range, 2));
+    controller.reconcile(
+      narrationSnapshot("playing", "narration-preparation-failed"),
+    );
+    expect(environment.highlighted).toBeUndefined();
+
+    controller.accept(observation("segment-started", range, 3));
+    controller.reconcile(narrationSnapshot(undefined));
+    expect(environment.highlighted).toBeUndefined();
+
+    controller.close();
+    mapper.close();
+    element.remove();
+  });
+
   it("keeps highlight-only behavior when usable geometry is unavailable", () => {
     const block = paragraph("Geometry");
     const located = locatedBlock(0, block, 8);
@@ -304,7 +466,6 @@ describe("segment highlight controller", () => {
       [located],
       mapper,
       {
-        currentSpineItemIndex: () => 0,
         navigateToLocator: vi.fn(),
         settleLocator: (locator) => settled.push(locator),
         suspendVisualSampling: vi.fn(),
