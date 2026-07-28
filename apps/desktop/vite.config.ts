@@ -44,6 +44,11 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 5173,
     strictPort: true,
+    watch: {
+      // Rust's generated target contains locked executables that Vite must
+      // not inspect while Tauri's native dev build is running.
+      ignored: ["**/src-tauri/**"],
+    },
   },
   test: {
     environment: "jsdom",
