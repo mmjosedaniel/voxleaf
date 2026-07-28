@@ -551,11 +551,23 @@ interaction is confirmed.
 - Expected result: all applicable repository checks pass; required Ubuntu and
   Windows pull-request checks pass; documentation distinguishes implemented
   stabilization from deferred M010/M011 and later narration experiments.
-- Actual result: Not yet available.
+- Actual result: Local closeout passes. `pnpm.cmd check` passed in 60.0 seconds
+  with formatting, TypeScript/Rust/Python lint and type checks, 19 shared test
+  files / 196 tests, 34 EPUB files / 555 tests, 34 desktop files / 330 tests,
+  7 native harness tests, 25 Rust tests, 234 Python tests, the desktop release
+  build, and the Python package build. `pnpm.cmd check:portable` passed in
+  33.6 seconds with the applicable portable coverage. `git diff --check`,
+  tracked-artifact, private-path, secret, dependency, binary, and cumulative
+  scope reviews pass. The release packaged WebView2 startup smoke passes after
+  its synchronization proof was isolated from the fixture's independently
+  lazy-loaded raster paragraph. Required pull-request checks for this final
+  closeout branch remain pending.
 
 ### Status
 
-Not started.
+Implementation and local validation complete as of 2026-07-28. Required Ubuntu
+and Windows pull-request checks remain before this milestone and plan can be
+marked complete and moved to `docs/plans/completed/`.
 
 ## Testing and benchmark strategy
 
@@ -1140,12 +1152,37 @@ confirmation and repository/privacy/pull-request closeout.
   reported `pnpm.cmd test:tts:adaptive-exact-host` passing against the final
   correction. No new raw log, private content, timing, or resource result was
   committed.
+- 2026-07-28: Audited the cumulative M009.1 diff. Changes remain confined to
+  the desktop reader/narration projection, content-safe test harnesses, and
+  documentation. No shared schema, EPUB parser, Python service, Rust protocol,
+  storage contract, model, production dependency, generated audio, model
+  artifact, private EPUB/path, secret, or unbounded retained state was added.
+- 2026-07-28: The merged Milestone 5 pull request's Ubuntu job passed, while
+  its clean Windows packaged smoke exposed one obsolete synchronization-probe
+  coupling. The proof selected the comprehensive fixture's last paragraph,
+  which also owns a deferred raster. Scrolling that target legitimately mounted
+  the raster while the proof asserted that highlighting alone preserved DOM
+  and geometry.
+- 2026-07-28: Corrected the packaged proof to select the last eligible
+  text-only target and keep deferred-raster presentation outside the
+  synchronization measurement. `node --check`, all 7 native harness tests, and
+  `pnpm.cmd --filter @voxleaf/desktop test:native-startup` pass; the release
+  smoke covers the sole reader viewport, synchronization, local raster
+  decoding, restoration, privacy, lifecycle cleanup, and zero external
+  requests.
+- 2026-07-28: Final local `pnpm.cmd check` and `pnpm.cmd check:portable` pass
+  with the recorded repository-wide coverage. The cumulative diff and
+  privacy/artifact/dependency audits are clean. Required Ubuntu and Windows
+  checks on the final closeout pull request remain the only completion gate.
 
 ## Final validation results
 
-Not yet available. Milestones 1-5 have completed their implementation,
-deterministic, browser, manual private-EPUB, and exact-host gates within the
-recorded scopes. Milestone 3's clean-host packaged validation and Milestone 6's
-final repository, privacy, documentation, and required pull-request closeout
-remain. The plan is complete only when those final gates pass and the plan is
-moved to `docs/plans/completed/`.
+Milestones 1-5 and Milestone 6 implementation/local closeout are complete
+within their recorded scopes. Deterministic, Chromium, release-packaged
+WebView2, manual private-EPUB, exact-host, repository, privacy, artifact,
+dependency, scope, and portable checks pass. A Windows clean-host failure in
+the merged Milestone 5 pull request was traced to the test selecting a
+lazy-raster paragraph for an otherwise independent synchronization proof; the
+text-only correction passes the same packaged smoke locally. Required Ubuntu
+and Windows checks on the final closeout pull request remain. The plan moves to
+`docs/plans/completed/` only after those checks pass.

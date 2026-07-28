@@ -147,6 +147,24 @@ content-free phase, play intent, navigation-settling flag, service state,
 retained/discarded counts, and fixed failure code. Identity-first cancellation
 must still occur for every explicit narration target.
 
+### Packaged synchronization smoke reports DOM or follow failure
+
+The packaged synchronization proof must use a text-only synthetic narration
+target. The comprehensive fixture's final paragraph also owns a deferred local
+raster; scrolling that paragraph into view can legitimately mount the image,
+change DOM geometry, and make `publicationDomUnchanged`, `followed`, and
+`insideReaderViewport` fail together even when highlight registration works.
+
+Run the current release smoke before diagnosing production highlighting:
+
+```powershell
+pnpm.cmd --filter @voxleaf/desktop test:native-startup
+```
+
+If it still fails, preserve only the fixed content-safe observation booleans
+and failure code. Do not attach the generated fixture, a private EPUB, rendered
+text, screenshots containing book content, or raw WebDriver logs.
+
 ### Memory, temperature, or cleanup looks abnormal
 
 The accepted M008 matrix peaked at 2,828,034,048 process-tree working-set bytes,

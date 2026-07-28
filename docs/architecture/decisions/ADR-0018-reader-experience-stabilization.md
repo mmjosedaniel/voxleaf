@@ -2,16 +2,16 @@
 
 ## Status
 
-Accepted as M009.1 implementation authority. Milestones 1-2 freeze the
-decision, strengthen paint-aware proof, repair active-range materialization,
-and pass clean-host validation. Milestone 3 implements the fixed reader shell,
-sole EPUB scroll root, compact/collapsible narration, and exact text-only
-loaded status; clean-host packaged validation remains pending. Milestone 4
-implements and validates the bounded paragraph leaf. Exact-host Milestone 5
-validation exposed and corrected passive-scroll narration retargeting; the
-corrected private-EPUB interaction and amended matrix pass. Milestone 6
-repository, clean-host, and pull-request closeout remains. This ADR therefore
-amends the passive-navigation portion of ADR-0017.
+Accepted and implemented as M009.1 authority. The completed implementation
+strengthens paint-aware proof, repairs active-range materialization, provides
+the fixed reader shell and sole EPUB scroll root, compacts narration, replaces
+the preparation bar with exact loaded-duration text, and adds one bounded
+paragraph leaf. Exact-host validation also exposed and corrected passive-scroll
+narration retargeting. Deterministic, Chromium, packaged WebView2,
+private-EPUB, exact-host, repository, privacy, and portable validation pass
+locally. Required Ubuntu and Windows checks on the final closeout pull request
+remain before the ExecPlan is archived. This ADR amends the passive-navigation
+portion of ADR-0017.
 
 ## Context
 
@@ -90,9 +90,9 @@ passage, or chapter action replaces narration.
   whole-paragraph audible timing.
 - A user may inspect another part of the chapter without cancelling or
   retargeting active narration.
-- Milestone 5 exact-host validation passes; Milestone 6 repository,
-  clean-host, and pull-request closeout remains before the stabilized
-  user-visible outcome is complete.
+- The stabilized user-visible outcome and local closeout pass; required Ubuntu
+  and Windows checks on the final closeout pull request remain before M009.1 is
+  archived and M010 begins.
 
 ## Alternatives considered
 

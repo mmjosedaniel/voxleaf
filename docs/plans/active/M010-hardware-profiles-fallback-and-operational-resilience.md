@@ -47,8 +47,9 @@ the milestone.
 
 ## Current state
 
-Roadmap Milestones 1 through 9 are complete. M009.1 is approved and sequenced
-before this plan; its implementation has not started.
+Roadmap Milestones 1 through 9 are complete. M009.1 implementation and local
+closeout pass; required Ubuntu and Windows checks on its final pull request
+remain before this plan starts.
 
 Completed M006 and its two blocker-resolution plans provide the
 candidate-neutral benchmark authority and measured evidence:
@@ -597,8 +598,8 @@ rewrite unrelated reader state.
 ## Final validation results
 
 Not yet available. M010 is approved for sequential implementation after
-M009.1, but all seven milestones are not started. The plan is complete only
-when:
+M009.1's required final pull-request checks, but all seven milestones are not
+started. The plan is complete only when:
 
 - hardware/profile/recovery authority is frozen before results;
 - privacy-safe detection and deterministic matching pass;

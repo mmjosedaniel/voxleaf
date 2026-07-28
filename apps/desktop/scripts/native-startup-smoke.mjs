@@ -3214,8 +3214,6 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
          ".semantic-document p",
        ),
      );
-     const selectionOwner = leaves[0];
-     const target = leaves.at(-1);
      const firstText = (element) => {
        if (!(element instanceof HTMLElement)) {
          return undefined;
@@ -3227,6 +3225,16 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
        const node = walker.nextNode();
        return node instanceof Text ? node : undefined;
      };
+     const selectionOwner = leaves[0];
+     // Keep this synchronization proof independent from deferred raster
+     // presentation. The comprehensive fixture's final paragraph contains a
+     // lazy image whose legitimate mount changes DOM and geometry while it
+     // enters the viewport.
+     const target = [...leaves].reverse().find(
+       (element) =>
+         element.querySelector(".semantic-raster-host") === null &&
+         (firstText(element)?.data.length ?? 0) >= 2,
+     );
      const selectionText = firstText(selectionOwner);
      const targetText = firstText(target);
      const selection = document.getSelection();
