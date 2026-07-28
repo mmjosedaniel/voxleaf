@@ -8,9 +8,9 @@ profile recommendations, explain unavailable configurations, recover from
 classified local-service failures without replaying stale audio, and use a
 CPU-compatible fallback only if a separately frozen evaluation proves one.
 
-M010 starts only after M009.1 stabilizes the reader shell, visible
-synchronization projection, compact narration status, and locator-backed
-paragraph action that compatibility and recovery UI must preserve.
+Completed M009.1 supplies the stabilized reader shell, visible synchronization
+projection, compact narration status, and locator-backed paragraph action that
+M010 compatibility and recovery UI must preserve.
 
 M010 must not turn the current exact-development Qwen/Serena path into a
 standard profile by implication. Hardware detection, profile admission,
@@ -47,9 +47,9 @@ the milestone.
 
 ## Current state
 
-Roadmap Milestones 1 through 9 are complete. M009.1 implementation and local
-closeout pass; required Ubuntu and Windows checks on its final pull request
-remain before this plan starts.
+Roadmap Milestones 1 through 9 and M009.1 are complete. M009.1 pull request
+#142 passed the required Ubuntu portable and Windows native foundation checks
+and merged, so this plan is unblocked. No M010 implementation has started.
 
 Completed M006 and its two blocker-resolution plans provide the
 candidate-neutral benchmark authority and measured evidence:
@@ -136,6 +136,9 @@ machine, or support matrix.
 - Changing narration normalization, M005 stable segmentation, M007 protocol
   v1, M008 audio ownership, M009 synchronization authority, or reading
   locator semantics without an explicit versioned decision.
+- Replacing M009.1's sole reader scroll owner, compact/collapsible narration
+  surface, truthful loaded-duration presentation, bounded contextual leaf, or
+  passive-scroll isolation with a second compatibility/recovery path.
 - Packaging, signing, updater policy, model/runtime distribution, or release
   claims; M011 owns those concerns.
 
@@ -150,13 +153,15 @@ machine, or support matrix.
 - `docs/plans/completed/M007-local-tts-service-and-process-protocol.md`
 - `docs/plans/completed/M008-bounded-adaptive-prebuffering.md`
 - `docs/plans/completed/M009-synchronized-reading-and-narration.md`
-- `docs/plans/active/M009-001-reader-experience-stabilization.md`
+- `docs/plans/completed/M009-001-reader-experience-stabilization.md`
 - `docs/architecture/tts-service-protocol-v1.md`
 - `docs/architecture/adaptive-buffer-authority-v1.md`
 - `docs/architecture/synchronization-authority-v1.md`
+- `docs/architecture/reader-experience-authority-v1.md`
 - `docs/architecture/decisions/ADR-0013-no-viable-local-tts-engine-profile.md`
 - `docs/architecture/decisions/ADR-0015-bounded-adaptive-qwen-demo-buffering.md`
 - `docs/architecture/decisions/ADR-0016-rust-owned-stdio-tts-protocol.md`
+- `docs/architecture/decisions/ADR-0018-reader-experience-stabilization.md`
 - `benchmarks/tts/selection-v5.md`
 
 ### Expected implementation areas
@@ -556,6 +561,10 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-28: Verified completed M009.1 closeout. Pull request #142 passed the
+  required Ubuntu portable and Windows native foundation checks and merged as
+  `e1b3b7d80696027e511f44236d12e7168d85f927`. M010 is now the next approved
+  active plan; no M010 support or fallback claim has started.
 - 2026-07-28: Sequenced M009.1 before M010 so compatibility and recovery state
   is implemented against the stabilized reader shell. Required future profile
   identity to include complete generation settings, so a later
@@ -586,7 +595,8 @@ rewrite unrelated reader state.
   not admitted by current evidence.
 - M009's non-skipping heard checkpoint is the recovery resume authority. A
   model/service failure must never advance it.
-- M009.1 owns the reader-visible stabilization work. M010 must preserve its
+- Completed M009.1 owns the reader-visible stabilization authority. M010 must
+  preserve its
   dedicated reader viewport, compact/collapsible status, and leaf-originated
   identity replacement rather than reintroduce a second UI path.
 - Natural and stable narration modes, if later admitted, must be evidence-backed
@@ -597,9 +607,8 @@ rewrite unrelated reader state.
 
 ## Final validation results
 
-Not yet available. M010 is approved for sequential implementation after
-M009.1's required final pull-request checks, but all seven milestones are not
-started. The plan is complete only when:
+Not yet available. M010 is unblocked and is the next approved active plan, but
+none of its seven milestones has started. The plan is complete only when:
 
 - hardware/profile/recovery authority is frozen before results;
 - privacy-safe detection and deterministic matching pass;

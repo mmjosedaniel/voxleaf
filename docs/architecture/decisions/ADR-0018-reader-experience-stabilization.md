@@ -2,16 +2,17 @@
 
 ## Status
 
-Accepted and implemented as M009.1 authority. The completed implementation
+Accepted, implemented, and validated as completed M009.1 authority. The
+implementation
 strengthens paint-aware proof, repairs active-range materialization, provides
 the fixed reader shell and sole EPUB scroll root, compacts narration, replaces
 the preparation bar with exact loaded-duration text, and adds one bounded
 paragraph leaf. Exact-host validation also exposed and corrected passive-scroll
 narration retargeting. Deterministic, Chromium, packaged WebView2,
 private-EPUB, exact-host, repository, privacy, and portable validation pass
-locally. Required Ubuntu and Windows checks on the final closeout pull request
-remain before the ExecPlan is archived. This ADR amends the passive-navigation
-portion of ADR-0017.
+locally and in required CI. Pull request #142 passed Ubuntu portable and
+Windows native foundation checks and merged the final closeout. This ADR
+amends the passive-navigation portion of ADR-0017.
 
 ## Context
 
@@ -90,9 +91,8 @@ passage, or chapter action replaces narration.
   whole-paragraph audible timing.
 - A user may inspect another part of the chapter without cancelling or
   retargeting active narration.
-- The stabilized user-visible outcome and local closeout pass; required Ubuntu
-  and Windows checks on the final closeout pull request remain before M009.1 is
-  archived and M010 begins.
+- The stabilized user-visible outcome, local closeout, and required pull-request
+  checks pass. M009.1 is archived and M010 may begin.
 
 ## Alternatives considered
 

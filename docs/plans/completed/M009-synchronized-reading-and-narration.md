@@ -4,7 +4,7 @@
 > the passive-navigation decision recorded in this completed plan. Ordinary
 > viewport scrolling now inspects the publication without replacing narration;
 > explicit leaf, visible-passage, previous/next, and chapter actions retain the
-> identity-first seek behavior. See ADR-0018 and the active M009.1 ExecPlan.
+> identity-first seek behavior. See ADR-0018 and the completed M009.1 ExecPlan.
 
 ## Goal
 
