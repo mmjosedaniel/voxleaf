@@ -216,12 +216,17 @@ export class ParagraphLeafController {
     if (!this.#available || this.#preview === undefined) {
       state = undefined;
       locatedBlock = undefined;
-    } else if (this.#phase === "preparing" && this.#preparing !== undefined) {
+    } else if (
+      this.#phase === "preparing" &&
+      this.#preparing !== undefined &&
+      sameBlock(this.#preparing, this.#preview)
+    ) {
       state = "preparing";
       locatedBlock = this.#preparing;
     } else if (
       (this.#phase === "playing" || this.#phase === "intentional-wait") &&
-      this.#audible !== undefined
+      this.#audible !== undefined &&
+      sameBlock(this.#audible, this.#preview)
     ) {
       state = "audible";
       locatedBlock = this.#audible;

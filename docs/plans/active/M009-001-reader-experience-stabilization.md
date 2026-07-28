@@ -772,6 +772,16 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   paragraph leaf still replace work through the original invalidation order.
   Focused reader/coordinator regressions pass, and the packaged exact-host
   script now checks passive isolation instead of the obsolete restart.
+- 2026-07-28: The private-EPUB follow-up confirmed narration no longer
+  restarted on scroll, but exposed that the single contextual leaf stayed
+  projected at the off-screen audible block. A repository-authored two-block
+  regression reproduced the condition: passive movement preserved the active
+  generation but left the inspected block without a selectable leaf.
+- 2026-07-28: Corrected the bounded projection so preparing, audible, and
+  checkpoint styling wins only when that retained state matches the active
+  visual block. Otherwise the same single control retargets to the inspected
+  block as a preview. Clicking it still enters the existing identity-first
+  replacement path; passive movement alone remains inert.
 
 ## Discoveries and decisions
 
@@ -812,6 +822,13 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   separate visible-passage target and active narration locator. Passive
   scrolling updates only the former; explicit leaf, visible-passage,
   previous/next, and chapter actions retain identity-first replacement.
+- Keeping the audible state as unconditional leaf-presentation priority made
+  the single control stay beside an off-screen paragraph after passive
+  inspection. That prevented the visible paragraph from exposing the only
+  approved narration-start action. The exact segment highlight and active
+  narration locator, not an off-screen leaf, are the durable audible
+  authorities. Retargeting the single control as a preview restores explicit
+  selection without adding per-paragraph tab stops or a second leaf.
 - The authority and stronger proof remain desktop-local. No M005 segmentation,
   M007 protocol, M008 threshold, shared contract, storage migration, native
   capability, CSP, or dependency change is required.
@@ -1033,9 +1050,24 @@ confirmation and repository/privacy/pull-request closeout.
   tests, 34 EPUB files / 555 tests, 34 desktop files / 328 tests plus 7 native
   tests, 234 Python tests, and portable builds. Pytest emitted one non-failing
   cache-write warning; no product assertion failed.
-- Remaining gate: rerun the amended exact-host passive-isolation matrix and
-  repeat the ephemeral private-EPUB scroll confirmation without recording
-  private content.
+- Leaf-retarget regression command: passed, 1 file / 28 tests. The test proves
+  that passive inspection does not issue a second narration start, the single
+  leaf becomes an actionable preview for the visible block, and activating it
+  supplies that block's canonical start locator.
+- Post-correction desktop typecheck passed. The full desktop suite passed, 34
+  files / 329 tests plus 7 native WebDriver-client/harness tests.
+- Post-correction `pnpm.cmd check:portable` passed outside the sandbox,
+  including formatting, TypeScript/Python lint and typecheck, 19 shared files /
+  196 tests, 34 EPUB files / 555 tests, 34 desktop files / 329 tests plus 7
+  native tests, 234 Python tests, and portable builds. Pytest emitted the known
+  non-failing cache-write warning; no product assertion failed.
+- All six Chromium smokes passed. The known Windows preview child remained
+  attached after the passing summary, so the bounded wrapper ended by timeout.
+- The model-free exact-host preflight passed, 3 Vitest files / 33 tests plus 7
+  native harness tests.
+- Remaining gate: rerun the amended exact-host passive-isolation and leaf
+  retarget matrix, then repeat the ephemeral private-EPUB scroll/leaf
+  confirmation without recording private content.
 
 ## Final validation results
 

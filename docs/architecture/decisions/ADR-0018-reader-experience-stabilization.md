@@ -60,13 +60,18 @@ Paragraph narration uses one retargeted contextual leaf control. It targets a
 canonical block-start locator and keeps at most one preview, preparing,
 audible, and checkpoint state. Ordinary paragraph clicks remain inert. Every
 state has a non-colour cue, visible focus, and keyboard/touch parity.
+The projected control follows the block at the active visual line. It uses a
+retained preparing, audible, or checkpoint treatment only when that state
+belongs to the same block; otherwise it presents the inspected block as an
+explicit selectable preview.
 
 The existing M005 segmentation, M007 protocol, M008 thresholds and bounds,
 explicit M009 identity-first invalidation, shared contracts, storage schema,
 native capabilities, CSP, and dependency graph remain unchanged. Passive
-viewport movement no longer invokes that invalidation: the audible leaf remains
-the narration authority until an explicit leaf, passage, or chapter action
-replaces it.
+viewport movement no longer invokes that invalidation: narration identity and
+the exact highlight remain authoritative while the contextual leaf may
+retarget as a preview. Only an explicit leaf, passage, or chapter action
+replaces narration.
 
 ## Consequences
 

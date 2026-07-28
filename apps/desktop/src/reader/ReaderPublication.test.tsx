@@ -413,6 +413,13 @@ const OPENING_LOCATED_BLOCK = Object.freeze({
     VALID_SYNTHETIC_DOCUMENT_FIXTURE.spineDocuments[0]!.blocks[0]!.locator,
   textLengthCodePoints: createIndex(7),
 }) satisfies PublicationLocatedBlock;
+const OPENING_LINK_LOCATED_BLOCK = Object.freeze({
+  documentId: OPENING_DOCUMENT_ID,
+  block: OPENING_LINK_PARAGRAPH,
+  startLocator:
+    VALID_SYNTHETIC_DOCUMENT_FIXTURE.spineDocuments[0]!.blocks[1]!.locator,
+  textLengthCodePoints: createIndex(16),
+}) satisfies PublicationLocatedBlock;
 const CONTINUATION_LOCATED_BLOCK = Object.freeze({
   documentId: CONTINUATION_DOCUMENT_ID,
   block: CONTINUATION_HEADING,
@@ -458,12 +465,18 @@ const NAVIGATION = Object.freeze([
 function createPublication(
   options: Readonly<{
     continuationDocument?: SemanticDocument;
+    includeOpeningLinkLocator?: boolean;
   }> = {},
 ): OpenedPublication {
-  const locatedBlocks = Object.freeze([
-    OPENING_LOCATED_BLOCK,
-    CONTINUATION_LOCATED_BLOCK,
-  ]);
+  const locatedBlocks = Object.freeze(
+    options.includeOpeningLinkLocator === true
+      ? [
+          OPENING_LOCATED_BLOCK,
+          OPENING_LINK_LOCATED_BLOCK,
+          CONTINUATION_LOCATED_BLOCK,
+        ]
+      : [OPENING_LOCATED_BLOCK, CONTINUATION_LOCATED_BLOCK],
+  );
   return {
     book: VALID_SYNTHETIC_DOCUMENT_FIXTURE.book,
     documents: Object.freeze([
@@ -478,12 +491,20 @@ function createPublication(
     readResource: vi.fn(async () => new Uint8Array()),
     resolveLocator: vi.fn((input: unknown) => {
       const candidate = input as {
+        readonly anchor?: { readonly anchorIndex?: number };
         readonly spineItemIndex?: number;
       };
-      const locatedBlock = locatedBlocks.find(
-        (block) =>
-          block.startLocator.spineItemIndex === candidate.spineItemIndex,
-      );
+      const locatedBlock =
+        locatedBlocks.find(
+          (block) =>
+            block.startLocator.spineItemIndex === candidate.spineItemIndex &&
+            block.startLocator.anchor.anchorIndex ===
+              candidate.anchor?.anchorIndex,
+        ) ??
+        locatedBlocks.find(
+          (block) =>
+            block.startLocator.spineItemIndex === candidate.spineItemIndex,
+        );
       if (locatedBlock === undefined) {
         throw new Error("Synthetic locator is unavailable.");
       }
@@ -1362,6 +1383,74 @@ describe("navigable publication reader", () => {
     unmount();
     expect(narrationSource.stateListenerCount).toBe(0);
     expect(narrationSource.progressListenerCount).toBe(0);
+  });
+
+  it("retargets the selectable leaf to the visible paragraph without restarting active narration", () => {
+    const mapper = new SemanticDomRangeMapper();
+    const environment = new ManualVisualLocatorEnvironment();
+    const narrationSource = new ManualReaderNarrationSource();
+    render(
+      <ReaderPublicationContent
+        publication={createPublication({ includeOpeningLinkLocator: true })}
+        domRangeMapper={mapper}
+        visualLocatorEnvironment={environment}
+        narrationSource={narrationSource}
+        segmentHighlightEnvironment={new ManualSegmentHighlightEnvironment()}
+      />,
+    );
+    environment.rects.set("Opening", {
+      top: 10,
+      right: 210,
+      bottom: 40,
+      left: 10,
+    });
+    environment.rects.set("Move to Continue", {
+      top: 60,
+      right: 210,
+      bottom: 90,
+      left: 10,
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Start narration at this paragraph",
+      }),
+    );
+    act(() => {
+      narrationSource.start(entireLocatedBlockRange(OPENING_LOCATED_BLOCK), 0);
+    });
+    expect(narrationSource.startLocators).toEqual([
+      OPENING_LOCATED_BLOCK.startLocator,
+    ]);
+
+    environment.rects.set("Opening", {
+      top: -60,
+      right: 210,
+      bottom: -30,
+      left: 10,
+    });
+    environment.rects.set("Move to Continue", {
+      top: 10,
+      right: 210,
+      bottom: 50,
+      left: 10,
+    });
+    environment.range = mapper.rangeFor(OPENING_LINK_LOCATED_BLOCK, 4);
+    act(() => {
+      environment.notify();
+      environment.flush();
+    });
+
+    expect(narrationSource.startLocators).toHaveLength(1);
+    const retargetedLeaf = screen.getByRole("button", {
+      name: "Start narration at this paragraph",
+    });
+    fireEvent.click(retargetedLeaf);
+
+    expect(narrationSource.startLocators).toEqual([
+      OPENING_LOCATED_BLOCK.startLocator,
+      OPENING_LINK_LOCATED_BLOCK.startLocator,
+    ]);
   });
 
   it("projects a restored stable locator as the bounded stopped checkpoint", () => {

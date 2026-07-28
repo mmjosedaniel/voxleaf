@@ -88,7 +88,9 @@ change is authorized.
   publication text or user selection.
 - Coarse segments can produce coarse visual movement and partial replay.
 - Passive scrolling may temporarily separate the inspected viewport from the
-  active narration; the audible leaf and highlight retain narration authority.
+  active narration. The exact highlight and active narration locator retain
+  narration authority while the contextual leaf may preview the inspected
+  paragraph.
 - Progress observations and metadata can remain desktop-local and bounded to
   existing work identities.
 - A later timestamp-capable engine requires a new authority before word-level

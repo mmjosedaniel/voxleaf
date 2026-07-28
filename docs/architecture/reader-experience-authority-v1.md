@@ -113,6 +113,13 @@ control, not one permanent keyboard tab stop per paragraph. It targets a
 canonical addressable block-start locator. Ordinary paragraph activation
 remains inert.
 
+The control follows the canonical block at the reader's active visual line.
+Preparing, audible, or checkpoint treatment appears only when that retained
+state belongs to the same block. If the user passively inspects another block,
+the control retargets there as a selectable preview without changing active
+narration; the exact highlight and narration locator remain authoritative
+until the user activates the preview.
+
 At most one state of each kind may be retained:
 
 | State | Visual treatment | Required non-colour cue |

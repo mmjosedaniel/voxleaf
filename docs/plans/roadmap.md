@@ -617,7 +617,9 @@ reader-first before M010 adds compatibility and recovery state.
   narration controls remain available.
 - A bounded application-owned leaf starts narration from a canonical paragraph
   locator and reinforces preview, preparing, audible, and saved-checkpoint
-  states without making ordinary paragraph text interactive.
+  states without making ordinary paragraph text interactive. Passive viewport
+  inspection retargets that leaf as a preview; only explicit activation
+  replaces narration.
 - The detailed narration panel can collapse without hiding buffering, failure,
   or required actions.
 - Preparation shows exact loaded playable duration and target as text without

@@ -7,8 +7,9 @@ Mixed implementation status. Roadmap Milestones 1 through 9 are complete. The se
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
 the visible-passage target separate from the active narration locator: passive
-scrolling preserves generation, playback, highlight, and the audible leaf,
-while explicit leaf, visible-passage, passage-boundary, and chapter actions
+scrolling preserves generation, playback, highlight, and play intent while the
+single contextual leaf retargets to the inspected paragraph as a selectable
+preview. Explicit leaf, visible-passage, passage-boundary, and chapter actions
 retain identity-first replacement. Corrective exact-host confirmation remains.
 
 M007 is complete. Its six milestones implement the accepted protocol v1,
@@ -168,8 +169,12 @@ leaf anchored through existing structural registration. It canonicalizes the
 eligible block start, replaces obsolete narration identity before settled
 placement, and projects bounded preview, preparing, audible, and checkpoint
 state without adding publication buttons, text interactivity, timing
-authority, or persistence. Completed focus, selection, cancellation,
-restoration, persistence, memory, and privacy invariants remain binding.
+authority, or persistence. The one projected leaf follows the active visual
+block; retained preparing, audible, or checkpoint styling applies only when
+that state matches the visible block, so passive inspection exposes an
+actionable preview while narration continues unchanged. Completed focus,
+selection, cancellation, restoration, persistence, memory, and privacy
+invariants remain binding.
 
 The desktop application and TTS inference should run in separate local processes.
 
