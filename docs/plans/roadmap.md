@@ -582,11 +582,13 @@ and [ADR-0018](../architecture/decisions/ADR-0018-reader-experience-stabilizatio
 It distinguishes accepted range registration from paint-aware perceivability
 and selects one reader scroll owner, compact narration, text-only loaded
 duration, and a bounded leaf before production implementation. Milestone 2
-repairs the proven same-chapter DOM-materialization gap and retains one
-focus-safe Custom Highlight with deterministic and Chromium evidence;
-clean-host packaged validation remains pending. Completed M009 remains the
-synchronization authority and evidence baseline; M009.1 Milestones 3 through
-6 remain.
+repairs the proven same-chapter DOM-materialization gap and passed clean-host
+validation. Milestone 3 implements the fixed ready-publication shell, sole
+reader scroll root, compact/collapsible narration, and exact
+loaded/target/estimate text without a progress bar; deterministic and Chromium
+evidence pass while clean-host packaged validation remains pending. Completed
+M009 remains the synchronization authority and evidence baseline; M009.1
+Milestones 4 through 6 remain.
 
 ### Goal
 
@@ -771,10 +773,10 @@ exact-host validation, and repository/CI closeout.
 is the approved bounded follow-up for the user-observed highlight discrepancy,
 dedicated reader scroll owner, compact/collapsible narration surface,
 text-only loaded-duration presentation, and locator-backed paragraph leaf. It
-now contains a frozen Milestone 1 authority and paint-aware proof but does not
-yet implement the production UI. It does not reopen M009 timing authority or
-change M005 segmentation, M007 protocol, M008 buffer policy, or the TTS
-profile.
+now contains completed authority and highlight-repair milestones plus the
+implemented fixed compact reader shell. The bounded paragraph leaf and final
+validation remain. It does not reopen M009 timing authority or change M005
+segmentation, M007 protocol, M008 buffer policy, or the TTS profile.
 
 [`active/M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md)
 is the approved implementation authority for privacy-safe host detection,

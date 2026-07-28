@@ -219,6 +219,26 @@ M009 Milestone 6 evidence. Milestone 7 records complete-diff privacy/repository
 review and passing required Ubuntu/Windows CI. The frozen and implemented behavior is documented in
 [`../architecture/synchronization-authority-v1.md`](../architecture/synchronization-authority-v1.md).
 
+## M009.1 fixed-reader-shell validation
+
+Milestone 3 extends the same deterministic, Chromium, and packaged proof
+surfaces for the fixed ready-publication shell. Component tests require one
+reader-owned scroll root, compact narration detail closed by default,
+persistent content-free playback/status/recovery actions, exact
+loaded/target/estimate text, and no `progressbar`. Browser tests drive locator
+tracking, reflow/restoration, and focus-safe following through that root at
+narrow and high-scale layouts, then verify stable chrome under keyboard,
+wheel, and touch input plus reduced-motion, forced-colors, replacement, and
+close behavior. The packaged smoke repeats the sole-scroll-owner and compact
+presentation assertions before its existing interaction and synchronization
+matrix. These tests use only repository-authored synthetic publications.
+
+On the current local Windows host, the release build succeeds but
+`tauri-driver` can still fail before application mount with
+`webdriver-session-not-created`. Record that as a host automation boundary,
+not an application pass or failure; required clean-host pull-request
+validation supplies the packaged result.
+
 ### Hardware-specific visual-reader benchmark
 
 Run `pnpm.cmd benchmark:reader` only from native Windows after `pnpm.cmd test:browser:install`. The benchmark launches fresh pinned Chromium processes and queries their numeric process IDs through CDP so a fixed PowerShell query can record aggregate working set. It emits only fixed fixture labels, block/image/node counts, durations, heap values, pixel counts, and byte totals. It disables trace, screenshot, and video capture; uses only repository-authored synthetic content and an in-memory generated EPUB for the production case; makes no external network request; and writes only ignored Playwright result artifacts.

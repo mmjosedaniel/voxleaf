@@ -57,20 +57,20 @@ heard checkpoints. Deterministic, Chromium, packaged WebView2, exact-host, and
 pull-request validation passed on the recorded implementation.
 
 A later manual run with a real local EPUB produced audible narration but did
-not show a visible active segment highlight. This observation does not erase
-the earlier synthetic evidence, and it does not establish a root cause. It is
-a product-visible discrepancy that must be reproduced with repository-authored
-synthetic content and corrected before M010 recovery relies on the same
-projection.
+not show a visible active segment highlight. Milestone 2 reproduced a
+same-chapter materialization gap with repository-authored synthetic content,
+repaired the one-shot canonical materialization path, and passed clean-host
+pull-request validation.
 
-The current opened-book UI remains one vertically scrolling application page.
-File selection, branding, publication metadata, narration configuration,
-controls, and reader content share the outer scroll, so the reading surface can
-start below the visible window. `AdaptivePreparationControls` renders both
-loaded/target text and a `<progress>` element. The detailed narration panel is
-always expanded. Starting at an arbitrary paragraph currently requires moving
-the visible locator and using the general visible-passage action; publication
-prose itself is intentionally not interactive.
+Milestone 3 now gives the ready-publication state one dedicated reader scroll
+viewport while keeping application, publication, and compact narration chrome
+stable. Narration detail defaults closed without hiding playback, phase,
+loaded duration, low-water, buffering, failure, or recovery state. Preparation
+uses exact loaded/target/estimate text and no `<progress>` element. No-book,
+loading, empty, and error states retain the normal responsive page. Starting
+at an arbitrary paragraph still requires moving the visible locator and using
+the general visible-passage action; the bounded paragraph leaf remains
+Milestone 4 work.
 
 M010 is approved but not started. It will add compatibility and recovery state
 to the application. Stabilizing the shell and its canonical narration
@@ -299,7 +299,11 @@ target, estimate, low-water, buffering, or complete-shorter-range information.
 - Expected result: the failing/perceivability proof is deterministic and
   content-safe; the selected layout and leaf authority preserve focus,
   selection, locator behavior, URL, CSP, and zero external requests.
-- Actual result: Not yet available.
+- Actual result: The reader-experience state table and paint-aware
+  browser/packaged proof are frozen before production changes. They distinguish
+  registry acceptance from visible geometry, contrast, non-color decoration,
+  and rendering opportunity while preserving focus, selection, publication
+  DOM, URL, privacy, and existing contracts.
 
 ### Status
 
@@ -345,12 +349,13 @@ packaged WebView2, Ubuntu portable, and Windows native validation pass.
   including rendered-pixel evidence with selected text in dark and
   forced-colors modes. The local native build passes, but this host still
   fails before application mount at the previously documented
-  `webdriver-session-not-created` boundary; clean-host packaged validation is
-  pending the pull request.
+  `webdriver-session-not-created` boundary. PR #138's clean Windows native
+  foundation passes the same packaged smoke.
 
 ### Status
 
-Implementation complete; clean-host packaged validation pending.
+Completed. Production repair, deterministic/browser validation, and
+clean-host packaged validation pass.
 
 ## Milestone 3: Implement the fixed reader shell and compact narration UI
 
@@ -380,11 +385,20 @@ Implementation complete; clean-host packaged validation pending.
 - Expected result: the book remains the primary visible surface, exactly one
   reader scroll owner controls locators, collapsing preserves narration and
   errors, and loaded audio is represented truthfully without a progress bar.
-- Actual result: Not yet available.
+- Actual result: Ready publications now use a fixed-height application shell
+  with stable compact application, publication, and narration chrome around
+  exactly one reader-owned scrolling viewport. Narration detail defaults
+  closed while playback, phase, loaded duration, low-water/buffering, errors,
+  and recovery remain on the compact surface. The preparation bar is removed
+  in favor of exact loaded/target/estimate text. Locator sampling, reflow,
+  restoration, highlight following, and browser/native proofs use the reader
+  root; no-book/loading/error behavior remains a normal responsive page. An
+  initial no-op resize notification is ignored, and following allows one
+  bounded post-layout correction before settlement.
 
 ### Status
 
-Not started.
+Implementation complete; clean-host packaged validation pending.
 
 ## Milestone 4: Add paragraph leaf navigation and progress reinforcement
 
@@ -607,6 +621,20 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   desktop tests, type checking, linting, formatting, and all six Chromium
   smokes pass. The local native build passes and the known pre-mount WebView2
   session handshake still fails; clean-host pull-request validation remains.
+- 2026-07-28: Confirmed PR #138's Ubuntu portable and Windows native
+  foundations pass, closing Milestone 2's clean-host packaged gate.
+- 2026-07-28: Implemented the fixed ready-publication shell, one reader-owned
+  scroll viewport, compact/collapsible narration surface, and exact
+  loaded/target/estimate text without a progress bar. Updated locator,
+  restoration, highlight, browser, and packaged proof geometry to use the new
+  scroll root.
+- 2026-07-28: Fixed two migration findings: initial `ResizeObserver`
+  delivery no longer starts a false viewport restoration, and focus-safe
+  following performs one bounded post-layout correction before settling.
+  Focused and full desktop tests, typecheck, lint, formatting, and all six
+  Chromium smokes pass. The release build passes; this host still stops before
+  application mount at `webdriver-session-not-created`, so clean-host packaged
+  validation remains for the pull request.
 
 ## Discoveries and decisions
 
@@ -614,12 +642,11 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   path, but the later private-EPUB manual observation did not show a visible
   highlight. The plan must reproduce and explain that discrepancy rather than
   silently claim either side is definitive.
-- `AdaptivePreparationControls` currently renders exact loaded/target text and
-  a `<progress>` element. Removing the visual bar is a presentation change;
-  it does not require a buffer-status contract or threshold change.
-- The current application uses the outer page as its scroll owner. A dedicated
-  reader viewport changes geometry and layout responsibilities but not stable
-  locator authority.
+- Removing the preparation `<progress>` element is a presentation change; it
+  does not require a buffer-status contract or threshold change.
+- A dedicated reader viewport changes geometry and layout responsibilities but
+  not stable locator authority. Locator sampling, reflow, highlight following,
+  and packaged proofs must all use the same scroll root.
 - The existing visible-passage, previous/next, chapter, identity-first
   invalidation, and audible-progress boundaries should be extended for leaf
   targeting rather than replaced.
@@ -668,6 +695,14 @@ release bounds, heard checkpoints, exact-byte restoration, or privacy.
   Replacing the harness with Tauri's newer embedded WebDriver-provider approach
   would add native plugins and dependencies, so it is not authorized by this
   frozen milestone merely to bypass a local validation-host failure.
+- The browser delivers an initial `ResizeObserver` notification even when the
+  reader viewport dimensions have not changed. Treating that notification as
+  a resize can overwrite the intended locator; comparing observed client
+  dimensions before preserving avoids the false transaction.
+- Instant reader scrolling may settle before one final layout adjustment.
+  One bounded range recheck/correction keeps the audible segment inside the
+  reader comfort region without introducing polling, focus movement, or a
+  second locator authority.
 
 ## Milestone 1 validation results
 
@@ -712,24 +747,54 @@ remain scoped to Milestones 2 through 6.
   WebDriver session creation failed before application mount with the same
   local `webdriver-session-not-created` boundary documented in Milestone 1.
   Retrying with the matching test-only WebView2/EdgeDriver
-  `150.0.4078.105` pair reached the same boundary. Clean-host Windows
-  pull-request validation remains pending.
+  `150.0.4078.105` pair reached the same boundary.
+- PR #138 `Ubuntu portable foundation`: passed.
+- PR #138 `Windows native foundation`: passed, including the packaged smoke.
 - Privacy/bounds review: fixtures remain repository-authored and synthetic;
   the controller retains one active source range and one one-shot
   materialization flag; no EPUB text, private path, PCM, generated audio,
   model artifact, persistence field, dependency, DOM wrapper, or external
   request was added.
 
-Milestone 2 production behavior and repository/browser validation are
-implemented. Its status becomes complete only after the clean-host packaged
-check passes.
+Milestone 2 is complete.
+
+## Milestone 3 validation results
+
+- Focused component/reader command: passed, 6 files / 60 tests.
+- `pnpm.cmd --filter @voxleaf/desktop test`: passed, 34 Vitest files / 320
+  tests plus 6 native WebDriver-client tests.
+- `pnpm.cmd --filter @voxleaf/desktop typecheck`: passed.
+- `pnpm.cmd lint:typescript`: passed.
+- `pnpm.cmd format:check:typescript`: passed.
+- `pnpm.cmd check:portable`: passed, including generated-contract checks,
+  TypeScript/Python typecheck and lint, 19 shared files / 196 tests, 34 EPUB
+  files / 555 tests, 34 desktop files / 320 tests plus 6 native-client tests,
+  234 Python tests, and portable package/desktop/Python builds.
+- `pnpm.cmd test:browser`: all 6 Playwright tests passed, covering the sole
+  scroll owner, fixed chrome under keyboard/wheel/touch input, narrow/high
+  scale layouts, locator tracking, reflow, highlight following, reduced
+  motion, forced colors, replacement, and close. The known Windows preview
+  child remained attached after the passing list, so the bounded wrapper
+  ended by timeout.
+- `pnpm.cmd test:native-startup`: Vite and the Tauri release build passed;
+  local WebDriver session creation failed before application mount at the
+  previously documented `webdriver-session-not-created` host boundary.
+  Clean-host packaged validation remains pending.
+- Privacy/bounds review: no EPUB content, path, PCM, generated audio, new
+  persistence, protocol, dependency, or buffer threshold was added. The
+  compact view consumes only existing content-free coordinator state, and
+  exactly one reader element owns EPUB scrolling.
+
+Milestone 3 production behavior and repository/browser validation are
+implemented. Its status becomes complete after the clean-host packaged check
+passes.
 
 ## Final validation results
 
-Not yet available. This plan is active with Milestone 1 complete and Milestone
-2 implemented pending clean-host packaged validation. It is complete only when
-the user-observed highlight discrepancy is confirmed closed; the fixed reader
-viewport, compact narration UI, text-only loaded duration, and bounded leaf
-interaction are implemented and validated; exact-host privacy and cleanup
-evidence passes; documentation matches actual behavior; and required
+Not yet available. This plan is active with Milestones 1-2 complete and
+Milestone 3 implemented pending clean-host packaged validation. It is complete
+only when the user-observed highlight discrepancy is confirmed closed; the
+fixed reader viewport, compact narration UI, text-only loaded duration, and
+bounded leaf interaction are implemented and validated; exact-host privacy and
+cleanup evidence passes; documentation matches actual behavior; and required
 pull-request checks pass.
