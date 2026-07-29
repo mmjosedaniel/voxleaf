@@ -713,6 +713,16 @@ rewrite unrelated reader state.
   eight-sample quality workflow, result derivation, tests, and operator
   commands. Official performance and quality must execute only from a clean
   strict descendant and name this authority commit.
+- 2026-07-28: Ran official preflight from clean strict-descendant commit
+  `480be8cca12d2f6b11c7fbea7779172c8abb37b6`. The exact candidate
+  interpreter and all three local Piper voice artifacts matched their frozen
+  hashes. Windows x86_64, Python 3.12.10, the 20-logical-processor reference
+  CPU, power, disk, RAM, provider, and process-memory probes passed. Preflight
+  stopped before candidate load solely with `network-isolation`: the existing
+  application-scoped outbound block is not bound to the new Piper interpreter.
+  No pilot, official waveform, raw performance session, or listening material
+  was produced. An elevated Windows administrator must replace that exact
+  firewall binding before execution can continue.
 - 2026-07-28: Closed Milestone 4 local validation. Portable and full native
   foundation checks pass; the complete browser matrix passes 6/6; and the
   release-packaged native smoke passes. The native rerun exposed and corrected
