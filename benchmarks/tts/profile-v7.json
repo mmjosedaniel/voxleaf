@@ -1,0 +1,206 @@
+{
+  "profileVersion": "tts-bilingual-profile-v7",
+  "status": "frozen-before-v7-implementation-pilot-and-official-results",
+  "purpose": "bilingual-product-and-bounded-candidate-evaluation",
+  "authorities": {
+    "product": {
+      "path": "docs/architecture/bilingual-narration-authority-v1.md"
+    },
+    "normalizationProfile": {
+      "path": "docs/architecture/narration-normalization-v2.md"
+    },
+    "normalizationCorpus": {
+      "path": "benchmarks/tts/normalization-corpus-v2.json",
+      "sha256": "7eb569b5c885e91f6fe8b250aa1c2a73be1642db70265530c62634cff691018a"
+    },
+    "evaluationCorpus": {
+      "path": "benchmarks/tts/corpus-v7.json",
+      "sha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe"
+    },
+    "candidateManifest": {
+      "path": "benchmarks/tts/candidates-v7.json",
+      "sha256": "1c8b4591782c298d0af19ae91037eb6154e372f32d1c005d6a8dfdfe47bc0f53"
+    },
+    "privateRawSchema": {
+      "path": "benchmarks/tts/schemas/bilingual-raw-v7.schema.json",
+      "sha256": "3fa093853fc520e9652e7ae9f439bd930e2de9b526630d9fb796b6ca60e44ce1"
+    },
+    "contentSafeSummarySchema": {
+      "path": "benchmarks/tts/schemas/bilingual-summary-v7.schema.json",
+      "sha256": "e2f14996912c35b4563df59f2ba9e03e08233af0c4f84796a27bbc9cdbfed7a3"
+    }
+  },
+  "productBehavior": {
+    "availableLanguages": ["es", "en"],
+    "defaultForExistingAndMissingPreference": "es",
+    "selection": "explicit-only",
+    "automaticDetection": false,
+    "translation": false,
+    "persistedPreference": {
+      "version": "narration-language-preference-v1",
+      "maximumRetainedValues": 1,
+      "allowedValues": ["es", "en"],
+      "bookContentAllowed": false,
+      "hostReportAllowed": false
+    },
+    "changeLifecycle": [
+      "replace-generation-identity",
+      "cancel-active-preparation-and-synthesis",
+      "stop-and-clean-service",
+      "discard-obsolete-queued-and-playing-audio",
+      "retain-current-canonical-narration-locator",
+      "recompute-exact-profile-compatibility",
+      "require-explicit-play"
+    ],
+    "unsupportedCombination": {
+      "childStart": "forbidden",
+      "automaticEngineFallback": false,
+      "presentation": "content-free-unavailable-state"
+    },
+    "accessibility": {
+      "control": "labelled-radiogroup",
+      "options": [
+        {
+          "value": "es",
+          "label": "Spanish"
+        },
+        {
+          "value": "en",
+          "label": "English"
+        }
+      ],
+      "keyboard": true,
+      "statusAnnouncement": "polite-content-free",
+      "disabledReasonExposed": true
+    }
+  },
+  "executionPolicy": {
+    "candidateOrder": [
+      "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
+      "chatterbox-multilingual-v3-cuda-bf16-default-v1",
+      "moss-tts-nano-100m-onnx-cpu-ava-v1"
+    ],
+    "conditionalCandidateRejectedAtIntake": "fun-cosyvoice3-0-5b-2512-v1",
+    "automaticRetries": 0,
+    "attemptsPerCase": {
+      "screenWarm": 1,
+      "fullWarm": 2,
+      "sustainedCompleteCorpusPassesMinimum": 3
+    },
+    "coldLoads": {
+      "baseline": 5,
+      "screen": 1,
+      "fullMatrix": 5
+    },
+    "candidateLifetime": "one-loaded-model-per-measured-session",
+    "candidateSwitchingWithinSession": "forbidden",
+    "runtimeDownloads": "forbidden",
+    "outboundNetworkDuringEvaluation": "blocked-for-exact-interpreter",
+    "referenceAudio": "forbidden",
+    "rawResultRoot": "benchmarks/tts/raw/v7",
+    "rawResultRetention": "delete-after-content-safe-derivation",
+    "generatedAudioRetention": "delete-after-private-quality-session",
+    "resultCommitRule": "authority-commit-must-be-strict-ancestor"
+  },
+  "timeoutsMilliseconds": {
+    "load": 120000,
+    "generation": 120000,
+    "sustained": 900000,
+    "identityInvalidation": 100,
+    "cooperativeCancellationAcknowledgement": 500,
+    "workerTermination": 2000,
+    "cleanup": 5000
+  },
+  "screenStopConditions": [
+    "license-or-voice-provenance-invalid",
+    "mandatory-online-inference",
+    "exact-windows-host-preflight-failed",
+    "model-load-failed",
+    "invalid-or-empty-audio",
+    "wrong-language-output",
+    "hallucination-repetition-or-meaning-change",
+    "first-attempt-failure",
+    "cancellation-or-cleanup-failed",
+    "memory-limit-exceeded",
+    "privacy-or-repository-boundary-failed"
+  ],
+  "machineGates": {
+    "failedOrTimedOutFirstAttempts": 0,
+    "invalidOrEmptyOutputs": 0,
+    "wrongLanguageOutputs": 0,
+    "automaticRetries": 0,
+    "allArtifactDigestsVerified": true,
+    "offline": true,
+    "networkIsolation": true,
+    "staleUnits": 0,
+    "processesRemainingAfterCleanup": 0
+  },
+  "performanceGates": {
+    "coldLoadP95SecondsMaximum": 30,
+    "firstAudioP95SecondsMaximum": 7,
+    "warmP95RtfMaximum": 1.1,
+    "sustainedP95RtfMaximum": 1.1,
+    "totalSustainedRtfMaximum": 1.08,
+    "gpuPeakDedicatedVramReserveMiBMinimum": 512,
+    "cpuPeakProcessTreeRamMiBMaximum": 4096,
+    "minimumAvailableSystemRamMiB": 4096
+  },
+  "cancellationGates": {
+    "trialsPerEvaluatedLanguage": [
+      "before-dispatch",
+      "accepted-before-audio",
+      "after-first-audio",
+      "near-hard-mid-generation"
+    ],
+    "allTrialsPass": true,
+    "staleUnits": 0,
+    "processesRemaining": 0
+  },
+  "qualityRubric": {
+    "evaluatorPolicy": "one-fluent-evaluator-per-evaluated-language",
+    "blindRandomizedOrder": true,
+    "scale": "1-5",
+    "dimensions": [
+      "intelligibility",
+      "naturalness",
+      "prosody",
+      "pronunciation",
+      "language-stability",
+      "overall-usefulness"
+    ],
+    "overallMeanMinimum": 3.25,
+    "intelligibilityMeanMinimum": 3.25,
+    "naturalnessMeanMinimum": 3.25,
+    "eachDimensionMeanMinimum": 2.75,
+    "meaningChangingDefectsMaximum": 0,
+    "wrongLanguageOutputsMaximum": 0,
+    "missingFluentEvaluator": "blocked",
+    "machineMetricsMaySubstitute": false
+  },
+  "privacyAndRepositoryGates": {
+    "committedResultContentSafeOnly": true,
+    "forbiddenCommittedContent": [
+      "source-or-narration-text",
+      "privacy-canaries",
+      "generated-audio",
+      "model-weights",
+      "python-environments",
+      "raw-evaluator-forms",
+      "evaluator-identity",
+      "model-or-user-paths",
+      "command-lines",
+      "environment-values",
+      "raw-exception-messages",
+      "private-host-identity"
+    ],
+    "allowedCommittedEvidence": [
+      "bounded-counts",
+      "content-free-enums",
+      "timings",
+      "resource-measurements",
+      "artifact-hashes",
+      "aggregate-quality-scores",
+      "closed-limitations"
+    ]
+  }
+}

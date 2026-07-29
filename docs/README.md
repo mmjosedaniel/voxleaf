@@ -43,12 +43,12 @@ compatible and configured, keeps Qwen/Serena development-only, and records
 that automatic engine failover remains disabled. M011 still owns runtime/model
 distribution and Piper license fulfillment.
 
-M010.1 is the active bounded follow-up before M011. It will freeze explicit
-Spanish/English narration behavior, extend locator-preserving preparation only
-through versioned authority, evaluate one exact Piper English baseline, and
-screen a small candidate set under frozen license, offline, performance,
-quality, cancellation, memory, and privacy gates. Current production behavior
-remains Spanish-only until that plan implements and validates a result.
+M010.1 is active before M011. Milestone 1 freezes the result-blind bilingual
+product, normalization, candidate, corpus, schema, and evaluation authority.
+It does not implement English runtime behavior or admit another product
+profile. Current product behavior remains Spanish-only while later milestones
+implement the frozen boundary and evaluate the exact Piper English baseline,
+Chatterbox Multilingual V3, and MOSS-TTS-Nano candidates.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -72,13 +72,16 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/hardware-profile-recovery-authority-v1.md`](architecture/hardware-profile-recovery-authority-v1.md): frozen M010 Milestone 1 privacy-safe host report, immutable profile/evidence shape, result-blind margins, matching/preference rules, failure taxonomy, and identity-first recovery authority.
 - [`architecture/qwen-development-vram-admission-v1.md`](architecture/qwen-development-vram-admission-v1.md): corrective development-only authority retaining generic total VRAM while admitting the exact Qwen demo with its measured peak plus a frozen 512-MiB available-VRAM reserve.
 - [`architecture/tts-support-matrix-v1.md`](architecture/tts-support-matrix-v1.md): final M010 product support matrix, admitted host margins, explicit selection/fallback policy, recovery policy, limitations, and runtime/license/distribution boundary.
+- [`architecture/bilingual-narration-authority-v1.md`](architecture/bilingual-narration-authority-v1.md): frozen result-blind M010.1 product authority for explicit Spanish/English selection, bounded preference, identity-first language changes, accessibility, and unsupported combinations.
 - [`architecture/narration-normalization-v1.md`](architecture/narration-normalization-v1.md): accepted test-only neutral/Spanish normalization corpus policy for Milestone 5.
+- [`architecture/narration-normalization-v2.md`](architecture/narration-normalization-v2.md): frozen additive Spanish/English normalization authority and synthetic corpus for M010.1; historical v1 bytes and current product behavior remain unchanged.
 - [`architecture/narration-preparation-limits-v1.md`](architecture/narration-preparation-limits-v1.md): accepted test-only `narration-v1` chunk, work, retention, checkpoint, and yield limits.
 - [`architecture/tts-feasibility-profile-v2.md`](architecture/tts-feasibility-profile-v2.md): current Milestone 6 rerun authority, including the Windows/PyTorch cross-checked VRAM method, unchanged role gates, listening rubric, and content-safe summary policy. The superseded `v1` profile remains historical evidence.
 - [`architecture/tts-feasibility-profile-v3.md`](architecture/tts-feasibility-profile-v3.md): current Milestone 6.1 authority for the exact Serena CustomVoice development candidate, its prototype stop gate, inherited full evaluation, and privacy/invalidation rules.
 - [`architecture/tts-feasibility-profile-v4.md`](architecture/tts-feasibility-profile-v4.md): frozen pre-result Milestone 6.2 authority for the exact short-unit/shared-model batch experiment, conditional targeted CPU placement, playback simulation, and separate standard/scheduling/demo conclusions.
 - [`architecture/tts-feasibility-profile-v5.md`](architecture/tts-feasibility-profile-v5.md): frozen pre-result Milestone 6.2 authority for the separately loaded GPU-primary/CPU-support experiment, CPU-solo screen, concurrent comparison, RAM/commit and zero-GPU checks, and simultaneous playback bounds.
 - [`architecture/tts-feasibility-profile-v6.md`](architecture/tts-feasibility-profile-v6.md): accepted M010 Piper CPU authority and passing result, including the normalized Spanish corpus, candidate-neutral machine and quality gates, termination-backed cancellation, and explicit GPL/CC0 packaging boundary.
+- [`architecture/tts-feasibility-profile-v7.md`](architecture/tts-feasibility-profile-v7.md): frozen pre-result M010.1 authority for the exact Piper English baseline and bounded Chatterbox/MOSS screens, including candidate locks, artifact hashes, offline rules, bilingual corpora, schemas, gates, and stop conditions.
 - [`architecture/piper-narration-preparation-profile-v1.md`](architecture/piper-narration-preparation-profile-v1.md): historical corrective product authority that narrows locator-safe EPUB segmentation only for Piper; v2 supersedes it for product dispatch.
 - [`architecture/piper-narration-preparation-profile-v2.md`](architecture/piper-narration-preparation-profile-v2.md): implemented Piper product correction that adds a deterministic normalized speech-expansion budget for compact numbers, acronyms, currencies, ordinals, and related forms while retaining the v1 locator, text, protocol, and privacy boundaries.
 - [`architecture/tts-profile-runtime-configuration-availability-v1.md`](architecture/tts-profile-runtime-configuration-availability-v1.md): frozen corrective authority that keeps hardware compatibility separate from native runtime configuration and requires the selected exact profile to be configured before product Play is enabled.
@@ -97,6 +100,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0021-boundary-aware-audio-transitions.md`](architecture/decisions/ADR-0021-boundary-aware-audio-transitions.md): accepted engine-neutral scheduled pause between already-buffered generated narration units.
 - [`architecture/decisions/ADR-0022-qwen-development-vram-admission.md`](architecture/decisions/ADR-0022-qwen-development-vram-admission.md): accepted narrow development-only available-VRAM rule without changing Qwen's failed standard evaluation or supported-profile margins.
 - [`architecture/decisions/ADR-0023-final-m010-support-and-recovery.md`](architecture/decisions/ADR-0023-final-m010-support-and-recovery.md): accepted final Piper-supported, Qwen-development-only, explicit-recovery decision while keeping M011 distribution obligations separate.
+- [`architecture/decisions/ADR-0024-freeze-bilingual-v7-authority.md`](architecture/decisions/ADR-0024-freeze-bilingual-v7-authority.md): freezes explicit bilingual product behavior and the v7 candidate/evaluation authority before results without claiming English runtime support.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development
@@ -129,7 +133,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M009-001-reader-experience-stabilization.md`](plans/completed/M009-001-reader-experience-stabilization.md): completed bounded M009 follow-up for the visible-highlight repair, dedicated reader viewport, compact/collapsible narration UI, truthful loaded-duration status, locator-backed paragraph leaf, passive-scroll isolation, exact-host validation, and repository/CI closeout.
 - [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
-- [`plans/active/M010-001-bilingual-narration-and-candidate-screening.md`](plans/active/M010-001-bilingual-narration-and-candidate-screening.md): approved, not-yet-implemented follow-up for explicit Spanish/English narration, an exact Piper English baseline, and bounded sequential screening of at most three naturalness candidates before M011.
+- [`plans/active/M010-001-bilingual-narration-and-candidate-screening.md`](plans/active/M010-001-bilingual-narration-and-candidate-screening.md): active follow-up whose Milestone 1 freezes explicit Spanish/English product and v7 evaluation authority before later implementation and result-bearing execution.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

@@ -95,6 +95,17 @@ The current tests are deterministic and layered by ownership:
   mandatory positive balanced-role signals, CPU-role GPU exclusion, bounded
   content-free v2 raw observation storage, private-value rejection, and
   duplicate-session rejection without loading a model.
+- `services/tts/tests/test_benchmark_v7_authority.py` freezes M010.1's
+  result-blind bilingual product/evaluation inputs before audio generation. It
+  verifies exact profile, candidate manifest, Spanish/English normalization
+  corpus, balanced synthetic evaluation corpus, raw/summary schemas, and
+  admitted candidate lock hashes; exact bounded candidate order and intake
+  decisions; closed schema conformance; content privacy; and strict
+  authority-tree plus Git-ancestry ordering for later result files. The
+  companion EPUB regression records that the current production boundary
+  still rejects English with a content-free result. These tests load no
+  candidate library, model, audio, or hardware and make no English-support or
+  candidate-pass claim.
 
 The hardware/manual boundary is separate from these tests. The completed `v2`
 cycle ran five cold loads, 24 warm generations, 12 sustained generations, and

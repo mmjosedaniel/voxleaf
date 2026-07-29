@@ -1,0 +1,143 @@
+{
+  "corpusVersion": "tts-bilingual-corpus-v7",
+  "status": "frozen-before-v7-results",
+  "provenance": {
+    "author": "VoxLeaf contributors",
+    "createdAt": "2026-07-29",
+    "kind": "repository-authored-synthetic",
+    "license": "CC0-1.0",
+    "sourceMaterial": "none"
+  },
+  "languagePolicy": {
+    "acceptedLanguages": ["es", "en"],
+    "explicitSelectionRequired": true,
+    "automaticDetection": false,
+    "translation": false,
+    "textIsNarrationBilingualV2NormalizedInput": true
+  },
+  "normalizationAuthority": {
+    "profile": "narration-bilingual-v2",
+    "candidateSpecificRewriting": "forbidden",
+    "engineInputField": "text"
+  },
+  "performanceOrder": [
+    "es-v7-arrival",
+    "en-v7-arrival",
+    "es-v7-dialogue",
+    "en-v7-dialogue",
+    "es-v7-numbers",
+    "en-v7-numbers",
+    "es-v7-symbols",
+    "en-v7-symbols",
+    "es-v7-closing",
+    "en-v7-closing"
+  ],
+  "qualityOrderByLanguage": {
+    "es": [
+      "es-v7-arrival",
+      "es-v7-dialogue",
+      "es-v7-numbers",
+      "es-v7-symbols",
+      "es-v7-closing"
+    ],
+    "en": [
+      "en-v7-arrival",
+      "en-v7-dialogue",
+      "en-v7-numbers",
+      "en-v7-symbols",
+      "en-v7-closing"
+    ]
+  },
+  "cases": [
+    {
+      "caseId": "es-v7-arrival",
+      "language": "es",
+      "tags": ["narrative", "neutral"],
+      "text": "Al llegar a la estación, Clara dejó la mochila junto al banco y observó el andén vacío. La primera luz del día aparecía detrás de las montañas.",
+      "privacyCanary": "tts-v7-canary-es-arrival",
+      "CodePointCount": 143,
+      "Utf8ByteCount": 152
+    },
+    {
+      "caseId": "en-v7-arrival",
+      "language": "en",
+      "tags": ["narrative", "neutral"],
+      "text": "When Clara reached the station, she placed her backpack beside the bench and watched the empty platform. The first light of day appeared beyond the hills.",
+      "privacyCanary": "tts-v7-canary-en-arrival",
+      "CodePointCount": 154,
+      "Utf8ByteCount": 154
+    },
+    {
+      "caseId": "es-v7-dialogue",
+      "language": "es",
+      "tags": ["dialogue", "punctuation"],
+      "text": "—¿Trajiste el mapa? —preguntó Elena. Marcos asintió y respondió: —Sí; podemos revisar la ruta antes de salir.",
+      "privacyCanary": "tts-v7-canary-es-dialogue",
+      "CodePointCount": 109,
+      "Utf8ByteCount": 120
+    },
+    {
+      "caseId": "en-v7-dialogue",
+      "language": "en",
+      "tags": ["dialogue", "punctuation"],
+      "text": "“Did you bring the map?” Elena asked. Marcus nodded and replied, “Yes; we can review the route before we leave.”",
+      "privacyCanary": "tts-v7-canary-en-dialogue",
+      "CodePointCount": 112,
+      "Utf8ByteCount": 120
+    },
+    {
+      "caseId": "es-v7-numbers",
+      "language": "es",
+      "tags": ["numbers", "currency", "date", "normalized"],
+      "text": "El informe de dos mil veintiséis confirmó un avance del veinticinco por ciento y un saldo de doce euros con cincuenta céntimos.",
+      "privacyCanary": "tts-v7-canary-es-numbers",
+      "CodePointCount": 127,
+      "Utf8ByteCount": 130
+    },
+    {
+      "caseId": "en-v7-numbers",
+      "language": "en",
+      "tags": ["numbers", "currency", "date", "normalized"],
+      "text": "The July twenty-fourth report confirmed twenty-five percent progress and a balance of twelve dollars and fifty cents.",
+      "privacyCanary": "tts-v7-canary-en-numbers",
+      "CodePointCount": 117,
+      "Utf8ByteCount": 117
+    },
+    {
+      "caseId": "es-v7-symbols",
+      "language": "es",
+      "tags": ["symbols", "temperature", "foreign-name"],
+      "text": "Siobhán O'Connor vio el cartel de Sol y Mar: marcaba veinte grados Celsius al mediodía.",
+      "privacyCanary": "tts-v7-canary-es-symbols",
+      "CodePointCount": 87,
+      "Utf8ByteCount": 89
+    },
+    {
+      "caseId": "en-v7-symbols",
+      "language": "en",
+      "tags": ["symbols", "temperature", "foreign-name"],
+      "text": "Siobhán O'Connor read the Salt and Stone sign: it showed twenty degrees Celsius at noon.",
+      "privacyCanary": "tts-v7-canary-en-symbols",
+      "CodePointCount": 88,
+      "Utf8ByteCount": 89
+    },
+    {
+      "caseId": "es-v7-closing",
+      "language": "es",
+      "tags": ["ellipsis", "closing"],
+      "text": "Cuando terminó la lluvia, las nubes se abrieron sobre el valle… Nadie habló; el sonido del río cerró la jornada.",
+      "privacyCanary": "tts-v7-canary-es-closing",
+      "CodePointCount": 112,
+      "Utf8ByteCount": 118
+    },
+    {
+      "caseId": "en-v7-closing",
+      "language": "en",
+      "tags": ["ellipsis", "closing"],
+      "text": "When the rain ended, the clouds opened above the valley… No one spoke; the sound of the river closed the day.",
+      "privacyCanary": "tts-v7-canary-en-closing",
+      "CodePointCount": 109,
+      "Utf8ByteCount": 111
+    }
+  ]
+}

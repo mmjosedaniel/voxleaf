@@ -45,11 +45,13 @@ configured while retaining explicit selection and zero automatic failover.
 Replacement Ubuntu/Windows checks pass. M011 still owns production
 distribution and Piper's GPL/CC0 packaging obligations.
 
-M010.1 is approved planned work, not an implemented runtime boundary. It will
-freeze explicit Spanish/English selection, versioned locator-safe narration
-preparation, an exact Piper English baseline, and a bounded candidate screen
-before M011. Until its implementation and evidence pass, product narration is
-Spanish-only and the existing M010 support matrix remains authoritative.
+M010.1 Milestone 1 has frozen result-blind explicit Spanish/English product,
+versioned locator-safe normalization, exact candidate, synthetic corpus,
+schema, and evaluation authority. This is authority and deterministic
+validation, not an implemented runtime boundary or support result. Product
+narration therefore remains Spanish-only and the existing M010 support matrix
+remains authoritative while later M010.1 milestones implement and execute the
+frozen work.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
@@ -166,7 +168,7 @@ Desktop application
 |-- Piper/davefx CPU-fallback runtime
 |   [M010 complete; integrated and exact-host Piper arm validated]
 `-- Explicit bilingual narration and bounded candidate screen
-    [M010.1 approved planned; not implemented]
+    [M010.1 authority frozen; runtime not implemented]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]

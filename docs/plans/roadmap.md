@@ -39,11 +39,11 @@ It changes no normalization, protocol, audio payload, buffer threshold, or
 engine. Full portable, authoritative Windows, privacy/repository, bounded
 clean-runner stabilization, and replacement Ubuntu/Windows validation pass.
 
-M010.1 is approved next before M011. It is a bounded follow-up for explicit
-Spanish/English narration and sequential candidate screening. Current product
-narration remains Spanish-only, Piper/davefx remains the sole supported
-profile, and no additional engine may be claimed until newly frozen evidence
-passes.
+M010.1 is active before M011. Its first milestone freezes result-blind
+Spanish/English product and v7 evaluation authority for sequential candidate
+screening. Current product narration remains Spanish-only, Piper/davefx
+remains the sole supported profile, and no additional engine may be claimed
+until later implementation and exact frozen evidence pass.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -837,11 +837,23 @@ frozen v6 cycle and passed measured evidence before product admission.
 
 ## Milestone 10.1: Add bilingual narration and screen naturalness candidates
 
-**Status:** Approved next; not started. Follow
+**Status:** In progress; Milestone 1 authority frozen as of 2026-07-29. Follow
 [`M010-001-bilingual-narration-and-candidate-screening.md`](active/M010-001-bilingual-narration-and-candidate-screening.md).
 This bounded pre-M011 follow-up responds to an explicit product need for
 English narration and a stronger portfolio demonstration. It does not reopen
 M010's completed Spanish Piper support decision.
+
+Milestone 1 records the explicit language lifecycle, additive bilingual
+normalization, exact candidate revisions/artifacts/locks, synthetic corpora,
+closed result schemas, quality/resource/privacy gates, and result-ordering
+validators in
+[`bilingual-narration-authority-v1`](../architecture/bilingual-narration-authority-v1.md),
+[`narration-normalization-v2`](../architecture/narration-normalization-v2.md),
+[`tts-feasibility-profile-v7`](../architecture/tts-feasibility-profile-v7.md),
+and [ADR-0024](../architecture/decisions/ADR-0024-freeze-bilingual-v7-authority.md).
+CosyVoice is rejected from this v7 cycle before an environment lock because
+its reviewed general path did not supply an exact non-personal default voice.
+These records do not implement English narration or admit a product profile.
 
 ### Goal
 
@@ -859,9 +871,8 @@ bounded memory, or support-evidence rules.
 - Exact Piper 1.4.2 with one independently reviewed English voice is measured
   as the low-risk bilingual baseline.
 - Chatterbox Multilingual V3 and MOSS-TTS-Nano ONNX are screened
-  sequentially; CosyVoice is screened only if both reject early and its
-  reference-voice, Windows, offline, and redistribution boundaries are
-  cleared within the same bounded scope.
+  sequentially. CosyVoice is not executed in v7 because exact intake did not
+  establish a non-personal default voice path.
 - At most one passing new engine is integrated. A failed screen produces an
   honest no-winner record and does not delay M011 indefinitely.
 - Language/profile changes replace work identity before cleanup, never reuse
@@ -921,9 +932,10 @@ All earlier milestones. Packaging exploration should begin during Milestones 6 a
 ## Post-MVP local TTS candidate backlog
 
 **Status:** Mostly deferred and unscheduled. M010.1 promotes only the explicit
-English baseline and bounded Chatterbox Multilingual V3, MOSS-TTS-Nano ONNX,
-and conditional CosyVoice screens into pre-M011 work. All other candidates
-remain post-MVP and require separate newly frozen authority.
+English baseline plus bounded Chatterbox Multilingual V3 and MOSS-TTS-Nano
+ONNX screens into pre-M011 work. Its v7 intake rejects CosyVoice before
+execution; any future reconsideration requires new authority. All other
+candidates remain post-MVP and require separate newly frozen authority.
 
 Retain Piper/davefx as the selected CPU fallback and Qwen/Serena as the
 optional GPU-dependent development profile until M010.1 evidence changes a
@@ -1013,11 +1025,12 @@ Piper fallback admission and integration, identity-safe recovery, final
 support decisions, and passing replacement closeout checks.
 
 [`active/M010-001-bilingual-narration-and-candidate-screening.md`](active/M010-001-bilingual-narration-and-candidate-screening.md)
-is the approved next implementation authority. It must freeze explicit
-Spanish/English behavior, versioned locator-safe preparation, exact candidate
-identities, and result-blind gates before result-bearing execution. It may
-integrate Piper English and at most one passing new engine. The plan itself is
-not evidence that either capability works.
+is the active implementation authority. Its first milestone has frozen
+explicit Spanish/English behavior, versioned locator-safe normalization, exact
+candidate identities, and result-blind gates before result-bearing execution.
+Later milestones may integrate Piper English and at most one passing new
+engine. The frozen authority itself is not evidence that either capability
+works.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by completed
@@ -1026,8 +1039,9 @@ supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
 Milestones 1 through 10, M008.1, and M009.1 are complete, with their evidence
-retained under [`completed/`](completed/). M010.1 is active as approved
-planned work before M011; it has no implementation evidence yet.
+retained under [`completed/`](completed/). M010.1 is active before M011;
+Milestone 1 has authority and deterministic validation evidence but no English
+runtime or newly admitted product-profile evidence.
 
 ## MVP completion boundary
 
