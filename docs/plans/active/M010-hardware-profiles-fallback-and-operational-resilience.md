@@ -743,6 +743,12 @@ rewrite unrelated reader state.
   test proves both are present. This authority correction precedes the first
   valid official execution; the invalid raw session is retained only until
   its failure and cleanup are durably recorded.
+- 2026-07-28: Froze the corrected executable v6 authority at
+  `9a2f74845853e84635b419a4e65170c9a2c207ee`, with profile SHA-256
+  `ec0ef6aceedfc2ed4df199cc276b5c8365f979921311a7d2cd3d813546e1bd48`.
+  Ruff format/lint, mypy, and all 240 Python tests pass. The invalid session is
+  authorized for deletion and the first valid official run must execute from
+  a clean strict descendant of this checkpoint.
 - 2026-07-28: Closed Milestone 4 local validation. Portable and full native
   foundation checks pass; the complete browser matrix passes 6/6; and the
   release-packaged native smoke passes. The native rerun exposed and corrected
