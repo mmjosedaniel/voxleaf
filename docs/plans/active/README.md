@@ -20,12 +20,15 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 - [`M010-hardware-profiles-fallback-and-operational-resilience.md`](M010-hardware-profiles-fallback-and-operational-resilience.md):
   approved focused ExecPlan for privacy-safe host detection, evidence-backed
   profile matching, fallback admission, and identity-safe operational
-  recovery. Milestones 1-6 are complete and implement the frozen authority,
+  recovery. Milestones 1-5 are complete. Milestone 6 is implemented and
+  exact-host validated, with private-book confirmation pending. Together they
+  implement the frozen authority,
   bounded native detector, measured registry/matcher, profile preference,
   pre-start enforcement, compatibility UI, recovery, and passing Piper
   fallback admission. Milestone 6 integrates the exact Piper runtime and its
-  Piper-only locator-safe preparation; its corrective long-paragraph packaged
-  resilience arm passes. Qwen passes offline service validation and the
+  Piper-only locator-safe spoken-expansion-aware preparation; its corrective
+  ordinary-prose and compact-form packaged resilience arm passes. Qwen passes
+  offline service validation and the
   packaged fail-closed VRAM path. Milestone 7 closeout remains.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its

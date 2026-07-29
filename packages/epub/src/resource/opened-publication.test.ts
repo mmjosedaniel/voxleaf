@@ -32,7 +32,11 @@ import type {
   RasterImageResourceId,
   SensitivePublicationText,
 } from "../document/document-model.js";
-import { NARRATION_PIPER_V1_SEGMENT_POLICY } from "../narration/narration-piper-policy.js";
+import {
+  NARRATION_PIPER_V1_SEGMENT_POLICY,
+  NARRATION_PIPER_V2_SEGMENT_POLICY,
+  piperSpeechExpansionCodePointUnits,
+} from "../narration/narration-piper-policy.js";
 import { NARRATION_V1_SOURCE_WINDOW_POLICY } from "../narration/narration-policy.js";
 import type { NarrationYieldScheduler } from "../narration/narration-source-window.js";
 import {
@@ -524,6 +528,65 @@ describe("bounded local publication resources", () => {
       expect(result.segments.map((segment) => segment.text).join("")).toBe(
         text,
       );
+    } finally {
+      await publication.close();
+    }
+  });
+
+  it("prepares expansion-aware Piper v2 segments through the public boundary", async () => {
+    const archive = await openEpubArchive(await createArchive({}));
+    const text = Array.from(
+      { length: 20 },
+      (_, index) => `${String(index + 1).padStart(4, "0")} USD`,
+    ).join(" ") as SensitivePublicationText;
+    const values = narrationTextPublicationValues(
+      [text],
+      async () => undefined,
+    );
+    const publication = createOpenedPublication(
+      archive,
+      createPackageDocument([]),
+      values,
+    );
+    const block = requiredLocatedBlock(values.locatorIndex.blocks[0]);
+
+    try {
+      const result = await publication.prepareNarration({
+        startLocator: block.startLocator,
+        profile: "narration-piper-v2",
+        defaultLanguage: "es",
+        maximumSegments: 16,
+      });
+      expect(result.status).toBe("complete");
+      if (result.status !== "complete") {
+        throw new Error("expected complete Piper v2 narration batch");
+      }
+      expect(result.segments.length).toBeGreaterThan(1);
+      expect(result.segments.map((segment) => segment.text).join("")).toBe(
+        text,
+      );
+      expect(
+        result.segments.every(
+          (segment) =>
+            Array.from(String(segment.text)).reduce(
+              (total, codePoint) =>
+                total + piperSpeechExpansionCodePointUnits(codePoint),
+              0,
+            ) <=
+            NARRATION_PIPER_V2_SEGMENT_POLICY.piperSpeechExpansionUnitsHardMaximum,
+        ),
+      ).toBe(true);
+      expect(result.segments[0]?.sourceRange.start).toEqual(block.startLocator);
+      expect(result.segments.at(-1)?.sourceRange.end.textOffsetCodePoints).toBe(
+        block.textLengthCodePoints,
+      );
+      for (const [index, segment] of result.segments.entries()) {
+        if (index > 0) {
+          expect(segment.sourceRange.start).toEqual(
+            result.segments[index - 1]?.sourceRange.end,
+          );
+        }
+      }
     } finally {
       await publication.close();
     }

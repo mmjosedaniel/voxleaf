@@ -165,13 +165,19 @@ second worker. Do not hide buffering or generalize either exact-host result.
 
 For Piper, this used to occur when generic `narration-v1` preparation emitted
 a long segment whose complete waveform exceeded protocol v1's 480,000-sample
-(20-second at 24 kHz) unit maximum. Compatibility could still show Piper as
-available because host matching and per-unit synthesis limits are separate
-checks. The product now selects `narration-piper-v1` for Piper only, preserving
-the complete text and locator ranges while producing shorter units. Rebuild and
-restart an older running application before retesting. The fix does not
-truncate audio or increase the protocol ceiling; an unusually long result still
-fails closed.
+(20-second at 24 kHz) unit maximum. The first `narration-piper-v1` correction
+bounded ordinary prose by code points, bytes, and sentence count, but compact
+numbers, currencies, acronyms, Roman numerals, ordinals, and letter sequences
+could still expand into more than 20 seconds of speech below those limits.
+Compatibility could still show Piper as available because host matching and
+per-unit synthesis limits are separate checks.
+
+The product now selects `narration-piper-v2` for Piper only. V2 preserves the
+complete normalized text and locator ranges while applying a deterministic
+spoken-expansion budget before inference. Rebuild and restart an older running
+application before retesting. The fix does not rewrite text, truncate audio,
+retry synthesis, or increase the protocol ceiling; an unusual output can
+still fail closed.
 
 One bounded cause is an exact Qwen call that does not emit its codec stop token.
 Its historical benchmark authority retains `maxNewTokens: 2048` so that

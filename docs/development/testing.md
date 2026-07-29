@@ -557,9 +557,10 @@ prepared playback, synchronized navigation/replacement, bounded ownership,
 cleanup, zero generated-audio persistence, and zero external requests without
 averaging incompatible profiles. The exact Piper arm passes with zero
 dedicated GPU use. Its product fixture includes a synthetic 400-plus-code-point
-paragraph that previously produced an oversized second unit; the corrected
-`narration-piper-v1` path must split it into locator-contiguous, text-complete
-units. After fast Piper generation fills the buffer, the fixture explicitly
+paragraph and an expansion-heavy sentence containing numbers, uppercase
+acronyms, Roman numerals, currency, and percentage forms. The corrected
+`narration-piper-v2` path must split both into locator-contiguous,
+text-complete, sub-20-second units. After fast Piper generation fills the buffer, the fixture explicitly
 selects the next passage to create a deterministic active-cancellation window
 instead of depending on timing. The Qwen service arm passes; when the packaged host cannot
 meet the frozen available-VRAM margin, the runner requires that exact closed

@@ -1132,7 +1132,7 @@ export class ProductNarrationCoordinator {
         startLocator,
         profile:
           this.#profileId === PIPER_CPU_FALLBACK_PROFILE_ID
-            ? "narration-piper-v1"
+            ? "narration-piper-v2"
             : "narration-v1",
         defaultLanguage: "es",
         maximumSegments: PREPARED_BATCH_SEGMENT_LIMIT,

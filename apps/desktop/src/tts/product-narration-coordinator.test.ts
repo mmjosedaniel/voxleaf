@@ -496,7 +496,7 @@ describe("product narration coordinator", () => {
     );
     expect(client.startedProfiles).toEqual([profileId]);
     expect(prepareNarration).toHaveBeenCalledWith(
-      expect.objectContaining({ profile: "narration-piper-v1" }),
+      expect.objectContaining({ profile: "narration-piper-v2" }),
     );
     await coordinator.close();
   });

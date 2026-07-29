@@ -47,8 +47,11 @@ the milestone.
 
 ## Current state
 
-Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-6
-are also complete. Commit `8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
+Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-5
+are complete. Milestone 6 runtime integration and deterministic/exact-host
+validation pass; its final corrective closure condition is one user-confirmed
+private-book rerun beyond the formerly failing second unit. Commit
+`8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
 result-blind hardware/profile/recovery authority, canonical compatibility
 report, executable desktop tables, native API/permission audit, and ADR-0019
 before any M010 host measurement. Implementation checkpoint
@@ -629,8 +632,8 @@ configuration, and settings choice atomically.
 
 ### Status
 
-Corrective Piper v2 spoken-expansion work is in progress on 2026-07-29 on
-branch
+Corrective Piper v2 implementation and repository/exact-host validation are
+complete on 2026-07-29 on branch
 `feat/m010-m6-profile-integration-resilience`, created from merged main commit
 `2b81b028fe6188e17f524d5720e68827511e3c05`. Authority, service, native,
 desktop selection, recovery, and exact-host boundaries were re-read before
@@ -674,6 +677,17 @@ content-free native check during availability resolution and again immediately
 before service start. Configured Piper passes the service-only lifecycle and
 release-packaged reader matrix; missing configuration stays unavailable before
 child creation.
+
+The residual spoken-expansion correction is also implemented. The EPUB
+preparation boundary now measures the frozen v2 weighted dimension while it
+already owns normalized source-mapped units, and Piper product dispatch alone
+selects `narration-piper-v2`. Generic and historical v1 behavior remains
+available and unchanged. All 559 EPUB tests and all 399 desktop tests pass.
+The release-packaged exact Piper expansion-heavy regression completed 60.010
+seconds of stable playback with zero underruns, 18 synchronized transitions,
+zero GPU allocation, zero external requests, zero generated-audio files, and
+zero retained/discarded units after cleanup. Milestone 6 remains open only for
+the frozen user confirmation on the private EPUB.
 
 ## Milestone 7: Record support decisions and close validation
 
@@ -789,6 +803,25 @@ rewrite unrelated reader state.
   8.336 and 17.694 seconds on the exact voice. V2 retains every v1 locator,
   text, byte, sentence, work, retention, cancellation, protocol, and privacy
   boundary. Private-case closure still requires the user's rerun.
+- 2026-07-29: Implemented `narration-piper-v2` without changing normalization,
+  protocol, public segment measurements, historical profile behavior, or
+  persistence. All 559 EPUB and 399 desktop tests pass. The release-packaged
+  exact Piper fixture now includes an expansion-heavy sentence; it passed
+  60.010 seconds of stable playback with zero underruns, 18 synchronized
+  transitions, 3,114 ms quick command-to-audible, 21.524 seconds of quick
+  start lead, 4,772 ms prepared command-to-audible, 62.496 seconds prepared,
+  zero GPU allocation, zero external requests, zero generated-audio files,
+  and zero retained/discarded units after cleanup. The synthetic reproduced
+  class is closed; private-case closure still requires the user's rerun.
+- 2026-07-29: Complete repository validation passes:
+  `pnpm.cmd check:portable`, `pnpm.cmd check`, `pnpm.cmd test:browser`, and
+  `pnpm.cmd test:native-startup`. The suites include 209 shared tests, 559
+  EPUB tests, 399 desktop tests plus 7 native-client tests, 40 Rust tests, 256
+  Python tests, all type/lint/format/build gates, six Chromium bodies, and the
+  release-packaged model-free native lifecycle. The first sandboxed browser
+  attempt reached the known narrow-viewport timing body but did not exit
+  before the command deadline; the immediate outside-sandbox complete rerun
+  passed all six in 9.0 seconds. `git diff --check` also passes.
 - 2026-07-29: Implemented the corrective exact-profile configuration boundary.
   Native supervision accepts only the selected bounded profile ID, derives one
   boolean through the same `ExactRuntime` construction used before start, and
@@ -1223,7 +1256,9 @@ rewrite unrelated reader state.
 ## Final validation results
 
 Milestones 1-6 implementation and local validation are complete and recorded
-above. M010 remains in progress with Milestone 7 not started. The
+above. Milestone 6's synthetic reproduced class is closed, while its frozen
+private-book confirmation is still pending. M010 remains in progress with
+Milestone 7 not started. The
 runtime can produce the canonical bounded host report, derive content-free
 compatibility, preserve only one bounded preference, reject a changed host
 immediately before child start, and perform one identity-safe explicit
@@ -1231,9 +1266,11 @@ recovery after verified cleanup. The frozen v6 evaluation selects exact
 Piper/davefx as the supported speed-focused CPU fallback, and Milestone 6
 implements its executable registry, service adapter, settings choice, and
 profile-aware one-tree supervision. Exact Piper product preparation now selects
-the frozen locator-safe `narration-piper-v1` bounds so generic 400-640-code-point
-segments cannot produce the reproduced oversized-unit failure. Piper's service
-and packaged resilience arms pass. Product Play now separately requires an
+the frozen locator-safe, spoken-expansion-aware `narration-piper-v2` bounds so
+generic long prose and compact numbers, currencies, acronyms, Roman numerals,
+ordinals, and letter sequences are split without rewriting text before
+inference. Piper's service and packaged resilience arms pass. Product Play now
+separately requires an
 affirmative native exact-runtime configuration check during availability
 resolution and immediately before child start, preventing the reproduced
 pre-handshake failure when process-local configuration is absent. Qwen's
@@ -1275,6 +1312,13 @@ Milestone 6 validation results:
   60.209 seconds of stable playback, 5,252 ms prepared command-to-audible,
   1,157 ms cancellation, 951 ms cleanup, 16 synchronized transitions, zero GPU
   allocation, zero external requests, and zero generated-audio files.
+- The expansion-aware packaged regression also passes. All 559 EPUB and 399
+  desktop tests are green; the synthetic compact-form fixture completed
+  60.010 seconds of stable playback with zero underruns and 18 synchronized
+  transitions. Quick command-to-audible was 3,114 ms with 21.524 seconds of
+  lead; prepared command-to-audible was 4,772 ms with 62.496 seconds prepared.
+  Cleanup retained zero units and files, and the run used zero GPU allocation
+  and made zero external requests.
 - `pnpm.cmd check:portable`, `pnpm.cmd check`, `pnpm.cmd test:browser`, and
   `pnpm.cmd test:native-startup` pass. The expected existing CSS
   `::highlight` minifier and large-chunk warnings remain non-fatal; one

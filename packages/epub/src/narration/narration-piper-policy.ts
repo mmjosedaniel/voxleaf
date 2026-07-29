@@ -9,6 +9,8 @@ export type NarrationSegmentPolicy = Readonly<{
   narrationUtf8BytesHardMaximum: number;
   sentencesTarget: number;
   sentencesHardMaximum: number;
+  piperSpeechExpansionUnitsTarget?: number;
+  piperSpeechExpansionUnitsHardMaximum?: number;
 }>;
 
 /**
@@ -28,10 +30,45 @@ export const NARRATION_PIPER_V1_SEGMENT_POLICY: NarrationSegmentPolicy =
     sentencesHardMaximum: 6,
   });
 
+export const NARRATION_PIPER_V2_SEGMENT_POLICY = Object.freeze({
+  ...NARRATION_PIPER_V1_SEGMENT_POLICY,
+  piperSpeechExpansionUnitsTarget: 120,
+  piperSpeechExpansionUnitsHardMaximum: 160,
+} satisfies NarrationSegmentPolicy);
+
+const PIPER_TRIPLE_WEIGHT_SYMBOLS = new Set([
+  "%",
+  "\u2030",
+  "\u00ba",
+  "\u00aa",
+  "\u00b0",
+]);
+const ASCII_DIGIT = /^[0-9]$/u;
+const UNICODE_CURRENCY_SYMBOL = /^\p{Sc}$/u;
+const UNICODE_UPPERCASE_LETTER = /^\p{Lu}$/u;
+
+export function piperSpeechExpansionCodePointUnits(codePoint: string): number {
+  if (ASCII_DIGIT.test(codePoint)) {
+    return 4;
+  }
+  if (
+    PIPER_TRIPLE_WEIGHT_SYMBOLS.has(codePoint) ||
+    UNICODE_CURRENCY_SYMBOL.test(codePoint)
+  ) {
+    return 3;
+  }
+  return UNICODE_UPPERCASE_LETTER.test(codePoint) ? 2 : 1;
+}
+
 export function narrationSegmentPolicy(
-  profile: "narration-v1" | "narration-piper-v1",
+  profile: "narration-v1" | "narration-piper-v1" | "narration-piper-v2",
 ): NarrationSegmentPolicy {
-  return profile === "narration-piper-v1"
-    ? NARRATION_PIPER_V1_SEGMENT_POLICY
-    : NARRATION_V1_SEGMENT_POLICY;
+  switch (profile) {
+    case "narration-piper-v1":
+      return NARRATION_PIPER_V1_SEGMENT_POLICY;
+    case "narration-piper-v2":
+      return NARRATION_PIPER_V2_SEGMENT_POLICY;
+    case "narration-v1":
+      return NARRATION_V1_SEGMENT_POLICY;
+  }
 }

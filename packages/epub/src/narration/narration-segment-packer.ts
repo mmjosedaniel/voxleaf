@@ -17,6 +17,8 @@ import {
 } from "./narration-policy.js";
 import {
   NARRATION_PIPER_V1_SEGMENT_POLICY,
+  NARRATION_PIPER_V2_SEGMENT_POLICY,
+  piperSpeechExpansionCodePointUnits,
   type NarrationSegmentPolicy,
 } from "./narration-piper-policy.js";
 import type { NarrationSourceSpan } from "./narration-source.js";
@@ -90,6 +92,7 @@ interface ResolvedNarrationPackingLimits {
 interface PrefixMeasurements {
   readonly narrationCodePoints: readonly number[];
   readonly narrationUtf8Bytes: readonly number[];
+  readonly piperSpeechExpansionUnits: readonly number[];
   readonly sentenceCount: readonly number[];
   readonly substantiveUnitCount: readonly number[];
 }
@@ -97,6 +100,7 @@ interface PrefixMeasurements {
 interface ValidatedScanMeasurements {
   readonly unitNarrationCodePoints: readonly number[];
   readonly unitNarrationUtf8Bytes: readonly number[];
+  readonly unitPiperSpeechExpansionUnits: readonly number[];
 }
 
 interface PackingContext {
@@ -111,7 +115,13 @@ interface SegmentMeasurements {
   readonly sourceCodePoints: number;
   readonly narrationCodePoints: number;
   readonly narrationUtf8Bytes: number;
+  readonly piperSpeechExpansionUnits: number;
   readonly sentenceCount: number;
+}
+
+interface TextMeasurements {
+  readonly codePoints: number;
+  readonly piperSpeechExpansionUnits: number;
 }
 
 interface CandidateBoundary {
@@ -179,7 +189,8 @@ function resolvePackingLimits(
     retainedNarrationUtf8BytesMaximum >
       NARRATION_V1_SEGMENT_POLICY.retainedNarrationUtf8BytesHardMaximum ||
     (segmentPolicy !== NARRATION_V1_SEGMENT_POLICY &&
-      segmentPolicy !== NARRATION_PIPER_V1_SEGMENT_POLICY)
+      segmentPolicy !== NARRATION_PIPER_V1_SEGMENT_POLICY &&
+      segmentPolicy !== NARRATION_PIPER_V2_SEGMENT_POLICY)
   ) {
     return fail();
   }
@@ -191,23 +202,27 @@ function resolvePackingLimits(
   });
 }
 
-async function measureTextCodePoints(
+async function measureText(
   value: string,
   work: NarrationWorkController,
-): Promise<number> {
-  let count = 0;
+): Promise<TextMeasurements> {
+  let codePoints = 0;
+  let piperSpeechExpansionUnits = 0;
   for (const codePoint of value) {
-    void codePoint;
-    count = addSafe(count, 1);
+    codePoints = addSafe(codePoints, 1);
+    piperSpeechExpansionUnits = addSafe(
+      piperSpeechExpansionUnits,
+      piperSpeechExpansionCodePointUnits(codePoint),
+    );
     await work.observe();
     if (
-      count >
+      codePoints >
       NARRATION_V1_SOURCE_WINDOW_POLICY.normalizationExpansionCodePointsHardMaximum
     ) {
       return fail();
     }
   }
-  return count;
+  return Object.freeze({ codePoints, piperSpeechExpansionUnits });
 }
 
 function utf8ByteLength(value: string): number {
@@ -274,6 +289,7 @@ async function prefixMeasurements(
   const { units } = scan.normalized;
   const narrationCodePoints = [0];
   const narrationUtf8Bytes = [0];
+  const piperSpeechExpansionUnits = [0];
   const sentenceBoundaryCounts = Array.from(
     { length: units.length + 1 },
     () => 0,
@@ -312,6 +328,13 @@ async function prefixMeasurements(
         validated.unitNarrationUtf8Bytes[unitIndex] ?? fail(),
       ),
     );
+    piperSpeechExpansionUnits.push(
+      addSafe(
+        piperSpeechExpansionUnits[piperSpeechExpansionUnits.length - 1] ??
+          fail(),
+        validated.unitPiperSpeechExpansionUnits[unitIndex] ?? fail(),
+      ),
+    );
     sentenceCount.push(
       addSafe(
         sentenceCount[sentenceCount.length - 1] ?? fail(),
@@ -329,6 +352,7 @@ async function prefixMeasurements(
   return Object.freeze({
     narrationCodePoints: Object.freeze(narrationCodePoints),
     narrationUtf8Bytes: Object.freeze(narrationUtf8Bytes),
+    piperSpeechExpansionUnits: Object.freeze(piperSpeechExpansionUnits),
     sentenceCount: Object.freeze(sentenceCount),
     substantiveUnitCount: Object.freeze(substantiveUnitCount),
   });
@@ -368,6 +392,11 @@ function measurementsBetween(
       startUnitIndex,
       endUnitIndexExclusive,
     ),
+    piperSpeechExpansionUnits: difference(
+      prefix.piperSpeechExpansionUnits,
+      startUnitIndex,
+      endUnitIndexExclusive,
+    ),
     sentenceCount: difference(
       prefix.sentenceCount,
       startUnitIndex,
@@ -384,6 +413,9 @@ function withinTarget(
     measurements.sourceCodePoints <= policy.sourceCodePointsTarget &&
     measurements.narrationCodePoints <= policy.narrationCodePointsTarget &&
     measurements.narrationUtf8Bytes <= policy.narrationUtf8BytesTarget &&
+    (policy.piperSpeechExpansionUnitsTarget === undefined ||
+      measurements.piperSpeechExpansionUnits <=
+        policy.piperSpeechExpansionUnitsTarget) &&
     measurements.sentenceCount <= policy.sentencesTarget
   );
 }
@@ -396,6 +428,9 @@ function withinHardMaximum(
     measurements.sourceCodePoints <= policy.sourceCodePointsHardMaximum &&
     measurements.narrationCodePoints <= policy.narrationCodePointsHardMaximum &&
     measurements.narrationUtf8Bytes <= policy.narrationUtf8BytesHardMaximum &&
+    (policy.piperSpeechExpansionUnitsHardMaximum === undefined ||
+      measurements.piperSpeechExpansionUnits <=
+        policy.piperSpeechExpansionUnitsHardMaximum) &&
     measurements.sentenceCount <= policy.sentencesHardMaximum
   );
 }
@@ -751,7 +786,7 @@ async function isRecognizedSceneBreak(
     const text = String(unit.text);
     nonWhitespaceCodePoints = addSafe(
       nonWhitespaceCodePoints,
-      await measureTextCodePoints(text, work),
+      (await measureText(text, work)).codePoints,
     );
     if (nonWhitespaceCodePoints > 3) {
       return false;
@@ -805,6 +840,7 @@ async function validateScan(
   const textParts: string[] = [];
   const unitNarrationCodePoints: number[] = [];
   const unitNarrationUtf8Bytes: number[] = [];
+  const unitPiperSpeechExpansionUnits: number[] = [];
   for (const unit of scan.normalized.units) {
     await work.observe();
     if (unit === undefined) {
@@ -819,7 +855,8 @@ async function validateScan(
     expectedSourceOffset = unit.sourceSpan.endOffsetCodePoints;
     if (unit.kind === "text") {
       const text = String(unit.text);
-      const narrationCodePoints = await measureTextCodePoints(text, work);
+      const textMeasurements = await measureText(text, work);
+      const narrationCodePoints = textMeasurements.codePoints;
       const narrationUtf8Bytes = utf8ByteLength(text);
       retainedNarrationCodePoints = addSafe(
         retainedNarrationCodePoints,
@@ -840,9 +877,13 @@ async function validateScan(
       textParts.push(text);
       unitNarrationCodePoints.push(narrationCodePoints);
       unitNarrationUtf8Bytes.push(narrationUtf8Bytes);
+      unitPiperSpeechExpansionUnits.push(
+        textMeasurements.piperSpeechExpansionUnits,
+      );
     } else {
       unitNarrationCodePoints.push(0);
       unitNarrationUtf8Bytes.push(0);
+      unitPiperSpeechExpansionUnits.push(0);
     }
   }
   if (
@@ -854,6 +895,7 @@ async function validateScan(
   return Object.freeze({
     unitNarrationCodePoints: Object.freeze(unitNarrationCodePoints),
     unitNarrationUtf8Bytes: Object.freeze(unitNarrationUtf8Bytes),
+    unitPiperSpeechExpansionUnits: Object.freeze(unitPiperSpeechExpansionUnits),
   });
 }
 

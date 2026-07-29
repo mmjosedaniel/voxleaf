@@ -4218,13 +4218,15 @@ async function run() {
   } else if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
     const boundedSyntheticSentence =
       "Esta narraci&#243;n sint&#233;tica describe una biblioteca tranquila y una lectura local. Cada frase valida transiciones naturales, memoria limitada y orden.";
+    const piperExpansionRegressionSentence =
+      "Serie 2026 2027 2028 2029, CPU GPU TTS, XIV XVI XVIII, $10.50 y 25%.";
     const syntheticParagraph =
       ADAPTIVE_TTS_PROFILE_ID === PIPER_CPU_FALLBACK_PROFILE_ID
-        ? Array.from(
+        ? `${piperExpansionRegressionSentence} ${Array.from(
             { length: 3 },
             (_, index) =>
               `${boundedSyntheticSentence} Parte ${String(index + 1)}.`,
-          ).join(" ")
+          ).join(" ")}`
         : boundedSyntheticSentence;
     const chapterParagraphs = (chapter) =>
       Array.from(

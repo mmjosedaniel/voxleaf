@@ -9,6 +9,10 @@ state of one accepted eight-second unit followed by a processing failure, and
 after bounded synthetic reproduction established the failure class. No EPUB
 text, path, audio, or model diagnostic was retained.
 
+Implemented on 2026-07-29. Deterministic package and desktop coverage plus the
+release-packaged exact Piper matrix pass. Closure of the original private-book
+case remains pending the user's rerun of the rebuilt application.
+
 This profile supersedes `narration-piper-v1` for new Piper product work. It
 does not change `narration-v1`, the historical v1 policy, normalization,
 locator-range semantics, protocol v1, the 20-second audio-unit ceiling,
@@ -110,3 +114,22 @@ Implementation must prove:
   and
 - the private reader case is considered closed only after the user confirms
   that the same book advances beyond the former second-unit failure.
+
+## Implementation results
+
+`@voxleaf/epub` measures speech-expansion units during its existing bounded
+normalized-unit scan and uses the additional target/hard dimension only when
+the request profile is `narration-piper-v2`. The value never appears in public
+segment measurements. Generic `narration-v1` and historical
+`narration-piper-v1` policies retain their prior behavior, and the desktop
+selects v2 only for the admitted Piper profile.
+
+All 559 EPUB tests and all 399 desktop tests pass. The release-packaged exact
+Piper regression uses a synthetic expansion-heavy sentence and completed
+60.010 seconds of stable playback with zero underruns, 18 synchronized
+transitions, zero GPU allocation, zero external requests, zero generated-audio
+files, and zero retained or discarded units after cleanup. Quick playback
+became audible in 3,114 ms with 21.524 seconds prepared; prepared playback
+became audible in 4,772 ms with 62.496 seconds prepared. This closes the
+synthetic reproduced class without changing protocol, inference settings,
+normalization, or audio persistence.

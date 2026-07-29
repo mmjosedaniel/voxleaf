@@ -7,6 +7,12 @@ authority for exact Piper 1.4.2 / `es_ES-davefx-medium`. The profile was frozen
 after a synthetic reproduction identified the integration discrepancy and
 before corrective product execution.
 
+Superseded for product dispatch on 2026-07-29 by
+[`narration-piper-v2`](piper-narration-preparation-profile-v2.md) after exact
+synthetic evaluation proved that compact written forms can exceed the
+20-second waveform boundary while remaining below v1's code-point limit. V1
+remains immutable historical authority and a decodable compatibility profile.
+
 This profile does not change protocol v1, the generic `narration-v1` profile,
 EPUB normalization, source-range semantics, cancellation, persistence, or the
 admitted Piper engine identity.
