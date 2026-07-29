@@ -2,10 +2,12 @@
 
 ## Status and timing
 
-This is a research backlog, not evaluation authority, implementation approval,
-or a support claim. It records candidates that may be screened only after the
-current MVP is complete. It must not expand M010 Milestone 6 or delay M011
-packaging and release validation.
+This is primarily a post-MVP research backlog, not evaluation authority,
+implementation approval, or a support claim. Completed M010 is not expanded.
+The approved M010.1 ExecPlan promotes only an exact Piper English baseline,
+Chatterbox Multilingual V3, MOSS-TTS-Nano 100M ONNX, and a conditional
+CosyVoice screen into bounded pre-M011 work. Every other entry remains
+post-MVP.
 
 The current MVP direction remains:
 
@@ -20,6 +22,26 @@ Any future evaluation requires a separate ExecPlan and newly frozen
 result-blind authority before result-bearing execution. Candidate claims,
 upstream benchmarks, parameter counts, or family names cannot admit a runtime
 or voice by themselves.
+
+## Bounded pre-M011 exception
+
+M010.1 exists because explicit English narration and a stronger naturalness
+demonstration became active portfolio requirements after M010 closed. It must
+not turn this entire backlog into MVP scope:
+
+1. Evaluate one exact Piper English voice as the low-risk bilingual baseline.
+2. Screen Chatterbox Multilingual V3 and MOSS-TTS-Nano 100M ONNX
+   sequentially.
+3. Screen Fun-CosyVoice3 only if the first two candidates reject early and its
+   non-personal reference/default-voice provenance, Windows/offline operation,
+   and redistribution boundary can be frozen inside the same timebox.
+4. Integrate at most one passing new engine. If none passes, record no winner
+   and continue to M011 with the existing M010 support matrix.
+
+Pocket TTS Spanish, the separate Chatterbox Latin American Spanish checkpoint,
+Kokoro, and additional voices stay in this backlog. The active
+[M010.1 ExecPlan](../plans/active/M010-001-bilingual-narration-and-candidate-screening.md)
+will become the only execution authority for the promoted subset.
 
 ## Engine-specific text adaptation boundary
 

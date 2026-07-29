@@ -38,8 +38,8 @@ the final
 Piper/davefx is the sole supported CPU fallback and only automatically
 recommendable profile when compatible and configured; Qwen/Serena remains
 development-only; Qwen/Aiden and Supertonic/F1 remain unsupported. “Fallback”
-does not authorize automatic engine failover. Required closeout pull-request
-checks remain before M010 is archived.
+does not authorize automatic engine failover. Replacement Ubuntu/Windows
+closeout checks pass, so M010 is complete and archived.
 
 ## Current implemented flow
 
@@ -101,17 +101,20 @@ authority.
 
 ## Remaining target user flow
 
-1. M010 Milestone 7 must complete its required replacement pull-request checks
-   and archive the recorded final support decision.
+1. M010.1 may add explicit English narration, an exact Piper English profile,
+   and at most one newly admitted engine through a separate frozen evaluation.
+   Current narration remains Spanish-only until that bounded plan passes.
 2. M011 then packages and validates an end-user distribution, including Piper
    notices, provenance, corresponding-source or written-offer mechanics,
    signing, updates, and complete-MVP validation.
 
-Additional engines and voices do not block this sequence. Pocket TTS,
-Chatterbox Latin American Spanish, MOSS-TTS-Nano, Kokoro, and additional Piper
-voices are retained only in the
-[post-MVP candidate backlog](post-mvp-tts-candidate-backlog.md). None is
-approved, implemented, or scheduled before MVP completion.
+M010.1 is a deliberately narrow pre-M011 exception to the earlier post-MVP
+candidate order because English narration and a stronger portfolio demo are
+now active requirements. It sequentially screens Chatterbox Multilingual V3,
+MOSS-TTS-Nano ONNX, and only conditionally CosyVoice; it may integrate at most
+one passing new engine. Pocket TTS, Chatterbox's Spanish-only regional profile,
+Kokoro, and additional voices remain in the
+[post-MVP candidate backlog](post-mvp-tts-candidate-backlog.md).
 
 ## MVP capability status
 
@@ -168,7 +171,8 @@ Implemented and validated:
 
 Remaining:
 
-- Complete M010's required closeout pull-request checks.
+- Implement and validate the approved M010.1 bilingual/candidate plan without
+  weakening the existing supported Piper Spanish profile.
 - Provide compliant runtime/model distribution, installer packaging, and a
   validated end-user installation path in M011.
 

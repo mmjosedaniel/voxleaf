@@ -4,13 +4,13 @@ Documentation is organized by purpose so contributors and Codex can load only th
 
 ## Current project status
 
-Roadmap Milestones 1 through 9 and the M009.1 reader-experience stabilization
-are complete. M008 provides the constrained one-GPU narration demo; M009 and
-M009.1 add synchronized highlighting, heard checkpoints, stable reader chrome,
-paragraph leaves, and passive-scroll isolation. M010 Milestones 1-6 are
-complete, and Milestone 7 has recorded its final support/recovery decision and
-entered closeout validation. Runtime integration, deterministic/exact-host
-validation, and content-safe packaged private-book confirmation pass. M010
+Roadmap Milestones 1 through 10, M008.1, and M009.1 are complete. M008 provides
+the constrained one-GPU narration demo; M008.1 adds bounded semantic
+transitions between already-buffered units; M009 and M009.1 add synchronized
+highlighting, heard checkpoints, stable reader chrome, paragraph leaves, and
+passive-scroll isolation. M010 runtime integration,
+deterministic/exact-host validation, content-safe packaged private-book
+confirmation, and required Ubuntu/Windows closeout checks pass. M010
 freezes and implements the separate privacy-safe
 host report, immutable measured registry, fail-closed matching, bounded
 profile preference, compatibility UI, immediate pre-start checks, and the
@@ -41,18 +41,14 @@ The final
 Piper/davefx the sole supported and automatically recommendable profile when
 compatible and configured, keeps Qwen/Serena development-only, and records
 that automatic engine failover remains disabled. M011 still owns runtime/model
-distribution and Piper license fulfillment. Required closeout pull-request
-checks remain before M010 is archived.
+distribution and Piper license fulfillment.
 
-M008.1 is a focused active closeout after exact listening found that
-independently generated units could sound joined. Its frozen engine-neutral
-policy and deterministic desktop implementation now schedule one bounded,
-interruptible semantic pause before an already-buffered successor without
-silent PCM, text/protocol changes, or compounded post-underrun delay. Portable
-and authoritative Windows repository validation pass. Its merged
-implementation's clean Windows check exposed a nondeterministic packaged
-synchronization-probe race; the bounded stabilization correction and required
-replacement pull-request checks remain before archival.
+M010.1 is the active bounded follow-up before M011. It will freeze explicit
+Spanish/English narration behavior, extend locator-preserving preparation only
+through versioned authority, evaluate one exact Piper English baseline, and
+screen a small candidate set under frozen license, offline, performance,
+quality, cancellation, memory, and privacy gates. Current production behavior
+remains Spanish-only until that plan implements and validates a result.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -131,8 +127,9 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M008-bounded-adaptive-prebuffering.md`](plans/completed/M008-bounded-adaptive-prebuffering.md): completed ExecPlan for the exact-development quick/prepared path, bounded scheduler/player, final demo policy, exact-host evidence, and repository/CI closeout.
 - [`plans/completed/M009-synchronized-reading-and-narration.md`](plans/completed/M009-synchronized-reading-and-narration.md): completed focused ExecPlan for segment-level synchronization, highlighting, focus-safe following, synchronized navigation, heard-position persistence, exact-host validation, and repository/CI closeout.
 - [`plans/completed/M009-001-reader-experience-stabilization.md`](plans/completed/M009-001-reader-experience-stabilization.md): completed bounded M009 follow-up for the visible-highlight repair, dedicated reader viewport, compact/collapsible narration UI, truthful loaded-duration status, locator-backed paragraph leaf, passive-scroll isolation, exact-host validation, and repository/CI closeout.
-- [`plans/active/M008-001-boundary-aware-audio-transitions.md`](plans/active/M008-001-boundary-aware-audio-transitions.md): active focused closeout for boundary-aware generated-unit playback transitions. Authority, deterministic implementation, portable validation, and authoritative Windows validation pass; bounded clean-runner smoke stabilization and replacement required checks remain.
-- [`plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md): active focused ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, and identity-safe operational recovery. Milestones 1-6 are complete. Milestone 7 records the final support matrix, exact margins, explicit fallback/recovery policy, limitations, and distribution boundary; local closeout validation and replacement required checks remain.
+- [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
+- [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
+- [`plans/active/M010-001-bilingual-narration-and-candidate-screening.md`](plans/active/M010-001-bilingual-narration-and-candidate-screening.md): approved, not-yet-implemented follow-up for explicit Spanish/English narration, an exact Piper English baseline, and bounded sequential screening of at most three naturalness candidates before M011.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

@@ -17,28 +17,14 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`M008-001-boundary-aware-audio-transitions.md`](M008-001-boundary-aware-audio-transitions.md):
-  active focused M008 follow-up that freezes and implements bounded semantic
-  pauses between independently generated buffered audio units without changing
-  TTS text, protocol, generated PCM, or the separate zero-default low-buffer
-  boundary-wait policy. Local validation passes; the replacement closeout PR
-  must pass the required clean Windows packaged smoke before archival.
-- [`M010-hardware-profiles-fallback-and-operational-resilience.md`](M010-hardware-profiles-fallback-and-operational-resilience.md):
-  approved focused ExecPlan for privacy-safe host detection, evidence-backed
-  profile matching, fallback admission, and identity-safe operational
-  recovery. Milestones 1-6 are complete, including exact-host and content-safe
-  packaged private-book validation. Together they
-  implement the frozen authority,
-  bounded native detector, measured registry/matcher, profile preference,
-  pre-start enforcement, compatibility UI, recovery, and passing Piper
-  fallback admission. Milestone 6 integrates the exact Piper runtime and its
-  Piper-only locator-safe spoken-expansion-aware preparation; its corrective
-  ordinary-prose, compact-form, and zero-sentence-boundary fragment corrections
-  pass. Qwen passes offline service validation and corrected native-gated
-  development VRAM admission; packaged inference runs, while its later
-  depletion assertion remains failed. Milestone 7 records the final support
-  matrix and ADR; local closeout validation and replacement required
-  pull-request checks remain before archival.
+- [`M010-001-bilingual-narration-and-candidate-screening.md`](M010-001-bilingual-narration-and-candidate-screening.md):
+  approved, not-yet-implemented bounded follow-up before M011. It freezes
+  explicit Spanish/English narration and versioned locator-safe preparation,
+  evaluates one exact Piper English baseline, and sequentially screens
+  Chatterbox Multilingual, MOSS-TTS-Nano ONNX, and only conditionally
+  CosyVoice. It may integrate Piper English and at most one passing new engine;
+  current narration remains Spanish-only until its evidence and validation
+  pass.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through

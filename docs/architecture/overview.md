@@ -2,8 +2,8 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 9 and M009.1 are
-complete. The secure EPUB boundary, visual reader, bounded restoration,
+Mixed implementation status. Roadmap Milestones 1 through 10, M008.1, and
+M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoration,
 locator-linked narration preparation, M007 service, exact-development M008
 coordinator/player path, M009 segment-level synchronization, and M009.1 reader
 stabilization are implemented and validated within their documented scopes.
@@ -16,16 +16,12 @@ contextual paragraph leaf, and passive-scroll isolation. Its private-EPUB,
 exact-host, repository/privacy, portable, packaged, and required Ubuntu/Windows
 validation pass; pull request #142 merged the closeout.
 
-M008.1 is an active focused closeout with frozen authority and deterministic
-desktop implementation. It adds boundary-aware scheduled separation between
+M008.1 is complete. It adds boundary-aware scheduled separation between
 already-buffered generated units without changing M008 thresholds or the TTS
-service/protocol. Portable and authoritative Windows repository validation
-pass. A nondeterministic clean-runner synchronization-probe race found by the
-merged implementation check has a bounded stabilization correction; replacement
-required checks remain before archival.
+service/protocol. Its bounded synchronization-probe stabilization and
+replacement Ubuntu/Windows checks pass.
 
-M010 Milestones 1-6 are complete, and Milestone 7 has recorded the final
-support/recovery decision and entered closeout validation. Milestones 1-4 implement the
+M010 is complete. Milestones 1-4 implement the
 privacy-safe native host report, immutable measured registry, fail-closed
 matching and preference, compatibility UI, pre-start checks, and identity-safe
 explicit recovery. Milestone 5 passes every frozen Piper v6 gate and selects
@@ -46,8 +42,14 @@ detection remains unavailable, and
 [`tts-support-matrix-v1`](tts-support-matrix-v1.md) now makes Piper the sole
 supported and automatically recommendable profile when compatible and
 configured while retaining explicit selection and zero automatic failover.
-Required replacement pull-request checks remain before archival. M011 still
-owns production distribution and Piper's GPL/CC0 packaging obligations.
+Replacement Ubuntu/Windows checks pass. M011 still owns production
+distribution and Piper's GPL/CC0 packaging obligations.
+
+M010.1 is approved planned work, not an implemented runtime boundary. It will
+freeze explicit Spanish/English selection, versioned locator-safe narration
+preparation, an exact Piper English baseline, and a bounded candidate screen
+before M011. Until its implementation and evidence pass, product narration is
+Spanish-only and the existing M010 support matrix remains authoritative.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
@@ -148,7 +150,7 @@ Desktop application
 |-- Adaptive scheduler, payload FIFO, and low-level Web Audio player
 |   [M008 Milestones 2-3; exact-demo path connected]
 |-- Boundary-aware buffered-unit transition policy and timer
-|   [M008.1 implemented; replacement closeout CI pending]
+|   [M008.1 complete; replacement Ubuntu/Windows CI passed]
 |-- Content-free preparation estimates, optional wait decisions, and controls
 |   [M008 Milestone 4; mounted only for exact native configuration]
 |-- Product narration coordinator [M008 Milestone 5; exact demo implemented]
@@ -161,8 +163,10 @@ Desktop application
 |   [M010 Milestones 3 and 6; Piper supported, Qwen development-only]
 |-- Identity-safe recovery controller
 |   [M010 Milestone 4 complete; one explicit verified-cleanup restart]
-`-- Piper/davefx CPU-fallback runtime
-    [M010 Milestones 5-6; integrated and exact-host Piper arm validated]
+|-- Piper/davefx CPU-fallback runtime
+|   [M010 complete; integrated and exact-host Piper arm validated]
+`-- Explicit bilingual narration and bounded candidate screen
+    [M010.1 approved planned; not implemented]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]
