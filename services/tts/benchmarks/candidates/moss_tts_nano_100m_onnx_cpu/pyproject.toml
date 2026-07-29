@@ -1,0 +1,11 @@
+[project]
+name = "voxleaf-benchmark-moss-tts-nano-100m-onnx-cpu"
+version = "0.0.0"
+description = "Isolated benchmark environment for MOSS-TTS-Nano 100M ONNX CPU"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "moss-tts-nano @ git+https://github.com/OpenMOSS/MOSS-TTS-Nano.git@cc7bdf19c7639c0870dab22045a33b442760f6be",
+]
+
+[tool.uv]
+exclude-newer = "2026-07-29T00:00:00Z"

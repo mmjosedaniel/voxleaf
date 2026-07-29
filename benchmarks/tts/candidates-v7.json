@@ -1,0 +1,412 @@
+{
+  "candidateManifestVersion": "tts-candidate-manifest-v7",
+  "status": "frozen-before-v7-results",
+  "frozenAt": "2026-07-29",
+  "selectionPolicy": {
+    "maximumNewEngineFullMatrixSurvivors": 1,
+    "screenOrder": [
+      "chatterbox-multilingual-v3-cuda-bf16-default-v1",
+      "moss-tts-nano-100m-onnx-cpu-ava-v1"
+    ],
+    "conditionalCandidate": "fun-cosyvoice3-0-5b-2512-v1",
+    "automaticRetries": 0,
+    "referenceAudio": "forbidden",
+    "personalVoiceEnrollment": "forbidden",
+    "runtimeDownloads": "forbidden",
+    "resultBeforeAuthority": "forbidden"
+  },
+  "candidates": [
+    {
+      "candidateId": "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
+      "role": "english-baseline",
+      "intakeDecision": "admitted-to-baseline-evaluation",
+      "engine": {
+        "name": "piper-tts",
+        "version": "1.4.2",
+        "provider": "onnxruntime-cpu",
+        "precision": "float32",
+        "sourceRevision": "1.4.2"
+      },
+      "model": {
+        "repository": "rhasspy/piper-voices",
+        "revision": "0d907f158acc877ddeebcbf827659ee13bea8bcd",
+        "voiceId": "en_US-joe-medium",
+        "languages": ["en"],
+        "nativeSampleRateHz": 22050,
+        "nativeChannels": 1,
+        "artifacts": [
+          {
+            "path": "en/en_US/joe/medium/en_US-joe-medium.onnx",
+            "sizeBytes": 63201294,
+            "sha256": "58afce0321b8d9c46d7cdf9c16500cc55a793b4220212dba6b70fb788b3baf06"
+          },
+          {
+            "path": "en/en_US/joe/medium/en_US-joe-medium.onnx.json",
+            "sizeBytes": 4794,
+            "sha256": "3d6d5410b3795cb1950595247ef8f06190719e6fdbfa3a2356d8ec368e1aad33"
+          },
+          {
+            "path": "en/en_US/joe/medium/MODEL_CARD",
+            "sizeBytes": 281,
+            "sha256": "d2caa63aca0fccb155105e959e393e5c0c0f03a1f388ef5ba217b83ef860c760"
+          }
+        ]
+      },
+      "dependencyLock": {
+        "path": "services/tts/benchmarks/candidates/piper_1_4_2_cpu/uv.lock",
+        "sha256": "542bf0064d80b20b9cfe599b0ac0a39488d25dbfb73a50e65aac1985c643cd82"
+      },
+      "voiceProvenance": {
+        "kind": "official-piper-voice",
+        "dataset": "OHF-Voice voice-datasets",
+        "datasetLicense": "CC0-1.0",
+        "training": "finetuned-from-en_US-lessac-medium",
+        "personalReferenceAudioRequired": false,
+        "status": "sufficient-for-evaluation"
+      },
+      "license": {
+        "engineAndBundledPhonemizer": "GPL-3.0-or-later",
+        "voice": "CC0-1.0",
+        "evaluation": "permitted",
+        "distributionDecision": "deferred-to-M011-obligations"
+      },
+      "host": {
+        "operatingSystem": "Windows",
+        "architecture": "x86_64",
+        "minimumLogicalProcessors": 4,
+        "minimumTotalRamMiB": 8192,
+        "gpuRequired": false
+      },
+      "offline": {
+        "environment": {
+          "HF_HUB_OFFLINE": "1"
+        },
+        "artifactResolution": "explicit-local-paths-only",
+        "outboundFirewallBlock": "exact-candidate-interpreter"
+      },
+      "audioConversion": {
+        "input": "22050-hz-mono-float32",
+        "operation": "bounded-linear-resample",
+        "output": "24000-hz-mono-float32"
+      },
+      "generation": {
+        "speakerId": null,
+        "noiseScale": 0.667,
+        "lengthScale": 1.0,
+        "noiseW": 0.8,
+        "normalizeAudio": true,
+        "volume": 1.0
+      },
+      "normalizationProfile": "narration-bilingual-v2"
+    },
+    {
+      "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v1",
+      "role": "naturalness-screen-1",
+      "intakeDecision": "admitted-to-bounded-screen",
+      "engine": {
+        "name": "chatterbox-tts",
+        "version": "0.1.7",
+        "provider": "pytorch-cuda",
+        "precision": "bfloat16",
+        "sourceRepository": "resemble-ai/chatterbox",
+        "sourceRevision": "5de7a54aa4e5e2baadb0182dde554908b48b85c2"
+      },
+      "model": {
+        "repository": "ResembleAI/chatterbox",
+        "revision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+        "voiceId": "official-bundled-default-v3",
+        "languages": ["es", "en"],
+        "nativeSampleRateHz": 24000,
+        "nativeChannels": 1,
+        "artifacts": [
+          {
+            "path": "t3_mtl23ls_v3.safetensors",
+            "sizeBytes": 2143989928,
+            "sha256": "5abca8321ede76f8e61f1cc0d19aea6c946b28871017ce8726f8a69203f05953"
+          },
+          {
+            "path": "s3gen.pt",
+            "sizeBytes": 1057165844,
+            "sha256": "9b9ff07e60b20c136e2b1b3d7563a24604e8d2c4c267888d1ee929dd0151d2a3"
+          },
+          {
+            "path": "ve.pt",
+            "sizeBytes": 5698626,
+            "sha256": "4b16d836bc598509860f6fa068165a8bb5e9ac84f05582dfcf278a5a372879f1"
+          },
+          {
+            "path": "conds.pt",
+            "sizeBytes": 107374,
+            "sha256": "6552d70568833628ba019c6b03459e77fe71ca197d5c560cef9411bee9d87f4e"
+          },
+          {
+            "path": "grapheme_mtl_merged_expanded_v1.json",
+            "sizeBytes": 69989,
+            "sha256": "69632f47220a788a52ce2661d096453c5655e9bf25289d89a8d832c46ee07dbf"
+          },
+          {
+            "path": "Cangjie5_TC.json",
+            "sizeBytes": 1920163,
+            "sha256": "7073fd9de919443ae88e0bd2449917a65fe54898a4413ed1edcc4b67f28bce8c"
+          }
+        ]
+      },
+      "dependencyLock": {
+        "path": "services/tts/benchmarks/candidates/chatterbox_multilingual_v3/uv.lock",
+        "sha256": "1fd89055fa3f603b0ee2613b40a263af8682de91f71275b5cd5f917c6f72ff00"
+      },
+      "voiceProvenance": {
+        "kind": "official-bundled-conditioning",
+        "artifact": "conds.pt",
+        "artifactLicense": "MIT",
+        "humanIdentity": "not-declared-by-upstream",
+        "personalReferenceAudioRequired": false,
+        "status": "sufficient-for-evaluation-not-release-identity-claim"
+      },
+      "license": {
+        "codeAndModel": "MIT",
+        "outputWatermark": "PerTh",
+        "evaluation": "permitted",
+        "distributionDecision": "requires-M011-notice-and-watermark-review"
+      },
+      "host": {
+        "operatingSystem": "Windows",
+        "architecture": "x86_64",
+        "minimumLogicalProcessors": 8,
+        "minimumTotalRamMiB": 24576,
+        "gpuRequired": true,
+        "minimumTotalDedicatedVramMiB": 8192,
+        "minimumAvailableDedicatedVramMiBAtPreflight": 6144
+      },
+      "offline": {
+        "environment": {
+          "HF_HUB_OFFLINE": "1",
+          "TRANSFORMERS_OFFLINE": "1",
+          "HF_DATASETS_OFFLINE": "1"
+        },
+        "artifactResolution": "exact-local-snapshot-only",
+        "outboundFirewallBlock": "exact-candidate-interpreter"
+      },
+      "audioConversion": {
+        "input": "24000-hz-mono-float32",
+        "operation": "identity",
+        "output": "24000-hz-mono-float32"
+      },
+      "generation": {
+        "t3Model": "v3",
+        "exaggeration": 0.5,
+        "cfgWeight": 0.5,
+        "temperature": 0.8,
+        "repetitionPenalty": 1.2,
+        "minP": 0.05,
+        "topP": 1.0,
+        "maxNewTokens": 1000,
+        "languageIdFromExplicitPreference": true
+      },
+      "normalizationProfile": "narration-bilingual-v2"
+    },
+    {
+      "candidateId": "moss-tts-nano-100m-onnx-cpu-ava-v1",
+      "role": "naturalness-screen-2",
+      "intakeDecision": "admitted-to-bounded-screen",
+      "engine": {
+        "name": "moss-tts-nano",
+        "version": "0.1.0",
+        "provider": "onnxruntime-cpu",
+        "precision": "float32",
+        "sourceRepository": "OpenMOSS/MOSS-TTS-Nano",
+        "sourceRevision": "cc7bdf19c7639c0870dab22045a33b442760f6be"
+      },
+      "model": {
+        "repository": "OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+        "revision": "f52645cb467506d8e18e746ddd59482685b74e58",
+        "codecRepository": "OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX",
+        "codecRevision": "ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae",
+        "voiceId": "Ava",
+        "languages": ["es", "en"],
+        "nativeSampleRateHz": 48000,
+        "nativeChannels": 2,
+        "artifacts": [
+          {
+            "path": "browser_poc_manifest.json",
+            "sizeBytes": 503354,
+            "sha256": "097d80e993dc29f0bae427590b4f77084a161cb578b50d82c29f455d5faa9eee"
+          },
+          {
+            "path": "moss_tts_global_shared.data",
+            "sizeBytes": 440813568,
+            "sha256": "bce8312c3df6a44545302cae229b61054fe0672e0b252ba59cba47adeed831dc"
+          },
+          {
+            "path": "moss_tts_decode_step.onnx",
+            "sizeBytes": 373544,
+            "sha256": "698cbcab4eb51e2762ec6f2e8aec00a2407706075a0818f2f94a890a311befb2"
+          },
+          {
+            "path": "moss_tts_local_cached.onnx",
+            "sizeBytes": 419160,
+            "sha256": "aa9035889208971750347c771095a0b8d315c397b903795489b7f1bb2ce6bb75"
+          },
+          {
+            "path": "moss_tts_local_decoder.onnx",
+            "sizeBytes": 451364,
+            "sha256": "51aa79ee2d4973cb763101a9e84e18a10af18ed46da281c48c312ee2c4b6041a"
+          },
+          {
+            "path": "moss_tts_local_fixed.onnx",
+            "sizeBytes": 616107,
+            "sha256": "40c59120c8779727be7ee4180c2b17045226120500206230580870553b56d8b2"
+          },
+          {
+            "path": "moss_tts_local_shared.data",
+            "sizeBytes": 229678080,
+            "sha256": "bae7782032c0fb12490ab42afe009f87ae6c75a0f0596fc7b5c08e4d5ee93916"
+          },
+          {
+            "path": "moss_tts_prefill.onnx",
+            "sizeBytes": 752495,
+            "sha256": "d561d2c7cd71868796f4a81276118d65bd2c868b8c3afdb2ab6f148f266e671d"
+          },
+          {
+            "path": "tokenizer.model",
+            "sizeBytes": 470897,
+            "sha256": "c353ee1479b536bf414c1b247f5542b6607fb8ae91320e5af1781fee200fddff"
+          },
+          {
+            "path": "tts_browser_onnx_meta.json",
+            "sizeBytes": 96845,
+            "sha256": "3edf389ec4041237e27c9d6b28a47afe88bde6f2503538845180723142065a50"
+          },
+          {
+            "path": "moss_audio_tokenizer_decode_full.onnx",
+            "sizeBytes": 595087,
+            "sha256": "0fbb03d4042c347a23391107cb09780910843411fc231f132846da7d9de53df1"
+          },
+          {
+            "path": "moss_audio_tokenizer_decode_shared.data",
+            "sizeBytes": 44198912,
+            "sha256": "e69d52e0f4e84ca27850557ee54face46632d3a5a16c89bd246c7c408466dcad"
+          },
+          {
+            "path": "moss_audio_tokenizer_decode_step.onnx",
+            "sizeBytes": 351400,
+            "sha256": "9527c86a29e1837edec1f74db57d5eeaadb3a715af3382703566460afed25855"
+          },
+          {
+            "path": "codec_browser_onnx_meta.json",
+            "sizeBytes": 17036,
+            "sha256": "3e291c883bb7d11ff2fe8e964e3e495519760358859f35c951254c7741592731"
+          }
+        ]
+      },
+      "dependencyLock": {
+        "path": "services/tts/benchmarks/candidates/moss_tts_nano_100m_onnx_cpu/uv.lock",
+        "sha256": "49d96b6b5121320290ba951be4a8a343f3380c2fc320182d6003b1dcf0d47bcb"
+      },
+      "voiceProvenance": {
+        "kind": "official-bundled-audio-token-preset",
+        "artifact": "browser_poc_manifest.json",
+        "voiceId": "Ava",
+        "humanIdentity": "not-declared-by-upstream",
+        "personalReferenceAudioRequired": false,
+        "status": "sufficient-for-evaluation-not-release-identity-claim"
+      },
+      "license": {
+        "codeAndModel": "Apache-2.0",
+        "evaluation": "permitted",
+        "distributionDecision": "requires-M011-notice-and-provenance-review"
+      },
+      "host": {
+        "operatingSystem": "Windows",
+        "architecture": "x86_64",
+        "minimumLogicalProcessors": 4,
+        "minimumTotalRamMiB": 16384,
+        "gpuRequired": false
+      },
+      "offline": {
+        "environment": {
+          "HF_HUB_OFFLINE": "1"
+        },
+        "artifactResolution": "exact-local-model-and-codec-directories-only",
+        "outboundFirewallBlock": "exact-candidate-interpreter"
+      },
+      "audioConversion": {
+        "input": "48000-hz-stereo-float32",
+        "operation": "arithmetic-mean-downmix-then-bounded-linear-resample",
+        "output": "24000-hz-mono-float32"
+      },
+      "generation": {
+        "executionProvider": "cpu",
+        "cpuThreads": 4,
+        "sampleMode": "fixed",
+        "doSample": true,
+        "realtimeStreamingDecode": true,
+        "maxNewFrames": 375,
+        "voiceCloneMaxTextTokens": 75,
+        "textTemperature": 1.0,
+        "textTopP": 1.0,
+        "textTopK": 50,
+        "audioTemperature": 0.8,
+        "audioTopP": 0.95,
+        "audioTopK": 25,
+        "audioRepetitionPenalty": 1.2,
+        "enableWeTextProcessing": false,
+        "enableUpstreamTextNormalization": false
+      },
+      "normalizationProfile": "narration-bilingual-v2"
+    },
+    {
+      "candidateId": "fun-cosyvoice3-0-5b-2512-v1",
+      "role": "conditional-naturalness-screen",
+      "intakeDecision": "rejected-before-environment-lock",
+      "engine": {
+        "name": "CosyVoice",
+        "version": "source-074ca6dc",
+        "provider": "pytorch-cuda",
+        "precision": "float32",
+        "sourceRepository": "FunAudioLLM/CosyVoice",
+        "sourceRevision": "074ca6dc9e80a2f424f1f74b48bdd7d3fea531cc"
+      },
+      "model": {
+        "repository": "FunAudioLLM/Fun-CosyVoice3-0.5B-2512",
+        "revision": "29e01c4e8d000f4bcd70751be16fa94bf3d85a18",
+        "voiceId": null,
+        "languages": ["es", "en"],
+        "artifacts": [
+          {
+            "path": "llm.pt",
+            "sizeBytes": 2024669519,
+            "sha256": "69f43bd545131c30e98947fb360ea8b4dc9916d8e83dded7757c7ea4f5a24970"
+          },
+          {
+            "path": "flow.pt",
+            "sizeBytes": 1329116148,
+            "sha256": "a6fab32a7825e5b0bc855ddd948f8db9370b0a786fbc249caa4595e95b608e4b"
+          },
+          {
+            "path": "hift.pt",
+            "sizeBytes": 83202622,
+            "sha256": "b279d7641eb97ae55b3b540cfba4f953c26492a2df758328a89a4d007ab87a65"
+          },
+          {
+            "path": "speech_tokenizer_v3.onnx",
+            "sizeBytes": 969451503,
+            "sha256": "23236a74175dbdda47afc66dbadd5bcb41303c467a57c261cb8539ad9db9208d"
+          }
+        ]
+      },
+      "dependencyLock": null,
+      "voiceProvenance": {
+        "kind": "no-admitted-non-personal-default",
+        "personalReferenceAudioRequired": true,
+        "status": "insufficient"
+      },
+      "license": {
+        "codeAndModel": "Apache-2.0",
+        "evaluation": "not-authorized-by-v7-intake",
+        "distributionDecision": "not-applicable"
+      },
+      "stopReason": "documented-general-path-requires-reference-audio-and-no-exact-non-personal-default-voice-was-frozen"
+    }
+  ]
+}

@@ -1,0 +1,220 @@
+{
+  "corpusVersion": "narration-normalization-corpus-v2",
+  "status": "frozen-before-bilingual-implementation-and-v7-results",
+  "provenance": {
+    "author": "VoxLeaf contributors",
+    "createdAt": "2026-07-29",
+    "kind": "repository-authored-synthetic",
+    "license": "CC0-1.0",
+    "sourceMaterial": "none"
+  },
+  "profile": "narration-bilingual-v2",
+  "historicalAuthority": {
+    "profile": "narration-v1",
+    "path": "docs/architecture/narration-normalization-v1.md",
+    "mutation": "forbidden"
+  },
+  "policy": {
+    "explicitLanguages": ["es", "en"],
+    "automaticLanguageDetection": false,
+    "translation": false,
+    "mixedLanguageUnit": "preserve-under-selected-language",
+    "displayedTextMutation": false,
+    "locatorRangeMutation": false,
+    "candidateSpecificRewriting": false
+  },
+  "cases": [
+    {
+      "caseId": "es-v2-historical-numbers",
+      "language": "es",
+      "tags": ["historical-v1-regression", "numbers", "currency"],
+      "source": "El informe de 2026 confirmó que el avance llegó al 25 % y que quedaban 12,50 €.",
+      "expected": "El informe de dos mil veintiséis confirmó que el avance llegó al veinticinco por ciento y que quedaban doce euros con cincuenta céntimos.",
+      "decision": "reuse-narration-v1-spanish",
+      "SourceCodePointCount": 79,
+      "SourceUtf8ByteCount": 83,
+      "ExpectedCodePointCount": 137,
+      "ExpectedUtf8ByteCount": 141
+    },
+    {
+      "caseId": "es-v2-historical-date-time",
+      "language": "es",
+      "tags": ["historical-v1-regression", "date", "time"],
+      "source": "La revisión será el 24/07/2026 a las 14:30.",
+      "expected": "La revisión será el veinticuatro de julio de dos mil veintiséis a las catorce treinta.",
+      "decision": "reuse-narration-v1-spanish",
+      "SourceCodePointCount": 43,
+      "SourceUtf8ByteCount": 45,
+      "ExpectedCodePointCount": 86,
+      "ExpectedUtf8ByteCount": 89
+    },
+    {
+      "caseId": "es-v2-historical-symbols",
+      "language": "es",
+      "tags": ["historical-v1-regression", "symbols"],
+      "source": "Sol & Mar marcó 20 °C.",
+      "expected": "Sol y Mar marcó veinte grados Celsius.",
+      "decision": "reuse-narration-v1-spanish",
+      "SourceCodePointCount": 22,
+      "SourceUtf8ByteCount": 24,
+      "ExpectedCodePointCount": 38,
+      "ExpectedUtf8ByteCount": 39
+    },
+    {
+      "caseId": "es-v2-preserve-foreign-name",
+      "language": "es",
+      "tags": ["historical-v1-regression", "foreign-name"],
+      "source": "Siobhán O'Connor habló con calma.",
+      "expected": "Siobhán O'Connor habló con calma.",
+      "decision": "reuse-narration-v1-spanish",
+      "SourceCodePointCount": 33,
+      "SourceUtf8ByteCount": 35,
+      "ExpectedCodePointCount": 33,
+      "ExpectedUtf8ByteCount": 35
+    },
+    {
+      "caseId": "en-v2-title-and-abbreviation",
+      "language": "en",
+      "tags": ["title", "abbreviation"],
+      "source": "Dr. Morgan met Mr. Reed at St. James Station.",
+      "expected": "Doctor Morgan met Mister Reed at Saint James Station.",
+      "decision": "closed-contextual-abbreviation",
+      "SourceCodePointCount": 45,
+      "SourceUtf8ByteCount": 45,
+      "ExpectedCodePointCount": 53,
+      "ExpectedUtf8ByteCount": 53
+    },
+    {
+      "caseId": "en-v2-cardinals-and-percent",
+      "language": "en",
+      "tags": ["cardinal", "percentage"],
+      "source": "The team completed 25 % of 120 pages.",
+      "expected": "The team completed twenty-five percent of one hundred twenty pages.",
+      "decision": "closed-cardinal-and-percent",
+      "SourceCodePointCount": 37,
+      "SourceUtf8ByteCount": 37,
+      "ExpectedCodePointCount": 67,
+      "ExpectedUtf8ByteCount": 67
+    },
+    {
+      "caseId": "en-v2-currency",
+      "language": "en",
+      "tags": ["currency", "decimal"],
+      "source": "The notebook cost $12.50.",
+      "expected": "The notebook cost twelve dollars and fifty cents.",
+      "decision": "closed-us-dollar",
+      "SourceCodePointCount": 25,
+      "SourceUtf8ByteCount": 25,
+      "ExpectedCodePointCount": 49,
+      "ExpectedUtf8ByteCount": 49
+    },
+    {
+      "caseId": "en-v2-iso-date",
+      "language": "en",
+      "tags": ["date"],
+      "source": "The review is scheduled for 2026-07-24.",
+      "expected": "The review is scheduled for July twenty-fourth, two thousand twenty-six.",
+      "decision": "closed-iso-date",
+      "SourceCodePointCount": 39,
+      "SourceUtf8ByteCount": 39,
+      "ExpectedCodePointCount": 72,
+      "ExpectedUtf8ByteCount": 72
+    },
+    {
+      "caseId": "en-v2-time",
+      "language": "en",
+      "tags": ["time"],
+      "source": "The doors open at 14:30.",
+      "expected": "The doors open at fourteen thirty.",
+      "decision": "closed-twenty-four-hour-time",
+      "SourceCodePointCount": 24,
+      "SourceUtf8ByteCount": 24,
+      "ExpectedCodePointCount": 34,
+      "ExpectedUtf8ByteCount": 34
+    },
+    {
+      "caseId": "en-v2-temperature-and-ampersand",
+      "language": "en",
+      "tags": ["temperature", "ampersand"],
+      "source": "Salt & Stone reported 20 °C.",
+      "expected": "Salt and Stone reported twenty degrees Celsius.",
+      "decision": "closed-symbol-context",
+      "SourceCodePointCount": 28,
+      "SourceUtf8ByteCount": 29,
+      "ExpectedCodePointCount": 47,
+      "ExpectedUtf8ByteCount": 47
+    },
+    {
+      "caseId": "en-v2-ordinal",
+      "language": "en",
+      "tags": ["ordinal"],
+      "source": "She finished 3rd and returned to the 21st row.",
+      "expected": "She finished third and returned to the twenty-first row.",
+      "decision": "closed-ordinal",
+      "SourceCodePointCount": 46,
+      "SourceUtf8ByteCount": 46,
+      "ExpectedCodePointCount": 56,
+      "ExpectedUtf8ByteCount": 56
+    },
+    {
+      "caseId": "en-v2-initialism",
+      "language": "en",
+      "tags": ["initialism"],
+      "source": "The U.S. team met at 8 a.m.",
+      "expected": "The U S team met at eight a m.",
+      "decision": "closed-initialism",
+      "SourceCodePointCount": 27,
+      "SourceUtf8ByteCount": 27,
+      "ExpectedCodePointCount": 30,
+      "ExpectedUtf8ByteCount": 30
+    },
+    {
+      "caseId": "en-v2-preserve-ambiguous-slash-date",
+      "language": "en",
+      "tags": ["ambiguous", "preserve"],
+      "source": "The note says 03/04/05.",
+      "expected": "The note says 03/04/05.",
+      "decision": "preserve-ambiguous-date",
+      "SourceCodePointCount": 23,
+      "SourceUtf8ByteCount": 23,
+      "ExpectedCodePointCount": 23,
+      "ExpectedUtf8ByteCount": 23
+    },
+    {
+      "caseId": "en-v2-preserve-unsupported-magnitude",
+      "language": "en",
+      "tags": ["unsupported", "preserve"],
+      "source": "The archive contains 12345678901234567890 records.",
+      "expected": "The archive contains 12345678901234567890 records.",
+      "decision": "preserve-unsupported-magnitude",
+      "SourceCodePointCount": 50,
+      "SourceUtf8ByteCount": 50,
+      "ExpectedCodePointCount": 50,
+      "ExpectedUtf8ByteCount": 50
+    },
+    {
+      "caseId": "en-v2-ellipsis-and-dialogue",
+      "language": "en",
+      "tags": ["ellipsis", "dialogue", "punctuation"],
+      "source": "“Wait…” Elena whispered. “Did you hear that?”",
+      "expected": "“Wait…” Elena whispered. “Did you hear that?”",
+      "decision": "preserve-punctuation",
+      "SourceCodePointCount": 45,
+      "SourceUtf8ByteCount": 55,
+      "ExpectedCodePointCount": 45,
+      "ExpectedUtf8ByteCount": 55
+    },
+    {
+      "caseId": "en-v2-preserve-code",
+      "language": "en",
+      "tags": ["code", "preserve"],
+      "source": "Use total += 1 and keep v2.0 unchanged.",
+      "expected": "Use total += 1 and keep v2.0 unchanged.",
+      "decision": "preserve-code-and-ambiguous-version",
+      "SourceCodePointCount": 39,
+      "SourceUtf8ByteCount": 39,
+      "ExpectedCodePointCount": 39,
+      "ExpectedUtf8ByteCount": 39
+    }
+  ]
+}

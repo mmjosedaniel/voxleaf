@@ -722,6 +722,15 @@ describe("bounded local publication resources", () => {
     });
     expect(unknownProfile.status).toBe("invalid-request");
 
+    const notYetImplementedEnglish = await publication.prepareNarration({
+      startLocator: start,
+      profile: "narration-v1",
+      defaultLanguage: "en" as "es",
+      maximumSegments: 1,
+    });
+    expect(notYetImplementedEnglish.status).toBe("invalid-request");
+    expect(JSON.stringify(notYetImplementedEnglish)).not.toContain("Canario");
+
     const invalidSignal = await publication.prepareNarration({
       startLocator: start,
       profile: "narration-v1",
