@@ -4,6 +4,7 @@ const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const TEST_STORAGE_KEY = "voxleaf.browser-smoke";
 const READER_POSITIONS_STORAGE_KEY = "voxleaf.reader.positions";
 const READER_PREFERENCES_STORAGE_KEY = "voxleaf.reader.preferences";
+const NARRATION_LANGUAGE_STORAGE_KEY = "voxleaf.narration.language-preference";
 
 async function buildNavigationFixture(): Promise<Uint8Array> {
   const fixtureModuleUrl = new URL(
@@ -42,6 +43,7 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
       TEST_STORAGE_KEY,
       READER_POSITIONS_STORAGE_KEY,
       READER_PREFERENCES_STORAGE_KEY,
+      NARRATION_LANGUAGE_STORAGE_KEY,
     ],
   );
   await page.addInitScript(() => {
@@ -95,7 +97,27 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
         name: "Check compatibility again",
       }),
     ).toBeVisible();
-    await expect(compatibility.getByRole("radio")).toHaveCount(0);
+    await expect(
+      compatibility.getByRole("group", { name: "Narration language" }),
+    ).toBeVisible();
+    await expect(
+      compatibility.getByRole("radio", { name: "Spanish" }),
+    ).toBeChecked();
+    await compatibility.getByRole("radio", { name: "English" }).click();
+    await expect(
+      compatibility.getByText(
+        "No evaluated local narration profile is available for English.",
+      ),
+    ).toHaveAttribute("aria-live", "polite");
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (key) => JSON.parse(localStorage.getItem(key) ?? "null"),
+          NARRATION_LANGUAGE_STORAGE_KEY,
+        ),
+      )
+      .toEqual({ schemaVersion: 1, language: "en" });
+    await compatibility.getByRole("radio", { name: "Spanish" }).click();
 
     await fileInput.focus();
     await expect(fileInput).toBeFocused();
@@ -538,6 +560,7 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
           TEST_STORAGE_KEY,
           READER_POSITIONS_STORAGE_KEY,
           READER_PREFERENCES_STORAGE_KEY,
+          NARRATION_LANGUAGE_STORAGE_KEY,
         ],
       );
     }

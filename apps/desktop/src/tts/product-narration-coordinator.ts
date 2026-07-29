@@ -40,6 +40,10 @@ import {
   PIPER_CPU_FALLBACK_PROFILE_ID,
 } from "./hardware-profile-registry";
 import {
+  DEFAULT_NARRATION_LANGUAGE_V1,
+  type NarrationLanguageV1,
+} from "./narration-language";
+import {
   HARDWARE_PROFILE_AUTHORITY_V1,
   type RecoveryFailureCodeV1,
 } from "./hardware-profile-authority";
@@ -79,6 +83,7 @@ export interface ProductNarrationMetrics {
 export interface ProductNarrationSnapshot {
   readonly availability: "checking" | TtsExactDemoAvailability;
   readonly profileId: string;
+  readonly language: NarrationLanguageV1;
   readonly selection: AdaptiveBufferStartMode;
   readonly state: AdaptivePreparationUiState | undefined;
   readonly failure: ProductNarrationFailureCode | undefined;
@@ -132,10 +137,12 @@ export interface ProductNarrationClock {
 
 export interface ProductNarrationProfileCompatibility {
   activeProfileId?(): string | undefined;
+  activeLanguage?(): NarrationLanguageV1;
   isProfileCurrentlyAllowed(profileId: string): boolean | undefined;
   isProfileStartAllowed(
     profileId: string,
     trigger: "application-start" | "before-profile-start",
+    language?: NarrationLanguageV1,
   ): Promise<boolean>;
 }
 
@@ -321,6 +328,7 @@ export class ProductNarrationCoordinator {
   readonly #knownBoundaries: LocatorRangeV1[] = [];
   #availability: ProductNarrationSnapshot["availability"] = "checking";
   #profileId = EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID;
+  #language = DEFAULT_NARRATION_LANGUAGE_V1;
   #selection: AdaptiveBufferStartMode = Object.freeze({ kind: "quick" });
   #activeLocator: ReadingLocatorV1;
   #visibleLocator: ReadingLocatorV1;
@@ -427,9 +435,15 @@ export class ProductNarrationCoordinator {
     if (this.#profileCompatibility === undefined) {
       availability = await this.#client.exactDemoAvailability();
     } else {
-      const profileId =
-        this.#profileCompatibility.activeProfileId?.() ??
-        EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID;
+      this.#language =
+        this.#profileCompatibility.activeLanguage?.() ??
+        DEFAULT_NARRATION_LANGUAGE_V1;
+      const profileId = this.#profileCompatibility.activeProfileId?.();
+      if (profileId === undefined) {
+        this.#availability = "unavailable";
+        this.#publish();
+        return;
+      }
       const current =
         this.#profileCompatibility.isProfileCurrentlyAllowed(profileId);
       const allowed =
@@ -437,6 +451,7 @@ export class ProductNarrationCoordinator {
         (await this.#profileCompatibility.isProfileStartAllowed(
           profileId,
           "application-start",
+          this.#language,
         ));
       this.#profileId = profileId;
       availability =
@@ -457,9 +472,13 @@ export class ProductNarrationCoordinator {
     if (this.#closed) {
       return;
     }
-    this.#profileId =
-      this.#profileCompatibility?.activeProfileId?.() ??
-      EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID;
+    const profileId = this.#profileCompatibility?.activeProfileId?.();
+    if (profileId !== undefined) {
+      this.#profileId = profileId;
+    }
+    this.#language =
+      this.#profileCompatibility?.activeLanguage?.() ??
+      DEFAULT_NARRATION_LANGUAGE_V1;
     this.#availability = "checking";
     this.#publish();
     await this.checkAvailability();
@@ -786,6 +805,16 @@ export class ProductNarrationCoordinator {
     await this.#stopActiveRun();
   }
 
+  public async stopForConfigurationChange(): Promise<void> {
+    await this.stop();
+    try {
+      await this.#client.shutdown();
+    } catch {
+      // Identity and retained audio were invalidated before containment.
+    }
+    this.#publish();
+  }
+
   #stopActiveRun(): Promise<void> {
     if (this.#stopOperation !== undefined) {
       return this.#stopOperation;
@@ -1052,13 +1081,32 @@ export class ProductNarrationCoordinator {
     try {
       switch (action.kind) {
         case "start-service": {
+          const selectedProfileId =
+            this.#profileCompatibility?.activeProfileId?.();
           const profileId =
-            this.#profileCompatibility?.activeProfileId?.() ?? this.#profileId;
+            this.#profileCompatibility === undefined
+              ? this.#profileId
+              : selectedProfileId;
+          const language =
+            this.#profileCompatibility?.activeLanguage?.() ?? this.#language;
+          if (profileId === undefined) {
+            if (runToken === this.#runToken) {
+              this.#availability = "unavailable";
+              this.#fail(
+                "tts-profile-unavailable",
+                runToken,
+                "start-service",
+                undefined,
+              );
+            }
+            return;
+          }
           const hardwareAllowed =
             this.#profileCompatibility === undefined ||
             (await this.#profileCompatibility.isProfileStartAllowed(
               profileId,
               "before-profile-start",
+              language,
             ));
           const configurationAvailable =
             hardwareAllowed &&
@@ -1079,6 +1127,7 @@ export class ProductNarrationCoordinator {
           scheduler.beginServiceStart();
           this.#publish();
           this.#profileId = profileId;
+          this.#language = language;
           await this.#client.start(profileId);
           if (runToken === this.#runToken) {
             scheduler.markServiceStarted();
@@ -1143,8 +1192,8 @@ export class ProductNarrationCoordinator {
         profile:
           this.#profileId === PIPER_CPU_FALLBACK_PROFILE_ID
             ? "narration-piper-v2"
-            : "narration-v1",
-        defaultLanguage: "es",
+            : "narration-bilingual-v2",
+        defaultLanguage: this.#language,
         maximumSegments: PREPARED_BATCH_SEGMENT_LIMIT,
         signal: controller.signal,
       });
@@ -1571,6 +1620,7 @@ export class ProductNarrationCoordinator {
     return Object.freeze({
       availability: this.#availability,
       profileId: this.#profileId,
+      language: this.#language,
       selection: this.#selection,
       state,
       failure: this.#failure,

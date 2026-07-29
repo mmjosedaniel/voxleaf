@@ -48,6 +48,7 @@ import { HardwareCompatibilityControls } from "./tts/HardwareCompatibilityContro
 import { HardwareProfileCompatibilityCoordinator } from "./tts/hardware-profile-compatibility";
 import { ProductNarrationControls } from "./tts/ProductNarrationControls";
 import { ProductNarrationCoordinator } from "./tts/product-narration-coordinator";
+import type { NarrationLanguageV1 } from "./tts/narration-language";
 
 type RasterImageProbeStatus =
   "accepted" | "cancelled" | "idle" | "rejected" | "running";
@@ -612,9 +613,23 @@ export function App({
   ]);
   const handleHardwareProfileSelection = useCallback(
     async (profileId: string): Promise<boolean> => {
-      await narrationCoordinator?.stop();
+      await (narrationCoordinator?.stopForConfigurationChange?.() ??
+        narrationCoordinator?.stop());
       const selected =
         await hardwareCompatibilityCoordinator.selectProfile(profileId);
+      if (selected) {
+        await narrationCoordinator?.refreshSelectedProfile();
+      }
+      return selected;
+    },
+    [hardwareCompatibilityCoordinator, narrationCoordinator],
+  );
+  const handleNarrationLanguageSelection = useCallback(
+    async (language: NarrationLanguageV1): Promise<boolean> => {
+      await (narrationCoordinator?.stopForConfigurationChange?.() ??
+        narrationCoordinator?.stop());
+      const selected =
+        await hardwareCompatibilityCoordinator.selectLanguage(language);
       if (selected) {
         await narrationCoordinator?.refreshSelectedProfile();
       }
@@ -692,6 +707,7 @@ export function App({
             <HardwareCompatibilityControls
               coordinator={hardwareCompatibilityCoordinator}
               onSelectProfile={handleHardwareProfileSelection}
+              onSelectLanguage={handleNarrationLanguageSelection}
               onRecoveryEpisodeReset={() =>
                 narrationCoordinator?.resetRecoveryEpisode()
               }

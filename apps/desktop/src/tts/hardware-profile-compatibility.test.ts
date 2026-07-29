@@ -2,6 +2,7 @@ import { decodeHostProfileCompatibilityReportV1 } from "@voxleaf/shared";
 import { describe, expect, it, vi } from "vitest";
 
 import type { HardwareProfilePreferenceRepository } from "../persistence/hardware-profile-preference";
+import type { NarrationLanguagePreferenceRepository } from "../persistence/narration-language-preference";
 import {
   HardwareProfileCompatibilityCoordinator,
   type HardwareDevelopmentGatePort,
@@ -121,12 +122,22 @@ function preference(
   };
 }
 
+function languagePreference(
+  language: "es" | "en" = "es",
+): NarrationLanguagePreferenceRepository {
+  return {
+    read: vi.fn(async () => ({ status: "ready" as const, language })),
+    write: vi.fn(async () => ({ status: "saved" as const })),
+  };
+}
+
 function dependencies(
   options: {
     report?: ReturnType<typeof completeReport>;
     detector?: HardwareProfileDetectionPort;
     gate?: "available" | "unavailable";
     preference?: HardwareProfilePreferenceRepository;
+    languagePreference?: NarrationLanguagePreferenceRepository;
   } = {},
 ) {
   const detector =
@@ -140,7 +151,14 @@ function dependencies(
     ),
   } satisfies HardwareDevelopmentGatePort;
   const preferenceRepository = options.preference ?? preference();
-  return { detector, developmentGate, preferenceRepository };
+  const languagePreferenceRepository =
+    options.languagePreference ?? languagePreference();
+  return {
+    detector,
+    developmentGate,
+    preferenceRepository,
+    languagePreferenceRepository,
+  };
 }
 
 describe("hardware profile compatibility coordinator", () => {
@@ -292,5 +310,65 @@ describe("hardware profile compatibility coordinator", () => {
       future.selectProfile(EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID),
     ).resolves.toBe(false);
     expect(futurePreference.write).not.toHaveBeenCalled();
+  });
+
+  it("persists explicit English, exposes no selectable profile, and rejects incompatible starts", async () => {
+    const languageRepository = languagePreference();
+    const subject = new HardwareProfileCompatibilityCoordinator(
+      dependencies({ languagePreference: languageRepository }),
+    );
+    await subject.check("application-start");
+
+    await expect(subject.selectLanguage("en")).resolves.toBe(true);
+    expect(languageRepository.write).toHaveBeenCalledWith("en");
+    expect(subject.observe()).toMatchObject({
+      language: "en",
+      languagePreferenceStatus: "ready",
+      activeProfileId: undefined,
+      status: "unavailable",
+      languageReason: "no-profile-for-language",
+      fallbackAvailable: false,
+    });
+    await expect(
+      subject.selectProfile(PIPER_CPU_FALLBACK_PROFILE_ID),
+    ).resolves.toBe(false);
+    await expect(
+      subject.isProfileStartAllowed(
+        PIPER_CPU_FALLBACK_PROFILE_ID,
+        "before-profile-start",
+        "en",
+      ),
+    ).resolves.toBe(false);
+  });
+
+  it("restores English explicitly and fails future language state closed to Spanish", async () => {
+    const english = new HardwareProfileCompatibilityCoordinator(
+      dependencies({ languagePreference: languagePreference("en") }),
+    );
+    await english.check("application-start");
+    expect(english.observe()).toMatchObject({
+      language: "en",
+      activeProfileId: undefined,
+      status: "unavailable",
+    });
+
+    const futureRepository: NarrationLanguagePreferenceRepository = {
+      read: vi.fn(async () => ({
+        status: "unsupported-version" as const,
+        language: "es" as const,
+      })),
+      write: vi.fn(async () => ({ status: "saved" as const })),
+    };
+    const future = new HardwareProfileCompatibilityCoordinator(
+      dependencies({ languagePreference: futureRepository }),
+    );
+    await future.check("application-start");
+    expect(future.observe()).toMatchObject({
+      language: "es",
+      canPersistLanguage: false,
+      activeProfileId: PIPER_CPU_FALLBACK_PROFILE_ID,
+    });
+    await expect(future.selectLanguage("en")).resolves.toBe(false);
+    expect(futureRepository.write).not.toHaveBeenCalled();
   });
 });
