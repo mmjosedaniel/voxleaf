@@ -44,6 +44,8 @@ import {
 } from "./reader/raster-image-probe";
 import type { ReaderNarrationSource } from "./reader/segment-highlight-controller";
 import { useStrictModeSafeResourceCleanup } from "./strict-mode-resource-cleanup";
+import { HardwareCompatibilityControls } from "./tts/HardwareCompatibilityControls";
+import { HardwareProfileCompatibilityCoordinator } from "./tts/hardware-profile-compatibility";
 import { ProductNarrationControls } from "./tts/ProductNarrationControls";
 import { ProductNarrationCoordinator } from "./tts/product-narration-coordinator";
 
@@ -74,9 +76,11 @@ export interface AppProps {
   readonly openFlow?: LocalPublicationOpenFlow;
   readonly readerPositionRepository?: ReaderPositionRepository;
   readonly readerPositionSaveEnvironment?: ReaderPositionSaveEnvironment;
+  readonly hardwareCompatibilityCoordinator?: HardwareProfileCompatibilityCoordinator;
   readonly createNarrationCoordinator?: (
     publication: OpenedPublication,
     initialLocator: ReadingLocatorV1,
+    hardwareCompatibility: HardwareProfileCompatibilityCoordinator,
   ) => ProductNarrationCoordinator;
   readonly ReadyPublicationContent?: ComponentType<ReadyPublicationContentProps>;
   readonly runRasterProbe?: typeof runRasterImageSafetyProbe;
@@ -211,14 +215,18 @@ function rasterStatusForResult(
 function createDefaultNarrationCoordinator(
   publication: OpenedPublication,
   initialLocator: ReadingLocatorV1,
+  hardwareCompatibility: HardwareProfileCompatibilityCoordinator,
 ): ProductNarrationCoordinator {
-  return new ProductNarrationCoordinator(publication, initialLocator);
+  return new ProductNarrationCoordinator(publication, initialLocator, {
+    profileCompatibility: hardwareCompatibility,
+  });
 }
 
 export function App({
   openFlow: suppliedOpenFlow,
   readerPositionRepository: suppliedReaderPositionRepository,
   readerPositionSaveEnvironment,
+  hardwareCompatibilityCoordinator: suppliedHardwareCompatibilityCoordinator,
   createNarrationCoordinator = createDefaultNarrationCoordinator,
   ReadyPublicationContent = ReaderPublicationContent,
   runRasterProbe = runRasterImageSafetyProbe,
@@ -233,6 +241,12 @@ export function App({
       suppliedReaderPositionRepository ??
       createWebStorageReaderPositionRepository(),
   );
+  const [hardwareCompatibilityCoordinator] = useState(
+    () =>
+      suppliedHardwareCompatibilityCoordinator ??
+      new HardwareProfileCompatibilityCoordinator(),
+  );
+  useStrictModeSafeResourceCleanup(hardwareCompatibilityCoordinator);
   const subscribe = useCallback(
     (listener: () => void) => readerLifecycle.subscribe(listener),
     [readerLifecycle],
@@ -273,11 +287,36 @@ export function App({
         : createNarrationCoordinator(
             readyPublication,
             readyRestorationResult.position.locator,
+            hardwareCompatibilityCoordinator,
           ),
-    [createNarrationCoordinator, readyPublication, readyRestorationResult],
+    [
+      createNarrationCoordinator,
+      hardwareCompatibilityCoordinator,
+      readyPublication,
+      readyRestorationResult,
+    ],
   );
 
   useStrictModeSafeResourceCleanup(narrationCoordinator);
+
+  useEffect(() => {
+    void hardwareCompatibilityCoordinator.ensureChecked();
+    let observedHidden = document.visibilityState === "hidden";
+    const handleVisibilityChange = (): void => {
+      if (document.visibilityState === "hidden") {
+        observedHidden = true;
+        return;
+      }
+      if (observedHidden) {
+        observedHidden = false;
+        void hardwareCompatibilityCoordinator.check("operating-system-resume");
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [hardwareCompatibilityCoordinator]);
 
   useEffect(() => {
     if (
@@ -638,6 +677,9 @@ export function App({
             </p>
           </div>
         </header>
+        <HardwareCompatibilityControls
+          coordinator={hardwareCompatibilityCoordinator}
+        />
         {viewState.status === "ready" ? (
           <ReaderErrorBoundary
             key={viewState.publicationSequence}

@@ -29,6 +29,7 @@ import {
   type ProductNarrationClock,
   type ProductNarrationCoordinatorDependencies,
   type ProductNarrationNavigationRequest,
+  type ProductNarrationProfileCompatibility,
   type ProductNarrationServiceClient,
 } from "./product-narration-coordinator";
 import type {
@@ -316,6 +317,7 @@ function createHarness(
     readonly availability?: "available" | "unavailable";
     readonly blockSynthesis?: boolean;
     readonly prepareNarration?: OpenedPublication["prepareNarration"];
+    readonly profileCompatibility?: ProductNarrationProfileCompatibility;
   } = {},
 ) {
   const clock = new ManualClock();
@@ -346,6 +348,9 @@ function createHarness(
         intervals.splice(index, 1);
       }
     },
+    ...(options.profileCompatibility === undefined
+      ? {}
+      : { profileCompatibility: options.profileCompatibility }),
   };
   const coordinator = new ProductNarrationCoordinator(
     publication,
@@ -385,6 +390,35 @@ describe("product narration coordinator", () => {
     expect(coordinator.observe().state).toBeUndefined();
     expect(client.state).toBe("stopped");
     expect(prepareNarration).not.toHaveBeenCalled();
+    await coordinator.close();
+  });
+
+  it("rechecks compatibility before service start and starts no child after a failed preflight", async () => {
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => false),
+    };
+    const { client, coordinator, prepareNarration } = createHarness({
+      profileCompatibility,
+    });
+    const start = vi.spyOn(client, "start");
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(
+      () => coordinator.observe().failure === "tts-profile-unavailable",
+    );
+
+    expect(profileCompatibility.isProfileStartAllowed).toHaveBeenCalledWith(
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
+      "before-profile-start",
+    );
+    expect(start).not.toHaveBeenCalled();
+    expect(prepareNarration).not.toHaveBeenCalled();
+    expect(coordinator.observe()).toMatchObject({
+      availability: "unavailable",
+      failure: "tts-profile-unavailable",
+    });
     await coordinator.close();
   });
 

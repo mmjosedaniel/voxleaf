@@ -79,6 +79,23 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
       "accept",
       ".epub,application/epub+zip",
     );
+    const compatibility = page.locator(".hardware-compatibility");
+    await expect(compatibility).toHaveAttribute(
+      "data-compatibility-status",
+      "failed",
+    );
+    await expect(
+      compatibility.getByText(
+        "The local narration compatibility check failed.",
+      ),
+    ).toBeVisible();
+    await compatibility.locator("summary").click();
+    await expect(
+      compatibility.getByRole("button", {
+        name: "Check compatibility again",
+      }),
+    ).toBeVisible();
+    await expect(compatibility.getByRole("radio")).toHaveCount(0);
 
     await fileInput.focus();
     await expect(fileInput).toBeFocused();
@@ -197,6 +214,17 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     expect(forcedColorFocus.forcedColors).toBe(true);
     expect(forcedColorFocus.outlineStyle).not.toBe("none");
     expect(forcedColorFocus.outlineWidth).toBeGreaterThan(0);
+    await compatibility.locator("summary").focus();
+    const compatibilityForcedColorFocus = await compatibility
+      .locator("summary")
+      .evaluate((element) => ({
+        forcedColors: matchMedia("(forced-colors: active)").matches,
+        outlineStyle: getComputedStyle(element).outlineStyle,
+        outlineWidth: Number.parseFloat(getComputedStyle(element).outlineWidth),
+      }));
+    expect(compatibilityForcedColorFocus.forcedColors).toBe(true);
+    expect(compatibilityForcedColorFocus.outlineStyle).not.toBe("none");
+    expect(compatibilityForcedColorFocus.outlineWidth).toBeGreaterThan(0);
     await page.evaluate(() => {
       const root = document.querySelector(".reader-content");
       if (root === null) {
