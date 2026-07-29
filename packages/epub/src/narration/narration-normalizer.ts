@@ -6,6 +6,12 @@ import type {
 import type { NarrationSourceTextContext } from "./narration-source-projector.js";
 import { NARRATION_V1_SOURCE_WINDOW_POLICY } from "./narration-policy.js";
 import {
+  ENGLISH_AMPERSAND_NARRATION,
+  ENGLISH_CELSIUS_NORMALIZATION,
+  ENGLISH_LEXICAL_NORMALIZATION_FORMS,
+  ENGLISH_LEXICAL_PRESERVATION_FORMS,
+} from "./english-normalization.js";
+import {
   isAcceptedSpanishLineEndHyphenation,
   SPANISH_AMPERSAND_NARRATION,
   SPANISH_CELSIUS_NORMALIZATION,
@@ -13,7 +19,7 @@ import {
   SPANISH_LEXICAL_PRESERVATION_FORMS,
 } from "./spanish-normalization.js";
 
-export type NarrationNormalizationLanguage = "es" | "und";
+export type NarrationNormalizationLanguage = "es" | "en" | "und";
 
 declare const sensitiveNormalizedNarrationTextBrand: unique symbol;
 
@@ -236,6 +242,19 @@ function hasSpanishPrimarySubtag(value: string): boolean {
   );
 }
 
+function hasEnglishPrimarySubtag(value: string): boolean {
+  if (!isWellFormedLanguageTag(value)) {
+    return false;
+  }
+  const separator = value.indexOf("-");
+  const primary = separator === -1 ? value : value.slice(0, separator);
+  return (
+    primary.length === 2 &&
+    (primary.charCodeAt(0) === 0x45 || primary.charCodeAt(0) === 0x65) &&
+    (primary.charCodeAt(1) === 0x4e || primary.charCodeAt(1) === 0x6e)
+  );
+}
+
 function effectiveLanguage(
   textContext: NarrationSourceTextContext,
   defaultLanguage: NarrationNormalizationLanguage,
@@ -243,7 +262,13 @@ function effectiveLanguage(
   if (textContext.language === undefined) {
     return defaultLanguage;
   }
-  return hasSpanishPrimarySubtag(textContext.language) ? "es" : "und";
+  if (hasSpanishPrimarySubtag(textContext.language)) {
+    return defaultLanguage === "en" ? "und" : "es";
+  }
+  if (hasEnglishPrimarySubtag(textContext.language)) {
+    return defaultLanguage === "es" || defaultLanguage === "und" ? "und" : "en";
+  }
+  return "und";
 }
 
 function copySourceSpan(sourceSpan: NarrationSourceSpan): NarrationSourceSpan {
@@ -363,10 +388,11 @@ function languageProtectionsForSpan(
   return NO_BOUNDARY_PROTECTIONS;
 }
 
-function isContextSafeSpanishAmpersand(
+function isContextSafeAmpersand(
   tokens: readonly NarrationSourceToken[],
   index: number,
   languages: readonly NarrationNormalizationLanguage[],
+  language: "es" | "en",
 ): boolean {
   const token = tokens[index];
   const leftSpace = tokens[index - 1];
@@ -384,38 +410,66 @@ function isContextSafeSpanishAmpersand(
     isWordContextCodePoint(sourceText(leftWord)) &&
     isProseTextToken(rightWord) &&
     isWordContextCodePoint(sourceText(rightWord)) &&
-    hasSameLanguage(languages, index - 2, index + 2, "es")
+    hasSameLanguage(languages, index - 2, index + 2, language)
   );
 }
 
-function isExactSpanishCelsiusForm(
+interface CelsiusNormalizationEntry {
+  readonly source: string;
+  readonly narration: string | undefined;
+}
+
+function isExactCelsiusForm(
   tokens: readonly NarrationSourceToken[],
   startIndex: number,
   languages: readonly NarrationNormalizationLanguage[],
+  language: "es" | "en",
+  form: readonly CelsiusNormalizationEntry[],
 ): boolean {
-  for (
-    let offset = 0;
-    offset < SPANISH_CELSIUS_NORMALIZATION.length;
-    offset += 1
-  ) {
+  for (let offset = 0; offset < form.length; offset += 1) {
     const token = tokens[startIndex + offset];
     if (
       !isProseTextToken(token) ||
-      sourceText(token) !== SPANISH_CELSIUS_NORMALIZATION[offset]?.source
+      sourceText(token) !== form[offset]?.source
     ) {
       return false;
     }
   }
-  const endIndex = startIndex + SPANISH_CELSIUS_NORMALIZATION.length - 1;
-  if (!hasSameLanguage(languages, startIndex, endIndex, "es")) {
+  const endIndex = startIndex + form.length - 1;
+  if (!hasSameLanguage(languages, startIndex, endIndex, language)) {
     return false;
   }
 
   const before = sourceText(tokens[startIndex - 1]);
-  const after = sourceText(
-    tokens[startIndex + SPANISH_CELSIUS_NORMALIZATION.length],
-  );
+  const after = sourceText(tokens[startIndex + form.length]);
   return !isWordContextCodePoint(before) && !isWordContextCodePoint(after);
+}
+
+function planCelsiusReplacement(
+  replacements: (PlannedReplacement | undefined)[],
+  startIndex: number,
+  form: readonly CelsiusNormalizationEntry[],
+): void {
+  for (let offset = 0; offset < form.length; offset += 1) {
+    const normalization = form[offset];
+    if (normalization === undefined) {
+      return fail();
+    }
+    replacements[startIndex + offset] =
+      normalization.narration === undefined
+        ? Object.freeze({
+            kind: "omission",
+            reason: "symbol-expansion",
+            boundaryProtections: SYMBOL_TOKEN_PROTECTION,
+          })
+        : Object.freeze({
+            kind: "text",
+            text: normalization.narration,
+            role: normalization.source === " " ? "whitespace" : "symbol",
+            collapsible: normalization.source === " ",
+            boundaryProtections: SYMBOL_TOKEN_PROTECTION,
+          });
+  }
 }
 
 function findSymbolReplacements(
@@ -425,39 +479,55 @@ function findSymbolReplacements(
   const replacements = new Array<PlannedReplacement | undefined>(tokens.length);
 
   for (let index = 0; index < tokens.length; index += 1) {
-    if (isExactSpanishCelsiusForm(tokens, index, languages)) {
-      for (
-        let offset = 0;
-        offset < SPANISH_CELSIUS_NORMALIZATION.length;
-        offset += 1
-      ) {
-        const normalization = SPANISH_CELSIUS_NORMALIZATION[offset];
-        if (normalization === undefined) {
-          return fail();
-        }
-        replacements[index + offset] =
-          normalization.narration === undefined
-            ? Object.freeze({
-                kind: "omission",
-                reason: "symbol-expansion",
-                boundaryProtections: SYMBOL_TOKEN_PROTECTION,
-              })
-            : Object.freeze({
-                kind: "text",
-                text: normalization.narration,
-                role: normalization.source === " " ? "whitespace" : "symbol",
-                collapsible: normalization.source === " ",
-                boundaryProtections: SYMBOL_TOKEN_PROTECTION,
-              });
-      }
+    if (
+      isExactCelsiusForm(
+        tokens,
+        index,
+        languages,
+        "es",
+        SPANISH_CELSIUS_NORMALIZATION,
+      )
+    ) {
+      planCelsiusReplacement(
+        replacements,
+        index,
+        SPANISH_CELSIUS_NORMALIZATION,
+      );
       index += SPANISH_CELSIUS_NORMALIZATION.length - 1;
       continue;
     }
+    if (
+      isExactCelsiusForm(
+        tokens,
+        index,
+        languages,
+        "en",
+        ENGLISH_CELSIUS_NORMALIZATION,
+      )
+    ) {
+      planCelsiusReplacement(
+        replacements,
+        index,
+        ENGLISH_CELSIUS_NORMALIZATION,
+      );
+      index += ENGLISH_CELSIUS_NORMALIZATION.length - 1;
+      continue;
+    }
 
-    if (isContextSafeSpanishAmpersand(tokens, index, languages)) {
+    if (isContextSafeAmpersand(tokens, index, languages, "es")) {
       replacements[index] = Object.freeze({
         kind: "text",
         text: SPANISH_AMPERSAND_NARRATION,
+        role: "symbol",
+        collapsible: false,
+        boundaryProtections: SYMBOL_TOKEN_PROTECTION,
+      });
+      continue;
+    }
+    if (isContextSafeAmpersand(tokens, index, languages, "en")) {
+      replacements[index] = Object.freeze({
+        kind: "text",
+        text: ENGLISH_AMPERSAND_NARRATION,
         role: "symbol",
         collapsible: false,
         boundaryProtections: SYMBOL_TOKEN_PROTECTION,
@@ -704,7 +774,10 @@ function findLexicalReplacements(
     }
 
     let matched = false;
-    for (const form of SPANISH_LEXICAL_PRESERVATION_FORMS) {
+    for (const form of [
+      ...SPANISH_LEXICAL_PRESERVATION_FORMS,
+      ...ENGLISH_LEXICAL_PRESERVATION_FORMS,
+    ]) {
       const endIndexExclusive = matchesLexicalForm(
         tokens,
         languages,
@@ -740,6 +813,34 @@ function findLexicalReplacements(
         index,
         form as LexicalNormalizationForm,
         "es",
+      );
+      if (endIndexExclusive === undefined) {
+        continue;
+      }
+      planLexicalSpan(
+        replacements,
+        tokens,
+        index,
+        endIndexExclusive,
+        form.kind,
+        form.boundaryProtections,
+        form.narration,
+      );
+      index = endIndexExclusive - 1;
+      break;
+    }
+    if (replacements[index] !== undefined) {
+      continue;
+    }
+
+    for (const form of ENGLISH_LEXICAL_NORMALIZATION_FORMS) {
+      const endIndexExclusive = matchesLexicalForm(
+        tokens,
+        languages,
+        replacements,
+        index,
+        form as LexicalNormalizationForm,
+        "en",
       );
       if (endIndexExclusive === undefined) {
         continue;
@@ -1347,7 +1448,9 @@ function validateNormalizedStream(
         token.sourceSpan.startOffsetCodePoints ||
       unit.sourceSpan.endOffsetCodePoints !==
         token.sourceSpan.endOffsetCodePoints ||
-      (unit.effectiveLanguage !== "es" && unit.effectiveLanguage !== "und")
+      (unit.effectiveLanguage !== "es" &&
+        unit.effectiveLanguage !== "en" &&
+        unit.effectiveLanguage !== "und")
     ) {
       return fail();
     }
@@ -1381,7 +1484,11 @@ function normalizeNarrationSourceTokensInternal(
   tokens: readonly NarrationSourceToken[],
   defaultLanguage: NarrationNormalizationLanguage,
 ): NarrationNormalizedStream {
-  if (defaultLanguage !== "es" && defaultLanguage !== "und") {
+  if (
+    defaultLanguage !== "es" &&
+    defaultLanguage !== "en" &&
+    defaultLanguage !== "und"
+  ) {
     return fail();
   }
   if (

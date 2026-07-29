@@ -7,8 +7,11 @@ import type {
 } from "@voxleaf/shared";
 
 export type NarrationPreparationProfileId =
-  "narration-v1" | "narration-piper-v1" | "narration-piper-v2";
-export type NarrationPreparationLanguage = "und" | "es";
+  | "narration-v1"
+  | "narration-bilingual-v2"
+  | "narration-piper-v1"
+  | "narration-piper-v2";
+export type NarrationPreparationLanguage = "und" | "es" | "en";
 
 export interface NarrationPreparationRequest {
   readonly startLocator: unknown;

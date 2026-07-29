@@ -39,6 +39,12 @@ export const SPANISH_CELSIUS_NORMALIZATION = Object.freeze([
  */
 export const SPANISH_LEXICAL_NORMALIZATION_FORMS = Object.freeze([
   Object.freeze({
+    source: "las 14:30",
+    narration: "las catorce treinta",
+    kind: "time",
+    boundaryProtections: Object.freeze(["time-token"] as const),
+  }),
+  Object.freeze({
     source: "24/07/2026",
     narration: "veinticuatro de julio de dos mil veintiséis",
     kind: "date",

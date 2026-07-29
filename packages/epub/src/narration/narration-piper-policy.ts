@@ -61,7 +61,11 @@ export function piperSpeechExpansionCodePointUnits(codePoint: string): number {
 }
 
 export function narrationSegmentPolicy(
-  profile: "narration-v1" | "narration-piper-v1" | "narration-piper-v2",
+  profile:
+    | "narration-v1"
+    | "narration-bilingual-v2"
+    | "narration-piper-v1"
+    | "narration-piper-v2",
 ): NarrationSegmentPolicy {
   switch (profile) {
     case "narration-piper-v1":
@@ -69,6 +73,7 @@ export function narrationSegmentPolicy(
     case "narration-piper-v2":
       return NARRATION_PIPER_V2_SEGMENT_POLICY;
     case "narration-v1":
+    case "narration-bilingual-v2":
       return NARRATION_V1_SEGMENT_POLICY;
   }
 }
