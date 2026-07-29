@@ -4,9 +4,10 @@
 
 Add explicit Spanish and English local narration through a versioned,
 locator-preserving preparation boundary, prove one exact Piper English
-baseline, and screen a small set of naturalness candidates before M011 without
-weakening VoxLeaf's privacy, cancellation, bounded-memory, licensing, or
-evidence requirements.
+baseline, evaluate exact local Qwen built-in voices for both product
+languages, and screen a small set of naturalness candidates before M011
+without weakening VoxLeaf's privacy, cancellation, bounded-memory, licensing,
+or evidence requirements.
 
 This is a bounded portfolio-focused follow-up, not an open-ended model search.
 Its implementation target is one development day when dependencies and
@@ -53,6 +54,13 @@ Qwen3-TTS 12Hz 1.7B CustomVoice / Serena is an optional native-gated
 development profile. The existing M010 support matrix remains authoritative
 unless this plan later records a newly admitted exact profile.
 
+M010.1 Milestone 1 originally froze result-blind v7 authority for Piper
+English plus Chatterbox and MOSS. No v7 result existed when the maintainer
+requested local Qwen bilingual coverage. Milestone 1A therefore preserves all
+v7 bytes and supersedes result-bearing work with layered v8 authority for
+exact Qwen/Serena Spanish and Qwen/Aiden English. V8 changes no current
+runtime or support state.
+
 ## Scope and non-goals
 
 ### In scope
@@ -64,6 +72,9 @@ unless this plan later records a newly admitted exact profile.
 - An exact Piper 1.4.2 English baseline, initially targeting
   `en_US-joe-medium` only if the frozen intake confirms its artifacts,
   provenance, license, redistribution obligations, and voice quality.
+- Independent exact local Qwen3-TTS 12Hz 1.7B CustomVoice controls:
+  Serena/Spanish and native-English Aiden/English, reusing the existing
+  isolated environment without sharing language/voice results.
 - Sequential screens for:
   1. Resemble AI Chatterbox Multilingual V3;
   2. OpenMOSS MOSS-TTS-Nano 100M ONNX.
@@ -105,9 +116,13 @@ unless this plan later records a newly admitted exact profile.
 - [bilingual narration authority v1](../../architecture/bilingual-narration-authority-v1.md)
 - [narration normalization v2](../../architecture/narration-normalization-v2.md)
 - [TTS feasibility profile v7](../../architecture/tts-feasibility-profile-v7.md)
+- [superseding TTS feasibility profile v8](../../architecture/tts-feasibility-profile-v8.md)
 - [ADR-0024](../../architecture/decisions/ADR-0024-freeze-bilingual-v7-authority.md)
+- [ADR-0025](../../architecture/decisions/ADR-0025-supersede-v7-with-local-qwen-bilingual-v8-authority.md)
 - [v7 candidate manifest](../../../benchmarks/tts/candidates-v7.json)
 - [v7 evaluation profile](../../../benchmarks/tts/profile-v7.json)
+- [v8 candidate amendment](../../../benchmarks/tts/candidates-v8.json)
+- [v8 evaluation profile](../../../benchmarks/tts/profile-v8.json)
 - [v7 synthetic corpus](../../../benchmarks/tts/corpus-v7.json)
 - [v2 normalization corpus](../../../benchmarks/tts/normalization-corpus-v2.json)
 
@@ -147,6 +162,9 @@ unless this plan later records a newly admitted exact profile.
 - [MOSS-TTS-Nano Reader](https://github.com/OpenMOSS/MOSS-TTS-Nano-Reader)
 - [CosyVoice official repository](https://github.com/FunAudioLLM/CosyVoice)
 - [Fun-CosyVoice3 0.5B model](https://huggingface.co/FunAudioLLM/Fun-CosyVoice3-0.5B-2512)
+- [Qwen3-TTS CustomVoice model card](https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice)
+- [Qwen3-TTS official repository](https://github.com/QwenLM/Qwen3-TTS)
+- [Qwen3-TTS release article](https://qwen.ai/blog?id=qwen3tts-0115)
 
 The links above are intake sources, not frozen revisions or proof of product
 fitness. Milestone 1 must record exact revisions, artifact digests, license
@@ -238,11 +256,18 @@ audio, hallucination/repetition/meaning change, or inability to fit the
 service and repository boundaries. Do not spend the full matrix on an
 already-rejected candidate.
 
-Chatterbox and MOSS receive the two v7 screens. CosyVoice was conditional in
+Piper English runs first. Exact Qwen/Serena Spanish and Qwen/Aiden English
+then receive independent single-language existing-engine controls. They reuse
+artifact identity only: neither voice/language result may admit the other, and
+old Qwen 0.6B/Aiden evidence is not substitutable. A passing Qwen control must
+complete its own language-specific full matrix but does not consume the
+one-new-engine-survivor allowance.
+
+Chatterbox and MOSS receive the two v8 new-engine screens. CosyVoice was conditional in
 the initial plan because its common zero-shot path uses reference audio and
 its documented setup may add Windows and distribution complexity. Milestone 1
 found no exact non-personal default voice to freeze, so it is rejected before
-an environment lock and does not proceed in v7.
+an environment lock and does not proceed in v8.
 
 At most one new-engine survivor receives the full bilingual matrix and product
 integration. Piper English is the baseline/additional profile and does not
@@ -298,6 +323,33 @@ reject authority drift, unadmitted candidates, substituted locks, private
 content, an execution commit without the frozen tree, or a result that does
 not strictly descend from its authority commit.
 
+### Milestone 1A: Supersede resultless v7 with local Qwen bilingual v8 authority
+
+**Status:** Complete on 2026-07-29. This is a result-blind authority amendment,
+not a result-bearing rerun or product implementation.
+
+1. Confirm that no v7 result-bearing file or generated audio exists.
+2. Preserve every v7 profile, manifest, corpus, schema, lock, and validator
+   hash.
+3. Freeze exact local Qwen 1.7B CustomVoice / Serena / Spanish and Qwen 1.7B
+   CustomVoice / Aiden / English profiles with independent identities.
+4. Reuse the existing exact Qwen model revision, artifact hashes, isolated
+   lock, offline controls, generation settings, and host boundary.
+5. Record Aiden as the single bounded native-English Qwen voice; defer Ryan,
+   voice cloning, voice design, and remote Alibaba Cloud inference.
+6. Preserve v7 product behavior, normalization/evaluation corpus bytes,
+   thresholds, evaluator rules, stop conditions, and one-new-engine survivor
+   limit.
+7. Add closed v8 raw/summary schemas and a fail-closed validator that requires
+   the complete v7 base plus v8 amendment and strict result ancestry.
+8. Commit the complete v8 authority before any result-bearing execution.
+
+Actual result: v8 adds the two exact Qwen language/voice controls without
+editing v7 or current runtime behavior. Focused v7/v8 authority validation
+passes 14 tests; the existing Qwen lock is reused and no dependency, model,
+audio, private data, or external capability is added. Result-bearing
+Milestones 3-5 must use v8, not v7.
+
 ### Milestone 2: Implement engine-neutral bilingual preparation and selection
 
 **Status:** Not started.
@@ -327,7 +379,7 @@ candidate dependency.
 1. Acquire the exact frozen Piper English artifacts outside Git.
 2. Verify hashes, license/provenance files, offline loading, native audio
    format, and interpreter outbound isolation.
-3. Extend the candidate-neutral harness only where the frozen v7 schema
+3. Extend the candidate-neutral harness only where the frozen v8 schema
    requires it; keep model-free tests deterministic.
 4. Run machine, resource, cancellation, zero-failure, and English quality
    gates on the exact host.
@@ -337,40 +389,45 @@ candidate dependency.
 Exit with a schema-valid result and explicit decision for the exact Piper
 English profile.
 
-### Milestone 4: Run bounded sequential candidate screens
+### Milestone 4: Run bounded sequential candidate and Qwen control screens
 
 **Status:** Not started.
 
-1. Screen exact Chatterbox Multilingual V3 for license/voice provenance,
+1. Run exact Qwen/Serena Spanish and Qwen/Aiden English independently through
+   the existing-engine control gates. Stop only the failing exact identity and
+   do not share voice/language quality evidence.
+2. Screen exact Chatterbox Multilingual V3 for license/voice provenance,
    offline Windows execution, Spanish and English intelligibility,
    naturalness, hallucination/repetition, startup, RTF, RAM/VRAM, cancellation,
    cleanup, and service-boundary fit.
-2. Screen exact MOSS-TTS-Nano 100M ONNX through the same candidate-neutral
+3. Screen exact MOSS-TTS-Nano 100M ONNX through the same candidate-neutral
    gates.
-3. Retain the Milestone 1 CosyVoice intake rejection; do not create an
-   environment or execute it in v7.
-4. Stop each rejected candidate immediately and remove its untracked artifacts
+4. Retain the Milestone 1 CosyVoice intake rejection; do not create an
+   environment or execute it in v8.
+5. Stop each rejected candidate immediately and remove its untracked artifacts
    through the documented cleanup path.
-5. Rank only gate-passing exact profiles; upstream samples and family claims
+6. Rank only gate-passing exact profiles; upstream samples and family claims
    cannot override a failed VoxLeaf gate.
 
 Exit with content-safe screen summaries and zero or one selected full-matrix
-survivor.
+new-engine survivor plus independent Qwen profile decisions.
 
-### Milestone 5: Execute the full frozen v7 evaluation and record the decision
+### Milestone 5: Execute the full frozen v8 evaluation and record the decision
 
 **Status:** Not started.
 
-1. If a screen survivor exists, run the complete frozen Spanish/English
+1. Run the complete language-specific matrix for each passing Qwen control.
+2. If a new-engine screen survivor exists, run the complete frozen
+   Spanish/English
    machine, quality, performance, memory, cancellation, cleanup, and privacy
    matrix on the exact host.
-2. If no survivor exists, record the frozen screen rejections and skip the
+3. If no survivor exists, record the frozen screen rejections and skip the
    full matrix rather than manufacturing a winner.
-3. Validate ancestry, hashes, schemas, derived summaries, evaluator
+4. Validate ancestry, hashes, schemas, derived summaries, evaluator
    completeness, and content safety.
-4. Accept the next numbered ADR that either admits one exact profile with
+5. Accept the next numbered ADR that either admits one exact profile with
    explicit margins/limitations or records no passing naturalness candidate.
-5. Update the support matrix without editing historical M010 result files.
+6. Update the support matrix without editing historical M010 or v7 files.
 
 Exit only when the decision follows frozen evidence and does not overstate
 language, hardware, voice, quality, performance, or distribution support.
@@ -530,6 +587,17 @@ committed benchmark authority after results.
   current Spanish-only product boundary. Focused tests, all isolated lock
   checks, the authoritative Windows aggregate, and the portable aggregate
   pass.
+- **2026-07-29:** Before any v7 result, reviewed the official Qwen CustomVoice
+  documentation and found that the exact local 1.7B checkpoint supports
+  Spanish and English, with Aiden and Ryan documented as native-English
+  built-in voices. Preserved v7 and froze layered v8 authority for
+  Serena/Spanish and Aiden/English. The remote Alibaba Cloud real-time API,
+  Ryan, voice cloning, and voice design remain excluded from this bounded
+  cycle.
+- **2026-07-29:** Added `profile-v8`, the layered candidate amendment, closed
+  v8 schemas, ADR-0025, and fail-closed v8 validation. The 14 focused v7/v8
+  tests, Ruff, and mypy pass. No result audio, model artifact, dependency,
+  runtime behavior, or support claim was added.
 
 ## Discoveries and decisions
 
@@ -560,6 +628,20 @@ committed benchmark authority after results.
   Piper uses bounded linear 22.05-to-24-kHz resampling, Chatterbox is an
   identity 24-kHz mono path, and MOSS uses arithmetic-mean stereo downmix
   followed by bounded linear 48-to-24-kHz resampling.
+- Qwen CustomVoice is the correct local default-voice family for this scope;
+  the Base checkpoint is a voice-cloning model, not a default-voice
+  alternative.
+- The official Qwen model card recommends native-language speakers for best
+  quality. Aiden is therefore the bounded English profile; Serena remains the
+  existing Spanish control despite its Chinese native language and must prove
+  Spanish quality independently.
+- The Alibaba Cloud real-time API is a separate remote service and voice
+  catalog. It cannot satisfy VoxLeaf's local-only privacy boundary and is not
+  evidence for the local checkpoint.
+- A pull-request squash can replace a branch checkpoint SHA. Result execution
+  must therefore name a reachable merged commit whose tree passes the frozen
+  authority validator, rather than assuming an unmerged checkpoint remains an
+  ancestor.
 
 ## Final validation results
 
@@ -587,6 +669,19 @@ services/tts/tests/test_benchmark_v7_authority.py` passed 7 tests.
 - `git diff --check` and a scoped privacy scan found no whitespace error,
   private path, email, credential, model weight, book, or generated-audio
   content.
+
+Milestone 1A focused validation on 2026-07-29:
+
+- `uv run --project services/tts --locked ruff check
+  services/tts/benchmarks/v8_authority.py
+  services/tts/tests/test_benchmark_v8_authority.py` passed.
+- `uv run --directory services/tts --locked mypy
+  benchmarks/v8_authority.py tests/test_benchmark_v8_authority.py` passed.
+- `uv run --project services/tts --locked pytest -p no:cacheprovider
+  services/tts/tests/test_benchmark_v7_authority.py
+  services/tts/tests/test_benchmark_v8_authority.py` passed 14 tests.
+- Complete repository validation and the final authority checkpoint are
+  recorded after documentation reconciliation below.
 
 The non-failing pytest cache-permission warning and existing Vite
 CSS-highlight/chunk-size warnings do not alter test or build outcomes. Browser,

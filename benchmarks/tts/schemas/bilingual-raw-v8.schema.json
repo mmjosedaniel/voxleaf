@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:benchmark:tts-bilingual-raw:v8",
+  "title": "VoxLeaf bilingual private raw result v8",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "candidateId",
+    "evaluationStage",
+    "authorityCommitSha",
+    "executionCommitSha",
+    "profileSha256",
+    "corpusSha256",
+    "candidateManifestSha256",
+    "dependencyLockSha256",
+    "status",
+    "languagesEvaluated",
+    "attempts",
+    "cancellationTrials",
+    "memory",
+    "audits",
+    "failures"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "tts-bilingual-raw-v8"
+    },
+    "candidateId": {
+      "$ref": "#/$defs/admittedCandidate"
+    },
+    "evaluationStage": {
+      "enum": ["baseline", "existing-engine-control", "screen", "full-matrix"]
+    },
+    "authorityCommitSha": {
+      "$ref": "#/$defs/commit"
+    },
+    "executionCommitSha": {
+      "$ref": "#/$defs/commit"
+    },
+    "profileSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "corpusSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "candidateManifestSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "dependencyLockSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "status": {
+      "enum": ["complete", "rejected", "failed", "invalid"]
+    },
+    "languagesEvaluated": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["es", "en"]
+      }
+    },
+    "attempts": {
+      "type": "array",
+      "maxItems": 240,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "caseId",
+          "language",
+          "phase",
+          "attempt",
+          "sampleCount",
+          "sampleRateHz",
+          "channels",
+          "wallNanoseconds",
+          "firstAudioNanoseconds",
+          "status"
+        ],
+        "properties": {
+          "caseId": {
+            "$ref": "#/$defs/stableId"
+          },
+          "language": {
+            "enum": ["es", "en"]
+          },
+          "phase": {
+            "enum": ["cold", "warm", "sustained"]
+          },
+          "attempt": {
+            "const": 1
+          },
+          "sampleCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sampleRateHz": {
+            "type": "integer",
+            "minimum": 8000,
+            "maximum": 192000
+          },
+          "channels": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2
+          },
+          "wallNanoseconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "firstAudioNanoseconds": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": ["complete", "failed", "timed-out", "invalid-audio"]
+          }
+        }
+      }
+    },
+    "cancellationTrials": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "trialId",
+          "language",
+          "passed",
+          "stopNanoseconds",
+          "cleanupNanoseconds",
+          "staleUnits",
+          "processesRemaining"
+        ],
+        "properties": {
+          "trialId": {
+            "$ref": "#/$defs/stableId"
+          },
+          "language": {
+            "enum": ["es", "en"]
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "stopNanoseconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cleanupNanoseconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "staleUnits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "processesRemaining": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "memory": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "peakProcessTreeRamBytes",
+            "peakDedicatedVramBytes",
+            "minimumAvailableSystemRamBytes"
+          ],
+          "properties": {
+            "peakProcessTreeRamBytes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "peakDedicatedVramBytes": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "minimumAvailableSystemRamBytes": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "audits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifacts",
+        "offline",
+        "networkIsolation",
+        "privacy",
+        "boundedRetention",
+        "cleanup",
+        "firstAttemptsOnly"
+      ],
+      "properties": {
+        "artifacts": {
+          "type": "boolean"
+        },
+        "offline": {
+          "type": "boolean"
+        },
+        "networkIsolation": {
+          "type": "boolean"
+        },
+        "privacy": {
+          "type": "boolean"
+        },
+        "boundedRetention": {
+          "type": "boolean"
+        },
+        "cleanup": {
+          "type": "boolean"
+        },
+        "firstAttemptsOnly": {
+          "type": "boolean"
+        }
+      }
+    },
+    "failures": {
+      "type": "array",
+      "maxItems": 24,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "caseId"],
+        "properties": {
+          "code": {
+            "$ref": "#/$defs/stableId"
+          },
+          "caseId": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/stableId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._:-]{0,127}$"
+    },
+    "admittedCandidate": {
+      "enum": [
+        "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
+        "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8",
+        "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8",
+        "chatterbox-multilingual-v3-cuda-bf16-default-v1",
+        "moss-tts-nano-100m-onnx-cpu-ava-v1"
+      ]
+    }
+  }
+}

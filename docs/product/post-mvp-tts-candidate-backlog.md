@@ -5,9 +5,9 @@
 This is primarily a post-MVP research backlog, not evaluation authority,
 implementation approval, or a support claim. Completed M010 is not expanded.
 The approved M010.1 ExecPlan promotes only an exact Piper English baseline,
-Chatterbox Multilingual V3, MOSS-TTS-Nano 100M ONNX, and a conditional
-CosyVoice screen into bounded pre-M011 work. Every other entry remains
-post-MVP.
+exact local Qwen/Serena Spanish and Qwen/Aiden English controls, Chatterbox
+Multilingual V3, and MOSS-TTS-Nano 100M ONNX into bounded pre-M011 work.
+CosyVoice was rejected at intake. Every other entry remains post-MVP.
 
 The current MVP direction remains:
 
@@ -30,12 +30,13 @@ demonstration became active portfolio requirements after M010 closed. It must
 not turn this entire backlog into MVP scope:
 
 1. Evaluate one exact Piper English voice as the low-risk bilingual baseline.
-2. Screen Chatterbox Multilingual V3 and MOSS-TTS-Nano 100M ONNX
+2. Evaluate exact local Qwen 1.7B CustomVoice Serena/Spanish and native-English
+   Aiden/English independently under the superseding v8 authority.
+3. Screen Chatterbox Multilingual V3 and MOSS-TTS-Nano 100M ONNX
    sequentially.
-3. Screen Fun-CosyVoice3 only if the first two candidates reject early and its
-   non-personal reference/default-voice provenance, Windows/offline operation,
-   and redistribution boundary can be frozen inside the same timebox.
-4. Integrate at most one passing new engine. If none passes, record no winner
+4. Retain Fun-CosyVoice3's intake rejection unless a future result-blind
+   authority establishes a non-personal default voice.
+5. Integrate at most one passing new engine. If none passes, record no winner
    and continue to M011 with the existing M010 support matrix.
 
 Pocket TTS Spanish, the separate Chatterbox Latin American Spanish checkpoint,

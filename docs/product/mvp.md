@@ -101,20 +101,23 @@ authority.
 
 ## Remaining target user flow
 
-1. M010.1 has frozen the authority under which it may add explicit English
-   narration, an exact Piper English profile, and at most one newly admitted
-   engine. Current narration remains Spanish-only until later implementation
-   and exact evaluation pass.
+1. M010.1 has frozen the superseding v8 authority under which it may add
+   explicit English narration, an exact Piper English profile, independent
+   local Qwen Serena/Spanish and Aiden/English profiles, and at most one newly
+   admitted engine. Current narration remains Spanish-only until later
+   implementation and exact evaluation pass.
 2. M011 then packages and validates an end-user distribution, including Piper
    notices, provenance, corresponding-source or written-offer mechanics,
    signing, updates, and complete-MVP validation.
 
 M010.1 is a deliberately narrow pre-M011 exception to the earlier post-MVP
 candidate order because English narration and a stronger portfolio demo are
-now active requirements. Its frozen v7 cycle sequentially screens Chatterbox
-Multilingual V3 and MOSS-TTS-Nano ONNX; exact intake rejected CosyVoice before
-execution because no non-personal default voice path was frozen. The cycle may
-integrate at most one passing new engine. Pocket TTS, Chatterbox's Spanish-only
+now active requirements. Its historical resultless v7 authority is preserved;
+v8 adds exact local Qwen/Serena Spanish and native-English Qwen/Aiden controls,
+then sequentially screens Chatterbox Multilingual V3 and MOSS-TTS-Nano ONNX.
+Exact intake rejected CosyVoice before execution because no non-personal
+default voice path was frozen. The cycle may integrate at most one passing new
+engine. Pocket TTS, Chatterbox's Spanish-only
 regional profile, Kokoro, and additional voices remain in the
 [post-MVP candidate backlog](post-mvp-tts-candidate-backlog.md).
 

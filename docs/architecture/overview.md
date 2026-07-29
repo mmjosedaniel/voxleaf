@@ -45,13 +45,16 @@ configured while retaining explicit selection and zero automatic failover.
 Replacement Ubuntu/Windows checks pass. M011 still owns production
 distribution and Piper's GPL/CC0 packaging obligations.
 
-M010.1 Milestone 1 has frozen result-blind explicit Spanish/English product,
-versioned locator-safe normalization, exact candidate, synthetic corpus,
-schema, and evaluation authority. This is authority and deterministic
-validation, not an implemented runtime boundary or support result. Product
-narration therefore remains Spanish-only and the existing M010 support matrix
-remains authoritative while later M010.1 milestones implement and execute the
-frozen work.
+M010.1 Milestone 1 froze historical result-blind v7 explicit
+Spanish/English product, versioned locator-safe normalization, exact
+candidate, synthetic corpus, schema, and evaluation authority. Before any v7
+result, Milestone 1A preserved v7 and froze layered v8 authority for exact
+local Qwen/Serena Spanish and Qwen/Aiden English controls. V8 reuses the same
+corpora, gates, stop conditions, and existing Qwen lock and excludes remote
+cloud inference, voice cloning, voice design, and a second English Qwen voice.
+This is authority and deterministic validation, not an implemented runtime
+boundary or support result. Product narration remains Spanish-only and the
+existing M010 support matrix remains authoritative.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
@@ -167,8 +170,8 @@ Desktop application
 |   [M010 Milestone 4 complete; one explicit verified-cleanup restart]
 |-- Piper/davefx CPU-fallback runtime
 |   [M010 complete; integrated and exact-host Piper arm validated]
-`-- Explicit bilingual narration and bounded candidate screen
-    [M010.1 authority frozen; runtime not implemented]
+`-- Explicit bilingual narration, local Qwen controls, and candidate screen
+    [M010.1 v8 authority frozen; runtime not implemented]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]

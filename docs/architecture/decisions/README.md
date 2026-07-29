@@ -34,6 +34,8 @@ ADR-0002-short-description.md
 - [`ADR-0021-boundary-aware-audio-transitions.md`](ADR-0021-boundary-aware-audio-transitions.md): schedule bounded semantic pauses between independently generated buffered audio units without creating silent PCM or changing model input.
 - [`ADR-0022-qwen-development-vram-admission.md`](ADR-0022-qwen-development-vram-admission.md): retain the generic total-VRAM rule while using a frozen 512-MiB available-VRAM reserve only for explicitly gated development-only GPU profiles.
 - [`ADR-0023-final-m010-support-and-recovery.md`](ADR-0023-final-m010-support-and-recovery.md): accept Piper/davefx as the sole supported CPU fallback, retain Qwen/Serena as development-only, keep automatic failover disabled, and defer distribution compliance to M011.
+- [`ADR-0024-freeze-bilingual-v7-authority.md`](ADR-0024-freeze-bilingual-v7-authority.md): freeze explicit bilingual product behavior and the historical v7 candidate/evaluation authority before results.
+- [`ADR-0025-supersede-v7-with-local-qwen-bilingual-v8-authority.md`](ADR-0025-supersede-v7-with-local-qwen-bilingual-v8-authority.md): preserve resultless v7 and supersede it with exact local Qwen/Serena Spanish and Qwen/Aiden English v8 profiles before results.
 
 ## Template
 
