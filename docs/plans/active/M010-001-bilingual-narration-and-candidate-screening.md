@@ -325,8 +325,9 @@ not strictly descend from its authority commit.
 
 ### Milestone 1A: Supersede resultless v7 with local Qwen bilingual v8 authority
 
-**Status:** Complete on 2026-07-29. This is a result-blind authority amendment,
-not a result-bearing rerun or product implementation.
+**Status:** Complete on 2026-07-29. Result-blind authority checkpoint
+`95b0452ffb237284c5ffb54332c578b36e45fdf5` contains the exact v7 base and
+v8 amendment. This is not a result-bearing rerun or product implementation.
 
 1. Confirm that no v7 result-bearing file or generated audio exists.
 2. Preserve every v7 profile, manifest, corpus, schema, lock, and validator
@@ -598,6 +599,12 @@ committed benchmark authority after results.
   v8 schemas, ADR-0025, and fail-closed v8 validation. The 14 focused v7/v8
   tests, Ruff, and mypy pass. No result audio, model artifact, dependency,
   runtime behavior, or support claim was added.
+- **2026-07-29:** Committed the result-blind authority at
+  `95b0452ffb237284c5ffb54332c578b36e45fdf5`; the production authority-tree
+  verifier accepts that exact committed tree. `pnpm.cmd check:portable`
+  passed in 36.2 seconds and `pnpm.cmd check` passed in 64.7 seconds. The
+  remaining pytest cache warning and existing CSS-highlight/chunk-size build
+  warnings are informational.
 
 ## Discoveries and decisions
 
@@ -680,8 +687,19 @@ Milestone 1A focused validation on 2026-07-29:
 - `uv run --project services/tts --locked pytest -p no:cacheprovider
   services/tts/tests/test_benchmark_v7_authority.py
   services/tts/tests/test_benchmark_v8_authority.py` passed 14 tests.
-- Complete repository validation and the final authority checkpoint are
-  recorded after documentation reconciliation below.
+- The production authority-tree verifier accepted exact commit
+  `95b0452ffb237284c5ffb54332c578b36e45fdf5`.
+- `pnpm.cmd check:portable` passed in 36.2 seconds: formatting, lint, all
+  TypeScript/Python type checks, 209 shared tests, 559 EPUB tests, 415 desktop
+  tests plus seven native-driver client tests, 270 Python tests, and portable
+  builds passed.
+- `pnpm.cmd check` passed in 64.7 seconds with the same suites plus Rust
+  formatting, Clippy, 40 Rust tests, the Tauri release build, and Python
+  source/wheel builds.
+- `git diff --check`, JSON formatting, exact v7 hash comparison, and a scoped
+  privacy/artifact scan passed. No book, generated audio, weight, environment,
+  private path, email, credential, runtime dependency, capability, or product
+  behavior entered the authority.
 
 The non-failing pytest cache-permission warning and existing Vite
 CSS-highlight/chunk-size warnings do not alter test or build outcomes. Browser,
