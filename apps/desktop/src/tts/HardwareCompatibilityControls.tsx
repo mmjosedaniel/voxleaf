@@ -182,7 +182,12 @@ export function HardwareCompatibilityControls({
         ) : null}
         <ul aria-label="Measured narration profiles">
           {snapshot.profiles.map((profile) => (
-            <li key={profile.profileId}>
+            <li
+              key={profile.profileId}
+              data-profile-id={profile.profileId}
+              data-profile-state={profile.state}
+              data-profile-reason={profile.reason ?? "none"}
+            >
               <span>{profileLabel(profile)}: </span>
               <span>{profileState(profile)}.</span>
               {profile.reason === undefined ? null : (

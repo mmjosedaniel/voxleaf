@@ -556,8 +556,11 @@ checks one active request, busy rejection, cancellation, reload, quick and
 prepared playback, synchronized navigation/replacement, bounded ownership,
 cleanup, zero generated-audio persistence, and zero external requests without
 averaging incompatible profiles. The exact Piper arm passes with zero
-dedicated GPU use. The Qwen service arm passes; its final packaged
-OS-enforced-offline arm remains pending the administrator firewall rule.
+dedicated GPU use. The Qwen service arm passes; when the packaged host cannot
+meet the frozen available-VRAM margin, the runner requires that exact closed
+rejection, verifies zero external requests and no model start, and continues
+to the supported Piper arm. On a compatible future host it runs the complete
+Qwen packaged playback matrix instead.
 
 M008 Milestone 6 retains quick mode as the default, one minute as the initial
 prepared and refill target, 10 seconds as low water, and `0` ms as the boundary

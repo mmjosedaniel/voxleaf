@@ -8,8 +8,7 @@ Roadmap Milestones 1 through 9 and the M009.1 reader-experience stabilization
 are complete. M008 provides the constrained one-GPU narration demo; M009 and
 M009.1 add synchronized highlighting, heard checkpoints, stable reader chrome,
 paragraph leaves, and passive-scroll isolation. M010 is in progress with
-Milestones 1-5 complete and Milestone 6 integration implemented pending its
-final Qwen offline arm. It freezes and implements the separate privacy-safe
+Milestones 1-6 complete. It freezes and implements the separate privacy-safe
 host report, immutable measured registry, fail-closed matching, bounded
 profile preference, compatibility UI, immediate pre-start checks, and the
 desktop-local identity-safe recovery controller. Operational failure replaces
@@ -22,8 +21,10 @@ Piper/davefx as the supported speed-focused CPU fallback after every v6 gate
 passed. Exact Qwen/Serena remains `development-only`. Milestone 6 adds Piper
 to the executable registry, exact local service, native selector, and
 user-controlled profile setting. The complete packaged Piper resilience arm
-passes; Qwen's final OS-enforced offline playback arm still requires the
-administrator-bound interpreter firewall rule.
+passes. Qwen's offline service lifecycle passes, while the packaged
+compatibility path correctly rejects it on this host because the frozen
+available-VRAM margin is not met; no model starts and zero external requests
+occur.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -93,7 +94,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M008-bounded-adaptive-prebuffering.md`](plans/completed/M008-bounded-adaptive-prebuffering.md): completed ExecPlan for the exact-development quick/prepared path, bounded scheduler/player, final demo policy, exact-host evidence, and repository/CI closeout.
 - [`plans/completed/M009-synchronized-reading-and-narration.md`](plans/completed/M009-synchronized-reading-and-narration.md): completed focused ExecPlan for segment-level synchronization, highlighting, focus-safe following, synchronized navigation, heard-position persistence, exact-host validation, and repository/CI closeout.
 - [`plans/completed/M009-001-reader-experience-stabilization.md`](plans/completed/M009-001-reader-experience-stabilization.md): completed bounded M009 follow-up for the visible-highlight repair, dedicated reader viewport, compact/collapsible narration UI, truthful loaded-duration status, locator-backed paragraph leaf, passive-scroll isolation, exact-host validation, and repository/CI closeout.
-- [`plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md): active focused ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, and identity-safe operational recovery. Milestones 1-5 are complete. Milestone 6 implements executable Piper/Qwen registry, service, native selection, settings, and the profile-specific resilience runner; the Piper arm passes and the final outbound-blocked Qwen playback arm remains open.
+- [`plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md): active focused ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, and identity-safe operational recovery. Milestones 1-6 are complete. Milestone 6 implements executable Piper/Qwen registry, service, native selection, settings, and the profile-specific resilience runner; Piper passes full packaged playback and Qwen passes service plus exact fail-closed packaged compatibility. Milestone 7 owns final support decisions and closeout.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

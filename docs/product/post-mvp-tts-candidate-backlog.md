@@ -9,8 +9,8 @@ packaging and release validation.
 
 The current MVP direction remains:
 
-- exact Piper 1.4.2 / `es_ES-davefx-medium` as the selected speed-focused CPU
-  fallback, pending M010 Milestone 6 runtime and settings integration;
+- exact Piper 1.4.2 / `es_ES-davefx-medium` as the selected, integrated
+  speed-focused CPU fallback; production distribution remains M011 work;
 - exact Qwen3-TTS/Serena as the optional higher-quality GPU-dependent
   development profile; and
 - one active service tree, bounded in-memory audio, identity-first
@@ -130,8 +130,8 @@ Source:
 
 ## Deferred or closed directions
 
-- **Piper/davefx:** already evaluated and selected. M010 Milestone 6 should
-  integrate it rather than run another candidate cycle.
+- **Piper/davefx:** already evaluated, selected, and integrated by M010
+  Milestone 6. This backlog does not reopen that decision.
 - **Supertonic 3:** already failed the frozen VoxLeaf compatibility evaluation.
   Upstream speed claims do not reopen that result.
 - **MeloTTS:** defer because it offers no demonstrated product advantage over

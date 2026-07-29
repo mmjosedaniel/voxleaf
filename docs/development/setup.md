@@ -2,7 +2,7 @@
 
 ## Current status
 
-The prerequisite toolchains, TypeScript workspace, React/Tauri desktop, isolated Python service, quality commands, browser/native smokes, secure EPUB reader, bounded restoration, locator-linked narration preparation, and segment-level synchronized reader projection are initialized and validated within their documented boundaries. Completed M007 provides protocol v1, native supervision, typed one-unit ownership, and the exact development-only Qwen/Serena adapter. Completed M008 connects the active visual locator to bounded preparation, one-at-a-time synthesis, the sole-owner FIFO, Web Audio playback, and accessible quick/prepared controls. Completed M009 adds exact segment transitions, focus-safe highlight/follow, synchronized user navigation, heard-position persistence, exact-host packaged evidence, and repository/CI closeout. M010 Milestones 1-5 add privacy-safe native Windows detection, an immutable measured registry, deterministic profile matching, bounded profile-ID preference reuse, compact compatibility UI, pre-start enforcement, identity-safe recovery, and the admitted Piper/davefx CPU fallback. Milestone 6 integrates Piper as the fourth executable profile with one profile-aware service tree; its exact-host service and packaged adaptive arms pass. Quick mode is the default; prepared playback initially selects one minute; refill remains one minute; low water is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target. Qwen/Serena remains development-only and its final OS-enforced offline packaged arm is pending. Production distribution and installers remain unimplemented.
+The prerequisite toolchains, TypeScript workspace, React/Tauri desktop, isolated Python service, quality commands, browser/native smokes, secure EPUB reader, bounded restoration, locator-linked narration preparation, and segment-level synchronized reader projection are initialized and validated within their documented boundaries. Completed M007 provides protocol v1, native supervision, typed one-unit ownership, and the exact development-only Qwen/Serena adapter. Completed M008 connects the active visual locator to bounded preparation, one-at-a-time synthesis, the sole-owner FIFO, Web Audio playback, and accessible quick/prepared controls. Completed M009 adds exact segment transitions, focus-safe highlight/follow, synchronized user navigation, heard-position persistence, exact-host packaged evidence, and repository/CI closeout. M010 Milestones 1-6 add privacy-safe native Windows detection, an immutable measured registry, deterministic profile matching, bounded profile-ID preference reuse, compact compatibility UI, pre-start enforcement, identity-safe recovery, the admitted Piper/davefx CPU fallback, and one profile-aware service tree. Piper's exact-host service and packaged adaptive arms pass. Qwen/Serena remains development-only: its offline service lifecycle passes, while the packaged host correctly rejects it because the frozen available-VRAM margin is not met. Quick mode is the default; prepared playback initially selects one minute; refill remains one minute; low water is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target. Production distribution and installers remain unimplemented.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
@@ -284,11 +284,14 @@ admitted-profile matrix:
 pnpm.cmd test:tts:resilience-exact-host
 ```
 
-The command builds the release application, runs the Qwen and Piper
-service-only lifecycle arms, then runs each profile through the packaged
-adaptive reader path. It proves profiles separately and does not average their
-performance. It requires administrator-created outbound firewall rules for
-both exact interpreters and is excluded from root checks and CI.
+The command builds the release application and runs the Qwen and Piper
+service-only lifecycle arms. It then runs full packaged Piper playback. Qwen
+runs full packaged playback only when compatible; otherwise the matrix accepts
+only the exact closed `available-dedicated-vram` rejection, verifies no model
+start or external request, and continues. It proves profiles separately and
+does not average their performance. It requires administrator-created outbound
+firewall rules for both exact interpreters and is excluded from root checks and
+CI.
 
 M007 Milestone 4 consumes the frozen native-only development keys only when
 `VOXLEAF_TTS_DEV_ENABLED` is exactly `1`. The interpreter must resolve to the

@@ -110,6 +110,14 @@ persists only one bounded profile ID and revalidates it; it never stores the raw
 host report. A changed or incompatible host must prevent the child from
 starting.
 
+An 8-GB NVIDIA device can report substantial free memory in `nvidia-smi` while
+Windows exposes a smaller allocatable dedicated-memory budget to the
+application. Qwen/Serena requires 7,196 MiB available under the frozen
+result-blind margin. If the UI reports that free dedicated graphics memory is
+unavailable after other GPU applications close, the correct behavior is to
+keep Qwen unselectable and use the compatible Piper fallback. Do not substitute
+the vendor free-memory number or weaken the matcher.
+
 ### Quick start takes longer than expected
 
 Quick start means playback begins when approximately 15 playable seconds are

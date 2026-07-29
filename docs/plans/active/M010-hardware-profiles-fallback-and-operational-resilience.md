@@ -47,9 +47,8 @@ the milestone.
 
 ## Current state
 
-Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-5
-are also complete and Milestone 6 is implemented with partial exact-host
-closure. Commit `8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
+Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-6
+are also complete. Commit `8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
 result-blind hardware/profile/recovery authority, canonical compatibility
 report, executable desktop tables, native API/permission audit, and ADR-0019
 before any M010 host measurement. Implementation checkpoint
@@ -57,9 +56,9 @@ before any M010 host measurement. Implementation checkpoint
 probe and typed desktop decoder without retaining measured values. Milestone 3
 checkpoints `e7e01f1` and `a519c6c` add the immutable measured registry,
 deterministic matcher, bounded preference, compatibility UI, pre-start
-  enforcement, and fixed-reader-layout correction. Later checkpoints implement
-  identity-safe recovery and select exact Piper/davefx as the supported CPU
-  fallback without promoting Qwen/Serena to standard support.
+enforcement, and fixed-reader-layout correction. Later checkpoints implement
+identity-safe recovery and select exact Piper/davefx as the supported CPU
+fallback without promoting Qwen/Serena to standard support.
 
 Completed M006 and its two blocker-resolution plans provide the
 candidate-neutral benchmark authority and measured evidence:
@@ -106,11 +105,11 @@ identity-free host report in addition to the content-free exact-demo
 model-free or exact child can be started. Milestone 3 now matches that report
 against the immutable measured registry, presents only closed compatibility
 results, persists only one bounded profile ID, and enforces a fresh match
-  before the exact child starts. The recovery state machine is implemented and
-  Piper is executable and user-selectable on compatible complete hosts. The
-  packaged Piper resilience arm passes. The Qwen service-only arm passes, but
-  its final OS-enforced offline packaged arm remains pending the exact
-  interpreter's administrator-created outbound firewall rule.
+before the exact child starts. The recovery state machine is implemented and
+Piper is executable and user-selectable on compatible complete hosts. The
+packaged Piper resilience arm passes. Qwen passes its outbound-blocked service
+lifecycle, while the packaged host correctly rejects it at the frozen
+available-VRAM margin without starting the model or making an external request.
 
 ## Scope and non-goals
 
@@ -610,17 +609,19 @@ configuration, and settings choice atomically.
 
 ### Status
 
-In progress on 2026-07-29 on branch
+Complete on 2026-07-29 on branch
 `feat/m010-m6-profile-integration-resilience`, created from merged main commit
 `2b81b028fe6188e17f524d5720e68827511e3c05`. Authority, service, native,
 desktop selection, recovery, and exact-host boundaries were re-read before
 implementation. The integration retains protocol v1, uses one service tree,
 and adds no automatic retry. Checkpoint `a64235a` integrates the exact Piper
 profile from registry through service, supervisor, client, coordinator, and
-settings. Deterministic focused validation and both service-only exact-host
-arms pass. The packaged Piper adaptive arm passes; the final Qwen
-OS-enforced-offline packaged arm is blocked only on its administrator-created
-interpreter firewall rule.
+settings. Deterministic focused validation and both outbound-blocked
+service-only exact-host arms pass. The packaged Piper adaptive arm passes.
+Qwen's packaged path proves the exact fail-closed
+`available-dedicated-vram` result on this host; a compatible future host will
+run its full playback arm. The complete `test:tts:resilience-exact-host`
+command passes.
 
 ## Milestone 7: Record support decisions and close validation
 
@@ -772,7 +773,7 @@ rewrite unrelated reader state.
 - 2026-07-29: Full deterministic and packaged validation passed after restoring
   byte-frozen ADR-0020 unchanged. `pnpm.cmd check:portable` passed formatting,
   TypeScript/Python lint and typechecks, 20 shared files / 209 tests, 34 EPUB
-  files / 555 tests, 42 desktop files / 395 tests plus 7 native-client tests,
+  files / 555 tests, 42 desktop files / 396 tests plus 7 native-client tests,
   256 Python tests, and all portable builds. `pnpm.cmd check` additionally
   passed Rust formatting/clippy, 40 Rust tests, the release Tauri build, and
   Python distributions. `pnpm.cmd test:browser` passed all 6 Chromium smokes.
@@ -781,6 +782,31 @@ rewrite unrelated reader state.
   cleanup, and zero-external-request matrix. The first portable attempt found
   that editing ADR-0020 changed the registry's frozen decision hash; the ADR
   edit was removed and its byte-authority test passes.
+- 2026-07-29: After the administrator added the exact Qwen interpreter outbound
+  block, isolated Qwen, isolated Piper, and immediate back-to-back service
+  lifecycle runs passed. The packaged Qwen path then remained unavailable
+  because Windows' allocatable dedicated-memory budget did not meet the frozen
+  7,196-MiB requirement even after unrelated GPU applications closed.
+  `nvidia-smi` free memory is not the authority; the product correctly uses the
+  more conservative direct Windows budget and must not bypass that result.
+- 2026-07-29: The exact-host runner now handles the development profile
+  conditionally without weakening compatibility. When Qwen is compatible it
+  runs the complete playback matrix. Otherwise it accepts only the exact closed
+  `available-dedicated-vram` rejection, proves no severe/runtime error and zero
+  external requests, and continues to the supported Piper arm. The UI exposes
+  only closed profile ID/state/reason data attributes for this content-safe
+  automation; focused UI tests and desktop typecheck pass.
+- 2026-07-29: The final combined
+  `pnpm.cmd test:tts:resilience-exact-host` passed. Both exact service
+  lifecycles passed under their interpreter-bound outbound blocks. Packaged
+  Qwen passed the expected fail-closed VRAM path with zero external requests.
+  Packaged Piper passed quick/prepared playback, 13 synchronized transitions,
+  navigation/replacement, bounded ownership, cleanup, zero generated-audio
+  files, and zero GPU allocation. It measured 2,722 ms quick
+  command-to-audible with 22.813 playable seconds, zero underruns and zero
+  buffering seconds per minute during a 60.322-second stable observation,
+  4,808 ms prepared command-to-audible with 66.548 playable seconds, 169 ms
+  cancellation, 443 ms resource release, and 1.1 ms follow p95.
 - 2026-07-28: Started Milestone 5 sequentially on
   `feat/m010-m5-cpu-fallback-evaluation`. Selected the new Piper 1.4.2
   ONNX/CPU `es_ES-davefx-medium` candidate after excluding previously rejected
@@ -1067,9 +1093,8 @@ rewrite unrelated reader state.
 
 ## Final validation results
 
-Milestones 1-5 implementation and local validation are complete and recorded
-above. M010 remains in progress with Milestone 6 partially closed and
-Milestone 7 not started. The
+Milestones 1-6 implementation and local validation are complete and recorded
+above. M010 remains in progress with Milestone 7 not started. The
 runtime can produce the canonical bounded host report, derive content-free
 compatibility, preserve only one bounded preference, reject a changed host
 immediately before child start, and perform one identity-safe explicit
@@ -1077,26 +1102,26 @@ recovery after verified cleanup. The frozen v6 evaluation selects exact
 Piper/davefx as the supported speed-focused CPU fallback, and Milestone 6
 implements its executable registry, service adapter, settings choice, and
 profile-aware one-tree supervision. Piper's service and packaged resilience
-arms pass. Qwen's service arm passes, but the combined OS-enforced-offline
-matrix cannot close until an administrator binds the outbound firewall rule to
-its exact interpreter. No automatic retry or standard Qwen support claim is
-available.
+arms pass. Qwen's outbound-blocked service arm passes and its packaged path
+passes the exact fail-closed available-VRAM scenario. No automatic retry or
+standard Qwen support claim is available.
 
-Milestone 6 validation results so far:
+Milestone 6 validation results:
 
 - Focused Python Piper/Qwen adapter and service tests, desktop profile/client/
   coordinator tests and typecheck, and native supervisor/detector tests pass.
 - Exact Piper service lifecycle passes load, synthesis, busy rejection,
   cancellation, reload, synthesis after reload, and shutdown.
-- Exact Qwen service lifecycle passes. The host-specific OS-offline claim is
-  intentionally withheld because its exact interpreter firewall rule is not
-  enabled.
+- Exact Qwen service lifecycle passes under its enabled interpreter-bound
+  outbound block. Packaged selection proves the exact
+  `available-dedicated-vram` rejection, no model start, and zero external
+  requests.
 - Release-packaged Piper quick and prepared playback passes with zero
-  underruns, zero buffering seconds per playback minute during the 60.064-second
+  underruns, zero buffering seconds per playback minute during the 60.322-second
   stable observation, zero dedicated GPU allocation, zero external requests,
-  and zero generated-audio files. Quick command-to-audible was 3,066 ms;
-  prepared command-to-audible was 4,260 ms; cancellation was 371 ms; final
-  resource release was 535 ms; 13 audible transitions had 1 ms follow p95.
+  and zero generated-audio files. Quick command-to-audible was 2,722 ms;
+  prepared command-to-audible was 4,808 ms; cancellation was 169 ms; final
+  resource release was 443 ms; 13 audible transitions had 1.1 ms follow p95.
 - The exact host detector now distinguishes discarded incomplete adapters from
   the selected provider. A discarded unusable adapter cannot poison a complete
   report, while selected unknown memory, ambiguity, and no-provider cases remain

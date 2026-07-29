@@ -46,7 +46,10 @@ function unavailableProvider() {
   };
 }
 
-function compatibleReport(availableRamMiB = 16_384) {
+function compatibleReport(
+  availableRamMiB = 16_384,
+  availableDedicatedVramMiB = 9_216,
+) {
   return decodeHostProfileCompatibilityReportV1({
     schemaVersion: 1,
     probeStatus: "complete",
@@ -79,7 +82,7 @@ function compatibleReport(availableRamMiB = 16_384) {
         availability: "available",
         deviceClass: "discrete-gpu",
         dedicatedMemoryMiB: knownQuantity(12_288),
-        availableDedicatedMemoryMiB: knownQuantity(9_216),
+        availableDedicatedMemoryMiB: knownQuantity(availableDedicatedVramMiB),
         precisions: {
           float32: "available",
           float16: "available",
@@ -117,12 +120,16 @@ function coordinator(
     gate?: "available" | "unavailable";
     preference?: HardwareProfilePreferenceRepository;
     availableRamMiB?: number;
+    availableDedicatedVramMiB?: number;
   } = {},
 ) {
   return new HardwareProfileCompatibilityCoordinator({
     detector: {
       detect: vi.fn(async () =>
-        compatibleReport(options.availableRamMiB ?? 16_384),
+        compatibleReport(
+          options.availableRamMiB ?? 16_384,
+          options.availableDedicatedVramMiB ?? 9_216,
+        ),
       ),
     },
     developmentGate: {
@@ -177,6 +184,41 @@ describe("hardware compatibility controls", () => {
     ).toHaveTextContent(
       "This profile did not pass the required product evaluation.",
     );
+    const qwenProfile = screen
+      .getByText("Qwen and Serena development profile:")
+      .closest("li");
+    expect(qwenProfile).toHaveAttribute(
+      "data-profile-id",
+      EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+    );
+    expect(qwenProfile).toHaveAttribute("data-profile-state", "compatible");
+    expect(qwenProfile).toHaveAttribute("data-profile-reason", "none");
+  });
+
+  it("exposes closed profile diagnostics for exact-host automation", async () => {
+    const subject = coordinator({ availableDedicatedVramMiB: 7_195 });
+    render(<HardwareCompatibilityControls coordinator={subject} />);
+
+    await waitFor(() => expect(subject.observe().status).toBe("compatible"));
+
+    const qwenProfile = screen
+      .getByText("Qwen and Serena development profile:")
+      .closest("li");
+    expect(qwenProfile).toHaveAttribute("data-profile-state", "incompatible");
+    expect(qwenProfile).toHaveAttribute(
+      "data-profile-reason",
+      "available-dedicated-vram",
+    );
+    expect(
+      screen.queryByRole("radio", {
+        name: "Qwen and Serena development profile",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("radio", {
+        name: "Piper and davefx fast CPU profile",
+      }),
+    ).toBeChecked();
   });
 
   it("supports explicit keyboard-focus-safe selection and recheck", async () => {

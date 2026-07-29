@@ -20,9 +20,10 @@ supported speed-focused CPU fallback after all frozen v6 gates passed. The
 exact Qwen/Serena profile remains development-only. Milestone 6 now integrates
 both admitted identities through one active service tree, exposes explicit
 profile choice, and adds the exact Piper CPU adapter with bounded 22.05-to-24
-kHz conversion. Its packaged Piper resilience arm passes. The final
-outbound-blocked Qwen playback arm remains open; no automatic retry or
-uninterrupted-playback promise exists.
+kHz conversion. Its packaged Piper resilience arm passes. Qwen's offline
+service arm passes, while the packaged host correctly marks that profile
+incompatible because its frozen available-VRAM margin is not met. No automatic
+retry or uninterrupted-playback promise exists.
 
 ## Current implemented flow
 
@@ -77,9 +78,10 @@ authority.
 
 ## Remaining target user flow
 
-1. M010 must finish the outbound-blocked Qwen arm, final repository/privacy
-   validation, support decision, and documentation closeout after the
-   implemented profile/service/settings integration and passing Piper matrix.
+1. M010 Milestone 7 must record the final support decision, complete
+   repository/privacy and pull-request validation, and close the plan after the
+   implemented profile/service/settings integration and passing resilience
+   matrix.
 2. M011 packages and validates an end-user distribution after those boundaries
    close.
 
