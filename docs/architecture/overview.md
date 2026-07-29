@@ -16,6 +16,12 @@ contextual paragraph leaf, and passive-scroll isolation. Its private-EPUB,
 exact-host, repository/privacy, portable, packaged, and required Ubuntu/Windows
 validation pass; pull request #142 merged the closeout.
 
+M008.1 is an active focused closeout with frozen authority and deterministic
+desktop implementation. It adds boundary-aware scheduled separation between
+already-buffered generated units without changing M008 thresholds or the TTS
+service/protocol. Portable and authoritative Windows repository validation
+pass; required pull-request checks remain.
+
 M010 is in progress with Milestones 1-6 complete. Milestones 1-4 implement the
 privacy-safe native host report, immutable measured registry, fail-closed
 matching and preference, compatibility UI, pre-start checks, and identity-safe
@@ -85,6 +91,18 @@ checkpoints, and prevents reflow from regressing the last heard locator.
 Production
 distribution and general-hardware support also remain unimplemented.
 
+M008.1 overlays one engine-neutral playback transition on that unchanged
+buffer authority. The coordinator reduces the completed prepared segment's
+semantic boundary and terminal-ellipsis suffix to one bounded numeric delay;
+the scheduler retains that number with the matching audio unit, and the player
+schedules at most one interruptible timer before an already-buffered
+successor. Hard/token splits remain gapless. Real buffering replaces the
+intended pause, final completion has no delay, and no silent PCM, narration
+text, or new protocol field is created. Pause freezes the remainder, while
+stop, navigation, profile/book replacement, failure, and close cancel it
+before stale work can start. Audible range projection advances only when the
+next audio unit actually starts.
+
 M009 Milestone 1 implements the closed desktop-local transition table and
 noncollapsed semantic range helper documented by the frozen
 [`synchronization-authority-v1`](synchronization-authority-v1.md) and
@@ -120,6 +138,8 @@ Desktop application
 |-- Adaptive buffer/UX authority [M008 Milestone 1; frozen]
 |-- Adaptive scheduler, payload FIFO, and low-level Web Audio player
 |   [M008 Milestones 2-3; exact-demo path connected]
+|-- Boundary-aware buffered-unit transition policy and timer
+|   [M008.1 deterministic implementation complete locally]
 |-- Content-free preparation estimates, optional wait decisions, and controls
 |   [M008 Milestone 4; mounted only for exact native configuration]
 |-- Product narration coordinator [M008 Milestone 5; exact demo implemented]
@@ -317,7 +337,7 @@ hardware support, or distribution.
 7. **Implemented — Milestone 5:** Emit bounded public prepared-segment batches with stable locator ranges and deterministic resource evidence.
 8. **Implemented — Milestone 7:** The model-free Rust probe proves the selected parent/child frame boundary and a narrow binary Tauri response. Canonical shared control schemas and the bounded Python service prove strict narration input, lifecycle, complete-unit audio framing, cancellation, and failure behavior. The native shell owns one persistent child, framed read/write bounds, state/timeouts, process-tree termination, zero automatic restart, application-exit cleanup, and narrow Tauri commands. The typed desktop client validates control order and identity, retains one binary unit outside React state, and zeroes released or stale bytes. Native-only configuration selects the implemented exact Qwen/Serena adapter.
 9. **Constrained exact-host product path implemented — Milestone 8:** Milestones 1-4 implement the frozen authority, scheduler, sole-owner FIFO, Web Audio player, content-free estimator/wait decisions, and accessible controls. Milestone 5 adds the application coordinator, active-locator preparation, one-at-a-time M007 dispatch, mounted exact-development controls, stale-first cancellation, and packaged quick/prepared hardware evidence. The matrix observes real depletion and buffering instead of treating the worker as real-time.
-10. **Policy closed; synchronization authority amended — Milestones 8-9 and M009.1:** Milestone 6 retains the frozen quick/prepared/refill defaults and zero boundary wait from measured evidence without promoting the profile. M009 Milestone 1 selects honest segment-level timing, CSS Custom Highlight decoration, and focus-safe following. M009.1 exact-host evidence supersedes automatic passive-scroll seeking: only explicit navigation actions replace narration.
+10. **Policy closed; synchronization authority amended — Milestones 8-9 and M009.1:** Milestone 6 retains the frozen quick/prepared/refill defaults and zero adaptive low-buffer wait from measured evidence without promoting the profile. M009 Milestone 1 selects honest segment-level timing, CSS Custom Highlight decoration, and focus-safe following. M009.1 exact-host evidence supersedes automatic passive-scroll seeking: only explicit navigation actions replace narration.
 11. **Implemented through exact-host synchronized validation — Milestones 8-9:** Played units release exactly once; stop, explicit locator replacement, close, and failure invalidate eligibility before bounded cleanup. M009 Milestone 2 carries immutable source ranges only with eligible FIFO ownership and emits identity-keyed start, bounded progress, and completion observations without text or PCM. Milestone 3 maps the active half-open range through the existing semantic DOM boundary, owns one production Custom Highlight, follows without focus or selection changes, and suppresses passive tracker feedback across incremental and chapter rendering. Milestone 4 implements identity-first explicit seeks, stable prepared-boundary movement, canonical reader placement, active/paused intent preservation, and fixed accessible actions. M009.1 keeps passive wheel/touch/pointer/key viewport inspection independent from that path. Milestone 5 persists exact audible starts, matching completions, and latest-heard lifecycle checkpoints while rejecting periodic, stale, passive-visual, or reflow advancement.
 12. **Implemented for reader state:** Persist the authoritative logical reading locator—heard while narration owns position, otherwise visual—not a rendered page number or generated audio. Generated-audio persistence remains prohibited future behavior unless a separate product/privacy decision approves it.
 
@@ -606,6 +626,7 @@ requests. It retains the standard-profile blocker.
 
 M008 Milestone 6 retains quick start as the default interaction and one minute
 as both the initial prepared selection and refill/resume target. It keeps the
-10-second low-water warning, `0` ms boundary wait, `1.0x` playback, 100%
-default volume, and exact simultaneous resource ceilings. This is a policy
-closeout over existing typed constants, not a contract or runtime change.
+10-second low-water warning, `0` ms adaptive low-buffer wait, `1.0x` playback,
+100% default volume, and exact simultaneous resource ceilings. M008.1 later
+adds the distinct semantic generated-unit transition described above without
+revising those M008 values.

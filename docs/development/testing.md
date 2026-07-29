@@ -480,7 +480,7 @@ profile.
 The M008 deterministic desktop tests remain model-free and device-free:
 
 ```powershell
-pnpm.cmd --filter @voxleaf/desktop exec vitest run src/tts/adaptive-buffer-authority.test.ts src/tts/adaptive-buffer-scheduler.test.ts src/tts/pcm-playback.test.ts src/tts/adaptive-preparation.test.ts src/tts/AdaptivePreparationControls.test.tsx src/tts/product-narration-coordinator.test.ts
+pnpm.cmd --filter @voxleaf/desktop exec vitest run src/tts/adaptive-buffer-authority.test.ts src/tts/playback-transition-policy.test.ts src/tts/adaptive-buffer-scheduler.test.ts src/tts/pcm-playback.test.ts src/tts/adaptive-preparation.test.ts src/tts/AdaptivePreparationControls.test.tsx src/tts/product-narration-coordinator.test.ts
 ```
 
 The authority and scheduler tests retain exact/max-plus-one resource,
@@ -492,6 +492,13 @@ end-of-range completion, and stop/seek/close cleanup. Its fake Web Audio
 context verifies little-endian float32 decoding into one active mono 24-kHz
 device buffer and opens no real audio device. These tests persist no payload,
 read no private book content, and load no candidate or model.
+
+M008.1 adds `playback-transition-policy.test.ts` plus scheduler/player/
+coordinator cases for every frozen semantic delay, terminal ellipsis, numeric
+metadata retention, one pending timer, exact audible-start order,
+pause/remainder/resume, invalidation, real-buffer substitution, final-unit
+completion, content-free metrics, and truthful transition status. These tests
+allocate no silent PCM and leave the older adaptive low-buffer wait at zero.
 
 `adaptive-preparation.test.ts` proves the bounded eight-observation
 elapsed-time/sample-frame estimator, stopped-service estimate input, identity
@@ -531,12 +538,12 @@ synthetic Spanish EPUB, exercises either quick depletion/buffering or a
 one-minute prepared playback. M009 Milestone 6 additionally verifies exact audible transitions,
 valid half-open ranges, readable focus-safe following, keyboard pause/resume,
 passage seek, chapter restart, stale suppression, reduced motion, forced
-  colors, retained/discarded-unit bounds, and generated-audio cleanup. Late
-  programmatic visual samples are suppressed during active narration; bounded
-  wheel-driven viewport inspection is now required to preserve the active
-  identity, highlight, leaf, and play intent. Explicit leaf, passage, and
-  chapter actions still prove identity-first replacement. It checks all four
-  prepared choices, content-free timing
+colors, retained/discarded-unit bounds, and generated-audio cleanup. Late
+programmatic visual samples are suppressed during active narration; bounded
+wheel-driven viewport inspection is now required to preserve the active
+identity, highlight, leaf, and play intent. Explicit leaf, passage, and
+chapter actions still prove identity-first replacement. It checks all four
+prepared choices, content-free timing
 and resource metrics, cleanup, and zero external requests. Cleanup samples RAM
 and VRAM until they return within the frozen bound or a 15-second deadline;
 it does not assume a fixed one-second release time. Generated audio is never
@@ -655,6 +662,11 @@ Examples:
   stop and invalidating actions clean up.
 - Low-buffer warnings, involuntary rebuffering, and intentional adaptive
   boundary waits are independently observable.
+- Every prepared semantic boundary maps to its frozen playback-transition
+  delay, including the terminal-ellipsis override.
+- One transition timer blocks only an already-buffered successor; pause/resume
+  preserves its remainder, invalidation suppresses late callbacks, and real
+  buffering or final completion adds no timer.
 
 ### Integration
 
@@ -683,6 +695,9 @@ Critical journeys:
   maximum, while explicit stop and invalidation release work and audio.
 - Verify that nearing the generation frontier warns and then enters a truthful
   buffering state, with intentional boundary waits measured separately.
+- Verify that adjacent generated units retain the frozen semantic separation
+  without adding silence before first audio, after a real underrun, or after
+  the final unit.
 - Pause and resume.
 - Seek to another paragraph.
 - Change chapters.
@@ -699,7 +714,9 @@ Report separately:
 - Delay between satisfying the initial audio threshold and audible playback.
 - Real-time factor.
 - Buffer underrun frequency and duration.
-- Intentional adaptive boundary-wait count and duration, reported separately.
+- Intentional adaptive low-buffer-wait count and duration, reported separately.
+- Intentional semantic transition count and duration, reported separately from
+  audible playback and involuntary buffering.
 - Cancellation latency.
 - CPU, GPU, VRAM, and RAM use.
 

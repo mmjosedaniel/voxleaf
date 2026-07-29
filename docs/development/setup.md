@@ -27,9 +27,12 @@ private-book confirmation pass. Qwen/Serena remains development-only: its
 offline service lifecycle passes, while the packaged host correctly rejects it
 because the frozen available-VRAM margin is not met. Quick mode is the default;
 prepared playback initially selects one minute; refill remains one minute; low
-water is 10 seconds; boundary waits default to zero; playback is `1.0x`; and
-the simultaneous 30-minute ceiling is not a startup target. M010 Milestone 7,
-production distribution, and installers remain unimplemented.
+water is 10 seconds; the adaptive low-buffer wait remains disabled; playback
+is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target.
+M008.1 now schedules the separate bounded semantic transition pause between
+already-buffered generated units; it adds no silent audio or startup timer.
+M010 Milestone 7, production distribution, and installers remain
+unimplemented.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,

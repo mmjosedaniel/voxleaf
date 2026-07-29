@@ -4,6 +4,12 @@
 
 Accepted.
 
+M008.1 and
+[ADR-0021](ADR-0021-boundary-aware-audio-transitions.md) later add a separate
+playback-only semantic transition pause between already-buffered generated
+units. That decision does not enable or revise this ADR's optional
+throughput-oriented low-buffer wait, which remains disabled at zero.
+
 ## Context
 
 ADR-0014 permits the exact Qwen3-TTS 12Hz 1.7B CustomVoice/Serena identity
@@ -98,7 +104,7 @@ M008 Milestone 6 closes the demo policy from that evidence:
   10-minute choices, and initially selects 1 minute;
 - the refill/resume target remains 1 minute;
 - the low-water warning remains 10 playable seconds;
-- optional semantic-boundary waits remain disabled by default at `0` ms;
+- optional adaptive low-buffer waits remain disabled by default at `0` ms;
 - playback remains `1.0x` only, with 100% default volume;
 - the simultaneous 30-minute frame/byte/unit ceiling remains a maximum, never a
   startup target or uninterrupted-playback promise; and

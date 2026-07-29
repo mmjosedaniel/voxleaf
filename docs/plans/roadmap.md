@@ -27,6 +27,13 @@ visible-passage target and narration locator are now separate; only explicit
 leaf, visible-passage, passage-boundary, and chapter actions trigger
 identity-first replacement.
 
+M008.1 is an active focused playback-rhythm closeout. Its authority was frozen
+before implementation, and deterministic desktop code now schedules one
+bounded semantic delay between already-buffered generated units. It changes no
+normalization, protocol, audio payload, buffer threshold, or engine. Full
+portable, authoritative Windows, and privacy/repository validation pass;
+required pull-request checks remain.
+
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
 ## Guiding constraints
@@ -55,6 +62,7 @@ Every milestone must preserve the product's defining constraints:
     -> 6.2. Qwen short-segment batch and dual-worker feasibility
     -> 7. Local TTS service and process protocol
     -> 8. Bounded audio playback and scheduling
+    -> 8.1. Boundary-aware audio transitions
     -> 9. Synchronized reading and narration
     -> 9.1. Reader experience stabilization
     -> 10. Hardware profiles, fallback, and resilience
@@ -480,7 +488,7 @@ model-independent scheduler and playback behavior remain separately owned.
 sole-owner FIFO, Web Audio player, presenter, controls, and
 exact-development coordinator. The final policy retains quick mode by default,
 one-minute initial prepared/refill target, 10-second low water, zero default
-boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. The
+adaptive low-buffer wait, `1.0x` playback, and the simultaneous 30-minute ceiling. The
 packaged matrix passes bounded quick/prepared playback, cancellation, cleanup,
 and privacy while recording one underrun and 19.49 buffering seconds per
 playback minute. That exceeds the MVP target and retains the standard blocker.
@@ -535,6 +543,53 @@ behavior should first be proven with deterministic fakes.
   inaccessible playback state.
 - Playback speed may require time stretching rather than changing sample rate.
 - Browser, WebView, native shell, and OS audio behavior may differ under load or background operation.
+
+## Milestone 8.1: Add boundary-aware audio transitions
+
+**Status:** In progress. The frozen
+[`playback-transition-pause-policy-v1.md`](../architecture/playback-transition-pause-policy-v1.md),
+[ADR-0021](../architecture/decisions/ADR-0021-boundary-aware-audio-transitions.md),
+and deterministic desktop implementation exist. Focused policy, scheduler,
+player, coordinator, controls, full desktop tests, and desktop typechecking
+pass. Full portable, authoritative Windows, privacy/repository, and relative
+documentation-link validation also pass. Required pull-request checks remain.
+Follow
+[`M008-001-boundary-aware-audio-transitions.md`](active/M008-001-boundary-aware-audio-transitions.md).
+
+### Goal
+
+Prevent independently generated sentences and paragraphs from sounding joined
+without changing prepared text, model input, generated waveforms, or the
+bounded M008 queue.
+
+### Expected outcome
+
+- The completed prepared segment's closed semantic boundary reduces to one
+  bounded numeric delay; a terminal ellipsis has an explicit override.
+- Hard/token size splits remain continuous.
+- At most one interruptible timer delays an already-buffered successor.
+- Real buffering replaces rather than compounds the delay, and final
+  completion has no trailing pause.
+- Pause freezes the remaining timer; stop, navigation, profile/book
+  replacement, failure, and close cancel it before stale audio can start.
+- Intentional transition time remains content-free and separate from audible
+  playback, adaptive low-buffer waits, and involuntary buffering.
+
+### Dependencies
+
+Completed M005 owns canonical boundary reasons. Completed M008 owns the
+buffer/player and retains its zero-default adaptive low-buffer wait. Completed
+M009 owns audible start/completion projection. M008.1 changes no package,
+process, protocol, persistence, or model boundary.
+
+### Major risks and unknowns
+
+- Excessive values can sound theatrical; later tuning requires a versioned
+  decision and listening evidence.
+- Timer callbacks must not start stale audio after identity invalidation.
+- Transition time must never enter playable-lead or RTF arithmetic.
+- Optional human listening may assess rhythm, but deterministic lifecycle and
+  privacy correctness cannot depend on a private EPUB.
 
 ## Milestone 9: Integrate synchronized reading and narration
 
@@ -829,8 +884,11 @@ The following decisions should be made when evidence is available, not assumed s
 6. **Audio gate:** satisfied by completed M008 and ADR-0015. The internal format,
    Web Audio mechanism, `1.0x` policy, quick/default and explicit prepared
    rules, low/target/maximum bounds, playback-only pause behavior, truthful
-   frontier buffering, and zero default boundary wait are recorded, and the
+   frontier buffering, and zero default adaptive low-buffer wait are recorded,
+   and the
    required Ubuntu and Windows pull-request checks passed.
+   M008.1 separately records the semantic generated-unit transition policy;
+   its closeout remains active.
 7. **Interaction gate:** satisfied by completed M009 and M009.1 through the
    frozen 500 ms
    passive settlement, identity-first chapter/visible-passage/stable-boundary

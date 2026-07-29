@@ -50,6 +50,18 @@ A moment when playback needs audio but the buffer is empty.
 
 An optional planned one- to three-second intentional pause at an eligible paragraph or chapter boundary when buffer health is low. It is measured separately from involuntary buffering and cannot make a slower-than-real-time model sustainable.
 
+This is the M008 throughput-oriented policy and remains disabled at zero. It
+is distinct from a playback transition pause.
+
+## Playback transition pause
+
+A short M008.1 delay after one generated audio unit completes and before the
+next already-buffered unit begins. Its duration comes from the completed
+prepared segment's semantic boundary, with a terminal-ellipsis override.
+Hard/token splits remain continuous. The player schedules time rather than
+allocating silent audio, and genuine buffering replaces rather than compounds
+the pause.
+
 ## Playback-only pause
 
 A pause that stops audible playback without invalidating the active narration identity. Under ADR-0015, bounded generation may continue until the buffer ceiling; explicit stop or an invalidating navigation/settings/session action still cancels obsolete work.

@@ -2,7 +2,7 @@
 
 ## Implementation status
 
-The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is never a startup target. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. M008's final policy run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute, which exceeds the MVP target.
+The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; the optional low-buffer throughput wait remains disabled; playback is `1.0x`; and the simultaneous 30-minute ceiling is never a startup target. M008.1 now applies a separate bounded semantic transition pause between independently generated units when the next unit is already buffered. Artificial hard/token splits remain continuous, genuine buffering replaces rather than compounds the pause, and no silent PCM is created. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. M008's final policy run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute, which exceeds the MVP target.
 
 Completed M009 connects audible segments to highlighting, focus-safe following,
 identity-first navigation, and bounded non-skipping heard-position persistence.
@@ -48,21 +48,26 @@ retry or uninterrupted-playback promise exists.
    explicit paragraph leaf, visible-passage, chapter, or previous/next passage
    action invalidates obsolete audio before a bounded restart from its
    canonical target.
-8. When exact-development narration is available, one contextual leaf can
+8. Between independently generated buffered units, the desktop player applies
+   the frozen M008.1 semantic pause for the completed sentence, dialogue,
+   paragraph, heading, scene, or terminal-ellipsis boundary. The next segment
+   becomes active only when its audio actually starts. If the queue is empty,
+   ordinary buffering supplies the separation and no extra pause follows.
+9. When exact-development narration is available, one contextual leaf can
    replace obsolete narration and start at its canonical paragraph. The leaf
    defaults to the paragraph at the active visual line and temporarily moves
    beside an eligible heading or paragraph when the pointer hovers it. It
    reinforces preparing, audible, and saved states when they match that
    paragraph, otherwise it becomes a selectable preview without restarting
    narration. Ordinary text clicks remain inert.
-9. VoxLeaf saves the canonical heard segment start/end checkpoint while
-   narration owns position, otherwise saves the canonical visual locator, and
-   retains display preferences on the approved bounded lifecycle.
-10. Immediately before starting the exact model child, VoxLeaf rechecks the
+10. VoxLeaf saves the canonical heard segment start/end checkpoint while
+    narration owns position, otherwise saves the canonical visual locator, and
+    retains display preferences on the approved bounded lifecycle.
+11. Immediately before starting the exact model child, VoxLeaf rechecks the
     selected profile and fails closed if host compatibility or the applicable
     native development gate changed. Switching profiles first invalidates and
     stops the old narration; the two engines never run simultaneously.
-11. After a classified operational failure, VoxLeaf contains obsolete work
+12. After a classified operational failure, VoxLeaf contains obsolete work
     and verifies zero service/audio ownership before offering at most one
     explicit restart. Restart uses fresh identities and the latest heard
     checkpoint; terminal failures direct the user to compatibility recheck or
@@ -115,6 +120,10 @@ Implemented and validated:
 - Own complete 24-kHz mono float32 units in one bounded desktop FIFO outside
   React, consume them through a dedicated low-level Web Audio player, account
   underruns, and release played or invalidated originals exactly once.
+- Preserve natural separation between generated units with one bounded,
+  interruptible semantic transition timer. Retain only the numeric delay with
+  the audio unit, create no silent PCM, and report its elapsed time separately
+  from playback and involuntary buffering.
 - Connect the active narration locator or explicit visible target to bounded narration preparation, the M007
   client, and audible quick/prepared playback under the exact-development
   availability gate.
@@ -183,6 +192,10 @@ Remaining:
 - Buffer exhaustion is represented as buffering, not as an application freeze.
 - A low-buffer warning appears before predictable frontier exhaustion when
   available lead crosses from above to at or below 10 playable seconds.
+- Already-buffered generated units use the frozen boundary-specific transition
+  delay; hard/token splits remain immediate, terminal ellipses receive the
+  explicit override, real buffering substitutes for the delay, and final
+  completion receives no trailing wait.
 
 ### Accessibility
 
@@ -192,7 +205,8 @@ Remaining:
 
 ### Performance
 
-- No artificial startup delay is added after the initial playable-audio threshold is met.
+- No transition pause is added before the first audible unit after the initial
+  playable-audio threshold is met.
 - Wall-clock startup latency and playable audio depth at startup are measured separately.
 - The MVP may buffer for up to 5 seconds per minute.
 - Queues and buffers have explicit maximum sizes.
@@ -200,8 +214,9 @@ Remaining:
   sample frames, 172,800,000 logical PCM bytes, and 256 complete
   units/metadata entries simultaneously; 30 playable minutes is a ceiling, not
   a startup target or uninterrupted-playback promise.
-- Intentional paragraph/chapter waits are reported separately from involuntary
-  buffering and cannot be used to claim real-time generation.
+- Semantic transition pauses and the separately disabled adaptive low-buffer
+  wait are reported separately from involuntary buffering and cannot be used
+  to claim real-time generation.
 - Startup latency, real-time factor, buffer depth, underruns, and cancellation latency can be measured.
 
 ### Reliability

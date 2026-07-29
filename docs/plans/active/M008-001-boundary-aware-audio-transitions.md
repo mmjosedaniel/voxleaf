@@ -101,7 +101,17 @@ Complete. The policy and ADR were accepted before runtime source changes.
 
 ### Status
 
-Not started.
+Complete. The pure v1 mapping, scheduler metadata reduction, one-timer player
+lifecycle, coordinator projection, content-free metrics, and truthful status
+are implemented.
+
+Focused validation passes:
+
+- `pnpm.cmd --filter @voxleaf/desktop exec vitest run src/tts/playback-transition-policy.test.ts src/tts/adaptive-buffer-scheduler.test.ts src/tts/pcm-playback.test.ts src/tts/product-narration-coordinator.test.ts src/tts/AdaptivePreparationControls.test.tsx`
+  — 5 files and 61 tests passed.
+- `pnpm.cmd --filter @voxleaf/desktop typecheck` — passed.
+- `pnpm.cmd --filter @voxleaf/desktop test` — 43 Vitest files/412 tests and
+  seven native WebDriver-client Node tests passed.
 
 ## Milestone 3: Integrate metrics and close validation
 
@@ -120,7 +130,11 @@ Not started.
 
 ### Status
 
-Not started.
+In progress pending required pull-request checks. Metrics and accessible
+status are implemented; current product, architecture, diagram, roadmap,
+setup, testing, and troubleshooting documentation is reconciled; and full
+portable, authoritative Windows, privacy/artifact, relative-link, and diff
+validation pass.
 
 ## Testing and benchmark strategy
 
@@ -152,6 +166,18 @@ human listening may tune a future version but cannot silently alter v1.
 - 2026-07-29: Milestone 1 froze exact transition delays, buffering
   substitution, lifecycle behavior, content-free measurement, and explicit
   non-goals. All new relative links resolve and `git diff --check` passes.
+- 2026-07-29: Milestone 2 implemented the semantic projection, bounded numeric
+  scheduler metadata, interruptible player timer, audible-start ordering,
+  content-free metrics, and accessible status. Focused 61-test validation,
+  desktop typechecking, and the complete 412-test desktop suite plus seven
+  native client tests pass.
+- 2026-07-29: Milestone 3 documentation reconciliation records M008.1 as a
+  separate playback-rhythm overlay rather than silently rewriting M008's
+  disabled low-buffer throughput wait.
+- 2026-07-29: Milestone 3 local closeout passes `pnpm.cmd check:portable`, the
+  authoritative Windows `pnpm.cmd check`, relative Markdown-link validation,
+  the 28-file task-delta privacy/artifact scan, and `git diff --check`.
+  Required pull-request checks remain before archival.
 
 ## Discoveries and decisions
 
@@ -162,7 +188,34 @@ human listening may tune a future version but cannot silently alter v1.
 3. Scheduled time is cheaper and safer than allocating silent PCM.
 4. A real buffer wait replaces rather than compounds an intended transition
    pause.
+5. Exact audible-progress semantics require no M009 contract change: the
+   completed segment remains complete before the pause, and the successor is
+   published only when its audio source starts.
+6. Player time can be scheduled without allocating PCM, copying payloads, or
+   retaining narration text; only the closed numeric delay follows the audio
+   unit.
 
 ## Final validation results
 
-Pending.
+Local implementation validation passes:
+
+- The focused command passes 5 test files and 61 tests.
+- Desktop typechecking passes. The complete desktop command passes 43 Vitest
+  files/412 tests plus seven native WebDriver-client Node tests.
+- `pnpm.cmd check:portable` passes Prettier, Ruff format/check, ESLint, mypy,
+  every workspace typecheck, 20 shared files/209 tests, 34 EPUB files/559
+  tests, 43 desktop files/412 tests, seven native client tests, 256 Python
+  tests, package/desktop/Python builds, and both Python distributions.
+- The authoritative Windows `pnpm.cmd check` passes the same surface plus
+  Cargo formatting, Clippy, 40 Rust tests, and the release Tauri build.
+- All relative Markdown links under `docs/` resolve.
+- The 28-file task delta contains no generated-audio, private-book,
+  model-weight, archive, log, private-path, common credential, or personal
+  email artifact finding.
+- `git diff --check` passes.
+
+The existing Vite CSS Custom Highlight/chunk-size advisories and sandbox-denied
+Pytest cache-write warning remained non-failing. No exact model, private EPUB,
+network service, or audio device was required for deterministic correctness.
+Required Ubuntu portable and Windows native pull-request checks remain before
+this plan can move to `completed/`.

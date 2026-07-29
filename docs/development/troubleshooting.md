@@ -156,10 +156,33 @@ most 5 seconds. VoxLeaf must warn below 10 playable seconds and show buffering
 when audio reaches zero.
 
 Prepared playback and playback-only pause may build more lead, but they do not
-improve model throughput. Semantic-boundary waits remain disabled at `0` ms.
+improve model throughput. The M008 adaptive low-buffer wait remains disabled
+at `0` ms. M008.1's shorter semantic transition pauses are a separate
+playback-rhythm feature and must not be counted as generated lead or improved
+throughput.
 The admitted Piper CPU fallback has separately passing faster-than-real-time
 evidence and must be selected as its own profile, never as a simultaneous
 second worker. Do not hide buffering or generalize either exact-host result.
+
+### Adjacent generated passages sound joined
+
+VoxLeaf sends bounded prepared segments to the selected engine and receives
+one complete waveform per request. If punctuation sounds correct inside each
+waveform but the last word of one unit runs directly into the next, the defect
+is at playback transition rather than text normalization.
+
+M008.1 schedules a frozen boundary-specific delay only when the next unit is
+already buffered. Sentence, dialogue, paragraph, heading, scene, and terminal
+ellipsis boundaries receive bounded separation; artificial hard/token splits
+remain continuous. The player creates no silent PCM and applies no fade. If
+the queue is empty, the observed buffering interval replaces the intended
+transition delay, so a second pause must not occur when audio becomes ready.
+
+The compact status reads “Brief pause between narration passages.” during the
+scheduled interval. If joins remain gapless after rebuilding, confirm that the
+completed prepared segment carries a nonzero semantic transition value. If
+playback waits twice after an underrun, treat that as a scheduler defect.
+Capture only fixed state, duration, sequence counts, and content-free metrics.
 
 ### Preparation stops after one or more playable units
 

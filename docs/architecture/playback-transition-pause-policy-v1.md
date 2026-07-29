@@ -25,17 +25,17 @@ syllable.
 After one complete audio unit ends, apply the following delay before the next
 already-buffered unit begins:
 
-| Completed segment boundary | Delay |
-| -------------------------- | ----: |
-| `hard-limit`               |  0 ms |
-| `token`                    |  0 ms |
-| `clause`                   | 150 ms |
-| `sentence`                 | 300 ms |
-| `dialogue-turn`            | 400 ms |
-| `paragraph`                | 600 ms |
-| `heading`                  | 750 ms |
-| `scene-break`              | 1,200 ms |
-| Segment ending in `...` or `…` | 900 ms |
+| Completed segment boundary                   |    Delay |
+| -------------------------------------------- | -------: |
+| `hard-limit`                                 |     0 ms |
+| `token`                                      |     0 ms |
+| `clause`                                     |   150 ms |
+| `sentence`                                   |   300 ms |
+| `dialogue-turn`                              |   400 ms |
+| `paragraph`                                  |   600 ms |
+| `heading`                                    |   750 ms |
+| `scene-break`                                | 1,200 ms |
+| Segment ending in `...` or a U+2026 ellipsis |   900 ms |
 
 The ellipsis value overrides the ordinary boundary value. A terminal ellipsis
 may be followed only by canonical closing quotation/bracket punctuation and
