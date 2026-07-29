@@ -812,7 +812,10 @@ Supertonic remains rejected by existing VoxLeaf evidence. MeloTTS and
 KittenTTS remain unprioritized, and Sherpa-ONNX is only a possible runtime
 study rather than a model candidate. Follow the complete
 [post-MVP TTS candidate backlog](../product/post-mvp-tts-candidate-backlog.md)
-for intake boundaries and sources.
+for intake boundaries, sources, and the future engine-specific text-adaptation
+decision gate. Canonical locator-preserving normalization remains shared; do
+not add a common adapter-preprocessor abstraction until multiple admitted
+engines demonstrate distinct requirements.
 
 ## Cross-milestone decision gates
 

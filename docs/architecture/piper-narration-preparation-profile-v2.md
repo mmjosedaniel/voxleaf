@@ -9,9 +9,9 @@ state of one accepted eight-second unit followed by a processing failure, and
 after bounded synthetic reproduction established the failure class. No EPUB
 text, path, audio, or model diagnostic was retained.
 
-Implemented on 2026-07-29. Deterministic package and desktop coverage plus the
-release-packaged exact Piper matrix pass. Closure of the original private-book
-case remains pending the user's rerun of the rebuilt application.
+Implemented and confirmed on 2026-07-29. Deterministic package and desktop
+coverage, the release-packaged exact Piper matrix, and the content-safe
+private-book confirmation pass.
 
 This profile supersedes `narration-piper-v1` for new Piper product work. It
 does not change `narration-v1`, the historical v1 policy, normalization,
@@ -102,6 +102,30 @@ displayed or prepared text, insert silence, persist content, consume a
 sequence number, or alter the continuation locator. Units with any potentially
 speakable content still reach Piper and retain the adapter's fail-closed
 output checks. Other engines are unchanged.
+
+## Future engine-specific text adaptation
+
+VoxLeaf may eventually need an engine-specific text-adaptation step, but this
+profile does not approve or implement a separate Piper text rewriter. Current
+Piper-specific behavior is limited to bounded segment sizing and omission of
+units that contain no potentially speakable content. Canonical prepared text
+remains the source-mapped output owned by `@voxleaf/epub`.
+
+Future engines must continue to share canonical normalization for whitespace,
+punctuation, numbers, symbols, language context, semantic segmentation, and
+stable locator ranges. An engine adapter may own only evidence-backed
+requirements such as engine-specific size budgets, supported-character
+handling, exact voice/language/parameter mapping, or a narrowly defined input
+format. Generation parameters such as temperature are adapter configuration,
+not text normalization.
+
+Do not introduce a common `EngineTextAdapter` abstraction until at least two
+integrated engines demonstrate concrete, different adaptation requirements.
+Any future text rewrite requires newly frozen rules and tests proving
+determinism, bounded expansion, cancellation, source-range traceability,
+meaning preservation, pronunciation benefit, privacy, and unchanged displayed
+EPUB text. The post-MVP evaluation boundary is recorded in the
+[local TTS candidate backlog](../product/post-mvp-tts-candidate-backlog.md#engine-specific-text-adaptation-boundary).
 
 ## Validation
 

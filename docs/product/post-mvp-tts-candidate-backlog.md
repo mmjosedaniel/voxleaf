@@ -21,6 +21,43 @@ result-blind authority before result-bearing execution. Candidate claims,
 upstream benchmarks, parameter counts, or family names cannot admit a runtime
 or voice by themselves.
 
+## Engine-specific text adaptation boundary
+
+Future engines may require different input preparation, but VoxLeaf must not
+duplicate general narration normalization inside every model adapter. Preserve
+the following ordered boundary:
+
+1. `@voxleaf/epub` owns canonical, locator-preserving normalization and
+   semantic segmentation, including accepted number and symbol expansion.
+2. A selected engine profile may add deterministic sizing or retention limits
+   over that canonical prepared text.
+3. The service adapter maps the bounded segment to the exact engine, voice,
+   language, input format, and generation parameters.
+
+Piper's implemented `narration-piper-v2` policy is the current example of the
+second layer: it accounts for spoken expansion and omits nonspoken
+punctuation-only units, but it does not rewrite prepared text. No separate
+Piper text preprocessor is currently necessary or approved. Qwen generation
+controls such as temperature are adapter configuration rather than canonical
+text preprocessing.
+
+Create a shared `EngineTextAdapter` interface only after at least two admitted
+engines demonstrate concrete and incompatible adaptation requirements.
+Before adopting any engine-specific text rewrite, freeze the exact rule and
+prove:
+
+- deterministic and bounded output with bounded cancellation work;
+- stable source identity and locator-range traceability;
+- no change to displayed EPUB text or persisted reading position;
+- preserved meaning plus a measured pronunciation or compatibility benefit;
+- no private text, adapted text, or generated audio in logs or persistence;
+  and
+- candidate-neutral evaluation text remains byte-identical unless a newly
+  frozen evaluation authority explicitly versions the corpus.
+
+This is a future decision constraint, not implementation approval or a reason
+to delay the current MVP.
+
 ## Prioritized candidates
 
 ### 1. Pocket TTS Spanish
