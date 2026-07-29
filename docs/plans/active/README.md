@@ -17,6 +17,11 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
+- [`M008-001-boundary-aware-audio-transitions.md`](M008-001-boundary-aware-audio-transitions.md):
+  active focused M008 follow-up that freezes and implements bounded semantic
+  pauses between independently generated buffered audio units without changing
+  TTS text, protocol, generated PCM, or the separate zero-default low-buffer
+  boundary-wait policy.
 - [`M010-hardware-profiles-fallback-and-operational-resilience.md`](M010-hardware-profiles-fallback-and-operational-resilience.md):
   approved focused ExecPlan for privacy-safe host detection, evidence-backed
   profile matching, fallback admission, and identity-safe operational

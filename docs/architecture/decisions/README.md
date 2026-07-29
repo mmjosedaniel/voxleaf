@@ -31,6 +31,7 @@ ADR-0002-short-description.md
 - [`ADR-0018-reader-experience-stabilization.md`](ADR-0018-reader-experience-stabilization.md): paint-aware highlight proof, one reader scroll owner, compact/collapsible narration, text-only loaded duration, and one bounded locator-backed leaf.
 - [`ADR-0019-privacy-safe-hardware-profiles-and-recovery.md`](ADR-0019-privacy-safe-hardware-profiles-and-recovery.md): privacy-safe host facts, evidence-backed profile matching, result-blind fallback admission, and identity-first explicit recovery.
 - [`ADR-0020-admit-piper-cpu-fallback.md`](ADR-0020-admit-piper-cpu-fallback.md): admit exact Piper/davefx as the speed-focused CPU fallback while retaining Qwen/Serena as an optional development-only GPU profile.
+- [`ADR-0021-boundary-aware-audio-transitions.md`](ADR-0021-boundary-aware-audio-transitions.md): schedule bounded semantic pauses between independently generated buffered audio units without creating silent PCM or changing model input.
 
 ## Template
 
