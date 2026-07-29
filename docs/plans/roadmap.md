@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 9 and M009.1 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Completed M009 freezes and proves segment-level authority, publishes bounded source-range audible progress, connects non-mutating highlight/follow behavior to the reader, implements identity-first synchronized user navigation, persists non-skipping heard checkpoints, and validates the packaged synchronized loop. Completed M009.1 repairs the later reproduced highlight-materialization defect, implements one dedicated reader viewport, compact/collapsible narration, truthful loaded-duration text, a bounded canonical paragraph leaf, and passive-scroll isolation without changing TTS, segmentation, protocol, or buffer policy. Its deterministic, Chromium, packaged WebView2, private-EPUB, exact-host, repository, privacy, portable, and required Ubuntu/Windows checks pass; pull request #142 merged the final closeout. M010 is in progress. Milestone 1 freezes the privacy-safe host report, immutable evidence-backed profile shape, conservative result-blind resource margins, deterministic selection, and explicit identity-first recovery policy. Milestone 2 implements the bounded native Windows detector and typed desktop decoder without making a support/fallback claim.
+VoxLeaf is pre-alpha. Milestones 1 through 9 and M009.1 are complete. M008's exact-development path connects the active visual locator to bounded narration preparation, one-at-a-time M007 synthesis, the adaptive FIFO/player, and accessible controls. Completed M009 freezes and proves segment-level authority, publishes bounded source-range audible progress, connects non-mutating highlight/follow behavior to the reader, implements identity-first synchronized user navigation, persists non-skipping heard checkpoints, and validates the packaged synchronized loop. Completed M009.1 repairs the later reproduced highlight-materialization defect, implements one dedicated reader viewport, compact/collapsible narration, truthful loaded-duration text, a bounded canonical paragraph leaf, and passive-scroll isolation without changing TTS, segmentation, protocol, or buffer policy. Its deterministic, Chromium, packaged WebView2, private-EPUB, exact-host, repository, privacy, portable, and required Ubuntu/Windows checks pass; pull request #142 merged the final closeout. M010 is in progress with Milestones 1-3 complete. Milestone 1 freezes the privacy-safe host report, immutable evidence-backed profile shape, conservative result-blind resource margins, deterministic selection, and explicit identity-first recovery policy. Milestone 2 implements the bounded native Windows detector and typed desktop decoder. Milestone 3 implements and validates the measured registry/matcher, bounded profile-ID preference, compatibility UI, and pre-start enforcement without making a standard support or fallback claim.
 
 M009.1 exact-host use also exposed and corrected one additional reader defect:
 passive viewport scrolling must not replace active narration. The
@@ -672,18 +672,22 @@ stabilized application shell.
 
 ## Milestone 10: Add hardware profiles, fallback, and operational resilience
 
-**Status:** In progress; Milestones 1-2 are complete. Follow
+**Status:** In progress; Milestones 1-3 are complete. Follow
 [`M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md).
 The canonical privacy-safe host compatibility report, profile/evidence shape,
 matching/preference rules, fixed resource margins, failure taxonomy, and
 identity-first explicit recovery authority are frozen by
 [`hardware-profile-recovery-authority-v1.md`](../architecture/hardware-profile-recovery-authority-v1.md)
-and ADR-0019. The native Windows detector now gathers only those bounded facts
+and ADR-0019. The native Windows detector gathers only those bounded facts
 through reviewed direct APIs and the desktop decodes them through the
-canonical contract; non-Windows builds return unavailable. Registry entries,
-product matching, a validated CPU fallback, model recovery, and support claims
-do not exist. CPU fallback is a hard evidence gate: rejected candidates cannot
-be silently re-admitted.
+canonical contract; non-Windows builds return unavailable. The product now
+matches an immutable registry containing the three measured historical
+profiles, retains only a bounded profile-ID preference, rechecks before the
+model child starts, and exposes closed compatibility states. Only the exact
+Qwen/Serena entry can be development-only behind its native gate. No
+`supported` entry, automatic recommendation, admitted CPU fallback, model
+recovery, or standard support claim exists. CPU fallback is a hard evidence
+gate: rejected candidates cannot be silently re-admitted.
 
 ### Goal
 
@@ -804,8 +808,10 @@ is the active implementation authority for privacy-safe host detection,
 evidence-backed profile matching, conditional CPU-fallback admission, and
 identity-safe operational recovery on the stabilized M009.1 application
 surface. Milestone 1 freezes the result-blind contract and policy. Milestone 2
-implements the bounded native Windows probe and typed decoder.
-No registry selection, hardware support, fallback, or recovery path is
+implements the bounded native Windows probe and typed decoder. Milestone 3
+implements the immutable measured registry, fail-closed selection, bounded
+profile preference, compatibility UI, and exact-child pre-start enforcement.
+No standard hardware support, admitted fallback, or recovery path is
 implemented yet.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
@@ -815,7 +821,7 @@ supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
 Milestones 1 through 9 and M009.1 are complete, with their evidence retained
-under [`completed/`](completed/). M010 is active with Milestones 1-2 complete.
+under [`completed/`](completed/). M010 is active with Milestones 1-3 complete.
 
 ## MVP completion boundary
 

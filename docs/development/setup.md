@@ -2,7 +2,7 @@
 
 ## Current status
 
-The prerequisite toolchains, TypeScript workspace, React/Tauri desktop, isolated Python service, quality commands, browser/native smokes, secure EPUB reader, bounded restoration, locator-linked narration preparation, and segment-level synchronized reader projection are initialized and validated within their documented boundaries. Completed M007 provides protocol v1, native supervision, typed one-unit ownership, and the exact development-only Qwen/Serena adapter. Completed M008 connects the active visual locator to bounded preparation, one-at-a-time synthesis, the sole-owner FIFO, Web Audio playback, and accessible quick/prepared controls. Completed M009 adds exact segment transitions, focus-safe highlight/follow, synchronized user navigation, heard-position persistence, exact-host packaged evidence, and repository/CI closeout. Quick mode is the default; prepared playback initially selects one minute; refill remains one minute; low water is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target. The synchronized exact-host run passes but records 378.46 buffering seconds per playback minute, so ADR-0013 still selects no standard profile. General hardware detection, validated fallback and recovery, production distribution, and installers remain unimplemented.
+The prerequisite toolchains, TypeScript workspace, React/Tauri desktop, isolated Python service, quality commands, browser/native smokes, secure EPUB reader, bounded restoration, locator-linked narration preparation, and segment-level synchronized reader projection are initialized and validated within their documented boundaries. Completed M007 provides protocol v1, native supervision, typed one-unit ownership, and the exact development-only Qwen/Serena adapter. Completed M008 connects the active visual locator to bounded preparation, one-at-a-time synthesis, the sole-owner FIFO, Web Audio playback, and accessible quick/prepared controls. Completed M009 adds exact segment transitions, focus-safe highlight/follow, synchronized user navigation, heard-position persistence, exact-host packaged evidence, and repository/CI closeout. M010 Milestones 1-3 add privacy-safe native Windows detection, an immutable measured registry, deterministic profile matching, bounded profile-ID preference reuse, compact compatibility UI, and pre-start enforcement. Quick mode is the default; prepared playback initially selects one minute; refill remains one minute; low water is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target. The synchronized exact-host run passes but records 378.46 buffering seconds per playback minute, so ADR-0013 still selects no standard profile. A validated CPU fallback and recovery, production distribution, and installers remain unimplemented.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
@@ -19,8 +19,8 @@ only a bounded one-GPU adaptive development demo with that exact local
 profile; it adds no production dependency and does not approve continuous
 playback. The constrained development inference, transport, narration
 dispatch, audio playback, and segment-level synchronization path is implemented
-and exact-host validated. General hardware detection, validated fallback and
-recovery, and installers remain unimplemented.
+and exact-host validated. Measured matching does not promote the development
+profile: a validated fallback, recovery, and installers remain unimplemented.
 The content-free `benchmarks/tts/selection-v3.md` record retains that failed
 standard result and separately identifies the constrained demo input.
 

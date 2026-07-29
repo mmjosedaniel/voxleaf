@@ -60,7 +60,7 @@ body {
 .shell-header-reader {
   display: grid;
   flex: 0 0 auto;
-  grid-template-columns: auto minmax(18rem, 1fr);
+  grid-template-columns: auto minmax(18rem, 1fr) minmax(13rem, 20rem);
   gap: 1rem;
   align-items: center;
 }
@@ -103,6 +103,105 @@ body {
   min-height: 0;
   margin: 0;
   font-size: 0.875rem;
+}
+
+.hardware-compatibility {
+  flex: 0 0 auto;
+  margin-top: 1rem;
+  border: 1px solid #b7c7b9;
+  border-radius: 0.75rem;
+  color: #263c30;
+  background: #f4f7f2;
+}
+
+.shell-header-reader > .hardware-compatibility {
+  min-width: 0;
+  margin-top: 0;
+}
+
+.hardware-compatibility summary {
+  display: flex;
+  min-width: 0;
+  gap: 0.5rem 0.75rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.55rem 0.75rem;
+  color: #183d2a;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hardware-compatibility summary span:last-child {
+  color: #405047;
+  font-weight: 500;
+}
+
+.hardware-compatibility summary:focus,
+.hardware-compatibility summary:focus-visible,
+.hardware-compatibility button:focus-visible,
+.hardware-compatibility input:focus-visible {
+  outline: 0.2rem solid #1d6b43;
+  outline-offset: 0.15rem;
+}
+
+.hardware-compatibility-detail {
+  display: grid;
+  max-height: min(24rem, 45vh);
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-top: 1px solid #b7c7b9;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.hardware-compatibility-detail p,
+.hardware-compatibility-detail ul,
+.hardware-compatibility-detail fieldset {
+  margin: 0;
+}
+
+.hardware-compatibility-detail ul {
+  display: grid;
+  gap: 0.35rem;
+  padding-inline-start: 1.25rem;
+}
+
+.hardware-compatibility-detail fieldset {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.65rem;
+  border: 1px solid #b7c7b9;
+  border-radius: 0.55rem;
+}
+
+.hardware-compatibility-detail label {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.hardware-compatibility-detail button {
+  width: fit-content;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #52705e;
+  border-radius: 0.55rem;
+  color: #24563a;
+  background: #fdfefb;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hardware-compatibility-detail button:disabled,
+.hardware-compatibility-detail fieldset:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.hardware-compatibility-reason {
+  color: #694c00;
+  font-weight: 700;
 }
 
 .shell-label {
@@ -1162,6 +1261,13 @@ button.semantic-internal-link {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .hardware-compatibility,
+  .hardware-compatibility * {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
   .semantic-reader,
   .semantic-reader * {
     scroll-behavior: auto !important;
@@ -1182,6 +1288,9 @@ button.semantic-internal-link {
   .adaptive-preparation-mode,
   .adaptive-preparation-target select,
   .adaptive-preparation-settings select,
+  .hardware-compatibility,
+  .hardware-compatibility-detail button,
+  .hardware-compatibility-detail fieldset,
   .product-narration,
   .product-narration-compact-actions button,
   .reader-preferences,
@@ -1197,6 +1306,9 @@ button.semantic-internal-link {
   }
 
   .reader-preference select:focus-visible,
+  .hardware-compatibility summary:focus-visible,
+  .hardware-compatibility button:focus-visible,
+  .hardware-compatibility input:focus-visible,
   .paragraph-leaf:focus-visible,
   .product-narration-compact-actions button:focus-visible,
   .adaptive-preparation button:focus-visible,
@@ -1226,6 +1338,14 @@ button.semantic-internal-link {
 }
 
 @media (max-width: 64rem) {
+  .shell-header-reader {
+    grid-template-columns: minmax(0, 1fr) minmax(13rem, 20rem);
+  }
+
+  .shell-header-reader .shell-brand {
+    display: none;
+  }
+
   .reader-preference-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1242,10 +1362,6 @@ button.semantic-internal-link {
 
   .shell-header-reader {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .shell-header-reader .shell-brand {
-    display: none;
   }
 }
 

@@ -47,15 +47,17 @@ the milestone.
 
 ## Current state
 
-Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-2
+Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-3
 are complete. Commit `8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
 result-blind hardware/profile/recovery authority, canonical compatibility
 report, executable desktop tables, native API/permission audit, and ADR-0019
 before any M010 host measurement. Implementation checkpoint
 `842770f7780930aeb971db7777e61ca34fb53e78` adds the bounded native Windows
-probe and typed desktop decoder without retaining measured values. Profile
-matching, fallback admission, recovery behavior, and support claims have not
-started.
+probe and typed desktop decoder without retaining measured values. Milestone 3
+checkpoints `e7e01f1` and `a519c6c` add the immutable measured registry,
+deterministic matcher, bounded preference, compatibility UI, pre-start
+enforcement, and fixed-reader-layout correction. Fallback admission, recovery
+behavior, and standard support claims have not started.
 
 Completed M006 and its two blocker-resolution plans provide the
 candidate-neutral benchmark authority and measured evidence:
@@ -92,9 +94,11 @@ report and must not be silently expanded.
 The desktop now has a typed internal command client for the canonical
 identity-free host report in addition to the content-free exact-demo
 `available`/`unavailable` flag. Native configuration still decides whether the
-model-free or exact child can be started. There is no measured profile
-registry, selection policy, CPU fallback, recovery state machine, or support
-matrix, and the host report is not yet shown in product UI.
+model-free or exact child can be started. Milestone 3 now matches that report
+against the immutable measured registry, presents only closed compatibility
+results, persists only one bounded profile ID, and enforces a fresh match
+before the exact child starts. There is no supported profile, CPU fallback,
+recovery state machine, or standard support matrix.
 
 ## Scope and non-goals
 
@@ -434,7 +438,24 @@ or fallback claim.
 
 ### Status
 
-Not started.
+Complete on 2026-07-28. Checkpoint `e7e01f1` adds the measured registry,
+pure matcher, bounded profile preference, single-concurrency compatibility
+coordinator, product preflight, accessible UI, and deterministic/component
+coverage. Checkpoint `a519c6c` moves the collapsed panel into the existing
+reader top bar so it does not reduce the fixed reading viewport and restores
+the browser highlight/follow geometry.
+
+All deterministic, browser-assertion, portable, native Windows, and required
+pull-request gates pass. Two local `pnpm.cmd test:native-startup` attempts built
+the release executable successfully and then stopped before application mount
+at the documented `webdriver-session-not-created` WebView2 automation boundary;
+no product assertion ran or failed. Pull request #146's clean-host Windows
+native foundation job subsequently passed, satisfying the authoritative
+host-specific packaged gate. Its Ubuntu portable foundation job also passed.
+
+No profile is `supported`, so no automatic recommendation or CPU fallback is
+available. Exact Qwen/Serena can be active only as `development-only` when the
+measured host match and existing native development gate both pass.
 
 ## Milestone 4: Implement identity-safe operational recovery
 
@@ -640,6 +661,29 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-28: Implemented Milestone 3 sequentially. Added the immutable
+  evidence-backed Qwen/Serena, Qwen/Aiden, and Supertonic/F1 registry; pure
+  fail-closed matching with the frozen result-blind margins; bounded
+  future-version-safe profile preference; one concurrent compatibility probe;
+  app-start, explicit, resume, and immediate pre-start rechecks; and compact
+  accessible compatibility states. Rejected profiles remain unavailable and
+  there is no supported recommendation or CPU fallback.
+- 2026-07-28: The first Chromium run exposed that the collapsed compatibility
+  panel occupied a new row and reduced the fixed reader viewport at 800x400,
+  breaking existing active-locator and highlight/follow geometry. Checkpoint
+  `a519c6c` moved the panel into the existing top bar when a publication is
+  ready. All six browser assertions then passed. The documented Windows
+  preview-child teardown still required the bounded wrapper to end by timeout.
+- 2026-07-28: `pnpm.cmd check:portable` passed the complete portable matrix.
+  Two packaged-native attempts built the release executable but stopped before
+  app mount at `webdriver-session-not-created`; no native product assertion
+  failed, and clean-host CI remained the authoritative packaged gate.
+- 2026-07-28: Pull request #146 run
+  [`30414223390`](https://github.com/mmjosedaniel/voxleaf/actions/runs/30414223390)
+  passed both required checks on the Milestone 3 implementation head:
+  Ubuntu portable foundation in 1m56s and Windows native foundation in 14m36s.
+  The clean-host Windows result closes the local pre-mount automation gap, so
+  Milestone 3 is complete.
 - 2026-07-28: Completed Milestone 2. Added a native injected probe port,
   single-concurrency guard, bounded normalization, direct Windows
   OS/storage/DXGI/D3D12/DirectML/CUDA adapters, the narrow Tauri command, and a
@@ -732,14 +776,65 @@ rewrite unrelated reader state.
   expose a free-form temperature control.
 - Raw host inventories need not enter React state or persistence. Closed
   compatibility and reason codes are sufficient for product UI.
+- The historical evidence supports exactly three initial registry records.
+  Their presence is not admission: the rejected Qwen/Aiden and Supertonic/F1
+  records remain `unsupported`, while exact Qwen/Serena remains
+  `development-only` and still requires its native configuration gate.
+- Because recommendations are restricted to compatible `supported` entries,
+  the current registry deliberately produces no automatic recommendation.
+  The exact development entry may be selected only through its existing native
+  gate; this preserves ADR-0013 rather than silently promoting the demo.
+- Keeping the compatibility snapshot limited to closed matches/reasons means
+  the raw host report can be discarded after each probe. The only persisted
+  value is the versioned bounded profile ID, and a future-version preference is
+  preserved without overwrite.
+- A compact compatibility surface must share the existing ready-publication
+  top bar rather than create another fixed-shell row. Otherwise short native or
+  Chromium viewports can lose the reader geometry required for active locator,
+  highlight, and focus-safe following evidence.
 
 ## Final validation results
 
-Milestones 1-2 validation is complete and recorded above. M010 remains in
-progress with Milestones 3 through 7 not started. The runtime can now produce
-the canonical bounded host report on Windows, but no compatibility result,
-fallback, recovery, or support claim is available. The plan is complete only
-when:
+Milestones 1-3 implementation and validation are complete and recorded above.
+M010 remains in progress with Milestones 4 through 7 not started. The runtime
+can produce the canonical bounded host report, derive content-free
+compatibility, preserve only one bounded preference, and reject a changed host
+immediately before starting the development child. No supported recommendation,
+CPU fallback, recovery, or standard support claim is available.
+
+Milestone 3 validation results:
+
+- `pnpm.cmd --filter @voxleaf/desktop typecheck`: passed.
+- `pnpm.cmd --filter @voxleaf/desktop test`: passed, 41 Vitest files / 381
+  tests plus 7 native WebDriver-client tests.
+- `pnpm.cmd test:browser`: all 6 Playwright test bodies passed after the
+  fixed-reader-layout correction. The known Windows preview child remained
+  attached after the passing test output, so the bounded command ended by
+  timeout.
+- `pnpm.cmd test:native-startup`: two release builds passed; both smoke
+  attempts stopped before application mount with
+  `webdriver-session-not-created`. No product assertion ran or failed.
+- `pnpm.cmd check:portable`: passed, including format/lint, TypeScript and
+  Python typechecks, 20 shared files / 209 tests, 34 EPUB files / 555 tests, 41
+  desktop files / 381 tests plus 7 native-client tests, 234 Python tests, and
+  all portable builds.
+- `pnpm.cmd check`: passed the complete native Windows foundation, including
+  format/lint/typechecks, the same TypeScript/Python suites, 38 Rust tests, the
+  production Windows bounded-host-report smoke, native clippy, the release
+  Tauri build, and Python source/wheel builds.
+- Pull request #146 Ubuntu portable foundation: passed in 1m56s
+  ([job `90457052148`](https://github.com/mmjosedaniel/voxleaf/actions/runs/30414223390/job/90457052148)).
+- Pull request #146 Windows native foundation: passed in 14m36s
+  ([job `90457052208`](https://github.com/mmjosedaniel/voxleaf/actions/runs/30414223390/job/90457052208)),
+  closing the authoritative packaged validation gate.
+- `git diff --check`: passed.
+- Complete 28-file branch scope/privacy review: passed. Changes are limited to
+  desktop matching/preference/UI/preflight code and tests plus current
+  documentation. No private path, user identity, secret, EPUB, generated
+  audio, model weight, raw host report/result, dependency, lockfile, Tauri
+  permission, shared contract, protocol field, or recovery behavior was added.
+
+The plan is complete only when:
 
 - hardware/profile/recovery authority is frozen before results;
 - privacy-safe detection and deterministic matching pass;

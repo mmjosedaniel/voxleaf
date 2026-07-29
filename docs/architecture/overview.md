@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 9 and M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoration, locator-linked narration preparation, M007 service, exact-development M008 coordinator/player path, M009 segment-level synchronization, and M009.1 reader stabilization are implemented and validated within their documented scopes. M009.1 implements the [`reader-experience-authority-v1`](reader-experience-authority-v1.md): stronger paint-aware evidence, the same-spine materialization repair, one dedicated reader scroll owner, a fixed compact shell, collapsible narration detail, exact loaded/target/estimate text without a progress bar, one retargeted contextual paragraph leaf, and passive-scroll isolation. Locator sampling, reflow/restoration, highlight following, and the leaf share existing registered reader geometry; no second timing source, persisted state, protocol field, or buffer-policy change was added. Its private-EPUB, exact-host, repository/privacy, portable, packaged, and required Ubuntu/Windows validation pass; pull request #142 merged the closeout. M010 is in progress. Milestone 1 implements the canonical privacy-safe host-profile report and freezes [`hardware-profile-recovery-authority-v1`](hardware-profile-recovery-authority-v1.md): immutable evidence identity, result-blind RAM/VRAM/storage margins, deterministic matching/preference rules, a closed failure taxonomy, and identity-first explicit recovery. Milestone 2 implements the corresponding native Windows probe port and typed desktop decoder. The native shell reads only bounded OS/architecture, processor count, RAM, application-volume storage, identity-free DXGI memory/class, CUDA capability, and DirectML precision facts; it emits no adapter identity or raw output. Non-Windows builds return unavailable. No matching, persistence, model activity, support, or fallback is admitted. ADR-0013 therefore continues to select no standard production profile. General-hardware support, validated fallback, runtime recovery, production distribution, and sustained uninterrupted playback remain unimplemented.
+Mixed implementation status. Roadmap Milestones 1 through 9 and M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoration, locator-linked narration preparation, M007 service, exact-development M008 coordinator/player path, M009 segment-level synchronization, and M009.1 reader stabilization are implemented and validated within their documented scopes. M009.1 implements the [`reader-experience-authority-v1`](reader-experience-authority-v1.md): stronger paint-aware evidence, the same-spine materialization repair, one dedicated reader scroll owner, a fixed compact shell, collapsible narration detail, exact loaded/target/estimate text without a progress bar, one retargeted contextual paragraph leaf, and passive-scroll isolation. Locator sampling, reflow/restoration, highlight following, and the leaf share existing registered reader geometry; no second timing source, persisted state, protocol field, or buffer-policy change was added. Its private-EPUB, exact-host, repository/privacy, portable, packaged, and required Ubuntu/Windows validation pass; pull request #142 merged the closeout. M010 is in progress. Milestone 1 implements the canonical privacy-safe host-profile report and freezes [`hardware-profile-recovery-authority-v1`](hardware-profile-recovery-authority-v1.md): immutable evidence identity, result-blind RAM/VRAM/storage margins, deterministic matching/preference rules, a closed failure taxonomy, and identity-first explicit recovery. Milestone 2 implements the corresponding native Windows probe port and typed desktop decoder. Milestone 3 implements the immutable three-entry measured registry, pure fail-closed matcher, bounded profile-ID preference, app-start/resume/pre-start checks, and compact accessible compatibility UI. The native shell reads only bounded OS/architecture, processor count, RAM, application-volume storage, identity-free DXGI memory/class, CUDA capability, and DirectML precision facts; it emits no adapter identity or raw output. Raw reports remain transient and non-Windows builds return unavailable. The exact Qwen/Serena entry remains development-only behind the native gate, while rejected Qwen/Aiden and Supertonic entries remain unavailable. ADR-0013 therefore continues to select no standard production profile. General-hardware support, validated fallback, runtime recovery, production distribution, and sustained uninterrupted playback remain unimplemented.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
@@ -97,8 +97,10 @@ Desktop application
 |-- Reader experience stabilization [M009.1 complete and validated]
 |-- Privacy-safe host detector and typed report boundary
 |   [M010 Milestones 1-2 implemented; Windows direct APIs, no support claim]
-`-- Profile matching and recovery authority
-    [M010 Milestone 1 frozen; matcher/recovery not implemented]
+|-- Measured profile registry, matching, preference, UI, and pre-start check
+|   [M010 Milestone 3 complete; exact development profile only]
+`-- Identity-safe recovery authority
+    [M010 Milestone 1 frozen; recovery not implemented]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]
@@ -433,8 +435,20 @@ Tauri command and independently decodes it with the canonical shared
 contract. Raw names, IDs, errors, paths, environment, timestamps, and
 recommendations never cross the boundary, and the detector performs no
 network, model, audio, or persistence operation. Unsupported non-Windows
-builds report unavailable rather than implying support. Registry entries,
-matching, compatibility UI, support selection, fallback, and recovery remain
+builds report unavailable rather than implying support.
+
+M010 Milestone 3 consumes the report without retaining it. The immutable
+registry binds exact historical engine/model/voice/runtime/configuration
+identity and evidence hashes for Qwen/Serena, Qwen/Aiden, and Supertonic/F1.
+The matcher applies the frozen fixed RAM, VRAM, and storage margins in
+deterministic profile-ID order and fails closed on incomplete facts, invalid
+evidence, resource/provider mismatch, or ambiguity. Rejected entries remain
+`unsupported`; only exact Qwen/Serena may become `development-only`, and only
+when the native development gate also passes. The desktop persists at most the
+versioned bounded profile ID, re-probes at application start, explicit recheck,
+OS resume, and immediately before child start, and exposes only closed
+content-free states and reasons. No `supported` entry exists, so there is no
+automatic recommendation or CPU fallback. Identity-safe recovery remains
 later M010 work.
 
 The implemented audio-frame v1 boundary describes payload-free in-memory frame metadata with frame, session, generation, and narration-segment identities; monotonic sequence; positive sample rate, per-channel sample-frame count, and channel count; and an explicit end-of-segment marker. Duration is derived from sample count divided by sample rate. Public helpers return conservative whole milliseconds using exact integer arithmetic, sum samples before truncating once, and reject unsafe duration overflow. Contiguous single-segment runs reject duplicate frame IDs, sequence gaps or reversals, identity or format changes, and frames after the segment-end marker. The contract selects no codec, payload representation, audio API, player, or buffer policy.

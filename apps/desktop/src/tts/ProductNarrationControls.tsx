@@ -33,7 +33,9 @@ function phaseMessage(
   snapshot: ReturnType<ProductNarrationCoordinator["observe"]>,
 ): string {
   if (snapshot.failure !== undefined) {
-    return "Local narration failed.";
+    return snapshot.failure === "tts-profile-unavailable"
+      ? "Local narration compatibility changed."
+      : "Local narration failed.";
   }
   switch (snapshot.state?.phase) {
     case "buffering":
@@ -124,7 +126,9 @@ export function ProductNarrationControls({
           ) : null}
           {snapshot.failure === undefined ? null : (
             <p className="product-narration-error">
-              Stop narration to reset it, then try again.
+              {snapshot.failure === "tts-profile-unavailable"
+                ? "Check compatibility before starting narration again."
+                : "Stop narration to reset it, then try again."}
             </p>
           )}
         </div>

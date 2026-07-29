@@ -34,6 +34,7 @@ import {
   type TtsGenerationScope,
   type TtsProcessClientObservation,
 } from "./process-client";
+import { EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID } from "./hardware-profile-registry";
 
 const TICK_INTERVAL_MS = 250;
 const PREPARED_BATCH_SEGMENT_LIMIT = 16;
@@ -42,6 +43,7 @@ const NAVIGATION_BOUNDARY_LIMIT = 64;
 export type ProductNarrationFailureCode =
   | "audio-playback-failed"
   | "narration-preparation-failed"
+  | "tts-profile-unavailable"
   | "tts-service-failed";
 
 export interface ProductNarrationMetrics {
@@ -105,9 +107,18 @@ export interface ProductNarrationClock {
   readonly nowMs: number;
 }
 
+export interface ProductNarrationProfileCompatibility {
+  isProfileCurrentlyAllowed(profileId: string): boolean | undefined;
+  isProfileStartAllowed(
+    profileId: string,
+    trigger: "application-start" | "before-profile-start",
+  ): Promise<boolean>;
+}
+
 export interface ProductNarrationCoordinatorDependencies {
   readonly client?: ProductNarrationServiceClient;
   readonly clock?: ProductNarrationClock;
+  readonly profileCompatibility?: ProductNarrationProfileCompatibility;
   readonly createPlayer?: (
     scheduler: AdaptiveBufferScheduler,
   ) => AdaptivePcmPlayer;
@@ -215,6 +226,8 @@ export class ProductNarrationCoordinator {
   readonly #publication: OpenedPublication;
   readonly #client: ProductNarrationServiceClient;
   readonly #clock: ProductNarrationClock;
+  readonly #profileCompatibility:
+    ProductNarrationProfileCompatibility | undefined;
   readonly #createPlayer: (
     scheduler: AdaptiveBufferScheduler,
   ) => AdaptivePcmPlayer;
@@ -278,6 +291,7 @@ export class ProductNarrationCoordinator {
     this.#activeLocator = initialLocator;
     this.#visibleLocator = initialLocator;
     this.#client = dependencies.client ?? new TtsProcessClient();
+    this.#profileCompatibility = dependencies.profileCompatibility;
     this.#clock =
       dependencies.clock ??
       Object.freeze({
@@ -332,7 +346,21 @@ export class ProductNarrationCoordinator {
     if (this.#closed || this.#availability !== "checking") {
       return;
     }
-    const availability = await this.#client.exactDemoAvailability();
+    let availability: TtsExactDemoAvailability;
+    if (this.#profileCompatibility === undefined) {
+      availability = await this.#client.exactDemoAvailability();
+    } else {
+      const current = this.#profileCompatibility.isProfileCurrentlyAllowed(
+        EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+      );
+      const allowed =
+        current ??
+        (await this.#profileCompatibility.isProfileStartAllowed(
+          EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+          "application-start",
+        ));
+      availability = allowed ? "available" : "unavailable";
+    }
     if (this.#closed) {
       return;
     }
@@ -854,6 +882,19 @@ export class ProductNarrationCoordinator {
     try {
       switch (action.kind) {
         case "start-service":
+          if (
+            this.#profileCompatibility !== undefined &&
+            !(await this.#profileCompatibility.isProfileStartAllowed(
+              EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+              "before-profile-start",
+            ))
+          ) {
+            if (runToken === this.#runToken) {
+              this.#availability = "unavailable";
+              this.#fail("tts-profile-unavailable", runToken);
+            }
+            return;
+          }
           scheduler.beginServiceStart();
           this.#publish();
           await this.#client.start();
