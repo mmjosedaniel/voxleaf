@@ -493,7 +493,17 @@ measured host match and existing native development gate both pass.
 
 ### Status
 
-Not started.
+In progress as of 2026-07-28 on branch
+`feat/m010-m4-identity-safe-operational-recovery`, created from merged main
+commit `1d31382730bdc3cf7edfb4b664bb4ded4c6fb5be`.
+
+The implementation remains desktop-local. It will add one pure bounded
+recovery controller, classify only closed service/playback failures, compose
+the existing coordinator/client/player cleanup boundaries, preserve an
+in-memory canonical latest-heard locator, and expose one explicit accessible
+recovery action. It changes no shared schema, protocol-v1 field, Python
+service, native command or permission, dependency, buffer limit, narration
+segmentation, or persisted reader-state shape.
 
 ## Milestone 5: Freeze and evaluate a CPU-compatible fallback candidate
 
@@ -661,6 +671,16 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-28: Started Milestone 4 sequentially on
+  `feat/m010-m4-identity-safe-operational-recovery` from merged main
+  `1d31382730bdc3cf7edfb4b664bb4ded4c6fb5be`. Re-read the frozen M010
+  transition/failure authority and the implemented M007-M009 lifecycle
+  boundaries. Selected a desktop-local implementation: one bounded pure
+  recovery controller, existing identity-first product teardown, asynchronous
+  four-unit audio release with a completion boundary, existing native
+  cancel/shutdown containment, zero-ownership verification, latest-heard
+  resume, and one explicit UI action. No automatic retry or restart is
+  authorized.
 - 2026-07-28: Implemented Milestone 3 sequentially. Added the immutable
   evidence-backed Qwen/Serena, Qwen/Aiden, and Supertonic/F1 registry; pure
   fail-closed matching with the frozen result-blind margins; bounded
