@@ -3,7 +3,7 @@
 ## Status and purpose
 
 VoxLeaf is pre-alpha. Milestones 1 through 9 and M009.1 are complete.
-M010 is in progress with Milestones 1-5 complete and Milestone 6 implemented:
+M010 is in progress with Milestones 1-6 complete:
 privacy-safe host
 detection, immutable measured matching, bounded preference and compatibility
 UI, pre-start enforcement, and identity-safe one-attempt recovery are
@@ -12,9 +12,8 @@ speed-focused CPU fallback. Exact Qwen/Serena remains development-only.
 Milestone 6 now integrates both through one service tree and explicit profile
 selection. Piper alone uses the frozen locator-safe,
 spoken-expansion-aware `narration-piper-v2` preparation limits; its corrective
-ordinary-prose and compact-form packaged matrix passes. The final Milestone 6
-closure condition is the user's rebuilt private-book rerun advancing beyond
-the formerly failing second unit.
+ordinary-prose, compact-form, zero-sentence-boundary fragment, and content-safe
+packaged private-book matrices pass.
 Product playback additionally requires the native exact-profile
 runtime-configuration gate during availability resolution and immediately
 before child start; hardware compatibility alone no longer enables Play.
@@ -690,8 +689,8 @@ stabilized application shell.
 
 ## Milestone 10: Add hardware profiles, fallback, and operational resilience
 
-**Status:** In progress; Milestones 1-5 are complete. Milestone 6 is
-implemented and exact-host validated; private-book confirmation remains. Follow
+**Status:** In progress; Milestones 1-6 are complete, including exact-host and
+content-safe packaged private-book validation. Follow
 [`M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md).
 The canonical privacy-safe host compatibility report, profile/evidence shape,
 matching/preference rules, fixed resource margins, failure taxonomy, and
@@ -713,6 +712,10 @@ reproduced oversized-unit failure without truncation or a protocol change.
 The desktop also skips punctuation-only Piper units after a private,
 content-safe reproduction proved that the exact phonemizer emits no waveform
 for them; no silence is inserted and locator continuation remains intact. The
+adaptive scheduler also accepts valid non-empty narration fragments with zero
+recognized sentence boundaries, matching the existing M005 non-negative
+measurement contract while retaining positive code-point/byte requirements.
+The
 separate native configuration-admission correction fails closed before child
 start when the selected exact runtime is not configured, and configured Piper
 passes the corrective packaged arm; Qwen passes offline
@@ -884,10 +887,9 @@ supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
 Milestones 1 through 9 and M009.1 are complete, with their evidence retained
-under [`completed/`](completed/). M010 is active with Milestones 1-5 complete
-and Milestone 6 implemented and exact-host validated. One rebuilt private-book
-rerun must confirm advancement beyond the formerly failing second unit before
-Milestone 6 closes; Milestone 7 then owns final support decisions and closeout.
+under [`completed/`](completed/). M010 is active with Milestones 1-6 complete,
+including exact-host and content-safe packaged private-book validation.
+Milestone 7 owns final support decisions and closeout.
 
 ## MVP completion boundary
 

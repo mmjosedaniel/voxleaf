@@ -147,6 +147,27 @@ function assertWithinAuthority(
 }
 
 describe("adaptive buffer scheduler", () => {
+  it("accepts a spoken fragment with no recognized sentence boundary", () => {
+    const scheduler = makeReadyScheduler(createManualClock(0));
+    const fragment = Object.freeze({
+      ...segment(1),
+      sentenceCount: 0,
+    });
+
+    prepare(scheduler, [fragment], true);
+
+    expect(scheduler.observe()).toMatchObject({
+      resourceSnapshot: {
+        retainedNarrationSentences: 0,
+        retainedPreparedSegments: 1,
+      },
+      nextAction: {
+        kind: "synthesize",
+        segmentId: fragment.segmentId,
+      },
+    });
+  });
+
   it("projects immutable source ranges only while their FIFO units are eligible", () => {
     const clock = createManualClock(0);
     const scheduler = makeReadyScheduler(clock);

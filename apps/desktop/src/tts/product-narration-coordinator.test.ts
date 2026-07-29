@@ -241,6 +241,7 @@ function sourceRange(startOffset: number, endOffset: number) {
 function preparedSegment(
   text: string,
   range = SOURCE_RANGE,
+  sentenceCount = 1,
 ): PreparedNarrationSegment {
   return Object.freeze({
     text: text as PreparedNarrationSegment["text"],
@@ -250,7 +251,7 @@ function preparedSegment(
       sourceCodePoints: createIndex(12),
       narrationCodePoints: createIndex(Array.from(text).length),
       narrationUtf8Bytes: createIndex(new TextEncoder().encode(text).length),
-      sentenceCount: createIndex(1),
+      sentenceCount: createIndex(sentenceCount),
     }),
   });
 }
@@ -264,6 +265,10 @@ function completeSegments(
   );
   const narrationUtf8Bytes = segments.reduce(
     (total, segment) => total + segment.measurements.narrationUtf8Bytes,
+    0,
+  );
+  const sentenceCount = segments.reduce(
+    (total, segment) => total + segment.measurements.sentenceCount,
     0,
   );
   return Object.freeze({
@@ -280,7 +285,7 @@ function completeSegments(
       narrationCodePoints: createIndex(narrationCodePoints),
       narrationUtf8Bytes: createIndex(narrationUtf8Bytes),
       segmentCount: createIndex(segments.length),
-      sentenceCount: createIndex(segments.length),
+      sentenceCount: createIndex(sentenceCount),
       checkpointCount: createIndex(segments.length),
     }),
   });
@@ -558,6 +563,33 @@ describe("product narration coordinator", () => {
     expect(client.synthesized[0]?.sourceRange).toEqual(spokenRange);
     expect(coordinator.observe().failure).toBeUndefined();
     expect(coordinator.startAtLocator(START_LOCATOR)).toBe(true);
+    await coordinator.close();
+  });
+
+  it("synthesizes a spoken Piper fragment with no recognized sentence boundary", async () => {
+    const profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const fragment = preparedSegment(
+      "Fragmento sintético sin cierre",
+      SOURCE_RANGE,
+      0,
+    );
+    const { client, coordinator } = createHarness({
+      result: completeSegments([fragment]),
+      profileCompatibility,
+    });
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+
+    expect(client.synthesized).toHaveLength(1);
+    expect(client.synthesized[0]?.text).toBe(fragment.text);
+    expect(coordinator.observe().failure).toBeUndefined();
     await coordinator.close();
   });
 

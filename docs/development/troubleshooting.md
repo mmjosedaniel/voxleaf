@@ -179,6 +179,14 @@ application before retesting. The fix does not rewrite text, truncate audio,
 retry synthesis, or increase the protocol ceiling; an unusual output can
 still fail closed.
 
+If failure occurs exactly when the next bounded preparation batch begins, do
+not assume Piper rejected the text. A valid non-empty fragment without a
+recognized terminal sentence boundary has `sentenceCount: 0`. Older scheduler
+code incorrectly rejected that non-negative M005 measurement after the first
+16 prepared units. The corrected scheduler still requires positive narration
+code-point and UTF-8-byte counts, but accepts zero sentence boundaries. Rebuild
+and restart the application; no reader-state reset or EPUB change is required.
+
 One bounded cause is an exact Qwen call that does not emit its codec stop token.
 Its historical benchmark authority retains `maxNewTokens: 2048` so that
 evaluation record remains unchanged, but that allowance can decode far beyond

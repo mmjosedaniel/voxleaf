@@ -575,6 +575,17 @@ range, and leaves paragraph-leaf replacement available. This is a Piper
 dispatch rule; generic/Qwen preparation and M005 normalization output remain
 unchanged.
 
+The final content-safe packaged private-book regression exposed a separate
+second-batch scheduler mismatch. Valid non-empty narration fragments can report
+zero recognized sentence boundaries; M005 models that measurement as a
+non-negative `Index`. Scheduler coverage now proves that
+`sentenceCount: 0` retains a prepared segment with zero retained sentence
+resources and dispatches it normally, while the product-coordinator regression
+proves Piper synthesizes the fragment without entering preparation failure.
+The rebuilt packaged confirmation crossed the former 16-unit boundary with 27
+accepted units, 60.837 playable seconds, active playback, no failure, and a
+ready service.
+
 Corrective Milestone 6 coverage also separates hardware matching from native
 runtime configuration. Rust rejects unknown profile identities at the
 content-free boolean boundary; the typed process client sends only the bounded

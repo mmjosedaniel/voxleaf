@@ -8,9 +8,9 @@ Roadmap Milestones 1 through 9 and the M009.1 reader-experience stabilization
 are complete. M008 provides the constrained one-GPU narration demo; M009 and
 M009.1 add synchronized highlighting, heard checkpoints, stable reader chrome,
 paragraph leaves, and passive-scroll isolation. M010 is in progress with
-Milestones 1-5 are complete. Milestone 6 runtime integration and its
-deterministic/exact-host validation pass; closure of the final Piper
-spoken-expansion correction awaits one private-book rerun. M010 freezes and
+Milestones 1-6 complete. Milestone 6 runtime integration,
+deterministic/exact-host validation, and content-safe packaged private-book
+confirmation pass. M010 freezes and
 implements the separate privacy-safe
 host report, immutable measured registry, fail-closed matching, bounded
 profile preference, compatibility UI, immediate pre-start checks, and the
@@ -105,7 +105,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M008-bounded-adaptive-prebuffering.md`](plans/completed/M008-bounded-adaptive-prebuffering.md): completed ExecPlan for the exact-development quick/prepared path, bounded scheduler/player, final demo policy, exact-host evidence, and repository/CI closeout.
 - [`plans/completed/M009-synchronized-reading-and-narration.md`](plans/completed/M009-synchronized-reading-and-narration.md): completed focused ExecPlan for segment-level synchronization, highlighting, focus-safe following, synchronized navigation, heard-position persistence, exact-host validation, and repository/CI closeout.
 - [`plans/completed/M009-001-reader-experience-stabilization.md`](plans/completed/M009-001-reader-experience-stabilization.md): completed bounded M009 follow-up for the visible-highlight repair, dedicated reader viewport, compact/collapsible narration UI, truthful loaded-duration status, locator-backed paragraph leaf, passive-scroll isolation, exact-host validation, and repository/CI closeout.
-- [`plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md): active focused ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, and identity-safe operational recovery. Milestones 1-5 are complete. Milestone 6 implements executable Piper/Qwen registry, service, native selection, settings, Piper-only locator-safe spoken-expansion-aware preparation, and the profile-specific resilience runner; corrected ordinary-prose and compact-form Piper playback passes, with private-book confirmation pending, and Qwen passes service plus exact fail-closed packaged compatibility. Milestone 7 owns final support decisions and closeout.
+- [`plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md): active focused ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, and identity-safe operational recovery. Milestones 1-6 are complete. Milestone 6 implements executable Piper/Qwen registry, service, native selection, settings, Piper-only locator-safe spoken-expansion-aware preparation, and the profile-specific resilience runner; corrected ordinary-prose, compact-form, zero-sentence-boundary fragment, and packaged private-book playback pass, and Qwen passes service plus exact fail-closed packaged compatibility. Milestone 7 owns final support decisions and closeout.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

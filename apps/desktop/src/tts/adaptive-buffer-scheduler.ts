@@ -209,8 +209,7 @@ function freezePreparedSegment(
     segment.narrationCodePoints === 0 ||
     !isCount(segment.narrationUtf8Bytes) ||
     segment.narrationUtf8Bytes === 0 ||
-    !isCount(segment.sentenceCount) ||
-    segment.sentenceCount === 0
+    !isCount(segment.sentenceCount)
   ) {
     throw new AdaptiveBufferSchedulerError("invalid-prepared-batch");
   }

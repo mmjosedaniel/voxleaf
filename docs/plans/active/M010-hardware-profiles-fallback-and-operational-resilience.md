@@ -47,10 +47,10 @@ the milestone.
 
 ## Current state
 
-Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-5
-are complete. Milestone 6 runtime integration and deterministic/exact-host
-validation pass; its final corrective closure condition is one user-confirmed
-private-book rerun beyond the formerly failing second unit. Commit
+Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-6
+are complete. Milestone 6 runtime integration, deterministic/exact-host
+validation, and the content-safe private-book packaged confirmation pass.
+Commit
 `8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
 result-blind hardware/profile/recovery authority, canonical compatibility
 report, executable desktop tables, native API/permission audit, and ADR-0019
@@ -618,6 +618,11 @@ configuration, and settings choice atomically.
   `piper-narration-preparation-profile-v2.md`, add its process-local weighted
   budget without changing normalization or protocol v1, and retain v1 only as
   historical authority.
+- Reconcile the adaptive scheduler with the existing M005 narration contract:
+  a non-empty spoken fragment may truthfully have `sentenceCount: 0` when no
+  recognized sentence boundary occurs. Keep code-point and byte non-emptiness,
+  accept the non-negative sentence measurement, and prove the second bounded
+  preparation batch no longer fails.
 
 ### Validation
 
@@ -692,7 +697,20 @@ the remaining failure to punctuation-only units for which Piper returns no
 waveform. The desktop now omits only those nonspoken Piper units before
 protocol dispatch, inserts no silence, preserves continuation, and keeps the
 next paragraph-leaf target actionable. All 400 desktop tests pass. Milestone 6
-remains open only for the frozen user confirmation on the private EPUB.
+then remained open for the frozen private-EPUB confirmation.
+
+The final packaged confirmation reproduced one further application-only
+boundary without retaining or printing book text, its path, or audio. Before
+the correction, exact Piper generated 16 units and 27.257 seconds of playable
+audio, but the next preparation batch failed while the service remained
+`ready`. A content-safe scan found valid non-empty fragments whose existing
+M005 measurement was `sentenceCount: 0`; the desktop scheduler alone had
+incorrectly required a positive value. The scheduler now accepts that
+non-negative measurement while retaining positive code-point/byte requirements
+and every queue/resource bound. The rebuilt packaged application then accepted
+27 units, held 60.837 playable seconds, remained in `playing` with no failure,
+and kept the service `ready`; starting through the paragraph leaf succeeded.
+Milestone 6 is complete.
 
 ## Milestone 7: Record support decisions and close validation
 
@@ -792,6 +810,22 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-29: Closed the final private-book discrepancy. A content-safe full
+  scan prepared all 5,722 units and confirmed exact Piper synthesis across the
+  publication. A release-packaged private-book reproduction then localized the
+  remaining failure to the second 16-unit preparation batch: 16 units and
+  27.257 playable seconds were accepted before
+  `narration-preparation-failed`, while the service remained `ready`. The
+  existing EPUB narration contract permits `sentenceCount: 0` for a non-empty
+  fragment without a recognized terminal boundary, but the adaptive scheduler
+  incorrectly rejected it. Focused scheduler and coordinator regressions now
+  cover that valid case. The rebuilt packaged rerun accepted 27 units, buffered
+  60.837 seconds, remained `playing` with no failure, kept the service `ready`,
+  and proved paragraph-leaf start. No EPUB text, path, or audio was retained or
+  emitted. `pnpm.cmd check:portable` and the authoritative Windows
+  `pnpm.cmd check` pass with 209 shared, 559 EPUB, 402 desktop plus 7 native
+  WebDriver-client, 40 Rust, and 256 Python tests. Milestone 6 is complete;
+  Milestone 7 closeout remains.
 - 2026-07-29: A private reader rerun accepted one eight-second Piper unit and
   then exposed a later processing failure. No EPUB text or path was inspected.
   Bounded exact-voice synthetic reproduction established the remaining
@@ -1274,9 +1308,9 @@ rewrite unrelated reader state.
 ## Final validation results
 
 Milestones 1-6 implementation and local validation are complete and recorded
-above. Milestone 6's synthetic reproduced class is closed, while its frozen
-private-book confirmation is still pending. M010 remains in progress with
-Milestone 7 not started. The
+above. Milestone 6's synthetic reproduced classes and content-safe packaged
+private-book confirmation are closed. M010 remains in progress with Milestone
+7 not started. The
 runtime can produce the canonical bounded host report, derive content-free
 compatibility, preserve only one bounded preference, reject a changed host
 immediately before child start, and perform one identity-safe explicit

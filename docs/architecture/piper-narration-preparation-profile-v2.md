@@ -136,7 +136,7 @@ segment measurements. Generic `narration-v1` and historical
 `narration-piper-v1` policies retain their prior behavior, and the desktop
 selects v2 only for the admitted Piper profile.
 
-All 559 EPUB tests and all 400 desktop tests pass. The release-packaged exact
+All 559 EPUB tests and all 402 desktop tests pass. The release-packaged exact
 Piper regression uses a synthetic expansion-heavy sentence and completed
 60.010 seconds of stable playback with zero underruns, 18 synchronized
 transitions, zero GPU allocation, zero external requests, zero generated-audio
@@ -154,5 +154,17 @@ unit; the prior desktop path treated that valid no-speech outcome as a
 processing failure. With the dispatch omission above, the first 64 prepared
 units omitted four punctuation-only units and all 60 speakable units
 synthesized successfully. The probe emitted only counts, durations, and fixed
-outcomes and retained no book text, path, or audio. A rebuilt application
-rerun remains the final private-book confirmation.
+outcomes and retained no book text, path, or audio.
+
+The rebuilt packaged confirmation subsequently proved that preparation and
+Piper synthesis were healthy across the private publication but exposed a
+desktop-only contract mismatch at the next 16-unit batch. A valid non-empty
+fragment reported `sentenceCount: 0`, as allowed by the existing M005
+non-negative `Index` measurement, while the adaptive scheduler incorrectly
+required a positive value. Removing only that false scheduler restriction
+retains positive code-point/byte requirements and all v2 bounds. Before the
+correction, 16 units and 27.257 playable seconds were accepted before
+preparation failed with the service still `ready`; afterward, the packaged run
+accepted 27 units, buffered 60.837 seconds, remained `playing` with no failure,
+kept the service `ready`, and started through the paragraph leaf. No book text,
+path, or audio was retained or printed. The private-book confirmation passes.
