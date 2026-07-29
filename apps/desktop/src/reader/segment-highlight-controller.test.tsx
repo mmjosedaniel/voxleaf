@@ -20,6 +20,7 @@ import type {
   ProductNarrationFailureCode,
   ProductNarrationSnapshot,
 } from "../tts/product-narration-coordinator";
+import { INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1 } from "../tts/operational-recovery";
 import { SemanticDocumentContent } from "./SemanticDocument";
 import {
   SegmentHighlightController,
@@ -133,6 +134,7 @@ function narrationSnapshot(
       discardedAudioUnitCount: 0,
     }),
     serviceState: phase === "playing" ? "ready" : "stopped",
+    recovery: INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1,
     navigation: Object.freeze({
       playIntent:
         phase === "playing"

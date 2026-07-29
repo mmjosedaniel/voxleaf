@@ -32,6 +32,25 @@ function availabilityMessage(
 function phaseMessage(
   snapshot: ReturnType<ProductNarrationCoordinator["observe"]>,
 ): string {
+  switch (snapshot.recovery.phase) {
+    case "invalidating":
+    case "releasing":
+    case "containing-service":
+    case "verifying-cleanup":
+      return "Containing the local narration failure.";
+    case "recovery-available":
+      return snapshot.recovery.action === "select-compatible-profile"
+        ? "Choose a compatible local narration profile."
+        : "Local narration can be restarted once.";
+    case "recovering":
+      return "Restarting local narration.";
+    case "unavailable":
+      return "Local narration recovery is unavailable.";
+    case "contained":
+      return "Local narration is safely contained.";
+    case "operational":
+      break;
+  }
   if (snapshot.failure !== undefined) {
     return snapshot.failure === "tts-profile-unavailable"
       ? "Local narration compatibility changed."
@@ -75,10 +94,15 @@ export function ProductNarrationControls({
   }, [coordinator]);
   const startHint = availabilityMessage(snapshot.availability);
   const state = snapshot.state;
-  const showStart = state === undefined;
+  const operational = snapshot.recovery.phase === "operational";
+  const canRestart =
+    snapshot.recovery.canRecover &&
+    snapshot.recovery.action !== "select-compatible-profile";
+  const showStart = state === undefined && operational;
   const showPause = state?.canPause === true;
   const showResume = state?.canResume === true;
   const showStop =
+    operational &&
     state !== undefined &&
     (state.canStop || state.phase === "complete" || state.phase === "failed");
 
@@ -89,6 +113,8 @@ export function ProductNarrationControls({
       data-narration-availability={snapshot.availability}
       data-narration-phase={snapshot.state?.phase ?? "idle"}
       data-narration-failure={snapshot.failure ?? "none"}
+      data-narration-recovery-phase={snapshot.recovery.phase}
+      data-narration-recovery-code={snapshot.recovery.failureCode ?? "none"}
       data-narration-playable-ms={snapshot.state?.readyMs ?? 0}
       data-narration-target-ms={snapshot.state?.targetMs ?? 0}
       data-narration-service-state={snapshot.serviceState}
@@ -126,9 +152,17 @@ export function ProductNarrationControls({
           ) : null}
           {snapshot.failure === undefined ? null : (
             <p className="product-narration-error">
-              {snapshot.failure === "tts-profile-unavailable"
-                ? "Check compatibility before starting narration again."
-                : "Stop narration to reset it, then try again."}
+              {snapshot.recovery.phase === "contained"
+                ? "Restart the application or check compatibility before trying again."
+                : snapshot.recovery.phase === "unavailable"
+                  ? "Check compatibility or restart the application before trying again."
+                  : snapshot.recovery.canRecover
+                    ? snapshot.recovery.action === "select-compatible-profile"
+                      ? "Check compatibility and choose an available profile."
+                      : "Restart resumes from the latest heard passage and does not reuse old audio."
+                    : snapshot.failure === "tts-profile-unavailable"
+                      ? "Check compatibility before starting narration again."
+                      : "Local narration cleanup is in progress."}
             </p>
           )}
         </div>
@@ -174,6 +208,15 @@ export function ProductNarrationControls({
               Stop
             </button>
           ) : null}
+          {canRestart ? (
+            <button
+              type="button"
+              data-narration-action="recover"
+              onClick={() => coordinator.recover()}
+            >
+              Restart local narration
+            </button>
+          ) : null}
           <button
             type="button"
             data-narration-action="details-toggle"
@@ -189,7 +232,9 @@ export function ProductNarrationControls({
         <div id={detailId} className="product-narration-detail">
           <AdaptivePreparationControls
             selection={snapshot.selection}
-            startDisabled={snapshot.availability !== "available"}
+            startDisabled={
+              snapshot.availability !== "available" || !operational
+            }
             showPlaybackControls={false}
             {...(state === undefined ? {} : { state })}
             {...(startHint === undefined ? {} : { startHint })}
@@ -235,6 +280,7 @@ export function ProductNarrationControls({
               data-narration-action="visible-passage"
               disabled={
                 snapshot.availability !== "available" ||
+                !operational ||
                 snapshot.navigation.settling
               }
               onClick={() => coordinator.startAtVisibleLocator()}

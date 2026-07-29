@@ -170,7 +170,13 @@ describe("hardware compatibility controls", () => {
   it("supports explicit keyboard-focus-safe selection and recheck", async () => {
     const preferenceRepository = preference();
     const subject = coordinator({ preference: preferenceRepository });
-    render(<HardwareCompatibilityControls coordinator={subject} />);
+    const onRecoveryEpisodeReset = vi.fn();
+    render(
+      <HardwareCompatibilityControls
+        coordinator={subject}
+        onRecoveryEpisodeReset={onRecoveryEpisodeReset}
+      />,
+    );
     await waitFor(() =>
       expect(subject.observe().status).toBe("development-only"),
     );
@@ -187,6 +193,7 @@ describe("hardware compatibility controls", () => {
         EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
       ),
     );
+    expect(onRecoveryEpisodeReset).toHaveBeenCalledTimes(1);
 
     const recheck = screen.getByRole("button", {
       name: "Check compatibility again",
@@ -196,6 +203,7 @@ describe("hardware compatibility controls", () => {
     expect(recheck).toHaveFocus();
     await waitFor(() => expect(recheck).toBeEnabled());
     expect(recheck).toHaveFocus();
+    expect(onRecoveryEpisodeReset).toHaveBeenCalledTimes(2);
   });
 
   it("keeps unavailable and failure presentation content-free", async () => {

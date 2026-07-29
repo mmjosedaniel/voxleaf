@@ -4,7 +4,21 @@ Documentation is organized by purpose so contributors and Codex can load only th
 
 ## Current project status
 
-Roadmap Milestones 1 through 9 and the M009.1 reader-experience stabilization are complete. M008 provides the constrained one-GPU narration demo: bounded narration preparation from the active visual locator, one-at-a-time M007 synthesis, sole-owner in-memory buffering, Web Audio playback, and accessible quick/prepared controls. M009 adds segment-level audible progress, one non-mutating focus-safe reader highlight/follow projection, identity-first synchronized navigation, non-skipping heard checkpoints, and exact-host packaged validation. M009.1 repairs the reproduced same-chapter highlight-materialization gap, gives the opened publication one dedicated scroll viewport and compact/collapsible narration chrome, replaces the ambiguous preparation bar with exact loaded-duration text, adds one bounded locator-backed paragraph leaf, and keeps passive viewport inspection separate from active narration. Its deterministic, Chromium, packaged WebView2, private-EPUB, exact-host, repository, privacy, portable, and required Ubuntu/Windows validation pass; pull request #142 merged the final closeout. M010 is in progress with Milestones 1-3 complete: Milestone 1 freezes the separate privacy-safe host compatibility contract, immutable profile/evidence shape, result-blind resource margins, deterministic matching and preference rules, closed failure taxonomy, and identity-first explicit recovery authority. Milestone 2 implements the native Windows detector and typed desktop decoder for that identity-free bounded report using direct OS/provider APIs, one concurrent probe, and fixed content-free failures. Milestone 3 adds and validates the immutable measured registry, pure fail-closed matcher, bounded profile-ID preference, app-start/resume/pre-start checks, and compact accessible compatibility UI. Only the exact Qwen/Serena profile may become `development-only` when both measured host facts and the native development gate pass. Rejected Qwen/Aiden and Supertonic profiles remain unavailable; no standard recommendation, CPU fallback, renderer permission, raw-report persistence, automatic retry, or recovery controller exists. The exact narration path remains development-only because ADR-0013 still selects no standard profile and observed buffering remains above the MVP target.
+Roadmap Milestones 1 through 9 and the M009.1 reader-experience stabilization
+are complete. M008 provides the constrained one-GPU narration demo; M009 and
+M009.1 add synchronized highlighting, heard checkpoints, stable reader chrome,
+paragraph leaves, and passive-scroll isolation. M010 is in progress with
+Milestones 1-4 complete. It freezes and implements the separate privacy-safe
+host report, immutable measured registry, fail-closed matching, bounded
+profile preference, compatibility UI, immediate pre-start checks, and the
+desktop-local identity-safe recovery controller. Operational failure replaces
+work identity before bounded teardown, verifies zero service/audio ownership,
+and only then exposes one explicit restart from the latest heard checkpoint.
+Protocol rejection, cancellation timeout, cleanup failure, and repeated
+recovery remain contained; diagnostics retain at most eight content-free
+entries and no automatic retry exists. Exact Qwen/Serena remains
+`development-only`; rejected candidates remain unavailable, and no standard
+recommendation or CPU fallback exists.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -39,7 +53,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0016-rust-owned-stdio-tts-protocol.md`](architecture/decisions/ADR-0016-rust-owned-stdio-tts-protocol.md): accepted Rust-owned standard-stream supervision and complete-unit binary-response decision.
 - [`architecture/decisions/ADR-0017-segment-level-reader-narration-synchronization.md`](architecture/decisions/ADR-0017-segment-level-reader-narration-synchronization.md): accepted segment-level synchronization, CSS Custom Highlight, focus-safe following, manual-navigation, and non-skipping persistence decision.
 - [`architecture/decisions/ADR-0018-reader-experience-stabilization.md`](architecture/decisions/ADR-0018-reader-experience-stabilization.md): accepted result-blind M009.1 reader-experience authority; highlight materialization, the fixed compact reader shell, and the bounded contextual leaf are implemented.
-- [`architecture/decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md`](architecture/decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md): accepted result-blind M010 hardware/profile/recovery authority and implementation status through privacy-safe detection and measured matching, without a standard support or fallback claim.
+- [`architecture/decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md`](architecture/decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md): accepted result-blind M010 hardware/profile/recovery authority and implementation status through privacy-safe detection, measured matching, and identity-safe explicit recovery, without a standard support or fallback claim.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development
@@ -70,7 +84,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M008-bounded-adaptive-prebuffering.md`](plans/completed/M008-bounded-adaptive-prebuffering.md): completed ExecPlan for the exact-development quick/prepared path, bounded scheduler/player, final demo policy, exact-host evidence, and repository/CI closeout.
 - [`plans/completed/M009-synchronized-reading-and-narration.md`](plans/completed/M009-synchronized-reading-and-narration.md): completed focused ExecPlan for segment-level synchronization, highlighting, focus-safe following, synchronized navigation, heard-position persistence, exact-host validation, and repository/CI closeout.
 - [`plans/completed/M009-001-reader-experience-stabilization.md`](plans/completed/M009-001-reader-experience-stabilization.md): completed bounded M009 follow-up for the visible-highlight repair, dedicated reader viewport, compact/collapsible narration UI, truthful loaded-duration status, locator-backed paragraph leaf, passive-scroll isolation, exact-host validation, and repository/CI closeout.
-- [`plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md): active focused ExecPlan for privacy-safe host detection, evidence-backed profile matching, conditional CPU-fallback admission, and identity-safe operational recovery. Milestones 1-3 are complete: they freeze the authority and implement and validate detection, measured matching, bounded preference reuse, pre-start enforcement, and compatibility UI; standard support, fallback admission, and recovery remain later work.
+- [`plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md): active focused ExecPlan for privacy-safe host detection, evidence-backed profile matching, conditional CPU-fallback admission, and identity-safe operational recovery. Milestones 1-4 are complete: they freeze the authority and implement detection, measured matching, bounded preference reuse, pre-start enforcement, compatibility UI, verified identity-first cleanup, latest-heard resume, and one explicit restart; standard support and fallback admission remain later work.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

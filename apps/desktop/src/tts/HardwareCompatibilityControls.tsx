@@ -16,6 +16,7 @@ import type {
 
 export interface HardwareCompatibilityControlsProps {
   readonly coordinator: HardwareProfileCompatibilityCoordinator;
+  readonly onRecoveryEpisodeReset?: () => void;
 }
 
 const REASON_MESSAGES: Readonly<
@@ -86,6 +87,7 @@ function profileState(profile: HardwareProfileMatchV1): string {
 
 export function HardwareCompatibilityControls({
   coordinator,
+  onRecoveryEpisodeReset,
 }: HardwareCompatibilityControlsProps): ReactElement {
   const [selectionPending, setSelectionPending] = useState(false);
   const snapshot = useSyncExternalStore(
@@ -108,10 +110,17 @@ export function HardwareCompatibilityControls({
   const handleSelection = async (profileId: string): Promise<void> => {
     setSelectionPending(true);
     try {
-      await coordinator.selectProfile(profileId);
+      if (await coordinator.selectProfile(profileId)) {
+        onRecoveryEpisodeReset?.();
+      }
     } finally {
       setSelectionPending(false);
     }
+  };
+
+  const handleRecheck = async (): Promise<void> => {
+    await coordinator.check("explicit-recheck");
+    onRecoveryEpisodeReset?.();
   };
 
   return (
@@ -177,7 +186,7 @@ export function HardwareCompatibilityControls({
         <button
           type="button"
           disabled={snapshot.status === "checking"}
-          onClick={() => void coordinator.check("explicit-recheck")}
+          onClick={() => void handleRecheck()}
         >
           Check compatibility again
         </button>

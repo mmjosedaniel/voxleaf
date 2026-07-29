@@ -30,11 +30,20 @@ import {
 } from "./pcm-playback";
 import {
   TtsProcessClient,
+  TtsProcessClientError,
   type TtsExactDemoAvailability,
   type TtsGenerationScope,
   type TtsProcessClientObservation,
 } from "./process-client";
 import { EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID } from "./hardware-profile-registry";
+import {
+  HARDWARE_PROFILE_AUTHORITY_V1,
+  type RecoveryFailureCodeV1,
+} from "./hardware-profile-authority";
+import {
+  OperationalRecoveryController,
+  type OperationalRecoverySnapshotV1,
+} from "./operational-recovery";
 
 const TICK_INTERVAL_MS = 250;
 const PREPARED_BATCH_SEGMENT_LIMIT = 16;
@@ -66,6 +75,7 @@ export interface ProductNarrationSnapshot {
   readonly metrics: ProductNarrationMetrics;
   readonly serviceState: TtsProcessClientObservation["state"];
   readonly navigation: ProductNarrationNavigationSnapshot;
+  readonly recovery: OperationalRecoverySnapshotV1;
 }
 
 export type ProductNarrationAudibleProgressObservation =
@@ -128,6 +138,16 @@ export interface ProductNarrationCoordinatorDependencies {
   ) => string;
   readonly setInterval?: (callback: () => void, intervalMs: number) => unknown;
   readonly clearInterval?: (handle: unknown) => void;
+}
+
+export class ProductNarrationRecoveryError extends Error {
+  public readonly recoveryCode: RecoveryFailureCodeV1;
+
+  public constructor(recoveryCode: RecoveryFailureCodeV1) {
+    super("Local narration recovery failed.");
+    this.name = "ProductNarrationRecoveryError";
+    this.recoveryCode = recoveryCode;
+  }
 }
 
 type PreparedSegmentEntry = Readonly<{
@@ -222,6 +242,42 @@ function isActivePhase(state: AdaptivePreparationUiState | undefined): boolean {
   );
 }
 
+function classifyOperationalFailure(
+  productCode: ProductNarrationFailureCode,
+  action: "playback" | "prepare-service" | "start-service" | "synthesize",
+  error: unknown,
+): RecoveryFailureCodeV1 {
+  if (error instanceof ProductNarrationRecoveryError) {
+    return error.recoveryCode;
+  }
+  if (productCode === "audio-playback-failed" || action === "playback") {
+    return "playback-failed";
+  }
+  if (productCode === "tts-profile-unavailable") {
+    return "provider-unavailable";
+  }
+  if (error instanceof TtsProcessClientError) {
+    if (error.code === "tts-service-resource-limit") {
+      return "resource-exhausted";
+    }
+    if (
+      error.code === "tts-service-invalid-input" ||
+      error.code === "tts-service-invalid-response" ||
+      error.code === "tts-service-invalid-state" ||
+      error.code === "tts-service-protocol-rejected"
+    ) {
+      return "protocol-failed";
+    }
+  }
+  if (action === "start-service") {
+    return "model-load-failed";
+  }
+  if (action === "prepare-service") {
+    return "model-warm-failed";
+  }
+  return "service-crashed";
+}
+
 export class ProductNarrationCoordinator {
   readonly #publication: OpenedPublication;
   readonly #client: ProductNarrationServiceClient;
@@ -246,12 +302,14 @@ export class ProductNarrationCoordinator {
     (request: ProductNarrationNavigationRequest) => void
   >();
   readonly #estimator = new AdaptivePreparationEstimator();
+  readonly #recovery = new OperationalRecoveryController();
   readonly #prepared = new Map<string, PreparedSegmentEntry>();
   readonly #knownBoundaries: LocatorRangeV1[] = [];
   #availability: ProductNarrationSnapshot["availability"] = "checking";
   #selection: AdaptiveBufferStartMode = Object.freeze({ kind: "quick" });
   #activeLocator: ReadingLocatorV1;
   #visibleLocator: ReadingLocatorV1;
+  #latestHeardLocator: ReadingLocatorV1;
   #audibleRange: LocatorRangeV1 | undefined;
   #playIntent: ProductNarrationPlayIntent = "inactive";
   #pendingNavigation: PendingNavigation | undefined;
@@ -264,6 +322,7 @@ export class ProductNarrationCoordinator {
   #playerAudibleUnsubscribe: (() => void) | undefined;
   #operation: Promise<void> | undefined;
   #stopOperation: Promise<void> | undefined;
+  #recoveryOperation: Promise<void> | undefined;
   #tickHandle: unknown;
   #closed = false;
   #runToken = 0;
@@ -290,6 +349,7 @@ export class ProductNarrationCoordinator {
     this.#publication = publication;
     this.#activeLocator = initialLocator;
     this.#visibleLocator = initialLocator;
+    this.#latestHeardLocator = initialLocator;
     this.#client = dependencies.client ?? new TtsProcessClient();
     this.#profileCompatibility = dependencies.profileCompatibility;
     this.#clock =
@@ -369,7 +429,11 @@ export class ProductNarrationCoordinator {
   }
 
   public setSelection(selection: AdaptiveBufferStartMode): void {
-    if (this.#closed || isActivePhase(this.#snapshot.state)) {
+    if (
+      this.#closed ||
+      isActivePhase(this.#snapshot.state) ||
+      this.#recovery.observe().phase !== "operational"
+    ) {
       return;
     }
     this.#selection = Object.freeze({ ...selection });
@@ -425,7 +489,11 @@ export class ProductNarrationCoordinator {
   }
 
   public startAtVisibleLocator(): void {
-    if (this.#closed || this.#availability !== "available") {
+    if (
+      this.#closed ||
+      this.#availability !== "available" ||
+      this.#recovery.observe().phase !== "operational"
+    ) {
       return;
     }
     if (this.#playIntent === "inactive") {
@@ -442,6 +510,7 @@ export class ProductNarrationCoordinator {
     if (
       this.#closed ||
       this.#availability !== "available" ||
+      this.#recovery.observe().phase !== "operational" ||
       this.#pendingNavigation !== undefined ||
       !sameBookIdentity(locator.bookIdentity, this.#publication.book.identity)
     ) {
@@ -504,14 +573,58 @@ export class ProductNarrationCoordinator {
     if (
       this.#closed ||
       this.#availability !== "available" ||
-      this.#scheduler !== undefined
+      this.#scheduler !== undefined ||
+      this.#recovery.observe().phase !== "operational"
     ) {
       return;
     }
+    this.#startRun();
+  }
+
+  public recover(): void {
+    if (
+      this.#closed ||
+      this.#availability !== "available" ||
+      this.#scheduler !== undefined ||
+      !this.#recovery.observe().canRecover ||
+      this.#recovery.observe().action === "select-compatible-profile"
+    ) {
+      return;
+    }
+    this.#recovery.requestRecovery();
+    this.#activeLocator = this.#latestHeardLocator;
+    this.#visibleLocator = this.#latestHeardLocator;
+    this.#publish();
+    this.#startRun();
+  }
+
+  /**
+   * Explicit compatibility work starts a new bounded failure episode. It
+   * never starts narration and is ignored while containment is still active.
+   */
+  public resetRecoveryEpisode(): void {
+    if (this.#closed) {
+      return;
+    }
+    try {
+      this.#recovery.resetEpisode();
+      this.#failure = undefined;
+      this.#terminalState = undefined;
+      this.#availability = "checking";
+      this.#publish();
+      void this.checkAvailability();
+    } catch {
+      // Compatibility UI cannot bypass active cleanup or recovery.
+    }
+  }
+
+  #startRun(): void {
     this.#pendingNavigation = undefined;
     this.#pausedNavigationState = undefined;
     this.#playIntent = "playing";
-    this.#failure = undefined;
+    if (this.#recovery.observe().phase === "operational") {
+      this.#failure = undefined;
+    }
     this.#terminalState = undefined;
     this.#estimator.reset();
     this.#prepared.clear();
@@ -547,7 +660,10 @@ export class ProductNarrationCoordinator {
             this.#audibleRange = observation.sourceRange;
             this.#activeLocator = observation.sourceRange.start;
             this.#visibleLocator = observation.sourceRange.start;
+            this.#latestHeardLocator = observation.sourceRange.start;
             this.#publish();
+          } else if (observation.kind === "segment-completed") {
+            this.#latestHeardLocator = observation.sourceRange.end;
           }
           for (const listener of this.#audibleProgressListeners) {
             try {
@@ -575,7 +691,12 @@ export class ProductNarrationCoordinator {
       this.#playIntent = "paused";
       this.#tick(this.#runToken);
     } catch {
-      this.#fail("audio-playback-failed", this.#runToken);
+      this.#fail(
+        "audio-playback-failed",
+        this.#runToken,
+        "playback",
+        undefined,
+      );
     }
   }
 
@@ -596,7 +717,12 @@ export class ProductNarrationCoordinator {
       }
       this.#tick(this.#runToken);
     } catch {
-      this.#fail("audio-playback-failed", this.#runToken);
+      this.#fail(
+        "audio-playback-failed",
+        this.#runToken,
+        "playback",
+        undefined,
+      );
     }
   }
 
@@ -605,7 +731,12 @@ export class ProductNarrationCoordinator {
       this.#player?.setVolumePercent(volumePercent);
       this.#publish();
     } catch {
-      this.#fail("audio-playback-failed", this.#runToken);
+      this.#fail(
+        "audio-playback-failed",
+        this.#runToken,
+        "playback",
+        undefined,
+      );
     }
   }
 
@@ -891,7 +1022,12 @@ export class ProductNarrationCoordinator {
           ) {
             if (runToken === this.#runToken) {
               this.#availability = "unavailable";
-              this.#fail("tts-profile-unavailable", runToken);
+              this.#fail(
+                "tts-profile-unavailable",
+                runToken,
+                "start-service",
+                undefined,
+              );
             }
             return;
           }
@@ -908,6 +1044,10 @@ export class ProductNarrationCoordinator {
           await this.#client.prepare();
           if (runToken === this.#runToken) {
             scheduler.markServiceReady();
+            if (this.#recovery.observe().phase === "recovering") {
+              this.#recovery.markRecoverySucceeded();
+              this.#failure = undefined;
+            }
           }
           break;
         case "prepare-narration":
@@ -920,19 +1060,19 @@ export class ProductNarrationCoordinator {
       if (runToken === this.#runToken) {
         this.#publish();
       }
-    } catch {
+    } catch (error) {
       if (runToken !== this.#runToken) {
         return;
       }
       if (action.kind === "prepare-narration") {
         scheduler.failNarrationPreparation();
-        this.#fail("narration-preparation-failed", runToken);
+        this.#failPreparation(runToken);
       } else if (action.kind === "synthesize") {
         scheduler.failActiveSynthesis();
-        this.#fail("tts-service-failed", runToken);
+        this.#fail("tts-service-failed", runToken, "synthesize", error);
       } else {
         scheduler.failServiceTransition();
-        this.#fail("tts-service-failed", runToken);
+        this.#fail("tts-service-failed", runToken, action.kind, error);
       }
     }
   }
@@ -1064,11 +1204,15 @@ export class ProductNarrationCoordinator {
     }
     try {
       const player = this.#player.synchronize();
+      if (player.state === "failed") {
+        this.#fail("audio-playback-failed", runToken, "playback", undefined);
+        return;
+      }
       this.#updateMetrics(player);
       this.#publish();
       this.#requestPump(runToken);
-    } catch {
-      this.#fail("audio-playback-failed", runToken);
+    } catch (error) {
+      this.#fail("audio-playback-failed", runToken, "playback", error);
     }
   }
 
@@ -1093,18 +1237,203 @@ export class ProductNarrationCoordinator {
     this.#lastPlayerPhase = player.state;
   }
 
-  #fail(code: ProductNarrationFailureCode, runToken: number): void {
-    if (runToken !== this.#runToken || this.#failure !== undefined) {
+  #fail(
+    code: ProductNarrationFailureCode,
+    runToken: number,
+    action: "playback" | "prepare-service" | "start-service" | "synthesize",
+    error: unknown,
+  ): void {
+    if (runToken !== this.#runToken || this.#recoveryOperation !== undefined) {
       return;
     }
     this.#failure = code;
     this.#terminalState = this.#stateFromActiveOwners();
+    const recoveryCode = classifyOperationalFailure(code, action, error);
+    const wasRecovering = this.#recovery.observe().phase === "recovering";
+    if (!wasRecovering) {
+      if (this.#recovery.observe().phase !== "operational") {
+        return;
+      }
+      this.#recovery.detectFailure(
+        recoveryCode,
+        EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+      );
+    }
+    const operation = this.#containOperationalFailure(wasRecovering);
+    this.#recoveryOperation = operation;
+    void operation.finally(() => {
+      if (this.#recoveryOperation === operation) {
+        this.#recoveryOperation = undefined;
+      }
+    });
+  }
+
+  async #containOperationalFailure(wasRecovering: boolean): Promise<void> {
+    const operation = this.#operation;
     const scope = this.#activeScope;
+    const scheduler = this.#scheduler;
+    const player = this.#player;
+    const containmentToken = ++this.#runToken;
+    this.#identity = undefined;
+    if (!wasRecovering) {
+      this.#recovery.markIdentityInvalidated();
+    }
+    this.#playIntent = "inactive";
+    this.#pendingNavigation = undefined;
+    const transition = player?.close();
+    this.#playerAudibleUnsubscribe?.();
+    this.#playerAudibleUnsubscribe = undefined;
+    this.#stopTicker();
+    this.#prepared.clear();
+    this.#preparationAbort?.abort();
+    this.#preparationAbort = undefined;
+    this.#continuation = undefined;
+    this.#activeScope = undefined;
+    this.#audibleRange = undefined;
+    if (!wasRecovering) {
+      this.#recovery.markPlaybackAndPreparationReleased();
+    }
+    this.#publish();
+
+    let cleanupFailure: "cancellation-timeout" | "cleanup-failed" | undefined;
+    const terminationMaximumMs =
+      HARDWARE_PROFILE_AUTHORITY_V1.cleanup.processTreeTerminationMaximumMs;
+    const finalCleanupMaximumMs =
+      HARDWARE_PROFILE_AUTHORITY_V1.cleanup.finalCleanupMaximumMs;
+    try {
+      if (transition === "cancel" && scope !== undefined) {
+        await this.#within(
+          this.#client.cancel(scope),
+          terminationMaximumMs,
+          "cancellation-timeout",
+        );
+      }
+      if (operation !== undefined) {
+        await this.#within(
+          operation.catch(() => undefined),
+          finalCleanupMaximumMs,
+          "cleanup-failed",
+        );
+      }
+      await this.#within(
+        this.#client.shutdown(),
+        terminationMaximumMs,
+        "cleanup-failed",
+      );
+    } catch (error) {
+      cleanupFailure =
+        (error instanceof ProductNarrationRecoveryError &&
+          error.recoveryCode === "cancellation-timeout") ||
+        (transition === "cancel" &&
+          error instanceof TtsProcessClientError &&
+          error.code === "tts-service-timeout")
+          ? "cancellation-timeout"
+          : "cleanup-failed";
+      try {
+        await this.#within(
+          this.#client.shutdown(),
+          terminationMaximumMs,
+          "cleanup-failed",
+        );
+      } catch {
+        cleanupFailure ??= "cleanup-failed";
+      }
+    }
+    if (containmentToken !== this.#runToken) {
+      return;
+    }
+    if (!wasRecovering) {
+      this.#recovery.markServiceContained();
+      this.#publish();
+    }
+
+    try {
+      if (player !== undefined) {
+        await this.#within(
+          player.waitForCleanup(),
+          finalCleanupMaximumMs,
+          "cleanup-failed",
+        );
+      }
+      try {
+        scheduler?.settleServiceStop();
+      } catch {
+        // A rejected scheduler operation may already be in stopped state.
+      }
+      const service = this.#client.observe();
+      const scheduled = scheduler?.observe();
+      const playback = player?.synchronize();
+      const verified =
+        cleanupFailure === undefined &&
+        service.state === "stopped" &&
+        service.serviceInstanceId === undefined &&
+        !service.hasActiveGeneration &&
+        service.retainedAudioUnits === 0 &&
+        (scheduled === undefined ||
+          (scheduled.retainedAudioUnitCount === 0 &&
+            scheduled.discardedAudioUnitCount === 0 &&
+            Object.values(scheduled.resourceSnapshot).every(
+              (value) => value === 0,
+            ))) &&
+        (playback === undefined ||
+          (playback.retainedAudioUnitCount === 0 &&
+            playback.discardedAudioUnitCount === 0));
+      if (!verified) {
+        cleanupFailure ??= "cleanup-failed";
+      }
+    } catch {
+      cleanupFailure ??= "cleanup-failed";
+    }
+
+    this.#scheduler = undefined;
+    this.#player = undefined;
+    if (this.#operation === operation) {
+      this.#operation = undefined;
+    }
+    if (wasRecovering) {
+      this.#recovery.markRecoveryFailed();
+      this.#failure = "tts-service-failed";
+    } else if (cleanupFailure !== undefined) {
+      this.#recovery.markCleanupFailed(cleanupFailure);
+    } else {
+      this.#recovery.markCleanupVerified();
+    }
+    this.#publish();
+  }
+
+  async #within<T>(
+    operation: Promise<T>,
+    maximumMs: number,
+    failureCode: "cancellation-timeout" | "cleanup-failed",
+  ): Promise<T> {
+    let timeout: ReturnType<typeof globalThis.setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        operation,
+        new Promise<never>((_, reject) => {
+          timeout = globalThis.setTimeout(() => {
+            reject(new ProductNarrationRecoveryError(failureCode));
+          }, maximumMs);
+        }),
+      ]);
+    } finally {
+      if (timeout !== undefined) {
+        globalThis.clearTimeout(timeout);
+      }
+    }
+  }
+
+  #failPreparation(runToken: number): void {
+    if (runToken !== this.#runToken || this.#failure !== undefined) {
+      return;
+    }
+    this.#failure = "narration-preparation-failed";
+    this.#terminalState = this.#stateFromActiveOwners();
     this.#runToken += 1;
     this.#identity = undefined;
     this.#playIntent = "inactive";
     this.#pendingNavigation = undefined;
-    const transition = this.#player?.close();
+    this.#player?.close();
     this.#playerAudibleUnsubscribe?.();
     this.#playerAudibleUnsubscribe = undefined;
     this.#stopTicker();
@@ -1115,17 +1444,7 @@ export class ProductNarrationCoordinator {
     this.#activeScope = undefined;
     this.#audibleRange = undefined;
     this.#publish();
-    void (async () => {
-      try {
-        if (transition === "cancel" && scope !== undefined) {
-          await this.#client.cancel(scope);
-        } else {
-          await this.#client.shutdown();
-        }
-      } catch {
-        // The fixed product failure is already published content-free.
-      }
-    })();
+    void this.#client.shutdown().catch(() => undefined);
   }
 
   #stateFromActiveOwners(): AdaptivePreparationUiState | undefined {
@@ -1211,6 +1530,7 @@ export class ProductNarrationCoordinator {
           navigationActive &&
           currentBoundaryIndex < this.#knownBoundaries.length - 1,
       }),
+      recovery: this.#recovery.observe(),
     });
   }
 

@@ -45,6 +45,7 @@ import type {
   ProductNarrationNavigationRequest,
   ProductNarrationSnapshot,
 } from "../tts/product-narration-coordinator";
+import { INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1 } from "../tts/operational-recovery";
 
 const OPENING_DOCUMENT_ID = "document:opening" as ContentDocumentId;
 const CONTINUATION_DOCUMENT_ID = "document:continuation" as ContentDocumentId;
@@ -230,6 +231,7 @@ function narrationSnapshot(
         : phase === "preparing"
           ? "loading"
           : "stopped",
+    recovery: INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1,
     navigation: Object.freeze({
       playIntent:
         phase === "playing" || phase === "preparing" ? "playing" : "inactive",
