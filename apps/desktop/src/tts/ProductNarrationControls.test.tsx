@@ -6,6 +6,7 @@ import type {
   ProductNarrationCoordinator,
   ProductNarrationSnapshot,
 } from "./product-narration-coordinator";
+import { INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1 } from "./operational-recovery";
 
 afterEach(() => {
   cleanup();
@@ -29,6 +30,7 @@ function snapshot(): ProductNarrationSnapshot {
       discardedAudioUnitCount: 1,
     }),
     serviceState: "stopped",
+    recovery: INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1,
     navigation: Object.freeze({
       playIntent: "playing",
       settling: false,
@@ -152,6 +154,13 @@ describe("product narration controls", () => {
         playbackRate: 1,
       }),
       failure: "tts-service-failed",
+      recovery: Object.freeze({
+        ...INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1,
+        phase: "recovery-available",
+        failureCode: "service-crashed",
+        action: "explicit-service-restart",
+        canRecover: true,
+      }),
     });
     const coordinator = {
       subscribe: vi.fn(() => () => undefined),
@@ -162,6 +171,7 @@ describe("product narration controls", () => {
       pause: vi.fn(),
       resume: vi.fn(),
       stop: vi.fn(async () => undefined),
+      recover: vi.fn(),
       setVolumePercent: vi.fn(),
       goToPreviousBoundary: vi.fn(),
       goToNextBoundary: vi.fn(),
@@ -170,7 +180,14 @@ describe("product narration controls", () => {
 
     render(<ProductNarrationControls coordinator={coordinator} />);
 
-    expect(screen.getByText("Local narration failed.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Local narration can be restarted once."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Restart resumes from the latest heard passage and does not reuse old audio.",
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         "Playable audio loaded: 12 seconds. Active target: 15 seconds.",
@@ -180,8 +197,8 @@ describe("product narration controls", () => {
       screen.getByText("Audio is running low and may briefly buffer."),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Stop narration to reset it, then try again."),
-    ).toBeInTheDocument();
+      screen.getByRole("button", { name: "Restart local narration" }),
+    ).toHaveAttribute("data-narration-action", "recover");
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
 
     const toggle = screen.getByRole("button", {
@@ -194,9 +211,10 @@ describe("product narration controls", () => {
     expect(coordinator.start).not.toHaveBeenCalled();
     expect(coordinator.stop).not.toHaveBeenCalled();
 
-    const stop = screen.getByRole("button", { name: "Stop" });
-    expect(stop).toHaveAttribute("data-narration-action", "stop");
-    fireEvent.click(stop);
-    expect(coordinator.stop).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("button", { name: "Stop" })).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Restart local narration" }),
+    );
+    expect(coordinator.recover).toHaveBeenCalledOnce();
   });
 });

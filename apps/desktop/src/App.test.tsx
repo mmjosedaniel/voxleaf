@@ -38,6 +38,7 @@ import type {
   ProductNarrationCoordinator,
   ProductNarrationSnapshot,
 } from "./tts/product-narration-coordinator";
+import { INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1 } from "./tts/operational-recovery";
 
 afterEach(() => {
   cleanup();
@@ -178,6 +179,7 @@ function narrationSnapshot(
       discardedAudioUnitCount: 0,
     }),
     serviceState: "ready",
+    recovery: INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1,
     navigation: Object.freeze({
       playIntent,
       settling: false,

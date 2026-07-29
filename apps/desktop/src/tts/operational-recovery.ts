@@ -30,6 +30,16 @@ export interface OperationalRecoverySnapshotV1 {
   readonly diagnostics: readonly OperationalRecoveryDiagnosticV1[];
 }
 
+export const INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1: OperationalRecoverySnapshotV1 =
+  Object.freeze({
+    phase: "operational",
+    failureCode: undefined,
+    action: undefined,
+    canRecover: false,
+    explicitAttemptUsed: false,
+    diagnostics: Object.freeze([]),
+  });
+
 export class OperationalRecoveryStateError extends Error {
   public constructor() {
     super("The local narration recovery state is invalid.");
@@ -79,14 +89,8 @@ export class OperationalRecoveryController {
   #profileId: string | undefined;
   #explicitAttemptUsed = false;
   #sequence = 0;
-  #snapshot: OperationalRecoverySnapshotV1 = Object.freeze({
-    phase: "operational",
-    failureCode: undefined,
-    action: undefined,
-    canRecover: false,
-    explicitAttemptUsed: false,
-    diagnostics: Object.freeze([]),
-  });
+  #snapshot: OperationalRecoverySnapshotV1 =
+    INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1;
 
   public observe(): OperationalRecoverySnapshotV1 {
     return this.#snapshot;

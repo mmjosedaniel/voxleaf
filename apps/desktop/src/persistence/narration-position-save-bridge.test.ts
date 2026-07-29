@@ -7,6 +7,7 @@ import type {
   ProductNarrationAudibleProgressObservation,
   ProductNarrationSnapshot,
 } from "../tts/product-narration-coordinator";
+import { INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1 } from "../tts/operational-recovery";
 import {
   bindNarrationPositionPersistence,
   type NarrationPositionSaveSink,
@@ -70,6 +71,7 @@ function snapshot(
       discardedAudioUnitCount: 0,
     }),
     serviceState: phase === "failed" ? "failed" : "ready",
+    recovery: INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1,
     navigation: Object.freeze({
       playIntent,
       settling: false,

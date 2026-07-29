@@ -679,6 +679,9 @@ export function App({
           {ready ? (
             <HardwareCompatibilityControls
               coordinator={hardwareCompatibilityCoordinator}
+              onRecoveryEpisodeReset={() =>
+                narrationCoordinator?.resetRecoveryEpisode()
+              }
             />
           ) : null}
         </header>

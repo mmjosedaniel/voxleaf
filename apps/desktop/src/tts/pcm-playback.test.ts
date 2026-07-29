@@ -589,7 +589,7 @@ describe("adaptive PCM playback", () => {
     },
   );
 
-  it("releases at most four invalidated originals per scheduled cleanup turn", () => {
+  it("releases at most four invalidated originals per scheduled cleanup turn", async () => {
     const clock = createManualClock(0);
     const segments = [
       segment(1),
@@ -611,13 +611,20 @@ describe("adaptive PCM playback", () => {
     player.synchronize();
 
     player.stop();
+    let cleanupComplete = false;
+    void player.waitForCleanup().then(() => {
+      cleanupComplete = true;
+    });
     expect(cleanupTurns).toHaveLength(1);
     cleanupTurns.shift()?.();
+    expect(cleanupComplete).toBe(false);
     expect(units.map(({ releaseCount }) => releaseCount)).toEqual([
       1, 1, 1, 1, 0,
     ]);
     expect(cleanupTurns).toHaveLength(1);
     cleanupTurns.shift()?.();
+    await Promise.resolve();
+    expect(cleanupComplete).toBe(true);
     expect(units.map(({ releaseCount }) => releaseCount)).toEqual([
       1, 1, 1, 1, 1,
     ]);
@@ -625,6 +632,17 @@ describe("adaptive PCM playback", () => {
       retainedAudioUnitCount: 0,
       discardedAudioUnitCount: 0,
     });
+  });
+
+  it("rejects cleanup observation before identity invalidation", () => {
+    const clock = createManualClock(0);
+    const scheduler = readyScheduler(clock, [segment(1)], true);
+    const player = new AdaptivePcmPlayer(
+      scheduler,
+      new ManualPcmPlaybackBackend(clock),
+    );
+
+    expect(() => player.waitForCleanup()).toThrowError(PcmPlaybackError);
   });
 
   it("admits bounded volume and only the frozen 1.0x playback rate", () => {

@@ -141,6 +141,7 @@ export class AdaptivePcmPlayer {
   readonly #audibleProgressListeners = new Set<
     (observation: AdaptivePcmAudibleProgressObservation) => void
   >();
+  readonly #cleanupWaiters = new Set<() => void>();
   #handle: PcmPlaybackHandle | undefined;
   #activeUnit: ActiveAudibleUnit | undefined;
   #lastProgressObservationAtMs: number | undefined;
@@ -246,6 +247,27 @@ export class AdaptivePcmPlayer {
     this.#backend.close();
     this.#audibleProgressListeners.clear();
     return transition;
+  }
+
+  /**
+   * Resolves only after invalidation has released every retained audio unit.
+   * Recovery uses this boundary before it permits a replacement service run.
+   */
+  public waitForCleanup(): Promise<void> {
+    if (this.#terminalState === undefined) {
+      throw new PcmPlaybackError("invalid-state");
+    }
+    const observation = this.#scheduler.observe();
+    if (
+      observation.retainedAudioUnitCount === 0 &&
+      observation.discardedAudioUnitCount === 0 &&
+      !this.#cleanupScheduled
+    ) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      this.#cleanupWaiters.add(resolve);
+    });
   }
 
   #startCurrentUnit(): void {
@@ -385,6 +407,11 @@ export class AdaptivePcmPlayer {
       );
       if (remaining > 0) {
         this.#scheduleCleanup();
+      } else {
+        for (const resolve of this.#cleanupWaiters) {
+          resolve();
+        }
+        this.#cleanupWaiters.clear();
       }
     });
   }
