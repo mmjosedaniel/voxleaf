@@ -194,6 +194,10 @@ impl ExactRuntime {
     }
 }
 
+fn profile_configuration_available(profile_id: &str) -> bool {
+    ExactRuntime::for_profile(profile_id).is_ok()
+}
+
 #[derive(Debug)]
 pub(crate) struct PrepareMeasurement {
     pub records: Vec<Value>,
@@ -1066,6 +1070,11 @@ pub async fn exact_tts_demo_available(
 }
 
 #[tauri::command]
+pub async fn tts_profile_configuration_available(profile_id: String) -> Result<bool, &'static str> {
+    blocking(move || Ok(profile_configuration_available(&profile_id))).await
+}
+
+#[tauri::command]
 pub async fn start_tts_service(
     supervisor: State<'_, Arc<TtsServiceSupervisor>>,
     profile_id: Option<String>,
@@ -1450,5 +1459,6 @@ mod tests {
             supervisor.configure_profile("unknown-profile"),
             Err(TtsNativeFailure::InvalidInput)
         );
+        assert!(!profile_configuration_available("unknown-profile"));
     }
 }

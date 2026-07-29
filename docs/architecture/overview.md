@@ -509,6 +509,18 @@ interpreter-bound outbound block. The packaged path records the exact
 selection, no model start, and zero external requests; a future compatible
 host will run the complete Qwen packaged arm.
 
+The corrective
+[`tts-profile-runtime-configuration-availability-v1`](tts-profile-runtime-configuration-availability-v1.md)
+boundary keeps hardware fit separate from executable configuration. After
+hardware admits the selected profile, the typed client sends only its bounded
+profile ID to native supervision and receives one boolean derived from the
+same exact-runtime construction used before child start. The check runs during
+product availability resolution and again immediately before start. Missing or
+invalid configuration disables Play without creating a child or recovery
+episode; paths, environment values, model data, and raw errors never cross the
+native boundary. Configured Piper passes the release-packaged reader matrix
+through this gate.
+
 The implemented audio-frame v1 boundary describes payload-free in-memory frame metadata with frame, session, generation, and narration-segment identities; monotonic sequence; positive sample rate, per-channel sample-frame count, and channel count; and an explicit end-of-segment marker. Duration is derived from sample count divided by sample rate. Public helpers return conservative whole milliseconds using exact integer arithmetic, sum samples before truncating once, and reject unsafe duration overflow. Contiguous single-segment runs reject duplicate frame IDs, sequence gaps or reversals, identity or format changes, and frames after the segment-end marker. The contract selects no codec, payload representation, audio API, player, or buffer policy.
 
 The implemented buffer-status v1 boundary is a payload-free snapshot for one session and generation. It carries contiguous playable duration, nonnegative ordered low-water/target/maximum duration thresholds, an underrun count, and only the currently justified `empty`, `buffering`, `ready`, `playing`, and `paused` states. It rejects duration above the configured maximum and state/depth contradictions. A zero-depth exhausted buffer is represented as `buffering`, as required by the MVP; no end-of-stream state, fixed wall-clock wait, queue, ring buffer, startup gate, or playback behavior is selected by this contract.

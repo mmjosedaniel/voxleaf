@@ -275,6 +275,12 @@ $env:VOXLEAF_TTS_PIPER_PYTHON = (Resolve-Path "services/tts/benchmarks/candidate
 $env:VOXLEAF_TTS_PIPER_MODEL_ROOT = (Resolve-Path "models/tts/piper-1.4.2-es_ES-davefx-medium-0d907f1").Path
 ```
 
+PowerShell environment values belong to the current terminal process. Set all
+three values in the same terminal that launches `tauri dev`, the packaged
+application, or an exact-host test. A new terminal does not inherit values set
+in an older terminal. VoxLeaf separately checks hardware fit and exact runtime
+configuration; hardware compatibility alone does not enable Play.
+
 These values remain native-only and are never returned to the renderer,
 logged, persisted, or placed in protocol frames. When Piper is selected, the
 desktop automatically requests `narration-piper-v1`; no user-facing chunk

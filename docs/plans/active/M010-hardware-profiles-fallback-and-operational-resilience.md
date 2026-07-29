@@ -622,8 +622,8 @@ configuration, and settings choice atomically.
 
 ### Status
 
-Corrective runtime-configuration availability work is in progress on
-2026-07-29 on branch
+Complete again after corrective runtime-configuration availability validation
+on 2026-07-29 on branch
 `feat/m010-m6-profile-integration-resilience`, created from merged main commit
 `2b81b028fe6188e17f524d5720e68827511e3c05`. Authority, service, native,
 desktop selection, recovery, and exact-host boundaries were re-read before
@@ -662,7 +662,11 @@ segmentation. Checkpoint authority
 `tts-profile-runtime-configuration-availability-v1.md` is frozen before the
 corrective implementation. Milestone 6 becomes complete again only after the
 desktop gates Play on the native configuration fact and the exact Piper paths
-and repository suites pass.
+and repository suites pass. The corrective implementation now performs that
+content-free native check during availability resolution and again immediately
+before service start. Configured Piper passes the service-only lifecycle and
+release-packaged reader matrix; missing configuration stays unavailable before
+child creation.
 
 ## Milestone 7: Record support decisions and close validation
 
@@ -762,6 +766,26 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-29: Implemented the corrective exact-profile configuration boundary.
+  Native supervision accepts only the selected bounded profile ID, derives one
+  boolean through the same `ExactRuntime` construction used before start, and
+  returns no paths, environment values, model content, or raw errors. The
+  typed client fails closed on false or invocation failure. Product narration
+  requires the affirmative fact during availability resolution and rechecks
+  immediately before child start. Deterministic tests prove an otherwise
+  hardware-compatible unconfigured profile enables no Play, starts no child,
+  prepares no narration, and creates no recovery episode.
+- 2026-07-29: Corrective validation passed. The exact configured Piper
+  service-only lifecycle passed in 3.8 seconds. The release-packaged matrix
+  passed through the real native configuration command with 2,893 ms quick
+  command-to-audible, 20.421 playable seconds at start, zero underruns in a
+  60.209-second stable observation, 5,252 ms prepared command-to-audible with
+  60.766 playable seconds, 1,157 ms cancellation, 951 ms cleanup, 16
+  synchronized transitions with 0.9 ms follow p95, zero GPU allocation, zero
+  external requests, and zero generated-audio files. The first in-sandbox
+  packaged attempt built successfully but could not create its WebDriver
+  session; the same already-built smoke passed outside the sandbox. Both
+  `pnpm.cmd check:portable` and `pnpm.cmd check` pass.
 - 2026-07-29: Reproduced a second post-integration Piper discrepancy with only
   content-free product state. Hardware compatibility admitted Piper, but Play
   reached `start-service` without an executable runtime configuration and
@@ -1186,7 +1210,11 @@ implements its executable registry, service adapter, settings choice, and
 profile-aware one-tree supervision. Exact Piper product preparation now selects
 the frozen locator-safe `narration-piper-v1` bounds so generic 400-640-code-point
 segments cannot produce the reproduced oversized-unit failure. Piper's service
-and packaged resilience arms pass. Qwen's outbound-blocked service arm passes
+and packaged resilience arms pass. Product Play now separately requires an
+affirmative native exact-runtime configuration check during availability
+resolution and immediately before child start, preventing the reproduced
+pre-handshake failure when process-local configuration is absent. Qwen's
+outbound-blocked service arm passes
 and its packaged path passes the exact fail-closed available-VRAM scenario. No
 automatic retry or standard Qwen support claim is available.
 
@@ -1216,6 +1244,14 @@ Milestone 6 validation results:
   the selected provider. A discarded unusable adapter cannot poison a complete
   report, while selected unknown memory, ambiguity, and no-provider cases remain
   partial and fail closed.
+- The content-free native configuration gate rejects unknown, missing, or
+  invalid exact runtimes before child creation. The typed client sends only the
+  bounded profile ID and fails closed on false or invocation failure. A
+  configured Piper release-packaged run passed with 2,893 ms quick
+  command-to-audible, 20.421 playable seconds at start, zero underruns during
+  60.209 seconds of stable playback, 5,252 ms prepared command-to-audible,
+  1,157 ms cancellation, 951 ms cleanup, 16 synchronized transitions, zero GPU
+  allocation, zero external requests, and zero generated-audio files.
 - `pnpm.cmd check:portable`, `pnpm.cmd check`, `pnpm.cmd test:browser`, and
   `pnpm.cmd test:native-startup` pass. The expected existing CSS
   `::highlight` minifier and large-chunk warnings remain non-fatal; one

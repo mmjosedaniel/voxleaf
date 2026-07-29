@@ -169,6 +169,30 @@ describe("typed native TTS process client", () => {
     expect(mockedInvoke).toHaveBeenNthCalledWith(1, "exact_tts_demo_available");
   });
 
+  it("reports only the selected profile configuration flag", async () => {
+    mockedInvoke
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+      .mockRejectedValueOnce({ privatePath: "must-not-escape" });
+    const client = new TtsProcessClient();
+    const profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+
+    await expect(
+      client.profileConfigurationAvailability(profileId),
+    ).resolves.toBe("available");
+    await expect(
+      client.profileConfigurationAvailability(profileId),
+    ).resolves.toBe("unavailable");
+    await expect(
+      client.profileConfigurationAvailability(profileId),
+    ).resolves.toBe("unavailable");
+    expect(mockedInvoke).toHaveBeenNthCalledWith(
+      1,
+      "tts_profile_configuration_available",
+      { profileId },
+    );
+  });
+
   it("passes an admitted profile identity only to native service start", async () => {
     mockedInvoke.mockResolvedValueOnce(startControls());
     const client = new TtsProcessClient();

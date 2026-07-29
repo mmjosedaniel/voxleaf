@@ -107,6 +107,9 @@ export interface ProductNarrationNavigationRequest {
 
 export interface ProductNarrationServiceClient extends AdaptiveBufferAudioUnitSource {
   exactDemoAvailability(): Promise<TtsExactDemoAvailability>;
+  profileConfigurationAvailability(
+    profileId: string,
+  ): Promise<TtsExactDemoAvailability>;
   observe(): TtsProcessClientObservation;
   start(profileId?: string): Promise<TtsProcessClientObservation>;
   prepare(): Promise<TtsProcessClientObservation>;
@@ -427,10 +430,13 @@ export class ProductNarrationCoordinator {
           profileId,
           "application-start",
         ));
-      availability = allowed ? "available" : "unavailable";
-      if (allowed) {
-        this.#profileId = profileId;
-      }
+      this.#profileId = profileId;
+      availability =
+        allowed &&
+        (await this.#client.profileConfigurationAvailability(profileId)) ===
+          "available"
+          ? "available"
+          : "unavailable";
     }
     if (this.#closed) {
       return;
@@ -1038,13 +1044,17 @@ export class ProductNarrationCoordinator {
         case "start-service": {
           const profileId =
             this.#profileCompatibility?.activeProfileId?.() ?? this.#profileId;
-          if (
-            this.#profileCompatibility !== undefined &&
-            !(await this.#profileCompatibility.isProfileStartAllowed(
+          const hardwareAllowed =
+            this.#profileCompatibility === undefined ||
+            (await this.#profileCompatibility.isProfileStartAllowed(
               profileId,
               "before-profile-start",
-            ))
-          ) {
+            ));
+          const configurationAvailable =
+            hardwareAllowed &&
+            (await this.#client.profileConfigurationAvailability(profileId)) ===
+              "available";
+          if (!configurationAvailable) {
             if (runToken === this.#runToken) {
               this.#availability = "unavailable";
               this.#fail(

@@ -68,6 +68,14 @@ $env:VOXLEAF_TTS_PIPER_PYTHON = (Resolve-Path "services/tts/benchmarks/candidate
 $env:VOXLEAF_TTS_PIPER_MODEL_ROOT = (Resolve-Path "models/tts/piper-1.4.2-es_ES-davefx-medium-0d907f1").Path
 ```
 
+Run the application from that same PowerShell terminal. These values are
+process-local; opening a new terminal or launching VoxLeaf elsewhere loses
+them. The compatibility panel may still truthfully say that Piper fits the
+hardware while product narration says the selected profile is not configured.
+After the corrective M010 Milestone 6 gate, missing configuration disables
+Play before child start instead of entering a misleading model-load restart
+episode.
+
 Each Python executable, verified ignored model root, outbound-blocking firewall
 rule, `tauri-driver`, and matching EdgeDriver must already exist. The
 model-free child is test infrastructure and must never be exposed as a
@@ -94,6 +102,13 @@ and immediately before the model child starts. `Unknown` means one or more
 required facts could not be established; `failed` means the bounded probe
 itself failed; `unavailable` means no admitted measured profile matches. None
 of these states is a support claim.
+
+Hardware matching and executable runtime configuration are separate checks.
+After a profile matches the host, the desktop asks native supervision for one
+boolean stating whether that exact profile can be constructed from its
+verified local configuration. The renderer receives no paths, environment
+values, or raw error. This check runs when product narration availability is
+resolved and again immediately before child start.
 
 For the exact development demo, the Qwen/Serena profile also requires the
 native variables above and the frozen RAM, VRAM, storage, provider, precision,

@@ -11,6 +11,9 @@ speed-focused CPU fallback. Exact Qwen/Serena remains development-only.
 Milestone 6 now integrates both through one service tree and explicit profile
 selection. Piper alone uses the frozen locator-safe `narration-piper-v1`
 preparation limits; its corrective long-paragraph packaged matrix passes.
+Product playback additionally requires the native exact-profile
+runtime-configuration gate during availability resolution and immediately
+before child start; hardware compatibility alone no longer enables Play.
 Qwen's outbound-blocked service
 lifecycle passes, while the packaged host correctly rejects it because the
 frozen available-VRAM margin is not met.
@@ -702,7 +705,9 @@ adapter, bounded native-rate conversion, profile-aware native start, explicit
 settings choice, and the two-profile resilience runner without regressing the
 Qwen development demo. Piper-only locator-safe preparation corrects the
 reproduced oversized-unit failure without truncation or a protocol change. The
-corrective packaged Piper arm passes; Qwen passes offline
+separate native configuration-admission correction fails closed before child
+start when the selected exact runtime is not configured, and configured Piper
+passes the corrective packaged arm; Qwen passes offline
 service validation and its exact fail-closed packaged VRAM path. Milestone 7
 closeout remains.
 

@@ -86,6 +86,7 @@ class FakePlaybackBackend implements PcmPlaybackBackend {
 
 class FakeServiceClient implements ProductNarrationServiceClient {
   public availability: "available" | "unavailable" = "available";
+  public configurationAvailability: "available" | "unavailable" = "available";
   public state: TtsServiceStateV1 = "stopped";
   public readonly synthesized: NarrationSegmentV1[] = [];
   public readonly cancelled: TtsGenerationScope[] = [];
@@ -110,6 +111,10 @@ class FakeServiceClient implements ProductNarrationServiceClient {
 
   public async exactDemoAvailability() {
     return this.availability;
+  }
+
+  public async profileConfigurationAvailability() {
+    return this.configurationAvailability;
   }
 
   public observe(): TtsProcessClientObservation {
@@ -319,6 +324,7 @@ function createHarness(
   options: {
     readonly result?: NarrationPreparationResult;
     readonly availability?: "available" | "unavailable";
+    readonly configurationAvailability?: "available" | "unavailable";
     readonly blockSynthesis?: boolean;
     readonly prepareNarration?: OpenedPublication["prepareNarration"];
     readonly profileCompatibility?: ProductNarrationProfileCompatibility;
@@ -327,6 +333,8 @@ function createHarness(
   const clock = new ManualClock();
   const client = new FakeServiceClient(clock);
   client.availability = options.availability ?? "available";
+  client.configurationAvailability =
+    options.configurationAvailability ?? "available";
   client.blockSynthesis = options.blockSynthesis ?? false;
   const backend = new FakePlaybackBackend();
   const prepareNarration = vi.fn<OpenedPublication["prepareNarration"]>(
@@ -397,6 +405,34 @@ describe("product narration coordinator", () => {
     await coordinator.close();
   });
 
+  it("does not enable a hardware-compatible profile without native runtime configuration", async () => {
+    const profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const { client, coordinator, prepareNarration } = createHarness({
+      configurationAvailability: "unavailable",
+      profileCompatibility,
+    });
+    const start = vi.spyOn(client, "start");
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+
+    expect(coordinator.observe()).toMatchObject({
+      availability: "unavailable",
+      profileId,
+      state: undefined,
+      failure: undefined,
+    });
+    expect(start).not.toHaveBeenCalled();
+    expect(prepareNarration).not.toHaveBeenCalled();
+    expect(coordinator.observe().recovery.phase).toBe("operational");
+    await coordinator.close();
+  });
+
   it("rechecks compatibility before service start and starts no child after a failed preflight", async () => {
     const profileCompatibility: ProductNarrationProfileCompatibility = {
       isProfileCurrentlyAllowed: vi.fn(() => true),
@@ -462,6 +498,33 @@ describe("product narration coordinator", () => {
     expect(prepareNarration).toHaveBeenCalledWith(
       expect.objectContaining({ profile: "narration-piper-v1" }),
     );
+    await coordinator.close();
+  });
+
+  it("rechecks native runtime configuration immediately before child start", async () => {
+    const profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const { client, coordinator, prepareNarration } = createHarness({
+      profileCompatibility,
+    });
+    vi.spyOn(client, "profileConfigurationAvailability")
+      .mockResolvedValueOnce("available")
+      .mockResolvedValueOnce("unavailable");
+    const start = vi.spyOn(client, "start");
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(
+      () => coordinator.observe().failure === "tts-profile-unavailable",
+    );
+
+    expect(start).not.toHaveBeenCalled();
+    expect(prepareNarration).not.toHaveBeenCalled();
+    expect(coordinator.observe().availability).toBe("unavailable");
     await coordinator.close();
   });
 

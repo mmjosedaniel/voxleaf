@@ -93,6 +93,12 @@ size limits over that unchanged normalization. It creates more, shorter,
 text-complete segments with exact contiguous locator ranges; it does not
 truncate speech, widen protocol v1, or change Qwen preparation.
 
+Hardware compatibility does not by itself make product narration available.
+VoxLeaf also asks native supervision for a content-free boolean confirming that
+the selected exact runtime can be constructed. That check occurs while Play
+availability is resolved and again immediately before child start. Missing
+configuration disables Play without exposing paths or entering recovery.
+
 Spanish deserves explicit early coverage through a reproducible synthetic corpus, including opening question and exclamation marks, dialogue punctuation, abbreviations, decimal and thousands separators, dates, years, currency, and foreign names embedded in Spanish prose. This is a test-coverage requirement, not a claim of complete language support or pronunciation quality.
 
 Segmentation should respect paragraphs, sentences, dialogue, headings, scene breaks, punctuation, abbreviations, decimals, initials, and unusually long sentences. Segment sizing must balance natural prosody, startup latency, seeking responsiveness, and the amount of work discarded after cancellation.

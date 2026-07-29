@@ -567,6 +567,15 @@ rejection, verifies zero external requests and no model start, and continues
 to the supported Piper arm. On a compatible future host it runs the complete
 Qwen packaged playback matrix instead.
 
+Corrective Milestone 6 coverage also separates hardware matching from native
+runtime configuration. Rust rejects unknown profile identities at the
+content-free boolean boundary; the typed process client sends only the bounded
+profile ID and fails closed on false or invocation failure; coordinator tests
+prove that a hardware-compatible but unconfigured profile enables no Play and
+starts no child, and that configuration is checked again immediately before
+start. The release-packaged Piper matrix passes through the real configured
+native gate.
+
 M008 Milestone 6 retains quick mode as the default, one minute as the initial
 prepared and refill target, 10 seconds as low water, and `0` ms as the boundary
 wait. The final accepted rerun measured 41.312 seconds command-to-audible,
