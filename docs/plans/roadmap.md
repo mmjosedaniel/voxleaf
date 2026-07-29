@@ -2,9 +2,8 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 9 and M009.1 are complete.
-M010 Milestones 1-6 are complete, and Milestone 7 has recorded the final
-support/recovery decision and entered closeout validation. Privacy-safe host
+VoxLeaf is pre-alpha. Milestones 1 through 10, M008.1, and M009.1 are
+complete. M010 records the final support/recovery decision. Privacy-safe host
 detection, immutable measured matching, bounded preference and compatibility
 UI, pre-start enforcement, and identity-safe one-attempt recovery are
 implemented. The passing v6 evaluation selects exact Piper/davefx as the
@@ -25,8 +24,8 @@ matrix later stops at the depletion synchronization assertion, so it remains
 development-only rather than supported. The final support matrix makes
 Piper/davefx the sole supported and automatically recommendable compatible
 profile, keeps fallback explicit rather than automatic, and assigns runtime/
-model distribution and Piper license fulfillment to M011. Required
-replacement pull-request checks remain before M010 is archived.
+model distribution and Piper license fulfillment to M011. Replacement
+Ubuntu/Windows closeout checks pass and M010 is archived.
 
 M009.1 exact-host use also exposed and corrected one additional reader defect:
 passive viewport scrolling must not replace active narration. The
@@ -34,14 +33,17 @@ visible-passage target and narration locator are now separate; only explicit
 leaf, visible-passage, passage-boundary, and chapter actions trigger
 identity-first replacement.
 
-M008.1 is an active focused playback-rhythm closeout. Its authority was frozen
-before implementation, and deterministic desktop code now schedules one
-bounded semantic delay between already-buffered generated units. It changes no
-normalization, protocol, audio payload, buffer threshold, or engine. Full
-portable, authoritative Windows, and privacy/repository validation pass;
-the merged implementation's clean-runner smoke found a nondeterministic
-synchronization-probe race. Its bounded correction and replacement required
-checks remain.
+M008.1 is complete. Its frozen authority and deterministic desktop code
+schedule one bounded semantic delay between already-buffered generated units.
+It changes no normalization, protocol, audio payload, buffer threshold, or
+engine. Full portable, authoritative Windows, privacy/repository, bounded
+clean-runner stabilization, and replacement Ubuntu/Windows validation pass.
+
+M010.1 is approved next before M011. It is a bounded follow-up for explicit
+Spanish/English narration and sequential candidate screening. Current product
+narration remains Spanish-only, Piper/davefx remains the sole supported
+profile, and no additional engine may be claimed until newly frozen evidence
+passes.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -555,16 +557,16 @@ behavior should first be proven with deterministic fakes.
 
 ## Milestone 8.1: Add boundary-aware audio transitions
 
-**Status:** In progress; replacement closeout CI remains. The frozen
+**Status:** Complete. The frozen
 [`playback-transition-pause-policy-v1.md`](../architecture/playback-transition-pause-policy-v1.md),
 [ADR-0021](../architecture/decisions/ADR-0021-boundary-aware-audio-transitions.md),
 and deterministic desktop implementation exist. Focused policy, scheduler,
 player, coordinator, controls, full desktop tests, and desktop typechecking
-pass. Full portable, authoritative Windows, privacy/repository, and relative
-documentation-link validation also pass. The bounded clean-runner
-synchronization-probe correction and replacement required checks remain.
+pass. Full portable, authoritative Windows, privacy/repository, relative
+documentation-link, bounded clean-runner stabilization, and replacement
+Ubuntu/Windows validation also pass.
 Follow
-[`M008-001-boundary-aware-audio-transitions.md`](active/M008-001-boundary-aware-audio-transitions.md).
+[`M008-001-boundary-aware-audio-transitions.md`](completed/M008-001-boundary-aware-audio-transitions.md).
 
 ### Goal
 
@@ -754,9 +756,8 @@ stabilized application shell.
 
 ## Milestone 10: Add hardware profiles, fallback, and operational resilience
 
-**Status:** Closeout validation; Milestones 1-6 are complete and Milestone 7
-has recorded the final support/recovery decision. Follow
-[`M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md).
+**Status:** Complete. Follow
+[`M010-hardware-profiles-fallback-and-operational-resilience.md`](completed/M010-hardware-profiles-fallback-and-operational-resilience.md).
 The canonical privacy-safe host compatibility report, profile/evidence shape,
 matching/preference rules, fixed resource margins, failure taxonomy, and
 identity-first explicit recovery authority are frozen by
@@ -797,8 +798,7 @@ pass. The final
 record Piper as the sole supported CPU fallback, Qwen/Serena as
 development-only, the remaining profiles as unsupported, zero automatic
 failover, exact admitted margins, and M011 distribution obligations. Local
-closeout validation and replacement required pull-request checks remain
-before archival.
+closeout validation and replacement required Ubuntu/Windows checks pass.
 
 ### Goal
 
@@ -835,13 +835,64 @@ frozen v6 cycle and passed measured evidence before product admission.
 - Recovery must not duplicate service processes, leak model memory, replay stale audio, or lose reading progress.
 - The accepted buffer policy may require tuning by hardware profile without becoming unbounded or hiding poor sustained RTF.
 
+## Milestone 10.1: Add bilingual narration and screen naturalness candidates
+
+**Status:** Approved next; not started. Follow
+[`M010-001-bilingual-narration-and-candidate-screening.md`](active/M010-001-bilingual-narration-and-candidate-screening.md).
+This bounded pre-M011 follow-up responds to an explicit product need for
+English narration and a stronger portfolio demonstration. It does not reopen
+M010's completed Spanish Piper support decision.
+
+### Goal
+
+Add explicit Spanish/English narration through versioned, locator-preserving
+preparation; measure an exact Piper English baseline; and screen a small
+candidate set for more natural speech without weakening privacy, cancellation,
+bounded memory, or support-evidence rules.
+
+### Expected outcome
+
+- The user explicitly chooses Spanish or English; VoxLeaf does not infer a
+  book's language or silently send text under the wrong engine language.
+- Existing `narration-v1` and `narration-piper-v2` behavior remains immutable.
+  Any bilingual normalization change uses newly frozen, versioned authority.
+- Exact Piper 1.4.2 with one independently reviewed English voice is measured
+  as the low-risk bilingual baseline.
+- Chatterbox Multilingual V3 and MOSS-TTS-Nano ONNX are screened
+  sequentially; CosyVoice is screened only if both reject early and its
+  reference-voice, Windows, offline, and redistribution boundaries are
+  cleared within the same bounded scope.
+- At most one passing new engine is integrated. A failed screen produces an
+  honest no-winner record and does not delay M011 indefinitely.
+- Language/profile changes replace work identity before cleanup, never reuse
+  stale audio, and retain only bounded non-content preference state.
+
+### Dependencies
+
+Completed M005 owns canonical normalization, semantic segmentation, and stable
+locator mapping. Completed M007-M010 own the protocol, service supervision,
+bounded player, synchronization, support registry, compatibility gates, and
+recovery behavior. M010.1 may extend those boundaries only through frozen
+versioned contracts and a new decision record.
+
+### Major risks and unknowns
+
+- Voice/model licenses may permit code use while blocking redistribution of
+  exact weights, reference audio, or a default voice.
+- Naturalness claims are language- and voice-specific; upstream family
+  benchmarks cannot substitute for exact VoxLeaf evidence.
+- A multilingual model may fit upstream hardware but fail this Windows host,
+  offline operation, startup, sustained RTF, cancellation, memory, or
+  long-form correctness gates.
+- A one-development-day target is a timebox for bounded screening, not an
+  acceptance shortcut or delivery guarantee.
+
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** Approved next; not started. It remains sequenced after M010's
-required closeout checks. The repository can build a release executable for
-validation, but installer bundling, signing, model/runtime distribution,
-Piper license fulfillment, updater policy, and complete-MVP validation are
-not implemented.
+**Status:** Approved after M010.1; not started. The repository can build a
+release executable for validation, but installer bundling, signing,
+model/runtime distribution, Piper license fulfillment, updater policy, and
+complete-MVP validation are not implemented.
 
 ### Goal
 
@@ -869,25 +920,25 @@ All earlier milestones. Packaging exploration should begin during Milestones 6 a
 
 ## Post-MVP local TTS candidate backlog
 
-**Status:** Deferred and unscheduled. This work starts only after the current
-MVP is complete and requires a separate ExecPlan plus newly frozen authority.
-It does not expand M010 or M011.
+**Status:** Mostly deferred and unscheduled. M010.1 promotes only the explicit
+English baseline and bounded Chatterbox Multilingual V3, MOSS-TTS-Nano ONNX,
+and conditional CosyVoice screens into pre-M011 work. All other candidates
+remain post-MVP and require separate newly frozen authority.
 
 Retain Piper/davefx as the selected CPU fallback and Qwen/Serena as the
-optional GPU-dependent development profile for the current MVP. After release,
-screen the candidates in this order:
+optional GPU-dependent development profile until M010.1 evidence changes a
+specific exact profile. After release, screen the remaining candidates in
+this order:
 
 1. Pocket TTS Spanish as a balanced streaming CPU challenger, conditional on
    exact model/voice license and redistribution review.
-2. Chatterbox Latin American Spanish as a regional quality candidate,
+2. Chatterbox Latin American Spanish as a separate regional quality candidate,
    conditional on a redistributable preset voice and measured hardware fit.
-3. MOSS-TTS-Nano as an experimental CPU/ONNX candidate with strict
-   hallucination, repetition, cancellation, and long-form gates.
-4. Kokoro primarily when English narration becomes active product scope and
-   only after its earlier immutable-bundle and bundled-phonemizer license
-   blockers are resolved.
-5. Additional Piper Spanish voices as independently licensed and measured
-   voice profiles; the passing davefx result cannot be inherited.
+3. Kokoro as a separate English quality/efficiency candidate only after its
+   earlier immutable-bundle and bundled-phonemizer license blockers are
+   resolved.
+4. Additional Piper Spanish or English voices as independently licensed and
+   measured voice profiles; the passing davefx result cannot be inherited.
 
 Supertonic remains rejected by existing VoxLeaf evidence. MeloTTS and
 KittenTTS remain unprioritized, and Sherpa-ONNX is only a possible runtime
@@ -913,8 +964,8 @@ The following decisions should be made when evidence is available, not assumed s
    frontier buffering, and zero default adaptive low-buffer wait are recorded,
    and the
    required Ubuntu and Windows pull-request checks passed.
-   M008.1 separately records the semantic generated-unit transition policy;
-   its closeout remains active.
+   Completed M008.1 separately records and validates the semantic
+   generated-unit transition policy.
 7. **Interaction gate:** satisfied by completed M009 and M009.1 through the
    frozen 500 ms
    passive settlement, identity-first chapter/visible-passage/stable-boundary
@@ -951,24 +1002,22 @@ locator-backed paragraph leaf, passive-scroll isolation, exact-host evidence,
 and repository/CI closeout. It does not reopen M009 timing authority or change
 M005 segmentation, M007 protocol, M008 buffer policy, or the TTS profile.
 
-[`active/M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md)
-is the active implementation authority for privacy-safe host detection,
-evidence-backed profile matching, conditional CPU-fallback admission, and
-identity-safe operational recovery on the stabilized M009.1 application
-surface. Milestone 1 freezes the result-blind contract and policy. Milestone 2
-implements the bounded native Windows probe and typed decoder. Milestone 3
-implements the immutable measured registry, fail-closed selection, bounded
-profile preference, compatibility UI, and exact-child pre-start enforcement.
-Milestone 4 implements identity-safe operational recovery with zero-owner
-verification and one explicit restart. Milestone 5 selects the passing Piper
-CPU fallback. Milestone 6 implements executable registry/service/settings
-integration and Piper-only locator-safe, spoken-expansion-aware preparation,
-passes the corrective ordinary-prose and compact-form Piper resilience arm,
-and records Qwen's passing offline service, corrected development-only VRAM
-admission, and the remaining packaged depletion limitation. Milestone 7
-records the final support matrix, safety margins, explicit fallback/recovery
-policy, limitations, dependency/license boundary, and ADR-0023; local closeout
-validation and replacement required checks remain.
+[`completed/M008-001-boundary-aware-audio-transitions.md`](completed/M008-001-boundary-aware-audio-transitions.md)
+records the completed engine-neutral boundary transition policy,
+deterministic timer ownership, clean-runner stabilization, and passing
+replacement validation.
+
+[`completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](completed/M010-hardware-profiles-fallback-and-operational-resilience.md)
+records privacy-safe host detection, evidence-backed profile matching, exact
+Piper fallback admission and integration, identity-safe recovery, final
+support decisions, and passing replacement closeout checks.
+
+[`active/M010-001-bilingual-narration-and-candidate-screening.md`](active/M010-001-bilingual-narration-and-candidate-screening.md)
+is the approved next implementation authority. It must freeze explicit
+Spanish/English behavior, versioned locator-safe preparation, exact candidate
+identities, and result-blind gates before result-bearing execution. It may
+integrate Piper English and at most one passing new engine. The plan itself is
+not evidence that either capability works.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by completed
@@ -976,10 +1025,9 @@ M009/M009.1 for synchronization and reader stabilization. It does not
 supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
-Milestones 1 through 9 and M009.1 are complete, with their evidence retained
-under [`completed/`](completed/). M010 is active in Milestone 7 closeout after
-recording the final support decision; M008.1 is active in the same replacement
-CI closeout. Both remain under [`active/`](active/) until required checks pass.
+Milestones 1 through 10, M008.1, and M009.1 are complete, with their evidence
+retained under [`completed/`](completed/). M010.1 is active as approved
+planned work before M011; it has no implementation evidence yet.
 
 ## MVP completion boundary
 

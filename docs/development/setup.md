@@ -15,9 +15,8 @@ segment transitions, focus-safe highlight/follow, synchronized user
 navigation, heard-position persistence, exact-host packaged evidence, and
 repository/CI closeout.
 
-M010 Milestones 1-6 are complete, and Milestone 7 has recorded the final
-support/recovery matrix and entered closeout validation. They add privacy-safe native Windows
-detection, an immutable measured registry, deterministic profile matching,
+M010 is complete. It adds privacy-safe native Windows detection, an immutable
+measured registry, deterministic profile matching,
 bounded profile-ID preference reuse, compact compatibility UI, pre-start
 enforcement, identity-safe recovery, the admitted Piper/davefx CPU fallback,
 and one profile-aware service tree. Piper automatically selects its
@@ -38,8 +37,10 @@ The final
 [`tts-support-matrix-v1`](../architecture/tts-support-matrix-v1.md) makes
 Piper/davefx the sole supported and automatically recommendable compatible
 profile, retains Qwen/Serena as development-only, and keeps automatic failover
-disabled. Required replacement pull-request checks remain before M008.1 and
-M010 are archived. Production distribution, Piper license fulfillment, and
+disabled. M008.1 and M010 passed replacement Ubuntu/Windows checks and are
+archived. M010.1 is approved planned work for explicit Spanish/English
+narration and bounded candidate screening; it has not changed setup or runtime
+behavior yet. Production distribution, Piper license fulfillment, and
 installers remain M011 work.
 
 M009.1 keeps passive viewport inspection separate from the active narration

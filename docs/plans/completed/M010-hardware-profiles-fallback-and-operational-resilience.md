@@ -47,12 +47,11 @@ the milestone.
 
 ## Current state
 
-Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-6
-are complete. Milestone 7 has recorded the final support/recovery matrix and
-entered closeout validation. Milestone 6 runtime integration,
+Roadmap Milestones 1 through 9, M009.1, and M010 are complete. Milestone 7
+records the final support/recovery matrix. Milestone 6 runtime integration,
 deterministic/exact-host validation, and the content-safe private-book
-packaged confirmation pass. Replacement required pull-request checks remain
-before the plan is archived.
+packaged confirmation pass. Pull request #150 subsequently passed both
+required replacement checks, closing the final archival gate.
 Commit
 `8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
 result-blind hardware/profile/recovery authority, canonical compatibility
@@ -765,11 +764,10 @@ assertion remains failed and keeps the profile development-only.
 
 ### Status
 
-Implementation and local closeout validation are complete. The final support
-matrix, exact admitted margins, selected and rejected states, explicit
-fallback/recovery policy, limitations, dependency and license boundary,
-ADR-0023, and current-state documentation are recorded. Replacement required
-pull-request checks remain before archival.
+Complete on 2026-07-29. The final support matrix, exact admitted margins,
+selected and rejected states, explicit fallback/recovery policy, limitations,
+dependency and license boundary, ADR-0023, and current-state documentation are
+recorded. Pull request #150 passed both required replacement checks.
 
 ## Testing and benchmark strategy
 
@@ -869,6 +867,15 @@ rewrite unrelated reader state.
   documentation links, the 19-file privacy/artifact scan, and
   `git diff --check` also pass. Only replacement Ubuntu portable and Windows
   native pull-request checks remain before M010 and M008.1 can be archived.
+- 2026-07-29: Pull request
+  [#150](https://github.com/mmjosedaniel/voxleaf/pull/150) Foundation
+  [run 30490042472](https://github.com/mmjosedaniel/voxleaf/actions/runs/30490042472)
+  passed the required Ubuntu portable
+  [job 90705351522](https://github.com/mmjosedaniel/voxleaf/actions/runs/30490042472/job/90705351522)
+  and Windows native
+  [job 90705351575](https://github.com/mmjosedaniel/voxleaf/actions/runs/30490042472/job/90705351575)
+  checks on the replacement closeout branch. This closes Milestone 7 and the
+  M010 archival gate without changing the recorded support decision.
 - 2026-07-29: Implemented the corrective Qwen matcher rule after authority
   checkpoint `5b2d058`. Deterministic regression first failed exactly as
   `available-dedicated-vram` at `6,508` MiB and hid the Qwen radio. Checkpoint
@@ -1403,8 +1410,9 @@ above. Milestone 6's synthetic reproduced classes and content-safe packaged
 private-book confirmation are closed. Milestone 7 records the final support
 matrix and ADR, exact safety margins, explicit fallback/recovery policy,
 limitations, and runtime/license/distribution boundary. Its complete local
-closeout surface passes; M010 remains active only until replacement required
-pull-request checks pass. The runtime can produce the canonical bounded host
+closeout surface passes. Pull request #150 Foundation run 30490042472 passed
+the required Ubuntu portable and Windows native jobs, closing M010. The
+runtime can produce the canonical bounded host
 report, derive content-free compatibility, preserve only one bounded
 preference, reject a changed host immediately before child start, and perform
 one identity-safe explicit recovery after verified cleanup. The frozen v6

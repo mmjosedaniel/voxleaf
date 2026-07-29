@@ -130,13 +130,13 @@ Focused validation passes:
 
 ### Status
 
-In progress pending replacement required pull-request checks. Metrics and accessible
-status are implemented; current product, architecture, diagram, roadmap,
-setup, testing, and troubleshooting documentation is reconciled; and full
-portable, authoritative Windows, privacy/artifact, relative-link, and diff
-validation pass. The merged implementation's Windows smoke exposed a
-nondeterministic pre-highlight layout-settlement race in shared test
-infrastructure; its bounded correction passes locally.
+Complete on 2026-07-29. Metrics and accessible status are implemented; current
+product, architecture, diagram, roadmap, setup, testing, and troubleshooting
+documentation is reconciled; and full portable, authoritative Windows,
+privacy/artifact, relative-link, and diff validation pass. The merged
+implementation's Windows smoke exposed a nondeterministic pre-highlight
+layout-settlement race in shared test infrastructure; its bounded correction
+passes locally and both replacement pull-request checks pass.
 
 ## Testing and benchmark strategy
 
@@ -197,6 +197,14 @@ human listening may tune a future version but cannot silently alter v1.
   tests, 40 Rust tests, 256 Python tests, all builds, relative-link validation,
   the 19-file privacy/artifact scan, and `git diff --check`. Replacement
   required pull-request checks are the only remaining archival gate.
+- 2026-07-29: Pull request
+  [#150](https://github.com/mmjosedaniel/voxleaf/pull/150) Foundation
+  [run 30490042472](https://github.com/mmjosedaniel/voxleaf/actions/runs/30490042472)
+  passed the required Ubuntu portable
+  [job 90705351522](https://github.com/mmjosedaniel/voxleaf/actions/runs/30490042472/job/90705351522)
+  and Windows native
+  [job 90705351575](https://github.com/mmjosedaniel/voxleaf/actions/runs/30490042472/job/90705351575)
+  checks. This closes the replacement clean-runner gate and completes M008.1.
 
 ## Discoveries and decisions
 
@@ -237,5 +245,7 @@ The existing Vite CSS Custom Highlight/chunk-size advisories and sandbox-denied
 Pytest cache-write warning remained non-failing. No exact model, private EPUB,
 network service, or audio device was required for deterministic correctness.
 PR #149's Ubuntu portable check passed and its Windows native check exposed the
-shared synchronization-probe race recorded above. Replacement Ubuntu portable
-and Windows native checks remain before this plan can move to `completed/`.
+shared synchronization-probe race recorded above. Pull request #150 Foundation
+run 30490042472 then passed replacement Ubuntu portable job 90705351522 and
+Windows native job 90705351575. The plan is complete and may move to
+`completed/`.

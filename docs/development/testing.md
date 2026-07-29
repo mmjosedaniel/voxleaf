@@ -663,8 +663,8 @@ git diff --check
 
 The hardware-specific evidence remains the frozen v6 result and the separately
 invoked `pnpm.cmd test:tts:resilience-exact-host` matrix described above.
-Default checks do not rerun private/model-backed evaluation. Required Ubuntu
-portable and Windows native pull-request checks must pass before M010 and the
+Default checks do not rerun private/model-backed evaluation. Pull request #150
+passed the required Ubuntu portable and Windows native checks, so M010 and the
 related M008.1 closeout are archived.
 
 ## Deferred coverage
