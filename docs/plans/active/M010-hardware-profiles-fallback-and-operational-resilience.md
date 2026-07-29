@@ -608,6 +608,13 @@ configuration, and settings choice atomically.
   `tts-profile-runtime-configuration-availability-v1.md` before correction,
   keep hardware fit separate from executable configuration, and fail closed
   before child start when the selected profile is not configured.
+- Correct the residual spoken-expansion discrepancy discovered after the v1
+  code-point fix: compact normalized numbers, acronyms, Roman numerals,
+  currencies, ordinals, and letter sequences can produce over-20-second Piper
+  output while remaining below 256 code points. Freeze
+  `piper-narration-preparation-profile-v2.md`, add its process-local weighted
+  budget without changing normalization or protocol v1, and retain v1 only as
+  historical authority.
 
 ### Validation
 
@@ -622,8 +629,8 @@ configuration, and settings choice atomically.
 
 ### Status
 
-Complete again after corrective runtime-configuration availability validation
-on 2026-07-29 on branch
+Corrective Piper v2 spoken-expansion work is in progress on 2026-07-29 on
+branch
 `feat/m010-m6-profile-integration-resilience`, created from merged main commit
 `2b81b028fe6188e17f524d5720e68827511e3c05`. Authority, service, native,
 desktop selection, recovery, and exact-host boundaries were re-read before
@@ -766,6 +773,22 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-29: A private reader rerun accepted one eight-second Piper unit and
+  then exposed a later processing failure. No EPUB text or path was inspected.
+  Bounded exact-voice synthetic reproduction established the remaining
+  failure class: 256-code-point digit, acronym, Roman-numeral, currency,
+  ordinal, and letter-sentence inputs all failed the complete-unit boundary.
+  Raw duration thresholds varied from 64 code points for digit groups to more
+  than 224 for acronyms, proving that one smaller raw-code-point limit is not
+  a credible general correction.
+- 2026-07-29: Froze `narration-piper-v2` before product implementation. Its
+  deterministic process-local expansion budget assigns four units to ASCII
+  digits, three to currency/percent/ordinal symbols, two to uppercase letters,
+  and one to other normalized code points, with target 120 and hard maximum
+  160. At the hard boundary, eight synthetic categories measured between
+  8.336 and 17.694 seconds on the exact voice. V2 retains every v1 locator,
+  text, byte, sentence, work, retention, cancellation, protocol, and privacy
+  boundary. Private-case closure still requires the user's rerun.
 - 2026-07-29: Implemented the corrective exact-profile configuration boundary.
   Native supervision accepts only the selected bounded profile ID, derives one
   boolean through the same `ExactRuntime` construction used before start, and
