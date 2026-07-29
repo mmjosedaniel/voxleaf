@@ -86,8 +86,8 @@ ordinary uv cache management outside the repository. Retain only its
 content-free manifest/report rationale. Neither rejected lock may enter the
 production graph. A future candidate must pass a newly frozen complete
 evaluation, including the license, security, offline, native-binary,
-install-hook, artifact-size, and packaging audit, before Milestone 7 may
-propose a production dependency.
+install-hook, artifact-size, and packaging audit, before any later milestone
+may propose a product dependency.
 Both projects set uv's `exclude-newer` cutoff to `2026-07-18T00:00:00Z`, seven
 days before the intake review, so regenerating either lock cannot silently
 admit a just-published dependency.

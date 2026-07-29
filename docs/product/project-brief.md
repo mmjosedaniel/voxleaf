@@ -174,7 +174,7 @@ Model choices and supported hardware claims require reproducible benchmarks, inc
 
 The first version is an interactive local EPUB reader, not a general ebook library, cloud service, mobile application, DRM tool, model-training system, automatic multi-character production studio, or complete-audiobook exporter.
 
-Possible post-MVP work includes more document formats, pronunciation dictionaries, multilingual books, word-level highlighting, bookmarks and notes, sleep timers, background playback, locally generated summaries or translations, explicit audiobook export, and support for additional desktop platforms. These possibilities must not displace the core promise:
+Possible post-MVP work includes the bounded [local TTS candidate backlog](post-mvp-tts-candidate-backlog.md), more document formats, pronunciation dictionaries, multilingual books, word-level highlighting, bookmarks and notes, sleep timers, background playback, locally generated summaries or translations, explicit audiobook export, and support for additional desktop platforms. The TTS backlog prioritizes Pocket TTS as a balanced CPU challenger, Chatterbox Latin American Spanish as a quality candidate, MOSS-TTS-Nano as experimental, Kokoro when English becomes active scope, and separately licensed Piper voice comparisons. These possibilities must not displace the core promise:
 
 > Open a book, press play, and hear narration generated privately on the local device.
 

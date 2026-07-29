@@ -77,6 +77,12 @@ authority.
 2. M011 packages and validates an end-user distribution after those boundaries
    close.
 
+Additional engines and voices do not block this sequence. Pocket TTS,
+Chatterbox Latin American Spanish, MOSS-TTS-Nano, Kokoro, and additional Piper
+voices are retained only in the
+[post-MVP candidate backlog](post-mvp-tts-candidate-backlog.md). None is
+approved, implemented, or scheduled before MVP completion.
+
 ## MVP capability status
 
 Implemented and validated:

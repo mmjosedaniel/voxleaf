@@ -761,6 +761,34 @@ All earlier milestones. Packaging exploration should begin during Milestones 6 a
 - Accessibility and long-session failures are expensive to fix if postponed until final packaging.
 - Portfolio or release claims must reflect validated behavior rather than the intended architecture.
 
+## Post-MVP local TTS candidate backlog
+
+**Status:** Deferred and unscheduled. This work starts only after the current
+MVP is complete and requires a separate ExecPlan plus newly frozen authority.
+It does not expand M010 or M011.
+
+Retain Piper/davefx as the selected CPU fallback and Qwen/Serena as the
+optional GPU-dependent development profile for the current MVP. After release,
+screen the candidates in this order:
+
+1. Pocket TTS Spanish as a balanced streaming CPU challenger, conditional on
+   exact model/voice license and redistribution review.
+2. Chatterbox Latin American Spanish as a regional quality candidate,
+   conditional on a redistributable preset voice and measured hardware fit.
+3. MOSS-TTS-Nano as an experimental CPU/ONNX candidate with strict
+   hallucination, repetition, cancellation, and long-form gates.
+4. Kokoro primarily when English narration becomes active product scope and
+   only after its earlier immutable-bundle and bundled-phonemizer license
+   blockers are resolved.
+5. Additional Piper Spanish voices as independently licensed and measured
+   voice profiles; the passing davefx result cannot be inherited.
+
+Supertonic remains rejected by existing VoxLeaf evidence. MeloTTS and
+KittenTTS remain unprioritized, and Sherpa-ONNX is only a possible runtime
+study rather than a model candidate. Follow the complete
+[post-MVP TTS candidate backlog](../product/post-mvp-tts-candidate-backlog.md)
+for intake boundaries and sources.
+
 ## Cross-milestone decision gates
 
 The following decisions should be made when evidence is available, not assumed silently:
