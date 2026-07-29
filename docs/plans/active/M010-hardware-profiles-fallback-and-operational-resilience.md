@@ -749,6 +749,10 @@ rewrite unrelated reader state.
   Ruff format/lint, mypy, and all 240 Python tests pass. The invalid session is
   authorized for deletion and the first valid official run must execute from
   a clean strict descendant of this checkpoint.
+- 2026-07-28: Deleted only invalid ignored session
+  `a4e4c1ed76f246b49260125db2d7f4de` after verifying its resolved directory
+  was exactly two levels below `benchmarks/results/raw`. The private raw
+  observations are not recoverable and no reviewable evidence was removed.
 - 2026-07-28: Closed Milestone 4 local validation. Portable and full native
   foundation checks pass; the complete browser matrix passes 6/6; and the
   release-packaged native smoke passes. The native rerun exposed and corrected

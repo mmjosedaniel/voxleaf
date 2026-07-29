@@ -68,8 +68,11 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   GPU identity only for ADR-0015's constrained demo, and keeps both
   diagnostics non-promotable.
 - `profile-v6.json`, `candidates-v6.json`, and `corpus-v6.json` freeze M010's
-  new Piper 1.4.2 / `es_ES-davefx-medium` CPU fallback evaluation before any
-  Piper synthesis or listening result. The exact engine/model artifacts,
+  new Piper 1.4.2 / `es_ES-davefx-medium` CPU fallback evaluation. The initial
+  authority preceded all Piper synthesis; an incomplete runner session then
+  exposed and invalidated an obsolete v1 cancellation-case lookup. Corrected
+  authority now binds the two exact v6 cancellation cases before the first
+  valid official result or listening result. The exact engine/model artifacts,
   isolated lock, `narration-v1` input, offline boundary, inherited
   candidate-neutral measurements, one-maintainer MVP quality screen,
   cancellation/cleanup gates, and GPL/CC0 packaging obligations are binding.
