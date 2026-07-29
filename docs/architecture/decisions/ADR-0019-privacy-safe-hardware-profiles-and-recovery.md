@@ -23,6 +23,12 @@ ownership, preserve the latest heard checkpoint, and expose at most one
 explicit restart. It adds no automatic retry, second worker, protocol/schema
 field, persisted recovery record, fallback, or support claim.
 
+M010 Milestone 5 subsequently passes the separately frozen Piper v6
+evaluation. ADR-0020 admits that exact profile as the supported CPU fallback.
+This does not retroactively change the result-blind authority here; Milestone
+6 must still integrate and validate the admitted runtime before it becomes
+user-visible.
+
 ## Context
 
 The constrained Qwen/Serena path is exact-host and development-only. ADR-0013

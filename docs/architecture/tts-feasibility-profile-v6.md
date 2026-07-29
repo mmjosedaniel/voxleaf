@@ -20,10 +20,10 @@ The evaluation candidate is Piper `1.4.2` with the
 candidate. It does not rename or reinterpret the rejected Supertonic/F1 or
 CPU-only Qwen profiles.
 
-This authority does not select a fallback. Selection requires a later clean
-execution commit, complete machine evidence, the bounded listening screen,
-and a content-safe decision. Until then, the product registry remains
-unchanged and `cpuFallback` remains unsupported.
+The later clean execution, bounded listening screen, and content-safe result
+passed every gate. [`selection-v6.md`](../../benchmarks/tts/selection-v6.md)
+and ADR-0020 select the exact profile as a supported CPU fallback. Runtime and
+settings integration remain M010 Milestone 6 work.
 
 ## Candidate and dependency boundary
 
@@ -122,3 +122,16 @@ derivation.
 If any mandatory gate fails, `selection-v6.md` must retain CPU fallback as
 unsupported and M010 stops at this hard evidence gate. Only a complete pass
 may admit this exact immutable profile to the product registry.
+
+## Accepted result
+
+[`cpu-fallback-result-v6.json`](../../benchmarks/tts/cpu-fallback-result-v6.json)
+is the schema-valid content-safe result. It records zero failed gates, total
+sustained RTF `0.02511192544515474`, 411,070,464 bytes peak process-tree RAM,
+five passing cancellation trials with zero stale frames, overall quality
+`4.621428571428572`, and zero meaning-changing defects. Successful derivation
+deleted all private sessions.
+
+The evaluator's pre-decision clarification was recorded as a separate private
+correction while preserving the original scorecard: one omitted vowel was
+understandable and did not alter meaning. Numeric scores were not changed.

@@ -544,7 +544,8 @@ merge gate.
 
 ### Status
 
-In progress. The exact Piper 1.4.2 / `es_ES-davefx-medium` CPU candidate,
+Complete on 2026-07-28. The exact Piper 1.4.2 /
+`es_ES-davefx-medium` CPU candidate,
 isolated lock, normalized synthetic corpus, schemas, performance/quality
 gates, cancellation/cleanup rules, offline controls, and GPL/CC0 packaging
 obligations are frozen in `profile-v6`. An invalid first runner session
@@ -552,10 +553,10 @@ exposed an obsolete v1 cancellation-case lookup after performance collection
 and before all cancellation, memory, and cleanup evidence. Its observations
 are not candidate evidence and cannot be promoted. Corrected v6 authority
 binds both cancellation case identifiers before the first valid official
-execution. The corrected machine run now passes and admits the frozen
-listening screen; the one-maintainer Spanish quality decision remains pending.
-CPU fallback remains unsupported until the content-safe selection passes
-every conjunctive gate.
+execution. The corrected machine run, one-maintainer Spanish quality screen,
+privacy/cleanup derivation, and content-safe selection pass every conjunctive
+gate. `selection-v6` and ADR-0020 admit Piper as the supported speed-focused
+CPU fallback. Runtime/settings integration remains Milestone 6 work.
 
 ## Milestone 6: Integrate admitted profiles and run the resilience matrix
 
@@ -766,6 +767,18 @@ rewrite unrelated reader state.
   v6 listening session for the single fluent-Spanish MVP maintainer. Its
   browser-local scorecard is pending; no quality score or candidate selection
   has been inferred before that review.
+- 2026-07-28: The evaluator scored overall quality `4.621428571428572`.
+  Before result derivation, the evaluator clarified that one marked
+  temperature-sample issue omitted a vowel but remained understandable and
+  preserved meaning. The correction workflow preserved the original private
+  scorecard, changed only the Boolean classification, retained every numeric
+  score, and re-aggregated zero meaning-changing defects.
+- 2026-07-28: Derived schema-valid
+  `benchmarks/tts/cpu-fallback-result-v6.json` with zero failed gates and
+  deleted both private performance and listening sessions. `selection-v6` and
+  ADR-0020 admit the exact Piper profile as a supported CPU fallback and
+  future user-selectable speed-focused option. Qwen/Serena remains
+  development-only; Milestone 6 owns actual runtime/settings integration.
 - 2026-07-28: Closed Milestone 4 local validation. Portable and full native
   foundation checks pass; the complete browser matrix passes 6/6; and the
   release-packaged native smoke passes. The native rerun exposed and corrected

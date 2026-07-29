@@ -76,6 +76,9 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   isolated lock, `narration-v1` input, offline boundary, inherited
   candidate-neutral measurements, one-maintainer MVP quality screen,
   cancellation/cleanup gates, and GPL/CC0 packaging obligations are binding.
+- `cpu-fallback-result-v6.json` is the schema-valid content-safe passing
+  result. `selection-v6.md` and ADR-0020 admit this exact profile as the
+  speed-focused CPU fallback; product wiring remains M010 Milestone 6 work.
 - `schemas/cpu-fallback-raw-v6.schema.json` and
   `schemas/cpu-fallback-summary-v6.schema.json` are the closed private and
   content-safe result shapes. No v6 result or selection exists at the
@@ -200,6 +203,23 @@ quality session ID, validates all machine/listening gates, writes only
 $derive = $assessment.Clone()
 $derive.qualitySessionId = "<quality-session-id>"
 $derive | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:cpu-fallback:derive
+```
+
+Before derivation, an evaluator may correct one mistaken v6 meaning-change
+classification without altering the original completed scorecard or any
+numeric score. The closed correction command accepts only the fixed reason
+`evaluator-clarified-no-meaning-change`, removes any stale private aggregate,
+and requires re-aggregation:
+
+```powershell
+$correction = @{
+  qualityOptIn = $true
+  sessionId = "<quality-session-id>"
+  evaluatorId = "evaluator-01"
+  caseId = "<frozen-case-id>"
+  reasonCode = "evaluator-clarified-no-meaning-change"
+}
+$correction | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:quality:correct
 ```
 
 Do not manually copy raw observations, audio, scorecards, randomization keys,

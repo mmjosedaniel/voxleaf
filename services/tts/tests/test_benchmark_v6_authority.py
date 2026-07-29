@@ -46,6 +46,7 @@ RAW_SCHEMA_PATH: Final = (
 SUMMARY_SCHEMA_PATH: Final = (
     REPOSITORY_ROOT / "benchmarks" / "tts" / "schemas" / "cpu-fallback-summary-v6.schema.json"
 )
+RESULT_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "cpu-fallback-result-v6.json"
 
 
 def _configuration(root: Path) -> CandidateConfiguration:
@@ -414,3 +415,19 @@ def test_v6_content_safe_summary_builds_and_validates() -> None:
     )
     assert b"tts-cpu-fallback-summary-v6" in payload
     assert b"private narration" not in payload
+
+
+def test_committed_v6_result_is_schema_valid_and_passes_every_gate() -> None:
+    result = cast(
+        dict[str, object],
+        json.loads(RESULT_PATH.read_text(encoding="utf-8")),
+    )
+    schema = load_schema(SUMMARY_SCHEMA_PATH)
+    errors = tuple(Draft202012Validator(schema, registry=schema_registry()).iter_errors(result))
+    assert errors == (), tuple(error.message for error in errors)
+    assert result["authorityCommitSha"] == "9a2f74845853e84635b419a4e65170c9a2c207ee"
+    assert result["executionCommitSha"] == "d9f2929be40e40b2fa85078816ea854fad9a6c69"
+    assert result["profileSha256"] == PROFILE_V6_SHA256
+    assert result["gateEvaluation"] == {"failedGates": [], "outcome": "pass"}
+    quality = cast(dict[str, object], result["quality"])
+    assert quality["meaningChangingDefects"] == 0
