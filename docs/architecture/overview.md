@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 9 and M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoration, locator-linked narration preparation, M007 service, exact-development M008 coordinator/player path, M009 segment-level synchronization, and M009.1 reader stabilization are implemented and validated within their documented scopes. M009.1 implements the [`reader-experience-authority-v1`](reader-experience-authority-v1.md): stronger paint-aware evidence, the same-spine materialization repair, one dedicated reader scroll owner, a fixed compact shell, collapsible narration detail, exact loaded/target/estimate text without a progress bar, one retargeted contextual paragraph leaf, and passive-scroll isolation. Locator sampling, reflow/restoration, highlight following, and the leaf share existing registered reader geometry; no second timing source, persisted state, protocol field, or buffer-policy change was added. Its private-EPUB, exact-host, repository/privacy, portable, packaged, and required Ubuntu/Windows validation pass; pull request #142 merged the closeout. M010 is in progress. Milestone 1 implements the canonical privacy-safe host-profile report and freezes [`hardware-profile-recovery-authority-v1`](hardware-profile-recovery-authority-v1.md): immutable evidence identity, result-blind RAM/VRAM/storage margins, deterministic matching/preference rules, a closed failure taxonomy, and identity-first explicit recovery. It performs no host probe and admits no support or fallback. ADR-0013 therefore continues to select no standard production profile. General-hardware support, validated fallback, runtime recovery, production distribution, and sustained uninterrupted playback remain unimplemented.
+Mixed implementation status. Roadmap Milestones 1 through 9 and M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoration, locator-linked narration preparation, M007 service, exact-development M008 coordinator/player path, M009 segment-level synchronization, and M009.1 reader stabilization are implemented and validated within their documented scopes. M009.1 implements the [`reader-experience-authority-v1`](reader-experience-authority-v1.md): stronger paint-aware evidence, the same-spine materialization repair, one dedicated reader scroll owner, a fixed compact shell, collapsible narration detail, exact loaded/target/estimate text without a progress bar, one retargeted contextual paragraph leaf, and passive-scroll isolation. Locator sampling, reflow/restoration, highlight following, and the leaf share existing registered reader geometry; no second timing source, persisted state, protocol field, or buffer-policy change was added. Its private-EPUB, exact-host, repository/privacy, portable, packaged, and required Ubuntu/Windows validation pass; pull request #142 merged the closeout. M010 is in progress. Milestone 1 implements the canonical privacy-safe host-profile report and freezes [`hardware-profile-recovery-authority-v1`](hardware-profile-recovery-authority-v1.md): immutable evidence identity, result-blind RAM/VRAM/storage margins, deterministic matching/preference rules, a closed failure taxonomy, and identity-first explicit recovery. Milestone 2 implements the corresponding native Windows probe port and typed desktop decoder. The native shell reads only bounded OS/architecture, processor count, RAM, application-volume storage, identity-free DXGI memory/class, CUDA capability, and DirectML precision facts; it emits no adapter identity or raw output. Non-Windows builds return unavailable. No matching, persistence, model activity, support, or fallback is admitted. ADR-0013 therefore continues to select no standard production profile. General-hardware support, validated fallback, runtime recovery, production distribution, and sustained uninterrupted playback remain unimplemented.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
@@ -95,8 +95,10 @@ Desktop application
 |-- Reader/narration projection, following, navigation, and heard persistence
 |   [M009 Milestones 1-7 complete and exact-host validated]
 |-- Reader experience stabilization [M009.1 complete and validated]
-`-- Host-profile and recovery authority
-    [M010 Milestone 1 frozen; runtime probe/matcher/recovery not implemented]
+|-- Privacy-safe host detector and typed report boundary
+|   [M010 Milestones 1-2 implemented; Windows direct APIs, no support claim]
+`-- Profile matching and recovery authority
+    [M010 Milestone 1 frozen; matcher/recovery not implemented]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]
@@ -417,8 +419,23 @@ recommendations, and support claims are excluded, and the report cannot be
 persisted. The adjacent executable desktop authority freezes registry/evidence
 shape, fixed capacity margins, deterministic matching and preference reuse,
 failure/recovery tables, zero automatic attempts, observation/diagnostic
-bounds, and M009 latest-heard resume semantics. Native probing, registry
-entries, matching, UI, and recovery remain later M010 work.
+bounds, and M009 latest-heard resume semantics.
+
+M010 Milestone 2 implements the narrow native producer and desktop consumer of
+that report. One injected native port owns the probe and permits one concurrent
+run. On Windows, direct `GetNativeSystemInfo`,
+`GetActiveProcessorCount`, `GlobalMemoryStatusEx`,
+`GetDiskFreeSpaceExW`, DXGI/D3D12/DirectML, and CUDA driver queries produce
+only bounded normalized facts. Adapter LUIDs exist only transiently to join
+provider capability to identity-free DXGI memory/class facts. The renderer has
+no shell/process/OS/HTTP capability; it receives the closed report through one
+Tauri command and independently decodes it with the canonical shared
+contract. Raw names, IDs, errors, paths, environment, timestamps, and
+recommendations never cross the boundary, and the detector performs no
+network, model, audio, or persistence operation. Unsupported non-Windows
+builds report unavailable rather than implying support. Registry entries,
+matching, compatibility UI, support selection, fallback, and recovery remain
+later M010 work.
 
 The implemented audio-frame v1 boundary describes payload-free in-memory frame metadata with frame, session, generation, and narration-segment identities; monotonic sequence; positive sample rate, per-channel sample-frame count, and channel count; and an explicit end-of-segment marker. Duration is derived from sample count divided by sample rate. Public helpers return conservative whole milliseconds using exact integer arithmetic, sum samples before truncating once, and reject unsafe duration overflow. Contiguous single-segment runs reject duplicate frame IDs, sequence gaps or reversals, identity or format changes, and frames after the segment-end marker. The contract selects no codec, payload representation, audio API, player, or buffer policy.
 

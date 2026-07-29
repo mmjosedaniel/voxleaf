@@ -47,12 +47,15 @@ the milestone.
 
 ## Current state
 
-Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestone 1 is
-complete. Commit `8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
+Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-2
+are complete. Commit `8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
 result-blind hardware/profile/recovery authority, canonical compatibility
 report, executable desktop tables, native API/permission audit, and ADR-0019
-before any M010 host measurement. Runtime host detection, profile matching,
-fallback admission, recovery behavior, and support claims have not started.
+before any M010 host measurement. Implementation checkpoint
+`842770f7780930aeb971db7777e61ca34fb53e78` adds the bounded native Windows
+probe and typed desktop decoder without retaining measured values. Profile
+matching, fallback admission, recovery behavior, and support claims have not
+started.
 
 Completed M006 and its two blocker-resolution plans provide the
 candidate-neutral benchmark authority and measured evidence:
@@ -86,11 +89,12 @@ no host identity, device inventory, engine identity, profile identity, memory
 quantity, provider, precision, or recommendation. Protocol v1 embeds that
 report and must not be silently expanded.
 
-The desktop currently exposes only a content-free exact-demo
-`available`/`unavailable` flag. Native configuration decides whether the
-model-free or exact child can be started. There is no general hardware probe,
-measured profile registry, selection policy, CPU fallback, recovery state
-machine, or support matrix.
+The desktop now has a typed internal command client for the canonical
+identity-free host report in addition to the content-free exact-demo
+`available`/`unavailable` flag. Native configuration still decides whether the
+model-free or exact child can be started. There is no measured profile
+registry, selection policy, CPU fallback, recovery state machine, or support
+matrix, and the host report is not yet shown in product UI.
 
 ## Scope and non-goals
 
@@ -348,15 +352,58 @@ Complete on 2026-07-28. The pre-result authority checkpoint is
 
 ### Validation
 
-- Run focused Rust probe/normalization tests and shared/desktop decoder tests.
-- Run `cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml`.
-- Run `pnpm.cmd --filter @voxleaf/shared test`.
-- Run `pnpm.cmd --filter @voxleaf/desktop test`.
-- Run `pnpm.cmd typecheck`.
+- Focused native command:
+  `cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml host_profile_detection`
+  - Actual: passed; 9 injected/production tests.
+- Focused desktop command:
+  `pnpm.cmd --filter @voxleaf/desktop exec vitest run src/tts/host-profile-client.test.ts`
+  - Actual: passed; 1 file and 6 tests.
+- Focused Rust lint:
+  `cargo clippy --manifest-path apps/desktop/src-tauri/Cargo.toml --all-targets -- -D warnings`
+  - Actual: passed.
+- Focused TypeScript lint:
+  `pnpm.cmd exec eslint apps/desktop/src/tts/host-profile-client.ts apps/desktop/src/tts/host-profile-client.test.ts`
+  - Actual: passed.
+- Focused desktop typecheck:
+  `pnpm.cmd --filter @voxleaf/desktop typecheck`
+  - Actual: passed.
+- Full native command:
+  `cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml`
+  - Actual: passed; 38 tests.
+- Full shared command: `pnpm.cmd --filter @voxleaf/shared test`
+  - Actual: passed; 20 files and 209 tests. The generator check verified 17
+    generated contract files.
+- Full desktop command: `pnpm.cmd --filter @voxleaf/desktop test`
+  - Actual: passed; 36 Vitest files and 344 tests plus 7 native-driver client
+    tests.
+- Repository typecheck: `pnpm.cmd typecheck`
+  - Actual: passed for shared, EPUB, desktop, and 90 Python source files.
+- Full repository command: `pnpm.cmd check`
+  - Actual: passed in local PowerShell after the sandboxed attempt was denied
+    access to uv's normal AppData cache. Formatting, linting, TypeScript/Python
+    typechecks, 20 shared files with 209 tests, 34 EPUB files with 555 tests,
+    36 desktop files with 344 tests, 7 native-driver client tests, 38 Rust
+    tests, 234 Python tests, the desktop release build, and both Python
+    distributions passed.
+  - Existing non-failing warnings remained for the CSS Custom Highlight
+    pseudo-element, the desktop bundle-size advisory, and pytest's inability
+    to write its optional cache in the local checkout.
+- Command: `git diff --check`
+  - Actual: passed.
+- Scope/privacy review:
+  - Actual: passed. The report exposes no name, identifier, LUID, vendor,
+    device ID, path, command output, environment, timestamp, book content,
+    audio, recommendation, or support state. No model, download, telemetry,
+    persistence, non-loopback request, shell/plugin permission, or profile
+    matcher was added.
 
 ### Status
 
-Not started.
+Complete on 2026-07-28. The implementation checkpoint is
+`842770f7780930aeb971db7777e61ca34fb53e78`; documentation reconciliation,
+full validation evidence, and final permission/privacy hardening are recorded
+at `fedf894e734016f720662caa155c9760d7216175`. The probe creates no support
+or fallback claim.
 
 ## Milestone 3: Implement measured profile matching and compatibility UI
 
@@ -593,6 +640,17 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-28: Completed Milestone 2. Added a native injected probe port,
+  single-concurrency guard, bounded normalization, direct Windows
+  OS/storage/DXGI/D3D12/DirectML/CUDA adapters, the narrow Tauri command, and a
+  typed desktop decoder. Deterministic tests cover the frozen complete,
+  partial, denied, malformed, multi-adapter, integrated-only, low-memory,
+  no-provider, unknown, ambiguous, unsupported-platform, and fixed-error
+  cases. The implementation checkpoint is
+  `842770f7780930aeb971db7777e61ca34fb53e78`. No measured host value was
+  retained and no profile was matched. Documentation, full validation
+  evidence, and final permission/privacy hardening are retained at
+  `fedf894e734016f720662caa155c9760d7216175`.
 - 2026-07-28: Completed Milestone 1 before any M010 host measurement. Added
   canonical `HostProfileCompatibilityReportV1`, strict fixtures/generated
   validators/runtime decoder, exact enum/unit/max/unknown semantics, the
@@ -621,6 +679,21 @@ rewrite unrelated reader state.
 
 ## Discoveries and decisions
 
+- The official `windows` crate version `0.61.3` was already present in the
+  resolved Rust graph. Promoting it to a direct Windows-only dependency gives
+  reviewed typed COM/Win32 bindings without adding a resolved package, Tauri
+  plugin, renderer permission, or general inventory API.
+- Provider-to-adapter association needs an identity only inside the native
+  probe. DXGI/CUDA LUIDs are therefore transient join keys and are discarded
+  before normalization; adapter descriptions, vendor/device IDs, driver
+  strings, and raw errors are never collected into the report.
+- The production probe can establish CUDA and DirectML capability without
+  loading a model. CUDA uses the system `nvcuda.dll` loaded from `System32`
+  with five fixed driver symbols; DirectML creates only bounded D3D12/DirectML
+  capability devices. Missing/denied/malformed facts fail closed.
+- Non-Windows builds deliberately return a schema-valid `unavailable` report.
+  This keeps the cross-platform build honest without claiming Linux or macOS
+  detection support.
 - The existing Tauri configuration grants no renderer capability and uses no
   shell/process/OS/HTTP plugin. Milestone 1 therefore adds no dependency or
   permission. Milestone 2 must use reviewed direct Windows/provider APIs
@@ -662,8 +735,9 @@ rewrite unrelated reader state.
 
 ## Final validation results
 
-Milestone 1 validation is complete and recorded above. M010 remains in
-progress with Milestones 2 through 7 not started. No runtime compatibility,
+Milestones 1-2 validation is complete and recorded above. M010 remains in
+progress with Milestones 3 through 7 not started. The runtime can now produce
+the canonical bounded host report on Windows, but no compatibility result,
 fallback, recovery, or support claim is available. The plan is complete only
 when:
 
