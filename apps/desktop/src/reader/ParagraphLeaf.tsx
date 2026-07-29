@@ -27,14 +27,6 @@ const LABELS: Readonly<Record<ReaderExperienceLeafState, string>> =
     checkpoint: "Resume narration at saved checkpoint",
   });
 
-const VISIBLE_STATES: Readonly<
-  Partial<Record<ReaderExperienceLeafState, string>>
-> = Object.freeze({
-  preparing: "Preparing",
-  audible: "Current",
-  checkpoint: "Saved",
-});
-
 function positionFor(
   root: HTMLElement,
   target: HTMLElement,
@@ -128,8 +120,6 @@ export function ParagraphLeaf({
   if (locatedBlock === undefined || state === undefined) {
     return null;
   }
-  const visibleState = VISIBLE_STATES[state];
-
   return (
     <div ref={hostRef} className="paragraph-leaf-host" hidden>
       <button
@@ -148,9 +138,6 @@ export function ParagraphLeaf({
         >
           <path d="M20.4 3.1C13.7 3.3 7.8 5.8 4.7 10.4c-2 3-1.6 6.1-.7 8.2 2.2-3.5 5.4-6.4 9.5-8.7-3.3 2.9-5.8 6.3-7.4 10.2 2.1.7 5 .8 7.5-1 4.5-3.2 6.6-9.4 6.8-16Z" />
         </svg>
-        {visibleState === undefined ? null : (
-          <span className="paragraph-leaf-state">{visibleState}</span>
-        )}
       </button>
     </div>
   );

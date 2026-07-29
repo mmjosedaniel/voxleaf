@@ -7,7 +7,10 @@ import {
   type HardwareDevelopmentGatePort,
   type HardwareProfileDetectionPort,
 } from "./hardware-profile-compatibility";
-import { EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID } from "./hardware-profile-registry";
+import {
+  EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+  PIPER_CPU_FALLBACK_PROFILE_ID,
+} from "./hardware-profile-registry";
 
 function unknownQuantity() {
   return { status: "unknown" as const };
@@ -141,24 +144,25 @@ function dependencies(
 }
 
 describe("hardware profile compatibility coordinator", () => {
-  it("reports the exact configured profile as development-only without inventing fallback", async () => {
+  it("recommends the admitted CPU fallback while retaining the exact development profile", async () => {
     const subject = new HardwareProfileCompatibilityCoordinator(dependencies());
 
     const snapshot = await subject.check("application-start");
 
-    expect(snapshot.status).toBe("development-only");
-    expect(snapshot.activeProfileId).toBe(
-      EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
-    );
-    expect(snapshot.selectionSource).toBe("native-development-gate");
-    expect(snapshot.fallbackAvailable).toBe(false);
-    expect(snapshot.profiles).toHaveLength(3);
+    expect(snapshot.status).toBe("compatible");
+    expect(snapshot.activeProfileId).toBe(PIPER_CPU_FALLBACK_PROFILE_ID);
+    expect(snapshot.selectionSource).toBe("recommendation");
+    expect(snapshot.fallbackAvailable).toBe(true);
+    expect(snapshot.profiles).toHaveLength(4);
   });
 
   it.each([
     [
-      "native gate unavailable",
-      dependencies({ gate: "unavailable" }),
+      "insufficient capacity",
+      dependencies({
+        report: completeReport(0),
+        gate: "unavailable",
+      }),
       "unavailable",
     ],
     [
@@ -207,7 +211,7 @@ describe("hardware profile compatibility coordinator", () => {
     expect(detect).toHaveBeenCalledOnce();
     resolveReport!(completeReport());
     await expect(first).resolves.toMatchObject({
-      status: "development-only",
+      status: "compatible",
     });
   });
 
@@ -215,20 +219,20 @@ describe("hardware profile compatibility coordinator", () => {
     const detect = vi
       .fn()
       .mockResolvedValueOnce(completeReport())
-      .mockResolvedValueOnce(completeReport(1_024));
+      .mockResolvedValueOnce(completeReport(128));
     const subject = new HardwareProfileCompatibilityCoordinator(
       dependencies({ detector: { detect } }),
     );
 
     await expect(
       subject.isProfileStartAllowed(
-        EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+        PIPER_CPU_FALLBACK_PROFILE_ID,
         "application-start",
       ),
     ).resolves.toBe(true);
     await expect(
       subject.isProfileStartAllowed(
-        EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+        PIPER_CPU_FALLBACK_PROFILE_ID,
         "before-profile-start",
       ),
     ).resolves.toBe(false);
@@ -273,9 +277,9 @@ describe("hardware profile compatibility coordinator", () => {
     );
     await stale.check("application-start");
     expect(stale.observe()).toMatchObject({
-      status: "development-only",
+      status: "compatible",
       preferenceStatus: "stale",
-      selectionSource: "native-development-gate",
+      selectionSource: "recommendation",
     });
 
     const futurePreference = preference({ status: "unsupported-version" });

@@ -13,6 +13,14 @@ is explicit with 1 minute initially selected, refill/resume remains 1 minute,
 and boundary waits remain disabled at `0` ms. Later work must preserve this
 authority without silently changing its values or meanings.
 
+M008.1 does not revise that low-buffer throughput policy. Its separately
+accepted
+[`playback-transition-pause-policy-v1`](playback-transition-pause-policy-v1.md)
+schedules sub-1.2-second semantic separation only after a generated unit ends
+and only when the next unit is already buffered. Those transition pauses do
+not contribute playable frames, alter startup/refill thresholds, or become an
+adaptive low-buffer wait.
+
 This document freezes model-independent scheduling and UX behavior for
 ADR-0015's exact one-GPU Qwen/Serena constrained development demo. It does not
 claim that the implemented scheduler, multi-unit buffer, and player are wired
@@ -259,6 +267,11 @@ timing/buffer validation.
 Boundary waits are disabled by default (`0` ms). The only admitted nonzero
 values are 1,000, 2,000, or 3,000 ms.
 
+This section describes only the M008 low-buffer throughput mechanism.
+M008.1's engine-neutral playback transition pause is a different policy with
+different eligibility and values; see
+[`playback-transition-pause-policy-v1`](playback-transition-pause-policy-v1.md).
+
 A later scheduler may use at most one wait at an eligible paragraph or chapter
 boundary only when:
 
@@ -300,7 +313,8 @@ The UI uses these truthful meanings:
 | Preparing                                | “Preparing audio — {ready} of {target} ready. Estimated wait: {estimate}.”                                    |
 | Playback-only pause with work continuing | “Playback paused. Preparing up to {target} of audio.” and an available “Stop preparing” action.               |
 | Low water                                | “Audio is running low. Playback may pause while local speech catches up.”                                     |
-| Intentional boundary wait                | “Brief planned pause while local speech catches up.”                                                          |
+| Adaptive low-buffer wait                 | “Brief planned pause while local speech catches up.”                                                          |
+| Buffered-unit semantic transition        | “Brief pause between narration passages.”                                                                     |
 | Involuntary buffering                    | “Playback paused while VoxLeaf generates more audio — {ready} of 1 minute ready. Estimated wait: {estimate}.” |
 | Resource ceiling                         | “Preparation paused at the in-memory limit.”                                                                  |
 | Complete shorter range                   | “All remaining audio is ready.”                                                                               |

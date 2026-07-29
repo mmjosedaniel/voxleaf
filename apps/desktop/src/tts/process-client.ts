@@ -279,11 +279,33 @@ export class TtsProcessClient {
     }
   }
 
-  public async start(): Promise<TtsProcessClientObservation> {
+  /**
+   * Returns only whether native supervision can construct the exact selected
+   * runtime. Interpreter and model paths remain native-private.
+   */
+  public async profileConfigurationAvailability(
+    profileId: string,
+  ): Promise<TtsExactDemoAvailability> {
+    try {
+      return (await this.invokePort<boolean>(
+        "tts_profile_configuration_available",
+        { profileId },
+      )) === true
+        ? "available"
+        : "unavailable";
+    } catch {
+      return "unavailable";
+    }
+  }
+
+  public async start(profileId?: string): Promise<TtsProcessClientObservation> {
     if (!["stopped", "failed"].includes(this.state)) {
       throw new TtsProcessClientError("tts-service-invalid-state");
     }
-    const controls = await this.invokeControls("start_tts_service");
+    const controls = await this.invokeControls(
+      "start_tts_service",
+      profileId === undefined ? undefined : { profileId },
+    );
     expectKinds(controls, [
       "state",
       "handshakeAccepted",

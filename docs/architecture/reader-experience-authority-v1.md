@@ -127,15 +127,19 @@ At most one state of each kind may be retained:
 
 | State | Visual treatment | Required non-colour cue |
 | --- | --- | --- |
-| preview | translucent | accessible action name |
-| preparing | distinct pending treatment | preparing label/state |
-| audible | solid | `aria-current` or equivalent |
-| checkpoint | outlined, non-solid | checkpoint label |
+| preview | translucent icon-only control | accessible action name |
+| preparing | icon-only control with dashed pending border | preparing accessible state name |
+| audible | solid icon-only control | `aria-current` plus accessible state name |
+| checkpoint | outlined, non-solid icon-only control | checkpoint accessible state name |
 
 Focus remains independently visible, and keyboard, pointer, and touch users
 receive the same action. Leaf activation explicitly replaces obsolete work and
 starts at the canonical target through the existing M009 invalidation order.
 The leaf supplements, but never replaces, the exact segment highlight.
+Visible state words are omitted so the fixed gutter control cannot expand over
+publication text. State-specific opacity, fill, and border treatment remain
+visual reinforcement; the complete action/state wording remains available to
+assistive technology through the button's accessible name.
 
 ## Preserved boundaries
 

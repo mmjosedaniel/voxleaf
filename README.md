@@ -82,6 +82,34 @@ The development server listens only on `http://127.0.0.1:5173`; stop it with `Ct
 pnpm.cmd build
 ```
 
+### Run the native development application with Qwen3-TTS
+
+The exact Qwen3-TTS 1.7B CustomVoice/Serena profile is a development-only
+configuration. Before launching it, prepare the ignored candidate virtual
+environment and local model directory described in
+[`docs/development/setup.md`](docs/development/setup.md), and ensure the
+administrator-created outbound-blocking firewall rule targets that exact
+Python interpreter.
+
+From the repository root, run the following commands in one PowerShell
+terminal:
+
+```powershell
+$env:VOXLEAF_TTS_DEV_ENABLED = "1"
+$env:VOXLEAF_TTS_DEV_PYTHON = (Resolve-Path "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/.venv/Scripts/python.exe" -ErrorAction Stop).Path
+$env:VOXLEAF_TTS_DEV_MODEL_ROOT = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda" -ErrorAction Stop).Path
+
+pnpm.cmd build:packages
+pnpm.cmd --filter @voxleaf/desktop tauri dev
+```
+
+Keep that terminal open while using the application and stop it with
+`Ctrl+C`. The variables apply only to that PowerShell process. Qwen appears in
+the compatibility panel only when the native development gate, exact runtime,
+model files, and frozen hardware admission checks all pass. This profile is
+not a supported production or real-time profile; Piper remains the supported
+MVP CPU fallback.
+
 The native executable is written to the ignored Tauri target directory. Installer bundling is intentionally disabled.
 
 See [`docs/development/setup.md`](docs/development/setup.md) for tool versions, focused commands, Windows and WSL boundaries, and generated outputs. See [`docs/development/testing.md`](docs/development/testing.md) for current test coverage and [`docs/development/dependencies.md`](docs/development/dependencies.md) for the dependency inventory and decision rationale.

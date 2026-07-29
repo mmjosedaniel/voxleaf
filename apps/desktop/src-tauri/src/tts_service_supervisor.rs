@@ -31,13 +31,21 @@ use crate::{
 
 pub const HOST_ARGUMENT: &str = "--voxleaf-tts-service-supervisor-host";
 pub const EXACT_HOST_ARGUMENT: &str = "--voxleaf-tts-exact-service-host";
+pub const PIPER_HOST_ARGUMENT: &str = "--voxleaf-tts-piper-service-host";
 
+const QWEN_PROFILE_ID: &str = "qwen3-tts-1-7b-customvoice-cuda-bf16-v1";
+const PIPER_PROFILE_ID: &str = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
 const DEV_ENABLED_KEY: &str = "VOXLEAF_TTS_DEV_ENABLED";
 const DEV_PYTHON_KEY: &str = "VOXLEAF_TTS_DEV_PYTHON";
 const DEV_MODEL_ROOT_KEY: &str = "VOXLEAF_TTS_DEV_MODEL_ROOT";
+const PIPER_ENABLED_KEY: &str = "VOXLEAF_TTS_PIPER_ENABLED";
+const PIPER_PYTHON_KEY: &str = "VOXLEAF_TTS_PIPER_PYTHON";
+const PIPER_MODEL_ROOT_KEY: &str = "VOXLEAF_TTS_PIPER_MODEL_ROOT";
 const CANDIDATE_LOCK_BYTES: &[u8] = include_bytes!(
     "../../../../services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock"
 );
+const PIPER_LOCK_BYTES: &[u8] =
+    include_bytes!("../../../../services/tts/benchmarks/candidates/piper_1_4_2_cpu/uv.lock");
 
 const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(5);
 const LOAD_TIMEOUT: Duration = Duration::from_secs(120);
@@ -57,6 +65,7 @@ struct ExactRuntime {
     model_root: PathBuf,
     service_source: PathBuf,
     service_site_packages: PathBuf,
+    service_module: &'static str,
 }
 
 impl ExactRuntime {
@@ -103,7 +112,61 @@ impl ExactRuntime {
             model_root: absolute_existing_path(DEV_MODEL_ROOT_KEY, true)?,
             service_source,
             service_site_packages,
+            service_module: "voxleaf_tts.qwen_service",
         })
+    }
+
+    fn piper_from_environment() -> Result<Self, TtsNativeFailure> {
+        if std::env::var_os(PIPER_ENABLED_KEY).as_deref() != Some(std::ffi::OsStr::new("1")) {
+            return Err(TtsNativeFailure::ChildUnavailable);
+        }
+        let repository_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../..")
+            .canonicalize()
+            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        let expected_python = repository_root
+            .join("services/tts/benchmarks/candidates/piper_1_4_2_cpu/.venv/Scripts/python.exe")
+            .canonicalize()
+            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        let configured_python = absolute_existing_path(PIPER_PYTHON_KEY, false)?;
+        if configured_python != expected_python {
+            return Err(TtsNativeFailure::ChildUnavailable);
+        }
+        let candidate_lock =
+            repository_root.join("services/tts/benchmarks/candidates/piper_1_4_2_cpu/uv.lock");
+        if fs::read(candidate_lock).map_err(|_| TtsNativeFailure::ChildUnavailable)?
+            != PIPER_LOCK_BYTES
+        {
+            return Err(TtsNativeFailure::ChildUnavailable);
+        }
+        let service_source = repository_root
+            .join("services/tts/src")
+            .canonicalize()
+            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        let service_site_packages = repository_root
+            .join("services/tts/.venv/Lib/site-packages")
+            .canonicalize()
+            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        for dependency in ["jsonschema", "referencing"] {
+            if !service_site_packages.join(dependency).is_dir() {
+                return Err(TtsNativeFailure::ChildUnavailable);
+            }
+        }
+        Ok(Self {
+            python: configured_python,
+            model_root: absolute_existing_path(PIPER_MODEL_ROOT_KEY, true)?,
+            service_source,
+            service_site_packages,
+            service_module: "voxleaf_tts.piper_service",
+        })
+    }
+
+    fn for_profile(profile_id: &str) -> Result<Self, TtsNativeFailure> {
+        match profile_id {
+            QWEN_PROFILE_ID => Self::from_environment(),
+            PIPER_PROFILE_ID => Self::piper_from_environment(),
+            _ => Err(TtsNativeFailure::InvalidInput),
+        }
     }
 
     fn command(&self) -> Result<Command, TtsNativeFailure> {
@@ -113,7 +176,7 @@ impl ExactRuntime {
         command
             .arg("-s")
             .arg("-m")
-            .arg("voxleaf_tts.qwen_service")
+            .arg(self.service_module)
             .current_dir(&self.model_root)
             .env("PYTHONPATH", python_path)
             .env("PYTHONNOUSERSITE", "1")
@@ -123,9 +186,16 @@ impl ExactRuntime {
             .env("HF_HUB_DISABLE_TELEMETRY", "1")
             .env_remove(DEV_ENABLED_KEY)
             .env_remove(DEV_PYTHON_KEY)
-            .env_remove(DEV_MODEL_ROOT_KEY);
+            .env_remove(DEV_MODEL_ROOT_KEY)
+            .env_remove(PIPER_ENABLED_KEY)
+            .env_remove(PIPER_PYTHON_KEY)
+            .env_remove(PIPER_MODEL_ROOT_KEY);
         Ok(command)
     }
+}
+
+fn profile_configuration_available(profile_id: &str) -> bool {
+    ExactRuntime::for_profile(profile_id).is_ok()
 }
 
 #[derive(Debug)]
@@ -169,6 +239,11 @@ impl ServiceChild {
     fn configured() -> Self {
         if std::env::var_os(DEV_ENABLED_KEY).as_deref() == Some(std::ffi::OsStr::new("1")) {
             return ExactRuntime::from_environment()
+                .map(Self::Exact)
+                .unwrap_or(Self::Unavailable);
+        }
+        if std::env::var_os(PIPER_ENABLED_KEY).as_deref() == Some(std::ffi::OsStr::new("1")) {
+            return ExactRuntime::piper_from_environment()
                 .map(Self::Exact)
                 .unwrap_or(Self::Unavailable);
         }
@@ -441,7 +516,7 @@ pub struct TtsServiceSupervisor {
     operation: Mutex<()>,
     lifecycle: Mutex<Lifecycle>,
     session: Mutex<Option<Arc<ServiceSession>>>,
-    child_configuration: ServiceChild,
+    child_configuration: Mutex<ServiceChild>,
 }
 
 impl Default for TtsServiceSupervisor {
@@ -463,7 +538,7 @@ impl TtsServiceSupervisor {
                 active: None,
             }),
             session: Mutex::new(None),
-            child_configuration,
+            child_configuration: Mutex::new(child_configuration),
         }
     }
 
@@ -474,7 +549,34 @@ impl TtsServiceSupervisor {
     }
 
     fn exact_demo_available(&self) -> bool {
-        matches!(self.child_configuration, ServiceChild::Exact(_))
+        ExactRuntime::from_environment().is_ok()
+    }
+
+    fn configure_profile(&self, profile_id: &str) -> Result<(), TtsNativeFailure> {
+        let _operation = self.acquire_operation()?;
+        if self
+            .session
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?
+            .is_some()
+        {
+            return Err(TtsNativeFailure::InvalidState);
+        }
+        let state = self
+            .lifecycle
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?
+            .state
+            .clone();
+        if state != "stopped" && state != "failed" {
+            return Err(TtsNativeFailure::InvalidState);
+        }
+        *self
+            .child_configuration
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)? =
+            ServiceChild::Exact(ExactRuntime::for_profile(profile_id)?);
+        Ok(())
     }
 
     fn acquire_operation(&self) -> Result<std::sync::MutexGuard<'_, ()>, TtsNativeFailure> {
@@ -558,8 +660,12 @@ impl TtsServiceSupervisor {
             "service:native-{}",
             SERVICE_COUNTER.fetch_add(1, Ordering::Relaxed)
         );
-        let session =
-            ServiceSession::spawn(&self.child_configuration, service_instance_id.clone())?;
+        let child_configuration = self
+            .child_configuration
+            .lock()
+            .map_err(|_| TtsNativeFailure::InternalFailure)?
+            .clone();
+        let session = ServiceSession::spawn(&child_configuration, service_instance_id.clone())?;
         self.set_state("starting")?;
         *self
             .session
@@ -964,11 +1070,23 @@ pub async fn exact_tts_demo_available(
 }
 
 #[tauri::command]
+pub async fn tts_profile_configuration_available(profile_id: String) -> Result<bool, &'static str> {
+    blocking(move || Ok(profile_configuration_available(&profile_id))).await
+}
+
+#[tauri::command]
 pub async fn start_tts_service(
     supervisor: State<'_, Arc<TtsServiceSupervisor>>,
+    profile_id: Option<String>,
 ) -> Result<Vec<Value>, &'static str> {
     let supervisor = Arc::clone(supervisor.inner());
-    blocking(move || supervisor.start()).await
+    blocking(move || {
+        if let Some(profile_id) = profile_id {
+            supervisor.configure_profile(&profile_id)?;
+        }
+        supervisor.start()
+    })
+    .await
 }
 
 #[tauri::command]
@@ -1119,6 +1237,18 @@ pub fn run_host() -> Result<(), &'static str> {
 
 pub fn run_exact_host() -> Result<(), &'static str> {
     let runtime = ExactRuntime::from_environment().map_err(TtsNativeFailure::code)?;
+    run_profile_host(runtime, verify_exact_capabilities)
+}
+
+pub fn run_piper_host() -> Result<(), &'static str> {
+    let runtime = ExactRuntime::piper_from_environment().map_err(TtsNativeFailure::code)?;
+    run_profile_host(runtime, verify_piper_capabilities)
+}
+
+fn run_profile_host(
+    runtime: ExactRuntime,
+    verify_capabilities: fn(&[Value]) -> Result<(), &'static str>,
+) -> Result<(), &'static str> {
     let segment: Value = serde_json::from_str::<Value>(include_str!(
         "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json"
     ))
@@ -1132,7 +1262,7 @@ pub fn run_exact_host() -> Result<(), &'static str> {
 
     supervisor.start().map_err(TtsNativeFailure::code)?;
     let prepared = supervisor.prepare().map_err(TtsNativeFailure::code)?;
-    verify_exact_capabilities(&prepared)?;
+    verify_capabilities(&prepared)?;
     let first = supervisor
         .synthesize(segment.clone())
         .map_err(TtsNativeFailure::code)?;
@@ -1179,7 +1309,7 @@ pub fn run_exact_host() -> Result<(), &'static str> {
 
     supervisor.start().map_err(TtsNativeFailure::code)?;
     let reloaded = supervisor.prepare().map_err(TtsNativeFailure::code)?;
-    verify_exact_capabilities(&reloaded)?;
+    verify_capabilities(&reloaded)?;
     let after_reload = supervisor
         .synthesize(segment)
         .map_err(TtsNativeFailure::code)?;
@@ -1187,6 +1317,37 @@ pub fn run_exact_host() -> Result<(), &'static str> {
     drop(after_reload);
     supervisor.shutdown().map_err(TtsNativeFailure::code)?;
     Ok(())
+}
+
+fn verify_piper_capabilities(records: &[Value]) -> Result<(), &'static str> {
+    let supported = records.iter().any(|record| {
+        record.get("kind").and_then(Value::as_str) == Some("capabilities")
+            && record
+                .pointer("/report/capabilities/localSpeechGeneration")
+                .and_then(Value::as_str)
+                == Some("supported")
+            && record
+                .pointer("/report/capabilities/hardwareAcceleration")
+                .and_then(Value::as_str)
+                == Some("unsupported")
+            && record
+                .pointer("/report/capabilities/streamingGeneration")
+                .and_then(Value::as_str)
+                == Some("unsupported")
+            && record
+                .pointer("/report/capabilities/generationCancellation")
+                .and_then(Value::as_str)
+                == Some("unsupported")
+            && record
+                .pointer("/report/capabilities/cpuFallback")
+                .and_then(Value::as_str)
+                == Some("supported")
+    });
+    if supported {
+        Ok(())
+    } else {
+        Err(TtsNativeFailure::ProtocolRejected.code())
+    }
 }
 
 pub(crate) fn verify_exact_capabilities(records: &[Value]) -> Result<(), &'static str> {
@@ -1292,10 +1453,12 @@ mod tests {
     }
 
     #[test]
-    fn exact_demo_availability_does_not_promote_the_model_free_child() {
-        assert!(!TtsServiceSupervisor::new(NORMAL_SCENARIO).exact_demo_available());
-        assert!(
-            !TtsServiceSupervisor::with_child(ServiceChild::Unavailable).exact_demo_available()
+    fn profile_configuration_rejects_unknown_profile_identity() {
+        let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
+        assert_eq!(
+            supervisor.configure_profile("unknown-profile"),
+            Err(TtsNativeFailure::InvalidInput)
         );
+        assert!(!profile_configuration_available("unknown-profile"));
     }
 }

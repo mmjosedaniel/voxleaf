@@ -24,6 +24,12 @@ import {
 } from "./narration-boundary-scanner.js";
 import { normalizeNarrationSourceTokens } from "./narration-normalizer.js";
 import {
+  NARRATION_PIPER_V1_SEGMENT_POLICY,
+  NARRATION_PIPER_V2_SEGMENT_POLICY,
+  piperSpeechExpansionCodePointUnits,
+  type NarrationSegmentPolicy,
+} from "./narration-piper-policy.js";
+import {
   NARRATION_V1_SEGMENT_POLICY,
   NARRATION_V1_SOURCE_WINDOW_POLICY,
 } from "./narration-policy.js";
@@ -245,6 +251,89 @@ describe("narration segment packer", () => {
     );
     assertSegmentBounds(sourcePacked);
     assertSegmentBounds(bytePacked);
+  });
+
+  it("keeps historical profiles unchanged and bounds Piper spoken expansion in v2", async () => {
+    expect(NARRATION_PIPER_V1_SEGMENT_POLICY).toEqual({
+      sourceCodePointsTarget: 240,
+      sourceCodePointsHardMaximum: 320,
+      narrationCodePointsTarget: 200,
+      narrationCodePointsHardMaximum: 256,
+      narrationUtf8BytesTarget: 800,
+      narrationUtf8BytesHardMaximum: 1_024,
+      sentencesTarget: 2,
+      sentencesHardMaximum: 6,
+    });
+    expect(NARRATION_PIPER_V2_SEGMENT_POLICY).toEqual({
+      ...NARRATION_PIPER_V1_SEGMENT_POLICY,
+      piperSpeechExpansionUnitsTarget: 120,
+      piperSpeechExpansionUnitsHardMaximum: 160,
+    });
+    expect(
+      [
+        "7",
+        "$",
+        "%",
+        "\u2030",
+        "\u00ba",
+        "\u00aa",
+        "\u00b0",
+        "A",
+        "\u00d1",
+        "a",
+        ".",
+      ].map(piperSpeechExpansionCodePointUnits),
+    ).toEqual([4, 3, 3, 3, 3, 3, 3, 2, 2, 1, 1]);
+
+    const source = Array.from(
+      { length: 20 },
+      (_, index) => `${String(index + 1).padStart(4, "0")} USD`,
+    ).join(" ");
+    const scan = scanLeaf(leafFor(paragraph([text(source)])), "es");
+    const generic = await packNarrationBoundaryScan(scan);
+    const piperV1 = await packNarrationBoundaryScan(scan, {
+      segmentPolicy: NARRATION_PIPER_V1_SEGMENT_POLICY,
+    });
+    const piperV2 = await packNarrationBoundaryScan(scan, {
+      segmentPolicy: NARRATION_PIPER_V2_SEGMENT_POLICY,
+    });
+
+    expect(joinedText(generic)).toBe(source);
+    expect(joinedText(piperV1)).toBe(source);
+    expect(joinedText(piperV2)).toBe(source);
+    expect(piperV2.segments.length).toBeGreaterThan(piperV1.segments.length);
+    assertOrderedSourceSpans(piperV2);
+    assertPiperExpansionBounds(piperV2);
+  });
+
+  it("bounds representative spoken-expansion categories without changing text", async () => {
+    const sources = [
+      Array.from({ length: 36 }, (_, index) =>
+        String(index + 1).padStart(4, "0"),
+      ).join(" "),
+      Array.from({ length: 30 }, () => "CPU GPU TTS").join(" "),
+      Array.from({ length: 30 }, () => "XIV XVI XVIII").join(" "),
+      Array.from({ length: 24 }, (_, index) => `$${index + 10}.50 25%`).join(
+        " ",
+      ),
+      Array.from({ length: 30 }, (_, index) => `${index + 1}\u00ba`).join(" "),
+      Array.from({ length: 40 }, () => "A B C").join(" "),
+      Array.from(
+        { length: 12 },
+        () => "Una frase sintetica normal conserva su texto.",
+      ).join(" "),
+    ];
+
+    for (const source of sources) {
+      const packed = await packNarrationBoundaryScan(
+        scanLeaf(leafFor(paragraph([text(source)])), "es"),
+        { segmentPolicy: NARRATION_PIPER_V2_SEGMENT_POLICY },
+      );
+
+      expect(joinedText(packed)).toBe(source);
+      assertOrderedSourceSpans(packed);
+      assertPiperExpansionBounds(packed);
+    }
   });
 
   it("enforces exact and max-plus-one retained narration limits", async () => {
@@ -694,15 +783,19 @@ function expandedScan(
 async function packLeaf(
   leaf: NarrationSourceTokenLeafEvent,
   defaultLanguage: "es" | "und",
+  segmentPolicy?: NarrationSegmentPolicy,
 ): Promise<NarrationPackedBlock> {
-  return await packNarrationBoundaryScan(scanLeaf(leaf, defaultLanguage));
+  return await packNarrationBoundaryScan(scanLeaf(leaf, defaultLanguage), {
+    ...(segmentPolicy === undefined ? {} : { segmentPolicy }),
+  });
 }
 
 async function packBlock(
   block: SemanticBlock,
   defaultLanguage: "es" | "und",
+  segmentPolicy?: NarrationSegmentPolicy,
 ): Promise<NarrationPackedBlock> {
-  return await packLeaf(leafFor(block), defaultLanguage);
+  return await packLeaf(leafFor(block), defaultLanguage, segmentPolicy);
 }
 
 function joinedText(packed: NarrationPackedBlock): string {
@@ -711,6 +804,30 @@ function joinedText(packed: NarrationPackedBlock): string {
 
 function codePointLength(value: string): number {
   return Array.from(value).length;
+}
+
+function piperSpeechExpansionUnits(value: string): number {
+  return Array.from(value).reduce(
+    (total, codePoint) => total + piperSpeechExpansionCodePointUnits(codePoint),
+    0,
+  );
+}
+
+function assertPiperExpansionBounds(packed: NarrationPackedBlock): void {
+  for (const segment of packed.segments) {
+    expect(piperSpeechExpansionUnits(String(segment.text))).toBeLessThanOrEqual(
+      NARRATION_PIPER_V2_SEGMENT_POLICY.piperSpeechExpansionUnitsHardMaximum,
+    );
+  }
+}
+
+function assertOrderedSourceSpans(packed: NarrationPackedBlock): void {
+  let previousEnd = packed.block.sourceStartOffsetCodePoints;
+  for (const segment of packed.segments) {
+    expect(segment.sourceSpan.startOffsetCodePoints).toBe(previousEnd);
+    previousEnd = segment.sourceSpan.endOffsetCodePoints;
+  }
+  expect(previousEnd).toBe(packed.block.sourceEndOffsetCodePoints);
 }
 
 function groupSegments(

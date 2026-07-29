@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  calculateProfileAvailableDedicatedVramRequirementMiB,
   calculateProfileCapacityRequirementMiB,
   HARDWARE_PROFILE_AUTHORITY_V1,
   RECOVERY_FAILURE_AUTHORITY_V1,
@@ -90,6 +91,35 @@ describe("hardware profile and recovery authority v1", () => {
         calculateProfileCapacityRequirementMiB("ram", invalid),
       ).toThrow(RangeError);
     }
+  });
+
+  it("uses a separate bounded available-VRAM reserve only for development entries", () => {
+    expect(HARDWARE_PROFILE_AUTHORITY_V1.developmentOnlyAdmission).toEqual({
+      availableDedicatedVramReserveMiB: 512,
+      role: "development-demo",
+      supportState: "development-only",
+    });
+    expect(
+      calculateProfileAvailableDedicatedVramRequirementMiB(
+        "development-demo",
+        "development-only",
+        5_996,
+      ),
+    ).toBe(6_508);
+    expect(
+      calculateProfileAvailableDedicatedVramRequirementMiB(
+        "standard",
+        "supported",
+        5_996,
+      ),
+    ).toBe(7_196);
+    expect(
+      calculateProfileAvailableDedicatedVramRequirementMiB(
+        "cpu-fallback",
+        "supported",
+        5_996,
+      ),
+    ).toBe(7_196);
   });
 
   it("admits only passing supported profiles for automatic recommendation", () => {

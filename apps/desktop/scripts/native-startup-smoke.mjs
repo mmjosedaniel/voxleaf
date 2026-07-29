@@ -43,6 +43,41 @@ const READER_PERFORMANCE_MODE = process.argv.includes("--reader-performance");
 const ADAPTIVE_TTS_EXACT_HOST_MODE = process.argv.includes(
   "--adaptive-tts-exact-host",
 );
+const ADAPTIVE_TTS_PROFILE_ARGUMENT = "--tts-profile=";
+const EXPECTED_UNAVAILABLE_PROFILE_REASON_ARGUMENT =
+  "--allow-profile-unavailable-reason=";
+const EXACT_QWEN_PROFILE_ID = "qwen3-tts-1-7b-customvoice-cuda-bf16-v1";
+const PIPER_CPU_FALLBACK_PROFILE_ID =
+  "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+const adaptiveTtsProfileArgument = process.argv.find((argument) =>
+  argument.startsWith(ADAPTIVE_TTS_PROFILE_ARGUMENT),
+);
+const ADAPTIVE_TTS_PROFILE_ID =
+  adaptiveTtsProfileArgument?.slice(ADAPTIVE_TTS_PROFILE_ARGUMENT.length) ??
+  EXACT_QWEN_PROFILE_ID;
+const expectedUnavailableReasonArgument = process.argv.find((argument) =>
+  argument.startsWith(EXPECTED_UNAVAILABLE_PROFILE_REASON_ARGUMENT),
+);
+const EXPECTED_UNAVAILABLE_PROFILE_REASON =
+  expectedUnavailableReasonArgument?.slice(
+    EXPECTED_UNAVAILABLE_PROFILE_REASON_ARGUMENT.length,
+  );
+if (
+  ADAPTIVE_TTS_EXACT_HOST_MODE &&
+  ![EXACT_QWEN_PROFILE_ID, PIPER_CPU_FALLBACK_PROFILE_ID].includes(
+    ADAPTIVE_TTS_PROFILE_ID,
+  )
+) {
+  throw new Error("Unknown exact-host TTS profile.");
+}
+if (
+  EXPECTED_UNAVAILABLE_PROFILE_REASON !== undefined &&
+  (!ADAPTIVE_TTS_EXACT_HOST_MODE ||
+    ADAPTIVE_TTS_PROFILE_ID !== EXACT_QWEN_PROFILE_ID ||
+    EXPECTED_UNAVAILABLE_PROFILE_REASON !== "available-dedicated-vram")
+) {
+  throw new Error("Unknown exact-host unavailable-profile expectation.");
+}
 const MEBIBYTE = 1_048_576;
 const MAX_LOCAL_EPUB_FILE_BYTES = 100 * MEBIBYTE;
 const NATIVE_BATCH_SCRIPT_LIMIT_MS = 16;
@@ -1669,6 +1704,10 @@ async function runAdaptiveTtsExactHostMatrix(
     }
 
     setStage("adaptive exact-host active cancellation");
+    const cancellationPassageButton = await driver.findElement(
+      '[data-narration-action="next-passage"]',
+    );
+    await driver.sendKeys(cancellationPassageButton, WEBDRIVER_SPACE);
     await waitForCondition(
       driver,
       `return document.querySelector(".product-narration")
@@ -2054,6 +2093,82 @@ async function runAdaptiveTtsExactHostMatrix(
       externalRequests: 0,
     })}`,
   );
+}
+
+async function selectAdaptiveTtsProfile(driver, profileId) {
+  const serializedProfileId = JSON.stringify(profileId);
+  await waitForCondition(
+    driver,
+    `const owner = document.querySelector(".hardware-compatibility");
+     return owner?.getAttribute("data-compatibility-status") !== "checking";`,
+  );
+  const observation = await driver.execute(
+    `const profileId = ${serializedProfileId};
+     const inputs = Array.from(
+       document.querySelectorAll('input[name="hardware-profile"]'),
+     );
+     const input = inputs.find((candidate) => candidate.value === profileId);
+     const profileEntry = Array.from(
+       document.querySelectorAll(
+         '[aria-label="Measured narration profiles"] li',
+       ),
+     ).find((candidate) => candidate.dataset.profileId === profileId);
+     const owner = document.querySelector(".hardware-compatibility");
+     return {
+       activeProfileId:
+         owner?.getAttribute("data-compatibility-profile") ?? null,
+       requestedProfileSelectable: input instanceof HTMLInputElement,
+       requestedProfileReason: profileEntry?.dataset.profileReason ?? null,
+       requestedProfileState: profileEntry?.dataset.profileState ?? null,
+       profileSummaries: Array.from(
+         document.querySelectorAll(
+           '[aria-label="Measured narration profiles"] li',
+         ),
+         (item) => item.textContent?.trim() ?? "",
+       ),
+       selectableProfileIds: inputs.map((candidate) => candidate.value),
+       status:
+         owner?.getAttribute("data-compatibility-status") ?? "missing",
+     };`,
+  );
+  console.log(`ADAPTIVE_TTS_PROFILE_SELECTION ${JSON.stringify(observation)}`);
+  if (
+    observation?.requestedProfileSelectable !== true &&
+    EXPECTED_UNAVAILABLE_PROFILE_REASON !== undefined
+  ) {
+    assert(
+      observation?.requestedProfileState === "incompatible" &&
+        observation?.requestedProfileReason ===
+          EXPECTED_UNAVAILABLE_PROFILE_REASON,
+      "Native synchronized narration proof failed.",
+    );
+    return false;
+  }
+  assert(
+    observation?.requestedProfileSelectable === true,
+    "Native synchronized narration proof failed.",
+  );
+  const selected = await driver.execute(
+    `const profileId = ${serializedProfileId};
+     const input = Array.from(
+       document.querySelectorAll('input[name="hardware-profile"]'),
+     ).find((candidate) => candidate.value === profileId);
+     if (!(input instanceof HTMLInputElement)) {
+       return false;
+     }
+     if (!input.checked) {
+       input.click();
+     }
+     return true;`,
+  );
+  assert(selected === true, "Native synchronized narration proof failed.");
+  await waitForCondition(
+    driver,
+    `return document.querySelector(".hardware-compatibility")
+       ?.getAttribute("data-compatibility-profile") ===
+       ${serializedProfileId};`,
+  );
+  return true;
 }
 
 async function installNativeResourceInstrumentation(driver) {
@@ -4101,8 +4216,18 @@ async function run() {
       }),
     ]);
   } else if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
-    const syntheticParagraph =
+    const boundedSyntheticSentence =
       "Esta narraci&#243;n sint&#233;tica describe una biblioteca tranquila y una lectura local. Cada frase valida transiciones naturales, memoria limitada y orden.";
+    const piperExpansionRegressionSentence =
+      "Serie 2026 2027 2028 2029, CPU GPU TTS, XIV XVI XVIII, $10.50 y 25%.";
+    const syntheticParagraph =
+      ADAPTIVE_TTS_PROFILE_ID === PIPER_CPU_FALLBACK_PROFILE_ID
+        ? `${piperExpansionRegressionSentence} ${Array.from(
+            { length: 3 },
+            (_, index) =>
+              `${boundedSyntheticSentence} Parte ${String(index + 1)}.`,
+          ).join(" ")}`
+        : boundedSyntheticSentence;
     const chapterParagraphs = (chapter) =>
       Array.from(
         { length: 96 },
@@ -4220,6 +4345,56 @@ async function run() {
       `return document.querySelector("#root")?.childElementCount > 0;`,
     );
     if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
+      stage = "adaptive exact-host profile selection";
+      const profileSelected = await selectAdaptiveTtsProfile(
+        driver,
+        ADAPTIVE_TTS_PROFILE_ID,
+      );
+      if (!profileSelected) {
+        stage = "adaptive exact-host unavailable-profile assertions";
+        await delay(OBSERVATION_WINDOW_MS);
+        const browserLogs = await driver.getLogs("browser");
+        const performanceLogs = inspectPerformanceLogs(
+          await driver.getLogs("performance"),
+        );
+        const externalLoadedResourceCount = await driver.execute(
+          `return performance.getEntriesByType("resource").filter((entry) => {
+             try {
+               const url = new URL(entry.name);
+               return !(
+                 url.protocol === "tauri:" ||
+                 url.protocol === "ipc:" ||
+                 url.protocol === "data:" ||
+                 url.protocol === "blob:" ||
+                 url.hostname === "tauri.localhost" ||
+                 url.hostname === "ipc.localhost"
+               );
+             } catch {
+               return true;
+             }
+           }).length;`,
+        );
+        assert(
+          browserLogs.every((entry) => entry?.level !== "SEVERE") &&
+            performanceLogs.runtimeErrorCount === 0,
+          "Native application emitted a page or console error.",
+        );
+        assert(
+          externalLoadedResourceCount === 0 &&
+            performanceLogs.externalRequestCount === 0,
+          "Native application attempted an external request.",
+        );
+        console.log(
+          `Adaptive exact-host unavailable-profile matrix passed: ${JSON.stringify(
+            {
+              externalRequests: 0,
+              profileId: ADAPTIVE_TTS_PROFILE_ID,
+              reason: EXPECTED_UNAVAILABLE_PROFILE_REASON,
+            },
+          )}`,
+        );
+        return;
+      }
       await runAdaptiveTtsExactHostMatrix(
         driver,
         fixturePath,

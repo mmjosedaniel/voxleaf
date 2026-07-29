@@ -2,7 +2,39 @@
 
 ## Current status
 
-The prerequisite toolchains, TypeScript workspace, React/Tauri desktop, isolated Python service, quality commands, browser/native smokes, secure EPUB reader, bounded restoration, locator-linked narration preparation, and segment-level synchronized reader projection are initialized and validated within their documented boundaries. Completed M007 provides protocol v1, native supervision, typed one-unit ownership, and the exact development-only Qwen/Serena adapter. Completed M008 connects the active visual locator to bounded preparation, one-at-a-time synthesis, the sole-owner FIFO, Web Audio playback, and accessible quick/prepared controls. Completed M009 adds exact segment transitions, focus-safe highlight/follow, synchronized user navigation, heard-position persistence, exact-host packaged evidence, and repository/CI closeout. M010 Milestones 1-3 add privacy-safe native Windows detection, an immutable measured registry, deterministic profile matching, bounded profile-ID preference reuse, compact compatibility UI, and pre-start enforcement. Quick mode is the default; prepared playback initially selects one minute; refill remains one minute; low water is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target. The synchronized exact-host run passes but records 378.46 buffering seconds per playback minute, so ADR-0013 still selects no standard profile. A validated CPU fallback and recovery, production distribution, and installers remain unimplemented.
+The prerequisite toolchains, TypeScript workspace, React/Tauri desktop,
+isolated Python service, quality commands, browser/native smokes, secure EPUB
+reader, bounded restoration, locator-linked narration preparation, and
+segment-level synchronized reader projection are initialized and validated
+within their documented boundaries. Completed M007 provides protocol v1,
+native supervision, typed one-unit ownership, and the exact development-only
+Qwen/Serena adapter. Completed M008 connects the active visual locator to
+bounded preparation, one-at-a-time synthesis, the sole-owner FIFO, Web Audio
+playback, and accessible quick/prepared controls. Completed M009 adds exact
+segment transitions, focus-safe highlight/follow, synchronized user
+navigation, heard-position persistence, exact-host packaged evidence, and
+repository/CI closeout.
+
+M010 Milestones 1-6 are complete. They add privacy-safe native Windows
+detection, an immutable measured registry, deterministic profile matching,
+bounded profile-ID preference reuse, compact compatibility UI, pre-start
+enforcement, identity-safe recovery, the admitted Piper/davefx CPU fallback,
+and one profile-aware service tree. Piper automatically selects its
+locator-safe, spoken-expansion-aware narration preparation profile; its
+exact-host service, corrective ordinary-prose/compact-form arms, valid
+zero-sentence-boundary fragment handling, and content-safe packaged
+private-book confirmation pass. Qwen/Serena remains development-only: its
+offline service lifecycle passes, and the packaged host now offers it when
+total dedicated VRAM is at least `7,196` MiB and currently available dedicated
+VRAM is at least `6,508` MiB. Its broader packaged matrix still stops at the
+depletion synchronization assertion. Quick mode is the default;
+prepared playback initially selects one minute; refill remains one minute; low
+water is 10 seconds; the adaptive low-buffer wait remains disabled; playback
+is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target.
+M008.1 now schedules the separate bounded semantic transition pause between
+already-buffered generated units; it adds no silent audio or startup timer.
+M010 Milestone 7, production distribution, and installers remain
+unimplemented.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
@@ -262,6 +294,52 @@ restart, shutdown, and Windows descendant cleanup, run:
 
 Exit code zero does not prove the Python service, Qwen, product playback, or
 general hardware support.
+
+M010 Milestone 6 also accepts the exact admitted Piper profile through a
+separate native-only configuration. The interpreter must resolve to the
+ignored `piper_1_4_2_cpu` environment, the model root must contain the frozen
+local davefx voice artifacts, and the enabled outbound firewall rule must
+target that exact interpreter:
+
+```powershell
+$env:VOXLEAF_TTS_PIPER_ENABLED = "1"
+$env:VOXLEAF_TTS_PIPER_PYTHON = (Resolve-Path "services/tts/benchmarks/candidates/piper_1_4_2_cpu/.venv/Scripts/python.exe").Path
+$env:VOXLEAF_TTS_PIPER_MODEL_ROOT = (Resolve-Path "models/tts/piper-1.4.2-es_ES-davefx-medium-0d907f1").Path
+```
+
+PowerShell environment values belong to the current terminal process. Set all
+three values in the same terminal that launches `tauri dev`, the packaged
+application, or an exact-host test. A new terminal does not inherit values set
+in an older terminal. VoxLeaf separately checks hardware fit and exact runtime
+configuration; hardware compatibility alone does not enable Play.
+
+These values remain native-only and are never returned to the renderer,
+logged, persisted, or placed in protocol frames. When Piper is selected, the
+desktop automatically requests `narration-piper-v2`; no user-facing chunk
+setting is required. The profile preserves all normalized text and exact
+locator ranges while applying the ordinary v1 limits plus a deterministic
+spoken-expansion budget before inference. This bounds ordinary prose and
+compact numbers, currencies, acronyms, Roman numerals, ordinals, and letter
+sequences without rewriting them or increasing protocol v1's 20-second
+ceiling. When both exact profiles and
+their interpreter-bound outbound blocks are prepared, run the complete
+admitted-profile matrix:
+
+```powershell
+pnpm.cmd test:tts:resilience-exact-host
+```
+
+The command builds the release application and runs the Qwen and Piper
+service-only lifecycle arms. It then runs full packaged Piper playback. Qwen
+runs full packaged playback when the exact native gate, `7,196`-MiB total
+VRAM, and `6,508`-MiB available-VRAM development reserve pass. Otherwise the
+matrix accepts only the closed `available-dedicated-vram` rejection, verifies
+no model start or external request, and continues. It proves profiles
+separately and does not average their performance. Qwen is development-only;
+its current full packaged matrix is known to stop at the depletion
+synchronization assertion. The command requires administrator-created
+outbound firewall rules for both exact interpreters and is excluded from root
+checks and CI.
 
 M007 Milestone 4 consumes the frozen native-only development keys only when
 `VOXLEAF_TTS_DEV_ENABLED` is exactly `1`. The interpreter must resolve to the

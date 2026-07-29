@@ -691,20 +691,16 @@ h1 {
 
 .paragraph-leaf {
   display: inline-flex;
+  inline-size: 2.75rem;
   min-width: 2.75rem;
   min-height: 2.75rem;
   align-items: center;
-  gap: 0.35rem;
   justify-content: center;
   padding: 0.35rem;
   border: 0.12rem solid transparent;
   border-radius: 999px;
   color: var(--reader-link);
   background: var(--reader-surface);
-  font: inherit;
-  font-size: 0.72rem;
-  font-weight: 750;
-  line-height: 1;
   cursor: pointer;
   opacity: 0.58;
   touch-action: manipulation;
@@ -725,10 +721,6 @@ h1 {
   height: 1.45rem;
   flex: 0 0 auto;
   fill: currentcolor;
-}
-
-.paragraph-leaf-state {
-  padding-inline-end: 0.25rem;
 }
 
 .paragraph-leaf[data-leaf-state="preparing"] {

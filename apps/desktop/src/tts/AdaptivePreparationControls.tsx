@@ -41,7 +41,7 @@ function primaryStatus(state: AdaptivePreparationUiState): string {
     case "failed":
       return "Local audio preparation stopped because of a processing failure.";
     case "intentional-wait":
-      return "Brief planned pause while local speech catches up.";
+      return "Brief pause between narration passages.";
     case "paused":
       return state.pauseContinuesPreparation
         ? `Playback paused. Preparing up to ${target} of audio.`

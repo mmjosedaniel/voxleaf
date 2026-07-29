@@ -47,8 +47,11 @@ the milestone.
 
 ## Current state
 
-Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-5
-are also complete. Commit `8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
+Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-6
+are complete. Milestone 6 runtime integration, deterministic/exact-host
+validation, and the content-safe private-book packaged confirmation pass.
+Commit
+`8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
 result-blind hardware/profile/recovery authority, canonical compatibility
 report, executable desktop tables, native API/permission audit, and ADR-0019
 before any M010 host measurement. Implementation checkpoint
@@ -56,8 +59,9 @@ before any M010 host measurement. Implementation checkpoint
 probe and typed desktop decoder without retaining measured values. Milestone 3
 checkpoints `e7e01f1` and `a519c6c` add the immutable measured registry,
 deterministic matcher, bounded preference, compatibility UI, pre-start
-enforcement, and fixed-reader-layout correction. Fallback admission, recovery
-behavior, and standard support claims have not started.
+enforcement, and fixed-reader-layout correction. Later checkpoints implement
+identity-safe recovery and select exact Piper/davefx as the supported CPU
+fallback without promoting Qwen/Serena to standard support.
 
 Completed M006 and its two blocker-resolution plans provide the
 candidate-neutral benchmark authority and measured evidence:
@@ -84,11 +88,12 @@ These boundaries already make resource exhaustion, buffering, cancellation,
 stale-work rejection, cleanup, and progress observable without exposing book
 text.
 
-Milestone 5 now selects exact Piper/davefx as the supported speed-focused CPU
-fallback after the content-safe v6 result passed every frozen gate. The
-currently executable product registry and service still contain only the
-earlier three entries and exact Qwen adapter; Milestone 6 must integrate Piper
-atomically with settings and resilience proof.
+Milestone 5 selects exact Piper/davefx as the supported speed-focused CPU
+fallback after the content-safe v6 result passed every frozen gate. Milestone
+6 checkpoint `a64235a` atomically adds its fourth executable registry entry,
+exact service adapter, profile-aware native supervision, and explicit settings
+selection while preserving the development-only Qwen path and one service
+tree.
 
 The current `CapabilityReportV1` is intentionally model-independent. It
 reports only `supported`, `unsupported`, or `unknown` for local generation,
@@ -104,8 +109,12 @@ model-free or exact child can be started. Milestone 3 now matches that report
 against the immutable measured registry, presents only closed compatibility
 results, persists only one bounded profile ID, and enforces a fresh match
 before the exact child starts. The recovery state machine is implemented and
-Piper is selected, but the supported fallback is not yet executable or
-user-visible and no standard support matrix exists.
+Piper is executable and user-selectable on compatible complete hosts. The
+packaged Piper resilience arm passes. Qwen passes its outbound-blocked service
+lifecycle. ADR-0022 retains its generic total-VRAM gate and replaces only the
+native-gated development profile's available-VRAM threshold with measured peak
+plus `512` MiB. The packaged host now offers and executes Qwen; its later
+depletion synchronization assertion remains failed.
 
 ## Scope and non-goals
 
@@ -563,14 +572,15 @@ binds both cancellation case identifiers before the first valid official
 execution. The corrected machine run, one-maintainer Spanish quality screen,
 privacy/cleanup derivation, and content-safe selection pass every conjunctive
 gate. `selection-v6` and ADR-0020 admit Piper as the supported speed-focused
-CPU fallback. Runtime/settings integration remains Milestone 6 work.
+CPU fallback. Runtime/settings integration was deliberately deferred to
+Milestone 6 and is now implemented at checkpoint `a64235a`.
 
-The executable three-entry registry intentionally remains unchanged at this
-checkpoint. Adding a `supported` Piper entry before its service adapter exists
+The executable three-entry registry intentionally remained unchanged at this
+Milestone 5 checkpoint. Adding a `supported` Piper entry before its service adapter existed
 would make the matcher recommend an ID the coordinator cannot start and would
 disable the working Qwen development demo on compatible hosts. Milestone 6
-must add the Piper registry entry, service adapter, native configuration, and
-settings choice atomically.
+therefore added the Piper registry entry, service adapter, native
+configuration, and settings choice atomically.
 
 ## Milestone 6: Integrate admitted profiles and run the resilience matrix
 
@@ -590,6 +600,37 @@ settings choice atomically.
   for each profile. Do not average incompatible profiles into a support claim.
 - Verify the outbound-blocked offline boundary and zero generated-audio
   persistence.
+- Correct the exact-host product discrepancy discovered after initial closure:
+  generic `narration-v1` can emit text whose complete Piper waveform exceeds
+  protocol v1's 20-second unit ceiling. Freeze
+  `piper-narration-preparation-profile-v1.md` before corrective execution,
+  select its narrower locator-safe preparation only for Piper, and retain
+  fail-closed behavior without truncating speech or changing protocol v1.
+- Correct the separate pre-handshake discrepancy discovered after the bounded
+  Piper preparation fix: hardware compatibility could enable Play without
+  proving that the running desktop process received the exact Piper runtime
+  configuration. Freeze
+  `tts-profile-runtime-configuration-availability-v1.md` before correction,
+  keep hardware fit separate from executable configuration, and fail closed
+  before child start when the selected profile is not configured.
+- Correct the residual spoken-expansion discrepancy discovered after the v1
+  code-point fix: compact normalized numbers, acronyms, Roman numerals,
+  currencies, ordinals, and letter sequences can produce over-20-second Piper
+  output while remaining below 256 code points. Freeze
+  `piper-narration-preparation-profile-v2.md`, add its process-local weighted
+  budget without changing normalization or protocol v1, and retain v1 only as
+  historical authority.
+- Reconcile the adaptive scheduler with the existing M005 narration contract:
+  a non-empty spoken fragment may truthfully have `sentenceCount: 0` when no
+  recognized sentence boundary occurs. Keep code-point and byte non-emptiness,
+  accept the non-negative sentence measurement, and prove the second bounded
+  preparation batch no longer fails.
+- Correct the Qwen development-only compatibility discrepancy without
+  weakening supported profiles. Freeze a separate authority that retains the
+  generic total-VRAM requirement but uses the measured Qwen peak plus the
+  predeclared 512-MiB v4 engineering reserve for currently available VRAM only
+  when the native-gated entry is both `development-demo` and
+  `development-only`.
 
 ### Validation
 
@@ -604,7 +645,94 @@ settings choice atomically.
 
 ### Status
 
-Not started.
+Corrective Piper v2 implementation and repository/exact-host validation are
+complete on 2026-07-29 on branch
+`feat/m010-m6-profile-integration-resilience`, created from merged main commit
+`2b81b028fe6188e17f524d5720e68827511e3c05`. Authority, service, native,
+desktop selection, recovery, and exact-host boundaries were re-read before
+implementation. The integration retains protocol v1, uses one service tree,
+and adds no automatic retry. Checkpoint `a64235a` integrates the exact Piper
+profile from registry through service, supervisor, client, coordinator, and
+settings. Deterministic focused validation and both outbound-blocked
+service-only exact-host arms pass. The packaged Piper adaptive arm passes.
+Before ADR-0022, Qwen's packaged path proved the exact fail-closed
+`available-dedicated-vram` result and the complete conditional
+`test:tts:resilience-exact-host` command passed. The corrective rule now admits
+the native-gated exact host, selects Qwen, and executes actual packaged
+inference. That broader Qwen arm later stops at the depletion synchronization
+assertion; this is retained as a development-profile limitation rather than a
+supported resilience pass.
+
+After that initial closure, a private-EPUB product run prepared and played one
+6-second Piper unit, then entered service containment. A synthetic,
+content-free reproduction established the failing boundary without reading or
+logging book text: the exact voice produced 17.694 seconds for 320 code points,
+21.769 seconds for 400, and 35.260 seconds for 640; the production adapter
+correctly rejected the 400-code-point result because protocol v1 admits at most
+20 seconds. Checkpoint `de1b527` froze the corrective
+`narration-piper-v1` authority before implementation. The EPUB package now
+emits narrower locator-safe Piper segments, while every other profile retains
+`narration-v1`. The packaged regression fixture advances through the formerly
+oversized paragraph, completes 17 synchronized transitions, cancellation,
+prepared playback, and cleanup with zero underruns, external requests, or
+generated-audio files.
+
+A later private-reader run exposed a separate pre-handshake failure:
+compatibility described Piper as compatible, but Play failed immediately with
+`tts-service-failed`, recovery code `model-load-failed`, service state
+`stopped`, and zero playable audio. The exact offline lifecycle passed in 5.9
+seconds when the same process received the exact Piper interpreter, model root,
+and enable gate. The failure is therefore runtime-configuration admission
+before child start, not EPUB content, Piper synthesis, hardware fit, or
+segmentation. Checkpoint authority
+`tts-profile-runtime-configuration-availability-v1.md` is frozen before the
+corrective implementation. Milestone 6 becomes complete again only after the
+desktop gates Play on the native configuration fact and the exact Piper paths
+and repository suites pass. The corrective implementation now performs that
+content-free native check during availability resolution and again immediately
+before service start. Configured Piper passes the service-only lifecycle and
+release-packaged reader matrix; missing configuration stays unavailable before
+child creation.
+
+The residual spoken-expansion correction is also implemented. The EPUB
+preparation boundary now measures the frozen v2 weighted dimension while it
+already owns normalized source-mapped units, and Piper product dispatch alone
+selects `narration-piper-v2`. Generic and historical v1 behavior remains
+available and unchanged. All 559 EPUB tests and all 399 desktop tests pass.
+The release-packaged exact Piper expansion-heavy regression completed 60.010
+seconds of stable playback with zero underruns, 18 synchronized transitions,
+zero GPU allocation, zero external requests, zero generated-audio files, and
+zero retained/discarded units after cleanup. A subsequent content-safe
+private-EPUB probe prepared the entire publication successfully and isolated
+the remaining failure to punctuation-only units for which Piper returns no
+waveform. The desktop now omits only those nonspoken Piper units before
+protocol dispatch, inserts no silence, preserves continuation, and keeps the
+next paragraph-leaf target actionable. All 400 desktop tests pass. Milestone 6
+then remained open for the frozen private-EPUB confirmation.
+
+The final packaged confirmation reproduced one further application-only
+boundary without retaining or printing book text, its path, or audio. Before
+the correction, exact Piper generated 16 units and 27.257 seconds of playable
+audio, but the next preparation batch failed while the service remained
+`ready`. A content-safe scan found valid non-empty fragments whose existing
+M005 measurement was `sentenceCount: 0`; the desktop scheduler alone had
+incorrectly required a positive value. The scheduler now accepts that
+non-negative measurement while retaining positive code-point/byte requirements
+and every queue/resource bound. The rebuilt packaged application then accepted
+27 units, held 60.837 playable seconds, remained in `playing` with no failure,
+and kept the service `ready`; starting through the paragraph leaf succeeded.
+Milestone 6 is complete.
+
+The corrective Qwen development admission is implemented. Authority was
+frozen in `qwen-development-vram-admission-v1.md` and ADR-0022 before matcher
+implementation. It retains the exact `5,996` MiB measured peak, `7,196` MiB
+total dedicated-VRAM requirement, development gate, runtime configuration
+check, failed standard-profile decision, and every supported/fallback margin.
+Only the development-only currently-available threshold changes to `6,508`
+MiB. Focused authority/matcher/UI tests and the complete desktop test,
+typecheck, lint, and format scopes pass. The release-packaged host reports
+Qwen as selectable and executes inference; the later depletion synchronization
+assertion remains failed and keeps the profile development-only.
 
 ## Milestone 7: Record support decisions and close validation
 
@@ -704,6 +832,249 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-29: Implemented the corrective Qwen matcher rule after authority
+  checkpoint `5b2d058`. Deterministic regression first failed exactly as
+  `available-dedicated-vram` at `6,508` MiB and hid the Qwen radio. Checkpoint
+  `58b175b` separates the unchanged generic total requirement from the
+  development-only available requirement. Exact boundaries now pass at
+  `7,196` MiB total / `6,508` MiB available and fail one MiB below either;
+  supported profiles retain the generic margin. All 415 desktop tests plus 7
+  native-client tests, desktop typecheck, ESLint, and formatting pass.
+- 2026-07-29: `pnpm.cmd check:portable` passes after the implementation and
+  documentation reconciliation: TypeScript/Python formatting, lint and
+  typechecks, all workspace TypeScript suites, 256 Python tests, package and
+  desktop production builds, and both Python distributions complete. Pytest
+  emitted only the existing sandbox cache-write warning; Vite retained its
+  existing Custom Highlight minifier and chunk-size advisories.
+- 2026-07-29: The corrected release-packaged host reported Qwen/Serena as
+  `Development-only and compatible`, exposed it beside Piper, selected it,
+  loaded the actual outbound-blocked runtime, and advanced through packaged
+  inference to the depletion stage. The broader matrix then failed the
+  existing synchronized-narration depletion assertion. That later result does
+  not restore the compatibility blocker or create a support claim; it remains
+  a documented development-profile limitation for Milestone 7.
+- 2026-07-29: Reproduced the Qwen compatibility discrepancy from the immutable
+  registry and matcher: the exact `5,996` MiB measured peak receives the
+  generic 20% margin for both total and currently available VRAM, requiring
+  `7,196` MiB free and rejecting the already-proven 8-GB-class development
+  host during ordinary desktop use. Froze
+  `qwen-development-vram-admission-v1.md` and ADR-0022 before corrective code.
+  The new authority retains `7,196` MiB total VRAM and every supported-profile
+  margin, while exact native-gated development-only Qwen requires `6,508` MiB
+  currently available: measured peak plus the predeclared v4 512-MiB reserve.
+- 2026-07-29: Closed the final private-book discrepancy. A content-safe full
+  scan prepared all 5,722 units and confirmed exact Piper synthesis across the
+  publication. A release-packaged private-book reproduction then localized the
+  remaining failure to the second 16-unit preparation batch: 16 units and
+  27.257 playable seconds were accepted before
+  `narration-preparation-failed`, while the service remained `ready`. The
+  existing EPUB narration contract permits `sentenceCount: 0` for a non-empty
+  fragment without a recognized terminal boundary, but the adaptive scheduler
+  incorrectly rejected it. Focused scheduler and coordinator regressions now
+  cover that valid case. The rebuilt packaged rerun accepted 27 units, buffered
+  60.837 seconds, remained `playing` with no failure, kept the service `ready`,
+  and proved paragraph-leaf start. No EPUB text, path, or audio was retained or
+  emitted. `pnpm.cmd check:portable` and the authoritative Windows
+  `pnpm.cmd check` pass with 209 shared, 559 EPUB, 402 desktop plus 7 native
+  WebDriver-client, 40 Rust, and 256 Python tests. Milestone 6 is complete;
+  Milestone 7 closeout remains.
+- 2026-07-29: A private reader rerun accepted one eight-second Piper unit and
+  then exposed a later processing failure. No EPUB text or path was inspected.
+  Bounded exact-voice synthetic reproduction established the remaining
+  failure class: 256-code-point digit, acronym, Roman-numeral, currency,
+  ordinal, and letter-sentence inputs all failed the complete-unit boundary.
+  Raw duration thresholds varied from 64 code points for digit groups to more
+  than 224 for acronyms, proving that one smaller raw-code-point limit is not
+  a credible general correction.
+- 2026-07-29: Froze `narration-piper-v2` before product implementation. Its
+  deterministic process-local expansion budget assigns four units to ASCII
+  digits, three to currency/percent/ordinal symbols, two to uppercase letters,
+  and one to other normalized code points, with target 120 and hard maximum
+  160. At the hard boundary, eight synthetic categories measured between
+  8.336 and 17.694 seconds on the exact voice. V2 retains every v1 locator,
+  text, byte, sentence, work, retention, cancellation, protocol, and privacy
+  boundary. Private-case closure still requires the user's rerun.
+- 2026-07-29: Implemented `narration-piper-v2` without changing normalization,
+  protocol, public segment measurements, historical profile behavior, or
+  persistence. All 559 EPUB and 399 desktop tests pass. The release-packaged
+  exact Piper fixture now includes an expansion-heavy sentence; it passed
+  60.010 seconds of stable playback with zero underruns, 18 synchronized
+  transitions, 3,114 ms quick command-to-audible, 21.524 seconds of quick
+  start lead, 4,772 ms prepared command-to-audible, 62.496 seconds prepared,
+  zero GPU allocation, zero external requests, zero generated-audio files,
+  and zero retained/discarded units after cleanup. The synthetic reproduced
+  class is closed; private-case closure still requires the user's rerun.
+- 2026-07-29: Complete repository validation passes:
+  `pnpm.cmd check:portable`, `pnpm.cmd check`, `pnpm.cmd test:browser`, and
+  `pnpm.cmd test:native-startup`. The suites include 209 shared tests, 559
+  EPUB tests, 399 desktop tests plus 7 native-client tests, 40 Rust tests, 256
+  Python tests, all type/lint/format/build gates, six Chromium bodies, and the
+  release-packaged model-free native lifecycle. The first sandboxed browser
+  attempt reached the known narrow-viewport timing body but did not exit
+  before the command deadline; the immediate outside-sandbox complete rerun
+  passed all six in 9.0 seconds. `git diff --check` also passes.
+- 2026-07-29: Implemented the corrective exact-profile configuration boundary.
+  Native supervision accepts only the selected bounded profile ID, derives one
+  boolean through the same `ExactRuntime` construction used before start, and
+  returns no paths, environment values, model content, or raw errors. The
+  typed client fails closed on false or invocation failure. Product narration
+  requires the affirmative fact during availability resolution and rechecks
+  immediately before child start. Deterministic tests prove an otherwise
+  hardware-compatible unconfigured profile enables no Play, starts no child,
+  prepares no narration, and creates no recovery episode.
+- 2026-07-29: Reproduced the remaining private-book failure without retaining
+  or printing its text, path, or audio. The complete ignored EPUB prepared as
+  5,722 locator-linked segments in 358 bounded requests, proving parsing and
+  v2 sizing succeed. Exact Piper returned no chunks for a two-code-point
+  punctuation-only unit after 24 earlier units, so the coordinator entered
+  cleanup and temporarily made paragraph-leaf retargeting unavailable. The
+  desktop now omits only Piper units lacking a Unicode letter, number,
+  currency, or accepted spoken symbol; it inserts no silence and advances the
+  unchanged continuation locator. In a 64-unit in-memory probe, four
+  punctuation-only units were omitted and all 60 speakable units synthesized.
+  A deterministic two-batch regression proves no synthesis request or
+  sequence number is spent on the omitted unit, the next source range plays,
+  no failure is published, and paragraph-leaf replacement remains accepted.
+- 2026-07-29: Corrective validation passed. The exact configured Piper
+  service-only lifecycle passed in 3.8 seconds. The release-packaged matrix
+  passed through the real native configuration command with 2,893 ms quick
+  command-to-audible, 20.421 playable seconds at start, zero underruns in a
+  60.209-second stable observation, 5,252 ms prepared command-to-audible with
+  60.766 playable seconds, 1,157 ms cancellation, 951 ms cleanup, 16
+  synchronized transitions with 0.9 ms follow p95, zero GPU allocation, zero
+  external requests, and zero generated-audio files. The first in-sandbox
+  packaged attempt built successfully but could not create its WebDriver
+  session; the same already-built smoke passed outside the sandbox. Both
+  `pnpm.cmd check:portable` and `pnpm.cmd check` pass.
+- 2026-07-29: Reproduced a second post-integration Piper discrepancy with only
+  content-free product state. Hardware compatibility admitted Piper, but Play
+  reached `start-service` without an executable runtime configuration and
+  failed before handshake with `tts-service-failed`, `model-load-failed`,
+  service state `stopped`, and zero playable audio. Running the exact offline
+  lifecycle with the interpreter, model root, and enable gate configured
+  passed in 5.9 seconds. This isolates the defect to availability admission;
+  EPUB text, preparation, waveform size, and hardware matching are not
+  implicated. Frozen corrective authority now requires a native boolean
+  configuration check during availability resolution and immediately before
+  service start. Qwen available-VRAM policy is intentionally deferred.
+- 2026-07-29: Reproduced the post-integration Piper failure without using book
+  text or persisting audio. Exact synthetic 320-, 400-, and 640-code-point
+  inputs produced 17.694, 21.769, and 35.260 seconds; the adapter correctly
+  rejected the 400-code-point waveform above protocol v1's 20-second ceiling.
+  Checkpoint `de1b527` froze `narration-piper-v1` before corrective execution.
+  The implementation adds a closed public preparation profile with 200/256
+  narration-code-point, 800/1,024-byte, 240/320 source-code-point, and 2/6
+  sentence target/hard bounds. Piper alone selects it; generic/Qwen preparation,
+  normalization, canonical locator ranges, protocol v1, and buffer bounds remain
+  unchanged.
+- 2026-07-29: Package regression coverage proves the formerly 400-plus
+  synthetic paragraph becomes multiple ordered, text-complete, locator-
+  contiguous Piper segments and unknown profiles still fail closed. Desktop
+  coverage proves only the Piper runtime selects `narration-piper-v1`. The
+  exact-host fixture now includes the long synthetic paragraph and uses an
+  explicit next-passage replacement to create a deterministic active-
+  cancellation window after fast generation fills the buffer. The packaged
+  matrix passed in 102.5 seconds: quick command-to-audible 2,584 ms, 20.793
+  playable seconds at start, zero underruns during 60.206 seconds of stable
+  playback, prepared command-to-audible 4,868 ms with 61.289 playable seconds,
+  871 ms cancellation, 449 ms resource release, 17 transitions with 1.5 ms
+  follow p95, zero GPU memory, zero external requests, and zero generated-audio
+  files.
+- 2026-07-29: The first full portable run exposed that adding the new constants
+  to `narration-policy.ts` would invalidate the historical v4-v6 byte
+  authority. The implementation moved them to the separate
+  `narration-piper-policy.ts` module instead. The frozen file remains exactly
+  `96a62a9d0d57e5fad904b4c38d98ded4d48d5c2f8e125ea527c5df535ac0f85c`,
+  and the focused v6 authority/quality tests and subsequent complete suites
+  pass.
+- 2026-07-29: Started Milestone 6 sequentially on
+  `feat/m010-m6-profile-integration-resilience` from merged main
+  `2b81b028fe6188e17f524d5720e68827511e3c05`. Re-read the frozen profile and
+  recovery authority, protocol v1, adaptive buffer authority, accepted Piper
+  decision, canonical architecture, and existing registry/service/native/UI
+  implementation. Selected a profile-aware one-tree integration: exact Piper
+  remains an isolated local process, its frozen 22.05-kHz synthesis is
+  converted inside the adapter to protocol v1's bounded 24-kHz mono float32
+  unit, and explicit profile changes invalidate and clean up old narration
+  before native reconfiguration. No generation setting, protocol field,
+  automatic retry, buffer limit, or persistence boundary changes.
+- 2026-07-29: Checkpoint `a64235a` integrated exact
+  `piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1` through the immutable registry,
+  compatibility recommendation, explicit settings choice, profile-aware
+  desktop/native start, one-tree supervisor, exact isolated Python service,
+  and common one-active/no-queue engine boundary. Model-free Python,
+  TypeScript, and Rust tests cover frozen runtime/artifact/provider checks,
+  bounded native 22,050-Hz to protocol 24,000-Hz conversion, switching only
+  after narration stop, invalidation, cleanup, and content-free failures.
+- 2026-07-29: The first packaged profile run failed closed at compatibility even
+  though the selected CUDA provider facts were complete. Content-free native
+  inspection found an unusable secondary adapter was globally marking the
+  report partial after it had already been discarded. The detector now ignores
+  incomplete facts from discarded candidates while still returning partial
+  for unknown selected-provider memory, no usable provider, or ambiguity.
+  Eleven focused native detector tests pass, including both regression edges.
+- 2026-07-29: Exact-host Piper service lifecycle passed load, synthesis, busy
+  rejection, termination-backed cancellation, reload synthesis, and shutdown.
+  The release-packaged adaptive Piper arm then passed quick and prepared
+  playback, synchronized segment transitions, seek/chapter/leaf replacement,
+  cancellation, bounded retained/discarded ownership, cleanup, zero external
+  requests, zero generated-audio files, and zero dedicated GPU use. It measured
+  3,066 ms quick command-to-audible with 34.284 playable seconds, 4,260 ms
+  prepared command-to-audible with 66.327 playable seconds, 371 ms active
+  cancellation, 535 ms final resource release, 13 audible transitions, and
+  1 ms follow p95. The 60.064-second stable observation recorded zero
+  underruns and zero buffering seconds per playback minute.
+- 2026-07-29: The exact Qwen service-only lifecycle arm passed in 63.2 seconds.
+  Its interpreter has no enabled outbound firewall rule on this host. Creating
+  that OS rule requires administrator authorization unavailable to the
+  repository process, so the final Qwen packaged OS-enforced-offline arm and
+  combined command remain open. Piper's exact interpreter already has the
+  required enabled outbound block.
+- 2026-07-29: Nested automation initially returned
+  `webdriver-session-not-created` / `chrome not reachable` before application
+  mount. The same release WebView2 session and Piper matrix passed from an
+  outside-sandbox local PowerShell context. No product retry or weakened
+  harness assertion was retained; the runner now emits only bounded
+  content-free profile-selection diagnostics when compatibility fails.
+- 2026-07-29: Full deterministic and packaged validation passed after restoring
+  byte-frozen ADR-0020 unchanged. `pnpm.cmd check:portable` passed formatting,
+  TypeScript/Python lint and typechecks, 20 shared files / 209 tests, 34 EPUB
+  files / 555 tests, 42 desktop files / 396 tests plus 7 native-client tests,
+  256 Python tests, and all portable builds. `pnpm.cmd check` additionally
+  passed Rust formatting/clippy, 40 Rust tests, the release Tauri build, and
+  Python distributions. `pnpm.cmd test:browser` passed all 6 Chromium smokes.
+  `pnpm.cmd test:native-startup` passed the release-packaged WebView2 reader,
+  protocol, fake-service lifecycle, ingress, synchronization, restoration,
+  cleanup, and zero-external-request matrix. The first portable attempt found
+  that editing ADR-0020 changed the registry's frozen decision hash; the ADR
+  edit was removed and its byte-authority test passes.
+- 2026-07-29: After the administrator added the exact Qwen interpreter outbound
+  block, isolated Qwen, isolated Piper, and immediate back-to-back service
+  lifecycle runs passed. The packaged Qwen path then remained unavailable
+  because Windows' allocatable dedicated-memory budget did not meet the frozen
+  7,196-MiB requirement even after unrelated GPU applications closed.
+  `nvidia-smi` free memory is not the authority; the product correctly uses the
+  more conservative direct Windows budget and did not bypass the then-frozen
+  result. ADR-0022 later supersedes only that development profile's available-
+  VRAM formula; this historical observation remains valid for the old rule.
+- 2026-07-29: The exact-host runner now handles the development profile
+  conditionally without weakening compatibility. When Qwen is compatible it
+  runs the complete playback matrix. Otherwise it accepts only the exact closed
+  `available-dedicated-vram` rejection, proves no severe/runtime error and zero
+  external requests, and continues to the supported Piper arm. The UI exposes
+  only closed profile ID/state/reason data attributes for this content-safe
+  automation; focused UI tests and desktop typecheck pass.
+- 2026-07-29: The final combined
+  `pnpm.cmd test:tts:resilience-exact-host` passed. Both exact service
+  lifecycles passed under their interpreter-bound outbound blocks. Packaged
+  Qwen passed the expected fail-closed VRAM path with zero external requests.
+  Packaged Piper passed quick/prepared playback, 13 synchronized transitions,
+  navigation/replacement, bounded ownership, cleanup, zero generated-audio
+  files, and zero GPU allocation. It measured 2,722 ms quick
+  command-to-audible with 22.813 playable seconds, zero underruns and zero
+  buffering seconds per minute during a 60.322-second stable observation,
+  4,808 ms prepared command-to-audible with 66.548 playable seconds, 169 ms
+  cancellation, 443 ms resource release, and 1.1 ms follow p95.
 - 2026-07-28: Started Milestone 5 sequentially on
   `feat/m010-m5-cpu-fallback-evaluation`. Selected the new Piper 1.4.2
   ONNX/CPU `es_ES-davefx-medium` candidate after excluding previously rejected
@@ -972,19 +1343,101 @@ rewrite unrelated reader state.
   service-restart action. The narration surface therefore directs the user to
   compatibility controls and never presents a restart button that availability
   gating would reject.
+- A discarded adapter is not a selected-provider fact. Its unknown memory may
+  exclude that candidate, but it must not downgrade an otherwise complete,
+  unambiguous provider report. Unknown memory on the selected candidate still
+  fails closed as partial. This distinction preserves the frozen report
+  semantics without widening support.
+- Piper's frozen native 22,050-Hz waveform cannot cross protocol v1 directly,
+  whose exact format remains 24,000-Hz mono float32. A bounded adapter-local
+  linear conversion preserves the protocol and player authority, keeps the
+  complete-unit publication rule, and adds no audio dependency or persisted
+  intermediate.
+- Profile selection is configuration replacement, not concurrent fallback.
+  The desktop stops and invalidates narration first, native supervision verifies
+  the selected bounded profile ID immediately before start, and exactly one
+  Qwen or Piper process tree may exist. No automatic failover or synthesis
+  retry is implied by the supported fallback role.
 
 ## Final validation results
 
-Milestones 1-5 implementation and local validation are complete and recorded
-above. M010 remains in progress with Milestones 6 and 7 not started. The
+Milestones 1-6 implementation and local validation are complete and recorded
+above. Milestone 6's synthetic reproduced classes and content-safe packaged
+private-book confirmation are closed. M010 remains in progress with Milestone
+7 not started. The
 runtime can produce the canonical bounded host report, derive content-free
 compatibility, preserve only one bounded preference, reject a changed host
 immediately before child start, and perform one identity-safe explicit
 recovery after verified cleanup. The frozen v6 evaluation selects exact
-Piper/davefx as the supported speed-focused CPU fallback, but the executable
-registry, service adapter, settings choice, and resilience integration remain
-Milestone 6 work. No automatic retry or standard Qwen support claim is
-available.
+Piper/davefx as the supported speed-focused CPU fallback, and Milestone 6
+implements its executable registry, service adapter, settings choice, and
+profile-aware one-tree supervision. Exact Piper product preparation now selects
+the frozen locator-safe, spoken-expansion-aware `narration-piper-v2` bounds so
+generic long prose and compact numbers, currencies, acronyms, Roman numerals,
+ordinals, and letter sequences are split without rewriting text before
+inference. Piper's service and packaged resilience arms pass. Product Play now
+separately requires an
+affirmative native exact-runtime configuration check during availability
+resolution and immediately before child start, preventing the reproduced
+pre-handshake failure when process-local configuration is absent. Qwen's
+outbound-blocked service arm passes. ADR-0022 corrects its separate
+development-only admission boundary: the packaged host now selects and
+executes Qwen at `7,196` MiB total / `6,508` MiB available VRAM, then later
+fails the depletion synchronization assertion. No automatic retry, complete
+resilience pass, or standard Qwen support claim is available.
+
+Milestone 6 validation results:
+
+- Focused Python Piper/Qwen adapter and service tests, desktop profile/client/
+  coordinator tests and typecheck, and native supervisor/detector tests pass.
+- Exact Piper service lifecycle passes load, synthesis, busy rejection,
+  cancellation, reload, synthesis after reload, and shutdown.
+- Exact Qwen service lifecycle passes under its enabled interpreter-bound
+  outbound block. Corrected packaged selection exposes Qwen as
+  development-only and compatible, starts the exact runtime, and reaches
+  actual playback/inference through the depletion stage. The subsequent
+  synchronization assertion fails and remains a known limitation.
+- Release-packaged Piper quick and prepared playback passes with zero
+  underruns, zero buffering seconds per playback minute during the 60.322-second
+  stable observation, zero dedicated GPU allocation, zero external requests,
+  and zero generated-audio files. Quick command-to-audible was 2,722 ms;
+  prepared command-to-audible was 4,808 ms; cancellation was 169 ms; final
+  resource release was 443 ms; 13 audible transitions had 1.1 ms follow p95.
+- The corrective long-paragraph packaged rerun also passes. Quick
+  command-to-audible was 2,584 ms with 20.793 playable seconds; the 60.206-
+  second stable observation had zero underruns; prepared playback began in
+  4,868 ms with 61.289 playable seconds; cancellation was 871 ms; cleanup was
+  449 ms; and all 17 synchronized transitions remained valid. No external
+  request, generated-audio file, or GPU allocation occurred.
+- The exact host detector now distinguishes discarded incomplete adapters from
+  the selected provider. A discarded unusable adapter cannot poison a complete
+  report, while selected unknown memory, ambiguity, and no-provider cases remain
+  partial and fail closed.
+- The content-free native configuration gate rejects unknown, missing, or
+  invalid exact runtimes before child creation. The typed client sends only the
+  bounded profile ID and fails closed on false or invocation failure. A
+  configured Piper release-packaged run passed with 2,893 ms quick
+  command-to-audible, 20.421 playable seconds at start, zero underruns during
+  60.209 seconds of stable playback, 5,252 ms prepared command-to-audible,
+  1,157 ms cancellation, 951 ms cleanup, 16 synchronized transitions, zero GPU
+  allocation, zero external requests, and zero generated-audio files.
+- The expansion-aware packaged regression also passes. All 559 EPUB and 399
+  desktop tests are green; the synthetic compact-form fixture completed
+  60.010 seconds of stable playback with zero underruns and 18 synchronized
+  transitions. Quick command-to-audible was 3,114 ms with 21.524 seconds of
+  lead; prepared command-to-audible was 4,772 ms with 62.496 seconds prepared.
+  Cleanup retained zero units and files, and the run used zero GPU allocation
+  and made zero external requests.
+- `pnpm.cmd check:portable`, `pnpm.cmd check`, `pnpm.cmd test:browser`, and
+  `pnpm.cmd test:native-startup` pass. The expected existing CSS
+  `::highlight` minifier and large-chunk warnings remain non-fatal; one
+  permission-denied pytest cache-write warning does not affect its 256 passing
+  tests or tracked output.
+- The historical `narration-policy.ts` authority remains byte-identical at
+  SHA-256
+  `96a62a9d0d57e5fad904b4c38d98ded4d48d5c2f8e125ea527c5df535ac0f85c`;
+  the Piper-only constants live in a new module and all 13 focused v6
+  authority/quality tests pass.
 
 Milestone 5 validation results:
 

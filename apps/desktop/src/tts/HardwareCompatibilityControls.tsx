@@ -17,6 +17,7 @@ import type {
 export interface HardwareCompatibilityControlsProps {
   readonly coordinator: HardwareProfileCompatibilityCoordinator;
   readonly onRecoveryEpisodeReset?: () => void;
+  readonly onSelectProfile?: (profileId: string) => Promise<boolean>;
 }
 
 const REASON_MESSAGES: Readonly<
@@ -40,7 +41,7 @@ const REASON_MESSAGES: Readonly<
   "device-class": "The available device class is not compatible.",
   "dedicated-vram": "The required dedicated graphics memory is not available.",
   "available-dedicated-vram":
-    "The required free dedicated graphics memory is not available.",
+    "The current free dedicated graphics-memory budget is below this profile's safety reserve.",
 });
 
 function statusMessage(snapshot: HardwareCompatibilitySnapshotV1): string {
@@ -64,6 +65,8 @@ function profileLabel(profile: HardwareProfileMatchV1): string {
   switch (profile.profileId) {
     case "qwen3-tts-1-7b-customvoice-cuda-bf16-v1":
       return "Qwen and Serena development profile";
+    case "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1":
+      return "Piper and davefx fast CPU profile";
     case "qwen3-tts-0-6b-customvoice-cuda-bf16-v1":
       return "Qwen and Aiden evaluated profile";
     case "supertonic-3-onnx-cpu-f1-es-v1":
@@ -88,6 +91,7 @@ function profileState(profile: HardwareProfileMatchV1): string {
 export function HardwareCompatibilityControls({
   coordinator,
   onRecoveryEpisodeReset,
+  onSelectProfile,
 }: HardwareCompatibilityControlsProps): ReactElement {
   const [selectionPending, setSelectionPending] = useState(false);
   const snapshot = useSyncExternalStore(
@@ -110,7 +114,11 @@ export function HardwareCompatibilityControls({
   const handleSelection = async (profileId: string): Promise<void> => {
     setSelectionPending(true);
     try {
-      if (await coordinator.selectProfile(profileId)) {
+      const selected =
+        onSelectProfile === undefined
+          ? await coordinator.selectProfile(profileId)
+          : await onSelectProfile(profileId);
+      if (selected) {
         onRecoveryEpisodeReset?.();
       }
     } finally {
@@ -174,7 +182,12 @@ export function HardwareCompatibilityControls({
         ) : null}
         <ul aria-label="Measured narration profiles">
           {snapshot.profiles.map((profile) => (
-            <li key={profile.profileId}>
+            <li
+              key={profile.profileId}
+              data-profile-id={profile.profileId}
+              data-profile-state={profile.state}
+              data-profile-reason={profile.reason ?? "none"}
+            >
               <span>{profileLabel(profile)}: </span>
               <span>{profileState(profile)}.</span>
               {profile.reason === undefined ? null : (

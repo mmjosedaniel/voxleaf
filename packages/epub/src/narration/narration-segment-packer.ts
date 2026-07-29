@@ -15,6 +15,12 @@ import {
   NARRATION_V1_SEGMENT_POLICY,
   NARRATION_V1_SOURCE_WINDOW_POLICY,
 } from "./narration-policy.js";
+import {
+  NARRATION_PIPER_V1_SEGMENT_POLICY,
+  NARRATION_PIPER_V2_SEGMENT_POLICY,
+  piperSpeechExpansionCodePointUnits,
+  type NarrationSegmentPolicy,
+} from "./narration-piper-policy.js";
 import type { NarrationSourceSpan } from "./narration-source.js";
 import {
   DEFAULT_NARRATION_YIELD_SCHEDULER,
@@ -71,6 +77,7 @@ export interface NarrationPackingOptions {
   readonly maximumSegments?: number;
   readonly retainedNarrationCodePointsMaximum?: number;
   readonly retainedNarrationUtf8BytesMaximum?: number;
+  readonly segmentPolicy?: NarrationSegmentPolicy;
   readonly signal?: AbortSignal;
   readonly scheduler?: NarrationYieldScheduler;
 }
@@ -79,11 +86,13 @@ interface ResolvedNarrationPackingLimits {
   readonly maximumSegments: number;
   readonly retainedNarrationCodePointsMaximum: number;
   readonly retainedNarrationUtf8BytesMaximum: number;
+  readonly segmentPolicy: NarrationSegmentPolicy;
 }
 
 interface PrefixMeasurements {
   readonly narrationCodePoints: readonly number[];
   readonly narrationUtf8Bytes: readonly number[];
+  readonly piperSpeechExpansionUnits: readonly number[];
   readonly sentenceCount: readonly number[];
   readonly substantiveUnitCount: readonly number[];
 }
@@ -91,6 +100,7 @@ interface PrefixMeasurements {
 interface ValidatedScanMeasurements {
   readonly unitNarrationCodePoints: readonly number[];
   readonly unitNarrationUtf8Bytes: readonly number[];
+  readonly unitPiperSpeechExpansionUnits: readonly number[];
 }
 
 interface PackingContext {
@@ -105,7 +115,13 @@ interface SegmentMeasurements {
   readonly sourceCodePoints: number;
   readonly narrationCodePoints: number;
   readonly narrationUtf8Bytes: number;
+  readonly piperSpeechExpansionUnits: number;
   readonly sentenceCount: number;
+}
+
+interface TextMeasurements {
+  readonly codePoints: number;
+  readonly piperSpeechExpansionUnits: number;
 }
 
 interface CandidateBoundary {
@@ -156,6 +172,7 @@ function resolvePackingLimits(
   const retainedNarrationUtf8BytesMaximum =
     options.retainedNarrationUtf8BytesMaximum ??
     NARRATION_V1_SEGMENT_POLICY.retainedNarrationUtf8BytesHardMaximum;
+  const segmentPolicy = options.segmentPolicy ?? NARRATION_V1_SEGMENT_POLICY;
   if (
     !Number.isSafeInteger(maximumSegments) ||
     maximumSegments <= 0 ||
@@ -170,7 +187,10 @@ function resolvePackingLimits(
     retainedNarrationUtf8BytesMaximum <
       NARRATION_V1_SEGMENT_POLICY.narrationUtf8BytesHardMaximum ||
     retainedNarrationUtf8BytesMaximum >
-      NARRATION_V1_SEGMENT_POLICY.retainedNarrationUtf8BytesHardMaximum
+      NARRATION_V1_SEGMENT_POLICY.retainedNarrationUtf8BytesHardMaximum ||
+    (segmentPolicy !== NARRATION_V1_SEGMENT_POLICY &&
+      segmentPolicy !== NARRATION_PIPER_V1_SEGMENT_POLICY &&
+      segmentPolicy !== NARRATION_PIPER_V2_SEGMENT_POLICY)
   ) {
     return fail();
   }
@@ -178,26 +198,31 @@ function resolvePackingLimits(
     maximumSegments,
     retainedNarrationCodePointsMaximum,
     retainedNarrationUtf8BytesMaximum,
+    segmentPolicy,
   });
 }
 
-async function measureTextCodePoints(
+async function measureText(
   value: string,
   work: NarrationWorkController,
-): Promise<number> {
-  let count = 0;
+): Promise<TextMeasurements> {
+  let codePoints = 0;
+  let piperSpeechExpansionUnits = 0;
   for (const codePoint of value) {
-    void codePoint;
-    count = addSafe(count, 1);
+    codePoints = addSafe(codePoints, 1);
+    piperSpeechExpansionUnits = addSafe(
+      piperSpeechExpansionUnits,
+      piperSpeechExpansionCodePointUnits(codePoint),
+    );
     await work.observe();
     if (
-      count >
+      codePoints >
       NARRATION_V1_SOURCE_WINDOW_POLICY.normalizationExpansionCodePointsHardMaximum
     ) {
       return fail();
     }
   }
-  return count;
+  return Object.freeze({ codePoints, piperSpeechExpansionUnits });
 }
 
 function utf8ByteLength(value: string): number {
@@ -264,6 +289,7 @@ async function prefixMeasurements(
   const { units } = scan.normalized;
   const narrationCodePoints = [0];
   const narrationUtf8Bytes = [0];
+  const piperSpeechExpansionUnits = [0];
   const sentenceBoundaryCounts = Array.from(
     { length: units.length + 1 },
     () => 0,
@@ -302,6 +328,13 @@ async function prefixMeasurements(
         validated.unitNarrationUtf8Bytes[unitIndex] ?? fail(),
       ),
     );
+    piperSpeechExpansionUnits.push(
+      addSafe(
+        piperSpeechExpansionUnits[piperSpeechExpansionUnits.length - 1] ??
+          fail(),
+        validated.unitPiperSpeechExpansionUnits[unitIndex] ?? fail(),
+      ),
+    );
     sentenceCount.push(
       addSafe(
         sentenceCount[sentenceCount.length - 1] ?? fail(),
@@ -319,6 +352,7 @@ async function prefixMeasurements(
   return Object.freeze({
     narrationCodePoints: Object.freeze(narrationCodePoints),
     narrationUtf8Bytes: Object.freeze(narrationUtf8Bytes),
+    piperSpeechExpansionUnits: Object.freeze(piperSpeechExpansionUnits),
     sentenceCount: Object.freeze(sentenceCount),
     substantiveUnitCount: Object.freeze(substantiveUnitCount),
   });
@@ -358,6 +392,11 @@ function measurementsBetween(
       startUnitIndex,
       endUnitIndexExclusive,
     ),
+    piperSpeechExpansionUnits: difference(
+      prefix.piperSpeechExpansionUnits,
+      startUnitIndex,
+      endUnitIndexExclusive,
+    ),
     sentenceCount: difference(
       prefix.sentenceCount,
       startUnitIndex,
@@ -366,28 +405,33 @@ function measurementsBetween(
   });
 }
 
-function withinTarget(measurements: SegmentMeasurements): boolean {
+function withinTarget(
+  measurements: SegmentMeasurements,
+  policy: NarrationSegmentPolicy,
+): boolean {
   return (
-    measurements.sourceCodePoints <=
-      NARRATION_V1_SEGMENT_POLICY.sourceCodePointsTarget &&
-    measurements.narrationCodePoints <=
-      NARRATION_V1_SEGMENT_POLICY.narrationCodePointsTarget &&
-    measurements.narrationUtf8Bytes <=
-      NARRATION_V1_SEGMENT_POLICY.narrationUtf8BytesTarget &&
-    measurements.sentenceCount <= NARRATION_V1_SEGMENT_POLICY.sentencesTarget
+    measurements.sourceCodePoints <= policy.sourceCodePointsTarget &&
+    measurements.narrationCodePoints <= policy.narrationCodePointsTarget &&
+    measurements.narrationUtf8Bytes <= policy.narrationUtf8BytesTarget &&
+    (policy.piperSpeechExpansionUnitsTarget === undefined ||
+      measurements.piperSpeechExpansionUnits <=
+        policy.piperSpeechExpansionUnitsTarget) &&
+    measurements.sentenceCount <= policy.sentencesTarget
   );
 }
 
-function withinHardMaximum(measurements: SegmentMeasurements): boolean {
+function withinHardMaximum(
+  measurements: SegmentMeasurements,
+  policy: NarrationSegmentPolicy,
+): boolean {
   return (
-    measurements.sourceCodePoints <=
-      NARRATION_V1_SEGMENT_POLICY.sourceCodePointsHardMaximum &&
-    measurements.narrationCodePoints <=
-      NARRATION_V1_SEGMENT_POLICY.narrationCodePointsHardMaximum &&
-    measurements.narrationUtf8Bytes <=
-      NARRATION_V1_SEGMENT_POLICY.narrationUtf8BytesHardMaximum &&
-    measurements.sentenceCount <=
-      NARRATION_V1_SEGMENT_POLICY.sentencesHardMaximum
+    measurements.sourceCodePoints <= policy.sourceCodePointsHardMaximum &&
+    measurements.narrationCodePoints <= policy.narrationCodePointsHardMaximum &&
+    measurements.narrationUtf8Bytes <= policy.narrationUtf8BytesHardMaximum &&
+    (policy.piperSpeechExpansionUnitsHardMaximum === undefined ||
+      measurements.piperSpeechExpansionUnits <=
+        policy.piperSpeechExpansionUnitsHardMaximum) &&
+    measurements.sentenceCount <= policy.sentencesHardMaximum
   );
 }
 
@@ -504,8 +548,9 @@ function preferLatestTarget(
   current: CandidateBoundary | undefined,
   candidate: CandidateBoundary,
   measurements: SegmentMeasurements,
+  policy: NarrationSegmentPolicy,
 ): CandidateBoundary | undefined {
-  return withinTarget(measurements) ? candidate : current;
+  return withinTarget(measurements, policy) ? candidate : current;
 }
 
 function preferFirstHard(
@@ -520,6 +565,7 @@ async function selectCandidate(
   context: PackingContext,
   startUnitIndex: number,
   work: NarrationWorkController,
+  policy: NarrationSegmentPolicy,
 ): Promise<CandidateBoundary> {
   const { prefix, recordedBoundaryKinds, safeBoundaries } = context;
   const blockEnd = scan.normalized.units.length;
@@ -545,7 +591,7 @@ async function selectCandidate(
       startUnitIndex,
       unitIndexExclusive,
     );
-    if (!withinHardMaximum(measurements)) {
+    if (!withinHardMaximum(measurements, policy)) {
       break;
     }
     if (
@@ -563,7 +609,7 @@ async function selectCandidate(
       unitIndexExclusive,
       reason: "hard-limit" as const,
     });
-    if (unitIndexExclusive === blockEnd && withinTarget(measurements)) {
+    if (unitIndexExclusive === blockEnd && withinTarget(measurements, policy)) {
       return Object.freeze({
         unitIndexExclusive: blockEnd,
         reason:
@@ -587,6 +633,7 @@ async function selectCandidate(
           targetSentence,
           candidate,
           measurements,
+          policy,
         );
         firstHardSentence = preferFirstHard(firstHardSentence, candidate);
       } else if (candidate.reason === "clause") {
@@ -594,6 +641,7 @@ async function selectCandidate(
           targetClause,
           candidate,
           measurements,
+          policy,
         );
         firstHardClause = preferFirstHard(firstHardClause, candidate);
       }
@@ -609,6 +657,7 @@ async function selectCandidate(
         targetWhitespace,
         candidate,
         measurements,
+        policy,
       );
       firstHardWhitespace = preferFirstHard(firstHardWhitespace, candidate);
     } else if (
@@ -621,7 +670,12 @@ async function selectCandidate(
         unitIndexExclusive,
         reason: "token" as const,
       });
-      targetToken = preferLatestTarget(targetToken, candidate, measurements);
+      targetToken = preferLatestTarget(
+        targetToken,
+        candidate,
+        measurements,
+        policy,
+      );
       firstHardToken = preferFirstHard(firstHardToken, candidate);
     }
   }
@@ -650,6 +704,7 @@ async function selectCandidate(
       safeBoundaries[nextPosition] !== true ||
       !withinHardMaximum(
         measurementsBetween(scan, prefix, startUnitIndex, nextPosition),
+        policy,
       )
     ) {
       break;
@@ -731,7 +786,7 @@ async function isRecognizedSceneBreak(
     const text = String(unit.text);
     nonWhitespaceCodePoints = addSafe(
       nonWhitespaceCodePoints,
-      await measureTextCodePoints(text, work),
+      (await measureText(text, work)).codePoints,
     );
     if (nonWhitespaceCodePoints > 3) {
       return false;
@@ -785,6 +840,7 @@ async function validateScan(
   const textParts: string[] = [];
   const unitNarrationCodePoints: number[] = [];
   const unitNarrationUtf8Bytes: number[] = [];
+  const unitPiperSpeechExpansionUnits: number[] = [];
   for (const unit of scan.normalized.units) {
     await work.observe();
     if (unit === undefined) {
@@ -799,7 +855,8 @@ async function validateScan(
     expectedSourceOffset = unit.sourceSpan.endOffsetCodePoints;
     if (unit.kind === "text") {
       const text = String(unit.text);
-      const narrationCodePoints = await measureTextCodePoints(text, work);
+      const textMeasurements = await measureText(text, work);
+      const narrationCodePoints = textMeasurements.codePoints;
       const narrationUtf8Bytes = utf8ByteLength(text);
       retainedNarrationCodePoints = addSafe(
         retainedNarrationCodePoints,
@@ -820,9 +877,13 @@ async function validateScan(
       textParts.push(text);
       unitNarrationCodePoints.push(narrationCodePoints);
       unitNarrationUtf8Bytes.push(narrationUtf8Bytes);
+      unitPiperSpeechExpansionUnits.push(
+        textMeasurements.piperSpeechExpansionUnits,
+      );
     } else {
       unitNarrationCodePoints.push(0);
       unitNarrationUtf8Bytes.push(0);
+      unitPiperSpeechExpansionUnits.push(0);
     }
   }
   if (
@@ -834,6 +895,7 @@ async function validateScan(
   return Object.freeze({
     unitNarrationCodePoints: Object.freeze(unitNarrationCodePoints),
     unitNarrationUtf8Bytes: Object.freeze(unitNarrationUtf8Bytes),
+    unitPiperSpeechExpansionUnits: Object.freeze(unitPiperSpeechExpansionUnits),
   });
 }
 
@@ -907,6 +969,7 @@ async function packNarrationBoundaryScanInternal(
       context,
       startUnitIndex,
       work,
+      limits.segmentPolicy,
     );
     if (candidate.unitIndexExclusive <= startUnitIndex) {
       return fail();
@@ -918,7 +981,7 @@ async function packNarrationBoundaryScanInternal(
       candidate.unitIndexExclusive,
     );
     if (
-      !withinHardMaximum(measurements) ||
+      !withinHardMaximum(measurements, limits.segmentPolicy) ||
       measurements.narrationCodePoints === 0
     ) {
       return resourceLimitExceeded();

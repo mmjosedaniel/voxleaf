@@ -35,7 +35,10 @@ import {
   type TtsGenerationScope,
   type TtsProcessClientObservation,
 } from "./process-client";
-import { EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID } from "./hardware-profile-registry";
+import {
+  EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+  PIPER_CPU_FALLBACK_PROFILE_ID,
+} from "./hardware-profile-registry";
 import {
   HARDWARE_PROFILE_AUTHORITY_V1,
   type RecoveryFailureCodeV1,
@@ -44,10 +47,16 @@ import {
   OperationalRecoveryController,
   type OperationalRecoverySnapshotV1,
 } from "./operational-recovery";
+import { playbackTransitionPauseMsForPreparedSegment } from "./playback-transition-policy";
 
 const TICK_INTERVAL_MS = 250;
 const PREPARED_BATCH_SEGMENT_LIMIT = 16;
 const NAVIGATION_BOUNDARY_LIMIT = 64;
+const PIPER_SPEAKABLE_CONTENT = /[\p{L}\p{N}\p{Sc}%‰ºª°]/u;
+
+function isPiperSpeakableSegment(segment: PreparedNarrationSegment): boolean {
+  return PIPER_SPEAKABLE_CONTENT.test(segment.text);
+}
 
 export type ProductNarrationFailureCode =
   | "audio-playback-failed"
@@ -69,6 +78,7 @@ export interface ProductNarrationMetrics {
 
 export interface ProductNarrationSnapshot {
   readonly availability: "checking" | TtsExactDemoAvailability;
+  readonly profileId: string;
   readonly selection: AdaptiveBufferStartMode;
   readonly state: AdaptivePreparationUiState | undefined;
   readonly failure: ProductNarrationFailureCode | undefined;
@@ -103,8 +113,11 @@ export interface ProductNarrationNavigationRequest {
 
 export interface ProductNarrationServiceClient extends AdaptiveBufferAudioUnitSource {
   exactDemoAvailability(): Promise<TtsExactDemoAvailability>;
+  profileConfigurationAvailability(
+    profileId: string,
+  ): Promise<TtsExactDemoAvailability>;
   observe(): TtsProcessClientObservation;
-  start(): Promise<TtsProcessClientObservation>;
+  start(profileId?: string): Promise<TtsProcessClientObservation>;
   prepare(): Promise<TtsProcessClientObservation>;
   synthesize(segment: unknown): Promise<{
     readonly sampleCountSamples: number;
@@ -118,6 +131,7 @@ export interface ProductNarrationClock {
 }
 
 export interface ProductNarrationProfileCompatibility {
+  activeProfileId?(): string | undefined;
   isProfileCurrentlyAllowed(profileId: string): boolean | undefined;
   isProfileStartAllowed(
     profileId: string,
@@ -306,6 +320,7 @@ export class ProductNarrationCoordinator {
   readonly #prepared = new Map<string, PreparedSegmentEntry>();
   readonly #knownBoundaries: LocatorRangeV1[] = [];
   #availability: ProductNarrationSnapshot["availability"] = "checking";
+  #profileId = EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID;
   #selection: AdaptiveBufferStartMode = Object.freeze({ kind: "quick" });
   #activeLocator: ReadingLocatorV1;
   #visibleLocator: ReadingLocatorV1;
@@ -335,9 +350,11 @@ export class ProductNarrationCoordinator {
   #commandStartedAtMs: number | undefined;
   #commandToAudibleMs: number | undefined;
   #bufferingMs = 0;
+  #intentionalWaitMs = 0;
   #playbackMs = 0;
   #lastMetricsAtMs: number | undefined;
   #lastPlayerPhase: AdaptivePcmPlayerObservation["state"] | undefined;
+  #lastPlayerIntentionalWaitMs = 0;
   #acceptedAudioUnitCount = 0;
   #acceptedAudioSampleFrames = 0;
 
@@ -410,22 +427,42 @@ export class ProductNarrationCoordinator {
     if (this.#profileCompatibility === undefined) {
       availability = await this.#client.exactDemoAvailability();
     } else {
-      const current = this.#profileCompatibility.isProfileCurrentlyAllowed(
-        EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
-      );
+      const profileId =
+        this.#profileCompatibility.activeProfileId?.() ??
+        EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID;
+      const current =
+        this.#profileCompatibility.isProfileCurrentlyAllowed(profileId);
       const allowed =
         current ??
         (await this.#profileCompatibility.isProfileStartAllowed(
-          EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+          profileId,
           "application-start",
         ));
-      availability = allowed ? "available" : "unavailable";
+      this.#profileId = profileId;
+      availability =
+        allowed &&
+        (await this.#client.profileConfigurationAvailability(profileId)) ===
+          "available"
+          ? "available"
+          : "unavailable";
     }
     if (this.#closed) {
       return;
     }
     this.#availability = availability;
     this.#publish();
+  }
+
+  public async refreshSelectedProfile(): Promise<void> {
+    if (this.#closed) {
+      return;
+    }
+    this.#profileId =
+      this.#profileCompatibility?.activeProfileId?.() ??
+      EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID;
+    this.#availability = "checking";
+    this.#publish();
+    await this.checkAvailability();
   }
 
   public setSelection(selection: AdaptiveBufferStartMode): void {
@@ -633,7 +670,9 @@ export class ProductNarrationCoordinator {
     this.#acceptedAudioUnitCount = 0;
     this.#acceptedAudioSampleFrames = 0;
     this.#bufferingMs = 0;
+    this.#intentionalWaitMs = 0;
     this.#playbackMs = 0;
+    this.#lastPlayerIntentionalWaitMs = 0;
     this.#commandToAudibleMs = undefined;
     this.#commandStartedAtMs = this.#clock.nowMs;
     this.#lastMetricsAtMs = this.#clock.nowMs;
@@ -1012,14 +1051,20 @@ export class ProductNarrationCoordinator {
     }
     try {
       switch (action.kind) {
-        case "start-service":
-          if (
-            this.#profileCompatibility !== undefined &&
-            !(await this.#profileCompatibility.isProfileStartAllowed(
-              EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+        case "start-service": {
+          const profileId =
+            this.#profileCompatibility?.activeProfileId?.() ?? this.#profileId;
+          const hardwareAllowed =
+            this.#profileCompatibility === undefined ||
+            (await this.#profileCompatibility.isProfileStartAllowed(
+              profileId,
               "before-profile-start",
-            ))
-          ) {
+            ));
+          const configurationAvailable =
+            hardwareAllowed &&
+            (await this.#client.profileConfigurationAvailability(profileId)) ===
+              "available";
+          if (!configurationAvailable) {
             if (runToken === this.#runToken) {
               this.#availability = "unavailable";
               this.#fail(
@@ -1033,11 +1078,13 @@ export class ProductNarrationCoordinator {
           }
           scheduler.beginServiceStart();
           this.#publish();
-          await this.#client.start();
+          this.#profileId = profileId;
+          await this.#client.start(profileId);
           if (runToken === this.#runToken) {
             scheduler.markServiceStarted();
           }
           break;
+        }
         case "prepare-service":
           scheduler.beginServicePrepare();
           this.#publish();
@@ -1093,7 +1140,10 @@ export class ProductNarrationCoordinator {
     try {
       result = await this.#publication.prepareNarration({
         startLocator,
-        profile: "narration-v1",
+        profile:
+          this.#profileId === PIPER_CPU_FALLBACK_PROFILE_ID
+            ? "narration-piper-v2"
+            : "narration-v1",
         defaultLanguage: "es",
         maximumSegments: PREPARED_BATCH_SEGMENT_LIMIT,
         signal: controller.signal,
@@ -1109,18 +1159,20 @@ export class ProductNarrationCoordinator {
     if (!isPreparationSuccess(result)) {
       throw new Error("content-free-preparation-failure");
     }
-    if (result.segments.length === 0) {
-      if (result.status !== "complete") {
-        throw new Error("content-free-empty-batch");
-      }
-      scheduler.acceptEmptyCompleteRange();
-      this.#continuation = undefined;
+    const preparedSegments =
+      this.#profileId === PIPER_CPU_FALLBACK_PROFILE_ID
+        ? result.segments.filter(isPiperSpeakableSegment)
+        : result.segments;
+    if (preparedSegments.length === 0) {
+      scheduler.acceptEmptyPreparedRange(result.status === "complete");
+      this.#continuation =
+        result.status === "batch" ? result.continuation : undefined;
       return;
     }
     if (this.#identity === undefined || this.#prepared.size !== 0) {
       throw new Error("content-free-preparation-state");
     }
-    const entries = result.segments.map((prepared) => {
+    const entries = preparedSegments.map((prepared) => {
       const sequence = this.#nextSequence;
       this.#nextSequence += 1;
       const segmentId = this.#createIdentifier!("segment", sequence);
@@ -1150,6 +1202,8 @@ export class ProductNarrationCoordinator {
           narrationCodePoints: prepared.measurements.narrationCodePoints,
           narrationUtf8Bytes: prepared.measurements.narrationUtf8Bytes,
           sentenceCount: prepared.measurements.sentenceCount,
+          transitionPauseMs:
+            playbackTransitionPauseMsForPreparedSegment(prepared),
         }),
       ),
     });
@@ -1218,14 +1272,19 @@ export class ProductNarrationCoordinator {
 
   #updateMetrics(player: AdaptivePcmPlayerObservation): void {
     const nowMs = this.#clock.nowMs;
+    const intentionalWaitDelta = Math.max(
+      0,
+      player.intentionalTransitionPauseMs - this.#lastPlayerIntentionalWaitMs,
+    );
     if (this.#lastMetricsAtMs !== undefined && nowMs >= this.#lastMetricsAtMs) {
       const elapsed = nowMs - this.#lastMetricsAtMs;
       if (this.#lastPlayerPhase === "buffering") {
         this.#bufferingMs += elapsed;
       } else if (this.#lastPlayerPhase === "playing") {
-        this.#playbackMs += elapsed;
+        this.#playbackMs += Math.max(0, elapsed - intentionalWaitDelta);
       }
     }
+    this.#intentionalWaitMs = player.intentionalTransitionPauseMs;
     if (
       player.state === "playing" &&
       this.#commandToAudibleMs === undefined &&
@@ -1235,6 +1294,7 @@ export class ProductNarrationCoordinator {
     }
     this.#lastMetricsAtMs = nowMs;
     this.#lastPlayerPhase = player.state;
+    this.#lastPlayerIntentionalWaitMs = player.intentionalTransitionPauseMs;
   }
 
   #fail(
@@ -1254,10 +1314,7 @@ export class ProductNarrationCoordinator {
       if (this.#recovery.observe().phase !== "operational") {
         return;
       }
-      this.#recovery.detectFailure(
-        recoveryCode,
-        EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
-      );
+      this.#recovery.detectFailure(recoveryCode, this.#profileId);
     }
     const operation = this.#containOperationalFailure(wasRecovering);
     this.#recoveryOperation = operation;
@@ -1459,7 +1516,10 @@ export class ProductNarrationCoordinator {
         scheduler: scheduler.observe(),
         ...(player === undefined
           ? {}
-          : { volumePercent: player.volumePercent }),
+          : {
+              intentionalBoundaryWait: player.intentionalTransitionPauseActive,
+              volumePercent: player.volumePercent,
+            }),
       });
       return Object.freeze({ ...projected, phase: "failed" });
     } catch {
@@ -1477,11 +1537,12 @@ export class ProductNarrationCoordinator {
   #createSnapshot(): ProductNarrationSnapshot {
     const scheduler = this.#scheduler?.observe();
     const player = this.#player;
+    const playerObservation = player?.synchronize();
     let state = this.#terminalState;
     if (
       state === undefined &&
       scheduler !== undefined &&
-      player !== undefined
+      playerObservation !== undefined
     ) {
       let estimatedWaitMs: number | undefined;
       try {
@@ -1497,7 +1558,9 @@ export class ProductNarrationCoordinator {
         mode: this.#selection,
         scheduler,
         ...(estimatedWaitMs === undefined ? {} : { estimatedWaitMs }),
-        volumePercent: player.synchronize().volumePercent,
+        intentionalBoundaryWait:
+          playerObservation.intentionalTransitionPauseActive,
+        volumePercent: playerObservation.volumePercent,
       });
     }
     const currentBoundaryIndex = this.#currentBoundaryIndex();
@@ -1507,6 +1570,7 @@ export class ProductNarrationCoordinator {
       currentBoundaryIndex !== undefined;
     return Object.freeze({
       availability: this.#availability,
+      profileId: this.#profileId,
       selection: this.#selection,
       state,
       failure: this.#failure,
@@ -1514,9 +1578,11 @@ export class ProductNarrationCoordinator {
       metrics: Object.freeze({
         commandToAudibleMs: this.#commandToAudibleMs,
         bufferingMs: this.#bufferingMs,
-        intentionalWaitMs: 0,
+        intentionalWaitMs:
+          playerObservation?.intentionalTransitionPauseMs ??
+          this.#intentionalWaitMs,
         playbackMs: this.#playbackMs,
-        underrunCount: this.#player?.synchronize().underrunCount ?? 0,
+        underrunCount: playerObservation?.underrunCount ?? 0,
         acceptedAudioUnitCount: this.#acceptedAudioUnitCount,
         acceptedAudioSampleFrames: this.#acceptedAudioSampleFrames,
         retainedAudioUnitCount: scheduler?.retainedAudioUnitCount ?? 0,

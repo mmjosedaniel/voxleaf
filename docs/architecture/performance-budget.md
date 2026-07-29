@@ -203,7 +203,7 @@ M008 Milestone 6 applies those observations without changing the frozen
 arithmetic. Quick mode remains the default because it minimizes the explicit
 wait, while prepared mode remains an opt-in with one minute initially selected.
 Refill/resume stays at one minute, low water stays at 10 seconds, and semantic
-boundary waits remain disabled at `0` ms. The final closeout rerun measured
+adaptive low-buffer waits remain disabled at `0` ms. The final closeout rerun measured
 19.49 buffering seconds per playback minute, which exceeds the MVP target of
 at most 5 seconds, so the exact profile remains a constrained development
 demo. Larger preparation targets may extend one listening interval but do not
@@ -373,6 +373,15 @@ Accepted `selection-v5` therefore rejects CPU-only and dual-worker scheduling.
 ADR-0015 retains one exact GPU worker only for a constrained adaptive demo.
 Using GPU-solo RTF 1.467 as a planning estimate, not a user guarantee:
 
+M010 originally converted the measured `5,996`-MiB authoritative peak into a
+generic `7,196`-MiB requirement for both total and currently available
+dedicated VRAM. ADR-0022 retains that total-device requirement but, only for
+the explicitly native-gated development profile, requires the measured peak
+plus the previously frozen `512`-MiB engineering reserve currently available:
+`6,508` MiB. Supported and fallback profiles retain the generic formula.
+This is an admission correction, not an RTF, quality, cancellation, or
+production-support improvement.
+
 | Playable lead | Approximate preparation time | Approximate playback before frontier |
 | ------------: | ---------------------------: | -----------------------------------: |
 |    15 seconds |                   22 seconds |                           47 seconds |
@@ -390,3 +399,12 @@ duration, unit-count, byte, prepared-text, and active-work bounds in
 `adaptive-buffer-authority-v1`. The Milestone 5 exact-host run confirms the
 model still depletes the quick buffer and therefore retains truthful buffering.
 M008 Milestone 6 closes the policy with a zero intentional-wait default.
+
+That historical default refers to M008's optional one- to three-second
+low-buffer throughput wait. M008.1 later introduces a distinct semantic
+transition timer between generated audio units under
+[`playback-transition-pause-policy-v1`](playback-transition-pause-policy-v1.md).
+It contributes zero playable frames, never delays first audio or a
+post-underrun refill, and is reported as intentional transition time rather
+than playback or buffering. It cannot improve or be used to reinterpret RTF,
+startup, or underrun results.

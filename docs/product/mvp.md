@@ -2,7 +2,7 @@
 
 ## Implementation status
 
-The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is never a startup target. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. M008's final policy run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute, which exceeds the MVP target.
+The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; the optional low-buffer throughput wait remains disabled; playback is `1.0x`; and the simultaneous 30-minute ceiling is never a startup target. M008.1 now applies a separate bounded semantic transition pause between independently generated units when the next unit is already buffered. Artificial hard/token splits remain continuous, genuine buffering replaces rather than compounds the pause, and no silent PCM is created. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. M008's final policy run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute, which exceeds the MVP target.
 
 Completed M009 connects audible segments to highlighting, focus-safe following,
 identity-first navigation, and bounded non-skipping heard-position persistence.
@@ -17,9 +17,22 @@ and only then permits one explicit restart from the latest heard checkpoint.
 Protocol, cancellation-timeout, cleanup, and repeated-recovery failures are
 terminal for the episode. Milestone 5 selects exact Piper/davefx as the
 supported speed-focused CPU fallback after all frozen v6 gates passed. The
-exact Qwen/Serena profile remains development-only. Piper runtime and settings
-integration are not implemented until Milestone 6; no automatic retry or
-uninterrupted-playback promise exists.
+exact Qwen/Serena profile remains development-only. Milestone 6 now integrates
+both admitted identities through one active service tree, exposes explicit
+profile choice, and adds the exact Piper CPU adapter with bounded 22.05-to-24
+kHz conversion. Piper alone uses text-complete, locator-safe,
+spoken-expansion-aware `narration-piper-v2` segments so ordinary prose and
+compact speech-expanding forms are bounded before protocol v1's 20-second
+unit ceiling. A punctuation-only Piper unit that cannot produce a waveform is
+omitted before synthesis without inserted silence or locator discontinuity;
+other engines retain `narration-v1`. Its corrective packaged Piper resilience
+arm passes. Qwen's offline service arm passes. When its exact native
+configuration, generic `7,196`-MiB total-VRAM requirement, and corrective
+`6,508`-MiB currently available development reserve pass, the packaged host
+offers Qwen/Serena as an optional development-only profile. The latest
+packaged run executed Qwen but later stopped at the depletion synchronization
+assertion; it remains neither supported nor automatically recommended. No
+automatic retry or uninterrupted-playback promise exists.
 
 ## Current implemented flow
 
@@ -29,36 +42,47 @@ uninterrupted-playback promise exists.
 3. VoxLeaf validates and loads the book.
 4. VoxLeaf opens at the user's last saved passage, or the beginning for a new book.
 5. The user reads and navigates the EPUB in a continuous reflowable reader, adjusts closed display preferences, and can close or replace the publication.
-6. On the exact configured development host, the user can start quick or
-   prepared local narration from the active narration leaf or visible target and hear complete
-   units through the bounded in-memory player.
+6. On an exact configured admitted host, the user can select compatible
+   Piper/davefx or development-only Qwen/Serena, then start quick or prepared
+   local narration from the active narration leaf or visible target and hear
+   complete units through the bounded in-memory player.
 7. The reader highlights and follows the audible stable segment. Ordinary
    viewport movement may inspect the book without changing narration. An
    explicit paragraph leaf, visible-passage, chapter, or previous/next passage
    action invalidates obsolete audio before a bounded restart from its
    canonical target.
-8. When exact-development narration is available, one contextual leaf can
+8. Between independently generated buffered units, the desktop player applies
+   the frozen M008.1 semantic pause for the completed sentence, dialogue,
+   paragraph, heading, scene, or terminal-ellipsis boundary. The next segment
+   becomes active only when its audio actually starts. If the queue is empty,
+   ordinary buffering supplies the separation and no extra pause follows.
+9. When exact-development narration is available, one contextual leaf can
    replace obsolete narration and start at its canonical paragraph. The leaf
    defaults to the paragraph at the active visual line and temporarily moves
    beside an eligible heading or paragraph when the pointer hovers it. It
    reinforces preparing, audible, and saved states when they match that
    paragraph, otherwise it becomes a selectable preview without restarting
-   narration. Ordinary text clicks remain inert.
-9. VoxLeaf saves the canonical heard segment start/end checkpoint while
-   narration owns position, otherwise saves the canonical visual locator, and
-   retains display preferences on the approved bounded lifecycle.
-10. Immediately before starting the exact model child, VoxLeaf rechecks the
-    selected development profile and fails closed if host compatibility or the
-    native development gate changed.
-11. After a classified operational failure, VoxLeaf contains obsolete work
+   narration. The gutter control remains icon-only so state wording cannot
+   cover publication text; its full action/state name remains accessible.
+   Ordinary text clicks remain inert.
+10. VoxLeaf saves the canonical heard segment start/end checkpoint while
+    narration owns position, otherwise saves the canonical visual locator, and
+    retains display preferences on the approved bounded lifecycle.
+11. Immediately before starting the exact model child, VoxLeaf rechecks the
+    selected profile and fails closed if host compatibility or the applicable
+    native development gate changed. Switching profiles first invalidates and
+    stops the old narration; the two engines never run simultaneously.
+12. After a classified operational failure, VoxLeaf contains obsolete work
     and verifies zero service/audio ownership before offering at most one
     explicit restart. Restart uses fresh identities and the latest heard
     checkpoint; terminal failures direct the user to compatibility recheck or
     application restart.
 
-The narration path is deliberately hidden when the exact native development
-configuration is unavailable. It is not a standard or generally supported
-runtime profile.
+The narration path is deliberately hidden when no exact local admitted
+configuration is available. Piper is the supported CPU fallback; Qwen remains
+a constrained development-only profile. Installer delivery and license
+fulfillment remain M011 work, so neither local artifact setup is yet a
+general end-user distribution.
 
 The highlight/follow path above passed repository-authored synthetic,
 Chromium, packaged WebView2, exact-host, M009.1 clean-host, and ephemeral
@@ -70,10 +94,10 @@ authority.
 
 ## Remaining target user flow
 
-1. M010 continues from implemented detection, measured matching,
-   identity-safe recovery, and the passing Piper fallback decision through
-   executable profile/service/settings integration and the remaining
-   resilience matrix.
+1. M010 Milestone 7 must record the final support decision, complete
+   repository/privacy and pull-request validation, and close the plan after the
+   implemented profile/service/settings integration and passing resilience
+   matrix.
 2. M011 packages and validates an end-user distribution after those boundaries
    close.
 
@@ -101,6 +125,10 @@ Implemented and validated:
 - Own complete 24-kHz mono float32 units in one bounded desktop FIFO outside
   React, consume them through a dedicated low-level Web Audio player, account
   underruns, and release played or invalidated originals exactly once.
+- Preserve natural separation between generated units with one bounded,
+  interruptible semantic transition timer. Retain only the numeric delay with
+  the audio unit, create no silent PCM, and report its elapsed time separately
+  from playback and involuntary buffering.
 - Connect the active narration locator or explicit visible target to bounded narration preparation, the M007
   client, and audible quick/prepared playback under the exact-development
   availability gate.
@@ -169,6 +197,10 @@ Remaining:
 - Buffer exhaustion is represented as buffering, not as an application freeze.
 - A low-buffer warning appears before predictable frontier exhaustion when
   available lead crosses from above to at or below 10 playable seconds.
+- Already-buffered generated units use the frozen boundary-specific transition
+  delay; hard/token splits remain immediate, terminal ellipses receive the
+  explicit override, real buffering substitutes for the delay, and final
+  completion receives no trailing wait.
 
 ### Accessibility
 
@@ -178,7 +210,8 @@ Remaining:
 
 ### Performance
 
-- No artificial startup delay is added after the initial playable-audio threshold is met.
+- No transition pause is added before the first audible unit after the initial
+  playable-audio threshold is met.
 - Wall-clock startup latency and playable audio depth at startup are measured separately.
 - The MVP may buffer for up to 5 seconds per minute.
 - Queues and buffers have explicit maximum sizes.
@@ -186,8 +219,9 @@ Remaining:
   sample frames, 172,800,000 logical PCM bytes, and 256 complete
   units/metadata entries simultaneously; 30 playable minutes is a ceiling, not
   a startup target or uninterrupted-playback promise.
-- Intentional paragraph/chapter waits are reported separately from involuntary
-  buffering and cannot be used to claim real-time generation.
+- Semantic transition pauses and the separately disabled adaptive low-buffer
+  wait are reported separately from involuntary buffering and cannot be used
+  to claim real-time generation.
 - Startup latency, real-time factor, buffer depth, underruns, and cancellation latency can be measured.
 
 ### Reliability

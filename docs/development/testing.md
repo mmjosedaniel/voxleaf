@@ -47,7 +47,10 @@ The current tests are deterministic and layered by ownership:
   narrow host-report boundary. Injected native snapshots cover complete,
   partial, permission-denied, malformed, multi-adapter, integrated-only,
   low-memory, no-provider, unknown, ambiguous, unsupported-platform, and
-  single-concurrency cases. A Windows production smoke exercises the direct
+  single-concurrency cases. The exact-host regression additionally proves an
+  unusable discarded adapter cannot downgrade a complete selected provider,
+  while unknown selected-provider memory remains partial. A Windows production
+  smoke exercises the direct
   bounded probe without recording its values. Desktop tests independently
   decode complete and partial reports and replace malformed/native failures
   with fixed content-free errors. Source audits prohibit process, network,
@@ -62,9 +65,11 @@ The current tests are deterministic and layered by ownership:
   incomplete/unknown facts, rejected entries, ties, stale/future preferences,
   and the development gate; one concurrent probe and pre-start recheck; and
   keyboard, focus, status, forced-color, reduced-motion, and content-safety
-  behavior. The production Chromium foundation smoke covers the compact panel
-  without reducing the fixed reader viewport. No test loads a model or promotes
-  a standard/fallback profile.
+  behavior. M010 Milestone 6 adds the immutable supported Piper entry, explicit
+  Piper/Qwen selection, stop-before-switch behavior, profile-aware native
+  start, and one-tree supervisor coverage. The production Chromium foundation
+  smoke covers the compact panel without reducing the fixed reader viewport.
+  Deterministic tests load no model and cannot make a host support claim.
 - `packages/shared/src/contracts/audio-frame.test.ts` verifies payload-free frame metadata, branded ownership identities, exact sample-derived whole-millisecond calculations, aggregate-before-truncation behavior, numeric and duration-overflow boundaries, contiguous sequencing, unique frame IDs, stable format, segment termination, and content-free errors without audio devices or payloads.
 - `packages/shared/src/contracts/buffer-status.test.ts` verifies payload-free, session-bound buffer snapshots; explicit playable-duration units; low/target/maximum ordering; below/exactly-at/above-target states; bounded duration; underrun counts; and rejection of invalid state combinations, payload fields, fixed waits, and private text without implementing a buffer or player.
 - `packages/shared/src/testing/manual-clock.test.ts` verifies an explicit-start, manually advanced test clock; deterministic first-scheduled ordering for equal-time callbacks; pending-work inspection and cleanup; invalid-input rejection; and safe millisecond overflow handling without reading real time or scheduling real timers.
@@ -111,6 +116,14 @@ roles fail; default tests and CI still load no model or generated audio.
   matching protocol v1's 480,000-sample ceiling, complete-waveform
   format/finiteness/size failures, content-free engine failures, and cleanup.
   Importing the adapter does not import Qwen or Torch.
+- `services/tts/tests/test_piper_adapter.py` and
+  `test_piper_service.py` remain model-free while byte-comparing the exact
+  candidate lock and frozen v6 identity. Injected Piper and ONNX Runtime
+  modules cover interpreter ownership, exact versions, artifact hashes,
+  CPU-only provider admission, offline controls, native waveform validation,
+  bounded linear 22,050-to-24,000-Hz mono conversion, content-free failures,
+  cleanup, and protocol service routing. Importing the adapter does not import
+  Piper or ONNX Runtime.
 - `packages/epub/src/index.test.ts` proves that the isolated EPUB package consumes synthetic book and locator contracts through the public `@voxleaf/shared` workspace boundary and exports only the validated `openEpubPublication` runtime entry point. `packages/epub/src/document/document-model.test.ts` exercises the public closed block/inline/navigation/resource/locator shapes, readonly recursive collections, opaque identifier separation, spine/non-spine documents, and explicit resource-read/locator-resolution/close lifecycle. Package-internal path, archive, processing-budget, XML-event, package, identity, navigation, XHTML projection, resource, and locator suites exercise untrusted ingestion with synthetic in-memory inputs, strict byte/count/depth/ratio/text/semantic-block limits, injected cancellation/deadlines, namespace-aware XML, fixed content-free failures, and no filesystem, network, worker, or DOM use. The XML/package regressions accept and omit valid legacy `meta name/content` compatibility values plus the inert HTML doctype in content documents while continuing to reject mixed/malformed metadata, package/container or non-HTML doctypes, public/system identifiers, internal subsets, custom entities, XInclude, and external-resource processing instructions. `packages/epub/test-support/epub-fixture.ts` supplies test-only deterministic arbitrary-ZIP, minimal-EPUB, comprehensive-EPUB, and documented byte-mutation builders with fixed order, timestamps, attributes, compression, and writer capabilities; `packages/epub/src/testing/epub-fixture.test.ts` proves repeated byte identity, fixed metadata, rich public opening, malformed construction, stale-checked mutations, caller-owned inputs, and no network or worker behavior. `packages/epub/src/public/open-epub-publication.test.ts` reuses the minimal builder to drive repository-authored in-memory EPUB bytes through the public opener and proves immutable semantic/navigation/resource/locator assembly, compatibility opening, exact resolution, close, every closed detail-to-`OperationalErrorV1` mapping, unknown-exception redaction, value-based invalid/cancelled results, and no network or worker capability. `packages/epub/src/integration/ingestion-matrix.test.ts` drives minimal, comprehensive, and adversarial deterministic EPUB bytes through the public boundary and proves representative failure at every ingestion stage, every untrusted-input detail family, rich deterministic success, shared-contract acceptance, lazy resource behavior, locator exact/recovery behavior, lifecycle closure, failure cleanup, privacy redaction, and absence of external capabilities. `packages/epub/src/document/xhtml-projector.test.ts` additionally proves allowlisted block/inline order, inherited language and direction, ordinary/code whitespace policy, opaque local links and images, inert external-link labels, omission of active/style/hidden/foreign/remote content, transactional failures, exact/max+1 content-document-byte and semantic-block accounting, and internal globally unique source-ID capture without changing semantic output. `packages/epub/src/resource/opened-publication.test.ts` proves lazy local GIF/JPEG/PNG/WebP reads, declared-size and signature gates, opaque immutable descriptors, independent caller-owned allocations, read-scoped and close-triggered cancellation, single-read concurrency, idempotent release, and closed-handle behavior without caching or external capabilities. `packages/epub/src/locator/locator-index.test.ts` proves final preorder assignment, exact/max+1 source-ID acceptance, deterministic duplicate/invalid/collision replacement, exact-byte and spine binding, shared-decoder round trips, Unicode code-point offsets, cancellation, immutability, and content-free failures. `packages/epub/src/locator/locator-resolver.test.ts` proves exact full-tuple resolution, wrong-book and malformed rejection, nearest offset/anchor/spine/book-start recovery, deterministic earlier-spine tie breaking, canonical immutable output, cancellation, and content-free failures without prose, page, or layout search. CFI parsing remains unsupported and deferred; public narration preparation is implemented and covered by the focused suites below, while application rendering, position restoration, and persistence remain desktop-owned.
 - `packages/epub/test-support/epub-fixture.ts` is also the sole test-only source for reader navigation, reflow/restoration, valid/malformed raster, and exact/max-plus-one long-chapter EPUB bytes. Browser, benchmark, and native smoke helpers import those named builders directly; their expected structural locator fields are repository-authored constants rather than parser-derived fixture output.
 - `packages/epub/test-support/narration-normalization-corpus.ts` is the accepted Task 1.2 test-only neutral/Spanish policy table. Its 62 frozen synthetic-sensitive cases record source semantics, per-unit effective language, exact expected narration text, ambiguous/unsupported preservation, and protected boundaries across whitespace, line breaks, hyphenation, punctuation, abbreviations, numbers, dates, times, currency, percentages, symbols, code, Unicode, mixed language, malformed input, and foreign names. `packages/epub/src/testing/narration-normalization-corpus.test.ts` proves category/edge coverage, unique identity/source signatures, deep immutability, and content-free closed validation failures. Tasks 3.1-3.4's `packages/epub/src/narration/narration-normalizer.test.ts` drives the complete accepted table through production source projection/token mapping and normalization, proving exact neutral/Spanish output, composed invariants, second-pass idempotence, legal retained origin spans, source immutability, deep freezing, exact limits, and content-free failures. Task 4.1's `packages/epub/src/narration/narration-boundary-scanner.test.ts` drives the same corpus through deterministic source-offset sentence/dialogue/clause/protected-token scanning and adds focused terminal-cluster, quotation, malformed fallback, structural metadata, two-pass work, exact/max-plus-one protected-token, and privacy evidence. Tasks 4.2-4.3's `packages/epub/src/narration/narration-segment-packer.test.ts` drives those scans through cancellable block-local target/hard packing and adds heading/scene-break, boundary-priority, exact source/code-point/UTF-8-byte, combining/protected-token, oversized unprotected-token splitting, indivisible-sequence limit failure, retained unit/text/byte ceilings, deterministic work/yield cancellation and retry, range-order, batch-slicing independence, immutability, and privacy evidence. Task 4.4's `packages/epub/src/narration/narration-prepared-segment.test.ts` validates complete packed output before publication, resolves every canonical half-open endpoint and continuation exactly, proves monotonic block-local repeat stability and deep freezing, wraps prepared values through `decodeNarrationSegmentV1` with test-only identities, and rejects inconsistent source identity without exposing sensitive text.
@@ -467,7 +480,7 @@ profile.
 The M008 deterministic desktop tests remain model-free and device-free:
 
 ```powershell
-pnpm.cmd --filter @voxleaf/desktop exec vitest run src/tts/adaptive-buffer-authority.test.ts src/tts/adaptive-buffer-scheduler.test.ts src/tts/pcm-playback.test.ts src/tts/adaptive-preparation.test.ts src/tts/AdaptivePreparationControls.test.tsx src/tts/product-narration-coordinator.test.ts
+pnpm.cmd --filter @voxleaf/desktop exec vitest run src/tts/adaptive-buffer-authority.test.ts src/tts/playback-transition-policy.test.ts src/tts/adaptive-buffer-scheduler.test.ts src/tts/pcm-playback.test.ts src/tts/adaptive-preparation.test.ts src/tts/AdaptivePreparationControls.test.tsx src/tts/product-narration-coordinator.test.ts
 ```
 
 The authority and scheduler tests retain exact/max-plus-one resource,
@@ -479,6 +492,13 @@ end-of-range completion, and stop/seek/close cleanup. Its fake Web Audio
 context verifies little-endian float32 decoding into one active mono 24-kHz
 device buffer and opens no real audio device. These tests persist no payload,
 read no private book content, and load no candidate or model.
+
+M008.1 adds `playback-transition-policy.test.ts` plus scheduler/player/
+coordinator cases for every frozen semantic delay, terminal ellipsis, numeric
+metadata retention, one pending timer, exact audible-start order,
+pause/remainder/resume, invalidation, real-buffer substitution, final-unit
+completion, content-free metrics, and truthful transition status. These tests
+allocate no silent PCM and leave the older adaptive low-buffer wait at zero.
 
 `adaptive-preparation.test.ts` proves the bounded eight-observation
 elapsed-time/sample-frame estimator, stopped-service estimate input, identity
@@ -518,16 +538,73 @@ synthetic Spanish EPUB, exercises either quick depletion/buffering or a
 one-minute prepared playback. M009 Milestone 6 additionally verifies exact audible transitions,
 valid half-open ranges, readable focus-safe following, keyboard pause/resume,
 passage seek, chapter restart, stale suppression, reduced motion, forced
-  colors, retained/discarded-unit bounds, and generated-audio cleanup. Late
-  programmatic visual samples are suppressed during active narration; bounded
-  wheel-driven viewport inspection is now required to preserve the active
-  identity, highlight, leaf, and play intent. Explicit leaf, passage, and
-  chapter actions still prove identity-first replacement. It checks all four
-  prepared choices, content-free timing
+colors, retained/discarded-unit bounds, and generated-audio cleanup. Late
+programmatic visual samples are suppressed during active narration; bounded
+wheel-driven viewport inspection is now required to preserve the active
+identity, highlight, leaf, and play intent. Explicit leaf, passage, and
+chapter actions still prove identity-first replacement. It checks all four
+prepared choices, content-free timing
 and resource metrics, cleanup, and zero external requests. Cleanup samples RAM
 and VRAM until they return within the frozen bound or a 15-second deadline;
 it does not assume a fixed one-second release time. Generated audio is never
 written. This run is excluded from default checks and CI.
+
+M010 Milestone 6 adds the combined exact-host command:
+
+```powershell
+pnpm.cmd test:tts:resilience-exact-host
+```
+
+It requires both exact interpreters, local artifact roots, their
+interpreter-bound outbound firewall blocks, Tauri driver, and matching
+EdgeDriver. The runner proves Qwen and Piper separately: first through the
+service lifecycle and then through the packaged adaptive reader path. It
+checks one active request, busy rejection, cancellation, reload, quick and
+prepared playback, synchronized navigation/replacement, bounded ownership,
+cleanup, zero generated-audio persistence, and zero external requests without
+averaging incompatible profiles. The exact Piper arm passes with zero
+dedicated GPU use. Its product fixture includes a synthetic 400-plus-code-point
+paragraph and an expansion-heavy sentence containing numbers, uppercase
+acronyms, Roman numerals, currency, and percentage forms. The corrected
+`narration-piper-v2` path must split both into locator-contiguous,
+text-complete, sub-20-second units. After fast Piper generation fills the buffer, the fixture explicitly
+selects the next passage to create a deterministic active-cancellation window
+instead of depending on timing. The Qwen service arm passes. Its packaged arm
+uses the generic `7,196`-MiB total-VRAM requirement and corrective
+development-only `6,508`-MiB available-VRAM threshold. Below that threshold
+the runner requires the exact closed rejection, verifies zero external
+requests and no model start, and continues to the supported Piper arm. At or
+above it, Qwen is offered and the complete matrix runs. The latest exact-host
+run reached actual Qwen playback and later stopped at the depletion
+synchronization assertion; that limitation is retained rather than converted
+into a passing resilience claim.
+
+The product-coordinator regression also proves that a punctuation-only Piper
+range creates no TTS request, consumes no narration sequence number, advances
+through the bounded continuation, plays the next speakable locator-linked
+range, and leaves paragraph-leaf replacement available. This is a Piper
+dispatch rule; generic/Qwen preparation and M005 normalization output remain
+unchanged.
+
+The final content-safe packaged private-book regression exposed a separate
+second-batch scheduler mismatch. Valid non-empty narration fragments can report
+zero recognized sentence boundaries; M005 models that measurement as a
+non-negative `Index`. Scheduler coverage now proves that
+`sentenceCount: 0` retains a prepared segment with zero retained sentence
+resources and dispatches it normally, while the product-coordinator regression
+proves Piper synthesizes the fragment without entering preparation failure.
+The rebuilt packaged confirmation crossed the former 16-unit boundary with 27
+accepted units, 60.837 playable seconds, active playback, no failure, and a
+ready service.
+
+Corrective Milestone 6 coverage also separates hardware matching from native
+runtime configuration. Rust rejects unknown profile identities at the
+content-free boolean boundary; the typed process client sends only the bounded
+profile ID and fails closed on false or invocation failure; coordinator tests
+prove that a hardware-compatible but unconfigured profile enables no Play and
+starts no child, and that configuration is checked again immediately before
+start. The release-packaged Piper matrix passes through the real configured
+native gate.
 
 M008 Milestone 6 retains quick mode as the default, one minute as the initial
 prepared and refill target, 10 seconds as low water, and `0` ms as the boundary
@@ -589,6 +666,11 @@ Examples:
   stop and invalidating actions clean up.
 - Low-buffer warnings, involuntary rebuffering, and intentional adaptive
   boundary waits are independently observable.
+- Every prepared semantic boundary maps to its frozen playback-transition
+  delay, including the terminal-ellipsis override.
+- One transition timer blocks only an already-buffered successor; pause/resume
+  preserves its remainder, invalidation suppresses late callbacks, and real
+  buffering or final completion adds no timer.
 
 ### Integration
 
@@ -617,6 +699,9 @@ Critical journeys:
   maximum, while explicit stop and invalidation release work and audio.
 - Verify that nearing the generation frontier warns and then enters a truthful
   buffering state, with intentional boundary waits measured separately.
+- Verify that adjacent generated units retain the frozen semantic separation
+  without adding silence before first audio, after a real underrun, or after
+  the final unit.
 - Pause and resume.
 - Seek to another paragraph.
 - Change chapters.
@@ -633,7 +718,9 @@ Report separately:
 - Delay between satisfying the initial audio threshold and audible playback.
 - Real-time factor.
 - Buffer underrun frequency and duration.
-- Intentional adaptive boundary-wait count and duration, reported separately.
+- Intentional adaptive low-buffer-wait count and duration, reported separately.
+- Intentional semantic transition count and duration, reported separately from
+  audible playback and involuntary buffering.
 - Cancellation latency.
 - CPU, GPU, VRAM, and RAM use.
 

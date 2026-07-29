@@ -14,7 +14,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { HardwareProfilePreferenceRepository } from "../persistence/hardware-profile-preference";
 import { HardwareCompatibilityControls } from "./HardwareCompatibilityControls";
 import { HardwareProfileCompatibilityCoordinator } from "./hardware-profile-compatibility";
-import { EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID } from "./hardware-profile-registry";
+import {
+  EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+  PIPER_CPU_FALLBACK_PROFILE_ID,
+} from "./hardware-profile-registry";
 
 afterEach(() => {
   cleanup();
@@ -43,7 +46,10 @@ function unavailableProvider() {
   };
 }
 
-function compatibleReport() {
+function compatibleReport(
+  availableRamMiB = 16_384,
+  availableDedicatedVramMiB = 9_216,
+) {
   return decodeHostProfileCompatibilityReportV1({
     schemaVersion: 1,
     probeStatus: "complete",
@@ -54,7 +60,7 @@ function compatibleReport() {
     processor: { logicalProcessorCount: knownQuantity(12) },
     memory: {
       totalPhysicalMiB: knownQuantity(24_576),
-      availablePhysicalMiB: knownQuantity(16_384),
+      availablePhysicalMiB: knownQuantity(availableRamMiB),
     },
     storage: {
       applicationVolumeAvailableMiB: knownQuantity(40_960),
@@ -76,7 +82,7 @@ function compatibleReport() {
         availability: "available",
         deviceClass: "discrete-gpu",
         dedicatedMemoryMiB: knownQuantity(12_288),
-        availableDedicatedMemoryMiB: knownQuantity(9_216),
+        availableDedicatedMemoryMiB: knownQuantity(availableDedicatedVramMiB),
         precisions: {
           float32: "available",
           float16: "available",
@@ -113,10 +119,19 @@ function coordinator(
   options: {
     gate?: "available" | "unavailable";
     preference?: HardwareProfilePreferenceRepository;
+    availableRamMiB?: number;
+    availableDedicatedVramMiB?: number;
   } = {},
 ) {
   return new HardwareProfileCompatibilityCoordinator({
-    detector: { detect: vi.fn(async () => compatibleReport()) },
+    detector: {
+      detect: vi.fn(async () =>
+        compatibleReport(
+          options.availableRamMiB ?? 16_384,
+          options.availableDedicatedVramMiB ?? 9_216,
+        ),
+      ),
+    },
     developmentGate: {
       exactDemoAvailability: vi.fn(
         async () => options.gate ?? ("available" as const),
@@ -127,7 +142,7 @@ function coordinator(
 }
 
 describe("hardware compatibility controls", () => {
-  it("announces the closed status and exposes only admitted selection controls", async () => {
+  it("announces the admitted fallback and exposes only admitted selection controls", async () => {
     const subject = coordinator();
     render(<HardwareCompatibilityControls coordinator={subject} />);
 
@@ -136,9 +151,7 @@ describe("hardware compatibility controls", () => {
     ).toHaveAttribute("aria-live", "polite");
     await waitFor(() =>
       expect(
-        screen.getByText(
-          "A development-only local narration profile is available.",
-        ),
+        screen.getByText("Local narration is compatible on this device."),
       ).toBeInTheDocument(),
     );
 
@@ -148,23 +161,85 @@ describe("hardware compatibility controls", () => {
     expect(summary).not.toBeNull();
     fireEvent.click(summary!);
 
-    const profile = screen.getByRole("radio", {
-      name: "Qwen and Serena development profile",
+    const fallback = screen.getByRole("radio", {
+      name: "Piper and davefx fast CPU profile",
     });
-    expect(profile).toBeChecked();
+    expect(fallback).toBeChecked();
+    expect(fallback).toHaveAttribute("value", PIPER_CPU_FALLBACK_PROFILE_ID);
+    expect(
+      screen.getByRole("radio", {
+        name: "Qwen and Serena development profile",
+      }),
+    ).not.toBeChecked();
     expect(
       screen.queryByRole("radio", {
         name: "Supertonic and F1 evaluated profile",
       }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByText("No measured CPU fallback is available."),
+      screen.getByText("A measured CPU fallback is available."),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("list", { name: "Measured narration profiles" }),
     ).toHaveTextContent(
       "This profile did not pass the required product evaluation.",
     );
+    const qwenProfile = screen
+      .getByText("Qwen and Serena development profile:")
+      .closest("li");
+    expect(qwenProfile).toHaveAttribute(
+      "data-profile-id",
+      EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+    );
+    expect(qwenProfile).toHaveAttribute("data-profile-state", "compatible");
+    expect(qwenProfile).toHaveAttribute("data-profile-reason", "none");
+  });
+
+  it("exposes closed profile diagnostics for exact-host automation", async () => {
+    const subject = coordinator({ availableDedicatedVramMiB: 6_507 });
+    render(<HardwareCompatibilityControls coordinator={subject} />);
+
+    await waitFor(() => expect(subject.observe().status).toBe("compatible"));
+
+    const qwenProfile = screen
+      .getByText("Qwen and Serena development profile:")
+      .closest("li");
+    expect(qwenProfile).toHaveAttribute("data-profile-state", "incompatible");
+    expect(qwenProfile).toHaveAttribute(
+      "data-profile-reason",
+      "available-dedicated-vram",
+    );
+    expect(qwenProfile).toHaveTextContent(
+      "The current free dedicated graphics-memory budget is below this profile's safety reserve.",
+    );
+    expect(
+      screen.queryByRole("radio", {
+        name: "Qwen and Serena development profile",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("radio", {
+        name: "Piper and davefx fast CPU profile",
+      }),
+    ).toBeChecked();
+  });
+
+  it("offers development-only Qwen at its frozen available-VRAM boundary", async () => {
+    const subject = coordinator({ availableDedicatedVramMiB: 6_508 });
+    render(<HardwareCompatibilityControls coordinator={subject} />);
+
+    await waitFor(() => expect(subject.observe().status).toBe("compatible"));
+
+    expect(
+      screen.getByRole("radio", {
+        name: "Qwen and Serena development profile",
+      }),
+    ).toBeInTheDocument();
+    const qwenProfile = screen
+      .getByText("Qwen and Serena development profile:")
+      .closest("li");
+    expect(qwenProfile).toHaveAttribute("data-profile-state", "compatible");
+    expect(qwenProfile).toHaveAttribute("data-profile-reason", "none");
   });
 
   it("supports explicit keyboard-focus-safe selection and recheck", async () => {
@@ -177,9 +252,7 @@ describe("hardware compatibility controls", () => {
         onRecoveryEpisodeReset={onRecoveryEpisodeReset}
       />,
     );
-    await waitFor(() =>
-      expect(subject.observe().status).toBe("development-only"),
-    );
+    await waitFor(() => expect(subject.observe().status).toBe("compatible"));
     fireEvent.click(
       screen.getByText("Local narration compatibility").closest("summary")!,
     );
@@ -207,7 +280,10 @@ describe("hardware compatibility controls", () => {
   });
 
   it("keeps unavailable and failure presentation content-free", async () => {
-    const unavailable = coordinator({ gate: "unavailable" });
+    const unavailable = coordinator({
+      gate: "unavailable",
+      availableRamMiB: 0,
+    });
     const { unmount } = render(
       <HardwareCompatibilityControls coordinator={unavailable} />,
     );

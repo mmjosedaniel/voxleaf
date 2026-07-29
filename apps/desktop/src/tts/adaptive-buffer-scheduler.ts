@@ -8,6 +8,10 @@ import {
   sampleFramesFromPlayableMilliseconds,
   type AdaptiveBufferResourceSnapshot,
 } from "./adaptive-buffer-authority";
+import {
+  isPlaybackTransitionPauseMs,
+  type PlaybackTransitionPauseMs,
+} from "./playback-transition-policy";
 
 const BYTES_PER_SAMPLE =
   ADAPTIVE_BUFFER_AUTHORITY_V1.audioFormat.bytesPerSample;
@@ -51,6 +55,7 @@ export interface AdaptiveBufferPreparedSegment {
   readonly narrationCodePoints: number;
   readonly narrationUtf8Bytes: number;
   readonly sentenceCount: number;
+  readonly transitionPauseMs: PlaybackTransitionPauseMs;
 }
 
 export interface AdaptiveBufferPreparedBatch {
@@ -82,6 +87,7 @@ export interface AdaptiveBufferPlaybackUnit {
   readonly metadata: AdaptiveBufferAudioUnitMetadata;
   readonly payload: Uint8Array;
   readonly consumedSampleFrames: number;
+  readonly transitionPauseMs: PlaybackTransitionPauseMs;
 }
 
 export interface AdaptiveBufferAudioUnitSource {
@@ -147,6 +153,7 @@ interface RetainedAudioUnit {
   readonly unit: AdaptiveBufferAudioUnit;
   readonly sampleFrames: number;
   readonly payloadBytes: number;
+  readonly transitionPauseMs: PlaybackTransitionPauseMs;
   consumedSampleFrames: number;
 }
 
@@ -210,7 +217,7 @@ function freezePreparedSegment(
     !isCount(segment.narrationUtf8Bytes) ||
     segment.narrationUtf8Bytes === 0 ||
     !isCount(segment.sentenceCount) ||
-    segment.sentenceCount === 0
+    !isPlaybackTransitionPauseMs(segment.transitionPauseMs)
   ) {
     throw new AdaptiveBufferSchedulerError("invalid-prepared-batch");
   }
@@ -456,10 +463,12 @@ export class AdaptiveBufferScheduler {
     this.#rangeComplete = batch.complete;
   }
 
-  public acceptEmptyCompleteRange(): void {
+  public acceptEmptyPreparedRange(complete: boolean): void {
     if (
       this.#resources.activeNarrationPreparations !== 1 ||
-      this.#resources.retainedPreparedBatches !== 0
+      this.#resources.retainedPreparedBatches !== 0 ||
+      this.#pendingSegments.length !== 0 ||
+      this.#activeSynthesis !== undefined
     ) {
       throw new AdaptiveBufferSchedulerError("invalid-state");
     }
@@ -467,7 +476,7 @@ export class AdaptiveBufferScheduler {
       ...this.#resources,
       activeNarrationPreparations: 0,
     };
-    this.#rangeComplete = true;
+    this.#rangeComplete = complete;
     this.#refreshPlaybackState();
   }
 
@@ -557,6 +566,7 @@ export class AdaptiveBufferScheduler {
       unit,
       sampleFrames: unit.metadata.sampleCountSamples,
       payloadBytes: unit.metadata.payloadBytes,
+      transitionPauseMs: completedSegment.transitionPauseMs,
       consumedSampleFrames: 0,
     });
     this.#serviceState = "ready";
@@ -583,6 +593,7 @@ export class AdaptiveBufferScheduler {
       metadata: retained.unit.metadata,
       payload: retained.unit.payload,
       consumedSampleFrames: retained.consumedSampleFrames,
+      transitionPauseMs: retained.transitionPauseMs,
     });
   }
 

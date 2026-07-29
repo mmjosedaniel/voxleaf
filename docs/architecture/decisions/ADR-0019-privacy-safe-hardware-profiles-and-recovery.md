@@ -29,6 +29,11 @@ This does not retroactively change the result-blind authority here; Milestone
 6 must still integrate and validate the admitted runtime before it becomes
 user-visible.
 
+ADR-0022 narrowly supersedes the available-dedicated-VRAM formula for an
+explicitly gated `development-demo` plus `development-only` profile. The
+generic total-VRAM formula and every supported/fallback profile margin remain
+unchanged.
+
 ## Context
 
 The constrained Qwen/Serena path is exact-host and development-only. ADR-0013

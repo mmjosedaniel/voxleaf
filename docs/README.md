@@ -8,7 +8,10 @@ Roadmap Milestones 1 through 9 and the M009.1 reader-experience stabilization
 are complete. M008 provides the constrained one-GPU narration demo; M009 and
 M009.1 add synchronized highlighting, heard checkpoints, stable reader chrome,
 paragraph leaves, and passive-scroll isolation. M010 is in progress with
-Milestones 1-5 complete. It freezes and implements the separate privacy-safe
+Milestones 1-6 complete. Milestone 6 runtime integration,
+deterministic/exact-host validation, and content-safe packaged private-book
+confirmation pass. M010 freezes and
+implements the separate privacy-safe
 host report, immutable measured registry, fail-closed matching, bounded
 profile preference, compatibility UI, immediate pre-start checks, and the
 desktop-local identity-safe recovery controller. Operational failure replaces
@@ -18,8 +21,29 @@ Protocol rejection, cancellation timeout, cleanup failure, and repeated
 recovery remain contained; diagnostics retain at most eight content-free
 entries and no automatic retry exists. Milestone 5 selects exact
 Piper/davefx as the supported speed-focused CPU fallback after every v6 gate
-passed. Exact Qwen/Serena remains `development-only`. Piper is not yet in the
-executable product registry or settings; Milestone 6 owns that integration.
+passed. Exact Qwen/Serena remains `development-only`. Milestone 6 adds Piper
+to the executable registry, exact local service, native selector, and
+user-controlled profile setting. Piper product narration automatically uses
+the locator-safe, spoken-expansion-aware
+[`narration-piper-v2`](architecture/piper-narration-preparation-profile-v2.md)
+preparation profile so ordinary prose and compact numbers, currencies,
+acronyms, Roman numerals, ordinals, and letter sequences are bounded before
+inference. The corrective packaged Piper resilience arm passes. Qwen's
+offline service lifecycle passes. Corrective ADR-0022 retains its generic
+`7,196`-MiB total-VRAM requirement but uses the measured `5,996`-MiB peak plus
+a frozen `512`-MiB reserve for currently available VRAM only while the exact
+profile remains native-gated and `development-only`. The packaged application
+now offers and executes Qwen on the exact host. Its broader matrix later stops
+at the depletion synchronization assertion, so no supported, real-time, or
+complete-resilience claim is added.
+
+M008.1 is a focused active closeout after exact listening found that
+independently generated units could sound joined. Its frozen engine-neutral
+policy and deterministic desktop implementation now schedule one bounded,
+interruptible semantic pause before an already-buffered successor without
+silent PCM, text/protocol changes, or compounded post-underrun delay. Portable
+and authoritative Windows repository validation pass; required pull-request
+checks remain.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -37,9 +61,11 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/overview.md`](architecture/overview.md): detailed component boundaries, invariants, implemented EPUB/reader/narration-preparation behavior, and the current TTS feasibility boundary.
 - [`architecture/performance-budget.md`](architecture/performance-budget.md): latency, buffering, memory, and measurement targets.
 - [`architecture/adaptive-buffer-authority-v1.md`](architecture/adaptive-buffer-authority-v1.md): frozen M008 quick/prepared/refill thresholds, simultaneous resource limits, ownership, lifecycle, volume/speed, and truthful UX authority.
+- [`architecture/playback-transition-pause-policy-v1.md`](architecture/playback-transition-pause-policy-v1.md): frozen M008.1 semantic generated-unit transition mapping, eligibility, lifecycle, measurement, and privacy authority.
 - [`architecture/synchronization-authority-v1.md`](architecture/synchronization-authority-v1.md): frozen M009 segment-level position, transition, highlighting, following, navigation, observation, invalidation, and persistence authority.
 - [`architecture/reader-experience-authority-v1.md`](architecture/reader-experience-authority-v1.md): frozen M009.1 paint-aware highlight proof, reader scroll ownership, compact narration, text-only loaded duration, and bounded paragraph-leaf authority.
 - [`architecture/hardware-profile-recovery-authority-v1.md`](architecture/hardware-profile-recovery-authority-v1.md): frozen M010 Milestone 1 privacy-safe host report, immutable profile/evidence shape, result-blind margins, matching/preference rules, failure taxonomy, and identity-first recovery authority.
+- [`architecture/qwen-development-vram-admission-v1.md`](architecture/qwen-development-vram-admission-v1.md): corrective development-only authority retaining generic total VRAM while admitting the exact Qwen demo with its measured peak plus a frozen 512-MiB available-VRAM reserve.
 - [`architecture/narration-normalization-v1.md`](architecture/narration-normalization-v1.md): accepted test-only neutral/Spanish normalization corpus policy for Milestone 5.
 - [`architecture/narration-preparation-limits-v1.md`](architecture/narration-preparation-limits-v1.md): accepted test-only `narration-v1` chunk, work, retention, checkpoint, and yield limits.
 - [`architecture/tts-feasibility-profile-v2.md`](architecture/tts-feasibility-profile-v2.md): current Milestone 6 rerun authority, including the Windows/PyTorch cross-checked VRAM method, unchanged role gates, listening rubric, and content-safe summary policy. The superseded `v1` profile remains historical evidence.
@@ -47,6 +73,9 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/tts-feasibility-profile-v4.md`](architecture/tts-feasibility-profile-v4.md): frozen pre-result Milestone 6.2 authority for the exact short-unit/shared-model batch experiment, conditional targeted CPU placement, playback simulation, and separate standard/scheduling/demo conclusions.
 - [`architecture/tts-feasibility-profile-v5.md`](architecture/tts-feasibility-profile-v5.md): frozen pre-result Milestone 6.2 authority for the separately loaded GPU-primary/CPU-support experiment, CPU-solo screen, concurrent comparison, RAM/commit and zero-GPU checks, and simultaneous playback bounds.
 - [`architecture/tts-feasibility-profile-v6.md`](architecture/tts-feasibility-profile-v6.md): accepted M010 Piper CPU authority and passing result, including the normalized Spanish corpus, candidate-neutral machine and quality gates, termination-backed cancellation, and explicit GPL/CC0 packaging boundary.
+- [`architecture/piper-narration-preparation-profile-v1.md`](architecture/piper-narration-preparation-profile-v1.md): historical corrective product authority that narrows locator-safe EPUB segmentation only for Piper; v2 supersedes it for product dispatch.
+- [`architecture/piper-narration-preparation-profile-v2.md`](architecture/piper-narration-preparation-profile-v2.md): implemented Piper product correction that adds a deterministic normalized speech-expansion budget for compact numbers, acronyms, currencies, ordinals, and related forms while retaining the v1 locator, text, protocol, and privacy boundaries.
+- [`architecture/tts-profile-runtime-configuration-availability-v1.md`](architecture/tts-profile-runtime-configuration-availability-v1.md): frozen corrective authority that keeps hardware compatibility separate from native runtime configuration and requires the selected exact profile to be configured before product Play is enabled.
 - [`../benchmarks/tts/selection-v6.md`](../benchmarks/tts/selection-v6.md): accepted M010 decision admitting exact Piper/davefx as the supported speed-focused CPU fallback before runtime/settings integration.
 - [`architecture/tts-service-protocol-v1.md`](architecture/tts-service-protocol-v1.md): accepted M007 protocol, framing, identity, audio-format, timeout, retention, capability, error, and native-configuration authority.
 - [`../benchmarks/tts/selection-v5.md`](../benchmarks/tts/selection-v5.md): accepted Milestone 6.2 decision rejecting CPU-only and dual-worker scheduling while retaining one exact GPU profile only for bounded adaptive demo work.
@@ -59,6 +88,8 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0018-reader-experience-stabilization.md`](architecture/decisions/ADR-0018-reader-experience-stabilization.md): accepted result-blind M009.1 reader-experience authority; highlight materialization, the fixed compact reader shell, and the bounded contextual leaf are implemented.
 - [`architecture/decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md`](architecture/decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md): accepted result-blind M010 hardware/profile/recovery authority and implementation status through privacy-safe detection, measured matching, and identity-safe explicit recovery.
 - [`architecture/decisions/ADR-0020-admit-piper-cpu-fallback.md`](architecture/decisions/ADR-0020-admit-piper-cpu-fallback.md): accepted exact Piper CPU-fallback selection, user-choice direction, and M010/M011 integration and packaging boundaries.
+- [`architecture/decisions/ADR-0021-boundary-aware-audio-transitions.md`](architecture/decisions/ADR-0021-boundary-aware-audio-transitions.md): accepted engine-neutral scheduled pause between already-buffered generated narration units.
+- [`architecture/decisions/ADR-0022-qwen-development-vram-admission.md`](architecture/decisions/ADR-0022-qwen-development-vram-admission.md): accepted narrow development-only available-VRAM rule without changing Qwen's failed standard evaluation or supported-profile margins.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development
@@ -89,7 +120,8 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M008-bounded-adaptive-prebuffering.md`](plans/completed/M008-bounded-adaptive-prebuffering.md): completed ExecPlan for the exact-development quick/prepared path, bounded scheduler/player, final demo policy, exact-host evidence, and repository/CI closeout.
 - [`plans/completed/M009-synchronized-reading-and-narration.md`](plans/completed/M009-synchronized-reading-and-narration.md): completed focused ExecPlan for segment-level synchronization, highlighting, focus-safe following, synchronized navigation, heard-position persistence, exact-host validation, and repository/CI closeout.
 - [`plans/completed/M009-001-reader-experience-stabilization.md`](plans/completed/M009-001-reader-experience-stabilization.md): completed bounded M009 follow-up for the visible-highlight repair, dedicated reader viewport, compact/collapsible narration UI, truthful loaded-duration status, locator-backed paragraph leaf, passive-scroll isolation, exact-host validation, and repository/CI closeout.
-- [`plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md): active focused ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, and identity-safe operational recovery. Milestones 1-5 are complete: they implement detection, matching, preference/recheck UI, identity-safe explicit recovery, and the passing Piper fallback decision. Milestone 6 owns executable registry/service/settings integration and the resilience matrix.
+- [`plans/active/M008-001-boundary-aware-audio-transitions.md`](plans/active/M008-001-boundary-aware-audio-transitions.md): active focused closeout for boundary-aware generated-unit playback transitions. Authority, deterministic implementation, portable validation, and authoritative Windows validation pass; required pull-request checks remain.
+- [`plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md): active focused ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, and identity-safe operational recovery. Milestones 1-6 are complete. Milestone 6 implements executable Piper/Qwen registry, service, native selection, settings, Piper-only locator-safe spoken-expansion-aware preparation, and the profile-specific resilience runner; corrected ordinary-prose, compact-form, zero-sentence-boundary fragment, and packaged private-book playback pass, and Qwen passes service plus exact fail-closed packaged compatibility. Milestone 7 owns final support decisions and closeout.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

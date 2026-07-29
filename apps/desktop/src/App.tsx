@@ -610,6 +610,18 @@ export function App({
     readerLifecycle,
     readerPositionRestoreCoordinator,
   ]);
+  const handleHardwareProfileSelection = useCallback(
+    async (profileId: string): Promise<boolean> => {
+      await narrationCoordinator?.stop();
+      const selected =
+        await hardwareCompatibilityCoordinator.selectProfile(profileId);
+      if (selected) {
+        await narrationCoordinator?.refreshSelectedProfile();
+      }
+      return selected;
+    },
+    [hardwareCompatibilityCoordinator, narrationCoordinator],
+  );
 
   const isBusy =
     viewState.status === "closing" ||
@@ -679,6 +691,7 @@ export function App({
           {ready ? (
             <HardwareCompatibilityControls
               coordinator={hardwareCompatibilityCoordinator}
+              onSelectProfile={handleHardwareProfileSelection}
               onRecoveryEpisodeReset={() =>
                 narrationCoordinator?.resetRecoveryEpisode()
               }

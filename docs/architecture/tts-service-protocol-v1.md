@@ -6,11 +6,12 @@ Accepted, frozen, implemented, and validated by completed M007. Deterministic,
 release parent/child, packaged WebView2, exact-adapter, exact-host handoff, and
 required pull-request CI evidence passes.
 
-This authority applies only to ADR-0015's exact one-GPU
-Qwen3-TTS 12Hz 1.7B CustomVoice/Serena constrained development demo. It does
-not select a standard production profile, approve distribution, or claim
-native model streaming, cooperative cancellation, continuous playback, CPU
-fallback, or general hardware support.
+This authority was frozen for ADR-0015's exact one-GPU
+Qwen3-TTS 12Hz 1.7B CustomVoice/Serena constrained development demo. M010
+Milestone 6 reuses the unchanged transport and control boundary for the
+separately admitted Piper CPU fallback. Protocol v1 itself does not select a
+profile, approve distribution, or claim native model streaming, cooperative
+engine cancellation, continuous playback, or general hardware support.
 
 ## Ownership and topology
 
@@ -298,21 +299,27 @@ identifier, exception, text, audio, or raw frame.
 The detailed protocol reason is a closed content-free enum owned by the v1
 schema. Unknown reasons are themselves protocol rejection.
 
-## Native-only development configuration
+## Native-only exact-profile configuration
 
-Milestone 4 may read only these development configuration keys in Rust:
+Rust may read only the keys for the explicitly selected exact profile:
 
-| Key                          | Meaning                                                |
-| ---------------------------- | ------------------------------------------------------ |
-| `VOXLEAF_TTS_DEV_ENABLED`    | Must be exactly `1` to enable the constrained adapter. |
-| `VOXLEAF_TTS_DEV_PYTHON`     | Absolute verified candidate-environment interpreter.   |
-| `VOXLEAF_TTS_DEV_MODEL_ROOT` | Absolute verified local model-artifact root.           |
+| Key                            | Meaning                                                    |
+| ------------------------------ | ---------------------------------------------------------- |
+| `VOXLEAF_TTS_DEV_ENABLED`      | Must be exactly `1` to enable the constrained Qwen adapter. |
+| `VOXLEAF_TTS_DEV_PYTHON`       | Absolute verified Qwen candidate-environment interpreter.  |
+| `VOXLEAF_TTS_DEV_MODEL_ROOT`   | Absolute verified local Qwen model-artifact root.           |
+| `VOXLEAF_TTS_PIPER_ENABLED`    | Must be exactly `1` to enable the admitted Piper adapter.   |
+| `VOXLEAF_TTS_PIPER_PYTHON`     | Absolute verified Piper candidate-environment interpreter. |
+| `VOXLEAF_TTS_PIPER_MODEL_ROOT` | Absolute verified local Piper voice-artifact root.          |
 
 Values are never returned to the renderer, serialized into protocol messages,
 logged, committed, persisted, or included in errors. Missing, relative,
 unverified, or mismatched values produce the fixed unavailable state. This is
-a development-only configuration boundary, not an installer or distribution
-decision.
+an exact local configuration boundary, not an installer or distribution
+decision. The native start command accepts only a bounded executable profile
+ID, verifies that profile immediately before child start, and starts one
+corresponding process tree. Profile identity is deliberately not added to
+protocol v1.
 
 ## Implementation evidence and remaining product work
 
@@ -378,8 +385,9 @@ without retry. It measures one allocator, zero listeners or external
 connections, zero persisted audio, and zero descendant RAM/VRAM at each
 cleanup checkpoint. The adapter still exposes only complete units, with
 first-audio and completion p95 both about 21.38 seconds on the exact host.
-Product narration dispatch, playback, production packaging, and general
-hardware support remain unimplemented.
+Subsequent M008-M009 work implements product narration dispatch, playback, and
+synchronization within the exact-profile boundary; production packaging and
+general hardware support remain unresolved.
 
 Milestone 6 reviewed the complete implementation and exact-host evidence and
 retains protocol version 1 unchanged. No observed case requires another
@@ -387,3 +395,13 @@ message, field, queue, framing primitive, capability claim, or wider bound.
 M008 schedules multiple complete units in its separately bounded playback
 owner, but the service remains one-active/no-queue and every unit continues to
 cross this exact protocol-v1 boundary.
+
+M010 Milestone 6 adds `PiperTtsEngine` behind the same common service engine
+boundary and one-tree supervisor. It verifies exact Piper/ONNX Runtime
+ownership, the frozen voice artifacts, CPU-only provider use, and offline
+controls. The adapter publishes no native 22,050-Hz frame: it performs a
+bounded linear conversion of the complete waveform to protocol v1's exact
+24,000-Hz mono float32 unit before metadata and bytes cross the service
+boundary. Exact-host service and packaged Piper resilience evidence passes
+without changing framing, control messages, capability-report shape,
+cancellation ownership, retry policy, or persistence.

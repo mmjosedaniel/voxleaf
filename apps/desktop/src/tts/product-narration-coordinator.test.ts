@@ -22,6 +22,8 @@ import {
   type PcmPlaybackCallbacks,
   type PcmPlaybackHandle,
   type PcmPlaybackRequest,
+  type TransitionPauseCanceller,
+  type TransitionPauseScheduler,
 } from "./pcm-playback";
 import {
   ProductNarrationCoordinator,
@@ -84,11 +86,43 @@ class FakePlaybackBackend implements PcmPlaybackBackend {
   }
 }
 
+interface ManualTransitionTimer {
+  readonly callback: () => void;
+  readonly delayMs: number;
+  cancelled: boolean;
+}
+
+class ManualTransitionTimers {
+  readonly timers: ManualTransitionTimer[] = [];
+
+  public readonly schedule: TransitionPauseScheduler = (callback, delayMs) => {
+    const timer: ManualTransitionTimer = {
+      callback,
+      delayMs,
+      cancelled: false,
+    };
+    this.timers.push(timer);
+    return timer;
+  };
+
+  public readonly cancel: TransitionPauseCanceller = (handle) => {
+    (handle as ManualTransitionTimer).cancelled = true;
+  };
+
+  public run(timer: ManualTransitionTimer): void {
+    if (!timer.cancelled) {
+      timer.callback();
+    }
+  }
+}
+
 class FakeServiceClient implements ProductNarrationServiceClient {
   public availability: "available" | "unavailable" = "available";
+  public configurationAvailability: "available" | "unavailable" = "available";
   public state: TtsServiceStateV1 = "stopped";
   public readonly synthesized: NarrationSegmentV1[] = [];
   public readonly cancelled: TtsGenerationScope[] = [];
+  public readonly startedProfiles: Array<string | undefined> = [];
   public shutdownCount = 0;
   public synthesisSampleFrames = 360_000;
   public synthesisElapsedMs = 1_000;
@@ -111,6 +145,10 @@ class FakeServiceClient implements ProductNarrationServiceClient {
     return this.availability;
   }
 
+  public async profileConfigurationAvailability() {
+    return this.configurationAvailability;
+  }
+
   public observe(): TtsProcessClientObservation {
     return Object.freeze({
       serviceInstanceId:
@@ -121,7 +159,8 @@ class FakeServiceClient implements ProductNarrationServiceClient {
     });
   }
 
-  public async start(): Promise<TtsProcessClientObservation> {
+  public async start(profileId?: string): Promise<TtsProcessClientObservation> {
+    this.startedProfiles.push(profileId);
     this.state = "unloaded";
     return this.observe();
   }
@@ -234,16 +273,18 @@ function sourceRange(startOffset: number, endOffset: number) {
 function preparedSegment(
   text: string,
   range = SOURCE_RANGE,
+  sentenceCount = 1,
+  boundaryReason: PreparedNarrationSegment["boundaryReason"] = "hard-limit",
 ): PreparedNarrationSegment {
   return Object.freeze({
     text: text as PreparedNarrationSegment["text"],
     sourceRange: range,
-    boundaryReason: "sentence",
+    boundaryReason,
     measurements: Object.freeze({
       sourceCodePoints: createIndex(12),
       narrationCodePoints: createIndex(Array.from(text).length),
       narrationUtf8Bytes: createIndex(new TextEncoder().encode(text).length),
-      sentenceCount: createIndex(1),
+      sentenceCount: createIndex(sentenceCount),
     }),
   });
 }
@@ -257,6 +298,10 @@ function completeSegments(
   );
   const narrationUtf8Bytes = segments.reduce(
     (total, segment) => total + segment.measurements.narrationUtf8Bytes,
+    0,
+  );
+  const sentenceCount = segments.reduce(
+    (total, segment) => total + segment.measurements.sentenceCount,
     0,
   );
   return Object.freeze({
@@ -273,7 +318,7 @@ function completeSegments(
       narrationCodePoints: createIndex(narrationCodePoints),
       narrationUtf8Bytes: createIndex(narrationUtf8Bytes),
       segmentCount: createIndex(segments.length),
-      sentenceCount: createIndex(segments.length),
+      sentenceCount: createIndex(sentenceCount),
       checkpointCount: createIndex(segments.length),
     }),
   });
@@ -284,6 +329,21 @@ function completeResult(
 ): NarrationPreparationResult {
   const segment = preparedSegment(text);
   return completeSegments([segment]);
+}
+
+function batchSegments(
+  segments: readonly PreparedNarrationSegment[],
+  continuation = END_LOCATOR,
+): NarrationPreparationResult {
+  const complete = completeSegments(segments);
+  if (complete.status !== "complete") {
+    throw new Error("content-free-test-state");
+  }
+  return Object.freeze({
+    ...complete,
+    status: "batch",
+    continuation,
+  });
 }
 
 function createPublication(
@@ -317,6 +377,7 @@ function createHarness(
   options: {
     readonly result?: NarrationPreparationResult;
     readonly availability?: "available" | "unavailable";
+    readonly configurationAvailability?: "available" | "unavailable";
     readonly blockSynthesis?: boolean;
     readonly prepareNarration?: OpenedPublication["prepareNarration"];
     readonly profileCompatibility?: ProductNarrationProfileCompatibility;
@@ -325,8 +386,11 @@ function createHarness(
   const clock = new ManualClock();
   const client = new FakeServiceClient(clock);
   client.availability = options.availability ?? "available";
+  client.configurationAvailability =
+    options.configurationAvailability ?? "available";
   client.blockSynthesis = options.blockSynthesis ?? false;
   const backend = new FakePlaybackBackend();
+  const transitionTimers = new ManualTransitionTimers();
   const prepareNarration = vi.fn<OpenedPublication["prepareNarration"]>(
     options.prepareNarration ??
       (async () => options.result ?? completeResult()),
@@ -339,7 +403,13 @@ function createHarness(
     createIdentifier: (kind, sequence) =>
       `${kind}:product-test-${String(sequence)}`,
     createPlayer: (scheduler: AdaptiveBufferScheduler) =>
-      new AdaptivePcmPlayer(scheduler, backend, (callback) => callback()),
+      new AdaptivePcmPlayer(
+        scheduler,
+        backend,
+        (callback) => callback(),
+        transitionTimers.schedule,
+        transitionTimers.cancel,
+      ),
     setInterval: (callback) => {
       intervals.push(callback);
       return callback;
@@ -366,6 +436,7 @@ function createHarness(
     coordinator,
     intervals,
     prepareNarration,
+    transitionTimers,
   };
 }
 
@@ -380,6 +451,55 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it("separates buffered generated units by semantic boundary and reports only intentional time", async () => {
+    const firstRange = sourceRange(0, 12);
+    const secondRange = sourceRange(12, 24);
+    const first = preparedSegment(
+      "Primera oración sintética.",
+      firstRange,
+      1,
+      "sentence",
+    );
+    const second = preparedSegment("Segunda oración sintética.", secondRange);
+    const { backend, client, clock, coordinator, intervals, transitionTimers } =
+      createHarness({
+        result: completeSegments([first, second]),
+      });
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => client.synthesized.length === 2);
+    expect(backend.active?.request.sequence).toBe(0);
+
+    backend.finish();
+    intervals[0]?.();
+    expect(transitionTimers.timers).toHaveLength(1);
+    expect(transitionTimers.timers[0]?.delayMs).toBe(300);
+    expect(coordinator.observe()).toMatchObject({
+      state: { phase: "intentional-wait" },
+      metrics: {
+        intentionalWaitMs: 0,
+        underrunCount: 0,
+      },
+    });
+
+    clock.advance(300);
+    transitionTimers.run(transitionTimers.timers[0]!);
+    intervals[0]?.();
+    expect(backend.active?.request.sequence).toBe(1);
+    expect(coordinator.observe()).toMatchObject({
+      state: { phase: "playing" },
+      metrics: {
+        intentionalWaitMs: 300,
+        underrunCount: 0,
+      },
+    });
+    const serialized = JSON.stringify(coordinator.observe());
+    expect(serialized).not.toContain(first.text);
+    expect(serialized).not.toContain(second.text);
+    await coordinator.close();
+  });
+
   it("does not expose the model-free service as product narration", async () => {
     const { client, coordinator, prepareNarration } = createHarness({
       availability: "unavailable",
@@ -392,6 +512,34 @@ describe("product narration coordinator", () => {
     expect(coordinator.observe().state).toBeUndefined();
     expect(client.state).toBe("stopped");
     expect(prepareNarration).not.toHaveBeenCalled();
+    await coordinator.close();
+  });
+
+  it("does not enable a hardware-compatible profile without native runtime configuration", async () => {
+    const profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const { client, coordinator, prepareNarration } = createHarness({
+      configurationAvailability: "unavailable",
+      profileCompatibility,
+    });
+    const start = vi.spyOn(client, "start");
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+
+    expect(coordinator.observe()).toMatchObject({
+      availability: "unavailable",
+      profileId,
+      state: undefined,
+      failure: undefined,
+    });
+    expect(start).not.toHaveBeenCalled();
+    expect(prepareNarration).not.toHaveBeenCalled();
+    expect(coordinator.observe().recovery.phase).toBe("operational");
     await coordinator.close();
   });
 
@@ -433,6 +581,132 @@ describe("product narration coordinator", () => {
         explicitAttemptUsed: false,
       },
     });
+    await coordinator.close();
+  });
+
+  it("starts only the active admitted profile selected by compatibility", async () => {
+    const profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const { client, coordinator, prepareNarration } = createHarness({
+      profileCompatibility,
+    });
+
+    await coordinator.checkAvailability();
+    expect(coordinator.observe().profileId).toBe(profileId);
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+
+    expect(profileCompatibility.isProfileStartAllowed).toHaveBeenCalledWith(
+      profileId,
+      "before-profile-start",
+    );
+    expect(client.startedProfiles).toEqual([profileId]);
+    expect(prepareNarration).toHaveBeenCalledWith(
+      expect.objectContaining({ profile: "narration-piper-v2" }),
+    );
+    await coordinator.close();
+  });
+
+  it("skips punctuation-only Piper ranges without failing or inserting audio", async () => {
+    const profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const spokenRange = sourceRange(
+      END_LOCATOR.textOffsetCodePoints,
+      END_LOCATOR.textOffsetCodePoints + 12,
+    );
+    const prepareNarration = vi
+      .fn<OpenedPublication["prepareNarration"]>()
+      .mockResolvedValueOnce(
+        batchSegments([preparedSegment("—…", sourceRange(0, 2))]),
+      )
+      .mockResolvedValueOnce(
+        completeSegments([
+          preparedSegment("Narración sintética.", spokenRange),
+        ]),
+      );
+    const { client, coordinator } = createHarness({
+      prepareNarration,
+      profileCompatibility,
+    });
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+
+    expect(prepareNarration).toHaveBeenCalledTimes(2);
+    expect(prepareNarration.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ profile: "narration-piper-v2" }),
+    );
+    expect(prepareNarration.mock.calls[1]?.[0]).toEqual(
+      expect.objectContaining({ startLocator: END_LOCATOR }),
+    );
+    expect(client.synthesized).toHaveLength(1);
+    expect(client.synthesized[0]?.sequence).toBe(0);
+    expect(client.synthesized[0]?.sourceRange).toEqual(spokenRange);
+    expect(coordinator.observe().failure).toBeUndefined();
+    expect(coordinator.startAtLocator(START_LOCATOR)).toBe(true);
+    await coordinator.close();
+  });
+
+  it("synthesizes a spoken Piper fragment with no recognized sentence boundary", async () => {
+    const profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const fragment = preparedSegment(
+      "Fragmento sintético sin cierre",
+      SOURCE_RANGE,
+      0,
+    );
+    const { client, coordinator } = createHarness({
+      result: completeSegments([fragment]),
+      profileCompatibility,
+    });
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+
+    expect(client.synthesized).toHaveLength(1);
+    expect(client.synthesized[0]?.text).toBe(fragment.text);
+    expect(coordinator.observe().failure).toBeUndefined();
+    await coordinator.close();
+  });
+
+  it("rechecks native runtime configuration immediately before child start", async () => {
+    const profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const { client, coordinator, prepareNarration } = createHarness({
+      profileCompatibility,
+    });
+    vi.spyOn(client, "profileConfigurationAvailability")
+      .mockResolvedValueOnce("available")
+      .mockResolvedValueOnce("unavailable");
+    const start = vi.spyOn(client, "start");
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(
+      () => coordinator.observe().failure === "tts-profile-unavailable",
+    );
+
+    expect(start).not.toHaveBeenCalled();
+    expect(prepareNarration).not.toHaveBeenCalled();
+    expect(coordinator.observe().availability).toBe("unavailable");
     await coordinator.close();
   });
 

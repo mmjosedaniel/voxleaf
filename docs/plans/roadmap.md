@@ -3,19 +3,39 @@
 ## Status and purpose
 
 VoxLeaf is pre-alpha. Milestones 1 through 9 and M009.1 are complete.
-M010 is in progress with Milestones 1-5 complete: privacy-safe host
+M010 is in progress with Milestones 1-6 complete:
+privacy-safe host
 detection, immutable measured matching, bounded preference and compatibility
 UI, pre-start enforcement, and identity-safe one-attempt recovery are
 implemented. The passing v6 evaluation selects exact Piper/davefx as the
-speed-focused CPU fallback. Exact Qwen/Serena remains development-only, and
-Milestone 6 must integrate Piper into the executable registry, service, and
-settings before it is user-visible.
+speed-focused CPU fallback. Exact Qwen/Serena remains development-only.
+Milestone 6 now integrates both through one service tree and explicit profile
+selection. Piper alone uses the frozen locator-safe,
+spoken-expansion-aware `narration-piper-v2` preparation limits; its corrective
+ordinary-prose, compact-form, zero-sentence-boundary fragment, and content-safe
+packaged private-book matrices pass.
+Product playback additionally requires the native exact-profile
+runtime-configuration gate during availability resolution and immediately
+before child start; hardware compatibility alone no longer enables Play.
+Qwen's outbound-blocked service lifecycle passes. ADR-0022 retains the
+`7,196`-MiB total-VRAM rule while replacing only its native-gated
+development-only available-VRAM threshold with `6,508` MiB. The packaged host
+now offers and executes Qwen when that reserve is available; its broader
+matrix later stops at the depletion synchronization assertion, so it remains
+development-only rather than supported.
 
 M009.1 exact-host use also exposed and corrected one additional reader defect:
 passive viewport scrolling must not replace active narration. The
 visible-passage target and narration locator are now separate; only explicit
 leaf, visible-passage, passage-boundary, and chapter actions trigger
 identity-first replacement.
+
+M008.1 is an active focused playback-rhythm closeout. Its authority was frozen
+before implementation, and deterministic desktop code now schedules one
+bounded semantic delay between already-buffered generated units. It changes no
+normalization, protocol, audio payload, buffer threshold, or engine. Full
+portable, authoritative Windows, and privacy/repository validation pass;
+required pull-request checks remain.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -45,6 +65,7 @@ Every milestone must preserve the product's defining constraints:
     -> 6.2. Qwen short-segment batch and dual-worker feasibility
     -> 7. Local TTS service and process protocol
     -> 8. Bounded audio playback and scheduling
+    -> 8.1. Boundary-aware audio transitions
     -> 9. Synchronized reading and narration
     -> 9.1. Reader experience stabilization
     -> 10. Hardware profiles, fallback, and resilience
@@ -470,7 +491,7 @@ model-independent scheduler and playback behavior remain separately owned.
 sole-owner FIFO, Web Audio player, presenter, controls, and
 exact-development coordinator. The final policy retains quick mode by default,
 one-minute initial prepared/refill target, 10-second low water, zero default
-boundary wait, `1.0x` playback, and the simultaneous 30-minute ceiling. The
+adaptive low-buffer wait, `1.0x` playback, and the simultaneous 30-minute ceiling. The
 packaged matrix passes bounded quick/prepared playback, cancellation, cleanup,
 and privacy while recording one underrun and 19.49 buffering seconds per
 playback minute. That exceeds the MVP target and retains the standard blocker.
@@ -525,6 +546,53 @@ behavior should first be proven with deterministic fakes.
   inaccessible playback state.
 - Playback speed may require time stretching rather than changing sample rate.
 - Browser, WebView, native shell, and OS audio behavior may differ under load or background operation.
+
+## Milestone 8.1: Add boundary-aware audio transitions
+
+**Status:** In progress. The frozen
+[`playback-transition-pause-policy-v1.md`](../architecture/playback-transition-pause-policy-v1.md),
+[ADR-0021](../architecture/decisions/ADR-0021-boundary-aware-audio-transitions.md),
+and deterministic desktop implementation exist. Focused policy, scheduler,
+player, coordinator, controls, full desktop tests, and desktop typechecking
+pass. Full portable, authoritative Windows, privacy/repository, and relative
+documentation-link validation also pass. Required pull-request checks remain.
+Follow
+[`M008-001-boundary-aware-audio-transitions.md`](active/M008-001-boundary-aware-audio-transitions.md).
+
+### Goal
+
+Prevent independently generated sentences and paragraphs from sounding joined
+without changing prepared text, model input, generated waveforms, or the
+bounded M008 queue.
+
+### Expected outcome
+
+- The completed prepared segment's closed semantic boundary reduces to one
+  bounded numeric delay; a terminal ellipsis has an explicit override.
+- Hard/token size splits remain continuous.
+- At most one interruptible timer delays an already-buffered successor.
+- Real buffering replaces rather than compounds the delay, and final
+  completion has no trailing pause.
+- Pause freezes the remaining timer; stop, navigation, profile/book
+  replacement, failure, and close cancel it before stale audio can start.
+- Intentional transition time remains content-free and separate from audible
+  playback, adaptive low-buffer waits, and involuntary buffering.
+
+### Dependencies
+
+Completed M005 owns canonical boundary reasons. Completed M008 owns the
+buffer/player and retains its zero-default adaptive low-buffer wait. Completed
+M009 owns audible start/completion projection. M008.1 changes no package,
+process, protocol, persistence, or model boundary.
+
+### Major risks and unknowns
+
+- Excessive values can sound theatrical; later tuning requires a versioned
+  decision and listening evidence.
+- Timer callbacks must not start stale audio after identity invalidation.
+- Transition time must never enter playable-lead or RTF arithmetic.
+- Optional human listening may assess rhythm, but deterministic lifecycle and
+  privacy correctness cannot depend on a private EPUB.
 
 ## Milestone 9: Integrate synchronized reading and narration
 
@@ -679,23 +747,44 @@ stabilized application shell.
 
 ## Milestone 10: Add hardware profiles, fallback, and operational resilience
 
-**Status:** In progress; Milestones 1-5 are complete. Follow
+**Status:** In progress; Milestones 1-6 are complete, including exact-host and
+content-safe packaged private-book validation. Follow
 [`M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md).
 The canonical privacy-safe host compatibility report, profile/evidence shape,
 matching/preference rules, fixed resource margins, failure taxonomy, and
 identity-first explicit recovery authority are frozen by
 [`hardware-profile-recovery-authority-v1.md`](../architecture/hardware-profile-recovery-authority-v1.md)
-and ADR-0019. The native Windows detector gathers only those bounded facts
+and ADR-0019. The narrow
+[`qwen-development-vram-admission-v1`](../architecture/qwen-development-vram-admission-v1.md)
+authority and
+[`ADR-0022`](../architecture/decisions/ADR-0022-qwen-development-vram-admission.md)
+later supersede only the available-VRAM formula for a native-gated
+development-only entry. The native Windows detector gathers only those bounded facts
 through reviewed direct APIs and the desktop decodes them through the
-canonical contract; non-Windows builds return unavailable. The product still
-matches the immutable three-entry executable registry, retains only a bounded
+canonical contract; non-Windows builds return unavailable. The product now
+matches the immutable four-entry executable registry, retains only a bounded
 profile-ID preference, rechecks before model-child start, and exposes closed
 compatibility states. Milestone 4 adds bounded recovery with identity-first
 cleanup, one explicit restart, latest-heard resume, and terminal containment.
 Milestone 5 passes every frozen Piper v6 gate and selects exact Piper/davefx
-as the supported speed-focused CPU fallback. It is not yet executable:
-Milestone 6 must add the active registry, service, settings, and resilience
-integration without regressing the Qwen development demo.
+as the supported speed-focused CPU fallback. Milestone 6 adds the exact Piper
+adapter, bounded native-rate conversion, profile-aware native start, explicit
+settings choice, and the two-profile resilience runner without regressing the
+Qwen development demo. Piper-only locator-safe preparation corrects the
+reproduced oversized-unit failure without truncation or a protocol change.
+The desktop also skips punctuation-only Piper units after a private,
+content-safe reproduction proved that the exact phonemizer emits no waveform
+for them; no silence is inserted and locator continuation remains intact. The
+adaptive scheduler also accepts valid non-empty narration fragments with zero
+recognized sentence boundaries, matching the existing M005 non-negative
+measurement contract while retaining positive code-point/byte requirements.
+The
+separate native configuration-admission correction fails closed before child
+start when the selected exact runtime is not configured, and configured Piper
+passes the corrective packaged arm. Qwen passes offline service validation,
+the corrective packaged compatibility boundary, and actual inference through
+the later depletion stage; that broader synchronization assertion does not
+pass. Milestone 7 closeout remains.
 
 ### Goal
 
@@ -787,7 +876,10 @@ Supertonic remains rejected by existing VoxLeaf evidence. MeloTTS and
 KittenTTS remain unprioritized, and Sherpa-ONNX is only a possible runtime
 study rather than a model candidate. Follow the complete
 [post-MVP TTS candidate backlog](../product/post-mvp-tts-candidate-backlog.md)
-for intake boundaries and sources.
+for intake boundaries, sources, and the future engine-specific text-adaptation
+decision gate. Canonical locator-preserving normalization remains shared; do
+not add a common adapter-preprocessor abstraction until multiple admitted
+engines demonstrate distinct requirements.
 
 ## Cross-milestone decision gates
 
@@ -801,8 +893,11 @@ The following decisions should be made when evidence is available, not assumed s
 6. **Audio gate:** satisfied by completed M008 and ADR-0015. The internal format,
    Web Audio mechanism, `1.0x` policy, quick/default and explicit prepared
    rules, low/target/maximum bounds, playback-only pause behavior, truthful
-   frontier buffering, and zero default boundary wait are recorded, and the
+   frontier buffering, and zero default adaptive low-buffer wait are recorded,
+   and the
    required Ubuntu and Windows pull-request checks passed.
+   M008.1 separately records the semantic generated-unit transition policy;
+   its closeout remains active.
 7. **Interaction gate:** satisfied by completed M009 and M009.1 through the
    frozen 500 ms
    passive settlement, identity-first chapter/visible-passage/stable-boundary
@@ -849,8 +944,11 @@ implements the immutable measured registry, fail-closed selection, bounded
 profile preference, compatibility UI, and exact-child pre-start enforcement.
 Milestone 4 implements identity-safe operational recovery with zero-owner
 verification and one explicit restart. Milestone 5 selects the passing Piper
-CPU fallback; executable registry/service/settings integration remains
-Milestone 6 work.
+CPU fallback. Milestone 6 implements executable registry/service/settings
+integration and Piper-only locator-safe, spoken-expansion-aware preparation,
+passes the corrective ordinary-prose and compact-form Piper resilience arm,
+and records Qwen's passing offline service, corrected development-only VRAM
+admission, and the remaining packaged depletion limitation.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by completed
@@ -859,7 +957,9 @@ supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
 Milestones 1 through 9 and M009.1 are complete, with their evidence retained
-under [`completed/`](completed/). M010 is active with Milestones 1-5 complete.
+under [`completed/`](completed/). M010 is active with Milestones 1-6 complete,
+including exact-host and content-safe packaged private-book validation.
+Milestone 7 owns final support decisions and closeout.
 
 ## MVP completion boundary
 

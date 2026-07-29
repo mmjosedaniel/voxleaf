@@ -75,6 +75,15 @@ fn main() {
                 1
             });
         }
+        Some(argument)
+            if argument == std::ffi::OsStr::new(tts_service_supervisor::PIPER_HOST_ARGUMENT) =>
+        {
+            std::process::exit(if tts_service_supervisor::run_piper_host().is_ok() {
+                0
+            } else {
+                1
+            });
+        }
         Some(argument) if argument == std::ffi::OsStr::new(tts_service_handoff::HOST_ARGUMENT) => {
             std::process::exit(if tts_service_handoff::run_host().is_ok() {
                 0
@@ -93,6 +102,7 @@ fn main() {
             host_profile_detection::detect_host_profile_compatibility,
             tts_protocol_probe::run_tts_protocol_probe,
             tts_service_supervisor::exact_tts_demo_available,
+            tts_service_supervisor::tts_profile_configuration_available,
             tts_service_supervisor::start_tts_service,
             tts_service_supervisor::prepare_tts_service,
             tts_service_supervisor::health_tts_service,

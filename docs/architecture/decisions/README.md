@@ -25,12 +25,14 @@ ADR-0002-short-description.md
 - [`ADR-0012-bounded-narration-preparation.md`](ADR-0012-bounded-narration-preparation.md): publication-owned bounded narration preparation, stable source ranges, continuation, cancellation, and closed outcomes.
 - [`ADR-0013-no-viable-local-tts-engine-profile.md`](ADR-0013-no-viable-local-tts-engine-profile.md): no balanced or compatibility profile selected from the frozen v2 evaluation; the standard production profile remains blocked, while ADR-0015 permits only the exact constrained one-GPU demo exception.
 - [`ADR-0014-constrained-qwen-development-demo.md`](ADR-0014-constrained-qwen-development-demo.md): historical constrained-demo decision, now superseded by ADR-0015 for scheduling and buffering.
-- [`ADR-0015-bounded-adaptive-qwen-demo-buffering.md`](ADR-0015-bounded-adaptive-qwen-demo-buffering.md): retain one exact GPU worker for a bounded adaptive development demo, with quick mode default, explicit prepared playback, one-minute refill, zero default boundary wait, and the standard feasibility blocker retained.
+- [`ADR-0015-bounded-adaptive-qwen-demo-buffering.md`](ADR-0015-bounded-adaptive-qwen-demo-buffering.md): retain one exact GPU worker for a bounded adaptive development demo, with quick mode default, explicit prepared playback, one-minute refill, zero default adaptive low-buffer wait, and the standard feasibility blocker retained.
 - [`ADR-0016-rust-owned-stdio-tts-protocol.md`](ADR-0016-rust-owned-stdio-tts-protocol.md): Rust-owned standard-stream child supervision, complete-unit float32-le framing, internal-only IPC CSP sources, and optimized Tauri binary responses.
 - [`ADR-0017-segment-level-reader-narration-synchronization.md`](ADR-0017-segment-level-reader-narration-synchronization.md): segment-level audible-position authority, CSS Custom Highlight decoration, focus-safe following, synchronized manual navigation, and non-skipping heard-progress persistence.
 - [`ADR-0018-reader-experience-stabilization.md`](ADR-0018-reader-experience-stabilization.md): paint-aware highlight proof, one reader scroll owner, compact/collapsible narration, text-only loaded duration, and one bounded locator-backed leaf.
 - [`ADR-0019-privacy-safe-hardware-profiles-and-recovery.md`](ADR-0019-privacy-safe-hardware-profiles-and-recovery.md): privacy-safe host facts, evidence-backed profile matching, result-blind fallback admission, and identity-first explicit recovery.
 - [`ADR-0020-admit-piper-cpu-fallback.md`](ADR-0020-admit-piper-cpu-fallback.md): admit exact Piper/davefx as the speed-focused CPU fallback while retaining Qwen/Serena as an optional development-only GPU profile.
+- [`ADR-0021-boundary-aware-audio-transitions.md`](ADR-0021-boundary-aware-audio-transitions.md): schedule bounded semantic pauses between independently generated buffered audio units without creating silent PCM or changing model input.
+- [`ADR-0022-qwen-development-vram-admission.md`](ADR-0022-qwen-development-vram-admission.md): retain the generic total-VRAM rule while using a frozen 512-MiB available-VRAM reserve only for explicitly gated development-only GPU profiles.
 
 ## Template
 
