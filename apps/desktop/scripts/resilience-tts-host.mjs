@@ -4,8 +4,13 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
+const profileArgument = process.argv.find((argument) =>
+  argument.startsWith("--profile="),
+);
+const requestedProfile = profileArgument?.slice("--profile=".length);
 const profiles = [
   {
+    profile: "qwen",
     argument: "--voxleaf-tts-exact-service-host",
     required: [
       "VOXLEAF_TTS_DEV_ENABLED",
@@ -14,6 +19,7 @@ const profiles = [
     ],
   },
   {
+    profile: "piper",
     argument: "--voxleaf-tts-piper-service-host",
     required: [
       "VOXLEAF_TTS_PIPER_ENABLED",
@@ -22,10 +28,15 @@ const profiles = [
     ],
   },
 ];
+const selectedProfiles =
+  requestedProfile === undefined
+    ? profiles
+    : profiles.filter(({ profile }) => profile === requestedProfile);
 
 if (
   process.platform !== "win32" ||
-  profiles.some(
+  selectedProfiles.length === 0 ||
+  selectedProfiles.some(
     ({ required }) =>
       process.env[required[0]] !== "1" ||
       required.some((name) => !process.env[name]),
@@ -45,7 +56,7 @@ const executable = path.resolve(
   "voxleaf-desktop.exe",
 );
 
-for (const { argument } of profiles) {
+for (const { argument } of selectedProfiles) {
   const result = spawnSync(executable, [argument], {
     env: process.env,
     stdio: "ignore",

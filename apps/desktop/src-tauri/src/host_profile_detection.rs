@@ -392,7 +392,6 @@ fn provider_rank(value: &ProviderReport) -> (bool, u64, bool, u64, u8) {
 fn provider_candidate(
     device: NativeProviderDevice,
     adapters: &[NativeAdapter],
-    status: &mut ProbeStatusAccumulator,
 ) -> Option<ProviderReport> {
     let mut matching = adapters
         .iter()
@@ -404,7 +403,6 @@ fn provider_candidate(
             DeviceClass::Cpu | DeviceClass::Unknown
         )
     {
-        status.mark_incomplete();
         return None;
     }
     if ![
@@ -415,35 +413,21 @@ fn provider_candidate(
     ]
     .contains(&Availability::Available)
     {
-        status.mark_incomplete();
         return None;
     }
 
     let dedicated_memory_mi_b = match adapter.dedicated_memory_bytes {
-        Some(bytes) => quantity_from_bytes(bytes).unwrap_or_else(|| {
-            status.mark_incomplete();
-            Quantity::Unknown
-        }),
-        None => {
-            status.mark_incomplete();
-            Quantity::Unknown
-        }
+        Some(bytes) => quantity_from_bytes(bytes).unwrap_or(Quantity::Unknown),
+        None => Quantity::Unknown,
     };
     let available_dedicated_memory_mi_b = match adapter.available_dedicated_memory_bytes {
-        Some(bytes) => quantity_from_bytes(bytes).unwrap_or_else(|| {
-            status.mark_incomplete();
-            Quantity::Unknown
-        }),
-        None => {
-            status.mark_incomplete();
-            Quantity::Unknown
-        }
+        Some(bytes) => quantity_from_bytes(bytes).unwrap_or(Quantity::Unknown),
+        None => Quantity::Unknown,
     };
     if let (Quantity::Known { value: dedicated }, Quantity::Known { value: available }) =
         (dedicated_memory_mi_b, available_dedicated_memory_mi_b)
         && available > dedicated
     {
-        status.mark_incomplete();
         return None;
     }
 
@@ -482,7 +466,7 @@ fn normalize_accelerated_provider(
     let mut selected: Option<ProviderReport> = None;
     let mut ambiguous = false;
     for device in devices {
-        let Some(candidate) = provider_candidate(*device, adapters, status) else {
+        let Some(candidate) = provider_candidate(*device, adapters) else {
             continue;
         };
         match selected {
@@ -501,10 +485,20 @@ fn normalize_accelerated_provider(
         status.mark_incomplete();
         return unknown_provider();
     }
-    selected.unwrap_or_else(|| {
+    let Some(selected) = selected else {
         status.mark_incomplete();
-        unknown_provider()
-    })
+        return unknown_provider();
+    };
+    if matches!(
+        (
+            selected.dedicated_memory_mi_b,
+            selected.available_dedicated_memory_mi_b,
+        ),
+        (Quantity::Unknown, _) | (_, Quantity::Unknown)
+    ) {
+        status.mark_incomplete();
+    }
+    selected
 }
 
 fn normalize_snapshot(snapshot: NativeHostSnapshot) -> HostProfileCompatibilityReportV1 {
@@ -1263,6 +1257,62 @@ mod tests {
         assert_eq!(
             report.providers.cuda.available_dedicated_memory_mi_b,
             Quantity::Known { value: 8_192 }
+        );
+    }
+
+    #[test]
+    fn discarded_unusable_adapter_does_not_poison_a_known_provider() {
+        let mut snapshot = complete_snapshot();
+        snapshot.adapters = ProbeValue::Known(vec![
+            NativeAdapter {
+                luid: 1,
+                device_class: DeviceClass::DiscreteGpu,
+                dedicated_memory_bytes: Some(gibibytes(12)),
+                available_dedicated_memory_bytes: Some(gibibytes(9)),
+            },
+            NativeAdapter {
+                luid: 2,
+                device_class: DeviceClass::Software,
+                dedicated_memory_bytes: None,
+                available_dedicated_memory_bytes: None,
+            },
+        ]);
+        snapshot.directml_devices = ProbeValue::Known(vec![
+            NativeProviderDevice {
+                luid: 1,
+                precisions: directml_precisions(),
+            },
+            NativeProviderDevice {
+                luid: 2,
+                precisions: directml_precisions(),
+            },
+        ]);
+
+        let report = report(snapshot);
+
+        assert_eq!(report.probe_status, ProbeStatus::Complete);
+        assert_eq!(
+            report.providers.directml.dedicated_memory_mi_b,
+            Quantity::Known { value: 12_288 }
+        );
+    }
+
+    #[test]
+    fn selected_provider_with_unknown_memory_remains_partial() {
+        let mut snapshot = complete_snapshot();
+        snapshot.adapters = ProbeValue::Known(vec![NativeAdapter {
+            luid: 1,
+            device_class: DeviceClass::DiscreteGpu,
+            dedicated_memory_bytes: None,
+            available_dedicated_memory_bytes: None,
+        }]);
+
+        let report = report(snapshot);
+
+        assert_eq!(report.probe_status, ProbeStatus::Partial);
+        assert_eq!(
+            report.providers.cuda.dedicated_memory_mi_b,
+            Quantity::Unknown
         );
     }
 

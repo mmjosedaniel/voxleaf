@@ -2078,18 +2078,41 @@ async function selectAdaptiveTtsProfile(driver, profileId) {
   const serializedProfileId = JSON.stringify(profileId);
   await waitForCondition(
     driver,
-    `const input = document.querySelector(
-       'input[name="hardware-profile"][value=' + ${serializedProfileId} + ']',
+    `const owner = document.querySelector(".hardware-compatibility");
+     return owner?.getAttribute("data-compatibility-status") !== "checking";`,
+  );
+  const observation = await driver.execute(
+    `const profileId = ${serializedProfileId};
+     const inputs = Array.from(
+       document.querySelectorAll('input[name="hardware-profile"]'),
      );
+     const input = inputs.find((candidate) => candidate.value === profileId);
      const owner = document.querySelector(".hardware-compatibility");
-     return input instanceof HTMLInputElement &&
-       owner?.getAttribute("data-compatibility-status") !== "checking";`,
+     return {
+       activeProfileId:
+         owner?.getAttribute("data-compatibility-profile") ?? null,
+       requestedProfileSelectable: input instanceof HTMLInputElement,
+       profileSummaries: Array.from(
+         document.querySelectorAll(
+           '[aria-label="Measured narration profiles"] li',
+         ),
+         (item) => item.textContent?.trim() ?? "",
+       ),
+       selectableProfileIds: inputs.map((candidate) => candidate.value),
+       status:
+         owner?.getAttribute("data-compatibility-status") ?? "missing",
+     };`,
+  );
+  console.log(`ADAPTIVE_TTS_PROFILE_SELECTION ${JSON.stringify(observation)}`);
+  assert(
+    observation?.requestedProfileSelectable === true,
+    "Native synchronized narration proof failed.",
   );
   const selected = await driver.execute(
     `const profileId = ${serializedProfileId};
-     const input = document.querySelector(
-       'input[name="hardware-profile"][value="' + profileId + '"]',
-     );
+     const input = Array.from(
+       document.querySelectorAll('input[name="hardware-profile"]'),
+     ).find((candidate) => candidate.value === profileId);
      if (!(input instanceof HTMLInputElement)) {
        return false;
      }
