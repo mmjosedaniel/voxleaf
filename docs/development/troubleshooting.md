@@ -74,6 +74,28 @@ pnpm.cmd test:tts:adaptive-exact-host
 Both commands are Windows/CUDA-only, excluded from normal checks and CI, and
 must remain offline after artifact preparation.
 
+### Compatibility is unavailable, unknown, or failed
+
+The compact `Local narration compatibility` disclosure checks bounded local
+host facts at application start, after an explicit recheck, after OS resume,
+and immediately before the model child starts. `Unknown` means one or more
+required facts could not be established; `failed` means the bounded probe
+itself failed; `unavailable` means no admitted measured profile matches. None
+of these states is a support claim.
+
+For the exact development demo, the Qwen/Serena profile also requires the
+native variables above and the frozen RAM, VRAM, storage, provider, precision,
+and device-class margins. Closing unrelated GPU/RAM-heavy applications may
+change available capacity; use `Check compatibility again` afterward. Rejected
+Qwen/Aiden and Supertonic records are intentionally listed as unavailable and
+cannot be selected. `No measured CPU fallback is available` is the current
+truthful result.
+
+Do not edit local storage or bypass preflight to force a profile. VoxLeaf
+persists only one bounded profile ID and revalidates it; it never stores the raw
+host report. A changed or incompatible host must prevent the child from
+starting.
+
 ### Quick start takes longer than expected
 
 Quick start means playback begins when approximately 15 playable seconds are

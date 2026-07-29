@@ -27,7 +27,7 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 | Desktop visual reader                              | **Implemented**                         | Local byte selection, publication lifecycle, safe semantic React rendering, navigation, reflow, preferences, logical-locator tracking, and bounded restoration.                                                                                                                                                                                                                                                              |
 | EPUB ingestion                                     | **Implemented**                         | Bounded in-memory open, archive/package/navigation validation, immutable safe semantics, lazy bounded raster access, and deterministic locators.                                                                                                                                                                                                                                                                             |
 | Narration preparation                              | **Implemented**                         | `@voxleaf/epub` exposes bounded, cancellable, locator-linked `OpenedPublication.prepareNarration` batches. The exact-development coordinator calls it from the active or settled navigation locator.                                                                                                                                                                                                                         |
-| Shared contracts and fakes                         | **Implemented**                         | Versioned contracts, runtime decoders, conformance fixtures, deterministic fakes, the closed protocol-v1 control family, and the M010 privacy-safe host-profile compatibility report exist. M010 Milestone 2 now produces and decodes that report across the narrow native-to-desktop boundary; it does not implement matching, support, fallback, or recovery.                                                                                                                                   |
+| Shared contracts and fakes                         | **Implemented**                         | Versioned contracts, runtime decoders, conformance fixtures, deterministic fakes, the closed protocol-v1 control family, and the M010 privacy-safe host-profile compatibility report exist. M010 Milestone 2 produces and decodes that report across the narrow native-to-desktop boundary; Milestone 3 consumes it without changing the shared contract or TTS protocol.                                                                                                                                   |
 | Tauri native shell                                 | **Implemented**                         | Completed M007 implements and validates the narrow binary-response boundary, persistent child supervision, framed standard streams, fixed timeouts, process-tree termination, zero automatic restart, typed commands, native-only exact-service activation, measured handoff diagnostics, and exit cleanup. M010 Milestone 2 adds one bounded native host-report command using direct Windows APIs. No plugin, general shell capability, listener, or renderer hardware API is granted. |
 | Python TTS area                                    | **Implemented**                         | Completed M007 implements and validates the offline framed service, bounded fake engine, common one-active adapter boundary, exact development-only Qwen/Serena adapter, and content-safe exact-host measurement runner. Default tests remain model-free.                                                                                                                                                                    |
 | TTS feasibility and profile decision               | **Implemented**                         | The bounded candidate-neutral `v2` harness measured both exact profiles. The license/offline/packaging audit is complete; limited one-evaluator quality remains non-promotable; ADR-0013 selects neither profile. This is development evidence, not runtime behavior.                                                                                                                                                        |
@@ -38,7 +38,7 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 | Adaptive audio scheduling and playback             | **Implemented and validated**           | Completed M008 provides the frozen authority, scheduler, sole-owner payload FIFO, Web Audio player, preparation presenter, controls, exact-development application coordinator, measured packaged quick/prepared matrix, final demo policy, and passing required CI. M009 Milestone 2 adds bounded source-range projection without changing PCM ownership.                                                                   |
 | Reader/narration synchronization                   | **Implemented and validated**           | Completed M009 implements the frozen segment authority, bounded content-free audible projection, one reader-owned Custom Highlight, focus-safe following, identity-first navigation, non-skipping heard-position persistence, passing exact-host proof, and repository/CI closeout.                                                                                                                                          |
 | Reader experience stabilization                    | **Complete and validated**              | Completed M009.1 repairs same-chapter active-range materialization; implements one reader scroll owner, stable compact chrome, collapsible narration detail, truthful loaded-duration text, and one bounded canonical paragraph leaf; and separates passive viewport inspection from explicit narration replacement. Deterministic, Chromium, packaged WebView2, private-EPUB, exact-host, repository, privacy, portable, and required Ubuntu/Windows checks pass. |
-| Hardware profiles, fallback, and resilience        | **In progress; detector implemented**   | M010 Milestone 1 freezes the privacy-safe host report, immutable profile/evidence shape, result-blind resource margins, deterministic matching/preference rules, closed failure taxonomy, and identity-first explicit recovery. Milestone 2 implements one native Windows probe and typed decoder with identity-free bounded output. No registry entry, product matcher, admitted CPU fallback, recovery controller, renderer permission, persistence, or support claim exists yet.                   |
+| Hardware profiles, fallback, and resilience        | **In progress; matching implemented**   | M010 Milestones 1-3 freeze and implement the privacy-safe report boundary, immutable three-entry evidence registry, result-blind matching, bounded profile-ID preference, compatibility UI, and immediate pre-start check. Exact Qwen/Serena remains development-only behind its native gate; rejected entries remain unavailable. No supported recommendation, admitted CPU fallback, recovery controller, renderer permission, raw-report persistence, or standard support claim exists.                   |
 | Release packaging                                  | **Deferred**                            | M011 remains future work; installer bundling, signing, model/runtime distribution, updater policy, and complete-MVP validation are not implemented.                                                                                                                                                                                                                                                                          |
 
 ## Component and trust-boundary map
@@ -63,7 +63,7 @@ flowchart LR
             PICKER["Browser file input + FileReader<br/>Implemented"]:::implemented
             SESSION["Publication session owner<br/>Implemented"]:::implemented
             READER["Semantic React reader<br/>navigation, reflow, locator tracking<br/>Implemented"]:::implemented
-            STORE["WebView localStorage<br/>locator + display preferences only<br/>Implemented"]:::implemented
+            STORE["WebView localStorage<br/>locator + display + bounded profile-ID preferences<br/>Implemented"]:::implemented
             SHELL["Tauri native supervisor<br/>model-free default or native-configured exact child<br/>M7 complete"]:::implemented
             CLIENT["Typed TTS client + one-unit handoff sink<br/>M7 complete<br/>consumed outside React"]:::implemented
             PLAYBACK["Product narration coordinator + adaptive scheduler<br/>payload FIFO, Web Audio player, controls<br/>M8 Milestones 1-6 exact demo + policy"]:::implemented
@@ -71,7 +71,7 @@ flowchart LR
             SYNC["Reader segment projection, following,<br/>and synchronized user navigation<br/>M9 complete; M9.1 M2 materialization repair"]:::implemented
             HEARD_STORE["Heard-position persistence bridge<br/>exact boundaries + lifecycle flush<br/>M9 complete"]:::implemented
             STABILIZE["Reader experience stabilization<br/>highlight repair + fixed reader viewport;<br/>compact narration + bounded leaf + passive isolation<br/>M9.1 complete"]:::implemented
-            COMPAT["Privacy-safe host detector + typed report<br/>M10 Milestones 1-2 implemented;<br/>matcher planned"]:::progress
+            COMPAT["Privacy-safe detector + measured matcher<br/>bounded preference, compatibility UI, pre-start check<br/>M10 Milestones 1-3 implemented"]:::implemented
             RECOVERY["Identity-safe recovery controller<br/>M10 approved planned"]:::planned
         end
 
@@ -108,7 +108,7 @@ flowchart LR
     SHELL -->|"native-only exact configuration"| PYTHON
     SHARED -->|"typed control decoding"| CLIENT
     HOST -->|"direct bounded content-free facts"| COMPAT
-    COMPAT -.->|"compatible admitted profile only"| SHELL
+    COMPAT -->|"compatible admitted profile only"| PLAYBACK
     PLAYBACK -.->|"classified failure + invalidated identity"| RECOVERY
     RECOVERY -.->|"explicit bounded restart after cleanup"| SHELL
 
@@ -183,17 +183,23 @@ exact segment text-range authority. Milestone 5 validates the corrected
 private-EPUB and exact-host interaction, and Milestone 6 closes repository,
 privacy, portable, packaged, and required pull-request validation.
 
-The M010 host-to-compatibility edge is now solid. Milestone 2 implements one
-native-owned, single-concurrency Windows probe and the typed desktop decoder
-for the canonical report frozen in Milestone 1. Direct OS, DXGI, DirectML, and
-CUDA driver APIs are normalized before crossing Tauri; adapter identity and
-raw errors are discarded, and unsupported platforms return unavailable. The
-dashed compatibility-to-shell and recovery edges remain planned because no
-host fact is matched to a profile and no support or recovery action exists.
-The authority keeps host facts separate from engine `CapabilityReportV1`,
-preserves one supervised service tree, and allows explicit recovery only after
-identity-first cleanup. The CPU-fallback node remains blocked until a new
-result-blind candidate evaluation passes every mandatory gate.
+The M010 host-to-compatibility and compatibility-to-playback edges are now
+solid.
+Milestone 2 implements one native-owned, single-concurrency Windows probe and
+the typed desktop decoder for the canonical report frozen in Milestone 1.
+Direct OS, DXGI, DirectML, and CUDA driver APIs are normalized before crossing
+Tauri; adapter identity and raw errors are discarded, and unsupported
+platforms return unavailable. Milestone 3 matches only immutable measured
+entries with fixed safety margins, keeps raw facts transient, persists only a
+bounded profile ID, and rechecks immediately before the product coordinator
+may issue the typed child-start request. The only admitted runtime remains the
+exact development-gated Qwen/Serena profile; there is no supported
+recommendation. The recovery edge remains dashed because no recovery action
+exists. The authority keeps host facts separate from engine
+`CapabilityReportV1`, preserves one supervised service tree, and allows
+explicit recovery only after identity-first cleanup. The CPU-fallback node
+remains blocked until a new result-blind candidate evaluation passes every
+mandatory gate.
 
 ## EPUB-to-audio flow
 
@@ -289,7 +295,7 @@ value remains a simultaneous ceiling, not a startup target.
 | Constrained local TTS service and process protocol      | [M007 completed ExecPlan](../plans/completed/M007-local-tts-service-and-process-protocol.md), accepted frozen [protocol v1 authority](tts-service-protocol-v1.md), accepted [ADR-0016](decisions/ADR-0016-rust-owned-stdio-tts-protocol.md), and the schema-valid [exact-host handoff result](../../benchmarks/tts/service-handoff-result-v1-exact-host.json). M007 validates transport, canonical contracts, Python service, native supervision, typed client, exact Qwen/Serena integration, model-free packaged evidence, and measured exact-host delivery/backpressure/invalidation/termination/cleanup/reload evidence.                                                                    |
 | Reader/narration synchronization                        | [M009 completed ExecPlan](../plans/completed/M009-synchronized-reading-and-narration.md), frozen [synchronization authority v1](synchronization-authority-v1.md), and accepted [ADR-0017](decisions/ADR-0017-segment-level-reader-narration-synchronization.md). Milestones 1-7 implement and validate the authority/proof, bounded audible projection, reader highlight/follow consumer, identity-first synchronized navigation, non-skipping heard persistence, exact-host packaged proof, and repository/CI closeout.                                                                                                                                                                        |
 | Reader experience stabilization                         | [M009.1 completed ExecPlan](../plans/completed/M009-001-reader-experience-stabilization.md), frozen [reader-experience authority v1](reader-experience-authority-v1.md), and accepted [ADR-0018](decisions/ADR-0018-reader-experience-stabilization.md). The highlight repair, fixed shell, compact narration, truthful loaded-duration text, bounded paragraph leaf, and passive-scroll isolation are implemented and validated. Pull request #142 passed required Ubuntu/Windows checks and merged the closeout. |
-| Hardware profiles, fallback, and operational resilience | [M010 active ExecPlan](../plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md), frozen [hardware/profile/recovery authority v1](hardware-profile-recovery-authority-v1.md), and accepted [ADR-0019](decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md). Milestone 1 implements the canonical report/decoder/fixtures and executable result-blind authority tests. Milestone 2 implements the bounded native Windows detector and typed desktop boundary. Matching, fallback, recovery, and support evidence remain absent.                                                                                  |
+| Hardware profiles, fallback, and operational resilience | [M010 active ExecPlan](../plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md), frozen [hardware/profile/recovery authority v1](hardware-profile-recovery-authority-v1.md), and accepted [ADR-0019](decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md). Milestone 1 implements the canonical report/decoder/fixtures and executable result-blind authority tests. Milestone 2 implements the bounded native Windows detector and typed desktop boundary. Milestone 3 implements the immutable measured registry, deterministic matcher, bounded preference, compatibility UI, and exact-child pre-start enforcement. Standard support, fallback, and recovery remain absent.                                                                                  |
 | Local-first desktop and future local process direction  | [ADR-0001](decisions/ADR-0001-local-first-desktop.md); ADR-0015 permits a constrained one-GPU development demo while the production profile and distribution boundary remain unresolved                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | Roadmap status                                          | [Roadmap](../plans/roadmap.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
@@ -297,7 +303,7 @@ value remains a simultaneous ceiling, not a startup target.
 
 1. **Milestone 9 — Complete:** all seven M009 milestones are implemented, exact-host validated, and covered by passing required Ubuntu and Windows pull-request checks.
 2. **Milestone 9.1 — Complete:** the [reader-experience authority v1](reader-experience-authority-v1.md) and [ADR-0018](decisions/ADR-0018-reader-experience-stabilization.md) are implemented. Deterministic, Chromium, release-packaged WebView2, private-EPUB, exact-host, repository, privacy, portable, and required Ubuntu/Windows validation pass.
-3. **Milestone 10 — In progress:** Milestones 1-2 freeze the [hardware/profile/recovery authority v1](hardware-profile-recovery-authority-v1.md) and implement its bounded native Windows report boundary. Follow the [M010 ExecPlan](../plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md) for measured profile selection, fallback admission, and identity-safe operational recovery without promoting the current exact-development profile.
+3. **Milestone 10 — In progress:** Milestones 1-3 freeze the [hardware/profile/recovery authority v1](hardware-profile-recovery-authority-v1.md) and implement its bounded native Windows report boundary, measured matching, compatibility UI, and pre-start enforcement. Follow the [M010 ExecPlan](../plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md) for fallback admission and identity-safe operational recovery without promoting the current exact-development profile.
 4. **Milestone 11 — Deferred:** complete installer/signing/distribution and full MVP closeout only after M010 establishes supportable hardware and recovery claims.
 
 Update this document whenever a major component boundary, process/package dependency, trust boundary, persistence owner, external interaction, runtime flow, or roadmap implementation status changes. A completed plan may advance a node or arrow only when its definition of done and validation evidence are present.

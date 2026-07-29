@@ -8,8 +8,13 @@ by this decision.
 
 M010 Milestone 2 subsequently implements the authorized privacy-safe report
 producer and decoder. That implementation does not widen this decision: it
-adds no profile registry entry, matching result, support/fallback claim,
-automatic retry, or recovery behavior.
+adds no support/fallback claim, automatic retry, or recovery behavior.
+
+M010 Milestone 3 subsequently implements the frozen registry, deterministic
+matcher, bounded profile-ID preference, compatibility UI, and pre-start
+enforcement. The exact Qwen/Serena entry remains `development-only` behind its
+native gate; rejected entries remain `unsupported`. No standard recommendation
+or CPU fallback is therefore available, and recovery remains unimplemented.
 
 ## Context
 
@@ -75,8 +80,9 @@ without immediate restart.
   unheard content.
 - A user may see fallback unavailable or no recommendation; that is an
   accepted truthful result.
-- Milestone 1 adds generated contract artifacts and tests but no production
-  dependency, Tauri permission, runtime probe, or support claim.
+- Milestones 1-3 add no new production dependency, Tauri permission, standard
+  support claim, or CPU fallback. Only the bounded profile ID may be persisted;
+  raw host facts remain transient.
 
 ## Alternatives considered
 

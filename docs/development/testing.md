@@ -53,6 +53,18 @@ The current tests are deterministic and layered by ownership:
   with fixed content-free errors. Source audits prohibit process, network,
   model, and persistence surfaces. These tests select no profile and make no
   support or fallback claim.
+- `apps/desktop/src/tts/hardware-profile-registry.test.ts`,
+  `hardware-profile-matcher.test.ts`,
+  `hardware-profile-compatibility.test.ts`, the bounded profile-preference
+  suite, and `HardwareCompatibilityControls.test.tsx` cover M010's measured
+  matching boundary. They verify immutable evidence hashes and strict
+  authority/result ancestry; every resource/provider boundary and max-plus-one;
+  incomplete/unknown facts, rejected entries, ties, stale/future preferences,
+  and the development gate; one concurrent probe and pre-start recheck; and
+  keyboard, focus, status, forced-color, reduced-motion, and content-safety
+  behavior. The production Chromium foundation smoke covers the compact panel
+  without reducing the fixed reader viewport. No test loads a model or promotes
+  a standard/fallback profile.
 - `packages/shared/src/contracts/audio-frame.test.ts` verifies payload-free frame metadata, branded ownership identities, exact sample-derived whole-millisecond calculations, aggregate-before-truncation behavior, numeric and duration-overflow boundaries, contiguous sequencing, unique frame IDs, stable format, segment termination, and content-free errors without audio devices or payloads.
 - `packages/shared/src/contracts/buffer-status.test.ts` verifies payload-free, session-bound buffer snapshots; explicit playable-duration units; low/target/maximum ordering; below/exactly-at/above-target states; bounded duration; underrun counts; and rejection of invalid state combinations, payload fields, fixed waits, and private text without implementing a buffer or player.
 - `packages/shared/src/testing/manual-clock.test.ts` verifies an explicit-start, manually advanced test clock; deterministic first-scheduled ordering for equal-time callbacks; pending-work inspection and cleanup; invalid-input rejection; and safe millisecond overflow handling without reading real time or scheduling real timers.
