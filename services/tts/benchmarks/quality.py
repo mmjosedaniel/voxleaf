@@ -53,6 +53,7 @@ MAXIMUM_SESSION_AUDIO_BYTES: Final = 512 * 1024 * 1024
 _SESSION_ID: Final = re.compile(r"^[a-f0-9]{32}$")
 _SAMPLE_ID: Final = re.compile(r"^[a-f0-9]{32}$")
 _EVALUATOR_ID: Final = re.compile(r"^evaluator-[0-9]{2}$")
+CORRECTION_REASON: Final = "evaluator-clarified-no-meaning-change"
 
 
 class QualitySessionError(RuntimeError):
@@ -608,6 +609,95 @@ def submit_scorecard(
     }
 
 
+def correct_meaning_changing_defect(
+    session_id: str,
+    evaluator_id: str,
+    case_id: str,
+    *,
+    reason_code: str,
+    raw_root: Path = RAW_ROOT,
+) -> dict[str, object]:
+    """Record one immutable pre-decision evaluator classification correction."""
+
+    session = _session_path(session_id, raw_root=raw_root, must_exist=True)
+    metadata = _read_mapping(session / "session.json")
+    if (
+        metadata.get("state") != "ready"
+        or metadata.get("protocolVersion") != "tts-cpu-fallback-profile-v6"
+        or metadata.get("expectedCandidates") != [PIPER_CPU_CANDIDATE_ID]
+        or _EVALUATOR_ID.fullmatch(evaluator_id) is None
+        or reason_code != CORRECTION_REASON
+    ):
+        raise QualitySessionError("correction-state")
+    completed_path = session / "scorecards" / f"{evaluator_id}.completed.json"
+    completed = _read_mapping(completed_path)
+    samples = completed.get("samples")
+    if not isinstance(samples, list):
+        raise QualitySessionError("invalid-scorecard")
+    matching = [
+        item for item in samples if isinstance(item, dict) and item.get("caseId") == case_id
+    ]
+    if len(matching) != 1 or matching[0].get("meaningChangingDefect") is not True:
+        raise QualitySessionError("correction-state")
+    correction_path = session / "scorecards" / f"{evaluator_id}.correction.json"
+    if correction_path.exists():
+        raise QualitySessionError("correction-state")
+    _write_json(
+        correction_path,
+        {
+            "sessionId": session_id,
+            "evaluatorId": evaluator_id,
+            "caseId": case_id,
+            "previousMeaningChangingDefect": True,
+            "correctedMeaningChangingDefect": False,
+            "reasonCode": reason_code,
+        },
+    )
+    aggregate_path = session / "quality.aggregate.json"
+    aggregate_path.unlink(missing_ok=True)
+    return {
+        "status": "pass",
+        "sessionId": session_id,
+        "evaluatorId": evaluator_id,
+        "caseId": case_id,
+        "correctedMeaningChangingDefect": False,
+    }
+
+
+def _corrected_defect_cases(
+    session: Path, cards: Sequence[Mapping[str, object]]
+) -> set[tuple[str, str]]:
+    corrected: set[tuple[str, str]] = set()
+    for card in cards:
+        evaluator_id = card.get("evaluatorId")
+        if not isinstance(evaluator_id, str):
+            raise QualitySessionError("invalid-scorecard")
+        path = session / "scorecards" / f"{evaluator_id}.correction.json"
+        if not path.exists():
+            continue
+        correction = _read_mapping(path)
+        case_id = correction.get("caseId")
+        if (
+            correction.get("sessionId") != card.get("sessionId")
+            or correction.get("evaluatorId") != evaluator_id
+            or not isinstance(case_id, str)
+            or correction.get("previousMeaningChangingDefect") is not True
+            or correction.get("correctedMeaningChangingDefect") is not False
+            or correction.get("reasonCode") != CORRECTION_REASON
+        ):
+            raise QualitySessionError("correction-state")
+        samples = card.get("samples")
+        if not isinstance(samples, list) or not any(
+            isinstance(item, dict)
+            and item.get("caseId") == case_id
+            and item.get("meaningChangingDefect") is True
+            for item in samples
+        ):
+            raise QualitySessionError("correction-state")
+        corrected.add((evaluator_id, case_id))
+    return corrected
+
+
 def aggregate_scores(
     session_id: str,
     *,
@@ -625,6 +715,7 @@ def aggregate_scores(
     ]
     if len(cards) != len(evaluator_ids):
         raise QualitySessionError("incomplete-scorecards")
+    corrected_defects = _corrected_defect_cases(session, cards)
     key = _read_mapping(session / "randomization-key.json")
     mappings = key.get("samples")
     if not isinstance(mappings, list):
@@ -682,7 +773,11 @@ def aggregate_scores(
                     value = _score(scores[dimension])
                     if isinstance(value, int):
                         per_dimension[dimension].append(value)
-                defects += int(sample["meaningChangingDefect"] is True)
+                evaluator_id = card.get("evaluatorId")
+                defects += int(
+                    sample["meaningChangingDefect"] is True
+                    and (cast(str, evaluator_id), case_id) not in corrected_defects
+                )
             for dimension in DIMENSIONS:
                 if per_dimension[dimension]:
                     dimension_values[dimension].append(

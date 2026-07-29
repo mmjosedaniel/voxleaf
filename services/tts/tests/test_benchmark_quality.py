@@ -9,6 +9,7 @@ from typing import cast
 import pytest
 
 from benchmarks.adapters.manifest import (
+    PIPER_CPU_CANDIDATE_ID,
     QWEN_CANDIDATE_ID,
     QWEN_V3_CANDIDATE_ID,
     SUPERTONIC_CANDIDATE_ID,
@@ -17,10 +18,12 @@ from benchmarks.cli import parse_preflight_request
 from benchmarks.contracts import GenerationRequest
 from benchmarks.preflight import PreflightRequest
 from benchmarks.quality import (
+    CORRECTION_REASON,
     DIMENSIONS,
     QualitySessionError,
     aggregate_scores,
     cleanup_session,
+    correct_meaning_changing_defect,
     finalize_session,
     generate_candidate_audio,
     submit_scorecard,
@@ -63,10 +66,18 @@ def _request(tmp_path: Path, candidate_id: str) -> PreflightRequest:
             "provider": "pytorch-cuda",
             "precision": "bfloat16",
         }
-    else:
+    elif candidate_id == SUPERTONIC_CANDIDATE_ID:
         values = {
             "modelRevision": "3cadd1ee6394adea1bd021217a0e650ede09a323",
             "voiceId": "F1",
+            "provider": "onnxruntime-cpu",
+            "precision": "float32",
+        }
+    else:
+        assert candidate_id == PIPER_CPU_CANDIDATE_ID
+        values = {
+            "modelRevision": "0d907f158acc877ddeebcbf827659ee13bea8bcd",
+            "voiceId": "es_ES-davefx-medium",
             "provider": "onnxruntime-cpu",
             "precision": "float32",
         }
@@ -296,3 +307,73 @@ def test_v3_quality_session_is_single_candidate_and_identity_bound(
     assert request.profile.instruction not in metadata
     assert str(request.configuration.artifact_root) not in metadata
     assert QWEN_V3_CANDIDATE_ID not in (session / "evaluator-01.html").read_text(encoding="utf-8")
+
+
+def test_v6_quality_preserves_and_applies_one_classification_correction(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("benchmarks.quality._write_wave", _fake_wave)
+    raw_root = tmp_path / "raw"
+    session_id = "6" * 32
+    generated = generate_candidate_audio(
+        _request(tmp_path, PIPER_CPU_CANDIDATE_ID),
+        session_id,
+        raw_root=raw_root,
+        adapter_builder=FakeQualityAdapter,
+    )
+    assert generated["generatedSamples"] == 8
+    assert generated["readyForFinalization"] is True
+    sample_ids = iter(f"{index:032x}" for index in range(61, 69))
+    finalize_session(
+        session_id,
+        1,
+        raw_root=raw_root,
+        id_factory=lambda: next(sample_ids),
+    )
+    session = raw_root / "quality-v2" / session_id
+    completed_path = session / "scorecards" / "evaluator-01.completed.json"
+    template = json.loads(
+        (session / "scorecards" / "evaluator-01.template.json").read_text(encoding="utf-8")
+    )
+    corrected_case_id = cast(str, template["samples"][0]["caseId"])
+    for index, sample in enumerate(template["samples"]):
+        sample["scores"] = {dimension: 4 for dimension in DIMENSIONS}
+        sample["meaningChangingDefect"] = index == 0
+    submit_scorecard(session_id, cast(object, template), raw_root=raw_root)
+    first = aggregate_scores(session_id, raw_root=raw_root)
+    first_candidate = cast(
+        dict[str, object],
+        cast(dict[str, object], first["candidates"])[PIPER_CPU_CANDIDATE_ID],
+    )
+    assert first_candidate["meaningChangingDefects"] == 1
+
+    correction = correct_meaning_changing_defect(
+        session_id,
+        "evaluator-01",
+        corrected_case_id,
+        reason_code=CORRECTION_REASON,
+        raw_root=raw_root,
+    )
+    assert correction["correctedMeaningChangingDefect"] is False
+    assert not (session / "quality.aggregate.json").exists()
+    original = json.loads(completed_path.read_text(encoding="utf-8"))
+    assert original["samples"][0]["meaningChangingDefect"] is True
+
+    corrected = aggregate_scores(session_id, raw_root=raw_root)
+    corrected_candidate = cast(
+        dict[str, object],
+        cast(dict[str, object], corrected["candidates"])[PIPER_CPU_CANDIDATE_ID],
+    )
+    assert corrected_candidate["meaningChangingDefects"] == 0
+    with pytest.raises(
+        QualitySessionError,
+        match=r"^tts-benchmark-quality:correction-state$",
+    ):
+        correct_meaning_changing_defect(
+            session_id,
+            "evaluator-01",
+            corrected_case_id,
+            reason_code=CORRECTION_REASON,
+            raw_root=raw_root,
+        )

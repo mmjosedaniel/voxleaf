@@ -11,9 +11,11 @@ from typing import Final, NoReturn, cast
 from benchmarks.cli import PREFLIGHT_FIELDS, parse_preflight_request
 from benchmarks.preflight import PreflightRequest, run_local_preflight
 from benchmarks.quality import (
+    CORRECTION_REASON,
     QualitySessionError,
     aggregate_scores,
     cleanup_session,
+    correct_meaning_changing_defect,
     finalize_session,
     generate_candidate_audio,
     submit_scorecard,
@@ -24,6 +26,15 @@ GENERATION_TIMEOUT_SECONDS: Final = 7_200
 GENERATE_FIELDS: Final = PREFLIGHT_FIELDS | frozenset(("qualityOptIn", "sessionId"))
 FINALIZE_FIELDS: Final = frozenset(("qualityOptIn", "sessionId", "evaluatorCount"))
 SUBMIT_FIELDS: Final = frozenset(("qualityOptIn", "sessionId", "scorecard"))
+CORRECT_FIELDS: Final = frozenset(
+    (
+        "qualityOptIn",
+        "sessionId",
+        "evaluatorId",
+        "caseId",
+        "reasonCode",
+    )
+)
 SESSION_FIELDS: Final = frozenset(("qualityOptIn", "sessionId"))
 GENERATION_RECEIPT_FIELDS: Final = frozenset(
     (
@@ -174,6 +185,29 @@ def _submit(payload: Mapping[str, object]) -> tuple[dict[str, object], int]:
     return submit_scorecard(session_id, payload.get("scorecard")), 0
 
 
+def _correct(payload: Mapping[str, object]) -> tuple[dict[str, object], int]:
+    _require_fields(payload, CORRECT_FIELDS)
+    session_id = payload.get("sessionId")
+    evaluator_id = payload.get("evaluatorId")
+    case_id = payload.get("caseId")
+    reason_code = payload.get("reasonCode")
+    if not all(
+        isinstance(value, str) for value in (session_id, evaluator_id, case_id, reason_code)
+    ):
+        _fail("invalid-input")
+    if reason_code != CORRECTION_REASON:
+        _fail("invalid-input")
+    return (
+        correct_meaning_changing_defect(
+            cast(str, session_id),
+            cast(str, evaluator_id),
+            cast(str, case_id),
+            reason_code=cast(str, reason_code),
+        ),
+        0,
+    )
+
+
 def _aggregate(payload: Mapping[str, object]) -> tuple[dict[str, object], int]:
     _require_fields(payload, SESSION_FIELDS)
     session_id = payload.get("sessionId")
@@ -197,6 +231,7 @@ def main() -> int:
         "_generate-worker",
         "finalize",
         "submit",
+        "correct",
         "aggregate",
         "cleanup",
     ):
@@ -213,6 +248,8 @@ def main() -> int:
             output, code = _finalize(payload)
         elif action == "submit":
             output, code = _submit(payload)
+        elif action == "correct":
+            output, code = _correct(payload)
         elif action == "aggregate":
             output, code = _aggregate(payload)
         else:

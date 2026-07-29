@@ -177,6 +177,20 @@ def _verify_authority(
         _fail("authority")
 
 
+def _result_execution_commit(
+    raw: Mapping[str, object],
+    current_commit_sha: str,
+) -> str:
+    execution_commit = _string(raw.get("commitSha"), "authority")
+    if len(current_commit_sha) != 40:
+        _fail("authority")
+    _git_output(
+        REPOSITORY_ROOT,
+        ("merge-base", "--is-ancestor", execution_commit, current_commit_sha),
+    )
+    return execution_commit
+
+
 def _benchmark_run(raw: Mapping[str, object]) -> BenchmarkRun:
     loads = tuple(
         LoadObservation(
@@ -327,7 +341,7 @@ def assess_machine_result(
     authority_commit_sha: str,
 ) -> dict[str, object]:
     raw, _session = _load_raw(performance_session_id)
-    execution_commit = request.expected_commit_sha
+    execution_commit = _result_execution_commit(raw, request.expected_commit_sha)
     _verify_authority(
         raw,
         authority_commit_sha=authority_commit_sha,
@@ -430,7 +444,7 @@ def derive_result(
     if receipt.failures or not receipt.eligible_for_official_run:
         _fail("preflight")
     raw, performance_session = _load_raw(performance_session_id)
-    execution_commit = request.expected_commit_sha
+    execution_commit = _result_execution_commit(raw, request.expected_commit_sha)
     _verify_authority(
         raw,
         authority_commit_sha=authority_commit_sha,
