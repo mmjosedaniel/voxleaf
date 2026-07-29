@@ -32,7 +32,14 @@ configuration, generic `7,196`-MiB total-VRAM requirement, and corrective
 offers Qwen/Serena as an optional development-only profile. The latest
 packaged run executed Qwen but later stopped at the depletion synchronization
 assertion; it remains neither supported nor automatically recommended. No
-automatic retry or uninterrupted-playback promise exists.
+automatic retry or uninterrupted-playback promise exists. Milestone 7 accepts
+the final
+[`tts-support-matrix-v1`](../architecture/tts-support-matrix-v1.md):
+Piper/davefx is the sole supported CPU fallback and only automatically
+recommendable profile when compatible and configured; Qwen/Serena remains
+development-only; Qwen/Aiden and Supertonic/F1 remain unsupported. “Fallback”
+does not authorize automatic engine failover. Required closeout pull-request
+checks remain before M010 is archived.
 
 ## Current implemented flow
 
@@ -94,12 +101,11 @@ authority.
 
 ## Remaining target user flow
 
-1. M010 Milestone 7 must record the final support decision, complete
-   repository/privacy and pull-request validation, and close the plan after the
-   implemented profile/service/settings integration and passing resilience
-   matrix.
-2. M011 packages and validates an end-user distribution after those boundaries
-   close.
+1. M010 Milestone 7 must complete its required replacement pull-request checks
+   and archive the recorded final support decision.
+2. M011 then packages and validates an end-user distribution, including Piper
+   notices, provenance, corresponding-source or written-offer mechanics,
+   signing, updates, and complete-MVP validation.
 
 Additional engines and voices do not block this sequence. Pocket TTS,
 Chatterbox Latin American Spanish, MOSS-TTS-Nano, Kokoro, and additional Piper
@@ -162,11 +168,9 @@ Implemented and validated:
 
 Remaining:
 
-- Validate a CPU-compatible fallback, or record a separate explicit product
-  decision that resolves the fallback gate.
-- Graduate a measured engine/voice to a supported production profile, or record
-  a separate explicit product decision.
-- Provide installer packaging and a validated end-user installation path.
+- Complete M010's required closeout pull-request checks.
+- Provide compliant runtime/model distribution, installer packaging, and a
+  validated end-user installation path in M011.
 
 ## Target acceptance criteria
 

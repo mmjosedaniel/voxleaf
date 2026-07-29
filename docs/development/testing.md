@@ -163,6 +163,16 @@ Task 2.5 replaced runtime compilation with committed generated predicates, made 
 
 This native command runs only on Windows and is separate from `pnpm.cmd check:portable`. The harness resolves PATH-installed `tauri-driver.exe` and `msedgedriver.exe` to absolute child-process paths while retaining `VOXLEAF_TAURI_DRIVER_PATH` and `VOXLEAF_EDGE_DRIVER_PATH` overrides. The authoritative Windows CI job checks Microsoft's documented machine/user registry locations for an installed Evergreen WebView2 Runtime, downloads and silently runs Microsoft's architecture-selecting bootstrapper only when the runtime is absent, and verifies a nonzero installed version. It installs exact `tauri-driver` `2.0.6`, builds pinned `msedgedriver-tool` revision `8c4b34f51b45f5cf08013366d703de464ab871d1`, downloads the EdgeDriver matching that runtime, verifies Microsoft's signature, and passes both explicit tool paths to the smoke. The driver processes use two ephemeral loopback ports and are test-only. The M007 child protocol itself opens no socket or network listener; it uses redirected standard streams owned by the release executable.
 
+The M010 closeout run exposed a nondeterministic synchronization-probe race on
+clean hosted Windows. The proof captured publication-DOM and range geometry
+before a legitimate lazy raster/layout update triggered by its own reader
+scroll had settled, so the same unchanged application could report the target
+outside the reader and the DOM changed. The corrected test waits for a bounded
+maximum of 24 animation frames and requires three consecutive content-free
+stable geometry/DOM observations before registering the highlight and taking
+the preservation baseline. It does not weaken viewport, focus, selection,
+contrast, underline, DOM, URL, or two-post-registration-frame assertions.
+
 ### Native raster decode safety probe
 
 ADR-0010 requires native Windows WebView2 evidence because jsdom cannot execute `HTMLImageElement.decode()` or prove the packaged CSP. `pnpm.cmd test:native-startup` now opens the comprehensive synthetic EPUB, scrolls its image host into the lazy-load margin, requires a visible 1×1 `<img>` with semantic alt text and an application-created `blob:` source, closes the publication, and verifies the image is removed with no page/console error or external request. For the isolated manager boundary, build and launch the release executable and activate **Run synthetic raster safety probe**. The fixed status must change from “Raster safety probe has not run” to “Bounded local raster decoding is available.” Repeat the probe to verify that the prior synthetic source was released and a new Blob URL can be decoded under `img-src 'self' blob:`.
@@ -631,16 +641,43 @@ requests. Its observed 291.3 buffering seconds per playback minute is
 observation-only, confirms substantial run-to-run throughput variation, and
 does not select or reject a new engine profile.
 
+## M010 support and resilience closeout
+
+The final
+[`tts-support-matrix-v1`](../architecture/tts-support-matrix-v1.md) binds every
+product support claim to immutable registry evidence and the frozen selection
+records. Piper/davefx is `supported` only because v6 passed every machine,
+quality, cancellation, memory, offline, cleanup, license, and packaging gate.
+Qwen/Serena remains `development-only`; Qwen/Aiden and Supertonic/F1 remain
+`unsupported`. Deterministic registry tests prove those exact states, evidence
+hashes, margins, selection rules, one-tree replacement, and zero automatic
+failover without loading a model.
+
+Closeout validation runs:
+
+```powershell
+pnpm.cmd check
+pnpm.cmd check:portable
+git diff --check
+```
+
+The hardware-specific evidence remains the frozen v6 result and the separately
+invoked `pnpm.cmd test:tts:resilience-exact-host` matrix described above.
+Default checks do not rerun private/model-backed evaluation. Required Ubuntu
+portable and Windows native pull-request checks must pass before M010 and the
+related M008.1 closeout are archived.
+
 ## Deferred coverage
 
 The secure EPUB, reader, narration-preparation, M007 service/protocol, M008
-exact-development quick/prepared flows, and M009 segment synchronization now
-have their scoped deterministic, packaged, and exact-host evidence. Default
-tests and CI still load no candidate or model; the model-backed M009 timing,
-highlight/follow, navigation, persistence, and cleanup matrix remains a
-separate exact-host command. General supported-hardware detection, standard
-profile selection, installer behavior, and complete production-profile MVP
-end-to-end coverage remain deferred. The examples below are requirements for
+exact-development quick/prepared flows, M009 segment synchronization, and
+M010 Windows host matching/recovery now have their scoped deterministic,
+packaged, and exact-host evidence. Default tests and CI still load no candidate
+or model; model-backed timing, profile, navigation, persistence, and cleanup
+matrices remain separate exact-host commands. Non-Windows hardware support, a
+supported standard GPU profile, installer behavior, license-complete
+distribution, and complete production-profile MVP end-to-end coverage remain
+deferred. The examples below are requirements for
 those later roadmap milestones, not claims about current coverage.
 
 ## Test levels

@@ -130,11 +130,13 @@ Focused validation passes:
 
 ### Status
 
-In progress pending required pull-request checks. Metrics and accessible
+In progress pending replacement required pull-request checks. Metrics and accessible
 status are implemented; current product, architecture, diagram, roadmap,
 setup, testing, and troubleshooting documentation is reconciled; and full
 portable, authoritative Windows, privacy/artifact, relative-link, and diff
-validation pass.
+validation pass. The merged implementation's Windows smoke exposed a
+nondeterministic pre-highlight layout-settlement race in shared test
+infrastructure; its bounded correction passes locally.
 
 ## Testing and benchmark strategy
 
@@ -178,6 +180,23 @@ human listening may tune a future version but cannot silently alter v1.
   authoritative Windows `pnpm.cmd check`, relative Markdown-link validation,
   the 28-file task-delta privacy/artifact scan, and `git diff --check`.
   Required pull-request checks remain before archival.
+- 2026-07-29: PR #149's Ubuntu check passed, while its clean Windows packaged
+  smoke exposed a shared synchronization-probe race unrelated to transition
+  scheduling. The proof took its DOM/geometry baseline before a legitimate
+  lazy raster/layout update caused by the proof's own reader scroll had
+  settled. The bounded correction requires three stable content-free
+  observations within 24 animation frames before highlight registration and
+  retains all visibility, focus, selection, DOM, URL, and paint assertions.
+  The corrected release-packaged smoke passes locally; replacement required
+  checks remain before archival. Corrective checkpoint
+  `b7a2ea7f9fc8b3beb698b0d467556a1bbcc2c48c` contains only the shared smoke
+  proof stabilization.
+- 2026-07-29: The corrected shared smoke and the current repository aggregate
+  pass again during M010 Milestone 7 closeout: 20 shared files / 209 tests,
+  34 EPUB files / 559 tests, 43 desktop files / 415 tests, seven native-client
+  tests, 40 Rust tests, 256 Python tests, all builds, relative-link validation,
+  the 19-file privacy/artifact scan, and `git diff --check`. Replacement
+  required pull-request checks are the only remaining archival gate.
 
 ## Discoveries and decisions
 
@@ -217,5 +236,6 @@ Local implementation validation passes:
 The existing Vite CSS Custom Highlight/chunk-size advisories and sandbox-denied
 Pytest cache-write warning remained non-failing. No exact model, private EPUB,
 network service, or audio device was required for deterministic correctness.
-Required Ubuntu portable and Windows native pull-request checks remain before
-this plan can move to `completed/`.
+PR #149's Ubuntu portable check passed and its Windows native check exposed the
+shared synchronization-probe race recorded above. Replacement Ubuntu portable
+and Windows native checks remain before this plan can move to `completed/`.

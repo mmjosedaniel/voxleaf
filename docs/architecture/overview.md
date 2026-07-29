@@ -20,9 +20,12 @@ M008.1 is an active focused closeout with frozen authority and deterministic
 desktop implementation. It adds boundary-aware scheduled separation between
 already-buffered generated units without changing M008 thresholds or the TTS
 service/protocol. Portable and authoritative Windows repository validation
-pass; required pull-request checks remain.
+pass. A nondeterministic clean-runner synchronization-probe race found by the
+merged implementation check has a bounded stabilization correction; replacement
+required checks remain before archival.
 
-M010 is in progress with Milestones 1-6 complete. Milestones 1-4 implement the
+M010 Milestones 1-6 are complete, and Milestone 7 has recorded the final
+support/recovery decision and entered closeout validation. Milestones 1-4 implement the
 privacy-safe native host report, immutable measured registry, fail-closed
 matching and preference, compatibility UI, pre-start checks, and identity-safe
 explicit recovery. Milestone 5 passes every frozen Piper v6 gate and selects
@@ -39,8 +42,12 @@ measured `5,996`-MiB peak plus a frozen `512`-MiB reserve for currently
 available VRAM only when native-gated and development-only. The packaged host
 now offers and executes Qwen; its broader matrix later stops at the depletion
 synchronization assertion. Raw host reports remain transient, non-Windows
-detection remains unavailable, M010 Milestone 7 remains, and M011 still owns
-production distribution and Piper's GPL/CC0 packaging obligations.
+detection remains unavailable, and
+[`tts-support-matrix-v1`](tts-support-matrix-v1.md) now makes Piper the sole
+supported and automatically recommendable profile when compatible and
+configured while retaining explicit selection and zero automatic failover.
+Required replacement pull-request checks remain before archival. M011 still
+owns production distribution and Piper's GPL/CC0 packaging obligations.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
@@ -89,8 +96,9 @@ identity enters the snapshot. Milestone 5 connects exact audible starts and
 matching completions to the existing bounded position repository, suppresses
 visual saves while narration owns position, flushes interruption and lifecycle
 checkpoints, and prevents reflow from regressing the last heard locator.
-Production
-distribution and general-hardware support also remain unimplemented.
+Production distribution and cross-platform/general-population support remain
+unimplemented; the implemented matcher currently makes exact evidence-backed
+Windows host decisions only.
 
 M008.1 overlays one engine-neutral playback transition on that unchanged
 buffer authority. The coordinator reduces the completed prepared segment's
@@ -140,7 +148,7 @@ Desktop application
 |-- Adaptive scheduler, payload FIFO, and low-level Web Audio player
 |   [M008 Milestones 2-3; exact-demo path connected]
 |-- Boundary-aware buffered-unit transition policy and timer
-|   [M008.1 deterministic implementation complete locally]
+|   [M008.1 implemented; replacement closeout CI pending]
 |-- Content-free preparation estimates, optional wait decisions, and controls
 |   [M008 Milestone 4; mounted only for exact native configuration]
 |-- Product narration coordinator [M008 Milestone 5; exact demo implemented]
@@ -579,6 +587,18 @@ invalid configuration disables Play without creating a child or recovery
 episode; paths, environment values, model data, and raw errors never cross the
 native boundary. Configured Piper passes the release-packaged reader matrix
 through this gate.
+
+M010 Milestone 7 accepts
+[`tts-support-matrix-v1`](tts-support-matrix-v1.md) and ADR-0023 without
+editing byte-frozen evaluation records. Piper/davefx is the sole `supported`
+CPU fallback and the only automatically recommendable profile when its
+matcher and runtime-configuration gates pass. Qwen/Serena remains an explicit
+native-gated `development-only` choice; Qwen/Aiden and Supertonic/F1 remain
+unselectable `unsupported` evidence. Fallback never means automatic engine
+failover. Recovery stays identity-first, cleanup-verified, limited to one
+explicit action, and constrained to one service tree. M011 owns distribution,
+including Piper GPL/phonemizer notices, corresponding-source or written-offer
+mechanics, CC0 voice provenance, installer size, signing, and updates.
 
 The implemented audio-frame v1 boundary describes payload-free in-memory frame metadata with frame, session, generation, and narration-segment identities; monotonic sequence; positive sample rate, per-channel sample-frame count, and channel count; and an explicit end-of-segment marker. Duration is derived from sample count divided by sample rate. Public helpers return conservative whole milliseconds using exact integer arithmetic, sum samples before truncating once, and reject unsafe duration overflow. Contiguous single-segment runs reject duplicate frame IDs, sequence gaps or reversals, identity or format changes, and frames after the segment-end marker. The contract selects no codec, payload representation, audio API, player, or buffer policy.
 

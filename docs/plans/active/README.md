@@ -21,7 +21,8 @@ Follow `.agents/PLANS.md` and update the progress log while working.
   active focused M008 follow-up that freezes and implements bounded semantic
   pauses between independently generated buffered audio units without changing
   TTS text, protocol, generated PCM, or the separate zero-default low-buffer
-  boundary-wait policy.
+  boundary-wait policy. Local validation passes; the replacement closeout PR
+  must pass the required clean Windows packaged smoke before archival.
 - [`M010-hardware-profiles-fallback-and-operational-resilience.md`](M010-hardware-profiles-fallback-and-operational-resilience.md):
   approved focused ExecPlan for privacy-safe host detection, evidence-backed
   profile matching, fallback admission, and identity-safe operational
@@ -35,7 +36,9 @@ Follow `.agents/PLANS.md` and update the progress log while working.
   ordinary-prose, compact-form, and zero-sentence-boundary fragment corrections
   pass. Qwen passes offline service validation and corrected native-gated
   development VRAM admission; packaged inference runs, while its later
-  depletion assertion remains failed. Milestone 7 closeout remains.
+  depletion assertion remains failed. Milestone 7 records the final support
+  matrix and ADR; local closeout validation and replacement required
+  pull-request checks remain before archival.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through

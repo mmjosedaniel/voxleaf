@@ -37,6 +37,13 @@ distribution obligations. M011 still owns notices, corresponding-source or
 written-offer mechanics, model provenance, installer size, signing, and
 updates.
 
+M010 Milestone 7 adds no dependency, manifest, lockfile, runtime capability,
+or distribution edge. The final
+[`tts-support-matrix-v1`](../architecture/tts-support-matrix-v1.md) confirms
+the exact isolated Piper and Qwen projects remain the only admitted runtime
+graphs, records their licenses and offline boundaries, and keeps Piper
+distribution conditional on M011 compliance work.
+
 ## Shipped application dependencies
 
 These are the only direct libraries that can participate in the current application's runtime output.
