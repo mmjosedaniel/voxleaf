@@ -400,8 +400,10 @@ Complete on 2026-07-28. The pre-result authority checkpoint is
 ### Status
 
 Complete on 2026-07-28. The implementation checkpoint is
-`842770f7780930aeb971db7777e61ca34fb53e78`. The probe creates no support or
-fallback claim.
+`842770f7780930aeb971db7777e61ca34fb53e78`; documentation reconciliation,
+full validation evidence, and final permission/privacy hardening are recorded
+at `fedf894e734016f720662caa155c9760d7216175`. The probe creates no support
+or fallback claim.
 
 ## Milestone 3: Implement measured profile matching and compatibility UI
 
@@ -646,7 +648,9 @@ rewrite unrelated reader state.
   no-provider, unknown, ambiguous, unsupported-platform, and fixed-error
   cases. The implementation checkpoint is
   `842770f7780930aeb971db7777e61ca34fb53e78`. No measured host value was
-  retained and no profile was matched.
+  retained and no profile was matched. Documentation, full validation
+  evidence, and final permission/privacy hardening are retained at
+  `fedf894e734016f720662caa155c9760d7216175`.
 - 2026-07-28: Completed Milestone 1 before any M010 host measurement. Added
   canonical `HostProfileCompatibilityReportV1`, strict fixtures/generated
   validators/runtime decoder, exact enum/unit/max/unknown semantics, the
