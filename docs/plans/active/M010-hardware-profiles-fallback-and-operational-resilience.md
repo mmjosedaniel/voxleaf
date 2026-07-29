@@ -623,6 +623,12 @@ configuration, and settings choice atomically.
   recognized sentence boundary occurs. Keep code-point and byte non-emptiness,
   accept the non-negative sentence measurement, and prove the second bounded
   preparation batch no longer fails.
+- Correct the Qwen development-only compatibility discrepancy without
+  weakening supported profiles. Freeze a separate authority that retains the
+  generic total-VRAM requirement but uses the measured Qwen peak plus the
+  predeclared 512-MiB v4 engineering reserve for currently available VRAM only
+  when the native-gated entry is both `development-demo` and
+  `development-only`.
 
 ### Validation
 
@@ -711,6 +717,14 @@ and every queue/resource bound. The rebuilt packaged application then accepted
 27 units, held 60.837 playable seconds, remained in `playing` with no failure,
 and kept the service `ready`; starting through the paragraph leaf succeeded.
 Milestone 6 is complete.
+
+The corrective Qwen development admission is in progress. Authority is frozen
+in `qwen-development-vram-admission-v1.md` and ADR-0022 before matcher
+implementation. It retains the exact `5,996` MiB measured peak, `7,196` MiB
+total dedicated-VRAM requirement, development gate, runtime configuration
+check, failed standard-profile decision, and every supported/fallback margin.
+Only the development-only currently-available threshold changes to `6,508`
+MiB.
 
 ## Milestone 7: Record support decisions and close validation
 
@@ -810,6 +824,15 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-29: Reproduced the Qwen compatibility discrepancy from the immutable
+  registry and matcher: the exact `5,996` MiB measured peak receives the
+  generic 20% margin for both total and currently available VRAM, requiring
+  `7,196` MiB free and rejecting the already-proven 8-GB-class development
+  host during ordinary desktop use. Froze
+  `qwen-development-vram-admission-v1.md` and ADR-0022 before corrective code.
+  The new authority retains `7,196` MiB total VRAM and every supported-profile
+  margin, while exact native-gated development-only Qwen requires `6,508` MiB
+  currently available: measured peak plus the predeclared v4 512-MiB reserve.
 - 2026-07-29: Closed the final private-book discrepancy. A content-safe full
   scan prepared all 5,722 units and confirmed exact Piper synthesis across the
   publication. A release-packaged private-book reproduction then localized the

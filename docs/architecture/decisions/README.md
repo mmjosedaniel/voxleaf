@@ -32,6 +32,7 @@ ADR-0002-short-description.md
 - [`ADR-0019-privacy-safe-hardware-profiles-and-recovery.md`](ADR-0019-privacy-safe-hardware-profiles-and-recovery.md): privacy-safe host facts, evidence-backed profile matching, result-blind fallback admission, and identity-first explicit recovery.
 - [`ADR-0020-admit-piper-cpu-fallback.md`](ADR-0020-admit-piper-cpu-fallback.md): admit exact Piper/davefx as the speed-focused CPU fallback while retaining Qwen/Serena as an optional development-only GPU profile.
 - [`ADR-0021-boundary-aware-audio-transitions.md`](ADR-0021-boundary-aware-audio-transitions.md): schedule bounded semantic pauses between independently generated buffered audio units without creating silent PCM or changing model input.
+- [`ADR-0022-qwen-development-vram-admission.md`](ADR-0022-qwen-development-vram-admission.md): retain the generic total-VRAM rule while using a frozen 512-MiB available-VRAM reserve only for explicitly gated development-only GPU profiles.
 
 ## Template
 
