@@ -38,7 +38,7 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 | Adaptive audio scheduling and playback             | **Implemented and validated**           | Completed M008 provides the frozen authority, scheduler, sole-owner payload FIFO, Web Audio player, preparation presenter, controls, exact-development application coordinator, measured packaged quick/prepared matrix, final demo policy, and passing required CI. M009 Milestone 2 adds bounded source-range projection without changing PCM ownership.                                                                                                                              |
 | Reader/narration synchronization                   | **Implemented and validated**           | Completed M009 implements the frozen segment authority, bounded content-free audible projection, one reader-owned Custom Highlight, focus-safe following, identity-first navigation, non-skipping heard-position persistence, passing exact-host proof, and repository/CI closeout.                                                                                                                                                                                                     |
 | Reader experience stabilization                    | **Complete and validated**              | Completed M009.1 repairs same-chapter active-range materialization; implements one reader scroll owner, stable compact chrome, collapsible narration detail, truthful loaded-duration text, and one bounded canonical paragraph leaf; and separates passive viewport inspection from explicit narration replacement. Deterministic, Chromium, packaged WebView2, private-EPUB, exact-host, repository, privacy, portable, and required Ubuntu/Windows checks pass.                      |
-| Hardware profiles, fallback, and resilience        | **In progress; fallback selected**      | M010 Milestones 1-5 implement detection, three-entry executable matching, preference/recheck UI, identity-safe recovery, and the passing Piper/davefx CPU-fallback decision. Exact Qwen/Serena remains development-only. Piper is not yet in the executable registry, service, or settings; Milestone 6 owns atomic integration and resilience proof.                                                                                                                                   |
+| Hardware profiles, fallback, and resilience        | **In progress; Piper arm validated**    | M010 Milestones 1-5 implement detection, matching, preference/recheck UI, identity-safe recovery, and the passing Piper/davefx CPU-fallback decision. Milestone 6 adds the fourth executable Piper profile, exact isolated service adapter, profile-aware supervision/settings, and resilience runner. The packaged Piper arm passes; exact Qwen/Serena remains development-only and its final OS-enforced offline packaged arm is pending the interpreter firewall rule.                         |
 | Release packaging                                  | **Deferred**                            | M011 remains future work; installer bundling, signing, model/runtime distribution, updater policy, and complete-MVP validation are not implemented.                                                                                                                                                                                                                                                                                                                                     |
 
 ## Component and trust-boundary map
@@ -71,7 +71,7 @@ flowchart LR
             SYNC["Reader segment projection, following,<br/>and synchronized user navigation<br/>M9 complete; M9.1 M2 materialization repair"]:::implemented
             HEARD_STORE["Heard-position persistence bridge<br/>exact boundaries + lifecycle flush<br/>M9 complete"]:::implemented
             STABILIZE["Reader experience stabilization<br/>highlight repair + fixed reader viewport;<br/>compact narration + bounded leaf + passive isolation<br/>M9.1 complete"]:::implemented
-            COMPAT["Privacy-safe detector + measured matcher<br/>bounded preference, compatibility UI, pre-start check<br/>M10 Milestones 1-3 complete"]:::implemented
+            COMPAT["Privacy-safe detector + measured matcher<br/>four profiles, bounded preference, UI, pre-start check<br/>M10 Milestones 1-3 + M6 integration"]:::implemented
             RECOVERY["Identity-safe recovery controller<br/>verified cleanup + one explicit restart<br/>M10 Milestone 4 implemented"]:::implemented
         end
 
@@ -85,12 +85,13 @@ flowchart LR
             PYTHON["Bounded Python protocol service<br/>fake + common one-active adapter boundary<br/>M7 complete"]:::implemented
             FAKE_CHILD["Supervised model-free Rust child<br/>framed stdio + synthetic complete unit<br/>M7 complete"]:::implemented
             QWEN["Exact Qwen/Serena adapter<br/>verified local artifacts + complete unit<br/>M7 Milestone 4 implemented; dev-only"]:::implemented
+            PIPER["Exact Piper/davefx CPU adapter<br/>verified local artifacts + 24-kHz complete unit<br/>M10 Milestone 6 integrated"]:::implemented
             FEASIBILITY["TTS feasibility harness + profile decision<br/>Implemented development evidence:<br/>both v2 roles rejected"]:::implemented
             PROFILE_CYCLE["TTS profile blocker resolution<br/>Complete: M6.1<br/>batch-one v3 failed; demo exception"]:::implemented
             BATCH_PROBE["Short-unit and dual-worker probe<br/>Complete: M6.2<br/>CPU + dual worker rejected"]:::implemented
             TTS["Constrained local TTS service + protocol<br/>M7 complete and exact-host measured"]:::implemented
             PROD_TTS["Standard production TTS profile<br/>Blocked: no passing profile"]:::blocked
-            CPU_FALLBACK["Piper/davefx CPU fallback<br/>Selected by v6 evidence;<br/>runtime/settings integration pending M10 M6"]:::progress
+            CPU_FALLBACK["Piper/davefx CPU fallback<br/>Selected by v6 evidence;<br/>runtime integrated and packaged arm passed"]:::implemented
         end
     end
 
@@ -117,7 +118,9 @@ flowchart LR
     PROFILE_CYCLE -.-> BATCH_PROBE
     BATCH_PROBE -.->|"selection-v5 + ADR-0015:<br/>one GPU demo only"| TTS
     TTS -.->|"does not establish production viability"| PROD_TTS
-    CPU_FALLBACK -.->|"v6 passed; M10 M6 must integrate"| TTS
+    CPU_FALLBACK -->|"v6 admitted profile"| PIPER
+    PYTHON -->|"one active exact request"| PIPER
+    PIPER -->|"bounded 24-kHz complete unit"| TTS
     PREP -->|"ephemeral prepared text;<br/>exact demo only"| PLAYBACK
     SHARED -->|"generated protocol contracts"| PYTHON
     PYTHON -->|"model-free service evidence"| TTS
@@ -192,19 +195,23 @@ Tauri; adapter identity and raw errors are discarded, and unsupported
 platforms return unavailable. Milestone 3 matches only immutable measured
 entries with fixed safety margins, keeps raw facts transient, persists only a
 bounded profile ID, and rechecks immediately before the product coordinator
-may issue the typed child-start request. The only currently executable runtime
-remains exact development-gated Qwen/Serena; the three-entry runtime registry
-has no supported recommendation. The recovery edge is now solid. Milestone 4
+may issue the typed child-start request. Milestone 6 adds exact Piper/davefx as
+the fourth executable `supported` profile while retaining exact Qwen/Serena as
+development-only. Profile selection stops and invalidates current narration
+before one new native configuration can start; only one service tree exists.
+The recovery edge is now solid. Milestone 4
 implements the
 closed failure taxonomy, identity-first teardown, bounded PCM cleanup
 completion, zero-owner verification, latest-heard resume, one explicit
 restart, terminal containment, and profile/recheck episode reset. The
 authority keeps host facts separate from engine `CapabilityReportV1`; no
 automatic retry or second service tree is admitted. Milestone 5 passes every
-frozen Piper v6 gate and changes the CPU-fallback node from blocked to
-selected/pending integration. Milestone 6 must add the executable Piper
-adapter, registry entry, settings choice, and resilience proof together so the
-selection cannot disable the existing Qwen development path.
+frozen Piper v6 gate. Milestone 6 integrates the verified isolated Piper
+adapter, converts its complete 22,050-Hz waveform to the protocol's bounded
+24,000-Hz mono unit, and passes the exact-host service and packaged adaptive
+Piper arms with zero GPU use and zero generated-audio persistence. The Qwen
+service arm passes; the final Qwen packaged offline arm remains pending its
+administrator-created interpreter firewall rule.
 
 ## EPUB-to-audio flow
 
@@ -300,7 +307,7 @@ value remains a simultaneous ceiling, not a startup target.
 | Constrained local TTS service and process protocol      | [M007 completed ExecPlan](../plans/completed/M007-local-tts-service-and-process-protocol.md), accepted frozen [protocol v1 authority](tts-service-protocol-v1.md), accepted [ADR-0016](decisions/ADR-0016-rust-owned-stdio-tts-protocol.md), and the schema-valid [exact-host handoff result](../../benchmarks/tts/service-handoff-result-v1-exact-host.json). M007 validates transport, canonical contracts, Python service, native supervision, typed client, exact Qwen/Serena integration, model-free packaged evidence, and measured exact-host delivery/backpressure/invalidation/termination/cleanup/reload evidence.                                                                         |
 | Reader/narration synchronization                        | [M009 completed ExecPlan](../plans/completed/M009-synchronized-reading-and-narration.md), frozen [synchronization authority v1](synchronization-authority-v1.md), and accepted [ADR-0017](decisions/ADR-0017-segment-level-reader-narration-synchronization.md). Milestones 1-7 implement and validate the authority/proof, bounded audible projection, reader highlight/follow consumer, identity-first synchronized navigation, non-skipping heard persistence, exact-host packaged proof, and repository/CI closeout.                                                                                                                                                                             |
 | Reader experience stabilization                         | [M009.1 completed ExecPlan](../plans/completed/M009-001-reader-experience-stabilization.md), frozen [reader-experience authority v1](reader-experience-authority-v1.md), and accepted [ADR-0018](decisions/ADR-0018-reader-experience-stabilization.md). The highlight repair, fixed shell, compact narration, truthful loaded-duration text, bounded paragraph leaf, and passive-scroll isolation are implemented and validated. Pull request #142 passed required Ubuntu/Windows checks and merged the closeout.                                                                                                                                                                                   |
-| Hardware profiles, fallback, and operational resilience | [M010 active ExecPlan](../plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md), frozen [hardware/profile/recovery authority v1](hardware-profile-recovery-authority-v1.md), accepted [ADR-0019](decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md), passing [Piper v6 result](../../benchmarks/tts/cpu-fallback-result-v6.json), accepted [selection-v6](../../benchmarks/tts/selection-v6.md), and [ADR-0020](decisions/ADR-0020-admit-piper-cpu-fallback.md). Milestones 1-5 implement detection, matching, preference/recheck UI, explicit recovery, and select the CPU fallback. Milestone 6 owns executable Piper integration and the resilience matrix. |
+| Hardware profiles, fallback, and operational resilience | [M010 active ExecPlan](../plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md), frozen [hardware/profile/recovery authority v1](hardware-profile-recovery-authority-v1.md), accepted [ADR-0019](decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md), passing [Piper v6 result](../../benchmarks/tts/cpu-fallback-result-v6.json), accepted [selection-v6](../../benchmarks/tts/selection-v6.md), and [ADR-0020](decisions/ADR-0020-admit-piper-cpu-fallback.md). Milestones 1-5 implement detection, matching, preference/recheck UI, explicit recovery, and select the CPU fallback. Milestone 6 integrates the admitted Piper runtime and passes its service and packaged adaptive arms; final Qwen OS-offline evidence remains. |
 | Local-first desktop and future local process direction  | [ADR-0001](decisions/ADR-0001-local-first-desktop.md); ADR-0015 permits a constrained one-GPU development demo while the production profile and distribution boundary remain unresolved                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Roadmap status                                          | [Roadmap](../plans/roadmap.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
@@ -308,7 +315,7 @@ value remains a simultaneous ceiling, not a startup target.
 
 1. **Milestone 9 — Complete:** all seven M009 milestones are implemented, exact-host validated, and covered by passing required Ubuntu and Windows pull-request checks.
 2. **Milestone 9.1 — Complete:** the [reader-experience authority v1](reader-experience-authority-v1.md) and [ADR-0018](decisions/ADR-0018-reader-experience-stabilization.md) are implemented. Deterministic, Chromium, release-packaged WebView2, private-EPUB, exact-host, repository, privacy, portable, and required Ubuntu/Windows validation pass.
-3. **Milestone 10 — In progress:** Milestones 1-5 freeze and implement the privacy-safe report, measured matching, compatibility/recheck UI, identity-safe recovery, and passing Piper CPU-fallback decision. Follow the [M010 ExecPlan](../plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md) for atomic Piper registry/service/settings integration and remaining resilience validation while retaining Qwen/Serena as development-only.
+3. **Milestone 10 — In progress:** Milestones 1-5 freeze and implement the privacy-safe report, measured matching, compatibility/recheck UI, identity-safe recovery, and passing Piper CPU-fallback decision. Milestone 6 integrates the four-entry registry, exact Piper service, profile-aware settings/supervision, and admitted-profile resilience runner; the Piper exact-host arm passes while Qwen's final OS-enforced offline packaged arm remains open. Milestone 7 owns final support decisions and closeout.
 4. **Milestone 11 — Deferred:** complete installer/signing/distribution and full MVP closeout only after M010 establishes supportable hardware and recovery claims.
 
 Update this document whenever a major component boundary, process/package dependency, trust boundary, persistence owner, external interaction, runtime flow, or roadmap implementation status changes. A completed plan may advance a node or arrow only when its definition of done and validation evidence are present.

@@ -2,7 +2,7 @@
 
 ## Scope and ownership
 
-This inventory covers every dependency declared directly by the repository and explains how transitive dependencies are controlled. The Milestone 1 foundation established the initial inventory; ADR-0006 added a development-time schema-to-TypeScript generator, Milestone 2 Task 2.1 added Ajv for the first real decoder, Milestone 4 Task 2.5 moved Ajv to generation/test-only use after introducing standalone validators, Task 5.5 added test-only Python schema validation plus Node declarations for cross-language fixture conformance, and Milestone 3 Task 1.2 selected the low-level ZIP and XML primitives proven below. M007 Milestone 3 promotes the minimal Rust JSON surface and Windows Job Object bindings needed by the accepted native supervisor. M010 Milestone 2 promotes the already locked official `windows` projection to a direct target-specific dependency for reviewed host-detection APIs. This inventory does not approve future TTS-model, audio-playback, persistence, installer, updater, telemetry, or renderer-framework dependencies.
+This inventory covers every dependency declared directly by the repository and explains how transitive dependencies are controlled. The Milestone 1 foundation established the initial inventory; ADR-0006 added a development-time schema-to-TypeScript generator, Milestone 2 Task 2.1 added Ajv for the first real decoder, Milestone 4 Task 2.5 moved Ajv to generation/test-only use after introducing standalone validators, Task 5.5 added test-only Python schema validation plus Node declarations for cross-language fixture conformance, and Milestone 3 Task 1.2 selected the low-level ZIP and XML primitives proven below. M007 Milestone 3 promotes the minimal Rust JSON surface and Windows Job Object bindings needed by the accepted native supervisor. M010 Milestone 2 promotes the already locked official `windows` projection to a direct target-specific dependency for reviewed host-detection APIs. M010 Milestone 6 integrates the separately locked admitted Piper environment without moving it into the base Python graph. This inventory does not approve future bundled TTS-model, persistence, installer, updater, telemetry, or renderer-framework dependencies.
 
 Dependency declarations and resolved versions have one owner per ecosystem:
 
@@ -25,6 +25,17 @@ package may use this candidate only as a separately identified local process
 with the license, notice, corresponding-source or written-offer, and model
 provenance obligations frozen in
 [`tts-feasibility-profile-v6.md`](../architecture/tts-feasibility-profile-v6.md).
+
+M010 Milestone 6 adds no manifest or lockfile edge. Service-owned
+`PiperTtsEngine` imports Piper and ONNX Runtime only from that exact isolated
+interpreter after the native supervisor verifies the candidate lock and local
+voice root. The adapter also verifies runtime versions, artifact hashes,
+CPU-only provider use, and offline controls before synthesis. This makes the
+admitted profile executable for local validation; it does not move Piper into
+`services/tts/uv.lock`, bundle an engine or voice, or satisfy GPL/CC0
+distribution obligations. M011 still owns notices, corresponding-source or
+written-offer mechanics, model provenance, installer size, signing, and
+updates.
 
 ## Shipped application dependencies
 

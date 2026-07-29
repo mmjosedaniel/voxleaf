@@ -40,13 +40,14 @@ pnpm.cmd --filter @voxleaf/desktop test
 Treat another persistent restoration stall as a regression; do not bypass
 restoration or clear private reader data merely to make the UI advance.
 
-## Exact one-GPU narration demo
+## Exact local narration profiles
 
 The M008 narration path and M009 synchronized reader integration form a
-constrained development demo, not a production or general-hardware profile.
-They are intentionally absent unless the native process starts with the exact
-verified Qwen3-TTS 12Hz 1.7B CustomVoice/Serena configuration documented in
-[`setup.md`](setup.md).
+constrained local path, not a production or general-hardware claim. Qwen
+remains a development-only GPU profile. M010 admits Piper/davefx as the
+supported CPU fallback and Milestone 6 integrates it, but M011 still owns
+release packaging and license fulfillment. Both exact local configurations
+are documented in [`setup.md`](setup.md).
 
 ### Narration controls are unavailable
 
@@ -59,7 +60,15 @@ $env:VOXLEAF_TTS_DEV_PYTHON = (Resolve-Path "services/tts/benchmarks/candidates/
 $env:VOXLEAF_TTS_DEV_MODEL_ROOT = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda").Path
 ```
 
-The Python executable, verified ignored model root, outbound-blocking firewall
+For Piper, set its separate exact keys instead:
+
+```powershell
+$env:VOXLEAF_TTS_PIPER_ENABLED = "1"
+$env:VOXLEAF_TTS_PIPER_PYTHON = (Resolve-Path "services/tts/benchmarks/candidates/piper_1_4_2_cpu/.venv/Scripts/python.exe").Path
+$env:VOXLEAF_TTS_PIPER_MODEL_ROOT = (Resolve-Path "models/tts/piper-1.4.2-es_ES-davefx-medium-0d907f1").Path
+```
+
+Each Python executable, verified ignored model root, outbound-blocking firewall
 rule, `tauri-driver`, and matching EdgeDriver must already exist. The
 model-free child is test infrastructure and must never be exposed as a
 user-facing voice.
@@ -69,10 +78,13 @@ Run the focused host diagnostic before the full playback matrix:
 ```powershell
 pnpm.cmd test:tts:exact-host
 pnpm.cmd test:tts:adaptive-exact-host
+pnpm.cmd test:tts:resilience-exact-host
 ```
 
-Both commands are Windows/CUDA-only, excluded from normal checks and CI, and
-must remain offline after artifact preparation.
+These commands are Windows exact-host tests, excluded from normal checks and
+CI, and must remain offline after artifact preparation. The combined
+resilience command requires both exact profile configurations and firewall
+rules.
 
 ### Compatibility is unavailable, unknown, or failed
 
@@ -88,8 +100,10 @@ native variables above and the frozen RAM, VRAM, storage, provider, precision,
 and device-class margins. Closing unrelated GPU/RAM-heavy applications may
 change available capacity; use `Check compatibility again` afterward. Rejected
 Qwen/Aiden and Supertonic records are intentionally listed as unavailable and
-cannot be selected. `No measured CPU fallback is available` is the current
-truthful result.
+cannot be selected. A compatible complete CPU report may recommend the
+supported Piper/davefx fallback. If it remains unavailable, verify the Piper
+native configuration, exact artifact hashes, CPU provider, and frozen RAM and
+storage margins; do not force the preference.
 
 Do not edit local storage or bypass preflight to force a profile. VoxLeaf
 persists only one bounded profile ID and revalidates it; it never stores the raw
@@ -99,7 +113,7 @@ starting.
 ### Quick start takes longer than expected
 
 Quick start means playback begins when approximately 15 playable seconds are
-ready; it is not a 15-second wall-clock promise. The final M008 policy rerun
+ready; it is not a 15-second wall-clock promise. For Qwen, the final M008 policy rerun
 took 41.312 seconds from command to audible playback, while the later M009
 synchronized matrix took 42.621 seconds with 16.240 playable seconds at start.
 Cold load, complete-unit generation, navigation/restart work, and the need for
@@ -111,7 +125,7 @@ minute; the other admitted choices are 2, 5, and 10 minutes.
 
 ### Playback reaches the generation frontier
 
-The exact worker is slower than real time. The final M008 policy rerun observed
+The exact Qwen worker is slower than real time. The final M008 policy rerun observed
 one underrun and 19.49 buffering seconds per playback minute. The longer M009
 synchronized matrix also observed one natural underrun/refill and measured
 378.46 buffering seconds per playback minute. Both exceed the MVP target of at
@@ -120,8 +134,9 @@ when audio reaches zero.
 
 Prepared playback and playback-only pause may build more lead, but they do not
 improve model throughput. Semantic-boundary waits remain disabled at `0` ms.
-Do not hide buffering, claim continuous playback, or enable a second CPU/GPU
-model worker.
+The admitted Piper CPU fallback has separately passing faster-than-real-time
+evidence and must be selected as its own profile, never as a simultaneous
+second worker. Do not hide buffering or generalize either exact-host result.
 
 ### Preparation stops after one or more playable units
 
@@ -186,6 +201,12 @@ pnpm.cmd --filter @voxleaf/desktop test:native-startup
 If it still fails, preserve only the fixed content-safe observation booleans
 and failure code. Do not attach the generated fixture, a private EPUB, rendered
 text, screenshots containing book content, or raw WebDriver logs.
+
+Run packaged WebView2 commands from a normal local PowerShell session. A nested
+automation sandbox can produce `webdriver-session-not-created` or
+`chrome not reachable` before the application mounts even when the release
+binary and local driver can create a session normally. Confirm the same command
+outside that sandbox before treating the result as a product failure.
 
 ### Memory, temperature, or cleanup looks abnormal
 

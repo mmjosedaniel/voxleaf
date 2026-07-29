@@ -17,8 +17,11 @@ and only then permits one explicit restart from the latest heard checkpoint.
 Protocol, cancellation-timeout, cleanup, and repeated-recovery failures are
 terminal for the episode. Milestone 5 selects exact Piper/davefx as the
 supported speed-focused CPU fallback after all frozen v6 gates passed. The
-exact Qwen/Serena profile remains development-only. Piper runtime and settings
-integration are not implemented until Milestone 6; no automatic retry or
+exact Qwen/Serena profile remains development-only. Milestone 6 now integrates
+both admitted identities through one active service tree, exposes explicit
+profile choice, and adds the exact Piper CPU adapter with bounded 22.05-to-24
+kHz conversion. Its packaged Piper resilience arm passes. The final
+outbound-blocked Qwen playback arm remains open; no automatic retry or
 uninterrupted-playback promise exists.
 
 ## Current implemented flow
@@ -29,9 +32,10 @@ uninterrupted-playback promise exists.
 3. VoxLeaf validates and loads the book.
 4. VoxLeaf opens at the user's last saved passage, or the beginning for a new book.
 5. The user reads and navigates the EPUB in a continuous reflowable reader, adjusts closed display preferences, and can close or replace the publication.
-6. On the exact configured development host, the user can start quick or
-   prepared local narration from the active narration leaf or visible target and hear complete
-   units through the bounded in-memory player.
+6. On an exact configured admitted host, the user can select compatible
+   Piper/davefx or development-only Qwen/Serena, then start quick or prepared
+   local narration from the active narration leaf or visible target and hear
+   complete units through the bounded in-memory player.
 7. The reader highlights and follows the audible stable segment. Ordinary
    viewport movement may inspect the book without changing narration. An
    explicit paragraph leaf, visible-passage, chapter, or previous/next passage
@@ -48,17 +52,20 @@ uninterrupted-playback promise exists.
    narration owns position, otherwise saves the canonical visual locator, and
    retains display preferences on the approved bounded lifecycle.
 10. Immediately before starting the exact model child, VoxLeaf rechecks the
-    selected development profile and fails closed if host compatibility or the
-    native development gate changed.
+    selected profile and fails closed if host compatibility or the applicable
+    native development gate changed. Switching profiles first invalidates and
+    stops the old narration; the two engines never run simultaneously.
 11. After a classified operational failure, VoxLeaf contains obsolete work
     and verifies zero service/audio ownership before offering at most one
     explicit restart. Restart uses fresh identities and the latest heard
     checkpoint; terminal failures direct the user to compatibility recheck or
     application restart.
 
-The narration path is deliberately hidden when the exact native development
-configuration is unavailable. It is not a standard or generally supported
-runtime profile.
+The narration path is deliberately hidden when no exact local admitted
+configuration is available. Piper is the supported CPU fallback; Qwen remains
+a constrained development-only profile. Installer delivery and license
+fulfillment remain M011 work, so neither local artifact setup is yet a
+general end-user distribution.
 
 The highlight/follow path above passed repository-authored synthetic,
 Chromium, packaged WebView2, exact-host, M009.1 clean-host, and ephemeral
@@ -70,10 +77,9 @@ authority.
 
 ## Remaining target user flow
 
-1. M010 continues from implemented detection, measured matching,
-   identity-safe recovery, and the passing Piper fallback decision through
-   executable profile/service/settings integration and the remaining
-   resilience matrix.
+1. M010 must finish the outbound-blocked Qwen arm, final repository/privacy
+   validation, support decision, and documentation closeout after the
+   implemented profile/service/settings integration and passing Piper matrix.
 2. M011 packages and validates an end-user distribution after those boundaries
    close.
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 9 and M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoration, locator-linked narration preparation, M007 service, exact-development M008 coordinator/player path, M009 segment-level synchronization, and M009.1 reader stabilization are implemented and validated within their documented scopes. M009.1 implements the [`reader-experience-authority-v1`](reader-experience-authority-v1.md): stronger paint-aware evidence, the same-spine materialization repair, one dedicated reader scroll owner, a fixed compact shell, collapsible narration detail, exact loaded/target/estimate text without a progress bar, one retargeted contextual paragraph leaf, and passive-scroll isolation. Locator sampling, reflow/restoration, highlight following, and the leaf share existing registered reader geometry; no second timing source, persisted state, protocol field, or buffer-policy change was added. Its private-EPUB, exact-host, repository/privacy, portable, packaged, and required Ubuntu/Windows validation pass; pull request #142 merged the closeout. M010 is in progress with Milestones 1-5 complete. Milestones 1-4 implement the privacy-safe native host report, immutable three-entry executable registry, fail-closed matching and preference, compatibility UI, pre-start checks, and identity-safe explicit recovery. Milestone 5 passes every frozen Piper v6 gate and selects exact Piper/davefx as the supported speed-focused CPU fallback. Qwen/Serena remains development-only. Piper is not yet wired into the executable registry, service, or settings; Milestone 6 owns that integration and resilience proof. Raw host reports remain transient, non-Windows detection remains unavailable, and M011 still owns production distribution and Piper's GPL/CC0 packaging obligations.
+Mixed implementation status. Roadmap Milestones 1 through 9 and M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoration, locator-linked narration preparation, M007 service, exact-development M008 coordinator/player path, M009 segment-level synchronization, and M009.1 reader stabilization are implemented and validated within their documented scopes. M009.1 implements the [`reader-experience-authority-v1`](reader-experience-authority-v1.md): stronger paint-aware evidence, the same-spine materialization repair, one dedicated reader scroll owner, a fixed compact shell, collapsible narration detail, exact loaded/target/estimate text without a progress bar, one retargeted contextual paragraph leaf, and passive-scroll isolation. Locator sampling, reflow/restoration, highlight following, and the leaf share existing registered reader geometry; no second timing source, persisted state, protocol field, or buffer-policy change was added. Its private-EPUB, exact-host, repository/privacy, portable, packaged, and required Ubuntu/Windows validation pass; pull request #142 merged the closeout. M010 is in progress with Milestones 1-5 complete and Milestone 6 partially validated. Milestones 1-4 implement the privacy-safe native host report, immutable measured registry, fail-closed matching and preference, compatibility UI, pre-start checks, and identity-safe explicit recovery. Milestone 5 passes every frozen Piper v6 gate and selects exact Piper/davefx as the supported speed-focused CPU fallback. Milestone 6 adds Piper as the fourth executable profile, its exact isolated service adapter, profile-aware native supervision, explicit settings selection, and the admitted-profile resilience runner while retaining Qwen/Serena as development-only. The packaged Piper adaptive arm passes on the exact host; the Qwen service arm passes, but its final OS-enforced offline packaged arm still requires the interpreter-bound administrator firewall rule. Raw host reports remain transient, non-Windows detection remains unavailable, and M011 still owns production distribution and Piper's GPL/CC0 packaging obligations.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
@@ -98,11 +98,11 @@ Desktop application
 |-- Privacy-safe host detector and typed report boundary
 |   [M010 Milestones 1-2 implemented; Windows direct APIs, no support claim]
 |-- Measured profile registry, matching, preference, UI, and pre-start check
-|   [M010 Milestone 3 complete; exact development profile only]
+|   [M010 Milestones 3 and 6; Piper supported, Qwen development-only]
 |-- Identity-safe recovery controller
 |   [M010 Milestone 4 complete; one explicit verified-cleanup restart]
-`-- Piper/davefx CPU-fallback selection
-    [M010 Milestone 5 complete; executable integration pending Milestone 6]
+`-- Piper/davefx CPU-fallback runtime
+    [M010 Milestones 5-6; integrated and exact-host Piper arm validated]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]
@@ -141,6 +141,8 @@ Local TTS service
 |   [M007 Milestone 3; implemented and packaged-validated with a Rust fake child]
 |-- Exact Qwen/Serena one-GPU adapter and native-only activation
 |   [M007 Milestones 4-6; exact-host handoff and closeout validated]
+|-- Exact Piper/davefx CPU adapter and native-only activation
+|   [M010 Milestone 6; executable integration and packaged arm validated]
 |-- Candidate-neutral feasibility harness and no-profile decision
 |   [implemented development evidence; not production runtime]
 |-- Shared-model v4 and independent dual-worker v5 benchmark
@@ -438,9 +440,13 @@ contract. Raw names, IDs, errors, paths, environment, timestamps, and
 recommendations never cross the boundary, and the detector performs no
 network, model, audio, or persistence operation. Unsupported non-Windows
 builds report unavailable rather than implying support.
+Milestone 6 corrects one normalization edge discovered on the exact host:
+an unusable discarded adapter no longer downgrades an otherwise complete,
+known selected provider. Unknown memory on the selected provider, no usable
+provider, or ambiguous candidates still produces a partial fail-closed report.
 
 M010 Milestone 3 consumes the report without retaining it. The immutable
-registry binds exact historical engine/model/voice/runtime/configuration
+registry initially bound exact historical engine/model/voice/runtime/configuration
 identity and evidence hashes for Qwen/Serena, Qwen/Aiden, and Supertonic/F1.
 The matcher applies the frozen fixed RAM, VRAM, and storage margins in
 deterministic profile-ID order and fails closed on incomplete facts, invalid
@@ -449,11 +455,12 @@ evidence, resource/provider mismatch, or ambiguity. Rejected entries remain
 when the native development gate also passes. The desktop persists at most the
 versioned bounded profile ID, re-probes at application start, explicit recheck,
 OS resume, and immediately before child start, and exposes only closed
-content-free states and reasons. No `supported` entry exists in that currently
-executable registry. ADR-0020 now selects Piper/davefx as the supported CPU
-fallback, but Milestone 6 must add it atomically with the exact service adapter
-and settings behavior so the existing Qwen development demo is not disabled
-by an unusable recommendation.
+content-free states and reasons. Milestone 6 atomically adds the exact
+Piper/davefx fourth entry as `supported`, so a compatible host may recommend
+it while Qwen/Serena remains explicitly selectable only as
+`development-only`. Switching profiles invalidates and releases the active
+narration before the native service configuration changes; it never creates a
+second service tree or starts narration implicitly.
 
 M010 Milestone 4 implements the frozen desktop-local recovery authority
 without changing shared schemas, protocol v1, native commands, Python service
@@ -477,8 +484,21 @@ total sustained RTF 0.0251, about 392 MiB measured peak process-tree RAM, five
 passing termination-backed cancellation races, overall Spanish quality
 4.621/5, zero meaning-changing defects, and passing offline/privacy/cleanup
 gates. `selection-v6` and ADR-0020 admit the exact profile as the
-speed-focused CPU fallback. That is evidence and a durable selection, not yet
-an implemented product runtime.
+speed-focused CPU fallback.
+
+M010 Milestone 6 implements that selected runtime without changing protocol
+v1. The native supervisor accepts one bounded profile ID and starts exactly
+one verified isolated Qwen or Piper service tree. `PiperTtsEngine` verifies the
+frozen Piper, ONNX Runtime, voice artifacts, CPU provider, and offline
+configuration before load. It converts each complete native 22,050-Hz mono
+waveform inside the adapter to one bounded 24,000-Hz mono float32 protocol
+unit; text, PCM, paths, and environment values remain outside diagnostics and
+persistence. The exact-host Piper service and packaged adaptive matrices pass
+load, synthesis, backpressure, cancellation, reload, quick/prepared playback,
+navigation replacement, cleanup, zero GPU use, and zero generated-audio
+persistence. The Qwen service-only arm also passes. Final Qwen packaged
+offline evidence remains open until its exact interpreter has the required
+administrator-created outbound block.
 
 The implemented audio-frame v1 boundary describes payload-free in-memory frame metadata with frame, session, generation, and narration-segment identities; monotonic sequence; positive sample rate, per-channel sample-frame count, and channel count; and an explicit end-of-segment marker. Duration is derived from sample count divided by sample rate. Public helpers return conservative whole milliseconds using exact integer arithmetic, sum samples before truncating once, and reject unsafe duration overflow. Contiguous single-segment runs reject duplicate frame IDs, sequence gaps or reversals, identity or format changes, and frames after the segment-end marker. The contract selects no codec, payload representation, audio API, player, or buffer policy.
 

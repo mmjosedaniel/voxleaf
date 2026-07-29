@@ -3,13 +3,15 @@
 ## Status and purpose
 
 VoxLeaf is pre-alpha. Milestones 1 through 9 and M009.1 are complete.
-M010 is in progress with Milestones 1-5 complete: privacy-safe host
+M010 is in progress with Milestones 1-5 complete and Milestone 6 integration
+implemented pending its final Qwen offline arm: privacy-safe host
 detection, immutable measured matching, bounded preference and compatibility
 UI, pre-start enforcement, and identity-safe one-attempt recovery are
 implemented. The passing v6 evaluation selects exact Piper/davefx as the
-speed-focused CPU fallback. Exact Qwen/Serena remains development-only, and
-Milestone 6 must integrate Piper into the executable registry, service, and
-settings before it is user-visible.
+speed-focused CPU fallback. Exact Qwen/Serena remains development-only.
+Milestone 6 now integrates both through one service tree and explicit profile
+selection. The packaged Piper matrix passes; Qwen's final playback rerun still
+requires its interpreter-bound administrator firewall rule.
 
 M009.1 exact-host use also exposed and corrected one additional reader defect:
 passive viewport scrolling must not replace active narration. The
@@ -679,7 +681,8 @@ stabilized application shell.
 
 ## Milestone 10: Add hardware profiles, fallback, and operational resilience
 
-**Status:** In progress; Milestones 1-5 are complete. Follow
+**Status:** In progress; Milestones 1-5 are complete and Milestone 6 code plus
+the Piper resilience arm pass. Follow
 [`M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md).
 The canonical privacy-safe host compatibility report, profile/evidence shape,
 matching/preference rules, fixed resource margins, failure taxonomy, and
@@ -687,15 +690,17 @@ identity-first explicit recovery authority are frozen by
 [`hardware-profile-recovery-authority-v1.md`](../architecture/hardware-profile-recovery-authority-v1.md)
 and ADR-0019. The native Windows detector gathers only those bounded facts
 through reviewed direct APIs and the desktop decodes them through the
-canonical contract; non-Windows builds return unavailable. The product still
-matches the immutable three-entry executable registry, retains only a bounded
+canonical contract; non-Windows builds return unavailable. The product now
+matches the immutable four-entry executable registry, retains only a bounded
 profile-ID preference, rechecks before model-child start, and exposes closed
 compatibility states. Milestone 4 adds bounded recovery with identity-first
 cleanup, one explicit restart, latest-heard resume, and terminal containment.
 Milestone 5 passes every frozen Piper v6 gate and selects exact Piper/davefx
-as the supported speed-focused CPU fallback. It is not yet executable:
-Milestone 6 must add the active registry, service, settings, and resilience
-integration without regressing the Qwen development demo.
+as the supported speed-focused CPU fallback. Milestone 6 adds the exact Piper
+adapter, bounded native-rate conversion, profile-aware native start, explicit
+settings choice, and the two-profile resilience runner without regressing the
+Qwen development demo. The packaged Piper arm passes; the outbound-blocked
+Qwen playback arm and Milestone 7 closeout remain.
 
 ### Goal
 
@@ -849,8 +854,9 @@ implements the immutable measured registry, fail-closed selection, bounded
 profile preference, compatibility UI, and exact-child pre-start enforcement.
 Milestone 4 implements identity-safe operational recovery with zero-owner
 verification and one explicit restart. Milestone 5 selects the passing Piper
-CPU fallback; executable registry/service/settings integration remains
-Milestone 6 work.
+CPU fallback. Milestone 6 implements executable registry/service/settings
+integration and passes the Piper resilience arm; its final Qwen offline arm
+remains open.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by completed
@@ -859,7 +865,9 @@ supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
 Milestones 1 through 9 and M009.1 are complete, with their evidence retained
-under [`completed/`](completed/). M010 is active with Milestones 1-5 complete.
+under [`completed/`](completed/). M010 is active with Milestones 1-5 complete
+and Milestone 6 implementation present; exact Piper passes and the final Qwen
+offline arm remains open.
 
 ## MVP completion boundary
 
