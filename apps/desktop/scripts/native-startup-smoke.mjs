@@ -1704,6 +1704,10 @@ async function runAdaptiveTtsExactHostMatrix(
     }
 
     setStage("adaptive exact-host active cancellation");
+    const cancellationPassageButton = await driver.findElement(
+      '[data-narration-action="next-passage"]',
+    );
+    await driver.sendKeys(cancellationPassageButton, WEBDRIVER_SPACE);
     await waitForCondition(
       driver,
       `return document.querySelector(".product-narration")
@@ -4212,8 +4216,16 @@ async function run() {
       }),
     ]);
   } else if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
-    const syntheticParagraph =
+    const boundedSyntheticSentence =
       "Esta narraci&#243;n sint&#233;tica describe una biblioteca tranquila y una lectura local. Cada frase valida transiciones naturales, memoria limitada y orden.";
+    const syntheticParagraph =
+      ADAPTIVE_TTS_PROFILE_ID === PIPER_CPU_FALLBACK_PROFILE_ID
+        ? Array.from(
+            { length: 3 },
+            (_, index) =>
+              `${boundedSyntheticSentence} Parte ${String(index + 1)}.`,
+          ).join(" ")
+        : boundedSyntheticSentence;
     const chapterParagraphs = (chapter) =>
       Array.from(
         { length: 96 },

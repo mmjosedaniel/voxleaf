@@ -27,6 +27,7 @@ import {
   NARRATION_V1_SEGMENT_POLICY,
   NARRATION_V1_SOURCE_WINDOW_POLICY,
 } from "./narration-policy.js";
+import { narrationSegmentPolicy } from "./narration-piper-policy.js";
 import {
   prepareNarrationSourceLeaf,
   type PreparedNarrationBlock,
@@ -44,7 +45,7 @@ import type {
 
 interface ValidatedNarrationPreparationRequest {
   readonly startLocator: unknown;
-  readonly profile: "narration-v1";
+  readonly profile: "narration-v1" | "narration-piper-v1";
   readonly defaultLanguage: "und" | "es";
   readonly maximumSegments: number;
   readonly signal?: AbortSignal;
@@ -263,7 +264,8 @@ export function validateNarrationPreparationRequest(
     if (
       Object.keys(request).some((key) => !REQUEST_KEYS.has(key)) ||
       !Object.hasOwn(request, "startLocator") ||
-      request.profile !== "narration-v1" ||
+      (request.profile !== "narration-v1" &&
+        request.profile !== "narration-piper-v1") ||
       (request.defaultLanguage !== "und" && request.defaultLanguage !== "es") ||
       !Number.isSafeInteger(request.maximumSegments) ||
       (request.maximumSegments as number) <= 0 ||
@@ -275,7 +277,7 @@ export function validateNarrationPreparationRequest(
     }
     const validated: ValidatedNarrationPreparationRequest = Object.freeze({
       startLocator: request.startLocator,
-      profile: "narration-v1" as const,
+      profile: request.profile,
       defaultLanguage: request.defaultLanguage as "und" | "es",
       maximumSegments: request.maximumSegments as number,
       ...(request.signal === undefined
@@ -577,6 +579,7 @@ export async function prepareNarrationBatch(
       sourceCodePointsInspected: 0,
     };
     let sourceComplete = false;
+    const segmentPolicy = narrationSegmentPolicy(request.profile);
 
     while (candidates.lookahead === undefined && !sourceComplete) {
       const window = await prepareNarrationSourceWindow(
@@ -636,9 +639,9 @@ export async function prepareNarrationBatch(
           if (
             remainingSegmentEntries <= 0 ||
             remainingNarrationCodePoints <
-              NARRATION_V1_SEGMENT_POLICY.narrationCodePointsHardMaximum ||
+              segmentPolicy.narrationCodePointsHardMaximum ||
             remainingNarrationUtf8Bytes <
-              NARRATION_V1_SEGMENT_POLICY.narrationUtf8BytesHardMaximum
+              segmentPolicy.narrationUtf8BytesHardMaximum
           ) {
             return narrationPreparationFailure("resource-limit-exceeded");
           }
@@ -649,6 +652,7 @@ export async function prepareNarrationBatch(
               maximumSegments: remainingSegmentEntries,
               retainedNarrationCodePointsMaximum: remainingNarrationCodePoints,
               retainedNarrationUtf8BytesMaximum: remainingNarrationUtf8Bytes,
+              segmentPolicy,
               signal,
               scheduler,
             }),

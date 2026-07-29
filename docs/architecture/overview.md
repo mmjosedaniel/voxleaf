@@ -493,7 +493,14 @@ frozen Piper, ONNX Runtime, voice artifacts, CPU provider, and offline
 configuration before load. It converts each complete native 22,050-Hz mono
 waveform inside the adapter to one bounded 24,000-Hz mono float32 protocol
 unit; text, PCM, paths, and environment values remain outside diagnostics and
-persistence. The exact-host Piper service and packaged adaptive matrices pass
+persistence. Product preparation selects the frozen
+[`narration-piper-v1`](piper-narration-preparation-profile-v1.md) profile only
+for Piper. Its 200/256 narration-code-point target/hard bounds preserve all
+normalized text and exact contiguous locator ranges while reducing normal
+units that would otherwise exceed protocol v1's 20-second ceiling; Qwen and
+other callers retain `narration-v1`, and unusual oversized output still fails
+closed. The exact-host Piper service and corrective long-paragraph packaged
+adaptive matrices pass
 load, synthesis, backpressure, cancellation, reload, quick/prepared playback,
 navigation replacement, cleanup, zero GPU use, and zero generated-audio
 persistence. The Qwen service-only arm also passes under its exact

@@ -615,7 +615,7 @@ configuration, and settings choice atomically.
 
 ### Status
 
-Corrective validation in progress on 2026-07-29 on branch
+Complete on 2026-07-29 on branch
 `feat/m010-m6-profile-integration-resilience`, created from merged main commit
 `2b81b028fe6188e17f524d5720e68827511e3c05`. Authority, service, native,
 desktop selection, recovery, and exact-host boundaries were re-read before
@@ -635,10 +635,13 @@ content-free reproduction established the failing boundary without reading or
 logging book text: the exact voice produced 17.694 seconds for 320 code points,
 21.769 seconds for 400, and 35.260 seconds for 640; the production adapter
 correctly rejected the 400-code-point result because protocol v1 admits at most
-20 seconds. The corrective `narration-piper-v1` authority is now frozen before
-implementation and exact-host rerun. Milestone 6 returns to complete only after
-locator-safe narrower preparation, regression coverage, and product playback
-validation pass.
+20 seconds. Checkpoint `de1b527` froze the corrective
+`narration-piper-v1` authority before implementation. The EPUB package now
+emits narrower locator-safe Piper segments, while every other profile retains
+`narration-v1`. The packaged regression fixture advances through the formerly
+oversized paragraph, completes 17 synchronized transitions, cancellation,
+prepared playback, and cleanup with zero underruns, external requests, or
+generated-audio files. Milestone 6 is complete again.
 
 ## Milestone 7: Record support decisions and close validation
 
@@ -738,6 +741,36 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-29: Reproduced the post-integration Piper failure without using book
+  text or persisting audio. Exact synthetic 320-, 400-, and 640-code-point
+  inputs produced 17.694, 21.769, and 35.260 seconds; the adapter correctly
+  rejected the 400-code-point waveform above protocol v1's 20-second ceiling.
+  Checkpoint `de1b527` froze `narration-piper-v1` before corrective execution.
+  The implementation adds a closed public preparation profile with 200/256
+  narration-code-point, 800/1,024-byte, 240/320 source-code-point, and 2/6
+  sentence target/hard bounds. Piper alone selects it; generic/Qwen preparation,
+  normalization, canonical locator ranges, protocol v1, and buffer bounds remain
+  unchanged.
+- 2026-07-29: Package regression coverage proves the formerly 400-plus
+  synthetic paragraph becomes multiple ordered, text-complete, locator-
+  contiguous Piper segments and unknown profiles still fail closed. Desktop
+  coverage proves only the Piper runtime selects `narration-piper-v1`. The
+  exact-host fixture now includes the long synthetic paragraph and uses an
+  explicit next-passage replacement to create a deterministic active-
+  cancellation window after fast generation fills the buffer. The packaged
+  matrix passed in 102.5 seconds: quick command-to-audible 2,584 ms, 20.793
+  playable seconds at start, zero underruns during 60.206 seconds of stable
+  playback, prepared command-to-audible 4,868 ms with 61.289 playable seconds,
+  871 ms cancellation, 449 ms resource release, 17 transitions with 1.5 ms
+  follow p95, zero GPU memory, zero external requests, and zero generated-audio
+  files.
+- 2026-07-29: The first full portable run exposed that adding the new constants
+  to `narration-policy.ts` would invalidate the historical v4-v6 byte
+  authority. The implementation moved them to the separate
+  `narration-piper-policy.ts` module instead. The frozen file remains exactly
+  `96a62a9d0d57e5fad904b4c38d98ded4d48d5c2f8e125ea527c5df535ac0f85c`,
+  and the focused v6 authority/quality tests and subsequent complete suites
+  pass.
 - 2026-07-29: Started Milestone 6 sequentially on
   `feat/m010-m6-profile-integration-resilience` from merged main
   `2b81b028fe6188e17f524d5720e68827511e3c05`. Re-read the frozen profile and
@@ -1118,10 +1151,12 @@ immediately before child start, and perform one identity-safe explicit
 recovery after verified cleanup. The frozen v6 evaluation selects exact
 Piper/davefx as the supported speed-focused CPU fallback, and Milestone 6
 implements its executable registry, service adapter, settings choice, and
-profile-aware one-tree supervision. Piper's service and packaged resilience
-arms pass. Qwen's outbound-blocked service arm passes and its packaged path
-passes the exact fail-closed available-VRAM scenario. No automatic retry or
-standard Qwen support claim is available.
+profile-aware one-tree supervision. Exact Piper product preparation now selects
+the frozen locator-safe `narration-piper-v1` bounds so generic 400-640-code-point
+segments cannot produce the reproduced oversized-unit failure. Piper's service
+and packaged resilience arms pass. Qwen's outbound-blocked service arm passes
+and its packaged path passes the exact fail-closed available-VRAM scenario. No
+automatic retry or standard Qwen support claim is available.
 
 Milestone 6 validation results:
 
@@ -1139,6 +1174,12 @@ Milestone 6 validation results:
   and zero generated-audio files. Quick command-to-audible was 2,722 ms;
   prepared command-to-audible was 4,808 ms; cancellation was 169 ms; final
   resource release was 443 ms; 13 audible transitions had 1.1 ms follow p95.
+- The corrective long-paragraph packaged rerun also passes. Quick
+  command-to-audible was 2,584 ms with 20.793 playable seconds; the 60.206-
+  second stable observation had zero underruns; prepared playback began in
+  4,868 ms with 61.289 playable seconds; cancellation was 871 ms; cleanup was
+  449 ms; and all 17 synchronized transitions remained valid. No external
+  request, generated-audio file, or GPU allocation occurred.
 - The exact host detector now distinguishes discarded incomplete adapters from
   the selected provider. A discarded unusable adapter cannot poison a complete
   report, while selected unknown memory, ambiguity, and no-provider cases remain
@@ -1148,6 +1189,11 @@ Milestone 6 validation results:
   `::highlight` minifier and large-chunk warnings remain non-fatal; one
   permission-denied pytest cache-write warning does not affect its 256 passing
   tests or tracked output.
+- The historical `narration-policy.ts` authority remains byte-identical at
+  SHA-256
+  `96a62a9d0d57e5fad904b4c38d98ded4d48d5c2f8e125ea527c5df535ac0f85c`;
+  the Piper-only constants live in a new module and all 13 focused v6
+  authority/quality tests pass.
 
 Milestone 5 validation results:
 

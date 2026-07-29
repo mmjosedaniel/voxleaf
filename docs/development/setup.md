@@ -2,7 +2,7 @@
 
 ## Current status
 
-The prerequisite toolchains, TypeScript workspace, React/Tauri desktop, isolated Python service, quality commands, browser/native smokes, secure EPUB reader, bounded restoration, locator-linked narration preparation, and segment-level synchronized reader projection are initialized and validated within their documented boundaries. Completed M007 provides protocol v1, native supervision, typed one-unit ownership, and the exact development-only Qwen/Serena adapter. Completed M008 connects the active visual locator to bounded preparation, one-at-a-time synthesis, the sole-owner FIFO, Web Audio playback, and accessible quick/prepared controls. Completed M009 adds exact segment transitions, focus-safe highlight/follow, synchronized user navigation, heard-position persistence, exact-host packaged evidence, and repository/CI closeout. M010 Milestones 1-6 add privacy-safe native Windows detection, an immutable measured registry, deterministic profile matching, bounded profile-ID preference reuse, compact compatibility UI, pre-start enforcement, identity-safe recovery, the admitted Piper/davefx CPU fallback, and one profile-aware service tree. Piper's exact-host service and packaged adaptive arms pass. Qwen/Serena remains development-only: its offline service lifecycle passes, while the packaged host correctly rejects it because the frozen available-VRAM margin is not met. Quick mode is the default; prepared playback initially selects one minute; refill remains one minute; low water is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target. Production distribution and installers remain unimplemented.
+The prerequisite toolchains, TypeScript workspace, React/Tauri desktop, isolated Python service, quality commands, browser/native smokes, secure EPUB reader, bounded restoration, locator-linked narration preparation, and segment-level synchronized reader projection are initialized and validated within their documented boundaries. Completed M007 provides protocol v1, native supervision, typed one-unit ownership, and the exact development-only Qwen/Serena adapter. Completed M008 connects the active visual locator to bounded preparation, one-at-a-time synthesis, the sole-owner FIFO, Web Audio playback, and accessible quick/prepared controls. Completed M009 adds exact segment transitions, focus-safe highlight/follow, synchronized user navigation, heard-position persistence, exact-host packaged evidence, and repository/CI closeout. M010 Milestones 1-6 add privacy-safe native Windows detection, an immutable measured registry, deterministic profile matching, bounded profile-ID preference reuse, compact compatibility UI, pre-start enforcement, identity-safe recovery, the admitted Piper/davefx CPU fallback, and one profile-aware service tree. Piper automatically selects its narrower locator-safe narration preparation profile; its exact-host service and corrective long-paragraph packaged adaptive arms pass. Qwen/Serena remains development-only: its offline service lifecycle passes, while the packaged host correctly rejects it because the frozen available-VRAM margin is not met. Quick mode is the default; prepared playback initially selects one minute; refill remains one minute; low water is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target. Production distribution and installers remain unimplemented.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
@@ -276,7 +276,11 @@ $env:VOXLEAF_TTS_PIPER_MODEL_ROOT = (Resolve-Path "models/tts/piper-1.4.2-es_ES-
 ```
 
 These values remain native-only and are never returned to the renderer,
-logged, persisted, or placed in protocol frames. When both exact profiles and
+logged, persisted, or placed in protocol frames. When Piper is selected, the
+desktop automatically requests `narration-piper-v1`; no user-facing chunk
+setting is required. The profile preserves all normalized text and exact
+locator ranges while keeping normal complete units within protocol v1's
+20-second ceiling. When both exact profiles and
 their interpreter-bound outbound blocks are prepared, run the complete
 admitted-profile matrix:
 

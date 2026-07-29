@@ -24,8 +24,9 @@ Follow `.agents/PLANS.md` and update the progress log while working.
   bounded native detector, measured registry/matcher, profile preference,
   pre-start enforcement, compatibility UI, recovery, and passing Piper
   fallback admission. Milestone 6 integrates the exact Piper runtime and its
-  packaged resilience arm passes; Qwen passes offline service validation and
-  the packaged fail-closed VRAM path. Milestone 7 closeout remains.
+  Piper-only locator-safe preparation; its corrective long-paragraph packaged
+  resilience arm passes. Qwen passes offline service validation and the
+  packaged fail-closed VRAM path. Milestone 7 closeout remains.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through

@@ -6,7 +6,8 @@ import type {
   SensitiveNarrationTextV1,
 } from "@voxleaf/shared";
 
-export type NarrationPreparationProfileId = "narration-v1";
+export type NarrationPreparationProfileId =
+  "narration-v1" | "narration-piper-v1";
 export type NarrationPreparationLanguage = "und" | "es";
 
 export interface NarrationPreparationRequest {

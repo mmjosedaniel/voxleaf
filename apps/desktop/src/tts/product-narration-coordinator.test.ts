@@ -445,7 +445,9 @@ describe("product narration coordinator", () => {
       isProfileCurrentlyAllowed: vi.fn(() => true),
       isProfileStartAllowed: vi.fn(async () => true),
     };
-    const { client, coordinator } = createHarness({ profileCompatibility });
+    const { client, coordinator, prepareNarration } = createHarness({
+      profileCompatibility,
+    });
 
     await coordinator.checkAvailability();
     expect(coordinator.observe().profileId).toBe(profileId);
@@ -457,6 +459,9 @@ describe("product narration coordinator", () => {
       "before-profile-start",
     );
     expect(client.startedProfiles).toEqual([profileId]);
+    expect(prepareNarration).toHaveBeenCalledWith(
+      expect.objectContaining({ profile: "narration-piper-v1" }),
+    );
     await coordinator.close();
   });
 

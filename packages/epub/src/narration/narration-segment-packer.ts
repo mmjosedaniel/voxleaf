@@ -15,6 +15,10 @@ import {
   NARRATION_V1_SEGMENT_POLICY,
   NARRATION_V1_SOURCE_WINDOW_POLICY,
 } from "./narration-policy.js";
+import {
+  NARRATION_PIPER_V1_SEGMENT_POLICY,
+  type NarrationSegmentPolicy,
+} from "./narration-piper-policy.js";
 import type { NarrationSourceSpan } from "./narration-source.js";
 import {
   DEFAULT_NARRATION_YIELD_SCHEDULER,
@@ -71,6 +75,7 @@ export interface NarrationPackingOptions {
   readonly maximumSegments?: number;
   readonly retainedNarrationCodePointsMaximum?: number;
   readonly retainedNarrationUtf8BytesMaximum?: number;
+  readonly segmentPolicy?: NarrationSegmentPolicy;
   readonly signal?: AbortSignal;
   readonly scheduler?: NarrationYieldScheduler;
 }
@@ -79,6 +84,7 @@ interface ResolvedNarrationPackingLimits {
   readonly maximumSegments: number;
   readonly retainedNarrationCodePointsMaximum: number;
   readonly retainedNarrationUtf8BytesMaximum: number;
+  readonly segmentPolicy: NarrationSegmentPolicy;
 }
 
 interface PrefixMeasurements {
@@ -156,6 +162,7 @@ function resolvePackingLimits(
   const retainedNarrationUtf8BytesMaximum =
     options.retainedNarrationUtf8BytesMaximum ??
     NARRATION_V1_SEGMENT_POLICY.retainedNarrationUtf8BytesHardMaximum;
+  const segmentPolicy = options.segmentPolicy ?? NARRATION_V1_SEGMENT_POLICY;
   if (
     !Number.isSafeInteger(maximumSegments) ||
     maximumSegments <= 0 ||
@@ -170,7 +177,9 @@ function resolvePackingLimits(
     retainedNarrationUtf8BytesMaximum <
       NARRATION_V1_SEGMENT_POLICY.narrationUtf8BytesHardMaximum ||
     retainedNarrationUtf8BytesMaximum >
-      NARRATION_V1_SEGMENT_POLICY.retainedNarrationUtf8BytesHardMaximum
+      NARRATION_V1_SEGMENT_POLICY.retainedNarrationUtf8BytesHardMaximum ||
+    (segmentPolicy !== NARRATION_V1_SEGMENT_POLICY &&
+      segmentPolicy !== NARRATION_PIPER_V1_SEGMENT_POLICY)
   ) {
     return fail();
   }
@@ -178,6 +187,7 @@ function resolvePackingLimits(
     maximumSegments,
     retainedNarrationCodePointsMaximum,
     retainedNarrationUtf8BytesMaximum,
+    segmentPolicy,
   });
 }
 
@@ -366,28 +376,27 @@ function measurementsBetween(
   });
 }
 
-function withinTarget(measurements: SegmentMeasurements): boolean {
+function withinTarget(
+  measurements: SegmentMeasurements,
+  policy: NarrationSegmentPolicy,
+): boolean {
   return (
-    measurements.sourceCodePoints <=
-      NARRATION_V1_SEGMENT_POLICY.sourceCodePointsTarget &&
-    measurements.narrationCodePoints <=
-      NARRATION_V1_SEGMENT_POLICY.narrationCodePointsTarget &&
-    measurements.narrationUtf8Bytes <=
-      NARRATION_V1_SEGMENT_POLICY.narrationUtf8BytesTarget &&
-    measurements.sentenceCount <= NARRATION_V1_SEGMENT_POLICY.sentencesTarget
+    measurements.sourceCodePoints <= policy.sourceCodePointsTarget &&
+    measurements.narrationCodePoints <= policy.narrationCodePointsTarget &&
+    measurements.narrationUtf8Bytes <= policy.narrationUtf8BytesTarget &&
+    measurements.sentenceCount <= policy.sentencesTarget
   );
 }
 
-function withinHardMaximum(measurements: SegmentMeasurements): boolean {
+function withinHardMaximum(
+  measurements: SegmentMeasurements,
+  policy: NarrationSegmentPolicy,
+): boolean {
   return (
-    measurements.sourceCodePoints <=
-      NARRATION_V1_SEGMENT_POLICY.sourceCodePointsHardMaximum &&
-    measurements.narrationCodePoints <=
-      NARRATION_V1_SEGMENT_POLICY.narrationCodePointsHardMaximum &&
-    measurements.narrationUtf8Bytes <=
-      NARRATION_V1_SEGMENT_POLICY.narrationUtf8BytesHardMaximum &&
-    measurements.sentenceCount <=
-      NARRATION_V1_SEGMENT_POLICY.sentencesHardMaximum
+    measurements.sourceCodePoints <= policy.sourceCodePointsHardMaximum &&
+    measurements.narrationCodePoints <= policy.narrationCodePointsHardMaximum &&
+    measurements.narrationUtf8Bytes <= policy.narrationUtf8BytesHardMaximum &&
+    measurements.sentenceCount <= policy.sentencesHardMaximum
   );
 }
 
@@ -504,8 +513,9 @@ function preferLatestTarget(
   current: CandidateBoundary | undefined,
   candidate: CandidateBoundary,
   measurements: SegmentMeasurements,
+  policy: NarrationSegmentPolicy,
 ): CandidateBoundary | undefined {
-  return withinTarget(measurements) ? candidate : current;
+  return withinTarget(measurements, policy) ? candidate : current;
 }
 
 function preferFirstHard(
@@ -520,6 +530,7 @@ async function selectCandidate(
   context: PackingContext,
   startUnitIndex: number,
   work: NarrationWorkController,
+  policy: NarrationSegmentPolicy,
 ): Promise<CandidateBoundary> {
   const { prefix, recordedBoundaryKinds, safeBoundaries } = context;
   const blockEnd = scan.normalized.units.length;
@@ -545,7 +556,7 @@ async function selectCandidate(
       startUnitIndex,
       unitIndexExclusive,
     );
-    if (!withinHardMaximum(measurements)) {
+    if (!withinHardMaximum(measurements, policy)) {
       break;
     }
     if (
@@ -563,7 +574,7 @@ async function selectCandidate(
       unitIndexExclusive,
       reason: "hard-limit" as const,
     });
-    if (unitIndexExclusive === blockEnd && withinTarget(measurements)) {
+    if (unitIndexExclusive === blockEnd && withinTarget(measurements, policy)) {
       return Object.freeze({
         unitIndexExclusive: blockEnd,
         reason:
@@ -587,6 +598,7 @@ async function selectCandidate(
           targetSentence,
           candidate,
           measurements,
+          policy,
         );
         firstHardSentence = preferFirstHard(firstHardSentence, candidate);
       } else if (candidate.reason === "clause") {
@@ -594,6 +606,7 @@ async function selectCandidate(
           targetClause,
           candidate,
           measurements,
+          policy,
         );
         firstHardClause = preferFirstHard(firstHardClause, candidate);
       }
@@ -609,6 +622,7 @@ async function selectCandidate(
         targetWhitespace,
         candidate,
         measurements,
+        policy,
       );
       firstHardWhitespace = preferFirstHard(firstHardWhitespace, candidate);
     } else if (
@@ -621,7 +635,12 @@ async function selectCandidate(
         unitIndexExclusive,
         reason: "token" as const,
       });
-      targetToken = preferLatestTarget(targetToken, candidate, measurements);
+      targetToken = preferLatestTarget(
+        targetToken,
+        candidate,
+        measurements,
+        policy,
+      );
       firstHardToken = preferFirstHard(firstHardToken, candidate);
     }
   }
@@ -650,6 +669,7 @@ async function selectCandidate(
       safeBoundaries[nextPosition] !== true ||
       !withinHardMaximum(
         measurementsBetween(scan, prefix, startUnitIndex, nextPosition),
+        policy,
       )
     ) {
       break;
@@ -907,6 +927,7 @@ async function packNarrationBoundaryScanInternal(
       context,
       startUnitIndex,
       work,
+      limits.segmentPolicy,
     );
     if (candidate.unitIndexExclusive <= startUnitIndex) {
       return fail();
@@ -918,7 +939,7 @@ async function packNarrationBoundaryScanInternal(
       candidate.unitIndexExclusive,
     );
     if (
-      !withinHardMaximum(measurements) ||
+      !withinHardMaximum(measurements, limits.segmentPolicy) ||
       measurements.narrationCodePoints === 0
     ) {
       return resourceLimitExceeded();

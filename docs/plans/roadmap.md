@@ -9,7 +9,9 @@ UI, pre-start enforcement, and identity-safe one-attempt recovery are
 implemented. The passing v6 evaluation selects exact Piper/davefx as the
 speed-focused CPU fallback. Exact Qwen/Serena remains development-only.
 Milestone 6 now integrates both through one service tree and explicit profile
-selection. The packaged Piper matrix passes. Qwen's outbound-blocked service
+selection. Piper alone uses the frozen locator-safe `narration-piper-v1`
+preparation limits; its corrective long-paragraph packaged matrix passes.
+Qwen's outbound-blocked service
 lifecycle passes, while the packaged host correctly rejects it because the
 frozen available-VRAM margin is not met.
 
@@ -698,7 +700,9 @@ Milestone 5 passes every frozen Piper v6 gate and selects exact Piper/davefx
 as the supported speed-focused CPU fallback. Milestone 6 adds the exact Piper
 adapter, bounded native-rate conversion, profile-aware native start, explicit
 settings choice, and the two-profile resilience runner without regressing the
-Qwen development demo. The packaged Piper arm passes; Qwen passes offline
+Qwen development demo. Piper-only locator-safe preparation corrects the
+reproduced oversized-unit failure without truncation or a protocol change. The
+corrective packaged Piper arm passes; Qwen passes offline
 service validation and its exact fail-closed packaged VRAM path. Milestone 7
 closeout remains.
 
@@ -855,7 +859,8 @@ profile preference, compatibility UI, and exact-child pre-start enforcement.
 Milestone 4 implements identity-safe operational recovery with zero-owner
 verification and one explicit restart. Milestone 5 selects the passing Piper
 CPU fallback. Milestone 6 implements executable registry/service/settings
-integration, passes the full Piper resilience arm, and records Qwen's passing
+integration and Piper-only locator-safe preparation, passes the corrective
+long-paragraph Piper resilience arm, and records Qwen's passing
 offline service plus fail-closed packaged VRAM result.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)

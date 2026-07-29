@@ -35,7 +35,10 @@ import {
   type TtsGenerationScope,
   type TtsProcessClientObservation,
 } from "./process-client";
-import { EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID } from "./hardware-profile-registry";
+import {
+  EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+  PIPER_CPU_FALLBACK_PROFILE_ID,
+} from "./hardware-profile-registry";
 import {
   HARDWARE_PROFILE_AUTHORITY_V1,
   type RecoveryFailureCodeV1,
@@ -1117,7 +1120,10 @@ export class ProductNarrationCoordinator {
     try {
       result = await this.#publication.prepareNarration({
         startLocator,
-        profile: "narration-v1",
+        profile:
+          this.#profileId === PIPER_CPU_FALLBACK_PROFILE_ID
+            ? "narration-piper-v1"
+            : "narration-v1",
         defaultLanguage: "es",
         maximumSegments: PREPARED_BATCH_SEGMENT_LIMIT,
         signal: controller.signal,

@@ -32,6 +32,7 @@ import type {
   RasterImageResourceId,
   SensitivePublicationText,
 } from "../document/document-model.js";
+import { NARRATION_PIPER_V1_SEGMENT_POLICY } from "../narration/narration-piper-policy.js";
 import { NARRATION_V1_SOURCE_WINDOW_POLICY } from "../narration/narration-policy.js";
 import type { NarrationYieldScheduler } from "../narration/narration-source-window.js";
 import {
@@ -461,6 +462,73 @@ describe("bounded local publication resources", () => {
     }
   });
 
+  it("prepares locator-safe bounded Piper segments without changing their text", async () => {
+    expect(NARRATION_PIPER_V1_SEGMENT_POLICY).toEqual({
+      sourceCodePointsTarget: 240,
+      sourceCodePointsHardMaximum: 320,
+      narrationCodePointsTarget: 200,
+      narrationCodePointsHardMaximum: 256,
+      narrationUtf8BytesTarget: 800,
+      narrationUtf8BytesHardMaximum: 1_024,
+      sentencesTarget: 2,
+      sentencesHardMaximum: 6,
+    });
+    const archive = await openEpubArchive(await createArchive({}));
+    const phrase =
+      "Esta es una oracion sintetica para comprobar la narracion local. ";
+    const text = (phrase.repeat(8).slice(0, 400) +
+      "Final seguro.") as SensitivePublicationText;
+    const values = narrationTextPublicationValues(
+      [text],
+      async () => undefined,
+    );
+    const publication = createOpenedPublication(
+      archive,
+      createPackageDocument([]),
+      values,
+    );
+    const block = requiredLocatedBlock(values.locatorIndex.blocks[0]);
+
+    try {
+      const result = await publication.prepareNarration({
+        startLocator: block.startLocator,
+        profile: "narration-piper-v1",
+        defaultLanguage: "es",
+        maximumSegments: 16,
+      });
+      expect(result.status).toBe("complete");
+      if (result.status !== "complete") {
+        throw new Error("expected complete Piper narration batch");
+      }
+      expect(result.segments.length).toBeGreaterThan(1);
+      expect(
+        result.segments.every(
+          (segment) =>
+            segment.measurements.narrationCodePoints <= 256 &&
+            segment.measurements.narrationUtf8Bytes <= 1_024 &&
+            segment.measurements.sentenceCount <= 6,
+        ),
+      ).toBe(true);
+      expect(result.segments[0]?.sourceRange.start).toEqual(block.startLocator);
+      expect(result.segments.at(-1)?.sourceRange.end.textOffsetCodePoints).toBe(
+        block.textLengthCodePoints,
+      );
+      for (const [index, segment] of result.segments.entries()) {
+        expect(segment.measurements.sourceCodePoints).toBeLessThanOrEqual(320);
+        if (index > 0) {
+          expect(segment.sourceRange.start).toEqual(
+            result.segments[index - 1]?.sourceRange.end,
+          );
+        }
+      }
+      expect(result.segments.map((segment) => segment.text).join("")).toBe(
+        text,
+      );
+    } finally {
+      await publication.close();
+    }
+  });
+
   it("returns the complete stable containing segment for an interior start", async () => {
     const archive = await openEpubArchive(await createArchive({}));
     const values = narrationTextPublicationValues(
@@ -582,6 +650,14 @@ describe("bounded local publication resources", () => {
     expect(invalid.error.code).toBe("invalid-input");
     expect(Object.isFrozen(invalid)).toBe(true);
     expect(JSON.stringify(invalid)).not.toContain("Canario");
+
+    const unknownProfile = await publication.prepareNarration({
+      startLocator: start,
+      profile: "narration-future-v2" as "narration-v1",
+      defaultLanguage: "es",
+      maximumSegments: 1,
+    });
+    expect(unknownProfile.status).toBe("invalid-request");
 
     const invalidSignal = await publication.prepareNarration({
       startLocator: start,
