@@ -601,6 +601,13 @@ configuration, and settings choice atomically.
   `piper-narration-preparation-profile-v1.md` before corrective execution,
   select its narrower locator-safe preparation only for Piper, and retain
   fail-closed behavior without truncating speech or changing protocol v1.
+- Correct the separate pre-handshake discrepancy discovered after the bounded
+  Piper preparation fix: hardware compatibility could enable Play without
+  proving that the running desktop process received the exact Piper runtime
+  configuration. Freeze
+  `tts-profile-runtime-configuration-availability-v1.md` before correction,
+  keep hardware fit separate from executable configuration, and fail closed
+  before child start when the selected profile is not configured.
 
 ### Validation
 
@@ -615,7 +622,8 @@ configuration, and settings choice atomically.
 
 ### Status
 
-Complete on 2026-07-29 on branch
+Corrective runtime-configuration availability work is in progress on
+2026-07-29 on branch
 `feat/m010-m6-profile-integration-resilience`, created from merged main commit
 `2b81b028fe6188e17f524d5720e68827511e3c05`. Authority, service, native,
 desktop selection, recovery, and exact-host boundaries were re-read before
@@ -641,7 +649,20 @@ emits narrower locator-safe Piper segments, while every other profile retains
 `narration-v1`. The packaged regression fixture advances through the formerly
 oversized paragraph, completes 17 synchronized transitions, cancellation,
 prepared playback, and cleanup with zero underruns, external requests, or
-generated-audio files. Milestone 6 is complete again.
+generated-audio files.
+
+A later private-reader run exposed a separate pre-handshake failure:
+compatibility described Piper as compatible, but Play failed immediately with
+`tts-service-failed`, recovery code `model-load-failed`, service state
+`stopped`, and zero playable audio. The exact offline lifecycle passed in 5.9
+seconds when the same process received the exact Piper interpreter, model root,
+and enable gate. The failure is therefore runtime-configuration admission
+before child start, not EPUB content, Piper synthesis, hardware fit, or
+segmentation. Checkpoint authority
+`tts-profile-runtime-configuration-availability-v1.md` is frozen before the
+corrective implementation. Milestone 6 becomes complete again only after the
+desktop gates Play on the native configuration fact and the exact Piper paths
+and repository suites pass.
 
 ## Milestone 7: Record support decisions and close validation
 
@@ -741,6 +762,17 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-29: Reproduced a second post-integration Piper discrepancy with only
+  content-free product state. Hardware compatibility admitted Piper, but Play
+  reached `start-service` without an executable runtime configuration and
+  failed before handshake with `tts-service-failed`, `model-load-failed`,
+  service state `stopped`, and zero playable audio. Running the exact offline
+  lifecycle with the interpreter, model root, and enable gate configured
+  passed in 5.9 seconds. This isolates the defect to availability admission;
+  EPUB text, preparation, waveform size, and hardware matching are not
+  implicated. Frozen corrective authority now requires a native boolean
+  configuration check during availability resolution and immediately before
+  service start. Qwen available-VRAM policy is intentionally deferred.
 - 2026-07-29: Reproduced the post-integration Piper failure without using book
   text or persisting audio. Exact synthetic 320-, 400-, and 640-code-point
   inputs produced 17.694, 21.769, and 35.260 seconds; the adapter correctly
