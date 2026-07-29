@@ -706,6 +706,13 @@ rewrite unrelated reader state.
   schema/ancestry/content-safe result derivation. The derivation deletes both
   private sessions before publishing a result. Focused tests and the complete
   Python suite pass; no Piper synthesis has run yet.
+- 2026-07-28: Froze the final executable v6 authority at
+  `ceccdf56b4e33153ae4615f7ff285e67636d73de`. The checkpoint contains profile
+  SHA-256 `f8828876715e3ceafddebf59063b3651f5a007c8bb6512cf4df11e14488b7c34`,
+  the exact loader/adapter, closed schemas, machine assessment, disposable
+  eight-sample quality workflow, result derivation, tests, and operator
+  commands. Official performance and quality must execute only from a clean
+  strict descendant and name this authority commit.
 - 2026-07-28: Closed Milestone 4 local validation. Portable and full native
   foundation checks pass; the complete browser matrix passes 6/6; and the
   release-packaged native smoke passes. The native rerun exposed and corrected
