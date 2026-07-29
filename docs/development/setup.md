@@ -24,8 +24,10 @@ locator-safe, spoken-expansion-aware narration preparation profile; its
 exact-host service, corrective ordinary-prose/compact-form arms, valid
 zero-sentence-boundary fragment handling, and content-safe packaged
 private-book confirmation pass. Qwen/Serena remains development-only: its
-offline service lifecycle passes, while the packaged host correctly rejects it
-because the frozen available-VRAM margin is not met. Quick mode is the default;
+offline service lifecycle passes, and the packaged host now offers it when
+total dedicated VRAM is at least `7,196` MiB and currently available dedicated
+VRAM is at least `6,508` MiB. Its broader packaged matrix still stops at the
+depletion synchronization assertion. Quick mode is the default;
 prepared playback initially selects one minute; refill remains one minute; low
 water is 10 seconds; the adaptive low-buffer wait remains disabled; playback
 is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target.
@@ -329,12 +331,15 @@ pnpm.cmd test:tts:resilience-exact-host
 
 The command builds the release application and runs the Qwen and Piper
 service-only lifecycle arms. It then runs full packaged Piper playback. Qwen
-runs full packaged playback only when compatible; otherwise the matrix accepts
-only the exact closed `available-dedicated-vram` rejection, verifies no model
-start or external request, and continues. It proves profiles separately and
-does not average their performance. It requires administrator-created outbound
-firewall rules for both exact interpreters and is excluded from root checks and
-CI.
+runs full packaged playback when the exact native gate, `7,196`-MiB total
+VRAM, and `6,508`-MiB available-VRAM development reserve pass. Otherwise the
+matrix accepts only the closed `available-dedicated-vram` rejection, verifies
+no model start or external request, and continues. It proves profiles
+separately and does not average their performance. Qwen is development-only;
+its current full packaged matrix is known to stop at the depletion
+synchronization assertion. The command requires administrator-created
+outbound firewall rules for both exact interpreters and is excluded from root
+checks and CI.
 
 M007 Milestone 4 consumes the frozen native-only development keys only when
 `VOXLEAF_TTS_DEV_ENABLED` is exactly `1`. The interpreter must resolve to the

@@ -373,6 +373,15 @@ Accepted `selection-v5` therefore rejects CPU-only and dual-worker scheduling.
 ADR-0015 retains one exact GPU worker only for a constrained adaptive demo.
 Using GPU-solo RTF 1.467 as a planning estimate, not a user guarantee:
 
+M010 originally converted the measured `5,996`-MiB authoritative peak into a
+generic `7,196`-MiB requirement for both total and currently available
+dedicated VRAM. ADR-0022 retains that total-device requirement but, only for
+the explicitly native-gated development profile, requires the measured peak
+plus the previously frozen `512`-MiB engineering reserve currently available:
+`6,508` MiB. Supported and fallback profiles retain the generic formula.
+This is an admission correction, not an RTF, quality, cancellation, or
+production-support improvement.
+
 | Playable lead | Approximate preparation time | Approximate playback before frontier |
 | ------------: | ---------------------------: | -----------------------------------: |
 |    15 seconds |                   22 seconds |                           47 seconds |

@@ -111,8 +111,10 @@ results, persists only one bounded profile ID, and enforces a fresh match
 before the exact child starts. The recovery state machine is implemented and
 Piper is executable and user-selectable on compatible complete hosts. The
 packaged Piper resilience arm passes. Qwen passes its outbound-blocked service
-lifecycle, while the packaged host correctly rejects it at the frozen
-available-VRAM margin without starting the model or making an external request.
+lifecycle. ADR-0022 retains its generic total-VRAM gate and replaces only the
+native-gated development profile's available-VRAM threshold with measured peak
+plus `512` MiB. The packaged host now offers and executes Qwen; its later
+depletion synchronization assertion remains failed.
 
 ## Scope and non-goals
 
@@ -653,10 +655,13 @@ and adds no automatic retry. Checkpoint `a64235a` integrates the exact Piper
 profile from registry through service, supervisor, client, coordinator, and
 settings. Deterministic focused validation and both outbound-blocked
 service-only exact-host arms pass. The packaged Piper adaptive arm passes.
-Qwen's packaged path proves the exact fail-closed
-`available-dedicated-vram` result on this host; a compatible future host will
-run its full playback arm. The complete `test:tts:resilience-exact-host`
-command passes.
+Before ADR-0022, Qwen's packaged path proved the exact fail-closed
+`available-dedicated-vram` result and the complete conditional
+`test:tts:resilience-exact-host` command passed. The corrective rule now admits
+the native-gated exact host, selects Qwen, and executes actual packaged
+inference. That broader Qwen arm later stops at the depletion synchronization
+assertion; this is retained as a development-profile limitation rather than a
+supported resilience pass.
 
 After that initial closure, a private-EPUB product run prepared and played one
 6-second Piper unit, then entered service containment. A synthetic,
@@ -718,13 +723,16 @@ and every queue/resource bound. The rebuilt packaged application then accepted
 and kept the service `ready`; starting through the paragraph leaf succeeded.
 Milestone 6 is complete.
 
-The corrective Qwen development admission is in progress. Authority is frozen
-in `qwen-development-vram-admission-v1.md` and ADR-0022 before matcher
+The corrective Qwen development admission is implemented. Authority was
+frozen in `qwen-development-vram-admission-v1.md` and ADR-0022 before matcher
 implementation. It retains the exact `5,996` MiB measured peak, `7,196` MiB
 total dedicated-VRAM requirement, development gate, runtime configuration
 check, failed standard-profile decision, and every supported/fallback margin.
 Only the development-only currently-available threshold changes to `6,508`
-MiB.
+MiB. Focused authority/matcher/UI tests and the complete desktop test,
+typecheck, lint, and format scopes pass. The release-packaged host reports
+Qwen as selectable and executes inference; the later depletion synchronization
+assertion remains failed and keeps the profile development-only.
 
 ## Milestone 7: Record support decisions and close validation
 
@@ -824,6 +832,27 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-29: Implemented the corrective Qwen matcher rule after authority
+  checkpoint `5b2d058`. Deterministic regression first failed exactly as
+  `available-dedicated-vram` at `6,508` MiB and hid the Qwen radio. Checkpoint
+  `58b175b` separates the unchanged generic total requirement from the
+  development-only available requirement. Exact boundaries now pass at
+  `7,196` MiB total / `6,508` MiB available and fail one MiB below either;
+  supported profiles retain the generic margin. All 415 desktop tests plus 7
+  native-client tests, desktop typecheck, ESLint, and formatting pass.
+- 2026-07-29: `pnpm.cmd check:portable` passes after the implementation and
+  documentation reconciliation: TypeScript/Python formatting, lint and
+  typechecks, all workspace TypeScript suites, 256 Python tests, package and
+  desktop production builds, and both Python distributions complete. Pytest
+  emitted only the existing sandbox cache-write warning; Vite retained its
+  existing Custom Highlight minifier and chunk-size advisories.
+- 2026-07-29: The corrected release-packaged host reported Qwen/Serena as
+  `Development-only and compatible`, exposed it beside Piper, selected it,
+  loaded the actual outbound-blocked runtime, and advanced through packaged
+  inference to the depletion stage. The broader matrix then failed the
+  existing synchronized-narration depletion assertion. That later result does
+  not restore the compatibility blocker or create a support claim; it remains
+  a documented development-profile limitation for Milestone 7.
 - 2026-07-29: Reproduced the Qwen compatibility discrepancy from the immutable
   registry and matcher: the exact `5,996` MiB measured peak receives the
   generic 20% margin for both total and currently available VRAM, requiring
@@ -1025,7 +1054,9 @@ rewrite unrelated reader state.
   because Windows' allocatable dedicated-memory budget did not meet the frozen
   7,196-MiB requirement even after unrelated GPU applications closed.
   `nvidia-smi` free memory is not the authority; the product correctly uses the
-  more conservative direct Windows budget and must not bypass that result.
+  more conservative direct Windows budget and did not bypass the then-frozen
+  result. ADR-0022 later supersedes only that development profile's available-
+  VRAM formula; this historical observation remains valid for the old rule.
 - 2026-07-29: The exact-host runner now handles the development profile
   conditionally without weakening compatibility. When Qwen is compatible it
   runs the complete playback matrix. Otherwise it accepts only the exact closed
@@ -1349,9 +1380,11 @@ separately requires an
 affirmative native exact-runtime configuration check during availability
 resolution and immediately before child start, preventing the reproduced
 pre-handshake failure when process-local configuration is absent. Qwen's
-outbound-blocked service arm passes
-and its packaged path passes the exact fail-closed available-VRAM scenario. No
-automatic retry or standard Qwen support claim is available.
+outbound-blocked service arm passes. ADR-0022 corrects its separate
+development-only admission boundary: the packaged host now selects and
+executes Qwen at `7,196` MiB total / `6,508` MiB available VRAM, then later
+fails the depletion synchronization assertion. No automatic retry, complete
+resilience pass, or standard Qwen support claim is available.
 
 Milestone 6 validation results:
 
@@ -1360,9 +1393,10 @@ Milestone 6 validation results:
 - Exact Piper service lifecycle passes load, synthesis, busy rejection,
   cancellation, reload, synthesis after reload, and shutdown.
 - Exact Qwen service lifecycle passes under its enabled interpreter-bound
-  outbound block. Packaged selection proves the exact
-  `available-dedicated-vram` rejection, no model start, and zero external
-  requests.
+  outbound block. Corrected packaged selection exposes Qwen as
+  development-only and compatible, starts the exact runtime, and reaches
+  actual playback/inference through the depletion stage. The subsequent
+  synchronization assertion fails and remains a known limitation.
 - Release-packaged Piper quick and prepared playback passes with zero
   underruns, zero buffering seconds per playback minute during the 60.322-second
   stable observation, zero dedicated GPU allocation, zero external requests,

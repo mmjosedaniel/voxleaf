@@ -41,7 +41,7 @@ const REASON_MESSAGES: Readonly<
   "device-class": "The available device class is not compatible.",
   "dedicated-vram": "The required dedicated graphics memory is not available.",
   "available-dedicated-vram":
-    "The required free dedicated graphics memory is not available.",
+    "The current free dedicated graphics-memory budget is below this profile's safety reserve.",
 });
 
 function statusMessage(snapshot: HardwareCompatibilitySnapshotV1): string {

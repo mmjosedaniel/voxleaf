@@ -26,10 +26,13 @@ compact speech-expanding forms are bounded before protocol v1's 20-second
 unit ceiling. A punctuation-only Piper unit that cannot produce a waveform is
 omitted before synthesis without inserted silence or locator discontinuity;
 other engines retain `narration-v1`. Its corrective packaged Piper resilience
-arm passes. Qwen's offline
-service arm passes, while the packaged host correctly marks that profile
-incompatible because its frozen available-VRAM margin is not met. No automatic
-retry or uninterrupted-playback promise exists.
+arm passes. Qwen's offline service arm passes. When its exact native
+configuration, generic `7,196`-MiB total-VRAM requirement, and corrective
+`6,508`-MiB currently available development reserve pass, the packaged host
+offers Qwen/Serena as an optional development-only profile. The latest
+packaged run executed Qwen but later stopped at the depletion synchronization
+assertion; it remains neither supported nor automatically recommended. No
+automatic retry or uninterrupted-playback promise exists.
 
 ## Current implemented flow
 

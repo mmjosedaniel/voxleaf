@@ -34,11 +34,15 @@ valid non-empty fragments with zero recognized sentence boundaries are
 present. Nonspoken omission inserts no silence and preserves locator
 continuation. The corrective ordinary-prose, compact-form, exact-host, and
 content-safe packaged private-book Piper arms pass. Qwen passes the
-outbound-blocked service lifecycle and the packaged host correctly rejects it
-at the frozen available-VRAM gate without starting the model or making an
-external request. Milestone 7 closeout remains. Installer distribution remains
-deferred to M011. The rest of this brief describes the intended complete
-product unless it explicitly identifies implemented behavior.
+outbound-blocked service lifecycle. ADR-0022 now separates total device
+capacity from momentary development headroom: exact Qwen retains `7,196` MiB
+total VRAM and requires `6,508` MiB currently available. The packaged host
+offers and executes it when those facts and its native gate pass. The latest
+broader Qwen matrix later stopped at the depletion synchronization assertion,
+so the profile remains development-only and not automatically recommended.
+Milestone 7 closeout remains. Installer distribution remains deferred to M011.
+The rest of this brief describes the intended complete product unless it
+explicitly identifies implemented behavior.
 
 ## Summary
 
@@ -170,7 +174,7 @@ directions are separated below:
 | Base voice cloning                | Outside current MVP                                                     | Qwen3-TTS 1.7B Base ICL/x-vector modes require user reference audio                                                                                                                                                | Retained only as related-runtime prototype evidence; no enrollment, clone prompt, or reference-data path is planned                                                   |
 | OpenAI Whisper                    | Rejected as TTS candidate                                               | Automatic speech recognition: audio input and text output                                                                                                                                                          | Optional fully local benchmark-only transcription may be assessed separately; it cannot generate narration or replace human quality review                            |
 | Process transport                 | Accepted, implemented, and validated                                    | Rust-owned child-process standard streams plus narrow optimized binary Tauri responses; no listener or renderer shell capability                                                                                   | Protocol v1 remains unchanged; production distribution remains blocked                                                                                                |
-| Internal audio                    | Both admitted local paths implemented; Piper packaged arm validated     | Bounded mono 24-kHz float32-le units; Piper performs bounded adapter-only linear conversion from native 22.05 kHz; sole-owner FIFO; one transient active-device copy; Web Audio; content-free controls and metrics | No audio persistence; Qwen remains development-only and unavailable when its frozen VRAM margin is not met                                                            |
+| Internal audio                    | Both admitted local paths implemented; Piper packaged arm validated     | Bounded mono 24-kHz float32-le units; Piper performs bounded adapter-only linear conversion from native 22.05 kHz; sole-owner FIFO; one transient active-device copy; Web Audio; content-free controls and metrics | No audio persistence; Qwen remains optional and development-only, requiring 7,196 MiB total and 6,508 MiB currently available VRAM plus its native configuration        |
 | Playback mechanism                | Web Audio selected and validated for the constrained demo               | One dedicated `AudioContext`, one gain node, and one active `AudioBufferSourceNode`; `1.0x` only                                                                                                                   | Production packaging and wider speed support remain deferred                                                                                                          |
 
 ADR-0013 records the standard rejection evidence. ADR-0015 supersedes

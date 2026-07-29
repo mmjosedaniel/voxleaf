@@ -209,6 +209,9 @@ describe("hardware compatibility controls", () => {
       "data-profile-reason",
       "available-dedicated-vram",
     );
+    expect(qwenProfile).toHaveTextContent(
+      "The current free dedicated graphics-memory budget is below this profile's safety reserve.",
+    );
     expect(
       screen.queryByRole("radio", {
         name: "Qwen and Serena development profile",

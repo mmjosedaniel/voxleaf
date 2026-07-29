@@ -29,10 +29,13 @@ the locator-safe, spoken-expansion-aware
 preparation profile so ordinary prose and compact numbers, currencies,
 acronyms, Roman numerals, ordinals, and letter sequences are bounded before
 inference. The corrective packaged Piper resilience arm passes. Qwen's
-offline service lifecycle passes, while the packaged
-compatibility path correctly rejects it on this host because the frozen
-available-VRAM margin is not met; no model starts and zero external requests
-occur.
+offline service lifecycle passes. Corrective ADR-0022 retains its generic
+`7,196`-MiB total-VRAM requirement but uses the measured `5,996`-MiB peak plus
+a frozen `512`-MiB reserve for currently available VRAM only while the exact
+profile remains native-gated and `development-only`. The packaged application
+now offers and executes Qwen on the exact host. Its broader matrix later stops
+at the depletion synchronization assertion, so no supported, real-time, or
+complete-resilience claim is added.
 
 M008.1 is a focused active closeout after exact listening found that
 independently generated units could sound joined. Its frozen engine-neutral

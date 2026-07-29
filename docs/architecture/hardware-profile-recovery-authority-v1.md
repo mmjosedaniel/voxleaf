@@ -189,6 +189,11 @@ Every admitted entry uses the same formulas:
 All arithmetic uses exact nonnegative integer MiB and rounds percentage
 margins upward. Overflow above `16,777,216` MiB invalidates the entry.
 
+[`qwen-development-vram-admission-v1.md`](qwen-development-vram-admission-v1.md)
+narrowly supersedes only the currently available dedicated-VRAM formula for an
+explicitly gated `development-demo` plus `development-only` entry. It retains
+the generic total-VRAM formula and every supported/fallback margin.
+
 ### Deterministic matching and selection
 
 Matching evaluates in this order:

@@ -34,12 +34,13 @@ narration, nonspoken-unit omission, and scheduler acceptance of valid
 non-empty fragments with zero recognized sentence boundaries while retaining
 Qwen/Serena as development-only. The packaged Piper adaptive and content-safe
 private-book arms pass on the exact host. Qwen passes its outbound-blocked
-service lifecycle; the packaged compatibility path correctly rejects it
-because this host cannot satisfy the frozen available-VRAM margin, without
-starting the model or making an external request. Raw host reports remain
-transient, non-Windows detection remains unavailable, M010 Milestone 7
-remains, and M011 still owns production distribution and Piper's GPL/CC0
-packaging obligations.
+service lifecycle. ADR-0022 retains `7,196` MiB total VRAM while using its
+measured `5,996`-MiB peak plus a frozen `512`-MiB reserve for currently
+available VRAM only when native-gated and development-only. The packaged host
+now offers and executes Qwen; its broader matrix later stops at the depletion
+synchronization assertion. Raw host reports remain transient, non-Windows
+detection remains unavailable, M010 Milestone 7 remains, and M011 still owns
+production distribution and Piper's GPL/CC0 packaging obligations.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
@@ -561,10 +562,11 @@ ordinary-prose and expansion-heavy packaged adaptive matrices pass
 load, synthesis, backpressure, cancellation, reload, quick/prepared playback,
 navigation replacement, cleanup, zero GPU use, and zero generated-audio
 persistence. The Qwen service-only arm also passes under its exact
-interpreter-bound outbound block. The packaged path records the exact
-`available-dedicated-vram` incompatibility on this host and proves fail-closed
-selection, no model start, and zero external requests; a future compatible
-host will run the complete Qwen packaged arm.
+interpreter-bound outbound block. The corrected packaged path admits the exact
+development profile at `7,196` MiB total and `6,508` MiB currently available
+VRAM, selects it, and executes actual inference through the later depletion
+stage. The depletion synchronization assertion then fails, so Qwen remains a
+development-only option with no complete resilience or support claim.
 
 The corrective
 [`tts-profile-runtime-configuration-availability-v1`](tts-profile-runtime-configuration-availability-v1.md)

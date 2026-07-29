@@ -569,11 +569,15 @@ acronyms, Roman numerals, currency, and percentage forms. The corrected
 `narration-piper-v2` path must split both into locator-contiguous,
 text-complete, sub-20-second units. After fast Piper generation fills the buffer, the fixture explicitly
 selects the next passage to create a deterministic active-cancellation window
-instead of depending on timing. The Qwen service arm passes; when the packaged host cannot
-meet the frozen available-VRAM margin, the runner requires that exact closed
-rejection, verifies zero external requests and no model start, and continues
-to the supported Piper arm. On a compatible future host it runs the complete
-Qwen packaged playback matrix instead.
+instead of depending on timing. The Qwen service arm passes. Its packaged arm
+uses the generic `7,196`-MiB total-VRAM requirement and corrective
+development-only `6,508`-MiB available-VRAM threshold. Below that threshold
+the runner requires the exact closed rejection, verifies zero external
+requests and no model start, and continues to the supported Piper arm. At or
+above it, Qwen is offered and the complete matrix runs. The latest exact-host
+run reached actual Qwen playback and later stopped at the depletion
+synchronization assertion; that limitation is retained rather than converted
+into a passing resilience claim.
 
 The product-coordinator regression also proves that a punctuation-only Piper
 range creates no TTS request, consumes no narration sequence number, advances

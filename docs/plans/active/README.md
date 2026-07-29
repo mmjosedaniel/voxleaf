@@ -33,9 +33,9 @@ Follow `.agents/PLANS.md` and update the progress log while working.
   fallback admission. Milestone 6 integrates the exact Piper runtime and its
   Piper-only locator-safe spoken-expansion-aware preparation; its corrective
   ordinary-prose, compact-form, and zero-sentence-boundary fragment corrections
-  pass. Qwen passes
-  offline service validation and the
-  packaged fail-closed VRAM path. Milestone 7 closeout remains.
+  pass. Qwen passes offline service validation and corrected native-gated
+  development VRAM admission; packaged inference runs, while its later
+  depletion assertion remains failed. Milestone 7 closeout remains.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through

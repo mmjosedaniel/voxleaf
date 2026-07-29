@@ -17,9 +17,12 @@ packaged private-book matrices pass.
 Product playback additionally requires the native exact-profile
 runtime-configuration gate during availability resolution and immediately
 before child start; hardware compatibility alone no longer enables Play.
-Qwen's outbound-blocked service
-lifecycle passes, while the packaged host correctly rejects it because the
-frozen available-VRAM margin is not met.
+Qwen's outbound-blocked service lifecycle passes. ADR-0022 retains the
+`7,196`-MiB total-VRAM rule while replacing only its native-gated
+development-only available-VRAM threshold with `6,508` MiB. The packaged host
+now offers and executes Qwen when that reserve is available; its broader
+matrix later stops at the depletion synchronization assertion, so it remains
+development-only rather than supported.
 
 M009.1 exact-host use also exposed and corrected one additional reader defect:
 passive viewport scrolling must not replace active narration. The
@@ -751,7 +754,12 @@ The canonical privacy-safe host compatibility report, profile/evidence shape,
 matching/preference rules, fixed resource margins, failure taxonomy, and
 identity-first explicit recovery authority are frozen by
 [`hardware-profile-recovery-authority-v1.md`](../architecture/hardware-profile-recovery-authority-v1.md)
-and ADR-0019. The native Windows detector gathers only those bounded facts
+and ADR-0019. The narrow
+[`qwen-development-vram-admission-v1`](../architecture/qwen-development-vram-admission-v1.md)
+authority and
+[`ADR-0022`](../architecture/decisions/ADR-0022-qwen-development-vram-admission.md)
+later supersede only the available-VRAM formula for a native-gated
+development-only entry. The native Windows detector gathers only those bounded facts
 through reviewed direct APIs and the desktop decodes them through the
 canonical contract; non-Windows builds return unavailable. The product now
 matches the immutable four-entry executable registry, retains only a bounded
@@ -773,9 +781,10 @@ measurement contract while retaining positive code-point/byte requirements.
 The
 separate native configuration-admission correction fails closed before child
 start when the selected exact runtime is not configured, and configured Piper
-passes the corrective packaged arm; Qwen passes offline
-service validation and its exact fail-closed packaged VRAM path. Milestone 7
-closeout remains.
+passes the corrective packaged arm. Qwen passes offline service validation,
+the corrective packaged compatibility boundary, and actual inference through
+the later depletion stage; that broader synchronization assertion does not
+pass. Milestone 7 closeout remains.
 
 ### Goal
 
@@ -938,8 +947,8 @@ verification and one explicit restart. Milestone 5 selects the passing Piper
 CPU fallback. Milestone 6 implements executable registry/service/settings
 integration and Piper-only locator-safe, spoken-expansion-aware preparation,
 passes the corrective ordinary-prose and compact-form Piper resilience arm,
-and records Qwen's passing
-offline service plus fail-closed packaged VRAM result.
+and records Qwen's passing offline service, corrected development-only VRAM
+admission, and the remaining packaged depletion limitation.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by completed
