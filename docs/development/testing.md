@@ -568,6 +568,13 @@ rejection, verifies zero external requests and no model start, and continues
 to the supported Piper arm. On a compatible future host it runs the complete
 Qwen packaged playback matrix instead.
 
+The product-coordinator regression also proves that a punctuation-only Piper
+range creates no TTS request, consumes no narration sequence number, advances
+through the bounded continuation, plays the next speakable locator-linked
+range, and leaves paragraph-leaf replacement available. This is a Piper
+dispatch rule; generic/Qwen preparation and M005 normalization output remain
+unchanged.
+
 Corrective Milestone 6 coverage also separates hardware matching from native
 runtime configuration. Rust rejects unknown profile identities at the
 content-free boolean boundary; the typed process client sends only the bounded

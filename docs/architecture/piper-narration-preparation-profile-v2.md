@@ -93,6 +93,16 @@ The desktop requests `narration-piper-v2` only for
 `narration-v1`. `narration-piper-v1` remains decodable only for historical
 tests and callers; product dispatch no longer selects it.
 
+Piper may return no waveform for a source-mapped unit containing punctuation
+but no speakable content. The desktop therefore omits a Piper unit only when
+it contains no Unicode letter, number, currency symbol, or accepted spoken
+symbol (`%`, `‰`, `º`, `ª`, or `°`). The omission happens after bounded
+preparation and before a protocol synthesis request. It does not rewrite
+displayed or prepared text, insert silence, persist content, consume a
+sequence number, or alter the continuation locator. Units with any potentially
+speakable content still reach Piper and retain the adapter's fail-closed
+output checks. Other engines are unchanged.
+
 ## Validation
 
 Implementation must prove:
@@ -108,6 +118,8 @@ Implementation must prove:
 - exact Piper produces complete sub-20-second units for the bounded synthetic
   regression matrix;
 - product dispatch selects v2 only for Piper;
+- punctuation-only Piper units create no synthesis request, while the next
+  speakable locator-linked unit remains ordered and selectable;
 - cancellation, work, retention, privacy, protocol, and generated-artifact
   bounds remain unchanged;
 - the release-packaged Piper matrix, portable checks, and native checks pass;
@@ -124,7 +136,7 @@ segment measurements. Generic `narration-v1` and historical
 `narration-piper-v1` policies retain their prior behavior, and the desktop
 selects v2 only for the admitted Piper profile.
 
-All 559 EPUB tests and all 399 desktop tests pass. The release-packaged exact
+All 559 EPUB tests and all 400 desktop tests pass. The release-packaged exact
 Piper regression uses a synthetic expansion-heavy sentence and completed
 60.010 seconds of stable playback with zero underruns, 18 synchronized
 transitions, zero GPU allocation, zero external requests, zero generated-audio
@@ -133,3 +145,14 @@ became audible in 3,114 ms with 21.524 seconds prepared; prepared playback
 became audible in 4,772 ms with 62.496 seconds prepared. This closes the
 synthetic reproduced class without changing protocol, inference settings,
 normalization, or audio persistence.
+
+A later content-safe in-memory probe over the user-provided ignored EPUB
+prepared the complete publication as 5,722 segments in 358 bounded requests.
+Preparation succeeded, so EPUB parsing and v2 sizing were not the remaining
+failure. Exact Piper produced no chunks for a two-code-point punctuation-only
+unit; the prior desktop path treated that valid no-speech outcome as a
+processing failure. With the dispatch omission above, the first 64 prepared
+units omitted four punctuation-only units and all 60 speakable units
+synthesized successfully. The probe emitted only counts, durations, and fixed
+outcomes and retained no book text, path, or audio. A rebuilt application
+rerun remains the final private-book confirmation.

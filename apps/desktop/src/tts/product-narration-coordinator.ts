@@ -51,6 +51,11 @@ import {
 const TICK_INTERVAL_MS = 250;
 const PREPARED_BATCH_SEGMENT_LIMIT = 16;
 const NAVIGATION_BOUNDARY_LIMIT = 64;
+const PIPER_SPEAKABLE_CONTENT = /[\p{L}\p{N}\p{Sc}%‰ºª°]/u;
+
+function isPiperSpeakableSegment(segment: PreparedNarrationSegment): boolean {
+  return PIPER_SPEAKABLE_CONTENT.test(segment.text);
+}
 
 export type ProductNarrationFailureCode =
   | "audio-playback-failed"
@@ -1149,18 +1154,20 @@ export class ProductNarrationCoordinator {
     if (!isPreparationSuccess(result)) {
       throw new Error("content-free-preparation-failure");
     }
-    if (result.segments.length === 0) {
-      if (result.status !== "complete") {
-        throw new Error("content-free-empty-batch");
-      }
-      scheduler.acceptEmptyCompleteRange();
-      this.#continuation = undefined;
+    const preparedSegments =
+      this.#profileId === PIPER_CPU_FALLBACK_PROFILE_ID
+        ? result.segments.filter(isPiperSpeakableSegment)
+        : result.segments;
+    if (preparedSegments.length === 0) {
+      scheduler.acceptEmptyPreparedRange(result.status === "complete");
+      this.#continuation =
+        result.status === "batch" ? result.continuation : undefined;
       return;
     }
     if (this.#identity === undefined || this.#prepared.size !== 0) {
       throw new Error("content-free-preparation-state");
     }
-    const entries = result.segments.map((prepared) => {
+    const entries = preparedSegments.map((prepared) => {
       const sequence = this.#nextSequence;
       this.#nextSequence += 1;
       const segmentId = this.#createIdentifier!("segment", sequence);

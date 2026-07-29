@@ -456,10 +456,12 @@ export class AdaptiveBufferScheduler {
     this.#rangeComplete = batch.complete;
   }
 
-  public acceptEmptyCompleteRange(): void {
+  public acceptEmptyPreparedRange(complete: boolean): void {
     if (
       this.#resources.activeNarrationPreparations !== 1 ||
-      this.#resources.retainedPreparedBatches !== 0
+      this.#resources.retainedPreparedBatches !== 0 ||
+      this.#pendingSegments.length !== 0 ||
+      this.#activeSynthesis !== undefined
     ) {
       throw new AdaptiveBufferSchedulerError("invalid-state");
     }
@@ -467,7 +469,7 @@ export class AdaptiveBufferScheduler {
       ...this.#resources,
       activeNarrationPreparations: 0,
     };
-    this.#rangeComplete = true;
+    this.#rangeComplete = complete;
     this.#refreshPlaybackState();
   }
 

@@ -709,7 +709,10 @@ as the supported speed-focused CPU fallback. Milestone 6 adds the exact Piper
 adapter, bounded native-rate conversion, profile-aware native start, explicit
 settings choice, and the two-profile resilience runner without regressing the
 Qwen development demo. Piper-only locator-safe preparation corrects the
-reproduced oversized-unit failure without truncation or a protocol change. The
+reproduced oversized-unit failure without truncation or a protocol change.
+The desktop also skips punctuation-only Piper units after a private,
+content-safe reproduction proved that the exact phonemizer emits no waveform
+for them; no silence is inserted and locator continuation remains intact. The
 separate native configuration-admission correction fails closed before child
 start when the selected exact runtime is not configured, and configured Piper
 passes the corrective packaged arm; Qwen passes offline

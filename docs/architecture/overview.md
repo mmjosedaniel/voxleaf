@@ -500,8 +500,12 @@ and every locator, byte, sentence, work, retention, cancellation, and privacy
 rule, then adds a 120/160 process-local spoken-expansion-unit target/hard
 bound. This protects ordinary prose plus compact numbers, currencies,
 acronyms, Roman numerals, ordinals, and letter sequences without rewriting
-text. Qwen and other callers retain `narration-v1`, and unusual oversized
-output still fails closed. The exact-host Piper service and corrective
+text. Before protocol dispatch, the desktop omits only Piper units that have
+no Unicode letter, number, currency, or accepted spoken symbol because the
+exact phonemizer emits no waveform for punctuation-only input. No silence is
+inserted, locator continuation is preserved, and Qwen and other callers retain
+`narration-v1`; unusual potentially spoken or oversized output still fails
+closed. The exact-host Piper service and corrective
 ordinary-prose and expansion-heavy packaged adaptive matrices pass
 load, synthesis, backpressure, cancellation, reload, quick/prepared playback,
 navigation replacement, cleanup, zero GPU use, and zero generated-audio

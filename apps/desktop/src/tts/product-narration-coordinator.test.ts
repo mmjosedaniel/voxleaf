@@ -293,6 +293,21 @@ function completeResult(
   return completeSegments([segment]);
 }
 
+function batchSegments(
+  segments: readonly PreparedNarrationSegment[],
+  continuation = END_LOCATOR,
+): NarrationPreparationResult {
+  const complete = completeSegments(segments);
+  if (complete.status !== "complete") {
+    throw new Error("content-free-test-state");
+  }
+  return Object.freeze({
+    ...complete,
+    status: "batch",
+    continuation,
+  });
+}
+
 function createPublication(
   prepareNarration: OpenedPublication["prepareNarration"],
 ): OpenedPublication {
@@ -498,6 +513,51 @@ describe("product narration coordinator", () => {
     expect(prepareNarration).toHaveBeenCalledWith(
       expect.objectContaining({ profile: "narration-piper-v2" }),
     );
+    await coordinator.close();
+  });
+
+  it("skips punctuation-only Piper ranges without failing or inserting audio", async () => {
+    const profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const spokenRange = sourceRange(
+      END_LOCATOR.textOffsetCodePoints,
+      END_LOCATOR.textOffsetCodePoints + 12,
+    );
+    const prepareNarration = vi
+      .fn<OpenedPublication["prepareNarration"]>()
+      .mockResolvedValueOnce(
+        batchSegments([preparedSegment("—…", sourceRange(0, 2))]),
+      )
+      .mockResolvedValueOnce(
+        completeSegments([
+          preparedSegment("Narración sintética.", spokenRange),
+        ]),
+      );
+    const { client, coordinator } = createHarness({
+      prepareNarration,
+      profileCompatibility,
+    });
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+
+    expect(prepareNarration).toHaveBeenCalledTimes(2);
+    expect(prepareNarration.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ profile: "narration-piper-v2" }),
+    );
+    expect(prepareNarration.mock.calls[1]?.[0]).toEqual(
+      expect.objectContaining({ startLocator: END_LOCATOR }),
+    );
+    expect(client.synthesized).toHaveLength(1);
+    expect(client.synthesized[0]?.sequence).toBe(0);
+    expect(client.synthesized[0]?.sourceRange).toEqual(spokenRange);
+    expect(coordinator.observe().failure).toBeUndefined();
+    expect(coordinator.startAtLocator(START_LOCATOR)).toBe(true);
     await coordinator.close();
   });
 

@@ -686,8 +686,13 @@ available and unchanged. All 559 EPUB tests and all 399 desktop tests pass.
 The release-packaged exact Piper expansion-heavy regression completed 60.010
 seconds of stable playback with zero underruns, 18 synchronized transitions,
 zero GPU allocation, zero external requests, zero generated-audio files, and
-zero retained/discarded units after cleanup. Milestone 6 remains open only for
-the frozen user confirmation on the private EPUB.
+zero retained/discarded units after cleanup. A subsequent content-safe
+private-EPUB probe prepared the entire publication successfully and isolated
+the remaining failure to punctuation-only units for which Piper returns no
+waveform. The desktop now omits only those nonspoken Piper units before
+protocol dispatch, inserts no silence, preserves continuation, and keeps the
+next paragraph-leaf target actionable. All 400 desktop tests pass. Milestone 6
+remains open only for the frozen user confirmation on the private EPUB.
 
 ## Milestone 7: Record support decisions and close validation
 
@@ -831,6 +836,19 @@ rewrite unrelated reader state.
   immediately before child start. Deterministic tests prove an otherwise
   hardware-compatible unconfigured profile enables no Play, starts no child,
   prepares no narration, and creates no recovery episode.
+- 2026-07-29: Reproduced the remaining private-book failure without retaining
+  or printing its text, path, or audio. The complete ignored EPUB prepared as
+  5,722 locator-linked segments in 358 bounded requests, proving parsing and
+  v2 sizing succeed. Exact Piper returned no chunks for a two-code-point
+  punctuation-only unit after 24 earlier units, so the coordinator entered
+  cleanup and temporarily made paragraph-leaf retargeting unavailable. The
+  desktop now omits only Piper units lacking a Unicode letter, number,
+  currency, or accepted spoken symbol; it inserts no silence and advances the
+  unchanged continuation locator. In a 64-unit in-memory probe, four
+  punctuation-only units were omitted and all 60 speakable units synthesized.
+  A deterministic two-batch regression proves no synthesis request or
+  sequence number is spent on the omitted unit, the next source range plays,
+  no failure is published, and paragraph-leaf replacement remains accepted.
 - 2026-07-29: Corrective validation passed. The exact configured Piper
   service-only lifecycle passed in 3.8 seconds. The release-packaged matrix
   passed through the real native configuration command with 2,893 ms quick

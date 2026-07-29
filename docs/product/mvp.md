@@ -18,13 +18,15 @@ Protocol, cancellation-timeout, cleanup, and repeated-recovery failures are
 terminal for the episode. Milestone 5 selects exact Piper/davefx as the
 supported speed-focused CPU fallback after all frozen v6 gates passed. The
 exact Qwen/Serena profile remains development-only. Milestone 6 now integrates
-  both admitted identities through one active service tree, exposes explicit
-  profile choice, and adds the exact Piper CPU adapter with bounded 22.05-to-24
-  kHz conversion. Piper alone uses text-complete, locator-safe,
-  spoken-expansion-aware `narration-piper-v2` segments so ordinary prose and
-  compact speech-expanding forms are bounded before protocol v1's 20-second
-  unit ceiling; other engines retain `narration-v1`. Its corrective packaged
-  Piper resilience arm passes. Qwen's offline
+both admitted identities through one active service tree, exposes explicit
+profile choice, and adds the exact Piper CPU adapter with bounded 22.05-to-24
+kHz conversion. Piper alone uses text-complete, locator-safe,
+spoken-expansion-aware `narration-piper-v2` segments so ordinary prose and
+compact speech-expanding forms are bounded before protocol v1's 20-second
+unit ceiling. A punctuation-only Piper unit that cannot produce a waveform is
+omitted before synthesis without inserted silence or locator discontinuity;
+other engines retain `narration-v1`. Its corrective packaged Piper resilience
+arm passes. Qwen's offline
 service arm passes, while the packaged host correctly marks that profile
 incompatible because its frozen available-VRAM margin is not met. No automatic
 retry or uninterrupted-playback promise exists.

@@ -66,7 +66,7 @@ flowchart LR
             STORE["WebView localStorage<br/>locator + display + bounded profile-ID preferences<br/>Implemented"]:::implemented
             SHELL["Tauri native supervisor<br/>model-free default or native-configured exact child<br/>M7 complete"]:::implemented
             CLIENT["Typed TTS client + one-unit handoff sink<br/>M7 complete<br/>consumed outside React"]:::implemented
-            PLAYBACK["Product narration coordinator + adaptive scheduler<br/>payload FIFO, Web Audio player, controls<br/>M8 Milestones 1-6 exact demo + policy"]:::implemented
+            PLAYBACK["Product narration coordinator + adaptive scheduler<br/>payload FIFO, Web Audio player, controls;<br/>Piper-only nonspoken-unit omission"]:::implemented
             PROJECTION["Bounded audible range projection<br/>exact start/completion + played frames<br/>M9 complete"]:::implemented
             SYNC["Reader segment projection, following,<br/>and synchronized user navigation<br/>M9 complete; M9.1 M2 materialization repair"]:::implemented
             HEARD_STORE["Heard-position persistence bridge<br/>exact boundaries + lifecycle flush<br/>M9 complete"]:::implemented
@@ -220,8 +220,10 @@ Piper arms with zero GPU use and zero generated-audio persistence. Piper
 product dispatch first applies the `narration-piper-v2` code-point, byte,
 sentence, and spoken-expansion limits, preserving complete text and contiguous
 locator ranges while bounding ordinary prose and compact speech-expanding
-forms before protocol v1's 20-second ceiling. Other profiles retain
-`narration-v1`. The Qwen
+forms before protocol v1's 20-second ceiling. It then omits only
+punctuation-only Piper units that cannot produce a waveform; no silence or
+stale audio is inserted, and continuation advances to the next speakable
+locator-linked unit. Other profiles retain `narration-v1`. The Qwen
 service arm passes under its interpreter firewall rule. Its packaged path
 correctly rejects the development profile at the frozen available-VRAM gate,
 starts no model, and records zero external requests.
