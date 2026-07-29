@@ -6,6 +6,11 @@ Accepted as result-blind M010 Milestone 1 authority. No host probe, supported
 profile, CPU fallback, automatic retry, or recovery implementation is accepted
 by this decision.
 
+M010 Milestone 2 subsequently implements the authorized privacy-safe report
+producer and decoder. That implementation does not widen this decision: it
+adds no profile registry entry, matching result, support/fallback claim,
+automatic retry, or recovery behavior.
+
 ## Context
 
 The constrained Qwen/Serena path is exact-host and development-only. ADR-0013

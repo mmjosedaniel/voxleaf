@@ -721,26 +721,32 @@ mod windows_probe {
         adapter: &IDXGIAdapter1,
         device_class: DeviceClass,
         dedicated_video_memory: usize,
-    ) -> (Option<u64>, Option<u64>) {
+    ) -> Result<(Option<u64>, Option<u64>), windows::core::Error> {
         if matches!(
             device_class,
             DeviceClass::IntegratedGpu | DeviceClass::Software
         ) {
-            return (Some(0), Some(0));
+            return Ok((Some(0), Some(0)));
         }
         let Ok(adapter3) = adapter.cast::<IDXGIAdapter3>() else {
-            return (Some(dedicated_video_memory as u64), None);
+            return Ok((Some(dedicated_video_memory as u64), None));
         };
         let mut information = DXGI_QUERY_VIDEO_MEMORY_INFO::default();
-        if unsafe {
+        if let Err(error) = unsafe {
             adapter3.QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &mut information)
+        } {
+            if error.code() == E_ACCESSDENIED {
+                return Err(error);
+            }
+            return Ok((Some(dedicated_video_memory as u64), None));
         }
-        .is_err()
-        {
-            return (Some(dedicated_video_memory as u64), None);
+        if information.CurrentUsage > information.Budget {
+            return Ok((Some(dedicated_video_memory as u64), None));
         }
-        let available = information.Budget.saturating_sub(information.CurrentUsage);
-        (Some(dedicated_video_memory as u64), Some(available))
+        Ok((
+            Some(dedicated_video_memory as u64),
+            Some(information.Budget - information.CurrentUsage),
+        ))
     }
 
     fn directml_data_type(
@@ -772,17 +778,27 @@ mod windows_probe {
         luid: u64,
     ) -> Result<Option<NativeProviderDevice>, windows::core::Error> {
         let mut d3d_device: Option<ID3D12Device> = None;
-        if unsafe { D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, &mut d3d_device) }.is_err() {
-            return Ok(None);
+        if let Err(error) =
+            unsafe { D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, &mut d3d_device) }
+        {
+            return if error.code() == E_ACCESSDENIED {
+                Err(error)
+            } else {
+                Ok(None)
+            };
         }
         let Some(d3d_device) = d3d_device else {
             return Ok(None);
         };
         let mut dml_device: Option<IDMLDevice> = None;
-        if unsafe { DMLCreateDevice(&d3d_device, DML_CREATE_DEVICE_FLAG_NONE, &mut dml_device) }
-            .is_err()
+        if let Err(error) =
+            unsafe { DMLCreateDevice(&d3d_device, DML_CREATE_DEVICE_FLAG_NONE, &mut dml_device) }
         {
-            return Ok(None);
+            return if error.code() == E_ACCESSDENIED {
+                Err(error)
+            } else {
+                Ok(None)
+            };
         }
         let Some(dml_device) = dml_device else {
             return Ok(None);
@@ -840,7 +856,12 @@ mod windows_probe {
             };
             let luid = luid_key(description.AdapterLuid);
             let (dedicated_memory_bytes, available_dedicated_memory_bytes) =
-                adapter_memory(&adapter, device_class, description.DedicatedVideoMemory);
+                match adapter_memory(&adapter, device_class, description.DedicatedVideoMemory) {
+                    Ok(memory) => memory,
+                    Err(_) => {
+                        return (ProbeValue::PermissionDenied, ProbeValue::PermissionDenied);
+                    }
+                };
             adapters.push(NativeAdapter {
                 luid,
                 device_class,
@@ -1374,8 +1395,19 @@ mod tests {
             ["Tcp", "Stream"].concat(),
             ["Udp", "Socket"].concat(),
             ["req", "west"].concat(),
+            ["http", "://"].concat(),
+            ["https", "://"].concat(),
+            ["std::", "fs::"].concat(),
+            ["File::", "create"].concat(),
+            ["Open", "Options"].concat(),
             ["local", "Storage"].concat(),
             ["write", "_all"].concat(),
+            ["Power", "Shell"].concat(),
+            ["nvidia", "-smi"].concat(),
+            ["wm", "ic"].concat(),
+            ["Win32::System::", "Registry"].concat(),
+            ["qwen", "_tts"].concat(),
+            ["import ", "torch"].concat(),
         ];
         for forbidden in forbidden {
             assert!(

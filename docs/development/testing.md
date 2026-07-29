@@ -42,6 +42,17 @@ The current tests are deterministic and layered by ownership:
   recovery tables, zero automatic attempts, bounded diagnostics, selected
   native API families, and the existing zero-plugin/zero-renderer-capability
   boundary. They collect no host facts and make no support or fallback claim.
+- `apps/desktop/src-tauri/src/host_profile_detection.rs` and
+  `apps/desktop/src/tts/host-profile-client.test.ts` implement and test M010's
+  narrow host-report boundary. Injected native snapshots cover complete,
+  partial, permission-denied, malformed, multi-adapter, integrated-only,
+  low-memory, no-provider, unknown, ambiguous, unsupported-platform, and
+  single-concurrency cases. A Windows production smoke exercises the direct
+  bounded probe without recording its values. Desktop tests independently
+  decode complete and partial reports and replace malformed/native failures
+  with fixed content-free errors. Source audits prohibit process, network,
+  model, and persistence surfaces. These tests select no profile and make no
+  support or fallback claim.
 - `packages/shared/src/contracts/audio-frame.test.ts` verifies payload-free frame metadata, branded ownership identities, exact sample-derived whole-millisecond calculations, aggregate-before-truncation behavior, numeric and duration-overflow boundaries, contiguous sequencing, unique frame IDs, stable format, segment termination, and content-free errors without audio devices or payloads.
 - `packages/shared/src/contracts/buffer-status.test.ts` verifies payload-free, session-bound buffer snapshots; explicit playable-duration units; low/target/maximum ordering; below/exactly-at/above-target states; bounded duration; underrun counts; and rejection of invalid state combinations, payload fields, fixed waits, and private text without implementing a buffer or player.
 - `packages/shared/src/testing/manual-clock.test.ts` verifies an explicit-start, manually advanced test clock; deterministic first-scheduled ordering for equal-time callbacks; pending-work inspection and cleanup; invalid-input rejection; and safe millisecond overflow handling without reading real time or scheduling real timers.
