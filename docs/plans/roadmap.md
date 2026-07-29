@@ -3,11 +3,13 @@
 ## Status and purpose
 
 VoxLeaf is pre-alpha. Milestones 1 through 9 and M009.1 are complete.
-M010 is in progress with Milestones 1-4 complete: privacy-safe host
+M010 is in progress with Milestones 1-5 complete: privacy-safe host
 detection, immutable measured matching, bounded preference and compatibility
 UI, pre-start enforcement, and identity-safe one-attempt recovery are
-implemented. Exact Qwen/Serena remains development-only, while standard
-support and CPU fallback remain unresolved evidence gates.
+implemented. The passing v6 evaluation selects exact Piper/davefx as the
+speed-focused CPU fallback. Exact Qwen/Serena remains development-only, and
+Milestone 6 must integrate Piper into the executable registry, service, and
+settings before it is user-visible.
 
 M009.1 exact-host use also exposed and corrected one additional reader defect:
 passive viewport scrolling must not replace active narration. The
@@ -677,7 +679,7 @@ stabilized application shell.
 
 ## Milestone 10: Add hardware profiles, fallback, and operational resilience
 
-**Status:** In progress; Milestones 1-4 are complete. Follow
+**Status:** In progress; Milestones 1-5 are complete. Follow
 [`M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md).
 The canonical privacy-safe host compatibility report, profile/evidence shape,
 matching/preference rules, fixed resource margins, failure taxonomy, and
@@ -685,17 +687,15 @@ identity-first explicit recovery authority are frozen by
 [`hardware-profile-recovery-authority-v1.md`](../architecture/hardware-profile-recovery-authority-v1.md)
 and ADR-0019. The native Windows detector gathers only those bounded facts
 through reviewed direct APIs and the desktop decodes them through the
-canonical contract; non-Windows builds return unavailable. The product now
-matches an immutable registry containing the three measured historical
-profiles, retains only a bounded profile-ID preference, rechecks before the
-model child starts, and exposes closed compatibility states. Only the exact
-Qwen/Serena entry can be development-only behind its native gate. No
-`supported` entry, automatic recommendation, admitted CPU fallback, or
-standard support claim exists. Milestone 4 adds the desktop-local bounded
-recovery controller, verified identity-first cleanup, one explicit restart,
-latest-heard resume, and terminal containment without automatic retry. CPU
-fallback is a hard evidence gate: rejected candidates cannot be silently
-re-admitted.
+canonical contract; non-Windows builds return unavailable. The product still
+matches the immutable three-entry executable registry, retains only a bounded
+profile-ID preference, rechecks before model-child start, and exposes closed
+compatibility states. Milestone 4 adds bounded recovery with identity-first
+cleanup, one explicit restart, latest-heard resume, and terminal containment.
+Milestone 5 passes every frozen Piper v6 gate and selects exact Piper/davefx
+as the supported speed-focused CPU fallback. It is not yet executable:
+Milestone 6 must add the active registry, service, settings, and resilience
+integration without regressing the Qwen development demo.
 
 ### Goal
 
@@ -761,6 +761,34 @@ All earlier milestones. Packaging exploration should begin during Milestones 6 a
 - Accessibility and long-session failures are expensive to fix if postponed until final packaging.
 - Portfolio or release claims must reflect validated behavior rather than the intended architecture.
 
+## Post-MVP local TTS candidate backlog
+
+**Status:** Deferred and unscheduled. This work starts only after the current
+MVP is complete and requires a separate ExecPlan plus newly frozen authority.
+It does not expand M010 or M011.
+
+Retain Piper/davefx as the selected CPU fallback and Qwen/Serena as the
+optional GPU-dependent development profile for the current MVP. After release,
+screen the candidates in this order:
+
+1. Pocket TTS Spanish as a balanced streaming CPU challenger, conditional on
+   exact model/voice license and redistribution review.
+2. Chatterbox Latin American Spanish as a regional quality candidate,
+   conditional on a redistributable preset voice and measured hardware fit.
+3. MOSS-TTS-Nano as an experimental CPU/ONNX candidate with strict
+   hallucination, repetition, cancellation, and long-form gates.
+4. Kokoro primarily when English narration becomes active product scope and
+   only after its earlier immutable-bundle and bundled-phonemizer license
+   blockers are resolved.
+5. Additional Piper Spanish voices as independently licensed and measured
+   voice profiles; the passing davefx result cannot be inherited.
+
+Supertonic remains rejected by existing VoxLeaf evidence. MeloTTS and
+KittenTTS remain unprioritized, and Sherpa-ONNX is only a possible runtime
+study rather than a model candidate. Follow the complete
+[post-MVP TTS candidate backlog](../product/post-mvp-tts-candidate-backlog.md)
+for intake boundaries and sources.
+
 ## Cross-milestone decision gates
 
 The following decisions should be made when evidence is available, not assumed silently:
@@ -820,8 +848,9 @@ implements the bounded native Windows probe and typed decoder. Milestone 3
 implements the immutable measured registry, fail-closed selection, bounded
 profile preference, compatibility UI, and exact-child pre-start enforcement.
 Milestone 4 implements identity-safe operational recovery with zero-owner
-verification and one explicit restart. No standard hardware support or
-admitted fallback is implemented yet.
+verification and one explicit restart. Milestone 5 selects the passing Piper
+CPU fallback; executable registry/service/settings integration remains
+Milestone 6 work.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by completed
@@ -830,7 +859,7 @@ supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
 Milestones 1 through 9 and M009.1 are complete, with their evidence retained
-under [`completed/`](completed/). M010 is active with Milestones 1-4 complete.
+under [`completed/`](completed/). M010 is active with Milestones 1-5 complete.
 
 ## MVP completion boundary
 

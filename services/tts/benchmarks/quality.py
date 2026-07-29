@@ -18,6 +18,7 @@ from typing import Any, Final, Protocol, cast
 
 from benchmarks.adapters.factory import CandidateAdapterFactory
 from benchmarks.adapters.manifest import (
+    PIPER_CPU_CANDIDATE_ID,
     QWEN_CANDIDATE_ID,
     QWEN_V3_CANDIDATE_ID,
     SUPERTONIC_CANDIDATE_ID,
@@ -29,7 +30,8 @@ from benchmarks.harness import load_corpus
 from benchmarks.preflight import PreflightRequest
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
-CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v1.json"
+LEGACY_CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v1.json"
+V6_CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v6.json"
 RAW_ROOT: Final = REPOSITORY_ROOT / "benchmarks" / "results" / "raw"
 QUALITY_ROOT_NAME: Final = "quality-v2"
 PROTOCOL_VERSION: Final = "tts-feasibility-profile-v2"
@@ -51,6 +53,7 @@ MAXIMUM_SESSION_AUDIO_BYTES: Final = 512 * 1024 * 1024
 _SESSION_ID: Final = re.compile(r"^[a-f0-9]{32}$")
 _SAMPLE_ID: Final = re.compile(r"^[a-f0-9]{32}$")
 _EVALUATOR_ID: Final = re.compile(r"^evaluator-[0-9]{2}$")
+CORRECTION_REASON: Final = "evaluator-clarified-no-meaning-change"
 
 
 class QualitySessionError(RuntimeError):
@@ -118,7 +121,29 @@ def _expected_candidates(profile: CandidateProfile) -> tuple[str, ...]:
         return (QWEN_V3_CANDIDATE_ID,)
     if profile.candidate_id in LEGACY_EXPECTED_CANDIDATES:
         return LEGACY_EXPECTED_CANDIDATES
+    if (
+        profile.candidate_id == PIPER_CPU_CANDIDATE_ID
+        and profile.authority is not None
+        and profile.authority.profile_version == "tts-cpu-fallback-profile-v6"
+    ):
+        return (PIPER_CPU_CANDIDATE_ID,)
     raise QualitySessionError("candidate-state")
+
+
+def _corpus_path(protocol: object) -> Path:
+    return V6_CORPUS_PATH if protocol == "tts-cpu-fallback-profile-v6" else LEGACY_CORPUS_PATH
+
+
+def _corpus_version(protocol: object) -> str:
+    return (
+        "tts-cpu-fallback-corpus-v6"
+        if protocol == "tts-cpu-fallback-profile-v6"
+        else "tts-synthetic-corpus-v1"
+    )
+
+
+def _minimum_evaluators(protocol: object) -> int:
+    return 1 if protocol == "tts-cpu-fallback-profile-v6" else 3
 
 
 def _new_session(session: Path, profile: CandidateProfile) -> dict[str, object]:
@@ -130,7 +155,7 @@ def _new_session(session: Path, profile: CandidateProfile) -> dict[str, object]:
     value: dict[str, object] = {
         "sessionVersion": SESSION_VERSION,
         "protocolVersion": protocol,
-        "corpusVersion": "tts-synthetic-corpus-v1",
+        "corpusVersion": _corpus_version(protocol),
         "state": "staging",
         "expectedCandidates": list(expected),
         "configurationIdentities": {
@@ -153,14 +178,13 @@ def _load_staging_session(session: Path) -> dict[str, object]:
     protocol = metadata.get("protocolVersion")
     if (
         metadata.get("sessionVersion") != SESSION_VERSION
-        or (
-            (protocol, expected)
-            not in (
-                (PROTOCOL_VERSION, LEGACY_EXPECTED_CANDIDATES),
-                ("tts-feasibility-profile-v3", (QWEN_V3_CANDIDATE_ID,)),
-            )
+        or (protocol, expected)
+        not in (
+            (PROTOCOL_VERSION, LEGACY_EXPECTED_CANDIDATES),
+            ("tts-feasibility-profile-v3", (QWEN_V3_CANDIDATE_ID,)),
+            ("tts-cpu-fallback-profile-v6", (PIPER_CPU_CANDIDATE_ID,)),
         )
-        or metadata.get("corpusVersion") != "tts-synthetic-corpus-v1"
+        or metadata.get("corpusVersion") != _corpus_version(protocol)
         or metadata.get("state") != "staging"
         or not isinstance(metadata.get("configurationIdentities"), dict)
         or not isinstance(metadata.get("candidateCommits"), dict)
@@ -246,7 +270,7 @@ def generate_candidate_audio(
         ):
             raise QualitySessionError("candidate-state")
         identities[candidate_id] = expected_identity
-        corpus = load_corpus(CORPUS_PATH)
+        corpus = load_corpus(_corpus_path(metadata.get("protocolVersion")))
         if len(corpus.performance_order) != len(corpus.cases) or set(
             corpus.performance_order
         ) != set(corpus.cases):
@@ -432,7 +456,7 @@ def finalize_session(
     expected_candidates = tuple(cast(list[str], metadata["expectedCandidates"]))
     if set(commits) != set(expected_candidates):
         raise QualitySessionError("candidate-state")
-    corpus = load_corpus(CORPUS_PATH)
+    corpus = load_corpus(_corpus_path(metadata.get("protocolVersion")))
     staging = session / "staging"
     audio = session / "audio"
     scorecards = session / "scorecards"
@@ -497,7 +521,8 @@ def finalize_session(
         "sessionId": session_id,
         "evaluatorCount": evaluator_count,
         "sampleCount": len(key_samples),
-        "eligibleForPromotion": evaluator_count >= 3,
+        "eligibleForPromotion": evaluator_count
+        >= _minimum_evaluators(metadata.get("protocolVersion")),
     }
 
 
@@ -584,6 +609,95 @@ def submit_scorecard(
     }
 
 
+def correct_meaning_changing_defect(
+    session_id: str,
+    evaluator_id: str,
+    case_id: str,
+    *,
+    reason_code: str,
+    raw_root: Path = RAW_ROOT,
+) -> dict[str, object]:
+    """Record one immutable pre-decision evaluator classification correction."""
+
+    session = _session_path(session_id, raw_root=raw_root, must_exist=True)
+    metadata = _read_mapping(session / "session.json")
+    if (
+        metadata.get("state") != "ready"
+        or metadata.get("protocolVersion") != "tts-cpu-fallback-profile-v6"
+        or metadata.get("expectedCandidates") != [PIPER_CPU_CANDIDATE_ID]
+        or _EVALUATOR_ID.fullmatch(evaluator_id) is None
+        or reason_code != CORRECTION_REASON
+    ):
+        raise QualitySessionError("correction-state")
+    completed_path = session / "scorecards" / f"{evaluator_id}.completed.json"
+    completed = _read_mapping(completed_path)
+    samples = completed.get("samples")
+    if not isinstance(samples, list):
+        raise QualitySessionError("invalid-scorecard")
+    matching = [
+        item for item in samples if isinstance(item, dict) and item.get("caseId") == case_id
+    ]
+    if len(matching) != 1 or matching[0].get("meaningChangingDefect") is not True:
+        raise QualitySessionError("correction-state")
+    correction_path = session / "scorecards" / f"{evaluator_id}.correction.json"
+    if correction_path.exists():
+        raise QualitySessionError("correction-state")
+    _write_json(
+        correction_path,
+        {
+            "sessionId": session_id,
+            "evaluatorId": evaluator_id,
+            "caseId": case_id,
+            "previousMeaningChangingDefect": True,
+            "correctedMeaningChangingDefect": False,
+            "reasonCode": reason_code,
+        },
+    )
+    aggregate_path = session / "quality.aggregate.json"
+    aggregate_path.unlink(missing_ok=True)
+    return {
+        "status": "pass",
+        "sessionId": session_id,
+        "evaluatorId": evaluator_id,
+        "caseId": case_id,
+        "correctedMeaningChangingDefect": False,
+    }
+
+
+def _corrected_defect_cases(
+    session: Path, cards: Sequence[Mapping[str, object]]
+) -> set[tuple[str, str]]:
+    corrected: set[tuple[str, str]] = set()
+    for card in cards:
+        evaluator_id = card.get("evaluatorId")
+        if not isinstance(evaluator_id, str):
+            raise QualitySessionError("invalid-scorecard")
+        path = session / "scorecards" / f"{evaluator_id}.correction.json"
+        if not path.exists():
+            continue
+        correction = _read_mapping(path)
+        case_id = correction.get("caseId")
+        if (
+            correction.get("sessionId") != card.get("sessionId")
+            or correction.get("evaluatorId") != evaluator_id
+            or not isinstance(case_id, str)
+            or correction.get("previousMeaningChangingDefect") is not True
+            or correction.get("correctedMeaningChangingDefect") is not False
+            or correction.get("reasonCode") != CORRECTION_REASON
+        ):
+            raise QualitySessionError("correction-state")
+        samples = card.get("samples")
+        if not isinstance(samples, list) or not any(
+            isinstance(item, dict)
+            and item.get("caseId") == case_id
+            and item.get("meaningChangingDefect") is True
+            for item in samples
+        ):
+            raise QualitySessionError("correction-state")
+        corrected.add((evaluator_id, case_id))
+    return corrected
+
+
 def aggregate_scores(
     session_id: str,
     *,
@@ -601,6 +715,7 @@ def aggregate_scores(
     ]
     if len(cards) != len(evaluator_ids):
         raise QualitySessionError("incomplete-scorecards")
+    corrected_defects = _corrected_defect_cases(session, cards)
     key = _read_mapping(session / "randomization-key.json")
     mappings = key.get("samples")
     if not isinstance(mappings, list):
@@ -628,7 +743,7 @@ def aggregate_scores(
             raise QualitySessionError("invalid-metadata")
         dimension_values: dict[str, list[float]] = {dimension: [] for dimension in DIMENSIONS}
         defects = 0
-        for case_id in load_corpus(CORPUS_PATH).performance_order:
+        for case_id in load_corpus(_corpus_path(metadata.get("protocolVersion"))).performance_order:
             matching_sample = next(
                 (
                     sample_id
@@ -658,7 +773,11 @@ def aggregate_scores(
                     value = _score(scores[dimension])
                     if isinstance(value, int):
                         per_dimension[dimension].append(value)
-                defects += int(sample["meaningChangingDefect"] is True)
+                evaluator_id = card.get("evaluatorId")
+                defects += int(
+                    sample["meaningChangingDefect"] is True
+                    and (cast(str, evaluator_id), case_id) not in corrected_defects
+                )
             for dimension in DIMENSIONS:
                 if per_dimension[dimension]:
                     dimension_values[dimension].append(
@@ -690,7 +809,7 @@ def aggregate_scores(
     aggregate = {
         "sessionVersion": SESSION_VERSION,
         "sessionId": session_id,
-        "eligibleForPromotion": len(cards) >= 3,
+        "eligibleForPromotion": len(cards) >= _minimum_evaluators(metadata.get("protocolVersion")),
         "candidates": results,
     }
     _write_json(session / "quality.aggregate.json", aggregate)
@@ -698,7 +817,7 @@ def aggregate_scores(
         "status": "pass",
         "sessionId": session_id,
         "evaluatorCount": len(cards),
-        "eligibleForPromotion": len(cards) >= 3,
+        "eligibleForPromotion": len(cards) >= _minimum_evaluators(metadata.get("protocolVersion")),
         "candidates": results,
     }
 

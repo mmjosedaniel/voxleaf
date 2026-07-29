@@ -67,6 +67,22 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   decision. It rejects CPU-only and dual-worker scheduling, retains the exact
   GPU identity only for ADR-0015's constrained demo, and keeps both
   diagnostics non-promotable.
+- `profile-v6.json`, `candidates-v6.json`, and `corpus-v6.json` freeze M010's
+  new Piper 1.4.2 / `es_ES-davefx-medium` CPU fallback evaluation. The initial
+  authority preceded all Piper synthesis; an incomplete runner session then
+  exposed and invalidated an obsolete v1 cancellation-case lookup. Corrected
+  authority now binds the two exact v6 cancellation cases before the first
+  valid official result or listening result. The exact engine/model artifacts,
+  isolated lock, `narration-v1` input, offline boundary, inherited
+  candidate-neutral measurements, one-maintainer MVP quality screen,
+  cancellation/cleanup gates, and GPL/CC0 packaging obligations are binding.
+- `cpu-fallback-result-v6.json` is the schema-valid content-safe passing
+  result. `selection-v6.md` and ADR-0020 admit this exact profile as the
+  speed-focused CPU fallback; product wiring remains M010 Milestone 6 work.
+- `schemas/cpu-fallback-raw-v6.schema.json` and
+  `schemas/cpu-fallback-summary-v6.schema.json` are the closed private and
+  content-safe result shapes. No v6 result or selection exists at the
+  authority checkpoint, so the product registry still has no CPU fallback.
 - `incremental-cancellation-prototype-v1.json` freezes the development-only
   prototype topology before results: complete-segment delivery, one resident
   spawned worker, explicit input/output/queue ceilings, identity-first stale
@@ -105,10 +121,109 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   explains the frozen independent GPU-primary/CPU-support authority, exact arm
   order, dispatch, CPU-zero-GPU checks, RAM/commit gates, simultaneous
   five-minute bounds, and non-promotable standard conclusion.
+- [`docs/architecture/tts-feasibility-profile-v6.md`](../../docs/architecture/tts-feasibility-profile-v6.md)
+  explains the frozen Piper CPU-only authority, conjunctive performance and
+  quality gates, process-termination cancellation, privacy boundary, and
+  explicit GPL/CC0 distribution obligations.
 
 Raw measurements, model files, generated audio, listening-session metadata,
 and profiling output belong below `benchmarks/results/raw/`, which is ignored.
 Nothing below that path is a reviewable result.
+
+## Frozen Piper CPU fallback evaluation
+
+M010's v6 runner uses only the isolated Piper interpreter and verified local
+artifacts. Setup is the only networked phase:
+
+```powershell
+uv sync --project services/tts/benchmarks/candidates/piper_1_4_2_cpu --locked
+```
+
+Acquire the exact `es_ES-davefx-medium` ONNX file, config, and model card at
+voice-repository revision
+`0d907f158acc877ddeebcbf827659ee13bea8bcd` into the ignored directory
+`models/tts/piper-1.4.2-es_ES-davefx-medium-0d907f1`, then verify the three
+hashes in `candidates-v6.json`. Runtime download is forbidden.
+
+The existing outbound firewall rule must point to this candidate's exact
+interpreter. From an elevated PowerShell prompt, remove the old rule only when
+it exists and then recreate the exact application-scoped block:
+
+```powershell
+$candidatePython = (Resolve-Path "services/tts/benchmarks/candidates/piper_1_4_2_cpu/.venv/Scripts/python.exe").Path
+Get-NetFirewallRule -DisplayName "VoxLeaf TTS Benchmark Offline" -ErrorAction SilentlyContinue |
+  Remove-NetFirewallRule
+New-NetFirewallRule -DisplayName "VoxLeaf TTS Benchmark Offline" -Direction Outbound -Action Block -Program $candidatePython -Profile Any
+```
+
+After the final authority and implementation commit is a strict ancestor of a
+clean execution commit, build the private stdin object without redirecting it
+to a file:
+
+```powershell
+$env:HF_HUB_OFFLINE = "1"
+$candidatePython = (Resolve-Path "services/tts/benchmarks/candidates/piper_1_4_2_cpu/.venv/Scripts/python.exe").Path
+$run = @{
+  candidateId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1"
+  artifactRoot = (Resolve-Path "models/tts/piper-1.4.2-es_ES-davefx-medium-0d907f1").Path
+  candidatePython = $candidatePython
+  modelRevision = "0d907f158acc877ddeebcbf827659ee13bea8bcd"
+  voiceId = "es_ES-davefx-medium"
+  provider = "onnxruntime-cpu"
+  precision = "float32"
+  offline = $true
+  expectedCommitSha = (git rev-parse HEAD).Trim()
+  purpose = "official"
+  sleepDisabled = $true
+  backgroundLoadAcceptable = $true
+  thermalStateAcceptable = $true
+}
+$run | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:preflight
+$measure = $run | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:measure | ConvertFrom-Json
+```
+
+Assess the content-free machine result before generating disposable review
+audio:
+
+```powershell
+$assessment = $run.Clone()
+$assessment.cpuFallbackOptIn = $true
+$assessment.performanceSessionId = $measure.sessionId
+$assessment.authorityCommitSha = "<frozen-authority-commit>"
+$assessment | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:cpu-fallback:assess
+```
+
+Only a `qualityAdmitted: true` result permits the existing
+`benchmark:tts:quality:generate`, `finalize`, `submit`, and `aggregate`
+workflow. Use one evaluator for v6. Final derivation additionally accepts the
+quality session ID, validates all machine/listening gates, writes only
+`cpu-fallback-result-v6.json`, and deletes both private sessions:
+
+```powershell
+$derive = $assessment.Clone()
+$derive.qualitySessionId = "<quality-session-id>"
+$derive | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:cpu-fallback:derive
+```
+
+Before derivation, an evaluator may correct one mistaken v6 meaning-change
+classification without altering the original completed scorecard or any
+numeric score. The closed correction command accepts only the fixed reason
+`evaluator-clarified-no-meaning-change`, removes any stale private aggregate,
+and requires re-aggregation:
+
+```powershell
+$correction = @{
+  qualityOptIn = $true
+  sessionId = "<quality-session-id>"
+  evaluatorId = "evaluator-01"
+  caseId = "<frozen-case-id>"
+  reasonCode = "evaluator-clarified-no-meaning-change"
+}
+$correction | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:quality:correct
+```
+
+Do not manually copy raw observations, audio, scorecards, randomization keys,
+paths, or input text into a result.
 
 Milestone 6.1's explicit `benchmark:tts:prototype` command runs only from the
 exact isolated Qwen candidate interpreter. It accepts one bounded JSON request
@@ -176,6 +291,7 @@ Candidate libraries are locked in independent projects:
 
 ```text
 services/tts/benchmarks/candidates/
+    piper_1_4_2_cpu/
     qwen3_1_7b_customvoice_cuda/
     qwen3_0_6b_cuda/
     supertonic3_cpu/
@@ -189,6 +305,7 @@ CI:
 uv sync --project services/tts/benchmarks/candidates/qwen3_0_6b_cuda --locked
 uv sync --project services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --locked
 uv sync --project services/tts/benchmarks/candidates/supertonic3_cpu --locked
+uv sync --project services/tts/benchmarks/candidates/piper_1_4_2_cpu --locked
 ```
 
 Model acquisition is a separate networked operation and must target an ignored

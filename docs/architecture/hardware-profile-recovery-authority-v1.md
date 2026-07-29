@@ -8,6 +8,11 @@ or new hardware measurement. This document and the executable constants under
 1 authority. They do not establish a supported profile, CPU fallback, or
 working recovery path.
 
+M010 Milestone 5 later passes the separately frozen Piper v6 evaluation.
+`selection-v6` and ADR-0020 admit that exact profile as the supported CPU
+fallback without changing this result-blind authority. Executable
+registry/service/settings integration remains Milestone 6 work.
+
 The canonical cross-boundary report is
 `packages/shared/schemas/host-profile-compatibility-report/v1.schema.json`.
 `CapabilityReportV1` and TTS protocol v1 remain unchanged.
@@ -232,18 +237,18 @@ When no admitted compatible CPU profile exists, the only truthful state is
 
 The closed failure codes and initial recovery actions are:
 
-| Failure | Initial action | Explicit attempts |
-| --- | --- | ---: |
-| `provider-unavailable` | select another compatible admitted profile | 1 |
-| `model-load-failed` | service restart after verified cleanup | 1 |
-| `model-warm-failed` | service restart after verified cleanup | 1 |
-| `service-crashed` | service restart after verified cleanup | 1 |
-| `protocol-failed` | contain and stop | 0 |
-| `resource-exhausted` | service restart after verified cleanup | 1 |
-| `cancellation-timeout` | contain and stop | 0 |
-| `playback-failed` | rebuild playback after verified cleanup | 1 |
-| `cleanup-failed` | contain and stop | 0 |
-| `repeated-recovery-failed` | contain and stop | 0 |
+| Failure                    | Initial action                             | Explicit attempts |
+| -------------------------- | ------------------------------------------ | ----------------: |
+| `provider-unavailable`     | select another compatible admitted profile |                 1 |
+| `model-load-failed`        | service restart after verified cleanup     |                 1 |
+| `model-warm-failed`        | service restart after verified cleanup     |                 1 |
+| `service-crashed`          | service restart after verified cleanup     |                 1 |
+| `protocol-failed`          | contain and stop                           |                 0 |
+| `resource-exhausted`       | service restart after verified cleanup     |                 1 |
+| `cancellation-timeout`     | contain and stop                           |                 0 |
+| `playback-failed`          | rebuild playback after verified cleanup    |                 1 |
+| `cleanup-failed`           | contain and stop                           |                 0 |
+| `repeated-recovery-failed` | contain and stop                           |                 0 |
 
 Every automatic attempt count is zero. Failure of the one admitted explicit
 attempt becomes stable unavailable. A new failure episode requires an explicit

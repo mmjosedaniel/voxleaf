@@ -16,6 +16,16 @@ Dependency declarations and resolved versions have one owner per ecosystem:
 
 Generated dependency directories and environments are ignored. Windows and Linux or WSL installations must remain separate.
 
+M010 Milestone 5 adds an evaluation-only isolated Piper project at
+`services/tts/benchmarks/candidates/piper_1_4_2_cpu`. It locks
+`piper-tts==1.4.2` and its ONNX Runtime graph without changing the production
+Python lock. Piper and its bundled phonemizer are GPL-3.0-or-later; the
+`es_ES-davefx-medium` voice card identifies CC0 source data. A later product
+package may use this candidate only as a separately identified local process
+with the license, notice, corresponding-source or written-offer, and model
+provenance obligations frozen in
+[`tts-feasibility-profile-v6.md`](../architecture/tts-feasibility-profile-v6.md).
+
 ## Shipped application dependencies
 
 These are the only direct libraries that can participate in the current application's runtime output.
@@ -76,8 +86,8 @@ ordinary uv cache management outside the repository. Retain only its
 content-free manifest/report rationale. Neither rejected lock may enter the
 production graph. A future candidate must pass a newly frozen complete
 evaluation, including the license, security, offline, native-binary,
-install-hook, artifact-size, and packaging audit, before Milestone 7 may
-propose a production dependency.
+install-hook, artifact-size, and packaging audit, before any later milestone
+may propose a product dependency.
 Both projects set uv's `exclude-newer` cutoff to `2026-07-18T00:00:00Z`, seven
 days before the intake review, so regenerating either lock cannot silently
 admit a just-published dependency.

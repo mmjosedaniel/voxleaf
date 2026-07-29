@@ -1,0 +1,124 @@
+{
+  "corpusVersion": "tts-cpu-fallback-corpus-v6",
+  "status": "frozen-before-v6-pilot-and-official-results",
+  "provenance": {
+    "author": "VoxLeaf contributors",
+    "createdAt": "2026-07-28",
+    "kind": "repository-authored-synthetic",
+    "license": "CC0-1.0",
+    "sourceMaterial": "none"
+  },
+  "languagePolicy": {
+    "defaultLanguage": "es",
+    "acceptedLanguages": ["es"],
+    "embeddedForeignNamesRemainUntranslated": true,
+    "textIsNarrationV1NormalizedInput": true
+  },
+  "normalizationAuthority": {
+    "profile": "narration-v1",
+    "candidateSpecificRewriting": "forbidden",
+    "engineInputField": "text"
+  },
+  "performanceOrder": [
+    "es-v6-arrival",
+    "es-v6-dialogue",
+    "es-v6-numbers",
+    "es-v6-date-time",
+    "es-v6-temperature",
+    "es-v6-foreign-name",
+    "es-v6-route",
+    "es-v6-closing"
+  ],
+  "sustainedSequence": [
+    "es-v6-route",
+    "es-v6-dialogue",
+    "es-v6-numbers",
+    "es-v6-date-time",
+    "es-v6-arrival",
+    "es-v6-temperature",
+    "es-v6-foreign-name",
+    "es-v6-closing"
+  ],
+  "cases": [
+    {
+      "caseId": "es-v6-arrival",
+      "language": "es",
+      "sizeClass": "short-unit",
+      "tags": ["narrative", "neutral"],
+      "text": "Al llegar a la estación, Clara dejó la mochila junto al banco y observó el andén vacío. La primera luz del día aparecía detrás de las montañas.",
+      "codePointCount": 143,
+      "utf8ByteCount": 152,
+      "privacyCanary": "tts-v6-canary-01-arrival"
+    },
+    {
+      "caseId": "es-v6-dialogue",
+      "language": "es",
+      "sizeClass": "short-unit",
+      "tags": ["dialogue", "punctuation"],
+      "text": "—¿Trajiste el mapa? —preguntó Elena. Marcos asintió, abrió la carpeta sobre la mesa y respondió: —Sí; podemos revisar la ruta antes de salir.",
+      "codePointCount": 141,
+      "utf8ByteCount": 153,
+      "privacyCanary": "tts-v6-canary-02-dialogue"
+    },
+    {
+      "caseId": "es-v6-numbers",
+      "language": "es",
+      "sizeClass": "short-unit",
+      "tags": ["numbers", "percentage", "currency", "normalized"],
+      "text": "El informe de dos mil veintiséis confirmó que el avance llegó al veinticinco por ciento y que quedaban doce euros con cincuenta céntimos para completar la compra de materiales.",
+      "codePointCount": 176,
+      "utf8ByteCount": 180,
+      "privacyCanary": "tts-v6-canary-03-numbers"
+    },
+    {
+      "caseId": "es-v6-date-time",
+      "language": "es",
+      "sizeClass": "short-unit",
+      "tags": ["date", "time", "normalized"],
+      "text": "La revisión quedó fijada para el veinticuatro de julio de dos mil veintiséis a las catorce treinta. El equipo llegará con tiempo para preparar la sala y comprobar cada conexión.",
+      "codePointCount": 177,
+      "utf8ByteCount": 182,
+      "privacyCanary": "tts-v6-canary-04-date-time"
+    },
+    {
+      "caseId": "es-v6-temperature",
+      "language": "es",
+      "sizeClass": "short-unit",
+      "tags": ["temperature", "ampersand", "normalized"],
+      "text": "El cartel de Sol y Mar indicó veinte grados Celsius al mediodía. Aun así, una brisa constante mantuvo fresco el sendero durante toda la caminata.",
+      "codePointCount": 145,
+      "utf8ByteCount": 148,
+      "privacyCanary": "tts-v6-canary-05-temperature"
+    },
+    {
+      "caseId": "es-v6-foreign-name",
+      "language": "es",
+      "sizeClass": "short-unit",
+      "tags": ["embedded-foreign-name", "accent"],
+      "text": "Siobhán O'Connor presentó el cuaderno en Bogotá y explicó sus conclusiones con calma. Después escuchó cada pregunta antes de responder.",
+      "codePointCount": 135,
+      "utf8ByteCount": 141,
+      "privacyCanary": "tts-v6-canary-06-foreign-name"
+    },
+    {
+      "caseId": "es-v6-route",
+      "language": "es",
+      "sizeClass": "short-unit",
+      "tags": ["narrative", "ordered-action"],
+      "text": "Tomás cerró la puerta, comprobó la brújula y señaló el camino del bosque. El grupo avanzó despacio para reconocer cada marca sin separarse.",
+      "codePointCount": 139,
+      "utf8ByteCount": 146,
+      "privacyCanary": "tts-v6-canary-07-route"
+    },
+    {
+      "caseId": "es-v6-closing",
+      "language": "es",
+      "sizeClass": "short-unit",
+      "tags": ["narrative", "closing"],
+      "text": "Cuando terminó la lluvia, las nubes se abrieron sobre el valle. Nadie habló durante unos instantes; el sonido del río bastaba para cerrar la jornada.",
+      "codePointCount": 149,
+      "utf8ByteCount": 152,
+      "privacyCanary": "tts-v6-canary-08-closing"
+    }
+  ]
+}

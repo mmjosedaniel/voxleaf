@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Final
 
 from benchmarks.adapters.manifest import (
+    PIPER_CPU_CANDIDATE_ID,
     QWEN_CANDIDATE_ID,
     QWEN_V3_CANDIDATE_ID,
     SUPERTONIC_CANDIDATE_ID,
@@ -14,6 +15,7 @@ from benchmarks.adapters.manifest import (
     CandidateConfiguration,
     CandidateProfile,
 )
+from benchmarks.adapters.piper import PiperCpuAdapter
 from benchmarks.adapters.qwen3 import Qwen3TtsAdapter
 from benchmarks.adapters.supertonic3 import Supertonic3Adapter
 from benchmarks.contracts import BenchmarkAdapter, PlacementProfileId
@@ -41,6 +43,8 @@ class CandidateAdapterFactory:
             )
         if self.profile.candidate_id == SUPERTONIC_CANDIDATE_ID:
             return Supertonic3Adapter(self.profile, self.configuration)
+        if self.profile.candidate_id == PIPER_CPU_CANDIDATE_ID:
+            return PiperCpuAdapter(self.profile, self.configuration)
         raise AdapterConfigurationError("candidate")
 
 

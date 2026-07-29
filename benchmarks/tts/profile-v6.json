@@ -1,0 +1,289 @@
+{
+  "profileVersion": "tts-cpu-fallback-profile-v6",
+  "status": "corrected-and-frozen-before-first-valid-v6-official-result",
+  "acceptedAt": "2026-07-28",
+  "purpose": "cpu-compatible-local-tts-fallback-selection",
+  "authorities": {
+    "candidateManifest": {
+      "path": "benchmarks/tts/candidates-v6.json",
+      "sha256": "41f75d61e6c8bb1b9aba4f68329218c9c69eaf66d26bb5c31402b2ce74cad2f1"
+    },
+    "candidateLock": {
+      "path": "services/tts/benchmarks/candidates/piper_1_4_2_cpu/uv.lock",
+      "sha256": "542bf0064d80b20b9cfe599b0ac0a39488d25dbfb73a50e65aac1985c643cd82"
+    },
+    "corpus": {
+      "path": "benchmarks/tts/corpus-v6.json",
+      "sha256": "0e1c997bbd9858969ddc36e0a097f7d5a019a94bc16fcf99af9fe1e0b1577def"
+    },
+    "privateRawSchema": {
+      "path": "benchmarks/tts/schemas/cpu-fallback-raw-v6.schema.json",
+      "sha256": "8454a1432da2d2e22e252dd8db0520078cd548b290c06172eb9a46ae2802ed00"
+    },
+    "contentSafeSummarySchema": {
+      "path": "benchmarks/tts/schemas/cpu-fallback-summary-v6.schema.json",
+      "sha256": "8665741bdff7cab107505e2f6e41d1641eabb80c0be10285207d6be87a4128f1"
+    },
+    "inheritedMeasurementProfile": {
+      "path": "docs/architecture/tts-feasibility-profile-v2.md",
+      "sha256": "92384d22a7f8f93761b98448ed24ee3bf829eeb2b32e38aa0f5ac508c201e527"
+    },
+    "normalizationContract": {
+      "path": "docs/architecture/narration-normalization-v1.md",
+      "sha256": "c90b5d9436515ffe983fda052d76b0d4a6fdab274f9bc253d8985745b5e1ac70"
+    },
+    "narrationPolicy": {
+      "path": "packages/epub/src/narration/narration-policy.ts",
+      "sha256": "96a62a9d0d57e5fad904b4c38d98ded4d48d5c2f8e125ea527c5df535ac0f85c"
+    },
+    "normalizerImplementation": {
+      "path": "packages/epub/src/narration/narration-normalizer.ts",
+      "sha256": "8bee1b480a81a96b105df32cf85eaf65f6e42bae382e152e89adbaa02353db74"
+    },
+    "spanishNormalizationImplementation": {
+      "path": "packages/epub/src/narration/spanish-normalization.ts",
+      "sha256": "f6e24298b9a80dbca5f9427580abee23aa04db5ffa5538141dcdb0b1cc531eba"
+    }
+  },
+  "candidate": {
+    "candidateId": "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1",
+    "role": "compatibility",
+    "environmentProject": "services/tts/benchmarks/candidates/piper_1_4_2_cpu",
+    "engine": {
+      "distribution": "piper-tts",
+      "version": "1.4.2",
+      "sourceRevision": "d6975e21a440c0d8b6e5fb7c41027409af13d44d",
+      "windowsWheelSha256": "9c4a3a11f5889ea9d0df4414dce2bd9bee5ce7d9cf604c8fd5e307441d4c031f",
+      "license": "GPL-3.0-or-later"
+    },
+    "model": {
+      "repository": "rhasspy/piper-voices",
+      "revision": "0d907f158acc877ddeebcbf827659ee13bea8bcd",
+      "voiceId": "es_ES-davefx-medium",
+      "modelCardDatasetLicense": "CC0",
+      "artifacts": [
+        {
+          "path": "es_ES-davefx-medium.onnx",
+          "sha256": "6658b03b1a6c316ee4c265a9896abc1393353c2d9e1bca7d66c2c442e222a917",
+          "sizeBytes": 63201294
+        },
+        {
+          "path": "es_ES-davefx-medium.onnx.json",
+          "sha256": "0e0dda87c732f6f38771ff274a6380d9252f327dca77aa2963d5fbdf9ec54842",
+          "sizeBytes": 4817
+        },
+        {
+          "path": "MODEL_CARD",
+          "sha256": "420703b5d8ea239b729f13d83f31eea9bae5fcb89447de23ebc94aa8a4768f95",
+          "sizeBytes": 276
+        }
+      ]
+    },
+    "runtime": {
+      "operatingSystem": "Windows",
+      "architecture": "x86_64",
+      "python": "3.12.*",
+      "provider": "ONNX Runtime CPUExecutionProvider",
+      "onnxruntime": "1.27.0",
+      "precision": "float32",
+      "phonemizer": "bundled-espeak-ng",
+      "sampleRateHz": 22050,
+      "channels": 1,
+      "sampleFormat": "float32"
+    },
+    "generation": {
+      "speakerId": null,
+      "noiseScale": 0.667,
+      "lengthScale": 1.0,
+      "noiseW": 0.8,
+      "normalizeAudio": true,
+      "volume": 1.0
+    }
+  },
+  "inputAuthority": {
+    "corpusVersion": "tts-cpu-fallback-corpus-v6",
+    "engineInputField": "cases[].text",
+    "normalizationProfile": "narration-v1",
+    "candidateSpecificTextRewriting": "forbidden",
+    "performanceOrder": [
+      "es-v6-arrival",
+      "es-v6-dialogue",
+      "es-v6-numbers",
+      "es-v6-date-time",
+      "es-v6-temperature",
+      "es-v6-foreign-name",
+      "es-v6-route",
+      "es-v6-closing"
+    ]
+  },
+  "executionPolicy": {
+    "clock": "monotonic-perf-counter-nanoseconds",
+    "modelLifetime": "one-resident-instance-per-session-and-complete-identity",
+    "nativeGenerationGranularity": "one-sentence-complete-audio-chunk",
+    "publicationGranularity": "bounded-sample-chunks-after-each-native-sentence",
+    "maximumPublishedChunkMilliseconds": 250,
+    "automaticRetries": 0,
+    "failureAccounting": "first-attempt-is-authoritative",
+    "configurationSwitching": "forbidden",
+    "warmupGenerations": 1,
+    "coldLoadObservations": 5,
+    "warmMeasuredPasses": 2,
+    "warmMeasuredGenerations": 16,
+    "sustainedMinimumMediaSeconds": 180,
+    "sustainedMaximumRounds": 10,
+    "cancellationTrials": [
+      "before-dispatch",
+      "accepted-before-audio",
+      "after-first-audio",
+      "after-five-media-seconds",
+      "near-hard-mid-generation"
+    ],
+    "cancellationCasePolicy": {
+      "defaultCaseId": "es-v6-arrival",
+      "nearHardCaseId": "es-v6-date-time"
+    },
+    "timeoutsMilliseconds": {
+      "coldLoad": 120000,
+      "generation": 120000,
+      "sustained": 900000,
+      "cooperativeCancellation": 500,
+      "workerTermination": 2000,
+      "cleanup": 5000
+    },
+    "memorySamplingMilliseconds": 50,
+    "whisper": "excluded",
+    "vadOrEnergy": "excluded",
+    "referenceAudio": "forbidden",
+    "referenceTranscript": "forbidden",
+    "voiceClonePrompt": "forbidden"
+  },
+  "offlineAndArtifactPolicy": {
+    "runtimeDownloads": "forbidden",
+    "verifiedLocalArtifactRootRequired": true,
+    "HF_HUB_OFFLINE": "1",
+    "outboundFirewallBlockBoundToCandidateInterpreter": true,
+    "artifactHashFailureInvalidatesRun": true,
+    "modelArtifactsRemainOutsideGit": true
+  },
+  "performanceGates": {
+    "allGatesAreConjunctive": true,
+    "maximumColdLoadP95Seconds": 30,
+    "maximumFirstAudioP95Seconds": 5,
+    "maximumTimeToFifteenSecondsP95Seconds": 18,
+    "maximumFirstAudioForShorterThanFifteenSecondsP95Seconds": 7,
+    "maximumWarmRtfP95": 1.1,
+    "maximumSustainedRtfP95": 1.1,
+    "maximumTotalSustainedRtf": 1.08,
+    "maximumPeakProcessTreeRamBytes": 4294967296,
+    "requiredGpuProviderAllocations": 0,
+    "maximumFailedObservations": 0,
+    "requiredCancellationTrialsPassed": 5,
+    "maximumStaleFrames": 0
+  },
+  "qualityWorkflow": {
+    "admission": "only-after-every-machine-safety-performance-and-cleanup-gate-passes",
+    "independentFluentSpanishEvaluators": 1,
+    "evaluatorIdentity": "maintainer",
+    "randomizedBlindOrder": true,
+    "scoreRange": [1, 5],
+    "dimensions": [
+      "intelligibility",
+      "spanishPronunciation",
+      "punctuationDialogue",
+      "numericExpressions",
+      "foreignNames",
+      "naturalness",
+      "artifactFreedom"
+    ],
+    "minimumOverallMean": 3.25,
+    "minimumIntelligibilityMean": 3.25,
+    "minimumSpanishMean": 3.25,
+    "minimumEveryDimensionMean": 2.75,
+    "maximumMeaningChangingDefects": 0,
+    "firstEvaluationOnly": true,
+    "laterQualityWaiver": "forbidden",
+    "scope": "focused-mvp-cpu-fallback-decision-not-a-population-quality-claim"
+  },
+  "cancellationAndCleanup": {
+    "cooperativeCapability": "not-required",
+    "midGenerationStopMode": "worker-termination",
+    "identityInvalidationBeforeTermination": true,
+    "staleOutputPublishable": false,
+    "workerProcessesRemaining": 0,
+    "rawSessionRemovedAfterSafeDerivation": true,
+    "generatedAudioRemoved": true,
+    "privateScorecardRemoved": true,
+    "priorSleepSettingRestored": true
+  },
+  "licenseAndPackaging": {
+    "benchmarkUse": "permitted",
+    "engineAndBundledPhonemizer": "GPL-3.0-or-later",
+    "voiceDataset": "CC0",
+    "productionBoundary": "separately-identified-local-process",
+    "productionBaseDependency": "forbidden",
+    "mandatoryDistributionObligations": [
+      "include GPL license and copyright notices",
+      "provide corresponding source or a compliant written offer",
+      "retain the Piper component as a separately identified local process",
+      "include model-card and CC0 provenance"
+    ]
+  },
+  "conclusionPolicy": {
+    "selectCpuFallbackOnlyIfEveryGatePasses": true,
+    "averageCannotRescueFailedGate": true,
+    "retryCannotRescueFailedGate": true,
+    "qualityCannotRescueMachineFailure": true,
+    "failureRetainsCpuFallbackUnsupported": true,
+    "selectionAuthorizesRegistryAdmissionOnly": true,
+    "selectionDoesNotAuthorizePackagingWithoutLicenseObligations": true
+  },
+  "resultAuthority": {
+    "privateRawSchemaVersion": "tts-cpu-fallback-raw-v6",
+    "contentSafeSummarySchemaVersion": "tts-cpu-fallback-summary-v6",
+    "officialResultMustRecordAuthorityCommit": true,
+    "authorityCommitMustContainExactFrozenAuthorityBytes": true,
+    "authorityCommitMustBeStrictAncestorOfExecutionCommit": true,
+    "pilotEligibleForPromotion": false,
+    "officialSummaryPath": "benchmarks/tts/cpu-fallback-result-v6.json",
+    "selectionPath": "benchmarks/tts/selection-v6.md",
+    "forbiddenCommittedOrReviewableEvidence": [
+      "sourceText",
+      "narrationText",
+      "privacyCanary",
+      "generatedAudio",
+      "waveformBytes",
+      "modelPath",
+      "userPath",
+      "commandLine",
+      "environmentValue",
+      "exceptionMessage",
+      "scorecard",
+      "randomizationKey",
+      "privateIdentity"
+    ]
+  },
+  "invalidation": {
+    "changesRequireNewProfileVersion": [
+      "authorityHash",
+      "candidate",
+      "modelRevision",
+      "artifactHash",
+      "candidateLock",
+      "runtime",
+      "voice",
+      "generationSetting",
+      "corpus",
+      "normalization",
+      "sampleCount",
+      "retryOrFailureAccounting",
+      "timeout",
+      "memoryBoundary",
+      "cancellationRule",
+      "qualityRule",
+      "licenseOrPackagingRule",
+      "conclusionRule",
+      "privacyOrCleanupRule",
+      "resultSchema"
+    ]
+  }
+}

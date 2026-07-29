@@ -55,13 +55,18 @@ class RawMeasurementJournal:
             or role not in ("balanced", "compatibility")
             or re.fullmatch(r"[0-9a-f]{40}", commit_sha) is None
             or _SESSION_ID.fullmatch(session_id) is None
-            or protocol_version not in ("tts-feasibility-profile-v2", "tts-feasibility-profile-v3")
+            or protocol_version
+            not in (
+                "tts-feasibility-profile-v2",
+                "tts-feasibility-profile-v3",
+                "tts-cpu-fallback-profile-v6",
+            )
             or (
                 configuration_identity_sha256 is not None
                 and re.fullmatch(r"[0-9a-f]{64}", configuration_identity_sha256) is None
             )
             or (
-                protocol_version == "tts-feasibility-profile-v3"
+                protocol_version in ("tts-feasibility-profile-v3", "tts-cpu-fallback-profile-v6")
                 and configuration_identity_sha256 is None
             )
             or (
@@ -187,11 +192,12 @@ class RawMeasurementJournal:
     def payload(self, *, status: str) -> dict[str, object]:
         if status not in ("complete", "failed", "invalid"):
             raise RawJournalError("invalid-status")
-        raw_version = (
-            "tts-feasibility-raw-v3"
-            if self._metadata["protocolVersion"] == "tts-feasibility-profile-v3"
-            else RAW_VERSION
-        )
+        raw_version_by_protocol = {
+            "tts-feasibility-profile-v2": RAW_VERSION,
+            "tts-feasibility-profile-v3": "tts-feasibility-raw-v3",
+            "tts-cpu-fallback-profile-v6": "tts-cpu-fallback-raw-v6",
+        }
+        raw_version = raw_version_by_protocol[str(self._metadata["protocolVersion"])]
         return {
             "rawVersion": raw_version,
             **self._metadata,
@@ -246,9 +252,12 @@ class RawMeasurementJournal:
         if len(relative.parts) != 2 or session.exists():
             raise RawJournalError("session-path")
         session.mkdir(parents=True)
-        version = (
-            "v3" if self._metadata["protocolVersion"] == "tts-feasibility-profile-v3" else "v2"
-        )
+        version_by_protocol = {
+            "tts-feasibility-profile-v2": "v2",
+            "tts-feasibility-profile-v3": "v3",
+            "tts-cpu-fallback-profile-v6": "v6",
+        }
+        version = version_by_protocol[str(self._metadata["protocolVersion"])]
         target = session / f"performance-{version}.raw.json"
         try:
             target.write_bytes(payload)

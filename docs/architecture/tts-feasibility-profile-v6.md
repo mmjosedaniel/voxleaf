@@ -1,0 +1,137 @@
+# Local TTS CPU fallback profile v6
+
+## Status and authority
+
+This document records the corrected pre-valid-result authority for M010
+Milestone 5. The
+normative machine-readable authority is
+[`profile-v6.json`](../../benchmarks/tts/profile-v6.json), SHA-256
+`ec0ef6aceedfc2ed4df199cc276b5c8365f979921311a7d2cd3d813546e1bd48`.
+Its initial form was frozen before any Piper waveform. An incomplete runner
+session later exposed an obsolete v1 cancellation-case lookup after
+performance observations but before cancellation and memory evidence. Those
+observations are invalid and cannot be assessed or promoted. This corrected
+form was frozen before the first valid v6 official execution, any listening
+score, or any selection result.
+
+The evaluation candidate is Piper `1.4.2` with the
+`es_ES-davefx-medium` voice at the exact revisions and artifact hashes in
+[`candidates-v6.json`](../../benchmarks/tts/candidates-v6.json). It is a new
+candidate. It does not rename or reinterpret the rejected Supertonic/F1 or
+CPU-only Qwen profiles.
+
+The later clean execution, bounded listening screen, and content-safe result
+passed every gate. [`selection-v6.md`](../../benchmarks/tts/selection-v6.md)
+and ADR-0020 select the exact profile as a supported CPU fallback. Runtime and
+settings integration remain M010 Milestone 6 work.
+
+## Candidate and dependency boundary
+
+Piper runs as a separately identified local CPU process through ONNX Runtime's
+`CPUExecutionProvider`. Its isolated project and lock live below
+`services/tts/benchmarks/candidates/piper_1_4_2_cpu`; neither Piper nor ONNX
+Runtime enters the base service lock.
+
+The engine and its bundled phonemizer are GPL-3.0-or-later. The voice card
+identifies its dataset as CC0. Benchmark use is admitted. Product distribution
+is admitted only if later packaging:
+
+- preserves Piper as a separately identified local process;
+- includes applicable GPL notices and copyright information;
+- provides corresponding source or a compliant written offer; and
+- includes the voice model card and CC0 provenance.
+
+The M010 evaluation may select the technical profile, but it cannot waive
+these M011 packaging obligations.
+
+## Input and execution
+
+[`corpus-v6.json`](../../benchmarks/tts/corpus-v6.json) contains eight
+repository-authored synthetic Spanish short units. They are already valid
+`narration-v1` normalized inputs, including numbers, currency, date, time,
+temperature, and an embedded foreign name. Only `cases[].text` reaches the
+engine. Canaries never do, and candidate-specific rewriting is forbidden.
+
+The candidate is loaded once per measured session. One excluded warm-up is
+followed by five cold-load observations, two ordered warm passes
+(16 generations), sustained complete passes until at least 180 seconds of
+media or ten rounds, and the five inherited cancellation races. Automatic
+retries and configuration switching are forbidden; the first attempt is
+authoritative.
+
+The four ordinary cancellation races use `es-v6-arrival`. The
+`near-hard-mid-generation` race uses `es-v6-date-time`. These identifiers are
+part of the frozen v6 authority; the runner must not inherit a case identifier
+from an earlier corpus version.
+
+Piper natively completes one sentence before yielding its audio. The adapter
+may split that completed audio into bounded metadata chunks no longer than
+250 milliseconds for the existing harness. This proves bounded publication
+after a native sentence completes, not token-level streaming. Mid-generation
+cancellation therefore uses identity invalidation followed by worker
+termination; stale output may never be published.
+
+## Mandatory performance and safety gates
+
+All gates are conjunctive:
+
+- cold-load p95 at or below 30 seconds;
+- first-audio p95 at or below 5 seconds;
+- time to 15 media seconds p95 at or below 18 seconds, or first audio at or
+  below 7 seconds for shorter outputs;
+- warm and sustained p95 RTF at or below 1.10;
+- total sustained RTF at or below 1.08;
+- peak process-tree RAM at or below 4 GiB;
+- zero GPU provider allocations and no GPU requirement;
+- zero failed or timed-out first attempts;
+- all five cancellation trials pass with zero stale frames;
+- verified artifacts, offline execution, network isolation, content-safe
+  diagnostics, bounded raw state, worker cleanup, audio deletion, scorecard
+  deletion, and sleep-setting restoration all pass.
+
+The existing 120-second load/request, 900-second sustained, 500-millisecond
+cooperative acknowledgment, 2-second worker-termination, and 5-second cleanup
+limits remain binding.
+
+## Bounded quality decision
+
+Quality is admitted only after every machine, performance, cancellation,
+privacy, and cleanup gate passes. One fluent Spanish maintainer reviews the
+eight randomized synthetic samples for intelligibility, normalized
+numbers/symbols, prosody, accent, and overall usefulness. This is the
+previously accepted MVP evaluator policy, not a population-quality claim.
+
+Overall, intelligibility, and Spanish means must each be at least 3.25; every
+dimension must be at least 2.75; and meaning-changing defects must be zero.
+The first complete evaluation is authoritative. Later listening cannot rescue
+a failed gate without a new profile version.
+
+## Result authority and privacy
+
+Private measurements must validate against
+`tts-cpu-fallback-raw-v6`. The only reviewable result is a content-safe
+`tts-cpu-fallback-summary-v6` file. It records the authority commit and an
+execution commit for which the authority commit is a strict ancestor.
+
+Source text, canaries, waveforms, model/user paths, command lines, environment
+values, raw exception messages, private scorecards, randomization keys, and
+evaluator identity are forbidden in committed evidence. Raw sessions and
+generated audio remain below the ignored raw tree and are deleted after safe
+derivation.
+
+If any mandatory gate fails, `selection-v6.md` must retain CPU fallback as
+unsupported and M010 stops at this hard evidence gate. Only a complete pass
+may admit this exact immutable profile to the product registry.
+
+## Accepted result
+
+[`cpu-fallback-result-v6.json`](../../benchmarks/tts/cpu-fallback-result-v6.json)
+is the schema-valid content-safe result. It records zero failed gates, total
+sustained RTF `0.02511192544515474`, 411,070,464 bytes peak process-tree RAM,
+five passing cancellation trials with zero stale frames, overall quality
+`4.621428571428572`, and zero meaning-changing defects. Successful derivation
+deleted all private sessions.
+
+The evaluator's pre-decision clarification was recorded as a separate private
+correction while preserving the original scorecard: one omitted vowel was
+understandable and did not alter meaning. Numeric scores were not changed.

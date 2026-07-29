@@ -1,0 +1,94 @@
+{
+  "manifestVersion": "tts-candidate-manifest-v6",
+  "status": "frozen-before-v6-pilot-and-official-results",
+  "reviewedAt": "2026-07-28",
+  "targetPlatform": {
+    "operatingSystem": "Windows",
+    "architecture": "x86_64",
+    "python": "3.12.*"
+  },
+  "candidate": {
+    "candidateId": "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1",
+    "admission": "admitted-for-frozen-evaluation-only",
+    "intendedRole": "cpu-fallback",
+    "environmentProject": "services/tts/benchmarks/candidates/piper_1_4_2_cpu",
+    "engine": {
+      "distribution": "piper-tts",
+      "version": "1.4.2",
+      "sourceRevision": "d6975e21a440c0d8b6e5fb7c41027409af13d44d",
+      "windowsWheelSha256": "9c4a3a11f5889ea9d0df4414dce2bd9bee5ce7d9cf604c8fd5e307441d4c031f",
+      "license": "GPL-3.0-or-later"
+    },
+    "model": {
+      "repository": "rhasspy/piper-voices",
+      "revision": "0d907f158acc877ddeebcbf827659ee13bea8bcd",
+      "voiceKey": "es_ES-davefx-medium",
+      "artifacts": [
+        {
+          "path": "es_ES-davefx-medium.onnx",
+          "sha256": "6658b03b1a6c316ee4c265a9896abc1393353c2d9e1bca7d66c2c442e222a917",
+          "sizeBytes": 63201294
+        },
+        {
+          "path": "es_ES-davefx-medium.onnx.json",
+          "sha256": "0e0dda87c732f6f38771ff274a6380d9252f327dca77aa2963d5fbdf9ec54842",
+          "sizeBytes": 4817
+        },
+        {
+          "path": "MODEL_CARD",
+          "sha256": "420703b5d8ea239b729f13d83f31eea9bae5fcb89447de23ebc94aa8a4768f95",
+          "sizeBytes": 276
+        }
+      ],
+      "modelCardDatasetLicense": "CC0",
+      "language": "Spanish",
+      "languageCode": "es_ES",
+      "speakers": 1,
+      "sampleRateHz": 22050
+    },
+    "runtime": {
+      "provider": "ONNX Runtime CPUExecutionProvider",
+      "onnxruntime": "1.27.0",
+      "precision": "float32",
+      "accelerationRequired": false,
+      "phonemizer": "bundled-espeak-ng",
+      "generation": {
+        "speakerId": null,
+        "noiseScale": 0.667,
+        "lengthScale": 1.0,
+        "noiseW": 0.8,
+        "normalizeAudio": true,
+        "volume": 1.0
+      }
+    },
+    "acquisition": {
+      "networkedSetupRequired": true,
+      "officialRunUsesVerifiedLocalPaths": true,
+      "runtimeDownloads": "forbidden",
+      "offlineControls": [
+        "HF_HUB_OFFLINE=1",
+        "outbound firewall block bound to exact candidate interpreter",
+        "PiperVoice.load uses explicit verified model and config paths"
+      ]
+    },
+    "licenseAndPackaging": {
+      "engineAndBundledPhonemizer": "GPL-3.0-or-later",
+      "voiceDataset": "CC0",
+      "benchmarkUse": "permitted",
+      "productIntegrationBoundary": "separate local process only",
+      "distributionObligations": [
+        "include GPL license and copyright notices",
+        "provide corresponding source or a compliant written offer",
+        "retain the Piper component as a separately identified local process",
+        "include the model card and CC0 provenance"
+      ],
+      "productionBaseDependency": "forbidden"
+    },
+    "knownRisks": [
+      "The voice is trained for Spanish from Spain and may not suit every dialect.",
+      "Native synthesis is sentence-complete; bounded sample publication does not prove token-level streaming.",
+      "Worker termination is the only admitted mid-generation cancellation method.",
+      "GPL packaging obligations must remain explicit through M011."
+    ]
+  }
+}

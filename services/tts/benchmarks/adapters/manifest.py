@@ -15,6 +15,7 @@ type CandidatePrecision = Literal["bfloat16", "float32"]
 QWEN_CANDIDATE_ID: Final = "qwen3-tts-0-6b-customvoice-cuda-bf16-v1"
 QWEN_V3_CANDIDATE_ID: Final = "qwen3-tts-1-7b-customvoice-cuda-bf16-v1"
 SUPERTONIC_CANDIDATE_ID: Final = "supertonic-3-onnx-cpu-f1-es-v1"
+PIPER_CPU_CANDIDATE_ID: Final = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1"
 ADMITTED_CANDIDATE_IDS: Final = frozenset((QWEN_CANDIDATE_ID, SUPERTONIC_CANDIDATE_ID))
 PROFILE_V3_SHA256: Final = "7d062a4f662ed95b1cb5ff0a21fc40864f4ac3858cea4314ee612b84c2e08dbe"
 PROFILE_V3_CONFIGURATION_SHA256: Final = (
@@ -30,6 +31,11 @@ PROFILE_V3_INSTRUCTION_SHA256: Final = (
 PROFILE_V3_GENERATION_SHA256: Final = (
     "1a03c4c5af681d0285200377b2321dd547d92f65c90649d8f36f0c31c25c263e"
 )
+PROFILE_V6_SHA256: Final = "ec0ef6aceedfc2ed4df199cc276b5c8365f979921311a7d2cd3d813546e1bd48"
+PROFILE_V6_CONFIGURATION_SHA256: Final = (
+    "9e9b1a93aed70cfdbdd8dd8141d2a7edb363530372387d7596bb4ef8d46bd918"
+)
+PROFILE_V6_LOCK_SHA256: Final = "542bf0064d80b20b9cfe599b0ac0a39488d25dbfb73a50e65aac1985c643cd82"
 HASH_READ_BYTES: Final = 1024 * 1024
 
 
@@ -115,6 +121,47 @@ class EvaluationAuthority:
 
 
 @dataclass(frozen=True)
+class CpuFallbackEvaluationAuthority:
+    profile_version: str
+    profile_sha256: str
+    configuration_identity_sha256: str
+    candidate_manifest_version: str
+    environment_project: str
+    candidate_lock_sha256: str
+    corpus_path: str
+    corpus_sha256: str
+    raw_schema_sha256: str
+    summary_schema_sha256: str
+    speaker_screen_result_sha256: str
+    instruction_sha256: str
+    generation_settings_sha256: str
+    batch_size: int
+    automatic_retries: int
+    model_lifetime: str
+    auxiliary_analysis: tuple[str, ...]
+    maximum_published_chunk_milliseconds: int
+
+
+@dataclass(frozen=True)
+class PiperGenerationSettings:
+    noise_scale: float
+    length_scale: float
+    noise_w: float
+    normalize_audio: bool
+    volume: float
+
+    def as_authority_value(self) -> dict[str, object]:
+        return {
+            "speakerId": None,
+            "noiseScale": self.noise_scale,
+            "lengthScale": self.length_scale,
+            "noiseW": self.noise_w,
+            "normalizeAudio": self.normalize_audio,
+            "volume": self.volume,
+        }
+
+
+@dataclass(frozen=True)
 class CandidateProfile:
     candidate_id: str
     role: Literal["balanced", "compatibility"]
@@ -132,7 +179,14 @@ class CandidateProfile:
         default=None,
         repr=False,
     )
-    authority: EvaluationAuthority | None = field(default=None, repr=False)
+    authority: EvaluationAuthority | CpuFallbackEvaluationAuthority | None = field(
+        default=None,
+        repr=False,
+    )
+    piper_generation_settings: PiperGenerationSettings | None = field(
+        default=None,
+        repr=False,
+    )
 
 
 @dataclass(frozen=True)
@@ -435,9 +489,220 @@ def load_benchmark_candidate_profile(repository_root: Path, candidate_id: str) -
 
     if candidate_id == QWEN_V3_CANDIDATE_ID:
         return load_v3_candidate_profile(repository_root, candidate_id)
+    if candidate_id == PIPER_CPU_CANDIDATE_ID:
+        return load_v6_candidate_profile(repository_root, candidate_id)
     return load_candidate_profile(
         repository_root / "benchmarks" / "tts" / "candidates-v1.json",
         candidate_id,
+    )
+
+
+def load_v6_candidate_profile(repository_root: Path, candidate_id: str) -> CandidateProfile:
+    """Load the exact pre-result Piper CPU fallback authority."""
+
+    if candidate_id != PIPER_CPU_CANDIDATE_ID:
+        raise AdapterConfigurationError("candidate")
+    profile_path = repository_root / "benchmarks" / "tts" / "profile-v6.json"
+    if _file_sha256(profile_path) != PROFILE_V6_SHA256:
+        raise AdapterConfigurationError("authority")
+    profile = _read_manifest(profile_path)
+    if (
+        profile.get("profileVersion") != "tts-cpu-fallback-profile-v6"
+        or profile.get("status") != "corrected-and-frozen-before-first-valid-v6-official-result"
+        or profile.get("purpose") != "cpu-compatible-local-tts-fallback-selection"
+    ):
+        raise AdapterConfigurationError("authority")
+
+    authorities = _mapping(profile.get("authorities"), "authority")
+    required_authorities = {
+        "candidateManifest",
+        "candidateLock",
+        "corpus",
+        "privateRawSchema",
+        "contentSafeSummarySchema",
+        "inheritedMeasurementProfile",
+        "normalizationContract",
+        "narrationPolicy",
+        "normalizerImplementation",
+        "spanishNormalizationImplementation",
+    }
+    if set(authorities) != required_authorities:
+        raise AdapterConfigurationError("authority")
+    resolved = {
+        name: _authority_path(repository_root, authorities.get(name))
+        for name in required_authorities
+    }
+    manifest = _read_manifest(resolved["candidateManifest"][0])
+    candidate = _mapping(profile.get("candidate"), "authority")
+    manifest_candidate = _mapping(manifest.get("candidate"), "authority")
+    manifest_engine = _mapping(manifest_candidate.get("engine"), "authority")
+    manifest_model = _mapping(manifest_candidate.get("model"), "authority")
+    manifest_runtime = _mapping(manifest_candidate.get("runtime"), "authority")
+    if (
+        manifest.get("manifestVersion") != "tts-candidate-manifest-v6"
+        or manifest_candidate.get("candidateId") != candidate_id
+        or manifest_candidate.get("admission") != "admitted-for-frozen-evaluation-only"
+        or manifest_candidate.get("intendedRole") != "cpu-fallback"
+        or manifest_candidate.get("environmentProject") != candidate.get("environmentProject")
+        or manifest_engine.get("distribution") != "piper-tts"
+        or manifest_engine.get("version") != "1.4.2"
+        or manifest_engine.get("sourceRevision") != "d6975e21a440c0d8b6e5fb7c41027409af13d44d"
+        or manifest_model.get("revision") != "0d907f158acc877ddeebcbf827659ee13bea8bcd"
+        or manifest_model.get("voiceKey") != "es_ES-davefx-medium"
+        or manifest_runtime.get("provider") != "ONNX Runtime CPUExecutionProvider"
+        or manifest_runtime.get("onnxruntime") != "1.27.0"
+        or manifest_runtime.get("precision") != "float32"
+    ):
+        raise AdapterConfigurationError("authority")
+
+    engine = _mapping(candidate.get("engine"), "authority")
+    model = _mapping(candidate.get("model"), "authority")
+    runtime = _mapping(candidate.get("runtime"), "authority")
+    generation = _mapping(candidate.get("generation"), "authority")
+    artifacts_value = model.get("artifacts")
+    if (
+        candidate.get("candidateId") != candidate_id
+        or candidate.get("role") != "compatibility"
+        or engine.get("distribution") != "piper-tts"
+        or engine.get("version") != "1.4.2"
+        or engine.get("license") != "GPL-3.0-or-later"
+        or model.get("revision") != "0d907f158acc877ddeebcbf827659ee13bea8bcd"
+        or model.get("voiceId") != "es_ES-davefx-medium"
+        or model.get("modelCardDatasetLicense") != "CC0"
+        or runtime.get("provider") != "ONNX Runtime CPUExecutionProvider"
+        or runtime.get("onnxruntime") != "1.27.0"
+        or runtime.get("precision") != "float32"
+        or runtime.get("sampleRateHz") != 22_050
+        or runtime.get("channels") != 1
+        or runtime.get("sampleFormat") != "float32"
+        or not isinstance(artifacts_value, list)
+        or len(artifacts_value) != 3
+    ):
+        raise AdapterConfigurationError("authority")
+
+    expected_generation = {
+        "speakerId": None,
+        "noiseScale": 0.667,
+        "lengthScale": 1.0,
+        "noiseW": 0.8,
+        "normalizeAudio": True,
+        "volume": 1.0,
+    }
+    if dict(generation) != expected_generation:
+        raise AdapterConfigurationError("authority")
+    settings = PiperGenerationSettings(
+        noise_scale=0.667,
+        length_scale=1.0,
+        noise_w=0.8,
+        normalize_audio=True,
+        volume=1.0,
+    )
+    artifacts = tuple(
+        ArtifactIdentity(
+            relative_path=_string(_mapping(item, "authority").get("path"), "authority"),
+            sha256=_sha256(_mapping(item, "authority").get("sha256")),
+        )
+        for item in artifacts_value
+    )
+    expected_paths = (
+        "es_ES-davefx-medium.onnx",
+        "es_ES-davefx-medium.onnx.json",
+        "MODEL_CARD",
+    )
+    if tuple(item.relative_path for item in artifacts) != expected_paths:
+        raise AdapterConfigurationError("authority")
+
+    configuration_value = {
+        "candidateId": candidate_id,
+        "model": candidate.get("model"),
+        "runtime": candidate.get("runtime"),
+        "generation": candidate.get("generation"),
+    }
+    configuration_sha256 = _canonical_sha256(configuration_value)
+    execution = _mapping(profile.get("executionPolicy"), "authority")
+    if (
+        configuration_sha256 != PROFILE_V6_CONFIGURATION_SHA256
+        or resolved["candidateLock"][1] != PROFILE_V6_LOCK_SHA256
+        or execution.get("automaticRetries") != 0
+        or execution.get("failureAccounting") != "first-attempt-is-authoritative"
+        or execution.get("modelLifetime")
+        != "one-resident-instance-per-session-and-complete-identity"
+        or execution.get("maximumPublishedChunkMilliseconds") != 250
+        or execution.get("cancellationCasePolicy")
+        != {
+            "defaultCaseId": "es-v6-arrival",
+            "nearHardCaseId": "es-v6-date-time",
+        }
+        or execution.get("whisper") != "excluded"
+        or execution.get("vadOrEnergy") != "excluded"
+        or execution.get("referenceAudio") != "forbidden"
+        or execution.get("referenceTranscript") != "forbidden"
+        or execution.get("voiceClonePrompt") != "forbidden"
+    ):
+        raise AdapterConfigurationError("authority")
+
+    authority = CpuFallbackEvaluationAuthority(
+        profile_version="tts-cpu-fallback-profile-v6",
+        profile_sha256=PROFILE_V6_SHA256,
+        configuration_identity_sha256=configuration_sha256,
+        candidate_manifest_version="tts-candidate-manifest-v6",
+        environment_project=_string(candidate.get("environmentProject"), "authority"),
+        candidate_lock_sha256=resolved["candidateLock"][1],
+        corpus_path="benchmarks/tts/corpus-v6.json",
+        corpus_sha256=resolved["corpus"][1],
+        raw_schema_sha256=resolved["privateRawSchema"][1],
+        summary_schema_sha256=resolved["contentSafeSummarySchema"][1],
+        speaker_screen_result_sha256="not-applicable",
+        instruction_sha256="not-applicable",
+        generation_settings_sha256=_canonical_sha256(generation),
+        batch_size=1,
+        automatic_retries=0,
+        model_lifetime=_string(execution.get("modelLifetime"), "authority"),
+        auxiliary_analysis=("whisper-excluded", "vad-or-energy-excluded"),
+        maximum_published_chunk_milliseconds=250,
+    )
+    return CandidateProfile(
+        candidate_id=candidate_id,
+        role="compatibility",
+        distribution="piper-tts",
+        engine_version="1.4.2",
+        model_revision=_string(model.get("revision"), "authority"),
+        voice_id=_string(model.get("voiceId"), "authority"),
+        provider="onnxruntime-cpu",
+        precision="float32",
+        artifacts=artifacts,
+        output_sample_rate_hz=22_050,
+        language="Spanish",
+        authority=authority,
+        piper_generation_settings=settings,
+    )
+
+
+def v6_profile_identity_matches(profile: CandidateProfile) -> bool:
+    """Recheck the exact Piper identity and sensitive generation settings."""
+
+    authority = profile.authority
+    settings = profile.piper_generation_settings
+    return bool(
+        profile.candidate_id == PIPER_CPU_CANDIDATE_ID
+        and profile.distribution == "piper-tts"
+        and profile.engine_version == "1.4.2"
+        and profile.model_revision == "0d907f158acc877ddeebcbf827659ee13bea8bcd"
+        and profile.voice_id == "es_ES-davefx-medium"
+        and profile.provider == "onnxruntime-cpu"
+        and profile.precision == "float32"
+        and profile.output_sample_rate_hz == 22_050
+        and isinstance(authority, CpuFallbackEvaluationAuthority)
+        and settings is not None
+        and settings.as_authority_value()
+        == {
+            "speakerId": None,
+            "noiseScale": 0.667,
+            "lengthScale": 1.0,
+            "noiseW": 0.8,
+            "normalizeAudio": True,
+            "volume": 1.0,
+        }
     )
 
 

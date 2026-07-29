@@ -47,8 +47,8 @@ the milestone.
 
 ## Current state
 
-Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-3
-are complete. Commit `8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
+Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-5
+are also complete. Commit `8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
 result-blind hardware/profile/recovery authority, canonical compatibility
 report, executable desktop tables, native API/permission audit, and ADR-0019
 before any M010 host measurement. Implementation checkpoint
@@ -84,6 +84,12 @@ These boundaries already make resource exhaustion, buffering, cancellation,
 stale-work rejection, cleanup, and progress observable without exposing book
 text.
 
+Milestone 5 now selects exact Piper/davefx as the supported speed-focused CPU
+fallback after the content-safe v6 result passed every frozen gate. The
+currently executable product registry and service still contain only the
+earlier three entries and exact Qwen adapter; Milestone 6 must integrate Piper
+atomically with settings and resilience proof.
+
 The current `CapabilityReportV1` is intentionally model-independent. It
 reports only `supported`, `unsupported`, or `unknown` for local generation,
 streaming, cancellation, hardware acceleration, and CPU fallback. It contains
@@ -97,8 +103,9 @@ identity-free host report in addition to the content-free exact-demo
 model-free or exact child can be started. Milestone 3 now matches that report
 against the immutable measured registry, presents only closed compatibility
 results, persists only one bounded profile ID, and enforces a fresh match
-before the exact child starts. There is no supported profile, CPU fallback,
-recovery state machine, or standard support matrix.
+before the exact child starts. The recovery state machine is implemented and
+Piper is selected, but the supported fallback is not yet executable or
+user-visible and no standard support matrix exists.
 
 ## Scope and non-goals
 
@@ -544,7 +551,26 @@ merge gate.
 
 ### Status
 
-Not started. This is a hard evidence gate for claiming CPU fallback.
+Complete on 2026-07-28. The exact Piper 1.4.2 /
+`es_ES-davefx-medium` CPU candidate,
+isolated lock, normalized synthetic corpus, schemas, performance/quality
+gates, cancellation/cleanup rules, offline controls, and GPL/CC0 packaging
+obligations are frozen in `profile-v6`. An invalid first runner session
+exposed an obsolete v1 cancellation-case lookup after performance collection
+and before all cancellation, memory, and cleanup evidence. Its observations
+are not candidate evidence and cannot be promoted. Corrected v6 authority
+binds both cancellation case identifiers before the first valid official
+execution. The corrected machine run, one-maintainer Spanish quality screen,
+privacy/cleanup derivation, and content-safe selection pass every conjunctive
+gate. `selection-v6` and ADR-0020 admit Piper as the supported speed-focused
+CPU fallback. Runtime/settings integration remains Milestone 6 work.
+
+The executable three-entry registry intentionally remains unchanged at this
+checkpoint. Adding a `supported` Piper entry before its service adapter exists
+would make the matcher recommend an ID the coordinator cannot start and would
+disable the working Qwen development demo on compatible hosts. Milestone 6
+must add the Piper registry entry, service adapter, native configuration, and
+settings choice atomically.
 
 ## Milestone 6: Integrate admitted profiles and run the resilience matrix
 
@@ -678,6 +704,101 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-28: Started Milestone 5 sequentially on
+  `feat/m010-m5-cpu-fallback-evaluation`. Selected the new Piper 1.4.2
+  ONNX/CPU `es_ES-davefx-medium` candidate after excluding previously rejected
+  profiles. Pinned the official engine source/wheel, voice-repository
+  revision, three local artifact hashes, isolated Python 3.12 lock, and
+  explicit GPL-3.0-or-later/CC0 distribution boundary. No Piper audio was
+  generated during candidate intake.
+- 2026-07-28: Added the pre-result `profile-v6`, eight-case repository-authored
+  `narration-v1` Spanish corpus, private raw schema, content-safe summary
+  schema, and detailed architecture authority. The frozen evaluation inherits
+  candidate-neutral M006 measurements, uses five cold loads, 16 warm
+  generations, at least 180 sustained media seconds, five termination-backed
+  cancellation trials, zero retries, a 4 GiB RAM ceiling, zero GPU
+  allocation, and one fluent-Spanish-maintainer MVP quality review only after
+  every machine gate passes. Product registry state remains unchanged.
+- 2026-07-28: Implemented model-free v6 authority loading, exact local
+  Piper/ONNX CPU placement checks, bounded 250-millisecond publication after
+  native sentence completion, candidate-neutral performance and
+  termination-backed cancellation execution, eight-sample quality routing,
+  one-maintainer eligibility, closed raw journaling, machine assessment, and
+  schema/ancestry/content-safe result derivation. The derivation deletes both
+  private sessions before publishing a result. Focused tests and the complete
+  Python suite pass; no Piper synthesis has run yet.
+- 2026-07-28: Froze the final executable v6 authority at
+  `ceccdf56b4e33153ae4615f7ff285e67636d73de`. The checkpoint contains profile
+  SHA-256 `f8828876715e3ceafddebf59063b3651f5a007c8bb6512cf4df11e14488b7c34`,
+  the exact loader/adapter, closed schemas, machine assessment, disposable
+  eight-sample quality workflow, result derivation, tests, and operator
+  commands. Official performance and quality must execute only from a clean
+  strict descendant and name this authority commit.
+- 2026-07-28: Ran official preflight from clean strict-descendant commit
+  `480be8cca12d2f6b11c7fbea7779172c8abb37b6`. The exact candidate
+  interpreter and all three local Piper voice artifacts matched their frozen
+  hashes. Windows x86_64, Python 3.12.10, the 20-logical-processor reference
+  CPU, power, disk, RAM, provider, and process-memory probes passed. Preflight
+  stopped before candidate load solely with `network-isolation`: the existing
+  application-scoped outbound block is not bound to the new Piper interpreter.
+  No pilot, official waveform, raw performance session, or listening material
+  was produced. An elevated Windows administrator must replace that exact
+  firewall binding before execution can continue.
+- 2026-07-28: After the administrator bound the outbound firewall rule to the
+  isolated Piper interpreter, preflight passed every frozen artifact,
+  isolation, interpreter, Windows x86_64, CPU, RAM, disk, power, provider, and
+  memory-probe check. Invalid session
+  `a4e4c1ed76f246b49260125db2d7f4de` then completed 5 cold loads, 16 warm
+  generations, and 24 sustained generations before the shared runner raised
+  `crash` while resolving the obsolete v1-only
+  `es-narrative-near-hard` case. It produced zero cancellation trials and no
+  memory result, so it is incomplete runner evidence rather than a Piper
+  failure and is forbidden from assessment or promotion.
+- 2026-07-28: Corrected `profile-v6` freezes `es-v6-arrival` for the four
+  ordinary cancellation races and `es-v6-date-time` for the near-hard race.
+  The harness resolves these versioned cases explicitly, and a regression
+  test proves both are present. This authority correction precedes the first
+  valid official execution; the invalid raw session is retained only until
+  its failure and cleanup are durably recorded.
+- 2026-07-28: Froze the corrected executable v6 authority at
+  `9a2f74845853e84635b419a4e65170c9a2c207ee`, with profile SHA-256
+  `ec0ef6aceedfc2ed4df199cc276b5c8365f979921311a7d2cd3d813546e1bd48`.
+  Ruff format/lint, mypy, and all 240 Python tests pass. The invalid session is
+  authorized for deletion and the first valid official run must execute from
+  a clean strict descendant of this checkpoint.
+- 2026-07-28: Deleted only invalid ignored session
+  `a4e4c1ed76f246b49260125db2d7f4de` after verifying its resolved directory
+  was exactly two levels below `benchmarks/results/raw`. The private raw
+  observations are not recoverable and no reviewable evidence was removed.
+- 2026-07-28: From clean strict-descendant commit
+  `d9f2929be40e40b2fa85078816ea854fad9a6c69`, corrected official preflight and
+  execution passed. The run completed 5 cold loads, 16 warm generations, 24
+  sustained generations, all 5 cancellation races, and 198.356 seconds of
+  sustained media with zero failed gates. Total sustained RTF was
+  `0.02511192544515474` and peak process-tree RAM was 411,070,464 bytes.
+  Machine assessment admitted, but did not perform, human quality review.
+- 2026-07-28: Generated and finalized the admitted disposable eight-sample
+  v6 listening session for the single fluent-Spanish MVP maintainer. Its
+  browser-local scorecard is pending; no quality score or candidate selection
+  has been inferred before that review.
+- 2026-07-28: The evaluator scored overall quality `4.621428571428572`.
+  Before result derivation, the evaluator clarified that one marked
+  temperature-sample issue omitted a vowel but remained understandable and
+  preserved meaning. The correction workflow preserved the original private
+  scorecard, changed only the Boolean classification, retained every numeric
+  score, and re-aggregated zero meaning-changing defects.
+- 2026-07-28: Derived schema-valid
+  `benchmarks/tts/cpu-fallback-result-v6.json` with zero failed gates and
+  deleted both private performance and listening sessions. `selection-v6` and
+  ADR-0020 admit the exact Piper profile as a supported CPU fallback and
+  future user-selectable speed-focused option. Qwen/Serena remains
+  development-only; Milestone 6 owns actual runtime/settings integration.
+- 2026-07-28: Checkpoint `f3163ca` fixes result derivation so the public
+  summary retains the measured execution commit while a clean descendant may
+  perform derivation, and adds the one-time immutable evaluator correction
+  record. All 241 Python tests pass. Checkpoint `f19f440` commits the
+  schema-valid result, `selection-v6`, ADR-0020, and a committed-result
+  regression test.
 - 2026-07-28: Closed Milestone 4 local validation. Portable and full native
   foundation checks pass; the complete browser matrix passes 6/6; and the
   release-packaged native smoke passes. The native rerun exposed and corrected
@@ -854,13 +975,36 @@ rewrite unrelated reader state.
 
 ## Final validation results
 
-Milestones 1-4 implementation and local validation are complete and recorded
-above. M010 remains in progress with Milestones 5 through 7 not started. The
+Milestones 1-5 implementation and local validation are complete and recorded
+above. M010 remains in progress with Milestones 6 and 7 not started. The
 runtime can produce the canonical bounded host report, derive content-free
 compatibility, preserve only one bounded preference, reject a changed host
 immediately before child start, and perform one identity-safe explicit
-recovery after verified cleanup. No supported recommendation, CPU fallback,
-automatic retry, or standard support claim is available.
+recovery after verified cleanup. The frozen v6 evaluation selects exact
+Piper/davefx as the supported speed-focused CPU fallback, but the executable
+registry, service adapter, settings choice, and resilience integration remain
+Milestone 6 work. No automatic retry or standard Qwen support claim is
+available.
+
+Milestone 5 validation results:
+
+- The corrected official run passed 5 cold, 16 warm, 24 sustained, and 5
+  cancellation cases. Sustained synthesis produced 198.356 seconds of audio at
+  aggregate RTF 0.0252 with 392 MiB peak process-tree RAM.
+- One fluent Spanish evaluator scored all eight frozen samples. The immutable
+  correction record clarified that the missing vowel remained understandable
+  and did not change meaning; numeric scores remained unchanged. The resulting
+  overall quality score is 4.621/5 with zero meaning-changing defects.
+- The public `cpu-fallback-result-v6.json`, `selection-v6`, and ADR-0020 pass
+  schema/authority tests and select Piper 1.4.2 with
+  `es_ES-davefx-medium` as the supported CPU fallback.
+- `pnpm.cmd check:portable` passed formatting, TypeScript/Python lint and
+  typechecks, 20 shared files / 209 tests, 34 EPUB files / 555 tests, 42
+  desktop files / 393 tests plus 7 native-client tests, 242 Python tests, and
+  all portable builds.
+- Repository/privacy review passed. Both private raw sessions are deleted, and
+  no model, voice artifact, generated audio, private scorecard, EPUB, secret,
+  or raw benchmark session is tracked.
 
 Milestone 4 validation results:
 

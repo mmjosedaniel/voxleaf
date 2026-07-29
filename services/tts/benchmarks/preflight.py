@@ -20,11 +20,17 @@ from benchmarks.adapters.manifest import (
     PROFILE_V3_LOCK_SHA256,
     PROFILE_V3_SCREEN_RESULT_SHA256,
     PROFILE_V3_SHA256,
+    PROFILE_V6_CONFIGURATION_SHA256,
+    PROFILE_V6_LOCK_SHA256,
+    PROFILE_V6_SHA256,
     AdapterConfigurationError,
     CandidateConfiguration,
     CandidateProfile,
+    CpuFallbackEvaluationAuthority,
+    EvaluationAuthority,
     VerifiedArtifact,
     v3_profile_identity_matches,
+    v6_profile_identity_matches,
     validate_configuration,
     verify_and_measure_artifacts,
 )
@@ -388,22 +394,37 @@ def run_preflight(
             ) == expected_python.resolve(strict=True)
         except OSError:
             candidate_python_matches = False
-        if (
-            authority.profile_version != "tts-feasibility-profile-v3"
-            or authority.profile_sha256 != PROFILE_V3_SHA256
-            or authority.configuration_identity_sha256 != PROFILE_V3_CONFIGURATION_SHA256
-            or authority.candidate_lock_sha256 != PROFILE_V3_LOCK_SHA256
-            or authority.speaker_screen_result_sha256 != PROFILE_V3_SCREEN_RESULT_SHA256
-            or authority.instruction_sha256 != PROFILE_V3_INSTRUCTION_SHA256
-            or authority.generation_settings_sha256 != PROFILE_V3_GENERATION_SHA256
-            or authority.candidate_manifest_version != "tts-candidate-manifest-v3"
-            or authority.environment_project
-            != "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda"
-            or authority.batch_size != 1
-            or authority.automatic_retries != 0
-            or not v3_profile_identity_matches(profile)
-            or not candidate_python_matches
-        ):
+        valid_authority = False
+        if isinstance(authority, EvaluationAuthority):
+            valid_authority = (
+                authority.profile_version == "tts-feasibility-profile-v3"
+                and authority.profile_sha256 == PROFILE_V3_SHA256
+                and authority.configuration_identity_sha256 == PROFILE_V3_CONFIGURATION_SHA256
+                and authority.candidate_lock_sha256 == PROFILE_V3_LOCK_SHA256
+                and authority.speaker_screen_result_sha256 == PROFILE_V3_SCREEN_RESULT_SHA256
+                and authority.instruction_sha256 == PROFILE_V3_INSTRUCTION_SHA256
+                and authority.generation_settings_sha256 == PROFILE_V3_GENERATION_SHA256
+                and authority.candidate_manifest_version == "tts-candidate-manifest-v3"
+                and authority.environment_project
+                == "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda"
+                and authority.batch_size == 1
+                and authority.automatic_retries == 0
+                and v3_profile_identity_matches(profile)
+            )
+        elif isinstance(authority, CpuFallbackEvaluationAuthority):
+            valid_authority = (
+                authority.profile_version == "tts-cpu-fallback-profile-v6"
+                and authority.profile_sha256 == PROFILE_V6_SHA256
+                and authority.configuration_identity_sha256 == PROFILE_V6_CONFIGURATION_SHA256
+                and authority.candidate_lock_sha256 == PROFILE_V6_LOCK_SHA256
+                and authority.candidate_manifest_version == "tts-candidate-manifest-v6"
+                and authority.environment_project
+                == "services/tts/benchmarks/candidates/piper_1_4_2_cpu"
+                and authority.automatic_retries == 0
+                and authority.maximum_published_chunk_milliseconds == 250
+                and v6_profile_identity_matches(profile)
+            )
+        if not valid_authority or not candidate_python_matches:
             failures.append("profile-authority")
     if not _offline_controls_match(profile, environment):
         failures.append("offline-control")

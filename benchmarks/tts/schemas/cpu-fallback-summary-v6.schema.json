@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:benchmark:tts-cpu-fallback-summary:v6",
+  "title": "VoxLeaf CPU fallback content-safe summary v6",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "protocolVersion",
+    "corpusVersion",
+    "candidateManifestVersion",
+    "reportPurpose",
+    "candidateId",
+    "role",
+    "authorityCommitSha",
+    "executionCommitSha",
+    "profileSha256",
+    "corpusSha256",
+    "candidateLockSha256",
+    "configurationIdentitySha256",
+    "source",
+    "host",
+    "runtime",
+    "artifacts",
+    "output",
+    "counts",
+    "loadObservations",
+    "generationObservations",
+    "aggregates",
+    "memory",
+    "cancellation",
+    "quality",
+    "audits",
+    "gateEvaluation",
+    "notes"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "tts-cpu-fallback-summary-v6"
+    },
+    "protocolVersion": {
+      "const": "tts-cpu-fallback-profile-v6"
+    },
+    "corpusVersion": {
+      "const": "tts-cpu-fallback-corpus-v6"
+    },
+    "candidateManifestVersion": {
+      "const": "tts-candidate-manifest-v6"
+    },
+    "reportPurpose": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/reportPurpose"
+    },
+    "candidateId": {
+      "const": "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1"
+    },
+    "role": {
+      "const": "compatibility"
+    },
+    "authorityCommitSha": {
+      "$ref": "#/$defs/commit"
+    },
+    "executionCommitSha": {
+      "$ref": "#/$defs/commit"
+    },
+    "profileSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "corpusSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "candidateLockSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "configurationIdentitySha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "source": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/source"
+    },
+    "host": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/host"
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "engineVersion",
+        "modelRevision",
+        "voiceId",
+        "provider",
+        "precision",
+        "offlineMode",
+        "streamingGranularity"
+      ],
+      "properties": {
+        "engineVersion": {
+          "const": "1.4.2"
+        },
+        "modelRevision": {
+          "const": "0d907f158acc877ddeebcbf827659ee13bea8bcd"
+        },
+        "voiceId": {
+          "const": "es_ES-davefx-medium"
+        },
+        "provider": {
+          "const": "onnxruntime-cpu"
+        },
+        "precision": {
+          "const": "float32"
+        },
+        "offlineMode": {
+          "const": true
+        },
+        "streamingGranularity": {
+          "const": "sample-chunks"
+        }
+      }
+    },
+    "artifacts": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/artifacts"
+    },
+    "output": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/output"
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coldLoads",
+        "warmGenerations",
+        "sustainedGenerations",
+        "cancellationTrials",
+        "failedObservations"
+      ],
+      "properties": {
+        "coldLoads": {
+          "const": 5
+        },
+        "warmGenerations": {
+          "const": 16
+        },
+        "sustainedGenerations": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 80,
+          "multipleOf": 8
+        },
+        "cancellationTrials": {
+          "const": 5
+        },
+        "failedObservations": {
+          "const": 0
+        }
+      }
+    },
+    "loadObservations": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/loadObservations"
+    },
+    "generationObservations": {
+      "type": "array",
+      "minItems": 24,
+      "maxItems": 96,
+      "items": {
+        "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/generationObservations/items"
+      }
+    },
+    "aggregates": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/aggregates"
+    },
+    "memory": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v2#/properties/memory"
+    },
+    "cancellation": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/cancellation"
+    },
+    "quality": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evaluatorCount",
+            "blindOrder",
+            "scale",
+            "overallMean",
+            "dimensions",
+            "meaningChangingDefects",
+            "limitations"
+          ],
+          "properties": {
+            "evaluatorCount": {
+              "const": 1
+            },
+            "blindOrder": {
+              "const": true
+            },
+            "scale": {
+              "const": "1-5"
+            },
+            "overallMean": {
+              "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/$defs/qualityScore"
+            },
+            "dimensions": {
+              "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/quality/properties/dimensions"
+            },
+            "meaningChangingDefects": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "limitations": {
+              "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/quality/properties/limitations"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": {
+              "const": "not-admitted"
+            }
+          }
+        }
+      ]
+    },
+    "audits": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/audits"
+    },
+    "gateEvaluation": {
+      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/gateEvaluation"
+    },
+    "notes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "schema-validation-fixture",
+          "mvp-single-maintainer-quality-screen",
+          "native-sentence-complete-output",
+          "mid-generation-cancellation-by-worker-termination",
+          "gpl-separate-process-packaging-obligations-retained"
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

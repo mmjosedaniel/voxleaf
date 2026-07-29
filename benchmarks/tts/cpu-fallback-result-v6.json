@@ -1,0 +1,678 @@
+{
+  "aggregates": {
+    "coldLoadSeconds": {
+      "count": 5,
+      "maximum": 1.5206271,
+      "p50": 1.4598556,
+      "p95": 1.5206271
+    },
+    "sustainedGeneratedDurationSeconds": 198.35646258503402,
+    "sustainedRtf": {
+      "count": 24,
+      "maximum": 0.03851859375,
+      "p50": 0.021631351102941176,
+      "p95": 0.03603414204703752
+    },
+    "totalSustainedRtf": 0.02511192544515474,
+    "warmFirstAudioSeconds": {
+      "count": 16,
+      "maximum": 0.4135505,
+      "p50": 0.1845593,
+      "p95": 0.4135505
+    },
+    "warmRtf": {
+      "count": 16,
+      "maximum": 0.052432513614430146,
+      "p50": 0.02260447534635043,
+      "p95": 0.052432513614430146
+    },
+    "warmShorterCompleteSeconds": {
+      "count": 16,
+      "maximum": 0.4139434,
+      "p50": 0.1850545,
+      "p95": 0.4139434
+    },
+    "warmTimeTo15SecondsMediaSeconds": "unavailable"
+  },
+  "artifacts": [
+    {
+      "artifactId": "piper-model",
+      "revision": "piper-voices-0d907f1",
+      "sha256": "6658b03b1a6c316ee4c265a9896abc1393353c2d9e1bca7d66c2c442e222a917",
+      "sizeBytes": 63201294
+    },
+    {
+      "artifactId": "piper-config",
+      "revision": "piper-voices-0d907f1",
+      "sha256": "0e0dda87c732f6f38771ff274a6380d9252f327dca77aa2963d5fbdf9ec54842",
+      "sizeBytes": 4817
+    },
+    {
+      "artifactId": "piper-model-card",
+      "revision": "piper-voices-0d907f1",
+      "sha256": "420703b5d8ea239b729f13d83f31eea9bae5fcb89447de23ebc94aa8a4768f95",
+      "sizeBytes": 276
+    }
+  ],
+  "audits": {
+    "artifacts": {
+      "status": "pass",
+      "violations": 0
+    },
+    "license": {
+      "reviewId": "piper-gpl3-cc0-v6",
+      "status": "pass"
+    },
+    "offline": {
+      "status": "pass",
+      "violations": 0
+    },
+    "privacy": {
+      "status": "pass",
+      "violations": 0
+    }
+  },
+  "authorityCommitSha": "9a2f74845853e84635b419a4e65170c9a2c207ee",
+  "cancellation": [
+    {
+      "cleanupSeconds": 0.0,
+      "rawSessionRemoved": true,
+      "staleFrames": 0,
+      "stopMode": "worker-termination",
+      "stopSeconds": 0.2024541,
+      "trialId": "before-dispatch"
+    },
+    {
+      "cleanupSeconds": 0.0,
+      "rawSessionRemoved": true,
+      "staleFrames": 0,
+      "stopMode": "worker-termination",
+      "stopSeconds": 0.2284832,
+      "trialId": "accepted-before-audio"
+    },
+    {
+      "cleanupSeconds": 0.0,
+      "rawSessionRemoved": true,
+      "staleFrames": 0,
+      "stopMode": "worker-termination",
+      "stopSeconds": 0.1917295,
+      "trialId": "after-first-audio"
+    },
+    {
+      "cleanupSeconds": 0.0,
+      "rawSessionRemoved": true,
+      "staleFrames": 0,
+      "stopMode": "worker-termination",
+      "stopSeconds": 0.1781399,
+      "trialId": "after-five-media-seconds"
+    },
+    {
+      "cleanupSeconds": 0.0,
+      "rawSessionRemoved": true,
+      "staleFrames": 0,
+      "stopMode": "worker-termination",
+      "stopSeconds": 0.1972723,
+      "trialId": "near-hard-mid-generation"
+    }
+  ],
+  "candidateId": "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1",
+  "candidateLockSha256": "542bf0064d80b20b9cfe599b0ac0a39488d25dbfb73a50e65aac1985c643cd82",
+  "candidateManifestVersion": "tts-candidate-manifest-v6",
+  "configurationIdentitySha256": "9e9b1a93aed70cfdbdd8dd8141d2a7edb363530372387d7596bb4ef8d46bd918",
+  "corpusSha256": "0e1c997bbd9858969ddc36e0a097f7d5a019a94bc16fcf99af9fe1e0b1577def",
+  "corpusVersion": "tts-cpu-fallback-corpus-v6",
+  "counts": {
+    "cancellationTrials": 5,
+    "coldLoads": 5,
+    "failedObservations": 0,
+    "sustainedGenerations": 24,
+    "warmGenerations": 16
+  },
+  "executionCommitSha": "d9f2929be40e40b2fa85078816ea854fad9a6c69",
+  "gateEvaluation": {
+    "failedGates": [],
+    "outcome": "pass"
+  },
+  "generationObservations": [
+    {
+      "caseId": "es-v6-arrival",
+      "firstAudioSeconds": 0.4135505,
+      "generatedDurationSeconds": 7.894784580498866,
+      "phase": "warm",
+      "rtf": 0.052432513614430146,
+      "sampleCount": 174080,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.4139434
+    },
+    {
+      "caseId": "es-v6-dialogue",
+      "firstAudioSeconds": 0.2258885,
+      "generatedDurationSeconds": 8.70748299319728,
+      "phase": "warm",
+      "rtf": 0.0260463328125,
+      "sampleCount": 192000,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.226798
+    },
+    {
+      "caseId": "es-v6-numbers",
+      "firstAudioSeconds": 0.3279939,
+      "generatedDurationSeconds": 9.206712018140589,
+      "phase": "warm",
+      "rtf": 0.035680175436436,
+      "sampleCount": 203008,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.3284971
+    },
+    {
+      "caseId": "es-v6-date-time",
+      "firstAudioSeconds": 0.3249877,
+      "generatedDurationSeconds": 9.32281179138322,
+      "phase": "warm",
+      "rtf": 0.03490484494181974,
+      "sampleCount": 205568,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.3254113
+    },
+    {
+      "caseId": "es-v6-temperature",
+      "firstAudioSeconds": 0.2177197,
+      "generatedDurationSeconds": 8.661043083900227,
+      "phase": "warm",
+      "rtf": 0.025181735951114278,
+      "sampleCount": 190976,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.2181001
+    },
+    {
+      "caseId": "es-v6-foreign-name",
+      "firstAudioSeconds": 0.1994706,
+      "generatedDurationSeconds": 6.884716553287982,
+      "phase": "warm",
+      "rtf": 0.02902346065424747,
+      "sampleCount": 151808,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1998183
+    },
+    {
+      "caseId": "es-v6-route",
+      "firstAudioSeconds": 0.1782463,
+      "generatedDurationSeconds": 8.034104308390022,
+      "phase": "warm",
+      "rtf": 0.02230471414378613,
+      "sampleCount": 177152,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1791984
+    },
+    {
+      "caseId": "es-v6-closing",
+      "firstAudioSeconds": 0.1825302,
+      "generatedDurationSeconds": 8.092154195011338,
+      "phase": "warm",
+      "rtf": 0.02260447534635043,
+      "sampleCount": 178432,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1829189
+    },
+    {
+      "caseId": "es-v6-arrival",
+      "firstAudioSeconds": 0.1679758,
+      "generatedDurationSeconds": 7.859954648526077,
+      "phase": "warm",
+      "rtf": 0.021416192271741137,
+      "sampleCount": 173312,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1683303
+    },
+    {
+      "caseId": "es-v6-dialogue",
+      "firstAudioSeconds": 0.1954593,
+      "generatedDurationSeconds": 8.579773242630386,
+      "phase": "warm",
+      "rtf": 0.022848878922107577,
+      "sampleCount": 189184,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1960382
+    },
+    {
+      "caseId": "es-v6-numbers",
+      "firstAudioSeconds": 0.1845593,
+      "generatedDurationSeconds": 9.113832199546485,
+      "phase": "warm",
+      "rtf": 0.020304795606090765,
+      "sampleCount": 200960,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1850545
+    },
+    {
+      "caseId": "es-v6-date-time",
+      "firstAudioSeconds": 0.1818492,
+      "generatedDurationSeconds": 9.229931972789116,
+      "phase": "warm",
+      "rtf": 0.019752160745872643,
+      "sampleCount": 203520,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1823111
+    },
+    {
+      "caseId": "es-v6-temperature",
+      "firstAudioSeconds": 0.1864359,
+      "generatedDurationSeconds": 8.498503401360544,
+      "phase": "warm",
+      "rtf": 0.021982517530097338,
+      "sampleCount": 187392,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1868185
+    },
+    {
+      "caseId": "es-v6-foreign-name",
+      "firstAudioSeconds": 0.1677196,
+      "generatedDurationSeconds": 6.931156462585034,
+      "phase": "warm",
+      "rtf": 0.024243270355684673,
+      "sampleCount": 152832,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1680339
+    },
+    {
+      "caseId": "es-v6-route",
+      "firstAudioSeconds": 0.1608665,
+      "generatedDurationSeconds": 7.952834467120182,
+      "phase": "warm",
+      "rtf": 0.020272507955063867,
+      "sampleCount": 175360,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1612239
+    },
+    {
+      "caseId": "es-v6-closing",
+      "firstAudioSeconds": 0.1691844,
+      "generatedDurationSeconds": 8.080544217687075,
+      "phase": "warm",
+      "rtf": 0.02098582662648168,
+      "sampleCount": 178176,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1695769
+    },
+    {
+      "caseId": "es-v6-route",
+      "firstAudioSeconds": 0.157934,
+      "generatedDurationSeconds": 7.918004535147392,
+      "phase": "sustained",
+      "rtf": 0.019991627852364368,
+      "sampleCount": 174592,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1582938
+    },
+    {
+      "caseId": "es-v6-dialogue",
+      "firstAudioSeconds": 0.1587684,
+      "generatedDurationSeconds": 8.486893424036282,
+      "phase": "sustained",
+      "rtf": 0.018779062259533175,
+      "sampleCount": 187136,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1593759
+    },
+    {
+      "caseId": "es-v6-numbers",
+      "firstAudioSeconds": 0.1784941,
+      "generatedDurationSeconds": 9.079002267573696,
+      "phase": "sustained",
+      "rtf": 0.019704026359694694,
+      "sampleCount": 200192,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1788929
+    },
+    {
+      "caseId": "es-v6-date-time",
+      "firstAudioSeconds": 0.1908688,
+      "generatedDurationSeconds": 9.137052154195011,
+      "phase": "sustained",
+      "rtf": 0.020940429886038756,
+      "sampleCount": 201472,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1913338
+    },
+    {
+      "caseId": "es-v6-arrival",
+      "firstAudioSeconds": 0.1644295,
+      "generatedDurationSeconds": 8.115374149659864,
+      "phase": "sustained",
+      "rtf": 0.02031341956142704,
+      "sampleCount": 178944,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.164851
+    },
+    {
+      "caseId": "es-v6-temperature",
+      "firstAudioSeconds": 0.174753,
+      "generatedDurationSeconds": 8.475283446712018,
+      "phase": "sustained",
+      "rtf": 0.020665255752354453,
+      "sampleCount": 186880,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1751439
+    },
+    {
+      "caseId": "es-v6-foreign-name",
+      "firstAudioSeconds": 0.1489076,
+      "generatedDurationSeconds": 6.907936507936508,
+      "phase": "sustained",
+      "rtf": 0.021631351102941176,
+      "sampleCount": 152320,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.149428
+    },
+    {
+      "caseId": "es-v6-closing",
+      "firstAudioSeconds": 0.1575197,
+      "generatedDurationSeconds": 8.150204081632653,
+      "phase": "sustained",
+      "rtf": 0.019374484174679487,
+      "sampleCount": 179712,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.157906
+    },
+    {
+      "caseId": "es-v6-route",
+      "firstAudioSeconds": 0.1710254,
+      "generatedDurationSeconds": 7.952834467120182,
+      "phase": "sustained",
+      "rtf": 0.021549838703239052,
+      "sampleCount": 175360,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1713823
+    },
+    {
+      "caseId": "es-v6-dialogue",
+      "firstAudioSeconds": 0.1725826,
+      "generatedDurationSeconds": 8.324353741496598,
+      "phase": "sustained",
+      "rtf": 0.02086658080543933,
+      "sampleCount": 183552,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1737008
+    },
+    {
+      "caseId": "es-v6-numbers",
+      "firstAudioSeconds": 0.1754195,
+      "generatedDurationSeconds": 9.009342403628118,
+      "phase": "sustained",
+      "rtf": 0.019569252904518362,
+      "sampleCount": 198656,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1763061
+    },
+    {
+      "caseId": "es-v6-date-time",
+      "firstAudioSeconds": 0.2092598,
+      "generatedDurationSeconds": 9.346031746031747,
+      "phase": "sustained",
+      "rtf": 0.02244304381793478,
+      "sampleCount": 206080,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.2097534
+    },
+    {
+      "caseId": "es-v6-arrival",
+      "firstAudioSeconds": 0.2387992,
+      "generatedDurationSeconds": 7.859954648526077,
+      "phase": "sustained",
+      "rtf": 0.030437045847950518,
+      "sampleCount": 173312,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.2392338
+    },
+    {
+      "caseId": "es-v6-temperature",
+      "firstAudioSeconds": 0.2713781,
+      "generatedDurationSeconds": 8.498503401360544,
+      "phase": "sustained",
+      "rtf": 0.032057773837730535,
+      "sampleCount": 187392,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.2724431
+    },
+    {
+      "caseId": "es-v6-foreign-name",
+      "firstAudioSeconds": 0.2246806,
+      "generatedDurationSeconds": 6.780226757369615,
+      "phase": "sustained",
+      "rtf": 0.03324776708315497,
+      "sampleCount": 149504,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.2254274
+    },
+    {
+      "caseId": "es-v6-closing",
+      "firstAudioSeconds": 0.199959,
+      "generatedDurationSeconds": 7.952834467120182,
+      "phase": "sustained",
+      "rtf": 0.025190628678147812,
+      "sampleCount": 175360,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.2003369
+    },
+    {
+      "caseId": "es-v6-route",
+      "firstAudioSeconds": 0.2810894,
+      "generatedDurationSeconds": 7.813514739229025,
+      "phase": "sustained",
+      "rtf": 0.03603414204703752,
+      "sampleCount": 172288,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.2815533
+    },
+    {
+      "caseId": "es-v6-dialogue",
+      "firstAudioSeconds": 0.2987675,
+      "generatedDurationSeconds": 8.417233560090702,
+      "phase": "sustained",
+      "rtf": 0.03554684539331897,
+      "sampleCount": 185600,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.2992061
+    },
+    {
+      "caseId": "es-v6-numbers",
+      "firstAudioSeconds": 0.3527314,
+      "generatedDurationSeconds": 9.218321995464853,
+      "phase": "sustained",
+      "rtf": 0.03851859375,
+      "sampleCount": 203264,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.3550768
+    },
+    {
+      "caseId": "es-v6-date-time",
+      "firstAudioSeconds": 0.3101906,
+      "generatedDurationSeconds": 9.543401360544218,
+      "phase": "sustained",
+      "rtf": 0.032562803162066604,
+      "sampleCount": 210432,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.3107599
+    },
+    {
+      "caseId": "es-v6-arrival",
+      "firstAudioSeconds": 0.2245047,
+      "generatedDurationSeconds": 8.02249433106576,
+      "phase": "sustained",
+      "rtf": 0.028034585095197177,
+      "sampleCount": 176896,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.2249073
+    },
+    {
+      "caseId": "es-v6-temperature",
+      "firstAudioSeconds": 0.1901798,
+      "generatedDurationSeconds": 8.428843537414966,
+      "phase": "sustained",
+      "rtf": 0.02260776334904442,
+      "sampleCount": 185856,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1905573
+    },
+    {
+      "caseId": "es-v6-foreign-name",
+      "firstAudioSeconds": 0.1530974,
+      "generatedDurationSeconds": 6.873106575963718,
+      "phase": "sustained",
+      "rtf": 0.022319237786370356,
+      "sampleCount": 151552,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1534025
+    },
+    {
+      "caseId": "es-v6-closing",
+      "firstAudioSeconds": 0.1614869,
+      "generatedDurationSeconds": 8.045714285714286,
+      "phase": "sustained",
+      "rtf": 0.020115106534090908,
+      "sampleCount": 177408,
+      "sampleRateHz": 22050,
+      "timeTo15SecondsMedia": "shorter-complete",
+      "wallSeconds": 0.1618404
+    }
+  ],
+  "host": {
+    "architecture": "x86_64",
+    "cpuModel": "Intel(R) Core(TM) Ultra 7 255HX",
+    "driverVersion": "577.05",
+    "gpuModel": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "logicalProcessors": 20,
+    "operatingSystem": "Windows",
+    "osVersion": "10.0.26200",
+    "pythonVersion": "3.12.10",
+    "totalRamBytes": 33752997888
+  },
+  "loadObservations": [
+    {
+      "cleanupSeconds": 0.0826876,
+      "loadSeconds": 1.4598556,
+      "observationIndex": 1
+    },
+    {
+      "cleanupSeconds": 0.0835698,
+      "loadSeconds": 1.4884577,
+      "observationIndex": 2
+    },
+    {
+      "cleanupSeconds": 0.080669,
+      "loadSeconds": 1.4485423,
+      "observationIndex": 3
+    },
+    {
+      "cleanupSeconds": 0.0953871,
+      "loadSeconds": 1.4574714,
+      "observationIndex": 4
+    },
+    {
+      "cleanupSeconds": 0.0986088,
+      "loadSeconds": 1.5206271,
+      "observationIndex": 5
+    }
+  ],
+  "memory": {
+    "gpuProviderAllocations": 0,
+    "peakFrameworkVramBytes": "unavailable",
+    "peakProcessTreeRamBytes": 411070464,
+    "peakProcessVramBytes": "unavailable",
+    "peakVramBytes": "unavailable",
+    "processVramSamplingIntervalMilliseconds": "unavailable",
+    "ramSamplingIntervalMilliseconds": 50,
+    "vramMeasurementMethod": "unavailable-cpu-role"
+  },
+  "notes": [
+    "mvp-single-maintainer-quality-screen",
+    "native-sentence-complete-output",
+    "mid-generation-cancellation-by-worker-termination",
+    "gpl-separate-process-packaging-obligations-retained"
+  ],
+  "output": {
+    "channels": 1,
+    "sampleFormat": "float32",
+    "sampleRateHz": 22050
+  },
+  "profileSha256": "ec0ef6aceedfc2ed4df199cc276b5c8365f979921311a7d2cd3d813546e1bd48",
+  "protocolVersion": "tts-cpu-fallback-profile-v6",
+  "quality": {
+    "blindOrder": true,
+    "dimensions": {
+      "artifactFreedom": 4.75,
+      "foreignNames": 4.6,
+      "intelligibility": 4.75,
+      "naturalness": 4.25,
+      "numericExpressions": 5.0,
+      "punctuationDialogue": 4.5,
+      "spanishPronunciation": 4.5
+    },
+    "evaluatorCount": 1,
+    "limitations": [
+      "small-panel",
+      "spanish-only",
+      "fixed-voices-only",
+      "synthetic-corpus-only",
+      "not-accessibility-certification"
+    ],
+    "meaningChangingDefects": 0,
+    "overallMean": 4.621428571428572,
+    "scale": "1-5"
+  },
+  "reportPurpose": "official-summary",
+  "role": "compatibility",
+  "runtime": {
+    "engineVersion": "1.4.2",
+    "modelRevision": "0d907f158acc877ddeebcbf827659ee13bea8bcd",
+    "offlineMode": true,
+    "precision": "float32",
+    "provider": "onnxruntime-cpu",
+    "streamingGranularity": "sample-chunks",
+    "voiceId": "es_ES-davefx-medium"
+  },
+  "schemaVersion": "tts-cpu-fallback-summary-v6",
+  "source": {
+    "commitSha": "d9f2929be40e40b2fa85078816ea854fad9a6c69",
+    "treeState": "clean"
+  }
+}
