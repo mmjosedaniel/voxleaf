@@ -3,8 +3,8 @@
 ## Status and purpose
 
 VoxLeaf is pre-alpha. Milestones 1 through 9 and M009.1 are complete.
-M010 is in progress with Milestones 1-6 complete:
-privacy-safe host
+M010 Milestones 1-6 are complete, and Milestone 7 has recorded the final
+support/recovery decision and entered closeout validation. Privacy-safe host
 detection, immutable measured matching, bounded preference and compatibility
 UI, pre-start enforcement, and identity-safe one-attempt recovery are
 implemented. The passing v6 evaluation selects exact Piper/davefx as the
@@ -22,7 +22,11 @@ Qwen's outbound-blocked service lifecycle passes. ADR-0022 retains the
 development-only available-VRAM threshold with `6,508` MiB. The packaged host
 now offers and executes Qwen when that reserve is available; its broader
 matrix later stops at the depletion synchronization assertion, so it remains
-development-only rather than supported.
+development-only rather than supported. The final support matrix makes
+Piper/davefx the sole supported and automatically recommendable compatible
+profile, keeps fallback explicit rather than automatic, and assigns runtime/
+model distribution and Piper license fulfillment to M011. Required
+replacement pull-request checks remain before M010 is archived.
 
 M009.1 exact-host use also exposed and corrected one additional reader defect:
 passive viewport scrolling must not replace active narration. The
@@ -35,7 +39,9 @@ before implementation, and deterministic desktop code now schedules one
 bounded semantic delay between already-buffered generated units. It changes no
 normalization, protocol, audio payload, buffer threshold, or engine. Full
 portable, authoritative Windows, and privacy/repository validation pass;
-required pull-request checks remain.
+the merged implementation's clean-runner smoke found a nondeterministic
+synchronization-probe race. Its bounded correction and replacement required
+checks remain.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -549,13 +555,14 @@ behavior should first be proven with deterministic fakes.
 
 ## Milestone 8.1: Add boundary-aware audio transitions
 
-**Status:** In progress. The frozen
+**Status:** In progress; replacement closeout CI remains. The frozen
 [`playback-transition-pause-policy-v1.md`](../architecture/playback-transition-pause-policy-v1.md),
 [ADR-0021](../architecture/decisions/ADR-0021-boundary-aware-audio-transitions.md),
 and deterministic desktop implementation exist. Focused policy, scheduler,
 player, coordinator, controls, full desktop tests, and desktop typechecking
 pass. Full portable, authoritative Windows, privacy/repository, and relative
-documentation-link validation also pass. Required pull-request checks remain.
+documentation-link validation also pass. The bounded clean-runner
+synchronization-probe correction and replacement required checks remain.
 Follow
 [`M008-001-boundary-aware-audio-transitions.md`](active/M008-001-boundary-aware-audio-transitions.md).
 
@@ -747,8 +754,8 @@ stabilized application shell.
 
 ## Milestone 10: Add hardware profiles, fallback, and operational resilience
 
-**Status:** In progress; Milestones 1-6 are complete, including exact-host and
-content-safe packaged private-book validation. Follow
+**Status:** Closeout validation; Milestones 1-6 are complete and Milestone 7
+has recorded the final support/recovery decision. Follow
 [`M010-hardware-profiles-fallback-and-operational-resilience.md`](active/M010-hardware-profiles-fallback-and-operational-resilience.md).
 The canonical privacy-safe host compatibility report, profile/evidence shape,
 matching/preference rules, fixed resource margins, failure taxonomy, and
@@ -784,7 +791,14 @@ start when the selected exact runtime is not configured, and configured Piper
 passes the corrective packaged arm. Qwen passes offline service validation,
 the corrective packaged compatibility boundary, and actual inference through
 the later depletion stage; that broader synchronization assertion does not
-pass. Milestone 7 closeout remains.
+pass. The final
+[`tts-support-matrix-v1`](../architecture/tts-support-matrix-v1.md) and
+[`ADR-0023`](../architecture/decisions/ADR-0023-final-m010-support-and-recovery.md)
+record Piper as the sole supported CPU fallback, Qwen/Serena as
+development-only, the remaining profiles as unsupported, zero automatic
+failover, exact admitted margins, and M011 distribution obligations. Local
+closeout validation and replacement required pull-request checks remain
+before archival.
 
 ### Goal
 
@@ -811,9 +825,8 @@ lifecycle, identity-first cancellation, bounded playback, synchronized
 navigation, heard-position recovery authority, and observable metrics needed
 to test compatibility and recovery. Completed M009.1 supplies the stabilized
 reader shell, visible segment projection, and locator-backed paragraph action
-that M010 recovery will exercise. A CPU fallback still requires a new
-result-blind frozen candidate cycle and passing measured evidence before
-product admission.
+that M010 recovery exercises. The Piper fallback completed a result-blind
+frozen v6 cycle and passed measured evidence before product admission.
 
 ### Major risks and unknowns
 
@@ -824,7 +837,11 @@ product admission.
 
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** Deferred. The repository can build a release executable for validation, but installer bundling, signing, model/runtime distribution, updater policy, and complete-MVP validation are not implemented.
+**Status:** Approved next; not started. It remains sequenced after M010's
+required closeout checks. The repository can build a release executable for
+validation, but installer bundling, signing, model/runtime distribution,
+Piper license fulfillment, updater policy, and complete-MVP validation are
+not implemented.
 
 ### Goal
 
@@ -948,7 +965,10 @@ CPU fallback. Milestone 6 implements executable registry/service/settings
 integration and Piper-only locator-safe, spoken-expansion-aware preparation,
 passes the corrective ordinary-prose and compact-form Piper resilience arm,
 and records Qwen's passing offline service, corrected development-only VRAM
-admission, and the remaining packaged depletion limitation.
+admission, and the remaining packaged depletion limitation. Milestone 7
+records the final support matrix, safety margins, explicit fallback/recovery
+policy, limitations, dependency/license boundary, and ADR-0023; local closeout
+validation and replacement required checks remain.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by completed
@@ -957,9 +977,9 @@ supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
 Milestones 1 through 9 and M009.1 are complete, with their evidence retained
-under [`completed/`](completed/). M010 is active with Milestones 1-6 complete,
-including exact-host and content-safe packaged private-book validation.
-Milestone 7 owns final support decisions and closeout.
+under [`completed/`](completed/). M010 is active in Milestone 7 closeout after
+recording the final support decision; M008.1 is active in the same replacement
+CI closeout. Both remain under [`active/`](active/) until required checks pass.
 
 ## MVP completion boundary
 

@@ -15,7 +15,8 @@ segment transitions, focus-safe highlight/follow, synchronized user
 navigation, heard-position persistence, exact-host packaged evidence, and
 repository/CI closeout.
 
-M010 Milestones 1-6 are complete. They add privacy-safe native Windows
+M010 Milestones 1-6 are complete, and Milestone 7 has recorded the final
+support/recovery matrix and entered closeout validation. They add privacy-safe native Windows
 detection, an immutable measured registry, deterministic profile matching,
 bounded profile-ID preference reuse, compact compatibility UI, pre-start
 enforcement, identity-safe recovery, the admitted Piper/davefx CPU fallback,
@@ -33,8 +34,13 @@ water is 10 seconds; the adaptive low-buffer wait remains disabled; playback
 is `1.0x`; and the simultaneous 30-minute ceiling is not a startup target.
 M008.1 now schedules the separate bounded semantic transition pause between
 already-buffered generated units; it adds no silent audio or startup timer.
-M010 Milestone 7, production distribution, and installers remain
-unimplemented.
+The final
+[`tts-support-matrix-v1`](../architecture/tts-support-matrix-v1.md) makes
+Piper/davefx the sole supported and automatically recommendable compatible
+profile, retains Qwen/Serena as development-only, and keeps automatic failover
+disabled. Required replacement pull-request checks remain before M008.1 and
+M010 are archived. Production distribution, Piper license fulfillment, and
+installers remain M011 work.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
@@ -52,7 +58,9 @@ profile; it adds no production dependency and does not approve continuous
 playback. The constrained development inference, transport, narration
 dispatch, audio playback, and segment-level synchronization path is implemented
 and exact-host validated. Measured matching does not promote the development
-profile: a validated fallback, recovery, and installers remain unimplemented.
+profile: supported Piper fallback and explicit identity-safe recovery are now
+implemented, while compliant distribution and installers remain
+unimplemented.
 The content-free `benchmarks/tts/selection-v3.md` record retains that failed
 standard result and separately identifies the constrained demo input.
 

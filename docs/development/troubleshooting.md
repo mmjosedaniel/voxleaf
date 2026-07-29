@@ -44,10 +44,12 @@ restoration or clear private reader data merely to make the UI advance.
 
 The M008 narration path and M009 synchronized reader integration form a
 constrained local path, not a production or general-hardware claim. Qwen
-remains a development-only GPU profile. M010 admits Piper/davefx as the
-supported CPU fallback and Milestone 6 integrates it, but M011 still owns
-release packaging and license fulfillment. Both exact local configurations
-are documented in [`setup.md`](setup.md).
+remains a development-only GPU profile. M010 admits and integrates
+Piper/davefx as the sole supported CPU fallback. The final
+[`tts-support-matrix-v1`](../architecture/tts-support-matrix-v1.md) records
+the exact support states, host margins, and recovery limitations, while M011
+still owns release packaging and license fulfillment. Both exact local
+configurations are documented in [`setup.md`](setup.md).
 
 ### Narration controls are unavailable
 
@@ -119,6 +121,12 @@ cannot be selected. A compatible complete CPU report may recommend the
 supported Piper/davefx fallback. If it remains unavailable, verify the Piper
 native configuration, exact artifact hashes, CPU provider, and frozen RAM and
 storage margins; do not force the preference.
+
+Fallback is not automatic failover. Selecting another compatible profile first
+invalidates and releases the current narration and then permits one new
+service tree. After an operational failure, use only the one explicit recovery
+action the UI offers for that closed episode; repeated recovery, protocol,
+cancellation-timeout, or cleanup failures remain contained.
 
 Do not edit local storage or bypass preflight to force a profile. VoxLeaf
 persists only one bounded profile ID and revalidates it; it never stores the raw

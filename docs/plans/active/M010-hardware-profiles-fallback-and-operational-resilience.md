@@ -48,8 +48,11 @@ the milestone.
 ## Current state
 
 Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-6
-are complete. Milestone 6 runtime integration, deterministic/exact-host
-validation, and the content-safe private-book packaged confirmation pass.
+are complete. Milestone 7 has recorded the final support/recovery matrix and
+entered closeout validation. Milestone 6 runtime integration,
+deterministic/exact-host validation, and the content-safe private-book
+packaged confirmation pass. Replacement required pull-request checks remain
+before the plan is archived.
 Commit
 `8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
 result-blind hardware/profile/recovery authority, canonical compatibility
@@ -762,7 +765,11 @@ assertion remains failed and keeps the profile development-only.
 
 ### Status
 
-Not started.
+Implementation and local closeout validation are complete. The final support
+matrix, exact admitted margins, selected and rejected states, explicit
+fallback/recovery policy, limitations, dependency and license boundary,
+ADR-0023, and current-state documentation are recorded. Replacement required
+pull-request checks remain before archival.
 
 ## Testing and benchmark strategy
 
@@ -832,6 +839,36 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-29: Started Milestone 7 sequentially on
+  `feat/m010-m7-support-decisions-closeout`. Added the final
+  `tts-support-matrix-v1` and ADR-0023 without editing byte-frozen benchmark
+  authorities. Piper/davefx is the sole supported and automatically
+  recommendable profile when compatible and configured; Qwen/Serena remains
+  explicit development-only; Qwen/Aiden and Supertonic/F1 remain unsupported;
+  automatic engine failover remains disabled; and M011 owns distribution and
+  Piper license fulfillment.
+- 2026-07-29: PR #149 merged Milestone 6 and M008.1 implementation, but its
+  Ubuntu check alone passed. The clean Windows packaged smoke exposed a
+  nondeterministic synchronization-probe race: the proof captured DOM and
+  range geometry before its own reader scroll's legitimate lazy raster/layout
+  work settled. The bounded correction waits for three consecutive stable
+  content-free observations within 24 animation frames before registering the
+  highlight and taking the preservation baseline. It retains every viewport,
+  focus, selection, contrast, non-color, DOM, URL, and post-registration paint
+  assertion. The corrected release-packaged smoke passes locally; replacement
+  required checks remain. Corrective checkpoint
+  `b7a2ea7f9fc8b3beb698b0d467556a1bbcc2c48c` contains only the smoke proof
+  stabilization.
+- 2026-07-29: Milestone 7 local closeout passes `pnpm.cmd check:portable` and
+  the authoritative Windows `pnpm.cmd check`. The current aggregate includes
+  20 shared files / 209 tests, 34 EPUB files / 559 tests, 43 desktop files /
+  415 tests, seven native WebDriver-client tests, 40 Rust tests, 256 Python
+  tests, all typechecks and linters, the release Tauri build, and both Python
+  distributions. The corrected `pnpm.cmd test:native-startup` release smoke,
+  both admitted candidate `uv lock --check` commands, all relative
+  documentation links, the 19-file privacy/artifact scan, and
+  `git diff --check` also pass. Only replacement Ubuntu portable and Windows
+  native pull-request checks remain before M010 and M008.1 can be archived.
 - 2026-07-29: Implemented the corrective Qwen matcher rule after authority
   checkpoint `5b2d058`. Deterministic regression first failed exactly as
   `available-dedicated-vram` at `6,508` MiB and hid the Qwen radio. Checkpoint
@@ -1363,20 +1400,22 @@ rewrite unrelated reader state.
 
 Milestones 1-6 implementation and local validation are complete and recorded
 above. Milestone 6's synthetic reproduced classes and content-safe packaged
-private-book confirmation are closed. M010 remains in progress with Milestone
-7 not started. The
-runtime can produce the canonical bounded host report, derive content-free
-compatibility, preserve only one bounded preference, reject a changed host
-immediately before child start, and perform one identity-safe explicit
-recovery after verified cleanup. The frozen v6 evaluation selects exact
-Piper/davefx as the supported speed-focused CPU fallback, and Milestone 6
-implements its executable registry, service adapter, settings choice, and
-profile-aware one-tree supervision. Exact Piper product preparation now selects
-the frozen locator-safe, spoken-expansion-aware `narration-piper-v2` bounds so
-generic long prose and compact numbers, currencies, acronyms, Roman numerals,
-ordinals, and letter sequences are split without rewriting text before
-inference. Piper's service and packaged resilience arms pass. Product Play now
-separately requires an
+private-book confirmation are closed. Milestone 7 records the final support
+matrix and ADR, exact safety margins, explicit fallback/recovery policy,
+limitations, and runtime/license/distribution boundary. Its complete local
+closeout surface passes; M010 remains active only until replacement required
+pull-request checks pass. The runtime can produce the canonical bounded host
+report, derive content-free compatibility, preserve only one bounded
+preference, reject a changed host immediately before child start, and perform
+one identity-safe explicit recovery after verified cleanup. The frozen v6
+evaluation selects exact Piper/davefx as the supported speed-focused CPU
+fallback, and Milestone 6 implements its executable registry, service adapter,
+settings choice, and profile-aware one-tree supervision. Exact Piper product
+preparation now selects the frozen locator-safe, spoken-expansion-aware
+`narration-piper-v2` bounds so generic long prose and compact numbers,
+currencies, acronyms, Roman numerals, ordinals, and letter sequences are split
+without rewriting text before inference. Piper's service and packaged
+resilience arms pass. Product Play now separately requires an
 affirmative native exact-runtime configuration check during availability
 resolution and immediately before child start, preventing the reproduced
 pre-handshake failure when process-local configuration is absent. Qwen's
