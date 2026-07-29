@@ -202,7 +202,7 @@ def _correct(payload: Mapping[str, object]) -> tuple[dict[str, object], int]:
             cast(str, session_id),
             cast(str, evaluator_id),
             cast(str, case_id),
-            reason_code=cast(str, reason_code),
+            reason_code=reason_code,
         ),
         0,
     )

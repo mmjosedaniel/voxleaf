@@ -8,7 +8,7 @@ Roadmap Milestones 1 through 9 and the M009.1 reader-experience stabilization
 are complete. M008 provides the constrained one-GPU narration demo; M009 and
 M009.1 add synchronized highlighting, heard checkpoints, stable reader chrome,
 paragraph leaves, and passive-scroll isolation. M010 is in progress with
-Milestones 1-4 complete. It freezes and implements the separate privacy-safe
+Milestones 1-5 complete. It freezes and implements the separate privacy-safe
 host report, immutable measured registry, fail-closed matching, bounded
 profile preference, compatibility UI, immediate pre-start checks, and the
 desktop-local identity-safe recovery controller. Operational failure replaces
@@ -16,9 +16,10 @@ work identity before bounded teardown, verifies zero service/audio ownership,
 and only then exposes one explicit restart from the latest heard checkpoint.
 Protocol rejection, cancellation timeout, cleanup failure, and repeated
 recovery remain contained; diagnostics retain at most eight content-free
-entries and no automatic retry exists. Exact Qwen/Serena remains
-`development-only`; rejected candidates remain unavailable, and no standard
-recommendation or CPU fallback exists.
+entries and no automatic retry exists. Milestone 5 selects exact
+Piper/davefx as the supported speed-focused CPU fallback after every v6 gate
+passed. Exact Qwen/Serena remains `development-only`. Piper is not yet in the
+executable product registry or settings; Milestone 6 owns that integration.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -44,7 +45,8 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/tts-feasibility-profile-v3.md`](architecture/tts-feasibility-profile-v3.md): current Milestone 6.1 authority for the exact Serena CustomVoice development candidate, its prototype stop gate, inherited full evaluation, and privacy/invalidation rules.
 - [`architecture/tts-feasibility-profile-v4.md`](architecture/tts-feasibility-profile-v4.md): frozen pre-result Milestone 6.2 authority for the exact short-unit/shared-model batch experiment, conditional targeted CPU placement, playback simulation, and separate standard/scheduling/demo conclusions.
 - [`architecture/tts-feasibility-profile-v5.md`](architecture/tts-feasibility-profile-v5.md): frozen pre-result Milestone 6.2 authority for the separately loaded GPU-primary/CPU-support experiment, CPU-solo screen, concurrent comparison, RAM/commit and zero-GPU checks, and simultaneous playback bounds.
-- [`architecture/tts-feasibility-profile-v6.md`](architecture/tts-feasibility-profile-v6.md): frozen pre-result M010 authority for the isolated Piper CPU candidate, normalized Spanish corpus, candidate-neutral machine and quality gates, termination-backed cancellation, and explicit GPL/CC0 packaging boundary.
+- [`architecture/tts-feasibility-profile-v6.md`](architecture/tts-feasibility-profile-v6.md): accepted M010 Piper CPU authority and passing result, including the normalized Spanish corpus, candidate-neutral machine and quality gates, termination-backed cancellation, and explicit GPL/CC0 packaging boundary.
+- [`../benchmarks/tts/selection-v6.md`](../benchmarks/tts/selection-v6.md): accepted M010 decision admitting exact Piper/davefx as the supported speed-focused CPU fallback before runtime/settings integration.
 - [`architecture/tts-service-protocol-v1.md`](architecture/tts-service-protocol-v1.md): accepted M007 protocol, framing, identity, audio-format, timeout, retention, capability, error, and native-configuration authority.
 - [`../benchmarks/tts/selection-v5.md`](../benchmarks/tts/selection-v5.md): accepted Milestone 6.2 decision rejecting CPU-only and dual-worker scheduling while retaining one exact GPU profile only for bounded adaptive demo work.
 - [`../benchmarks/tts/selection-v4.md`](../benchmarks/tts/selection-v4.md): accepted Milestone 6.2 decision selecting neither `v4` placement and preserving unavailable performance and quality as unavailable.
@@ -54,7 +56,8 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0016-rust-owned-stdio-tts-protocol.md`](architecture/decisions/ADR-0016-rust-owned-stdio-tts-protocol.md): accepted Rust-owned standard-stream supervision and complete-unit binary-response decision.
 - [`architecture/decisions/ADR-0017-segment-level-reader-narration-synchronization.md`](architecture/decisions/ADR-0017-segment-level-reader-narration-synchronization.md): accepted segment-level synchronization, CSS Custom Highlight, focus-safe following, manual-navigation, and non-skipping persistence decision.
 - [`architecture/decisions/ADR-0018-reader-experience-stabilization.md`](architecture/decisions/ADR-0018-reader-experience-stabilization.md): accepted result-blind M009.1 reader-experience authority; highlight materialization, the fixed compact reader shell, and the bounded contextual leaf are implemented.
-- [`architecture/decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md`](architecture/decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md): accepted result-blind M010 hardware/profile/recovery authority and implementation status through privacy-safe detection, measured matching, and identity-safe explicit recovery, without a standard support or fallback claim.
+- [`architecture/decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md`](architecture/decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md): accepted result-blind M010 hardware/profile/recovery authority and implementation status through privacy-safe detection, measured matching, and identity-safe explicit recovery.
+- [`architecture/decisions/ADR-0020-admit-piper-cpu-fallback.md`](architecture/decisions/ADR-0020-admit-piper-cpu-fallback.md): accepted exact Piper CPU-fallback selection, user-choice direction, and M010/M011 integration and packaging boundaries.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development
@@ -85,7 +88,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M008-bounded-adaptive-prebuffering.md`](plans/completed/M008-bounded-adaptive-prebuffering.md): completed ExecPlan for the exact-development quick/prepared path, bounded scheduler/player, final demo policy, exact-host evidence, and repository/CI closeout.
 - [`plans/completed/M009-synchronized-reading-and-narration.md`](plans/completed/M009-synchronized-reading-and-narration.md): completed focused ExecPlan for segment-level synchronization, highlighting, focus-safe following, synchronized navigation, heard-position persistence, exact-host validation, and repository/CI closeout.
 - [`plans/completed/M009-001-reader-experience-stabilization.md`](plans/completed/M009-001-reader-experience-stabilization.md): completed bounded M009 follow-up for the visible-highlight repair, dedicated reader viewport, compact/collapsible narration UI, truthful loaded-duration status, locator-backed paragraph leaf, passive-scroll isolation, exact-host validation, and repository/CI closeout.
-- [`plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md): active focused ExecPlan for privacy-safe host detection, evidence-backed profile matching, conditional CPU-fallback admission, and identity-safe operational recovery. Milestones 1-4 are complete: they freeze the authority and implement detection, measured matching, bounded preference reuse, pre-start enforcement, compatibility UI, verified identity-first cleanup, latest-heard resume, and one explicit restart; standard support and fallback admission remain later work.
+- [`plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/active/M010-hardware-profiles-fallback-and-operational-resilience.md): active focused ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, and identity-safe operational recovery. Milestones 1-5 are complete: they implement detection, matching, preference/recheck UI, identity-safe explicit recovery, and the passing Piper fallback decision. Milestone 6 owns executable registry/service/settings integration and the resilience matrix.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

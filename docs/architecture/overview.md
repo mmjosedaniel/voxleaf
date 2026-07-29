@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 9 and M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoration, locator-linked narration preparation, M007 service, exact-development M008 coordinator/player path, M009 segment-level synchronization, and M009.1 reader stabilization are implemented and validated within their documented scopes. M009.1 implements the [`reader-experience-authority-v1`](reader-experience-authority-v1.md): stronger paint-aware evidence, the same-spine materialization repair, one dedicated reader scroll owner, a fixed compact shell, collapsible narration detail, exact loaded/target/estimate text without a progress bar, one retargeted contextual paragraph leaf, and passive-scroll isolation. Locator sampling, reflow/restoration, highlight following, and the leaf share existing registered reader geometry; no second timing source, persisted state, protocol field, or buffer-policy change was added. Its private-EPUB, exact-host, repository/privacy, portable, packaged, and required Ubuntu/Windows validation pass; pull request #142 merged the closeout. M010 is in progress. Milestone 1 implements the canonical privacy-safe host-profile report and freezes [`hardware-profile-recovery-authority-v1`](hardware-profile-recovery-authority-v1.md): immutable evidence identity, result-blind RAM/VRAM/storage margins, deterministic matching/preference rules, a closed failure taxonomy, and identity-first explicit recovery. Milestone 2 implements the corresponding native Windows probe port and typed desktop decoder. Milestone 3 implements the immutable three-entry measured registry, pure fail-closed matcher, bounded profile-ID preference, app-start/resume/pre-start checks, and compact accessible compatibility UI. The native shell reads only bounded OS/architecture, processor count, RAM, application-volume storage, identity-free DXGI memory/class, CUDA capability, and DirectML precision facts; it emits no adapter identity or raw output. Raw reports remain transient and non-Windows builds return unavailable. The exact Qwen/Serena entry remains development-only behind the native gate, while rejected Qwen/Aiden and Supertonic entries remain unavailable. ADR-0013 therefore continues to select no standard production profile. General-hardware support, validated fallback, runtime recovery, production distribution, and sustained uninterrupted playback remain unimplemented.
+Mixed implementation status. Roadmap Milestones 1 through 9 and M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoration, locator-linked narration preparation, M007 service, exact-development M008 coordinator/player path, M009 segment-level synchronization, and M009.1 reader stabilization are implemented and validated within their documented scopes. M009.1 implements the [`reader-experience-authority-v1`](reader-experience-authority-v1.md): stronger paint-aware evidence, the same-spine materialization repair, one dedicated reader scroll owner, a fixed compact shell, collapsible narration detail, exact loaded/target/estimate text without a progress bar, one retargeted contextual paragraph leaf, and passive-scroll isolation. Locator sampling, reflow/restoration, highlight following, and the leaf share existing registered reader geometry; no second timing source, persisted state, protocol field, or buffer-policy change was added. Its private-EPUB, exact-host, repository/privacy, portable, packaged, and required Ubuntu/Windows validation pass; pull request #142 merged the closeout. M010 is in progress with Milestones 1-5 complete. Milestones 1-4 implement the privacy-safe native host report, immutable three-entry executable registry, fail-closed matching and preference, compatibility UI, pre-start checks, and identity-safe explicit recovery. Milestone 5 passes every frozen Piper v6 gate and selects exact Piper/davefx as the supported speed-focused CPU fallback. Qwen/Serena remains development-only. Piper is not yet wired into the executable registry, service, or settings; Milestone 6 owns that integration and resilience proof. Raw host reports remain transient, non-Windows detection remains unavailable, and M011 still owns production distribution and Piper's GPL/CC0 packaging obligations.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
@@ -28,7 +28,7 @@ explicit 1-, 2-, 5-, or 10-minute prepared-playback targets, and exact
 43,200,000-frame/172,800,000-byte/256-unit simultaneous maxima. The 30-minute
 value is a capacity ceiling, not a startup wait, real-time claim, or
 uninterrupted-playback guarantee. The exact-development product coordinator
-  starts from the active narration locator, prepares a bounded batch, dispatches one
+starts from the active narration locator, prepares a bounded batch, dispatches one
 M007 synthesis at a time, transfers each complete unit into the sole-owner
 FIFO, and plays it through Web Audio. Quick/prepared controls expose only
 content-free state. The final exact-host run measured 41.312 seconds to audible
@@ -40,12 +40,12 @@ coordinator subscription. M009 Milestone 3 connects that subscription to one
 reader-owned semantic source-range projection. It registers the production
 Custom Highlight, follows only outside the frozen comfort region, suspends
 passive visual sampling across incremental and chapter rendering, preserves
-  focus and selection, and clears on stop/failure/cleanup. M009 Milestone 4
-  invalidates work identity before playback/preparation/queue/synthesis cleanup
-  for explicit navigation, preserves active versus paused intent, and routes
-  chapter, leaf, visible-passage, and stable prepared-boundary actions through
-  canonical reader placement. M009.1 exact-host validation keeps passive
-  viewport inspection outside that replacement path. At most 64 recent structural
+focus and selection, and clears on stop/failure/cleanup. M009 Milestone 4
+invalidates work identity before playback/preparation/queue/synthesis cleanup
+for explicit navigation, preserves active versus paused intent, and routes
+chapter, leaf, visible-passage, and stable prepared-boundary actions through
+canonical reader placement. M009.1 exact-host validation keeps passive
+viewport inspection outside that replacement path. At most 64 recent structural
 ranges are retained outside React state; no narration text, PCM, or work
 identity enters the snapshot. Milestone 5 connects exact audible starts and
 matching completions to the existing bounded position repository, suppresses
@@ -99,8 +99,10 @@ Desktop application
 |   [M010 Milestones 1-2 implemented; Windows direct APIs, no support claim]
 |-- Measured profile registry, matching, preference, UI, and pre-start check
 |   [M010 Milestone 3 complete; exact development profile only]
-`-- Identity-safe recovery authority
-    [M010 Milestone 1 frozen; recovery not implemented]
+|-- Identity-safe recovery controller
+|   [M010 Milestone 4 complete; one explicit verified-cleanup restart]
+`-- Piper/davefx CPU-fallback selection
+    [M010 Milestone 5 complete; executable integration pending Milestone 6]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]
@@ -447,8 +449,11 @@ evidence, resource/provider mismatch, or ambiguity. Rejected entries remain
 when the native development gate also passes. The desktop persists at most the
 versioned bounded profile ID, re-probes at application start, explicit recheck,
 OS resume, and immediately before child start, and exposes only closed
-content-free states and reasons. No `supported` entry exists, so there is no
-automatic recommendation or CPU fallback.
+content-free states and reasons. No `supported` entry exists in that currently
+executable registry. ADR-0020 now selects Piper/davefx as the supported CPU
+fallback, but Milestone 6 must add it atomically with the exact service adapter
+and settings behavior so the existing Qwen development demo is not disabled
+by an unusable recommendation.
 
 M010 Milestone 4 implements the frozen desktop-local recovery authority
 without changing shared schemas, protocol v1, native commands, Python service
@@ -464,8 +469,16 @@ checkpoint; a mid-segment failure replays that segment from its start.
 Protocol rejection, cancellation timeout, cleanup failure, and a failed or
 repeated recovery remain contained or unavailable. Compatibility recheck or
 explicit profile selection starts a new episode but never starts narration.
-There is no automatic retry, duplicate worker, stale-audio reuse, new CPU
-fallback, or new support claim.
+There is no automatic retry, duplicate worker, or stale-audio reuse.
+
+M010 Milestone 5 evaluates Piper 1.4.2 / `es_ES-davefx-medium` through the
+isolated ONNX Runtime CPU boundary. The passing content-safe v6 result records
+total sustained RTF 0.0251, about 392 MiB measured peak process-tree RAM, five
+passing termination-backed cancellation races, overall Spanish quality
+4.621/5, zero meaning-changing defects, and passing offline/privacy/cleanup
+gates. `selection-v6` and ADR-0020 admit the exact profile as the
+speed-focused CPU fallback. That is evidence and a durable selection, not yet
+an implemented product runtime.
 
 The implemented audio-frame v1 boundary describes payload-free in-memory frame metadata with frame, session, generation, and narration-segment identities; monotonic sequence; positive sample rate, per-channel sample-frame count, and channel count; and an explicit end-of-segment marker. Duration is derived from sample count divided by sample rate. Public helpers return conservative whole milliseconds using exact integer arithmetic, sum samples before truncating once, and reject unsafe duration overflow. Contiguous single-segment runs reject duplicate frame IDs, sequence gaps or reversals, identity or format changes, and frames after the segment-end marker. The contract selects no codec, payload representation, audio API, player, or buffer policy.
 

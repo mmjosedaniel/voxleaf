@@ -15,8 +15,10 @@ desktop-local recovery controller: failure invalidates identity first,
 releases preparation and audio, contains the service, verifies zero ownership,
 and only then permits one explicit restart from the latest heard checkpoint.
 Protocol, cancellation-timeout, cleanup, and repeated-recovery failures are
-terminal for the episode. The exact Qwen/Serena profile remains
-development-only; no standard profile, CPU fallback, automatic retry, or
+terminal for the episode. Milestone 5 selects exact Piper/davefx as the
+supported speed-focused CPU fallback after all frozen v6 gates passed. The
+exact Qwen/Serena profile remains development-only. Piper runtime and settings
+integration are not implemented until Milestone 6; no automatic retry or
 uninterrupted-playback promise exists.
 
 ## Current implemented flow
@@ -68,9 +70,10 @@ authority.
 
 ## Remaining target user flow
 
-1. M010 continues from implemented detection, measured matching, and
-   identity-safe recovery through conditional fallback admission and the
-   remaining resilience matrix.
+1. M010 continues from implemented detection, measured matching,
+   identity-safe recovery, and the passing Piper fallback decision through
+   executable profile/service/settings integration and the remaining
+   resilience matrix.
 2. M011 packages and validates an end-user distribution after those boundaries
    close.
 
