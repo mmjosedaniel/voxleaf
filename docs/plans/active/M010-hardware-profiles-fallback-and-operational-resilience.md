@@ -552,8 +552,10 @@ exposed an obsolete v1 cancellation-case lookup after performance collection
 and before all cancellation, memory, and cleanup evidence. Its observations
 are not candidate evidence and cannot be promoted. Corrected v6 authority
 binds both cancellation case identifiers before the first valid official
-execution. CPU fallback remains unsupported until that execution and the
-content-safe selection pass every conjunctive gate.
+execution. The corrected machine run now passes and admits the frozen
+listening screen; the one-maintainer Spanish quality decision remains pending.
+CPU fallback remains unsupported until the content-safe selection passes
+every conjunctive gate.
 
 ## Milestone 6: Integrate admitted profiles and run the resilience matrix
 
@@ -753,6 +755,17 @@ rewrite unrelated reader state.
   `a4e4c1ed76f246b49260125db2d7f4de` after verifying its resolved directory
   was exactly two levels below `benchmarks/results/raw`. The private raw
   observations are not recoverable and no reviewable evidence was removed.
+- 2026-07-28: From clean strict-descendant commit
+  `d9f2929be40e40b2fa85078816ea854fad9a6c69`, corrected official preflight and
+  execution passed. The run completed 5 cold loads, 16 warm generations, 24
+  sustained generations, all 5 cancellation races, and 198.356 seconds of
+  sustained media with zero failed gates. Total sustained RTF was
+  `0.02511192544515474` and peak process-tree RAM was 411,070,464 bytes.
+  Machine assessment admitted, but did not perform, human quality review.
+- 2026-07-28: Generated and finalized the admitted disposable eight-sample
+  v6 listening session for the single fluent-Spanish MVP maintainer. Its
+  browser-local scorecard is pending; no quality score or candidate selection
+  has been inferred before that review.
 - 2026-07-28: Closed Milestone 4 local validation. Portable and full native
   foundation checks pass; the complete browser matrix passes 6/6; and the
   release-packaged native smoke passes. The native rerun exposed and corrected
