@@ -47,9 +47,8 @@ the milestone.
 
 ## Current state
 
-Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-2
-are complete and Milestone 3 is implemented with one clean-host packaged
-validation gate pending. Commit `8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
+Roadmap Milestones 1 through 9 and M009.1 are complete. M010 Milestones 1-3
+are complete. Commit `8b7e153abef0639c54f148684ec1bab7e2d34a10` freezes the
 result-blind hardware/profile/recovery authority, canonical compatibility
 report, executable desktop tables, native API/permission audit, and ADR-0019
 before any M010 host measurement. Implementation checkpoint
@@ -439,19 +438,20 @@ or fallback claim.
 
 ### Status
 
-Implemented on 2026-07-28. Checkpoint `e7e01f1` adds the measured registry,
+Complete on 2026-07-28. Checkpoint `e7e01f1` adds the measured registry,
 pure matcher, bounded profile preference, single-concurrency compatibility
 coordinator, product preflight, accessible UI, and deterministic/component
 coverage. Checkpoint `a519c6c` moves the collapsed panel into the existing
 reader top bar so it does not reduce the fixed reading viewport and restores
 the browser highlight/follow geometry.
 
-All deterministic, browser-assertion, and portable gates pass. Local packaged
-closure remains pending because two `pnpm.cmd test:native-startup` attempts
-built the release executable successfully and then stopped before application
-mount at the documented `webdriver-session-not-created` WebView2 automation
-boundary. No product assertion ran or failed. The required clean Windows
-foundation job remains authoritative for this host-specific gate.
+All deterministic, browser-assertion, portable, native Windows, and required
+pull-request gates pass. Two local `pnpm.cmd test:native-startup` attempts built
+the release executable successfully and then stopped before application mount
+at the documented `webdriver-session-not-created` WebView2 automation boundary;
+no product assertion ran or failed. Pull request #146's clean-host Windows
+native foundation job subsequently passed, satisfying the authoritative
+host-specific packaged gate. Its Ubuntu portable foundation job also passed.
 
 No profile is `supported`, so no automatic recommendation or CPU fallback is
 available. Exact Qwen/Serena can be active only as `development-only` when the
@@ -677,7 +677,13 @@ rewrite unrelated reader state.
 - 2026-07-28: `pnpm.cmd check:portable` passed the complete portable matrix.
   Two packaged-native attempts built the release executable but stopped before
   app mount at `webdriver-session-not-created`; no native product assertion
-  failed, and clean-host CI remains the authoritative packaged gate.
+  failed, and clean-host CI remained the authoritative packaged gate.
+- 2026-07-28: Pull request #146 run
+  [`30414223390`](https://github.com/mmjosedaniel/voxleaf/actions/runs/30414223390)
+  passed both required checks on the Milestone 3 implementation head:
+  Ubuntu portable foundation in 1m56s and Windows native foundation in 14m36s.
+  The clean-host Windows result closes the local pre-mount automation gap, so
+  Milestone 3 is complete.
 - 2026-07-28: Completed Milestone 2. Added a native injected probe port,
   single-concurrency guard, bounded normalization, direct Windows
   OS/storage/DXGI/D3D12/DirectML/CUDA adapters, the narrow Tauri command, and a
@@ -789,10 +795,7 @@ rewrite unrelated reader state.
 
 ## Final validation results
 
-Milestones 1-2 validation is complete and recorded above. Milestone 3
-implementation, deterministic validation, browser assertions, documentation,
-and portable validation are complete; its local packaged gate awaits the
-required clean Windows job after the documented pre-mount automation failure.
+Milestones 1-3 implementation and validation are complete and recorded above.
 M010 remains in progress with Milestones 4 through 7 not started. The runtime
 can produce the canonical bounded host report, derive content-free
 compatibility, preserve only one bounded preference, and reject a changed host
@@ -819,6 +822,11 @@ Milestone 3 validation results:
   format/lint/typechecks, the same TypeScript/Python suites, 38 Rust tests, the
   production Windows bounded-host-report smoke, native clippy, the release
   Tauri build, and Python source/wheel builds.
+- Pull request #146 Ubuntu portable foundation: passed in 1m56s
+  ([job `90457052148`](https://github.com/mmjosedaniel/voxleaf/actions/runs/30414223390/job/90457052148)).
+- Pull request #146 Windows native foundation: passed in 14m36s
+  ([job `90457052208`](https://github.com/mmjosedaniel/voxleaf/actions/runs/30414223390/job/90457052208)),
+  closing the authoritative packaged validation gate.
 - `git diff --check`: passed.
 - Complete 28-file branch scope/privacy review: passed. Changes are limited to
   desktop matching/preference/UI/preflight code and tests plus current

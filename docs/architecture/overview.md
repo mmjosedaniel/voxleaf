@@ -98,7 +98,7 @@ Desktop application
 |-- Privacy-safe host detector and typed report boundary
 |   [M010 Milestones 1-2 implemented; Windows direct APIs, no support claim]
 |-- Measured profile registry, matching, preference, UI, and pre-start check
-|   [M010 Milestone 3 implemented; exact development profile only]
+|   [M010 Milestone 3 complete; exact development profile only]
 `-- Identity-safe recovery authority
     [M010 Milestone 1 frozen; recovery not implemented]
 
