@@ -6,6 +6,7 @@ use tauri::Manager;
 
 #[cfg(test)]
 mod hardware_profile_authority;
+mod host_profile_detection;
 mod tts_protocol_contract;
 mod tts_protocol_probe;
 mod tts_service_fake_child;
@@ -89,6 +90,7 @@ fn main() {
             tts_service_supervisor::TtsServiceSupervisor::default(),
         ))
         .invoke_handler(tauri::generate_handler![
+            host_profile_detection::detect_host_profile_compatibility,
             tts_protocol_probe::run_tts_protocol_probe,
             tts_service_supervisor::exact_tts_demo_available,
             tts_service_supervisor::start_tts_service,
