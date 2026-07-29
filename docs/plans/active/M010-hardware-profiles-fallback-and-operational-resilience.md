@@ -815,6 +815,10 @@ Milestone 3 validation results:
   Python typechecks, 20 shared files / 209 tests, 34 EPUB files / 555 tests, 41
   desktop files / 381 tests plus 7 native-client tests, 234 Python tests, and
   all portable builds.
+- `pnpm.cmd check`: passed the complete native Windows foundation, including
+  format/lint/typechecks, the same TypeScript/Python suites, 38 Rust tests, the
+  production Windows bounded-host-report smoke, native clippy, the release
+  Tauri build, and Python source/wheel builds.
 - `git diff --check`: passed.
 - Complete 28-file branch scope/privacy review: passed. Changes are limited to
   desktop matching/preference/UI/preflight code and tests plus current
