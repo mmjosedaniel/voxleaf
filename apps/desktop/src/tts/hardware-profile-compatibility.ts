@@ -194,6 +194,10 @@ export class HardwareProfileCompatibilityCoordinator {
     return this.#snapshot;
   }
 
+  public activeProfileId(): string | undefined {
+    return this.#snapshot.activeProfileId;
+  }
+
   public ensureChecked(): Promise<HardwareCompatibilitySnapshotV1> {
     if (this.#snapshot.status !== "checking") {
       return Promise.resolve(this.#snapshot);

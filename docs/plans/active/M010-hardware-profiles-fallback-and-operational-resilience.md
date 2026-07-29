@@ -604,7 +604,12 @@ settings choice atomically.
 
 ### Status
 
-Not started.
+In progress on 2026-07-29 on branch
+`feat/m010-m6-profile-integration-resilience`, created from merged main commit
+`2b81b028fe6188e17f524d5720e68827511e3c05`. Authority, service, native,
+desktop selection, recovery, and exact-host boundaries were re-read before
+implementation. The integration retains protocol v1, uses one service tree,
+and adds no automatic retry.
 
 ## Milestone 7: Record support decisions and close validation
 
@@ -704,6 +709,17 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-29: Started Milestone 6 sequentially on
+  `feat/m010-m6-profile-integration-resilience` from merged main
+  `2b81b028fe6188e17f524d5720e68827511e3c05`. Re-read the frozen profile and
+  recovery authority, protocol v1, adaptive buffer authority, accepted Piper
+  decision, canonical architecture, and existing registry/service/native/UI
+  implementation. Selected a profile-aware one-tree integration: exact Piper
+  remains an isolated local process, its frozen 22.05-kHz synthesis is
+  converted inside the adapter to protocol v1's bounded 24-kHz mono float32
+  unit, and explicit profile changes invalidate and clean up old narration
+  before native reconfiguration. No generation setting, protocol field,
+  automatic retry, buffer limit, or persistence boundary changes.
 - 2026-07-28: Started Milestone 5 sequentially on
   `feat/m010-m5-cpu-fallback-evaluation`. Selected the new Piper 1.4.2
   ONNX/CPU `es_ES-davefx-medium` candidate after excluding previously rejected

@@ -169,6 +169,17 @@ describe("typed native TTS process client", () => {
     expect(mockedInvoke).toHaveBeenNthCalledWith(1, "exact_tts_demo_available");
   });
 
+  it("passes an admitted profile identity only to native service start", async () => {
+    mockedInvoke.mockResolvedValueOnce(startControls());
+    const client = new TtsProcessClient();
+
+    await client.start("piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1");
+
+    expect(mockedInvoke).toHaveBeenCalledWith("start_tts_service", {
+      profileId: "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1",
+    });
+  });
+
   it("accepts the exact lifecycle, owns one binary unit, and zeroes it on release", async () => {
     const buffer = audioBuffer();
     mockedInvoke

@@ -14,7 +14,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { HardwareProfilePreferenceRepository } from "../persistence/hardware-profile-preference";
 import { HardwareCompatibilityControls } from "./HardwareCompatibilityControls";
 import { HardwareProfileCompatibilityCoordinator } from "./hardware-profile-compatibility";
-import { EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID } from "./hardware-profile-registry";
+import {
+  EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+  PIPER_CPU_FALLBACK_PROFILE_ID,
+} from "./hardware-profile-registry";
 
 afterEach(() => {
   cleanup();
@@ -43,7 +46,7 @@ function unavailableProvider() {
   };
 }
 
-function compatibleReport() {
+function compatibleReport(availableRamMiB = 16_384) {
   return decodeHostProfileCompatibilityReportV1({
     schemaVersion: 1,
     probeStatus: "complete",
@@ -54,7 +57,7 @@ function compatibleReport() {
     processor: { logicalProcessorCount: knownQuantity(12) },
     memory: {
       totalPhysicalMiB: knownQuantity(24_576),
-      availablePhysicalMiB: knownQuantity(16_384),
+      availablePhysicalMiB: knownQuantity(availableRamMiB),
     },
     storage: {
       applicationVolumeAvailableMiB: knownQuantity(40_960),
@@ -113,10 +116,15 @@ function coordinator(
   options: {
     gate?: "available" | "unavailable";
     preference?: HardwareProfilePreferenceRepository;
+    availableRamMiB?: number;
   } = {},
 ) {
   return new HardwareProfileCompatibilityCoordinator({
-    detector: { detect: vi.fn(async () => compatibleReport()) },
+    detector: {
+      detect: vi.fn(async () =>
+        compatibleReport(options.availableRamMiB ?? 16_384),
+      ),
+    },
     developmentGate: {
       exactDemoAvailability: vi.fn(
         async () => options.gate ?? ("available" as const),
@@ -127,7 +135,7 @@ function coordinator(
 }
 
 describe("hardware compatibility controls", () => {
-  it("announces the closed status and exposes only admitted selection controls", async () => {
+  it("announces the admitted fallback and exposes only admitted selection controls", async () => {
     const subject = coordinator();
     render(<HardwareCompatibilityControls coordinator={subject} />);
 
@@ -136,9 +144,7 @@ describe("hardware compatibility controls", () => {
     ).toHaveAttribute("aria-live", "polite");
     await waitFor(() =>
       expect(
-        screen.getByText(
-          "A development-only local narration profile is available.",
-        ),
+        screen.getByText("Local narration is compatible on this device."),
       ).toBeInTheDocument(),
     );
 
@@ -148,17 +154,23 @@ describe("hardware compatibility controls", () => {
     expect(summary).not.toBeNull();
     fireEvent.click(summary!);
 
-    const profile = screen.getByRole("radio", {
-      name: "Qwen and Serena development profile",
+    const fallback = screen.getByRole("radio", {
+      name: "Piper and davefx fast CPU profile",
     });
-    expect(profile).toBeChecked();
+    expect(fallback).toBeChecked();
+    expect(fallback).toHaveAttribute("value", PIPER_CPU_FALLBACK_PROFILE_ID);
+    expect(
+      screen.getByRole("radio", {
+        name: "Qwen and Serena development profile",
+      }),
+    ).not.toBeChecked();
     expect(
       screen.queryByRole("radio", {
         name: "Supertonic and F1 evaluated profile",
       }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByText("No measured CPU fallback is available."),
+      screen.getByText("A measured CPU fallback is available."),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("list", { name: "Measured narration profiles" }),
@@ -177,9 +189,7 @@ describe("hardware compatibility controls", () => {
         onRecoveryEpisodeReset={onRecoveryEpisodeReset}
       />,
     );
-    await waitFor(() =>
-      expect(subject.observe().status).toBe("development-only"),
-    );
+    await waitFor(() => expect(subject.observe().status).toBe("compatible"));
     fireEvent.click(
       screen.getByText("Local narration compatibility").closest("summary")!,
     );
@@ -207,7 +217,10 @@ describe("hardware compatibility controls", () => {
   });
 
   it("keeps unavailable and failure presentation content-free", async () => {
-    const unavailable = coordinator({ gate: "unavailable" });
+    const unavailable = coordinator({
+      gate: "unavailable",
+      availableRamMiB: 0,
+    });
     const { unmount } = render(
       <HardwareCompatibilityControls coordinator={unavailable} />,
     );

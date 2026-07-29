@@ -8,6 +8,7 @@ import {
 
 import { AdaptivePreparationControls } from "./AdaptivePreparationControls";
 import { loadedAudioStatusText } from "./adaptive-preparation-presentation";
+import { PIPER_CPU_FALLBACK_PROFILE_ID } from "./hardware-profile-registry";
 import type { ProductNarrationCoordinator } from "./product-narration-coordinator";
 
 export interface ProductNarrationControlsProps {
@@ -18,14 +19,17 @@ function availabilityMessage(
   availability: ReturnType<
     ProductNarrationCoordinator["observe"]
   >["availability"],
+  profileId: string,
 ): string | undefined {
   switch (availability) {
     case "available":
-      return "The exact local Qwen/Serena development demo is available.";
+      return profileId === PIPER_CPU_FALLBACK_PROFILE_ID
+        ? "The local Piper CPU narration profile is available."
+        : "The exact local Qwen/Serena development demo is available.";
     case "checking":
-      return "Checking the exact local narration demo configuration.";
+      return "Checking the selected local narration profile.";
     case "unavailable":
-      return "The exact local narration demo is not configured on this device.";
+      return "The selected local narration profile is not configured on this device.";
   }
 }
 
@@ -74,7 +78,10 @@ function phaseMessage(
     case "stopped":
       return "Narration stopped.";
     case undefined:
-      return availabilityMessage(snapshot.availability) ?? "Narration ready.";
+      return (
+        availabilityMessage(snapshot.availability, snapshot.profileId) ??
+        "Narration ready."
+      );
   }
 }
 
@@ -92,7 +99,10 @@ export function ProductNarrationControls({
   useEffect(() => {
     void coordinator.checkAvailability();
   }, [coordinator]);
-  const startHint = availabilityMessage(snapshot.availability);
+  const startHint = availabilityMessage(
+    snapshot.availability,
+    snapshot.profileId,
+  );
   const state = snapshot.state;
   const operational = snapshot.recovery.phase === "operational";
   const canRestart =
@@ -111,6 +121,7 @@ export function ProductNarrationControls({
       className="product-narration"
       aria-labelledby="product-narration-title"
       data-narration-availability={snapshot.availability}
+      data-narration-profile={snapshot.profileId}
       data-narration-phase={snapshot.state?.phase ?? "idle"}
       data-narration-failure={snapshot.failure ?? "none"}
       data-narration-recovery-phase={snapshot.recovery.phase}

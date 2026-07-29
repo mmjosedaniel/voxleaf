@@ -16,6 +16,7 @@ import {
 import {
   EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
   HARDWARE_PROFILE_REGISTRY_V1,
+  PIPER_CPU_FALLBACK_PROFILE_ID,
 } from "./hardware-profile-registry";
 
 function unknownQuantity() {
@@ -111,7 +112,10 @@ function reportValue() {
 function supportedProfile(
   profileId = "synthetic-supported-profile",
 ): HardwareProfileRegistryEntryV1 {
-  const source = HARDWARE_PROFILE_REGISTRY_V1[0];
+  const source = HARDWARE_PROFILE_REGISTRY_V1.find(
+    (entry) =>
+      entry.identity.profileId === EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+  )!;
   return {
     ...source,
     identity: { ...source.identity, profileId },
@@ -150,7 +154,7 @@ function firstReason(
 }
 
 describe("hardware profile matcher v1", () => {
-  it("admits only the exact native-gated development profile in the frozen registry", () => {
+  it("admits the supported CPU fallback and exact native-gated development profile", () => {
     const result = matchHardwareProfilesV1({
       report: report(),
       registry: HARDWARE_PROFILE_REGISTRY_V1,
@@ -158,28 +162,35 @@ describe("hardware profile matcher v1", () => {
     });
 
     expect(result.compatibleProfileIds).toEqual([
+      PIPER_CPU_FALLBACK_PROFILE_ID,
       EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
     ]);
-    expect(result.recommendedProfileId).toBeUndefined();
+    expect(result.recommendedProfileId).toBe(PIPER_CPU_FALLBACK_PROFILE_ID);
     expect(result.selectedProfileId).toBeUndefined();
-    expect(result.fallbackAvailable).toBe(false);
+    expect(result.fallbackAvailable).toBe(true);
     expect(
       result.profiles.filter((profile) => profile.state === "incompatible"),
     ).toHaveLength(2);
   });
 
-  it("does not admit development-only or rejected profiles without their authority", () => {
+  it("retains the supported fallback while closing development-only and rejected profiles", () => {
     const result = matchHardwareProfilesV1({
       report: report(),
       registry: HARDWARE_PROFILE_REGISTRY_V1,
       nativeDevelopmentGate: false,
     });
 
-    expect(result.compatibleProfileIds).toEqual([]);
+    expect(result.compatibleProfileIds).toEqual([
+      PIPER_CPU_FALLBACK_PROFILE_ID,
+    ]);
+    expect(result.recommendedProfileId).toBe(PIPER_CPU_FALLBACK_PROFILE_ID);
+    expect(result.fallbackAvailable).toBe(true);
     expect(
-      result.profiles.every(
-        (profile) => profile.reason === "support-state-not-admitted",
-      ),
+      result.profiles
+        .filter(
+          (profile) => profile.profileId !== PIPER_CPU_FALLBACK_PROFILE_ID,
+        )
+        .every((profile) => profile.reason === "support-state-not-admitted"),
     ).toBe(true);
   });
 

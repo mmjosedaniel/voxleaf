@@ -89,6 +89,7 @@ class FakeServiceClient implements ProductNarrationServiceClient {
   public state: TtsServiceStateV1 = "stopped";
   public readonly synthesized: NarrationSegmentV1[] = [];
   public readonly cancelled: TtsGenerationScope[] = [];
+  public readonly startedProfiles: Array<string | undefined> = [];
   public shutdownCount = 0;
   public synthesisSampleFrames = 360_000;
   public synthesisElapsedMs = 1_000;
@@ -121,7 +122,8 @@ class FakeServiceClient implements ProductNarrationServiceClient {
     });
   }
 
-  public async start(): Promise<TtsProcessClientObservation> {
+  public async start(profileId?: string): Promise<TtsProcessClientObservation> {
+    this.startedProfiles.push(profileId);
     this.state = "unloaded";
     return this.observe();
   }
@@ -433,6 +435,28 @@ describe("product narration coordinator", () => {
         explicitAttemptUsed: false,
       },
     });
+    await coordinator.close();
+  });
+
+  it("starts only the active admitted profile selected by compatibility", async () => {
+    const profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const { client, coordinator } = createHarness({ profileCompatibility });
+
+    await coordinator.checkAvailability();
+    expect(coordinator.observe().profileId).toBe(profileId);
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+
+    expect(profileCompatibility.isProfileStartAllowed).toHaveBeenCalledWith(
+      profileId,
+      "before-profile-start",
+    );
+    expect(client.startedProfiles).toEqual([profileId]);
     await coordinator.close();
   });
 

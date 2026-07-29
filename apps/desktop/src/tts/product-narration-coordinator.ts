@@ -69,6 +69,7 @@ export interface ProductNarrationMetrics {
 
 export interface ProductNarrationSnapshot {
   readonly availability: "checking" | TtsExactDemoAvailability;
+  readonly profileId: string;
   readonly selection: AdaptiveBufferStartMode;
   readonly state: AdaptivePreparationUiState | undefined;
   readonly failure: ProductNarrationFailureCode | undefined;
@@ -104,7 +105,7 @@ export interface ProductNarrationNavigationRequest {
 export interface ProductNarrationServiceClient extends AdaptiveBufferAudioUnitSource {
   exactDemoAvailability(): Promise<TtsExactDemoAvailability>;
   observe(): TtsProcessClientObservation;
-  start(): Promise<TtsProcessClientObservation>;
+  start(profileId?: string): Promise<TtsProcessClientObservation>;
   prepare(): Promise<TtsProcessClientObservation>;
   synthesize(segment: unknown): Promise<{
     readonly sampleCountSamples: number;
@@ -118,6 +119,7 @@ export interface ProductNarrationClock {
 }
 
 export interface ProductNarrationProfileCompatibility {
+  activeProfileId?(): string | undefined;
   isProfileCurrentlyAllowed(profileId: string): boolean | undefined;
   isProfileStartAllowed(
     profileId: string,
@@ -306,6 +308,7 @@ export class ProductNarrationCoordinator {
   readonly #prepared = new Map<string, PreparedSegmentEntry>();
   readonly #knownBoundaries: LocatorRangeV1[] = [];
   #availability: ProductNarrationSnapshot["availability"] = "checking";
+  #profileId = EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID;
   #selection: AdaptiveBufferStartMode = Object.freeze({ kind: "quick" });
   #activeLocator: ReadingLocatorV1;
   #visibleLocator: ReadingLocatorV1;
@@ -410,22 +413,39 @@ export class ProductNarrationCoordinator {
     if (this.#profileCompatibility === undefined) {
       availability = await this.#client.exactDemoAvailability();
     } else {
-      const current = this.#profileCompatibility.isProfileCurrentlyAllowed(
-        EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
-      );
+      const profileId =
+        this.#profileCompatibility.activeProfileId?.() ??
+        EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID;
+      const current =
+        this.#profileCompatibility.isProfileCurrentlyAllowed(profileId);
       const allowed =
         current ??
         (await this.#profileCompatibility.isProfileStartAllowed(
-          EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+          profileId,
           "application-start",
         ));
       availability = allowed ? "available" : "unavailable";
+      if (allowed) {
+        this.#profileId = profileId;
+      }
     }
     if (this.#closed) {
       return;
     }
     this.#availability = availability;
     this.#publish();
+  }
+
+  public async refreshSelectedProfile(): Promise<void> {
+    if (this.#closed) {
+      return;
+    }
+    this.#profileId =
+      this.#profileCompatibility?.activeProfileId?.() ??
+      EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID;
+    this.#availability = "checking";
+    this.#publish();
+    await this.checkAvailability();
   }
 
   public setSelection(selection: AdaptiveBufferStartMode): void {
@@ -1012,11 +1032,13 @@ export class ProductNarrationCoordinator {
     }
     try {
       switch (action.kind) {
-        case "start-service":
+        case "start-service": {
+          const profileId =
+            this.#profileCompatibility?.activeProfileId?.() ?? this.#profileId;
           if (
             this.#profileCompatibility !== undefined &&
             !(await this.#profileCompatibility.isProfileStartAllowed(
-              EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+              profileId,
               "before-profile-start",
             ))
           ) {
@@ -1033,11 +1055,13 @@ export class ProductNarrationCoordinator {
           }
           scheduler.beginServiceStart();
           this.#publish();
-          await this.#client.start();
+          this.#profileId = profileId;
+          await this.#client.start(profileId);
           if (runToken === this.#runToken) {
             scheduler.markServiceStarted();
           }
           break;
+        }
         case "prepare-service":
           scheduler.beginServicePrepare();
           this.#publish();
@@ -1254,10 +1278,7 @@ export class ProductNarrationCoordinator {
       if (this.#recovery.observe().phase !== "operational") {
         return;
       }
-      this.#recovery.detectFailure(
-        recoveryCode,
-        EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
-      );
+      this.#recovery.detectFailure(recoveryCode, this.#profileId);
     }
     const operation = this.#containOperationalFailure(wasRecovering);
     this.#recoveryOperation = operation;
@@ -1507,6 +1528,7 @@ export class ProductNarrationCoordinator {
       currentBoundaryIndex !== undefined;
     return Object.freeze({
       availability: this.#availability,
+      profileId: this.#profileId,
       selection: this.#selection,
       state,
       failure: this.#failure,

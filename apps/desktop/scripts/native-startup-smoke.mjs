@@ -43,6 +43,24 @@ const READER_PERFORMANCE_MODE = process.argv.includes("--reader-performance");
 const ADAPTIVE_TTS_EXACT_HOST_MODE = process.argv.includes(
   "--adaptive-tts-exact-host",
 );
+const ADAPTIVE_TTS_PROFILE_ARGUMENT = "--tts-profile=";
+const EXACT_QWEN_PROFILE_ID = "qwen3-tts-1-7b-customvoice-cuda-bf16-v1";
+const PIPER_CPU_FALLBACK_PROFILE_ID =
+  "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+const adaptiveTtsProfileArgument = process.argv.find((argument) =>
+  argument.startsWith(ADAPTIVE_TTS_PROFILE_ARGUMENT),
+);
+const ADAPTIVE_TTS_PROFILE_ID =
+  adaptiveTtsProfileArgument?.slice(ADAPTIVE_TTS_PROFILE_ARGUMENT.length) ??
+  EXACT_QWEN_PROFILE_ID;
+if (
+  ADAPTIVE_TTS_EXACT_HOST_MODE &&
+  ![EXACT_QWEN_PROFILE_ID, PIPER_CPU_FALLBACK_PROFILE_ID].includes(
+    ADAPTIVE_TTS_PROFILE_ID,
+  )
+) {
+  throw new Error("Unknown exact-host TTS profile.");
+}
 const MEBIBYTE = 1_048_576;
 const MAX_LOCAL_EPUB_FILE_BYTES = 100 * MEBIBYTE;
 const NATIVE_BATCH_SCRIPT_LIMIT_MS = 16;
@@ -2053,6 +2071,39 @@ async function runAdaptiveTtsExactHostMatrix(
       preparedOptionsAcceptedMs: [60_000, 120_000, 300_000, 600_000],
       externalRequests: 0,
     })}`,
+  );
+}
+
+async function selectAdaptiveTtsProfile(driver, profileId) {
+  const serializedProfileId = JSON.stringify(profileId);
+  await waitForCondition(
+    driver,
+    `const input = document.querySelector(
+       'input[name="hardware-profile"][value=' + ${serializedProfileId} + ']',
+     );
+     const owner = document.querySelector(".hardware-compatibility");
+     return input instanceof HTMLInputElement &&
+       owner?.getAttribute("data-compatibility-status") !== "checking";`,
+  );
+  const selected = await driver.execute(
+    `const profileId = ${serializedProfileId};
+     const input = document.querySelector(
+       'input[name="hardware-profile"][value="' + profileId + '"]',
+     );
+     if (!(input instanceof HTMLInputElement)) {
+       return false;
+     }
+     if (!input.checked) {
+       input.click();
+     }
+     return true;`,
+  );
+  assert(selected === true, "Native synchronized narration proof failed.");
+  await waitForCondition(
+    driver,
+    `return document.querySelector(".hardware-compatibility")
+       ?.getAttribute("data-compatibility-profile") ===
+       ${serializedProfileId};`,
   );
 }
 
@@ -4220,6 +4271,8 @@ async function run() {
       `return document.querySelector("#root")?.childElementCount > 0;`,
     );
     if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
+      stage = "adaptive exact-host profile selection";
+      await selectAdaptiveTtsProfile(driver, ADAPTIVE_TTS_PROFILE_ID);
       await runAdaptiveTtsExactHostMatrix(
         driver,
         fixturePath,

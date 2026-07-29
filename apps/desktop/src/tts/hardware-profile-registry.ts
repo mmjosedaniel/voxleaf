@@ -2,6 +2,8 @@ import type { HardwareProfileRegistryEntryV1 } from "./hardware-profile-authorit
 
 export const EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID =
   "qwen3-tts-1-7b-customvoice-cuda-bf16-v1";
+export const PIPER_CPU_FALLBACK_PROFILE_ID =
+  "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
 
 function profileEntry(
   entry: HardwareProfileRegistryEntryV1,
@@ -30,6 +32,55 @@ function profileEntry(
  * only the supportState and the deterministic matcher may admit it.
  */
 export const HARDWARE_PROFILE_REGISTRY_V1 = Object.freeze([
+  profileEntry({
+    registryVersion: 1,
+    identity: {
+      profileId: PIPER_CPU_FALLBACK_PROFILE_ID,
+      engineId: "piper-tts",
+      engineVersion: "1.4.2",
+      modelId: "rhasspy/piper-voices",
+      modelRevision: "0d907f158acc877ddeebcbf827659ee13bea8bcd",
+      voiceId: "es_ES-davefx-medium",
+      runtimeId: "cpython-onnxruntime-cpu",
+      runtimeVersion: "python-3.12.10|piper-tts-1.4.2|onnxruntime-1.27.0",
+      generationConfigurationSha256:
+        "9e9b1a93aed70cfdbdd8dd8141d2a7edb363530372387d7596bb4ef8d46bd918",
+    },
+    role: "cpu-fallback",
+    supportState: "supported",
+    requirements: {
+      operatingSystems: ["windows"],
+      architectures: ["x86_64"],
+      minimumLogicalProcessors: 1,
+      provider: "cpu",
+      precision: "float32",
+      deviceClasses: ["cpu"],
+      measuredPeakRamMiB: 393,
+      measuredPeakDedicatedVramMiB: 0,
+      measuredArtifactFootprintMiB: 166,
+    },
+    evidence: {
+      authorityCommitSha: "9a2f74845853e84635b419a4e65170c9a2c207ee",
+      authoritySha256:
+        "ec0ef6aceedfc2ed4df199cc276b5c8365f979921311a7d2cd3d813546e1bd48",
+      resultCommitSha: "f19f440eb05f63b090bd56113b9d48338779a59f",
+      resultSha256:
+        "8d8005f3909517276faecacda859db48714a497ccd3a2a92797a7cedb3eb38f8",
+      decisionSha256:
+        "678104e655ca9ef1b17b7bdfc89c6bb4bf4f4a684045cc15a6d5d0a83f945d8d",
+      gates: {
+        startup: "pass",
+        throughput: "pass",
+        cancellation: "pass",
+        memory: "pass",
+        quality: "pass",
+        offline: "pass",
+        cleanup: "pass",
+        license: "pass",
+        packaging: "pass",
+      },
+    },
+  }),
   profileEntry({
     registryVersion: 1,
     identity: {

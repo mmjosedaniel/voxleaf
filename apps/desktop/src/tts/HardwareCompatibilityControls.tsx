@@ -17,6 +17,7 @@ import type {
 export interface HardwareCompatibilityControlsProps {
   readonly coordinator: HardwareProfileCompatibilityCoordinator;
   readonly onRecoveryEpisodeReset?: () => void;
+  readonly onSelectProfile?: (profileId: string) => Promise<boolean>;
 }
 
 const REASON_MESSAGES: Readonly<
@@ -64,6 +65,8 @@ function profileLabel(profile: HardwareProfileMatchV1): string {
   switch (profile.profileId) {
     case "qwen3-tts-1-7b-customvoice-cuda-bf16-v1":
       return "Qwen and Serena development profile";
+    case "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1":
+      return "Piper and davefx fast CPU profile";
     case "qwen3-tts-0-6b-customvoice-cuda-bf16-v1":
       return "Qwen and Aiden evaluated profile";
     case "supertonic-3-onnx-cpu-f1-es-v1":
@@ -88,6 +91,7 @@ function profileState(profile: HardwareProfileMatchV1): string {
 export function HardwareCompatibilityControls({
   coordinator,
   onRecoveryEpisodeReset,
+  onSelectProfile,
 }: HardwareCompatibilityControlsProps): ReactElement {
   const [selectionPending, setSelectionPending] = useState(false);
   const snapshot = useSyncExternalStore(
@@ -110,7 +114,11 @@ export function HardwareCompatibilityControls({
   const handleSelection = async (profileId: string): Promise<void> => {
     setSelectionPending(true);
     try {
-      if (await coordinator.selectProfile(profileId)) {
+      const selected =
+        onSelectProfile === undefined
+          ? await coordinator.selectProfile(profileId)
+          : await onSelectProfile(profileId);
+      if (selected) {
         onRecoveryEpisodeReset?.();
       }
     } finally {

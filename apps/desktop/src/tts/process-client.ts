@@ -279,11 +279,14 @@ export class TtsProcessClient {
     }
   }
 
-  public async start(): Promise<TtsProcessClientObservation> {
+  public async start(profileId?: string): Promise<TtsProcessClientObservation> {
     if (!["stopped", "failed"].includes(this.state)) {
       throw new TtsProcessClientError("tts-service-invalid-state");
     }
-    const controls = await this.invokeControls("start_tts_service");
+    const controls = await this.invokeControls(
+      "start_tts_service",
+      profileId === undefined ? undefined : { profileId },
+    );
     expectKinds(controls, [
       "state",
       "handshakeAccepted",
