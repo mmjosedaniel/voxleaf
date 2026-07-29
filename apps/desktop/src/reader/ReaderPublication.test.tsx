@@ -1338,11 +1338,11 @@ describe("navigable publication reader", () => {
     expect(narrationSource.startLocators).toEqual([
       OPENING_LOCATED_BLOCK.startLocator,
     ]);
-    expect(
-      screen.getByRole("button", {
-        name: "Preparing narration at this paragraph",
-      }),
-    ).toHaveTextContent("Preparing");
+    const preparing = screen.getByRole("button", {
+      name: "Preparing narration at this paragraph",
+    });
+    expect(preparing.textContent).toBe("");
+    expect(preparing.querySelector(".paragraph-leaf-state")).toBeNull();
     expect(container.querySelectorAll(".paragraph-leaf")).toHaveLength(1);
 
     act(() => {
@@ -1352,7 +1352,8 @@ describe("navigable publication reader", () => {
       name: "Narrating this paragraph",
     });
     expect(audible).toHaveAttribute("aria-current", "true");
-    expect(audible).toHaveTextContent("Current");
+    expect(audible.textContent).toBe("");
+    expect(audible.querySelector(".paragraph-leaf-state")).toBeNull();
 
     act(() => {
       narrationSource.emit(
@@ -1378,7 +1379,8 @@ describe("navigable publication reader", () => {
       name: "Resume narration at saved checkpoint",
     });
     expect(checkpoint).not.toHaveAttribute("aria-current");
-    expect(checkpoint).toHaveTextContent("Saved");
+    expect(checkpoint.textContent).toBe("");
+    expect(checkpoint.querySelector(".paragraph-leaf-state")).toBeNull();
     expect(container.querySelectorAll(".paragraph-leaf")).toHaveLength(1);
 
     expect(narrationSource.stateListenerCount).toBe(2);

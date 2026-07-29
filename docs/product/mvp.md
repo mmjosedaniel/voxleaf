@@ -59,7 +59,9 @@ retry or uninterrupted-playback promise exists.
    beside an eligible heading or paragraph when the pointer hovers it. It
    reinforces preparing, audible, and saved states when they match that
    paragraph, otherwise it becomes a selectable preview without restarting
-   narration. Ordinary text clicks remain inert.
+   narration. The gutter control remains icon-only so state wording cannot
+   cover publication text; its full action/state name remains accessible.
+   Ordinary text clicks remain inert.
 10. VoxLeaf saves the canonical heard segment start/end checkpoint while
     narration owns position, otherwise saves the canonical visual locator, and
     retains display preferences on the approved bounded lifecycle.
