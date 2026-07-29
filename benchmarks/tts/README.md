@@ -124,6 +124,84 @@ Raw measurements, model files, generated audio, listening-session metadata,
 and profiling output belong below `benchmarks/results/raw/`, which is ignored.
 Nothing below that path is a reviewable result.
 
+## Frozen Piper CPU fallback evaluation
+
+M010's v6 runner uses only the isolated Piper interpreter and verified local
+artifacts. Setup is the only networked phase:
+
+```powershell
+uv sync --project services/tts/benchmarks/candidates/piper_1_4_2_cpu --locked
+```
+
+Acquire the exact `es_ES-davefx-medium` ONNX file, config, and model card at
+voice-repository revision
+`0d907f158acc877ddeebcbf827659ee13bea8bcd` into the ignored directory
+`models/tts/piper-1.4.2-es_ES-davefx-medium-0d907f1`, then verify the three
+hashes in `candidates-v6.json`. Runtime download is forbidden.
+
+The existing outbound firewall rule must point to this candidate's exact
+interpreter. From an elevated PowerShell prompt, remove the old rule only when
+it exists and then recreate the exact application-scoped block:
+
+```powershell
+$candidatePython = (Resolve-Path "services/tts/benchmarks/candidates/piper_1_4_2_cpu/.venv/Scripts/python.exe").Path
+Get-NetFirewallRule -DisplayName "VoxLeaf TTS Benchmark Offline" -ErrorAction SilentlyContinue |
+  Remove-NetFirewallRule
+New-NetFirewallRule -DisplayName "VoxLeaf TTS Benchmark Offline" -Direction Outbound -Action Block -Program $candidatePython -Profile Any
+```
+
+After the final authority and implementation commit is a strict ancestor of a
+clean execution commit, build the private stdin object without redirecting it
+to a file:
+
+```powershell
+$env:HF_HUB_OFFLINE = "1"
+$candidatePython = (Resolve-Path "services/tts/benchmarks/candidates/piper_1_4_2_cpu/.venv/Scripts/python.exe").Path
+$run = @{
+  candidateId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1"
+  artifactRoot = (Resolve-Path "models/tts/piper-1.4.2-es_ES-davefx-medium-0d907f1").Path
+  candidatePython = $candidatePython
+  modelRevision = "0d907f158acc877ddeebcbf827659ee13bea8bcd"
+  voiceId = "es_ES-davefx-medium"
+  provider = "onnxruntime-cpu"
+  precision = "float32"
+  offline = $true
+  expectedCommitSha = (git rev-parse HEAD).Trim()
+  purpose = "official"
+  sleepDisabled = $true
+  backgroundLoadAcceptable = $true
+  thermalStateAcceptable = $true
+}
+$run | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:preflight
+$measure = $run | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:measure | ConvertFrom-Json
+```
+
+Assess the content-free machine result before generating disposable review
+audio:
+
+```powershell
+$assessment = $run.Clone()
+$assessment.cpuFallbackOptIn = $true
+$assessment.performanceSessionId = $measure.sessionId
+$assessment.authorityCommitSha = "<frozen-authority-commit>"
+$assessment | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:cpu-fallback:assess
+```
+
+Only a `qualityAdmitted: true` result permits the existing
+`benchmark:tts:quality:generate`, `finalize`, `submit`, and `aggregate`
+workflow. Use one evaluator for v6. Final derivation additionally accepts the
+quality session ID, validates all machine/listening gates, writes only
+`cpu-fallback-result-v6.json`, and deletes both private sessions:
+
+```powershell
+$derive = $assessment.Clone()
+$derive.qualitySessionId = "<quality-session-id>"
+$derive | ConvertTo-Json -Compress | pnpm.cmd benchmark:tts:cpu-fallback:derive
+```
+
+Do not manually copy raw observations, audio, scorecards, randomization keys,
+paths, or input text into a result.
+
 Milestone 6.1's explicit `benchmark:tts:prototype` command runs only from the
 exact isolated Qwen candidate interpreter. It accepts one bounded JSON request
 through standard input, repeats official local/offline/firewall preflight,

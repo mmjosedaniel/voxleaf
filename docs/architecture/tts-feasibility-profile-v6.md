@@ -5,7 +5,7 @@
 This document records the pre-result authority for M010 Milestone 5. The
 normative machine-readable authority is
 [`profile-v6.json`](../../benchmarks/tts/profile-v6.json), SHA-256
-`4088c2f3736b90e2c52a8bf1233926f3eff37ed4edc71dd1a9a801c82fdaca24`.
+`f8828876715e3ceafddebf59063b3651f5a007c8bb6512cf4df11e14488b7c34`.
 It was frozen before any Piper pilot, official waveform, listening score, or
 selection result.
 

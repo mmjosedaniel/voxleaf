@@ -91,7 +91,13 @@ def _validate_generation_receipt(
         or receipt.get("status") != "pass"
         or receipt.get("sessionId") != session_id
         or receipt.get("candidateId") != request.profile.candidate_id
-        or receipt.get("generatedSamples") != 12
+        or receipt.get("generatedSamples")
+        != (
+            8
+            if request.profile.authority is not None
+            and request.profile.authority.profile_version == "tts-cpu-fallback-profile-v6"
+            else 12
+        )
         or not isinstance(receipt.get("readyForFinalization"), bool)
     ):
         _fail("invalid-worker-output")

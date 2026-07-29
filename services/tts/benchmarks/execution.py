@@ -23,12 +23,19 @@ from benchmarks.preflight import PreflightRequest
 from benchmarks.raw import RawJournalError, RawMeasurementJournal
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
-CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v1.json"
+LEGACY_CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v1.json"
 RAW_ROOT: Final = REPOSITORY_ROOT / "benchmarks" / "results" / "raw"
 
 
+def _corpus_path(request: PreflightRequest) -> Path:
+    authority = request.profile.authority
+    if authority is not None and authority.profile_version == "tts-cpu-fallback-profile-v6":
+        return REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v6.json"
+    return LEGACY_CORPUS_PATH
+
+
 def _forbidden_values(request: PreflightRequest) -> tuple[str, ...]:
-    corpus = load_corpus(CORPUS_PATH)
+    corpus = load_corpus(_corpus_path(request))
     return (
         *(value for case in corpus.cases.values() for value in (case.text, case.privacy_canary)),
         str(request.configuration.artifact_root),
@@ -67,7 +74,7 @@ def run_measurement_worker(
             strict=True
         ):
             raise RuntimeError("interpreter")
-        corpus = load_corpus(CORPUS_PATH)
+        corpus = load_corpus(_corpus_path(request))
         sensitive_values = _forbidden_values(request)
         framework_tracker = FrameworkVramTracker() if request.profile.role == "balanced" else None
 

@@ -18,6 +18,7 @@ from typing import Any, Final, Protocol, cast
 
 from benchmarks.adapters.factory import CandidateAdapterFactory
 from benchmarks.adapters.manifest import (
+    PIPER_CPU_CANDIDATE_ID,
     QWEN_CANDIDATE_ID,
     QWEN_V3_CANDIDATE_ID,
     SUPERTONIC_CANDIDATE_ID,
@@ -29,7 +30,8 @@ from benchmarks.harness import load_corpus
 from benchmarks.preflight import PreflightRequest
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
-CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v1.json"
+LEGACY_CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v1.json"
+V6_CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v6.json"
 RAW_ROOT: Final = REPOSITORY_ROOT / "benchmarks" / "results" / "raw"
 QUALITY_ROOT_NAME: Final = "quality-v2"
 PROTOCOL_VERSION: Final = "tts-feasibility-profile-v2"
@@ -118,7 +120,29 @@ def _expected_candidates(profile: CandidateProfile) -> tuple[str, ...]:
         return (QWEN_V3_CANDIDATE_ID,)
     if profile.candidate_id in LEGACY_EXPECTED_CANDIDATES:
         return LEGACY_EXPECTED_CANDIDATES
+    if (
+        profile.candidate_id == PIPER_CPU_CANDIDATE_ID
+        and profile.authority is not None
+        and profile.authority.profile_version == "tts-cpu-fallback-profile-v6"
+    ):
+        return (PIPER_CPU_CANDIDATE_ID,)
     raise QualitySessionError("candidate-state")
+
+
+def _corpus_path(protocol: object) -> Path:
+    return V6_CORPUS_PATH if protocol == "tts-cpu-fallback-profile-v6" else LEGACY_CORPUS_PATH
+
+
+def _corpus_version(protocol: object) -> str:
+    return (
+        "tts-cpu-fallback-corpus-v6"
+        if protocol == "tts-cpu-fallback-profile-v6"
+        else "tts-synthetic-corpus-v1"
+    )
+
+
+def _minimum_evaluators(protocol: object) -> int:
+    return 1 if protocol == "tts-cpu-fallback-profile-v6" else 3
 
 
 def _new_session(session: Path, profile: CandidateProfile) -> dict[str, object]:
@@ -130,7 +154,7 @@ def _new_session(session: Path, profile: CandidateProfile) -> dict[str, object]:
     value: dict[str, object] = {
         "sessionVersion": SESSION_VERSION,
         "protocolVersion": protocol,
-        "corpusVersion": "tts-synthetic-corpus-v1",
+        "corpusVersion": _corpus_version(protocol),
         "state": "staging",
         "expectedCandidates": list(expected),
         "configurationIdentities": {
@@ -153,14 +177,13 @@ def _load_staging_session(session: Path) -> dict[str, object]:
     protocol = metadata.get("protocolVersion")
     if (
         metadata.get("sessionVersion") != SESSION_VERSION
-        or (
-            (protocol, expected)
-            not in (
-                (PROTOCOL_VERSION, LEGACY_EXPECTED_CANDIDATES),
-                ("tts-feasibility-profile-v3", (QWEN_V3_CANDIDATE_ID,)),
-            )
+        or (protocol, expected)
+        not in (
+            (PROTOCOL_VERSION, LEGACY_EXPECTED_CANDIDATES),
+            ("tts-feasibility-profile-v3", (QWEN_V3_CANDIDATE_ID,)),
+            ("tts-cpu-fallback-profile-v6", (PIPER_CPU_CANDIDATE_ID,)),
         )
-        or metadata.get("corpusVersion") != "tts-synthetic-corpus-v1"
+        or metadata.get("corpusVersion") != _corpus_version(protocol)
         or metadata.get("state") != "staging"
         or not isinstance(metadata.get("configurationIdentities"), dict)
         or not isinstance(metadata.get("candidateCommits"), dict)
@@ -246,7 +269,7 @@ def generate_candidate_audio(
         ):
             raise QualitySessionError("candidate-state")
         identities[candidate_id] = expected_identity
-        corpus = load_corpus(CORPUS_PATH)
+        corpus = load_corpus(_corpus_path(metadata.get("protocolVersion")))
         if len(corpus.performance_order) != len(corpus.cases) or set(
             corpus.performance_order
         ) != set(corpus.cases):
@@ -432,7 +455,7 @@ def finalize_session(
     expected_candidates = tuple(cast(list[str], metadata["expectedCandidates"]))
     if set(commits) != set(expected_candidates):
         raise QualitySessionError("candidate-state")
-    corpus = load_corpus(CORPUS_PATH)
+    corpus = load_corpus(_corpus_path(metadata.get("protocolVersion")))
     staging = session / "staging"
     audio = session / "audio"
     scorecards = session / "scorecards"
@@ -497,7 +520,8 @@ def finalize_session(
         "sessionId": session_id,
         "evaluatorCount": evaluator_count,
         "sampleCount": len(key_samples),
-        "eligibleForPromotion": evaluator_count >= 3,
+        "eligibleForPromotion": evaluator_count
+        >= _minimum_evaluators(metadata.get("protocolVersion")),
     }
 
 
@@ -628,7 +652,7 @@ def aggregate_scores(
             raise QualitySessionError("invalid-metadata")
         dimension_values: dict[str, list[float]] = {dimension: [] for dimension in DIMENSIONS}
         defects = 0
-        for case_id in load_corpus(CORPUS_PATH).performance_order:
+        for case_id in load_corpus(_corpus_path(metadata.get("protocolVersion"))).performance_order:
             matching_sample = next(
                 (
                     sample_id
@@ -690,7 +714,7 @@ def aggregate_scores(
     aggregate = {
         "sessionVersion": SESSION_VERSION,
         "sessionId": session_id,
-        "eligibleForPromotion": len(cards) >= 3,
+        "eligibleForPromotion": len(cards) >= _minimum_evaluators(metadata.get("protocolVersion")),
         "candidates": results,
     }
     _write_json(session / "quality.aggregate.json", aggregate)
@@ -698,7 +722,7 @@ def aggregate_scores(
         "status": "pass",
         "sessionId": session_id,
         "evaluatorCount": len(cards),
-        "eligibleForPromotion": len(cards) >= 3,
+        "eligibleForPromotion": len(cards) >= _minimum_evaluators(metadata.get("protocolVersion")),
         "candidates": results,
     }
 

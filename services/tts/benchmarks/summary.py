@@ -22,6 +22,7 @@ from benchmarks.metrics import (
 
 SUMMARY_VERSION: Final = "tts-feasibility-summary-v2"
 SUMMARY_V3_VERSION: Final = "tts-feasibility-summary-v3"
+SUMMARY_V6_VERSION: Final = "tts-cpu-fallback-summary-v6"
 _V1_SCHEMA_PATH: Final = (
     Path(__file__).resolve().parents[3]
     / "benchmarks"
@@ -152,6 +153,8 @@ def _read_string(value: object, code: str) -> str:
 
 
 def _quality_allowlist(value: Mapping[str, object]) -> dict[str, object]:
+    if value.get("status") == "not-admitted" and set(value) == {"status"}:
+        return {"status": "not-admitted"}
     dimensions = _read_mapping(value.get("dimensions"), "invalid-quality")
     return {
         "evaluatorCount": _read_integer(value.get("evaluatorCount"), "invalid-quality"),
@@ -284,10 +287,14 @@ def build_summary(run: BenchmarkRun, metadata: SummaryMetadata) -> dict[str, obj
 
     notes = [_read_string(note, "invalid-note") for note in metadata.notes]
     is_v3 = metadata.protocol_version == "tts-feasibility-profile-v3"
-    if is_v3 != (metadata.evaluation_authority is not None):
+    is_v6 = metadata.protocol_version == "tts-cpu-fallback-profile-v6"
+    if (is_v3 or is_v6) != (metadata.evaluation_authority is not None):
         _fail("authority-mismatch")
+    schema_version = (
+        SUMMARY_V6_VERSION if is_v6 else SUMMARY_V3_VERSION if is_v3 else SUMMARY_VERSION
+    )
     summary: dict[str, object] = {
-        "schemaVersion": SUMMARY_V3_VERSION if is_v3 else SUMMARY_VERSION,
+        "schemaVersion": schema_version,
         "protocolVersion": metadata.protocol_version,
         "corpusVersion": metadata.corpus_version,
         "candidateManifestVersion": metadata.candidate_manifest_version,
@@ -404,9 +411,39 @@ def build_summary(run: BenchmarkRun, metadata: SummaryMetadata) -> dict[str, obj
         "gateEvaluation": _gate_allowlist(metadata.gate_evaluation),
         "notes": notes,
     }
-    if metadata.evaluation_authority is not None:
+    if is_v3 and metadata.evaluation_authority is not None:
         summary["evaluationAuthority"] = _evaluation_authority_allowlist(
             metadata.evaluation_authority
+        )
+    elif is_v6 and metadata.evaluation_authority is not None:
+        authority = metadata.evaluation_authority
+        summary.update(
+            {
+                "authorityCommitSha": _read_string(
+                    authority.get("authorityCommitSha"),
+                    "invalid-authority",
+                ),
+                "executionCommitSha": _read_string(
+                    authority.get("executionCommitSha"),
+                    "invalid-authority",
+                ),
+                "profileSha256": _read_string(
+                    authority.get("profileSha256"),
+                    "invalid-authority",
+                ),
+                "corpusSha256": _read_string(
+                    authority.get("corpusSha256"),
+                    "invalid-authority",
+                ),
+                "candidateLockSha256": _read_string(
+                    authority.get("candidateLockSha256"),
+                    "invalid-authority",
+                ),
+                "configurationIdentitySha256": _read_string(
+                    authority.get("configurationIdentitySha256"),
+                    "invalid-authority",
+                ),
+            }
         )
     return summary
 
@@ -675,7 +712,13 @@ def summary_filename(
         _fail("invalid-candidate-id")
     if any(value and value in candidate_id for value in forbidden_values):
         _fail("sensitive-value")
-    suffix = "v3" if protocol_version == "tts-feasibility-profile-v3" else "v2"
+    suffix = (
+        "v6"
+        if protocol_version == "tts-cpu-fallback-profile-v6"
+        else "v3"
+        if protocol_version == "tts-feasibility-profile-v3"
+        else "v2"
+    )
     return f"{candidate_id}.summary-{suffix}.json"
 
 

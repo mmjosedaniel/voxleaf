@@ -698,6 +698,14 @@ rewrite unrelated reader state.
   cancellation trials, zero retries, a 4 GiB RAM ceiling, zero GPU
   allocation, and one fluent-Spanish-maintainer MVP quality review only after
   every machine gate passes. Product registry state remains unchanged.
+- 2026-07-28: Implemented model-free v6 authority loading, exact local
+  Piper/ONNX CPU placement checks, bounded 250-millisecond publication after
+  native sentence completion, candidate-neutral performance and
+  termination-backed cancellation execution, eight-sample quality routing,
+  one-maintainer eligibility, closed raw journaling, machine assessment, and
+  schema/ancestry/content-safe result derivation. The derivation deletes both
+  private sessions before publishing a result. Focused tests and the complete
+  Python suite pass; no Piper synthesis has run yet.
 - 2026-07-28: Closed Milestone 4 local validation. Portable and full native
   foundation checks pass; the complete browser matrix passes 6/6; and the
   release-packaged native smoke passes. The native rerun exposed and corrected

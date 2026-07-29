@@ -247,12 +247,18 @@ def _validated_worker_receipt(
         _fail("invalid-worker-output")
     if status == "pass" and request.conditions.purpose == "official":
         sustained_count = cast(int, counts["sustainedGenerations"])
+        v6 = (
+            request.profile.authority is not None
+            and request.profile.authority.profile_version == "tts-cpu-fallback-profile-v6"
+        )
+        warm_generations = 16 if v6 else 24
+        sequence_length = 8 if v6 else 12
         if (
             counts["coldLoads"] != 5
-            or counts["warmGenerations"] != 24
+            or counts["warmGenerations"] != warm_generations
             or counts["cancellationTrials"] != 5
-            or not 12 <= sustained_count <= 120
-            or sustained_count % 12
+            or not sequence_length <= sustained_count <= sequence_length * 10
+            or sustained_count % sequence_length
         ):
             _fail("invalid-worker-output")
     return dict(payload)

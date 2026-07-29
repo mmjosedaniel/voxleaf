@@ -81,7 +81,40 @@
       "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/host"
     },
     "runtime": {
-      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/runtime"
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "engineVersion",
+        "modelRevision",
+        "voiceId",
+        "provider",
+        "precision",
+        "offlineMode",
+        "streamingGranularity"
+      ],
+      "properties": {
+        "engineVersion": {
+          "const": "1.4.2"
+        },
+        "modelRevision": {
+          "const": "0d907f158acc877ddeebcbf827659ee13bea8bcd"
+        },
+        "voiceId": {
+          "const": "es_ES-davefx-medium"
+        },
+        "provider": {
+          "const": "onnxruntime-cpu"
+        },
+        "precision": {
+          "const": "float32"
+        },
+        "offlineMode": {
+          "const": true
+        },
+        "streamingGranularity": {
+          "const": "sample-chunks"
+        }
+      }
     },
     "artifacts": {
       "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/artifacts"
@@ -90,13 +123,46 @@
       "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/output"
     },
     "counts": {
-      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/counts"
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coldLoads",
+        "warmGenerations",
+        "sustainedGenerations",
+        "cancellationTrials",
+        "failedObservations"
+      ],
+      "properties": {
+        "coldLoads": {
+          "const": 5
+        },
+        "warmGenerations": {
+          "const": 16
+        },
+        "sustainedGenerations": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 80,
+          "multipleOf": 8
+        },
+        "cancellationTrials": {
+          "const": 5
+        },
+        "failedObservations": {
+          "const": 0
+        }
+      }
     },
     "loadObservations": {
       "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/loadObservations"
     },
     "generationObservations": {
-      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/generationObservations"
+      "type": "array",
+      "minItems": 24,
+      "maxItems": 96,
+      "items": {
+        "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/generationObservations/items"
+      }
     },
     "aggregates": {
       "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/aggregates"
@@ -108,7 +174,55 @@
       "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/cancellation"
     },
     "quality": {
-      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/quality"
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evaluatorCount",
+            "blindOrder",
+            "scale",
+            "overallMean",
+            "dimensions",
+            "meaningChangingDefects",
+            "limitations"
+          ],
+          "properties": {
+            "evaluatorCount": {
+              "const": 1
+            },
+            "blindOrder": {
+              "const": true
+            },
+            "scale": {
+              "const": "1-5"
+            },
+            "overallMean": {
+              "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/$defs/qualityScore"
+            },
+            "dimensions": {
+              "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/quality/properties/dimensions"
+            },
+            "meaningChangingDefects": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "limitations": {
+              "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/quality/properties/limitations"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": {
+              "const": "not-admitted"
+            }
+          }
+        }
+      ]
     },
     "audits": {
       "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/audits"
@@ -117,7 +231,17 @@
       "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/gateEvaluation"
     },
     "notes": {
-      "$ref": "urn:voxleaf:benchmark:tts-feasibility-summary:v1#/properties/notes"
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "schema-validation-fixture",
+          "mvp-single-maintainer-quality-screen",
+          "native-sentence-complete-output",
+          "mid-generation-cancellation-by-worker-termination",
+          "gpl-separate-process-packaging-obligations-retained"
+        ]
+      }
     }
   },
   "$defs": {

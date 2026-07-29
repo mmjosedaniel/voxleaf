@@ -22,7 +22,7 @@
     },
     "contentSafeSummarySchema": {
       "path": "benchmarks/tts/schemas/cpu-fallback-summary-v6.schema.json",
-      "sha256": "c9d4889ed15490f9fcddc1da92dde2bab0850e663f03c2039ee576b20c17b2b1"
+      "sha256": "8665741bdff7cab107505e2f6e41d1641eabb80c0be10285207d6be87a4128f1"
     },
     "inheritedMeasurementProfile": {
       "path": "docs/architecture/tts-feasibility-profile-v2.md",
@@ -184,10 +184,12 @@
     "scoreRange": [1, 5],
     "dimensions": [
       "intelligibility",
-      "number-and-symbol-normalization",
-      "prosody",
-      "accent",
-      "overall"
+      "spanishPronunciation",
+      "punctuationDialogue",
+      "numericExpressions",
+      "foreignNames",
+      "naturalness",
+      "artifactFreedom"
     ],
     "minimumOverallMean": 3.25,
     "minimumIntelligibilityMean": 3.25,
