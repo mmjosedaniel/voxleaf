@@ -676,10 +676,17 @@ export function App({
                 : statusMessage(viewState)}
             </p>
           </div>
+          {ready ? (
+            <HardwareCompatibilityControls
+              coordinator={hardwareCompatibilityCoordinator}
+            />
+          ) : null}
         </header>
-        <HardwareCompatibilityControls
-          coordinator={hardwareCompatibilityCoordinator}
-        />
+        {ready ? null : (
+          <HardwareCompatibilityControls
+            coordinator={hardwareCompatibilityCoordinator}
+          />
+        )}
         {viewState.status === "ready" ? (
           <ReaderErrorBoundary
             key={viewState.publicationSequence}
