@@ -70,6 +70,12 @@ Spanish Piper remains the only supported profile until later v7 evidence
 admits an English profile. Qwen/Serena remains development-only and
 Spanish-only unless a later versioned evaluation changes that exact identity.
 
+ADR-0025 later preserves resultless v7 and freezes v8 evaluation coverage for
+exact Qwen/Serena Spanish and Qwen/Aiden English. That amendment changes no
+current product availability: Aiden remains unsupported and unselectable until
+the later implementation, exact evidence, decision, and integration gates
+pass.
+
 ## Privacy and cancellation
 
 Language selection changes no EPUB privacy rule. Book text and generated audio

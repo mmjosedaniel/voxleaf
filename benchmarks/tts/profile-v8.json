@@ -1,0 +1,140 @@
+{
+  "profileVersion": "tts-bilingual-profile-v8",
+  "status": "frozen-before-v8-implementation-pilot-and-official-results",
+  "purpose": "bilingual-product-and-bounded-candidate-evaluation-with-local-qwen-controls",
+  "supersedes": {
+    "profile": "benchmarks/tts/profile-v7.json",
+    "sha256": "aa524172b817c1748b2085066a7ada69c48a9f8b097da749b3b40ff14b9d99ef",
+    "v7ResultFilesPresent": 0,
+    "reason": "qwen-native-english-and-spanish-built-in-voice-profiles-were-added-before-results"
+  },
+  "authorities": {
+    "product": {
+      "path": "docs/architecture/bilingual-narration-authority-v1.md",
+      "sha256": "7a0cb1e7096d9e84bae58c66393cb6ab4037f322c9013a7e4e7f8172215b006c"
+    },
+    "normalizationProfile": {
+      "path": "docs/architecture/narration-normalization-v2.md",
+      "sha256": "8e4f0bc45d260a03bc4bfdf523d272951eb26915005a9acbc60e8f17a4dd446e"
+    },
+    "normalizationCorpus": {
+      "path": "benchmarks/tts/normalization-corpus-v2.json",
+      "sha256": "7eb569b5c885e91f6fe8b250aa1c2a73be1642db70265530c62634cff691018a"
+    },
+    "evaluationCorpus": {
+      "path": "benchmarks/tts/corpus-v7.json",
+      "sha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe"
+    },
+    "baseEvaluationProfile": {
+      "path": "benchmarks/tts/profile-v7.json",
+      "sha256": "aa524172b817c1748b2085066a7ada69c48a9f8b097da749b3b40ff14b9d99ef"
+    },
+    "baseCandidateManifest": {
+      "path": "benchmarks/tts/candidates-v7.json",
+      "sha256": "1c8b4591782c298d0af19ae91037eb6154e372f32d1c005d6a8dfdfe47bc0f53"
+    },
+    "candidateManifest": {
+      "path": "benchmarks/tts/candidates-v8.json",
+      "sha256": "5245f6949cf035eee8de98fef21e8eea89d30b468d76039949e2100558401b0e"
+    },
+    "privateRawSchema": {
+      "path": "benchmarks/tts/schemas/bilingual-raw-v8.schema.json",
+      "sha256": "b18c14fa7a65d45f9bc8ddc05aa71607e7835584a5c0b7e87f244b5cb1681492"
+    },
+    "contentSafeSummarySchema": {
+      "path": "benchmarks/tts/schemas/bilingual-summary-v8.schema.json",
+      "sha256": "c1d57fcea4c6abbbeb6af7ba3fe4a8a59b514c55803e09601e3d0448a863f67c"
+    }
+  },
+  "inheritedUnchangedFromV7": [
+    "productBehavior",
+    "timeoutsMilliseconds",
+    "screenStopConditions",
+    "machineGates",
+    "performanceGates",
+    "cancellationGates",
+    "qualityRubric",
+    "privacyAndRepositoryGates"
+  ],
+  "executionPolicy": {
+    "candidateOrder": [
+      "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8",
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8",
+      "chatterbox-multilingual-v3-cuda-bf16-default-v1",
+      "moss-tts-nano-100m-onnx-cpu-ava-v1"
+    ],
+    "candidateLanguages": {
+      "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1": ["en"],
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8": ["es"],
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8": ["en"],
+      "chatterbox-multilingual-v3-cuda-bf16-default-v1": ["es", "en"],
+      "moss-tts-nano-100m-onnx-cpu-ava-v1": ["es", "en"]
+    },
+    "evaluationStageByCandidate": {
+      "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1": "baseline",
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8": "existing-engine-control",
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8": "existing-engine-control",
+      "chatterbox-multilingual-v3-cuda-bf16-default-v1": "screen",
+      "moss-tts-nano-100m-onnx-cpu-ava-v1": "screen"
+    },
+    "qwenControlPolicy": {
+      "profilesEvaluatedIndependently": true,
+      "sharedModelArtifactsMayEstablishIdentityOnly": true,
+      "sharedResultsAcrossLanguagesOrSpeakers": false,
+      "screenFailureStopsOnlyThatExactProfile": true,
+      "profilesCountTowardMaximumNewEngineSurvivors": false,
+      "admissionRequiresLanguageSpecificFullMatrix": true
+    },
+    "maximumNewEngineFullMatrixSurvivors": 1,
+    "conditionalCandidateRejectedAtIntake": "fun-cosyvoice3-0-5b-2512-v1",
+    "automaticRetries": 0,
+    "attemptsPerCase": {
+      "screenWarm": 1,
+      "fullWarm": 2,
+      "sustainedCompleteCorpusPassesMinimum": 3
+    },
+    "coldLoads": {
+      "baseline": 5,
+      "existingEngineControl": 1,
+      "screen": 1,
+      "fullMatrix": 5
+    },
+    "candidateLifetime": "one-loaded-model-per-measured-session",
+    "candidateSwitchingWithinSession": "forbidden",
+    "runtimeDownloads": "forbidden",
+    "outboundNetworkDuringEvaluation": "blocked-for-exact-interpreter",
+    "remoteInferenceApis": "forbidden",
+    "referenceAudio": "forbidden",
+    "rawResultRoot": "benchmarks/tts/raw/v8",
+    "rawResultRetention": "delete-after-content-safe-derivation",
+    "generatedAudioRetention": "delete-after-private-quality-session",
+    "resultCommitRule": "authority-commit-must-be-strict-ancestor"
+  },
+  "qwenProductBoundary": {
+    "localCheckpointOnly": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+    "cloudRealtimeApi": "excluded",
+    "voiceCloneBaseModel": "excluded",
+    "voiceDesignModel": "excluded",
+    "spanishProfile": {
+      "speaker": "Serena",
+      "language": "Spanish"
+    },
+    "englishProfile": {
+      "speaker": "Aiden",
+      "language": "English"
+    },
+    "ryanEnglishComparison": "deferred-unless-a-later-result-blind-authority-admits-it"
+  },
+  "resultRules": {
+    "schemaVersions": {
+      "privateRaw": "tts-bilingual-raw-v8",
+      "contentSafeSummary": "tts-bilingual-summary-v8"
+    },
+    "candidateManifestSha256": "5245f6949cf035eee8de98fef21e8eea89d30b468d76039949e2100558401b0e",
+    "evaluationCorpusSha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe",
+    "authorityCommitMustContainExactV7AndV8Trees": true,
+    "executionCommitMustStrictlyDescendFromAuthority": true,
+    "resultBearingFilesBeforeAuthority": "forbidden"
+  }
+}

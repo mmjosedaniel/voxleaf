@@ -64,6 +64,15 @@ default-voice path to authorize. These locks are evaluation inputs only: they
 are not imported by product code, installed by default checks, bundled,
 redistributed, or evidence that a candidate passes.
 
+M010.1 Milestone 1A adds no dependency, project, lock, model artifact, or
+runtime graph. The superseding
+[`candidates-v8.json`](../../benchmarks/tts/candidates-v8.json) reuses the
+existing exact `qwen3_1_7b_customvoice_cuda` lock and local 1.7B CustomVoice
+snapshot for two independent evaluation identities: Serena/Spanish and
+Aiden/English. Shared weights and environment establish only artifact
+identity; they do not share language/voice results. Alibaba Cloud remote TTS,
+Ryan, Base voice cloning, and VoiceDesign add no graph and remain outside v8.
+
 ## Shipped application dependencies
 
 These are the only direct libraries that can participate in the current application's runtime output.

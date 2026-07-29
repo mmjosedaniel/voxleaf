@@ -1,0 +1,264 @@
+{
+  "candidateManifestVersion": "tts-candidate-manifest-v8",
+  "status": "frozen-before-v8-results",
+  "frozenAt": "2026-07-29",
+  "supersedes": {
+    "manifest": "benchmarks/tts/candidates-v7.json",
+    "sha256": "1c8b4591782c298d0af19ae91037eb6154e372f32d1c005d6a8dfdfe47bc0f53",
+    "resultFilesPresentAtSupersession": 0,
+    "reason": "add-exact-local-qwen-spanish-and-english-built-in-voice-profiles-before-results"
+  },
+  "selectionPolicy": {
+    "maximumNewEngineFullMatrixSurvivors": 1,
+    "newEngineScreenOrder": [
+      "chatterbox-multilingual-v3-cuda-bf16-default-v1",
+      "moss-tts-nano-100m-onnx-cpu-ava-v1"
+    ],
+    "existingEngineControlOrder": [
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8",
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8"
+    ],
+    "qwenProfilesCountAsNewEngineSurvivors": false,
+    "automaticRetries": 0,
+    "referenceAudio": "forbidden",
+    "personalVoiceEnrollment": "forbidden",
+    "runtimeDownloads": "forbidden",
+    "resultBeforeAuthority": "forbidden"
+  },
+  "baseCandidates": {
+    "path": "benchmarks/tts/candidates-v7.json",
+    "sha256": "1c8b4591782c298d0af19ae91037eb6154e372f32d1c005d6a8dfdfe47bc0f53",
+    "admittedCandidateIds": [
+      "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
+      "chatterbox-multilingual-v3-cuda-bf16-default-v1",
+      "moss-tts-nano-100m-onnx-cpu-ava-v1"
+    ],
+    "rejectedCandidateId": "fun-cosyvoice3-0-5b-2512-v1"
+  },
+  "addedCandidates": [
+    {
+      "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8",
+      "role": "existing-engine-spanish-control",
+      "intakeDecision": "admitted-to-existing-engine-control-evaluation",
+      "engine": {
+        "name": "qwen-tts",
+        "version": "0.1.1",
+        "wheelSha256": "11a290d8dabc7ef91a90c54478c8ab19b3edb1d85c0882313721892bdc4af15d",
+        "provider": "pytorch-cuda",
+        "precision": "bfloat16",
+        "attention": "sdpa",
+        "source": "https://pypi.org/project/qwen-tts/0.1.1/"
+      },
+      "model": {
+        "repository": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+        "revision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+        "repositorySizeBytes": 4523965995,
+        "license": "Apache-2.0",
+        "source": "https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/tree/0c0e3051f131929182e2c023b9537f8b1c68adfe",
+        "artifacts": [
+          {
+            "path": "model.safetensors",
+            "sizeBytes": 3833402552,
+            "sha256": "38b1d5971bdbd982b561cccec982669a53b0537c3cf5e9bd4778ed07bb2f5137"
+          },
+          {
+            "path": "speech_tokenizer/model.safetensors",
+            "sizeBytes": 682293092,
+            "sha256": "836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258"
+          }
+        ]
+      },
+      "dependencyLock": {
+        "path": "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock",
+        "sha256": "1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913"
+      },
+      "voice": {
+        "mode": "built-in-customvoice",
+        "speaker": "Serena",
+        "nativeLanguage": "Chinese",
+        "evaluationLanguage": "es",
+        "languageArgument": "Spanish",
+        "instruction": "Lee con un tono neutro, claro, natural y sereno, apropiado para narrar un audiolibro; mantén un ritmo moderado y una expresividad contenida.",
+        "personalReferenceAudioRequired": false,
+        "catalogSource": "https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/blob/0c0e3051f131929182e2c023b9537f8b1c68adfe/README.md"
+      },
+      "host": {
+        "operatingSystem": "Windows",
+        "architecture": "x86_64",
+        "python": "3.12.*",
+        "minimumLogicalProcessors": 8,
+        "minimumTotalRamMiB": 10570,
+        "minimumAvailableRamMiBAtPreflight": 6474,
+        "gpuRequired": true,
+        "minimumTotalDedicatedVramMiB": 7196,
+        "minimumAvailableDedicatedVramMiBAtPreflight": 6508,
+        "minimumAvailableStorageMiB": 11345
+      },
+      "offline": {
+        "environment": {
+          "HF_HUB_OFFLINE": "1",
+          "TRANSFORMERS_OFFLINE": "1"
+        },
+        "artifactResolution": "exact-local-snapshot-only",
+        "localFilesOnly": true,
+        "outboundFirewallBlock": "exact-candidate-interpreter"
+      },
+      "audioConversion": {
+        "input": "24000-hz-mono-float32",
+        "operation": "identity",
+        "output": "24000-hz-mono-float32"
+      },
+      "generation": {
+        "batchSize": 1,
+        "doSample": true,
+        "repetitionPenalty": 1.05,
+        "temperature": 0.9,
+        "topP": 1.0,
+        "topK": 50,
+        "subtalkerDoSample": true,
+        "subtalkerTemperature": 0.9,
+        "subtalkerTopP": 1.0,
+        "subtalkerTopK": 50,
+        "maxNewTokens": 2048
+      },
+      "normalizationProfile": "narration-bilingual-v2",
+      "license": {
+        "engineModelAndBuiltInVoice": "Apache-2.0",
+        "evaluation": "permitted",
+        "distributionDecision": "requires-M011-license-and-notice-review"
+      },
+      "evidenceBoundary": {
+        "existingSpanishDevelopmentEvidenceMayEstablishSupport": false,
+        "v8LanguageSpecificResultRequired": true,
+        "supportStateBeforeV8Result": "development-only"
+      },
+      "knownRisks": [
+        "speaker-native-language-is-not-spanish",
+        "complete-waveform-high-level-api",
+        "historical-standard-performance-gates-failed",
+        "large-model-and-cuda-packaging-cost"
+      ]
+    },
+    {
+      "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8",
+      "role": "existing-engine-english-control",
+      "intakeDecision": "admitted-to-existing-engine-control-evaluation",
+      "engine": {
+        "name": "qwen-tts",
+        "version": "0.1.1",
+        "wheelSha256": "11a290d8dabc7ef91a90c54478c8ab19b3edb1d85c0882313721892bdc4af15d",
+        "provider": "pytorch-cuda",
+        "precision": "bfloat16",
+        "attention": "sdpa",
+        "source": "https://pypi.org/project/qwen-tts/0.1.1/"
+      },
+      "model": {
+        "repository": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+        "revision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+        "repositorySizeBytes": 4523965995,
+        "license": "Apache-2.0",
+        "source": "https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/tree/0c0e3051f131929182e2c023b9537f8b1c68adfe",
+        "artifacts": [
+          {
+            "path": "model.safetensors",
+            "sizeBytes": 3833402552,
+            "sha256": "38b1d5971bdbd982b561cccec982669a53b0537c3cf5e9bd4778ed07bb2f5137"
+          },
+          {
+            "path": "speech_tokenizer/model.safetensors",
+            "sizeBytes": 682293092,
+            "sha256": "836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258"
+          }
+        ]
+      },
+      "dependencyLock": {
+        "path": "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock",
+        "sha256": "1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913"
+      },
+      "voice": {
+        "mode": "built-in-customvoice",
+        "speaker": "Aiden",
+        "nativeLanguage": "English",
+        "evaluationLanguage": "en",
+        "languageArgument": "English",
+        "instruction": "Read in a neutral, clear, natural, and calm tone suitable for audiobook narration; maintain a moderate pace and restrained expressiveness.",
+        "personalReferenceAudioRequired": false,
+        "catalogSource": "https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice/blob/0c0e3051f131929182e2c023b9537f8b1c68adfe/README.md"
+      },
+      "host": {
+        "operatingSystem": "Windows",
+        "architecture": "x86_64",
+        "python": "3.12.*",
+        "minimumLogicalProcessors": 8,
+        "minimumTotalRamMiB": 10570,
+        "minimumAvailableRamMiBAtPreflight": 6474,
+        "gpuRequired": true,
+        "minimumTotalDedicatedVramMiB": 7196,
+        "minimumAvailableDedicatedVramMiBAtPreflight": 6508,
+        "minimumAvailableStorageMiB": 11345
+      },
+      "offline": {
+        "environment": {
+          "HF_HUB_OFFLINE": "1",
+          "TRANSFORMERS_OFFLINE": "1"
+        },
+        "artifactResolution": "exact-local-snapshot-only",
+        "localFilesOnly": true,
+        "outboundFirewallBlock": "exact-candidate-interpreter"
+      },
+      "audioConversion": {
+        "input": "24000-hz-mono-float32",
+        "operation": "identity",
+        "output": "24000-hz-mono-float32"
+      },
+      "generation": {
+        "batchSize": 1,
+        "doSample": true,
+        "repetitionPenalty": 1.05,
+        "temperature": 0.9,
+        "topP": 1.0,
+        "topK": 50,
+        "subtalkerDoSample": true,
+        "subtalkerTemperature": 0.9,
+        "subtalkerTopP": 1.0,
+        "subtalkerTopK": 50,
+        "maxNewTokens": 2048
+      },
+      "normalizationProfile": "narration-bilingual-v2",
+      "license": {
+        "engineModelAndBuiltInVoice": "Apache-2.0",
+        "evaluation": "permitted",
+        "distributionDecision": "requires-M011-license-and-notice-review"
+      },
+      "evidenceBoundary": {
+        "serenaOrZeroPointSixBResultsMayEstablishSupport": false,
+        "v8LanguageSpecificResultRequired": true,
+        "supportStateBeforeV8Result": "unsupported"
+      },
+      "knownRisks": [
+        "english-profile-has-no-voxleaf-result",
+        "complete-waveform-high-level-api",
+        "historical-qwen-performance-gates-failed",
+        "large-model-and-cuda-packaging-cost"
+      ]
+    }
+  ],
+  "excluded": [
+    {
+      "candidateId": "qwen3-tts-cloud-realtime",
+      "reasonCode": "remote-inference-violates-local-only-product-boundary"
+    },
+    {
+      "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-ryan-en",
+      "reasonCode": "bounded-v8-selects-one-native-english-qwen-voice"
+    },
+    {
+      "candidateId": "qwen3-tts-1-7b-base-voice-cloning",
+      "reasonCode": "voice-cloning-outside-mvp"
+    },
+    {
+      "candidateId": "qwen3-tts-1-7b-voicedesign",
+      "reasonCode": "voice-design-outside-default-narrator-scope"
+    }
+  ]
+}

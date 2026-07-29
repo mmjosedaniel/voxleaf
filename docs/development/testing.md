@@ -106,6 +106,14 @@ The current tests are deterministic and layered by ownership:
   still rejects English with a content-free result. These tests load no
   candidate library, model, audio, or hardware and make no English-support or
   candidate-pass claim.
+- `services/tts/tests/test_benchmark_v8_authority.py` preserves that complete
+  v7 base and validates the result-blind v8 amendment before audio generation.
+  It verifies exact Qwen 1.7B CustomVoice / Serena / Spanish and Qwen 1.7B
+  CustomVoice / Aiden / English identities, the reused lock/model revision,
+  cloud/cloning/design exclusions, unchanged v7/corpus bytes, closed v8
+  schemas, candidate-language-stage-lock binding, private-content rejection,
+  and complete v7-plus-v8 authority-tree ancestry. The combined focused suite
+  passes 14 tests without loading a model, audio, or hardware.
 
 The hardware/manual boundary is separate from these tests. The completed `v2`
 cycle ran five cold loads, 24 warm generations, 12 sustained generations, and
