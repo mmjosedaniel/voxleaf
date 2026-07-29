@@ -544,7 +544,12 @@ merge gate.
 
 ### Status
 
-Not started. This is a hard evidence gate for claiming CPU fallback.
+In progress. The exact Piper 1.4.2 / `es_ES-davefx-medium` CPU candidate,
+isolated lock, normalized synthetic corpus, schemas, performance/quality
+gates, cancellation/cleanup rules, offline controls, and GPL/CC0 packaging
+obligations are frozen in `profile-v6` before any Piper synthesis result.
+CPU fallback remains unsupported until the later official execution and
+content-safe selection pass every conjunctive gate.
 
 ## Milestone 6: Integrate admitted profiles and run the resilience matrix
 
@@ -678,6 +683,21 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-28: Started Milestone 5 sequentially on
+  `feat/m010-m5-cpu-fallback-evaluation`. Selected the new Piper 1.4.2
+  ONNX/CPU `es_ES-davefx-medium` candidate after excluding previously rejected
+  profiles. Pinned the official engine source/wheel, voice-repository
+  revision, three local artifact hashes, isolated Python 3.12 lock, and
+  explicit GPL-3.0-or-later/CC0 distribution boundary. No Piper audio was
+  generated during candidate intake.
+- 2026-07-28: Added the pre-result `profile-v6`, eight-case repository-authored
+  `narration-v1` Spanish corpus, private raw schema, content-safe summary
+  schema, and detailed architecture authority. The frozen evaluation inherits
+  candidate-neutral M006 measurements, uses five cold loads, 16 warm
+  generations, at least 180 sustained media seconds, five termination-backed
+  cancellation trials, zero retries, a 4 GiB RAM ceiling, zero GPU
+  allocation, and one fluent-Spanish-maintainer MVP quality review only after
+  every machine gate passes. Product registry state remains unchanged.
 - 2026-07-28: Closed Milestone 4 local validation. Portable and full native
   foundation checks pass; the complete browser matrix passes 6/6; and the
   release-packaged native smoke passes. The native rerun exposed and corrected

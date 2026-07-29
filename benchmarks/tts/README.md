@@ -67,6 +67,16 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   decision. It rejects CPU-only and dual-worker scheduling, retains the exact
   GPU identity only for ADR-0015's constrained demo, and keeps both
   diagnostics non-promotable.
+- `profile-v6.json`, `candidates-v6.json`, and `corpus-v6.json` freeze M010's
+  new Piper 1.4.2 / `es_ES-davefx-medium` CPU fallback evaluation before any
+  Piper synthesis or listening result. The exact engine/model artifacts,
+  isolated lock, `narration-v1` input, offline boundary, inherited
+  candidate-neutral measurements, one-maintainer MVP quality screen,
+  cancellation/cleanup gates, and GPL/CC0 packaging obligations are binding.
+- `schemas/cpu-fallback-raw-v6.schema.json` and
+  `schemas/cpu-fallback-summary-v6.schema.json` are the closed private and
+  content-safe result shapes. No v6 result or selection exists at the
+  authority checkpoint, so the product registry still has no CPU fallback.
 - `incremental-cancellation-prototype-v1.json` freezes the development-only
   prototype topology before results: complete-segment delivery, one resident
   spawned worker, explicit input/output/queue ceilings, identity-first stale
@@ -105,6 +115,10 @@ roadmap Milestone 6. It is not a production TTS service boundary.
   explains the frozen independent GPU-primary/CPU-support authority, exact arm
   order, dispatch, CPU-zero-GPU checks, RAM/commit gates, simultaneous
   five-minute bounds, and non-promotable standard conclusion.
+- [`docs/architecture/tts-feasibility-profile-v6.md`](../../docs/architecture/tts-feasibility-profile-v6.md)
+  explains the frozen Piper CPU-only authority, conjunctive performance and
+  quality gates, process-termination cancellation, privacy boundary, and
+  explicit GPL/CC0 distribution obligations.
 
 Raw measurements, model files, generated audio, listening-session metadata,
 and profiling output belong below `benchmarks/results/raw/`, which is ignored.
@@ -176,6 +190,7 @@ Candidate libraries are locked in independent projects:
 
 ```text
 services/tts/benchmarks/candidates/
+    piper_1_4_2_cpu/
     qwen3_1_7b_customvoice_cuda/
     qwen3_0_6b_cuda/
     supertonic3_cpu/
@@ -189,6 +204,7 @@ CI:
 uv sync --project services/tts/benchmarks/candidates/qwen3_0_6b_cuda --locked
 uv sync --project services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda --locked
 uv sync --project services/tts/benchmarks/candidates/supertonic3_cpu --locked
+uv sync --project services/tts/benchmarks/candidates/piper_1_4_2_cpu --locked
 ```
 
 Model acquisition is a separate networked operation and must target an ignored

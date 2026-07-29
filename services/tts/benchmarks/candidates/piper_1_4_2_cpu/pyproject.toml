@@ -1,0 +1,11 @@
+[project]
+name = "voxleaf-benchmark-piper-1-4-2-cpu"
+version = "0.0.0"
+description = "Isolated benchmark environment for the Piper 1.4.2 CPU candidate"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "piper-tts==1.4.2",
+]
+
+[tool.uv]
+exclude-newer = "2026-07-18T00:00:00Z"
