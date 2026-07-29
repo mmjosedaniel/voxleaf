@@ -5,6 +5,7 @@ import type {
 
 import {
   HARDWARE_PROFILE_AUTHORITY_V1,
+  calculateProfileAvailableDedicatedVramRequirementMiB,
   calculateProfileCapacityRequirementMiB,
   type HardwareProfileEvidenceGateStateV1,
   type HardwareProfileRegistryEntryV1,
@@ -194,6 +195,11 @@ function hasValidEntryShape(entry: HardwareProfileRegistryEntryV1): boolean {
         "vram",
         requirements.measuredPeakDedicatedVramMiB,
       );
+      calculateProfileAvailableDedicatedVramRequirementMiB(
+        entry.role,
+        entry.supportState,
+        requirements.measuredPeakDedicatedVramMiB,
+      );
     }
     return (
       availableRam +
@@ -308,20 +314,26 @@ function providerFailure(
     return undefined;
   }
 
-  const requiredVram = calculateProfileCapacityRequirementMiB(
+  const requiredTotalVram = calculateProfileCapacityRequirementMiB(
     "vram",
     entry.requirements.measuredPeakDedicatedVramMiB,
   );
+  const requiredAvailableVram =
+    calculateProfileAvailableDedicatedVramRequirementMiB(
+      entry.role,
+      entry.supportState,
+      entry.requirements.measuredPeakDedicatedVramMiB,
+    );
   return (
     insufficientQuantity(
       provider.dedicatedMemoryMiB,
-      requiredVram,
+      requiredTotalVram,
       entry,
       "dedicated-vram",
     ) ??
     insufficientQuantity(
       provider.availableDedicatedMemoryMiB,
-      requiredVram,
+      requiredAvailableVram,
       entry,
       "available-dedicated-vram",
     )

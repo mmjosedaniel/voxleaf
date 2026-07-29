@@ -196,7 +196,7 @@ describe("hardware compatibility controls", () => {
   });
 
   it("exposes closed profile diagnostics for exact-host automation", async () => {
-    const subject = coordinator({ availableDedicatedVramMiB: 7_195 });
+    const subject = coordinator({ availableDedicatedVramMiB: 6_507 });
     render(<HardwareCompatibilityControls coordinator={subject} />);
 
     await waitFor(() => expect(subject.observe().status).toBe("compatible"));
@@ -219,6 +219,24 @@ describe("hardware compatibility controls", () => {
         name: "Piper and davefx fast CPU profile",
       }),
     ).toBeChecked();
+  });
+
+  it("offers development-only Qwen at its frozen available-VRAM boundary", async () => {
+    const subject = coordinator({ availableDedicatedVramMiB: 6_508 });
+    render(<HardwareCompatibilityControls coordinator={subject} />);
+
+    await waitFor(() => expect(subject.observe().status).toBe("compatible"));
+
+    expect(
+      screen.getByRole("radio", {
+        name: "Qwen and Serena development profile",
+      }),
+    ).toBeInTheDocument();
+    const qwenProfile = screen
+      .getByText("Qwen and Serena development profile:")
+      .closest("li");
+    expect(qwenProfile).toHaveAttribute("data-profile-state", "compatible");
+    expect(qwenProfile).toHaveAttribute("data-profile-reason", "none");
   });
 
   it("supports explicit keyboard-focus-safe selection and recheck", async () => {

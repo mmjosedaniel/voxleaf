@@ -199,6 +199,11 @@ export const HARDWARE_PROFILE_AUTHORITY_V1 = Object.freeze({
       minimumMiB: 2_048,
     }),
   }),
+  developmentOnlyAdmission: Object.freeze({
+    availableDedicatedVramReserveMiB: 512,
+    role: "development-demo" as const,
+    supportState: "development-only" as const,
+  }),
   matching: Object.freeze({
     order: Object.freeze([
       "contract-version",
@@ -467,6 +472,30 @@ export function calculateProfileCapacityRequirementMiB(
   const requirement =
     measuredMiB + Math.max(policy.minimumMiB, percentageMargin);
   if (requirement > maximum) {
+    throw new RangeError("Profile resource requirement exceeds authority.");
+  }
+  return requirement;
+}
+
+export function calculateProfileAvailableDedicatedVramRequirementMiB(
+  role: HardwareProfileRoleV1,
+  supportState: HardwareProfileSupportStateV1,
+  measuredMiB: number,
+): number {
+  const genericRequirement = calculateProfileCapacityRequirementMiB(
+    "vram",
+    measuredMiB,
+  );
+  const policy = HARDWARE_PROFILE_AUTHORITY_V1.developmentOnlyAdmission;
+  if (role !== policy.role || supportState !== policy.supportState) {
+    return genericRequirement;
+  }
+
+  const requirement = measuredMiB + policy.availableDedicatedVramReserveMiB;
+  if (
+    requirement >
+    HARDWARE_PROFILE_AUTHORITY_V1.compatibilityContract.maximumQuantityMiB
+  ) {
     throw new RangeError("Profile resource requirement exceeds authority.");
   }
   return requirement;

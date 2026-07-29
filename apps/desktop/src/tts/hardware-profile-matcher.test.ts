@@ -173,6 +173,66 @@ describe("hardware profile matcher v1", () => {
     ).toHaveLength(2);
   });
 
+  it("uses the frozen 512 MiB available-VRAM reserve only for the development profile", () => {
+    const profile = HARDWARE_PROFILE_REGISTRY_V1.find(
+      (entry) =>
+        entry.identity.profileId === EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+    )!;
+    const totalVram = calculateProfileCapacityRequirementMiB(
+      "vram",
+      profile.requirements.measuredPeakDedicatedVramMiB,
+    );
+    const availableVram =
+      profile.requirements.measuredPeakDedicatedVramMiB +
+      HARDWARE_PROFILE_AUTHORITY_V1.developmentOnlyAdmission
+        .availableDedicatedVramReserveMiB;
+    const hostAtBoundaries = report((value) => ({
+      ...value,
+      providers: {
+        ...value.providers,
+        cuda: {
+          ...value.providers.cuda,
+          dedicatedMemoryMiB: knownQuantity(totalVram),
+          availableDedicatedMemoryMiB: knownQuantity(availableVram),
+        },
+      },
+    }));
+
+    expect(firstReason(hostAtBoundaries, profile)).toBeUndefined();
+    expect(
+      firstReason(
+        report((value) => ({
+          ...value,
+          providers: {
+            ...value.providers,
+            cuda: {
+              ...value.providers.cuda,
+              dedicatedMemoryMiB: knownQuantity(totalVram),
+              availableDedicatedMemoryMiB: knownQuantity(availableVram - 1),
+            },
+          },
+        })),
+        profile,
+      ),
+    ).toBe("available-dedicated-vram");
+    expect(
+      firstReason(
+        report((value) => ({
+          ...value,
+          providers: {
+            ...value.providers,
+            cuda: {
+              ...value.providers.cuda,
+              dedicatedMemoryMiB: knownQuantity(totalVram - 1),
+              availableDedicatedMemoryMiB: knownQuantity(availableVram),
+            },
+          },
+        })),
+        profile,
+      ),
+    ).toBe("dedicated-vram");
+  });
+
   it("retains the supported fallback while closing development-only and rejected profiles", () => {
     const result = matchHardwareProfilesV1({
       report: report(),
