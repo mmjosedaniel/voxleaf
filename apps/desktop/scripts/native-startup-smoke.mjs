@@ -3385,19 +3385,11 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
      selection.addRange(selected);
      const selectionBefore = selection.toString();
      const article = target.closest(".semantic-document");
-     const descendantCountBefore = article?.querySelectorAll("*").length;
-     const textLengthBefore = article?.textContent?.length;
-     const initialUrl = window.location.href;
 
      const range = document.createRange();
      range.setStart(targetText, 0);
      range.setEnd(targetText, targetText.data.length);
      const highlightName = "voxleaf-narration-active";
-     const highlight = new Highlight(range);
-     highlights.set(highlightName, highlight);
-     const rangeAcceptedBeforePaint =
-       highlights.has(highlightName) && highlight.has(range);
-     const highlightPerceivableBeforePaint = false;
 
      readerViewport.scrollTop = 0;
      const readerViewportBounds = readerViewport.getBoundingClientRect();
@@ -3417,6 +3409,59 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
        readerViewport.scrollTop += beforeFollow.top - comfortTop;
      }
      return new Promise((resolve) => {
+       const maximumFollowAnimationFrames = 24;
+       const requiredStableFollowFrames = 3;
+       let followAnimationFrames = 0;
+       let stableFollowFrames = 0;
+       let previousFollowSignature;
+       const settleFollow = () => {
+         followAnimationFrames += 1;
+         const followRect = range.getBoundingClientRect();
+         const followSignature = [
+           article?.querySelectorAll("*").length ?? -1,
+           article?.textContent?.length ?? -1,
+           Math.round(followRect.top * 100),
+           Math.round(followRect.bottom * 100),
+           Math.round(readerViewport.scrollTop * 100),
+         ].join(":");
+         stableFollowFrames =
+           followSignature === previousFollowSignature
+             ? stableFollowFrames + 1
+             : 0;
+         previousFollowSignature = followSignature;
+         if (
+           stableFollowFrames < requiredStableFollowFrames &&
+           followAnimationFrames < maximumFollowAnimationFrames
+         ) {
+           requestAnimationFrame(settleFollow);
+           return;
+         }
+
+         const settledFollowRect = range.getBoundingClientRect();
+         const settledInsideReaderViewport =
+           settledFollowRect.bottom >= comfortTop - 1 &&
+           settledFollowRect.top <= comfortBottom + 1;
+         if (
+           !settledInsideReaderViewport &&
+           followAnimationFrames < maximumFollowAnimationFrames
+         ) {
+           readerViewport.scrollTop += settledFollowRect.top - comfortTop;
+           stableFollowFrames = 0;
+           previousFollowSignature = undefined;
+           requestAnimationFrame(settleFollow);
+           return;
+         }
+
+         const descendantCountBefore =
+           article?.querySelectorAll("*").length;
+         const textLengthBefore = article?.textContent?.length;
+         const initialUrl = window.location.href;
+         const highlight = new Highlight(range);
+         highlights.set(highlightName, highlight);
+         const rangeAcceptedBeforePaint =
+           highlights.has(highlightName) && highlight.has(range);
+         const highlightPerceivableBeforePaint = false;
+
        let registeredAnimationFrames = 0;
        const observeRenderingOpportunity = () => {
          registeredAnimationFrames += 1;
@@ -3539,6 +3584,8 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
          resolve(result);
        };
        requestAnimationFrame(observeRenderingOpportunity);
+       };
+       requestAnimationFrame(settleFollow);
      });`,
   );
   await driver.setWindowRect(960, 720);
