@@ -595,6 +595,12 @@ configuration, and settings choice atomically.
   for each profile. Do not average incompatible profiles into a support claim.
 - Verify the outbound-blocked offline boundary and zero generated-audio
   persistence.
+- Correct the exact-host product discrepancy discovered after initial closure:
+  generic `narration-v1` can emit text whose complete Piper waveform exceeds
+  protocol v1's 20-second unit ceiling. Freeze
+  `piper-narration-preparation-profile-v1.md` before corrective execution,
+  select its narrower locator-safe preparation only for Piper, and retain
+  fail-closed behavior without truncating speech or changing protocol v1.
 
 ### Validation
 
@@ -609,7 +615,7 @@ configuration, and settings choice atomically.
 
 ### Status
 
-Complete on 2026-07-29 on branch
+Corrective validation in progress on 2026-07-29 on branch
 `feat/m010-m6-profile-integration-resilience`, created from merged main commit
 `2b81b028fe6188e17f524d5720e68827511e3c05`. Authority, service, native,
 desktop selection, recovery, and exact-host boundaries were re-read before
@@ -622,6 +628,17 @@ Qwen's packaged path proves the exact fail-closed
 `available-dedicated-vram` result on this host; a compatible future host will
 run its full playback arm. The complete `test:tts:resilience-exact-host`
 command passes.
+
+After that initial closure, a private-EPUB product run prepared and played one
+6-second Piper unit, then entered service containment. A synthetic,
+content-free reproduction established the failing boundary without reading or
+logging book text: the exact voice produced 17.694 seconds for 320 code points,
+21.769 seconds for 400, and 35.260 seconds for 640; the production adapter
+correctly rejected the 400-code-point result because protocol v1 admits at most
+20 seconds. The corrective `narration-piper-v1` authority is now frozen before
+implementation and exact-host rerun. Milestone 6 returns to complete only after
+locator-safe narrower preparation, regression coverage, and product playback
+validation pass.
 
 ## Milestone 7: Record support decisions and close validation
 
