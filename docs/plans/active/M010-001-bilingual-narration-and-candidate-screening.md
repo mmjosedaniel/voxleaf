@@ -66,10 +66,10 @@ unless this plan later records a newly admitted exact profile.
   provenance, license, redistribution obligations, and voice quality.
 - Sequential screens for:
   1. Resemble AI Chatterbox Multilingual V3;
-  2. OpenMOSS MOSS-TTS-Nano 100M ONNX; and
-  3. Fun-CosyVoice3 0.5B only if the first two reject early and the remaining
-     timebox can still close its voice provenance, Windows, offline, and
-     redistribution gates.
+  2. OpenMOSS MOSS-TTS-Nano 100M ONNX.
+- Intake of Fun-CosyVoice3 0.5B as a proposed conditional third candidate;
+  Milestone 1 rejects it from v7 before lock or execution because no exact
+  non-personal default voice was frozen.
 - Full candidate-neutral evaluation for no more than one new-engine survivor.
 - Integration of Piper English and at most one passing new engine/profile.
 - Content-safe synthetic English and Spanish fixtures, exact-host evidence,
@@ -102,6 +102,14 @@ unless this plan later records a newly admitted exact profile.
 - [canonical system diagram](../../architecture/system-diagram.md)
 - [architecture overview](../../architecture/overview.md)
 - [performance budget](../../architecture/performance-budget.md)
+- [bilingual narration authority v1](../../architecture/bilingual-narration-authority-v1.md)
+- [narration normalization v2](../../architecture/narration-normalization-v2.md)
+- [TTS feasibility profile v7](../../architecture/tts-feasibility-profile-v7.md)
+- [ADR-0024](../../architecture/decisions/ADR-0024-freeze-bilingual-v7-authority.md)
+- [v7 candidate manifest](../../../benchmarks/tts/candidates-v7.json)
+- [v7 evaluation profile](../../../benchmarks/tts/profile-v7.json)
+- [v7 synthetic corpus](../../../benchmarks/tts/corpus-v7.json)
+- [v2 normalization corpus](../../../benchmarks/tts/normalization-corpus-v2.json)
 
 ### Completed boundaries that must remain valid
 
@@ -230,11 +238,11 @@ audio, hallucination/repetition/meaning change, or inability to fit the
 service and repository boundaries. Do not spend the full matrix on an
 already-rejected candidate.
 
-Chatterbox and MOSS receive the first two screens. CosyVoice is conditional
-because its common zero-shot path uses reference audio and its documented
-setup may add Windows and distribution complexity. It proceeds only if a
-non-personal redistributable voice path is frozen and the earlier candidates
-leave enough bounded time.
+Chatterbox and MOSS receive the two v7 screens. CosyVoice was conditional in
+the initial plan because its common zero-shot path uses reference audio and
+its documented setup may add Windows and distribution complexity. Milestone 1
+found no exact non-personal default voice to freeze, so it is rejected before
+an environment lock and does not proceed in v7.
 
 At most one new-engine survivor receives the full bilingual matrix and product
 integration. Piper English is the baseline/additional profile and does not
@@ -256,7 +264,9 @@ runtime, model, voice, and license obligation.
 
 ### Milestone 1: Freeze bilingual product and v7 evaluation authority
 
-**Status:** Not started.
+**Status:** Complete as of 2026-07-29. Authority checkpoint
+`339561acac7cb026f8ec7ea36d177189f2eaf3be` precedes every permitted
+result-bearing v7 execution.
 
 1. Reproduce and record the current Spanish-only product boundary with
    deterministic tests.
@@ -276,6 +286,17 @@ runtime, model, voice, and license obligation.
 Exit when the product and evaluation authority is result-blind, byte-frozen,
 tested, and committed. Stop for unresolved licensing ambiguity, a required
 voice-provenance decision, or unavailable evaluation hardware.
+
+Actual result: the current Spanish-only boundary has a deterministic
+content-safe regression; the explicit bilingual lifecycle and additive
+normalization policy are frozen; exact Piper English, Chatterbox, and MOSS
+inputs have revisions, artifact hashes, dependency locks, offline controls,
+audio conversions, settings, host requirements, provenance, and license
+records; and CosyVoice is rejected before lock or execution because no exact
+non-personal default voice was frozen. The closed v7 schemas and validator
+reject authority drift, unadmitted candidates, substituted locks, private
+content, an execution commit without the frozen tree, or a result that does
+not strictly descend from its authority commit.
 
 ### Milestone 2: Implement engine-neutral bilingual preparation and selection
 
@@ -326,9 +347,8 @@ English profile.
    cleanup, and service-boundary fit.
 2. Screen exact MOSS-TTS-Nano 100M ONNX through the same candidate-neutral
    gates.
-3. Screen exact Fun-CosyVoice3 only if both earlier candidates reject early,
-   its frozen voice path does not require personal reference audio, and the
-   remaining timebox can close the result safely.
+3. Retain the Milestone 1 CosyVoice intake rejection; do not create an
+   environment or execute it in v7.
 4. Stop each rejected candidate immediately and remove its untracked artifacts
    through the documented cleanup path.
 5. Rank only gate-passing exact profiles; upstream samples and family claims
@@ -491,8 +511,25 @@ committed benchmark authority after results.
   conditional third screen because its common reference-audio path and Windows
   packaging boundary require earlier rejection space and explicit intake.
 - **2026-07-29:** Selected exact Piper `en_US-joe-medium` only as the proposed
-  English baseline; Milestone 1 must still freeze artifacts, hashes, license,
-  provenance, and redistribution conclusions before execution.
+  English baseline; Milestone 1 subsequently froze its artifacts, hashes,
+  license, provenance, offline boundary, conversion, and distribution
+  deferral before execution.
+- **2026-07-29:** Froze the bilingual product and normalization authorities,
+  the balanced 10-case v7 corpus, the 16-case normalization corpus, closed raw
+  and summary schemas, exact evaluation gates, and three isolated candidate
+  locks. The authority checkpoint is
+  `339561acac7cb026f8ec7ea36d177189f2eaf3be`; no v7 result file or generated
+  audio exists.
+- **2026-07-29:** Completed exact candidate intake. Piper
+  `en_US-joe-medium`, Chatterbox Multilingual V3 with its official bundled
+  conditioning, and MOSS-TTS-Nano ONNX with built-in `Ava` are admitted only
+  to their frozen evaluation stages. CosyVoice is rejected from v7 before an
+  environment lock because its reviewed general path requires reference audio
+  and supplied no exact non-personal default voice.
+- **2026-07-29:** Added fail-closed v7 authority validation and confirmed the
+  current Spanish-only product boundary. Focused tests, all isolated lock
+  checks, the authoritative Windows aggregate, and the portable aggregate
+  pass.
 
 ## Discoveries and decisions
 
@@ -501,9 +538,9 @@ committed benchmark authority after results.
 - A same-engine English voice is the lowest-risk bilingual baseline, but exact
   voice evidence cannot inherit the passing Spanish/davefx result.
 - The candidate order favors Chatterbox for multilingual naturalness potential
-  and MOSS ONNX for a small CPU/Windows-oriented path. CosyVoice remains
-  conditional because a reference-audio workflow would conflict with the
-  no-cloning scope unless a non-personal redistributable voice path is proven.
+  and MOSS ONNX for a small CPU/Windows-oriented path. CosyVoice is rejected
+  from v7 because its reviewed path did not prove a non-personal default voice
+  compatible with the no-cloning scope.
 - Canonical narration preparation stays engine-neutral. Adapter-specific input
   shaping is evidence-driven and comes after shared normalization.
 - M010.1 may integrate at most one new engine and must accept no winner as a
@@ -511,9 +548,50 @@ committed benchmark authority after results.
 - M011 remains responsible for production packaging and license fulfillment;
   M010.1 must nevertheless establish whether exact redistribution is legally
   feasible before admitting a profile.
+- Candidate intake distinguishes authorization to evaluate from product or
+  distribution admission. Chatterbox's bundled conditioning and MOSS's
+  built-in voice are sufficient for a no-personal-reference screen but not an
+  upstream human-identity claim. Piper, Chatterbox, and MOSS distribution
+  obligations remain explicit M011 gates.
+- CosyVoice is not a conditional runtime candidate in v7 after intake: the
+  absence of a frozen non-personal default voice is a deterministic rejection,
+  not an unresolved blocker.
+- Native audio conversion is candidate-specific but frozen before results:
+  Piper uses bounded linear 22.05-to-24-kHz resampling, Chatterbox is an
+  identity 24-kHz mono path, and MOSS uses arithmetic-mean stereo downmix
+  followed by bounded linear 48-to-24-kHz resampling.
 
 ## Final validation results
 
-Not yet available. This plan is approved planned work and contains no
-implementation, candidate admission, English support, or additional-engine
-support evidence.
+Milestone 1 validation on 2026-07-29:
+
+- `pnpm.cmd --filter @voxleaf/epub exec vitest run src/resource/opened-publication.test.ts`
+  passed 19 tests, including the current content-safe English rejection.
+- `uv run --project services/tts --locked ruff check
+services/tts/benchmarks/v7_authority.py
+services/tts/tests/test_benchmark_v7_authority.py` passed.
+- `uv run --directory services/tts --locked mypy
+benchmarks/v7_authority.py tests/test_benchmark_v7_authority.py` passed.
+- `uv run --project services/tts --locked pytest -p no:cacheprovider
+services/tts/tests/test_benchmark_v7_authority.py` passed 7 tests.
+- `uv lock --check` passed for the exact Piper, Chatterbox, and MOSS isolated
+  candidate projects.
+- The production authority-tree verifier accepted
+  `339561acac7cb026f8ec7ea36d177189f2eaf3be` as the exact frozen v7 tree.
+- `pnpm.cmd check` passed formatting, linting, type checking, 20 shared test
+  files/209 tests, 34 EPUB test files/559 tests, 43 desktop test files/415
+  tests, 40 Rust tests, 263 Python tests, native release build, and Python
+  package builds.
+- `pnpm.cmd check:portable` passed the complementary portable aggregate with
+  the same TypeScript and Python suites and portable builds.
+- `git diff --check` and a scoped privacy scan found no whitespace error,
+  private path, email, credential, model weight, book, or generated-audio
+  content.
+
+The non-failing pytest cache-permission warning and existing Vite
+CSS-highlight/chunk-size warnings do not alter test or build outcomes. Browser,
+packaged WebDriver, model-backed, audio, and exact-host benchmark runs are not
+applicable to this authority-only milestone and were not used as support
+evidence. The plan remains active for Milestone 2; no English runtime,
+candidate performance/quality result, or new supported product profile is
+claimed.
