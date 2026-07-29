@@ -244,11 +244,7 @@ function isActivePhase(state: AdaptivePreparationUiState | undefined): boolean {
 
 function classifyOperationalFailure(
   productCode: ProductNarrationFailureCode,
-  action:
-    | "playback"
-    | "prepare-service"
-    | "start-service"
-    | "synthesize",
+  action: "playback" | "prepare-service" | "start-service" | "synthesize",
   error: unknown,
 ): RecoveryFailureCodeV1 {
   if (error instanceof ProductNarrationRecoveryError) {
@@ -614,7 +610,9 @@ export class ProductNarrationCoordinator {
       this.#recovery.resetEpisode();
       this.#failure = undefined;
       this.#terminalState = undefined;
+      this.#availability = "checking";
       this.#publish();
+      void this.checkAvailability();
     } catch {
       // Compatibility UI cannot bypass active cleanup or recovery.
     }
@@ -1207,12 +1205,7 @@ export class ProductNarrationCoordinator {
     try {
       const player = this.#player.synchronize();
       if (player.state === "failed") {
-        this.#fail(
-          "audio-playback-failed",
-          runToken,
-          "playback",
-          undefined,
-        );
+        this.#fail("audio-playback-failed", runToken, "playback", undefined);
         return;
       }
       this.#updateMetrics(player);
@@ -1247,17 +1240,10 @@ export class ProductNarrationCoordinator {
   #fail(
     code: ProductNarrationFailureCode,
     runToken: number,
-    action:
-      | "playback"
-      | "prepare-service"
-      | "start-service"
-      | "synthesize",
+    action: "playback" | "prepare-service" | "start-service" | "synthesize",
     error: unknown,
   ): void {
-    if (
-      runToken !== this.#runToken ||
-      this.#recoveryOperation !== undefined
-    ) {
+    if (runToken !== this.#runToken || this.#recoveryOperation !== undefined) {
       return;
     }
     this.#failure = code;
@@ -1322,7 +1308,13 @@ export class ProductNarrationCoordinator {
           "cancellation-timeout",
         );
       }
-      await operation?.catch(() => undefined);
+      if (operation !== undefined) {
+        await this.#within(
+          operation.catch(() => undefined),
+          finalCleanupMaximumMs,
+          "cleanup-failed",
+        );
+      }
       await this.#within(
         this.#client.shutdown(),
         terminationMaximumMs,

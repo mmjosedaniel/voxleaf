@@ -4,7 +4,20 @@
 
 The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; boundary waits default to zero; playback is `1.0x`; and the simultaneous 30-minute ceiling is never a startup target. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. M008's final policy run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute, which exceeds the MVP target.
 
-Completed M009 connects exact audible segment transitions to one non-mutating semantic source-range highlight, focus-safe automatic following, identity-first synchronized user navigation, and bounded non-skipping heard-position persistence, then validates the complete synchronized loop on the exact host. M009.1 repairs the proven same-chapter materialization gap, gives ready publications one dedicated reader scroll viewport with stable compact chrome, adds collapsible narration detail and exact loaded/target/estimate text without a progress bar, provides one bounded canonical paragraph leaf without making text interactive, and keeps passive scrolling independent from narration replacement. Its corrected private-EPUB interaction, amended exact-host matrix, repository/privacy audit, portable checks, release-packaged smoke, and required Ubuntu/Windows checks pass; pull request #142 merged the completed closeout. M010 Milestone 1 freezes a separate privacy-safe host report, immutable evidence-backed profile shape, conservative result-blind resource margins, deterministic selection, and identity-first explicit recovery policy. Milestone 2 implements the native Windows host detector and typed desktop decoder for that bounded report. Milestone 3 implements the evidence-backed registry and fail-closed matcher, keeps raw host facts transient, persists only one bounded profile ID, rechecks compatibility before model start, and exposes compact accessible checking/compatible/development-only/unavailable/unknown/failed states. The exact Qwen/Serena profile remains development-only behind the native gate; rejected candidates are not selectable and no standard profile, CPU fallback, automatic retry, or recovery controller exists. The narration path therefore remains a constrained development demo rather than a passing standard profile or uninterrupted-playback promise.
+Completed M009 connects audible segments to highlighting, focus-safe following,
+identity-first navigation, and bounded non-skipping heard-position persistence.
+M009.1 stabilizes the dedicated reader viewport, compact narration surface,
+truthful loaded-duration text, paragraph leaf, and passive-scroll isolation.
+M010 Milestones 1-3 add the privacy-safe host report, bounded native detector,
+immutable measured registry, fail-closed matcher, bounded profile preference,
+compatibility UI, and immediate pre-start recheck. Milestone 4 implements the
+desktop-local recovery controller: failure invalidates identity first,
+releases preparation and audio, contains the service, verifies zero ownership,
+and only then permits one explicit restart from the latest heard checkpoint.
+Protocol, cancellation-timeout, cleanup, and repeated-recovery failures are
+terminal for the episode. The exact Qwen/Serena profile remains
+development-only; no standard profile, CPU fallback, automatic retry, or
+uninterrupted-playback promise exists.
 
 ## Current implemented flow
 
@@ -35,6 +48,11 @@ Completed M009 connects exact audible segment transitions to one non-mutating se
 10. Immediately before starting the exact model child, VoxLeaf rechecks the
     selected development profile and fails closed if host compatibility or the
     native development gate changed.
+11. After a classified operational failure, VoxLeaf contains obsolete work
+    and verifies zero service/audio ownership before offering at most one
+    explicit restart. Restart uses fresh identities and the latest heard
+    checkpoint; terminal failures direct the user to compatibility recheck or
+    application restart.
 
 The narration path is deliberately hidden when the exact native development
 configuration is unavailable. It is not a standard or generally supported
@@ -50,8 +68,9 @@ authority.
 
 ## Remaining target user flow
 
-1. M010 continues from implemented detection and measured matching through
-   conditional fallback admission and identity-safe recovery.
+1. M010 continues from implemented detection, measured matching, and
+   identity-safe recovery through conditional fallback admission and the
+   remaining resilience matrix.
 2. M011 packages and validates an end-user distribution after those boundaries
    close.
 
@@ -98,6 +117,10 @@ Implemented and validated:
   profile records with fixed safety margins, expose accessible compatibility
   state, persist only a bounded profile ID, and recheck immediately before
   starting the exact development child.
+- Classify operational failures without dynamic details, invalidate identity
+  before cleanup, verify zero service/audio ownership, retain at most eight
+  content-free diagnostic entries, and offer no more than one explicit restart
+  from the latest heard checkpoint.
 - Provide documented local setup plus deterministic reader/package validation.
 
 Remaining:

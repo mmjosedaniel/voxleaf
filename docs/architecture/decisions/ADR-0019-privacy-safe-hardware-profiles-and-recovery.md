@@ -14,7 +14,14 @@ M010 Milestone 3 subsequently implements the frozen registry, deterministic
 matcher, bounded profile-ID preference, compatibility UI, and pre-start
 enforcement. The exact Qwen/Serena entry remains `development-only` behind its
 native gate; rejected entries remain `unsupported`. No standard recommendation
-or CPU fallback is therefore available, and recovery remains unimplemented.
+or CPU fallback is therefore available.
+
+M010 Milestone 4 subsequently implements the authorized desktop-local recovery
+controller. It composes existing player, coordinator, typed-client, and native
+supervisor boundaries to invalidate identity first, verify zero service/audio
+ownership, preserve the latest heard checkpoint, and expose at most one
+explicit restart. It adds no automatic retry, second worker, protocol/schema
+field, persisted recovery record, fallback, or support claim.
 
 ## Context
 
@@ -80,9 +87,9 @@ without immediate restart.
   unheard content.
 - A user may see fallback unavailable or no recommendation; that is an
   accepted truthful result.
-- Milestones 1-3 add no new production dependency, Tauri permission, standard
+- Milestones 1-4 add no new production dependency, Tauri permission, standard
   support claim, or CPU fallback. Only the bounded profile ID may be persisted;
-  raw host facts remain transient.
+  raw host facts remain transient and recovery diagnostics remain in memory.
 
 ## Alternatives considered
 

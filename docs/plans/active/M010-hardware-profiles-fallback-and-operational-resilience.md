@@ -493,17 +493,24 @@ measured host match and existing native development gate both pass.
 
 ### Status
 
-In progress as of 2026-07-28 on branch
+Complete locally as of 2026-07-28 on branch
 `feat/m010-m4-identity-safe-operational-recovery`, created from merged main
 commit `1d31382730bdc3cf7edfb4b664bb4ded4c6fb5be`.
 
-The implementation remains desktop-local. It will add one pure bounded
-recovery controller, classify only closed service/playback failures, compose
-the existing coordinator/client/player cleanup boundaries, preserve an
-in-memory canonical latest-heard locator, and expose one explicit accessible
-recovery action. It changes no shared schema, protocol-v1 field, Python
-service, native command or permission, dependency, buffer limit, narration
-segmentation, or persisted reader-state shape.
+Checkpoint `576fcbc` adds the pure bounded recovery controller and exhaustive
+transition/diagnostic tests. Checkpoint `02cc7b4` integrates verifiable PCM
+cleanup, closed service/playback classification, identity-first containment,
+zero-owner verification, latest-heard resume, fresh recovery identities, one
+explicit accessible restart, terminal containment, and compatibility
+recheck/profile-selection episode reset.
+
+The implementation remains desktop-local and changes no shared schema,
+protocol-v1 field, Python service, native command or permission, dependency,
+buffer limit, narration segmentation, or persisted reader-state shape.
+Focused coordinator/player/controller/UI tests pass (5 files, 42 tests).
+Portable, browser, release-packaged native, and full native Windows validation
+also pass as recorded below. Required pull-request checks remain the remote
+merge gate.
 
 ## Milestone 5: Freeze and evaluate a CPU-compatible fallback candidate
 
@@ -671,6 +678,26 @@ rewrite unrelated reader state.
 
 ## Progress log
 
+- 2026-07-28: Closed Milestone 4 local validation. Portable and full native
+  foundation checks pass; the complete browser matrix passes 6/6; and the
+  release-packaged native smoke passes. The native rerun exposed and corrected
+  a content-free harness defect where two fixed 24px comfort insets created an
+  impossible region inside a 38px DPI-scaled reader viewport. The replacement
+  keeps the 24px maximum but caps each inset at one quarter of available
+  height.
+- 2026-07-28: Implemented the Milestone 4 recovery authority in checkpoints
+  `576fcbc` and `02cc7b4`. Operational failures now replace identity before
+  bounded teardown, release PCM in four-unit turns with a completion promise,
+  terminate the supervised service, and verify zero client/scheduler/player
+  ownership before exposing any action. One explicit restart uses fresh
+  identities and the latest heard locator; mid-segment recovery replays the
+  segment start. Protocol failure, cancellation timeout, cleanup failure, and
+  failed/repeated recovery remain stable and non-retryable.
+- 2026-07-28: Added compact accessible recovery status/action presentation and
+  wired explicit compatibility recheck or successful profile selection as the
+  only in-session recovery-budget reset. The pure controller retains at most
+  eight frozen content-free diagnostic entries. Focused validation passes: 5
+  files / 42 tests plus desktop typechecking and `git diff --check`.
 - 2026-07-28: Started Milestone 4 sequentially on
   `feat/m010-m4-identity-safe-operational-recovery` from merged main
   `1d31382730bdc3cf7edfb4b664bb4ded4c6fb5be`. Re-read the frozen M010
@@ -812,15 +839,59 @@ rewrite unrelated reader state.
   top bar rather than create another fixed-shell row. Otherwise short native or
   Chromium viewports can lose the reader geometry required for active locator,
   highlight, and focus-safe following evidence.
+- Playback-backend failures arrive through an asynchronous callback; polling
+  previously returned a stable `failed` player observation without throwing.
+  The product coordinator must treat that closed state as an operational
+  playback failure rather than rely only on synchronous exceptions.
+- Releasing discarded PCM asynchronously is insufficient proof of cleanup.
+  Recovery therefore waits on the player's bounded cleanup-completion promise
+  and independently verifies zero retained/discarded units and zero scheduler
+  resource counters before a replacement run can exist.
+- `provider-unavailable` selects the compatibility/profile action, not the
+  service-restart action. The narration surface therefore directs the user to
+  compatibility controls and never presents a restart button that availability
+  gating would reject.
 
 ## Final validation results
 
-Milestones 1-3 implementation and validation are complete and recorded above.
-M010 remains in progress with Milestones 4 through 7 not started. The runtime
-can produce the canonical bounded host report, derive content-free
-compatibility, preserve only one bounded preference, and reject a changed host
-immediately before starting the development child. No supported recommendation,
-CPU fallback, recovery, or standard support claim is available.
+Milestones 1-4 implementation and local validation are complete and recorded
+above. M010 remains in progress with Milestones 5 through 7 not started. The
+runtime can produce the canonical bounded host report, derive content-free
+compatibility, preserve only one bounded preference, reject a changed host
+immediately before child start, and perform one identity-safe explicit
+recovery after verified cleanup. No supported recommendation, CPU fallback,
+automatic retry, or standard support claim is available.
+
+Milestone 4 validation results:
+
+- Focused recovery validation passed: 5 Vitest files / 42 tests plus desktop
+  TypeScript typechecking and `git diff --check`.
+- `pnpm.cmd check:portable`: passed formatting, TypeScript/Python lint and
+  typechecks, 20 shared files / 209 tests, 34 EPUB files / 555 tests, 42
+  desktop files / 393 tests plus 7 native-client tests, 234 Python tests, and
+  portable builds.
+- `pnpm.cmd test:browser`: the first run had one transient reading-line sample
+  miss; the exact focused rerun passed, then the complete matrix passed all 6
+  Playwright bodies.
+- `pnpm.cmd test:native-startup`: the release application built on every run.
+  The first two runs exposed a smoke-harness assumption: a fixed 24px top and
+  bottom comfort inset was impossible inside a 38px DPI-scaled reader
+  viewport, even though the accepted range intersected the real viewport.
+  Capping the inset at one quarter of the available height while retaining the
+  24px maximum corrected the content-free proof. The final release-packaged
+  smoke passed root mount, protocol/supervisor crash recovery, file lifecycle,
+  reader/synchronization, raster, persistence/restart, cleanup, and zero
+  external requests.
+- `pnpm.cmd check`: passed the complete native Windows foundation: formatting,
+  TypeScript/Rust/Python lint, typechecks, the TypeScript/Python suites above,
+  38 Rust tests, clippy, release Tauri build, and Python source/wheel builds.
+- Scope/privacy review passed. The implementation adds no private path, host
+  identity, EPUB, narration text outside test-local fixtures, generated audio,
+  model weight, secret, raw host report, persisted recovery record,
+  dependency, lockfile, Tauri permission, shared contract, or protocol field.
+  Recovery snapshots and diagnostics contain only closed codes/phases,
+  sequence, profile ID, counts, and durations; they contain no work identity,
+  locator, prose, PCM, path, timestamp, or dynamic error.
 
 Milestone 3 validation results:
 

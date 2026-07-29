@@ -448,8 +448,24 @@ when the native development gate also passes. The desktop persists at most the
 versioned bounded profile ID, re-probes at application start, explicit recheck,
 OS resume, and immediately before child start, and exposes only closed
 content-free states and reasons. No `supported` entry exists, so there is no
-automatic recommendation or CPU fallback. Identity-safe recovery remains
-later M010 work.
+automatic recommendation or CPU fallback.
+
+M010 Milestone 4 implements the frozen desktop-local recovery authority
+without changing shared schemas, protocol v1, native commands, Python service
+behavior, dependencies, buffer limits, or persisted reader state. A pure
+controller retains only the closed failure code, recovery phase, profile ID,
+bounded sequence, and at most eight frozen diagnostics. Operational failure
+replaces the active session/generation identity before aborting preparation,
+invalidating playback, releasing queued units, terminating the supervised
+service, and verifying zero client, scheduler, and player ownership. Only
+then can the compact narration surface expose one explicit restart. A fresh
+run receives new identities and resumes from the latest in-memory heard
+checkpoint; a mid-segment failure replays that segment from its start.
+Protocol rejection, cancellation timeout, cleanup failure, and a failed or
+repeated recovery remain contained or unavailable. Compatibility recheck or
+explicit profile selection starts a new episode but never starts narration.
+There is no automatic retry, duplicate worker, stale-audio reuse, new CPU
+fallback, or new support claim.
 
 The implemented audio-frame v1 boundary describes payload-free in-memory frame metadata with frame, session, generation, and narration-segment identities; monotonic sequence; positive sample rate, per-channel sample-frame count, and channel count; and an explicit end-of-segment marker. Duration is derived from sample count divided by sample rate. Public helpers return conservative whole milliseconds using exact integer arithmetic, sum samples before truncating once, and reject unsafe duration overflow. Contiguous single-segment runs reject duplicate frame IDs, sequence gaps or reversals, identity or format changes, and frames after the segment-end marker. The contract selects no codec, payload representation, audio API, player, or buffer policy.
 

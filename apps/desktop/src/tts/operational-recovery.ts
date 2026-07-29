@@ -10,9 +10,7 @@ import {
 } from "./hardware-profile-authority";
 
 export type RecoveryCleanupFailureCodeV1 =
-  | "cancellation-timeout"
-  | "cleanup-failed"
-  | "protocol-failed";
+  "cancellation-timeout" | "cleanup-failed" | "protocol-failed";
 
 export interface OperationalRecoveryDiagnosticV1 {
   readonly failureCode: RecoveryFailureCodeV1;
@@ -50,9 +48,7 @@ export class OperationalRecoveryStateError extends Error {
 const FAILURE_BY_CODE = new Map<
   RecoveryFailureCodeV1,
   RecoveryFailureAuthorityV1
->(
-  RECOVERY_FAILURE_AUTHORITY_V1.map((failure) => [failure.code, failure]),
-);
+>(RECOVERY_FAILURE_AUTHORITY_V1.map((failure) => [failure.code, failure]));
 
 function validProfileId(profileId: string): boolean {
   const bounds = HARDWARE_PROFILE_AUTHORITY_V1.registry;
@@ -64,9 +60,7 @@ function validProfileId(profileId: string): boolean {
   );
 }
 
-function failureFor(
-  code: RecoveryFailureCodeV1,
-): RecoveryFailureAuthorityV1 {
+function failureFor(code: RecoveryFailureCodeV1): RecoveryFailureAuthorityV1 {
   const failure = FAILURE_BY_CODE.get(code);
   if (failure === undefined) {
     throw new OperationalRecoveryStateError();
@@ -96,10 +90,7 @@ export class OperationalRecoveryController {
     return this.#snapshot;
   }
 
-  public detectFailure(
-    code: RecoveryFailureCodeV1,
-    profileId: string,
-  ): void {
+  public detectFailure(code: RecoveryFailureCodeV1, profileId: string): void {
     if (this.#phase !== "operational" || !validProfileId(profileId)) {
       throw new OperationalRecoveryStateError();
     }

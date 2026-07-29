@@ -421,6 +421,18 @@ describe("product narration coordinator", () => {
       availability: "unavailable",
       failure: "tts-profile-unavailable",
     });
+    await settleUntil(
+      () => coordinator.observe().recovery.phase === "recovery-available",
+    );
+    coordinator.resetRecoveryEpisode();
+    await settleUntil(() => coordinator.observe().availability === "available");
+    expect(coordinator.observe()).toMatchObject({
+      failure: undefined,
+      recovery: {
+        phase: "operational",
+        explicitAttemptUsed: false,
+      },
+    });
     await coordinator.close();
   });
 

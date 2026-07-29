@@ -609,8 +609,12 @@ async function installAdaptiveSynchronizationInstrumentation(driver) {
          state.rangeValid = false;
          return;
        }
-       const comfortTop = viewportBounds.top + 24;
-       const comfortBottom = viewportBounds.bottom - 24;
+       const comfortInset = Math.min(
+         24,
+         Math.max(0, viewportBounds.height / 4),
+       );
+       const comfortTop = viewportBounds.top + comfortInset;
+       const comfortBottom = viewportBounds.bottom - comfortInset;
        const inside =
          Number.isFinite(rect.top) &&
          Number.isFinite(rect.bottom) &&
@@ -912,8 +916,12 @@ async function adaptiveActiveHighlightPerceivability(driver) {
            return;
          }
          const viewportRect = viewport.getBoundingClientRect();
-         const comfortTop = viewportRect.top + 24;
-         const comfortBottom = viewportRect.bottom - 24;
+         const comfortInset = Math.min(
+           24,
+           Math.max(0, viewportRect.height / 4),
+         );
+         const comfortTop = viewportRect.top + comfortInset;
+         const comfortBottom = viewportRect.bottom - comfortInset;
          const currentHighlight = registry.get(highlightName);
          resolve({
            available: true,
@@ -3279,7 +3287,12 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
      readerViewport.scrollTop = 0;
      const readerViewportBounds = readerViewport.getBoundingClientRect();
      const beforeFollow = range.getBoundingClientRect();
-     const comfortInsetPx = 24;
+     // Keep the comfort band non-empty on short or DPI-scaled WebView2
+     // viewports while retaining the frozen 24px maximum on normal windows.
+     const comfortInsetPx = Math.min(
+       24,
+       Math.max(0, readerViewportBounds.height / 4),
+     );
      const comfortTop = readerViewportBounds.top + comfortInsetPx;
      const comfortBottom = readerViewportBounds.bottom - comfortInsetPx;
      const outsideBefore =
