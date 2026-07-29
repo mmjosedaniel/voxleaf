@@ -1,6 +1,6 @@
 {
   "profileVersion": "tts-cpu-fallback-profile-v6",
-  "status": "frozen-before-v6-pilot-and-official-results",
+  "status": "corrected-and-frozen-before-first-valid-v6-official-result",
   "acceptedAt": "2026-07-28",
   "purpose": "cpu-compatible-local-tts-fallback-selection",
   "authorities": {
@@ -138,6 +138,10 @@
       "after-five-media-seconds",
       "near-hard-mid-generation"
     ],
+    "cancellationCasePolicy": {
+      "defaultCaseId": "es-v6-arrival",
+      "nearHardCaseId": "es-v6-date-time"
+    },
     "timeoutsMilliseconds": {
       "coldLoad": 120000,
       "generation": 120000,

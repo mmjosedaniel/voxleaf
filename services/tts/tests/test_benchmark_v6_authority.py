@@ -33,7 +33,7 @@ from benchmarks.contracts import (
     MemoryObservation,
     SummaryMetadata,
 )
-from benchmarks.harness import load_corpus
+from benchmarks.harness import _cancellation_cases, load_corpus
 from benchmarks.raw import RawMeasurementJournal
 from benchmarks.summary import build_summary, load_schema, promote_summary, schema_registry
 
@@ -103,6 +103,13 @@ def test_v6_corpus_declares_exact_sizes_and_orders_each_case_once() -> None:
         text = cast(str, case["text"])
         assert len(text) == case["codePointCount"]
         assert len(text.encode("utf-8")) == case["utf8ByteCount"]
+
+
+def test_v6_cancellation_cases_are_frozen_and_resolvable() -> None:
+    corpus = load_corpus(CORPUS_PATH)
+    default_case, near_hard_case = _cancellation_cases(corpus)
+    assert default_case.case_id == "es-v6-arrival"
+    assert near_hard_case.case_id == "es-v6-date-time"
 
 
 def test_v6_adapter_forces_cpu_and_publishes_bounded_sample_chunks(

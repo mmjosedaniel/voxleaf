@@ -547,8 +547,12 @@ merge gate.
 In progress. The exact Piper 1.4.2 / `es_ES-davefx-medium` CPU candidate,
 isolated lock, normalized synthetic corpus, schemas, performance/quality
 gates, cancellation/cleanup rules, offline controls, and GPL/CC0 packaging
-obligations are frozen in `profile-v6` before any Piper synthesis result.
-CPU fallback remains unsupported until the later official execution and
+obligations are frozen in `profile-v6`. An invalid first runner session
+exposed an obsolete v1 cancellation-case lookup after performance collection
+and before all cancellation, memory, and cleanup evidence. Its observations
+are not candidate evidence and cannot be promoted. Corrected v6 authority
+binds both cancellation case identifiers before the first valid official
+execution. CPU fallback remains unsupported until that execution and the
 content-safe selection pass every conjunctive gate.
 
 ## Milestone 6: Integrate admitted profiles and run the resilience matrix
@@ -723,6 +727,22 @@ rewrite unrelated reader state.
   No pilot, official waveform, raw performance session, or listening material
   was produced. An elevated Windows administrator must replace that exact
   firewall binding before execution can continue.
+- 2026-07-28: After the administrator bound the outbound firewall rule to the
+  isolated Piper interpreter, preflight passed every frozen artifact,
+  isolation, interpreter, Windows x86_64, CPU, RAM, disk, power, provider, and
+  memory-probe check. Invalid session
+  `a4e4c1ed76f246b49260125db2d7f4de` then completed 5 cold loads, 16 warm
+  generations, and 24 sustained generations before the shared runner raised
+  `crash` while resolving the obsolete v1-only
+  `es-narrative-near-hard` case. It produced zero cancellation trials and no
+  memory result, so it is incomplete runner evidence rather than a Piper
+  failure and is forbidden from assessment or promotion.
+- 2026-07-28: Corrected `profile-v6` freezes `es-v6-arrival` for the four
+  ordinary cancellation races and `es-v6-date-time` for the near-hard race.
+  The harness resolves these versioned cases explicitly, and a regression
+  test proves both are present. This authority correction precedes the first
+  valid official execution; the invalid raw session is retained only until
+  its failure and cleanup are durably recorded.
 - 2026-07-28: Closed Milestone 4 local validation. Portable and full native
   foundation checks pass; the complete browser matrix passes 6/6; and the
   release-packaged native smoke passes. The native rerun exposed and corrected

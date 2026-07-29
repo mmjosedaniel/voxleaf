@@ -31,7 +31,7 @@ PROFILE_V3_INSTRUCTION_SHA256: Final = (
 PROFILE_V3_GENERATION_SHA256: Final = (
     "1a03c4c5af681d0285200377b2321dd547d92f65c90649d8f36f0c31c25c263e"
 )
-PROFILE_V6_SHA256: Final = "f8828876715e3ceafddebf59063b3651f5a007c8bb6512cf4df11e14488b7c34"
+PROFILE_V6_SHA256: Final = "ec0ef6aceedfc2ed4df199cc276b5c8365f979921311a7d2cd3d813546e1bd48"
 PROFILE_V6_CONFIGURATION_SHA256: Final = (
     "9e9b1a93aed70cfdbdd8dd8141d2a7edb363530372387d7596bb4ef8d46bd918"
 )
@@ -508,7 +508,7 @@ def load_v6_candidate_profile(repository_root: Path, candidate_id: str) -> Candi
     profile = _read_manifest(profile_path)
     if (
         profile.get("profileVersion") != "tts-cpu-fallback-profile-v6"
-        or profile.get("status") != "frozen-before-v6-pilot-and-official-results"
+        or profile.get("status") != "corrected-and-frozen-before-first-valid-v6-official-result"
         or profile.get("purpose") != "cpu-compatible-local-tts-fallback-selection"
     ):
         raise AdapterConfigurationError("authority")
@@ -628,6 +628,11 @@ def load_v6_candidate_profile(repository_root: Path, candidate_id: str) -> Candi
         or execution.get("modelLifetime")
         != "one-resident-instance-per-session-and-complete-identity"
         or execution.get("maximumPublishedChunkMilliseconds") != 250
+        or execution.get("cancellationCasePolicy")
+        != {
+            "defaultCaseId": "es-v6-arrival",
+            "nearHardCaseId": "es-v6-date-time",
+        }
         or execution.get("whisper") != "excluded"
         or execution.get("vadOrEnergy") != "excluded"
         or execution.get("referenceAudio") != "forbidden"

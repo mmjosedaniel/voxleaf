@@ -2,12 +2,17 @@
 
 ## Status and authority
 
-This document records the pre-result authority for M010 Milestone 5. The
+This document records the corrected pre-valid-result authority for M010
+Milestone 5. The
 normative machine-readable authority is
 [`profile-v6.json`](../../benchmarks/tts/profile-v6.json), SHA-256
-`f8828876715e3ceafddebf59063b3651f5a007c8bb6512cf4df11e14488b7c34`.
-It was frozen before any Piper pilot, official waveform, listening score, or
-selection result.
+`ec0ef6aceedfc2ed4df199cc276b5c8365f979921311a7d2cd3d813546e1bd48`.
+Its initial form was frozen before any Piper waveform. An incomplete runner
+session later exposed an obsolete v1 cancellation-case lookup after
+performance observations but before cancellation and memory evidence. Those
+observations are invalid and cannot be assessed or promoted. This corrected
+form was frozen before the first valid v6 official execution, any listening
+score, or any selection result.
 
 The evaluation candidate is Piper `1.4.2` with the
 `es_ES-davefx-medium` voice at the exact revisions and artifact hashes in
@@ -53,6 +58,11 @@ followed by five cold-load observations, two ordered warm passes
 media or ten rounds, and the five inherited cancellation races. Automatic
 retries and configuration switching are forbidden; the first attempt is
 authoritative.
+
+The four ordinary cancellation races use `es-v6-arrival`. The
+`near-hard-mid-generation` race uses `es-v6-date-time`. These identifiers are
+part of the frozen v6 authority; the runner must not inherit a case identifier
+from an earlier corpus version.
 
 Piper natively completes one sentence before yielding its audio. The adapter
 may split that completed audio into bounded metadata chunks no longer than

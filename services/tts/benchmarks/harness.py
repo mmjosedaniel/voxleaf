@@ -159,6 +159,22 @@ def _forbidden_values(corpus: BenchmarkCorpus) -> tuple[str, ...]:
     )
 
 
+def _cancellation_cases(corpus: BenchmarkCorpus) -> tuple[CorpusCase, CorpusCase]:
+    if corpus.corpus_version == "tts-cpu-fallback-corpus-v6":
+        try:
+            return (
+                corpus.cases["es-v6-arrival"],
+                corpus.cases["es-v6-date-time"],
+            )
+        except KeyError:
+            _fail("invalid-request")
+    try:
+        first_case = corpus.cases[corpus.performance_order[0]]
+        return first_case, corpus.cases["es-narrative-near-hard"]
+    except (IndexError, KeyError):
+        _fail("invalid-request")
+
+
 def _validate_request(request: GenerationRequest) -> None:
     if (
         not request.request_id
@@ -654,9 +670,11 @@ class BenchmarkHarness:
 
             cancellation_observations: list[CancellationObservation] = []
             cancellation_failures = 0
-            near_hard_case = corpus.cases["es-narrative-near-hard"]
+            cancellation_case, near_hard_case = _cancellation_cases(corpus)
             for trial_index, trial_id in enumerate(CANCELLATION_TRIAL_ORDER, start=1):
-                case = near_hard_case if trial_id == "near-hard-mid-generation" else first_case
+                case = (
+                    near_hard_case if trial_id == "near-hard-mid-generation" else cancellation_case
+                )
                 try:
                     cancellation_observation = self.observe_cancellation(
                         main_adapter,
