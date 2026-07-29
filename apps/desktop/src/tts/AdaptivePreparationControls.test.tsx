@@ -176,7 +176,7 @@ describe("adaptive preparation controls", () => {
     );
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Brief planned pause while local speech catches up.",
+      "Brief pause between narration passages.",
     );
     expect(screen.getByRole("status")).toHaveTextContent(
       "Audio is running low.",

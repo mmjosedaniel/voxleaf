@@ -74,6 +74,10 @@ export interface AdaptivePcmPlayerObservation {
   readonly volumePercent: number;
   readonly playbackRate: 1;
   readonly activeSequence: number | undefined;
+  readonly intentionalTransitionPauseActive: boolean;
+  readonly intentionalTransitionPauseMs: number;
+  readonly intentionalTransitionPauseRemainingMs: number;
+  readonly completedTransitionPauseCount: number;
   readonly retainedAudioUnitCount: number;
   readonly discardedAudioUnitCount: number;
 }
@@ -100,12 +104,36 @@ interface ActiveAudibleUnit {
   readonly sequence: number;
   readonly sourceRange: LocatorRangeV1;
   readonly sampleCountSamples: number;
+  readonly transitionPauseMs: number;
 }
 
 export type CleanupTurnScheduler = (callback: () => void) => void;
+export type TransitionPauseScheduler = (
+  callback: () => void,
+  delayMs: number,
+) => unknown;
+export type TransitionPauseCanceller = (handle: unknown) => void;
+
+interface PendingTransitionPause {
+  readonly token: number;
+  remainingMs: number;
+  startedAtMs: number | undefined;
+  handle: unknown;
+}
 
 function defaultCleanupTurnScheduler(callback: () => void): void {
   globalThis.setTimeout(callback, 0);
+}
+
+function defaultTransitionPauseScheduler(
+  callback: () => void,
+  delayMs: number,
+): unknown {
+  return globalThis.setTimeout(callback, delayMs);
+}
+
+function defaultTransitionPauseCanceller(handle: unknown): void {
+  globalThis.clearTimeout(handle as ReturnType<typeof globalThis.setTimeout>);
 }
 
 function validVolumePercent(value: number): boolean {
@@ -138,6 +166,8 @@ export class AdaptivePcmPlayer {
   readonly #scheduler: AdaptiveBufferScheduler;
   readonly #backend: PcmPlaybackBackend;
   readonly #scheduleCleanupTurn: CleanupTurnScheduler;
+  readonly #scheduleTransitionPause: TransitionPauseScheduler;
+  readonly #cancelTransitionPause: TransitionPauseCanceller;
   readonly #audibleProgressListeners = new Set<
     (observation: AdaptivePcmAudibleProgressObservation) => void
   >();
@@ -153,15 +183,23 @@ export class AdaptivePcmPlayer {
   #terminalState: "stopped" | "failed" | undefined;
   #invalidationTransition: "cancel" | "shutdown" | undefined;
   #cleanupScheduled = false;
+  #transitionPause: PendingTransitionPause | undefined;
+  #transitionPauseToken = 0;
+  #completedTransitionPauseCount = 0;
+  #completedTransitionPauseMs = 0;
 
   public constructor(
     scheduler: AdaptiveBufferScheduler,
     backend: PcmPlaybackBackend,
     scheduleCleanupTurn: CleanupTurnScheduler = defaultCleanupTurnScheduler,
+    scheduleTransitionPause: TransitionPauseScheduler = defaultTransitionPauseScheduler,
+    cancelTransitionPause: TransitionPauseCanceller = defaultTransitionPauseCanceller,
   ) {
     this.#scheduler = scheduler;
     this.#backend = backend;
     this.#scheduleCleanupTurn = scheduleCleanupTurn;
+    this.#scheduleTransitionPause = scheduleTransitionPause;
+    this.#cancelTransitionPause = cancelTransitionPause;
   }
 
   public synchronize(): AdaptivePcmPlayerObservation {
@@ -169,8 +207,13 @@ export class AdaptivePcmPlayer {
       return this.#observation();
     }
     this.#refreshProgress();
+    this.#settleElapsedTransitionPause();
     const observation = this.#scheduler.observe();
-    if (observation.playbackState === "playing" && this.#handle === undefined) {
+    if (
+      observation.playbackState === "playing" &&
+      this.#handle === undefined &&
+      this.#transitionPause === undefined
+    ) {
       this.#startCurrentUnit();
     }
     return this.#observation();
@@ -188,14 +231,17 @@ export class AdaptivePcmPlayer {
   public pause(): AdaptivePcmPlayerObservation {
     this.#expectActive();
     this.synchronize();
-    if (
-      this.#scheduler.observe().playbackState !== "playing" ||
-      this.#handle === undefined
-    ) {
+    if (this.#scheduler.observe().playbackState !== "playing") {
       throw new PcmPlaybackError("invalid-state");
     }
-    this.#handle.pause();
-    this.#refreshProgress();
+    if (this.#handle !== undefined) {
+      this.#handle.pause();
+      this.#refreshProgress();
+    } else if (this.#transitionPause !== undefined) {
+      this.#freezeTransitionPause();
+    } else {
+      throw new PcmPlaybackError("invalid-state");
+    }
     this.#scheduler.pausePlayback();
     return this.#observation();
   }
@@ -204,12 +250,16 @@ export class AdaptivePcmPlayer {
     this.#expectActive();
     if (
       this.#scheduler.observe().playbackState !== "paused" ||
-      this.#handle === undefined
+      (this.#handle === undefined && this.#transitionPause === undefined)
     ) {
       throw new PcmPlaybackError("invalid-state");
     }
-    this.#handle.resume();
     this.#scheduler.resumePlayback();
+    if (this.#handle !== undefined) {
+      this.#handle.resume();
+    } else if (this.#transitionPause !== undefined) {
+      this.#startTransitionPauseTimer(this.#transitionPause);
+    }
     return this.synchronize();
   }
 
@@ -297,6 +347,7 @@ export class AdaptivePcmPlayer {
         sequence: unit.sequence,
         sourceRange: unit.sourceRange,
         sampleCountSamples: unit.metadata.sampleCountSamples,
+        transitionPauseMs: unit.transitionPauseMs,
       });
       this.#lastProgressObservationAtMs =
         this.#scheduler.observe().observedAtMs;
@@ -334,6 +385,12 @@ export class AdaptivePcmPlayer {
     const observation = this.#scheduler.observe();
     if (observation.playbackState === "buffering") {
       this.#underrunCount += 1;
+    } else if (
+      observation.playbackState === "playing" &&
+      completedUnit.transitionPauseMs > 0 &&
+      this.#scheduler.currentPlaybackUnit() !== undefined
+    ) {
+      this.#beginTransitionPause(completedUnit.transitionPauseMs);
     }
     this.synchronize();
   }
@@ -378,6 +435,7 @@ export class AdaptivePcmPlayer {
       return this.#invalidationTransition ?? "shutdown";
     }
     this.#terminalState = terminalState;
+    this.#cancelPendingTransitionPause();
     const transition = this.#scheduler.invalidate();
     this.#invalidationTransition = transition;
     const handle = this.#handle;
@@ -393,6 +451,147 @@ export class AdaptivePcmPlayer {
     if (this.#terminalState === undefined) {
       this.#invalidate("failed");
     }
+  }
+
+  #beginTransitionPause(durationMs: number): void {
+    if (
+      this.#transitionPause !== undefined ||
+      !Number.isSafeInteger(durationMs) ||
+      durationMs <= 0
+    ) {
+      throw new PcmPlaybackError("invalid-state");
+    }
+    const pending: PendingTransitionPause = {
+      token: ++this.#transitionPauseToken,
+      remainingMs: durationMs,
+      startedAtMs: undefined,
+      handle: undefined,
+    };
+    this.#transitionPause = pending;
+    this.#startTransitionPauseTimer(pending);
+  }
+
+  #startTransitionPauseTimer(pending: PendingTransitionPause): void {
+    if (
+      this.#transitionPause !== pending ||
+      pending.remainingMs <= 0 ||
+      pending.startedAtMs !== undefined ||
+      this.#scheduler.observe().playbackState !== "playing"
+    ) {
+      throw new PcmPlaybackError("invalid-state");
+    }
+    pending.startedAtMs = this.#scheduler.observe().observedAtMs;
+    pending.handle = this.#scheduleTransitionPause(() => {
+      this.#finishTransitionPauseTimer(pending);
+    }, pending.remainingMs);
+  }
+
+  #finishTransitionPauseTimer(pending: PendingTransitionPause): void {
+    if (
+      this.#terminalState !== undefined ||
+      this.#transitionPause !== pending ||
+      pending.token !== this.#transitionPauseToken
+    ) {
+      return;
+    }
+    pending.handle = undefined;
+    this.#captureTransitionPauseElapsed(pending);
+    if (pending.remainingMs > 0) {
+      this.#startTransitionPauseTimer(pending);
+      return;
+    }
+    this.#transitionPause = undefined;
+    this.#completedTransitionPauseCount += 1;
+    this.synchronize();
+  }
+
+  #settleElapsedTransitionPause(): void {
+    const pending = this.#transitionPause;
+    if (
+      pending === undefined ||
+      pending.startedAtMs === undefined ||
+      this.#scheduler.observe().observedAtMs - pending.startedAtMs <
+        pending.remainingMs
+    ) {
+      return;
+    }
+    if (pending.handle !== undefined) {
+      this.#cancelTransitionPause(pending.handle);
+      pending.handle = undefined;
+    }
+    this.#captureTransitionPauseElapsed(pending);
+    if (pending.remainingMs !== 0) {
+      throw new PcmPlaybackError("invalid-state");
+    }
+    this.#transitionPause = undefined;
+    this.#completedTransitionPauseCount += 1;
+  }
+
+  #freezeTransitionPause(): void {
+    const pending = this.#transitionPause;
+    if (pending === undefined || pending.startedAtMs === undefined) {
+      throw new PcmPlaybackError("invalid-state");
+    }
+    if (pending.handle !== undefined) {
+      this.#cancelTransitionPause(pending.handle);
+      pending.handle = undefined;
+    }
+    this.#captureTransitionPauseElapsed(pending);
+  }
+
+  #captureTransitionPauseElapsed(pending: PendingTransitionPause): void {
+    const startedAtMs = pending.startedAtMs;
+    if (startedAtMs === undefined) {
+      return;
+    }
+    const elapsedMs = Math.min(
+      pending.remainingMs,
+      Math.max(0, this.#scheduler.observe().observedAtMs - startedAtMs),
+    );
+    pending.remainingMs -= elapsedMs;
+    pending.startedAtMs = undefined;
+    this.#completedTransitionPauseMs += elapsedMs;
+  }
+
+  #cancelPendingTransitionPause(): void {
+    const pending = this.#transitionPause;
+    if (pending?.handle !== undefined) {
+      this.#cancelTransitionPause(pending.handle);
+    }
+    this.#transitionPause = undefined;
+    this.#transitionPauseToken += 1;
+  }
+
+  #transitionPauseRemainingMs(): number {
+    const pending = this.#transitionPause;
+    if (pending === undefined) {
+      return 0;
+    }
+    if (pending.startedAtMs === undefined) {
+      return pending.remainingMs;
+    }
+    return Math.max(
+      0,
+      pending.remainingMs -
+        (this.#scheduler.observe().observedAtMs - pending.startedAtMs),
+    );
+  }
+
+  #intentionalTransitionPauseMs(): number {
+    const pending = this.#transitionPause;
+    if (pending?.startedAtMs === undefined) {
+      return this.#completedTransitionPauseMs;
+    }
+    return (
+      this.#completedTransitionPauseMs +
+      Math.min(
+        pending.remainingMs,
+        Math.max(
+          0,
+          this.#scheduler.observe().observedAtMs - pending.startedAtMs,
+        ),
+      )
+    );
   }
 
   #scheduleCleanup(): void {
@@ -458,6 +657,12 @@ export class AdaptivePcmPlayer {
       volumePercent: this.#volumePercent,
       playbackRate: 1,
       activeSequence: this.#handle?.sequence,
+      intentionalTransitionPauseActive:
+        this.#transitionPause?.startedAtMs !== undefined &&
+        scheduler.playbackState === "playing",
+      intentionalTransitionPauseMs: this.#intentionalTransitionPauseMs(),
+      intentionalTransitionPauseRemainingMs: this.#transitionPauseRemainingMs(),
+      completedTransitionPauseCount: this.#completedTransitionPauseCount,
       retainedAudioUnitCount: scheduler.retainedAudioUnitCount,
       discardedAudioUnitCount: scheduler.discardedAudioUnitCount,
     });

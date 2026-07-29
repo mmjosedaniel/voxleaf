@@ -21,7 +21,10 @@ import {
   type PcmPlaybackCallbacks,
   type PcmPlaybackHandle,
   type PcmPlaybackRequest,
+  type TransitionPauseCanceller,
+  type TransitionPauseScheduler,
 } from "./pcm-playback";
+import type { PlaybackTransitionPauseMs } from "./playback-transition-policy";
 
 const IDENTITY = Object.freeze({
   sessionId: "session:synthetic-playback-1",
@@ -129,6 +132,36 @@ class ManualPcmPlaybackBackend implements PcmPlaybackBackend {
   }
 }
 
+interface ManualTransitionTimer {
+  readonly callback: () => void;
+  readonly delayMs: number;
+  cancelled: boolean;
+}
+
+class ManualTransitionTimers {
+  readonly timers: ManualTransitionTimer[] = [];
+
+  public readonly schedule: TransitionPauseScheduler = (callback, delayMs) => {
+    const timer: ManualTransitionTimer = {
+      callback,
+      delayMs,
+      cancelled: false,
+    };
+    this.timers.push(timer);
+    return timer;
+  };
+
+  public readonly cancel: TransitionPauseCanceller = (handle) => {
+    (handle as ManualTransitionTimer).cancelled = true;
+  };
+
+  public run(timer: ManualTransitionTimer): void {
+    if (!timer.cancelled) {
+      timer.callback();
+    }
+  }
+}
+
 class FakeAudioBuffer {
   readonly channel: Float32Array;
 
@@ -225,7 +258,10 @@ class FakeAudioContext {
   }
 }
 
-function segment(index: number): AdaptiveBufferPreparedSegment {
+function segment(
+  index: number,
+  transitionPauseMs: PlaybackTransitionPauseMs = 0,
+): AdaptiveBufferPreparedSegment {
   return Object.freeze({
     segmentId: `segment:synthetic-playback-${index}`,
     sequence: index - 1,
@@ -243,6 +279,7 @@ function segment(index: number): AdaptiveBufferPreparedSegment {
     narrationCodePoints: 20,
     narrationUtf8Bytes: 20,
     sentenceCount: 1,
+    transitionPauseMs,
   });
 }
 
@@ -323,6 +360,192 @@ function runCleanupTurns(turns: Array<() => void>): void {
 }
 
 describe("adaptive PCM playback", () => {
+  it("waits by semantic transition without allocating or consuming audio", () => {
+    const clock = createManualClock(0);
+    const segments = [segment(1, 300), segment(2)];
+    const scheduler = readyScheduler(clock, segments, true);
+    const first = synthesize(scheduler, segments[0]!, 8_000);
+    const second = synthesize(scheduler, segments[1]!, 8_000);
+    const backend = new ManualPcmPlaybackBackend(clock);
+    const timers = new ManualTransitionTimers();
+    const player = new AdaptivePcmPlayer(
+      scheduler,
+      backend,
+      (callback) => callback(),
+      timers.schedule,
+      timers.cancel,
+    );
+    const events: AdaptivePcmAudibleProgressObservation[] = [];
+    player.subscribeAudibleProgress((event) => events.push(event));
+
+    player.synchronize();
+    clock.advanceBy(8_000);
+    backend.pump();
+
+    expect(player.synchronize()).toMatchObject({
+      state: "playing",
+      activeSequence: undefined,
+      playableDurationMs: 8_000,
+      intentionalTransitionPauseActive: true,
+      intentionalTransitionPauseRemainingMs: 300,
+      completedTransitionPauseCount: 0,
+    });
+    expect(timers.timers.at(-1)?.delayMs).toBe(300);
+    expect(backend.startedSequences).toEqual([0]);
+    expect(first.releaseCount).toBe(1);
+    expect(second.releaseCount).toBe(0);
+    expect(events.at(-1)).toMatchObject({
+      kind: "segment-completed",
+      sequence: 0,
+    });
+
+    clock.advanceBy(299);
+    expect(player.synchronize()).toMatchObject({
+      activeSequence: undefined,
+      intentionalTransitionPauseRemainingMs: 1,
+    });
+    clock.advanceBy(1);
+    expect(player.synchronize()).toMatchObject({
+      activeSequence: 1,
+      intentionalTransitionPauseActive: false,
+      intentionalTransitionPauseMs: 300,
+      intentionalTransitionPauseRemainingMs: 0,
+      completedTransitionPauseCount: 1,
+    });
+    expect(backend.startedSequences).toEqual([0, 1]);
+    expect(timers.timers.at(-1)?.cancelled).toBe(true);
+    expect(events.at(-1)).toMatchObject({
+      kind: "segment-started",
+      sequence: 1,
+    });
+  });
+
+  it("freezes and resumes only the remaining transition pause", () => {
+    const clock = createManualClock(0);
+    const segments = [segment(1, 600), segment(2)];
+    const scheduler = readyScheduler(clock, segments, true);
+    synthesize(scheduler, segments[0]!, 8_000);
+    synthesize(scheduler, segments[1]!, 8_000);
+    const backend = new ManualPcmPlaybackBackend(clock);
+    const timers = new ManualTransitionTimers();
+    const player = new AdaptivePcmPlayer(
+      scheduler,
+      backend,
+      (callback) => callback(),
+      timers.schedule,
+      timers.cancel,
+    );
+
+    player.synchronize();
+    clock.advanceBy(8_000);
+    backend.pump();
+    clock.advanceBy(200);
+    expect(player.pause()).toMatchObject({
+      state: "paused",
+      intentionalTransitionPauseActive: false,
+      intentionalTransitionPauseMs: 200,
+      intentionalTransitionPauseRemainingMs: 400,
+    });
+    const firstTimer = timers.timers[0]!;
+    expect(firstTimer.cancelled).toBe(true);
+
+    clock.advanceBy(2_000);
+    expect(player.synchronize()).toMatchObject({
+      state: "paused",
+      intentionalTransitionPauseMs: 200,
+      intentionalTransitionPauseRemainingMs: 400,
+    });
+    player.resume();
+    expect(timers.timers.at(-1)?.delayMs).toBe(400);
+    clock.advanceBy(399);
+    expect(player.synchronize().activeSequence).toBeUndefined();
+    clock.advanceBy(1);
+    expect(player.synchronize()).toMatchObject({
+      state: "playing",
+      activeSequence: 1,
+      intentionalTransitionPauseMs: 600,
+      completedTransitionPauseCount: 1,
+    });
+  });
+
+  it("does not compound real buffering or delay the final unit", () => {
+    const clock = createManualClock(0);
+    const segments = [segment(1, 600), segment(2, 1_200)];
+    const scheduler = readyScheduler(clock, segments, true);
+    synthesize(scheduler, segments[0]!, 16_000);
+    const backend = new ManualPcmPlaybackBackend(clock);
+    const timers = new ManualTransitionTimers();
+    const player = new AdaptivePcmPlayer(
+      scheduler,
+      backend,
+      (callback) => callback(),
+      timers.schedule,
+      timers.cancel,
+    );
+
+    player.synchronize();
+    clock.advanceBy(16_000);
+    backend.pump();
+    expect(player.synchronize()).toMatchObject({
+      state: "buffering",
+      underrunCount: 1,
+      intentionalTransitionPauseMs: 0,
+      intentionalTransitionPauseRemainingMs: 0,
+    });
+    expect(timers.timers).toHaveLength(0);
+
+    synthesize(scheduler, segments[1]!, 16_000);
+    expect(player.synchronize()).toMatchObject({
+      state: "playing",
+      activeSequence: 1,
+      intentionalTransitionPauseActive: false,
+    });
+    clock.advanceBy(16_000);
+    backend.pump();
+    expect(player.synchronize()).toMatchObject({
+      state: "complete",
+      activeSequence: undefined,
+      intentionalTransitionPauseMs: 0,
+    });
+    expect(timers.timers).toHaveLength(0);
+  });
+
+  it("cancels a pending transition before stale cleanup and ignores its late callback", () => {
+    const clock = createManualClock(0);
+    const segments = [segment(1, 750), segment(2)];
+    const scheduler = readyScheduler(clock, segments, true);
+    synthesize(scheduler, segments[0]!, 8_000);
+    synthesize(scheduler, segments[1]!, 8_000);
+    const backend = new ManualPcmPlaybackBackend(clock);
+    const timers = new ManualTransitionTimers();
+    const cleanupTurns: Array<() => void> = [];
+    const player = new AdaptivePcmPlayer(
+      scheduler,
+      backend,
+      (callback) => cleanupTurns.push(callback),
+      timers.schedule,
+      timers.cancel,
+    );
+
+    player.synchronize();
+    clock.advanceBy(8_000);
+    backend.pump();
+    const lateTimer = timers.timers[0]!;
+    expect(player.synchronize().intentionalTransitionPauseActive).toBe(true);
+
+    expect(player.stop()).toBe("shutdown");
+    expect(lateTimer.cancelled).toBe(true);
+    lateTimer.callback();
+    expect(player.synchronize()).toMatchObject({
+      state: "stopped",
+      activeSequence: undefined,
+      intentionalTransitionPauseActive: false,
+      intentionalTransitionPauseRemainingMs: 0,
+    });
+    expect(backend.startedSequences).toEqual([0]);
+    runCleanupTurns(cleanupTurns);
+  });
+
   it("publishes exact FIFO transitions and progress no more often than every 250 ms", () => {
     const clock = createManualClock(0);
     const segments = [segment(1), segment(2)];

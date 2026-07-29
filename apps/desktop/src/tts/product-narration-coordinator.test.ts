@@ -22,6 +22,8 @@ import {
   type PcmPlaybackCallbacks,
   type PcmPlaybackHandle,
   type PcmPlaybackRequest,
+  type TransitionPauseCanceller,
+  type TransitionPauseScheduler,
 } from "./pcm-playback";
 import {
   ProductNarrationCoordinator,
@@ -81,6 +83,36 @@ class FakePlaybackBackend implements PcmPlaybackBackend {
   public close(): void {
     this.closed = true;
     this.active = undefined;
+  }
+}
+
+interface ManualTransitionTimer {
+  readonly callback: () => void;
+  readonly delayMs: number;
+  cancelled: boolean;
+}
+
+class ManualTransitionTimers {
+  readonly timers: ManualTransitionTimer[] = [];
+
+  public readonly schedule: TransitionPauseScheduler = (callback, delayMs) => {
+    const timer: ManualTransitionTimer = {
+      callback,
+      delayMs,
+      cancelled: false,
+    };
+    this.timers.push(timer);
+    return timer;
+  };
+
+  public readonly cancel: TransitionPauseCanceller = (handle) => {
+    (handle as ManualTransitionTimer).cancelled = true;
+  };
+
+  public run(timer: ManualTransitionTimer): void {
+    if (!timer.cancelled) {
+      timer.callback();
+    }
   }
 }
 
@@ -242,11 +274,12 @@ function preparedSegment(
   text: string,
   range = SOURCE_RANGE,
   sentenceCount = 1,
+  boundaryReason: PreparedNarrationSegment["boundaryReason"] = "hard-limit",
 ): PreparedNarrationSegment {
   return Object.freeze({
     text: text as PreparedNarrationSegment["text"],
     sourceRange: range,
-    boundaryReason: "sentence",
+    boundaryReason,
     measurements: Object.freeze({
       sourceCodePoints: createIndex(12),
       narrationCodePoints: createIndex(Array.from(text).length),
@@ -357,6 +390,7 @@ function createHarness(
     options.configurationAvailability ?? "available";
   client.blockSynthesis = options.blockSynthesis ?? false;
   const backend = new FakePlaybackBackend();
+  const transitionTimers = new ManualTransitionTimers();
   const prepareNarration = vi.fn<OpenedPublication["prepareNarration"]>(
     options.prepareNarration ??
       (async () => options.result ?? completeResult()),
@@ -369,7 +403,13 @@ function createHarness(
     createIdentifier: (kind, sequence) =>
       `${kind}:product-test-${String(sequence)}`,
     createPlayer: (scheduler: AdaptiveBufferScheduler) =>
-      new AdaptivePcmPlayer(scheduler, backend, (callback) => callback()),
+      new AdaptivePcmPlayer(
+        scheduler,
+        backend,
+        (callback) => callback(),
+        transitionTimers.schedule,
+        transitionTimers.cancel,
+      ),
     setInterval: (callback) => {
       intervals.push(callback);
       return callback;
@@ -396,6 +436,7 @@ function createHarness(
     coordinator,
     intervals,
     prepareNarration,
+    transitionTimers,
   };
 }
 
@@ -410,6 +451,55 @@ async function settleUntil(predicate: () => boolean): Promise<void> {
 }
 
 describe("product narration coordinator", () => {
+  it("separates buffered generated units by semantic boundary and reports only intentional time", async () => {
+    const firstRange = sourceRange(0, 12);
+    const secondRange = sourceRange(12, 24);
+    const first = preparedSegment(
+      "Primera oración sintética.",
+      firstRange,
+      1,
+      "sentence",
+    );
+    const second = preparedSegment("Segunda oración sintética.", secondRange);
+    const { backend, client, clock, coordinator, intervals, transitionTimers } =
+      createHarness({
+        result: completeSegments([first, second]),
+      });
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => client.synthesized.length === 2);
+    expect(backend.active?.request.sequence).toBe(0);
+
+    backend.finish();
+    intervals[0]?.();
+    expect(transitionTimers.timers).toHaveLength(1);
+    expect(transitionTimers.timers[0]?.delayMs).toBe(300);
+    expect(coordinator.observe()).toMatchObject({
+      state: { phase: "intentional-wait" },
+      metrics: {
+        intentionalWaitMs: 0,
+        underrunCount: 0,
+      },
+    });
+
+    clock.advance(300);
+    transitionTimers.run(transitionTimers.timers[0]!);
+    intervals[0]?.();
+    expect(backend.active?.request.sequence).toBe(1);
+    expect(coordinator.observe()).toMatchObject({
+      state: { phase: "playing" },
+      metrics: {
+        intentionalWaitMs: 300,
+        underrunCount: 0,
+      },
+    });
+    const serialized = JSON.stringify(coordinator.observe());
+    expect(serialized).not.toContain(first.text);
+    expect(serialized).not.toContain(second.text);
+    await coordinator.close();
+  });
+
   it("does not expose the model-free service as product narration", async () => {
     const { client, coordinator, prepareNarration } = createHarness({
       availability: "unavailable",

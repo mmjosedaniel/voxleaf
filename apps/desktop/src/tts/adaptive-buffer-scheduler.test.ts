@@ -20,6 +20,7 @@ import {
   type AdaptiveBufferSchedulerObservation,
   type AdaptiveBufferStartMode,
 } from "./adaptive-buffer-scheduler";
+import type { PlaybackTransitionPauseMs } from "./playback-transition-policy";
 
 const IDENTITY = Object.freeze({
   sessionId: "session:synthetic-scheduler-1",
@@ -53,7 +54,10 @@ function emptyResources(): AdaptiveBufferResourceSnapshot {
   };
 }
 
-function segment(index: number): AdaptiveBufferPreparedSegment {
+function segment(
+  index: number,
+  transitionPauseMs: PlaybackTransitionPauseMs = 0,
+): AdaptiveBufferPreparedSegment {
   return Object.freeze({
     segmentId: `segment:synthetic-${index}`,
     sequence: index - 1,
@@ -71,6 +75,7 @@ function segment(index: number): AdaptiveBufferPreparedSegment {
     narrationCodePoints: 20,
     narrationUtf8Bytes: 20,
     sentenceCount: 1,
+    transitionPauseMs,
   });
 }
 
@@ -147,6 +152,39 @@ function assertWithinAuthority(
 }
 
 describe("adaptive buffer scheduler", () => {
+  it("retains only a bounded numeric transition pause with the matching audio unit", () => {
+    const clock = createManualClock(0);
+    const scheduler = makeReadyScheduler(clock);
+    const prepared = segment(1, 900);
+    prepare(scheduler, [prepared], true);
+    synthesize(scheduler, ownedUnit(prepared.segmentId, 16_000));
+
+    expect(scheduler.currentPlaybackUnit()).toMatchObject({
+      sequence: prepared.sequence,
+      transitionPauseMs: 900,
+    });
+    expect(JSON.stringify(scheduler.observe())).not.toContain(
+      "transitionPause",
+    );
+  });
+
+  it("rejects an unfrozen transition pause value", () => {
+    const scheduler = makeReadyScheduler(createManualClock(0));
+    scheduler.beginNarrationPreparation();
+
+    expect(() =>
+      scheduler.acceptPreparedBatch({
+        segments: [
+          {
+            ...segment(1),
+            transitionPauseMs: 1 as PlaybackTransitionPauseMs,
+          },
+        ],
+        complete: true,
+      }),
+    ).toThrow("Adaptive buffer scheduler operation failed.");
+  });
+
   it("accepts a spoken fragment with no recognized sentence boundary", () => {
     const scheduler = makeReadyScheduler(createManualClock(0));
     const fragment = Object.freeze({

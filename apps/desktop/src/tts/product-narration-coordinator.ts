@@ -47,6 +47,7 @@ import {
   OperationalRecoveryController,
   type OperationalRecoverySnapshotV1,
 } from "./operational-recovery";
+import { playbackTransitionPauseMsForPreparedSegment } from "./playback-transition-policy";
 
 const TICK_INTERVAL_MS = 250;
 const PREPARED_BATCH_SEGMENT_LIMIT = 16;
@@ -349,9 +350,11 @@ export class ProductNarrationCoordinator {
   #commandStartedAtMs: number | undefined;
   #commandToAudibleMs: number | undefined;
   #bufferingMs = 0;
+  #intentionalWaitMs = 0;
   #playbackMs = 0;
   #lastMetricsAtMs: number | undefined;
   #lastPlayerPhase: AdaptivePcmPlayerObservation["state"] | undefined;
+  #lastPlayerIntentionalWaitMs = 0;
   #acceptedAudioUnitCount = 0;
   #acceptedAudioSampleFrames = 0;
 
@@ -667,7 +670,9 @@ export class ProductNarrationCoordinator {
     this.#acceptedAudioUnitCount = 0;
     this.#acceptedAudioSampleFrames = 0;
     this.#bufferingMs = 0;
+    this.#intentionalWaitMs = 0;
     this.#playbackMs = 0;
+    this.#lastPlayerIntentionalWaitMs = 0;
     this.#commandToAudibleMs = undefined;
     this.#commandStartedAtMs = this.#clock.nowMs;
     this.#lastMetricsAtMs = this.#clock.nowMs;
@@ -1197,6 +1202,8 @@ export class ProductNarrationCoordinator {
           narrationCodePoints: prepared.measurements.narrationCodePoints,
           narrationUtf8Bytes: prepared.measurements.narrationUtf8Bytes,
           sentenceCount: prepared.measurements.sentenceCount,
+          transitionPauseMs:
+            playbackTransitionPauseMsForPreparedSegment(prepared),
         }),
       ),
     });
@@ -1265,14 +1272,19 @@ export class ProductNarrationCoordinator {
 
   #updateMetrics(player: AdaptivePcmPlayerObservation): void {
     const nowMs = this.#clock.nowMs;
+    const intentionalWaitDelta = Math.max(
+      0,
+      player.intentionalTransitionPauseMs - this.#lastPlayerIntentionalWaitMs,
+    );
     if (this.#lastMetricsAtMs !== undefined && nowMs >= this.#lastMetricsAtMs) {
       const elapsed = nowMs - this.#lastMetricsAtMs;
       if (this.#lastPlayerPhase === "buffering") {
         this.#bufferingMs += elapsed;
       } else if (this.#lastPlayerPhase === "playing") {
-        this.#playbackMs += elapsed;
+        this.#playbackMs += Math.max(0, elapsed - intentionalWaitDelta);
       }
     }
+    this.#intentionalWaitMs = player.intentionalTransitionPauseMs;
     if (
       player.state === "playing" &&
       this.#commandToAudibleMs === undefined &&
@@ -1282,6 +1294,7 @@ export class ProductNarrationCoordinator {
     }
     this.#lastMetricsAtMs = nowMs;
     this.#lastPlayerPhase = player.state;
+    this.#lastPlayerIntentionalWaitMs = player.intentionalTransitionPauseMs;
   }
 
   #fail(
@@ -1503,7 +1516,10 @@ export class ProductNarrationCoordinator {
         scheduler: scheduler.observe(),
         ...(player === undefined
           ? {}
-          : { volumePercent: player.volumePercent }),
+          : {
+              intentionalBoundaryWait: player.intentionalTransitionPauseActive,
+              volumePercent: player.volumePercent,
+            }),
       });
       return Object.freeze({ ...projected, phase: "failed" });
     } catch {
@@ -1521,11 +1537,12 @@ export class ProductNarrationCoordinator {
   #createSnapshot(): ProductNarrationSnapshot {
     const scheduler = this.#scheduler?.observe();
     const player = this.#player;
+    const playerObservation = player?.synchronize();
     let state = this.#terminalState;
     if (
       state === undefined &&
       scheduler !== undefined &&
-      player !== undefined
+      playerObservation !== undefined
     ) {
       let estimatedWaitMs: number | undefined;
       try {
@@ -1541,7 +1558,9 @@ export class ProductNarrationCoordinator {
         mode: this.#selection,
         scheduler,
         ...(estimatedWaitMs === undefined ? {} : { estimatedWaitMs }),
-        volumePercent: player.synchronize().volumePercent,
+        intentionalBoundaryWait:
+          playerObservation.intentionalTransitionPauseActive,
+        volumePercent: playerObservation.volumePercent,
       });
     }
     const currentBoundaryIndex = this.#currentBoundaryIndex();
@@ -1559,9 +1578,11 @@ export class ProductNarrationCoordinator {
       metrics: Object.freeze({
         commandToAudibleMs: this.#commandToAudibleMs,
         bufferingMs: this.#bufferingMs,
-        intentionalWaitMs: 0,
+        intentionalWaitMs:
+          playerObservation?.intentionalTransitionPauseMs ??
+          this.#intentionalWaitMs,
         playbackMs: this.#playbackMs,
-        underrunCount: this.#player?.synchronize().underrunCount ?? 0,
+        underrunCount: playerObservation?.underrunCount ?? 0,
         acceptedAudioUnitCount: this.#acceptedAudioUnitCount,
         acceptedAudioSampleFrames: this.#acceptedAudioSampleFrames,
         retainedAudioUnitCount: scheduler?.retainedAudioUnitCount ?? 0,
