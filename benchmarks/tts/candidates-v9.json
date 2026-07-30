@@ -89,6 +89,11 @@
         "path": "services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v2/uv.lock",
         "sha256": "9a5b2628499f522535dc79a70194dd604e40d9d7ab325a765ffc476f5c437c82"
       },
+      "hostCorrection": {
+        "minimumTotalDedicatedVramMiB": 8000,
+        "minimumAvailableDedicatedVramMiBAtPreflight": 6144,
+        "reason": "consumer-8gb-cards-may-report-slightly-less-than-8192-mib"
+      },
       "correction": {
         "v8ConfigurationMismatch": "the-old-pypi-lock-loaded-v2-and-was-not-a-model-result",
         "currentSourceSupportsExplicitT3ModelV3": true

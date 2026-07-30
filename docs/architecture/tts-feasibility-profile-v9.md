@@ -38,7 +38,10 @@ or personal reference audio is permitted.
 Chatterbox v2 uses the current official source revision already frozen in v7
 and explicitly selects `t3_model="v3"`. Its new isolated dependency lock is
 separate from the historical v7/v8 lock. The same exact six V3 model artifacts
-and bundled non-personal conditioning remain required.
+and bundled non-personal conditioning remain required. Its corrected host
+preflight treats an NVIDIA-reported 8,000 MiB or greater as an 8 GB card,
+instead of requiring the nominal 8,192 MiB value that consumer drivers may not
+report.
 
 MOSS v2 uses the already frozen model, codec, and source revisions. V9 records
 the actual 16 files published at those revisions, including both the TTS model

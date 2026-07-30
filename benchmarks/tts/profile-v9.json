@@ -19,7 +19,7 @@
     },
     "candidateManifest": {
       "path": "benchmarks/tts/candidates-v9.json",
-      "sha256": "4ac6aefad403c566126445498f084152d8dc14f449fff3d08f3eb14d00c707c5"
+      "sha256": "31249a583b8d43f90f7442797373e89b8993455e4cfe26e536cc1e1ca0ca8ad3"
     },
     "privateRawSchema": {
       "path": "benchmarks/tts/schemas/bilingual-raw-v9.schema.json",
@@ -119,7 +119,7 @@
       "privateRaw": "tts-bilingual-raw-v9",
       "contentSafeSummary": "tts-bilingual-summary-v9"
     },
-    "candidateManifestSha256": "4ac6aefad403c566126445498f084152d8dc14f449fff3d08f3eb14d00c707c5",
+    "candidateManifestSha256": "31249a583b8d43f90f7442797373e89b8993455e4cfe26e536cc1e1ca0ca8ad3",
     "evaluationCorpusSha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe",
     "executionCommitMustStrictlyDescendFromAuthority": true,
     "resultBearingFilesBeforeAuthority": "forbidden"

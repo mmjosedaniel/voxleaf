@@ -60,7 +60,9 @@ maintainer explicitly chooses an outcome.
 The corrected Chatterbox environment is isolated in a new path so the
 byte-frozen v7/v8 dependency lock remains unchanged. The MOSS v9 identity
 records the actual model and codec files at the already pinned upstream
-revisions.
+revisions. Chatterbox's exact-host floor accepts at least 8,000 MiB of reported
+dedicated VRAM so an actual 8 GB consumer card is not rejected merely because
+the driver reports slightly less than the nominal 8,192 MiB.
 
 This decision does not promote any candidate to general support or distribution.
 M011 still owns packaging, licensing notices, and release readiness.

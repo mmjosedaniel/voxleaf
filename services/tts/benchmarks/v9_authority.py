@@ -28,8 +28,8 @@ MOSS_LOCK_RELATIVE_PATH: Final = Path(
     "services/tts/benchmarks/candidates/moss_tts_nano_100m_onnx_cpu/uv.lock"
 )
 
-PROFILE_SHA256: Final = "6e0ea9f05d0046bee82b09732afc5e3d6f4822cc9d48548a4510836bf8c5fbca"
-CANDIDATES_SHA256: Final = "4ac6aefad403c566126445498f084152d8dc14f449fff3d08f3eb14d00c707c5"
+PROFILE_SHA256: Final = "37453acb0d2fbb3d63ba605cf854abe30e2bb4da8ad74e0e801cb7484cefc70d"
+CANDIDATES_SHA256: Final = "31249a583b8d43f90f7442797373e89b8993455e4cfe26e536cc1e1ca0ca8ad3"
 RAW_SCHEMA_SHA256: Final = "6802fcb5e80ffc158b2d515711856d32233dc341dbc893941a9c9a5166bab5e4"
 SUMMARY_SCHEMA_SHA256: Final = "d15df5809bf9df376f616298afee2a9cca63ab905ee1e31e13bab152640aa23f"
 CHATTERBOX_LOCK_SHA256: Final = "9a5b2628499f522535dc79a70194dd604e40d9d7ab325a765ffc476f5c437c82"
@@ -253,12 +253,15 @@ def _verify_candidates(candidates: Mapping[str, object]) -> None:
     chatterbox_engine = _mapping(chatterbox.get("engine"), "chatterbox")
     chatterbox_model = _mapping(chatterbox.get("model"), "chatterbox")
     chatterbox_lock = _mapping(chatterbox.get("dependencyLock"), "chatterbox")
+    chatterbox_host = _mapping(chatterbox.get("hostCorrection"), "chatterbox")
     if (
         chatterbox_engine.get("sourceRevision") != "5de7a54aa4e5e2baadb0182dde554908b48b85c2"
         or chatterbox_model.get("revision") != "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
         or chatterbox_model.get("t3Model") != "v3"
         or chatterbox_lock.get("path") != CHATTERBOX_LOCK_RELATIVE_PATH.as_posix()
         or chatterbox_lock.get("sha256") != CHATTERBOX_LOCK_SHA256
+        or chatterbox_host.get("minimumTotalDedicatedVramMiB") != 8_000
+        or chatterbox_host.get("minimumAvailableDedicatedVramMiBAtPreflight") != 6_144
     ):
         _fail("chatterbox")
     moss = profiles[MOSS_CANDIDATE_ID]

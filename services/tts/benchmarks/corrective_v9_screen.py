@@ -223,7 +223,7 @@ def run_corrective_preflight(
         failures.append("total-ram")
     if candidate_id == CHATTERBOX_CANDIDATE_ID and (
         host.total_vram_bytes is None
-        or host.total_vram_bytes < 8_192 * MIB
+        or host.total_vram_bytes < 8_000 * MIB
         or host.free_vram_bytes is None
         or host.free_vram_bytes < 6_144 * MIB
         or not host.process_vram_available
