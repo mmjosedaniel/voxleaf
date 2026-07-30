@@ -1213,3 +1213,223 @@ class BenchmarkHarness:
             result_failure = BenchmarkFailure(code="crash")
             self._observation_sink.record_failure(result_failure)
             return BenchmarkRunResult(run=None, failure=result_failure)
+
+    def run_bilingual_full_protocol(
+        self,
+        *,
+        adapter_factory: AdapterFactory,
+        corpora: Sequence[BenchmarkCorpus],
+        role: CandidateRole,
+    ) -> BenchmarkRunResult:
+        """Run the frozen v12 two-language full and sustained matrix."""
+
+        languages = tuple(
+            next(iter({case.language for case in corpus.cases.values()}), "") for corpus in corpora
+        )
+        if (
+            role not in ("balanced", "compatibility")
+            or languages != ("es", "en")
+            or any(
+                corpus.corpus_version != "tts-bilingual-corpus-v7"
+                or len(corpus.performance_order) != 5
+                or len(corpus.sustained_sequence) != 5
+                or {case.language for case in corpus.cases.values()} != {language}
+                for corpus, language in zip(corpora, languages, strict=True)
+            )
+        ):
+            return BenchmarkRunResult(
+                run=None,
+                failure=BenchmarkFailure(code="invalid-request"),
+            )
+        forbidden_values = tuple(value for corpus in corpora for value in _forbidden_values(corpus))
+        main_adapter: BenchmarkAdapter | None = None
+        memory_started = False
+        try:
+            load_observations: list[LoadObservation] = []
+            for index in range(1, 6):
+                adapter = adapter_factory()
+                load_ns = self._load(
+                    adapter,
+                    forbidden_values=forbidden_values,
+                    request_id=f"cold-{index}",
+                )
+                cleanup_ns = self._close(
+                    adapter,
+                    forbidden_values=forbidden_values,
+                    request_id=f"cold-{index}",
+                )
+                load_observation = LoadObservation(
+                    observation_index=index,
+                    load_ns=load_ns,
+                    cleanup_ns=cleanup_ns,
+                )
+                load_observations.append(load_observation)
+                self._observation_sink.record_load(load_observation)
+
+            main_adapter = adapter_factory()
+            capabilities = main_adapter.capabilities()
+            self._memory_probe.start()
+            memory_started = True
+            self._load(
+                main_adapter,
+                forbidden_values=forbidden_values,
+                request_id="measurement-load",
+            )
+            first_case = corpora[0].cases[corpora[0].performance_order[0]]
+            self._warm_up(
+                main_adapter,
+                GenerationRequest(
+                    request_id="warmup-1",
+                    case_id=first_case.case_id,
+                    phase="warmup",
+                    text=first_case.text,
+                    language=first_case.language,
+                ),
+                forbidden_values=forbidden_values,
+            )
+
+            generations: list[GenerationObservation] = []
+            for corpus in corpora:
+                for pass_index in range(2):
+                    for case_id in corpus.performance_order:
+                        case = corpus.cases[case_id]
+                        generation_observation = self.observe_generation(
+                            main_adapter,
+                            GenerationRequest(
+                                request_id=(
+                                    f"warm-{case.language}-{pass_index + 1}-{case.case_id}"
+                                ),
+                                case_id=case.case_id,
+                                phase="warm",
+                                text=case.text,
+                                language=case.language,
+                            ),
+                            forbidden_values=forbidden_values,
+                        )
+                        generations.append(generation_observation)
+                        self._observation_sink.record_generation(generation_observation)
+
+            sustained_started_ns = self._clock.now_ns()
+            for corpus in corpora:
+                for pass_index in range(3):
+                    for case_id in corpus.sustained_sequence:
+                        case = corpus.cases[case_id]
+                        generation_observation = self.observe_generation(
+                            main_adapter,
+                            GenerationRequest(
+                                request_id=(
+                                    f"sustained-{case.language}-{pass_index + 1}-{case.case_id}"
+                                ),
+                                case_id=case.case_id,
+                                phase="sustained",
+                                text=case.text,
+                                language=case.language,
+                            ),
+                            forbidden_values=forbidden_values,
+                        )
+                        generations.append(generation_observation)
+                        self._observation_sink.record_generation(generation_observation)
+                        if self._clock.now_ns() - sustained_started_ns > 1_800_000_000_000:
+                            _fail("timeout", "sustained")
+
+            cancellations: list[CancellationObservation] = []
+            cancellation_failures = 0
+            for corpus in corpora:
+                default_case = corpus.cases[corpus.performance_order[0]]
+                near_hard_case = corpus.cases[corpus.performance_order[-1]]
+                for trial_index, trial_id in enumerate(
+                    V8_CANCELLATION_TRIAL_ORDER,
+                    start=1,
+                ):
+                    case = (
+                        near_hard_case if trial_id == "near-hard-mid-generation" else default_case
+                    )
+                    try:
+                        cancellation_observation = self.observe_cancellation(
+                            main_adapter,
+                            GenerationRequest(
+                                request_id=(f"cancel-{case.language}-{trial_index}"),
+                                case_id=case.case_id,
+                                phase="cancellation",
+                                text=case.text,
+                                language=case.language,
+                            ),
+                            trial_id,
+                            forbidden_values=forbidden_values,
+                        )
+                    except _HarnessFailure as failure:
+                        if failure.code != "cancellation-failed":
+                            raise
+                        cancellation_failures += 1
+                        self._observation_sink.record_cancellation_failure(
+                            trial_id,
+                            BenchmarkFailure(
+                                code=failure.code,
+                                request_id=failure.request_id,
+                            ),
+                        )
+                        continue
+                    cancellations.append(cancellation_observation)
+                    self._observation_sink.record_cancellation(cancellation_observation)
+
+            self._close(
+                main_adapter,
+                forbidden_values=forbidden_values,
+                request_id="measurement-close",
+            )
+            main_adapter = None
+            memory = self._memory_probe.stop()
+            memory_started = False
+            self._observation_sink.record_memory(memory)
+            if {
+                (
+                    observation.sample_rate_hz,
+                    observation.channels,
+                    observation.sample_format,
+                )
+                for observation in generations
+            } != {(24_000, 1, "float32")}:
+                _fail("invalid-output")
+            return BenchmarkRunResult(
+                run=BenchmarkRun(
+                    candidate_id=capabilities.candidate_id,
+                    role=role,
+                    capabilities=capabilities,
+                    load_observations=tuple(load_observations),
+                    generation_observations=tuple(generations),
+                    cancellation_observations=tuple(cancellations),
+                    memory=memory,
+                    failed_observations=cancellation_failures,
+                ),
+                failure=(
+                    BenchmarkFailure(
+                        code="cancellation-failed",
+                        request_id="cancellation",
+                    )
+                    if cancellation_failures
+                    else None
+                ),
+            )
+        except _HarnessFailure as failure:
+            if main_adapter is not None:
+                with suppress(Exception):
+                    main_adapter.close()
+            if memory_started:
+                with suppress(Exception):
+                    self._memory_probe.stop()
+            result_failure = BenchmarkFailure(
+                code=failure.code,
+                request_id=failure.request_id,
+            )
+            self._observation_sink.record_failure(result_failure)
+            return BenchmarkRunResult(run=None, failure=result_failure)
+        except Exception:
+            if main_adapter is not None:
+                with suppress(Exception):
+                    main_adapter.close()
+            if memory_started:
+                with suppress(Exception):
+                    self._memory_probe.stop()
+            result_failure = BenchmarkFailure(code="crash")
+            self._observation_sink.record_failure(result_failure)
+            return BenchmarkRunResult(run=None, failure=result_failure)

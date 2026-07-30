@@ -664,6 +664,16 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-30:** Committed the result-blind v12 authority at
+  `0b90fa2c16cdb276550ad3c3a58a2d84e1509876` before implementing or running
+  any result-bearing command. Added the generic bounded bilingual full
+  protocol, exact Chatterbox preflight/matrix command, candidate-interpreter
+  private quality workflow, guarded content-safe derivation, and private
+  cleanup. Model-free validation proves five cold loads, 20 warm attempts, 30
+  sustained attempts, eight cancellation trials, and independent
+  language-specific quality aggregation. All 336 Python tests, strict mypy,
+  Ruff formatting, and Ruff lint pass. No v12 audio or result has been
+  generated yet.
 - **2026-07-30:** Began Milestone 5 on
   `feat/m010-001-corrective-full-evaluation`. Added result-blind v12 authority
   for the complete Chatterbox bilingual/sustained matrix and two independent
