@@ -518,7 +518,7 @@ From repository root, capture the clean commits and interpreters before
 changing directory:
 
 ```powershell
-$authorityCommit = git rev-parse "HEAD^"
+$authorityCommit = git log --format="%H" --fixed-strings --grep="feat(tts): freeze corrective full evaluation v12" -1
 $executionCommit = git rev-parse HEAD
 $servicePython = (Resolve-Path "services/tts/.venv/Scripts/python.exe").Path
 $chatterboxPython = (Resolve-Path "services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v4/.venv/Scripts/python.exe").Path
@@ -548,6 +548,10 @@ Pop-Location
 The machine command returns a content-free session ID. Generate each opted-in
 private review separately so only one model is loaded at a time. Supply that
 machine session only for Chatterbox; Qwen creates a separate ignored session:
+the Chatterbox candidate command delegates schema verification of the machine
+journal to the service interpreter, then performs inference only inside the
+locked candidate environment. This keeps service validation dependencies out
+of the frozen model environment.
 
 ```powershell
 Push-Location "services/tts"

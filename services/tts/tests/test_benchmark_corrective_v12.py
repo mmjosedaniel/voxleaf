@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 from typing import Final, cast
 
@@ -28,6 +29,7 @@ from benchmarks.harness import BenchmarkHarness, load_bilingual_corpus
 from benchmarks.preflight import HostSnapshot
 from benchmarks.v11_authority import CANDIDATE_ID
 from benchmarks.v12_authority import (
+    CHATTERBOX_CANDIDATE_ID,
     QWEN_SERENA_CANDIDATE_ID,
     validate_v12_raw_result,
 )
@@ -208,3 +210,43 @@ def test_v12_private_quality_aggregate_is_language_specific_and_bounded(
         }
     ]
     assert not result_path.exists()
+
+
+def test_v12_candidate_quality_delegates_machine_schema_validation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service_python = tmp_path / "python.exe"
+    service_python.write_bytes(b"test")
+    monkeypatch.setattr(v12_quality, "SERVICE_PYTHON", service_python)
+    observed: dict[str, object] = {}
+
+    def run(command: tuple[str, ...], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        observed["command"] = command
+        observed["input"] = kwargs["input"]
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            stdout=json.dumps(
+                {
+                    "status": "valid",
+                    "candidateId": CHATTERBOX_CANDIDATE_ID,
+                    "sessionId": "a" * 32,
+                }
+            ),
+        )
+
+    monkeypatch.setattr(subprocess, "run", run)
+
+    v12_quality._validate_machine_under_service(
+        CHATTERBOX_CANDIDATE_ID,
+        "a" * 32,
+    )
+
+    command = cast(tuple[str, ...], observed["command"])
+    assert command[0] == str(service_python.resolve())
+    assert command[-1] == "validate-machine"
+    assert json.loads(cast(str, observed["input"])) == {
+        "candidateId": CHATTERBOX_CANDIDATE_ID,
+        "sessionId": "a" * 32,
+    }

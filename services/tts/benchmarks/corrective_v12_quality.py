@@ -59,6 +59,7 @@ CHATTERBOX_ARTIFACT_ROOT: Final = REPOSITORY_ROOT / "models/chatterbox_multiling
 QWEN_PYTHON: Final = REPOSITORY_ROOT / (
     "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/.venv/Scripts/python.exe"
 )
+SERVICE_PYTHON: Final = REPOSITORY_ROOT / "services/tts/.venv/Scripts/python.exe"
 QWEN_ARTIFACT_ROOT: Final = REPOSITORY_ROOT / "models/qwen3_1_7b_customvoice_cuda"
 DIMENSIONS: Final = (
     "intelligibility",
@@ -207,6 +208,61 @@ def _repository_ready(authority_commit_sha: str, execution_commit_sha: str) -> b
     )
 
 
+def validate_machine_session(candidate_id: str, session_id: str) -> dict[str, object]:
+    """Validate the private machine result under the service dependency set."""
+
+    if candidate_id != CHATTERBOX_CANDIDATE_ID:
+        _fail("candidate")
+    session = _session(candidate_id, session_id)
+    raw = _read(session / "machine.raw.json")
+    validate_v12_raw_result(REPOSITORY_ROOT, raw)
+    if raw.get("status") != "measured-awaiting-decision":
+        _fail("machine")
+    return {
+        "status": "valid",
+        "candidateId": candidate_id,
+        "sessionId": session_id,
+    }
+
+
+def _validate_machine_under_service(candidate_id: str, session_id: str) -> None:
+    """Keep schema tooling out of the locked model-only candidate environment."""
+
+    try:
+        service_python = SERVICE_PYTHON.resolve(strict=True)
+        completed = subprocess.run(
+            (
+                str(service_python),
+                "-m",
+                "benchmarks.corrective_v12_quality_cli",
+                "validate-machine",
+            ),
+            cwd=REPOSITORY_ROOT / "services" / "tts",
+            input=json.dumps(
+                {
+                    "candidateId": candidate_id,
+                    "sessionId": session_id,
+                },
+                ensure_ascii=True,
+                separators=(",", ":"),
+            ),
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=os.environ.copy(),
+        )
+        value = cast(object, json.loads(completed.stdout))
+    except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+        _fail("machine-validation")
+    if value != {
+        "status": "valid",
+        "candidateId": candidate_id,
+        "sessionId": session_id,
+    }:
+        _fail("machine-validation")
+
+
 def _adapter(
     candidate_id: str,
 ) -> tuple[object, Path, tuple[str, ...]]:
@@ -350,10 +406,7 @@ def generate_quality_session(
         if machine_session_id is None:
             _fail("machine")
         session = _session(candidate_id, machine_session_id)
-        raw = _read(session / "machine.raw.json")
-        validate_v12_raw_result(REPOSITORY_ROOT, raw)
-        if raw.get("status") != "measured-awaiting-decision":
-            _fail("machine")
+        _validate_machine_under_service(candidate_id, machine_session_id)
         session_id = machine_session_id
     else:
         if machine_session_id is not None:

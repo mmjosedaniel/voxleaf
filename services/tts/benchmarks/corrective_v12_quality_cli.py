@@ -11,6 +11,7 @@ from benchmarks.corrective_v12_quality import (
     CorrectiveV12QualityError,
     derive_and_cleanup,
     generate_quality_session,
+    validate_machine_session,
 )
 from benchmarks.v12_authority import (
     CHATTERBOX_CANDIDATE_ID,
@@ -28,6 +29,7 @@ GENERATE_FIELDS: Final = frozenset(
     }
 )
 DERIVE_FIELDS: Final = frozenset({"candidateId", "sessionId", "resultPath", "outputPath"})
+VALIDATE_MACHINE_FIELDS: Final = frozenset({"candidateId", "sessionId"})
 
 
 def _read() -> dict[str, object]:
@@ -50,7 +52,7 @@ def _candidate(value: object) -> str:
 
 
 def main() -> int:
-    if len(sys.argv) != 2 or sys.argv[1] not in ("generate", "derive"):
+    if len(sys.argv) != 2 or sys.argv[1] not in ("generate", "derive", "validate-machine"):
         print('{"status":"invalid","failureCode":"invalid-request"}')
         return 2
     try:
@@ -74,7 +76,7 @@ def main() -> int:
                 execution_commit_sha=cast(str, payload["executionCommitSha"]),
                 machine_session_id=cast(str | None, payload["sessionId"]),
             )
-        else:
+        elif sys.argv[1] == "derive":
             if (
                 set(payload) != DERIVE_FIELDS
                 or not isinstance(payload.get("sessionId"), str)
@@ -87,6 +89,17 @@ def main() -> int:
                 session_id=cast(str, payload["sessionId"]),
                 result_path=Path(cast(str, payload["resultPath"])),
                 output_path=Path(cast(str, payload["outputPath"])),
+            )
+        else:
+            if (
+                set(payload) != VALIDATE_MACHINE_FIELDS
+                or candidate_id != CHATTERBOX_CANDIDATE_ID
+                or not isinstance(payload.get("sessionId"), str)
+            ):
+                raise CorrectiveV12QualityError("input")
+            output = validate_machine_session(
+                candidate_id,
+                cast(str, payload["sessionId"]),
             )
         exit_code = 0
     except (CorrectiveV12QualityError, OSError, RuntimeError):

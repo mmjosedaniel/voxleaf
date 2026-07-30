@@ -664,6 +664,17 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-30:** The exact v12 Chatterbox machine matrix completed all five
+  cold loads, 50 generation attempts, and eight cancellation trials. Offline
+  isolation, artifact, privacy, bounded-retention, and cleanup audits passed.
+  Cold-load time and process RAM exceeded preferred advisory targets; v12
+  correctly retains these as observations for the maintainer rather than
+  automatically rejecting the candidate. The first private-quality attempt
+  exposed a process-boundary defect: the locked model-only environment does
+  not include the service's JSON Schema dependency. Moved machine-journal
+  schema validation to a closed service-interpreter subprocess without
+  changing the frozen candidate lock or allowing the service validator to
+  perform inference.
 - **2026-07-30:** The first v12 preflight stopped before model loading on
   `result-before-authority`. The v12 authority tree and ancestry were valid;
   the cause was the reused v11 helper's unreachable pre-squash hard-coded SHA.
