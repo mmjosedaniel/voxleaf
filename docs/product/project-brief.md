@@ -52,10 +52,11 @@ replacement under superseding result-blind v8 authority. Spanish Piper remains
 the only supported playable profile; English selection is truthful but
 unavailable at runtime. Milestone 3 has admitted exact Piper/joe English
 through the frozen v8 baseline gates, but Milestone 6 must integrate and prove
-it before it becomes selectable or supported. Independent Qwen Serena/Spanish
-and Aiden/English evaluation and at most one new engine remain future M010.1
-work. Installer distribution and Piper license fulfillment remain deferred to
-M011.
+it before it becomes selectable or supported. Corrective Milestone 4 advances
+Chatterbox as the sole new-engine full-matrix survivor, defers MOSS without
+rejection, and retains Qwen Serena/Spanish plus Aiden/English for independent
+hardware-dependent constrained-buffer decisions. Installer distribution and
+Piper license fulfillment remain deferred to M011.
 The rest of this brief describes the intended complete product unless it
 explicitly identifies implemented behavior.
 

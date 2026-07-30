@@ -466,13 +466,10 @@ distribution and license fulfillment.
 
 ### Milestone 4: Run bounded sequential candidate and Qwen control screens
 
-**Status:** In progress under corrective v9 authority. V8 produced useful
-Qwen measurements but incorrectly treated its preferred standard-profile
-targets as automatic rejection gates for the already approved constrained
-buffered path. The Chatterbox and MOSS v8 stops were configuration mismatches,
-not model tests. V9 preserves those historical records, corrects both exact
-candidate configurations, and forbids a rejection until the maintainer reviews
-the evidence and decides.
+**Status:** Complete as of 2026-07-30. Corrective v9/v11 produced real MOSS
+and Chatterbox evidence, the maintainer reviewed both private bilingual sample
+sets, content-safe summaries were retained, and the private scorecards,
+blinded maps, generated audio, and complete raw sessions were deleted.
 
 1. Run exact Qwen/Serena Spanish and Qwen/Aiden English independently through
    the existing-engine control gates. Stop only the failing exact identity and
@@ -494,25 +491,42 @@ the evidence and decides.
 Exit with content-safe screen summaries and zero or one selected full-matrix
 new-engine survivor plus independent Qwen profile decisions.
 
-### Milestone 5: Execute the corrective frozen v9 evaluation and record the decision
+Actual result: Chatterbox completed 10/10 generation cases and 8/8
+cancellation trials at about 0.65 warm p95 RTF in both languages. The
+maintainer rated it highly, with cross-language accent limitations, and
+selected it as the sole new-engine full-matrix survivor. MOSS also completed
+10/10 generations and 8/8 cancellation trials at 0.50 Spanish and 0.43
+English warm p95 RTF, but the maintainer reported dialogue-tail omission in
+both languages and did not prefer the accent; MOSS is deferred without
+rejection. Existing Qwen/Serena Spanish and Qwen/Aiden English remain separate
+hardware-dependent constrained-buffer candidates. Their approximately 1.44
+RTF on this laptop is not an automatic blocker and does not predict
+performance on a stronger compatible GPU. ADR-0029 and `selection-v11.md`
+record this routing without changing runtime support.
+
+### Milestone 5: Freeze and execute the corrective full evaluation
 
 **Status:** Not started.
 
-1. Retain the existing language-specific Qwen measurements as capacity
-   evidence, complete their private quality review under v9, and treat the
-   `RTF <= 1.1` standard target as advisory for the constrained buffered MVP.
-2. After the corrected real Chatterbox and MOSS screens, run the complete frozen
-   Spanish/English
-   machine, quality, performance, memory, cancellation, cleanup, and privacy
-   matrix on the exact host.
-3. Present any screen failure, limitation, or blocked execution to the
+1. Before any new result, freeze a new numbered authority that preserves the
+   v8 Qwen, v9 MOSS, and v11 Chatterbox evidence unchanged.
+2. Run the complete frozen Spanish/English machine, quality, performance,
+   memory, cancellation, cleanup, privacy, and long-form matrix for exact
+   Chatterbox profile `chatterbox-multilingual-v3-cuda-bf16-default-v4`.
+3. Retain the existing language-specific Qwen measurements as constrained
+   buffer capacity evidence and collect independent result-neutral private
+   quality evidence for Qwen/Serena Spanish and Qwen/Aiden English. Treat the
+   `RTF <= 1.1` standard target as advisory for this path.
+4. Present any failure, limitation, or blocked execution to the
    maintainer before deciding whether to reject, defer, retain, or advance the
    candidate.
-4. Validate ancestry, hashes, schemas, derived summaries, evaluator
+5. Validate ancestry, hashes, schemas, derived summaries, evaluator
    completeness, and content safety.
-5. Accept the next numbered ADR that either admits one exact profile with
-   explicit margins/limitations or records no passing naturalness candidate.
-6. Update the support matrix without editing historical M010 or v7 files.
+6. Accept the next numbered ADR that either admits exact profiles with
+   explicit language, hardware, voice, and constrained-buffer limitations or
+   records why a profile remains development-only or deferred.
+7. Update the support matrix without editing historical M010 or v7-v11
+   authority and results.
 
 Exit only when the decision follows frozen evidence and does not overstate
 language, hardware, voice, quality, performance, or distribution support.
@@ -522,16 +536,20 @@ language, hardware, voice, quality, performance, or distribution support.
 **Status:** Not started.
 
 1. Integrate Piper English only if Milestone 3 admits it.
-2. Integrate at most one new engine only if Milestone 5 admits it.
-3. Keep candidate dependencies isolated in exact lockfiles and preserve one
+2. Integrate Chatterbox only if Milestone 5 admits its exact profile.
+3. Make Qwen/Serena Spanish and Qwen/Aiden English selectable only if
+   Milestone 5 accepts their independent quality decisions and the measured
+   host satisfies the exact profile. Keep slower-than-real-time Qwen behind
+   the existing bounded constrained-buffer behavior.
+4. Keep candidate dependencies isolated in exact lockfiles and preserve one
    native-owned service tree.
-4. Add the exact adapter, profile registry entry, native configuration gate,
+5. Add the exact adapter, profile registry entry, native configuration gate,
    host matching, settings availability, pre-start recheck, recovery mapping,
    and deterministic fakes.
-5. Keep protocol v1 unchanged unless a concrete admitted requirement proves
+6. Keep protocol v1 unchanged unless a concrete admitted requirement proves
    it insufficient; any protocol change requires separate versioned authority
    and conformance fixtures before implementation.
-6. Prove ordered bounded buffering, M008.1 transitions, synchronization,
+7. Prove ordered bounded buffering, M008.1 transitions, synchronization,
    language/profile switching, identity-first cancellation, explicit recovery,
    cleanup, and no generated-audio persistence.
 
@@ -645,6 +663,30 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-30:** Completed corrective Milestone 4. V11 Chatterbox completed
+  10/10 bilingual cases and 8/8 cancellation trials with about 0.65 warm p95
+  RTF; the maintainer rated it very good with cross-language accent
+  limitations and advanced it as the sole new-engine full-matrix survivor. V9
+  MOSS completed the same machine/cancellation counts more quickly and with
+  zero VRAM, but the maintainer reported bilingual dialogue-tail omission and
+  did not prefer its accent, so it is deferred without rejection. Existing
+  Qwen/Serena Spanish and Qwen/Aiden English remain independent
+  hardware-dependent constrained-buffer candidates; their approximately 1.44
+  RTF on this laptop is not an automatic blocker. ADR-0029 and
+  `selection-v11.md` record the routing.
+- **2026-07-30:** Added a fail-closed content-safe result derivation and
+  cleanup command. It validated both frozen authorities, raw sessions,
+  blinded maps, and one-evaluator scorecards before deleting the downloaded
+  scorecards, generated waveforms, maps, and complete ignored v9/v11 sessions.
+  Only the schema-valid MOSS v9 and Chatterbox v11 summaries remain.
+- **2026-07-30:** The exact v11 Torch 2.9.1+cu128 compatibility environment
+  supported the RTX 5060 `sm_120` host and produced real Chatterbox inference.
+  All ten Spanish/English cases and all eight cancellation trials completed.
+  Spanish first-audio p95 was 3.923 seconds with 0.646 warm p95 RTF; English
+  first-audio p95 was 4.227 seconds with 0.650 warm p95 RTF. Peak
+  process-tree RAM was about 4.88 GiB and peak dedicated VRAM about 3.51 GiB.
+  The preferred cold-load and process-RAM targets remain documented
+  observations rather than automatic candidate rejection.
 - **2026-07-29:** The exact v10 Torch 2.6.0+cu124 runtime reached local
   Chatterbox model loading but stopped before inference on the exact NVIDIA
   GeForce RTX 5060 Laptop GPU. The host reports CUDA capability 12.0
@@ -892,9 +934,22 @@ committed benchmark authority after results.
   pre-inference v8 stops. V9 corrects them prospectively without editing v8.
 - The v8 Serena and Aiden summaries retain valid measurements but do not decide
   constrained buffered eligibility. Their approximately 1.44 RTF is not an
-  automatic blocker. MOSS has now produced real v9 machine evidence and
-  private quality samples; Chatterbox has not yet produced model evidence.
-  Neither candidate may be rejected before maintainer review.
+  automatic blocker or a prediction for stronger compatible GPUs. Both exact
+  Qwen language profiles remain eligible for separate quality review and
+  hardware-dependent constrained-buffer use.
+- Corrective MOSS and Chatterbox screens now have real model evidence.
+  Chatterbox is the sole new-engine full-matrix survivor because the
+  maintainer preferred its quality and observed no truncation or
+  wrong-language output. MOSS is deferred, not rejected, because its
+  otherwise-fast CPU path omitted the dialogue tail in both languages and its
+  accent was not preferred.
+- Chatterbox's exact evaluated API has no native speaking-rate parameter.
+  Generation controls such as temperature, exaggeration, and CFG weight are
+  not equivalent to pitch-preserving playback speed. Any future speed control
+  should remain engine-neutral and separately authorized.
+- The evaluated Chatterbox path has one bundled default conditioning voice.
+  Additional voices require reference conditioning or voice cloning and
+  remain outside this no-personal-reference scope.
 
 ## Final validation results
 

@@ -46,6 +46,9 @@ controls. Milestone 2 implements explicit bilingual preparation and selection,
 and Milestone 3 admits exact Piper/joe English through every frozen v8
 baseline gate. Piper/davefx remains the sole supported playable profile until
 Milestone 6 integrates and exact-host proves the admitted English profile.
+Corrective Milestone 4 advances Chatterbox as the sole new-engine full-matrix
+survivor, defers MOSS without rejection, and retains both exact Qwen language
+profiles for hardware-dependent constrained-buffer evaluation.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -839,7 +842,8 @@ frozen v6 cycle and passed measured evidence before product admission.
 
 ## Milestone 10.1: Add bilingual narration and screen naturalness candidates
 
-**Status:** In progress; Milestones 1, 1A, 2, and 3 complete as of 2026-07-29. Follow
+**Status:** In progress; Milestones 1, 1A, 2, 3, and 4 complete as of
+2026-07-30. Follow
 [`M010-001-bilingual-narration-and-candidate-screening.md`](active/M010-001-bilingual-narration-and-candidate-screening.md).
 This bounded pre-M011 follow-up responds to an explicit product need for
 English narration and a stronger portfolio demonstration. It does not reopen
@@ -862,7 +866,12 @@ does not itself admit an English product profile. Milestone 3 independently
 admits exact Piper 1.4.2 / `en_US-joe-medium` for later integration after all
 machine, performance, memory, cancellation, quality, privacy, offline, and
 cleanup gates pass. It remains unavailable in the application until
-Milestone 6.
+Milestone 6. Corrective Milestone 4 advances exact Chatterbox as the sole
+new-engine full-matrix survivor, defers MOSS without rejection after
+bilingual dialogue-tail omission, and retains Qwen/Serena Spanish plus
+Qwen/Aiden English as independent hardware-dependent constrained-buffer
+candidates. Qwen's approximately 1.44 RTF on this laptop is capacity evidence,
+not an automatic blocker or a claim about stronger compatible GPUs.
 
 ### Goal
 
@@ -883,9 +892,10 @@ memory, or support-evidence rules.
 - Exact local Qwen 1.7B CustomVoice / Serena / Spanish and Qwen 1.7B
   CustomVoice / native-English Aiden / English are evaluated independently.
   Shared weights establish identity only; results are not shared.
-- Chatterbox Multilingual V3 and MOSS-TTS-Nano ONNX are screened
-  sequentially. CosyVoice is not executed in v8 because exact intake did not
-  establish a non-personal default voice path.
+- Chatterbox Multilingual V3 and MOSS-TTS-Nano ONNX were screened
+  sequentially. Chatterbox advances to the next frozen full matrix; MOSS is
+  deferred without rejection. CosyVoice is not executed in v8 because exact
+  intake did not establish a non-personal default voice path.
 - At most one passing new engine is integrated. A failed screen produces an
   honest no-winner record and does not delay M011 indefinitely.
 - Language/profile changes replace work identity before cleanup, never reuse
@@ -952,10 +962,13 @@ any future reconsideration requires new authority. All other candidates remain
 post-MVP and require separate newly frozen authority.
 
 Retain Piper/davefx as the selected CPU fallback and Qwen/Serena as the
-optional GPU-dependent development profile. M010.1 now also retains the
-passing Piper/joe English baseline for Milestone 6 integration; this evidence
-does not change the current runtime support matrix by itself. After release,
-screen the remaining candidates in this order:
+optional GPU-dependent development profile. M010.1 also retains Qwen/Aiden
+for independent English review and the passing Piper/joe English baseline for
+Milestone 6 integration; this evidence does not change the current runtime
+support matrix by itself. Chatterbox has moved from backlog intake into the
+next pre-M011 full evaluation, while MOSS returns to targeted future
+investigation unless a new authority schedules it. After release, screen the
+remaining candidates in this order:
 
 1. Pocket TTS Spanish as a balanced streaming CPU challenger, conditional on
    exact model/voice license and redistribution review.
@@ -1043,10 +1056,12 @@ support decisions, and passing replacement closeout checks.
 is the active implementation authority. Its first milestone has frozen
 explicit Spanish/English behavior, versioned locator-safe normalization, exact
 candidate identities, and result-blind gates; Milestone 1A supersedes
-resultless v7 with v8 Qwen bilingual coverage before execution. Later
+resultless v7 with v8 Qwen bilingual coverage before execution. Milestone 4
+records real corrective MOSS/Chatterbox screens and selects Chatterbox for the
+next full matrix while retaining both exact Qwen language profiles. Later
 milestones may integrate Piper English, independently passing exact Qwen
-profiles, and at most one passing new engine. Frozen authority itself is not
-evidence that any capability works.
+profiles, and at most one passing new engine. Frozen authority or screen
+advancement itself is not evidence that any capability is supported.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by completed
@@ -1056,8 +1071,9 @@ production selection.
 
 Milestones 1 through 10, M008.1, and M009.1 are complete, with their evidence
 retained under [`completed/`](completed/). M010.1 is active before M011;
-Milestones 1/1A have authority and deterministic validation evidence but no
-English runtime or newly admitted product-profile evidence.
+Milestones 1/1A through 4 have authority, implementation, baseline, and
+candidate-screen evidence but no English runtime or newly integrated
+product-profile evidence.
 
 ## MVP completion boundary
 

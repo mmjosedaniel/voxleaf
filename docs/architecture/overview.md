@@ -60,7 +60,13 @@ and cleanup. Milestone 3 independently admits exact Piper 1.4.2 /
 offline, and cleanup gates all pass. This result is not runtime integration:
 Spanish Piper remains the only supported playable profile and the existing
 M010 support matrix remains authoritative until M010.1 Milestone 6 adds and
-proves the English registry/service path.
+proves the English registry/service path. Corrective Milestone 4 now advances
+exact Chatterbox as the sole new-engine full-matrix survivor, defers MOSS
+without rejection after bilingual dialogue-tail omission, and retains
+Qwen/Serena Spanish plus Qwen/Aiden English as independent
+hardware-dependent constrained-buffer candidates. Their approximately 1.44
+RTF on this laptop is capacity evidence rather than a general-hardware claim.
+This evaluation routing changes no runtime component or process edge.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
@@ -177,8 +183,8 @@ Desktop application
 |-- Piper/davefx CPU-fallback runtime
 |   [M010 complete; integrated and exact-host Piper arm validated]
 `-- Explicit bilingual narration, local Qwen controls, and candidate screen
-    [M010.1 Milestone 2 preparation/selection implemented;
-     English engine evaluation pending]
+    [M010.1 Milestones 2-4; preparation/selection implemented,
+     Piper English admitted, Chatterbox advanced, Qwen retained]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]

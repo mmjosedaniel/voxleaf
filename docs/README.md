@@ -54,6 +54,13 @@ Milestone 3 independently admits exact Piper 1.4.2 / `en_US-joe-medium` on
 the frozen machine, cancellation, quality, privacy, and cleanup gates.
 English still fails closed before child start because Milestone 6 has not yet
 integrated that admitted profile into the runtime registry and service.
+Corrective Milestone 4 now has real MOSS v9 and Chatterbox v11 bilingual
+screen evidence. The maintainer advances Chatterbox as the sole new-engine
+full-matrix survivor, defers MOSS without rejection after dialogue-tail
+omission, and retains Qwen/Serena Spanish plus Qwen/Aiden English as separate
+hardware-dependent constrained-buffer candidates. Qwen's approximately 1.44
+RTF on this laptop remains capacity evidence rather than an automatic blocker;
+no claim is made for unmeasured stronger hardware.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -90,7 +97,8 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/tts-feasibility-profile-v8.md`](architecture/tts-feasibility-profile-v8.md): superseding result-blind M010.1 authority that preserves v7 and adds exact local Qwen/Serena Spanish and Qwen/Aiden English controls while excluding cloud inference, voice cloning, and voice design; its first content-safe result admits the exact Piper/joe English CPU baseline for later integration.
 - [`architecture/tts-feasibility-profile-v9.md`](architecture/tts-feasibility-profile-v9.md): corrective decision-neutral M010.1 authority that treats Qwen's approximately 1.44 RTF as constrained-buffer capacity evidence and requires real MOSS and Chatterbox tests before maintainer decisions.
 - [`architecture/tts-feasibility-profile-v10.md`](architecture/tts-feasibility-profile-v10.md): frozen exact CUDA 12.4 Chatterbox correction whose Torch 2.6 runtime stops before inference because it lacks RTX 5060 `sm_120` kernels.
-- [`architecture/tts-feasibility-profile-v11.md`](architecture/tts-feasibility-profile-v11.md): frozen experimental Torch 2.9.1+cu128 Chatterbox compatibility screen for the exact RTX 5060 host; all outcomes remain pending explicit maintainer review.
+- [`architecture/tts-feasibility-profile-v11.md`](architecture/tts-feasibility-profile-v11.md): frozen experimental Torch 2.9.1+cu128 Chatterbox compatibility screen for the exact RTX 5060 host; its content-safe result is reviewed and advanced only to the next full evaluation in selection v11.
+- [`../benchmarks/tts/selection-v11.md`](../benchmarks/tts/selection-v11.md): accepted M010.1 Milestone 4 routing that advances exact Chatterbox to the next full matrix, defers MOSS without rejection, and retains both Qwen language profiles for hardware-dependent constrained-buffer evaluation.
 - [`architecture/piper-narration-preparation-profile-v1.md`](architecture/piper-narration-preparation-profile-v1.md): historical corrective product authority that narrows locator-safe EPUB segmentation only for Piper; v2 supersedes it for product dispatch.
 - [`architecture/piper-narration-preparation-profile-v2.md`](architecture/piper-narration-preparation-profile-v2.md): implemented Piper product correction that adds a deterministic normalized speech-expansion budget for compact numbers, acronyms, currencies, ordinals, and related forms while retaining the v1 locator, text, protocol, and privacy boundaries.
 - [`architecture/tts-profile-runtime-configuration-availability-v1.md`](architecture/tts-profile-runtime-configuration-availability-v1.md): frozen corrective authority that keeps hardware compatibility separate from native runtime configuration and requires the selected exact profile to be configured before product Play is enabled.
@@ -114,6 +122,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0026-correct-bilingual-candidate-decision-authority.md`](architecture/decisions/ADR-0026-correct-bilingual-candidate-decision-authority.md): makes the Qwen constrained-buffer interpretation explicit and prevents automatic MOSS/Chatterbox rejection.
 - [`architecture/decisions/ADR-0027-freeze-chatterbox-cuda-v10-correction.md`](architecture/decisions/ADR-0027-freeze-chatterbox-cuda-v10-correction.md): preserves v9 MOSS evidence and freezes the exact CUDA 12.4 Chatterbox correction.
 - [`architecture/decisions/ADR-0028-freeze-chatterbox-rtx50-compatibility-v11.md`](architecture/decisions/ADR-0028-freeze-chatterbox-rtx50-compatibility-v11.md): freezes a separate RTX 50-series compatibility experiment with no automatic candidate decision.
+- [`architecture/decisions/ADR-0029-advance-chatterbox-retain-qwen-defer-moss.md`](architecture/decisions/ADR-0029-advance-chatterbox-retain-qwen-defer-moss.md): advances exact Chatterbox as the sole new-engine full-matrix survivor, defers MOSS without rejection, and retains Qwen Serena/Aiden as separate hardware-dependent candidates.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development
@@ -146,7 +155,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M009-001-reader-experience-stabilization.md`](plans/completed/M009-001-reader-experience-stabilization.md): completed bounded M009 follow-up for the visible-highlight repair, dedicated reader viewport, compact/collapsible narration UI, truthful loaded-duration status, locator-backed paragraph leaf, passive-scroll isolation, exact-host validation, and repository/CI closeout.
 - [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
-- [`plans/active/M010-001-bilingual-narration-and-candidate-screening.md`](plans/active/M010-001-bilingual-narration-and-candidate-screening.md): active follow-up whose Milestones 1/1A freeze the superseding v8 authority and whose Milestone 2 implements model-free bilingual preparation, selection, persistence, and lifecycle containment before result-bearing execution.
+- [`plans/active/M010-001-bilingual-narration-and-candidate-screening.md`](plans/active/M010-001-bilingual-narration-and-candidate-screening.md): active follow-up whose Milestones 1/1A-4 now cover superseding authority, model-free bilingual preparation, the admitted Piper English baseline, and corrective MOSS/Chatterbox routing while retaining both Qwen language profiles.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

@@ -1,0 +1,73 @@
+{
+  "audits": {
+    "artifacts": true,
+    "boundedRetention": true,
+    "cleanup": true,
+    "networkIsolation": true,
+    "offline": true,
+    "privacy": true
+  },
+  "authorityCommitSha": "915cd039a51d8b85eb9e6a6612b79b0e8b1c0a33",
+  "cancellation": {
+    "passedTrials": 8,
+    "requiredTrials": 8
+  },
+  "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v4",
+  "candidateManifestSha256": "3bceb2c227be02c5f69b524afc3e008e3acf40d42ae47d38ce0b10462324cc06",
+  "corpusSha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe",
+  "counts": {
+    "attempted": 10,
+    "cancellationTrials": 8,
+    "completed": 10,
+    "failed": 0
+  },
+  "decision": {
+    "rejectionRecorded": false,
+    "state": "pending-maintainer-decision"
+  },
+  "dependencyLockSha256": "30f3ca3c27842d88e04256d357e79c291b90636d4f7e20fca18d20713021b1ab",
+  "executionCommitSha": "866f1aff7504e585f8d5b40dd006da8f2e20d277",
+  "languagesEvaluated": ["es", "en"],
+  "limitations": [
+    "single-fluent-bilingual-maintainer",
+    "synthetic-ten-case-corpus",
+    "official-bundled-default-voice-only",
+    "cross-language-accent-observed",
+    "native-speaking-rate-control-unavailable",
+    "experimental-torch-dependency-override",
+    "distribution-obligations-deferred-to-m011"
+  ],
+  "memory": {
+    "peakDedicatedVramBytes": 3774398464,
+    "peakProcessTreeRamBytes": 5236158464
+  },
+  "observations": [
+    "preferred-cold-load-target-exceeded",
+    "preferred-process-ram-target-exceeded"
+  ],
+  "performanceByLanguage": [
+    {
+      "firstAudioP95Seconds": 3.9232545,
+      "language": "es",
+      "warmP95Rtf": 0.645971590909091
+    },
+    {
+      "firstAudioP95Seconds": 4.2274122,
+      "language": "en",
+      "warmP95Rtf": 0.6500018793103448
+    }
+  ],
+  "profileSha256": "a48d5fd8c9624b0c8e7a394a45d050377990ff233486f9f0a96082ab675599c4",
+  "qualityByLanguage": [
+    {
+      "language": "es",
+      "status": "reviewed-awaiting-decision"
+    },
+    {
+      "language": "en",
+      "status": "reviewed-awaiting-decision"
+    }
+  ],
+  "schemaVersion": "tts-bilingual-summary-v11",
+  "status": "measured-awaiting-decision"
+}
