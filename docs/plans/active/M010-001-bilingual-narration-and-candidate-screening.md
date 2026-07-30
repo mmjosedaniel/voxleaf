@@ -624,6 +624,20 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-29:** Installed and verified the exact Qwen interpreter outbound
+  block, then completed the first permitted Serena/Spanish control at
+  execution commit `5d821b9351a7335cc2cf205bccbb58974161f22f`.
+  All five first-attempt generations completed, but the exact profile was
+  rejected before quality on cold-load, first-audio, warm-RTF, cancellation,
+  and process-tree RAM gates. Content-safe evidence records 15.887 seconds
+  first-audio p95, 1.439 warm p95 RTF, 4,638,187,520 peak process-tree RAM,
+  4,825,075,712 peak dedicated VRAM, and two of four cancellation trials
+  completed before the complete-waveform boundary failed the next trial. The
+  full private session and generated audio were deleted before
+  `qwen-serena-spanish-control-result-v8.json` was retained. Review also fixed
+  a result-derivation classification defect so a cancellation failure no
+  longer falsely marks five completed generations as failed first attempts;
+  the rejection itself is unchanged.
 - **2026-07-29:** Began Milestone 4 on
   `feat/m010-001-candidate-qwen-screens`. Added a v8-only bounded screen
   protocol with one cold load, one warm first attempt per frozen case, four

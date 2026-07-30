@@ -240,7 +240,7 @@ def _machine_failures(
         failures.append("observation-count")
     elif run.load_observations[0].load_ns / 1_000_000_000 > 30:
         failures.append("cold-load-p95")
-    if len(run.generation_observations) != expected_generations or run.failed_observations != 0:
+    if len(run.generation_observations) != expected_generations:
         failures.append("first-attempt-failure")
     for language in receipt.languages:
         observations = tuple(
