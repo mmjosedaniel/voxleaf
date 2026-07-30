@@ -1,0 +1,80 @@
+{
+  "audits": {
+    "artifacts": true,
+    "boundedRetention": true,
+    "cleanup": true,
+    "firstAttemptsOnly": true,
+    "networkIsolation": true,
+    "offline": true,
+    "privacy": true
+  },
+  "authorityCommitSha": "b66fafa743b84e8a995705ec3bbdf8fed6a9a04e",
+  "cancellation": {
+    "passedTrials": 4,
+    "processesRemaining": 0,
+    "requiredTrials": 4,
+    "staleUnits": 0
+  },
+  "candidateId": "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
+  "candidateManifestSha256": "5245f6949cf035eee8de98fef21e8eea89d30b468d76039949e2100558401b0e",
+  "corpusSha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe",
+  "counts": {
+    "cancellationTrials": 4,
+    "completedGenerations": 25,
+    "failedGenerations": 0,
+    "firstAttempts": 25
+  },
+  "dependencyLockSha256": "542bf0064d80b20b9cfe599b0ac0a39488d25dbfb73a50e65aac1985c643cd82",
+  "evaluationStage": "baseline",
+  "executionCommitSha": "bcf6521e13984a65157d8486d77fb6212b0aaa90",
+  "gates": {
+    "cancellation": "pass",
+    "cleanup": "pass",
+    "machine": "pass",
+    "memory": "pass",
+    "overall": "pass",
+    "performance": "pass",
+    "privacy": "pass",
+    "quality": "pass"
+  },
+  "languagesEvaluated": ["en"],
+  "limitations": [
+    "single-fluent-english-evaluator",
+    "synthetic-five-case-corpus",
+    "native-piper-sentence-complete-output",
+    "mid-generation-cancellation-by-worker-termination",
+    "cold-load-timing-detail-private",
+    "per-dimension-quality-detail-private",
+    "distribution-obligations-deferred-to-m011"
+  ],
+  "memory": {
+    "minimumAvailableSystemRamBytes": 12122398720,
+    "peakDedicatedVramBytes": null,
+    "peakProcessTreeRamBytes": 431788032
+  },
+  "performanceByLanguage": [
+    {
+      "failedFirstAttempts": 0,
+      "firstAudioP95Seconds": 0.1537418,
+      "language": "en",
+      "sustainedP95Rtf": 0.025193863246975753,
+      "totalSustainedRtf": 0.01986398782451109,
+      "warmP95Rtf": 0.023485883391308863
+    }
+  ],
+  "profileSha256": "84448e70e8b8b2782f22c0e3d874b1b30531084732e0416ab9e83e1ad1e7525a",
+  "qualityByLanguage": [
+    {
+      "blindOrder": true,
+      "evaluatorCount": 1,
+      "intelligibilityMean": 5.0,
+      "language": "en",
+      "meaningChangingDefects": 0,
+      "naturalnessMean": 4.2,
+      "overallMean": 4.8,
+      "wrongLanguageOutputs": 0
+    }
+  ],
+  "schemaVersion": "tts-bilingual-summary-v8",
+  "status": "complete"
+}

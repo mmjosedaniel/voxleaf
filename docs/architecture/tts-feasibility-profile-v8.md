@@ -133,3 +133,22 @@ The v8 validator loads and revalidates the complete v7 base, verifies all v8
 bytes and the reused Qwen lock, rejects candidate/language/stage substitution,
 rejects private content, verifies the complete authority tree, and requires
 strict Git ancestry.
+
+## Recorded baseline result
+
+M010.1 Milestone 3 executed exact
+`piper-1-4-2-onnx-cpu-en-us-joe-medium-v1` after the authority was frozen.
+The content-safe
+[`piper-english-result-v8.json`](../../benchmarks/tts/piper-english-result-v8.json)
+records a complete overall pass: 25 first-attempt generations with zero
+failures, four passing cancellation trials, 0.154-second p95 first audio,
+0.0252 sustained p95 RTF, 411.8 MiB peak process-tree RAM, zero
+meaning-changing defects, zero wrong-language outputs, 5.0/5 mean
+intelligibility, 4.2/5 mean naturalness, and 4.8/5 mean overall usefulness.
+The quality limitation is one fluent evaluator over five synthetic cases;
+prosody averaged 3.8/5.
+
+The exact Piper/joe profile is admitted for Milestone 6 integration. This is
+evaluation evidence, not current runtime availability: the English profile is
+not yet in the executable product registry, and M011 retains distribution and
+license-fulfillment responsibility.

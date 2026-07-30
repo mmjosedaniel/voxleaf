@@ -104,10 +104,11 @@ authority.
 1. M010.1 now implements explicit Spanish/English selection and the
    engine-neutral bilingual preparation boundary under superseding v8
    authority. Spanish remains the only playable product language because no
-   English profile is admitted yet; selecting English fails closed before
-   child start. Later milestones evaluate exact Piper English, independent
-   local Qwen Serena/Spanish and Aiden/English profiles, and at most one newly
-   admitted engine.
+   English profile is integrated yet; selecting English fails closed before
+   child start. Milestone 3 has admitted exact Piper/joe English through every
+   frozen baseline gate for later Milestone 6 integration. Later milestones
+   evaluate independent local Qwen Serena/Spanish and Aiden/English profiles
+   and at most one newly admitted engine.
 2. M011 then packages and validates an end-user distribution, including Piper
    notices, provenance, corresponding-source or written-offer mechanics,
    signing, updates, and complete-MVP validation.

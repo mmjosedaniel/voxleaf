@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import json
 from pathlib import Path
 from typing import Final, cast
 
@@ -209,12 +210,22 @@ def test_v8_excludes_cloud_voice_cloning_voice_design_and_extra_english_voice() 
 
 def test_v8_supersedes_resultless_v7_before_any_result() -> None:
     result_paths = sorted(
-        path.name for path in (REPOSITORY_ROOT / "benchmarks/tts").glob("*result-v[78]*.json")
+        path.name for path in (REPOSITORY_ROOT / "benchmarks/tts").glob("*result-v7*.json")
     )
     assert result_paths == []
     authority = load_frozen_v8_authority(REPOSITORY_ROOT)
     supersedes = cast(dict[str, object], authority.profile["supersedes"])
     assert supersedes["v7ResultFilesPresent"] == 0
+
+
+def test_committed_v8_summaries_are_schema_valid() -> None:
+    paths = sorted((REPOSITORY_ROOT / "benchmarks/tts").glob("*result-v8*.json"))
+    assert paths
+    for path in paths:
+        validate_v8_summary_result(
+            REPOSITORY_ROOT,
+            json.loads(path.read_text(encoding="utf-8")),
+        )
 
 
 def test_v8_summary_accepts_only_exact_candidate_language_stage_and_lock() -> None:

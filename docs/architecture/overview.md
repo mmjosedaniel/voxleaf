@@ -55,9 +55,12 @@ cloud inference, voice cloning, voice design, and a second English Qwen voice.
 Milestone 2 implements the model-free product boundary: a closed bilingual
 preparation profile, bounded language preference, accessible explicit
 selection, exact profile/language admission, and identity-first cancellation
-and cleanup. No English engine or support result exists yet; Spanish Piper
-remains the only supported playable profile and the existing M010 support
-matrix remains authoritative.
+and cleanup. Milestone 3 independently admits exact Piper 1.4.2 /
+`en_US-joe-medium` after its frozen v8 CPU, cancellation, quality, privacy,
+offline, and cleanup gates all pass. This result is not runtime integration:
+Spanish Piper remains the only supported playable profile and the existing
+M010 support matrix remains authoritative until M010.1 Milestone 6 adds and
+proves the English registry/service path.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps

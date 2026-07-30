@@ -43,8 +43,9 @@ M010.1 is active before M011. Milestone 1 froze historical result-blind v7;
 before any result, Milestone 1A preserved it and froze superseding v8
 authority with exact local Qwen/Serena Spanish and Qwen/Aiden English
 controls. Milestone 2 implements explicit bilingual preparation and selection,
-but Piper/davefx remains the sole supported playable profile. No English or
-additional profile may be claimed until later exact evidence passes.
+and Milestone 3 admits exact Piper/joe English through every frozen v8
+baseline gate. Piper/davefx remains the sole supported playable profile until
+Milestone 6 integrates and exact-host proves the admitted English profile.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -838,7 +839,7 @@ frozen v6 cycle and passed measured evidence before product admission.
 
 ## Milestone 10.1: Add bilingual narration and screen naturalness candidates
 
-**Status:** In progress; Milestones 1, 1A, and 2 complete as of 2026-07-29. Follow
+**Status:** In progress; Milestones 1, 1A, 2, and 3 complete as of 2026-07-29. Follow
 [`M010-001-bilingual-narration-and-candidate-screening.md`](active/M010-001-bilingual-narration-and-candidate-screening.md).
 This bounded pre-M011 follow-up responds to an explicit product need for
 English narration and a stronger portfolio demonstration. It does not reopen
@@ -857,7 +858,11 @@ and [ADR-0025](../architecture/decisions/ADR-0025-supersede-v7-with-local-qwen-b
 CosyVoice is rejected from this v8 cycle before an environment lock because
 its reviewed general path did not supply an exact non-personal default voice.
 Milestone 2 implements the model-free selection and preparation boundary but
-does not admit an English product profile.
+does not itself admit an English product profile. Milestone 3 independently
+admits exact Piper 1.4.2 / `en_US-joe-medium` for later integration after all
+machine, performance, memory, cancellation, quality, privacy, offline, and
+cleanup gates pass. It remains unavailable in the application until
+Milestone 6.
 
 ### Goal
 
@@ -947,9 +952,10 @@ any future reconsideration requires new authority. All other candidates remain
 post-MVP and require separate newly frozen authority.
 
 Retain Piper/davefx as the selected CPU fallback and Qwen/Serena as the
-optional GPU-dependent development profile until M010.1 evidence changes a
-specific exact profile. After release, screen the remaining candidates in
-this order:
+optional GPU-dependent development profile. M010.1 now also retains the
+passing Piper/joe English baseline for Milestone 6 integration; this evidence
+does not change the current runtime support matrix by itself. After release,
+screen the remaining candidates in this order:
 
 1. Pocket TTS Spanish as a balanced streaming CPU challenger, conditional on
    exact model/voice license and redistribution review.
