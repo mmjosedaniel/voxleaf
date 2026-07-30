@@ -1,0 +1,112 @@
+{
+  "profileVersion": "tts-bilingual-corrective-profile-v9",
+  "status": "frozen-before-corrective-v9-implementation-and-results",
+  "purpose": "measure-qwen-chatterbox-and-moss-without-automatic-candidate-rejection",
+  "supersedesProspectiveUseOf": {
+    "profile": "benchmarks/tts/profile-v8.json",
+    "sha256": "84448e70e8b8b2782f22c0e3d874b1b30531084732e0416ab9e83e1ad1e7525a",
+    "historicalV8ResultsRemainImmutable": true,
+    "reason": "v8-conflated-standard-support-targets-with-constrained-buffered-mvp-eligibility-and-recorded-configuration-mismatches-as-candidate-rejections"
+  },
+  "authorities": {
+    "evaluationCorpus": {
+      "path": "benchmarks/tts/corpus-v7.json",
+      "sha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe"
+    },
+    "normalizationProfile": {
+      "path": "docs/architecture/narration-normalization-v2.md",
+      "sha256": "8e4f0bc45d260a03bc4bfdf523d272951eb26915005a9acbc60e8f17a4dd446e"
+    },
+    "candidateManifest": {
+      "path": "benchmarks/tts/candidates-v9.json",
+      "sha256": "4ac6aefad403c566126445498f084152d8dc14f449fff3d08f3eb14d00c707c5"
+    },
+    "privateRawSchema": {
+      "path": "benchmarks/tts/schemas/bilingual-raw-v9.schema.json",
+      "sha256": "6802fcb5e80ffc158b2d515711856d32233dc341dbc893941a9c9a5166bab5e4"
+    },
+    "contentSafeSummarySchema": {
+      "path": "benchmarks/tts/schemas/bilingual-summary-v9.schema.json",
+      "sha256": "d15df5809bf9df376f616298afee2a9cca63ab905ee1e31e13bab152640aa23f"
+    }
+  },
+  "productInterpretation": {
+    "standardSupportTargets": {
+      "warmP95RtfMaximum": 1.1,
+      "sustainedP95RtfMaximum": 1.1,
+      "meaning": "preferred-standard-profile-target-not-automatic-rejection"
+    },
+    "constrainedBufferedMvp": {
+      "rtfAboveOnePermitted": true,
+      "knownQwenReferenceRtf": 1.44,
+      "startup": "begin-when-configured-playable-audio-lead-is-ready",
+      "buffering": "bounded-adaptive-prebuffering",
+      "underruns": "observable-and-measurable",
+      "maintainerDecisionRequired": true
+    }
+  },
+  "executionPolicy": {
+    "candidateOrder": [
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v9",
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v9",
+      "chatterbox-multilingual-v3-cuda-bf16-default-v2",
+      "moss-tts-nano-100m-onnx-cpu-ava-v2"
+    ],
+    "oneLoadedModelAtATime": true,
+    "automaticRetries": 0,
+    "automaticCandidateRejection": "forbidden",
+    "configurationMismatchOutcome": "correct-authority-before-measurement",
+    "measurementIssueOutcome": "record-observation-and-await-maintainer-decision",
+    "qualityReviewAfterAdvisoryPerformanceIssue": "permitted",
+    "hardStopConditions": [
+      "privacy-violation",
+      "remote-inference",
+      "unbounded-retention",
+      "artifact-identity-mismatch",
+      "network-isolation-missing",
+      "host-safety-preflight-failure"
+    ],
+    "hardStopIsCandidateRejection": false,
+    "runtimeDownloads": "forbidden",
+    "referenceAudio": "forbidden",
+    "rawResultRoot": "benchmarks/tts/raw/v9",
+    "rawResultRetention": "delete-after-content-safe-derivation",
+    "generatedAudioRetention": "delete-after-private-quality-session",
+    "resultCommitRule": "authority-commit-must-be-strict-ancestor"
+  },
+  "boundedScreen": {
+    "warmAttemptsPerLanguage": 5,
+    "cancellationTrialsPerLanguage": 4,
+    "coldLoadsPerCandidate": 1,
+    "firstAttemptsOnly": true,
+    "measurements": [
+      "cold-load",
+      "first-audio",
+      "warm-rtf",
+      "process-tree-ram",
+      "dedicated-vram",
+      "cancellation",
+      "wrong-language-output",
+      "intelligibility",
+      "naturalness",
+      "overall-usefulness"
+    ]
+  },
+  "decisionRules": {
+    "preDecisionStatus": "measured-awaiting-decision",
+    "rejectionRequiresExplicitMaintainerDecision": true,
+    "noModelMayBeRejectedByHarness": true,
+    "historicalV8RejectionsDoNotDecideV9": true,
+    "recordedDecisionMustCiteContentSafeV9Evidence": true
+  },
+  "resultRules": {
+    "schemaVersions": {
+      "privateRaw": "tts-bilingual-raw-v9",
+      "contentSafeSummary": "tts-bilingual-summary-v9"
+    },
+    "candidateManifestSha256": "4ac6aefad403c566126445498f084152d8dc14f449fff3d08f3eb14d00c707c5",
+    "evaluationCorpusSha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe",
+    "executionCommitMustStrictlyDescendFromAuthority": true,
+    "resultBearingFilesBeforeAuthority": "forbidden"
+  }
+}

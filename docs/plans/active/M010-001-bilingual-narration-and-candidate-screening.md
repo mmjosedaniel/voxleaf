@@ -452,10 +452,13 @@ distribution and license fulfillment.
 
 ### Milestone 4: Run bounded sequential candidate and Qwen control screens
 
-**Status:** Complete. Both independent Qwen controls were rejected before
-quality, and both new-engine screens stopped at their exact frozen
-model-identity boundaries before inference. Zero new-engine profiles advance
-to the Milestone 5 full matrix.
+**Status:** In progress under corrective v9 authority. V8 produced useful
+Qwen measurements but incorrectly treated its preferred standard-profile
+targets as automatic rejection gates for the already approved constrained
+buffered path. The Chatterbox and MOSS v8 stops were configuration mismatches,
+not model tests. V9 preserves those historical records, corrects both exact
+candidate configurations, and forbids a rejection until the maintainer reviews
+the evidence and decides.
 
 1. Run exact Qwen/Serena Spanish and Qwen/Aiden English independently through
    the existing-engine control gates. Stop only the failing exact identity and
@@ -468,25 +471,29 @@ to the Milestone 5 full matrix.
    gates.
 4. Retain the Milestone 1 CosyVoice intake rejection; do not create an
    environment or execute it in v8.
-5. Stop each rejected candidate immediately and remove its untracked artifacts
-   through the documented cleanup path.
-6. Rank only gate-passing exact profiles; upstream samples and family claims
-   cannot override a failed VoxLeaf gate.
+5. Stop an unsafe or invalid execution and remove its untracked artifacts
+   through the documented cleanup path, but do not convert that stop into a
+   candidate rejection.
+6. Report measurements and quality evidence. Ask the maintainer before
+   recording any rejection.
 
 Exit with content-safe screen summaries and zero or one selected full-matrix
 new-engine survivor plus independent Qwen profile decisions.
 
-### Milestone 5: Execute the full frozen v8 evaluation and record the decision
+### Milestone 5: Execute the corrective frozen v9 evaluation and record the decision
 
 **Status:** Not started.
 
-1. Run the complete language-specific matrix for each passing Qwen control.
-2. If a new-engine screen survivor exists, run the complete frozen
+1. Retain the existing language-specific Qwen measurements as capacity
+   evidence, complete their private quality review under v9, and treat the
+   `RTF <= 1.1` standard target as advisory for the constrained buffered MVP.
+2. After the corrected real Chatterbox and MOSS screens, run the complete frozen
    Spanish/English
    machine, quality, performance, memory, cancellation, cleanup, and privacy
    matrix on the exact host.
-3. If no survivor exists, record the frozen screen rejections and skip the
-   full matrix rather than manufacturing a winner.
+3. Present any screen failure, limitation, or blocked execution to the
+   maintainer before deciding whether to reject, defer, retain, or advance the
+   candidate.
 4. Validate ancestry, hashes, schemas, derived summaries, evaluator
    completeness, and content safety.
 5. Accept the next numbered ADR that either admits one exact profile with
@@ -624,8 +631,18 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-29:** Reopened Milestone 4 after maintainer review found that v8
+  had applied the `RTF <= 1.1` preferred standard-profile target as an
+  automatic blocker despite ADR-0015's approved constrained buffered Qwen
+  mode. Preserved every v7/v8 byte and result, then froze corrective v9
+  authority. V9 treats the existing approximately 1.44 Qwen RTF as advisory
+  capacity evidence, requires real bounded Chatterbox and MOSS inference, and
+  requires an explicit maintainer decision before any model rejection.
+  Chatterbox now has a separate exact source-revision lock that supports
+  explicit V3 loading; MOSS v9 records the actual model and codec artifacts at
+  the already frozen upstream revisions.
 - **2026-07-29:** Completed Milestone 4 with zero new-engine full-matrix
-  survivors. The exact MOSS source and environment installed successfully,
+  survivors under historical v8 interpretation. The exact MOSS source and environment installed successfully,
   and exact revision
   `f52645cb467506d8e18e746ddd59482685b74e58` was requested into the ignored
   model root. The downloaded revision did not match the frozen v8 artifact
@@ -830,15 +847,16 @@ committed benchmark authority after results.
   gate. Its lower prosody mean (3.8/5) is a documented limitation, not a gate
   failure, because intelligibility, naturalness, usefulness, language
   stability, meaning, and wrong-language criteria all passed unchanged.
-- Exact package or repository names do not establish a frozen model identity.
+- Historical v8 showed that exact package or repository names do not by
+  themselves establish a frozen model identity.
   Chatterbox's pinned package loaded a V2 filename instead of the frozen V3
   checkpoint, while MOSS's exact pinned revision contained ONNX filenames and
   bytes different from the frozen artifact manifest. Both are deterministic
-  pre-inference rejections; silently switching package versions, revisions, or
-  artifact hashes after seeing the discrepancy would invalidate v8 authority.
-- Milestone 4 therefore advances no new engine. The rejected Serena and Aiden
-  controls remain independent evidence and do not reopen Qwen admission;
-  Piper/joe English remains the only profile admitted by M010.1 so far.
+  pre-inference v8 stops. V9 corrects them prospectively without editing v8.
+- The v8 Serena and Aiden summaries retain valid measurements but do not decide
+  constrained buffered eligibility. Their approximately 1.44 RTF is not an
+  automatic blocker. Chatterbox and MOSS have not yet produced model evidence.
+  No v9 candidate decision may be recorded before maintainer review.
 
 ## Final validation results
 
