@@ -1,0 +1,105 @@
+{
+  "profileVersion": "tts-chatterbox-cuda-corrective-profile-v10",
+  "status": "frozen-before-chatterbox-cuda-v10-implementation-and-results",
+  "purpose": "measure-the-corrected-chatterbox-cuda-environment-without-automatic-candidate-rejection",
+  "supersedesCandidateConfiguration": {
+    "profile": "benchmarks/tts/profile-v9.json",
+    "sha256": "39499a63ba6194803ae3e8e88c2e3a77390454310a059e2aaa9ca7f5874ba3d5",
+    "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v2",
+    "reason": "the-v9-environment-resolved-cpu-only-torch-and-produced-no-model-result"
+  },
+  "preserves": {
+    "v9MossAuthorityAndEvidence": true,
+    "v9MossCandidateId": "moss-tts-nano-100m-onnx-cpu-ava-v2"
+  },
+  "authorities": {
+    "evaluationCorpus": {
+      "path": "benchmarks/tts/corpus-v7.json",
+      "sha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe"
+    },
+    "normalizationProfile": {
+      "path": "docs/architecture/narration-normalization-v2.md",
+      "sha256": "8e4f0bc45d260a03bc4bfdf523d272951eb26915005a9acbc60e8f17a4dd446e"
+    },
+    "candidateManifest": {
+      "path": "benchmarks/tts/candidates-v10.json",
+      "sha256": "07332b38d5e480733538d75b9b8ae85ae44df5d921dd2fee4da12ba2f29f942c"
+    },
+    "privateRawSchema": {
+      "path": "benchmarks/tts/schemas/bilingual-raw-v10.schema.json",
+      "sha256": "5b2f858eb0aeaf708f565e9f9818b6d4c7e01526a7232be7979bc6ac0ab09c7c"
+    },
+    "contentSafeSummarySchema": {
+      "path": "benchmarks/tts/schemas/bilingual-summary-v10.schema.json",
+      "sha256": "e7d5ba3aea5a3367f98b2c445a41425a0ed69aa53898e99ae1644ee178cc5387"
+    }
+  },
+  "productInterpretation": {
+    "standardSupportTargets": {
+      "warmP95RtfMaximum": 1.1,
+      "sustainedP95RtfMaximum": 1.1,
+      "meaning": "preferred-standard-profile-target-not-automatic-rejection"
+    },
+    "constrainedBufferedMvp": {
+      "rtfAboveOnePermitted": true,
+      "startup": "begin-when-configured-playable-audio-lead-is-ready",
+      "buffering": "bounded-adaptive-prebuffering",
+      "underruns": "observable-and-measurable",
+      "maintainerDecisionRequired": true
+    }
+  },
+  "executionPolicy": {
+    "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v3",
+    "oneLoadedModelAtATime": true,
+    "automaticRetries": 0,
+    "automaticCandidateRejection": "forbidden",
+    "configurationMismatchOutcome": "correct-authority-before-measurement",
+    "measurementIssueOutcome": "record-observation-and-await-maintainer-decision",
+    "qualityReviewAfterAdvisoryPerformanceIssue": "permitted",
+    "hardStopConditions": [
+      "privacy-violation",
+      "remote-inference",
+      "unbounded-retention",
+      "artifact-identity-mismatch",
+      "network-isolation-missing"
+    ],
+    "hardStopIsCandidateRejection": false
+  },
+  "boundedScreen": {
+    "languages": ["es", "en"],
+    "warmCasesPerLanguage": 5,
+    "cancellationTrialsPerLanguage": [
+      "before-dispatch",
+      "accepted-before-audio",
+      "after-first-audio",
+      "near-hard-mid-generation"
+    ],
+    "timeoutsMilliseconds": {
+      "load": 300000,
+      "request": 180000,
+      "workerTermination": 2000,
+      "cleanup": 5000
+    },
+    "advisoryTargets": {
+      "coldLoadP95SecondsMaximum": 30,
+      "firstAudioP95SecondsMaximum": 7,
+      "warmP95RtfMaximum": 1.1,
+      "peakProcessTreeRamBytesMaximum": 4294967296,
+      "minimumAvailableRamBytes": 4294967296,
+      "minimumDedicatedVramReserveBytes": 536870912
+    }
+  },
+  "privacy": {
+    "runtimeDownloads": "forbidden",
+    "remoteInference": "forbidden",
+    "referenceAudio": "forbidden",
+    "generatedAudioRetention": "private-opt-in-quality-session-only",
+    "rawEvidence": "gitignored-private-session",
+    "committedEvidence": "content-safe-summary-only",
+    "bookTextInLogs": "forbidden"
+  },
+  "decision": {
+    "stateBeforeMaintainerReview": "pending-maintainer-decision",
+    "rejectionRecordedBeforeMaintainerReview": false
+  }
+}

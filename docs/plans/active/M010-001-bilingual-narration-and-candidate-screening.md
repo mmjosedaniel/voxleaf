@@ -121,12 +121,20 @@ runtime or support state.
 - [narration normalization v2](../../architecture/narration-normalization-v2.md)
 - [TTS feasibility profile v7](../../architecture/tts-feasibility-profile-v7.md)
 - [superseding TTS feasibility profile v8](../../architecture/tts-feasibility-profile-v8.md)
+- [corrective TTS feasibility profile v9](../../architecture/tts-feasibility-profile-v9.md)
+- [Chatterbox CUDA feasibility profile v10](../../architecture/tts-feasibility-profile-v10.md)
 - [ADR-0024](../../architecture/decisions/ADR-0024-freeze-bilingual-v7-authority.md)
 - [ADR-0025](../../architecture/decisions/ADR-0025-supersede-v7-with-local-qwen-bilingual-v8-authority.md)
+- [ADR-0026](../../architecture/decisions/ADR-0026-correct-bilingual-candidate-decision-authority.md)
+- [ADR-0027](../../architecture/decisions/ADR-0027-freeze-chatterbox-cuda-v10-correction.md)
 - [v7 candidate manifest](../../../benchmarks/tts/candidates-v7.json)
 - [v7 evaluation profile](../../../benchmarks/tts/profile-v7.json)
 - [v8 candidate amendment](../../../benchmarks/tts/candidates-v8.json)
 - [v8 evaluation profile](../../../benchmarks/tts/profile-v8.json)
+- [v9 corrective candidate manifest](../../../benchmarks/tts/candidates-v9.json)
+- [v9 corrective evaluation profile](../../../benchmarks/tts/profile-v9.json)
+- [v10 Chatterbox candidate manifest](../../../benchmarks/tts/candidates-v10.json)
+- [v10 Chatterbox evaluation profile](../../../benchmarks/tts/profile-v10.json)
 - [v7 synthetic corpus](../../../benchmarks/tts/corpus-v7.json)
 - [v2 normalization corpus](../../../benchmarks/tts/normalization-corpus-v2.json)
 
@@ -253,11 +261,13 @@ Use one fluent evaluator per evaluated language for MVP quality admission. If
 no fluent English evaluator is available, the English quality gate is blocked;
 machine metrics or Spanish feedback cannot substitute for that decision.
 
-Screen candidates sequentially. Reject immediately on unresolved licensing or
+Screen candidates sequentially. Stop an execution on unresolved licensing or
 voice provenance, mandatory online inference, inability to run offline on the
 exact Windows host, unsafe resource fit, failed startup/cancellation, invalid
 audio, hallucination/repetition/meaning change, or inability to fit the
-service and repository boundaries. Do not spend the full matrix on an
+service and repository boundaries. Record the content-safe observation and
+ask the maintainer before accepting, deferring, or rejecting the candidate.
+Do not spend the full matrix on an
 already-rejected candidate.
 
 Piper English runs first. Exact Qwen/Serena Spanish and Qwen/Aiden English
@@ -631,6 +641,20 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-29:** Corrective v9 completed real MOSS machine inference rather
+  than reusing the historical configuration stop. All ten Spanish/English
+  cases and all eight cancellation trials completed. Spanish warm p95 RTF was
+  0.496 with 5.07-second first-audio p95; English warm p95 RTF was 0.425 with
+  3.91-second first-audio p95. Peak process-tree RAM was about 1.78 GiB and no
+  advisory observation was raised. Ten private listening samples were
+  generated and remain ignored pending maintainer review; no candidate
+  decision has been recorded.
+- **2026-07-29:** The v9 Chatterbox environment stopped before model loading
+  because its lock resolved the Windows PyPI `torch 2.6.0+cpu` wheel. This is
+  a configuration observation, not a model result or rejection. Preserved v9
+  and its MOSS evidence unchanged, then froze candidate-specific v10 authority
+  with a new CUDA 12.4 environment requiring exact Torch/Torchaudio
+  2.6.0+cu124 before another Chatterbox attempt.
 - **2026-07-29:** Reopened Milestone 4 after maintainer review found that v8
   had applied the `RTF <= 1.1` preferred standard-profile target as an
   automatic blocker despite ADR-0015's approved constrained buffered Qwen
@@ -855,8 +879,9 @@ committed benchmark authority after results.
   pre-inference v8 stops. V9 corrects them prospectively without editing v8.
 - The v8 Serena and Aiden summaries retain valid measurements but do not decide
   constrained buffered eligibility. Their approximately 1.44 RTF is not an
-  automatic blocker. Chatterbox and MOSS have not yet produced model evidence.
-  No v9 candidate decision may be recorded before maintainer review.
+  automatic blocker. MOSS has now produced real v9 machine evidence and
+  private quality samples; Chatterbox has not yet produced model evidence.
+  Neither candidate may be rejected before maintainer review.
 
 ## Final validation results
 

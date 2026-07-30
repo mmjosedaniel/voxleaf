@@ -36,6 +36,8 @@ ADR-0002-short-description.md
 - [`ADR-0023-final-m010-support-and-recovery.md`](ADR-0023-final-m010-support-and-recovery.md): accept Piper/davefx as the sole supported CPU fallback, retain Qwen/Serena as development-only, keep automatic failover disabled, and defer distribution compliance to M011.
 - [`ADR-0024-freeze-bilingual-v7-authority.md`](ADR-0024-freeze-bilingual-v7-authority.md): freeze explicit bilingual product behavior and the historical v7 candidate/evaluation authority before results.
 - [`ADR-0025-supersede-v7-with-local-qwen-bilingual-v8-authority.md`](ADR-0025-supersede-v7-with-local-qwen-bilingual-v8-authority.md): preserve resultless v7 and supersede it with exact local Qwen/Serena Spanish and Qwen/Aiden English v8 profiles before results.
+- [`ADR-0026-correct-bilingual-candidate-decision-authority.md`](ADR-0026-correct-bilingual-candidate-decision-authority.md): treat Qwen's approximately 1.44 RTF as constrained-buffer capacity evidence, require real Chatterbox and MOSS tests, and prohibit harness-recorded candidate rejection.
+- [`ADR-0027-freeze-chatterbox-cuda-v10-correction.md`](ADR-0027-freeze-chatterbox-cuda-v10-correction.md): preserve v9 MOSS evidence while freezing an exact CUDA 12.4 Chatterbox environment after the v9 CPU-wheel configuration stop.
 
 ## Template
 
