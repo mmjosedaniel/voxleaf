@@ -414,7 +414,12 @@ now preserve the v6 Spanish path, apply the frozen 22,050-to-24,000 Hz bounded
 linear conversion, project only the five English corpus cases, execute ten
 warm and fifteen sustained first attempts, and use the four v8 cancellation
 trials. Model-free focused formatting, lint, type checking, and 20 tests pass.
-No Piper English waveform or result has been produced yet: the exact
+The private quality workflow now generates five randomized English samples,
+requires all six frozen dimensions plus meaning and wrong-language findings,
+deletes the exported scorecard after aggregation, and derives only the closed
+content-safe v8 summary after deleting the complete private session. The
+expanded focused suite passes 23 tests. No Piper English waveform or result
+has been produced yet: the exact
 candidate interpreter still requires its administrator-installed outbound
 firewall block before preflight can admit the run.
 
@@ -596,8 +601,9 @@ committed benchmark authority after results.
   Piper 1.4.2, ONNX Runtime 1.27.0, and CPU provider availability. Added a
   v8-only English adapter, bounded 24 kHz conversion, bilingual corpus
   projection, four-trial baseline protocol, content-safe raw schema path,
-  closed-stdin command, ignored v8 raw root, and deterministic regression
-  coverage. Focused Ruff, mypy, and 20 pytest cases pass. The first
+  closed-stdin commands, disposable blinded English quality workflow,
+  content-safe summary derivation, ignored v8 raw root, and deterministic
+  regression coverage. Focused Ruff, mypy, and 23 pytest cases pass. The first
   administrator-scoped firewall installation attempt failed with Windows
   access denied, so exact inference remains correctly blocked pending that
   host control.
