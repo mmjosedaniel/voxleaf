@@ -1100,6 +1100,15 @@ async function observeAdaptiveDepletionOrStablePlayback(driver) {
     if (observation?.phase === "playing" && observation.playbackMs >= 60_000) {
       return Object.freeze({ kind: "stable", observation });
     }
+    if (
+      observation?.phase === "failed" ||
+      (["idle", "stopped"].includes(observation?.phase) &&
+        observation.playIntent !== "playing")
+    ) {
+      console.error(
+        `ADAPTIVE_TTS_DEPLETION_OBSERVATION ${JSON.stringify(observation)}`,
+      );
+    }
     assert(
       observation?.phase !== "failed" &&
         !(
@@ -1110,6 +1119,9 @@ async function observeAdaptiveDepletionOrStablePlayback(driver) {
     );
     await delay(250);
   }
+  console.error(
+    `ADAPTIVE_TTS_DEPLETION_OBSERVATION ${JSON.stringify(observation)}`,
+  );
   throw new Error("Native synchronized narration proof failed.");
 }
 
