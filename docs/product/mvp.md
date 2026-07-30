@@ -60,6 +60,9 @@ closed backend comparison before results, then selected no pitch-preserving
 backend. Later milestones may reorganize the ready reader around one fixed app
 bar, accessible Settings, compact narration, and the sole publication scroll
 viewport; make English the fallback only for missing/invalid/reset language
+state; and, under ADR-0035, evaluate a separate fee-free six-rate v2 ending at
+`0.75x`. Runtime playback remains `1.00x` until that comparison admits a
+backend.
 state; and preserve applicable Piper, Chatterbox, and development-only Qwen
 presentation. Non-default playback speed requires a new decision. Current
 runtime behavior remains the completed M010.1 UI, Spanish fallback, and
@@ -130,9 +133,9 @@ authority.
 
 1. M010.2 Milestones 1-2 froze the reader-first Settings shell, English
    fallback, bounded narration preferences, and playback authority, then
-   selected no backend from the closed pitch-preserving comparison. The
-   reader/Settings work remains available, but the eleven-speed outcome is
-   blocked pending an explicit reduced-scope or new-backend decision in
+   selected no backend from the closed v1 pitch-preserving comparison. The
+   reader/Settings work remains available, and ADR-0035 authorizes the
+   separate six-rate, fee-free v2 whose authority must be frozen next in
    [`reader-settings-and-playback-controls.md`](reader-settings-and-playback-controls.md).
 2. M011 then packages and validates an end-user distribution, including model
    and voice license notices, provenance, corresponding-source or written-offer
@@ -244,9 +247,10 @@ Remaining:
   delay; hard/token splits remain immediate, terminal ellipses receive the
   explicit override, real buffering substitutes for the delay, and final
   completion receives no trailing wait.
-- M010.2 playback speed is applied after synthesis, offers only `1.00x`
-  through `0.50x` in `0.05x` steps, preserves pitch, and neither regenerates
-  audio nor changes model RTF.
+- M010.2 playback speed is applied after synthesis, offers only `1.00x`,
+  `0.95x`, `0.90x`, `0.85x`, `0.80x`, and `0.75x`, preserves pitch, and
+  neither regenerates audio nor changes model RTF. It may use only an admitted
+  fee-free permissive backend.
 - Source frames remain memory and heard-progress authority; effective
   listening duration governs startup, low-water, and underrun promises after
   M010.2 is implemented.

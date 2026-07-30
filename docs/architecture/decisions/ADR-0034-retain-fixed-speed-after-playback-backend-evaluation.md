@@ -58,6 +58,14 @@ The next decision must choose one of these paths:
 Neither path may reinterpret the Milestone 2 evidence or silently relax its
 frozen gates.
 
+## Follow-up
+
+On 2026-07-30 the maintainer selected the second path through ADR-0035. The
+future product range is reduced to six values ending at `0.75x`, and a new
+result-blind fee-free v2 comparison must be frozen before implementation.
+This follow-up does not change this ADR's v1 result or the current `1.00x`
+runtime.
+
 ## Alternatives considered
 
 - Relaxing the CPU or RAM gate after observing WSOLA was rejected because the

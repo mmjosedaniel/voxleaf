@@ -61,6 +61,9 @@ and result-blind backend comparison, then selected no pitch-preserving backend.
 Runtime behavior is not implemented. Later milestones may reorganize the
 reader around one fixed app bar, accessible Settings, compact narration, and
 the sole reader scroll viewport, and introduce an English fallback that
+preserves valid saved Spanish/English choices. ADR-0035 separately authorizes
+a fee-free v2 comparison for six rates ending at `0.75x`; Milestone 2A is next
+and runtime remains `1.00x`.
 preserves valid saved language. Non-default playback speed requires a new
 decision. Installer distribution and license fulfillment remain deferred to
 M011.
@@ -176,8 +179,8 @@ persistence. Playback is currently fixed at `1.0x`.
 
 Approved M010.2 requirements move configuration into an accessible Settings
 drawer/sheet, keep the book as the sole large scroll surface, and add
-engine-neutral pitch-preserving speeds from `1.00x` through `0.50x` in the
-compact narration bar. The user continues to read the same source passage
+engine-neutral pitch-preserving speeds from `1.00x` through `0.75x` in `0.05x`
+steps in the compact narration bar. The user continues to read the same source passage
 being narrated rather than a separate transcript or unrelated location.
 
 Core interaction should support keyboard navigation, visible focus, semantic controls, assistive-technology labels, high contrast, reduced motion, adjustable text size, and operation without a mouse. The UI must remain responsive while inference runs.
@@ -210,7 +213,7 @@ directions are separated below:
 | OpenAI Whisper                    | Rejected as TTS candidate                                                 | Automatic speech recognition: audio input and text output                                                                                                                                                                    | Optional fully local benchmark-only transcription may be assessed separately; it cannot generate narration or replace human quality review                            |
 | Process transport                 | Accepted, implemented, and validated                                      | Rust-owned child-process standard streams plus narrow optimized binary Tauri responses; no listener or renderer shell capability                                                                                             | Protocol v1 remains unchanged; production distribution remains blocked                                                                                                |
 | Internal audio                    | All admitted profile adapters and local packaged portfolio proof complete | Bounded mono 24-kHz float32-le units; Piper converts native 22.05 kHz inside its adapter; Chatterbox and Qwen return bounded complete units; sole-owner FIFO and one transient active-device copy                            | No audio persistence; one model child at a time; Qwen remains optional development-only and constrained-buffered                                                      |
-| Playback mechanism                | Web Audio `1.0x` path implemented; M010.2 Milestone 2 selected no backend  | One dedicated `AudioContext`, one gain node, and one active `AudioBufferSourceNode`; WSOLA failed the frozen CPU gate and packaged WebView2 rejected the media-element path under the unchanged CSP                           | Retain `1.00x`; non-default speed requires new result-blind authority or an explicit reduced-scope decision                                                            |
+| Playback mechanism                | Web Audio `1.0x` path implemented; M010.2 v1 selected no backend; fee-free six-rate v2 authorized | One dedicated `AudioContext`, one gain node, and one active `AudioBufferSourceNode`; v1 WSOLA failed the CPU gate and packaged WebView2 rejected the media path under unchanged CSP; ADR-0035 authorizes a separately frozen media, Signalsmith, and optimized WSOLA comparison | Retain `1.00x` until one v2 candidate passes every frozen resource, lifecycle, privacy, browser, packaged-host, licence, and listening gate |
 
 ADR-0013 records the standard rejection evidence. ADR-0015 supersedes
 ADR-0014's scheduling and buffering details, rejects CPU and dual-worker

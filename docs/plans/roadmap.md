@@ -54,10 +54,10 @@ Ubuntu and Windows checks and merged the closeout.
 M010.2 is active before M011. Milestones 1-2 are complete: the architecture
 authority and result-blind comparison were frozen before results, then neither
 eligible backend passed every machine and packaged-host gate. ADR-0034 retains
-`1.00x`; runtime behavior remains unchanged. Reader/Settings milestones can
-proceed, but the original eleven-speed outcome awaits an explicit reduced-scope
-or newly frozen backend decision. M011 remains deferred until this bounded
-portfolio follow-up closes.
+`1.00x`; runtime behavior remains unchanged. ADR-0035 now authorizes a separate
+fee-free v2 comparison for six exact rates ending at `0.75x` without rewriting
+v1. Milestone 2A is next. M011 remains deferred until this bounded portfolio
+follow-up closes.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -761,7 +761,8 @@ stabilized application shell.
   reproducible, and identity-safe.
 - **M010.2 before M011:** implement the separately approved reader-first shell,
   accessible Settings, English fallback, bounded narration preferences, and
-  engine-neutral pitch-preserving playback speed. Keep the completed M009.1
+  engine-neutral pitch-preserving playback speed only if the separately frozen
+  fee-free v2 admits a backend. Keep the completed M009.1
   scroll/leaf/highlight authority and M008.1 wall-clock transition pauses.
 - **Still deferred:** a natural-versus-stable generation profile, changed
   quick-start target, rate-scaled transition pauses, clearer reopen/resume
@@ -944,8 +945,9 @@ versioned contracts and a new decision record.
 
 ## Milestone 10.2: Add reader settings and pitch-preserving playback controls
 
-**Status:** In progress with the speed path blocked. Milestones 1-2 are
-complete; ADR-0034 selected no pitch-preserving backend. Follow
+**Status:** In progress. Milestones 1-2 are complete; ADR-0034 selected no
+pitch-preserving backend for v1. ADR-0035 authorizes a reduced-range,
+fee-free v2 comparison, and Milestone 2A is next. Follow
 [`M010-002-reader-settings-and-playback-controls.md`](active/M010-002-reader-settings-and-playback-controls.md)
 and the approved
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
@@ -961,14 +963,14 @@ and
 [`ADR-0033`](../architecture/decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md).
 The current runtime remains Spanish-fallback and `1.00x`; no Settings or
 time-stretch implementation is claimed. Milestones 3-4 do not depend on the
-backend result, but Milestone 5 requires a new explicit scope/backend decision.
+backend result, but Milestone 5 requires Milestone 2B to admit a v2 backend.
 
 ### Goal
 
 Make the book the dominant application surface, collect durable/setup-oriented
 choices in one accessible Settings experience, default missing/invalid/reset
 narration language to English without overwriting valid saved choices, and add
-engine-neutral pitch-preserving playback speeds from `1.00x` through `0.50x`.
+engine-neutral pitch-preserving playback speeds from `1.00x` through `0.75x`.
 
 ### Expected outcome
 
@@ -985,8 +987,9 @@ engine-neutral pitch-preserving playback speeds from `1.00x` through `0.50x`.
   gate-correct; M010.2 does not change support status.
 - Quick/Prepared startup, Prepared target, and playback speed use bounded
   versioned content-free preference ownership; volume remains session-only.
-- The compact narration bar offers eleven fixed pitch-preserving playback
-  rates without regenerating audio or replacing work identity.
+- The compact narration bar offers exactly `1.00x`, `0.95x`, `0.90x`,
+  `0.85x`, `0.80x`, and `0.75x` without regenerating audio or replacing work
+  identity, but only after one v2 backend passes every frozen gate.
 - Source sample frames remain memory/progress authority while effective
   listening duration governs lead, startup, low-water, and underrun promises.
 - Semantic generated-unit pauses remain unchanged wall-clock timers.
@@ -1017,7 +1020,11 @@ through newly frozen authority and regression evidence.
   work when Settings opens, or regress locator preservation and accessibility.
 - A valid saved Spanish preference must not be overwritten by the English
   fallback migration.
-- Any production dependency must pass license and M011 distribution review.
+- Any production dependency must pass exact package/source/transitive licence
+  and M011 distribution review. The speed feature may use only platform,
+  repository-owned, or permissive fee-free code; it must not require a
+  purchase, royalty, subscription, commercial exception, copyleft/source
+  availability, or ambiguous licence.
 
 ## Milestone 11: Package, validate, and release the MVP
 
@@ -1114,11 +1121,14 @@ The following decisions should be made when evidence is available, not assumed s
    required pull-request validation, plus the fixed reader viewport, compact
    narration surface, bounded paragraph leaf, and passive-scroll isolation.
 8. **Reader/settings/playback-control gate:** M010.2 Milestone 1 freezes the
-   new shell, Settings, English fallback, preference ownership, exact
-   pitch-preserving rate set, source/effective-duration arithmetic, and
+   new shell, Settings, English fallback, preference ownership, original
+   pitch-preserving rate set, source/effective-duration arithmetic, and v1
    backend comparison before results. Milestone 2 selects no backend and
-   retains M008's accepted `1.0x` policy. Later milestones must validate
-   packaged accessibility, and non-default speed requires a new decision.
+   retains M008's accepted `1.0x` policy. ADR-0035 authorizes a distinct v2 for
+   six exact rates ending at `0.75x`, fee-free permissive candidates, and a
+   narrowly bounded media CSP review. Milestone 2A must freeze that authority
+   before Milestone 2B measures candidates. Later milestones must validate
+   packaged accessibility; no non-default runtime behavior is yet claimed.
 9. **Release gate:** define supported hardware and wall-clock startup
    expectations from measured results before release.
 
@@ -1181,8 +1191,8 @@ production selection.
 
 Milestones 1 through 10.1, M008.1, and M009.1 are complete, with their evidence
 retained under [`completed/`](completed/). M010.2 Milestones 1-2 are complete
-and M010.2 remains active before M011; no M010.2 runtime behavior is
-implemented.
+and M010.2 remains active before M011. ADR-0035 authorizes v2 and Milestone 2A
+is next; no M010.2 runtime behavior is implemented.
 
 ## MVP completion boundary
 

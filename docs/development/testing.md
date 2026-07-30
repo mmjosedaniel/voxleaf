@@ -790,6 +790,14 @@ unchanged packaged Tauri CSP rejected its in-memory `blob:` WAV. The negative
 control shifted pitch. No candidate reached listening; all experimental
 adapters were removed and current test/runtime playback remains `1.00x`.
 
+ADR-0035 authorizes a distinct reduced-range v2 comparison without changing
+those results. Milestone 2A must freeze exactly `1.00x`, `0.95x`, `0.90x`,
+`0.85x`, `0.80x`, and `0.75x`; the media-element, exact audited Signalsmith
+Stretch, and optimized repository WSOLA candidates; the fee-free permissive
+licence gate; and the narrowly bounded media CSP before implementation or
+measurement. Milestone 2B then runs deterministic, Chromium, packaged WebView2,
+concurrent-resource, lifecycle, privacy, and gated listening checks.
+
 Later milestones must extend existing desktop, browser, and native-startup
 coverage rather than create an unrelated harness. Their model-free tests will
 cover:
@@ -801,7 +809,7 @@ cover:
 - English fallback and valid Spanish/English preference preservation;
 - language-, support-, development-, hardware-, and runtime-gated profiles;
 - bounded startup and playback-speed preferences;
-- all eleven exact playback rates and invalid inputs;
+- all six exact playback rates and invalid inputs;
 - pitch-preserving backend source-frame progress and mid-unit rate changes;
 - effective-listening lead at startup, low water, refill, and underrun;
 - unchanged source-frame/byte/unit ceilings and transition-pause timers; and

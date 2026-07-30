@@ -80,6 +80,12 @@ and the packaged host rejected the media-element path under the unchanged CSP,
 so no backend was selected. No M010.2 runtime arrow is implemented: the current
 app remains Spanish-fallback and `1.0x`.
 
+[ADR-0035](decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md)
+authorizes a separate result-blind v2 for six exact rates ending at `0.75x`,
+fee-free permissive candidates, and a narrowly bounded media CSP review without
+changing v1 evidence. Milestone 2A is next; no new dependency, CSP, preference,
+or playback behavior is implemented yet.
+
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
 the visible-passage target separate from the active narration locator: passive
