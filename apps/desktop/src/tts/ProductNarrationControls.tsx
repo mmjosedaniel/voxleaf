@@ -143,6 +143,7 @@ export function ProductNarrationControls({
       data-narration-profile={snapshot.profileId}
       data-narration-phase={snapshot.state?.phase ?? "idle"}
       data-narration-failure={snapshot.failure ?? "none"}
+      data-narration-preparation-failure={snapshot.preparationFailure ?? "none"}
       data-narration-recovery-phase={snapshot.recovery.phase}
       data-narration-recovery-code={snapshot.recovery.failureCode ?? "none"}
       data-narration-playable-ms={snapshot.state?.readyMs ?? 0}
@@ -182,17 +183,19 @@ export function ProductNarrationControls({
           ) : null}
           {snapshot.failure === undefined ? null : (
             <p className="product-narration-error">
-              {snapshot.recovery.phase === "contained"
-                ? "Restart the application or check compatibility before trying again."
-                : snapshot.recovery.phase === "unavailable"
-                  ? "Check compatibility or restart the application before trying again."
-                  : snapshot.recovery.canRecover
-                    ? snapshot.recovery.action === "select-compatible-profile"
-                      ? "Check compatibility and choose an available profile."
-                      : "Restart resumes from the latest heard passage and does not reuse old audio."
-                    : snapshot.failure === "tts-profile-unavailable"
-                      ? "Check compatibility before starting narration again."
-                      : "Local narration cleanup is in progress."}
+              {snapshot.failure === "narration-preparation-failed"
+                ? "The current EPUB passage could not be prepared. Stop and choose another passage before trying again."
+                : snapshot.recovery.phase === "contained"
+                  ? "Restart the application or check compatibility before trying again."
+                  : snapshot.recovery.phase === "unavailable"
+                    ? "Check compatibility or restart the application before trying again."
+                    : snapshot.recovery.canRecover
+                      ? snapshot.recovery.action === "select-compatible-profile"
+                        ? "Check compatibility and choose an available profile."
+                        : "Restart resumes from the latest heard passage and does not reuse old audio."
+                      : snapshot.failure === "tts-profile-unavailable"
+                        ? "Check compatibility before starting narration again."
+                        : "Local narration cleanup is in progress."}
             </p>
           )}
         </div>

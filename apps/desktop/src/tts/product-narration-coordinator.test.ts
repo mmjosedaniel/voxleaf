@@ -909,7 +909,7 @@ describe("product narration coordinator", () => {
         startLocator: START_LOCATOR,
         profile: "narration-bilingual-v2",
         defaultLanguage: "es",
-        maximumSegments: 16,
+        maximumSegments: 8,
         signal: expect.any(AbortSignal),
       }),
     );
@@ -1257,6 +1257,9 @@ describe("product narration coordinator", () => {
     await settleUntil(() => coordinator.observe().failure !== undefined);
 
     expect(coordinator.observe().failure).toBe("narration-preparation-failed");
+    expect(coordinator.observe().preparationFailure).toBe(
+      "resource-limit-exceeded",
+    );
     expect(coordinator.observe().state?.phase).toBe("failed");
     expect(JSON.stringify(coordinator.observe())).not.toContain(
       "Private synthetic narration",

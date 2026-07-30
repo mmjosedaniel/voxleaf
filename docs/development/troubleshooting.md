@@ -240,6 +240,18 @@ code incorrectly rejected that non-negative M005 measurement after the first
 code-point and UTF-8-byte counts, but accepts zero sentence boundaries. Rebuild
 and restart the application; no reader-state reset or EPUB change is required.
 
+If Chatterbox fails before accepting its first audio unit while the service
+has already become ready, inspect the content-safe
+`data-narration-preparation-failure` value rather than treating the generic
+message as a model or GPU failure. A live English EPUB exposed
+`resource-limit-exceeded` when the desktop requested the narration-v1 hard
+maximum of 16 prepared segments in one coordinator batch. The desktop now
+requests the approved target of eight segments and continues through repeated
+bounded batches; the independent 16-segment hard ceiling is unchanged. The
+same passage then reached Chatterbox playback with 36 seconds buffered and a
+one-minute active target. EPUB text, paths, generated audio, and model output
+are not included in this diagnostic.
+
 One bounded cause is an exact Qwen call that does not emit its codec stop token.
 Its historical benchmark authority retains `maxNewTokens: 2048` so that
 evaluation record remains unchanged, but that allowance can decode far beyond

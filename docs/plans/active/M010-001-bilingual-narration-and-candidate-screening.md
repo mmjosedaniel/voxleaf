@@ -728,6 +728,18 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-30:** A clean live Chatterbox/English retry proved that the
+  remaining “cleanup” message was not active cleanup or a model-load failure.
+  Content-safe DOM diagnostics reported an operational recovery state, a
+  ready service, and `narration-preparation-failed` with
+  `resource-limit-exceeded`. The UI now reports preparation failure directly
+  and exposes only its closed status code. The desktop requests the accepted
+  eight-segment narration batch target instead of the independent
+  16-segment hard maximum. The same opened EPUB then reached playback with 36
+  seconds buffered toward a one-minute target. `pnpm.cmd check:portable`
+  passes formatting, lint, TypeScript/Python typechecking, 209 shared tests,
+  578 EPUB tests, 432 desktop tests plus 11 native-script tests, 347 Python
+  tests, and the portable package, desktop, and Python builds.
 - **2026-07-30:** A live Piper-to-Chatterbox selection exposed a bounded
   lifecycle race not covered by the successful-path profile-switch matrix. If
   operational failure containment had already begun when configuration
