@@ -16,7 +16,10 @@ The current MVP direction remains:
 - exact Piper 1.4.2 / `en_US-joe-medium` admitted by the M010.1 v8 baseline
   for later Milestone 6 integration, not yet a selectable product profile;
 - exact Qwen3-TTS/Serena as the optional higher-quality GPU-dependent
-  development profile; and
+  development profile, with exact Qwen/Aiden retained for independent English
+  quality and hardware-dependent constrained-buffer review;
+- exact Chatterbox Multilingual V3 advanced as the sole new-engine full-matrix
+  survivor, without product admission; and
 - one active service tree, bounded in-memory audio, identity-first
   cancellation, no remote inference, and no generated-audio persistence.
 
@@ -33,10 +36,12 @@ not turn this entire backlog into MVP scope:
 
 1. Exact Piper/joe English passed the low-risk bilingual baseline and is
    retained for Milestone 6 integration.
-2. Evaluate exact local Qwen 1.7B CustomVoice Serena/Spanish and native-English
-   Aiden/English independently under the superseding v8 authority.
-3. Screen Chatterbox Multilingual V3 and MOSS-TTS-Nano 100M ONNX
-   sequentially.
+2. Retain exact local Qwen 1.7B CustomVoice Serena/Spanish and native-English
+   Aiden/English independently; Milestone 5 must collect result-neutral
+   language-specific quality evidence before integration decisions.
+3. Advance Chatterbox Multilingual V3 to the next frozen full matrix and defer
+   MOSS-TTS-Nano 100M ONNX without rejection pending dialogue/punctuation and
+   voice investigation.
 4. Retain Fun-CosyVoice3's intake rejection unless a future result-blind
    authority establishes a non-personal default voice.
 5. Integrate at most one passing new engine. If none passes, record no winner

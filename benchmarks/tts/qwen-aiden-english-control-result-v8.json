@@ -1,0 +1,72 @@
+{
+  "audits": {
+    "artifacts": true,
+    "boundedRetention": true,
+    "cleanup": true,
+    "firstAttemptsOnly": true,
+    "networkIsolation": true,
+    "offline": true,
+    "privacy": true
+  },
+  "authorityCommitSha": "b66fafa743b84e8a995705ec3bbdf8fed6a9a04e",
+  "cancellation": {
+    "passedTrials": 2,
+    "processesRemaining": 0,
+    "requiredTrials": 4,
+    "staleUnits": 0
+  },
+  "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8",
+  "candidateManifestSha256": "5245f6949cf035eee8de98fef21e8eea89d30b468d76039949e2100558401b0e",
+  "corpusSha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe",
+  "counts": {
+    "cancellationTrials": 2,
+    "completedGenerations": 5,
+    "failedGenerations": 0,
+    "firstAttempts": 5
+  },
+  "dependencyLockSha256": "1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913",
+  "evaluationStage": "existing-engine-control",
+  "executionCommitSha": "1e93f97f0632b7c677160e5254326a9984348509",
+  "gates": {
+    "cancellation": "fail",
+    "cleanup": "pass",
+    "machine": "pass",
+    "memory": "fail",
+    "overall": "fail",
+    "performance": "fail",
+    "privacy": "pass",
+    "quality": "not-admitted"
+  },
+  "languagesEvaluated": ["en"],
+  "limitations": [
+    "bounded-screen-one-warm-attempt-per-case",
+    "screen-warm-metrics-repeated-in-sustained-schema-fields",
+    "quality-not-admitted-after-machine-rejection",
+    "complete-waveform-high-level-api",
+    "distribution-obligations-deferred-to-m011"
+  ],
+  "memory": {
+    "minimumAvailableSystemRamBytes": 6862532608,
+    "peakDedicatedVramBytes": 4791521280,
+    "peakProcessTreeRamBytes": 4647976960
+  },
+  "performanceByLanguage": [
+    {
+      "failedFirstAttempts": 0,
+      "firstAudioP95Seconds": 11.9469203,
+      "language": "en",
+      "sustainedP95Rtf": 1.4538290753424659,
+      "totalSustainedRtf": 1.418750483440171,
+      "warmP95Rtf": 1.4538290753424659
+    }
+  ],
+  "profileSha256": "84448e70e8b8b2782f22c0e3d874b1b30531084732e0416ab9e83e1ad1e7525a",
+  "qualityByLanguage": [
+    {
+      "language": "en",
+      "status": "not-admitted"
+    }
+  ],
+  "schemaVersion": "tts-bilingual-summary-v8",
+  "status": "rejected"
+}

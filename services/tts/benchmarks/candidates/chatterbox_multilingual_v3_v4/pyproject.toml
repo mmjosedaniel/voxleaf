@@ -1,0 +1,26 @@
+[project]
+name = "voxleaf-benchmark-chatterbox-multilingual-v3-v4"
+version = "0.0.0"
+description = "Experimental RTX 50-series benchmark environment for Chatterbox Multilingual V3"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "chatterbox-tts @ git+https://github.com/resemble-ai/chatterbox.git@5de7a54aa4e5e2baadb0182dde554908b48b85c2",
+    "torch==2.9.1",
+    "torchaudio==2.9.1",
+]
+
+[tool.uv]
+exclude-newer = "2026-07-29T00:00:00Z"
+override-dependencies = [
+    "torch==2.9.1",
+    "torchaudio==2.9.1",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+torchaudio = { index = "pytorch-cu128" }

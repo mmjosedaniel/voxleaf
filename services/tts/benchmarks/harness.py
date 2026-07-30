@@ -1029,3 +1029,187 @@ class BenchmarkHarness:
             result_failure = BenchmarkFailure(code="crash")
             self._observation_sink.record_failure(result_failure)
             return BenchmarkRunResult(run=None, failure=result_failure)
+
+    def run_bilingual_screen_protocol(
+        self,
+        *,
+        adapter_factory: AdapterFactory,
+        corpora: Sequence[BenchmarkCorpus],
+        role: CandidateRole,
+    ) -> BenchmarkRunResult:
+        """Run one frozen v8 control/screen without expanding into a full matrix."""
+
+        languages = tuple(
+            next(iter({case.language for case in corpus.cases.values()}), "") for corpus in corpora
+        )
+        if (
+            role not in ("balanced", "compatibility")
+            or len(corpora) not in (1, 2)
+            or len(set(languages)) != len(languages)
+            or any(
+                corpus.corpus_version != "tts-bilingual-corpus-v7"
+                or len(corpus.performance_order) != 5
+                or len(corpus.sustained_sequence) != 5
+                or {case.language for case in corpus.cases.values()} != {language}
+                for corpus, language in zip(corpora, languages, strict=True)
+            )
+        ):
+            return BenchmarkRunResult(
+                run=None,
+                failure=BenchmarkFailure(code="invalid-request"),
+            )
+        forbidden_values = tuple(value for corpus in corpora for value in _forbidden_values(corpus))
+        main_adapter: BenchmarkAdapter | None = None
+        memory_started = False
+        try:
+            cold_adapter = adapter_factory()
+            load_ns = self._load(
+                cold_adapter,
+                forbidden_values=forbidden_values,
+                request_id="cold-1",
+            )
+            cleanup_ns = self._close(
+                cold_adapter,
+                forbidden_values=forbidden_values,
+                request_id="cold-1",
+            )
+            load = LoadObservation(
+                observation_index=1,
+                load_ns=load_ns,
+                cleanup_ns=cleanup_ns,
+            )
+            self._observation_sink.record_load(load)
+
+            main_adapter = adapter_factory()
+            capabilities = main_adapter.capabilities()
+            self._memory_probe.start()
+            memory_started = True
+            self._load(
+                main_adapter,
+                forbidden_values=forbidden_values,
+                request_id="measurement-load",
+            )
+            first_corpus = corpora[0]
+            first_case = first_corpus.cases[first_corpus.performance_order[0]]
+            self._warm_up(
+                main_adapter,
+                GenerationRequest(
+                    request_id="warmup-1",
+                    case_id=first_case.case_id,
+                    phase="warmup",
+                    text=first_case.text,
+                    language=first_case.language,
+                ),
+                forbidden_values=forbidden_values,
+            )
+
+            generations: list[GenerationObservation] = []
+            for corpus in corpora:
+                for case_id in corpus.performance_order:
+                    case = corpus.cases[case_id]
+                    observation = self.observe_generation(
+                        main_adapter,
+                        GenerationRequest(
+                            request_id=f"screen-{case.case_id}",
+                            case_id=case.case_id,
+                            phase="warm",
+                            text=case.text,
+                            language=case.language,
+                        ),
+                        forbidden_values=forbidden_values,
+                    )
+                    generations.append(observation)
+                    self._observation_sink.record_generation(observation)
+
+            cancellations: list[CancellationObservation] = []
+            cancellation_failure: BenchmarkFailure | None = None
+            for corpus in corpora:
+                default_case = corpus.cases[corpus.performance_order[0]]
+                near_hard_case = corpus.cases[corpus.performance_order[-1]]
+                for trial_index, trial_id in enumerate(
+                    V8_CANCELLATION_TRIAL_ORDER,
+                    start=1,
+                ):
+                    case = (
+                        near_hard_case if trial_id == "near-hard-mid-generation" else default_case
+                    )
+                    try:
+                        cancellation_observation = self.observe_cancellation(
+                            main_adapter,
+                            GenerationRequest(
+                                request_id=f"cancel-{case.language}-{trial_index}",
+                                case_id=case.case_id,
+                                phase="cancellation",
+                                text=case.text,
+                                language=case.language,
+                            ),
+                            trial_id,
+                            forbidden_values=forbidden_values,
+                        )
+                    except _HarnessFailure as failure:
+                        cancellation_failure = BenchmarkFailure(
+                            code=failure.code,
+                            request_id=failure.request_id,
+                        )
+                        self._observation_sink.record_cancellation_failure(
+                            trial_id,
+                            cancellation_failure,
+                        )
+                        break
+                    cancellations.append(cancellation_observation)
+                    self._observation_sink.record_cancellation(cancellation_observation)
+                if cancellation_failure is not None:
+                    break
+
+            self._close(
+                main_adapter,
+                forbidden_values=forbidden_values,
+                request_id="measurement-close",
+            )
+            main_adapter = None
+            memory = self._memory_probe.stop()
+            memory_started = False
+            self._observation_sink.record_memory(memory)
+            if {
+                (
+                    observation.sample_rate_hz,
+                    observation.channels,
+                    observation.sample_format,
+                )
+                for observation in generations
+            } != {(24_000, 1, "float32")}:
+                _fail("invalid-output")
+            run = BenchmarkRun(
+                candidate_id=capabilities.candidate_id,
+                role=role,
+                capabilities=capabilities,
+                load_observations=(load,),
+                generation_observations=tuple(generations),
+                cancellation_observations=tuple(cancellations),
+                memory=memory,
+                failed_observations=int(cancellation_failure is not None),
+            )
+            return BenchmarkRunResult(run=run, failure=cancellation_failure)
+        except _HarnessFailure as failure:
+            if main_adapter is not None:
+                with suppress(Exception):
+                    main_adapter.close()
+            if memory_started:
+                with suppress(Exception):
+                    self._memory_probe.stop()
+            result_failure = BenchmarkFailure(
+                code=failure.code,
+                request_id=failure.request_id,
+            )
+            self._observation_sink.record_failure(result_failure)
+            return BenchmarkRunResult(run=None, failure=result_failure)
+        except Exception:
+            if main_adapter is not None:
+                with suppress(Exception):
+                    main_adapter.close()
+            if memory_started:
+                with suppress(Exception):
+                    self._memory_probe.stop()
+            result_failure = BenchmarkFailure(code="crash")
+            self._observation_sink.record_failure(result_failure)
+            return BenchmarkRunResult(run=None, failure=result_failure)

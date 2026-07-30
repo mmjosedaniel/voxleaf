@@ -1,0 +1,106 @@
+{
+  "profileVersion": "tts-chatterbox-rtx50-compatibility-profile-v11",
+  "status": "frozen-before-chatterbox-rtx50-v11-implementation-and-results",
+  "purpose": "measure-an-explicit-chatterbox-torch-2-9-cuda-12-8-compatibility-override-without-automatic-candidate-rejection",
+  "supersedesCandidateConfiguration": {
+    "profile": "benchmarks/tts/profile-v10.json",
+    "sha256": "d6abd95698f81d5e868b1e59296f4be22830d7070bc7a5596c881e1b57adfc8b",
+    "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v3",
+    "reason": "the-exact-torch-2-6-cu124-runtime-has-no-sm120-kernel-and-produced-no-model-result"
+  },
+  "preserves": {
+    "v9MossAuthorityAndEvidence": true,
+    "v10ChatterboxConfigurationStop": true
+  },
+  "authorities": {
+    "evaluationCorpus": {
+      "path": "benchmarks/tts/corpus-v7.json",
+      "sha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe"
+    },
+    "normalizationProfile": {
+      "path": "docs/architecture/narration-normalization-v2.md",
+      "sha256": "8e4f0bc45d260a03bc4bfdf523d272951eb26915005a9acbc60e8f17a4dd446e"
+    },
+    "candidateManifest": {
+      "path": "benchmarks/tts/candidates-v11.json",
+      "sha256": "3bceb2c227be02c5f69b524afc3e008e3acf40d42ae47d38ce0b10462324cc06"
+    },
+    "privateRawSchema": {
+      "path": "benchmarks/tts/schemas/bilingual-raw-v11.schema.json",
+      "sha256": "ef12722046d266c8332e9f4f4a99ed32f39618e113899ce4c8740ee1b84a2d7d"
+    },
+    "contentSafeSummarySchema": {
+      "path": "benchmarks/tts/schemas/bilingual-summary-v11.schema.json",
+      "sha256": "5fe1aa4d6471a4b7b1f17f179b5df61aeb6efd833164ced3087497257ef77353"
+    }
+  },
+  "productInterpretation": {
+    "standardSupportTargets": {
+      "warmP95RtfMaximum": 1.1,
+      "sustainedP95RtfMaximum": 1.1,
+      "meaning": "preferred-standard-profile-target-not-automatic-rejection"
+    },
+    "constrainedBufferedMvp": {
+      "rtfAboveOnePermitted": true,
+      "startup": "begin-when-configured-playable-audio-lead-is-ready",
+      "buffering": "bounded-adaptive-prebuffering",
+      "underruns": "observable-and-measurable",
+      "maintainerDecisionRequired": true
+    }
+  },
+  "executionPolicy": {
+    "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v4",
+    "supportIntent": "experimental-compatibility-only",
+    "oneLoadedModelAtATime": true,
+    "automaticRetries": 0,
+    "automaticCandidateRejection": "forbidden",
+    "configurationMismatchOutcome": "correct-authority-before-measurement",
+    "measurementIssueOutcome": "record-observation-and-await-maintainer-decision",
+    "qualityReviewAfterAdvisoryPerformanceIssue": "permitted",
+    "hardStopConditions": [
+      "privacy-violation",
+      "remote-inference",
+      "unbounded-retention",
+      "artifact-identity-mismatch",
+      "network-isolation-missing"
+    ],
+    "hardStopIsCandidateRejection": false
+  },
+  "boundedScreen": {
+    "languages": ["es", "en"],
+    "warmCasesPerLanguage": 5,
+    "cancellationTrialsPerLanguage": [
+      "before-dispatch",
+      "accepted-before-audio",
+      "after-first-audio",
+      "near-hard-mid-generation"
+    ],
+    "timeoutsMilliseconds": {
+      "load": 300000,
+      "request": 180000,
+      "workerTermination": 2000,
+      "cleanup": 5000
+    },
+    "advisoryTargets": {
+      "coldLoadP95SecondsMaximum": 30,
+      "firstAudioP95SecondsMaximum": 7,
+      "warmP95RtfMaximum": 1.1,
+      "peakProcessTreeRamBytesMaximum": 4294967296,
+      "minimumAvailableRamBytes": 4294967296,
+      "minimumDedicatedVramReserveBytes": 536870912
+    }
+  },
+  "privacy": {
+    "runtimeDownloads": "forbidden",
+    "remoteInference": "forbidden",
+    "referenceAudio": "forbidden",
+    "generatedAudioRetention": "private-opt-in-quality-session-only",
+    "rawEvidence": "gitignored-private-session",
+    "committedEvidence": "content-safe-summary-only",
+    "bookTextInLogs": "forbidden"
+  },
+  "decision": {
+    "stateBeforeMaintainerReview": "pending-maintainer-decision",
+    "rejectionRecordedBeforeMaintainerReview": false
+  }
+}

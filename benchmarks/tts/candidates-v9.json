@@ -1,0 +1,231 @@
+{
+  "candidateManifestVersion": "tts-candidate-manifest-v9",
+  "status": "frozen-before-corrective-v9-results",
+  "frozenAt": "2026-07-29",
+  "supersedes": {
+    "manifest": "benchmarks/tts/candidates-v8.json",
+    "sha256": "5245f6949cf035eee8de98fef21e8eea89d30b468d76039949e2100558401b0e",
+    "reason": "correct-result-interpretation-and-test-current-exact-chatterbox-and-moss-artifacts"
+  },
+  "decisionPolicy": {
+    "automaticCandidateRejection": "forbidden",
+    "maintainerDecisionRequiredBeforeRejection": true,
+    "measurementFailureIsCandidateRejection": false,
+    "configurationFailureIsCandidateRejection": false,
+    "qualityReviewMayFollowAdvisoryPerformance": true,
+    "resultStateBeforeMaintainerDecision": "measured-awaiting-decision",
+    "candidateExecutionOrder": [
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v9",
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v9",
+      "chatterbox-multilingual-v3-cuda-bf16-default-v2",
+      "moss-tts-nano-100m-onnx-cpu-ava-v2"
+    ],
+    "automaticRetries": 0,
+    "oneLoadedModelAtATime": true,
+    "runtimeDownloads": "forbidden",
+    "remoteInferenceApis": "forbidden",
+    "referenceAudio": "forbidden",
+    "outboundNetworkDuringEvaluation": "blocked-for-exact-interpreter"
+  },
+  "profiles": [
+    {
+      "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v9",
+      "identitySource": {
+        "manifest": "benchmarks/tts/candidates-v8.json",
+        "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8"
+      },
+      "evaluationStage": "constrained-buffered-control",
+      "languages": ["es"],
+      "dependencyLock": {
+        "path": "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock",
+        "sha256": "1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913"
+      },
+      "performanceInterpretation": {
+        "measuredReferenceRtf": 1.44,
+        "rtfAboveOneAutomaticRejection": false,
+        "productMode": "bounded-adaptive-prebuffering",
+        "standardSupportGateRetainedAsAdvisory": true
+      }
+    },
+    {
+      "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v9",
+      "identitySource": {
+        "manifest": "benchmarks/tts/candidates-v8.json",
+        "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8"
+      },
+      "evaluationStage": "constrained-buffered-control",
+      "languages": ["en"],
+      "dependencyLock": {
+        "path": "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock",
+        "sha256": "1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913"
+      },
+      "performanceInterpretation": {
+        "measuredReferenceRtf": 1.44,
+        "rtfAboveOneAutomaticRejection": false,
+        "productMode": "bounded-adaptive-prebuffering",
+        "standardSupportGateRetainedAsAdvisory": true
+      }
+    },
+    {
+      "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v2",
+      "identitySource": {
+        "manifest": "benchmarks/tts/candidates-v7.json",
+        "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v1"
+      },
+      "evaluationStage": "bounded-bilingual-screen",
+      "languages": ["es", "en"],
+      "engine": {
+        "sourceRepository": "resemble-ai/chatterbox",
+        "sourceRevision": "5de7a54aa4e5e2baadb0182dde554908b48b85c2",
+        "installation": "git-revision"
+      },
+      "model": {
+        "repository": "ResembleAI/chatterbox",
+        "revision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+        "t3Model": "v3",
+        "artifactsInheritedUnchangedFromV7": true
+      },
+      "dependencyLock": {
+        "path": "services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v2/uv.lock",
+        "sha256": "9a5b2628499f522535dc79a70194dd604e40d9d7ab325a765ffc476f5c437c82"
+      },
+      "hostCorrection": {
+        "minimumTotalDedicatedVramMiB": 8000,
+        "minimumAvailableDedicatedVramMiBAtPreflight": 6144,
+        "reason": "consumer-8gb-cards-may-report-slightly-less-than-8192-mib"
+      },
+      "correction": {
+        "v8ConfigurationMismatch": "the-old-pypi-lock-loaded-v2-and-was-not-a-model-result",
+        "currentSourceSupportsExplicitT3ModelV3": true
+      }
+    },
+    {
+      "candidateId": "moss-tts-nano-100m-onnx-cpu-ava-v2",
+      "identitySource": {
+        "manifest": "benchmarks/tts/candidates-v7.json",
+        "candidateId": "moss-tts-nano-100m-onnx-cpu-ava-v1"
+      },
+      "evaluationStage": "bounded-bilingual-screen",
+      "languages": ["es", "en"],
+      "engine": {
+        "sourceRepository": "OpenMOSS/MOSS-TTS-Nano",
+        "sourceRevision": "cc7bdf19c7639c0870dab22045a33b442760f6be",
+        "version": "0.1.0",
+        "provider": "onnxruntime-cpu"
+      },
+      "model": {
+        "repository": "OpenMOSS-Team/MOSS-TTS-Nano-100M-ONNX",
+        "revision": "f52645cb467506d8e18e746ddd59482685b74e58",
+        "codecRepository": "OpenMOSS-Team/MOSS-Audio-Tokenizer-Nano-ONNX",
+        "codecRevision": "ceff0d0749bfb3fa2d61149794ec6feef0d1e1ae",
+        "voiceId": "Ava",
+        "artifacts": [
+          {
+            "root": "model",
+            "path": "browser_poc_manifest.json",
+            "sizeBytes": 503354,
+            "sha256": "097d80e993dc29f0bae427590b4f77084a161cb578b50d82c29f455d5faa9eee"
+          },
+          {
+            "root": "model",
+            "path": "moss_tts_global_shared.data",
+            "sizeBytes": 440813568,
+            "sha256": "bce8312c3df6a44545302cae229b61054fe0672e0b252ba59cba47adeed831dc"
+          },
+          {
+            "root": "model",
+            "path": "moss_tts_decode_step.onnx",
+            "sizeBytes": 291483,
+            "sha256": "698cbc2fc1c2feca16e5895614ed52bbb32ded10f236c076f477b2e69abf32d8"
+          },
+          {
+            "root": "model",
+            "path": "moss_tts_local_cached_step.onnx",
+            "sizeBytes": 53685,
+            "sha256": "aa9035fefc1c138a951a8bcfc0374fb03a25f1ece67f7f7f53bce349b84a1dd5"
+          },
+          {
+            "root": "model",
+            "path": "moss_tts_local_decoder.onnx",
+            "sizeBytes": 49231,
+            "sha256": "51aa754301b38550a5f9adda0ad93bd3dc95819afb511e6dcabf4a90b345a454"
+          },
+          {
+            "root": "model",
+            "path": "moss_tts_local_fixed_sampled_frame.onnx",
+            "sizeBytes": 471262,
+            "sha256": "40cdb00efc171c450cf91468e01429caa41b0252222cd308e978f58fe354afa8"
+          },
+          {
+            "root": "model",
+            "path": "moss_tts_local_shared.data",
+            "sizeBytes": 229678080,
+            "sha256": "bae7782032c0fb12490ab42afe009f87ae6c75a0f0596fc7b5c08e4d5ee93916"
+          },
+          {
+            "root": "model",
+            "path": "moss_tts_prefill.onnx",
+            "sizeBytes": 283305,
+            "sha256": "d56126dcd0574c2f15d98fc6b35eda68d0386b5bd9c5e38e28548d6f2ea8f3db"
+          },
+          {
+            "root": "model",
+            "path": "tokenizer.model",
+            "sizeBytes": 470897,
+            "sha256": "c353ee1479b536bf414c1b247f5542b6607fb8ae91320e5af1781fee200fddff"
+          },
+          {
+            "root": "model",
+            "path": "tts_browser_onnx_meta.json",
+            "sizeBytes": 4487,
+            "sha256": "3edf25232dcd0af3d061c837e9a968a39e2f8592e06777d740503c4f2244f95c"
+          },
+          {
+            "root": "codec",
+            "path": "moss_audio_tokenizer_decode_shared.data",
+            "sizeBytes": 44198912,
+            "sha256": "e69d52e0f4e84ca27850557ee54face46632d3a5a16c89bd246c7c408466dcad"
+          },
+          {
+            "root": "codec",
+            "path": "moss_audio_tokenizer_decode_step.onnx",
+            "sizeBytes": 351400,
+            "sha256": "9527c86a29e1837edec1f74db57d5eeaadb3a715af3382703566460afed25855"
+          },
+          {
+            "root": "codec",
+            "path": "codec_browser_onnx_meta.json",
+            "sizeBytes": 17036,
+            "sha256": "3e291c883bb7d11ff2fe8e964e3e495519760358859f35c951254c7741592731"
+          },
+          {
+            "root": "codec",
+            "path": "moss_audio_tokenizer_decode_full.onnx",
+            "sizeBytes": 681902,
+            "sha256": "0fbbafe3fd4afa2a019af5c5ced204af6e2d1db044fa40f021525d2aee95b4ac"
+          },
+          {
+            "root": "codec",
+            "path": "moss_audio_tokenizer_encode.data",
+            "sizeBytes": 44507136,
+            "sha256": "aa751265b2bab2887eac224484546b194875aa7494b607115439b3dc6b228a2c"
+          },
+          {
+            "root": "codec",
+            "path": "moss_audio_tokenizer_encode.onnx",
+            "sizeBytes": 815775,
+            "sha256": "eadea4a645abdcf98714c7aead122ee2ce7da6e080f9f80b977cd1ca8e19473a"
+          }
+        ]
+      },
+      "dependencyLock": {
+        "path": "services/tts/benchmarks/candidates/moss_tts_nano_100m_onnx_cpu/uv.lock",
+        "sha256": "49d96b6b5121320290ba951be4a8a343f3380c2fc320182d6003b1dcf0d47bcb"
+      },
+      "correction": {
+        "v8ConfigurationMismatch": "the-frozen-file-list-did-not-match-the-exact-pinned-revision-and-was-not-a-model-result",
+        "currentExactRevisionArtifactsRecorded": true
+      }
+    }
+  ]
+}

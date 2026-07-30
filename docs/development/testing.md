@@ -124,6 +124,26 @@ The current tests are deterministic and layered by ownership:
   schemas, candidate-language-stage-lock binding, private-content rejection,
   and complete v7-plus-v8 authority-tree ancestry. The combined focused suite
   passes 14 tests without loading a model, audio, or hardware.
+- `services/tts/tests/test_benchmark_bilingual_screen.py` proves the v8
+  control/screen protocol without loading a candidate. It freezes one cold
+  load, one warm first attempt for each of five cases per language, four
+  cancellation trials per evaluated language, the independent Serena/Spanish
+  and Aiden/English identities, 24 kHz mono output, and content-safe
+  machine-rejection derivation with quality correctly marked
+  `not-admitted`.
+
+M010.1 result-bearing Qwen controls must run sequentially from a clean
+committed checkpoint under the exact candidate interpreter. Set
+`HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1`, use the ignored local model
+root `models/qwen3_1_7b_customvoice_cuda`, and pass a closed JSON request to
+`python -m benchmarks.bilingual_screen_cli preflight` before replacing
+`preflight` with `machine`. The exact interpreter must have one enabled
+outbound-block Windows Firewall rule named
+`VoxLeaf TTS Benchmark Offline`; failure to prove that rule stops before
+inference. Raw sessions remain ignored under `benchmarks/tts/raw/v8` and must
+be validated and deleted through
+`python -m benchmarks.bilingual_screen_result_cli`, never copied into tracked
+documentation.
 
 The hardware/manual boundary is separate from these tests. The completed `v2`
 cycle ran five cold loads, 24 warm generations, 12 sustained generations, and

@@ -1,0 +1,68 @@
+{
+  "candidateManifestVersion": "tts-candidate-manifest-v10",
+  "status": "frozen-before-chatterbox-cuda-v10-results",
+  "frozenAt": "2026-07-29",
+  "supersedesCandidateConfiguration": {
+    "manifest": "benchmarks/tts/candidates-v9.json",
+    "sha256": "31249a583b8d43f90f7442797373e89b8993455e4cfe26e536cc1e1ca0ca8ad3",
+    "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v2",
+    "reason": "v9-resolved-torch-2-6-0-cpu-and-stopped-before-model-load"
+  },
+  "preservesV9MossEvidence": true,
+  "decisionPolicy": {
+    "automaticCandidateRejection": "forbidden",
+    "maintainerDecisionRequiredBeforeRejection": true,
+    "measurementFailureIsCandidateRejection": false,
+    "configurationFailureIsCandidateRejection": false,
+    "qualityReviewMayFollowAdvisoryPerformance": true,
+    "resultStateBeforeMaintainerDecision": "measured-awaiting-decision",
+    "automaticRetries": 0,
+    "oneLoadedModelAtATime": true,
+    "runtimeDownloads": "forbidden",
+    "remoteInferenceApis": "forbidden",
+    "referenceAudio": "forbidden",
+    "outboundNetworkDuringEvaluation": "blocked-for-exact-interpreter"
+  },
+  "profile": {
+    "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v3",
+    "identitySource": {
+      "manifest": "benchmarks/tts/candidates-v7.json",
+      "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v1"
+    },
+    "evaluationStage": "bounded-bilingual-screen",
+    "languages": ["es", "en"],
+    "engine": {
+      "sourceRepository": "resemble-ai/chatterbox",
+      "sourceRevision": "5de7a54aa4e5e2baadb0182dde554908b48b85c2",
+      "installation": "git-revision"
+    },
+    "model": {
+      "repository": "ResembleAI/chatterbox",
+      "revision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+      "t3Model": "v3",
+      "artifactsInheritedUnchangedFromV7": true
+    },
+    "dependencyLock": {
+      "path": "services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v3/uv.lock",
+      "sha256": "70d4d5c4a959bb0e8392c1877d6c5d329b345d3fb17faa140a34787e4632c3d1"
+    },
+    "runtime": {
+      "python": "3.12",
+      "torch": "2.6.0+cu124",
+      "torchaudio": "2.6.0+cu124",
+      "provider": "cuda",
+      "precision": "bf16"
+    },
+    "host": {
+      "minimumTotalDedicatedVramMiB": 8000,
+      "minimumAvailableDedicatedVramMiBAtPreflight": 6144,
+      "minimumTotalRamMiB": 24576,
+      "minimumLogicalProcessors": 8
+    },
+    "correction": {
+      "v9ConfigurationStopWasModelResult": false,
+      "v9ConfigurationStopWasCandidateRejection": false,
+      "cudaWheelSourceExplicit": true
+    }
+  }
+}

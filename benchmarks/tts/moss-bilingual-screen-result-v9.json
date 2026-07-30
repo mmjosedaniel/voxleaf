@@ -1,0 +1,69 @@
+{
+  "audits": {
+    "artifacts": true,
+    "boundedRetention": true,
+    "cleanup": true,
+    "networkIsolation": true,
+    "offline": true,
+    "privacy": true
+  },
+  "authorityCommitSha": "4a80b628b3720c3ce71583ace9576a4113845ea8",
+  "cancellation": {
+    "passedTrials": 8,
+    "requiredTrials": 8
+  },
+  "candidateId": "moss-tts-nano-100m-onnx-cpu-ava-v2",
+  "candidateManifestSha256": "31249a583b8d43f90f7442797373e89b8993455e4cfe26e536cc1e1ca0ca8ad3",
+  "corpusSha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe",
+  "counts": {
+    "attempted": 10,
+    "cancellationTrials": 8,
+    "completed": 10,
+    "failed": 0
+  },
+  "decision": {
+    "rejectionRecorded": false,
+    "state": "pending-maintainer-decision"
+  },
+  "dependencyLockSha256": "49d96b6b5121320290ba951be4a8a343f3380c2fc320182d6003b1dcf0d47bcb",
+  "executionCommitSha": "7a4c85d3201478fe27ced182d5dd1426dc66c21d",
+  "languagesEvaluated": ["es", "en"],
+  "limitations": [
+    "single-fluent-bilingual-maintainer",
+    "synthetic-ten-case-corpus",
+    "official-bundled-ava-voice-only",
+    "dialogue-tail-omission-reported-in-both-languages",
+    "accent-not-preferred-by-maintainer",
+    "distribution-obligations-deferred-to-m011"
+  ],
+  "memory": {
+    "peakDedicatedVramBytes": null,
+    "peakProcessTreeRamBytes": 1915355136
+  },
+  "observations": [],
+  "performanceByLanguage": [
+    {
+      "firstAudioP95Seconds": 5.0650529,
+      "language": "es",
+      "warmP95Rtf": 0.49633903846153843
+    },
+    {
+      "firstAudioP95Seconds": 3.9054277,
+      "language": "en",
+      "warmP95Rtf": 0.42454576086956525
+    }
+  ],
+  "profileSha256": "39499a63ba6194803ae3e8e88c2e3a77390454310a059e2aaa9ca7f5874ba3d5",
+  "qualityByLanguage": [
+    {
+      "language": "es",
+      "status": "reviewed-awaiting-decision"
+    },
+    {
+      "language": "en",
+      "status": "reviewed-awaiting-decision"
+    }
+  ],
+  "schemaVersion": "tts-bilingual-summary-v9",
+  "status": "measured-awaiting-decision"
+}

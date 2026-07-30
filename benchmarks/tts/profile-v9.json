@@ -1,0 +1,127 @@
+{
+  "profileVersion": "tts-bilingual-corrective-profile-v9",
+  "status": "frozen-before-corrective-v9-implementation-and-results",
+  "purpose": "measure-qwen-chatterbox-and-moss-without-automatic-candidate-rejection",
+  "supersedesProspectiveUseOf": {
+    "profile": "benchmarks/tts/profile-v8.json",
+    "sha256": "84448e70e8b8b2782f22c0e3d874b1b30531084732e0416ab9e83e1ad1e7525a",
+    "historicalV8ResultsRemainImmutable": true,
+    "reason": "v8-conflated-standard-support-targets-with-constrained-buffered-mvp-eligibility-and-recorded-configuration-mismatches-as-candidate-rejections"
+  },
+  "authorities": {
+    "evaluationCorpus": {
+      "path": "benchmarks/tts/corpus-v7.json",
+      "sha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe"
+    },
+    "normalizationProfile": {
+      "path": "docs/architecture/narration-normalization-v2.md",
+      "sha256": "8e4f0bc45d260a03bc4bfdf523d272951eb26915005a9acbc60e8f17a4dd446e"
+    },
+    "candidateManifest": {
+      "path": "benchmarks/tts/candidates-v9.json",
+      "sha256": "31249a583b8d43f90f7442797373e89b8993455e4cfe26e536cc1e1ca0ca8ad3"
+    },
+    "privateRawSchema": {
+      "path": "benchmarks/tts/schemas/bilingual-raw-v9.schema.json",
+      "sha256": "f8f4f70b284dd162ac55cebadcbdd6d3ab3f1a8980e605cfbd9d52f45fe4d202"
+    },
+    "contentSafeSummarySchema": {
+      "path": "benchmarks/tts/schemas/bilingual-summary-v9.schema.json",
+      "sha256": "34299a8ab0ca2cccf302ef82d6e223237115939c6e23376465c16bb7970fbd05"
+    }
+  },
+  "productInterpretation": {
+    "standardSupportTargets": {
+      "warmP95RtfMaximum": 1.1,
+      "sustainedP95RtfMaximum": 1.1,
+      "meaning": "preferred-standard-profile-target-not-automatic-rejection"
+    },
+    "constrainedBufferedMvp": {
+      "rtfAboveOnePermitted": true,
+      "knownQwenReferenceRtf": 1.44,
+      "startup": "begin-when-configured-playable-audio-lead-is-ready",
+      "buffering": "bounded-adaptive-prebuffering",
+      "underruns": "observable-and-measurable",
+      "maintainerDecisionRequired": true
+    }
+  },
+  "executionPolicy": {
+    "candidateOrder": [
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v9",
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v9",
+      "chatterbox-multilingual-v3-cuda-bf16-default-v2",
+      "moss-tts-nano-100m-onnx-cpu-ava-v2"
+    ],
+    "oneLoadedModelAtATime": true,
+    "automaticRetries": 0,
+    "automaticCandidateRejection": "forbidden",
+    "configurationMismatchOutcome": "correct-authority-before-measurement",
+    "measurementIssueOutcome": "record-observation-and-await-maintainer-decision",
+    "qualityReviewAfterAdvisoryPerformanceIssue": "permitted",
+    "hardStopConditions": [
+      "privacy-violation",
+      "remote-inference",
+      "unbounded-retention",
+      "artifact-identity-mismatch",
+      "network-isolation-missing",
+      "host-safety-preflight-failure"
+    ],
+    "hardStopIsCandidateRejection": false,
+    "runtimeDownloads": "forbidden",
+    "referenceAudio": "forbidden",
+    "rawResultRoot": "benchmarks/tts/raw/v9",
+    "rawResultRetention": "delete-after-content-safe-derivation",
+    "generatedAudioRetention": "delete-after-private-quality-session",
+    "resultCommitRule": "authority-commit-must-be-strict-ancestor"
+  },
+  "boundedScreen": {
+    "warmAttemptsPerLanguage": 5,
+    "cancellationTrialsPerLanguage": 4,
+    "coldLoadsPerCandidate": 1,
+    "firstAttemptsOnly": true,
+    "timeoutsMilliseconds": {
+      "load": 300000,
+      "request": 180000,
+      "termination": 2000,
+      "cleanup": 5000
+    },
+    "advisoryTargets": {
+      "coldLoadP95SecondsMaximum": 30,
+      "firstAudioP95SecondsMaximum": 7,
+      "warmP95RtfMaximum": 1.1,
+      "peakProcessTreeRamMiBMaximum": 4096,
+      "minimumAvailableSystemRamMiB": 4096,
+      "minimumDedicatedVramReserveMiB": 512,
+      "cancellationTrialsPassed": "all"
+    },
+    "measurements": [
+      "cold-load",
+      "first-audio",
+      "warm-rtf",
+      "process-tree-ram",
+      "dedicated-vram",
+      "cancellation",
+      "wrong-language-output",
+      "intelligibility",
+      "naturalness",
+      "overall-usefulness"
+    ]
+  },
+  "decisionRules": {
+    "preDecisionStatus": "measured-awaiting-decision",
+    "rejectionRequiresExplicitMaintainerDecision": true,
+    "noModelMayBeRejectedByHarness": true,
+    "historicalV8RejectionsDoNotDecideV9": true,
+    "recordedDecisionMustCiteContentSafeV9Evidence": true
+  },
+  "resultRules": {
+    "schemaVersions": {
+      "privateRaw": "tts-bilingual-raw-v9",
+      "contentSafeSummary": "tts-bilingual-summary-v9"
+    },
+    "candidateManifestSha256": "31249a583b8d43f90f7442797373e89b8993455e4cfe26e536cc1e1ca0ca8ad3",
+    "evaluationCorpusSha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe",
+    "executionCommitMustStrictlyDescendFromAuthority": true,
+    "resultBearingFilesBeforeAuthority": "forbidden"
+  }
+}

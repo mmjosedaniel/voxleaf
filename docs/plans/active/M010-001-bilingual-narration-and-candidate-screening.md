@@ -121,12 +121,24 @@ runtime or support state.
 - [narration normalization v2](../../architecture/narration-normalization-v2.md)
 - [TTS feasibility profile v7](../../architecture/tts-feasibility-profile-v7.md)
 - [superseding TTS feasibility profile v8](../../architecture/tts-feasibility-profile-v8.md)
+- [corrective TTS feasibility profile v9](../../architecture/tts-feasibility-profile-v9.md)
+- [Chatterbox CUDA feasibility profile v10](../../architecture/tts-feasibility-profile-v10.md)
+- [Chatterbox RTX 50 compatibility profile v11](../../architecture/tts-feasibility-profile-v11.md)
 - [ADR-0024](../../architecture/decisions/ADR-0024-freeze-bilingual-v7-authority.md)
 - [ADR-0025](../../architecture/decisions/ADR-0025-supersede-v7-with-local-qwen-bilingual-v8-authority.md)
+- [ADR-0026](../../architecture/decisions/ADR-0026-correct-bilingual-candidate-decision-authority.md)
+- [ADR-0027](../../architecture/decisions/ADR-0027-freeze-chatterbox-cuda-v10-correction.md)
+- [ADR-0028](../../architecture/decisions/ADR-0028-freeze-chatterbox-rtx50-compatibility-v11.md)
 - [v7 candidate manifest](../../../benchmarks/tts/candidates-v7.json)
 - [v7 evaluation profile](../../../benchmarks/tts/profile-v7.json)
 - [v8 candidate amendment](../../../benchmarks/tts/candidates-v8.json)
 - [v8 evaluation profile](../../../benchmarks/tts/profile-v8.json)
+- [v9 corrective candidate manifest](../../../benchmarks/tts/candidates-v9.json)
+- [v9 corrective evaluation profile](../../../benchmarks/tts/profile-v9.json)
+- [v10 Chatterbox candidate manifest](../../../benchmarks/tts/candidates-v10.json)
+- [v10 Chatterbox evaluation profile](../../../benchmarks/tts/profile-v10.json)
+- [v11 Chatterbox candidate manifest](../../../benchmarks/tts/candidates-v11.json)
+- [v11 Chatterbox evaluation profile](../../../benchmarks/tts/profile-v11.json)
 - [v7 synthetic corpus](../../../benchmarks/tts/corpus-v7.json)
 - [v2 normalization corpus](../../../benchmarks/tts/normalization-corpus-v2.json)
 
@@ -253,11 +265,13 @@ Use one fluent evaluator per evaluated language for MVP quality admission. If
 no fluent English evaluator is available, the English quality gate is blocked;
 machine metrics or Spanish feedback cannot substitute for that decision.
 
-Screen candidates sequentially. Reject immediately on unresolved licensing or
+Screen candidates sequentially. Stop an execution on unresolved licensing or
 voice provenance, mandatory online inference, inability to run offline on the
 exact Windows host, unsafe resource fit, failed startup/cancellation, invalid
 audio, hallucination/repetition/meaning change, or inability to fit the
-service and repository boundaries. Do not spend the full matrix on an
+service and repository boundaries. Record the content-safe observation and
+ask the maintainer before accepting, deferring, or rejecting the candidate.
+Do not spend the full matrix on an
 already-rejected candidate.
 
 Piper English runs first. Exact Qwen/Serena Spanish and Qwen/Aiden English
@@ -452,7 +466,10 @@ distribution and license fulfillment.
 
 ### Milestone 4: Run bounded sequential candidate and Qwen control screens
 
-**Status:** Not started.
+**Status:** Complete as of 2026-07-30. Corrective v9/v11 produced real MOSS
+and Chatterbox evidence, the maintainer reviewed both private bilingual sample
+sets, content-safe summaries were retained, and the private scorecards,
+blinded maps, generated audio, and complete raw sessions were deleted.
 
 1. Run exact Qwen/Serena Spanish and Qwen/Aiden English independently through
    the existing-engine control gates. Stop only the failing exact identity and
@@ -465,30 +482,51 @@ distribution and license fulfillment.
    gates.
 4. Retain the Milestone 1 CosyVoice intake rejection; do not create an
    environment or execute it in v8.
-5. Stop each rejected candidate immediately and remove its untracked artifacts
-   through the documented cleanup path.
-6. Rank only gate-passing exact profiles; upstream samples and family claims
-   cannot override a failed VoxLeaf gate.
+5. Stop an unsafe or invalid execution and remove its untracked artifacts
+   through the documented cleanup path, but do not convert that stop into a
+   candidate rejection.
+6. Report measurements and quality evidence. Ask the maintainer before
+   recording any rejection.
 
 Exit with content-safe screen summaries and zero or one selected full-matrix
 new-engine survivor plus independent Qwen profile decisions.
 
-### Milestone 5: Execute the full frozen v8 evaluation and record the decision
+Actual result: Chatterbox completed 10/10 generation cases and 8/8
+cancellation trials at about 0.65 warm p95 RTF in both languages. The
+maintainer rated it highly, with cross-language accent limitations, and
+selected it as the sole new-engine full-matrix survivor. MOSS also completed
+10/10 generations and 8/8 cancellation trials at 0.50 Spanish and 0.43
+English warm p95 RTF, but the maintainer reported dialogue-tail omission in
+both languages and did not prefer the accent; MOSS is deferred without
+rejection. Existing Qwen/Serena Spanish and Qwen/Aiden English remain separate
+hardware-dependent constrained-buffer candidates. Their approximately 1.44
+RTF on this laptop is not an automatic blocker and does not predict
+performance on a stronger compatible GPU. ADR-0029 and `selection-v11.md`
+record this routing without changing runtime support.
+
+### Milestone 5: Freeze and execute the corrective full evaluation
 
 **Status:** Not started.
 
-1. Run the complete language-specific matrix for each passing Qwen control.
-2. If a new-engine screen survivor exists, run the complete frozen
-   Spanish/English
-   machine, quality, performance, memory, cancellation, cleanup, and privacy
-   matrix on the exact host.
-3. If no survivor exists, record the frozen screen rejections and skip the
-   full matrix rather than manufacturing a winner.
-4. Validate ancestry, hashes, schemas, derived summaries, evaluator
+1. Before any new result, freeze a new numbered authority that preserves the
+   v8 Qwen, v9 MOSS, and v11 Chatterbox evidence unchanged.
+2. Run the complete frozen Spanish/English machine, quality, performance,
+   memory, cancellation, cleanup, privacy, and long-form matrix for exact
+   Chatterbox profile `chatterbox-multilingual-v3-cuda-bf16-default-v4`.
+3. Retain the existing language-specific Qwen measurements as constrained
+   buffer capacity evidence and collect independent result-neutral private
+   quality evidence for Qwen/Serena Spanish and Qwen/Aiden English. Treat the
+   `RTF <= 1.1` standard target as advisory for this path.
+4. Present any failure, limitation, or blocked execution to the
+   maintainer before deciding whether to reject, defer, retain, or advance the
+   candidate.
+5. Validate ancestry, hashes, schemas, derived summaries, evaluator
    completeness, and content safety.
-5. Accept the next numbered ADR that either admits one exact profile with
-   explicit margins/limitations or records no passing naturalness candidate.
-6. Update the support matrix without editing historical M010 or v7 files.
+6. Accept the next numbered ADR that either admits exact profiles with
+   explicit language, hardware, voice, and constrained-buffer limitations or
+   records why a profile remains development-only or deferred.
+7. Update the support matrix without editing historical M010 or v7-v11
+   authority and results.
 
 Exit only when the decision follows frozen evidence and does not overstate
 language, hardware, voice, quality, performance, or distribution support.
@@ -498,16 +536,20 @@ language, hardware, voice, quality, performance, or distribution support.
 **Status:** Not started.
 
 1. Integrate Piper English only if Milestone 3 admits it.
-2. Integrate at most one new engine only if Milestone 5 admits it.
-3. Keep candidate dependencies isolated in exact lockfiles and preserve one
+2. Integrate Chatterbox only if Milestone 5 admits its exact profile.
+3. Make Qwen/Serena Spanish and Qwen/Aiden English selectable only if
+   Milestone 5 accepts their independent quality decisions and the measured
+   host satisfies the exact profile. Keep slower-than-real-time Qwen behind
+   the existing bounded constrained-buffer behavior.
+4. Keep candidate dependencies isolated in exact lockfiles and preserve one
    native-owned service tree.
-4. Add the exact adapter, profile registry entry, native configuration gate,
+5. Add the exact adapter, profile registry entry, native configuration gate,
    host matching, settings availability, pre-start recheck, recovery mapping,
    and deterministic fakes.
-5. Keep protocol v1 unchanged unless a concrete admitted requirement proves
+6. Keep protocol v1 unchanged unless a concrete admitted requirement proves
    it insufficient; any protocol change requires separate versioned authority
    and conformance fixtures before implementation.
-6. Prove ordered bounded buffering, M008.1 transitions, synchronization,
+7. Prove ordered bounded buffering, M008.1 transitions, synchronization,
    language/profile switching, identity-first cancellation, explicit recovery,
    cleanup, and no generated-audio persistence.
 
@@ -621,6 +663,134 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-30:** Completed corrective Milestone 4. V11 Chatterbox completed
+  10/10 bilingual cases and 8/8 cancellation trials with about 0.65 warm p95
+  RTF; the maintainer rated it very good with cross-language accent
+  limitations and advanced it as the sole new-engine full-matrix survivor. V9
+  MOSS completed the same machine/cancellation counts more quickly and with
+  zero VRAM, but the maintainer reported bilingual dialogue-tail omission and
+  did not prefer its accent, so it is deferred without rejection. Existing
+  Qwen/Serena Spanish and Qwen/Aiden English remain independent
+  hardware-dependent constrained-buffer candidates; their approximately 1.44
+  RTF on this laptop is not an automatic blocker. ADR-0029 and
+  `selection-v11.md` record the routing.
+- **2026-07-30:** Added a fail-closed content-safe result derivation and
+  cleanup command. It validated both frozen authorities, raw sessions,
+  blinded maps, and one-evaluator scorecards before deleting the downloaded
+  scorecards, generated waveforms, maps, and complete ignored v9/v11 sessions.
+  Only the schema-valid MOSS v9 and Chatterbox v11 summaries remain.
+- **2026-07-30:** The exact v11 Torch 2.9.1+cu128 compatibility environment
+  supported the RTX 5060 `sm_120` host and produced real Chatterbox inference.
+  All ten Spanish/English cases and all eight cancellation trials completed.
+  Spanish first-audio p95 was 3.923 seconds with 0.646 warm p95 RTF; English
+  first-audio p95 was 4.227 seconds with 0.650 warm p95 RTF. Peak
+  process-tree RAM was about 4.88 GiB and peak dedicated VRAM about 3.51 GiB.
+  The preferred cold-load and process-RAM targets remain documented
+  observations rather than automatic candidate rejection.
+- **2026-07-29:** The exact v10 Torch 2.6.0+cu124 runtime reached local
+  Chatterbox model loading but stopped before inference on the exact NVIDIA
+  GeForce RTX 5060 Laptop GPU. The host reports CUDA capability 12.0
+  (`sm_120`), while the frozen Torch build supplies kernels only through
+  `sm_90`; the first CUDA operation failed because no compatible kernel image
+  was available. This remains a configuration observation,
+  not model evidence or rejection. Preserved v9/v10 and froze separate v11
+  experimental compatibility authority with exact Torch/Torchaudio
+  2.9.1+cu128 before another attempt.
+- **2026-07-29:** Corrective v9 completed real MOSS machine inference rather
+  than reusing the historical configuration stop. All ten Spanish/English
+  cases and all eight cancellation trials completed. Spanish warm p95 RTF was
+  0.496 with 5.07-second first-audio p95; English warm p95 RTF was 0.425 with
+  3.91-second first-audio p95. Peak process-tree RAM was about 1.78 GiB and no
+  advisory observation was raised. Ten private listening samples were
+  generated and remain ignored pending maintainer review; no candidate
+  decision has been recorded.
+- **2026-07-29:** The v9 Chatterbox environment stopped before model loading
+  because its lock resolved the Windows PyPI `torch 2.6.0+cpu` wheel. This is
+  a configuration observation, not a model result or rejection. Preserved v9
+  and its MOSS evidence unchanged, then froze candidate-specific v10 authority
+  with a new CUDA 12.4 environment requiring exact Torch/Torchaudio
+  2.6.0+cu124 before another Chatterbox attempt.
+- **2026-07-29:** Reopened Milestone 4 after maintainer review found that v8
+  had applied the `RTF <= 1.1` preferred standard-profile target as an
+  automatic blocker despite ADR-0015's approved constrained buffered Qwen
+  mode. Preserved every v7/v8 byte and result, then froze corrective v9
+  authority. V9 treats the existing approximately 1.44 Qwen RTF as advisory
+  capacity evidence, requires real bounded Chatterbox and MOSS inference, and
+  requires an explicit maintainer decision before any model rejection.
+  Chatterbox now has a separate exact source-revision lock that supports
+  explicit V3 loading; MOSS v9 records the actual model and codec artifacts at
+  the already frozen upstream revisions.
+- **2026-07-29:** Completed Milestone 4 with zero new-engine full-matrix
+  survivors under historical v8 interpretation. The exact MOSS source and environment installed successfully,
+  and exact revision
+  `f52645cb467506d8e18e746ddd59482685b74e58` was requested into the ignored
+  model root. The downloaded revision did not match the frozen v8 artifact
+  authority: for example, `moss_tts_decode_step.onnx` was 291,483 bytes
+  instead of 373,544 bytes, `moss_tts_local_cached.onnx` was absent, and
+  `tts_browser_onnx_meta.json` was 4,487 bytes instead of 96,845 bytes.
+  Execution stopped immediately with `model-load-failed`; the codec download,
+  firewall change, inference, audio generation, measurements, cancellations,
+  and quality review did not run. The ignored partial model root and candidate
+  environment were deleted before retaining only
+  `moss-bilingual-screen-result-v8.json`. CosyVoice remains rejected at intake
+  and was neither installed nor run.
+- **2026-07-29:** Rejected the exact Chatterbox Multilingual V3 screen before
+  model acquisition or inference. The exact frozen environment installed
+  successfully, but inspection of `chatterbox-tts==0.1.7` showed that its
+  offline `from_local` loader requires
+  `t3_mtl23ls_v2.safetensors`, while the frozen v8 candidate requires
+  `t3_mtl23ls_v3.safetensors`. Its alternative `from_pretrained` path is
+  revision-`main` network acquisition, which cannot substitute for the frozen
+  local identity. The screen therefore stopped immediately with
+  `model-load-failed`; no model artifacts, inference, generated audio, timing,
+  memory, cancellation, or quality measurements were produced. The ignored
+  candidate environment was removed through the verified exact-path cleanup
+  before retaining only
+  `chatterbox-bilingual-screen-result-v8.json`.
+- **2026-07-29:** Completed the independent Aiden/English control at execution
+  commit `1e93f97f0632b7c677160e5254326a9984348509`. All five first-attempt
+  generations completed, but the profile was rejected before quality on
+  first-audio, warm-RTF, cancellation, and process-tree RAM gates.
+  Content-safe evidence records 11.947 seconds first-audio p95, 1.454 warm
+  p95 RTF, 4,647,976,960 peak process-tree RAM, 4,791,521,280 peak dedicated
+  VRAM, and two of four cancellation trials completed before the
+  complete-waveform boundary failed the next trial. The private session,
+  generated audio, and exact temporary control files were deleted before
+  `qwen-aiden-english-control-result-v8.json` was retained. No Serena scores,
+  samples, or decision were reused.
+- **2026-07-29:** Installed and verified the exact Qwen interpreter outbound
+  block, then completed the first permitted Serena/Spanish control at
+  execution commit `5d821b9351a7335cc2cf205bccbb58974161f22f`.
+  All five first-attempt generations completed, but the exact profile was
+  rejected before quality on cold-load, first-audio, warm-RTF, cancellation,
+  and process-tree RAM gates. Content-safe evidence records 15.887 seconds
+  first-audio p95, 1.439 warm p95 RTF, 4,638,187,520 peak process-tree RAM,
+  4,825,075,712 peak dedicated VRAM, and two of four cancellation trials
+  completed before the complete-waveform boundary failed the next trial. The
+  full private session and generated audio were deleted before
+  `qwen-serena-spanish-control-result-v8.json` was retained. Review also fixed
+  a result-derivation classification defect so a cancellation failure no
+  longer falsely marks five completed generations as failed first attempts;
+  the rejection itself is unchanged.
+- **2026-07-29:** Began Milestone 4 on
+  `feat/m010-001-candidate-qwen-screens`. Added a v8-only bounded screen
+  protocol with one cold load, one warm first attempt per frozen case, four
+  cancellation trials per evaluated language, process-tree RAM and WDDM plus
+  framework VRAM measurement, exact Qwen/Serena and Qwen/Aiden built-in voice
+  identities, closed-stdin commands, repository-environment raw validation,
+  immediate machine-rejection derivation, private-session cleanup, and
+  model-free regression coverage. The executable result-bearing checkpoint is
+  `5b64bb0aac45a143d0806edc6cbd403b4257b737`; focused Ruff, mypy, and 19
+  pytest cases pass.
+- **2026-07-29:** Ran the first required Serena/Spanish preflight at
+  `5b64bb0aac45a143d0806edc6cbd403b4257b737`. The exact ignored model
+  artifacts and current host thresholds passed, but the only installed
+  `VoxLeaf TTS Benchmark Offline` rule targets the Piper interpreter. The
+  Qwen preflight therefore failed closed with only `network-isolation`, and
+  no inference, raw session, generated audio, Aiden run, or new-engine screen
+  began. A direct `New-NetFirewallRule` attempt returned Windows access
+  denied; an administrator must add the exact Qwen interpreter rule before
+  sequential execution can resume.
 - **2026-07-29:** Completed Milestone 3. The exact isolated Piper/joe English
   CPU matrix passed all machine, performance, memory, cancellation, quality,
   privacy, offline, and cleanup gates. The five-sample private evaluation
@@ -756,6 +926,30 @@ committed benchmark authority after results.
   gate. Its lower prosody mean (3.8/5) is a documented limitation, not a gate
   failure, because intelligibility, naturalness, usefulness, language
   stability, meaning, and wrong-language criteria all passed unchanged.
+- Historical v8 showed that exact package or repository names do not by
+  themselves establish a frozen model identity.
+  Chatterbox's pinned package loaded a V2 filename instead of the frozen V3
+  checkpoint, while MOSS's exact pinned revision contained ONNX filenames and
+  bytes different from the frozen artifact manifest. Both are deterministic
+  pre-inference v8 stops. V9 corrects them prospectively without editing v8.
+- The v8 Serena and Aiden summaries retain valid measurements but do not decide
+  constrained buffered eligibility. Their approximately 1.44 RTF is not an
+  automatic blocker or a prediction for stronger compatible GPUs. Both exact
+  Qwen language profiles remain eligible for separate quality review and
+  hardware-dependent constrained-buffer use.
+- Corrective MOSS and Chatterbox screens now have real model evidence.
+  Chatterbox is the sole new-engine full-matrix survivor because the
+  maintainer preferred its quality and observed no truncation or
+  wrong-language output. MOSS is deferred, not rejected, because its
+  otherwise-fast CPU path omitted the dialogue tail in both languages and its
+  accent was not preferred.
+- Chatterbox's exact evaluated API has no native speaking-rate parameter.
+  Generation controls such as temperature, exaggeration, and CFG weight are
+  not equivalent to pitch-preserving playback speed. Any future speed control
+  should remain engine-neutral and separately authorized.
+- The evaluated Chatterbox path has one bundled default conditioning voice.
+  Additional voices require reference conditioning or voice cloning and
+  remain outside this no-personal-reference scope.
 
 ## Final validation results
 
@@ -787,13 +981,13 @@ services/tts/tests/test_benchmark_v7_authority.py` passed 7 tests.
 Milestone 1A focused validation on 2026-07-29:
 
 - `uv run --project services/tts --locked ruff check
-  services/tts/benchmarks/v8_authority.py
-  services/tts/tests/test_benchmark_v8_authority.py` passed.
+services/tts/benchmarks/v8_authority.py
+services/tts/tests/test_benchmark_v8_authority.py` passed.
 - `uv run --directory services/tts --locked mypy
-  benchmarks/v8_authority.py tests/test_benchmark_v8_authority.py` passed.
+benchmarks/v8_authority.py tests/test_benchmark_v8_authority.py` passed.
 - `uv run --project services/tts --locked pytest -p no:cacheprovider
-  services/tts/tests/test_benchmark_v7_authority.py
-  services/tts/tests/test_benchmark_v8_authority.py` passed 14 tests.
+services/tts/tests/test_benchmark_v7_authority.py
+services/tts/tests/test_benchmark_v8_authority.py` passed 14 tests.
 - The production authority-tree verifier accepted exact commit
   `95b0452ffb237284c5ffb54332c578b36e45fdf5`.
 - `pnpm.cmd check:portable` passed in 36.2 seconds: formatting, lint, all
@@ -828,8 +1022,8 @@ Milestone 2 focused validation on 2026-07-29:
   preference, supervised fake-service, cancellation/recovery, EPUB lifecycle,
   synchronization, privacy, and no-external-request matrix.
 - `uv run --project services/tts --locked pytest
-  services/tts/tests/test_benchmark_v6_authority.py
-  services/tts/tests/test_benchmark_v8_authority.py` passed 14 tests after the
+services/tts/tests/test_benchmark_v6_authority.py
+services/tts/tests/test_benchmark_v8_authority.py` passed 14 tests after the
   four frozen authority inputs were restored to their exact recorded hashes.
 - `pnpm.cmd check:portable` passed formatting, lint, TypeScript and Python type
   checks, 209 shared tests, 577 EPUB tests, 429 desktop tests plus seven
@@ -851,12 +1045,12 @@ Milestone 3 validation on 2026-07-29:
   quality gate with zero meaning-changing defects and zero wrong-language
   outputs.
 - `services/tts/.venv/Scripts/python.exe -m pytest -p no:cacheprovider
-  --basetemp <workspace-temp> tests/test_benchmark_bilingual_baseline.py
-  tests/test_benchmark_v8_authority.py` passed 16 tests.
+--basetemp <workspace-temp> tests/test_benchmark_bilingual_baseline.py
+tests/test_benchmark_v8_authority.py` passed 16 tests.
 - Focused Ruff and strict mypy passed the English adapter, runner, quality,
   result, and authority-test surfaces.
 - `services/tts/.venv/Scripts/python.exe -m pytest -p no:cacheprovider
-  --basetemp <workspace-temp> .` passed all 279 Python tests.
+--basetemp <workspace-temp> .` passed all 279 Python tests.
 - `pnpm.cmd check:portable` passed formatting, lint, TypeScript/Python type
   checks, 209 shared tests, 577 EPUB tests, 429 desktop tests plus seven
   native-driver client tests, all 279 Python tests, and portable builds.
@@ -870,3 +1064,62 @@ Milestone 3 validation on 2026-07-29:
   scoped privacy/artifact scan passed. The exported scorecard and complete
   ignored raw session, including generated audio, were deleted before the
   content-safe result was retained.
+
+Historical v8 Milestone 4 validation on 2026-07-29:
+
+- Exact Serena/Spanish and Aiden/English control artifacts, environments,
+  offline controls, and interpreter-specific outbound isolation passed
+  preflight before their independent measured executions.
+- Each Qwen control completed all five first attempts but failed the frozen
+  performance, memory, and cancellation conjunction before quality. Their
+  private sessions and generated audio were deleted before retaining the two
+  content-safe summaries.
+- Chatterbox and MOSS stopped before inference at deterministic frozen
+  model-identity failures. Their ignored environments and partial MOSS model
+  download were deleted; neither result contains fabricated observations.
+- Frozen v8 schema validation passed for all four control/screen summaries.
+  Focused Ruff and strict mypy passed, and the focused screen/authority pytest
+  run passed 13 tests.
+- `pnpm.cmd check:portable` passed formatting, lint, TypeScript/Python type
+  checks, 209 shared tests, 577 EPUB tests, 429 desktop tests plus seven
+  native-driver client tests, all 284 Python tests, and portable builds.
+- `pnpm.cmd check` passed the same suites plus Rust formatting, Clippy, all 40
+  Rust tests, the Tauri release build, and Python source/wheel builds.
+- The first portable run correctly found that the four generated JSON
+  summaries needed repository Prettier formatting. Mechanical formatting
+  changed no values; all summaries passed schema validation again before both
+  aggregates passed.
+- `git diff --check` and the scoped privacy/artifact audit passed. No EPUB,
+  generated audio, raw session, model weight, candidate environment, secret,
+  or private host identity is tracked. The pytest cache-permission warning and
+  existing CSS-highlight/chunk-size build warnings remain non-failing.
+
+Corrective Milestone 4 validation on 2026-07-30:
+
+- Exact outbound-isolated v9 MOSS and v11 Chatterbox executions each completed
+  10/10 Spanish/English generation cases and 8/8 cancellation trials. Their
+  content-safe metrics and limitations are retained in the schema-valid v9 and
+  v11 summaries.
+- One fluent bilingual maintainer reviewed ten blinded samples per candidate.
+  The guarded derivation verified the frozen authority, raw result, raw hash,
+  blinded map, sample identity set, score bounds, and scorecard identity before
+  cleanup.
+- The downloaded scorecards, private maps, generated waveforms, and complete
+  ignored v9/v11 raw sessions were deleted. Only content-safe summaries,
+  selection v11, and ADR-0029 remain.
+- Focused Ruff formatting/lint, strict mypy, and the 16-test candidate-result
+  plus v9/v11 authority suite passed.
+- `pnpm.cmd check:portable` passed formatting, lint, all TypeScript/Python type
+  checks, 209 shared tests, 577 EPUB tests, 429 desktop tests plus seven native
+  WebDriver-client tests, all 327 Python tests, portable desktop/package
+  builds, and both Python distributions.
+- `pnpm.cmd check` passed the same checks plus Rust formatting, Clippy, all 40
+  Rust tests, the Tauri release build, and Python source/wheel builds.
+- The initial sandboxed portable invocation stopped only because uv could not
+  access its user-local cache; the required local outside-sandbox rerun passed.
+  The existing pytest cache-permission warning and CSS-highlight/chunk-size
+  build warnings remain informational.
+- `git diff --check`, explicit v9/v11 summary validation after Prettier, and a
+  scoped privacy/artifact scan passed. No EPUB, generated audio, raw session,
+  scorecard, model weight, candidate environment, private path, email,
+  credential, or secret is tracked by this milestone.

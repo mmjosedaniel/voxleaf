@@ -106,9 +106,11 @@ authority.
    authority. Spanish remains the only playable product language because no
    English profile is integrated yet; selecting English fails closed before
    child start. Milestone 3 has admitted exact Piper/joe English through every
-   frozen baseline gate for later Milestone 6 integration. Later milestones
-   evaluate independent local Qwen Serena/Spanish and Aiden/English profiles
-   and at most one newly admitted engine.
+   frozen baseline gate for later Milestone 6 integration. Corrective
+   Milestone 4 advances exact Chatterbox to the next full matrix, defers MOSS
+   without rejection, and retains independent local Qwen Serena/Spanish and
+   Aiden/English profiles for hardware-dependent constrained-buffer
+   evaluation.
 2. M011 then packages and validates an end-user distribution, including Piper
    notices, provenance, corresponding-source or written-offer mechanics,
    signing, updates, and complete-MVP validation.
@@ -118,6 +120,8 @@ candidate order because English narration and a stronger portfolio demo are
 now active requirements. Its historical resultless v7 authority is preserved;
 v8 adds exact local Qwen/Serena Spanish and native-English Qwen/Aiden controls,
 then sequentially screens Chatterbox Multilingual V3 and MOSS-TTS-Nano ONNX.
+The corrective screens select Chatterbox for the next full matrix and defer
+MOSS after dialogue-tail omission; they do not create a support claim.
 Exact intake rejected CosyVoice before execution because no non-personal
 default voice path was frozen. The cycle may integrate at most one passing new
 engine. Pocket TTS, Chatterbox's Spanish-only
