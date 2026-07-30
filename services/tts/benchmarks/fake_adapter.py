@@ -106,7 +106,7 @@ class _FakeGeneration(Iterator[AudioChunk]):
             request_id=self._request.request_id,
             sequence=sequence,
             sample_count=self._sample_count,
-            sample_rate_hz=SAMPLE_RATE_HZ,
+            sample_rate_hz=self._owner.sample_rate_hz,
             channels=1,
             sample_format="float32",
             end_of_output=end_of_output,
@@ -125,11 +125,13 @@ class DeterministicFakeAdapter:
         emit_sensitive_diagnostic: bool = False,
         fail_generation: bool = False,
         sample_count_override: int | None = None,
+        sample_rate_hz: int = SAMPLE_RATE_HZ,
     ) -> None:
         self.clock = clock
         self.emit_sensitive_diagnostic = emit_sensitive_diagnostic
         self.fail_generation = fail_generation
         self.sample_count_override = sample_count_override
+        self.sample_rate_hz = sample_rate_hz
         self.cancelled_request_ids: set[str] = set()
         self.active_request_ids: set[str] = set()
         self.loaded = False
@@ -164,15 +166,15 @@ class DeterministicFakeAdapter:
         self.active_request_ids.add(request.request_id)
         if request.phase in ("warmup", "warm"):
             chunk_count = 2
-            sample_count = SAMPLE_RATE_HZ * 5
+            sample_count = self.sample_rate_hz * 5
             advance_ns = 500_000_000
         elif request.phase == "sustained":
             chunk_count = 3
-            sample_count = SAMPLE_RATE_HZ * 5
+            sample_count = self.sample_rate_hz * 5
             advance_ns = 500_000_000
         else:
             chunk_count = 10
-            sample_count = SAMPLE_RATE_HZ
+            sample_count = self.sample_rate_hz
             advance_ns = 50_000_000
         if self.sample_count_override is not None:
             sample_count = self.sample_count_override

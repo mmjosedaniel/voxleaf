@@ -49,7 +49,9 @@ Milestone 2 now lets the desktop explicitly select Spanish or English and
 dispatches the selected language through `narration-bilingual-v2`. The
 executable profile-language registry still has no admitted English profile,
 so English selection reports a content-free unavailable state and starts no
-child. No existing result proves English audio.
+child. Milestone 3 has now admitted the exact Piper/joe English baseline for
+later product integration; it is not selectable until Milestone 6 updates the
+registry, service adapter, configuration, and exact-host product proof.
 
 Exact Piper 1.4.2 / `es_ES-davefx-medium` is the sole supported profile.
 Qwen3-TTS 12Hz 1.7B CustomVoice / Serena is an optional native-gated
@@ -381,8 +383,9 @@ historical/Piper combinations. The v2 implementation lives in separate
 bilingual normalizer modules; the four byte-frozen v6/v8 authority inputs
 retain their recorded SHA-256 values. The desktop stores one versioned
 language, exposes a labelled keyboard-operable radio group, filters profiles
-by immutable language binding, and rejects English before child start because
-no English profile is admitted. Configuration replacement invalidates work,
+by immutable language binding, and at the Milestone 2 checkpoint rejects
+English before child start because no English runtime profile is integrated.
+Configuration replacement invalidates work,
 cancels preparation/synthesis, releases buffered/current audio, contains the
 service tree, retains the canonical target, and requires explicit Play. No
 model, candidate dependency, audio persistence, or book-content storage was
@@ -390,7 +393,7 @@ added.
 
 ### Milestone 3: Evaluate the exact Piper English baseline
 
-**Status:** Not started.
+**Status:** Complete on 2026-07-29.
 
 1. Acquire the exact frozen Piper English artifacts outside Git.
 2. Verify hashes, license/provenance files, offline loading, native audio
@@ -404,6 +407,48 @@ added.
 
 Exit with a schema-valid result and explicit decision for the exact Piper
 English profile.
+
+Actual result: the three frozen `en_US-joe-medium` artifacts were
+acquired into the ignored local model root and matched the frozen sizes and
+SHA-256 digests. The existing Piper 1.4.2 candidate environment, Python
+3.12.10 interpreter, ONNX Runtime 1.27.0 CPU provider, and dependency-lock
+digest also match authority. A separate v8 English adapter and baseline runner
+now preserve the v6 Spanish path, apply the frozen 22,050-to-24,000 Hz bounded
+linear conversion, project only the five English corpus cases, execute ten
+warm and fifteen sustained first attempts, and use the four v8 cancellation
+trials. Model-free focused formatting, lint, type checking, and 20 tests pass.
+The private quality workflow now generates five randomized English samples,
+requires all six frozen dimensions plus meaning and wrong-language findings,
+deletes the exported scorecard after aggregation, and derives only the closed
+content-safe v8 summary after deleting the complete private session. The
+frozen candidate environment contains no repository schema dependencies, so
+candidate execution now hands its closed raw record to the existing service
+environment for v8 validation after the candidate process exits; the frozen
+candidate lock remains unchanged. The expanded focused suite passes 23 tests,
+and both candidate-side command modules import successfully in the exact
+environment.
+
+The administrator-installed exact-interpreter outbound block then passed
+preflight. On execution commit
+`bcf6521e13984a65157d8486d77fb6212b0aaa90`, the exact CPU profile completed
+all 25 first-attempt generations with zero failures, all four cancellation
+trials with zero stale units or remaining processes, 0.154-second p95 first
+audio, 0.0235 warm p95 RTF, 0.0252 sustained p95 RTF, 0.0199 total sustained
+RTF, 411.8 MiB peak process-tree RAM, and at least 11,560.8 MiB available
+system RAM. One fluent evaluator scored five blinded English samples:
+intelligibility 5.0/5, pronunciation 4.6/5, language stability 4.8/5,
+naturalness 4.2/5, prosody 3.8/5, and overall usefulness 4.8/5, with zero
+meaning-changing defects and zero wrong-language outputs. The private
+scorecard, audio, maps, raw metrics, and complete session were deleted before
+the content-safe
+[`piper-english-result-v8.json`](../../../benchmarks/tts/piper-english-result-v8.json)
+was written. All conjunctive v8 gates pass.
+
+Decision: admit exact
+`piper-1-4-2-onnx-cpu-en-us-joe-medium-v1` to Milestone 6 product integration
+as the English CPU profile. This evidence does not yet make it selectable or
+supported in the current application, and M011 still owns runtime/model
+distribution and license fulfillment.
 
 ### Milestone 4: Run bounded sequential candidate and Qwen control screens
 
@@ -576,6 +621,27 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-29:** Completed Milestone 3. The exact isolated Piper/joe English
+  CPU matrix passed all machine, performance, memory, cancellation, quality,
+  privacy, offline, and cleanup gates. The five-sample private evaluation
+  recorded no meaning defect or wrong-language output. Derived and retained
+  only the schema-valid content-safe v8 result, deleted the complete private
+  session, and admitted this exact profile for later Milestone 6 integration;
+  no runtime registry or support claim changed.
+- **2026-07-29:** Began Milestone 3 on
+  `feat/m010-001-piper-english-baseline`. Acquired the exact ignored
+  Piper/joe English artifacts and verified all three frozen sizes and hashes,
+  the CC0 model-card provenance, the existing candidate lock, Python 3.12.10,
+  Piper 1.4.2, ONNX Runtime 1.27.0, and CPU provider availability. Added a
+  v8-only English adapter, bounded 24 kHz conversion, bilingual corpus
+  projection, four-trial baseline protocol, content-safe raw schema path,
+  closed-stdin commands, disposable blinded English quality workflow,
+  content-safe summary derivation, ignored v8 raw root, and deterministic
+  regression coverage. Focused Ruff, mypy, and 23 pytest cases pass. The first
+  administrator-scoped firewall installation attempt failed with Windows
+  access denied, so exact inference remains correctly blocked pending that
+  host control.
+
 - **2026-07-29:** Created this ExecPlan after M010 and M008.1 replacement
   Ubuntu/Windows checks passed. Sequenced the bounded bilingual/candidate work
   before M011 while retaining Spanish-only current-state claims.
@@ -624,8 +690,8 @@ committed benchmark authority after results.
   Added the exact frozen English normalization allowlist, bilingual public
   preparation profile, bounded language preference, accessible selector,
   immutable profile/language bindings, and pre-child lifecycle enforcement.
-  Spanish remains the only playable language because no English engine is
-  admitted.
+  At that checkpoint, Spanish remains the only playable language because no
+  English engine is integrated.
 - **2026-07-29:** The first portable aggregate correctly rejected edits to
   frozen v6/v8 authority inputs. Restored the historical normalizer, Spanish
   table, and two frozen authority documents byte-for-byte; moved additive v2
@@ -685,6 +751,11 @@ committed benchmark authority after results.
   inputs. Additive bilingual normalization must remain in separate v2 modules
   while the v1 normalizer, v1 Spanish table, and frozen v8 authority documents
   stay byte-identical to their committed hash authority.
+- Exact Piper English evidence cannot be inherited from Piper Spanish, but the
+  independently frozen `en_US-joe-medium` profile passed every v8 baseline
+  gate. Its lower prosody mean (3.8/5) is a documented limitation, not a gate
+  failure, because intelligibility, naturalness, usefulness, language
+  stability, meaning, and wrong-language criteria all passed unchanged.
 
 ## Final validation results
 
@@ -741,8 +812,8 @@ The non-failing pytest cache-permission warning and existing Vite
 CSS-highlight/chunk-size warnings do not alter test or build outcomes. Browser,
 packaged WebDriver, model-backed, audio, and exact-host benchmark runs are not
 applicable to this authority-only milestone and were not used as support
-evidence. The plan remains active for Milestone 3; no English engine,
-candidate performance/quality result, or new supported product profile is
+evidence. At that authority checkpoint, no English engine,
+candidate performance/quality result, or new supported product profile was
 claimed.
 
 Milestone 2 focused validation on 2026-07-29:
@@ -767,3 +838,35 @@ Milestone 2 focused validation on 2026-07-29:
   tests, the Tauri release build, and Python source/wheel builds.
 - No model, candidate runtime, generated audio, book, private path, host
   report, or external request was added or persisted.
+
+Milestone 3 validation on 2026-07-29:
+
+- Exact preflight passed artifact hashes, offline environment, dependency
+  lock, interpreter identity, CPU provider, host resource, and
+  exact-interpreter outbound-isolation checks.
+- The frozen exact-host matrix completed 25 first-attempt generations with
+  zero failures and four cancellation trials with zero stale units or
+  remaining processes.
+- The one-evaluator five-sample English quality review passed every frozen
+  quality gate with zero meaning-changing defects and zero wrong-language
+  outputs.
+- `services/tts/.venv/Scripts/python.exe -m pytest -p no:cacheprovider
+  --basetemp <workspace-temp> tests/test_benchmark_bilingual_baseline.py
+  tests/test_benchmark_v8_authority.py` passed 16 tests.
+- Focused Ruff and strict mypy passed the English adapter, runner, quality,
+  result, and authority-test surfaces.
+- `services/tts/.venv/Scripts/python.exe -m pytest -p no:cacheprovider
+  --basetemp <workspace-temp> .` passed all 279 Python tests.
+- `pnpm.cmd check:portable` passed formatting, lint, TypeScript/Python type
+  checks, 209 shared tests, 577 EPUB tests, 429 desktop tests plus seven
+  native-driver client tests, all 279 Python tests, and portable builds.
+- `pnpm.cmd check` passed the same suites plus Rust formatting, Clippy, all 40
+  Rust tests, the Tauri release build, and Python source/wheel builds.
+- The initial portable attempt was blocked only by sandbox access to the
+  user-local uv cache; the required outside-sandbox rerun passed. The initial
+  focused pytest attempt similarly could not access pytest's user-temp root;
+  its fresh workspace-local basetemp rerun passed.
+- `git diff --check`, schema validation of the committed v8 result, and the
+  scoped privacy/artifact scan passed. The exported scorecard and complete
+  ignored raw session, including generated audio, were deleted before the
+  content-safe result was retained.

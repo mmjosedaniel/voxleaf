@@ -13,6 +13,8 @@ The current MVP direction remains:
 
 - exact Piper 1.4.2 / `es_ES-davefx-medium` as the selected, integrated
   speed-focused CPU fallback; production distribution remains M011 work;
+- exact Piper 1.4.2 / `en_US-joe-medium` admitted by the M010.1 v8 baseline
+  for later Milestone 6 integration, not yet a selectable product profile;
 - exact Qwen3-TTS/Serena as the optional higher-quality GPU-dependent
   development profile; and
 - one active service tree, bounded in-memory audio, identity-first
@@ -29,7 +31,8 @@ M010.1 exists because explicit English narration and a stronger naturalness
 demonstration became active portfolio requirements after M010 closed. It must
 not turn this entire backlog into MVP scope:
 
-1. Evaluate one exact Piper English voice as the low-risk bilingual baseline.
+1. Exact Piper/joe English passed the low-risk bilingual baseline and is
+   retained for Milestone 6 integration.
 2. Evaluate exact local Qwen 1.7B CustomVoice Serena/Spanish and native-English
    Aiden/English independently under the superseding v8 authority.
 3. Screen Chatterbox Multilingual V3 and MOSS-TTS-Nano 100M ONNX

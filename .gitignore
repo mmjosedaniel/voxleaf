@@ -86,6 +86,7 @@ logs/
 
 # Benchmarks and profiling
 benchmarks/results/raw/
+benchmarks/tts/raw/
 profiling/
 *.prof
 *.trace
