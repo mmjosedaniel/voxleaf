@@ -43,18 +43,41 @@ const READER_PERFORMANCE_MODE = process.argv.includes("--reader-performance");
 const ADAPTIVE_TTS_EXACT_HOST_MODE = process.argv.includes(
   "--adaptive-tts-exact-host",
 );
+const EXERCISE_EXACT_HOST_PROFILE_SWITCH = process.argv.includes(
+  "--exercise-profile-switch",
+);
 const ADAPTIVE_TTS_PROFILE_ARGUMENT = "--tts-profile=";
+const ADAPTIVE_TTS_LANGUAGE_ARGUMENT = "--tts-language=";
 const EXPECTED_UNAVAILABLE_PROFILE_REASON_ARGUMENT =
   "--allow-profile-unavailable-reason=";
-const EXACT_QWEN_PROFILE_ID = "qwen3-tts-1-7b-customvoice-cuda-bf16-v1";
+const EXACT_QWEN_SERENA_PROFILE_ID =
+  "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8";
+const EXACT_QWEN_AIDEN_PROFILE_ID =
+  "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8";
 const PIPER_CPU_FALLBACK_PROFILE_ID =
   "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+const PIPER_ENGLISH_CPU_PROFILE_ID = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+const CHATTERBOX_BILINGUAL_PROFILE_ID =
+  "chatterbox-multilingual-v3-cuda-bf16-default-v4";
+const EXACT_HOST_TTS_PROFILE_LANGUAGES = new Map([
+  [EXACT_QWEN_SERENA_PROFILE_ID, Object.freeze(["es"])],
+  [EXACT_QWEN_AIDEN_PROFILE_ID, Object.freeze(["en"])],
+  [PIPER_CPU_FALLBACK_PROFILE_ID, Object.freeze(["es"])],
+  [PIPER_ENGLISH_CPU_PROFILE_ID, Object.freeze(["en"])],
+  [CHATTERBOX_BILINGUAL_PROFILE_ID, Object.freeze(["es", "en"])],
+]);
 const adaptiveTtsProfileArgument = process.argv.find((argument) =>
   argument.startsWith(ADAPTIVE_TTS_PROFILE_ARGUMENT),
 );
 const ADAPTIVE_TTS_PROFILE_ID =
   adaptiveTtsProfileArgument?.slice(ADAPTIVE_TTS_PROFILE_ARGUMENT.length) ??
-  EXACT_QWEN_PROFILE_ID;
+  EXACT_QWEN_SERENA_PROFILE_ID;
+const adaptiveTtsLanguageArgument = process.argv.find((argument) =>
+  argument.startsWith(ADAPTIVE_TTS_LANGUAGE_ARGUMENT),
+);
+const ADAPTIVE_TTS_LANGUAGE =
+  adaptiveTtsLanguageArgument?.slice(ADAPTIVE_TTS_LANGUAGE_ARGUMENT.length) ??
+  EXACT_HOST_TTS_PROFILE_LANGUAGES.get(ADAPTIVE_TTS_PROFILE_ID)?.[0];
 const expectedUnavailableReasonArgument = process.argv.find((argument) =>
   argument.startsWith(EXPECTED_UNAVAILABLE_PROFILE_REASON_ARGUMENT),
 );
@@ -64,16 +87,21 @@ const EXPECTED_UNAVAILABLE_PROFILE_REASON =
   );
 if (
   ADAPTIVE_TTS_EXACT_HOST_MODE &&
-  ![EXACT_QWEN_PROFILE_ID, PIPER_CPU_FALLBACK_PROFILE_ID].includes(
-    ADAPTIVE_TTS_PROFILE_ID,
+  !EXACT_HOST_TTS_PROFILE_LANGUAGES.get(ADAPTIVE_TTS_PROFILE_ID)?.includes(
+    ADAPTIVE_TTS_LANGUAGE,
   )
 ) {
-  throw new Error("Unknown exact-host TTS profile.");
+  throw new Error("Unknown exact-host TTS profile or language.");
+}
+if (EXERCISE_EXACT_HOST_PROFILE_SWITCH && !ADAPTIVE_TTS_EXACT_HOST_MODE) {
+  throw new Error("Exact-host profile switching requires adaptive TTS mode.");
 }
 if (
   EXPECTED_UNAVAILABLE_PROFILE_REASON !== undefined &&
   (!ADAPTIVE_TTS_EXACT_HOST_MODE ||
-    ADAPTIVE_TTS_PROFILE_ID !== EXACT_QWEN_PROFILE_ID ||
+    ![EXACT_QWEN_SERENA_PROFILE_ID, EXACT_QWEN_AIDEN_PROFILE_ID].includes(
+      ADAPTIVE_TTS_PROFILE_ID,
+    ) ||
     EXPECTED_UNAVAILABLE_PROFILE_REASON !== "available-dedicated-vram")
 ) {
   throw new Error("Unknown exact-host unavailable-profile expectation.");
@@ -2001,8 +2029,18 @@ async function runAdaptiveTtsExactHostMatrix(
     preparedWorkingSetBytes,
     cleanupWorkingSetBytes,
   );
+  const warmPreparedRtf = rounded(
+    preparedObservation.commandToAudibleMs / preparedObservation.playableMs,
+  );
+  assert(
+    synchronizationObservation.maxRetainedUnits <= 256 &&
+      synchronizationObservation.maxDiscardedUnits <= 256,
+    "Native synchronized narration proof failed.",
+  );
   console.log(
     `Adaptive exact-host TTS matrix passed: ${JSON.stringify({
+      profileId: ADAPTIVE_TTS_PROFILE_ID,
+      language: ADAPTIVE_TTS_LANGUAGE,
       quick: {
         commandToAudibleMs: quickObservation.commandToAudibleMs,
         playableLeadAtStartMs: quickObservation.playableMs,
@@ -2022,6 +2060,7 @@ async function runAdaptiveTtsExactHostMatrix(
             : null,
       },
       prepared: preparedObservation,
+      warmPreparedRtf,
       cancellationMs,
       processTreeWorkingSetBytes: {
         baseline: baselineWorkingSetBytes,
@@ -2095,7 +2134,11 @@ async function runAdaptiveTtsExactHostMatrix(
   );
 }
 
-async function selectAdaptiveTtsProfile(driver, profileId) {
+async function selectAdaptiveTtsProfile(
+  driver,
+  profileId,
+  exerciseSwitch = false,
+) {
   const serializedProfileId = JSON.stringify(profileId);
   await waitForCondition(
     driver,
@@ -2148,6 +2191,32 @@ async function selectAdaptiveTtsProfile(driver, profileId) {
     observation?.requestedProfileSelectable === true,
     "Native synchronized narration proof failed.",
   );
+  if (exerciseSwitch) {
+    const switched = await driver.execute(
+      `const profileId = ${serializedProfileId};
+       const inputs = Array.from(
+         document.querySelectorAll('input[name="hardware-profile"]'),
+       );
+       const alternate = inputs.find(
+         (candidate) => candidate.value !== profileId,
+       );
+       if (!(alternate instanceof HTMLInputElement)) {
+         return false;
+       }
+       alternate.click();
+       return alternate.value;`,
+    );
+    assert(
+      typeof switched === "string" && switched.length > 0,
+      "Native synchronized narration proof failed.",
+    );
+    await waitForCondition(
+      driver,
+      `return document.querySelector(".hardware-compatibility")
+         ?.getAttribute("data-compatibility-profile") ===
+         ${JSON.stringify(switched)};`,
+    );
+  }
   const selected = await driver.execute(
     `const profileId = ${serializedProfileId};
      const input = Array.from(
@@ -2171,29 +2240,35 @@ async function selectAdaptiveTtsProfile(driver, profileId) {
   return true;
 }
 
-async function exerciseNarrationLanguagePreference(driver) {
-  await waitForCondition(
-    driver,
-    `const owner = document.querySelector(".hardware-compatibility");
-     return owner?.getAttribute("data-compatibility-status") !== "checking" &&
-       document.querySelectorAll('input[name="narration-language"]').length === 2;`,
-  );
-  const selectedEnglish = await driver.execute(
-    `const input = Array.from(
+async function selectNarrationLanguage(driver, language) {
+  const serializedLanguage = JSON.stringify(language);
+  const selected = await driver.execute(
+    `const language = ${serializedLanguage};
+     const input = Array.from(
        document.querySelectorAll('input[name="narration-language"]'),
-     ).find((candidate) => candidate.value === "en");
+     ).find((candidate) => candidate.value === language);
      if (!(input instanceof HTMLInputElement)) {
        return false;
      }
      input.click();
      return true;`,
   );
-  assert(selectedEnglish === true, "Native narration language proof failed.");
+  assert(selected === true, "Native narration language proof failed.");
   await waitForCondition(
     driver,
     `return document.querySelector(".hardware-compatibility")
-       ?.getAttribute("data-narration-language") === "en";`,
+       ?.getAttribute("data-narration-language") === ${serializedLanguage};`,
   );
+}
+
+async function exerciseNarrationLanguagePreference(driver, finalLanguage) {
+  await waitForCondition(
+    driver,
+    `const owner = document.querySelector(".hardware-compatibility");
+     return owner?.getAttribute("data-compatibility-status") !== "checking" &&
+       document.querySelectorAll('input[name="narration-language"]').length === 2;`,
+  );
+  await selectNarrationLanguage(driver, "en");
   const persisted = await driver.execute(
     `const serialized = localStorage.getItem(
        "voxleaf.narration.language-preference",
@@ -2217,21 +2292,19 @@ async function exerciseNarrationLanguagePreference(driver) {
         JSON.stringify(["language", "schemaVersion"]),
     "Native narration language proof failed.",
   );
-  const restoredSpanish = await driver.execute(
-    `const input = Array.from(
-       document.querySelectorAll('input[name="narration-language"]'),
-     ).find((candidate) => candidate.value === "es");
-     if (!(input instanceof HTMLInputElement)) {
-       return false;
-     }
-     input.click();
-     return true;`,
+  await selectNarrationLanguage(driver, "es");
+  if (finalLanguage === "en") {
+    await selectNarrationLanguage(driver, "en");
+  }
+  const finalPersistedLanguage = await driver.execute(
+    `const value = JSON.parse(
+       localStorage.getItem("voxleaf.narration.language-preference") ?? "null",
+     );
+     return value?.language ?? null;`,
   );
-  assert(restoredSpanish === true, "Native narration language proof failed.");
-  await waitForCondition(
-    driver,
-    `return document.querySelector(".hardware-compatibility")
-       ?.getAttribute("data-narration-language") === "es";`,
+  assert(
+    finalPersistedLanguage === finalLanguage,
+    "Native narration language proof failed.",
   );
 }
 
@@ -4327,38 +4400,53 @@ async function run() {
       }),
     ]);
   } else if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
-    const boundedSyntheticSentence =
-      "Esta narraci&#243;n sint&#233;tica describe una biblioteca tranquila y una lectura local. Cada frase valida transiciones naturales, memoria limitada y orden.";
-    const piperExpansionRegressionSentence =
-      "Serie 2026 2027 2028 2029, CPU GPU TTS, XIV XVI XVIII, $10.50 y 25%.";
-    const syntheticParagraph =
-      ADAPTIVE_TTS_PROFILE_ID === PIPER_CPU_FALLBACK_PROFILE_ID
-        ? `${piperExpansionRegressionSentence} ${Array.from(
-            { length: 3 },
-            (_, index) =>
-              `${boundedSyntheticSentence} Parte ${String(index + 1)}.`,
-          ).join(" ")}`
-        : boundedSyntheticSentence;
+    const fixtureLanguage = ADAPTIVE_TTS_LANGUAGE;
+    const isEnglishFixture = fixtureLanguage === "en";
+    const boundedSyntheticSentence = isEnglishFixture
+      ? "This synthetic narration describes a quiet library and private local reading. Each sentence validates natural transitions, bounded memory, and order."
+      : "Esta narraci&#243;n sint&#233;tica describe una biblioteca tranquila y una lectura local privada. Cada frase valida transiciones naturales, memoria limitada y orden.";
+    const piperExpansionRegressionSentence = isEnglishFixture
+      ? "Series 2026 2027 2028 2029, CPU GPU TTS, XIV XVI XVIII, $10.50 and 25%."
+      : "Serie 2026 2027 2028 2029, CPU GPU TTS, XIV XVI XVIII, $10.50 y 25%.";
+    const syntheticParagraph = [
+      PIPER_CPU_FALLBACK_PROFILE_ID,
+      PIPER_ENGLISH_CPU_PROFILE_ID,
+    ].includes(ADAPTIVE_TTS_PROFILE_ID)
+      ? `${piperExpansionRegressionSentence} ${Array.from(
+          { length: 3 },
+          (_, index) =>
+            `${boundedSyntheticSentence} ${
+              isEnglishFixture ? "Part" : "Parte"
+            } ${String(index + 1)}.`,
+        ).join(" ")}`
+      : boundedSyntheticSentence;
     const chapterParagraphs = (chapter) =>
       Array.from(
         { length: 96 },
         (_, index) =>
-          `<p>${syntheticParagraph} Cap&#237;tulo ${String(
-            chapter,
-          )}, secci&#243;n ${String(index + 1)}.</p>`,
+          `<p>${syntheticParagraph} ${
+            isEnglishFixture ? "Chapter" : "Cap&#237;tulo"
+          } ${String(chapter)}, ${
+            isEnglishFixture ? "section" : "secci&#243;n"
+          } ${String(index + 1)}.</p>`,
       ).join("");
+    const firstSectionTitle = isEnglishFixture
+      ? "First section"
+      : "Primera secci&#243;n";
+    const secondSectionTitle = isEnglishFixture
+      ? "Second section"
+      : "Segunda secci&#243;n";
     const adaptiveFixture = await buildMinimalEpubFixture({
-      packageDocument:
-        '<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:adaptive-synchronization</dc:identifier><dc:title>Synthetic synchronized narration</dc:title><dc:language>es</dc:language><meta property="dcterms:modified">2026-07-27T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter-one" href="text/chapter.xhtml" media-type="application/xhtml+xml"/><item id="chapter-two" href="text/chapter-two.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="chapter-one"/><itemref idref="chapter-two"/></spine></package>',
+      packageDocument: `<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:adaptive-synchronization-${fixtureLanguage}</dc:identifier><dc:title>Synthetic synchronized narration ${fixtureLanguage}</dc:title><dc:language>${fixtureLanguage}</dc:language><meta property="dcterms:modified">2026-07-30T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter-one" href="text/chapter.xhtml" media-type="application/xhtml+xml"/><item id="chapter-two" href="text/chapter-two.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="chapter-one"/><itemref idref="chapter-two"/></spine></package>`,
       navigationDocument:
         '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><h2>Contents</h2><ol><li><a href="text/chapter.xhtml#chapter-one">First synthetic section</a></li><li><a href="text/chapter-two.xhtml#chapter-two">Second synthetic section</a></li></ol></nav></body></html>',
-      chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="es"><head><title>Primera secci&#243;n</title></head><body><h1 id="chapter-one">Primera secci&#243;n</h1>${chapterParagraphs(
+      chapterDocument: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${fixtureLanguage}"><head><title>${firstSectionTitle}</title></head><body><h1 id="chapter-one">${firstSectionTitle}</h1>${chapterParagraphs(
         1,
       )}</body></html>`,
       additionalEntries: [
         Object.freeze({
           name: "EPUB/text/chapter-two.xhtml",
-          content: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="es"><head><title>Segunda secci&#243;n</title></head><body><h1 id="chapter-two">Segunda secci&#243;n</h1>${chapterParagraphs(
+          content: `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${fixtureLanguage}"><head><title>${secondSectionTitle}</title></head><body><h1 id="chapter-two">${secondSectionTitle}</h1>${chapterParagraphs(
             2,
           )}</body></html>`,
           compression: "deflate",
@@ -4456,12 +4544,16 @@ async function run() {
       `return document.querySelector("#root")?.childElementCount > 0;`,
     );
     stage = "native bilingual narration preference";
-    await exerciseNarrationLanguagePreference(driver);
+    await exerciseNarrationLanguagePreference(
+      driver,
+      ADAPTIVE_TTS_EXACT_HOST_MODE ? ADAPTIVE_TTS_LANGUAGE : "es",
+    );
     if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
       stage = "adaptive exact-host profile selection";
       const profileSelected = await selectAdaptiveTtsProfile(
         driver,
         ADAPTIVE_TTS_PROFILE_ID,
+        EXERCISE_EXACT_HOST_PROFILE_SWITCH,
       );
       if (!profileSelected) {
         stage = "adaptive exact-host unavailable-profile assertions";
@@ -4501,6 +4593,7 @@ async function run() {
           `Adaptive exact-host unavailable-profile matrix passed: ${JSON.stringify(
             {
               externalRequests: 0,
+              language: ADAPTIVE_TTS_LANGUAGE,
               profileId: ADAPTIVE_TTS_PROFILE_ID,
               reason: EXPECTED_UNAVAILABLE_PROFILE_REASON,
             },

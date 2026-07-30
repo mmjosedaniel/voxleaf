@@ -747,6 +747,27 @@ accepted exact-host run passed all six arms. This is service integration
 evidence only; M010.1 Milestone 7 still owns packaged EPUB journeys,
 portfolio-level performance/underrun evidence, and final privacy closeout.
 
+M010.1 Milestone 7 adds a separate packaged portfolio validation command:
+
+```powershell
+pnpm.cmd test:tts:bilingual-portfolio-exact-host
+```
+
+It first runs the model-free UI/driver preflight, verifies the offline
+environment and an enabled interpreter-bound outbound block for every exact
+Python runtime, builds the release application once, and runs the existing
+native lifecycle matrix. It then executes the six exact profile/language arms
+sequentially through disposable Spanish or English EPUBs and the production
+reader, coordinator, native supervisor, service adapter, in-memory player, and
+synchronization path. Each arm exercises explicit language and profile
+selection, quick and prepared playback, highlighting, leaf and chapter
+navigation, pause/resume, stop/cancellation, bounded retention, resource
+cleanup, application exit, and zero generated-audio persistence. The command
+emits only content-free timing, underrun, intentional-transition, RAM/VRAM,
+cancellation, synchronization, and cleanup observations. It is manual,
+Windows/exact-host only, excluded from CI, and must not be run with private
+EPUBs.
+
 ## Deferred coverage
 
 The secure EPUB, reader, narration-preparation, M007 service/protocol, M008

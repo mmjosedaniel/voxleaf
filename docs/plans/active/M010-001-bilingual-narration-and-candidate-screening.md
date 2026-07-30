@@ -583,7 +583,9 @@ closeout.
 
 ### Milestone 7: Validate the bilingual portfolio demo and close the plan
 
-**Status:** Not started.
+**Status:** In progress as of 2026-07-30. The packaged bilingual validation
+runner is implemented and model-free preflight passes; exact-host execution,
+privacy/repository closeout, and required pull-request checks remain.
 
 1. Run synthetic Spanish and English EPUB journeys on the exact host for
    open/restore, explicit language selection, narration start, highlighting,
@@ -688,6 +690,22 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-30:** Began Milestone 7 on
+  `feat/m010-001-close-bilingual-portfolio`. Extended the existing packaged
+  adaptive exact-host runner from the historical Spanish-only profile to the
+  exact six language/profile bindings integrated by Milestone 6. The runner
+  now builds language-matched disposable synthetic EPUBs, exercises persisted
+  language choice and an explicit compatible-profile switch, reports
+  content-free profile/language, first-audible, warm prepared RTF, underrun,
+  intentional-transition, RAM/VRAM, cancellation, synchronization, and cleanup
+  observations, and enforces the frozen 256-unit retention ceiling. A
+  sequential wrapper fails closed on missing offline controls, exact
+  interpreter/model configuration, or interpreter-bound firewall isolation,
+  and verifies that each newly created interpreter process exits with its
+  packaged application arm. Three wrapper tests, 34 focused adaptive UI tests,
+  seven native-driver tests, Node syntax checks, and desktop TypeScript
+  typechecking pass. No model inference or result claim has been made at this
+  pre-result checkpoint.
 - **2026-07-30:** Final Milestone 6 repository validation passed.
   `pnpm.cmd check` completed formatting, ESLint, Clippy, Ruff, TypeScript and
   mypy type checks, 209 shared tests, 577 EPUB tests, 429 desktop tests plus

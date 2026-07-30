@@ -359,6 +359,23 @@ a fixed content-safe result, and is excluded from root checks and CI. It is
 service integration evidence, not the packaged EPUB portfolio proof owned by
 Milestone 7.
 
+After the service-only matrix passes, run the Milestone 7 packaged bilingual
+portfolio validation from the same offline PowerShell process:
+
+```powershell
+$env:HF_HUB_OFFLINE = "1"
+$env:TRANSFORMERS_OFFLINE = "1"
+pnpm.cmd test:tts:bilingual-portfolio-exact-host
+```
+
+The command fails before building or inference when any exact configuration or
+interpreter-bound outbound block is absent. It runs the general synthetic
+native lifecycle proof and then the six disposable Spanish/English EPUB arms
+sequentially, loading only one model process at a time. Output is limited to
+content-free timing, underrun, intentional-transition, resource,
+synchronization, and cleanup observations. The command retains no generated
+audio or private book content and remains excluded from normal checks and CI.
+
 The earlier M010 two-profile resilience matrix remains available:
 
 ```powershell
