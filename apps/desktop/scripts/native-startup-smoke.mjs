@@ -2157,6 +2157,17 @@ async function selectAdaptiveTtsProfile(
     `const owner = document.querySelector(".hardware-compatibility");
      return owner?.getAttribute("data-compatibility-status") !== "checking";`,
   );
+  const hostCapacity = await driver.execute(
+    `return globalThis.__TAURI_INTERNALS__.invoke(
+       "detect_host_profile_compatibility",
+     ).then((report) => ({
+       availableDedicatedMemoryMiB:
+         report?.providers?.cuda?.availableDedicatedMemoryMiB?.value ?? null,
+       dedicatedMemoryMiB:
+         report?.providers?.cuda?.dedicatedMemoryMiB?.value ?? null,
+       probeStatus: report?.probeStatus ?? null,
+     }));`,
+  );
   const observation = await driver.execute(
     `const profileId = ${serializedProfileId};
      const inputs = Array.from(
@@ -2186,7 +2197,12 @@ async function selectAdaptiveTtsProfile(
          owner?.getAttribute("data-compatibility-status") ?? "missing",
      };`,
   );
-  console.log(`ADAPTIVE_TTS_PROFILE_SELECTION ${JSON.stringify(observation)}`);
+  console.log(
+    `ADAPTIVE_TTS_PROFILE_SELECTION ${JSON.stringify({
+      ...observation,
+      hostCapacity,
+    })}`,
+  );
   if (
     observation?.requestedProfileSelectable !== true &&
     EXPECTED_UNAVAILABLE_PROFILE_REASON !== undefined
