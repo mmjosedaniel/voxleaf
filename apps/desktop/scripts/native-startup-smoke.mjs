@@ -1061,6 +1061,46 @@ async function stopAdaptiveSynchronizationInstrumentation(driver) {
   );
 }
 
+async function waitForAdaptivePlaying(driver, timeoutMs) {
+  const timeoutAt = Date.now() + timeoutMs;
+  let observation;
+  while (Date.now() < timeoutAt) {
+    observation = await driver.execute(
+      `const owner = document.querySelector(".product-narration");
+       return owner === null ? undefined : {
+         failure: owner.getAttribute("data-narration-failure"),
+         phase: owner.getAttribute("data-narration-phase"),
+         playIntent: owner.getAttribute("data-narration-play-intent"),
+         recoveryCode: owner.getAttribute("data-narration-recovery-code"),
+         recoveryPhase: owner.getAttribute("data-narration-recovery-phase"),
+         retainedUnits: Number(
+           owner.getAttribute("data-narration-retained-units"),
+         ),
+         serviceState: owner.getAttribute("data-narration-service-state"),
+       };`,
+    );
+    if (observation?.phase === "playing") {
+      return observation;
+    }
+    if (
+      observation?.phase === "failed" ||
+      observation?.failure !== "none" ||
+      (observation?.playIntent !== "playing" &&
+        ["idle", "stopped"].includes(observation?.phase))
+    ) {
+      console.error(
+        `ADAPTIVE_TTS_STARTUP_OBSERVATION ${JSON.stringify(observation)}`,
+      );
+      throw new Error("Native synchronized narration proof failed.");
+    }
+    await delay(250);
+  }
+  console.error(
+    `ADAPTIVE_TTS_STARTUP_OBSERVATION ${JSON.stringify(observation)}`,
+  );
+  throw new Error("Native synchronized narration proof failed.");
+}
+
 async function observeAdaptiveDepletionOrStablePlayback(driver) {
   const timeoutAt = Date.now() + 2 * STARTUP_TIMEOUT_MS;
   let observation;
@@ -1313,12 +1353,7 @@ async function runAdaptiveTtsExactHostMatrix(
          ?.focus({ preventScroll: true });
        return true;`,
     );
-    await waitForCondition(
-      driver,
-      `return document.querySelector(".product-narration")
-         ?.getAttribute("data-narration-phase") === "playing";`,
-      3 * STARTUP_TIMEOUT_MS,
-    );
+    await waitForAdaptivePlaying(driver, 3 * STARTUP_TIMEOUT_MS);
     await waitForCondition(
       driver,
       `return globalThis

@@ -32,13 +32,13 @@ be both unsafe and unnecessarily abrupt:
 
 | Synthetic pattern | 160 raw code points | First raw length above 20 seconds |
 | ----------------- | ------------------: | --------------------------------: |
-| Ordinary Spanish  |         about 8.7 s |                     not reproduced |
-| Digit groups      |        about 51.7 s |                     64 code points |
-| Acronyms          |        about 15.7 s |                    224 code points |
-| Roman numerals    |        about 19.7 s |                    192 code points |
-| Currency groups   |        about 39.3 s |                     96 code points |
-| Ordinals          |        about 20.0 s |                    192 code points |
-| Letter sentences  |        about 16.4 s |                    224 code points |
+| Ordinary Spanish  |         about 8.7 s |                    not reproduced |
+| Digit groups      |        about 51.7 s |                    64 code points |
+| Acronyms          |        about 15.7 s |                   224 code points |
+| Roman numerals    |        about 19.7 s |                   192 code points |
+| Currency groups   |        about 39.3 s |                    96 code points |
+| Ordinals          |        about 20.0 s |                   192 code points |
+| Letter sentences  |        about 16.4 s |                   224 code points |
 
 The correction must account for normalized text categories before inference.
 It must not inspect private prose outside the existing process-local EPUB
@@ -55,7 +55,7 @@ process-local measurement named a **Piper speech-expansion unit**:
 | -------------------------------------------------- | ----: |
 | ASCII digit `0` through `9`                        |     4 |
 | Unicode currency symbol or `%`, `‰`, `º`, `ª`, `°` |     3 |
-| Unicode uppercase letter                          |     2 |
+| Unicode uppercase letter                           |     2 |
 | Every other normalized code point                  |     1 |
 
 The expansion-unit target is 120 and the hard maximum is 160. Candidate
@@ -88,10 +88,15 @@ enforcement for any unusual output that still exceeds protocol v1.
 
 ## Product selection
 
-The desktop requests `narration-piper-v2` only for
-`piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1`. Other engines continue to use
-`narration-v1`. `narration-piper-v1` remains decodable only for historical
-tests and callers; product dispatch no longer selects it.
+The desktop requests `narration-piper-v2` for both admitted Piper profiles:
+`piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1` and
+`piper-1-4-2-onnx-cpu-en-us-joe-medium-v1`. Spanish retains the original
+normalization path byte-for-byte. English composes the additive
+`narration-bilingual-v2` normalizer with the same Piper expansion-unit segment
+budget, preserving canonical locator ranges while preventing English spoken
+expansion from exceeding the complete-unit boundary. Other engines use
+`narration-bilingual-v2`. `narration-piper-v1` remains decodable only for
+historical tests and callers; product dispatch no longer selects it.
 
 Piper may return no waveform for a source-mapped unit containing punctuation
 but no speakable content. The desktop therefore omits a Piper unit only when
@@ -157,8 +162,11 @@ Implementation must prove:
 normalized-unit scan and uses the additional target/hard dimension only when
 the request profile is `narration-piper-v2`. The value never appears in public
 segment measurements. Generic `narration-v1` and historical
-`narration-piper-v1` policies retain their prior behavior, and the desktop
-selects v2 only for the admitted Piper profile.
+`narration-piper-v1` policies retain their prior behavior. M010.1 extends
+product selection to the admitted English Piper profile and applies
+`narration-bilingual-v2` normalization only for its explicit English request.
+This additive composition was corrected when the exact packaged Milestone 7
+journey exposed the previously closed English request decoder.
 
 All 559 EPUB tests and all 402 desktop tests pass. The release-packaged exact
 Piper regression uses a synthetic expansion-heavy sentence and completed

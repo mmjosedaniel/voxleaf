@@ -274,8 +274,12 @@ export function validateNarrationPreparationRequest(
         request.profile !== "narration-piper-v2") ||
       (request.profile === "narration-bilingual-v2"
         ? request.defaultLanguage !== "es" && request.defaultLanguage !== "en"
-        : request.defaultLanguage !== "und" &&
-          request.defaultLanguage !== "es") ||
+        : request.profile === "narration-piper-v2"
+          ? request.defaultLanguage !== "und" &&
+            request.defaultLanguage !== "es" &&
+            request.defaultLanguage !== "en"
+          : request.defaultLanguage !== "und" &&
+            request.defaultLanguage !== "es") ||
       !Number.isSafeInteger(request.maximumSegments) ||
       (request.maximumSegments as number) <= 0 ||
       (request.maximumSegments as number) >
@@ -659,7 +663,9 @@ export async function prepareNarrationBatch(
             request.defaultLanguage,
             Object.freeze({
               normalizationProfile:
-                request.profile === "narration-bilingual-v2"
+                request.profile === "narration-bilingual-v2" ||
+                (request.profile === "narration-piper-v2" &&
+                  request.defaultLanguage === "en")
                   ? "narration-bilingual-v2"
                   : "narration-v1",
               maximumSegments: remainingSegmentEntries,

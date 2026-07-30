@@ -642,6 +642,54 @@ describe("bounded local publication resources", () => {
     }
   });
 
+  it("combines bilingual English normalization with Piper v2 expansion bounds", async () => {
+    const archive = await openEpubArchive(await createArchive({}));
+    const text = "The notebook cost $12.50." as SensitivePublicationText;
+    const values = narrationTextPublicationValues(
+      [text],
+      async () => undefined,
+    );
+    const publication = createOpenedPublication(
+      archive,
+      createPackageDocument([]),
+      values,
+    );
+    const block = requiredLocatedBlock(values.locatorIndex.blocks[0]);
+
+    try {
+      const result = await publication.prepareNarration({
+        startLocator: block.startLocator,
+        profile: "narration-piper-v2",
+        defaultLanguage: "en",
+        maximumSegments: 16,
+      });
+      expect(result.status).toBe("complete");
+      if (result.status !== "complete") {
+        throw new Error("expected complete English Piper v2 narration batch");
+      }
+      expect(result.segments.map((segment) => segment.text).join("")).toBe(
+        "The notebook cost twelve dollars and fifty cents.",
+      );
+      expect(
+        result.segments.every(
+          (segment) =>
+            Array.from(String(segment.text)).reduce(
+              (total, codePoint) =>
+                total + piperSpeechExpansionCodePointUnits(codePoint),
+              0,
+            ) <=
+            NARRATION_PIPER_V2_SEGMENT_POLICY.piperSpeechExpansionUnitsHardMaximum,
+        ),
+      ).toBe(true);
+      expect(result.segments[0]?.sourceRange.start).toEqual(block.startLocator);
+      expect(result.segments.at(-1)?.sourceRange.end.textOffsetCodePoints).toBe(
+        block.textLengthCodePoints,
+      );
+    } finally {
+      await publication.close();
+    }
+  });
+
   it("returns the complete stable containing segment for an interior start", async () => {
     const archive = await openEpubArchive(await createArchive({}));
     const values = narrationTextPublicationValues(
@@ -788,14 +836,6 @@ describe("bounded local publication resources", () => {
       maximumSegments: 1,
     });
     expect(invalidBilingualNeutral.status).toBe("invalid-request");
-
-    const invalidPiperEnglish = await publication.prepareNarration({
-      startLocator: start,
-      profile: "narration-piper-v2",
-      defaultLanguage: "en" as "es",
-      maximumSegments: 1,
-    });
-    expect(invalidPiperEnglish.status).toBe("invalid-request");
 
     const invalidSignal = await publication.prepareNarration({
       startLocator: start,
