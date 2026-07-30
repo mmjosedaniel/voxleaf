@@ -452,10 +452,10 @@ distribution and license fulfillment.
 
 ### Milestone 4: Run bounded sequential candidate and Qwen control screens
 
-**Status:** In progress. The committed Qwen control harness is ready, but the
-first exact Serena/Spanish result is blocked before inference because Windows
-administrator authorization is required to install the frozen outbound block
-for the Qwen candidate interpreter.
+**Status:** In progress. Both independent Qwen controls are complete and
+rejected before quality. Chatterbox Multilingual V3 is also rejected before
+model acquisition because its frozen package API cannot load the frozen V3
+checkpoint identity. The sequential MOSS screen remains.
 
 1. Run exact Qwen/Serena Spanish and Qwen/Aiden English independently through
    the existing-engine control gates. Stop only the failing exact identity and
@@ -624,6 +624,19 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-29:** Rejected the exact Chatterbox Multilingual V3 screen before
+  model acquisition or inference. The exact frozen environment installed
+  successfully, but inspection of `chatterbox-tts==0.1.7` showed that its
+  offline `from_local` loader requires
+  `t3_mtl23ls_v2.safetensors`, while the frozen v8 candidate requires
+  `t3_mtl23ls_v3.safetensors`. Its alternative `from_pretrained` path is
+  revision-`main` network acquisition, which cannot substitute for the frozen
+  local identity. The screen therefore stopped immediately with
+  `model-load-failed`; no model artifacts, inference, generated audio, timing,
+  memory, cancellation, or quality measurements were produced. The ignored
+  candidate environment was removed through the verified exact-path cleanup
+  before retaining only
+  `chatterbox-bilingual-screen-result-v8.json`.
 - **2026-07-29:** Completed the independent Aiden/English control at execution
   commit `1e93f97f0632b7c677160e5254326a9984348509`. All five first-attempt
   generations completed, but the profile was rejected before quality on
