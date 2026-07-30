@@ -101,11 +101,21 @@ The current tests are deterministic and layered by ownership:
   corpus, balanced synthetic evaluation corpus, raw/summary schemas, and
   admitted candidate lock hashes; exact bounded candidate order and intake
   decisions; closed schema conformance; content privacy; and strict
-  authority-tree plus Git-ancestry ordering for later result files. The
-  companion EPUB regression records that the current production boundary
-  still rejects English with a content-free result. These tests load no
-  candidate library, model, audio, or hardware and make no English-support or
+  authority-tree plus Git-ancestry ordering for later result files. M010.1
+  Milestone 2 replaces the historical English-rejection regression with
+  closed `narration-bilingual-v2` acceptance while retaining rejection of
+  English on historical and Piper profiles. These tests load no candidate
+  library, model, audio, or hardware and make no English-engine or
   candidate-pass claim.
+- M010.1 Milestone 2 covers all 16 frozen normalization cases, deterministic
+  source mapping and Spanish regression, bounded language persistence,
+  accessible explicit selection, exact profile/language admission before
+  child start, and identity-first stale-audio containment. The Chromium smoke
+  verifies the closed radio group and storage envelope; the packaged native
+  smoke performs the same preference path alongside its supervised fake TTS
+  lifecycle. The additive v2 normalizers are separate from the byte-frozen v1
+  normalizer and Spanish table; focused v6/v8 authority tests protect those
+  historical hashes from implementation drift.
 - `services/tts/tests/test_benchmark_v8_authority.py` preserves that complete
   v7 base and validates the result-blind v8 amendment before audio generation.
   It verifies exact Qwen 1.7B CustomVoice / Serena / Spanish and Qwen 1.7B

@@ -46,11 +46,14 @@ Piper/davefx the sole supported CPU fallback and the only automatically
 recommendable profile when compatible and configured. Engine fallback remains
 an explicit choice rather than automatic failover. M008.1 and M010 passed
 their replacement Ubuntu/Windows closeout checks and are archived. The active
-M010.1 follow-up has frozen superseding result-blind v8 authority that may add
-explicit English narration, independent exact Qwen Serena/Spanish and
-Aiden/English profiles, and at most one newly admitted engine, but none of
-those new runtime capabilities exists yet. Installer distribution and Piper
-license fulfillment remain deferred to M011.
+M010.1 has implemented explicit Spanish/English selection, bounded preference,
+versioned bilingual preparation, and identity-safe profile/language
+replacement under superseding result-blind v8 authority. Spanish Piper remains
+the only supported playable profile; English selection is truthful but
+unavailable until exact evidence admits an English profile. Independent Qwen
+Serena/Spanish and Aiden/English evaluation and at most one new engine remain
+future M010.1 work. Installer distribution and Piper license fulfillment
+remain deferred to M011.
 The rest of this brief describes the intended complete product unless it
 explicitly identifies implemented behavior.
 
@@ -180,7 +183,7 @@ directions are separated below:
 | Dual-worker scheduling experiment | Rejected by `selection-v5`                                              | One GPU-primary Qwen worker plus one separately loaded CPU-only float32 support worker                                                                                                                                       | CPU solo was too slow; low-load concurrency improved aggregate RTF by only about 2.6%, substantially slowed the GPU worker, and increased memory and operational risk |
 | Adaptive demo buffering           | Exact-development path, policy, and synchronized host proof implemented | Quick default; explicit 1-/2-/5-/10-minute preparation with 1 minute initially selected; 1-minute refill; 10-second warning; zero adaptive low-buffer wait; approximately 30-minute ceiling                                  | Exact-host evidence remains development-only; production/general-hardware graduation remains blocked                                                                  |
 | Audio-unit transitions            | M008.1 implemented, validated, and archived                             | Boundary-specific scheduled delays between already-buffered units; no silent PCM, fade, model-input rewrite, or delay after real buffering/final completion                                                                  | Listening may tune only a future version                                                                                                                              |
-| Bilingual narration               | V8 authority frozen; runtime not implemented                            | M010.1 Milestones 1/1A freeze explicit Spanish/English selection, versioned shared normalization, an exact Piper English baseline, independent local Qwen Serena/Spanish and Aiden/English controls, and bounded candidate gates before any support claim | Implement the frozen boundary, pass language-specific correctness/quality/privacy gates, then integrate only admitted profiles                                        |
+| Bilingual narration               | Preparation and selection implemented; English engine unavailable       | M010.1 Milestone 2 provides explicit Spanish/English selection, bounded persistence, `narration-bilingual-v2`, exact profile/language admission, and identity-safe replacement; Milestones 1/1A retain exact Piper English and independent Qwen Serena/Spanish and Aiden/English evaluation authority | Pass exact performance/quality/privacy/license gates, then integrate only admitted profiles                                                                            |
 | Built-in speaker and demo quality | Maintainer accepted for demo only                                       | Serena selected by the frozen intake screen; one fluent maintainer later scored the 12-case panel 4.2667/5 with three meaning-changing defects                                                                               | One maintainer is sufficient for future MVP demo feedback; historical `v3` remains non-promotable and no standard quality pass is claimed                             |
 | Base voice cloning                | Outside current MVP                                                     | Qwen3-TTS 1.7B Base ICL/x-vector modes require user reference audio                                                                                                                                                          | Retained only as related-runtime prototype evidence; no enrollment, clone prompt, or reference-data path is planned                                                   |
 | OpenAI Whisper                    | Rejected as TTS candidate                                               | Automatic speech recognition: audio input and text output                                                                                                                                                                    | Optional fully local benchmark-only transcription may be assessed separately; it cannot generate narration or replace human quality review                            |

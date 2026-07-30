@@ -101,11 +101,13 @@ authority.
 
 ## Remaining target user flow
 
-1. M010.1 has frozen the superseding v8 authority under which it may add
-   explicit English narration, an exact Piper English profile, independent
+1. M010.1 now implements explicit Spanish/English selection and the
+   engine-neutral bilingual preparation boundary under superseding v8
+   authority. Spanish remains the only playable product language because no
+   English profile is admitted yet; selecting English fails closed before
+   child start. Later milestones evaluate exact Piper English, independent
    local Qwen Serena/Spanish and Aiden/English profiles, and at most one newly
-   admitted engine. Current narration remains Spanish-only until later
-   implementation and exact evaluation pass.
+   admitted engine.
 2. M011 then packages and validates an end-user distribution, including Piper
    notices, provenance, corresponding-source or written-offer mechanics,
    signing, updates, and complete-MVP validation.
@@ -176,8 +178,9 @@ Implemented and validated:
 
 Remaining:
 
-- Implement and validate the frozen M010.1 bilingual/candidate authority
-  without weakening the existing supported Piper Spanish profile.
+- Evaluate and integrate only profiles admitted by the remaining M010.1
+  candidate milestones without weakening the implemented bilingual boundary
+  or the existing supported Piper Spanish profile.
 - Provide compliant runtime/model distribution, installer packaging, and a
   validated end-user installation path in M011.
 
