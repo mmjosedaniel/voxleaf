@@ -32,20 +32,33 @@ use crate::{
 pub const HOST_ARGUMENT: &str = "--voxleaf-tts-service-supervisor-host";
 pub const EXACT_HOST_ARGUMENT: &str = "--voxleaf-tts-exact-service-host";
 pub const PIPER_HOST_ARGUMENT: &str = "--voxleaf-tts-piper-service-host";
+pub const BILINGUAL_PROFILE_HOST_ARGUMENT: &str = "--voxleaf-tts-bilingual-profile-service-host";
 
-const QWEN_PROFILE_ID: &str = "qwen3-tts-1-7b-customvoice-cuda-bf16-v1";
-const PIPER_PROFILE_ID: &str = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+const QWEN_SERENA_PROFILE_ID: &str = "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8";
+const QWEN_AIDEN_PROFILE_ID: &str = "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8";
+const PIPER_SPANISH_PROFILE_ID: &str = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+const PIPER_ENGLISH_PROFILE_ID: &str = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+const CHATTERBOX_PROFILE_ID: &str = "chatterbox-multilingual-v3-cuda-bf16-default-v4";
 const DEV_ENABLED_KEY: &str = "VOXLEAF_TTS_DEV_ENABLED";
 const DEV_PYTHON_KEY: &str = "VOXLEAF_TTS_DEV_PYTHON";
 const DEV_MODEL_ROOT_KEY: &str = "VOXLEAF_TTS_DEV_MODEL_ROOT";
 const PIPER_ENABLED_KEY: &str = "VOXLEAF_TTS_PIPER_ENABLED";
 const PIPER_PYTHON_KEY: &str = "VOXLEAF_TTS_PIPER_PYTHON";
 const PIPER_MODEL_ROOT_KEY: &str = "VOXLEAF_TTS_PIPER_MODEL_ROOT";
+const PIPER_EN_ENABLED_KEY: &str = "VOXLEAF_TTS_PIPER_EN_ENABLED";
+const PIPER_EN_PYTHON_KEY: &str = "VOXLEAF_TTS_PIPER_EN_PYTHON";
+const PIPER_EN_MODEL_ROOT_KEY: &str = "VOXLEAF_TTS_PIPER_EN_MODEL_ROOT";
+const CHATTERBOX_ENABLED_KEY: &str = "VOXLEAF_TTS_CHATTERBOX_ENABLED";
+const CHATTERBOX_PYTHON_KEY: &str = "VOXLEAF_TTS_CHATTERBOX_PYTHON";
+const CHATTERBOX_MODEL_ROOT_KEY: &str = "VOXLEAF_TTS_CHATTERBOX_MODEL_ROOT";
 const CANDIDATE_LOCK_BYTES: &[u8] = include_bytes!(
     "../../../../services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock"
 );
 const PIPER_LOCK_BYTES: &[u8] =
     include_bytes!("../../../../services/tts/benchmarks/candidates/piper_1_4_2_cpu/uv.lock");
+const CHATTERBOX_LOCK_BYTES: &[u8] = include_bytes!(
+    "../../../../services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v4/uv.lock"
+);
 
 const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(5);
 const LOAD_TIMEOUT: Duration = Duration::from_secs(120);
@@ -66,6 +79,7 @@ struct ExactRuntime {
     service_source: PathBuf,
     service_site_packages: PathBuf,
     service_module: &'static str,
+    runtime_environment: Vec<(&'static str, &'static str)>,
 }
 
 impl ExactRuntime {
@@ -113,11 +127,39 @@ impl ExactRuntime {
             service_source,
             service_site_packages,
             service_module: "voxleaf_tts.qwen_service",
+            runtime_environment: vec![("VOXLEAF_TTS_RUNTIME_QWEN_VOICE", "serena-es")],
         })
     }
 
-    fn piper_from_environment() -> Result<Self, TtsNativeFailure> {
-        if std::env::var_os(PIPER_ENABLED_KEY).as_deref() != Some(std::ffi::OsStr::new("1")) {
+    fn qwen_from_environment(profile_id: &str) -> Result<Self, TtsNativeFailure> {
+        let mut runtime = Self::from_environment()?;
+        runtime.runtime_environment = match profile_id {
+            QWEN_SERENA_PROFILE_ID => {
+                vec![("VOXLEAF_TTS_RUNTIME_QWEN_VOICE", "serena-es")]
+            }
+            QWEN_AIDEN_PROFILE_ID => vec![("VOXLEAF_TTS_RUNTIME_QWEN_VOICE", "aiden-en")],
+            _ => return Err(TtsNativeFailure::InvalidInput),
+        };
+        Ok(runtime)
+    }
+
+    fn piper_from_environment(profile_id: &str) -> Result<Self, TtsNativeFailure> {
+        let (enabled_key, python_key, model_root_key, runtime_voice) = match profile_id {
+            PIPER_SPANISH_PROFILE_ID => (
+                PIPER_ENABLED_KEY,
+                PIPER_PYTHON_KEY,
+                PIPER_MODEL_ROOT_KEY,
+                "davefx-es",
+            ),
+            PIPER_ENGLISH_PROFILE_ID => (
+                PIPER_EN_ENABLED_KEY,
+                PIPER_EN_PYTHON_KEY,
+                PIPER_EN_MODEL_ROOT_KEY,
+                "joe-en",
+            ),
+            _ => return Err(TtsNativeFailure::InvalidInput),
+        };
+        if std::env::var_os(enabled_key).as_deref() != Some(std::ffi::OsStr::new("1")) {
             return Err(TtsNativeFailure::ChildUnavailable);
         }
         let repository_root = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -128,7 +170,7 @@ impl ExactRuntime {
             .join("services/tts/benchmarks/candidates/piper_1_4_2_cpu/.venv/Scripts/python.exe")
             .canonicalize()
             .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
-        let configured_python = absolute_existing_path(PIPER_PYTHON_KEY, false)?;
+        let configured_python = absolute_existing_path(python_key, false)?;
         if configured_python != expected_python {
             return Err(TtsNativeFailure::ChildUnavailable);
         }
@@ -154,17 +196,83 @@ impl ExactRuntime {
         }
         Ok(Self {
             python: configured_python,
-            model_root: absolute_existing_path(PIPER_MODEL_ROOT_KEY, true)?,
+            model_root: absolute_existing_path(model_root_key, true)?,
             service_source,
             service_site_packages,
             service_module: "voxleaf_tts.piper_service",
+            runtime_environment: vec![("VOXLEAF_TTS_RUNTIME_PIPER_VOICE", runtime_voice)],
         })
     }
 
-    fn for_profile(profile_id: &str) -> Result<Self, TtsNativeFailure> {
+    fn chatterbox_from_environment(language: &str) -> Result<Self, TtsNativeFailure> {
+        if !matches!(language, "es" | "en") {
+            return Err(TtsNativeFailure::InvalidInput);
+        }
+        if std::env::var_os(CHATTERBOX_ENABLED_KEY).as_deref() != Some(std::ffi::OsStr::new("1")) {
+            return Err(TtsNativeFailure::ChildUnavailable);
+        }
+        let repository_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../..")
+            .canonicalize()
+            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        let expected_python = repository_root
+            .join(
+                "services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v4/.venv/Scripts/python.exe",
+            )
+            .canonicalize()
+            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        let configured_python = absolute_existing_path(CHATTERBOX_PYTHON_KEY, false)?;
+        if configured_python != expected_python {
+            return Err(TtsNativeFailure::ChildUnavailable);
+        }
+        let candidate_lock = repository_root
+            .join("services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v4/uv.lock");
+        if fs::read(candidate_lock).map_err(|_| TtsNativeFailure::ChildUnavailable)?
+            != CHATTERBOX_LOCK_BYTES
+        {
+            return Err(TtsNativeFailure::ChildUnavailable);
+        }
+        let service_source = repository_root
+            .join("services/tts/src")
+            .canonicalize()
+            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        let service_site_packages = repository_root
+            .join("services/tts/.venv/Lib/site-packages")
+            .canonicalize()
+            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+        for dependency in ["jsonschema", "referencing"] {
+            if !service_site_packages.join(dependency).is_dir() {
+                return Err(TtsNativeFailure::ChildUnavailable);
+            }
+        }
+        Ok(Self {
+            python: configured_python,
+            model_root: absolute_existing_path(CHATTERBOX_MODEL_ROOT_KEY, true)?,
+            service_source,
+            service_site_packages,
+            service_module: "voxleaf_tts.chatterbox_service",
+            runtime_environment: vec![(
+                "VOXLEAF_TTS_RUNTIME_CHATTERBOX_LANGUAGE",
+                if language == "es" { "es" } else { "en" },
+            )],
+        })
+    }
+
+    fn for_profile(profile_id: &str, language: Option<&str>) -> Result<Self, TtsNativeFailure> {
         match profile_id {
-            QWEN_PROFILE_ID => Self::from_environment(),
-            PIPER_PROFILE_ID => Self::piper_from_environment(),
+            QWEN_SERENA_PROFILE_ID if language.is_none_or(|value| value == "es") => {
+                Self::qwen_from_environment(profile_id)
+            }
+            QWEN_AIDEN_PROFILE_ID if language.is_none_or(|value| value == "en") => {
+                Self::qwen_from_environment(profile_id)
+            }
+            PIPER_SPANISH_PROFILE_ID if language.is_none_or(|value| value == "es") => {
+                Self::piper_from_environment(profile_id)
+            }
+            PIPER_ENGLISH_PROFILE_ID if language.is_none_or(|value| value == "en") => {
+                Self::piper_from_environment(profile_id)
+            }
+            CHATTERBOX_PROFILE_ID => Self::chatterbox_from_environment(language.unwrap_or("es")),
             _ => Err(TtsNativeFailure::InvalidInput),
         }
     }
@@ -189,13 +297,22 @@ impl ExactRuntime {
             .env_remove(DEV_MODEL_ROOT_KEY)
             .env_remove(PIPER_ENABLED_KEY)
             .env_remove(PIPER_PYTHON_KEY)
-            .env_remove(PIPER_MODEL_ROOT_KEY);
+            .env_remove(PIPER_MODEL_ROOT_KEY)
+            .env_remove(PIPER_EN_ENABLED_KEY)
+            .env_remove(PIPER_EN_PYTHON_KEY)
+            .env_remove(PIPER_EN_MODEL_ROOT_KEY)
+            .env_remove(CHATTERBOX_ENABLED_KEY)
+            .env_remove(CHATTERBOX_PYTHON_KEY)
+            .env_remove(CHATTERBOX_MODEL_ROOT_KEY);
+        for (key, value) in &self.runtime_environment {
+            command.env(key, value);
+        }
         Ok(command)
     }
 }
 
 fn profile_configuration_available(profile_id: &str) -> bool {
-    ExactRuntime::for_profile(profile_id).is_ok()
+    ExactRuntime::for_profile(profile_id, None).is_ok()
 }
 
 #[derive(Debug)]
@@ -243,7 +360,7 @@ impl ServiceChild {
                 .unwrap_or(Self::Unavailable);
         }
         if std::env::var_os(PIPER_ENABLED_KEY).as_deref() == Some(std::ffi::OsStr::new("1")) {
-            return ExactRuntime::piper_from_environment()
+            return ExactRuntime::piper_from_environment(PIPER_SPANISH_PROFILE_ID)
                 .map(Self::Exact)
                 .unwrap_or(Self::Unavailable);
         }
@@ -552,7 +669,11 @@ impl TtsServiceSupervisor {
         ExactRuntime::from_environment().is_ok()
     }
 
-    fn configure_profile(&self, profile_id: &str) -> Result<(), TtsNativeFailure> {
+    fn configure_profile(
+        &self,
+        profile_id: &str,
+        language: Option<&str>,
+    ) -> Result<(), TtsNativeFailure> {
         let _operation = self.acquire_operation()?;
         if self
             .session
@@ -575,7 +696,7 @@ impl TtsServiceSupervisor {
             .child_configuration
             .lock()
             .map_err(|_| TtsNativeFailure::InternalFailure)? =
-            ServiceChild::Exact(ExactRuntime::for_profile(profile_id)?);
+            ServiceChild::Exact(ExactRuntime::for_profile(profile_id, language)?);
         Ok(())
     }
 
@@ -1078,11 +1199,12 @@ pub async fn tts_profile_configuration_available(profile_id: String) -> Result<b
 pub async fn start_tts_service(
     supervisor: State<'_, Arc<TtsServiceSupervisor>>,
     profile_id: Option<String>,
+    language: Option<String>,
 ) -> Result<Vec<Value>, &'static str> {
     let supervisor = Arc::clone(supervisor.inner());
     blocking(move || {
         if let Some(profile_id) = profile_id {
-            supervisor.configure_profile(&profile_id)?;
+            supervisor.configure_profile(&profile_id, language.as_deref())?;
         }
         supervisor.start()
     })
@@ -1241,8 +1363,22 @@ pub fn run_exact_host() -> Result<(), &'static str> {
 }
 
 pub fn run_piper_host() -> Result<(), &'static str> {
-    let runtime = ExactRuntime::piper_from_environment().map_err(TtsNativeFailure::code)?;
+    let runtime = ExactRuntime::piper_from_environment(PIPER_SPANISH_PROFILE_ID)
+        .map_err(TtsNativeFailure::code)?;
     run_profile_host(runtime, verify_piper_capabilities)
+}
+
+pub fn run_bilingual_profile_host(profile_id: &str, language: &str) -> Result<(), &'static str> {
+    let runtime =
+        ExactRuntime::for_profile(profile_id, Some(language)).map_err(TtsNativeFailure::code)?;
+    let verify = match profile_id {
+        PIPER_SPANISH_PROFILE_ID | PIPER_ENGLISH_PROFILE_ID => verify_piper_capabilities,
+        QWEN_SERENA_PROFILE_ID | QWEN_AIDEN_PROFILE_ID | CHATTERBOX_PROFILE_ID => {
+            verify_exact_capabilities
+        }
+        _ => return Err(TtsNativeFailure::InvalidInput.code()),
+    };
+    run_profile_host(runtime, verify)
 }
 
 fn run_profile_host(
@@ -1456,9 +1592,28 @@ mod tests {
     fn profile_configuration_rejects_unknown_profile_identity() {
         let supervisor = TtsServiceSupervisor::new(NORMAL_SCENARIO);
         assert_eq!(
-            supervisor.configure_profile("unknown-profile"),
+            supervisor.configure_profile("unknown-profile", None),
             Err(TtsNativeFailure::InvalidInput)
         );
         assert!(!profile_configuration_available("unknown-profile"));
+    }
+
+    #[test]
+    fn profile_configuration_rejects_wrong_language_bindings_before_runtime_lookup() {
+        for (profile_id, language) in [
+            (PIPER_SPANISH_PROFILE_ID, "en"),
+            (PIPER_ENGLISH_PROFILE_ID, "es"),
+            (QWEN_SERENA_PROFILE_ID, "en"),
+            (QWEN_AIDEN_PROFILE_ID, "es"),
+        ] {
+            assert!(matches!(
+                ExactRuntime::for_profile(profile_id, Some(language)),
+                Err(TtsNativeFailure::InvalidInput)
+            ));
+        }
+        assert!(matches!(
+            ExactRuntime::for_profile(CHATTERBOX_PROFILE_ID, Some("fr")),
+            Err(TtsNativeFailure::InvalidInput)
+        ));
     }
 }

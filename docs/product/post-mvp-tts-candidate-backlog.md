@@ -11,15 +11,12 @@ CosyVoice was rejected at intake. Every other entry remains post-MVP.
 
 The current MVP direction remains:
 
-- exact Piper 1.4.2 / `es_ES-davefx-medium` as the selected, integrated
-  speed-focused CPU fallback; production distribution remains M011 work;
-- exact Piper 1.4.2 / `en_US-joe-medium` admitted by the M010.1 v8 baseline
-  for later Milestone 6 integration, not yet a selectable product profile;
-- exact Qwen3-TTS/Serena as the optional higher-quality GPU-dependent
-  development profile, with exact Qwen/Aiden retained for independent English
-  quality and hardware-dependent constrained-buffer review;
-- exact Chatterbox Multilingual V3 advanced as the sole new-engine full-matrix
-  survivor, without product admission; and
+- exact Piper 1.4.2 davefx/Spanish and joe/English as supported,
+  language-matched CPU profiles; production distribution remains M011 work;
+- exact Qwen3-TTS Serena/Spanish and Aiden/English as implemented
+  GPU-dependent development profiles behind constrained buffering;
+- exact Chatterbox Multilingual V3 as an implemented supported
+  Spanish/English GPU profile with disclosed cold-load and RAM costs; and
 - one active service tree, bounded in-memory audio, identity-first
   cancellation, no remote inference, and no generated-audio persistence.
 
@@ -34,23 +31,23 @@ M010.1 exists because explicit English narration and a stronger naturalness
 demonstration became active portfolio requirements after M010 closed. It must
 not turn this entire backlog into MVP scope:
 
-1. Exact Piper/joe English passed the low-risk bilingual baseline and is
-   retained for Milestone 6 integration.
-2. Retain exact local Qwen 1.7B CustomVoice Serena/Spanish and native-English
-   Aiden/English independently; Milestone 5 must collect result-neutral
-   language-specific quality evidence before integration decisions.
-3. Advance Chatterbox Multilingual V3 to the next frozen full matrix and defer
-   MOSS-TTS-Nano 100M ONNX without rejection pending dialogue/punctuation and
-   voice investigation.
+1. Exact Piper/joe English passed the low-risk bilingual baseline and
+   Milestone 6 integrated it.
+2. Exact local Qwen 1.7B CustomVoice Serena/Spanish and native-English
+   Aiden/English passed independent quality review and Milestone 6 integrated
+   both as development-only profiles.
+3. Chatterbox Multilingual V3 passed the full frozen matrix and Milestone 6
+   integrated it for both languages. MOSS-TTS-Nano 100M ONNX remains deferred
+   without rejection pending dialogue/punctuation and voice investigation.
 4. Retain Fun-CosyVoice3's intake rejection unless a future result-blind
    authority establishes a non-personal default voice.
-5. Integrate at most one passing new engine. If none passes, record no winner
-   and continue to M011 with the existing M010 support matrix.
+5. Milestone 7 must validate the packaged portfolio and close M010.1 before
+   M011; it must not expand this backlog.
 
 Pocket TTS Spanish, the separate Chatterbox Latin American Spanish checkpoint,
 Kokoro, and additional voices stay in this backlog. The active
 [M010.1 ExecPlan](../plans/active/M010-001-bilingual-narration-and-candidate-screening.md)
-will become the only execution authority for the promoted subset.
+is the execution authority for the promoted subset.
 
 ## Engine-specific text adaptation boundary
 

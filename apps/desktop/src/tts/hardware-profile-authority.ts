@@ -50,6 +50,11 @@ export interface HardwareProfileRequirementsV1 {
   readonly measuredPeakRamMiB: number;
   readonly measuredPeakDedicatedVramMiB: number;
   readonly measuredArtifactFootprintMiB: number;
+  readonly minimumTotalRamMiB?: number;
+  readonly minimumAvailableRamMiB?: number;
+  readonly minimumTotalDedicatedVramMiB?: number;
+  readonly minimumAvailableDedicatedVramMiB?: number;
+  readonly minimumAvailableStorageMiB?: number;
 }
 
 export interface HardwareProfileEvidenceV1 {

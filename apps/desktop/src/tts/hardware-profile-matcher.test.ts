@@ -14,9 +14,12 @@ import {
   type HardwareProfileRejectionReasonV1,
 } from "./hardware-profile-matcher";
 import {
+  CHATTERBOX_BILINGUAL_PROFILE_ID,
+  EXACT_QWEN_AIDEN_DEVELOPMENT_PROFILE_ID,
   EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
   HARDWARE_PROFILE_REGISTRY_V1,
   PIPER_CPU_FALLBACK_PROFILE_ID,
+  PIPER_ENGLISH_CPU_PROFILE_ID,
 } from "./hardware-profile-registry";
 
 function unknownQuantity() {
@@ -122,8 +125,17 @@ function supportedProfile(
     role: "standard",
     supportState: "supported",
     requirements: {
-      ...source.requirements,
+      operatingSystems: source.requirements.operatingSystems,
+      architectures: source.requirements.architectures,
       minimumLogicalProcessors: 12,
+      provider: source.requirements.provider,
+      precision: source.requirements.precision,
+      deviceClasses: source.requirements.deviceClasses,
+      measuredPeakRamMiB: source.requirements.measuredPeakRamMiB,
+      measuredPeakDedicatedVramMiB:
+        source.requirements.measuredPeakDedicatedVramMiB,
+      measuredArtifactFootprintMiB:
+        source.requirements.measuredArtifactFootprintMiB,
     },
     evidence: {
       ...source.evidence,
@@ -162,10 +174,13 @@ describe("hardware profile matcher v1", () => {
     });
 
     expect(result.compatibleProfileIds).toEqual([
+      CHATTERBOX_BILINGUAL_PROFILE_ID,
+      PIPER_ENGLISH_CPU_PROFILE_ID,
       PIPER_CPU_FALLBACK_PROFILE_ID,
+      EXACT_QWEN_AIDEN_DEVELOPMENT_PROFILE_ID,
       EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
     ]);
-    expect(result.recommendedProfileId).toBe(PIPER_CPU_FALLBACK_PROFILE_ID);
+    expect(result.recommendedProfileId).toBeUndefined();
     expect(result.selectedProfileId).toBeUndefined();
     expect(result.fallbackAvailable).toBe(true);
     expect(
@@ -173,19 +188,24 @@ describe("hardware profile matcher v1", () => {
     ).toHaveLength(2);
   });
 
-  it("uses the frozen 512 MiB available-VRAM reserve only for the development profile", () => {
+  it("uses the frozen exact-host VRAM boundary for the Qwen development profile", () => {
     const profile = HARDWARE_PROFILE_REGISTRY_V1.find(
       (entry) =>
         entry.identity.profileId === EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
     )!;
-    const totalVram = calculateProfileCapacityRequirementMiB(
-      "vram",
-      profile.requirements.measuredPeakDedicatedVramMiB,
+    const totalVram = Math.max(
+      calculateProfileCapacityRequirementMiB(
+        "vram",
+        profile.requirements.measuredPeakDedicatedVramMiB,
+      ),
+      profile.requirements.minimumTotalDedicatedVramMiB ?? 0,
     );
-    const availableVram =
+    const availableVram = Math.max(
       profile.requirements.measuredPeakDedicatedVramMiB +
-      HARDWARE_PROFILE_AUTHORITY_V1.developmentOnlyAdmission
-        .availableDedicatedVramReserveMiB;
+        HARDWARE_PROFILE_AUTHORITY_V1.developmentOnlyAdmission
+          .availableDedicatedVramReserveMiB,
+      profile.requirements.minimumAvailableDedicatedVramMiB ?? 0,
+    );
     const hostAtBoundaries = report((value) => ({
       ...value,
       providers: {
@@ -241,15 +261,15 @@ describe("hardware profile matcher v1", () => {
     });
 
     expect(result.compatibleProfileIds).toEqual([
+      CHATTERBOX_BILINGUAL_PROFILE_ID,
+      PIPER_ENGLISH_CPU_PROFILE_ID,
       PIPER_CPU_FALLBACK_PROFILE_ID,
     ]);
-    expect(result.recommendedProfileId).toBe(PIPER_CPU_FALLBACK_PROFILE_ID);
+    expect(result.recommendedProfileId).toBeUndefined();
     expect(result.fallbackAvailable).toBe(true);
     expect(
       result.profiles
-        .filter(
-          (profile) => profile.profileId !== PIPER_CPU_FALLBACK_PROFILE_ID,
-        )
+        .filter((profile) => profile.supportState !== "supported")
         .every((profile) => profile.reason === "support-state-not-admitted"),
     ).toBe(true);
   });

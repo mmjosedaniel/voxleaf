@@ -18,6 +18,7 @@ import { HardwareProfileCompatibilityCoordinator } from "./hardware-profile-comp
 import {
   EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
   PIPER_CPU_FALLBACK_PROFILE_ID,
+  PIPER_ENGLISH_CPU_PROFILE_ID,
 } from "./hardware-profile-registry";
 
 afterEach(() => {
@@ -176,13 +177,13 @@ describe("hardware compatibility controls", () => {
     fireEvent.click(summary!);
 
     const fallback = screen.getByRole("radio", {
-      name: "Piper and davefx fast CPU profile",
+      name: "Piper and davefx Spanish fast CPU profile",
     });
     expect(fallback).toBeChecked();
     expect(fallback).toHaveAttribute("value", PIPER_CPU_FALLBACK_PROFILE_ID);
     expect(
       screen.getByRole("radio", {
-        name: "Qwen and Serena development profile",
+        name: "Qwen and Serena Spanish quality profile",
       }),
     ).not.toBeChecked();
     expect(
@@ -199,7 +200,7 @@ describe("hardware compatibility controls", () => {
       "This profile did not pass the required product evaluation.",
     );
     const qwenProfile = screen
-      .getByText("Qwen and Serena development profile:")
+      .getByText("Qwen and Serena Spanish quality profile:")
       .closest("li");
     expect(qwenProfile).toHaveAttribute(
       "data-profile-id",
@@ -216,7 +217,7 @@ describe("hardware compatibility controls", () => {
     await waitFor(() => expect(subject.observe().status).toBe("compatible"));
 
     const qwenProfile = screen
-      .getByText("Qwen and Serena development profile:")
+      .getByText("Qwen and Serena Spanish quality profile:")
       .closest("li");
     expect(qwenProfile).toHaveAttribute("data-profile-state", "incompatible");
     expect(qwenProfile).toHaveAttribute(
@@ -228,12 +229,12 @@ describe("hardware compatibility controls", () => {
     );
     expect(
       screen.queryByRole("radio", {
-        name: "Qwen and Serena development profile",
+        name: "Qwen and Serena Spanish quality profile",
       }),
     ).not.toBeInTheDocument();
     expect(
       screen.getByRole("radio", {
-        name: "Piper and davefx fast CPU profile",
+        name: "Piper and davefx Spanish fast CPU profile",
       }),
     ).toBeChecked();
   });
@@ -246,11 +247,11 @@ describe("hardware compatibility controls", () => {
 
     expect(
       screen.getByRole("radio", {
-        name: "Qwen and Serena development profile",
+        name: "Qwen and Serena Spanish quality profile",
       }),
     ).toBeInTheDocument();
     const qwenProfile = screen
-      .getByText("Qwen and Serena development profile:")
+      .getByText("Qwen and Serena Spanish quality profile:")
       .closest("li");
     expect(qwenProfile).toHaveAttribute("data-profile-state", "compatible");
     expect(qwenProfile).toHaveAttribute("data-profile-reason", "none");
@@ -272,7 +273,7 @@ describe("hardware compatibility controls", () => {
     );
 
     const profile = screen.getByRole("radio", {
-      name: "Qwen and Serena development profile",
+      name: "Qwen and Serena Spanish quality profile",
     });
     fireEvent.click(profile);
     await waitFor(() =>
@@ -293,7 +294,7 @@ describe("hardware compatibility controls", () => {
     expect(onRecoveryEpisodeReset).toHaveBeenCalledTimes(2);
   });
 
-  it("offers an accessible bilingual radio group and announces an unavailable English combination", async () => {
+  it("offers an accessible bilingual radio group and selects the admitted English fallback", async () => {
     const languageRepository = languagePreference();
     const subject = coordinator({ languagePreference: languageRepository });
     render(<HardwareCompatibilityControls coordinator={subject} />);
@@ -317,13 +318,19 @@ describe("hardware compatibility controls", () => {
     expect(english).toHaveFocus();
     expect(english).toBeChecked();
     expect(
-      screen.getByText(
-        "No evaluated local narration profile is available for English.",
-      ),
+      screen.getByText("The selected narration language is English."),
     ).toHaveAttribute("aria-live", "polite");
+    const englishFallback = screen.getByRole("radio", {
+      name: "Piper and joe English fast CPU profile",
+    });
+    expect(englishFallback).toBeChecked();
+    expect(englishFallback).toHaveAttribute(
+      "value",
+      PIPER_ENGLISH_CPU_PROFILE_ID,
+    );
     expect(
       screen.queryByRole("radio", {
-        name: "Piper and davefx fast CPU profile",
+        name: "Piper and davefx Spanish fast CPU profile",
       }),
     ).not.toBeInTheDocument();
   });

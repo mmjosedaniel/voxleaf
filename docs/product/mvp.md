@@ -41,6 +41,16 @@ development-only; Qwen/Aiden and Supertonic/F1 remain unsupported. â€œFallbackâ€
 does not authorize automatic engine failover. Replacement Ubuntu/Windows
 closeout checks pass, so M010 is complete and archived.
 
+M010.1 Milestone 6 now layers the bilingual runtime over that historical
+matrix. The user can select Spanish or English and only exact language-bound
+profiles are eligible: Piper davefx/Spanish and Piper joe/English are supported
+CPU profiles; Chatterbox is supported for Spanish and English; Qwen
+Serena/Spanish and Aiden/English are development-only constrained-buffer
+profiles. Native supervision retains one child tree, protocol v1 remains
+unchanged, and language/profile switches invalidate identity before cleanup.
+Model-free validation and a sequential six-arm exact-host service matrix pass.
+Milestone 7 still owns packaged EPUB portfolio journeys and M010.1 closeout.
+
 ## Current implemented flow
 
 1. The user opens VoxLeaf. VoxLeaf performs one bounded local compatibility
@@ -101,19 +111,12 @@ authority.
 
 ## Remaining target user flow
 
-1. M010.1 now implements explicit Spanish/English selection and the
-   engine-neutral bilingual preparation boundary under superseding v8
-   authority. Spanish remains the only playable product language because no
-   English profile is integrated yet; selecting English fails closed before
-   child start. Milestone 3 has admitted exact Piper/joe English through every
-   frozen baseline gate for later Milestone 6 integration. Corrective
-   Milestone 4 advances exact Chatterbox to the next full matrix, defers MOSS
-   without rejection, and retains independent local Qwen Serena/Spanish and
-   Aiden/English profiles for hardware-dependent constrained-buffer
-   evaluation.
-2. M011 then packages and validates an end-user distribution, including Piper
-   notices, provenance, corresponding-source or written-offer mechanics,
-   signing, updates, and complete-MVP validation.
+1. M010.1 Milestone 7 runs packaged Spanish/English EPUB journeys for every
+   admitted profile, records portfolio-level performance, underrun,
+   cancellation, cleanup, and privacy evidence, and closes the plan.
+2. M011 then packages and validates an end-user distribution, including model
+   and voice license notices, provenance, corresponding-source or written-offer
+   mechanics, signing, updates, and complete-MVP validation.
 
 M010.1 is a deliberately narrow pre-M011 exception to the earlier post-MVP
 candidate order because English narration and a stronger portfolio demo are
@@ -183,9 +186,9 @@ Implemented and validated:
 
 Remaining:
 
-- Evaluate and integrate only profiles admitted by the remaining M010.1
-  candidate milestones without weakening the implemented bilingual boundary
-  or the existing supported Piper Spanish profile.
+- Complete M010.1 Milestone 7 packaged portfolio and closeout validation
+  without weakening the implemented bilingual boundary or exact support
+  states.
 - Provide compliant runtime/model distribution, installer packaging, and a
   validated end-user installation path in M011.
 

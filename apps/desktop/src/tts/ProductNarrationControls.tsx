@@ -8,7 +8,13 @@ import {
 
 import { AdaptivePreparationControls } from "./AdaptivePreparationControls";
 import { loadedAudioStatusText } from "./adaptive-preparation-presentation";
-import { PIPER_CPU_FALLBACK_PROFILE_ID } from "./hardware-profile-registry";
+import {
+  CHATTERBOX_BILINGUAL_PROFILE_ID,
+  EXACT_QWEN_AIDEN_DEVELOPMENT_PROFILE_ID,
+  EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+  PIPER_CPU_FALLBACK_PROFILE_ID,
+  PIPER_ENGLISH_CPU_PROFILE_ID,
+} from "./hardware-profile-registry";
 import type { ProductNarrationCoordinator } from "./product-narration-coordinator";
 
 export interface ProductNarrationControlsProps {
@@ -23,9 +29,22 @@ function availabilityMessage(
 ): string | undefined {
   switch (availability) {
     case "available":
-      return profileId === PIPER_CPU_FALLBACK_PROFILE_ID
-        ? "The local Piper CPU narration profile is available."
-        : "The exact local Qwen/Serena development demo is available.";
+      if (
+        profileId === PIPER_CPU_FALLBACK_PROFILE_ID ||
+        profileId === PIPER_ENGLISH_CPU_PROFILE_ID
+      ) {
+        return "The selected local Piper CPU narration profile is available.";
+      }
+      if (profileId === CHATTERBOX_BILINGUAL_PROFILE_ID) {
+        return "The local Chatterbox bilingual narration profile is available.";
+      }
+      if (
+        profileId === EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID ||
+        profileId === EXACT_QWEN_AIDEN_DEVELOPMENT_PROFILE_ID
+      ) {
+        return "The selected local Qwen development profile is available.";
+      }
+      return "The selected local narration profile is available.";
     case "checking":
       return "Checking the selected local narration profile.";
     case "unavailable":

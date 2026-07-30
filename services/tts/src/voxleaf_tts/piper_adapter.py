@@ -29,7 +29,9 @@ from .protocol import (
     SAMPLE_RATE_HZ,
 )
 
-CANDIDATE_ID: Final = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1"
+SPANISH_CANDIDATE_ID: Final = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1"
+ENGLISH_CANDIDATE_ID: Final = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1"
+CANDIDATE_ID: Final = SPANISH_CANDIDATE_ID
 ENGINE_VERSION: Final = "1.4.2"
 ONNXRUNTIME_VERSION: Final = "1.27.0"
 MODEL_REVISION: Final = "0d907f158acc877ddeebcbf827659ee13bea8bcd"
@@ -54,6 +56,17 @@ class ArtifactIdentity:
     size_bytes: int
 
 
+@dataclass(frozen=True, slots=True)
+class PiperVoiceProfile:
+    """One exact admitted Piper voice and its bounded warm-up identity."""
+
+    candidate_id: str
+    voice_id: str
+    expected_espeak_voice: str
+    warm_text: str
+    artifacts: tuple[ArtifactIdentity, ...]
+
+
 ARTIFACTS: Final = (
     ArtifactIdentity(
         relative_path="es_ES-davefx-medium.onnx",
@@ -70,6 +83,39 @@ ARTIFACTS: Final = (
         sha256="420703b5d8ea239b729f13d83f31eea9bae5fcb89447de23ebc94aa8a4768f95",
         size_bytes=276,
     ),
+)
+
+ENGLISH_ARTIFACTS: Final = (
+    ArtifactIdentity(
+        relative_path="en_US-joe-medium.onnx",
+        sha256="58afce0321b8d9c46d7cdf9c16500cc55a793b4220212dba6b70fb788b3baf06",
+        size_bytes=63_201_294,
+    ),
+    ArtifactIdentity(
+        relative_path="en_US-joe-medium.onnx.json",
+        sha256="3d6d5410b3795cb1950595247ef8f06190719e6fdbfa3a2356d8ec368e1aad33",
+        size_bytes=4_794,
+    ),
+    ArtifactIdentity(
+        relative_path="MODEL_CARD",
+        sha256="d2caa63aca0fccb155105e959e393e5c0c0f03a1f388ef5ba217b83ef860c760",
+        size_bytes=281,
+    ),
+)
+
+SPANISH_PROFILE: Final = PiperVoiceProfile(
+    candidate_id=SPANISH_CANDIDATE_ID,
+    voice_id=VOICE_ID,
+    expected_espeak_voice="es",
+    warm_text=WARM_TEXT,
+    artifacts=ARTIFACTS,
+)
+ENGLISH_PROFILE: Final = PiperVoiceProfile(
+    candidate_id=ENGLISH_CANDIDATE_ID,
+    voice_id="en_US-joe-medium",
+    expected_espeak_voice="en-us",
+    warm_text="This is a brief local narration test.",
+    artifacts=ENGLISH_ARTIFACTS,
 )
 
 
@@ -225,7 +271,8 @@ class PiperCpuTtsEngine:
         self,
         artifact_root: Path,
         *,
-        artifacts: tuple[ArtifactIdentity, ...] = ARTIFACTS,
+        profile: PiperVoiceProfile = SPANISH_PROFILE,
+        artifacts: tuple[ArtifactIdentity, ...] | None = None,
         importer: Callable[[str], ModuleType] = importlib.import_module,
         version_reader: Callable[[str], str] = _default_version_reader,
         distribution_root_reader: Callable[[str], Path] = _default_distribution_root,
@@ -239,7 +286,8 @@ class PiperCpuTtsEngine:
             raise EngineFailure(EngineFailureCode.UNAVAILABLE) from None
         if not self._artifact_root.is_dir():
             raise EngineFailure(EngineFailureCode.UNAVAILABLE)
-        self._artifacts = artifacts
+        self._profile = profile
+        self._artifacts = profile.artifacts if artifacts is None else artifacts
         self._importer = importer
         self._version_reader = version_reader
         self._distribution_root_reader = distribution_root_reader
@@ -315,8 +363,8 @@ class PiperCpuTtsEngine:
             voice_module = cast(_PiperVoiceModule, self._importer("piper.voice"))
             config_module = cast(_PiperConfigModule, self._importer("piper.config"))
             voice = voice_module.PiperVoice.load(
-                self._artifact_root / "es_ES-davefx-medium.onnx",
-                config_path=self._artifact_root / "es_ES-davefx-medium.onnx.json",
+                self._artifact_root / f"{self._profile.voice_id}.onnx",
+                config_path=self._artifact_root / f"{self._profile.voice_id}.onnx.json",
                 use_cuda=False,
                 download_dir=self._artifact_root,
             )
@@ -324,7 +372,7 @@ class PiperCpuTtsEngine:
                 voice.session.get_providers() != ["CPUExecutionProvider"]
                 or voice.config.sample_rate != SOURCE_SAMPLE_RATE_HZ
                 or voice.config.num_speakers != 1
-                or voice.config.espeak_voice != "es"
+                or voice.config.espeak_voice != self._profile.expected_espeak_voice
             ):
                 raise EngineFailure(EngineFailureCode.UNAVAILABLE)
             synthesis_config = config_module.SynthesisConfig(
@@ -399,7 +447,7 @@ class PiperCpuTtsEngine:
     def warm(self) -> None:
         if self._voice is None or self._warmed or self._active is not None:
             raise EngineFailure(EngineFailureCode.INVALID_STATE)
-        result = self._generate(WARM_TEXT)
+        result = self._generate(self._profile.warm_text)
         del result
         self._warmed = True
 

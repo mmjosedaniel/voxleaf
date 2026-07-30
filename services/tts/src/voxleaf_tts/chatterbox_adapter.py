@@ -1,4 +1,4 @@
-"""Exact offline Qwen3-TTS CustomVoice/Serena development adapter."""
+"""Exact offline Chatterbox Multilingual V3 bilingual service adapter."""
 
 from __future__ import annotations
 
@@ -7,11 +7,10 @@ import hashlib
 import importlib
 import importlib.metadata
 import io
-import json
 import math
 import os
 import sys
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping
 from contextlib import contextmanager, redirect_stdout, suppress
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -32,100 +31,63 @@ from .protocol import (
     SAMPLE_RATE_HZ,
 )
 
-SERENA_CANDIDATE_ID: Final = "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8"
-AIDEN_CANDIDATE_ID: Final = "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8"
-CANDIDATE_ID: Final = SERENA_CANDIDATE_ID
-MODEL_REPOSITORY: Final = "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"
-MODEL_REVISION: Final = "0c0e3051f131929182e2c023b9537f8b1c68adfe"
-SPEAKER: Final = "Serena"
-LANGUAGE: Final = "Spanish"
-INSTRUCTION: Final = (
-    "Lee con un tono neutro, claro, natural y sereno, apropiado para narrar "
-    "un audiolibro; mantén un ritmo moderado y una expresividad contenida."
-)
-ENGLISH_INSTRUCTION: Final = (
-    "Read in a neutral, clear, natural, and calm tone suitable for audiobook "
-    "narration; maintain a moderate pace and restrained expressiveness."
-)
-ENGINE_VERSION: Final = "0.1.1"
+CANDIDATE_ID: Final = "chatterbox-multilingual-v3-cuda-bf16-default-v4"
+ENGINE_VERSION: Final = "0.1.7"
 TORCH_VERSION: Final = "2.9.1+cu128"
 TORCHAUDIO_VERSION: Final = "2.9.1+cu128"
-WARM_TEXT: Final = "Esta es una prueba breve de narración local."
+MODEL_REVISION: Final = "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
 HASH_READ_BYTES: Final = 8 * 1024 * 1024
+
+GENERATION_SETTINGS: Final = {
+    "exaggeration": 0.5,
+    "cfg_weight": 0.5,
+    "temperature": 0.8,
+    "repetition_penalty": 1.2,
+    "min_p": 0.05,
+    "top_p": 1.0,
+}
 
 
 @dataclass(frozen=True, slots=True)
 class ArtifactIdentity:
-    """One allowlisted exact model artifact."""
+    """One allowlisted exact Chatterbox model artifact."""
 
     relative_path: str
     sha256: str
     size_bytes: int
 
 
-@dataclass(frozen=True, slots=True)
-class QwenVoiceProfile:
-    """One admitted built-in Qwen voice/language configuration."""
-
-    candidate_id: str
-    speaker: str
-    language: str
-    instruction: str
-    warm_text: str
-
-
-MAJOR_ARTIFACTS: Final = (
+ARTIFACTS: Final = (
     ArtifactIdentity(
-        relative_path="model.safetensors",
-        sha256="38b1d5971bdbd982b561cccec982669a53b0537c3cf5e9bd4778ed07bb2f5137",
-        size_bytes=3_833_402_552,
+        "t3_mtl23ls_v3.safetensors",
+        "5abca8321ede76f8e61f1cc0d19aea6c946b28871017ce8726f8a69203f05953",
+        2_143_989_928,
     ),
     ArtifactIdentity(
-        relative_path="speech_tokenizer/model.safetensors",
-        sha256="836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258",
-        size_bytes=682_293_092,
+        "s3gen.pt",
+        "9b9ff07e60b20c136e2b1b3d7563a24604e8d2c4c267888d1ee929dd0151d2a3",
+        1_057_165_844,
     ),
-)
-
-GENERATION_SETTINGS: Final = {
-    "do_sample": True,
-    "repetition_penalty": 1.05,
-    "temperature": 0.9,
-    "top_p": 1.0,
-    "top_k": 50,
-    "subtalker_dosample": True,
-    "subtalker_temperature": 0.9,
-    "subtalker_top_p": 1.0,
-    "subtalker_top_k": 50,
-    "max_new_tokens": 2048,
-}
-
-# The frozen benchmark permits 2,048 codec tokens so result-bearing evaluation
-# can observe a runaway generation. Product service output is narrower: the
-# pinned 12 Hz tokenizer decodes every codec token to 1,920 samples, while
-# protocol v1 admits at most 480,000 samples (20 seconds at 24 kHz). Clamp only
-# the product call at that existing transport boundary; successful generations
-# that emit EOS before the boundary retain the frozen sampling configuration.
-CODEC_SAMPLES_PER_TOKEN: Final = 1_920
-MAX_SERVICE_CODEC_TOKENS: Final = MAX_AUDIO_SAMPLE_COUNT // CODEC_SAMPLES_PER_TOKEN
-SERVICE_GENERATION_SETTINGS: Final = {
-    **GENERATION_SETTINGS,
-    "max_new_tokens": MAX_SERVICE_CODEC_TOKENS,
-}
-
-SERENA_SPANISH_PROFILE: Final = QwenVoiceProfile(
-    candidate_id=SERENA_CANDIDATE_ID,
-    speaker=SPEAKER,
-    language=LANGUAGE,
-    instruction=INSTRUCTION,
-    warm_text=WARM_TEXT,
-)
-AIDEN_ENGLISH_PROFILE: Final = QwenVoiceProfile(
-    candidate_id=AIDEN_CANDIDATE_ID,
-    speaker="Aiden",
-    language="English",
-    instruction=ENGLISH_INSTRUCTION,
-    warm_text="This is a brief local narration test.",
+    ArtifactIdentity(
+        "ve.pt",
+        "4b16d836bc598509860f6fa068165a8bb5e9ac84f05582dfcf278a5a372879f1",
+        5_698_626,
+    ),
+    ArtifactIdentity(
+        "conds.pt",
+        "6552d70568833628ba019c6b03459e77fe71ca197d5c560cef9411bee9d87f4e",
+        107_374,
+    ),
+    ArtifactIdentity(
+        "grapheme_mtl_merged_expanded_v1.json",
+        "69632f47220a788a52ce2661d096453c5655e9bf25289d89a8d832c46ee07dbf",
+        69_989,
+    ),
+    ArtifactIdentity(
+        "Cangjie5_TC.json",
+        "7073fd9de919443ae88e0bd2449917a65fe54898a4413ed1edcc4b67f28bce8c",
+        1_920_163,
+    ),
 )
 
 
@@ -142,8 +104,6 @@ class _NullTextWriter(io.TextIOBase):
 
 @contextmanager
 def _discard_process_stdout() -> Any:
-    """Discard Python and native-library stdout while preserving protocol stdout."""
-
     try:
         descriptor = sys.stdout.fileno()
     except (AttributeError, io.UnsupportedOperation):
@@ -166,8 +126,7 @@ def _discard_process_stdout() -> Any:
 
 def _default_distribution_root(name: str) -> Path:
     try:
-        location = importlib.metadata.distribution(name).locate_file("")
-        return Path(str(location)).resolve(strict=True)
+        return Path(str(importlib.metadata.distribution(name).locate_file(""))).resolve(strict=True)
     except (importlib.metadata.PackageNotFoundError, OSError):
         raise EngineFailure(EngineFailureCode.UNAVAILABLE) from None
 
@@ -211,42 +170,15 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _verify_revision_metadata(root: Path, artifact: ArtifactIdentity) -> None:
-    metadata_path = _resolve_artifact(
-        root,
-        f".cache/huggingface/download/{artifact.relative_path}.metadata",
-    )
-    try:
-        lines = metadata_path.read_text(encoding="utf-8").splitlines()
-    except (OSError, UnicodeError):
-        raise EngineFailure(EngineFailureCode.UNAVAILABLE) from None
-    if len(lines) < 2 or lines[0] != MODEL_REVISION or lines[1] != artifact.sha256:
-        raise EngineFailure(EngineFailureCode.UNAVAILABLE)
-
-
-def _verify_model_config(root: Path) -> None:
-    path = _resolve_artifact(root, "config.json")
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError):
-        raise EngineFailure(EngineFailureCode.UNAVAILABLE) from None
-    if not isinstance(value, dict) or (
-        value.get("model_type"),
-        value.get("tts_model_size"),
-        value.get("tts_model_type"),
-    ) != ("qwen3_tts", "1b7", "custom_voice"):
-        raise EngineFailure(EngineFailureCode.UNAVAILABLE)
-
-
-class QwenSerenaTtsEngine:
-    """One resident exact Qwen/Serena model with one active complete-waveform call."""
+class ChatterboxMultilingualTtsEngine:
+    """One resident exact bilingual model with one active complete-waveform call."""
 
     def __init__(
         self,
         artifact_root: Path,
+        language: str,
         *,
-        profile: QwenVoiceProfile = SERENA_SPANISH_PROFILE,
-        artifacts: tuple[ArtifactIdentity, ...] = MAJOR_ARTIFACTS,
+        artifacts: tuple[ArtifactIdentity, ...] = ARTIFACTS,
         importer: Callable[[str], ModuleType] = importlib.import_module,
         version_reader: Callable[[str], str] = _default_version_reader,
         distribution_root_reader: Callable[[str], Path] = _default_distribution_root,
@@ -254,13 +186,15 @@ class QwenSerenaTtsEngine:
         runtime_executable: Path | None = None,
         python_version: tuple[int, int] | None = None,
     ) -> None:
+        if language not in {"es", "en"}:
+            raise EngineFailure(EngineFailureCode.UNAVAILABLE)
         try:
             self._artifact_root = artifact_root.resolve(strict=True)
         except OSError:
             raise EngineFailure(EngineFailureCode.UNAVAILABLE) from None
         if not self._artifact_root.is_dir():
             raise EngineFailure(EngineFailureCode.UNAVAILABLE)
-        self._profile = profile
+        self._language = language
         self._artifacts = artifacts
         self._importer = importer
         self._version_reader = version_reader
@@ -298,21 +232,18 @@ class QwenSerenaTtsEngine:
             or os.environ.get("TRANSFORMERS_OFFLINE") != "1"
         ):
             raise EngineFailure(EngineFailureCode.UNAVAILABLE)
-        expected_versions = {
-            "qwen-tts": ENGINE_VERSION,
+        for distribution, version in {
+            "chatterbox-tts": ENGINE_VERSION,
             "torch": TORCH_VERSION,
             "torchaudio": TORCHAUDIO_VERSION,
-        }
-        for distribution, version in expected_versions.items():
+        }.items():
             if self._version_reader(distribution) != version:
                 raise EngineFailure(EngineFailureCode.UNAVAILABLE)
             try:
-                distribution_root = self._distribution_root_reader(distribution).resolve(
-                    strict=True
-                )
+                root = self._distribution_root_reader(distribution).resolve(strict=True)
             except OSError:
                 raise EngineFailure(EngineFailureCode.UNAVAILABLE) from None
-            if not _is_within(distribution_root, self._runtime_root):
+            if not _is_within(root, self._runtime_root):
                 raise EngineFailure(EngineFailureCode.UNAVAILABLE)
 
     def _verify_artifacts(self) -> None:
@@ -324,8 +255,6 @@ class QwenSerenaTtsEngine:
                 raise EngineFailure(EngineFailureCode.UNAVAILABLE) from None
             if size != artifact.size_bytes or _sha256(target) != artifact.sha256:
                 raise EngineFailure(EngineFailureCode.UNAVAILABLE)
-            _verify_revision_metadata(self._artifact_root, artifact)
-        _verify_model_config(self._artifact_root)
 
     def load(self) -> None:
         if self._model is not None or self._active is not None:
@@ -335,26 +264,21 @@ class QwenSerenaTtsEngine:
             self._verify_artifacts()
             with _discard_process_stdout():
                 torch = cast(Any, self._importer("torch"))
-                qwen_tts = cast(Any, self._importer("qwen_tts"))
+                chatterbox = cast(Any, self._importer("chatterbox.mtl_tts"))
                 if (
                     str(torch.__version__) != TORCH_VERSION
                     or not bool(torch.cuda.is_available())
                     or not bool(torch.cuda.is_bf16_supported())
+                    or tuple(torch.cuda.get_device_capability()) != (12, 0)
+                    or "sm_120" not in tuple(torch.cuda.get_arch_list())
                 ):
                     raise EngineFailure(EngineFailureCode.UNAVAILABLE)
                 torch.cuda.reset_peak_memory_stats()
-                model = qwen_tts.Qwen3TTSModel.from_pretrained(
+                model = chatterbox.ChatterboxMultilingualTTS.from_local(
                     str(self._artifact_root),
-                    device_map="cuda:0",
-                    dtype=torch.bfloat16,
-                    attn_implementation="sdpa",
-                    local_files_only=True,
+                    device=torch.device("cuda"),
+                    t3_model="v3",
                 )
-                speakers = tuple(cast(Sequence[str], model.get_supported_speakers()))
-                if self._profile.speaker.casefold() not in {
-                    speaker.casefold() for speaker in speakers
-                }:
-                    raise EngineFailure(EngineFailureCode.UNAVAILABLE)
         except EngineFailure:
             self.cleanup()
             raise
@@ -381,51 +305,31 @@ class QwenSerenaTtsEngine:
             raise EngineFailure(EngineFailureCode.INVALID_STATE)
         try:
             with _discard_process_stdout():
-                waveforms, sample_rate = model.generate_custom_voice(
-                    text=text,
-                    language=self._profile.language,
-                    speaker=self._profile.speaker,
-                    instruct=self._profile.instruction,
-                    **SERVICE_GENERATION_SETTINGS,
+                waveform = model.generate(
+                    text,
+                    language_id=self._language,
+                    audio_prompt_path=None,
+                    **GENERATION_SETTINGS,
                 )
-            if (
-                type(sample_rate) is not int
-                or sample_rate != SAMPLE_RATE_HZ
-                or not isinstance(waveforms, (list, tuple))
-                or len(waveforms) != 1
-            ):
-                raise EngineFailure(EngineFailureCode.FAILURE)
-            waveform = waveforms[0]
-            shape = getattr(waveform, "shape", None)
-            if (
-                not isinstance(shape, tuple)
-                or len(shape) != 1
-                or type(shape[0]) is not int
-                or shape[0] <= 0
-                or shape[0] > MAX_AUDIO_SAMPLE_COUNT
-                or len(waveform) != shape[0]
-            ):
-                raise EngineFailure(EngineFailureCode.FAILURE)
             numpy = self._numpy_module()
-            samples = numpy.asarray(waveform, dtype="<f4", order="C")
+            samples = numpy.asarray(
+                waveform.detach().to("cpu").reshape(-1).numpy(),
+                dtype="<f4",
+                order="C",
+            )
+            sample_count = int(samples.size)
             if (
                 samples.ndim != 1
-                or int(samples.size) != shape[0]
+                or sample_count <= 0
+                or sample_count > MAX_AUDIO_SAMPLE_COUNT
                 or not bool(numpy.isfinite(samples).all())
-            ):
-                raise EngineFailure(EngineFailureCode.FAILURE)
-            payload = cast(bytes, samples.tobytes(order="C"))
-            if (
-                len(payload) != shape[0] * 4
-                or len(payload) > MAX_AUDIO_PAYLOAD_BYTES
                 or not all(math.isfinite(value) for value in samples)
             ):
                 raise EngineFailure(EngineFailureCode.FAILURE)
-            return EngineResult(
-                sample_rate_hz=SAMPLE_RATE_HZ,
-                channel_count=CHANNEL_COUNT,
-                payload=payload,
-            )
+            payload = cast(bytes, samples.tobytes(order="C"))
+            if len(payload) != sample_count * 4 or len(payload) > MAX_AUDIO_PAYLOAD_BYTES:
+                raise EngineFailure(EngineFailureCode.FAILURE)
+            return EngineResult(SAMPLE_RATE_HZ, CHANNEL_COUNT, payload)
         except EngineFailure:
             raise
         except Exception:
@@ -434,8 +338,13 @@ class QwenSerenaTtsEngine:
     def warm(self) -> None:
         if self._model is None or self._warmed or self._active is not None:
             raise EngineFailure(EngineFailureCode.INVALID_STATE)
-        result = self._generate(self._profile.warm_text)
-        del result
+        warm_text = (
+            "Esta es una prueba breve de narración local."
+            if self._language == "es"
+            else "This is a brief local narration test."
+        )
+        warm_audio = self._generate(warm_text)
+        del warm_audio
         self._warmed = True
 
     def begin(self, request_id: str, segment: Mapping[str, object]) -> WorkIdentity:
@@ -445,16 +354,23 @@ class QwenSerenaTtsEngine:
         session_id = segment.get("sessionId")
         generation_id = segment.get("generationId")
         segment_id = segment.get("segmentId")
-        if (
-            not isinstance(text, str)
-            or not text
-            or not isinstance(session_id, str)
-            or not isinstance(generation_id, str)
-            or not isinstance(segment_id, str)
+        if not all(
+            isinstance(value, str) and value
+            for value in (
+                text,
+                session_id,
+                generation_id,
+                segment_id,
+            )
         ):
             raise EngineFailure(EngineFailureCode.INVALID_STATE)
-        identity = WorkIdentity(request_id, session_id, generation_id, segment_id)
-        self._active = _ActiveOperation(identity=identity, text=text)
+        identity = WorkIdentity(
+            request_id,
+            cast(str, session_id),
+            cast(str, generation_id),
+            cast(str, segment_id),
+        )
+        self._active = _ActiveOperation(identity, cast(str, text))
         return identity
 
     def settle(self) -> tuple[WorkIdentity, EngineResult]:
@@ -464,7 +380,7 @@ class QwenSerenaTtsEngine:
         self._active = None
         result = self._generate(operation.text)
         self._retained_result = result
-        return (operation.identity, result)
+        return operation.identity, result
 
     def cancel(self, identity: WorkIdentity) -> None:
         if self._active is None or self._active.identity != identity:

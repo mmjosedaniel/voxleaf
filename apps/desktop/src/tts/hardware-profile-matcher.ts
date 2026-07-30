@@ -134,6 +134,13 @@ function hasValidEntryShape(entry: HardwareProfileRegistryEntryV1): boolean {
     HARDWARE_PROFILE_AUTHORITY_V1.registry.supportStates,
   );
   const gateKeys = Object.keys(evidence.gates);
+  const optionalRequirements = [
+    requirements.minimumTotalRamMiB,
+    requirements.minimumAvailableRamMiB,
+    requirements.minimumTotalDedicatedVramMiB,
+    requirements.minimumAvailableDedicatedVramMiB,
+    requirements.minimumAvailableStorageMiB,
+  ];
 
   if (
     entry.registryVersion !== HARDWARE_PROFILE_AUTHORITY_V1.registry.version ||
@@ -166,6 +173,9 @@ function hasValidEntryShape(entry: HardwareProfileRegistryEntryV1): boolean {
     !isQuantity(requirements.measuredPeakRamMiB) ||
     !isQuantity(requirements.measuredPeakDedicatedVramMiB) ||
     !isQuantity(requirements.measuredArtifactFootprintMiB) ||
+    !optionalRequirements.every(
+      (value) => value === undefined || (isQuantity(value) && value > 0),
+    ) ||
     !GIT_SHA1_PATTERN.test(evidence.authorityCommitSha) ||
     !GIT_SHA1_PATTERN.test(evidence.resultCommitSha) ||
     evidence.authorityCommitSha === evidence.resultCommitSha ||
@@ -314,16 +324,21 @@ function providerFailure(
     return undefined;
   }
 
-  const requiredTotalVram = calculateProfileCapacityRequirementMiB(
-    "vram",
-    entry.requirements.measuredPeakDedicatedVramMiB,
+  const requiredTotalVram = Math.max(
+    calculateProfileCapacityRequirementMiB(
+      "vram",
+      entry.requirements.measuredPeakDedicatedVramMiB,
+    ),
+    entry.requirements.minimumTotalDedicatedVramMiB ?? 0,
   );
-  const requiredAvailableVram =
+  const requiredAvailableVram = Math.max(
     calculateProfileAvailableDedicatedVramRequirementMiB(
       entry.role,
       entry.supportState,
       entry.requirements.measuredPeakDedicatedVramMiB,
-    );
+    ),
+    entry.requirements.minimumAvailableDedicatedVramMiB ?? 0,
+  );
   return (
     insufficientQuantity(
       provider.dedicatedMemoryMiB,
@@ -404,9 +419,17 @@ function matchEntry(
     "ram",
     entry.requirements.measuredPeakRamMiB,
   );
-  const totalRamRequirement =
+  const calculatedTotalRamRequirement =
     availableRamRequirement +
     HARDWARE_PROFILE_AUTHORITY_V1.safetyMargins.ram.totalPhysicalReserveMiB;
+  const totalRamRequirement = Math.max(
+    calculatedTotalRamRequirement,
+    entry.requirements.minimumTotalRamMiB ?? 0,
+  );
+  const exactAvailableRamRequirement = Math.max(
+    availableRamRequirement,
+    entry.requirements.minimumAvailableRamMiB ?? 0,
+  );
   const memoryFailure =
     insufficientQuantity(
       report.memory.totalPhysicalMiB,
@@ -416,7 +439,7 @@ function matchEntry(
     ) ??
     insufficientQuantity(
       report.memory.availablePhysicalMiB,
-      availableRamRequirement,
+      exactAvailableRamRequirement,
       entry,
       "available-ram",
     );
@@ -426,9 +449,12 @@ function matchEntry(
 
   const storageFailure = insufficientQuantity(
     report.storage.applicationVolumeAvailableMiB,
-    calculateProfileCapacityRequirementMiB(
-      "storage",
-      entry.requirements.measuredArtifactFootprintMiB,
+    Math.max(
+      calculateProfileCapacityRequirementMiB(
+        "storage",
+        entry.requirements.measuredArtifactFootprintMiB,
+      ),
+      entry.requirements.minimumAvailableStorageMiB ?? 0,
     ),
     entry,
     "application-volume-storage",

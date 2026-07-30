@@ -18,6 +18,7 @@ import {
   type HardwareProfileRejectionReasonV1,
 } from "./hardware-profile-matcher";
 import {
+  EXACT_QWEN_AIDEN_DEVELOPMENT_PROFILE_ID,
   EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
   HARDWARE_PROFILE_REGISTRY_V1,
 } from "./hardware-profile-registry";
@@ -198,21 +199,61 @@ function chooseActiveProfile(
       source: "recommendation",
     });
   }
+  const lightweightSupported = matches.profiles.find(
+    (profile) =>
+      admittedForLanguage(profile, language) &&
+      profile.supportState === "supported" &&
+      profile.role === "cpu-fallback",
+  );
+  if (lightweightSupported !== undefined) {
+    return Object.freeze({
+      profileId: lightweightSupported.profileId,
+      source: "recommendation",
+    });
+  }
+  const exactQwenProfileId =
+    language === "en"
+      ? EXACT_QWEN_AIDEN_DEVELOPMENT_PROFILE_ID
+      : EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID;
   if (
-    matches.compatibleProfileIds.includes(
-      EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
-    ) &&
-    profileSupportsNarrationLanguageV1(
-      EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
-      language,
-    )
+    matches.compatibleProfileIds.includes(exactQwenProfileId) &&
+    profileSupportsNarrationLanguageV1(exactQwenProfileId, language)
   ) {
     return Object.freeze({
-      profileId: EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
+      profileId: exactQwenProfileId,
       source: "native-development-gate",
     });
   }
   return Object.freeze({ profileId: undefined, source: undefined });
+}
+
+function chooseReplacementProfile(
+  profiles: readonly HardwareProfileMatchV1[],
+  currentProfileId: string | undefined,
+  language: NarrationLanguageV1,
+): HardwareProfileMatchV1 | undefined {
+  const current = profiles.find(
+    (profile) =>
+      profile.profileId === currentProfileId &&
+      admittedForLanguage(profile, language),
+  );
+  if (current !== undefined) {
+    return current;
+  }
+  return (
+    profiles.find(
+      (profile) =>
+        admittedForLanguage(profile, language) &&
+        profile.supportState === "supported" &&
+        profile.role === "cpu-fallback",
+    ) ??
+    profiles.find(
+      (profile) =>
+        admittedForLanguage(profile, language) &&
+        profile.supportState === "supported",
+    ) ??
+    profiles.find((profile) => admittedForLanguage(profile, language))
+  );
 }
 
 export class HardwareProfileCompatibilityCoordinator {
@@ -363,16 +404,11 @@ export class HardwareProfileCompatibilityCoordinator {
     if (this.#closed || result.status !== "saved") {
       return false;
     }
-    const active = this.#snapshot.profiles.find(
-      (profile) =>
-        profile.profileId === this.#snapshot.activeProfileId &&
-        admittedForLanguage(profile, language),
+    const replacement = chooseReplacementProfile(
+      this.#snapshot.profiles,
+      this.#snapshot.activeProfileId,
+      language,
     );
-    const replacement =
-      active ??
-      this.#snapshot.profiles.find((profile) =>
-        admittedForLanguage(profile, language),
-      );
     const status = statusFor(replacement, this.#snapshot.profiles);
     this.#snapshot = Object.freeze({
       ...this.#snapshot,
@@ -385,12 +421,12 @@ export class HardwareProfileCompatibilityCoordinator {
       selectionSource:
         replacement === undefined
           ? undefined
-          : active === undefined
+          : replacement.profileId !== this.#snapshot.activeProfileId
             ? "recommendation"
             : this.#snapshot.selectionSource,
       fallbackAvailable:
         replacement?.supportState === "supported" &&
-        replacement.profileId === "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1",
+        replacement.role === "cpu-fallback",
       language,
       languagePreferenceStatus: "ready",
       languageReason:

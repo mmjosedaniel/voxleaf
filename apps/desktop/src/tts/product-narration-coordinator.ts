@@ -38,6 +38,7 @@ import {
 import {
   EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
   PIPER_CPU_FALLBACK_PROFILE_ID,
+  PIPER_ENGLISH_CPU_PROFILE_ID,
 } from "./hardware-profile-registry";
 import {
   DEFAULT_NARRATION_LANGUAGE_V1,
@@ -60,6 +61,13 @@ const PIPER_SPEAKABLE_CONTENT = /[\p{L}\p{N}\p{Sc}%‰ºª°]/u;
 
 function isPiperSpeakableSegment(segment: PreparedNarrationSegment): boolean {
   return PIPER_SPEAKABLE_CONTENT.test(segment.text);
+}
+
+function isPiperProfile(profileId: string): boolean {
+  return (
+    profileId === PIPER_CPU_FALLBACK_PROFILE_ID ||
+    profileId === PIPER_ENGLISH_CPU_PROFILE_ID
+  );
 }
 
 export type ProductNarrationFailureCode =
@@ -122,7 +130,10 @@ export interface ProductNarrationServiceClient extends AdaptiveBufferAudioUnitSo
     profileId: string,
   ): Promise<TtsExactDemoAvailability>;
   observe(): TtsProcessClientObservation;
-  start(profileId?: string): Promise<TtsProcessClientObservation>;
+  start(
+    profileId?: string,
+    language?: NarrationLanguageV1,
+  ): Promise<TtsProcessClientObservation>;
   prepare(): Promise<TtsProcessClientObservation>;
   synthesize(segment: unknown): Promise<{
     readonly sampleCountSamples: number;
@@ -1128,7 +1139,7 @@ export class ProductNarrationCoordinator {
           this.#publish();
           this.#profileId = profileId;
           this.#language = language;
-          await this.#client.start(profileId);
+          await this.#client.start(profileId, language);
           if (runToken === this.#runToken) {
             scheduler.markServiceStarted();
           }
@@ -1189,10 +1200,9 @@ export class ProductNarrationCoordinator {
     try {
       result = await this.#publication.prepareNarration({
         startLocator,
-        profile:
-          this.#profileId === PIPER_CPU_FALLBACK_PROFILE_ID
-            ? "narration-piper-v2"
-            : "narration-bilingual-v2",
+        profile: isPiperProfile(this.#profileId)
+          ? "narration-piper-v2"
+          : "narration-bilingual-v2",
         defaultLanguage: this.#language,
         maximumSegments: PREPARED_BATCH_SEGMENT_LIMIT,
         signal: controller.signal,
@@ -1208,10 +1218,9 @@ export class ProductNarrationCoordinator {
     if (!isPreparationSuccess(result)) {
       throw new Error("content-free-preparation-failure");
     }
-    const preparedSegments =
-      this.#profileId === PIPER_CPU_FALLBACK_PROFILE_ID
-        ? result.segments.filter(isPiperSpeakableSegment)
-        : result.segments;
+    const preparedSegments = isPiperProfile(this.#profileId)
+      ? result.segments.filter(isPiperSpeakableSegment)
+      : result.segments;
     if (preparedSegments.length === 0) {
       scheduler.acceptEmptyPreparedRange(result.status === "complete");
       this.#continuation =

@@ -2,7 +2,7 @@
 
 A privacy-first desktop EPUB reader in development, designed for on-device neural text-to-speech and in-memory audio streaming.
 
-> **Status:** pre-alpha. Roadmap Milestones 1 through 10, M008.1, and M009.1 are complete. M010 adds privacy-safe Windows host detection, immutable evidence-backed matching, compatibility and explicit profile choice, identity-safe one-attempt recovery, and the exact Piper/davefx CPU fallback. Piper is the sole supported and automatically recommendable profile when its host and native-runtime gates pass. Qwen3-TTS 1.7B CustomVoice/Serena remains an optional development-only profile; no standard GPU profile passed. M008.1 implements bounded semantic pauses between already-buffered generated units. The active M010.1 plan will add explicit Spanish/English narration authority and perform a bounded candidate screen before M011; those bilingual and additional-engine capabilities are not implemented yet. Production runtime/model distribution, Piper license fulfillment, installers, signing, updates, and complete-MVP release validation remain M011 work.
+> **Status:** pre-alpha. Roadmap Milestones 1 through 10, M008.1, and M009.1 are complete. Active M010.1 now implements explicit Spanish/English narration selection and exact language-bound local profiles: Piper/davefx Spanish and Piper/joe English are supported CPU profiles; Chatterbox Multilingual V3 is a supported Spanish/English GPU profile; and Qwen3-TTS 1.7B CustomVoice Serena/Spanish plus Aiden/English remain explicitly gated development-only profiles. All paths preserve one native-owned service tree, bounded in-memory audio, and identity-first cancellation. M010.1 Milestone 7 still owns packaged portfolio validation and plan closeout. Production runtime/model distribution, license fulfillment, installers, signing, updates, and complete-MVP release validation remain M011 work.
 
 ## Goal
 
@@ -34,7 +34,7 @@ The MVP is allowed to:
 
 The canonical [system architecture diagram](docs/architecture/system-diagram.md) distinguishes implemented components, approved planned work, blocked boundaries, foundations, external systems, and deferred work. The framework-independent `@voxleaf/epub` package validates in-memory EPUB bytes and exposes safe semantic documents, bounded resources, deterministic locators, and `OpenedPublication.prepareNarration`. The desktop connects those ephemeral locator-linked prepared segments to one selected local service, sole-owner in-memory buffering, Web Audio playback, synchronized highlighting, and heard-position persistence without changing displayed text or retaining generated audio.
 
-Tauri, React, TypeScript, the direct semantic DOM reader, bounded WebView `localStorage` persistence, constrained Web Audio playback, segment-level reader/narration synchronization, privacy-safe host matching, and explicit recovery are accepted and implemented within their documented limits. The accepted local process transport is Rust-owned child standard streams with complete bounded 24-kHz mono float32-le units returned through narrow binary Tauri responses. Native supervision selects exactly one verified isolated Qwen or Piper child. The exact Piper/davefx CPU profile passes frozen evaluation and packaged resilience evidence and is supported; Qwen3-TTS 1.7B CustomVoice/Serena remains development-only, while Qwen3-TTS 0.6B CustomVoice/Aiden and Supertonic/F1 remain unsupported. The final matrix and safety margins are recorded in [`tts-support-matrix-v1.md`](docs/architecture/tts-support-matrix-v1.md). Distribution remains undecided until M011 fulfills packaging and licensing obligations.
+Tauri, React, TypeScript, the direct semantic DOM reader, bounded WebView `localStorage` persistence, constrained Web Audio playback, segment-level reader/narration synchronization, privacy-safe host matching, and explicit recovery are accepted and implemented within their documented limits. The accepted local process transport is Rust-owned child standard streams with complete bounded 24-kHz mono float32-le units returned through narrow binary Tauri responses. Native supervision selects exactly one verified isolated Piper, Chatterbox, or Qwen child for the selected language. Piper/davefx Spanish, Piper/joe English, and Chatterbox Spanish/English are supported when their exact host and runtime gates pass. Qwen Serena/Spanish and Aiden/English remain development-only constrained-buffer choices, while historical Qwen 0.6B/Aiden and Supertonic/F1 remain unsupported. The current matrix is recorded in [`tts-support-matrix-v2.md`](docs/architecture/tts-support-matrix-v2.md). Distribution remains undecided until M011 fulfills packaging and licensing obligations.
 
 ## Privacy principles
 
@@ -82,19 +82,30 @@ The development server listens only on `http://127.0.0.1:5173`; stop it with `Ct
 pnpm.cmd build
 ```
 
-### Run the native development application with Qwen3-TTS
+### Run the native development application with bilingual local TTS
 
-The exact Qwen3-TTS 1.7B CustomVoice/Serena profile is a development-only
-configuration. Before launching it, prepare the ignored candidate virtual
-environment and local model directory described in
+Before launching, prepare the ignored candidate virtual environments and local
+model directories described in
 [`docs/development/setup.md`](docs/development/setup.md), and ensure the
-administrator-created outbound-blocking firewall rule targets that exact
-Python interpreter.
+administrator-created outbound-blocking firewall rules target each exact
+candidate interpreter that you enable.
 
 From the repository root, run the following commands in one PowerShell
 terminal:
 
 ```powershell
+$env:VOXLEAF_TTS_PIPER_ENABLED = "1"
+$env:VOXLEAF_TTS_PIPER_PYTHON = (Resolve-Path "services/tts/benchmarks/candidates/piper_1_4_2_cpu/.venv/Scripts/python.exe" -ErrorAction Stop).Path
+$env:VOXLEAF_TTS_PIPER_MODEL_ROOT = (Resolve-Path "models/tts/piper-1.4.2-es_ES-davefx-medium-0d907f1" -ErrorAction Stop).Path
+
+$env:VOXLEAF_TTS_PIPER_EN_ENABLED = "1"
+$env:VOXLEAF_TTS_PIPER_EN_PYTHON = $env:VOXLEAF_TTS_PIPER_PYTHON
+$env:VOXLEAF_TTS_PIPER_EN_MODEL_ROOT = (Resolve-Path "models/tts/piper-1.4.2-en_US-joe-medium-0d907f1" -ErrorAction Stop).Path
+
+$env:VOXLEAF_TTS_CHATTERBOX_ENABLED = "1"
+$env:VOXLEAF_TTS_CHATTERBOX_PYTHON = (Resolve-Path "services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v4/.venv/Scripts/python.exe" -ErrorAction Stop).Path
+$env:VOXLEAF_TTS_CHATTERBOX_MODEL_ROOT = (Resolve-Path "models/chatterbox_multilingual_v3_v2" -ErrorAction Stop).Path
+
 $env:VOXLEAF_TTS_DEV_ENABLED = "1"
 $env:VOXLEAF_TTS_DEV_PYTHON = (Resolve-Path "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/.venv/Scripts/python.exe" -ErrorAction Stop).Path
 $env:VOXLEAF_TTS_DEV_MODEL_ROOT = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda" -ErrorAction Stop).Path
@@ -104,11 +115,13 @@ pnpm.cmd --filter @voxleaf/desktop tauri dev
 ```
 
 Keep that terminal open while using the application and stop it with
-`Ctrl+C`. The variables apply only to that PowerShell process. Qwen appears in
-the compatibility panel only when the native development gate, exact runtime,
-model files, and frozen hardware admission checks all pass. This profile is
-not a supported production or real-time profile; Piper remains the supported
-MVP CPU fallback.
+`Ctrl+C`. The variables apply only to that PowerShell process. You may omit
+whole three-variable groups for profiles you do not want to configure.
+Compatibility remains profile- and language-specific. Qwen appears only when
+the development gate, exact runtime/model files, and frozen hardware checks
+pass; it is not a supported production or real-time profile. These commands
+configure local development assets only and do not replace M011 packaging or
+license fulfillment.
 
 The native executable is written to the ignored Tauri target directory. Installer bundling is intentionally disabled.
 

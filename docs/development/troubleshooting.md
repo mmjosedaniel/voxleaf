@@ -44,11 +44,12 @@ restoration or clear private reader data merely to make the UI advance.
 
 The M008 narration path and M009 synchronized reader integration form a
 constrained local path, not a production or general-hardware claim. Qwen
-remains a development-only GPU profile. M010 admits and integrates
-Piper/davefx as the sole supported CPU fallback. The final
-[`tts-support-matrix-v1`](../architecture/tts-support-matrix-v1.md) records
-the exact support states, host margins, and recovery limitations, while M011
-still owns release packaging and license fulfillment. Both exact local
+remains a development-only GPU engine. M010.1 Milestone 6 implements exact
+Piper Spanish/English CPU profiles, supported Chatterbox Spanish/English, and
+development-only Qwen Serena/Spanish plus Aiden/English. The current
+[`tts-support-matrix-v2`](../architecture/tts-support-matrix-v2.md) records the
+exact states, host margins, and language bindings, while M011 still owns
+release packaging and license fulfillment. All native-only local
 configurations are documented in [`setup.md`](setup.md).
 
 ### Narration controls are unavailable
@@ -70,6 +71,14 @@ $env:VOXLEAF_TTS_PIPER_PYTHON = (Resolve-Path "services/tts/benchmarks/candidate
 $env:VOXLEAF_TTS_PIPER_MODEL_ROOT = (Resolve-Path "models/tts/piper-1.4.2-es_ES-davefx-medium-0d907f1").Path
 ```
 
+Piper English uses the parallel `VOXLEAF_TTS_PIPER_EN_*` group and the exact
+`en_US-joe-medium` root. Chatterbox uses the
+`VOXLEAF_TTS_CHATTERBOX_*` group. Do not mix a profile's interpreter, model
+root, or three-value group with another profile; the native constructor fails
+closed before child start. Qwen Serena and Aiden intentionally share the
+`VOXLEAF_TTS_DEV_*` environment because profile/language validation selects the
+built-in voice inside that exact runtime.
+
 Run the application from that same PowerShell terminal. These values are
 process-local; opening a new terminal or launching VoxLeaf elsewhere loses
 them. The compatibility panel may still truthfully say that Piper fits the
@@ -89,6 +98,7 @@ Run the focused host diagnostic before the full playback matrix:
 pnpm.cmd test:tts:exact-host
 pnpm.cmd test:tts:adaptive-exact-host
 pnpm.cmd test:tts:resilience-exact-host
+pnpm.cmd test:tts:bilingual-profiles-exact-host
 ```
 
 These commands are Windows exact-host tests, excluded from normal checks and
@@ -112,15 +122,15 @@ verified local configuration. The renderer receives no paths, environment
 values, or raw error. This check runs when product narration availability is
 resolved and again immediately before child start.
 
-For the exact development demo, the Qwen/Serena profile also requires the
-native variables above and the frozen RAM, VRAM, storage, provider, precision,
-and device-class margins. Closing unrelated GPU/RAM-heavy applications may
-change available capacity; use `Check compatibility again` afterward. Rejected
-Qwen/Aiden and Supertonic records are intentionally listed as unavailable and
-cannot be selected. A compatible complete CPU report may recommend the
-supported Piper/davefx fallback. If it remains unavailable, verify the Piper
-native configuration, exact artifact hashes, CPU provider, and frozen RAM and
-storage margins; do not force the preference.
+For an exact Qwen development profile, the native variables above and frozen
+RAM, VRAM, storage, provider, precision, and device-class margins must pass.
+Closing unrelated GPU/RAM-heavy applications may change available capacity;
+use `Check compatibility again` afterward. The 1.7B Aiden/English profile is
+selectable only for English and must not be confused with the historical
+unsupported Qwen 0.6B/Aiden entry. A compatible complete CPU report may
+recommend the language-matched Piper voice. If it remains unavailable, verify
+the exact native configuration, artifact hashes, CPU provider, and frozen RAM
+and storage margins; do not force the preference.
 
 Fallback is not automatic failover. Selecting another compatible profile first
 invalidates and releases the current narration and then permits one new

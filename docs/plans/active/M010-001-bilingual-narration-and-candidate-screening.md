@@ -31,9 +31,12 @@ After this plan passes:
 - if no candidate passes, VoxLeaf records that result honestly and proceeds to
   M011 without claiming a naturalness upgrade.
 
-Until those checks pass, current narration remains Spanish-only,
-Piper/davefx remains the sole supported and automatically recommendable
-profile, and Qwen/Serena remains development-only.
+Milestone 6 now implements the admitted bilingual runtime set. Piper/davefx
+Spanish and Piper/joe English are supported CPU profiles; Chatterbox is a
+supported Spanish/English GPU profile; and the exact Qwen/Serena Spanish and
+Qwen/Aiden English profiles remain explicitly gated `development-only`
+choices. Milestone 7 still owns the packaged portfolio journeys and final
+plan closeout.
 
 ## Current state
 
@@ -45,18 +48,15 @@ Completed M010 adds the separate Piper-only
 [`narration-piper-v2`](../../architecture/piper-narration-preparation-profile-v2.md)
 spoken-expansion-aware path for exact `es_ES-davefx-medium`.
 
-Milestone 2 now lets the desktop explicitly select Spanish or English and
-dispatches the selected language through `narration-bilingual-v2`. The
-executable profile-language registry still has no admitted English profile,
-so English selection reports a content-free unavailable state and starts no
-child. Milestone 3 has now admitted the exact Piper/joe English baseline for
-later product integration; it is not selectable until Milestone 6 updates the
-registry, service adapter, configuration, and exact-host product proof.
-
-Exact Piper 1.4.2 / `es_ES-davefx-medium` is the sole supported profile.
-Qwen3-TTS 12Hz 1.7B CustomVoice / Serena is an optional native-gated
-development profile. The existing M010 support matrix remains authoritative
-unless this plan later records a newly admitted exact profile.
+Milestone 2 lets the desktop explicitly select Spanish or English and
+dispatches the selected language through `narration-bilingual-v2`. Milestone 6
+now connects that product boundary to exact language-bound runtime profiles:
+Piper 1.4.2 `es_ES-davefx-medium` and `en_US-joe-medium`, Chatterbox
+Multilingual V3 in Spanish and English, and native-gated Qwen3-TTS 12Hz 1.7B
+CustomVoice Serena/Spanish and Aiden/English. The shared process protocol
+remains v1; native supervision carries the selected profile and language,
+starts only the exact matching isolated environment, and retains one child
+process tree.
 
 M010.1 Milestone 1 originally froze result-blind v7 authority for Piper
 English plus Chatterbox and MOSS. No v7 result existed when the maintainer
@@ -535,7 +535,7 @@ language, hardware, voice, quality, performance, or distribution support.
 
 ### Milestone 6: Integrate admitted bilingual profiles
 
-**Status:** Not started.
+**Status:** Complete as of 2026-07-30. Implementation checkpoint `fea11d4`.
 
 1. Integrate Piper English only if Milestone 3 admits it.
 2. Integrate Chatterbox only if Milestone 5 admits its exact profile.
@@ -557,6 +557,29 @@ language, hardware, voice, quality, performance, or distribution support.
 
 Exit when all admitted paths pass model-free repository tests and exact-profile
 integration evidence without regressing Spanish Piper narration.
+
+Actual result: the executable registry, host matcher, compatibility UI,
+pre-start recheck, typed desktop client, native supervisor, and Python adapters
+now expose the exact admitted language/profile combinations. Piper English
+uses its exact `joe` ONNX voice; Chatterbox uses one exact bilingual CUDA
+profile; and Qwen switches between Serena/Spanish and Aiden/English while
+remaining development-only and constrained-buffered. Unsupported and
+wrong-language combinations fail closed, profile or language changes replace
+the generation identity before cleanup, and no automatic engine failover was
+introduced. Protocol v1 did not require a public change.
+
+Model-free validation passed with 429 desktop tests plus seven Node tests, 347
+Python tests, 41 Rust tests, TypeScript type checking, Ruff formatting/lint,
+strict mypy, and a release Tauri build. The authoritative `pnpm.cmd check`
+wrapper also passes on the formatted implementation. The content-safe
+exact-host matrix then
+ran all six service arms sequentially—Piper Spanish, Piper English,
+Chatterbox Spanish, Chatterbox English, Qwen Serena Spanish, and Qwen Aiden
+English—and proved load/warmup, bounded synthesis, busy handling,
+identity-first cancellation, reload, second synthesis, shutdown, cleanup, and
+zero retained audio. Milestone 7 still owns packaged EPUB journeys,
+portfolio-level performance/underrun evidence, privacy scans, and final plan
+closeout.
 
 ### Milestone 7: Validate the bilingual portfolio demo and close the plan
 
@@ -665,6 +688,25 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-30:** Final Milestone 6 repository validation passed.
+  `pnpm.cmd check` completed formatting, ESLint, Clippy, Ruff, TypeScript and
+  mypy type checks, 209 shared tests, 577 EPUB tests, 429 desktop tests plus
+  seven Node tests, 41 Rust tests, 347 Python tests, package/desktop/Python
+  builds, and the release Tauri build. The existing CSS Custom Highlight and
+  bundle-size notices plus one unwritable pytest cache warning are
+  informational. Diff/privacy scans found no tracked EPUB, generated audio,
+  model weight, raw result session, private path, or secret pattern.
+- **2026-07-30:** Completed Milestone 6 at implementation checkpoint
+  `fea11d4`. Added exact language-bound registry and host requirements,
+  supported Piper/joe English and Chatterbox bilingual adapters, retained
+  Qwen/Serena Spanish and added Qwen/Aiden English behind the
+  development-only gate, and extended native supervision without changing
+  protocol v1 or one-process ownership. Model-free desktop, Python, and Rust
+  suites passed, as did TypeScript, Ruff, mypy, and release build validation.
+  A content-safe sequential six-arm exact-host service matrix passed
+  load/warmup, bounded synthesis, busy/cancellation/reload, second synthesis,
+  shutdown, and cleanup for every admitted language/profile binding. No audio,
+  model artifacts, book text, or private paths were retained.
 - **2026-07-30:** Recorded, without scheduling, a possible follow-up after
   M010.1 closes: improve the portfolio-facing reader interface and replace the
   current `1.0x`-only policy with an engine-neutral post-generation playback
@@ -684,8 +726,7 @@ committed benchmark authority after results.
   admitted as the English configuration of the existing engine. Every private
   scorecard, waveform, map, and raw session was deleted after guarded
   derivation. `selection-v12.md`, ADR-0031, and support/integration matrix v2
-  record the decisions; runtime availability remains unchanged until
-  Milestone 6.
+  record the decisions; Milestone 6 later integrated the admitted paths.
 - **2026-07-30:** The exact v12 Chatterbox machine matrix completed all five
   cold loads, 50 generation attempts, and eight cancellation trials. Offline
   isolation, artifact, privacy, bounded-retention, and cleanup audits passed.

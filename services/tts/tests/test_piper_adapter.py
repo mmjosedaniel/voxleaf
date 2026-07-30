@@ -18,6 +18,8 @@ from voxleaf_tts.piper_adapter import (
     ARTIFACTS,
     CANDIDATE_ID,
     ENGINE_VERSION,
+    ENGLISH_CANDIDATE_ID,
+    ENGLISH_PROFILE,
     LENGTH_SCALE,
     MODEL_REVISION,
     NOISE_SCALE,
@@ -25,10 +27,12 @@ from voxleaf_tts.piper_adapter import (
     NORMALIZE_AUDIO,
     ONNXRUNTIME_VERSION,
     SOURCE_SAMPLE_RATE_HZ,
+    SPANISH_PROFILE,
     VOICE_ID,
     VOLUME,
     ArtifactIdentity,
     PiperCpuTtsEngine,
+    PiperVoiceProfile,
 )
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
@@ -64,6 +68,7 @@ class FakeVoice:
         *,
         provider: str = "CPUExecutionProvider",
         sample_rate: int = SOURCE_SAMPLE_RATE_HZ,
+        espeak_voice: str = "es",
         failure: Exception | None = None,
     ) -> None:
         self._calls = calls
@@ -73,7 +78,7 @@ class FakeVoice:
         self.config = SimpleNamespace(
             sample_rate=sample_rate,
             num_speakers=1,
-            espeak_voice="es",
+            espeak_voice=espeak_voice,
         )
 
     def synthesize(
@@ -103,13 +108,17 @@ class FakeVoice:
         )
 
 
-def _write_exact_artifacts(root: Path) -> tuple[ArtifactIdentity, ...]:
+def _write_exact_artifacts(
+    root: Path,
+    profile: PiperVoiceProfile,
+) -> tuple[ArtifactIdentity, ...]:
     artifacts: list[ArtifactIdentity] = []
-    for relative, content in (
-        ("es_ES-davefx-medium.onnx", b"model-test"),
-        ("es_ES-davefx-medium.onnx.json", b"config-test"),
-        ("MODEL_CARD", b"card-test"),
+    for artifact, content in zip(
+        profile.artifacts,
+        (b"model-test", b"config-test", b"card-test"),
+        strict=True,
     ):
+        relative = artifact.relative_path
         path = root / relative
         path.write_bytes(content)
         artifacts.append(
@@ -141,14 +150,19 @@ def _adapter(
     distribution_root: Path | None = None,
     onnx_device: str = "CPU",
     onnx_providers: tuple[str, ...] = ("CPUExecutionProvider",),
+    profile: PiperVoiceProfile | None = None,
 ) -> tuple[PiperCpuTtsEngine, dict[str, object], FakeVoice]:
     monkeypatch.setenv("HF_HUB_OFFLINE", "1")
     artifact_root = tmp_path / "model"
     artifact_root.mkdir()
-    artifacts = _write_exact_artifacts(artifact_root)
+    selected_profile = profile or SPANISH_PROFILE
+    artifacts = _write_exact_artifacts(artifact_root, selected_profile)
     runtime_root, executable, distributions = _runtime(tmp_path)
     calls: dict[str, object] = {}
-    selected_voice = voice or FakeVoice(calls)
+    selected_voice = voice or FakeVoice(
+        calls,
+        espeak_voice=selected_profile.expected_espeak_voice,
+    )
 
     class VoiceFactory:
         @staticmethod
@@ -185,6 +199,7 @@ def _adapter(
     root = distribution_root or distributions
     adapter = PiperCpuTtsEngine(
         artifact_root,
+        profile=selected_profile,
         artifacts=artifacts,
         importer=modules.__getitem__,
         version_reader=selected_versions.__getitem__,
@@ -273,6 +288,33 @@ def test_exact_load_warm_and_generation_use_frozen_identity_and_protocol_format(
     assert capabilities.cpu_fallback == "supported"
     adapter.release_result()
     adapter.cleanup()
+
+
+def test_english_profile_uses_the_exact_joe_voice_and_model_paths(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter, calls, _voice = _adapter(
+        tmp_path,
+        monkeypatch,
+        profile=ENGLISH_PROFILE,
+    )
+
+    adapter.load()
+    adapter.warm()
+    adapter.begin("request:english", _segment("A bounded English segment."))
+    adapter.settle()
+
+    assert ENGLISH_PROFILE.candidate_id == ENGLISH_CANDIDATE_ID
+    assert calls["load_args"] == (tmp_path / "model" / "en_US-joe-medium.onnx",)
+    assert calls["load_kwargs"] == {
+        "config_path": tmp_path / "model" / "en_US-joe-medium.onnx.json",
+        "use_cuda": False,
+        "download_dir": tmp_path / "model",
+    }
+    generations = calls["generations"]
+    assert isinstance(generations, list)
+    assert generations[-1]["text"] == "A bounded English segment."
 
 
 @pytest.mark.parametrize(

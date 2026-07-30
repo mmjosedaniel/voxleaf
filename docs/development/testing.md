@@ -70,6 +70,12 @@ The current tests are deterministic and layered by ownership:
   start, and one-tree supervisor coverage. The production Chromium foundation
   smoke covers the compact panel without reducing the fixed reader viewport.
   Deterministic tests load no model and cannot make a host support claim.
+- M010.1 Milestone 6 extends those same boundaries with exact Piper/joe
+  English, Chatterbox Spanish/English, Qwen/Serena Spanish, and Qwen/Aiden
+  English bindings. Registry, matcher, coordinator, process-client, UI, Python
+  adapter/service, and Rust supervisor tests prove language/profile closure,
+  supported versus development-only selection, exact configuration gates,
+  one-child replacement, and content-safe failures without loading models.
 - `packages/shared/src/contracts/audio-frame.test.ts` verifies payload-free frame metadata, branded ownership identities, exact sample-derived whole-millisecond calculations, aggregate-before-truncation behavior, numeric and duration-overflow boundaries, contiguous sequencing, unique frame IDs, stable format, segment termination, and content-free errors without audio devices or payloads.
 - `packages/shared/src/contracts/buffer-status.test.ts` verifies payload-free, session-bound buffer snapshots; explicit playable-duration units; low/target/maximum ordering; below/exactly-at/above-target states; bounded duration; underrun counts; and rejection of invalid state combinations, payload fields, fixed waits, and private text without implementing a buffer or player.
 - `packages/shared/src/testing/manual-clock.test.ts` verifies an explicit-start, manually advanced test clock; deterministic first-scheduled ordering for equal-time callbacks; pending-work inspection and cleanup; invalid-input rejection; and safe millisecond overflow handling without reading real time or scheduling real timers.
@@ -716,6 +722,31 @@ Default checks do not rerun private/model-backed evaluation. Pull request #150
 passed the required Ubuntu portable and Windows native checks, so M010 and the
 related M008.1 closeout are archived.
 
+## M010.1 bilingual profile integration
+
+Milestone 6 preserves protocol v1 and adds exact language-bound implementations
+for Piper davefx/Spanish, Piper joe/English, Chatterbox/Spanish,
+Chatterbox/English, Qwen Serena/Spanish, and Qwen Aiden/English. Model-free
+repository tests cover adapters, profile selection, native configuration,
+hardware matching, language/profile switches, identity-first cancellation,
+recovery, cleanup, and historical unsupported records.
+
+The hardware-specific service matrix is manual, sequential, excluded from
+default checks and CI, and requires all exact local assets plus
+interpreter-bound outbound firewall rules:
+
+```powershell
+pnpm.cmd test:tts:bilingual-profiles-exact-host
+```
+
+Each of the six arms proves load/warmup, one bounded synthesis, busy handling,
+cancellation and stale suppression, clean reload, a second bounded synthesis,
+shutdown, and process cleanup. It emits only a fixed content-safe pass/fail
+line, starts one model process at a time, and writes no generated audio. The
+accepted exact-host run passed all six arms. This is service integration
+evidence only; M010.1 Milestone 7 still owns packaged EPUB journeys,
+portfolio-level performance/underrun evidence, and final privacy closeout.
+
 ## Deferred coverage
 
 The secure EPUB, reader, narration-preparation, M007 service/protocol, M008
@@ -723,10 +754,10 @@ exact-development quick/prepared flows, M009 segment synchronization, and
 M010 Windows host matching/recovery now have their scoped deterministic,
 packaged, and exact-host evidence. Default tests and CI still load no candidate
 or model; model-backed timing, profile, navigation, persistence, and cleanup
-matrices remain separate exact-host commands. Non-Windows hardware support, a
-supported standard GPU profile, installer behavior, license-complete
-distribution, and complete production-profile MVP end-to-end coverage remain
-deferred. The examples below are requirements for
+matrices remain separate exact-host commands. Non-Windows hardware support,
+installer behavior, license-complete distribution, and complete packaged
+bilingual-profile MVP end-to-end coverage remain deferred. The examples below
+are requirements for
 those later roadmap milestones, not claims about current coverage.
 
 ## Test levels

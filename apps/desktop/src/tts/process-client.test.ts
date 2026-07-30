@@ -193,14 +193,15 @@ describe("typed native TTS process client", () => {
     );
   });
 
-  it("passes an admitted profile identity only to native service start", async () => {
+  it("passes only the admitted profile identity and language to native service start", async () => {
     mockedInvoke.mockResolvedValueOnce(startControls());
     const client = new TtsProcessClient();
 
-    await client.start("piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1");
+    await client.start("piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1", "es");
 
     expect(mockedInvoke).toHaveBeenCalledWith("start_tts_service", {
       profileId: "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1",
+      language: "es",
     });
   });
 

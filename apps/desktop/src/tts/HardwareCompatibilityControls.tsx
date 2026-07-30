@@ -71,12 +71,18 @@ function statusMessage(snapshot: HardwareCompatibilitySnapshotV1): string {
 
 function profileLabel(profile: HardwareProfileMatchV1): string {
   switch (profile.profileId) {
-    case "qwen3-tts-1-7b-customvoice-cuda-bf16-v1":
-      return "Qwen and Serena development profile";
+    case "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8":
+      return "Qwen and Serena Spanish quality profile";
+    case "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8":
+      return "Qwen and Aiden English quality profile";
     case "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1":
-      return "Piper and davefx fast CPU profile";
+      return "Piper and davefx Spanish fast CPU profile";
+    case "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1":
+      return "Piper and joe English fast CPU profile";
+    case "chatterbox-multilingual-v3-cuda-bf16-default-v4":
+      return "Chatterbox bilingual natural voice profile";
     case "qwen3-tts-0-6b-customvoice-cuda-bf16-v1":
-      return "Qwen and Aiden evaluated profile";
+      return "Historical Qwen 0.6B evaluated profile";
     case "supertonic-3-onnx-cpu-f1-es-v1":
       return "Supertonic and F1 evaluated profile";
     default:
