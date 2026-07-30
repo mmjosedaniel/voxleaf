@@ -452,7 +452,10 @@ distribution and license fulfillment.
 
 ### Milestone 4: Run bounded sequential candidate and Qwen control screens
 
-**Status:** Not started.
+**Status:** In progress. The committed Qwen control harness is ready, but the
+first exact Serena/Spanish result is blocked before inference because Windows
+administrator authorization is required to install the frozen outbound block
+for the Qwen candidate interpreter.
 
 1. Run exact Qwen/Serena Spanish and Qwen/Aiden English independently through
    the existing-engine control gates. Stop only the failing exact identity and
@@ -621,6 +624,25 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-29:** Began Milestone 4 on
+  `feat/m010-001-candidate-qwen-screens`. Added a v8-only bounded screen
+  protocol with one cold load, one warm first attempt per frozen case, four
+  cancellation trials per evaluated language, process-tree RAM and WDDM plus
+  framework VRAM measurement, exact Qwen/Serena and Qwen/Aiden built-in voice
+  identities, closed-stdin commands, repository-environment raw validation,
+  immediate machine-rejection derivation, private-session cleanup, and
+  model-free regression coverage. The executable result-bearing checkpoint is
+  `5b64bb0aac45a143d0806edc6cbd403b4257b737`; focused Ruff, mypy, and 19
+  pytest cases pass.
+- **2026-07-29:** Ran the first required Serena/Spanish preflight at
+  `5b64bb0aac45a143d0806edc6cbd403b4257b737`. The exact ignored model
+  artifacts and current host thresholds passed, but the only installed
+  `VoxLeaf TTS Benchmark Offline` rule targets the Piper interpreter. The
+  Qwen preflight therefore failed closed with only `network-isolation`, and
+  no inference, raw session, generated audio, Aiden run, or new-engine screen
+  began. A direct `New-NetFirewallRule` attempt returned Windows access
+  denied; an administrator must add the exact Qwen interpreter rule before
+  sequential execution can resume.
 - **2026-07-29:** Completed Milestone 3. The exact isolated Piper/joe English
   CPU matrix passed all machine, performance, memory, cancellation, quality,
   privacy, offline, and cleanup gates. The five-sample private evaluation
