@@ -183,6 +183,8 @@ describe("hardware profile registry v1", () => {
       measuredPeakRamMiB: 4_994,
       measuredPeakDedicatedVramMiB: 3_644,
       measuredArtifactFootprintMiB: 8_211,
+      minimumTotalDedicatedVramMiB: 7_680,
+      minimumAvailableDedicatedVramMiB: 6_144,
     });
     expect(byId.get(PIPER_CPU_FALLBACK_PROFILE_ID)?.requirements).toMatchObject(
       {
