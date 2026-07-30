@@ -1743,7 +1743,7 @@ async function runAdaptiveTtsExactHostMatrix(
       );
     }
 
-    setStage("adaptive exact-host active cancellation");
+    setStage("adaptive exact-host active cancellation generation");
     const cancellationPassageButton = await driver.findElement(
       '[data-narration-action="next-passage"]',
     );
@@ -1754,6 +1754,7 @@ async function runAdaptiveTtsExactHostMatrix(
          ?.getAttribute("data-narration-service-state") === "generating";`,
       STARTUP_TIMEOUT_MS,
     );
+    setStage("adaptive exact-host active cancellation stop");
     const cancellationAtMs = Date.now();
     const stopButton = await driver.findElement(
       '[data-narration-action="stop"]',
@@ -1768,16 +1769,28 @@ async function runAdaptiveTtsExactHostMatrix(
       STARTUP_TIMEOUT_MS,
     );
     cancellationMs = Date.now() - cancellationAtMs;
+    setStage("adaptive exact-host active cancellation highlight cleanup");
     await waitForCondition(
       driver,
       `return CSS.highlights?.has(
          "voxleaf-narration-active",
        ) !== true;`,
     );
+    setStage("adaptive exact-host active cancellation reader state");
     checkpointObservation = await adaptiveReaderExperienceObservation(driver);
+    console.error(
+      `ADAPTIVE_TTS_CANCELLATION_OBSERVATION ${JSON.stringify({
+        cancellationMs,
+        ...checkpointObservation,
+      })}`,
+    );
     assert(
       checkpointObservation?.leafCount === 1 &&
-        checkpointObservation.leafState === "checkpoint" &&
+        // A fast engine may make the requested passage audible before stop,
+        // while a slower engine can still be holding it as a non-audible
+        // preview. Both states prove that preparing/audible authority was
+        // cleared; requiring only checkpoint made cancellation timing-dependent.
+        ["checkpoint", "preview"].includes(checkpointObservation.leafState) &&
         checkpointObservation.leafAriaCurrent === false &&
         checkpointObservation.compactVisible === true &&
         checkpointObservation.detailExpanded === true &&
