@@ -1182,3 +1182,31 @@ Corrective Milestone 4 validation on 2026-07-30:
   scoped privacy/artifact scan passed. No EPUB, generated audio, raw session,
   scorecard, model weight, candidate environment, private path, email,
   credential, or secret is tracked by this milestone.
+
+Corrective Milestone 5 validation on 2026-07-30:
+
+- Exact v12 Chatterbox execution completed 5/5 cold loads, 20/20 warm
+  attempts, 30/30 sustained attempts, and 8/8 cancellation trials under
+  offline environment controls and the exact interpreter-bound outbound block.
+- The three blinded private reviews covered 10 Chatterbox bilingual samples,
+  five Qwen/Serena Spanish samples, and five Qwen/Aiden English samples. The
+  guarded derivation validated every scorecard and authority binding before
+  deleting all downloaded forms, waveforms, maps, and raw sessions.
+- `uv run --project services/tts --locked pytest
+services/tts/tests/test_benchmark_v12_authority.py
+services/tts/tests/test_benchmark_corrective_v12.py` passed 10 tests. The
+  focused format, Ruff, and strict-mypy checks also passed.
+- `pnpm.cmd check:portable` passed formatting, lint, all TypeScript/Python
+  type checks, 209 shared tests, 577 EPUB tests, 429 desktop tests plus seven
+  native WebDriver-client tests, all 337 Python tests, portable
+  desktop/package builds, and both Python distributions.
+- `pnpm.cmd check` passed the same checks plus Rust formatting, Clippy, all 40
+  Rust tests, the Tauri release build, and Python source/wheel builds.
+- The sandboxed focused uv invocation initially lacked access to the
+  user-local cache; its required local outside-sandbox rerun passed. The
+  existing pytest cache-permission warning and CSS-highlight/chunk-size build
+  warnings remain informational.
+- Schema validation passed again after mechanical Prettier formatting.
+  `git diff --check`, staged privacy scanning, and private-session inspection
+  found no EPUB, generated audio, raw session, scorecard, model weight,
+  candidate environment, private path, email, credential, or secret.
