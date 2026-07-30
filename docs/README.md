@@ -52,8 +52,10 @@ joe/English are supported CPU profiles; Chatterbox is supported for Spanish
 and English; Qwen Serena/Spanish and Aiden/English remain development-only
 constrained-buffer profiles. Protocol v1 and one-child ownership remain
 unchanged, and the sequential six-arm exact-host service matrix passes. MOSS
-remains deferred without rejection. Milestone 7 still owns packaged portfolio
-validation and M010.1 closeout.
+remains deferred without rejection. Milestone 7's six packaged synthetic EPUB
+arms, exact-host metrics, privacy boundary, cancellation, synchronization, and
+cleanup evidence now pass locally. Required pull-request checks remain before
+M010.1 moves to `completed/`.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -153,7 +155,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M009-001-reader-experience-stabilization.md`](plans/completed/M009-001-reader-experience-stabilization.md): completed bounded M009 follow-up for the visible-highlight repair, dedicated reader viewport, compact/collapsible narration UI, truthful loaded-duration status, locator-backed paragraph leaf, passive-scroll isolation, exact-host validation, and repository/CI closeout.
 - [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
-- [`plans/active/M010-001-bilingual-narration-and-candidate-screening.md`](plans/active/M010-001-bilingual-narration-and-candidate-screening.md): active follow-up whose Milestones 1/1A-6 freeze and execute bilingual evidence, integrate exact Piper/Chatterbox/Qwen language paths, and leave packaged portfolio validation and final closeout to Milestone 7.
+- [`plans/active/M010-001-bilingual-narration-and-candidate-screening.md`](plans/active/M010-001-bilingual-narration-and-candidate-screening.md): active follow-up whose implementation and local exact-host evidence are complete through Milestone 7; required pull-request checks still gate archival.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

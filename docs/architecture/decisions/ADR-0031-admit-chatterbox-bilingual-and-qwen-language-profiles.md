@@ -27,6 +27,15 @@ literal floor. The same probe reported 7,042 MiB available. Chatterbox's
 measured-plus-frozen-margin requirement is 4,668 MiB and its separate available
 floor remains 6,144 MiB.
 
+The final packaged synthetic EPUB matrix confirms both Chatterbox languages
+through the complete product path. Spanish and English reached first audible
+output in 28.811 and 33.007 seconds, produced warm prepared RTF of 0.92 and
+0.87, sustained the one-minute quick observation with zero underruns, and
+released all audio/model ownership after cancellation and exit. The Qwen
+controls also completed safely, but warm prepared RTF was 2.21 for Serena and
+2.09 for Aiden; each quick-start arm depleted once and required a bounded
+refill. No arm persisted audio or made an external request.
+
 One fluent bilingual maintainer reviewed five fresh samples per language and
 profile. Chatterbox was strongly useful in both languages with no
 meaning-changing or wrong-language output. Qwen/Serena was strongly rated in
@@ -68,6 +77,11 @@ roughly 5-GiB process footprint on the measured host. Qwen remains a
 hardware-dependent buffered quality option with complete-waveform
 cancellation limitations. Automatic fallback remains disabled, and only one
 model process may be loaded at a time.
+
+The packaged evidence preserves the support decision: Chatterbox is supported
+on exact compatible/configured hosts, while Qwen remains development-only
+because successful bounded execution does not imply uninterrupted quick
+playback on this measured GPU.
 
 M011 must still resolve distributable runtime/model/voice topology, licenses,
 notices, installer size, signing, updates, and broader host claims. Admission

@@ -46,8 +46,10 @@ integrates those language-bound profiles through one native-owned service
 tree: both Piper voices and Chatterbox are supported when their exact
 configuration and host requirements pass, while both Qwen voices remain
 explicitly gated development-only constrained-buffer profiles. MOSS remains
-deferred without rejection. Milestone 7 still owns packaged portfolio
-journeys, final metrics/privacy validation, and M010.1 closeout.
+deferred without rejection. Milestone 7's six packaged portfolio journeys,
+final exact-host metrics, privacy, bounded synchronization, and cleanup
+validation pass locally. Required pull-request checks still gate M010.1
+closeout and archival.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -841,8 +843,9 @@ frozen v6 cycle and passed measured evidence before product admission.
 
 ## Milestone 10.1: Add bilingual narration and screen naturalness candidates
 
-**Status:** In progress; Milestones 1, 1A, 2, 3, 4, 5, and 6 complete as of
-2026-07-30. Follow
+**Status:** Local implementation and exact-host validation complete through
+Milestone 7 as of 2026-07-30; required pull-request checks remain before
+archival. Follow
 [`M010-001-bilingual-narration-and-candidate-screening.md`](active/M010-001-bilingual-narration-and-candidate-screening.md).
 This bounded pre-M011 follow-up responds to an explicit product need for
 English narration and a stronger portfolio demonstration. It does not reopen
@@ -874,7 +877,11 @@ about stronger compatible GPUs. MOSS remains deferred without rejection.
 Milestone 6 implements the exact language/profile registry, adapters, native
 configuration and host gates, compatibility selection, recovery mapping, and
 sequential exact-host service proof. Protocol v1 and one-child ownership remain
-unchanged.
+unchanged. Milestone 7 validates six packaged language/profile EPUB journeys.
+Piper and Chatterbox sustain one minute without underruns; the development-only
+Qwen controls each deplete once and refill safely. All arms prove bounded
+ownership, cancellation, synchronization, cleanup, zero generated-audio
+persistence, and zero external requests.
 
 ### Goal
 
@@ -927,10 +934,10 @@ versioned contracts and a new decision record.
 
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** Approved after M010.1; not started. M010.1 Milestone 6 has
-integrated the bounded bilingual profiles, but Milestone 7 must still validate
-the packaged portfolio journeys and close M010.1 before M011 begins. The
-repository can build a
+**Status:** Approved after M010.1; not started. M010.1 has integrated the
+bounded bilingual profiles and its local packaged Milestone 7 matrix passes,
+but required pull-request checks and plan archival remain before M011 begins.
+The repository can build a
 release executable for validation, but installer bundling, signing,
 model/runtime distribution, Piper license fulfillment, updater policy, and
 complete-MVP validation are not implemented.
@@ -1062,9 +1069,9 @@ is the active implementation authority. Milestones 1 through 5 freeze and
 execute the bilingual evidence path. Milestone 6 implements exact Piper
 Spanish/English, Chatterbox Spanish/English, and development-only Qwen
 Serena/Spanish plus Aiden/English bindings with one service tree and unchanged
-protocol v1. Milestone 7 remains responsible for packaged portfolio journeys,
-final measurements, privacy/repository validation, and moving the plan to
-completed.
+protocol v1. Milestone 7's local packaged portfolio journeys, final
+measurements, and privacy/repository validation pass. Required pull-request
+checks remain before moving the plan to completed.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by completed
@@ -1073,10 +1080,10 @@ supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
 Milestones 1 through 10, M008.1, and M009.1 are complete, with their evidence
-retained under [`completed/`](completed/). M010.1 is active before M011;
-Milestones 1/1A through 4 have authority, implementation, baseline, and
-candidate-screen evidence but no English runtime or newly integrated
-product-profile evidence.
+retained under [`completed/`](completed/). M010.1 remains active before M011
+only for required pull-request checks and archival; its bilingual authority,
+candidate evidence, runtime integrations, and local packaged portfolio
+evidence are complete.
 
 ## MVP completion boundary
 

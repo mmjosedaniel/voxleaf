@@ -35,8 +35,9 @@ Milestone 6 now implements the admitted bilingual runtime set. Piper/davefx
 Spanish and Piper/joe English are supported CPU profiles; Chatterbox is a
 supported Spanish/English GPU profile; and the exact Qwen/Serena Spanish and
 Qwen/Aiden English profiles remain explicitly gated `development-only`
-choices. Milestone 7 still owns the packaged portfolio journeys and final
-plan closeout.
+choices. Milestone 7 implementation and exact-host packaged portfolio evidence
+are complete. Required Ubuntu/Windows pull-request checks still gate moving
+this plan to `completed/`.
 
 ## Current state
 
@@ -46,7 +47,9 @@ input, and its Spanish normalization is byte-frozen by
 [`narration-normalization-v1.md`](../../architecture/narration-normalization-v1.md).
 Completed M010 adds the separate Piper-only
 [`narration-piper-v2`](../../architecture/piper-narration-preparation-profile-v2.md)
-spoken-expansion-aware path for exact `es_ES-davefx-medium`.
+spoken-expansion-aware path. M010.1 composes its bounded segment policy with
+the additive bilingual normalizer for the exact English `joe` profile while
+leaving the Spanish normalization path unchanged.
 
 Milestone 2 lets the desktop explicitly select Spanish or English and
 dispatches the selected language through `narration-bilingual-v2`. Milestone 6
@@ -577,15 +580,14 @@ ran all six service arms sequentially—Piper Spanish, Piper English,
 Chatterbox Spanish, Chatterbox English, Qwen Serena Spanish, and Qwen Aiden
 English—and proved load/warmup, bounded synthesis, busy handling,
 identity-first cancellation, reload, second synthesis, shutdown, cleanup, and
-zero retained audio. Milestone 7 still owns packaged EPUB journeys,
-portfolio-level performance/underrun evidence, privacy scans, and final plan
-closeout.
+zero retained audio. The later Milestone 7 packaged EPUB matrix, portfolio
+performance/underrun evidence, privacy scans, and local closeout validation
+also pass.
 
 ### Milestone 7: Validate the bilingual portfolio demo and close the plan
 
-**Status:** In progress as of 2026-07-30. The packaged bilingual validation
-runner is implemented and model-free preflight passes; exact-host execution,
-privacy/repository closeout, and required pull-request checks remain.
+**Status:** Implementation and local exact-host validation complete as of
+2026-07-30. Required Ubuntu/Windows pull-request checks remain before archival.
 
 1. Run synthetic Spanish and English EPUB journeys on the exact host for
    open/restore, explicit language selection, narration start, highlighting,
@@ -610,6 +612,42 @@ privacy/repository closeout, and required pull-request checks remain.
 Exit when the portfolio demo and repository satisfy the definition of done, or
 when an honest no-winner decision is fully documented and M011 can proceed
 with the remaining admitted profiles.
+
+Actual result: one fail-closed packaged runner exercised six exact
+language/profile arms sequentially, plus the generic native startup,
+crash-recovery, restart, book-replacement, application-exit, and child-cleanup
+lifecycle. Every arm used a disposable repository-owned synthetic EPUB,
+offline environment controls, exact interpreter/model paths, and an
+interpreter-bound outbound firewall rule. No fixture text, waveform, model
+artifact, private path, or host identity entered the result.
+
+| Exact arm         | Quick first audible | Warm prepared RTF | Quick underruns | Peak process-tree RAM | Peak dedicated VRAM | Active cancellation |
+| ----------------- | ------------------: | ----------------: | --------------: | --------------------: | ------------------: | ------------------: |
+| Piper davefx / es |             2.968 s |              0.08 |               0 |             1,080 MiB |               0 MiB |              850 ms |
+| Piper joe / en    |             3.110 s |              0.09 |               0 |             1,271 MiB |               0 MiB |              786 ms |
+| Chatterbox / es   |            28.811 s |              0.92 |               0 |             4,691 MiB |           3,980 MiB |              157 ms |
+| Chatterbox / en   |            33.007 s |              0.87 |               0 |             4,701 MiB |           3,878 MiB |              170 ms |
+| Qwen Serena / es  |            43.795 s |              2.21 |               1 |             2,842 MiB |           5,232 MiB |              174 ms |
+| Qwen Aiden / en   |            67.641 s |              2.09 |               1 |             3,883 MiB |           5,002 MiB |              172 ms |
+
+Both supported Piper arms and both supported Chatterbox arms sustained the
+one-minute observation with zero involuntary buffering and zero underruns.
+Each development-only Qwen arm depleted once and later refilled; Serena
+observed 124.962 seconds and Aiden 100.777 seconds of refill wall time. This
+confirms functional constrained-buffer operation and honest slower-than-real-
+time host limitations; it does not promote either Qwen profile to supported
+or promise uninterrupted quick playback.
+
+All arms preserved one reader scroll owner, the bounded paragraph leaf,
+synchronized visible highlighting, focus safety, forced-colors/reduced-motion
+behavior, identity-first navigation replacement, zero stale playback, the
+256-unit hard retention ceiling, zero generated-audio files, zero retained or
+discarded units after cleanup, and zero external requests. The exact runs also
+exposed and corrected three integration defects: a nominal 8-GB DXGI unit
+boundary that incorrectly rejected the measured Chatterbox host, a
+timing-dependent cancellation assertion that confused a safe preview with
+stale audible state, and a closed Piper-v2 English decoder that prevented the
+admitted English voice from reaching inference.
 
 ## Testing and benchmark strategy
 
@@ -690,6 +728,24 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-30:** Completed the local Milestone 7 implementation and
+  exact-host portfolio matrix. Piper Spanish/English and Chatterbox
+  Spanish/English completed the one-minute quick observation with zero
+  underruns; Qwen Serena/Spanish and Aiden/English each depleted once, refilled
+  safely, and remain explicitly development-only. All six arms passed
+  prepared mode, profile selection, active cancellation, synchronized
+  navigation/highlighting, bounded ownership, cleanup, zero generated-audio
+  persistence, and zero external requests. The separate packaged generic
+  crash/restart/recovery and process-exit lifecycle also passed.
+- **2026-07-30:** Exact execution found and corrected three result-driven
+  integration defects without changing historical benchmark authority: DXGI
+  reports the nominal 8-GB RTX 5060 as 7,810 MiB, so the Chatterbox total-VRAM
+  class floor is now 7,680 MiB while its 6,144-MiB available floor remains;
+  slow-engine cancellation may correctly leave a non-audible preview leaf
+  instead of a checkpoint; and Piper English now composes
+  `narration-bilingual-v2` normalization with the existing Piper-v2 expansion
+  budget. Focused validation passes 578 EPUB tests and 430 desktop tests plus
+  11 Node tests. Required PR checks remain before plan archival.
 - **2026-07-30:** Began Milestone 7 on
   `feat/m010-001-close-bilingual-portfolio`. Extended the existing packaged
   adaptive exact-host runner from the historical Spanish-only profile to the
@@ -1305,3 +1361,43 @@ services/tts/tests/test_benchmark_corrective_v12.py` passed 10 tests. The
   `git diff --check`, staged privacy scanning, and private-session inspection
   found no EPUB, generated audio, raw session, scorecard, model weight,
   candidate environment, private path, email, credential, or secret.
+
+Milestone 7 local validation on 2026-07-30:
+
+- `pnpm.cmd test:tts:bilingual-portfolio-exact-host` was executed as six
+  individually isolated exact-profile/language arms after one passing
+  `--lifecycle-only` run. This avoided rerunning already passing model arms
+  while correcting discovered validator/integration defects. Piper
+  davefx/Spanish, Piper joe/English, Chatterbox Spanish, Chatterbox English,
+  Qwen Serena/Spanish, and Qwen Aiden/English all passed the packaged synthetic
+  EPUB journey under offline controls and exact interpreter-bound outbound
+  isolation.
+- The supported Piper and Chatterbox arms sustained the one-minute quick
+  observation with zero underruns. Both development-only Qwen arms depleted
+  once, observed one underrun, refilled, completed prepared mode, and cleaned
+  up safely. The exact content-safe measurements and support interpretation
+  are recorded in the Milestone 7 actual result above and ADR-0031.
+- Every arm passed explicit profile/language selection, quick and prepared
+  starts, active cancellation, pause/resume, synchronized highlighting,
+  keyboard leaf navigation, seek/chapter replacement, bounded retained and
+  discarded ownership, final stop, process-tree release, zero generated-audio
+  files, and zero external requests. The generic packaged lifecycle separately
+  passed fake-service binary delivery, cancellation, crash/recovery, EPUB
+  replacement, application restart/exit, and child cleanup.
+- `pnpm.cmd check` passed Prettier, Rust/Python formatting, ESLint, Clippy,
+  Ruff, TypeScript and mypy type checks, 209 shared tests, 578 EPUB tests, 430
+  desktop tests plus 11 Node tests, 41 Rust tests, 347 Python tests, package
+  builds, the release Tauri build, and both Python distributions.
+- `pnpm.cmd check:portable` passed the portable equivalent, including the same
+  TypeScript/Python tests and portable builds.
+- `git diff --check` passed. The scoped privacy/artifact scan found zero
+  tracked EPUB/audio/model-weight extensions, zero tracked private/raw/
+  scorecard/environment paths, zero private-host-path or secret-pattern
+  matches in the diff, and confirmed that all three exact model roots plus the
+  candidate virtual environment remain ignored.
+- The existing CSS Custom Highlight parser notice, Vite bundle-size warning,
+  and unwritable pytest-cache warning remain informational; all validation
+  commands exited zero.
+- Required Ubuntu and Windows pull-request checks have not yet run. In
+  accordance with this plan's exit rule, the file remains under `active/`
+  until those external checks pass.

@@ -52,6 +52,14 @@ exact states, host margins, and language bindings, while M011 still owns
 release packaging and license fulfillment. All native-only local
 configurations are documented in [`setup.md`](setup.md).
 
+M010.1 Milestone 7's local packaged matrix confirms that Piper and Chatterbox
+sustain the one-minute quick observation without underruns on the measured
+host. Both Qwen language arms can run, but each depletes once and refills; a
+long Qwen wait is therefore a measured development-profile limitation, not
+evidence that the service silently switched engines. Use
+`pnpm.cmd test:tts:bilingual-portfolio-exact-host` from the fully configured
+offline PowerShell process for the content-safe six-arm diagnostic.
+
 ### Narration controls are unavailable
 
 Confirm all three native-only development variables are set in the PowerShell

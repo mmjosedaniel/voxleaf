@@ -4,7 +4,8 @@
 
 Accepted on 2026-07-30 as the M010.1 Milestone 5 evaluation and integration
 routing matrix, then reconciled with the completed Milestone 6 runtime
-integration. It layers new evidence-backed profiles over the historical M010
+integration and passing local Milestone 7 packaged matrix. It layers new
+evidence-backed profiles over the historical M010
 runtime matrix without claiming that locally configured development
 environments are packaged or distributed.
 
@@ -15,16 +16,16 @@ as production support. `deferred` and `unsupported` remain non-selectable.
 
 ## Current matrix
 
-| Exact profile                                                                | Language            | State after Milestone 6    | Next boundary                                                                                             |
-| ---------------------------------------------------------------------------- | ------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Piper 1.4.2 / davefx / ONNX CPU                                              | Spanish             | **Supported**              | Retain as a lightweight CPU profile; M011 owns packaging and distribution obligations.                    |
-| Piper 1.4.2 / joe / ONNX CPU                                                 | English             | **Supported**              | Retain as the language-matched lightweight CPU profile; M011 owns packaging and distribution obligations. |
+| Exact profile                                                                | Language            | Current state              | Next boundary                                                                                                 |
+| ---------------------------------------------------------------------------- | ------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Piper 1.4.2 / davefx / ONNX CPU                                              | Spanish             | **Supported**              | Retain as a lightweight CPU profile; M011 owns packaging and distribution obligations.                        |
+| Piper 1.4.2 / joe / ONNX CPU                                                 | English             | **Supported**              | Retain as the language-matched lightweight CPU profile; M011 owns packaging and distribution obligations.     |
 | Chatterbox Multilingual V3 / bundled default conditioning / CUDA bfloat16 v4 | Spanish and English | **Supported**              | Nominal 8-GB GPU class (7,680 MiB DXGI floor), at least 6,144 MiB free; disclose measured cold-load/RAM cost. |
-| Qwen3-TTS 1.7B CustomVoice / Serena / CUDA bfloat16 v8                       | Spanish             | **Development-only**       | Keep constrained buffering and require the exact Qwen developer gate and measured host.                   |
-| Qwen3-TTS 1.7B CustomVoice / Aiden / CUDA bfloat16 v8                        | English             | **Development-only**       | Keep constrained buffering and require the exact Qwen developer gate and measured host.                   |
-| MOSS-TTS-Nano 100M ONNX / Ava                                                | Spanish and English | **Deferred, not rejected** | Future separately frozen dialogue/punctuation and voice/accent investigation.                             |
-| Qwen3-TTS 0.6B CustomVoice / Aiden                                           | Historical profile  | **Unsupported**            | Preserve historical rejection; do not confuse it with the implemented 1.7B Aiden v8 profile.              |
-| Supertonic 3 / F1                                                            | Spanish             | **Unsupported**            | Preserve historical rejection.                                                                            |
+| Qwen3-TTS 1.7B CustomVoice / Serena / CUDA bfloat16 v8                       | Spanish             | **Development-only**       | Keep constrained buffering and require the exact Qwen developer gate and measured host.                       |
+| Qwen3-TTS 1.7B CustomVoice / Aiden / CUDA bfloat16 v8                        | English             | **Development-only**       | Keep constrained buffering and require the exact Qwen developer gate and measured host.                       |
+| MOSS-TTS-Nano 100M ONNX / Ava                                                | Spanish and English | **Deferred, not rejected** | Future separately frozen dialogue/punctuation and voice/accent investigation.                                 |
+| Qwen3-TTS 0.6B CustomVoice / Aiden                                           | Historical profile  | **Unsupported**            | Preserve historical rejection; do not confuse it with the implemented 1.7B Aiden v8 profile.                  |
+| Supertonic 3 / F1                                                            | Spanish             | **Unsupported**            | Preserve historical rejection.                                                                                |
 
 ## Invariants
 
@@ -40,6 +41,7 @@ as production support. `deferred` and `unsupported` remain non-selectable.
 The historical
 [`tts-support-matrix-v1.md`](tts-support-matrix-v1.md) remains the record of
 M010's original runtime closeout. This v2 matrix is the current executable
-M010.1 overlay. Milestone 7 must validate the packaged bilingual portfolio
-journeys and close the plan; M011 remains responsible for distribution,
-licensing fulfillment, installers, and production support claims.
+M010.1 overlay. Milestone 7's six packaged bilingual portfolio journeys pass
+locally; required pull-request checks still gate plan archival. M011 remains
+responsible for distribution, licensing fulfillment, installers, and
+production support claims.

@@ -61,8 +61,10 @@ profile and language without changing protocol v1. Both Piper voices and
 Chatterbox are supported behind exact configuration and host gates; both Qwen
 voices remain explicitly gated development-only. Model-free repository tests
 and a content-safe sequential six-arm exact-host service matrix pass.
-Milestone 7 still owns packaged bilingual EPUB journeys, portfolio metrics,
-privacy closeout, and plan completion.
+Milestone 7's six packaged bilingual EPUB journeys, portfolio metrics,
+bounded synchronization/cancellation, zero-audio-persistence, and privacy
+closeout also pass locally. Required pull-request checks still gate plan
+completion.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps

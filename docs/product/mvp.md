@@ -49,7 +49,10 @@ Serena/Spanish and Aiden/English are development-only constrained-buffer
 profiles. Native supervision retains one child tree, protocol v1 remains
 unchanged, and language/profile switches invalidate identity before cleanup.
 Model-free validation and a sequential six-arm exact-host service matrix pass.
-Milestone 7 still owns packaged EPUB portfolio journeys and M010.1 closeout.
+Milestone 7's packaged EPUB portfolio journeys also pass locally. Piper and
+Chatterbox sustain the one-minute quick observation without underruns; both
+development-only Qwen arms deplete once and refill safely on this host.
+Required pull-request checks still gate M010.1 closeout.
 
 ## Current implemented flow
 
@@ -111,9 +114,8 @@ authority.
 
 ## Remaining target user flow
 
-1. M010.1 Milestone 7 runs packaged Spanish/English EPUB journeys for every
-   admitted profile, records portfolio-level performance, underrun,
-   cancellation, cleanup, and privacy evidence, and closes the plan.
+1. Required Ubuntu/Windows pull-request checks close and archive M010.1 after
+   its passing local packaged Spanish/English portfolio matrix.
 2. M011 then packages and validates an end-user distribution, including model
    and voice license notices, provenance, corresponding-source or written-offer
    mechanics, signing, updates, and complete-MVP validation.
@@ -186,9 +188,8 @@ Implemented and validated:
 
 Remaining:
 
-- Complete M010.1 Milestone 7 packaged portfolio and closeout validation
-  without weakening the implemented bilingual boundary or exact support
-  states.
+- Pass the required pull-request checks and archive M010.1 without weakening
+  the implemented bilingual boundary or exact support states.
 - Provide compliant runtime/model distribution, installer packaging, and a
   validated end-user installation path in M011.
 

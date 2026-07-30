@@ -744,8 +744,9 @@ cancellation and stale suppression, clean reload, a second bounded synthesis,
 shutdown, and process cleanup. It emits only a fixed content-safe pass/fail
 line, starts one model process at a time, and writes no generated audio. The
 accepted exact-host run passed all six arms. This is service integration
-evidence only; M010.1 Milestone 7 still owns packaged EPUB journeys,
-portfolio-level performance/underrun evidence, and final privacy closeout.
+evidence only; the separate M010.1 Milestone 7 packaged EPUB matrix now also
+passes locally with portfolio-level performance/underrun evidence and final
+privacy closeout.
 
 M010.1 Milestone 7 adds a separate packaged portfolio validation command:
 
