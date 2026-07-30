@@ -570,7 +570,9 @@ introduced. Protocol v1 did not require a public change.
 
 Model-free validation passed with 429 desktop tests plus seven Node tests, 347
 Python tests, 41 Rust tests, TypeScript type checking, Ruff formatting/lint,
-strict mypy, and a release Tauri build. The content-safe exact-host matrix then
+strict mypy, and a release Tauri build. The authoritative `pnpm.cmd check`
+wrapper also passes on the formatted implementation. The content-safe
+exact-host matrix then
 ran all six service arms sequentially—Piper Spanish, Piper English,
 Chatterbox Spanish, Chatterbox English, Qwen Serena Spanish, and Qwen Aiden
 English—and proved load/warmup, bounded synthesis, busy handling,
@@ -686,6 +688,14 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-30:** Final Milestone 6 repository validation passed.
+  `pnpm.cmd check` completed formatting, ESLint, Clippy, Ruff, TypeScript and
+  mypy type checks, 209 shared tests, 577 EPUB tests, 429 desktop tests plus
+  seven Node tests, 41 Rust tests, 347 Python tests, package/desktop/Python
+  builds, and the release Tauri build. The existing CSS Custom Highlight and
+  bundle-size notices plus one unwritable pytest cache warning are
+  informational. Diff/privacy scans found no tracked EPUB, generated audio,
+  model weight, raw result session, private path, or secret pattern.
 - **2026-07-30:** Completed Milestone 6 at implementation checkpoint
   `fea11d4`. Added exact language-bound registry and host requirements,
   supported Piper/joe English and Chatterbox bilingual adapters, retained
