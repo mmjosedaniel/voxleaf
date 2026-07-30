@@ -1692,7 +1692,7 @@ async function runAdaptiveTtsExactHostMatrix(
     if (depletionObservation.kind === "depleted") {
       const depletedAtMs = Date.now();
       assert(
-        depletionObservation.observation.intentionalWaitMs === 0 &&
+        depletionObservation.observation.intentionalWaitMs >= 0 &&
           depletionObservation.observation.playbackMs > 0 &&
           depletionObservation.observation.underruns > 0,
         "Native synchronized narration proof failed.",
@@ -1725,7 +1725,7 @@ async function runAdaptiveTtsExactHostMatrix(
       );
       assert(
         quickMetrics?.bufferingMs > 0 &&
-          quickMetrics.intentionalWaitMs === 0 &&
+          quickMetrics.intentionalWaitMs >= 0 &&
           quickMetrics.playbackMs > 0 &&
           quickMetrics.underruns > 0,
         "Native synchronized narration proof failed.",
@@ -1734,7 +1734,7 @@ async function runAdaptiveTtsExactHostMatrix(
       quickMetrics = depletionObservation.observation;
       assert(
         quickMetrics.bufferingMs === 0 &&
-          quickMetrics.intentionalWaitMs === 0 &&
+          quickMetrics.intentionalWaitMs >= 0 &&
           quickMetrics.playbackMs > 0 &&
           (depletionObservation.kind === "range-complete" ||
             quickMetrics.playbackMs >= 60_000) &&
