@@ -28,12 +28,18 @@ CHATTERBOX_MODEL_DIRECTORY: Final = "chatterbox_multilingual_v3_v2"
 MOSS_MODEL_DIRECTORY: Final = "MOSS-TTS-Nano-100M-ONNX"
 MOSS_CODEC_DIRECTORY: Final = "MOSS-Audio-Tokenizer-Nano-ONNX"
 CHATTERBOX_CANDIDATE_ID: Final = "chatterbox-multilingual-v3-cuda-bf16-default-v2"
+CHATTERBOX_V10_CANDIDATE_ID: Final = "chatterbox-multilingual-v3-cuda-bf16-default-v3"
 MOSS_CANDIDATE_ID: Final = "moss-tts-nano-100m-onnx-cpu-ava-v2"
 CHATTERBOX_LOCK_SHA256: Final = "9a5b2628499f522535dc79a70194dd604e40d9d7ab325a765ffc476f5c437c82"
+CHATTERBOX_V10_LOCK_SHA256: Final = (
+    "70d4d5c4a959bb0e8392c1877d6c5d329b345d3fb17faa140a34787e4632c3d1"
+)
 MOSS_LOCK_SHA256: Final = "49d96b6b5121320290ba951be4a8a343f3380c2fc320182d6003b1dcf0d47bcb"
 V7_CANDIDATES_SHA256: Final = "1c8b4591782c298d0af19ae91037eb6154e372f32d1c005d6a8dfdfe47bc0f53"
 V9_PROFILE_SHA256: Final = "39499a63ba6194803ae3e8e88c2e3a77390454310a059e2aaa9ca7f5874ba3d5"
 V9_CANDIDATES_SHA256: Final = "31249a583b8d43f90f7442797373e89b8993455e4cfe26e536cc1e1ca0ca8ad3"
+V10_PROFILE_SHA256: Final = "d6abd95698f81d5e868b1e59296f4be22830d7070bc7a5596c881e1b57adfc8b"
+V10_CANDIDATES_SHA256: Final = "07332b38d5e480733538d75b9b8ae85ae44df5d921dd2fee4da12ba2f29f942c"
 
 
 class CorrectiveV9ConfigurationError(RuntimeError):
@@ -102,6 +108,8 @@ class ChatterboxV9Profile:
     model_revision: str
     artifacts: tuple[Artifact, ...]
     generation: Mapping[str, object]
+    torch_version: str = "2.6.0"
+    torchaudio_version: str = "2.6.0"
 
 
 @dataclass(frozen=True)
@@ -178,6 +186,32 @@ def _v9_profile(repository_root: Path, candidate_id: str) -> Mapping[str, object
     return selected[0]
 
 
+def _v10_chatterbox_profile(repository_root: Path) -> Mapping[str, object]:
+    profile_path = repository_root / "benchmarks/tts/profile-v10.json"
+    candidates_path = repository_root / "benchmarks/tts/candidates-v10.json"
+    try:
+        profile_payload = profile_path.read_bytes()
+        candidates_payload = candidates_path.read_bytes()
+        if (
+            hashlib.sha256(profile_payload).hexdigest() != V10_PROFILE_SHA256
+            or hashlib.sha256(candidates_payload).hexdigest() != V10_CANDIDATES_SHA256
+        ):
+            _fail("authority")
+        profile_authority = _mapping(json.loads(profile_payload.decode("utf-8")))
+        candidates_authority = _mapping(json.loads(candidates_payload.decode("utf-8")))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        _fail("authority")
+    decision = _mapping(profile_authority.get("decision"))
+    selected = _mapping(candidates_authority.get("profile"))
+    if (
+        decision.get("stateBeforeMaintainerReview") != "pending-maintainer-decision"
+        or decision.get("rejectionRecordedBeforeMaintainerReview") is not False
+        or selected.get("candidateId") != CHATTERBOX_V10_CANDIDATE_ID
+    ):
+        _fail("authority")
+    return selected
+
+
 def load_chatterbox_v9_profile(repository_root: Path) -> ChatterboxV9Profile:
     """Load the corrected exact Chatterbox V3 identity."""
 
@@ -219,6 +253,55 @@ def load_chatterbox_v9_profile(repository_root: Path) -> ChatterboxV9Profile:
         model_revision=cast(str, model["revision"]),
         artifacts=artifacts,
         generation=generation,
+    )
+
+
+def load_chatterbox_v10_profile(repository_root: Path) -> ChatterboxV9Profile:
+    """Load the corrected CUDA-wheel Chatterbox V3 identity."""
+
+    correction = _v10_chatterbox_profile(repository_root)
+    base = _base_candidate(
+        repository_root,
+        "chatterbox-multilingual-v3-cuda-bf16-default-v1",
+    )
+    engine = _mapping(correction.get("engine"))
+    model = _mapping(correction.get("model"))
+    lock = _mapping(correction.get("dependencyLock"))
+    runtime = _mapping(correction.get("runtime"))
+    base_model = _mapping(base.get("model"))
+    generation = _mapping(base.get("generation"))
+    raw_artifacts = _sequence(base_model.get("artifacts"))
+    if (
+        correction.get("evaluationStage") != "bounded-bilingual-screen"
+        or correction.get("languages") != ["es", "en"]
+        or engine.get("sourceRevision") != "5de7a54aa4e5e2baadb0182dde554908b48b85c2"
+        or model.get("revision") != "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
+        or model.get("t3Model") != "v3"
+        or lock.get("sha256") != CHATTERBOX_V10_LOCK_SHA256
+        or runtime.get("torch") != "2.6.0+cu124"
+        or runtime.get("torchaudio") != "2.6.0+cu124"
+        or base_model.get("nativeSampleRateHz") != OUTPUT_SAMPLE_RATE_HZ
+        or base_model.get("nativeChannels") != 1
+        or len(raw_artifacts) != 6
+    ):
+        _fail("authority")
+    artifacts = tuple(
+        Artifact(
+            root="model",
+            relative_path=cast(str, artifact.get("path")),
+            size_bytes=cast(int, artifact.get("sizeBytes")),
+            sha256=cast(str, artifact.get("sha256")),
+        )
+        for artifact in (_mapping(value) for value in raw_artifacts)
+    )
+    return ChatterboxV9Profile(
+        candidate_id=CHATTERBOX_V10_CANDIDATE_ID,
+        source_revision=cast(str, engine["sourceRevision"]),
+        model_revision=cast(str, model["revision"]),
+        artifacts=artifacts,
+        generation=generation,
+        torch_version="2.6.0+cu124",
+        torchaudio_version="2.6.0+cu124",
     )
 
 
@@ -380,7 +463,8 @@ class ChatterboxV9Adapter:
         root = verify_chatterbox_v9_artifacts(self._profile, self._configuration)
         if (
             metadata.version("chatterbox-tts") != "0.1.7"
-            or metadata.version("torch") != "2.6.0"
+            or metadata.version("torch") != self._profile.torch_version
+            or metadata.version("torchaudio") != self._profile.torchaudio_version
             or os.environ.get("HF_HUB_OFFLINE") != "1"
             or os.environ.get("TRANSFORMERS_OFFLINE") != "1"
         ):

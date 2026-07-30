@@ -18,6 +18,7 @@ from benchmarks.adapters.corrective_v9 import (
     MossV9Profile,
     _restore_candidate_site_packages,
     load_chatterbox_v9_profile,
+    load_chatterbox_v10_profile,
     load_moss_v9_profile,
 )
 from benchmarks.contracts import GenerationRequest
@@ -160,6 +161,14 @@ def test_v9_profiles_load_corrected_exact_identities() -> None:
     assert moss.voice_id == "Ava"
     assert len(moss.artifacts) == 16
     assert {artifact.root for artifact in moss.artifacts} == {"model", "codec"}
+
+
+def test_v10_chatterbox_profile_requires_the_exact_cuda_wheel_identity() -> None:
+    chatterbox = load_chatterbox_v10_profile(REPOSITORY_ROOT)
+    assert chatterbox.candidate_id == ("chatterbox-multilingual-v3-cuda-bf16-default-v3")
+    assert chatterbox.torch_version == "2.6.0+cu124"
+    assert chatterbox.torchaudio_version == "2.6.0+cu124"
+    assert len(chatterbox.artifacts) == 6
 
 
 def test_chatterbox_adapter_uses_explicit_language_and_bounded_metadata_chunks() -> None:
