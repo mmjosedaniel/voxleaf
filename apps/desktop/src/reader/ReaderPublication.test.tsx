@@ -216,6 +216,7 @@ function narrationSnapshot(
             playbackRate: 1,
           }),
     failure: undefined,
+    preparationFailure: undefined,
     metrics: Object.freeze({
       commandToAudibleMs: undefined,
       bufferingMs: 0,

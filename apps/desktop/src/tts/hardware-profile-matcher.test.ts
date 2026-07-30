@@ -253,6 +253,57 @@ describe("hardware profile matcher v1", () => {
     ).toBe("dedicated-vram");
   });
 
+  it("admits the evaluated nominal 8-GB Chatterbox host through its DXGI quantity", () => {
+    const profile = HARDWARE_PROFILE_REGISTRY_V1.find(
+      (entry) => entry.identity.profileId === CHATTERBOX_BILINGUAL_PROFILE_ID,
+    )!;
+    const exactHost = report((value) => ({
+      ...value,
+      providers: {
+        ...value.providers,
+        cuda: {
+          ...value.providers.cuda,
+          dedicatedMemoryMiB: knownQuantity(7_810),
+          availableDedicatedMemoryMiB: knownQuantity(7_042),
+        },
+      },
+    }));
+
+    expect(firstReason(exactHost, profile)).toBeUndefined();
+    expect(
+      firstReason(
+        report((value) => ({
+          ...value,
+          providers: {
+            ...value.providers,
+            cuda: {
+              ...value.providers.cuda,
+              dedicatedMemoryMiB: knownQuantity(7_679),
+              availableDedicatedMemoryMiB: knownQuantity(7_042),
+            },
+          },
+        })),
+        profile,
+      ),
+    ).toBe("dedicated-vram");
+    expect(
+      firstReason(
+        report((value) => ({
+          ...value,
+          providers: {
+            ...value.providers,
+            cuda: {
+              ...value.providers.cuda,
+              dedicatedMemoryMiB: knownQuantity(7_810),
+              availableDedicatedMemoryMiB: knownQuantity(6_143),
+            },
+          },
+        })),
+        profile,
+      ),
+    ).toBe("available-dedicated-vram");
+  });
+
   it("retains the supported fallback while closing development-only and rejected profiles", () => {
     const result = matchHardwareProfilesV1({
       report: report(),

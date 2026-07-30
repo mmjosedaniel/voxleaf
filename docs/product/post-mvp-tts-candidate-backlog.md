@@ -41,8 +41,9 @@ not turn this entire backlog into MVP scope:
    without rejection pending dialogue/punctuation and voice investigation.
 4. Retain Fun-CosyVoice3's intake rejection unless a future result-blind
    authority establishes a non-personal default voice.
-5. Milestone 7 must validate the packaged portfolio and close M010.1 before
-   M011; it must not expand this backlog.
+5. Milestone 7's packaged portfolio passes locally. Required pull-request
+   checks and plan archival remain before M011; this work does not expand the
+   backlog.
 
 Pocket TTS Spanish, the separate Chatterbox Latin American Spanish checkpoint,
 Kokoro, and additional voices stay in this backlog. The active

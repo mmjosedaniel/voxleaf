@@ -22,6 +22,7 @@ import {
   type NarrationSegmentPolicy,
 } from "./narration-piper-policy.js";
 import type { NarrationSourceSpan } from "./narration-source.js";
+import { NARRATION_CHATTERBOX_V1_SEGMENT_POLICY } from "./narration-chatterbox-policy.js";
 import {
   DEFAULT_NARRATION_YIELD_SCHEDULER,
   NarrationWorkController,
@@ -189,6 +190,7 @@ function resolvePackingLimits(
     retainedNarrationUtf8BytesMaximum >
       NARRATION_V1_SEGMENT_POLICY.retainedNarrationUtf8BytesHardMaximum ||
     (segmentPolicy !== NARRATION_V1_SEGMENT_POLICY &&
+      segmentPolicy !== NARRATION_CHATTERBOX_V1_SEGMENT_POLICY &&
       segmentPolicy !== NARRATION_PIPER_V1_SEGMENT_POLICY &&
       segmentPolicy !== NARRATION_PIPER_V2_SEGMENT_POLICY)
   ) {

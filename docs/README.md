@@ -52,8 +52,10 @@ joe/English are supported CPU profiles; Chatterbox is supported for Spanish
 and English; Qwen Serena/Spanish and Aiden/English remain development-only
 constrained-buffer profiles. Protocol v1 and one-child ownership remain
 unchanged, and the sequential six-arm exact-host service matrix passes. MOSS
-remains deferred without rejection. Milestone 7 still owns packaged portfolio
-validation and M010.1 closeout.
+remains deferred without rejection. Milestone 7's six packaged synthetic EPUB
+arms, exact-host metrics, privacy boundary, cancellation, synchronization, and
+cleanup evidence now pass locally. Required pull-request checks remain before
+M010.1 moves to `completed/`.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -82,6 +84,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/narration-normalization-v1.md`](architecture/narration-normalization-v1.md): accepted test-only neutral/Spanish normalization corpus policy for Milestone 5.
 - [`architecture/narration-normalization-v2.md`](architecture/narration-normalization-v2.md): implemented additive Spanish/English normalization authority and synthetic corpus for M010.1; historical combinations remain closed and Spanish regressions remain passing.
 - [`architecture/narration-preparation-limits-v1.md`](architecture/narration-preparation-limits-v1.md): accepted test-only `narration-v1` chunk, work, retention, checkpoint, and yield limits.
+- [`architecture/chatterbox-narration-preparation-profile-v1.md`](architecture/chatterbox-narration-preparation-profile-v1.md): implemented Chatterbox-specific packing limits that preserve bilingual normalization and whose exact-host outputs remained inside protocol v1.
 - [`architecture/tts-feasibility-profile-v2.md`](architecture/tts-feasibility-profile-v2.md): current Milestone 6 rerun authority, including the Windows/PyTorch cross-checked VRAM method, unchanged role gates, listening rubric, and content-safe summary policy. The superseded `v1` profile remains historical evidence.
 - [`architecture/tts-feasibility-profile-v3.md`](architecture/tts-feasibility-profile-v3.md): current Milestone 6.1 authority for the exact Serena CustomVoice development candidate, its prototype stop gate, inherited full evaluation, and privacy/invalidation rules.
 - [`architecture/tts-feasibility-profile-v4.md`](architecture/tts-feasibility-profile-v4.md): frozen pre-result Milestone 6.2 authority for the exact short-unit/shared-model batch experiment, conditional targeted CPU placement, playback simulation, and separate standard/scheduling/demo conclusions.
@@ -121,6 +124,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0029-advance-chatterbox-retain-qwen-defer-moss.md`](architecture/decisions/ADR-0029-advance-chatterbox-retain-qwen-defer-moss.md): advances exact Chatterbox as the sole new-engine full-matrix survivor, defers MOSS without rejection, and retains Qwen Serena/Aiden as separate hardware-dependent candidates.
 - [`architecture/decisions/ADR-0030-freeze-corrective-full-evaluation-v12.md`](architecture/decisions/ADR-0030-freeze-corrective-full-evaluation-v12.md): freezes the result-blind complete Chatterbox and independent Qwen quality authority before new audio or results.
 - [`architecture/decisions/ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md`](architecture/decisions/ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md): admits exact Chatterbox for both languages and Qwen/Aiden for English integration while retaining Qwen/Serena Spanish and explicit host/buffering limitations.
+- [`architecture/decisions/ADR-0032-bound-chatterbox-complete-waveform-units.md`](architecture/decisions/ADR-0032-bound-chatterbox-complete-waveform-units.md): bounds Chatterbox complete-waveform units without changing bilingual normalization or protocol v1.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development
@@ -153,7 +157,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M009-001-reader-experience-stabilization.md`](plans/completed/M009-001-reader-experience-stabilization.md): completed bounded M009 follow-up for the visible-highlight repair, dedicated reader viewport, compact/collapsible narration UI, truthful loaded-duration status, locator-backed paragraph leaf, passive-scroll isolation, exact-host validation, and repository/CI closeout.
 - [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
-- [`plans/active/M010-001-bilingual-narration-and-candidate-screening.md`](plans/active/M010-001-bilingual-narration-and-candidate-screening.md): active follow-up whose Milestones 1/1A-6 freeze and execute bilingual evidence, integrate exact Piper/Chatterbox/Qwen language paths, and leave packaged portfolio validation and final closeout to Milestone 7.
+- [`plans/active/M010-001-bilingual-narration-and-candidate-screening.md`](plans/active/M010-001-bilingual-narration-and-candidate-screening.md): active follow-up whose implementation and local exact-host evidence are complete through Milestone 7; required pull-request checks still gate archival.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

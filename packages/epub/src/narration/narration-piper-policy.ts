@@ -1,4 +1,5 @@
 import { NARRATION_V1_SEGMENT_POLICY } from "./narration-policy.js";
+import { NARRATION_CHATTERBOX_V1_SEGMENT_POLICY } from "./narration-chatterbox-policy.js";
 
 export type NarrationSegmentPolicy = Readonly<{
   sourceCodePointsTarget: number;
@@ -64,10 +65,13 @@ export function narrationSegmentPolicy(
   profile:
     | "narration-v1"
     | "narration-bilingual-v2"
+    | "narration-chatterbox-v1"
     | "narration-piper-v1"
     | "narration-piper-v2",
 ): NarrationSegmentPolicy {
   switch (profile) {
+    case "narration-chatterbox-v1":
+      return NARRATION_CHATTERBOX_V1_SEGMENT_POLICY;
     case "narration-piper-v1":
       return NARRATION_PIPER_V1_SEGMENT_POLICY;
     case "narration-piper-v2":

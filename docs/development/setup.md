@@ -38,10 +38,10 @@ The final
 Piper/davefx the sole supported and automatically recommendable compatible
 profile, retains Qwen/Serena as development-only, and keeps automatic failover
 disabled. M008.1 and M010 passed replacement Ubuntu/Windows checks and are
-archived. M010.1 is approved planned work for explicit Spanish/English
-narration and bounded candidate screening; it has not changed setup or runtime
-behavior yet. Production distribution, Piper license fulfillment, and
-installers remain M011 work.
+archived. M010.1 implements explicit Spanish/English narration and bounded
+candidate screening; its local six-arm packaged portfolio validation passes,
+while required pull-request checks still gate archival. Production
+distribution, Piper license fulfillment, and installers remain M011 work.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
@@ -337,10 +337,11 @@ compatibility alone does not enable Play.
 
 These values remain native-only and are never returned to the renderer,
 logged, persisted, or placed in protocol frames. Both Piper voices use the
-same frozen `narration-piper-v2` preparation contract; Chatterbox and Qwen use
-the engine-neutral bilingual segments and language-bound adapters. No
-user-facing chunk setting is required, and protocol v1's 20-second unit ceiling
-is unchanged.
+same bounded `narration-piper-v2` segment policy; the English path composes it
+with the engine-neutral bilingual normalizer. Chatterbox and Qwen use the
+engine-neutral bilingual segments and language-bound adapters. No user-facing
+chunk setting is required, and protocol v1's 20-second unit ceiling is
+unchanged.
 
 When every exact profile and interpreter-bound outbound block is prepared,
 run the M010.1 service-only bilingual matrix:
@@ -356,8 +357,25 @@ proves load/warmup, bounded generation, busy rejection, identity-first
 cancellation, clean reload, a second generation, shutdown, and cleanup. It
 starts only one model process at a time, retains no generated audio, emits only
 a fixed content-safe result, and is excluded from root checks and CI. It is
-service integration evidence, not the packaged EPUB portfolio proof owned by
-Milestone 7.
+service integration evidence; the separate command below is the passing
+packaged EPUB portfolio proof.
+
+After the service-only matrix passes, run the Milestone 7 packaged bilingual
+portfolio validation from the same offline PowerShell process:
+
+```powershell
+$env:HF_HUB_OFFLINE = "1"
+$env:TRANSFORMERS_OFFLINE = "1"
+pnpm.cmd test:tts:bilingual-portfolio-exact-host
+```
+
+The command fails before building or inference when any exact configuration or
+interpreter-bound outbound block is absent. It runs the general synthetic
+native lifecycle proof and then the six disposable Spanish/English EPUB arms
+sequentially, loading only one model process at a time. Output is limited to
+content-free timing, underrun, intentional-transition, resource,
+synchronization, and cleanup observations. The command retains no generated
+audio or private book content and remains excluded from normal checks and CI.
 
 The earlier M010 two-profile resilience matrix remains available:
 

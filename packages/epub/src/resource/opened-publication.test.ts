@@ -32,6 +32,7 @@ import type {
   RasterImageResourceId,
   SensitivePublicationText,
 } from "../document/document-model.js";
+import { NARRATION_CHATTERBOX_V1_SEGMENT_POLICY } from "../narration/narration-chatterbox-policy.js";
 import {
   NARRATION_PIPER_V1_SEGMENT_POLICY,
   NARRATION_PIPER_V2_SEGMENT_POLICY,
@@ -583,6 +584,73 @@ describe("bounded local publication resources", () => {
     }
   });
 
+  it("combines bilingual normalization with bounded Chatterbox waveform units", async () => {
+    expect(NARRATION_CHATTERBOX_V1_SEGMENT_POLICY).toEqual({
+      sourceCodePointsTarget: 240,
+      sourceCodePointsHardMaximum: 320,
+      narrationCodePointsTarget: 200,
+      narrationCodePointsHardMaximum: 256,
+      narrationUtf8BytesTarget: 800,
+      narrationUtf8BytesHardMaximum: 1_024,
+      sentencesTarget: 2,
+      sentencesHardMaximum: 6,
+    });
+    const archive = await openEpubArchive(await createArchive({}));
+    const phrase =
+      "A complete local waveform remains bounded while preserving the sentence. ";
+    const text = (phrase.repeat(8).slice(0, 480) +
+      "Final safe sentence.") as SensitivePublicationText;
+    const values = narrationTextPublicationValues(
+      [text],
+      async () => undefined,
+    );
+    const publication = createOpenedPublication(
+      archive,
+      createPackageDocument([]),
+      values,
+    );
+    const block = requiredLocatedBlock(values.locatorIndex.blocks[0]);
+
+    try {
+      const result = await publication.prepareNarration({
+        startLocator: block.startLocator,
+        profile: "narration-chatterbox-v1",
+        defaultLanguage: "en",
+        maximumSegments: 16,
+      });
+      expect(result.status).toBe("complete");
+      if (result.status !== "complete") {
+        throw new Error("expected complete Chatterbox narration batch");
+      }
+      expect(result.segments.length).toBeGreaterThan(1);
+      expect(result.segments.map((segment) => segment.text).join("")).toBe(
+        text,
+      );
+      expect(
+        result.segments.every(
+          (segment) =>
+            segment.measurements.sourceCodePoints <= 320 &&
+            segment.measurements.narrationCodePoints <= 256 &&
+            segment.measurements.narrationUtf8Bytes <= 1_024 &&
+            segment.measurements.sentenceCount <= 6,
+        ),
+      ).toBe(true);
+      expect(result.segments[0]?.sourceRange.start).toEqual(block.startLocator);
+      expect(result.segments.at(-1)?.sourceRange.end.textOffsetCodePoints).toBe(
+        block.textLengthCodePoints,
+      );
+      for (const [index, segment] of result.segments.entries()) {
+        if (index > 0) {
+          expect(segment.sourceRange.start).toEqual(
+            result.segments[index - 1]?.sourceRange.end,
+          );
+        }
+      }
+    } finally {
+      await publication.close();
+    }
+  });
+
   it("prepares expansion-aware Piper v2 segments through the public boundary", async () => {
     const archive = await openEpubArchive(await createArchive({}));
     const text = Array.from(
@@ -637,6 +705,54 @@ describe("bounded local publication resources", () => {
           );
         }
       }
+    } finally {
+      await publication.close();
+    }
+  });
+
+  it("combines bilingual English normalization with Piper v2 expansion bounds", async () => {
+    const archive = await openEpubArchive(await createArchive({}));
+    const text = "The notebook cost $12.50." as SensitivePublicationText;
+    const values = narrationTextPublicationValues(
+      [text],
+      async () => undefined,
+    );
+    const publication = createOpenedPublication(
+      archive,
+      createPackageDocument([]),
+      values,
+    );
+    const block = requiredLocatedBlock(values.locatorIndex.blocks[0]);
+
+    try {
+      const result = await publication.prepareNarration({
+        startLocator: block.startLocator,
+        profile: "narration-piper-v2",
+        defaultLanguage: "en",
+        maximumSegments: 16,
+      });
+      expect(result.status).toBe("complete");
+      if (result.status !== "complete") {
+        throw new Error("expected complete English Piper v2 narration batch");
+      }
+      expect(result.segments.map((segment) => segment.text).join("")).toBe(
+        "The notebook cost twelve dollars and fifty cents.",
+      );
+      expect(
+        result.segments.every(
+          (segment) =>
+            Array.from(String(segment.text)).reduce(
+              (total, codePoint) =>
+                total + piperSpeechExpansionCodePointUnits(codePoint),
+              0,
+            ) <=
+            NARRATION_PIPER_V2_SEGMENT_POLICY.piperSpeechExpansionUnitsHardMaximum,
+        ),
+      ).toBe(true);
+      expect(result.segments[0]?.sourceRange.start).toEqual(block.startLocator);
+      expect(result.segments.at(-1)?.sourceRange.end.textOffsetCodePoints).toBe(
+        block.textLengthCodePoints,
+      );
     } finally {
       await publication.close();
     }
@@ -788,14 +904,6 @@ describe("bounded local publication resources", () => {
       maximumSegments: 1,
     });
     expect(invalidBilingualNeutral.status).toBe("invalid-request");
-
-    const invalidPiperEnglish = await publication.prepareNarration({
-      startLocator: start,
-      profile: "narration-piper-v2",
-      defaultLanguage: "en" as "es",
-      maximumSegments: 1,
-    });
-    expect(invalidPiperEnglish.status).toBe("invalid-request");
 
     const invalidSignal = await publication.prepareNarration({
       startLocator: start,

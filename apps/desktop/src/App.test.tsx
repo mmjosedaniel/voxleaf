@@ -169,6 +169,7 @@ function narrationSnapshot(
     selection: Object.freeze({ kind: "quick" }),
     state: undefined,
     failure: undefined,
+    preparationFailure: undefined,
     metrics: Object.freeze({
       commandToAudibleMs: undefined,
       bufferingMs: 0,

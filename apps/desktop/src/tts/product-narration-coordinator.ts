@@ -1,4 +1,5 @@
 import type {
+  NarrationPreparationFailureDetail,
   NarrationPreparationResult,
   OpenedPublication,
   PreparedNarrationSegment,
@@ -36,6 +37,7 @@ import {
   type TtsProcessClientObservation,
 } from "./process-client";
 import {
+  CHATTERBOX_BILINGUAL_PROFILE_ID,
   EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
   PIPER_CPU_FALLBACK_PROFILE_ID,
   PIPER_ENGLISH_CPU_PROFILE_ID,
@@ -55,7 +57,7 @@ import {
 import { playbackTransitionPauseMsForPreparedSegment } from "./playback-transition-policy";
 
 const TICK_INTERVAL_MS = 250;
-const PREPARED_BATCH_SEGMENT_LIMIT = 16;
+const PREPARED_BATCH_SEGMENT_LIMIT = 8;
 const NAVIGATION_BOUNDARY_LIMIT = 64;
 const PIPER_SPEAKABLE_CONTENT = /[\p{L}\p{N}\p{Sc}%‰ºª°]/u;
 
@@ -68,6 +70,10 @@ function isPiperProfile(profileId: string): boolean {
     profileId === PIPER_CPU_FALLBACK_PROFILE_ID ||
     profileId === PIPER_ENGLISH_CPU_PROFILE_ID
   );
+}
+
+function isChatterboxProfile(profileId: string): boolean {
+  return profileId === CHATTERBOX_BILINGUAL_PROFILE_ID;
 }
 
 export type ProductNarrationFailureCode =
@@ -95,6 +101,7 @@ export interface ProductNarrationSnapshot {
   readonly selection: AdaptiveBufferStartMode;
   readonly state: AdaptivePreparationUiState | undefined;
   readonly failure: ProductNarrationFailureCode | undefined;
+  readonly preparationFailure: NarrationPreparationFailureDetail | undefined;
   readonly metrics: ProductNarrationMetrics;
   readonly serviceState: TtsProcessClientObservation["state"];
   readonly navigation: ProductNarrationNavigationSnapshot;
@@ -364,6 +371,7 @@ export class ProductNarrationCoordinator {
   #activeScope: TtsGenerationScope | undefined;
   #preparationAbort: AbortController | undefined;
   #failure: ProductNarrationFailureCode | undefined;
+  #preparationFailure: NarrationPreparationFailureDetail | undefined;
   #terminalState: AdaptivePreparationUiState | undefined;
   #snapshot: ProductNarrationSnapshot;
   #commandStartedAtMs: number | undefined;
@@ -505,6 +513,7 @@ export class ProductNarrationCoordinator {
     }
     this.#selection = Object.freeze({ ...selection });
     this.#failure = undefined;
+    this.#preparationFailure = undefined;
     this.#terminalState = undefined;
     this.#publish();
   }
@@ -676,6 +685,7 @@ export class ProductNarrationCoordinator {
     try {
       this.#recovery.resetEpisode();
       this.#failure = undefined;
+      this.#preparationFailure = undefined;
       this.#terminalState = undefined;
       this.#availability = "checking";
       this.#publish();
@@ -693,6 +703,7 @@ export class ProductNarrationCoordinator {
       this.#failure = undefined;
     }
     this.#terminalState = undefined;
+    this.#preparationFailure = undefined;
     this.#estimator.reset();
     this.#prepared.clear();
     this.#continuation = this.#activeLocator;
@@ -827,6 +838,9 @@ export class ProductNarrationCoordinator {
   }
 
   #stopActiveRun(): Promise<void> {
+    if (this.#recoveryOperation !== undefined) {
+      return this.#recoveryOperation;
+    }
     if (this.#stopOperation !== undefined) {
       return this.#stopOperation;
     }
@@ -844,6 +858,7 @@ export class ProductNarrationCoordinator {
     if (this.#scheduler === undefined || this.#player === undefined) {
       this.#terminalState = undefined;
       this.#failure = undefined;
+      this.#preparationFailure = undefined;
       this.#publish();
       return;
     }
@@ -888,6 +903,7 @@ export class ProductNarrationCoordinator {
     this.#player = undefined;
     this.#terminalState = undefined;
     this.#failure = undefined;
+    this.#preparationFailure = undefined;
     this.#publish();
   }
 
@@ -1154,6 +1170,7 @@ export class ProductNarrationCoordinator {
             if (this.#recovery.observe().phase === "recovering") {
               this.#recovery.markRecoverySucceeded();
               this.#failure = undefined;
+              this.#preparationFailure = undefined;
             }
           }
           break;
@@ -1202,7 +1219,9 @@ export class ProductNarrationCoordinator {
         startLocator,
         profile: isPiperProfile(this.#profileId)
           ? "narration-piper-v2"
-          : "narration-bilingual-v2",
+          : isChatterboxProfile(this.#profileId)
+            ? "narration-chatterbox-v1"
+            : "narration-bilingual-v2",
         defaultLanguage: this.#language,
         maximumSegments: PREPARED_BATCH_SEGMENT_LIMIT,
         signal: controller.signal,
@@ -1216,8 +1235,10 @@ export class ProductNarrationCoordinator {
       return;
     }
     if (!isPreparationSuccess(result)) {
+      this.#preparationFailure = result.status;
       throw new Error("content-free-preparation-failure");
     }
+    this.#preparationFailure = undefined;
     const preparedSegments = isPiperProfile(this.#profileId)
       ? result.segments.filter(isPiperSpeakableSegment)
       : result.segments;
@@ -1633,6 +1654,7 @@ export class ProductNarrationCoordinator {
       selection: this.#selection,
       state,
       failure: this.#failure,
+      preparationFailure: this.#preparationFailure,
       serviceState: this.#client.observe().state,
       metrics: Object.freeze({
         commandToAudibleMs: this.#commandToAudibleMs,

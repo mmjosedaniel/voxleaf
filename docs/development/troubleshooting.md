@@ -52,6 +52,14 @@ exact states, host margins, and language bindings, while M011 still owns
 release packaging and license fulfillment. All native-only local
 configurations are documented in [`setup.md`](setup.md).
 
+M010.1 Milestone 7's local packaged matrix confirms that Piper and Chatterbox
+sustain the one-minute quick observation without underruns on the measured
+host. Both Qwen language arms can run, but each depletes once and refills; a
+long Qwen wait is therefore a measured development-profile limitation, not
+evidence that the service silently switched engines. Use
+`pnpm.cmd test:tts:bilingual-portfolio-exact-host` from the fully configured
+offline PowerShell process for the content-safe six-arm diagnostic.
+
 ### Narration controls are unavailable
 
 Confirm all three native-only development variables are set in the PowerShell
@@ -231,6 +239,28 @@ code incorrectly rejected that non-negative M005 measurement after the first
 16 prepared units. The corrected scheduler still requires positive narration
 code-point and UTF-8-byte counts, but accepts zero sentence boundaries. Rebuild
 and restart the application; no reader-state reset or EPUB change is required.
+
+If Chatterbox fails before accepting its first audio unit while the service
+has already become ready, inspect the content-safe
+`data-narration-preparation-failure` value rather than treating the generic
+message as a model or GPU failure. A live English EPUB exposed
+`resource-limit-exceeded` when the desktop requested the narration-v1 hard
+maximum of 16 prepared segments in one coordinator batch. The desktop now
+requests the approved target of eight segments and continues through repeated
+bounded batches; the independent 16-segment hard ceiling is unchanged. The
+same passage then reached Chatterbox playback with 36 seconds buffered and a
+one-minute active target. EPUB text, paths, generated audio, and model output
+are not included in this diagnostic.
+
+If Chatterbox starts playback but later reports a processing failure after one
+or more generated units, verify that the desktop selected
+`narration-chatterbox-v1`. Protocol v1 accepts at most 480,000 samples, or 20
+seconds at 24 kHz. The generic bilingual packer previously produced complete
+Chatterbox waveforms of 21.92 and 20.44 seconds for two long source units. The
+model and CUDA runtime remained healthy; the service correctly rejected the
+oversized unit. The Chatterbox profile preserves bilingual normalization while
+using a smaller packing envelope. Do not increase the shared protocol bound or
+truncate generated audio as a workaround.
 
 One bounded cause is an exact Qwen call that does not emit its codec stop token.
 Its historical benchmark authority retains `maxNewTokens: 2048` so that

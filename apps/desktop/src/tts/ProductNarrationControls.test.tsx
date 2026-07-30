@@ -20,6 +20,7 @@ function snapshot(): ProductNarrationSnapshot {
     selection: Object.freeze({ kind: "quick" }),
     state: undefined,
     failure: undefined,
+    preparationFailure: undefined,
     metrics: Object.freeze({
       commandToAudibleMs: undefined,
       bufferingMs: 0,
@@ -218,5 +219,43 @@ describe("product narration controls", () => {
       screen.getByRole("button", { name: "Restart local narration" }),
     );
     expect(coordinator.recover).toHaveBeenCalledOnce();
+  });
+
+  it("reports preparation failure without calling it active cleanup", () => {
+    const current: ProductNarrationSnapshot = Object.freeze({
+      ...snapshot(),
+      failure: "narration-preparation-failed",
+      preparationFailure: "operation-active",
+    });
+    const coordinator = {
+      subscribe: vi.fn(() => () => undefined),
+      observe: vi.fn(() => current),
+      checkAvailability: vi.fn(async () => undefined),
+      setSelection: vi.fn(),
+      start: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(async () => undefined),
+      recover: vi.fn(),
+      setVolumePercent: vi.fn(),
+      goToPreviousBoundary: vi.fn(),
+      goToNextBoundary: vi.fn(),
+      startAtVisibleLocator: vi.fn(),
+    } as unknown as ProductNarrationCoordinator;
+
+    render(<ProductNarrationControls coordinator={coordinator} />);
+
+    expect(
+      screen.getByText(
+        "The current EPUB passage could not be prepared. Stop and choose another passage before trying again.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Local narration cleanup is in progress."),
+    ).not.toBeInTheDocument();
+    expect(document.querySelector(".product-narration")).toHaveAttribute(
+      "data-narration-preparation-failure",
+      "operation-active",
+    );
   });
 });

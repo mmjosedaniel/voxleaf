@@ -657,6 +657,31 @@ describe("product narration coordinator", () => {
     await coordinator.close();
   });
 
+  it("prepares Chatterbox through its bounded bilingual waveform profile", async () => {
+    const profileId = "chatterbox-multilingual-v3-cuda-bf16-default-v4";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      activeLanguage: vi.fn(() => "en" as const),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const { coordinator, prepareNarration } = createHarness({
+      profileCompatibility,
+    });
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+
+    expect(prepareNarration).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profile: "narration-chatterbox-v1",
+        defaultLanguage: "en",
+      }),
+    );
+    await coordinator.close();
+  });
+
   it("rejects a language with no compatible profile before child start", async () => {
     const profileCompatibility: ProductNarrationProfileCompatibility = {
       activeProfileId: vi.fn(() => undefined),
@@ -733,6 +758,61 @@ describe("product narration coordinator", () => {
     expect(client.synthesized[1]?.generationId).not.toBe(
       client.cancelled[0]?.generationId,
     );
+    await coordinator.close();
+  });
+
+  it("waits for active failure containment before replacing profile identity", async () => {
+    let profileId = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      activeLanguage: vi.fn(() => "en" as const),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const { client, coordinator } = createHarness({
+      profileCompatibility,
+    });
+    const performShutdown = client.shutdown.bind(client);
+    let releaseContainment = (): void => undefined;
+    const containmentBlocked = new Promise<void>((resolve) => {
+      releaseContainment = resolve;
+    });
+    vi.spyOn(client, "prepare").mockRejectedValueOnce(
+      new ProductNarrationRecoveryError("model-warm-failed"),
+    );
+    vi.spyOn(client, "shutdown").mockImplementationOnce(async () => {
+      await containmentBlocked;
+      await performShutdown();
+    });
+    await coordinator.checkAvailability();
+
+    coordinator.start();
+    await settleUntil(
+      () => coordinator.observe().recovery.phase === "containing-service",
+    );
+
+    const stop = coordinator.stopForConfigurationChange();
+    releaseContainment();
+    await stop;
+    profileId = "chatterbox-multilingual-v3-cuda-bf16-default-v1";
+    await coordinator.refreshSelectedProfile();
+    coordinator.resetRecoveryEpisode();
+    await settleUntil(() => coordinator.observe().availability === "available");
+
+    expect(coordinator.observe()).toMatchObject({
+      profileId,
+      availability: "available",
+      failure: undefined,
+      recovery: {
+        phase: "operational",
+        failureCode: undefined,
+      },
+      navigation: { playIntent: "inactive" },
+      metrics: { retainedAudioUnitCount: 0 },
+    });
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+    expect(client.startedProfiles.at(-1)).toBe(profileId);
     await coordinator.close();
   });
 
@@ -854,7 +934,7 @@ describe("product narration coordinator", () => {
         startLocator: START_LOCATOR,
         profile: "narration-bilingual-v2",
         defaultLanguage: "es",
-        maximumSegments: 16,
+        maximumSegments: 8,
         signal: expect.any(AbortSignal),
       }),
     );
@@ -1202,6 +1282,9 @@ describe("product narration coordinator", () => {
     await settleUntil(() => coordinator.observe().failure !== undefined);
 
     expect(coordinator.observe().failure).toBe("narration-preparation-failed");
+    expect(coordinator.observe().preparationFailure).toBe(
+      "resource-limit-exceeded",
+    );
     expect(coordinator.observe().state?.phase).toBe("failed");
     expect(JSON.stringify(coordinator.observe())).not.toContain(
       "Private synthetic narration",

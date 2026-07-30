@@ -23,6 +23,7 @@ import {
   type NarrationBoundaryScan,
 } from "./narration-boundary-scanner.js";
 import { normalizeNarrationSourceTokens } from "./narration-normalizer.js";
+import { NARRATION_CHATTERBOX_V1_SEGMENT_POLICY } from "./narration-chatterbox-policy.js";
 import {
   NARRATION_PIPER_V1_SEGMENT_POLICY,
   NARRATION_PIPER_V2_SEGMENT_POLICY,
@@ -304,6 +305,41 @@ describe("narration segment packer", () => {
     expect(piperV2.segments.length).toBeGreaterThan(piperV1.segments.length);
     assertOrderedSourceSpans(piperV2);
     assertPiperExpansionBounds(piperV2);
+  });
+
+  it("bounds complete-waveform Chatterbox units without changing bilingual text", async () => {
+    expect(NARRATION_CHATTERBOX_V1_SEGMENT_POLICY).toEqual({
+      sourceCodePointsTarget: 240,
+      sourceCodePointsHardMaximum: 320,
+      narrationCodePointsTarget: 200,
+      narrationCodePointsHardMaximum: 256,
+      narrationUtf8BytesTarget: 800,
+      narrationUtf8BytesHardMaximum: 1_024,
+      sentencesTarget: 2,
+      sentencesHardMaximum: 6,
+    });
+
+    const source = Array.from(
+      { length: 8 },
+      () => "A bounded bilingual sentence keeps the waveform safely sized",
+    ).join(", ");
+    const scan = scanLeaf(leafFor(paragraph([text(source)])), "es");
+    const packed = await packNarrationBoundaryScan(scan, {
+      segmentPolicy: NARRATION_CHATTERBOX_V1_SEGMENT_POLICY,
+    });
+
+    expect(joinedText(packed)).toBe(source);
+    expect(packed.segments.length).toBeGreaterThan(1);
+    expect(
+      packed.segments.every(
+        (segment) =>
+          segment.measurements.sourceCodePoints <= 320 &&
+          segment.measurements.narrationCodePoints <= 256 &&
+          segment.measurements.narrationUtf8Bytes <= 1_024 &&
+          segment.measurements.sentenceCount <= 6,
+      ),
+    ).toBe(true);
+    assertOrderedSourceSpans(packed);
   });
 
   it("bounds representative spoken-expansion categories without changing text", async () => {
