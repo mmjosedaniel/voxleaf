@@ -41,14 +41,14 @@ not turn this entire backlog into MVP scope:
    without rejection pending dialogue/punctuation and voice investigation.
 4. Retain Fun-CosyVoice3's intake rejection unless a future result-blind
    authority establishes a non-personal default voice.
-5. Milestone 7's packaged portfolio passes locally. Required pull-request
-   checks and plan archival remain before M011; this work does not expand the
-   backlog.
+5. Milestone 7's packaged portfolio and required pull-request checks pass; the
+   plan is archived and this work does not expand the backlog.
 
 Pocket TTS Spanish, the separate Chatterbox Latin American Spanish checkpoint,
-Kokoro, and additional voices stay in this backlog. The active
+Kokoro, and additional voices stay in this backlog. The completed, byte-frozen
 [M010.1 ExecPlan](../plans/active/M010-001-bilingual-narration-and-candidate-screening.md)
-is the execution authority for the promoted subset.
+is retained at its authority path and remains the execution authority for the
+promoted subset.
 
 ## Engine-specific text adaptation boundary
 

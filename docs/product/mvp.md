@@ -52,7 +52,16 @@ Model-free validation and a sequential six-arm exact-host service matrix pass.
 Milestone 7's packaged EPUB portfolio journeys also pass locally. Piper and
 Chatterbox sustain the one-minute quick observation without underruns; both
 development-only Qwen arms deplete once and refill safely on this host.
-Required pull-request checks still gate M010.1 closeout.
+Pull request #159 passed the required Ubuntu and Windows checks and merged the
+M010.1 closeout.
+
+M010.2 is approved before M011 but is not implemented. It will reorganize the
+ready reader around one fixed app bar, accessible Settings, compact narration,
+and the sole publication scroll viewport; make English the fallback only for
+missing/invalid/reset language state; preserve applicable Piper, Chatterbox,
+and development-only Qwen presentation; and add bounded pitch-preserving
+playback speeds from `1.00x` through `0.50x`. Current runtime behavior remains
+the completed M010.1 UI, Spanish fallback, and `1.0x`.
 
 ## Current implemented flow
 
@@ -62,10 +71,12 @@ Required pull-request checks still gate M010.1 closeout.
 3. VoxLeaf validates and loads the book.
 4. VoxLeaf opens at the user's last saved passage, or the beginning for a new book.
 5. The user reads and navigates the EPUB in a continuous reflowable reader, adjusts closed display preferences, and can close or replace the publication.
-6. On an exact configured admitted host, the user can select compatible
-   Piper/davefx or development-only Qwen/Serena, then start quick or prepared
-   local narration from the active narration leaf or visible target and hear
-   complete units through the bounded in-memory player.
+6. On an exact configured admitted host, the user can select a
+   language-applicable supported Piper or Chatterbox profile, or an explicitly
+   gated development-only Qwen Serena/Spanish or Aiden/English profile, then
+   start quick or prepared local narration from the active narration leaf or
+   visible target and hear complete units through the bounded in-memory
+   player.
 7. The reader highlights and follows the audible stable segment. Ordinary
    viewport movement may inspect the book without changing narration. An
    explicit paragraph leaf, visible-passage, chapter, or previous/next passage
@@ -99,8 +110,9 @@ Required pull-request checks still gate M010.1 closeout.
     application restart.
 
 The narration path is deliberately hidden when no exact local admitted
-configuration is available. Piper is the supported CPU fallback; Qwen remains
-a constrained development-only profile. Installer delivery and license
+configuration is available. Piper is the supported CPU fallback, Chatterbox
+is the supported bilingual GPU profile, and Qwen remains constrained and
+development-only. Installer delivery and license
 fulfillment remain M011 work, so neither local artifact setup is yet a
 general end-user distribution.
 
@@ -114,8 +126,10 @@ authority.
 
 ## Remaining target user flow
 
-1. Required Ubuntu/Windows pull-request checks close and archive M010.1 after
-   its passing local packaged Spanish/English portfolio matrix.
+1. M010.2 freezes and validates the reader-first Settings shell, English
+   fallback, bounded narration preferences, and pitch-preserving playback
+   controls described in
+   [`reader-settings-and-playback-controls.md`](reader-settings-and-playback-controls.md).
 2. M011 then packages and validates an end-user distribution, including model
    and voice license notices, provenance, corresponding-source or written-offer
    mechanics, signing, updates, and complete-MVP validation.
@@ -176,10 +190,10 @@ Implemented and validated:
 - Reject stale work before cancellation, abort preparation, keep sensitive
   prompts and PCM outside React state, and expose only content-free status.
 - Display actionable reader loading, opening, restoration, and error states.
-- Detect privacy-safe bounded host facts, match the three immutable measured
-  profile records with fixed safety margins, expose accessible compatibility
+- Detect privacy-safe bounded host facts, match the closed immutable executable
+  profile registry with fixed safety margins, expose accessible compatibility
   state, persist only a bounded profile ID, and recheck immediately before
-  starting the exact development child.
+  starting the exact child.
 - Classify operational failures without dynamic details, invalidate identity
   before cleanup, verify zero service/audio ownership, retain at most eight
   content-free diagnostic entries, and offer no more than one explicit restart
@@ -188,8 +202,8 @@ Implemented and validated:
 
 Remaining:
 
-- Pass the required pull-request checks and archive M010.1 without weakening
-  the implemented bilingual boundary or exact support states.
+- Implement and validate M010.2 without weakening the implemented bilingual,
+  scroll, synchronization, buffering, recovery, or exact support boundaries.
 - Provide compliant runtime/model distribution, installer packaging, and a
   validated end-user installation path in M011.
 
@@ -226,6 +240,12 @@ Remaining:
   delay; hard/token splits remain immediate, terminal ellipses receive the
   explicit override, real buffering substitutes for the delay, and final
   completion receives no trailing wait.
+- M010.2 playback speed is applied after synthesis, offers only `1.00x`
+  through `0.50x` in `0.05x` steps, preserves pitch, and neither regenerates
+  audio nor changes model RTF.
+- Source frames remain memory and heard-progress authority; effective
+  listening duration governs startup, low-water, and underrun promises after
+  M010.2 is implemented.
 
 ### Accessibility
 

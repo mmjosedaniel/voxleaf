@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 10, M008.1, and M009.1 are
+VoxLeaf is pre-alpha. Milestones 1 through 10.1, M008.1, and M009.1 are
 complete. M010 records the final support/recovery decision. Privacy-safe host
 detection, immutable measured matching, bounded preference and compatibility
 UI, pre-start enforcement, and identity-safe one-attempt recovery are
@@ -22,7 +22,7 @@ development-only available-VRAM threshold with `6,508` MiB. The packaged host
 now offers and executes Qwen when that reserve is available; its broader
 matrix later stops at the depletion synchronization assertion, so it remains
 development-only rather than supported. M010's historical v1 matrix makes
-Piper/davefx its sole supported profile; active M010.1 layers the bilingual v2
+Piper/davefx its sole supported profile; completed M010.1 layers the bilingual v2
 matrix described below without enabling automatic failover. Runtime/model
 distribution and license fulfillment remain M011 work. Replacement
 Ubuntu/Windows closeout checks pass and M010 is archived.
@@ -39,7 +39,7 @@ It changes no normalization, protocol, audio payload, buffer threshold, or
 engine. Full portable, authoritative Windows, privacy/repository, bounded
 clean-runner stabilization, and replacement Ubuntu/Windows validation pass.
 
-M010.1 is active before M011. Milestones 1 through 5 freeze and execute the
+M010.1 is complete. Milestones 1 through 5 freeze and execute the
 bilingual authority and admit exact Piper/joe English, Chatterbox
 Spanish/English, Qwen/Serena Spanish, and Qwen/Aiden English. Milestone 6 now
 integrates those language-bound profiles through one native-owned service
@@ -48,8 +48,16 @@ configuration and host requirements pass, while both Qwen voices remain
 explicitly gated development-only constrained-buffer profiles. MOSS remains
 deferred without rejection. Milestone 7's six packaged portfolio journeys,
 final exact-host metrics, privacy, bounded synchronization, and cleanup
-validation pass locally. Required pull-request checks still gate M010.1
-closeout and archival.
+validation pass locally. Pull request #159 subsequently passed the required
+Ubuntu and Windows checks and merged the closeout.
+
+M010.2 is approved and active before M011. It has not changed implementation.
+It will freeze and implement a reader-first fixed shell, accessible Settings,
+English fallback with valid-preference preservation, language- and
+gate-correct profile presentation, bounded narration-start/playback
+preferences, and pitch-preserving engine-neutral playback speeds from
+`1.00x` through `0.50x`. M011 remains deferred until this bounded portfolio
+follow-up closes.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -83,6 +91,8 @@ Every milestone must preserve the product's defining constraints:
     -> 9. Synchronized reading and narration
     -> 9.1. Reader experience stabilization
     -> 10. Hardware profiles, fallback, and resilience
+    -> 10.1. Bilingual narration and candidate screening
+    -> 10.2. Reader settings and playback controls
     -> 11. Packaging and MVP validation
 ```
 
@@ -749,12 +759,13 @@ stabilized application shell.
   configuration or canonical hash. Do not expose a free-form temperature
   control. This keeps a possible future natural/stable choice measurable,
   reproducible, and identity-safe.
-- **After M010 and before M011, if separately admitted:** evaluate a closed
-  natural-versus-stable narration profile, optional 0.5- to 1-second eligible
-  boundary pauses, a 20- or 30-second quick-start target, clearer reopen/resume
-  choices, and approximate book/chapter progress. None of these changes is
-  authorized by M009.1 because each changes generation identity, buffer policy,
-  timing, persistence UX, or progress semantics.
+- **M010.2 before M011:** implement the separately approved reader-first shell,
+  accessible Settings, English fallback, bounded narration preferences, and
+  engine-neutral pitch-preserving playback speed. Keep the completed M009.1
+  scroll/leaf/highlight authority and M008.1 wall-clock transition pauses.
+- **Still deferred:** a natural-versus-stable generation profile, changed
+  quick-start target, rate-scaled transition pauses, clearer reopen/resume
+  choices, and approximate book/chapter progress require separate authority.
 - **After the MVP:** consider a full native application menu bar, expanded
   table-of-contents shell, voice-cloning controls, advanced pause rules, and
   automatic retry. They are useful refinements but do not block the current
@@ -843,10 +854,11 @@ frozen v6 cycle and passed measured evidence before product admission.
 
 ## Milestone 10.1: Add bilingual narration and screen naturalness candidates
 
-**Status:** Local implementation and exact-host validation complete through
-Milestone 7 as of 2026-07-30; required pull-request checks remain before
-archival. Follow
+**Status:** Complete as of 2026-07-30. Pull request #159 passed the required
+Ubuntu and Windows checks and merged the closeout. Follow
 [`M010-001-bilingual-narration-and-candidate-screening.md`](active/M010-001-bilingual-narration-and-candidate-screening.md).
+The completed plan remains byte-for-byte at this frozen authority path because
+the v8-v12 benchmark verifiers hash it.
 This bounded pre-M011 follow-up responds to an explicit product need for
 English narration and a stronger portfolio demonstration. It does not reopen
 M010's completed Spanish Piper support decision.
@@ -932,11 +944,79 @@ versioned contracts and a new decision record.
 - A one-development-day target is a timebox for bounded screening, not an
   acceptance shortcut or delivery guarantee.
 
+## Milestone 10.2: Add reader settings and pitch-preserving playback controls
+
+**Status:** Approved; not started. Follow
+[`M010-002-reader-settings-and-playback-controls.md`](active/M010-002-reader-settings-and-playback-controls.md)
+and the approved
+[`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
+product requirements.
+
+This bounded portfolio-facing follow-up runs before M011. It does not change
+the completed M010.1 language/profile support matrix, TTS generation,
+normalization, protocol, or runtime/model distribution boundary.
+
+### Goal
+
+Make the book the dominant application surface, collect durable/setup-oriented
+choices in one accessible Settings experience, default missing/invalid/reset
+narration language to English without overwriting valid saved choices, and add
+engine-neutral pitch-preserving playback speeds from `1.00x` through `0.50x`.
+
+### Expected outcome
+
+- One fixed compact app bar exposes Open/Replace EPUB, concise compatibility,
+  Settings, and Close EPUB.
+- Compact metadata and narration controls remain outside the sole publication
+  scroll viewport.
+- A right-side Settings drawer on wide windows and full-width dialog-like
+  sheet on narrow windows owns reader appearance, language/profile, startup
+  policy, and compatibility detail.
+- English is the fallback only when no valid language preference exists or the
+  user explicitly resets Narration settings.
+- Piper, Chatterbox, and development-only Qwen remain language- and
+  gate-correct; M010.2 does not change support status.
+- Quick/Prepared startup, Prepared target, and playback speed use bounded
+  versioned content-free preference ownership; volume remains session-only.
+- The compact narration bar offers eleven fixed pitch-preserving playback
+  rates without regenerating audio or replacing work identity.
+- Source sample frames remain memory/progress authority while effective
+  listening duration governs lead, startup, low-water, and underrun promises.
+- Semantic generated-unit pauses remain unchanged wall-clock timers.
+- Synthetic raster and raw diagnostics leave the normal product surface and
+  remain development/test gated.
+
+### Dependencies
+
+Completed M005 owns canonical narration preparation. Completed M008/M008.1
+own bounded source PCM, startup/refill ceilings, and semantic transition
+timers. Completed M009/M009.1 own audible source ranges, highlighting, heard
+persistence, one reader scroll owner, and paragraph leaves. Completed
+M010/M010.1 own compatibility, recovery, bilingual profile identities, support
+states, and one-child supervision. M010.2 may compose these boundaries only
+through newly frozen authority and regression evidence.
+
+### Major risks and unknowns
+
+- A pitch-preserving time stretcher may distort speech or consume too much CPU
+  or memory beside local inference.
+- Direct Web Audio playback-rate changes alter pitch and are not an acceptable
+  shortcut.
+- Mid-unit rate changes can corrupt highlighting or heard checkpoints unless
+  progress settles in source frames before the new rate applies.
+- Effective listening lead must not increase retained source-frame/byte
+  ceilings.
+- Moving controls can duplicate domain ownership, trigger model lifecycle
+  work when Settings opens, or regress locator preservation and accessibility.
+- A valid saved Spanish preference must not be overwritten by the English
+  fallback migration.
+- Any production dependency must pass license and M011 distribution review.
+
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** Approved after M010.1; not started. M010.1 has integrated the
-bounded bilingual profiles and its local packaged Milestone 7 matrix passes,
-but required pull-request checks and plan archival remain before M011 begins.
+**Status:** Approved after M010.2; not started. M010.1 is complete, but the
+approved M010.2 portfolio-facing reader/settings/playback follow-up remains
+before M011.
 The repository can build a
 release executable for validation, but installer bundling, signing,
 model/runtime distribution, Piper license fulfillment, updater policy, and
@@ -1026,7 +1106,12 @@ The following decisions should be made when evidence is available, not assumed s
    highlight/follow/navigation evidence plus passing repository, privacy, and
    required pull-request validation, plus the fixed reader viewport, compact
    narration surface, bounded paragraph leaf, and passive-scroll isolation.
-8. **Release gate:** define supported hardware and wall-clock startup expectations from measured results before release.
+8. **Reader/settings/playback-control gate:** M010.2 must freeze and validate
+   the new shell, Settings, English fallback, preference ownership, exact
+   pitch-preserving rate set, source/effective-duration arithmetic, and
+   packaged accessibility before changing M008's accepted `1.0x` policy.
+9. **Release gate:** define supported hardware and wall-clock startup
+   expectations from measured results before release.
 
 Durable decisions belong in architecture decision records. Temporary implementation detail belongs in the active ExecPlan. Benchmark results and discovered constraints should update later milestones rather than forcing the project to follow an obsolete roadmap.
 
@@ -1065,13 +1150,20 @@ Piper fallback admission and integration, identity-safe recovery, final
 support decisions, and passing replacement closeout checks.
 
 [`active/M010-001-bilingual-narration-and-candidate-screening.md`](active/M010-001-bilingual-narration-and-candidate-screening.md)
-is the active implementation authority. Milestones 1 through 5 freeze and
+is the completed M010.1 implementation authority, retained byte-for-byte at
+its frozen path for v8-v12 verification. Milestones 1 through 5 freeze and
 execute the bilingual evidence path. Milestone 6 implements exact Piper
 Spanish/English, Chatterbox Spanish/English, and development-only Qwen
 Serena/Spanish plus Aiden/English bindings with one service tree and unchanged
 protocol v1. Milestone 7's local packaged portfolio journeys, final
-measurements, and privacy/repository validation pass. Required pull-request
-checks remain before moving the plan to completed.
+measurements, and privacy/repository validation pass. Pull request #159 passed
+the required Ubuntu/Windows checks and merged the closeout.
+
+[`active/M010-002-reader-settings-and-playback-controls.md`](active/M010-002-reader-settings-and-playback-controls.md)
+is the approved active pre-M011 implementation authority. It must freeze and
+validate its reader-first shell, accessible Settings, English fallback,
+bounded preference, pitch-preserving playback, and timing semantics before
+those planned behaviors may be described as implemented.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by completed
@@ -1079,11 +1171,9 @@ M009/M009.1 for synchronization and reader stabilization. It does not
 supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
-Milestones 1 through 10, M008.1, and M009.1 are complete, with their evidence
-retained under [`completed/`](completed/). M010.1 remains active before M011
-only for required pull-request checks and archival; its bilingual authority,
-candidate evidence, runtime integrations, and local packaged portfolio
-evidence are complete.
+Milestones 1 through 10.1, M008.1, and M009.1 are complete, with their evidence
+retained under [`completed/`](completed/). M010.2 is active before M011; no
+M010.2 runtime behavior is implemented yet.
 
 ## MVP completion boundary
 

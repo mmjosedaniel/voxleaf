@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 10, M008.1, and
+Mixed implementation status. Roadmap Milestones 1 through 10.1, M008.1, and
 M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoration,
 locator-linked narration preparation, M007 service, exact-development M008
 coordinator/player path, M009 segment-level synchronization, and M009.1 reader
@@ -63,8 +63,18 @@ voices remain explicitly gated development-only. Model-free repository tests
 and a content-safe sequential six-arm exact-host service matrix pass.
 Milestone 7's six packaged bilingual EPUB journeys, portfolio metrics,
 bounded synchronization/cancellation, zero-audio-persistence, and privacy
-closeout also pass locally. Required pull-request checks still gate plan
-completion.
+closeout pass. Pull request #159 passed the required Ubuntu and Windows checks
+and merged the M010.1 closeout.
+
+M010.2 is approved but not implemented. Its
+[`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
+requirements and
+[`active ExecPlan`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
+will compose the completed reader, preference, compatibility, playback, and
+synchronization boundaries into a reader-first Settings shell. They also
+require a newly frozen pitch-preserving playback authority before the current
+`1.0x` capability can change. No M010.2 arrow or runtime behavior is currently
+implemented.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
@@ -692,4 +702,8 @@ as both the initial prepared selection and refill/resume target. It keeps the
 10-second low-water warning, `0` ms adaptive low-buffer wait, `1.0x` playback,
 100% default volume, and exact simultaneous resource ceilings. M008.1 later
 adds the distinct semantic generated-unit transition described above without
-revising those M008 values.
+revising those M008 values. Approved M010.2 may supersede only the playback
+rate and derived effective-listening-time portions after it freezes new
+authority and passes deterministic, browser, packaged, exact-host, quality,
+resource, synchronization, privacy, and lifecycle gates. Source-frame/byte
+ceilings and M008.1 wall-clock transition timers remain unchanged.

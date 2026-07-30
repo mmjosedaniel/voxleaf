@@ -4,7 +4,7 @@ Documentation is organized by purpose so contributors and Codex can load only th
 
 ## Current project status
 
-Roadmap Milestones 1 through 10, M008.1, and M009.1 are complete. M008 provides
+Roadmap Milestones 1 through 10.1, M008.1, and M009.1 are complete. M008 provides
 the constrained one-GPU narration demo; M008.1 adds bounded semantic
 transitions between already-buffered units; M009 and M009.1 add synchronized
 highlighting, heard checkpoints, stable reader chrome, paragraph leaves, and
@@ -41,10 +41,10 @@ The historical M010
 Piper/davefx the sole supported and automatically recommendable profile when
 compatible and configured, keeps Qwen/Serena development-only, and records
 that automatic engine failover remains disabled. M011 still owns runtime/model
-distribution and license fulfillment. M010.1's current v2 overlay is described
-below.
+distribution and license fulfillment. M010.1's completed v2 overlay is
+described below.
 
-M010.1 is active before M011. Milestones 1 through 5 freeze and execute the
+M010.1 is complete. Milestones 1 through 5 freeze and execute the
 bilingual authority, evaluation, and maintainer decisions. Milestone 6 now
 implements the exact language/profile registry, host and runtime gates,
 selection UI, native supervision, and local adapters. Piper davefx/Spanish and
@@ -54,8 +54,15 @@ constrained-buffer profiles. Protocol v1 and one-child ownership remain
 unchanged, and the sequential six-arm exact-host service matrix passes. MOSS
 remains deferred without rejection. Milestone 7's six packaged synthetic EPUB
 arms, exact-host metrics, privacy boundary, cancellation, synchronization, and
-cleanup evidence now pass locally. Required pull-request checks remain before
-M010.1 moves to `completed/`.
+cleanup evidence pass. Pull request #159 passed the required Ubuntu and
+Windows checks and merged the closeout.
+
+M010.2 is the approved active follow-up before M011. It has not changed
+runtime behavior. Its product scope is a reader-first fixed shell, accessible
+Settings drawer/sheet, English fallback that preserves valid saved language,
+language- and gate-correct profile presentation, bounded narration
+preferences, and engine-neutral pitch-preserving playback speeds from
+`1.00x` through `0.50x`.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -64,6 +71,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`product/vision.md`](product/vision.md): product purpose, audience, and principles.
 - [`product/project-brief.md`](product/project-brief.md): detailed problem, intended experience, product boundaries, and candidate technical direction.
 - [`product/mvp.md`](product/mvp.md): MVP scope, non-goals, constraints, and acceptance criteria.
+- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and pitch-preserving playback-speed requirements; not yet implemented.
 - [`product/post-mvp-tts-candidate-backlog.md`](product/post-mvp-tts-candidate-backlog.md): non-authoritative post-MVP intake order for Pocket TTS, Chatterbox LatAm, MOSS-TTS-Nano, Kokoro, and additional Piper voices.
 - [`product/glossary.md`](product/glossary.md): shared terminology.
 
@@ -157,7 +165,8 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M009-001-reader-experience-stabilization.md`](plans/completed/M009-001-reader-experience-stabilization.md): completed bounded M009 follow-up for the visible-highlight repair, dedicated reader viewport, compact/collapsible narration UI, truthful loaded-duration status, locator-backed paragraph leaf, passive-scroll isolation, exact-host validation, and repository/CI closeout.
 - [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
-- [`plans/active/M010-001-bilingual-narration-and-candidate-screening.md`](plans/active/M010-001-bilingual-narration-and-candidate-screening.md): active follow-up whose implementation and local exact-host evidence are complete through Milestone 7; required pull-request checks still gate archival.
+- [`plans/active/M010-001-bilingual-narration-and-candidate-screening.md`](plans/active/M010-001-bilingual-narration-and-candidate-screening.md): completed bilingual follow-up retained byte-for-byte at its frozen authority path; pull request #159 passed Ubuntu/Windows closeout and merged, so it is not active work.
+- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): approved pre-M011 reader-first settings and pitch-preserving playback-control follow-up; implementation has not started.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

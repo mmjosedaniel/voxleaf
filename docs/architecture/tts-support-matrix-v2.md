@@ -42,6 +42,7 @@ The historical
 [`tts-support-matrix-v1.md`](tts-support-matrix-v1.md) remains the record of
 M010's original runtime closeout. This v2 matrix is the current executable
 M010.1 overlay. Milestone 7's six packaged bilingual portfolio journeys pass
-locally; required pull-request checks still gate plan archival. M011 remains
-responsible for distribution, licensing fulfillment, installers, and
-production support claims.
+locally; pull request #159 passed required Ubuntu/Windows checks and merged the
+plan closeout. M010.2 may reorganize presentation and playback controls but
+must not change this matrix. M011 remains responsible for distribution,
+licensing fulfillment, installers, and production support claims.

@@ -25,7 +25,7 @@ prepared semantic boundary to one numeric delay, schedules it only before an
 already-buffered successor, creates no silent PCM, and keeps real buffering,
 audible playback, and intentional transition time distinct.
 
-M010 is complete. Privacy-safe host detection, four-entry measured
+M010 is complete. Privacy-safe host detection, closed-registry measured
 matching/preference, compatibility UI, identity-safe
 explicit recovery, the supported Piper/davefx CPU adapter, native profile
 selection, Piper-only locator-safe spoken-expansion-aware sizing, omission of
@@ -45,23 +45,28 @@ The accepted
 Piper/davefx the sole supported CPU fallback and the only automatically
 recommendable profile when compatible and configured. Engine fallback remains
 an explicit choice rather than automatic failover. M008.1 and M010 passed
-their replacement Ubuntu/Windows closeout checks and are archived. The active
-M010.1 now implements explicit Spanish/English selection, bounded preference,
+their replacement Ubuntu/Windows closeout checks and are archived. Completed
+M010.1 implements explicit Spanish/English selection, bounded preference,
 versioned bilingual preparation, and identity-safe profile/language
 replacement. Milestone 6 integrates exact Piper davefx/Spanish and joe/English
 CPU profiles, supported Chatterbox Spanish/English, and development-only Qwen
 Serena/Spanish plus Aiden/English through one native-owned service tree and
 unchanged protocol v1. The model-free suites, sequential six-arm exact-host
 service matrix, and six packaged synthetic EPUB portfolio arms pass. MOSS
-remains deferred without rejection. Required pull-request checks still gate
-M010.1 archival; installer distribution and license fulfillment remain
-deferred to M011.
+remains deferred without rejection. Pull request #159 passed the required
+Ubuntu/Windows checks and merged the closeout.
+
+M010.2 is approved but not implemented. It will reorganize the reader around
+one fixed app bar, accessible Settings, compact narration, and the sole reader
+scroll viewport; introduce an English fallback that preserves valid saved
+language; and add bounded pitch-preserving playback speeds after synthesis.
+Installer distribution and license fulfillment remain deferred to M011.
 The rest of this brief describes the intended complete product unless it
 explicitly identifies implemented behavior.
 
 ## Summary
 
-VoxLeaf is a privacy-first desktop EPUB reader being built to turn book text into natural-sounding speech entirely on the user's computer. A reader can open a supported local EPUB, navigate its chapters, read its formatted semantic content, and restore a saved logical passage. On the exact configured development host, the user can also start bounded quick or prepared local narration. ADR-0015 authorizes only that constrained one-GPU demo path; standard production narration remains blocked pending a viable profile.
+VoxLeaf is a privacy-first desktop EPUB reader being built to turn book text into natural-sounding speech entirely on the user's computer. A reader can open a supported local EPUB, navigate its chapters, read its formatted semantic content, and restore a saved logical passage. On exact configured hosts, the user can start bounded quick or prepared local narration through supported Piper or Chatterbox profiles, while Qwen remains an explicitly gated development-only constrained-buffer option. General distribution remains M011 work.
 
 The intended narration pipeline will generate progressively instead of converting a complete book or chapter into an audiobook. It will retain only a bounded amount of audio in memory, play it while preparing later segments, and discard it after playback.
 
@@ -159,7 +164,18 @@ Segmentation should respect paragraphs, sentences, dialogue, headings, scene bre
 
 ### Reader interface and accessibility
 
-The initial reader exposes book and chapter context, readable continuously scrolling chapter content, bounded typography/theme controls, and actionable reader errors. On the exact configured development host, the implemented narration path adds accessible quick/prepared playback controls, truthful buffer state, one segment-level highlight, focus-safe narrated-passage following, synchronized navigation, and non-skipping heard-position persistence. The exact Qwen/Serena model and voice remain fixed, and `1.0x` is the only admitted playback rate; production voice selection and adjustable playback speed remain later requirements. The user reads the same source passage being narrated rather than a separate transcript or unrelated location.
+The implemented reader exposes book and chapter context, readable continuously
+scrolling chapter content, bounded typography/theme controls, and actionable
+reader errors. On exact configured hosts, narration adds accessible
+quick/prepared playback controls, truthful buffer state, segment highlighting,
+focus-safe following, synchronized navigation, and non-skipping heard-position
+persistence. Playback is currently fixed at `1.0x`.
+
+Approved M010.2 requirements move configuration into an accessible Settings
+drawer/sheet, keep the book as the sole large scroll surface, and add
+engine-neutral pitch-preserving speeds from `1.00x` through `0.50x` in the
+compact narration bar. The user continues to read the same source passage
+being narrated rather than a separate transcript or unrelated location.
 
 Core interaction should support keyboard navigation, visible focus, semantic controls, assistive-technology labels, high contrast, reduced motion, adjustable text size, and operation without a mouse. The UI must remain responsive while inference runs.
 
@@ -167,7 +183,7 @@ Core interaction should support keyboard navigation, visible focus, semantic con
 
 Normal reading must not send book text, derived narration text, or generated speech to a remote service. Derived narration text and generated audio are ephemeral and must not be persisted by default. Logs, analytics, snapshots, diagnostics, and performance summaries must exclude book prose, derived narration text, and audio.
 
-The implemented persisted reader state retains only bounded exact-byte identity, a structural content locator and Unicode-code-point offset, and closed display preferences; it does not retain a file reference, EPUB bytes, publisher metadata, prose, rendered geometry, or images. Future milestones may justify selected model/voice, playback speed, and non-content hardware or benchmark data within explicit bounded contracts. Full extracted text and generated narration must not become persistent application state without a separate product and privacy decision.
+The implemented persisted reader state retains only bounded exact-byte identity, a structural content locator and Unicode-code-point offset, and closed display preferences; it does not retain a file reference, EPUB bytes, publisher metadata, prose, rendered geometry, or images. Existing narration language/profile preferences are separately bounded and content-free. M010.2 may add bounded startup and playback-speed preferences under explicit versioned ownership. Full extracted text and generated narration must not become persistent application state without a separate product and privacy decision.
 
 ## Current and candidate technical direction
 
@@ -185,13 +201,13 @@ directions are separated below:
 | Dual-worker scheduling experiment | Rejected by `selection-v5`                                                | One GPU-primary Qwen worker plus one separately loaded CPU-only float32 support worker                                                                                                                                       | CPU solo was too slow; low-load concurrency improved aggregate RTF by only about 2.6%, substantially slowed the GPU worker, and increased memory and operational risk |
 | Adaptive demo buffering           | Exact-development path, policy, and synchronized host proof implemented   | Quick default; explicit 1-/2-/5-/10-minute preparation with 1 minute initially selected; 1-minute refill; 10-second warning; zero adaptive low-buffer wait; approximately 30-minute ceiling                                  | Exact-host evidence remains development-only; production/general-hardware graduation remains blocked                                                                  |
 | Audio-unit transitions            | M008.1 implemented, validated, and archived                               | Boundary-specific scheduled delays between already-buffered units; no silent PCM, fade, model-input rewrite, or delay after real buffering/final completion                                                                  | Listening may tune only a future version                                                                                                                              |
-| Bilingual narration               | Runtime integration and local packaged portfolio matrix complete          | Piper davefx/Spanish and joe/English are supported CPU paths; Chatterbox Spanish/English is supported; Qwen Serena/Spanish and Aiden/English are development-only                                                            | Required PR checks gate M010.1 archival; M011 owns distribution and license fulfillment                                                                               |
+| Bilingual narration               | Runtime integration, local portfolio matrix, and required CI complete      | Piper davefx/Spanish and joe/English are supported CPU paths; Chatterbox Spanish/English is supported; Qwen Serena/Spanish and Aiden/English are development-only                                                            | M011 owns distribution and license fulfillment                                                                                                                        |
 | Built-in speaker and demo quality | Maintainer accepted for demo only                                         | Serena selected by the frozen intake screen; one fluent maintainer later scored the 12-case panel 4.2667/5 with three meaning-changing defects                                                                               | One maintainer is sufficient for future MVP demo feedback; historical `v3` remains non-promotable and no standard quality pass is claimed                             |
 | Base voice cloning                | Outside current MVP                                                       | Qwen3-TTS 1.7B Base ICL/x-vector modes require user reference audio                                                                                                                                                          | Retained only as related-runtime prototype evidence; no enrollment, clone prompt, or reference-data path is planned                                                   |
 | OpenAI Whisper                    | Rejected as TTS candidate                                                 | Automatic speech recognition: audio input and text output                                                                                                                                                                    | Optional fully local benchmark-only transcription may be assessed separately; it cannot generate narration or replace human quality review                            |
 | Process transport                 | Accepted, implemented, and validated                                      | Rust-owned child-process standard streams plus narrow optimized binary Tauri responses; no listener or renderer shell capability                                                                                             | Protocol v1 remains unchanged; production distribution remains blocked                                                                                                |
 | Internal audio                    | All admitted profile adapters and local packaged portfolio proof complete | Bounded mono 24-kHz float32-le units; Piper converts native 22.05 kHz inside its adapter; Chatterbox and Qwen return bounded complete units; sole-owner FIFO and one transient active-device copy                            | No audio persistence; one model child at a time; Qwen remains optional development-only and constrained-buffered                                                      |
-| Playback mechanism                | Web Audio selected and validated for the constrained demo                 | One dedicated `AudioContext`, one gain node, and one active `AudioBufferSourceNode`; `1.0x` only                                                                                                                             | Production packaging and wider speed support remain deferred                                                                                                          |
+| Playback mechanism                | Web Audio `1.0x` path implemented; M010.2 speed work approved, not started | One dedicated `AudioContext`, one gain node, and one active `AudioBufferSourceNode`; M010.2 must select a bounded pitch-preserving in-memory path for eleven fixed rates                                                     | Freeze/select backend, validate source-frame progress, effective lead, quality, resources, packaged WebView2, and lifecycle before claiming adjustable speed         |
 
 ADR-0013 records the standard rejection evidence. ADR-0015 supersedes
 ADR-0014's scheduling and buffering details, rejects CPU and dual-worker
