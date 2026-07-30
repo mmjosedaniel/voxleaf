@@ -304,41 +304,68 @@ restart, shutdown, and Windows descendant cleanup, run:
 Exit code zero does not prove the Python service, Qwen, product playback, or
 general hardware support.
 
-M010 Milestone 6 also accepts the exact admitted Piper profile through a
-separate native-only configuration. The interpreter must resolve to the
-ignored `piper_1_4_2_cpu` environment, the model root must contain the frozen
-local davefx voice artifacts, and the enabled outbound firewall rule must
-target that exact interpreter:
+M010 and M010.1 Milestone 6 accept the exact admitted local profiles through
+separate native-only configurations. Each interpreter must resolve to its
+ignored locked candidate environment, each model root must contain only the
+frozen exact artifacts, and an enabled outbound firewall rule must target
+every configured interpreter:
 
 ```powershell
 $env:VOXLEAF_TTS_PIPER_ENABLED = "1"
 $env:VOXLEAF_TTS_PIPER_PYTHON = (Resolve-Path "services/tts/benchmarks/candidates/piper_1_4_2_cpu/.venv/Scripts/python.exe").Path
 $env:VOXLEAF_TTS_PIPER_MODEL_ROOT = (Resolve-Path "models/tts/piper-1.4.2-es_ES-davefx-medium-0d907f1").Path
+
+$env:VOXLEAF_TTS_PIPER_EN_ENABLED = "1"
+$env:VOXLEAF_TTS_PIPER_EN_PYTHON = $env:VOXLEAF_TTS_PIPER_PYTHON
+$env:VOXLEAF_TTS_PIPER_EN_MODEL_ROOT = (Resolve-Path "models/tts/piper-1.4.2-en_US-joe-medium-0d907f1").Path
+
+$env:VOXLEAF_TTS_CHATTERBOX_ENABLED = "1"
+$env:VOXLEAF_TTS_CHATTERBOX_PYTHON = (Resolve-Path "services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v4/.venv/Scripts/python.exe").Path
+$env:VOXLEAF_TTS_CHATTERBOX_MODEL_ROOT = (Resolve-Path "models/chatterbox_multilingual_v3_v2").Path
+
+$env:VOXLEAF_TTS_DEV_ENABLED = "1"
+$env:VOXLEAF_TTS_DEV_PYTHON = (Resolve-Path "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/.venv/Scripts/python.exe").Path
+$env:VOXLEAF_TTS_DEV_MODEL_ROOT = (Resolve-Path "models/qwen3_1_7b_customvoice_cuda").Path
 ```
 
-PowerShell environment values belong to the current terminal process. Set all
-three values in the same terminal that launches `tauri dev`, the packaged
-application, or an exact-host test. A new terminal does not inherit values set
-in an older terminal. VoxLeaf separately checks hardware fit and exact runtime
-configuration; hardware compatibility alone does not enable Play.
+PowerShell environment values belong to the current terminal process. Set the
+complete three-value group for every profile you enable in the same terminal
+that launches `tauri dev`, the packaged application, or an exact-host test. A
+new terminal does not inherit values set in an older terminal. VoxLeaf
+separately checks hardware fit and exact runtime configuration; hardware
+compatibility alone does not enable Play.
 
 These values remain native-only and are never returned to the renderer,
-logged, persisted, or placed in protocol frames. When Piper is selected, the
-desktop automatically requests `narration-piper-v2`; no user-facing chunk
-setting is required. The profile preserves all normalized text and exact
-locator ranges while applying the ordinary v1 limits plus a deterministic
-spoken-expansion budget before inference. This bounds ordinary prose and
-compact numbers, currencies, acronyms, Roman numerals, ordinals, and letter
-sequences without rewriting them or increasing protocol v1's 20-second
-ceiling. When both exact profiles and
-their interpreter-bound outbound blocks are prepared, run the complete
-admitted-profile matrix:
+logged, persisted, or placed in protocol frames. Both Piper voices use the
+same frozen `narration-piper-v2` preparation contract; Chatterbox and Qwen use
+the engine-neutral bilingual segments and language-bound adapters. No
+user-facing chunk setting is required, and protocol v1's 20-second unit ceiling
+is unchanged.
+
+When every exact profile and interpreter-bound outbound block is prepared,
+run the M010.1 service-only bilingual matrix:
+
+```powershell
+pnpm.cmd test:tts:bilingual-profiles-exact-host
+```
+
+The command builds the release application and runs six arms sequentially:
+Piper davefx/Spanish, Piper joe/English, Chatterbox/Spanish,
+Chatterbox/English, Qwen Serena/Spanish, and Qwen Aiden/English. Each arm
+proves load/warmup, bounded generation, busy rejection, identity-first
+cancellation, clean reload, a second generation, shutdown, and cleanup. It
+starts only one model process at a time, retains no generated audio, emits only
+a fixed content-safe result, and is excluded from root checks and CI. It is
+service integration evidence, not the packaged EPUB portfolio proof owned by
+Milestone 7.
+
+The earlier M010 two-profile resilience matrix remains available:
 
 ```powershell
 pnpm.cmd test:tts:resilience-exact-host
 ```
 
-The command builds the release application and runs the Qwen and Piper
+That command builds the release application and runs the Qwen and Piper
 service-only lifecycle arms. It then runs full packaged Piper playback. Qwen
 runs full packaged playback when the exact native gate, `7,196`-MiB total
 VRAM, and `6,508`-MiB available-VRAM development reserve pass. Otherwise the

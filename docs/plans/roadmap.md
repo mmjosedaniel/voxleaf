@@ -21,10 +21,10 @@ Qwen's outbound-blocked service lifecycle passes. ADR-0022 retains the
 development-only available-VRAM threshold with `6,508` MiB. The packaged host
 now offers and executes Qwen when that reserve is available; its broader
 matrix later stops at the depletion synchronization assertion, so it remains
-development-only rather than supported. The final support matrix makes
-Piper/davefx the sole supported and automatically recommendable compatible
-profile, keeps fallback explicit rather than automatic, and assigns runtime/
-model distribution and Piper license fulfillment to M011. Replacement
+development-only rather than supported. M010's historical v1 matrix makes
+Piper/davefx its sole supported profile; active M010.1 layers the bilingual v2
+matrix described below without enabling automatic failover. Runtime/model
+distribution and license fulfillment remain M011 work. Replacement
 Ubuntu/Windows closeout checks pass and M010 is archived.
 
 M009.1 exact-host use also exposed and corrected one additional reader defect:
@@ -39,16 +39,15 @@ It changes no normalization, protocol, audio payload, buffer threshold, or
 engine. Full portable, authoritative Windows, privacy/repository, bounded
 clean-runner stabilization, and replacement Ubuntu/Windows validation pass.
 
-M010.1 is active before M011. Milestone 1 froze historical result-blind v7;
-before any result, Milestone 1A preserved it and froze superseding v8
-authority with exact local Qwen/Serena Spanish and Qwen/Aiden English
-controls. Milestone 2 implements explicit bilingual preparation and selection,
-and Milestone 3 admits exact Piper/joe English through every frozen v8
-baseline gate. Piper/davefx remains the sole supported playable profile until
-Milestone 6 integrates and exact-host proves the admitted English profile.
-Corrective Milestone 4 advances Chatterbox as the sole new-engine full-matrix
-survivor, defers MOSS without rejection, and retains both exact Qwen language
-profiles for hardware-dependent constrained-buffer evaluation.
+M010.1 is active before M011. Milestones 1 through 5 freeze and execute the
+bilingual authority and admit exact Piper/joe English, Chatterbox
+Spanish/English, Qwen/Serena Spanish, and Qwen/Aiden English. Milestone 6 now
+integrates those language-bound profiles through one native-owned service
+tree: both Piper voices and Chatterbox are supported when their exact
+configuration and host requirements pass, while both Qwen voices remain
+explicitly gated development-only constrained-buffer profiles. MOSS remains
+deferred without rejection. Milestone 7 still owns packaged portfolio
+journeys, final metrics/privacy validation, and M010.1 closeout.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -842,7 +841,7 @@ frozen v6 cycle and passed measured evidence before product admission.
 
 ## Milestone 10.1: Add bilingual narration and screen naturalness candidates
 
-**Status:** In progress; Milestones 1, 1A, 2, 3, 4, and 5 complete as of
+**Status:** In progress; Milestones 1, 1A, 2, 3, 4, 5, and 6 complete as of
 2026-07-30. Follow
 [`M010-001-bilingual-narration-and-candidate-screening.md`](active/M010-001-bilingual-narration-and-candidate-screening.md).
 This bounded pre-M011 follow-up responds to an explicit product need for
@@ -863,16 +862,19 @@ CosyVoice is rejected from this v8 cycle before an environment lock because
 its reviewed general path did not supply an exact non-personal default voice.
 Milestone 2 implements the model-free selection and preparation boundary but
 does not itself admit an English product profile. Milestone 3 independently
-admits exact Piper 1.4.2 / `en_US-joe-medium` for later integration after all
-machine, performance, memory, cancellation, quality, privacy, offline, and
-cleanup gates pass. It remains unavailable in the application until
-Milestone 6. Corrective Milestone 5 admits exact Chatterbox for both Spanish
+admits exact Piper 1.4.2 / `en_US-joe-medium` after all machine, performance,
+memory, cancellation, quality, privacy, offline, and cleanup gates pass.
+Corrective Milestone 5 admits exact Chatterbox for both Spanish
 and English after its complete bilingual machine/cancellation matrix and
 private quality review pass. It retains Qwen/Serena Spanish and admits
 Qwen/Aiden English as independent hardware-dependent constrained-buffer
 configurations of the existing Qwen engine. Qwen's approximately 1.44 RTF
 on this laptop is capacity evidence, not an automatic blocker or a claim
 about stronger compatible GPUs. MOSS remains deferred without rejection.
+Milestone 6 implements the exact language/profile registry, adapters, native
+configuration and host gates, compatibility selection, recovery mapping, and
+sequential exact-host service proof. Protocol v1 and one-child ownership remain
+unchanged.
 
 ### Goal
 
@@ -925,9 +927,10 @@ versioned contracts and a new decision record.
 
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** Approved after M010.1; not started. M010.1 Milestone 5 has admitted
-the bounded bilingual profiles, but Milestones 6-7 must still integrate and
-validate them before M011 begins. The repository can build a
+**Status:** Approved after M010.1; not started. M010.1 Milestone 6 has
+integrated the bounded bilingual profiles, but Milestone 7 must still validate
+the packaged portfolio journeys and close M010.1 before M011 begins. The
+repository can build a
 release executable for validation, but installer bundling, signing,
 model/runtime distribution, Piper license fulfillment, updater policy, and
 complete-MVP validation are not implemented.
@@ -965,13 +968,12 @@ pre-M011 work. Its preserved v7/v8 intake rejects CosyVoice before execution;
 any future reconsideration requires new authority. All other candidates remain
 post-MVP and require separate newly frozen authority.
 
-Retain Piper/davefx as the selected CPU fallback. M010.1 admits Piper/joe
-English, Chatterbox Spanish/English, and Qwen/Aiden English for Milestone 6
-integration while retaining Qwen/Serena Spanish as the optional GPU-dependent
-development profile. This evidence does not change the current runtime support
-matrix by itself. MOSS returns to targeted future investigation unless a new
-authority schedules it. After release, screen the remaining candidates in
-this order:
+Retain Piper/davefx and Piper/joe as the language-matched CPU profiles.
+M010.1 now implements Chatterbox Spanish/English as a supported exact GPU
+profile and Qwen/Serena Spanish plus Qwen/Aiden English as optional
+GPU-dependent development profiles. MOSS returns to targeted future
+investigation unless a new authority schedules it. After release, screen the
+remaining candidates in this order:
 
 1. Pocket TTS Spanish as a balanced streaming CPU challenger, conditional on
    exact model/voice license and redistribution review.
@@ -1056,15 +1058,13 @@ Piper fallback admission and integration, identity-safe recovery, final
 support decisions, and passing replacement closeout checks.
 
 [`active/M010-001-bilingual-narration-and-candidate-screening.md`](active/M010-001-bilingual-narration-and-candidate-screening.md)
-is the active implementation authority. Its first milestone has frozen
-explicit Spanish/English behavior, versioned locator-safe normalization, exact
-candidate identities, and result-blind gates; Milestone 1A supersedes
-resultless v7 with v8 Qwen bilingual coverage before execution. Milestone 4
-records real corrective MOSS/Chatterbox screens and selects Chatterbox for the
-next full matrix while retaining both exact Qwen language profiles. Later
-milestones may integrate Piper English, independently passing exact Qwen
-profiles, and at most one passing new engine. Frozen authority or screen
-advancement itself is not evidence that any capability is supported.
+is the active implementation authority. Milestones 1 through 5 freeze and
+execute the bilingual evidence path. Milestone 6 implements exact Piper
+Spanish/English, Chatterbox Spanish/English, and development-only Qwen
+Serena/Spanish plus Aiden/English bindings with one service tree and unchanged
+protocol v1. Milestone 7 remains responsible for packaged portfolio journeys,
+final measurements, privacy/repository validation, and moving the plan to
+completed.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by completed

@@ -45,30 +45,24 @@ configured while retaining explicit selection and zero automatic failover.
 Replacement Ubuntu/Windows checks pass. M011 still owns production
 distribution and Piper's GPL/CC0 packaging obligations.
 
-M010.1 Milestone 1 froze historical result-blind v7 explicit
-Spanish/English product, versioned locator-safe normalization, exact
-candidate, synthetic corpus, schema, and evaluation authority. Before any v7
-result, Milestone 1A preserved v7 and froze layered v8 authority for exact
-local Qwen/Serena Spanish and Qwen/Aiden English controls. V8 reuses the same
-corpora, gates, stop conditions, and existing Qwen lock and excludes remote
-cloud inference, voice cloning, voice design, and a second English Qwen voice.
-Milestone 2 implements the model-free product boundary: a closed bilingual
-preparation profile, bounded language preference, accessible explicit
-selection, exact profile/language admission, and identity-first cancellation
-and cleanup. Milestone 3 independently admits exact Piper 1.4.2 /
-`en_US-joe-medium` after its frozen v8 CPU, cancellation, quality, privacy,
-offline, and cleanup gates all pass. This result is not runtime integration:
-Spanish Piper remains the only supported playable profile and the existing
-M010 runtime matrix remains authoritative until M010.1 Milestone 6 adds and
-proves new registry/service paths. Corrective Milestone 5 now admits exact
-Chatterbox for both Spanish and English integration, retains Qwen/Serena
-Spanish, and admits Qwen/Aiden as the English configuration of the existing
-Qwen engine. Chatterbox passed the complete bilingual matrix at about
-0.52-0.54 total sustained RTF but retains a greater-than-30-second cold-load
-and 4.88-GiB process-RAM limitation. Both Qwen profiles retain their
-approximately 1.44 RTF hardware-dependent constrained-buffer interpretation.
-MOSS remains deferred without rejection. These admissions authorize
-Milestone 6 work but change no runtime component or process edge yet.
+M010.1 Milestones 1 through 5 freeze and execute explicit Spanish/English
+product, locator-safe normalization, exact candidate, corpus, schema, machine,
+and private-quality authority. Chatterbox passes the complete bilingual matrix
+at about 0.52-0.54 total sustained RTF while retaining a greater-than-30-second
+cold-load and 4.88-GiB process-RAM limitation. Both Qwen language profiles
+retain their approximately 1.44 RTF hardware-dependent constrained-buffer
+interpretation, and MOSS remains deferred without rejection.
+
+Milestone 6 now implements the admitted runtime edges. The closed executable
+registry binds Piper/davefx to Spanish, Piper/joe to English, Chatterbox to
+Spanish and English, Qwen/Serena to Spanish, and Qwen/Aiden to English. Native
+supervision starts one exact isolated child tree and carries the selected
+profile and language without changing protocol v1. Both Piper voices and
+Chatterbox are supported behind exact configuration and host gates; both Qwen
+voices remain explicitly gated development-only. Model-free repository tests
+and a content-safe sequential six-arm exact-host service matrix pass.
+Milestone 7 still owns packaged bilingual EPUB journeys, portfolio metrics,
+privacy closeout, and plan completion.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
@@ -184,9 +178,9 @@ Desktop application
 |   [M010 Milestone 4 complete; one explicit verified-cleanup restart]
 |-- Piper/davefx CPU-fallback runtime
 |   [M010 complete; integrated and exact-host Piper arm validated]
-`-- Explicit bilingual narration, local Qwen controls, and candidate screen
-    [M010.1 Milestones 2-4; preparation/selection implemented,
-     Piper English admitted, Chatterbox advanced, Qwen retained]
+`-- Explicit bilingual narration and exact language/profile selection
+    [M010.1 Milestones 2-6; Piper ES/EN and Chatterbox supported,
+     Qwen Serena/Aiden development-only]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]
@@ -227,6 +221,12 @@ Local TTS service
 |   [M007 Milestones 4-6; exact-host handoff and closeout validated]
 |-- Exact Piper/davefx CPU adapter and native-only activation
 |   [M010 Milestone 6; executable integration and packaged arm validated]
+|-- Exact Piper/joe English CPU adapter and native-only activation
+|   [M010.1 Milestone 6; executable and exact-host service validated]
+|-- Exact Chatterbox bilingual CUDA adapter and native-only activation
+|   [M010.1 Milestone 6; executable and exact-host service validated]
+|-- Exact Qwen/Aiden English configuration
+|   [M010.1 Milestone 6; development-only exact-host service validated]
 |-- Candidate-neutral feasibility harness and no-profile decision
 |   [implemented development evidence; not production runtime]
 |-- Shared-model v4 and independent dual-worker v5 benchmark
@@ -599,6 +599,17 @@ development profile at `7,196` MiB total and `6,508` MiB currently available
 VRAM, selects it, and executes actual inference through the later depletion
 stage. The depletion synchronization assertion then fails, so Qwen remains a
 development-only option with no complete resilience or support claim.
+
+M010.1 Milestone 6 generalizes the same native-owned service boundary without
+changing protocol v1. Profile-language validation and exact runtime
+configuration happen before start. Piper/joe produces bounded English units
+through the same Piper adapter and `narration-piper-v2` preparation contract.
+Chatterbox exposes one exact bilingual CUDA adapter with complete bounded
+24-kHz units. Qwen selects Serena for Spanish or Aiden for English inside its
+existing isolated environment and remains behind constrained buffering. A
+sequential six-arm exact-host service matrix proves load, bounded synthesis,
+busy handling, identity-first cancellation, reload, second synthesis,
+shutdown, and cleanup with one model process at a time and no retained audio.
 
 The corrective
 [`tts-profile-runtime-configuration-availability-v1`](tts-profile-runtime-configuration-availability-v1.md)
