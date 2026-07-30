@@ -10,7 +10,10 @@ from benchmarks.adapters.qwen_v8 import (
     load_qwen_v8_profile,
 )
 from benchmarks.bilingual_screen import ScreenPreflightReceipt, _machine_failures
-from benchmarks.bilingual_screen_result import build_rejected_summary
+from benchmarks.bilingual_screen_result import (
+    build_preflight_rejection_summary,
+    build_rejected_summary,
+)
 from benchmarks.contracts import (
     AdapterCapabilities,
     BenchmarkRun,
@@ -26,6 +29,7 @@ from benchmarks.fake_adapter import (
 )
 from benchmarks.harness import BenchmarkHarness, load_bilingual_corpus
 from benchmarks.preflight import HostSnapshot
+from benchmarks.v7_authority import ADMITTED_CANDIDATE_IDS as V7_CANDIDATE_IDS
 from benchmarks.v8_authority import (
     QWEN_AIDEN_CANDIDATE_ID,
     QWEN_SERENA_CANDIDATE_ID,
@@ -252,3 +256,32 @@ def test_cancellation_failure_does_not_relabel_completed_generations() -> None:
 
     assert "cancellation" in failures
     assert "first-attempt-failure" not in failures
+
+
+def test_preflight_model_api_rejection_records_no_fabricated_measurements() -> None:
+    summary = build_preflight_rejection_summary(
+        candidate_id=V7_CANDIDATE_IDS[1],
+        execution_commit_sha="1" * 40,
+        failure_id="model-load-failed",
+        artifacts_verified=False,
+        network_isolation=False,
+        limitations=(
+            "frozen-lock-loads-v2-filename",
+            "frozen-candidate-requires-v3-filename",
+            "runtime-download-substitution-forbidden",
+        ),
+    )
+
+    assert summary["status"] == "rejected"
+    assert summary["performanceByLanguage"] == []
+    assert summary["memory"] is None
+    assert summary["counts"] == {
+        "firstAttempts": 0,
+        "completedGenerations": 0,
+        "failedGenerations": 0,
+        "cancellationTrials": 0,
+    }
+    assert summary["qualityByLanguage"] == [
+        {"language": "es", "status": "not-admitted"},
+        {"language": "en", "status": "not-admitted"},
+    ]

@@ -12,7 +12,14 @@ from typing import Final, NoReturn, cast
 from benchmarks.bilingual_screen import AUTHORITY_COMMIT_SHA, RAW_ROOT, REPOSITORY_ROOT
 from benchmarks.metrics import distribution
 from benchmarks.preflight import GitRepositoryProbe
-from benchmarks.v7_authority import CORPUS_SHA256
+from benchmarks.v7_authority import (
+    ADMITTED_CANDIDATE_IDS as V7_ADMITTED_CANDIDATE_IDS,
+)
+from benchmarks.v7_authority import (
+    CHATTERBOX_LOCK_SHA256,
+    CORPUS_SHA256,
+    MOSS_LOCK_SHA256,
+)
 from benchmarks.v8_authority import (
     ADDED_CANDIDATE_IDS,
     CANDIDATES_SHA256,
@@ -27,6 +34,14 @@ from benchmarks.v8_authority import (
 RESULT_NAMES: Final = {
     ADDED_CANDIDATE_IDS[0]: "qwen-serena-spanish-control-result-v8.json",
     ADDED_CANDIDATE_IDS[1]: "qwen-aiden-english-control-result-v8.json",
+    V7_ADMITTED_CANDIDATE_IDS[1]: "chatterbox-bilingual-screen-result-v8.json",
+    V7_ADMITTED_CANDIDATE_IDS[2]: "moss-bilingual-screen-result-v8.json",
+}
+LOCKS: Final = {
+    ADDED_CANDIDATE_IDS[0]: QWEN_LOCK_SHA256,
+    ADDED_CANDIDATE_IDS[1]: QWEN_LOCK_SHA256,
+    V7_ADMITTED_CANDIDATE_IDS[1]: CHATTERBOX_LOCK_SHA256,
+    V7_ADMITTED_CANDIDATE_IDS[2]: MOSS_LOCK_SHA256,
 }
 
 
@@ -122,6 +137,125 @@ def validate_machine_session(
         "candidateId": candidate_id,
         "sessionId": session_id,
         "rawStatus": raw["status"],
+    }
+
+
+def build_preflight_rejection_summary(
+    *,
+    candidate_id: str,
+    execution_commit_sha: str,
+    failure_id: str,
+    artifacts_verified: bool,
+    network_isolation: bool,
+    limitations: Sequence[str],
+) -> dict[str, object]:
+    """Record one exact pre-inference stop without fabricating observations."""
+
+    if (
+        candidate_id not in RESULT_NAMES
+        or candidate_id in ADDED_CANDIDATE_IDS
+        or failure_id != "model-load-failed"
+        or not limitations
+    ):
+        _fail("candidate")
+    languages = EXPECTED_LANGUAGES[candidate_id]
+    summary: dict[str, object] = {
+        "schemaVersion": "tts-bilingual-summary-v8",
+        "candidateId": candidate_id,
+        "evaluationStage": "screen",
+        "authorityCommitSha": AUTHORITY_COMMIT_SHA,
+        "executionCommitSha": execution_commit_sha,
+        "profileSha256": PROFILE_SHA256,
+        "corpusSha256": CORPUS_SHA256,
+        "candidateManifestSha256": CANDIDATES_SHA256,
+        "dependencyLockSha256": LOCKS[candidate_id],
+        "status": "rejected",
+        "languagesEvaluated": list(languages),
+        "counts": {
+            "firstAttempts": 0,
+            "completedGenerations": 0,
+            "failedGenerations": 0,
+            "cancellationTrials": 0,
+        },
+        "performanceByLanguage": [],
+        "memory": None,
+        "cancellation": {
+            "requiredTrials": 4 * len(languages),
+            "passedTrials": 0,
+            "staleUnits": 0,
+            "processesRemaining": 0,
+        },
+        "qualityByLanguage": [
+            {"language": language, "status": "not-admitted"} for language in languages
+        ],
+        "audits": {
+            "artifacts": artifacts_verified,
+            "offline": True,
+            "networkIsolation": network_isolation,
+            "privacy": True,
+            "boundedRetention": True,
+            "cleanup": True,
+            "firstAttemptsOnly": True,
+        },
+        "gates": {
+            "machine": "fail",
+            "performance": "not-admitted",
+            "memory": "not-admitted",
+            "cancellation": "not-admitted",
+            "quality": "not-admitted",
+            "privacy": "pass",
+            "cleanup": "pass",
+            "overall": "fail",
+        },
+        "limitations": [failure_id, *limitations],
+    }
+    validate_v8_summary_result(
+        REPOSITORY_ROOT,
+        summary,
+        ancestry_checker=lambda authority, execution: authority != execution,
+        authority_tree_checker=lambda authority: authority == AUTHORITY_COMMIT_SHA,
+    )
+    return summary
+
+
+def write_preflight_rejection(
+    *,
+    candidate_id: str,
+    expected_commit_sha: str,
+    failure_id: str,
+    artifacts_verified: bool,
+    network_isolation: bool,
+    limitations: Sequence[str],
+) -> dict[str, object]:
+    """Write one content-safe early rejection from a clean committed checkpoint."""
+
+    repository = GitRepositoryProbe().snapshot(REPOSITORY_ROOT)
+    result_name = RESULT_NAMES.get(candidate_id)
+    if result_name is None or repository.commit_sha != expected_commit_sha or not repository.clean:
+        _fail("state")
+    result_path = REPOSITORY_ROOT / "benchmarks" / "tts" / result_name
+    if result_path.exists():
+        _fail("state")
+    summary = build_preflight_rejection_summary(
+        candidate_id=candidate_id,
+        execution_commit_sha=expected_commit_sha,
+        failure_id=failure_id,
+        artifacts_verified=artifacts_verified,
+        network_isolation=network_isolation,
+        limitations=limitations,
+    )
+    validate_v8_summary_result(REPOSITORY_ROOT, summary)
+    payload = (json.dumps(summary, ensure_ascii=True, indent=2, sort_keys=True) + "\n").encode(
+        "utf-8"
+    )
+    result_path.write_bytes(payload)
+    if result_path.read_bytes() != payload:
+        _fail("result-write")
+    return {
+        "status": "pass",
+        "candidateId": candidate_id,
+        "outcome": "fail",
+        "resultPath": result_path.relative_to(REPOSITORY_ROOT).as_posix(),
     }
 
 
