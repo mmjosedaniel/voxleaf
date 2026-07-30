@@ -12,6 +12,7 @@ from typing import Final, NoReturn, cast
 
 from jsonschema import Draft202012Validator
 
+import benchmarks.v7_authority as v7_authority
 import benchmarks.v8_authority as v8_authority
 
 PROFILE_RELATIVE_PATH: Final = Path("benchmarks/tts/profile-v9.json")
@@ -27,7 +28,7 @@ MOSS_LOCK_RELATIVE_PATH: Final = Path(
     "services/tts/benchmarks/candidates/moss_tts_nano_100m_onnx_cpu/uv.lock"
 )
 
-PROFILE_SHA256: Final = "bcd1887977970adbfe5674200ce3b376f11098dc155662da150902ece860b4a9"
+PROFILE_SHA256: Final = "6e0ea9f05d0046bee82b09732afc5e3d6f4822cc9d48548a4510836bf8c5fbca"
 CANDIDATES_SHA256: Final = "4ac6aefad403c566126445498f084152d8dc14f449fff3d08f3eb14d00c707c5"
 RAW_SCHEMA_SHA256: Final = "6802fcb5e80ffc158b2d515711856d32233dc341dbc893941a9c9a5166bab5e4"
 SUMMARY_SCHEMA_SHA256: Final = "d15df5809bf9df376f616298afee2a9cca63ab905ee1e31e13bab152640aa23f"
@@ -147,8 +148,8 @@ def _verify_profile(profile: Mapping[str, object]) -> None:
     _verify_link(
         authorities,
         "evaluationCorpus",
-        v8_authority.v7_authority.CORPUS_RELATIVE_PATH,
-        v8_authority.v7_authority.CORPUS_SHA256,
+        v7_authority.CORPUS_RELATIVE_PATH,
+        v7_authority.CORPUS_SHA256,
     )
     _verify_link(
         authorities,
@@ -183,6 +184,21 @@ def _verify_profile(profile: Mapping[str, object]) -> None:
         or execution.get("oneLoadedModelAtATime") is not True
     ):
         _fail("execution")
+    bounded = _mapping(profile.get("boundedScreen"), "bounded")
+    timeouts = _mapping(bounded.get("timeoutsMilliseconds"), "bounded")
+    advisory = _mapping(bounded.get("advisoryTargets"), "bounded")
+    if (
+        dict(timeouts)
+        != {
+            "load": 300_000,
+            "request": 180_000,
+            "termination": 2_000,
+            "cleanup": 5_000,
+        }
+        or advisory.get("warmP95RtfMaximum") != 1.1
+        or advisory.get("cancellationTrialsPassed") != "all"
+    ):
+        _fail("bounded")
     decisions = _mapping(profile.get("decisionRules"), "decisions")
     if (
         decisions.get("rejectionRequiresExplicitMaintainerDecision") is not True
@@ -325,7 +341,7 @@ def validate_v9_summary_result(
         != EXPECTED_LANGUAGES[candidate_id]
         or result.get("profileSha256") != PROFILE_SHA256
         or result.get("candidateManifestSha256") != CANDIDATES_SHA256
-        or result.get("corpusSha256") != v8_authority.v7_authority.CORPUS_SHA256
+        or result.get("corpusSha256") != v7_authority.CORPUS_SHA256
         or result.get("dependencyLockSha256") != DEPENDENCY_LOCKS[candidate_id]
     ):
         _fail("result-authority")

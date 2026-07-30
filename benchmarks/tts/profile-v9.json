@@ -79,6 +79,21 @@
     "cancellationTrialsPerLanguage": 4,
     "coldLoadsPerCandidate": 1,
     "firstAttemptsOnly": true,
+    "timeoutsMilliseconds": {
+      "load": 300000,
+      "request": 180000,
+      "termination": 2000,
+      "cleanup": 5000
+    },
+    "advisoryTargets": {
+      "coldLoadP95SecondsMaximum": 30,
+      "firstAudioP95SecondsMaximum": 7,
+      "warmP95RtfMaximum": 1.1,
+      "peakProcessTreeRamMiBMaximum": 4096,
+      "minimumAvailableSystemRamMiB": 4096,
+      "minimumDedicatedVramReserveMiB": 512,
+      "cancellationTrialsPassed": "all"
+    },
     "measurements": [
       "cold-load",
       "first-audio",

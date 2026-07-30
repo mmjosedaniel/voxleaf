@@ -9,8 +9,9 @@ from typing import Final, cast
 
 import pytest
 
-import benchmarks.v9_authority as v9_authority
+from benchmarks.v7_authority import CORPUS_SHA256
 from benchmarks.v8_authority import PROFILE_SHA256 as V8_PROFILE_SHA256
+from benchmarks.v8_authority import QWEN_LOCK_SHA256
 from benchmarks.v9_authority import (
     CANDIDATES_SHA256,
     CHATTERBOX_CANDIDATE_ID,
@@ -40,8 +41,8 @@ def _sha256(path: str) -> str:
 def _summary(candidate_id: str = QWEN_SERENA_CANDIDATE_ID) -> dict[str, object]:
     languages = list(EXPECTED_LANGUAGES[candidate_id])
     lock = {
-        QWEN_SERENA_CANDIDATE_ID: v9_authority.v8_authority.QWEN_LOCK_SHA256,
-        QWEN_AIDEN_CANDIDATE_ID: v9_authority.v8_authority.QWEN_LOCK_SHA256,
+        QWEN_SERENA_CANDIDATE_ID: QWEN_LOCK_SHA256,
+        QWEN_AIDEN_CANDIDATE_ID: QWEN_LOCK_SHA256,
         CHATTERBOX_CANDIDATE_ID: CHATTERBOX_LOCK_SHA256,
         MOSS_CANDIDATE_ID: MOSS_LOCK_SHA256,
     }[candidate_id]
@@ -51,7 +52,7 @@ def _summary(candidate_id: str = QWEN_SERENA_CANDIDATE_ID) -> dict[str, object]:
         "authorityCommitSha": AUTHORITY_COMMIT,
         "executionCommitSha": EXECUTION_COMMIT,
         "profileSha256": PROFILE_SHA256,
-        "corpusSha256": v9_authority.v8_authority.v7_authority.CORPUS_SHA256,
+        "corpusSha256": CORPUS_SHA256,
         "candidateManifestSha256": CANDIDATES_SHA256,
         "dependencyLockSha256": lock,
         "status": "measured-awaiting-decision",
