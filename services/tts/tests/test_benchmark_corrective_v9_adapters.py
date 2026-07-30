@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Final
+
+from pytest import MonkeyPatch
 
 from benchmarks.adapters.corrective_v9 import (
     Artifact,
@@ -13,6 +16,7 @@ from benchmarks.adapters.corrective_v9 import (
     MossV9Adapter,
     MossV9Configuration,
     MossV9Profile,
+    _restore_candidate_site_packages,
     load_chatterbox_v9_profile,
     load_moss_v9_profile,
 )
@@ -219,3 +223,21 @@ def test_adapter_profile_artifacts_are_content_free() -> None:
     artifact = Artifact("model", "model.bin", 10, "0" * 64)
     assert artifact.relative_path == "model.bin"
     assert "Texto" not in repr(artifact)
+
+
+def test_spawned_worker_restores_its_candidate_site_packages(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    candidate_python = tmp_path / ".venv" / "Scripts" / "python.exe"
+    candidate_python.parent.mkdir(parents=True)
+    candidate_python.touch()
+    site_packages = tmp_path / ".venv" / "Lib" / "site-packages"
+    site_packages.mkdir(parents=True)
+    copied_service_path = str(tmp_path / "service-site-packages")
+    monkeypatch.setattr(sys, "executable", str(candidate_python))
+    monkeypatch.setattr(sys, "path", [copied_service_path, str(site_packages)])
+
+    _restore_candidate_site_packages()
+
+    assert sys.path == [str(site_packages.resolve()), copied_service_path]

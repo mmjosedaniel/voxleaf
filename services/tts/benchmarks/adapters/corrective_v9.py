@@ -7,6 +7,7 @@ import importlib
 import json
 import os
 import shutil
+import sys
 from collections.abc import Iterator, Mapping, Sequence, Sized
 from dataclasses import dataclass
 from importlib import metadata
@@ -68,6 +69,22 @@ def _sha256(path: Path) -> str:
     except OSError:
         _fail("artifact")
     return digest.hexdigest()
+
+
+def _restore_candidate_site_packages() -> None:
+    """Undo the parent sys.path copied into a Windows spawned venv process."""
+
+    site_packages = (
+        Path(sys.executable).resolve().parent.parent / "Lib" / "site-packages"
+    ).resolve()
+    if not site_packages.is_dir():
+        _fail("runtime")
+    normalized = os.path.normcase(str(site_packages))
+    sys.path[:] = [
+        entry for entry in sys.path if os.path.normcase(str(Path(entry).resolve())) != normalized
+    ]
+    sys.path.insert(0, str(site_packages))
+    importlib.invalidate_caches()
 
 
 @dataclass(frozen=True)
@@ -359,6 +376,7 @@ class ChatterboxV9Adapter:
     def load(self) -> None:
         if self._model is not None:
             _fail("already-loaded")
+        _restore_candidate_site_packages()
         root = verify_chatterbox_v9_artifacts(self._profile, self._configuration)
         if (
             metadata.version("chatterbox-tts") != "0.1.7"
@@ -464,6 +482,7 @@ class MossV9Adapter:
     def load(self) -> None:
         if self._runtime is not None:
             _fail("already-loaded")
+        _restore_candidate_site_packages()
         root = verify_moss_v9_artifacts(self._profile, self._configuration)
         if (
             metadata.version("moss-tts-nano") != "0.1.0"
