@@ -3,6 +3,11 @@ import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
 import "./styles.css";
+import {
+  inspectPitchPreservingBackendCapabilities,
+  runPitchPreservingBackendCandidateProbe,
+  runPitchPreservingBackendMachineProbe,
+} from "./tts/pitch-preserving-backend-probe";
 import { runTtsServiceLifecycleProbe } from "./tts/service-lifecycle-probe";
 import { runTtsProtocolProbe } from "./tts/transport-probe";
 
@@ -10,6 +15,9 @@ declare global {
   interface Window {
     readonly __voxleafRunTtsProtocolProbe?: typeof runTtsProtocolProbe;
     readonly __voxleafRunTtsServiceLifecycleProbe?: typeof runTtsServiceLifecycleProbe;
+    readonly __voxleafInspectPitchPreservingBackendCapabilities?: typeof inspectPitchPreservingBackendCapabilities;
+    readonly __voxleafRunPitchPreservingBackendCandidateProbe?: typeof runPitchPreservingBackendCandidateProbe;
+    readonly __voxleafRunPitchPreservingBackendMachineProbe?: typeof runPitchPreservingBackendMachineProbe;
   }
 }
 
@@ -26,6 +34,39 @@ Object.defineProperty(globalThis, "__voxleafRunTtsServiceLifecycleProbe", {
   value: runTtsServiceLifecycleProbe,
   writable: false,
 });
+
+Object.defineProperty(
+  globalThis,
+  "__voxleafRunPitchPreservingBackendCandidateProbe",
+  {
+    configurable: false,
+    enumerable: false,
+    value: runPitchPreservingBackendCandidateProbe,
+    writable: false,
+  },
+);
+
+Object.defineProperty(
+  globalThis,
+  "__voxleafInspectPitchPreservingBackendCapabilities",
+  {
+    configurable: false,
+    enumerable: false,
+    value: inspectPitchPreservingBackendCapabilities,
+    writable: false,
+  },
+);
+
+Object.defineProperty(
+  globalThis,
+  "__voxleafRunPitchPreservingBackendMachineProbe",
+  {
+    configurable: false,
+    enumerable: false,
+    value: runPitchPreservingBackendMachineProbe,
+    writable: false,
+  },
+);
 
 const container = document.getElementById("root");
 
