@@ -26,33 +26,36 @@
     "limitations"
   ],
   "properties": {
-    "schemaVersion": {"const": "tts-bilingual-summary-v9"},
-    "candidateId": {"$ref": "#/$defs/candidate"},
-    "authorityCommitSha": {"$ref": "#/$defs/commit"},
-    "executionCommitSha": {"$ref": "#/$defs/commit"},
-    "profileSha256": {"$ref": "#/$defs/sha256"},
-    "corpusSha256": {"$ref": "#/$defs/sha256"},
-    "candidateManifestSha256": {"$ref": "#/$defs/sha256"},
-    "dependencyLockSha256": {"$ref": "#/$defs/sha256"},
+    "schemaVersion": { "const": "tts-bilingual-summary-v9" },
+    "candidateId": { "$ref": "#/$defs/candidate" },
+    "authorityCommitSha": { "$ref": "#/$defs/commit" },
+    "executionCommitSha": { "$ref": "#/$defs/commit" },
+    "profileSha256": { "$ref": "#/$defs/sha256" },
+    "corpusSha256": { "$ref": "#/$defs/sha256" },
+    "candidateManifestSha256": { "$ref": "#/$defs/sha256" },
+    "dependencyLockSha256": { "$ref": "#/$defs/sha256" },
     "status": {
-      "enum": ["measured-awaiting-decision", "execution-blocked-awaiting-decision"]
+      "enum": [
+        "measured-awaiting-decision",
+        "execution-blocked-awaiting-decision"
+      ]
     },
     "languagesEvaluated": {
       "type": "array",
       "minItems": 1,
       "maxItems": 2,
       "uniqueItems": true,
-      "items": {"enum": ["es", "en"]}
+      "items": { "enum": ["es", "en"] }
     },
     "counts": {
       "type": "object",
       "additionalProperties": false,
       "required": ["attempted", "completed", "failed", "cancellationTrials"],
       "properties": {
-        "attempted": {"type": "integer", "minimum": 0, "maximum": 20},
-        "completed": {"type": "integer", "minimum": 0, "maximum": 20},
-        "failed": {"type": "integer", "minimum": 0, "maximum": 20},
-        "cancellationTrials": {"type": "integer", "minimum": 0, "maximum": 8}
+        "attempted": { "type": "integer", "minimum": 0, "maximum": 20 },
+        "completed": { "type": "integer", "minimum": 0, "maximum": 20 },
+        "failed": { "type": "integer", "minimum": 0, "maximum": 20 },
+        "cancellationTrials": { "type": "integer", "minimum": 0, "maximum": 8 }
       }
     },
     "performanceByLanguage": {
@@ -63,22 +66,25 @@
         "additionalProperties": false,
         "required": ["language", "firstAudioP95Seconds", "warmP95Rtf"],
         "properties": {
-          "language": {"enum": ["es", "en"]},
-          "firstAudioP95Seconds": {"type": ["number", "null"], "minimum": 0},
-          "warmP95Rtf": {"type": ["number", "null"], "minimum": 0}
+          "language": { "enum": ["es", "en"] },
+          "firstAudioP95Seconds": { "type": ["number", "null"], "minimum": 0 },
+          "warmP95Rtf": { "type": ["number", "null"], "minimum": 0 }
         }
       }
     },
     "memory": {
       "oneOf": [
-        {"type": "null"},
+        { "type": "null" },
         {
           "type": "object",
           "additionalProperties": false,
           "required": ["peakProcessTreeRamBytes", "peakDedicatedVramBytes"],
           "properties": {
-            "peakProcessTreeRamBytes": {"type": "integer", "minimum": 0},
-            "peakDedicatedVramBytes": {"type": ["integer", "null"], "minimum": 0}
+            "peakProcessTreeRamBytes": { "type": "integer", "minimum": 0 },
+            "peakDedicatedVramBytes": {
+              "type": ["integer", "null"],
+              "minimum": 0
+            }
           }
         }
       ]
@@ -88,8 +94,8 @@
       "additionalProperties": false,
       "required": ["requiredTrials", "passedTrials"],
       "properties": {
-        "requiredTrials": {"type": "integer", "minimum": 0, "maximum": 8},
-        "passedTrials": {"type": "integer", "minimum": 0, "maximum": 8}
+        "requiredTrials": { "type": "integer", "minimum": 0, "maximum": 8 },
+        "passedTrials": { "type": "integer", "minimum": 0, "maximum": 8 }
       }
     },
     "qualityByLanguage": {
@@ -100,9 +106,13 @@
         "additionalProperties": false,
         "required": ["language", "status"],
         "properties": {
-          "language": {"enum": ["es", "en"]},
+          "language": { "enum": ["es", "en"] },
           "status": {
-            "enum": ["pending-private-review", "reviewed-awaiting-decision", "not-generated"]
+            "enum": [
+              "pending-private-review",
+              "reviewed-awaiting-decision",
+              "not-generated"
+            ]
           }
         }
       }
@@ -119,40 +129,43 @@
         "cleanup"
       ],
       "properties": {
-        "artifacts": {"type": "boolean"},
-        "offline": {"type": "boolean"},
-        "networkIsolation": {"type": "boolean"},
-        "privacy": {"type": "boolean"},
-        "boundedRetention": {"type": "boolean"},
-        "cleanup": {"type": "boolean"}
+        "artifacts": { "type": "boolean" },
+        "offline": { "type": "boolean" },
+        "networkIsolation": { "type": "boolean" },
+        "privacy": { "type": "boolean" },
+        "boundedRetention": { "type": "boolean" },
+        "cleanup": { "type": "boolean" }
       }
     },
     "observations": {
       "type": "array",
       "maxItems": 32,
       "uniqueItems": true,
-      "items": {"$ref": "#/$defs/stableId"}
+      "items": { "$ref": "#/$defs/stableId" }
     },
     "decision": {
       "type": "object",
       "additionalProperties": false,
       "required": ["state", "rejectionRecorded"],
       "properties": {
-        "state": {"const": "pending-maintainer-decision"},
-        "rejectionRecorded": {"const": false}
+        "state": { "const": "pending-maintainer-decision" },
+        "rejectionRecorded": { "const": false }
       }
     },
     "limitations": {
       "type": "array",
       "maxItems": 32,
       "uniqueItems": true,
-      "items": {"$ref": "#/$defs/stableId"}
+      "items": { "$ref": "#/$defs/stableId" }
     }
   },
   "$defs": {
-    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
-    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-    "stableId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{0,127}$"},
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._:-]{0,127}$"
+    },
     "candidate": {
       "enum": [
         "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v9",

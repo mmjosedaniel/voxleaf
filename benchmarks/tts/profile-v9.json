@@ -23,11 +23,11 @@
     },
     "privateRawSchema": {
       "path": "benchmarks/tts/schemas/bilingual-raw-v9.schema.json",
-      "sha256": "6802fcb5e80ffc158b2d515711856d32233dc341dbc893941a9c9a5166bab5e4"
+      "sha256": "f8f4f70b284dd162ac55cebadcbdd6d3ab3f1a8980e605cfbd9d52f45fe4d202"
     },
     "contentSafeSummarySchema": {
       "path": "benchmarks/tts/schemas/bilingual-summary-v9.schema.json",
-      "sha256": "d15df5809bf9df376f616298afee2a9cca63ab905ee1e31e13bab152640aa23f"
+      "sha256": "34299a8ab0ca2cccf302ef82d6e223237115939c6e23376465c16bb7970fbd05"
     }
   },
   "productInterpretation": {
