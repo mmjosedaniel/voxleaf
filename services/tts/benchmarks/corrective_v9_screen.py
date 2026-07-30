@@ -15,8 +15,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, NoReturn, cast
 
-from jsonschema import Draft202012Validator
-
 from benchmarks.adapters.corrective_v9 import (
     ChatterboxV9AdapterFactory,
     ChatterboxV9Configuration,
@@ -490,6 +488,8 @@ def run_corrective_machine_evaluation(
     receipt: CorrectivePreflightReceipt,
 ) -> dict[str, object]:
     """Run one corrected candidate and retain decision-neutral private evidence."""
+
+    from jsonschema import Draft202012Validator
 
     if not receipt.eligible:
         _fail("preflight")

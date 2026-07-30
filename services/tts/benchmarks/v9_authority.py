@@ -10,8 +10,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, NoReturn, cast
 
-from jsonschema import Draft202012Validator
-
 import benchmarks.v7_authority as v7_authority
 import benchmarks.v8_authority as v8_authority
 
@@ -289,6 +287,8 @@ def _verify_candidates(candidates: Mapping[str, object]) -> None:
 def load_frozen_v9_authority(repository_root: Path) -> FrozenV9Authority:
     """Load and verify immutable v8 history plus the exact v9 correction."""
 
+    from jsonschema import Draft202012Validator
+
     base = v8_authority.load_frozen_v8_authority(repository_root)
     _verify_hashes(repository_root)
     profile = _load_object(repository_root / PROFILE_RELATIVE_PATH)
@@ -330,6 +330,8 @@ def validate_v9_summary_result(
     ancestry_checker: Callable[[str, str], bool] | None = None,
 ) -> None:
     """Validate one content-safe, decision-pending v9 summary."""
+
+    from jsonschema import Draft202012Validator
 
     authority = load_frozen_v9_authority(repository_root)
     errors = tuple(Draft202012Validator(authority.summary_schema).iter_errors(value))

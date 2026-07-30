@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 from typing import Final, cast
 
@@ -29,6 +31,7 @@ from benchmarks.preflight import HostSnapshot
 from benchmarks.v9_authority import CHATTERBOX_CANDIDATE_ID, load_frozen_v9_authority
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
+SERVICE_ROOT: Final = Path(__file__).resolve().parents[1]
 
 
 def _receipt() -> CorrectivePreflightReceipt:
@@ -163,3 +166,19 @@ def test_content_safe_output_cannot_record_rejection() -> None:
         1.44,
         1.44,
     ]
+
+
+def test_isolated_worker_import_does_not_require_service_schema_validator() -> None:
+    completed = subprocess.run(
+        (
+            sys.executable,
+            "-c",
+            ("import sys;sys.modules['jsonschema']=None;import benchmarks.corrective_v9_screen"),
+        ),
+        cwd=SERVICE_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    assert completed.returncode == 0, completed.stderr
