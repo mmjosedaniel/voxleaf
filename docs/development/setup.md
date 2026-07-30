@@ -506,6 +506,92 @@ writes waveform samples. The returned session ID is content-free; the raw
 journal remains non-promotable until the later quality and audit fields are
 complete and the allowlisted summary passes validation.
 
+### M010.1 corrective full evaluation v12
+
+V12 is a manual exact-host evaluation, not part of root checks or application
+startup. Its authority commit must be a strict ancestor of the clean execution
+commit. The exact Chatterbox and Qwen candidate interpreters must already have
+enabled outbound-block firewall rules, and all model artifacts must already
+exist under their ignored exact local roots.
+
+From repository root, capture the clean commits and interpreters before
+changing directory:
+
+```powershell
+$authorityCommit = git log --format="%H" --fixed-strings --grep="feat(tts): freeze corrective full evaluation v12" -1
+$executionCommit = git rev-parse HEAD
+$servicePython = (Resolve-Path "services/tts/.venv/Scripts/python.exe").Path
+$chatterboxPython = (Resolve-Path "services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v4/.venv/Scripts/python.exe").Path
+$qwenPython = (Resolve-Path "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/.venv/Scripts/python.exe").Path
+$env:HF_HUB_OFFLINE = "1"
+$env:TRANSFORMERS_OFFLINE = "1"
+```
+
+Run Chatterbox preflight and the complete machine matrix from the service
+package directory:
+
+```powershell
+$machineRequest = @{
+  authorityCommitSha = $authorityCommit
+  executionCommitSha = $executionCommit
+  sleepDisabled = $true
+  backgroundLoadAcceptable = $true
+  thermalStateAcceptable = $true
+} | ConvertTo-Json -Compress
+
+Push-Location "services/tts"
+$machineRequest | & $servicePython -m benchmarks.corrective_v12_cli preflight
+$machineRequest | & $servicePython -m benchmarks.corrective_v12_cli machine
+Pop-Location
+```
+
+The machine command returns a content-free session ID. Generate each opted-in
+private review separately so only one model is loaded at a time. Supply that
+machine session only for Chatterbox; Qwen creates a separate ignored session:
+the Chatterbox candidate command delegates schema verification of the machine
+journal to the service interpreter, then performs inference only inside the
+locked candidate environment. This keeps service validation dependencies out
+of the frozen model environment.
+
+```powershell
+Push-Location "services/tts"
+
+$chatterboxQuality = @{
+  candidateId = "chatterbox-multilingual-v3-cuda-bf16-default-v4"
+  authorityCommitSha = $authorityCommit
+  executionCommitSha = $executionCommit
+  sessionId = "<machine-session-id>"
+  qualityOptIn = $true
+} | ConvertTo-Json -Compress
+$chatterboxQuality | & $chatterboxPython -m benchmarks.corrective_v12_quality_cli generate
+
+$serenaQuality = @{
+  candidateId = "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8"
+  authorityCommitSha = $authorityCommit
+  executionCommitSha = $executionCommit
+  sessionId = $null
+  qualityOptIn = $true
+} | ConvertTo-Json -Compress
+$serenaQuality | & $qwenPython -m benchmarks.corrective_v12_quality_cli generate
+
+$aidenQuality = @{
+  candidateId = "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8"
+  authorityCommitSha = $authorityCommit
+  executionCommitSha = $executionCommit
+  sessionId = $null
+  qualityOptIn = $true
+} | ConvertTo-Json -Compress
+$aidenQuality | & $qwenPython -m benchmarks.corrective_v12_quality_cli generate
+
+Pop-Location
+```
+
+Open each returned ignored evaluator HTML locally, complete every field, and
+download the result. The guarded `derive` command accepts one downloaded form,
+writes only its schema-valid content-safe summary below `benchmarks/tts/`, and
+deletes the complete private session. Do not commit a downloaded form,
+generated waveform, private map, raw session, model, environment, or path.
+
 For the completed `v2` cycle, the audit is complete but the one-evaluator
 quality result remains below the frozen three-person minimum, so no official
 summary or production profile was promoted. The accepted content-free outcome

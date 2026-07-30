@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:benchmark:tts-bilingual-full-raw:v12",
+  "title": "VoxLeaf private corrective Chatterbox full evaluation v12",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "candidateId",
+    "authorityCommitSha",
+    "executionCommitSha",
+    "profileSha256",
+    "corpusSha256",
+    "candidateManifestSha256",
+    "dependencyLockSha256",
+    "status",
+    "languagesEvaluated",
+    "loadObservations",
+    "attempts",
+    "cancellationTrials",
+    "memory",
+    "audits",
+    "observations",
+    "decision"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "tts-bilingual-full-raw-v12" },
+    "candidateId": {
+      "const": "chatterbox-multilingual-v3-cuda-bf16-default-v4"
+    },
+    "authorityCommitSha": { "$ref": "#/$defs/commit" },
+    "executionCommitSha": { "$ref": "#/$defs/commit" },
+    "profileSha256": { "$ref": "#/$defs/sha256" },
+    "corpusSha256": { "$ref": "#/$defs/sha256" },
+    "candidateManifestSha256": { "$ref": "#/$defs/sha256" },
+    "dependencyLockSha256": { "$ref": "#/$defs/sha256" },
+    "status": {
+      "enum": [
+        "measured-awaiting-decision",
+        "execution-blocked-awaiting-decision"
+      ]
+    },
+    "languagesEvaluated": {
+      "const": ["es", "en"]
+    },
+    "loadObservations": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["loadNanoseconds", "cleanupNanoseconds"],
+        "properties": {
+          "loadNanoseconds": { "type": "integer", "minimum": 0 },
+          "cleanupNanoseconds": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "attempts": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "caseId",
+          "language",
+          "phase",
+          "sampleCount",
+          "sampleRateHz",
+          "channels",
+          "wallNanoseconds",
+          "firstAudioNanoseconds",
+          "status"
+        ],
+        "properties": {
+          "caseId": { "$ref": "#/$defs/stableId" },
+          "language": { "enum": ["es", "en"] },
+          "phase": { "enum": ["warm", "sustained"] },
+          "sampleCount": { "type": "integer", "minimum": 1 },
+          "sampleRateHz": { "const": 24000 },
+          "channels": { "const": 1 },
+          "wallNanoseconds": { "type": "integer", "minimum": 1 },
+          "firstAudioNanoseconds": { "type": "integer", "minimum": 1 },
+          "status": { "const": "complete" }
+        }
+      }
+    },
+    "cancellationTrials": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "trialId",
+          "language",
+          "passed",
+          "stopNanoseconds",
+          "cleanupNanoseconds",
+          "staleUnits",
+          "processesRemaining"
+        ],
+        "properties": {
+          "trialId": { "$ref": "#/$defs/stableId" },
+          "language": { "enum": ["es", "en"] },
+          "passed": { "type": "boolean" },
+          "stopNanoseconds": { "type": "integer", "minimum": 0 },
+          "cleanupNanoseconds": { "type": "integer", "minimum": 0 },
+          "staleUnits": { "type": "integer", "minimum": 0 },
+          "processesRemaining": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "memory": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "peakProcessTreeRamBytes",
+            "peakDedicatedVramBytes",
+            "minimumAvailableSystemRamBytes"
+          ],
+          "properties": {
+            "peakProcessTreeRamBytes": { "type": "integer", "minimum": 0 },
+            "peakDedicatedVramBytes": {
+              "type": ["integer", "null"],
+              "minimum": 0
+            },
+            "minimumAvailableSystemRamBytes": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      ]
+    },
+    "audits": { "$ref": "#/$defs/audits" },
+    "observations": {
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/stableId" }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state"],
+      "properties": {
+        "state": { "const": "pending-maintainer-decision" }
+      }
+    }
+  },
+  "$defs": {
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._:-]{0,127}$"
+    },
+    "audits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifacts",
+        "offline",
+        "networkIsolation",
+        "privacy",
+        "boundedRetention",
+        "cleanup"
+      ],
+      "properties": {
+        "artifacts": { "type": "boolean" },
+        "offline": { "type": "boolean" },
+        "networkIsolation": { "type": "boolean" },
+        "privacy": { "type": "boolean" },
+        "boundedRetention": { "type": "boolean" },
+        "cleanup": { "type": "boolean" }
+      }
+    }
+  }
+}

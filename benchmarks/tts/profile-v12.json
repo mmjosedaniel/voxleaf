@@ -1,0 +1,157 @@
+{
+  "profileVersion": "tts-corrective-full-evaluation-profile-v12",
+  "status": "frozen-before-v12-implementation-and-results",
+  "purpose": "complete-chatterbox-bilingual-evaluation-and-independent-qwen-language-quality-decisions",
+  "preserves": {
+    "v8QwenAuthorityAndResults": true,
+    "v9MossAuthorityAndResult": true,
+    "v11ChatterboxAuthorityAndResult": true,
+    "historicalBytesMayBeEdited": false
+  },
+  "authorities": {
+    "evaluationCorpus": {
+      "path": "benchmarks/tts/corpus-v7.json",
+      "sha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe"
+    },
+    "candidateManifest": {
+      "path": "benchmarks/tts/candidates-v12.json",
+      "sha256": "0107aee0e4cbea5ae0d26cddb6511340d57854061f2b1c4108166bcf1df45539"
+    },
+    "chatterboxPrivateRawSchema": {
+      "path": "benchmarks/tts/schemas/bilingual-full-raw-v12.schema.json",
+      "sha256": "06e72b865d2dea9568e1e08a32b7153a98ea95f4c2799eaae42210a2ea7a07bb"
+    },
+    "chatterboxContentSafeSummarySchema": {
+      "path": "benchmarks/tts/schemas/bilingual-full-summary-v12.schema.json",
+      "sha256": "a4a25d7448e8e8c0615ed10168a9fbff460ef314a1801518a7ffb207014ff9ac"
+    },
+    "qwenContentSafeQualitySchema": {
+      "path": "benchmarks/tts/schemas/quality-control-summary-v12.schema.json",
+      "sha256": "d13db1077572d47894ba4bf897da11781325574ad7e4c4241e303406684f4f50"
+    }
+  },
+  "executionPolicy": {
+    "candidateOrder": [
+      "chatterbox-multilingual-v3-cuda-bf16-default-v4",
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8",
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8"
+    ],
+    "oneLoadedModelAtATime": true,
+    "automaticRetries": 0,
+    "runtimeDownloads": "forbidden",
+    "outboundNetworkDuringEvaluation": "blocked-for-exact-interpreter",
+    "referenceAudio": "forbidden",
+    "rawResultRoot": "benchmarks/tts/raw/v12",
+    "rawResultRetention": "delete-after-content-safe-derivation",
+    "generatedAudioRetention": "delete-after-private-quality-session",
+    "resultCommitRule": "authority-commit-tree-must-match-and-be-strict-ancestor",
+    "commands": {
+      "chatterbox": "python -m benchmarks.corrective_v12_cli",
+      "quality": "python -m benchmarks.corrective_v12_quality_cli"
+    }
+  },
+  "chatterboxFullMatrix": {
+    "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v4",
+    "languages": ["es", "en"],
+    "coldLoads": 5,
+    "warmPassesPerLanguage": 2,
+    "sustainedCompleteCorpusPassesPerLanguage": 3,
+    "expectedWarmAttempts": 20,
+    "expectedSustainedAttempts": 30,
+    "cancellationTrialsPerLanguage": [
+      "before-dispatch",
+      "accepted-before-audio",
+      "after-first-audio",
+      "near-hard-mid-generation"
+    ],
+    "timeoutsMilliseconds": {
+      "load": 300000,
+      "request": 180000,
+      "sustained": 1800000,
+      "workerTermination": 2000,
+      "cleanup": 5000
+    },
+    "host": {
+      "operatingSystem": "Windows",
+      "architecture": "x86_64",
+      "minimumLogicalProcessors": 8,
+      "minimumTotalRamMiB": 24576,
+      "minimumAvailableRamMiB": 4096,
+      "minimumTotalDedicatedVramMiB": 8000,
+      "minimumAvailableDedicatedVramMiB": 6144,
+      "requiredCudaCapability": "12.0",
+      "powerOnline": true,
+      "sleepDisabled": true,
+      "backgroundLoadAcceptable": true,
+      "thermalStateAcceptable": true
+    }
+  },
+  "qwenQualityControls": {
+    "reuseMachineEvidenceWithoutReinterpretation": true,
+    "newMachineExecutionRequired": false,
+    "profiles": [
+      {
+        "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8",
+        "language": "es",
+        "speaker": "Serena",
+        "machineEvidenceSha256": "fef771409d1edb24bd6f02302f5b11317044903ea9e103e3a679511ac1d9b8f4"
+      },
+      {
+        "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8",
+        "language": "en",
+        "speaker": "Aiden",
+        "machineEvidenceSha256": "ac0321bbbc0626ee0026254ff05a5a58c9629088736f7f8509b88e3a08e62f73"
+      }
+    ],
+    "standardRtfTarget": {
+      "warmP95RtfMaximum": 1.1,
+      "interpretation": "advisory-for-bounded-constrained-buffering"
+    }
+  },
+  "qualityRubric": {
+    "evaluatorPolicy": "one-fluent-evaluator-per-evaluated-language",
+    "blindRandomizedOrder": true,
+    "samplesPerProfileLanguage": 5,
+    "scale": "1-5",
+    "dimensions": [
+      "intelligibility",
+      "naturalness",
+      "prosody",
+      "pronunciation",
+      "language-stability",
+      "overall-usefulness"
+    ],
+    "advisoryThresholds": {
+      "overallMeanMinimum": 3.25,
+      "intelligibilityMeanMinimum": 3.25,
+      "naturalnessMeanMinimum": 3.25,
+      "eachDimensionMeanMinimum": 2.75,
+      "meaningChangingDefectsMaximum": 0,
+      "wrongLanguageOutputsMaximum": 0
+    },
+    "machineMetricsMaySubstitute": false,
+    "missingFluentEvaluator": "blocked"
+  },
+  "interpretation": {
+    "automaticCandidateRejection": "forbidden",
+    "maintainerDecisionRequiredBeforeAdmissionDeferralOrRejection": true,
+    "standardPerformanceTargetsAreAdvisory": true,
+    "hardStops": [
+      "privacy-violation",
+      "remote-inference",
+      "unbounded-retention",
+      "artifact-identity-mismatch",
+      "network-isolation-missing"
+    ],
+    "hardStopIsAutomaticCandidateDecision": false,
+    "supportStateBeforeDecision": "unchanged"
+  },
+  "privacy": {
+    "committedResultContentSafeOnly": true,
+    "bookTextInLogs": "forbidden",
+    "privatePathsInResults": "forbidden",
+    "generatedAudioInGit": "forbidden",
+    "rawEvaluatorFormsInGit": "forbidden",
+    "modelWeightsInGit": "forbidden"
+  }
+}

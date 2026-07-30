@@ -40,6 +40,8 @@ ADR-0002-short-description.md
 - [`ADR-0027-freeze-chatterbox-cuda-v10-correction.md`](ADR-0027-freeze-chatterbox-cuda-v10-correction.md): preserve v9 MOSS evidence while freezing an exact CUDA 12.4 Chatterbox environment after the v9 CPU-wheel configuration stop.
 - [`ADR-0028-freeze-chatterbox-rtx50-compatibility-v11.md`](ADR-0028-freeze-chatterbox-rtx50-compatibility-v11.md): preserve v9/v10 evidence and freeze an explicit Torch 2.9.1+cu128 compatibility screen for the exact RTX 5060 host without recording a candidate rejection.
 - [`ADR-0029-advance-chatterbox-retain-qwen-defer-moss.md`](ADR-0029-advance-chatterbox-retain-qwen-defer-moss.md): advance exact Chatterbox to the next full matrix, defer MOSS without rejection, and retain Qwen Serena/Aiden as hardware-dependent constrained-buffer candidates.
+- [`ADR-0030-freeze-corrective-full-evaluation-v12.md`](ADR-0030-freeze-corrective-full-evaluation-v12.md): freeze the complete Chatterbox bilingual matrix and independent Qwen language-quality controls before new result-bearing work.
+- [`ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md`](ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md): admit Chatterbox for both languages and Qwen/Aiden English integration while retaining Qwen/Serena Spanish and explicit compatibility limits.
 
 ## Template
 

@@ -506,7 +506,9 @@ record this routing without changing runtime support.
 
 ### Milestone 5: Freeze and execute the corrective full evaluation
 
-**Status:** Not started.
+**Status:** Complete as of 2026-07-30. Result-blind v12 authority was committed
+before execution; the complete matrix, three private quality reviews,
+content-safe derivation, cleanup, and maintainer decisions are recorded.
 
 1. Before any new result, freeze a new numbered authority that preserves the
    v8 Qwen, v9 MOSS, and v11 Chatterbox evidence unchanged.
@@ -663,6 +665,63 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-30:** Recorded, without scheduling, a possible follow-up after
+  M010.1 closes: improve the portfolio-facing reader interface and replace the
+  current `1.0x`-only policy with an engine-neutral post-generation playback
+  control offering `1.0x`, `0.9x`, `0.8x`, `0.7x`, and `0.6x`. No M010.2
+  ExecPlan, authority, roadmap commitment, or implementation was created. The
+  maintainer will reevaluate the idea after M010.1 is complete.
+- **2026-07-30:** Completed Milestone 5. Chatterbox finished the complete
+  bilingual v12 matrix with 5/5 cold loads, 20/20 warm attempts, 30/30
+  sustained attempts, and 8/8 cancellation trials. Spanish/English total
+  sustained RTF were 0.523/0.537; peak process-tree RAM was 4.88 GiB and peak
+  dedicated VRAM was 3.56 GiB. All privacy, offline, bounded-retention, and
+  cleanup audits passed. One fluent bilingual maintainer reviewed five fresh
+  samples for each Chatterbox language and each Qwen language profile.
+  Chatterbox had zero meaning-changing or wrong-language outputs and was
+  admitted for Spanish and English. Qwen/Serena Spanish scored strongly and
+  was retained; Qwen/Aiden English received 5.0 in every dimension and was
+  admitted as the English configuration of the existing engine. Every private
+  scorecard, waveform, map, and raw session was deleted after guarded
+  derivation. `selection-v12.md`, ADR-0031, and support/integration matrix v2
+  record the decisions; runtime availability remains unchanged until
+  Milestone 6.
+- **2026-07-30:** The exact v12 Chatterbox machine matrix completed all five
+  cold loads, 50 generation attempts, and eight cancellation trials. Offline
+  isolation, artifact, privacy, bounded-retention, and cleanup audits passed.
+  Cold-load time and process RAM exceeded preferred advisory targets; v12
+  correctly retains these as observations for the maintainer rather than
+  automatically rejecting the candidate. The first private-quality attempt
+  exposed a process-boundary defect: the locked model-only environment does
+  not include the service's JSON Schema dependency. Moved machine-journal
+  schema validation to a closed service-interpreter subprocess without
+  changing the frozen candidate lock or allowing the service validator to
+  perform inference.
+- **2026-07-30:** The first v12 preflight stopped before model loading on
+  `result-before-authority`. The v12 authority tree and ancestry were valid;
+  the cause was the reused v11 helper's unreachable pre-squash hard-coded SHA.
+  Replaced that helper dependency with the same exact host/artifact/network
+  checks plus v12's commit-tree proof. Focused Ruff, strict mypy, and nine
+  authority/workflow tests pass. This was a pre-result implementation repair,
+  not a model failure or candidate decision.
+- **2026-07-30:** Committed the result-blind v12 authority at
+  `0b90fa2c16cdb276550ad3c3a58a2d84e1509876` before implementing or running
+  any result-bearing command. Added the generic bounded bilingual full
+  protocol, exact Chatterbox preflight/matrix command, candidate-interpreter
+  private quality workflow, guarded content-safe derivation, and private
+  cleanup. Model-free validation proves five cold loads, 20 warm attempts, 30
+  sustained attempts, eight cancellation trials, and independent
+  language-specific quality aggregation. All 336 Python tests, strict mypy,
+  Ruff formatting, and Ruff lint pass. No v12 audio or result has been
+  generated yet.
+- **2026-07-30:** Began Milestone 5 on
+  `feat/m010-001-corrective-full-evaluation`. Added result-blind v12 authority
+  for the complete Chatterbox bilingual/sustained matrix and two independent
+  Qwen language-quality controls. V12 preserves the exact v8 Qwen, v9 MOSS,
+  and v11 Chatterbox results; keeps the standard RTF target advisory for
+  constrained buffering; forbids automatic rejection; and requires a
+  maintainer decision after private review. No new audio or result exists at
+  this checkpoint.
 - **2026-07-30:** Completed corrective Milestone 4. V11 Chatterbox completed
   10/10 bilingual cases and 8/8 cancellation trials with about 0.65 warm p95
   RTF; the maintainer rated it very good with cross-language accent
@@ -870,6 +929,12 @@ committed benchmark authority after results.
 
 ## Discoveries and decisions
 
+- V11's reusable preflight helper hard-coded the original branch authority SHA.
+  After GitHub squash-merged that work, the frozen v11 files remained exact
+  but the branch SHA was no longer an ancestor of `main`. V12 therefore
+  verifies the complete frozen authority tree at its supplied reachable
+  commit and strict ancestry directly; it does not inherit the obsolete v11
+  branch-ancestry assumption.
 - Current VoxLeaf normalization and product coordination are Spanish-specific;
   English narration is not a UI-only toggle.
 - A same-engine English voice is the lowest-risk bilingual baseline, but exact
@@ -947,6 +1012,36 @@ committed benchmark authority after results.
   Generation controls such as temperature, exaggeration, and CFG weight are
   not equivalent to pitch-preserving playback speed. Any future speed control
   should remain engine-neutral and separately authorized.
+- A possible post-M010.1 playback follow-up would expose exactly `1.0x`,
+  `0.9x`, `0.8x`, `0.7x`, and `0.6x`, retain `1.0x` as the default, and slow
+  only already-generated playback. It would not rewrite narration text,
+  regenerate audio, or add model-specific rate controls. At Qwen's measured
+  approximately 1.44 RTF, generation produces about 0.69 seconds of media per
+  wall-clock second, so `0.7x` is near the theoretical sustained consumption
+  boundary and the existing bounded inter-unit pauses may add limited
+  headroom. `0.8x` and `0.9x` improve depletion time but cannot independently
+  guarantee uninterrupted Qwen playback. Chatterbox and Piper already produce
+  faster than real time on the measured host and do not need slowdown for
+  capacity.
+- Enabling those rates is not merely activating an unfinished dropdown:
+  M008's accepted policy currently admits only `1.0x`. A future authority must
+  decide whether pitch-changing Web Audio playback is acceptable or whether
+  VoxLeaf must add a bounded pitch-preserving time-stretch path. It must also
+  make audible-progress projection, highlighting, heard-position persistence,
+  boundary-delay scheduling, buffer forecasts, underrun metrics, mid-unit
+  rate changes, accessibility, and bounded non-content preference persistence
+  speed-aware.
+- The same unscheduled follow-up may reconsider visual hierarchy for a
+  portfolio-ready interface: keep the reading surface primary and preserve its
+  sole scroll ownership, move infrequent file/profile/language/appearance
+  choices into bounded application chrome or settings, keep narration and
+  compatibility detail compact and collapsible, and preserve the explicit
+  paragraph leaf, active highlight, keyboard access, focus safety, and
+  truthful status messages. Exact visual requirements and mockups are not yet
+  approved.
+- These interface and playback ideas are discussion backlog only. Reevaluate
+  them after M010.1 Milestones 6 and 7 finish; create a new result-blind
+  authority and ExecPlan only if the maintainer then approves the scope.
 - The evaluated Chatterbox path has one bundled default conditioning voice.
   Additional voices require reference conditioning or voice cloning and
   remain outside this no-personal-reference scope.
@@ -1123,3 +1218,31 @@ Corrective Milestone 4 validation on 2026-07-30:
   scoped privacy/artifact scan passed. No EPUB, generated audio, raw session,
   scorecard, model weight, candidate environment, private path, email,
   credential, or secret is tracked by this milestone.
+
+Corrective Milestone 5 validation on 2026-07-30:
+
+- Exact v12 Chatterbox execution completed 5/5 cold loads, 20/20 warm
+  attempts, 30/30 sustained attempts, and 8/8 cancellation trials under
+  offline environment controls and the exact interpreter-bound outbound block.
+- The three blinded private reviews covered 10 Chatterbox bilingual samples,
+  five Qwen/Serena Spanish samples, and five Qwen/Aiden English samples. The
+  guarded derivation validated every scorecard and authority binding before
+  deleting all downloaded forms, waveforms, maps, and raw sessions.
+- `uv run --project services/tts --locked pytest
+services/tts/tests/test_benchmark_v12_authority.py
+services/tts/tests/test_benchmark_corrective_v12.py` passed 10 tests. The
+  focused format, Ruff, and strict-mypy checks also passed.
+- `pnpm.cmd check:portable` passed formatting, lint, all TypeScript/Python
+  type checks, 209 shared tests, 577 EPUB tests, 429 desktop tests plus seven
+  native WebDriver-client tests, all 337 Python tests, portable
+  desktop/package builds, and both Python distributions.
+- `pnpm.cmd check` passed the same checks plus Rust formatting, Clippy, all 40
+  Rust tests, the Tauri release build, and Python source/wheel builds.
+- The sandboxed focused uv invocation initially lacked access to the
+  user-local cache; its required local outside-sandbox rerun passed. The
+  existing pytest cache-permission warning and CSS-highlight/chunk-size build
+  warnings remain informational.
+- Schema validation passed again after mechanical Prettier formatting.
+  `git diff --check`, staged privacy scanning, and private-session inspection
+  found no EPUB, generated audio, raw session, scorecard, model weight,
+  candidate environment, private path, email, credential, or secret.

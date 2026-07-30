@@ -1,0 +1,47 @@
+{
+  "audits": {
+    "artifacts": true,
+    "boundedRetention": true,
+    "cleanup": true,
+    "networkIsolation": true,
+    "offline": true,
+    "privacy": true
+  },
+  "authorityCommitSha": "0b90fa2c16cdb276550ad3c3a58a2d84e1509876",
+  "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8",
+  "candidateManifestSha256": "0107aee0e4cbea5ae0d26cddb6511340d57854061f2b1c4108166bcf1df45539",
+  "corpusSha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe",
+  "decision": {
+    "rejectionRecorded": false,
+    "state": "pending-maintainer-decision"
+  },
+  "dependencyLockSha256": "1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913",
+  "evaluationStage": "independent-quality-only",
+  "executionCommitSha": "3c7ace1f9cb02341c26b0ecf921d99031cd6010b",
+  "language": "es",
+  "limitations": [
+    "single-fluent-maintainer",
+    "synthetic-five-case-corpus",
+    "v8-machine-evidence-reused-without-reinterpretation",
+    "complete-waveform-cancellation-limitation",
+    "hardware-dependent-constrained-buffer-profile",
+    "distribution-obligations-deferred-to-m011"
+  ],
+  "machineEvidenceSha256": "fef771409d1edb24bd6f02302f5b11317044903ea9e103e3a679511ac1d9b8f4",
+  "profileSha256": "b4144299538225bdac86983493b3a64b8cf2a8c291403aca21dfafe7d33cc267",
+  "quality": {
+    "dimensionMeans": {
+      "intelligibility": 4.8,
+      "language-stability": 4.8,
+      "naturalness": 4.6,
+      "overall-usefulness": 4.8,
+      "pronunciation": 4.6,
+      "prosody": 4.4
+    },
+    "meaningChangingDefects": 0,
+    "sampleCount": 5,
+    "status": "reviewed-awaiting-decision",
+    "wrongLanguageOutputs": 0
+  },
+  "schemaVersion": "tts-quality-control-summary-v12"
+}
