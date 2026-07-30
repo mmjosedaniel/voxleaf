@@ -665,6 +665,12 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-30:** Recorded, without scheduling, a possible follow-up after
+  M010.1 closes: improve the portfolio-facing reader interface and replace the
+  current `1.0x`-only policy with an engine-neutral post-generation playback
+  control offering `1.0x`, `0.9x`, `0.8x`, `0.7x`, and `0.6x`. No M010.2
+  ExecPlan, authority, roadmap commitment, or implementation was created. The
+  maintainer will reevaluate the idea after M010.1 is complete.
 - **2026-07-30:** Completed Milestone 5. Chatterbox finished the complete
   bilingual v12 matrix with 5/5 cold loads, 20/20 warm attempts, 30/30
   sustained attempts, and 8/8 cancellation trials. Spanish/English total
@@ -1006,6 +1012,36 @@ committed benchmark authority after results.
   Generation controls such as temperature, exaggeration, and CFG weight are
   not equivalent to pitch-preserving playback speed. Any future speed control
   should remain engine-neutral and separately authorized.
+- A possible post-M010.1 playback follow-up would expose exactly `1.0x`,
+  `0.9x`, `0.8x`, `0.7x`, and `0.6x`, retain `1.0x` as the default, and slow
+  only already-generated playback. It would not rewrite narration text,
+  regenerate audio, or add model-specific rate controls. At Qwen's measured
+  approximately 1.44 RTF, generation produces about 0.69 seconds of media per
+  wall-clock second, so `0.7x` is near the theoretical sustained consumption
+  boundary and the existing bounded inter-unit pauses may add limited
+  headroom. `0.8x` and `0.9x` improve depletion time but cannot independently
+  guarantee uninterrupted Qwen playback. Chatterbox and Piper already produce
+  faster than real time on the measured host and do not need slowdown for
+  capacity.
+- Enabling those rates is not merely activating an unfinished dropdown:
+  M008's accepted policy currently admits only `1.0x`. A future authority must
+  decide whether pitch-changing Web Audio playback is acceptable or whether
+  VoxLeaf must add a bounded pitch-preserving time-stretch path. It must also
+  make audible-progress projection, highlighting, heard-position persistence,
+  boundary-delay scheduling, buffer forecasts, underrun metrics, mid-unit
+  rate changes, accessibility, and bounded non-content preference persistence
+  speed-aware.
+- The same unscheduled follow-up may reconsider visual hierarchy for a
+  portfolio-ready interface: keep the reading surface primary and preserve its
+  sole scroll ownership, move infrequent file/profile/language/appearance
+  choices into bounded application chrome or settings, keep narration and
+  compatibility detail compact and collapsible, and preserve the explicit
+  paragraph leaf, active highlight, keyboard access, focus safety, and
+  truthful status messages. Exact visual requirements and mockups are not yet
+  approved.
+- These interface and playback ideas are discussion backlog only. Reevaluate
+  them after M010.1 Milestones 6 and 7 finish; create a new result-blind
+  authority and ExecPlan only if the maintainer then approves the scope.
 - The evaluated Chatterbox path has one bundled default conditioning voice.
   Additional voices require reference conditioning or voice cloning and
   remain outside this no-personal-reference scope.
