@@ -46,6 +46,7 @@ ADR-0002-short-description.md
 - [`ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md`](ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md): freeze the reader-first shell, bounded Settings preferences, English fallback migration, exact playback-rate arithmetic, and result-blind pitch-preserving backend comparison before implementation.
 - [`ADR-0034-retain-fixed-speed-after-playback-backend-evaluation.md`](ADR-0034-retain-fixed-speed-after-playback-backend-evaluation.md): retain `1.00x` after WSOLA exceeded the frozen CPU gate and packaged WebView2 rejected the in-memory media candidate under the unchanged CSP.
 - [`ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md`](ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md): reopen a separate result-blind comparison for six rates ending at `0.75x`, a narrowly reviewed media CSP, and fee-free permissive candidates without rewriting the failed v1 evidence.
+- [`ADR-0036-freeze-reduced-range-fee-free-playback-authority-v2.md`](ADR-0036-freeze-reduced-range-fee-free-playback-authority-v2.md): freeze the exact six-rate, three-candidate, fee-free licence, media-only CSP, lifecycle, resource, and result-lineage authority before v2 implementation or results.
 
 ## Template
 
