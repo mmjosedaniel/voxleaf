@@ -1,3 +1,10 @@
+/*
+ * Spanish table used only by `narration-bilingual-v2`.
+ *
+ * Keep additive v2 forms here because the historical Spanish table is a
+ * byte-frozen v6 evaluation input.
+ */
+
 /**
  * Closed `narration-v1` allowlist for line-end Spanish hyphenation.
  *
@@ -38,6 +45,12 @@ export const SPANISH_CELSIUS_NORMALIZATION = Object.freeze([
  * source-span enforcement.
  */
 export const SPANISH_LEXICAL_NORMALIZATION_FORMS = Object.freeze([
+  Object.freeze({
+    source: "las 14:30",
+    narration: "las catorce treinta",
+    kind: "time",
+    boundaryProtections: Object.freeze(["time-token"] as const),
+  }),
   Object.freeze({
     source: "24/07/2026",
     narration: "veinticuatro de julio de dos mil veintiséis",

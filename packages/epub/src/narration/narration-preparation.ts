@@ -658,6 +658,10 @@ export async function prepareNarrationBatch(
             leaf,
             request.defaultLanguage,
             Object.freeze({
+              normalizationProfile:
+                request.profile === "narration-bilingual-v2"
+                  ? "narration-bilingual-v2"
+                  : "narration-v1",
               maximumSegments: remainingSegmentEntries,
               retainedNarrationCodePointsMaximum: remainingNarrationCodePoints,
               retainedNarrationUtf8BytesMaximum: remainingNarrationUtf8Bytes,

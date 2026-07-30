@@ -17,6 +17,7 @@ import type {
 import type { XhtmlDocumentProjection } from "../document/xhtml-projector.js";
 import { createPublicationLocatorIndex } from "../locator/locator-index.js";
 import { createEpubProcessingBudget } from "../security/processing-budget.js";
+import { normalizeNarrationSourceTokens as normalizeBilingualNarrationSourceTokens } from "./narration-bilingual-normalizer.js";
 import {
   normalizeNarrationSourceTokens,
   type NarrationNormalizedStream,
@@ -154,11 +155,11 @@ describe("narration normalization", () => {
         const leaf = singleTextFixture(corpusCase.source, false);
         const before = JSON.stringify(leaf.sourceTokens);
 
-        const first = normalizeNarrationSourceTokens(
+        const first = normalizeBilingualNarrationSourceTokens(
           leaf.sourceTokens,
           corpusCase.language,
         );
-        const repeated = normalizeNarrationSourceTokens(
+        const repeated = normalizeBilingualNarrationSourceTokens(
           leaf.sourceTokens,
           corpusCase.language,
         );
@@ -166,8 +167,11 @@ describe("narration normalization", () => {
         expect(first.text).toBe(corpusCase.expected);
         expect(repeated).toEqual(first);
         expect(JSON.stringify(leaf.sourceTokens)).toBe(before);
-        assertSourceMapping(leaf, first);
-        assertDeepFrozen(first);
+        assertSourceMapping(
+          leaf,
+          first as unknown as NarrationNormalizedStream,
+        );
+        assertDeepFrozen(first as unknown as NarrationNormalizedStream);
       });
     }
 
@@ -181,13 +185,20 @@ describe("narration normalization", () => {
       const unsupported = leafFor(paragraph([text("Dr. Morgan", "fr")], "en"));
 
       expect(
-        normalizeNarrationSourceTokens(englishSelected.sourceTokens, "en").text,
+        normalizeBilingualNarrationSourceTokens(
+          englishSelected.sourceTokens,
+          "en",
+        ).text,
       ).toBe("Dr. Morgan");
       expect(
-        normalizeNarrationSourceTokens(spanishSelected.sourceTokens, "es").text,
+        normalizeBilingualNarrationSourceTokens(
+          spanishSelected.sourceTokens,
+          "es",
+        ).text,
       ).toBe("Dr. Morgan");
       expect(
-        normalizeNarrationSourceTokens(unsupported.sourceTokens, "en").text,
+        normalizeBilingualNarrationSourceTokens(unsupported.sourceTokens, "en")
+          .text,
       ).toBe("Dr. Morgan");
     });
   });
