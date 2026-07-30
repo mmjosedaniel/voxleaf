@@ -728,6 +728,16 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-30:** A live Piper-to-Chatterbox selection exposed a bounded
+  lifecycle race not covered by the successful-path profile-switch matrix. If
+  operational failure containment had already begun when configuration
+  selection requested a stop, the competing stop invalidated the containment
+  token before cleanup verification, leaving the UI indefinitely in
+  `containing-service`. Configuration stops now join any active containment
+  operation before refreshing the selected profile. A deterministic
+  regression reproduces the overlap, verifies zero retained audio, resets the
+  explicit failure episode only after containment, and starts the replacement
+  Chatterbox identity successfully.
 - **2026-07-30:** Completed the local Milestone 7 implementation and
   exact-host portfolio matrix. Piper Spanish/English and Chatterbox
   Spanish/English completed the one-minute quick observation with zero

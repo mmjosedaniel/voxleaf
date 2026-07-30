@@ -827,6 +827,9 @@ export class ProductNarrationCoordinator {
   }
 
   #stopActiveRun(): Promise<void> {
+    if (this.#recoveryOperation !== undefined) {
+      return this.#recoveryOperation;
+    }
     if (this.#stopOperation !== undefined) {
       return this.#stopOperation;
     }

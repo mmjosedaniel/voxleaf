@@ -736,6 +736,61 @@ describe("product narration coordinator", () => {
     await coordinator.close();
   });
 
+  it("waits for active failure containment before replacing profile identity", async () => {
+    let profileId = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      activeLanguage: vi.fn(() => "en" as const),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const { client, coordinator } = createHarness({
+      profileCompatibility,
+    });
+    const performShutdown = client.shutdown.bind(client);
+    let releaseContainment = (): void => undefined;
+    const containmentBlocked = new Promise<void>((resolve) => {
+      releaseContainment = resolve;
+    });
+    vi.spyOn(client, "prepare").mockRejectedValueOnce(
+      new ProductNarrationRecoveryError("model-warm-failed"),
+    );
+    vi.spyOn(client, "shutdown").mockImplementationOnce(async () => {
+      await containmentBlocked;
+      await performShutdown();
+    });
+    await coordinator.checkAvailability();
+
+    coordinator.start();
+    await settleUntil(
+      () => coordinator.observe().recovery.phase === "containing-service",
+    );
+
+    const stop = coordinator.stopForConfigurationChange();
+    releaseContainment();
+    await stop;
+    profileId = "chatterbox-multilingual-v3-cuda-bf16-default-v1";
+    await coordinator.refreshSelectedProfile();
+    coordinator.resetRecoveryEpisode();
+    await settleUntil(() => coordinator.observe().availability === "available");
+
+    expect(coordinator.observe()).toMatchObject({
+      profileId,
+      availability: "available",
+      failure: undefined,
+      recovery: {
+        phase: "operational",
+        failureCode: undefined,
+      },
+      navigation: { playIntent: "inactive" },
+      metrics: { retainedAudioUnitCount: 0 },
+    });
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+    expect(client.startedProfiles.at(-1)).toBe(profileId);
+    await coordinator.close();
+  });
+
   it("skips punctuation-only Piper ranges without failing or inserting audio", async () => {
     const profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
     const profileCompatibility: ProductNarrationProfileCompatibility = {
