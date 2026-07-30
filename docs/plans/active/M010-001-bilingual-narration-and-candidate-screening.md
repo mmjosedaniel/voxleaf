@@ -390,7 +390,7 @@ added.
 
 ### Milestone 3: Evaluate the exact Piper English baseline
 
-**Status:** Not started.
+**Status:** In progress.
 
 1. Acquire the exact frozen Piper English artifacts outside Git.
 2. Verify hashes, license/provenance files, offline loading, native audio
@@ -404,6 +404,19 @@ added.
 
 Exit with a schema-valid result and explicit decision for the exact Piper
 English profile.
+
+Actual result to date: the three frozen `en_US-joe-medium` artifacts were
+acquired into the ignored local model root and matched the frozen sizes and
+SHA-256 digests. The existing Piper 1.4.2 candidate environment, Python
+3.12.10 interpreter, ONNX Runtime 1.27.0 CPU provider, and dependency-lock
+digest also match authority. A separate v8 English adapter and baseline runner
+now preserve the v6 Spanish path, apply the frozen 22,050-to-24,000 Hz bounded
+linear conversion, project only the five English corpus cases, execute ten
+warm and fifteen sustained first attempts, and use the four v8 cancellation
+trials. Model-free focused formatting, lint, type checking, and 20 tests pass.
+No Piper English waveform or result has been produced yet: the exact
+candidate interpreter still requires its administrator-installed outbound
+firewall block before preflight can admit the run.
 
 ### Milestone 4: Run bounded sequential candidate and Qwen control screens
 
@@ -575,6 +588,19 @@ historical M005-M010 authority or user book state. Never use rollback to alter
 committed benchmark authority after results.
 
 ## Progress log
+
+- **2026-07-29:** Began Milestone 3 on
+  `feat/m010-001-piper-english-baseline`. Acquired the exact ignored
+  Piper/joe English artifacts and verified all three frozen sizes and hashes,
+  the CC0 model-card provenance, the existing candidate lock, Python 3.12.10,
+  Piper 1.4.2, ONNX Runtime 1.27.0, and CPU provider availability. Added a
+  v8-only English adapter, bounded 24 kHz conversion, bilingual corpus
+  projection, four-trial baseline protocol, content-safe raw schema path,
+  closed-stdin command, ignored v8 raw root, and deterministic regression
+  coverage. Focused Ruff, mypy, and 20 pytest cases pass. The first
+  administrator-scoped firewall installation attempt failed with Windows
+  access denied, so exact inference remains correctly blocked pending that
+  host control.
 
 - **2026-07-29:** Created this ExecPlan after M010 and M008.1 replacement
   Ubuntu/Windows checks passed. Sequenced the bounded bilingual/candidate work

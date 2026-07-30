@@ -57,6 +57,12 @@ CANCELLATION_TRIAL_ORDER: Final[tuple[CancellationTrialId, ...]] = (
     "after-five-media-seconds",
     "near-hard-mid-generation",
 )
+V8_CANCELLATION_TRIAL_ORDER: Final[tuple[CancellationTrialId, ...]] = (
+    "before-dispatch",
+    "accepted-before-audio",
+    "after-first-audio",
+    "near-hard-mid-generation",
+)
 
 
 class SystemNanosecondClock:
@@ -153,6 +159,52 @@ def load_corpus(path: Path) -> BenchmarkCorpus:
     )
 
 
+def load_bilingual_corpus(path: Path, language: str) -> BenchmarkCorpus:
+    """Load one language projection of the frozen bilingual v7/v8 corpus."""
+
+    if language not in ("es", "en"):
+        _fail("invalid-request")
+    raw = cast(object, json.loads(path.read_text(encoding="utf-8")))
+    if not isinstance(raw, dict):
+        _fail("invalid-request")
+    value = cast(Mapping[str, object], raw)
+    if value.get("corpusVersion") != "tts-bilingual-corpus-v7":
+        _fail("invalid-request")
+    raw_cases = value.get("cases")
+    quality_order = value.get("qualityOrderByLanguage")
+    if not isinstance(raw_cases, list) or not isinstance(quality_order, dict):
+        _fail("invalid-request")
+    raw_order = cast(Mapping[str, object], quality_order).get(language)
+    if not isinstance(raw_order, list):
+        _fail("invalid-request")
+
+    cases: dict[str, CorpusCase] = {}
+    for raw_case in raw_cases:
+        if not isinstance(raw_case, dict):
+            _fail("invalid-request")
+        case = cast(Mapping[str, object], raw_case)
+        if case.get("language") != language:
+            continue
+        corpus_case = CorpusCase(
+            case_id=_read_string(case.get("caseId")),
+            language=_read_string(case.get("language")),
+            text=_read_string(case.get("text")),
+            privacy_canary=_read_string(case.get("privacyCanary")),
+        )
+        if corpus_case.case_id in cases:
+            _fail("invalid-request")
+        cases[corpus_case.case_id] = corpus_case
+    order = tuple(_read_string(item) for item in raw_order)
+    if len(order) != 5 or set(order) != set(cases):
+        _fail("invalid-request")
+    return BenchmarkCorpus(
+        corpus_version="tts-bilingual-corpus-v7",
+        performance_order=order,
+        sustained_sequence=order,
+        cases=cases,
+    )
+
+
 def _forbidden_values(corpus: BenchmarkCorpus) -> tuple[str, ...]:
     return tuple(
         value for case in corpus.cases.values() for value in (case.text, case.privacy_canary)
@@ -181,7 +233,7 @@ def _validate_request(request: GenerationRequest) -> None:
         or len(request.request_id) > 128
         or not request.case_id
         or len(request.case_id) > 128
-        or request.language != "es"
+        or request.language not in ("es", "en")
         or not request.text
         or len(request.text) > MAX_INPUT_CODE_POINTS
         or len(request.text.encode("utf-8")) > MAX_INPUT_UTF8_BYTES
@@ -776,3 +828,204 @@ class BenchmarkHarness:
                 run=None,
                 failure=result_failure,
             )
+
+    def run_bilingual_baseline_protocol(
+        self,
+        *,
+        adapter_factory: AdapterFactory,
+        corpus: BenchmarkCorpus,
+    ) -> BenchmarkRunResult:
+        """Run the frozen v8 one-language baseline matrix without v6 drift."""
+
+        if (
+            corpus.corpus_version != "tts-bilingual-corpus-v7"
+            or len(corpus.performance_order) != 5
+            or len(corpus.sustained_sequence) != 5
+            or {case.language for case in corpus.cases.values()} != {"en"}
+        ):
+            return BenchmarkRunResult(
+                run=None,
+                failure=BenchmarkFailure(code="invalid-request"),
+            )
+        forbidden_values = _forbidden_values(corpus)
+        main_adapter: BenchmarkAdapter | None = None
+        memory_started = False
+        try:
+            load_observations: list[LoadObservation] = []
+            for index in range(1, 6):
+                adapter = adapter_factory()
+                load_ns = self._load(
+                    adapter,
+                    forbidden_values=forbidden_values,
+                    request_id=f"cold-{index}",
+                )
+                cleanup_ns = self._close(
+                    adapter,
+                    forbidden_values=forbidden_values,
+                    request_id=f"cold-{index}",
+                )
+                load_observation = LoadObservation(
+                    observation_index=index,
+                    load_ns=load_ns,
+                    cleanup_ns=cleanup_ns,
+                )
+                load_observations.append(load_observation)
+                self._observation_sink.record_load(load_observation)
+
+            main_adapter = adapter_factory()
+            capabilities = main_adapter.capabilities()
+            self._memory_probe.start()
+            memory_started = True
+            self._load(
+                main_adapter,
+                forbidden_values=forbidden_values,
+                request_id="measurement-load",
+            )
+            first_case = corpus.cases[corpus.performance_order[0]]
+            self._warm_up(
+                main_adapter,
+                GenerationRequest(
+                    request_id="warmup-1",
+                    case_id=first_case.case_id,
+                    phase="warmup",
+                    text=first_case.text,
+                    language=first_case.language,
+                ),
+                forbidden_values=forbidden_values,
+            )
+
+            generations: list[GenerationObservation] = []
+            for pass_index in range(2):
+                for case_id in corpus.performance_order:
+                    case = corpus.cases[case_id]
+                    generation_observation = self.observe_generation(
+                        main_adapter,
+                        GenerationRequest(
+                            request_id=f"warm-{pass_index + 1}-{case.case_id}",
+                            case_id=case.case_id,
+                            phase="warm",
+                            text=case.text,
+                            language=case.language,
+                        ),
+                        forbidden_values=forbidden_values,
+                    )
+                    generations.append(generation_observation)
+                    self._observation_sink.record_generation(generation_observation)
+
+            sustained_started_ns = self._clock.now_ns()
+            for pass_index in range(3):
+                for case_id in corpus.sustained_sequence:
+                    case = corpus.cases[case_id]
+                    generation_observation = self.observe_generation(
+                        main_adapter,
+                        GenerationRequest(
+                            request_id=f"sustained-{pass_index + 1}-{case.case_id}",
+                            case_id=case.case_id,
+                            phase="sustained",
+                            text=case.text,
+                            language=case.language,
+                        ),
+                        forbidden_values=forbidden_values,
+                    )
+                    generations.append(generation_observation)
+                    self._observation_sink.record_generation(generation_observation)
+                    if self._clock.now_ns() - sustained_started_ns > SUSTAINED_TIMEOUT_NS:
+                        _fail("timeout", "sustained")
+
+            cancellations: list[CancellationObservation] = []
+            cancellation_failures = 0
+            default_case = corpus.cases[corpus.performance_order[0]]
+            near_hard_case = corpus.cases[corpus.performance_order[-1]]
+            for index, trial_id in enumerate(V8_CANCELLATION_TRIAL_ORDER, start=1):
+                case = near_hard_case if trial_id == "near-hard-mid-generation" else default_case
+                try:
+                    cancellation_observation = self.observe_cancellation(
+                        main_adapter,
+                        GenerationRequest(
+                            request_id=f"cancel-{index}",
+                            case_id=case.case_id,
+                            phase="cancellation",
+                            text=case.text,
+                            language=case.language,
+                        ),
+                        trial_id,
+                        forbidden_values=forbidden_values,
+                    )
+                except _HarnessFailure as failure:
+                    if failure.code != "cancellation-failed":
+                        raise
+                    cancellation_failures += 1
+                    self._observation_sink.record_cancellation_failure(
+                        trial_id,
+                        BenchmarkFailure(
+                            code=failure.code,
+                            request_id=failure.request_id,
+                        ),
+                    )
+                    continue
+                cancellations.append(cancellation_observation)
+                self._observation_sink.record_cancellation(cancellation_observation)
+
+            self._close(
+                main_adapter,
+                forbidden_values=forbidden_values,
+                request_id="measurement-close",
+            )
+            main_adapter = None
+            memory = self._memory_probe.stop()
+            memory_started = False
+            self._observation_sink.record_memory(memory)
+            output_shapes = {
+                (
+                    observation.sample_rate_hz,
+                    observation.channels,
+                    observation.sample_format,
+                )
+                for observation in generations
+            }
+            if output_shapes != {(24_000, 1, "float32")}:
+                _fail("invalid-output")
+            run = BenchmarkRun(
+                candidate_id=capabilities.candidate_id,
+                role="compatibility",
+                capabilities=capabilities,
+                load_observations=tuple(load_observations),
+                generation_observations=tuple(generations),
+                cancellation_observations=tuple(cancellations),
+                memory=memory,
+                failed_observations=cancellation_failures,
+            )
+            return BenchmarkRunResult(
+                run=run,
+                failure=(
+                    BenchmarkFailure(
+                        code="cancellation-failed",
+                        request_id="cancellation",
+                    )
+                    if cancellation_failures
+                    else None
+                ),
+            )
+        except _HarnessFailure as failure:
+            if main_adapter is not None:
+                with suppress(Exception):
+                    main_adapter.close()
+            if memory_started:
+                with suppress(Exception):
+                    self._memory_probe.stop()
+            result_failure = BenchmarkFailure(
+                code=failure.code,
+                request_id=failure.request_id,
+            )
+            self._observation_sink.record_failure(result_failure)
+            return BenchmarkRunResult(run=None, failure=result_failure)
+        except Exception:
+            if main_adapter is not None:
+                with suppress(Exception):
+                    main_adapter.close()
+            if memory_started:
+                with suppress(Exception):
+                    self._memory_probe.stop()
+            result_failure = BenchmarkFailure(code="crash")
+            self._observation_sink.record_failure(result_failure)
+            return BenchmarkRunResult(run=None, failure=result_failure)
