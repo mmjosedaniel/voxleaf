@@ -418,8 +418,12 @@ The private quality workflow now generates five randomized English samples,
 requires all six frozen dimensions plus meaning and wrong-language findings,
 deletes the exported scorecard after aggregation, and derives only the closed
 content-safe v8 summary after deleting the complete private session. The
-expanded focused suite passes 23 tests. No Piper English waveform or result
-has been produced yet: the exact
+frozen candidate environment contains no repository schema dependencies, so
+candidate execution now hands its closed raw record to the existing service
+environment for v8 validation after the candidate process exits; the frozen
+candidate lock remains unchanged. The expanded focused suite passes 23 tests,
+and both candidate-side command modules import successfully in the exact
+environment. No Piper English waveform or result has been produced yet: the exact
 candidate interpreter still requires its administrator-installed outbound
 firewall block before preflight can admit the run.
 

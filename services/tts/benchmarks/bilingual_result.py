@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 from collections.abc import Mapping, Sequence
@@ -11,13 +12,10 @@ from typing import Final, NoReturn, cast
 from jsonschema import Draft202012Validator
 
 from benchmarks.adapters.piper_english import PIPER_ENGLISH_CANDIDATE_ID
-from benchmarks.bilingual_baseline import (
-    AUTHORITY_COMMIT_SHA,
-    RAW_ROOT,
-    BaselinePreflightReceipt,
-)
+from benchmarks.bilingual_baseline import AUTHORITY_COMMIT_SHA, RAW_ROOT
 from benchmarks.bilingual_quality import DIMENSIONS
 from benchmarks.metrics import distribution
+from benchmarks.preflight import GitRepositoryProbe
 from benchmarks.v7_authority import CORPUS_SHA256, PIPER_LOCK_SHA256
 from benchmarks.v8_authority import (
     CANDIDATES_SHA256,
@@ -93,6 +91,40 @@ def _session_path(session_id: str) -> Path:
     ):
         _fail("session")
     return session
+
+
+def validate_machine_session(
+    *,
+    expected_commit_sha: str,
+    machine_session_id: str,
+) -> dict[str, object]:
+    """Validate candidate-produced raw evidence in the repository environment."""
+
+    session = _session_path(machine_session_id)
+    raw_path = session / "machine.raw.json"
+    raw = _read_mapping(raw_path)
+    if (
+        raw.get("candidateId") != PIPER_ENGLISH_CANDIDATE_ID
+        or raw.get("executionCommitSha") != expected_commit_sha
+    ):
+        _fail("authority")
+    validate_v8_raw_result(REPOSITORY_ROOT, raw)
+    marker = {
+        "schemaVersion": "tts-bilingual-machine-validation-v8",
+        "candidateId": PIPER_ENGLISH_CANDIDATE_ID,
+        "executionCommitSha": expected_commit_sha,
+        "rawSha256": hashlib.sha256(raw_path.read_bytes()).hexdigest(),
+    }
+    (session / "machine.validated.json").write_text(
+        json.dumps(marker, ensure_ascii=True, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return {
+        "status": "pass",
+        "candidateId": PIPER_ENGLISH_CANDIDATE_ID,
+        "sessionId": machine_session_id,
+        "rawStatus": raw["status"],
+    }
 
 
 def _p95(values: Sequence[float]) -> float:
@@ -309,19 +341,20 @@ def build_content_safe_summary(
 
 
 def derive_and_cleanup_result(
-    receipt: BaselinePreflightReceipt,
     *,
+    expected_commit_sha: str,
     machine_session_id: str,
 ) -> dict[str, object]:
     """Validate evidence, remove all private state, and write one public result."""
 
-    if not receipt.eligible or RESULT_PATH.exists():
+    repository = GitRepositoryProbe().snapshot(REPOSITORY_ROOT)
+    if RESULT_PATH.exists() or not repository.clean or repository.commit_sha != expected_commit_sha:
         _fail("state")
     session = _session_path(machine_session_id)
     raw = _read_mapping(session / "machine.raw.json")
     aggregate = _read_mapping(session / "quality" / "quality.aggregate.json")
     if (
-        raw.get("executionCommitSha") != receipt.expected_commit_sha
+        raw.get("executionCommitSha") != expected_commit_sha
         or aggregate.get("sessionId") != machine_session_id
     ):
         _fail("authority")

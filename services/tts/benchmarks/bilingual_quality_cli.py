@@ -8,22 +8,25 @@ from pathlib import Path
 from typing import Final, cast
 
 from benchmarks.adapters.piper_english import PIPER_ENGLISH_CANDIDATE_ID
-from benchmarks.bilingual_baseline import REPOSITORY_ROOT, BilingualBaselineError
+from benchmarks.bilingual_baseline import REPOSITORY_ROOT
 from benchmarks.bilingual_baseline_cli import REQUEST_FIELDS, _preflight
 from benchmarks.bilingual_quality import (
     BilingualQualityError,
     finalize_quality_session,
     generate_quality_session,
 )
-from benchmarks.bilingual_result import (
-    BilingualResultError,
-    derive_and_cleanup_result,
-)
 
 MAXIMUM_STDIN_BYTES: Final = 32_768
 GENERATE_FIELDS: Final = REQUEST_FIELDS | frozenset({"qualityOptIn", "sessionId"})
 FINALIZE_FIELDS: Final = frozenset({"candidateId", "qualityOptIn", "sessionId", "resultPath"})
-DERIVE_FIELDS: Final = REQUEST_FIELDS | frozenset({"qualityOptIn", "sessionId"})
+DERIVE_FIELDS: Final = frozenset(
+    {
+        "candidateId",
+        "qualityOptIn",
+        "sessionId",
+        "expectedCommitSha",
+    }
+)
 
 
 def _read() -> dict[str, object]:
@@ -100,16 +103,13 @@ def _finalize(payload: dict[str, object]) -> dict[str, object]:
 def _derive(payload: dict[str, object]) -> dict[str, object]:
     if set(payload) != DERIVE_FIELDS or not _quality_enabled(payload):
         raise BilingualQualityError("invalid-input")
-    receipt = _preflight(_baseline_request(payload))
-    if not receipt.eligible:
-        return {
-            "status": "fail",
-            "candidateId": PIPER_ENGLISH_CANDIDATE_ID,
-            "stage": "preflight",
-            "failures": list(receipt.failures),
-        }
+    expected_commit_sha = payload.get("expectedCommitSha")
+    if not isinstance(expected_commit_sha, str):
+        raise BilingualQualityError("invalid-input")
+    from benchmarks.bilingual_result import derive_and_cleanup_result
+
     return derive_and_cleanup_result(
-        receipt,
+        expected_commit_sha=expected_commit_sha,
         machine_session_id=_session_id(payload),
     )
 
@@ -128,12 +128,7 @@ def main() -> int:
         else:
             output = _derive(payload)
         exit_code = 0 if output["status"] == "pass" else 2
-    except (
-        BilingualBaselineError,
-        BilingualQualityError,
-        BilingualResultError,
-        OSError,
-    ):
+    except (OSError, RuntimeError):
         output = {"status": "fail", "failureCode": "invalid-request"}
         exit_code = 2
     print(json.dumps(output, ensure_ascii=True, separators=(",", ":")))

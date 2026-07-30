@@ -17,8 +17,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, NoReturn, cast
 
-from jsonschema import Draft202012Validator
-
 from benchmarks.adapters.piper_english import (
     PIPER_ENGLISH_CANDIDATE_ID,
     PiperEnglishAdapterFactory,
@@ -46,8 +44,6 @@ from benchmarks.v7_authority import CORPUS_SHA256, PIPER_LOCK_SHA256
 from benchmarks.v8_authority import (
     CANDIDATES_SHA256,
     PROFILE_SHA256,
-    load_frozen_v8_authority,
-    validate_v8_raw_result,
 )
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
@@ -212,7 +208,6 @@ def run_baseline_preflight(
 ) -> BaselinePreflightReceipt:
     """Verify the exact result-bearing environment without exposing private values."""
 
-    load_frozen_v8_authority(repository_root)
     profile = load_piper_english_profile(repository_root)
     repository = (repository_probe or GitRepositoryProbe()).snapshot(repository_root)
     host = (host_probe or WindowsHostProbe()).snapshot(repository_root)
@@ -498,11 +493,6 @@ def run_machine_evaluation(receipt: BaselinePreflightReceipt) -> dict[str, objec
         minimum_available_ram_bytes=minimum_available_ram,
         failure_code=result.failure.code if result.failure is not None else None,
     )
-    authority = load_frozen_v8_authority(REPOSITORY_ROOT)
-    errors = tuple(Draft202012Validator(authority.raw_schema).iter_errors(raw))
-    if errors:
-        _fail("raw-schema")
-    validate_v8_raw_result(REPOSITORY_ROOT, raw)
     session_id = uuid.uuid4().hex
     if SESSION_ID.fullmatch(session_id) is None:
         _fail("session")
@@ -517,6 +507,39 @@ def run_machine_evaluation(receipt: BaselinePreflightReceipt) -> dict[str, objec
         json.dumps(raw, ensure_ascii=True, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+    service_python = REPOSITORY_ROOT / "services" / "tts" / ".venv" / "Scripts" / "python.exe"
+    try:
+        completed = subprocess.run(
+            (
+                str(service_python.resolve(strict=True)),
+                "-m",
+                "benchmarks.bilingual_result_cli",
+                "validate-machine",
+            ),
+            cwd=REPOSITORY_ROOT / "services" / "tts",
+            input=json.dumps(
+                {
+                    "candidateId": PIPER_ENGLISH_CANDIDATE_ID,
+                    "expectedCommitSha": receipt.expected_commit_sha,
+                    "sessionId": session_id,
+                },
+                ensure_ascii=True,
+                separators=(",", ":"),
+            ),
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=120,
+        )
+        validation = cast(object, json.loads(completed.stdout))
+    except (OSError, subprocess.SubprocessError, json.JSONDecodeError):
+        _fail("raw-validation")
+    if (
+        completed.returncode != 0
+        or not isinstance(validation, dict)
+        or validation.get("status") != "pass"
+    ):
+        _fail("raw-validation")
     attempts = cast(list[dict[str, object]], raw["attempts"])
     cancellation_trials = cast(list[dict[str, object]], raw["cancellationTrials"])
     return {

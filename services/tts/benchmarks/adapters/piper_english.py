@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import json
 import os
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence, Sized
 from dataclasses import dataclass
@@ -18,7 +19,6 @@ from benchmarks.contracts import (
     CancellationResponse,
     GenerationRequest,
 )
-from benchmarks.v8_authority import load_frozen_v8_authority
 
 PIPER_ENGLISH_CANDIDATE_ID: Final = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1"
 MODEL_REVISION: Final = "0d907f158acc877ddeebcbf827659ee13bea8bcd"
@@ -26,6 +26,29 @@ NATIVE_SAMPLE_RATE_HZ: Final = 22_050
 OUTPUT_SAMPLE_RATE_HZ: Final = 24_000
 MAXIMUM_PUBLISHED_CHUNK_MILLISECONDS: Final = 250
 HASH_READ_BYTES: Final = 1024 * 1024
+FROZEN_AUTHORITY_FILES: Final = {
+    "benchmarks/tts/profile-v7.json": (
+        "aa524172b817c1748b2085066a7ada69c48a9f8b097da749b3b40ff14b9d99ef"
+    ),
+    "benchmarks/tts/candidates-v7.json": (
+        "1c8b4591782c298d0af19ae91037eb6154e372f32d1c005d6a8dfdfe47bc0f53"
+    ),
+    "benchmarks/tts/corpus-v7.json": (
+        "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe"
+    ),
+    "benchmarks/tts/profile-v8.json": (
+        "84448e70e8b8b2782f22c0e3d874b1b30531084732e0416ab9e83e1ad1e7525a"
+    ),
+    "benchmarks/tts/candidates-v8.json": (
+        "5245f6949cf035eee8de98fef21e8eea89d30b468d76039949e2100558401b0e"
+    ),
+    "benchmarks/tts/schemas/bilingual-raw-v8.schema.json": (
+        "b18c14fa7a65d45f9bc8ddc05aa71607e7835584a5c0b7e87f244b5cb1681492"
+    ),
+    "benchmarks/tts/schemas/bilingual-summary-v8.schema.json": (
+        "c1d57fcea4c6abbbeb6af7ba3fe4a8a59b514c55803e09601e3d0448a863f67c"
+    ),
+}
 
 type ModuleImporter = Callable[[str], ModuleType]
 type VersionReader = Callable[[str], str]
@@ -156,11 +179,27 @@ def _number(value: object, code: str = "authority") -> float:
 def load_piper_english_profile(repository_root: Path) -> PiperEnglishProfile:
     """Load the exact Piper baseline through the already-frozen v8 authority."""
 
-    authority = load_frozen_v8_authority(repository_root)
+    for relative_path, expected_sha256 in FROZEN_AUTHORITY_FILES.items():
+        try:
+            payload = (repository_root / relative_path).read_bytes()
+        except OSError:
+            raise PiperEnglishConfigurationError("authority") from None
+        if hashlib.sha256(payload).hexdigest() != expected_sha256:
+            raise PiperEnglishConfigurationError("authority")
+    try:
+        candidates_value = cast(
+            object,
+            json.loads(
+                (repository_root / "benchmarks/tts/candidates-v7.json").read_text(encoding="utf-8")
+            ),
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        raise PiperEnglishConfigurationError("authority") from None
+    candidates_manifest = _mapping(candidates_value)
     candidates = {
         candidate.get("candidateId"): candidate
         for candidate in (
-            _mapping(item) for item in _sequence(authority.base.candidates.get("candidates"))
+            _mapping(item) for item in _sequence(candidates_manifest.get("candidates"))
         )
     }
     candidate = _mapping(candidates.get(PIPER_ENGLISH_CANDIDATE_ID))

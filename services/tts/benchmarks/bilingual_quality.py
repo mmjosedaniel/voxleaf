@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import html
 import json
 import secrets
@@ -238,13 +239,18 @@ document.querySelector("#export").addEventListener("click",()=>{{
 
 
 def _machine_passed(session: Path, expected_commit_sha: str) -> bool:
-    raw = _read_mapping(session / "machine.raw.json", maximum_bytes=262_144)
+    raw_path = session / "machine.raw.json"
+    raw = _read_mapping(raw_path, maximum_bytes=262_144)
+    marker = _read_mapping(session / "machine.validated.json")
     return (
         raw.get("schemaVersion") == "tts-bilingual-raw-v8"
         and raw.get("candidateId") == PIPER_ENGLISH_CANDIDATE_ID
         and raw.get("executionCommitSha") == expected_commit_sha
         and raw.get("status") == "complete"
         and raw.get("failures") == []
+        and marker.get("schemaVersion") == "tts-bilingual-machine-validation-v8"
+        and marker.get("executionCommitSha") == expected_commit_sha
+        and marker.get("rawSha256") == hashlib.sha256(raw_path.read_bytes()).hexdigest()
     )
 
 
