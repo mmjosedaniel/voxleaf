@@ -39,6 +39,14 @@ choices. Milestone 7 implementation and exact-host packaged portfolio evidence
 are complete. Required Ubuntu/Windows pull-request checks still gate moving
 this plan to `completed/`.
 
+The exact-host reader subsequently exposed a Chatterbox complete-waveform
+boundary defect: generic bilingual units could generate more than protocol
+v1's 480,000-sample maximum. The accepted
+[`narration-chatterbox-v1`](../../architecture/chatterbox-narration-preparation-profile-v1.md)
+profile keeps bilingual normalization but applies a tighter packing envelope.
+The private EPUB reproduction now reaches the one-minute playable-audio target
+without the former processing failure.
+
 ## Current state
 
 Completed M005 implements deterministic, bounded, locator-linked narration
@@ -1423,3 +1431,21 @@ Milestone 7 local validation on 2026-07-30:
 - Required Ubuntu and Windows pull-request checks have not yet run. In
   accordance with this plan's exit rule, the file remains under `active/`
   until those external checks pass.
+
+Post-Milestone 7 exact-host correction on 2026-07-30:
+
+- Reproduced the post-start Chatterbox failure without retaining book text or
+  audio. The generic bilingual profile produced 526,080- and 490,560-sample
+  waveforms, or 21.92 and 20.44 seconds at 24 kHz, above protocol v1's
+  480,000-sample maximum.
+- Added `narration-chatterbox-v1` with exact coordinator dispatch, retained
+  bilingual normalization, stable locator ranges, bounded continuation, and
+  regression coverage. The same diagnostic produced eight consecutive
+  waveforms from 5.12 to 12.00 seconds.
+- A fresh packaged application run with the same private EPUB crossed the
+  former failure point and reached the one-minute playable-audio target. Stop
+  completed cleanly and no private artifact entered the repository.
+- `pnpm.cmd check:portable` passed formatting, ESLint, Ruff, TypeScript and
+  strict-mypy checks, 209 shared tests, 580 EPUB tests, 433 desktop tests plus
+  11 native-script tests, all 347 Python tests, and portable package, desktop,
+  and Python builds.

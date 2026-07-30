@@ -48,6 +48,7 @@ interface ValidatedNarrationPreparationRequest {
   readonly profile:
     | "narration-v1"
     | "narration-bilingual-v2"
+    | "narration-chatterbox-v1"
     | "narration-piper-v1"
     | "narration-piper-v2";
   readonly defaultLanguage: "und" | "es" | "en";
@@ -270,9 +271,11 @@ export function validateNarrationPreparationRequest(
       !Object.hasOwn(request, "startLocator") ||
       (request.profile !== "narration-v1" &&
         request.profile !== "narration-bilingual-v2" &&
+        request.profile !== "narration-chatterbox-v1" &&
         request.profile !== "narration-piper-v1" &&
         request.profile !== "narration-piper-v2") ||
-      (request.profile === "narration-bilingual-v2"
+      (request.profile === "narration-bilingual-v2" ||
+      request.profile === "narration-chatterbox-v1"
         ? request.defaultLanguage !== "es" && request.defaultLanguage !== "en"
         : request.profile === "narration-piper-v2"
           ? request.defaultLanguage !== "und" &&
@@ -664,6 +667,7 @@ export async function prepareNarrationBatch(
             Object.freeze({
               normalizationProfile:
                 request.profile === "narration-bilingual-v2" ||
+                request.profile === "narration-chatterbox-v1" ||
                 (request.profile === "narration-piper-v2" &&
                   request.defaultLanguage === "en")
                   ? "narration-bilingual-v2"

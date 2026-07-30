@@ -252,6 +252,16 @@ same passage then reached Chatterbox playback with 36 seconds buffered and a
 one-minute active target. EPUB text, paths, generated audio, and model output
 are not included in this diagnostic.
 
+If Chatterbox starts playback but later reports a processing failure after one
+or more generated units, verify that the desktop selected
+`narration-chatterbox-v1`. Protocol v1 accepts at most 480,000 samples, or 20
+seconds at 24 kHz. The generic bilingual packer previously produced complete
+Chatterbox waveforms of 21.92 and 20.44 seconds for two long source units. The
+model and CUDA runtime remained healthy; the service correctly rejected the
+oversized unit. The Chatterbox profile preserves bilingual normalization while
+using a smaller packing envelope. Do not increase the shared protocol bound or
+truncate generated audio as a workaround.
+
 One bounded cause is an exact Qwen call that does not emit its codec stop token.
 Its historical benchmark authority retains `maxNewTokens: 2048` so that
 evaluation record remains unchanged, but that allowance can decode far beyond

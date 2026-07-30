@@ -657,6 +657,31 @@ describe("product narration coordinator", () => {
     await coordinator.close();
   });
 
+  it("prepares Chatterbox through its bounded bilingual waveform profile", async () => {
+    const profileId = "chatterbox-multilingual-v3-cuda-bf16-default-v4";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      activeLanguage: vi.fn(() => "en" as const),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const { coordinator, prepareNarration } = createHarness({
+      profileCompatibility,
+    });
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+
+    expect(prepareNarration).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profile: "narration-chatterbox-v1",
+        defaultLanguage: "en",
+      }),
+    );
+    await coordinator.close();
+  });
+
   it("rejects a language with no compatible profile before child start", async () => {
     const profileCompatibility: ProductNarrationProfileCompatibility = {
       activeProfileId: vi.fn(() => undefined),

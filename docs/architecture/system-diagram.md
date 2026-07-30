@@ -80,7 +80,7 @@ flowchart LR
 
         subgraph PACKAGES["TypeScript packages"]
             EPUBCORE["@voxleaf/epub<br/>ingestion, safe semantics, rasters, locators<br/>Implemented"]:::implemented
-            PREP["@voxleaf/epub narration preparation<br/>narration-v1 + bilingual-v2 + Piper-v2<br/>locator-linked + spoken-expansion bounded"]:::implemented
+            PREP["@voxleaf/epub narration preparation<br/>narration-v1 + bilingual-v2 + Piper-v2 + Chatterbox-v1<br/>locator-linked + model-output bounded"]:::implemented
             SHARED["@voxleaf/shared<br/>contracts, protocol-v1 control + host-profile schemas,<br/>generated validators and fixtures"]:::implemented
         end
 
@@ -170,7 +170,8 @@ the desktop playback node; it creates no new service, package, protocol,
 persistence, or external-device edge.
 The M010.1 node now includes implemented product selection and preparation
 flow: the closed persisted language joins the generation configuration,
-canonical text is prepared through `narration-bilingual-v2`, and an invalid
+canonical text is normalized through `narration-bilingual-v2`; Piper and
+Chatterbox then apply their exact bounded packing profiles, and an invalid
 profile/language pair is rejected before child start. Milestone 6 makes the
 admitted edges solid: Piper davefx/Spanish, Piper joe/English, and Chatterbox
 Spanish/English are supported exact bindings; Qwen Serena/Spanish and

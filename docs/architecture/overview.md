@@ -606,9 +606,13 @@ M010.1 Milestone 6 generalizes the same native-owned service boundary without
 changing protocol v1. Profile-language validation and exact runtime
 configuration happen before start. Piper/joe produces bounded English units
 through the same Piper adapter and `narration-piper-v2` preparation contract.
-Chatterbox exposes one exact bilingual CUDA adapter with complete bounded
-24-kHz units. Qwen selects Serena for Spanish or Aiden for English inside its
-existing isolated environment and remains behind constrained buffering. A
+Chatterbox exposes one exact bilingual CUDA adapter with complete 24-kHz
+units. The coordinator preserves `narration-bilingual-v2` normalization but
+selects the tighter `narration-chatterbox-v1` packing envelope so a complete
+waveform is more likely to stay inside protocol v1's 480,000-sample bound; the
+service still fails closed on an unusual oversized result. Qwen selects Serena
+for Spanish or Aiden for English inside its existing isolated environment and
+remains behind constrained buffering. A
 sequential six-arm exact-host service matrix proves load, bounded synthesis,
 busy handling, identity-first cancellation, reload, second synthesis,
 shutdown, and cleanup with one model process at a time and no retained audio.

@@ -42,6 +42,7 @@ ADR-0002-short-description.md
 - [`ADR-0029-advance-chatterbox-retain-qwen-defer-moss.md`](ADR-0029-advance-chatterbox-retain-qwen-defer-moss.md): advance exact Chatterbox to the next full matrix, defer MOSS without rejection, and retain Qwen Serena/Aiden as hardware-dependent constrained-buffer candidates.
 - [`ADR-0030-freeze-corrective-full-evaluation-v12.md`](ADR-0030-freeze-corrective-full-evaluation-v12.md): freeze the complete Chatterbox bilingual matrix and independent Qwen language-quality controls before new result-bearing work.
 - [`ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md`](ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md): admit Chatterbox for both languages and Qwen/Aiden English integration while retaining Qwen/Serena Spanish and explicit compatibility limits.
+- [`ADR-0032-bound-chatterbox-complete-waveform-units.md`](ADR-0032-bound-chatterbox-complete-waveform-units.md): preserve bilingual normalization while giving complete-waveform Chatterbox inference a tighter measured packing profile.
 
 ## Template
 

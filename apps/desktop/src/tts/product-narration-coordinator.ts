@@ -37,6 +37,7 @@ import {
   type TtsProcessClientObservation,
 } from "./process-client";
 import {
+  CHATTERBOX_BILINGUAL_PROFILE_ID,
   EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
   PIPER_CPU_FALLBACK_PROFILE_ID,
   PIPER_ENGLISH_CPU_PROFILE_ID,
@@ -69,6 +70,10 @@ function isPiperProfile(profileId: string): boolean {
     profileId === PIPER_CPU_FALLBACK_PROFILE_ID ||
     profileId === PIPER_ENGLISH_CPU_PROFILE_ID
   );
+}
+
+function isChatterboxProfile(profileId: string): boolean {
+  return profileId === CHATTERBOX_BILINGUAL_PROFILE_ID;
 }
 
 export type ProductNarrationFailureCode =
@@ -1214,7 +1219,9 @@ export class ProductNarrationCoordinator {
         startLocator,
         profile: isPiperProfile(this.#profileId)
           ? "narration-piper-v2"
-          : "narration-bilingual-v2",
+          : isChatterboxProfile(this.#profileId)
+            ? "narration-chatterbox-v1"
+            : "narration-bilingual-v2",
         defaultLanguage: this.#language,
         maximumSegments: PREPARED_BATCH_SEGMENT_LIMIT,
         signal: controller.signal,
