@@ -1,0 +1,83 @@
+{
+  "candidateManifestVersion": "tts-candidate-manifest-v12",
+  "status": "frozen-before-corrective-full-evaluation-results",
+  "frozenAt": "2026-07-30",
+  "preservesHistoricalEvidence": {
+    "qwenSerenaV8ResultSha256": "fef771409d1edb24bd6f02302f5b11317044903ea9e103e3a679511ac1d9b8f4",
+    "qwenAidenV8ResultSha256": "ac0321bbbc0626ee0026254ff05a5a58c9629088736f7f8509b88e3a08e62f73",
+    "mossV9ResultSha256": "be8aaddf5bd18da93638b7203e924ce65800dcb32cbb865ef13802cd4a7d9063",
+    "chatterboxV11ResultSha256": "74db9d10e23a7dbb6343935ea9b71c7efa51f176fe335b9deaffda471ffcd17a"
+  },
+  "decisionPolicy": {
+    "automaticCandidateRejection": "forbidden",
+    "maintainerDecisionRequired": true,
+    "standardRtfTargetIsAdvisoryForConstrainedBuffering": true,
+    "oneLoadedModelAtATime": true,
+    "automaticRetries": 0,
+    "runtimeDownloads": "forbidden",
+    "remoteInference": "forbidden",
+    "referenceAudio": "forbidden"
+  },
+  "profiles": [
+    {
+      "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v4",
+      "evaluationStage": "corrective-full-bilingual",
+      "languages": ["es", "en"],
+      "identityAuthority": {
+        "manifest": "benchmarks/tts/candidates-v11.json",
+        "sha256": "3bceb2c227be02c5f69b524afc3e008e3acf40d42ae47d38ce0b10462324cc06"
+      },
+      "dependencyLock": {
+        "path": "services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v4/uv.lock",
+        "sha256": "30f3ca3c27842d88e04256d357e79c291b90636d4f7e20fca18d20713021b1ab"
+      },
+      "runtime": {
+        "python": "3.12",
+        "torch": "2.9.1+cu128",
+        "torchaudio": "2.9.1+cu128",
+        "provider": "cuda",
+        "precision": "bf16",
+        "requiredCudaCapability": "12.0"
+      },
+      "voice": {
+        "identity": "official-bundled-default-conditioning",
+        "personalReferenceAudioRequired": false,
+        "nativeSpeakingRateControl": false
+      }
+    },
+    {
+      "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8",
+      "evaluationStage": "independent-quality-only",
+      "languages": ["es"],
+      "identityAuthority": {
+        "manifest": "benchmarks/tts/candidates-v8.json",
+        "sha256": "5245f6949cf035eee8de98fef21e8eea89d30b468d76039949e2100558401b0e"
+      },
+      "machineEvidence": {
+        "path": "benchmarks/tts/qwen-serena-spanish-control-result-v8.json",
+        "sha256": "fef771409d1edb24bd6f02302f5b11317044903ea9e103e3a679511ac1d9b8f4"
+      },
+      "dependencyLock": {
+        "path": "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock",
+        "sha256": "1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913"
+      }
+    },
+    {
+      "candidateId": "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8",
+      "evaluationStage": "independent-quality-only",
+      "languages": ["en"],
+      "identityAuthority": {
+        "manifest": "benchmarks/tts/candidates-v8.json",
+        "sha256": "5245f6949cf035eee8de98fef21e8eea89d30b468d76039949e2100558401b0e"
+      },
+      "machineEvidence": {
+        "path": "benchmarks/tts/qwen-aiden-english-control-result-v8.json",
+        "sha256": "ac0321bbbc0626ee0026254ff05a5a58c9629088736f7f8509b88e3a08e62f73"
+      },
+      "dependencyLock": {
+        "path": "services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock",
+        "sha256": "1b6e6e4d6ec7ebd84b0d8d943fe0d54cdb9211aa917716364299a681852e7913"
+      }
+    }
+  ]
+}

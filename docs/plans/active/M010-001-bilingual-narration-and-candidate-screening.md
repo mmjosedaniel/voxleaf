@@ -506,7 +506,8 @@ record this routing without changing runtime support.
 
 ### Milestone 5: Freeze and execute the corrective full evaluation
 
-**Status:** Not started.
+**Status:** In progress as of 2026-07-30. Result-blind v12 authority is being
+frozen before any new result-bearing execution.
 
 1. Before any new result, freeze a new numbered authority that preserves the
    v8 Qwen, v9 MOSS, and v11 Chatterbox evidence unchanged.
@@ -663,6 +664,14 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-30:** Began Milestone 5 on
+  `feat/m010-001-corrective-full-evaluation`. Added result-blind v12 authority
+  for the complete Chatterbox bilingual/sustained matrix and two independent
+  Qwen language-quality controls. V12 preserves the exact v8 Qwen, v9 MOSS,
+  and v11 Chatterbox results; keeps the standard RTF target advisory for
+  constrained buffering; forbids automatic rejection; and requires a
+  maintainer decision after private review. No new audio or result exists at
+  this checkpoint.
 - **2026-07-30:** Completed corrective Milestone 4. V11 Chatterbox completed
   10/10 bilingual cases and 8/8 cancellation trials with about 0.65 warm p95
   RTF; the maintainer rated it very good with cross-language accent

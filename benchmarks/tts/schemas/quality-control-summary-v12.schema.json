@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:voxleaf:benchmark:tts-quality-control-summary:v12",
+  "title": "VoxLeaf content-safe independent Qwen quality result v12",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "candidateId",
+    "evaluationStage",
+    "authorityCommitSha",
+    "executionCommitSha",
+    "profileSha256",
+    "corpusSha256",
+    "candidateManifestSha256",
+    "dependencyLockSha256",
+    "machineEvidenceSha256",
+    "language",
+    "quality",
+    "audits",
+    "decision",
+    "limitations"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "tts-quality-control-summary-v12" },
+    "candidateId": {
+      "enum": [
+        "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8",
+        "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8"
+      ]
+    },
+    "evaluationStage": { "const": "independent-quality-only" },
+    "authorityCommitSha": { "$ref": "#/$defs/commit" },
+    "executionCommitSha": { "$ref": "#/$defs/commit" },
+    "profileSha256": { "$ref": "#/$defs/sha256" },
+    "corpusSha256": { "$ref": "#/$defs/sha256" },
+    "candidateManifestSha256": { "$ref": "#/$defs/sha256" },
+    "dependencyLockSha256": { "$ref": "#/$defs/sha256" },
+    "machineEvidenceSha256": { "$ref": "#/$defs/sha256" },
+    "language": { "enum": ["es", "en"] },
+    "quality": { "$ref": "#/$defs/quality" },
+    "audits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifacts",
+        "offline",
+        "networkIsolation",
+        "privacy",
+        "boundedRetention",
+        "cleanup"
+      ],
+      "properties": {
+        "artifacts": { "type": "boolean" },
+        "offline": { "type": "boolean" },
+        "networkIsolation": { "type": "boolean" },
+        "privacy": { "type": "boolean" },
+        "boundedRetention": { "type": "boolean" },
+        "cleanup": { "type": "boolean" }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "rejectionRecorded"],
+      "properties": {
+        "state": { "const": "pending-maintainer-decision" },
+        "rejectionRecorded": { "const": false }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/stableId" }
+    }
+  },
+  "$defs": {
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._:-]{0,127}$"
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "sampleCount",
+        "dimensionMeans",
+        "meaningChangingDefects",
+        "wrongLanguageOutputs"
+      ],
+      "properties": {
+        "status": { "const": "reviewed-awaiting-decision" },
+        "sampleCount": { "const": 5 },
+        "dimensionMeans": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "intelligibility",
+            "naturalness",
+            "prosody",
+            "pronunciation",
+            "language-stability",
+            "overall-usefulness"
+          ],
+          "properties": {
+            "intelligibility": { "type": "number", "minimum": 1, "maximum": 5 },
+            "naturalness": { "type": "number", "minimum": 1, "maximum": 5 },
+            "prosody": { "type": "number", "minimum": 1, "maximum": 5 },
+            "pronunciation": { "type": "number", "minimum": 1, "maximum": 5 },
+            "language-stability": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "overall-usefulness": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 5
+            }
+          }
+        },
+        "meaningChangingDefects": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "wrongLanguageOutputs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        }
+      }
+    }
+  }
+}
