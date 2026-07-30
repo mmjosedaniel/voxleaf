@@ -545,6 +545,8 @@ describe("product narration coordinator", () => {
 
   it("rechecks compatibility before service start and starts no child after a failed preflight", async () => {
     const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => "qwen3-tts-1-7b-customvoice-cuda-bf16-v1"),
+      activeLanguage: vi.fn(() => "es" as const),
       isProfileCurrentlyAllowed: vi.fn(() => true),
       isProfileStartAllowed: vi.fn(async () => false),
     };
@@ -562,6 +564,7 @@ describe("product narration coordinator", () => {
     expect(profileCompatibility.isProfileStartAllowed).toHaveBeenCalledWith(
       "qwen3-tts-1-7b-customvoice-cuda-bf16-v1",
       "before-profile-start",
+      "es",
     );
     expect(start).not.toHaveBeenCalled();
     expect(prepareNarration).not.toHaveBeenCalled();
@@ -588,6 +591,7 @@ describe("product narration coordinator", () => {
     const profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
     const profileCompatibility: ProductNarrationProfileCompatibility = {
       activeProfileId: vi.fn(() => profileId),
+      activeLanguage: vi.fn(() => "es" as const),
       isProfileCurrentlyAllowed: vi.fn(() => true),
       isProfileStartAllowed: vi.fn(async () => true),
     };
@@ -603,10 +607,124 @@ describe("product narration coordinator", () => {
     expect(profileCompatibility.isProfileStartAllowed).toHaveBeenCalledWith(
       profileId,
       "before-profile-start",
+      "es",
     );
     expect(client.startedProfiles).toEqual([profileId]);
     expect(prepareNarration).toHaveBeenCalledWith(
       expect.objectContaining({ profile: "narration-piper-v2" }),
+    );
+    await coordinator.close();
+  });
+
+  it("prepares English through the engine-neutral bilingual profile", async () => {
+    const profileId = "qwen3-tts-0-6b-customvoice-cuda-bf16-v1";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      activeLanguage: vi.fn(() => "en" as const),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const { coordinator, prepareNarration } = createHarness({
+      profileCompatibility,
+    });
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+
+    expect(coordinator.observe()).toMatchObject({
+      profileId,
+      language: "en",
+    });
+    expect(prepareNarration).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profile: "narration-bilingual-v2",
+        defaultLanguage: "en",
+      }),
+    );
+    expect(profileCompatibility.isProfileStartAllowed).toHaveBeenCalledWith(
+      profileId,
+      "before-profile-start",
+      "en",
+    );
+    await coordinator.close();
+  });
+
+  it("rejects a language with no compatible profile before child start", async () => {
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => undefined),
+      activeLanguage: vi.fn(() => "en" as const),
+      isProfileCurrentlyAllowed: vi.fn(() => false),
+      isProfileStartAllowed: vi.fn(async () => false),
+    };
+    const { client, coordinator, prepareNarration } = createHarness({
+      profileCompatibility,
+    });
+    const start = vi.spyOn(client, "start");
+
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await Promise.resolve();
+
+    expect(start).not.toHaveBeenCalled();
+    expect(prepareNarration).not.toHaveBeenCalled();
+    expect(coordinator.observe()).toMatchObject({
+      availability: "unavailable",
+      language: "en",
+      failure: undefined,
+    });
+    await coordinator.close();
+  });
+
+  it("replaces language identity, releases obsolete work, and requires a new explicit start", async () => {
+    let profileId = "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1";
+    let language: "es" | "en" = "es";
+    const profileCompatibility: ProductNarrationProfileCompatibility = {
+      activeProfileId: vi.fn(() => profileId),
+      activeLanguage: vi.fn(() => language),
+      isProfileCurrentlyAllowed: vi.fn(() => true),
+      isProfileStartAllowed: vi.fn(async () => true),
+    };
+    const { client, coordinator, prepareNarration } = createHarness({
+      profileCompatibility,
+      blockSynthesis: true,
+    });
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(() => client.state === "generating");
+
+    await coordinator.stopForConfigurationChange();
+    profileId = "qwen3-tts-0-6b-customvoice-cuda-bf16-v1";
+    language = "en";
+    await coordinator.refreshSelectedProfile();
+
+    expect(client.cancelled).toHaveLength(1);
+    expect(client.shutdownCount).toBe(1);
+    expect(coordinator.observe()).toMatchObject({
+      language: "en",
+      state: undefined,
+      navigation: { playIntent: "inactive" },
+      metrics: { retainedAudioUnitCount: 0 },
+    });
+    expect(prepareNarration).toHaveBeenCalledTimes(1);
+
+    client.blockSynthesis = false;
+    coordinator.start();
+    await settleUntil(() => coordinator.observe().state?.phase === "playing");
+    expect(client.startedProfiles).toEqual([
+      "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1",
+      "qwen3-tts-0-6b-customvoice-cuda-bf16-v1",
+    ]);
+    expect(prepareNarration).toHaveBeenCalledTimes(2);
+    expect(prepareNarration.mock.calls[1]?.[0]).toEqual(
+      expect.objectContaining({
+        startLocator: START_LOCATOR,
+        profile: "narration-bilingual-v2",
+        defaultLanguage: "en",
+      }),
+    );
+    expect(client.synthesized[1]?.generationId).not.toBe(
+      client.cancelled[0]?.generationId,
     );
     await coordinator.close();
   });
@@ -727,7 +845,7 @@ describe("product narration coordinator", () => {
     expect(prepareNarration).toHaveBeenCalledWith(
       expect.objectContaining({
         startLocator: START_LOCATOR,
-        profile: "narration-v1",
+        profile: "narration-bilingual-v2",
         defaultLanguage: "es",
         maximumSegments: 16,
         signal: expect.any(AbortSignal),

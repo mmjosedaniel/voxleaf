@@ -42,9 +42,9 @@ clean-runner stabilization, and replacement Ubuntu/Windows validation pass.
 M010.1 is active before M011. Milestone 1 froze historical result-blind v7;
 before any result, Milestone 1A preserved it and froze superseding v8
 authority with exact local Qwen/Serena Spanish and Qwen/Aiden English
-controls. Current narration remains Spanish-only, Piper/davefx remains the
-sole supported profile, and no additional profile may be claimed until later
-implementation and exact evidence pass.
+controls. Milestone 2 implements explicit bilingual preparation and selection,
+but Piper/davefx remains the sole supported playable profile. No English or
+additional profile may be claimed until later exact evidence passes.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -838,7 +838,7 @@ frozen v6 cycle and passed measured evidence before product admission.
 
 ## Milestone 10.1: Add bilingual narration and screen naturalness candidates
 
-**Status:** In progress; Milestones 1 and 1A authority frozen as of 2026-07-29. Follow
+**Status:** In progress; Milestones 1, 1A, and 2 complete as of 2026-07-29. Follow
 [`M010-001-bilingual-narration-and-candidate-screening.md`](active/M010-001-bilingual-narration-and-candidate-screening.md).
 This bounded pre-M011 follow-up responds to an explicit product need for
 English narration and a stronger portfolio demonstration. It does not reopen
@@ -856,7 +856,8 @@ validators in
 and [ADR-0025](../architecture/decisions/ADR-0025-supersede-v7-with-local-qwen-bilingual-v8-authority.md).
 CosyVoice is rejected from this v8 cycle before an environment lock because
 its reviewed general path did not supply an exact non-personal default voice.
-These records do not implement English narration or admit a product profile.
+Milestone 2 implements the model-free selection and preparation boundary but
+does not admit an English product profile.
 
 ### Goal
 

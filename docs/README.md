@@ -47,8 +47,10 @@ M010.1 is active before M011. Milestone 1 froze the historical result-blind
 bilingual product, normalization, candidate, corpus, schema, and v7 evaluation
 authority. Before any v7 result, Milestone 1A preserved v7 and superseded
 result-bearing work with v8, adding exact local Qwen/Serena Spanish and
-Qwen/Aiden English profiles. Neither milestone implements English runtime
-behavior or admits another product profile.
+Qwen/Aiden English profiles. Milestone 2 now implements the versioned
+Spanish/English preparation boundary, bounded language preference, accessible
+selection, exact profile/language admission, and identity-safe replacement.
+No English engine is admitted yet, so English fails closed before child start.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -72,9 +74,9 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/hardware-profile-recovery-authority-v1.md`](architecture/hardware-profile-recovery-authority-v1.md): frozen M010 Milestone 1 privacy-safe host report, immutable profile/evidence shape, result-blind margins, matching/preference rules, failure taxonomy, and identity-first recovery authority.
 - [`architecture/qwen-development-vram-admission-v1.md`](architecture/qwen-development-vram-admission-v1.md): corrective development-only authority retaining generic total VRAM while admitting the exact Qwen demo with its measured peak plus a frozen 512-MiB available-VRAM reserve.
 - [`architecture/tts-support-matrix-v1.md`](architecture/tts-support-matrix-v1.md): final M010 product support matrix, admitted host margins, explicit selection/fallback policy, recovery policy, limitations, and runtime/license/distribution boundary.
-- [`architecture/bilingual-narration-authority-v1.md`](architecture/bilingual-narration-authority-v1.md): frozen result-blind M010.1 product authority for explicit Spanish/English selection, bounded preference, identity-first language changes, accessibility, and unsupported combinations.
+- [`architecture/bilingual-narration-authority-v1.md`](architecture/bilingual-narration-authority-v1.md): implemented M010.1 product authority for explicit Spanish/English selection, bounded preference, identity-first language changes, accessibility, and unsupported combinations; an English engine remains pending exact evidence.
 - [`architecture/narration-normalization-v1.md`](architecture/narration-normalization-v1.md): accepted test-only neutral/Spanish normalization corpus policy for Milestone 5.
-- [`architecture/narration-normalization-v2.md`](architecture/narration-normalization-v2.md): frozen additive Spanish/English normalization authority and synthetic corpus for M010.1; historical v1 bytes and current product behavior remain unchanged.
+- [`architecture/narration-normalization-v2.md`](architecture/narration-normalization-v2.md): implemented additive Spanish/English normalization authority and synthetic corpus for M010.1; historical combinations remain closed and Spanish regressions remain passing.
 - [`architecture/narration-preparation-limits-v1.md`](architecture/narration-preparation-limits-v1.md): accepted test-only `narration-v1` chunk, work, retention, checkpoint, and yield limits.
 - [`architecture/tts-feasibility-profile-v2.md`](architecture/tts-feasibility-profile-v2.md): current Milestone 6 rerun authority, including the Windows/PyTorch cross-checked VRAM method, unchanged role gates, listening rubric, and content-safe summary policy. The superseded `v1` profile remains historical evidence.
 - [`architecture/tts-feasibility-profile-v3.md`](architecture/tts-feasibility-profile-v3.md): current Milestone 6.1 authority for the exact Serena CustomVoice development candidate, its prototype stop gate, inherited full evaluation, and privacy/invalidation rules.
@@ -135,7 +137,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M009-001-reader-experience-stabilization.md`](plans/completed/M009-001-reader-experience-stabilization.md): completed bounded M009 follow-up for the visible-highlight repair, dedicated reader viewport, compact/collapsible narration UI, truthful loaded-duration status, locator-backed paragraph leaf, passive-scroll isolation, exact-host validation, and repository/CI closeout.
 - [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
-- [`plans/active/M010-001-bilingual-narration-and-candidate-screening.md`](plans/active/M010-001-bilingual-narration-and-candidate-screening.md): active follow-up whose Milestones 1/1A freeze explicit Spanish/English product behavior and the superseding v8 evaluation authority before later implementation and result-bearing execution.
+- [`plans/active/M010-001-bilingual-narration-and-candidate-screening.md`](plans/active/M010-001-bilingual-narration-and-candidate-screening.md): active follow-up whose Milestones 1/1A freeze the superseding v8 authority and whose Milestone 2 implements model-free bilingual preparation, selection, persistence, and lifecycle containment before result-bearing execution.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

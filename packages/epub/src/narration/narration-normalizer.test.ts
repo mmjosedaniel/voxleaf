@@ -17,6 +17,7 @@ import type {
 import type { XhtmlDocumentProjection } from "../document/xhtml-projector.js";
 import { createPublicationLocatorIndex } from "../locator/locator-index.js";
 import { createEpubProcessingBudget } from "../security/processing-budget.js";
+import { normalizeNarrationSourceTokens as normalizeBilingualNarrationSourceTokens } from "./narration-bilingual-normalizer.js";
 import {
   normalizeNarrationSourceTokens,
   type NarrationNormalizedStream,
@@ -59,8 +60,148 @@ const TASK_3_3_CORPUS = NARRATION_NORMALIZATION_CORPUS.filter(
     category === "percentage" ||
     category === "language",
 );
+const BILINGUAL_V2_CORPUS = Object.freeze([
+  Object.freeze({
+    language: "es" as const,
+    source:
+      "El informe de 2026 confirmó que el avance llegó al 25 % y que quedaban 12,50 €.",
+    expected:
+      "El informe de dos mil veintiséis confirmó que el avance llegó al veinticinco por ciento y que quedaban doce euros con cincuenta céntimos.",
+  }),
+  Object.freeze({
+    language: "es" as const,
+    source: "La revisión será el 24/07/2026 a las 14:30.",
+    expected:
+      "La revisión será el veinticuatro de julio de dos mil veintiséis a las catorce treinta.",
+  }),
+  Object.freeze({
+    language: "es" as const,
+    source: "Sol & Mar marcó 20 °C.",
+    expected: "Sol y Mar marcó veinte grados Celsius.",
+  }),
+  Object.freeze({
+    language: "es" as const,
+    source: "Siobhán O'Connor habló con calma.",
+    expected: "Siobhán O'Connor habló con calma.",
+  }),
+  Object.freeze({
+    language: "en" as const,
+    source: "Dr. Morgan met Mr. Reed at St. James Station.",
+    expected: "Doctor Morgan met Mister Reed at Saint James Station.",
+  }),
+  Object.freeze({
+    language: "en" as const,
+    source: "The team completed 25 % of 120 pages.",
+    expected:
+      "The team completed twenty-five percent of one hundred twenty pages.",
+  }),
+  Object.freeze({
+    language: "en" as const,
+    source: "The notebook cost $12.50.",
+    expected: "The notebook cost twelve dollars and fifty cents.",
+  }),
+  Object.freeze({
+    language: "en" as const,
+    source: "The review is scheduled for 2026-07-24.",
+    expected:
+      "The review is scheduled for July twenty-fourth, two thousand twenty-six.",
+  }),
+  Object.freeze({
+    language: "en" as const,
+    source: "The doors open at 14:30.",
+    expected: "The doors open at fourteen thirty.",
+  }),
+  Object.freeze({
+    language: "en" as const,
+    source: "Salt & Stone reported 20 °C.",
+    expected: "Salt and Stone reported twenty degrees Celsius.",
+  }),
+  Object.freeze({
+    language: "en" as const,
+    source: "She finished 3rd and returned to the 21st row.",
+    expected: "She finished third and returned to the twenty-first row.",
+  }),
+  Object.freeze({
+    language: "en" as const,
+    source: "The U.S. team met at 8 a.m.",
+    expected: "The U S team met at eight a m.",
+  }),
+  Object.freeze({
+    language: "en" as const,
+    source: "The note says 03/04/05.",
+    expected: "The note says 03/04/05.",
+  }),
+  Object.freeze({
+    language: "en" as const,
+    source: "The archive contains 12345678901234567890 records.",
+    expected: "The archive contains 12345678901234567890 records.",
+  }),
+  Object.freeze({
+    language: "en" as const,
+    source: "“Wait…” Elena whispered. “Did you hear that?”",
+    expected: "“Wait…” Elena whispered. “Did you hear that?”",
+  }),
+  Object.freeze({
+    language: "en" as const,
+    source: "Use total += 1 and keep v2.0 unchanged.",
+    expected: "Use total += 1 and keep v2.0 unchanged.",
+  }),
+]);
 
 describe("narration normalization", () => {
+  describe("frozen bilingual v2 corpus", () => {
+    for (const [index, corpusCase] of BILINGUAL_V2_CORPUS.entries()) {
+      it(`normalizes frozen case ${index + 1}`, () => {
+        const leaf = singleTextFixture(corpusCase.source, false);
+        const before = JSON.stringify(leaf.sourceTokens);
+
+        const first = normalizeBilingualNarrationSourceTokens(
+          leaf.sourceTokens,
+          corpusCase.language,
+        );
+        const repeated = normalizeBilingualNarrationSourceTokens(
+          leaf.sourceTokens,
+          corpusCase.language,
+        );
+
+        expect(first.text).toBe(corpusCase.expected);
+        expect(repeated).toEqual(first);
+        expect(JSON.stringify(leaf.sourceTokens)).toBe(before);
+        assertSourceMapping(
+          leaf,
+          first as unknown as NarrationNormalizedStream,
+        );
+        assertDeepFrozen(first as unknown as NarrationNormalizedStream);
+      });
+    }
+
+    it("preserves conflicting and unsupported semantic language spans", () => {
+      const englishSelected = leafFor(
+        paragraph([text("Dr. Morgan", "es")], "en"),
+      );
+      const spanishSelected = leafFor(
+        paragraph([text("Dr. Morgan", "en")], "es"),
+      );
+      const unsupported = leafFor(paragraph([text("Dr. Morgan", "fr")], "en"));
+
+      expect(
+        normalizeBilingualNarrationSourceTokens(
+          englishSelected.sourceTokens,
+          "en",
+        ).text,
+      ).toBe("Dr. Morgan");
+      expect(
+        normalizeBilingualNarrationSourceTokens(
+          spanishSelected.sourceTokens,
+          "es",
+        ).text,
+      ).toBe("Dr. Morgan");
+      expect(
+        normalizeBilingualNarrationSourceTokens(unsupported.sourceTokens, "en")
+          .text,
+      ).toBe("Dr. Morgan");
+    });
+  });
   describe("accepted Task 3.1 corpus", () => {
     for (const corpusCase of TASK_3_1_CORPUS) {
       it(corpusCase.id, () => {

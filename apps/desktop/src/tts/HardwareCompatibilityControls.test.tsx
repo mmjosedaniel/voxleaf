@@ -12,6 +12,7 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { HardwareProfilePreferenceRepository } from "../persistence/hardware-profile-preference";
+import type { NarrationLanguagePreferenceRepository } from "../persistence/narration-language-preference";
 import { HardwareCompatibilityControls } from "./HardwareCompatibilityControls";
 import { HardwareProfileCompatibilityCoordinator } from "./hardware-profile-compatibility";
 import {
@@ -115,12 +116,23 @@ function preference(): HardwareProfilePreferenceRepository {
   };
 }
 
+function languagePreference(): NarrationLanguagePreferenceRepository {
+  return {
+    read: vi.fn(async () => ({
+      status: "ready" as const,
+      language: "es" as const,
+    })),
+    write: vi.fn(async () => ({ status: "saved" as const })),
+  };
+}
+
 function coordinator(
   options: {
     gate?: "available" | "unavailable";
     preference?: HardwareProfilePreferenceRepository;
     availableRamMiB?: number;
     availableDedicatedVramMiB?: number;
+    languagePreference?: NarrationLanguagePreferenceRepository;
   } = {},
 ) {
   return new HardwareProfileCompatibilityCoordinator({
@@ -138,6 +150,8 @@ function coordinator(
       ),
     },
     preferenceRepository: options.preference ?? preference(),
+    languagePreferenceRepository:
+      options.languagePreference ?? languagePreference(),
   });
 }
 
@@ -277,6 +291,41 @@ describe("hardware compatibility controls", () => {
     await waitFor(() => expect(recheck).toBeEnabled());
     expect(recheck).toHaveFocus();
     expect(onRecoveryEpisodeReset).toHaveBeenCalledTimes(2);
+  });
+
+  it("offers an accessible bilingual radio group and announces an unavailable English combination", async () => {
+    const languageRepository = languagePreference();
+    const subject = coordinator({ languagePreference: languageRepository });
+    render(<HardwareCompatibilityControls coordinator={subject} />);
+    await waitFor(() => expect(subject.observe().status).toBe("compatible"));
+    fireEvent.click(
+      screen.getByText("Local narration compatibility").closest("summary")!,
+    );
+
+    const group = screen.getByRole("group", {
+      name: "Narration language",
+    });
+    expect(group).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Spanish" })).toBeChecked();
+    const english = screen.getByRole("radio", { name: "English" });
+    english.focus();
+    fireEvent.click(english);
+
+    await waitFor(() =>
+      expect(languageRepository.write).toHaveBeenCalledWith("en"),
+    );
+    expect(english).toHaveFocus();
+    expect(english).toBeChecked();
+    expect(
+      screen.getByText(
+        "No evaluated local narration profile is available for English.",
+      ),
+    ).toHaveAttribute("aria-live", "polite");
+    expect(
+      screen.queryByRole("radio", {
+        name: "Piper and davefx fast CPU profile",
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps unavailable and failure presentation content-free", async () => {

@@ -466,6 +466,56 @@ describe("bounded local publication resources", () => {
     }
   });
 
+  it("publishes the versioned bilingual profile while preserving historical Spanish bytes", async () => {
+    const spanishSource =
+      "El informe de 2026 confirmó que el avance llegó al 25 %.";
+    const archive = await openEpubArchive(await createArchive({}));
+    const values = narrationTextPublicationValues(
+      [spanishSource],
+      async () => undefined,
+    );
+    const publication = createOpenedPublication(
+      archive,
+      createPackageDocument([]),
+      values,
+    );
+    const start = requiredLocatedBlock(
+      values.locatorIndex.blocks[0],
+    ).startLocator;
+
+    try {
+      const historical = await publication.prepareNarration({
+        startLocator: start,
+        profile: "narration-v1",
+        defaultLanguage: "es",
+        maximumSegments: 16,
+      });
+      const bilingualSpanish = await publication.prepareNarration({
+        startLocator: start,
+        profile: "narration-bilingual-v2",
+        defaultLanguage: "es",
+        maximumSegments: 16,
+      });
+      const bilingualEnglish = await publication.prepareNarration({
+        startLocator: start,
+        profile: "narration-bilingual-v2",
+        defaultLanguage: "en",
+        maximumSegments: 16,
+      });
+
+      expect(bilingualSpanish).toEqual(historical);
+      expect(bilingualEnglish.status).toBe("complete");
+      if (bilingualEnglish.status !== "complete") {
+        throw new Error("expected bilingual English narration");
+      }
+      expect(String(bilingualEnglish.segments[0]?.text)).toBe(
+        "El informe de 2026 confirmó que el avance llegó al twenty-five percent.",
+      );
+    } finally {
+      await publication.close();
+    }
+  });
+
   it("prepares locator-safe bounded Piper segments without changing their text", async () => {
     expect(NARRATION_PIPER_V1_SEGMENT_POLICY).toEqual({
       sourceCodePointsTarget: 240,
@@ -730,6 +780,22 @@ describe("bounded local publication resources", () => {
     });
     expect(notYetImplementedEnglish.status).toBe("invalid-request");
     expect(JSON.stringify(notYetImplementedEnglish)).not.toContain("Canario");
+
+    const invalidBilingualNeutral = await publication.prepareNarration({
+      startLocator: start,
+      profile: "narration-bilingual-v2",
+      defaultLanguage: "und" as "es",
+      maximumSegments: 1,
+    });
+    expect(invalidBilingualNeutral.status).toBe("invalid-request");
+
+    const invalidPiperEnglish = await publication.prepareNarration({
+      startLocator: start,
+      profile: "narration-piper-v2",
+      defaultLanguage: "en" as "es",
+      maximumSegments: 1,
+    });
+    expect(invalidPiperEnglish.status).toBe("invalid-request");
 
     const invalidSignal = await publication.prepareNarration({
       startLocator: start,

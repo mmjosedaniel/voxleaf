@@ -46,8 +46,11 @@ import type {
 interface ValidatedNarrationPreparationRequest {
   readonly startLocator: unknown;
   readonly profile:
-    "narration-v1" | "narration-piper-v1" | "narration-piper-v2";
-  readonly defaultLanguage: "und" | "es";
+    | "narration-v1"
+    | "narration-bilingual-v2"
+    | "narration-piper-v1"
+    | "narration-piper-v2";
+  readonly defaultLanguage: "und" | "es" | "en";
   readonly maximumSegments: number;
   readonly signal?: AbortSignal;
 }
@@ -266,9 +269,13 @@ export function validateNarrationPreparationRequest(
       Object.keys(request).some((key) => !REQUEST_KEYS.has(key)) ||
       !Object.hasOwn(request, "startLocator") ||
       (request.profile !== "narration-v1" &&
+        request.profile !== "narration-bilingual-v2" &&
         request.profile !== "narration-piper-v1" &&
         request.profile !== "narration-piper-v2") ||
-      (request.defaultLanguage !== "und" && request.defaultLanguage !== "es") ||
+      (request.profile === "narration-bilingual-v2"
+        ? request.defaultLanguage !== "es" && request.defaultLanguage !== "en"
+        : request.defaultLanguage !== "und" &&
+          request.defaultLanguage !== "es") ||
       !Number.isSafeInteger(request.maximumSegments) ||
       (request.maximumSegments as number) <= 0 ||
       (request.maximumSegments as number) >
@@ -280,7 +287,7 @@ export function validateNarrationPreparationRequest(
     const validated: ValidatedNarrationPreparationRequest = Object.freeze({
       startLocator: request.startLocator,
       profile: request.profile,
-      defaultLanguage: request.defaultLanguage as "und" | "es",
+      defaultLanguage: request.defaultLanguage as "und" | "es" | "en",
       maximumSegments: request.maximumSegments as number,
       ...(request.signal === undefined
         ? {}
@@ -651,6 +658,10 @@ export async function prepareNarrationBatch(
             leaf,
             request.defaultLanguage,
             Object.freeze({
+              normalizationProfile:
+                request.profile === "narration-bilingual-v2"
+                  ? "narration-bilingual-v2"
+                  : "narration-v1",
               maximumSegments: remainingSegmentEntries,
               retainedNarrationCodePointsMaximum: remainingNarrationCodePoints,
               retainedNarrationUtf8BytesMaximum: remainingNarrationUtf8Bytes,

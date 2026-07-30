@@ -497,7 +497,7 @@ function scanBoundaryPoints(
   let pendingSentence: PendingSentenceBoundary | undefined;
   let sentenceHasText = false;
   let lastSpokenUnitIndexExclusive = 0;
-  let previousSpokenLanguage: "es" | "und" | undefined;
+  let previousSpokenLanguage: "es" | "en" | "und" | undefined;
 
   const recordBoundary = (
     kind: NarrationScannedBoundaryKind,

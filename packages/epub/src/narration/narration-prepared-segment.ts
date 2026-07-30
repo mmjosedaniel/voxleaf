@@ -30,8 +30,12 @@ import {
 } from "./narration-segment-packer.js";
 import {
   normalizeNarrationSourceTokens,
-  type NarrationNormalizationLanguage,
+  type NarrationNormalizedStream,
 } from "./narration-normalizer.js";
+import {
+  normalizeNarrationSourceTokens as normalizeBilingualNarrationSourceTokens,
+  type NarrationNormalizationLanguage as BilingualNarrationNormalizationLanguage,
+} from "./narration-bilingual-normalizer.js";
 import { scanNarrationBoundaries } from "./narration-boundary-scanner.js";
 import {
   createNarrationSourceTokenRange,
@@ -44,6 +48,12 @@ export interface PreparedNarrationBlock {
   readonly segments: readonly PreparedNarrationSegment[];
   readonly continuation: ReadingLocatorV1;
   readonly measurements: NarrationPackedBlockMeasurements;
+}
+
+type NarrationNormalizationProfile = "narration-v1" | "narration-bilingual-v2";
+
+interface NarrationPreparationOptions extends NarrationPackingOptions {
+  readonly normalizationProfile?: NarrationNormalizationProfile;
 }
 
 interface StagedPreparedNarrationSegment {
@@ -308,14 +318,20 @@ function emitPreparedNarrationBlock(
  */
 export async function prepareNarrationSourceLeaf(
   source: NarrationSourceTokenLeafEvent,
-  defaultLanguage: NarrationNormalizationLanguage,
-  options: NarrationPackingOptions = {},
+  defaultLanguage: BilingualNarrationNormalizationLanguage,
+  options: NarrationPreparationOptions = {},
 ): Promise<PreparedNarrationBlock> {
   try {
-    const normalized = normalizeNarrationSourceTokens(
-      source.sourceTokens,
-      defaultLanguage,
-    );
+    const normalized = (options.normalizationProfile ===
+    "narration-bilingual-v2"
+      ? normalizeBilingualNarrationSourceTokens(
+          source.sourceTokens,
+          defaultLanguage,
+        )
+      : normalizeNarrationSourceTokens(
+          source.sourceTokens,
+          defaultLanguage === "en" ? fail() : defaultLanguage,
+        )) as unknown as NarrationNormalizedStream;
     const scan = scanNarrationBoundaries(source, normalized);
     const packed = await packNarrationBoundaryScan(scan, options);
     if (options.signal?.aborted === true) {

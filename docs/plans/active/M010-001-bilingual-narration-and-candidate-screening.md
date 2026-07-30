@@ -45,9 +45,11 @@ Completed M010 adds the separate Piper-only
 [`narration-piper-v2`](../../architecture/piper-narration-preparation-profile-v2.md)
 spoken-expansion-aware path for exact `es_ES-davefx-medium`.
 
-The desktop currently requests Spanish preparation, the Qwen/Serena adapter
-uses a fixed Spanish language setting, and the executable registry has no
-English profile. No existing code or benchmark proves English narration.
+Milestone 2 now lets the desktop explicitly select Spanish or English and
+dispatches the selected language through `narration-bilingual-v2`. The
+executable profile-language registry still has no admitted English profile,
+so English selection reports a content-free unavailable state and starts no
+child. No existing result proves English audio.
 
 Exact Piper 1.4.2 / `es_ES-davefx-medium` is the sole supported profile.
 Qwen3-TTS 12Hz 1.7B CustomVoice / Serena is an optional native-gated
@@ -353,7 +355,7 @@ Milestones 3-5 must use v8, not v7.
 
 ### Milestone 2: Implement engine-neutral bilingual preparation and selection
 
-**Status:** Not started.
+**Status:** Complete.
 
 1. Extend the public narration language boundary with English under the new
    versioned authority.
@@ -372,6 +374,19 @@ Milestones 3-5 must use v8, not v7.
 Exit when model-free unit, integration, browser, and packaged fake-service
 tests prove bilingual preparation and lifecycle behavior without adding a real
 candidate dependency.
+
+Actual result: the EPUB boundary accepts only `narration-bilingual-v2` with
+`es | en`, implements the exact frozen English allowlist, and retains closed
+historical/Piper combinations. The v2 implementation lives in separate
+bilingual normalizer modules; the four byte-frozen v6/v8 authority inputs
+retain their recorded SHA-256 values. The desktop stores one versioned
+language, exposes a labelled keyboard-operable radio group, filters profiles
+by immutable language binding, and rejects English before child start because
+no English profile is admitted. Configuration replacement invalidates work,
+cancels preparation/synthesis, releases buffered/current audio, contains the
+service tree, retains the canonical target, and requires explicit Play. No
+model, candidate dependency, audio persistence, or book-content storage was
+added.
 
 ### Milestone 3: Evaluate the exact Piper English baseline
 
@@ -605,6 +620,17 @@ committed benchmark authority after results.
   passed in 36.2 seconds and `pnpm.cmd check` passed in 64.7 seconds. The
   remaining pytest cache warning and existing CSS-highlight/chunk-size build
   warnings are informational.
+- **2026-07-29:** Completed Milestone 2 on the versioned model-free boundary.
+  Added the exact frozen English normalization allowlist, bilingual public
+  preparation profile, bounded language preference, accessible selector,
+  immutable profile/language bindings, and pre-child lifecycle enforcement.
+  Spanish remains the only playable language because no English engine is
+  admitted.
+- **2026-07-29:** The first portable aggregate correctly rejected edits to
+  frozen v6/v8 authority inputs. Restored the historical normalizer, Spanish
+  table, and two frozen authority documents byte-for-byte; moved additive v2
+  behavior into separate bilingual modules; and confirmed the exact recorded
+  hashes plus all 14 focused v6/v8 authority tests.
 
 ## Discoveries and decisions
 
@@ -649,6 +675,16 @@ committed benchmark authority after results.
   must therefore name a reachable merged commit whose tree passes the frozen
   authority validator, rather than assuming an unmerged checkpoint remains an
   ancestor.
+- Language availability and engine availability are separate. English
+  preparation and preference are implemented, while English playback remains
+  honestly unavailable until an exact profile passes later gates.
+- Configuration replacement requires full service-tree containment after
+  generation cancellation; ordinary stale work cannot survive a language or
+  profile change.
+- Versioned behavior does not authorize mutation of historical evaluation
+  inputs. Additive bilingual normalization must remain in separate v2 modules
+  while the v1 normalizer, v1 Spanish table, and frozen v8 authority documents
+  stay byte-identical to their committed hash authority.
 
 ## Final validation results
 
@@ -705,6 +741,29 @@ The non-failing pytest cache-permission warning and existing Vite
 CSS-highlight/chunk-size warnings do not alter test or build outcomes. Browser,
 packaged WebDriver, model-backed, audio, and exact-host benchmark runs are not
 applicable to this authority-only milestone and were not used as support
-evidence. The plan remains active for Milestone 2; no English runtime,
+evidence. The plan remains active for Milestone 3; no English engine,
 candidate performance/quality result, or new supported product profile is
 claimed.
+
+Milestone 2 focused validation on 2026-07-29:
+
+- `pnpm.cmd --filter @voxleaf/epub test` passed 34 files / 577 tests.
+- `pnpm.cmd --filter @voxleaf/epub typecheck` passed.
+- `pnpm.cmd --filter @voxleaf/desktop test` passed 44 files / 429 tests plus
+  seven native WebDriver-client tests.
+- `pnpm.cmd --filter @voxleaf/desktop typecheck` passed.
+- `pnpm.cmd test:browser` completed all six Chromium scenarios successfully.
+- `pnpm.cmd test:native-startup` passed the packaged native startup,
+  preference, supervised fake-service, cancellation/recovery, EPUB lifecycle,
+  synchronization, privacy, and no-external-request matrix.
+- `uv run --project services/tts --locked pytest
+  services/tts/tests/test_benchmark_v6_authority.py
+  services/tts/tests/test_benchmark_v8_authority.py` passed 14 tests after the
+  four frozen authority inputs were restored to their exact recorded hashes.
+- `pnpm.cmd check:portable` passed formatting, lint, TypeScript and Python type
+  checks, 209 shared tests, 577 EPUB tests, 429 desktop tests plus seven
+  native-driver client tests, 270 Python tests, and portable builds.
+- `pnpm.cmd check` passed the same suites plus Rust formatting, Clippy, 40 Rust
+  tests, the Tauri release build, and Python source/wheel builds.
+- No model, candidate runtime, generated audio, book, private path, host
+  report, or external request was added or persisted.

@@ -2171,6 +2171,70 @@ async function selectAdaptiveTtsProfile(driver, profileId) {
   return true;
 }
 
+async function exerciseNarrationLanguagePreference(driver) {
+  await waitForCondition(
+    driver,
+    `const owner = document.querySelector(".hardware-compatibility");
+     return owner?.getAttribute("data-compatibility-status") !== "checking" &&
+       document.querySelectorAll('input[name="narration-language"]').length === 2;`,
+  );
+  const selectedEnglish = await driver.execute(
+    `const input = Array.from(
+       document.querySelectorAll('input[name="narration-language"]'),
+     ).find((candidate) => candidate.value === "en");
+     if (!(input instanceof HTMLInputElement)) {
+       return false;
+     }
+     input.click();
+     return true;`,
+  );
+  assert(selectedEnglish === true, "Native narration language proof failed.");
+  await waitForCondition(
+    driver,
+    `return document.querySelector(".hardware-compatibility")
+       ?.getAttribute("data-narration-language") === "en";`,
+  );
+  const persisted = await driver.execute(
+    `const serialized = localStorage.getItem(
+       "voxleaf.narration.language-preference",
+     );
+     if (serialized === null) {
+       return null;
+     }
+     const value = JSON.parse(serialized);
+     return {
+       keys: Object.keys(value).sort(),
+       language: value.language,
+       schemaVersion: value.schemaVersion,
+       serializedLength: serialized.length,
+     };`,
+  );
+  assert(
+    persisted?.schemaVersion === 1 &&
+      persisted?.language === "en" &&
+      persisted?.serializedLength <= 96 &&
+      JSON.stringify(persisted?.keys) ===
+        JSON.stringify(["language", "schemaVersion"]),
+    "Native narration language proof failed.",
+  );
+  const restoredSpanish = await driver.execute(
+    `const input = Array.from(
+       document.querySelectorAll('input[name="narration-language"]'),
+     ).find((candidate) => candidate.value === "es");
+     if (!(input instanceof HTMLInputElement)) {
+       return false;
+     }
+     input.click();
+     return true;`,
+  );
+  assert(restoredSpanish === true, "Native narration language proof failed.");
+  await waitForCondition(
+    driver,
+    `return document.querySelector(".hardware-compatibility")
+       ?.getAttribute("data-narration-language") === "es";`,
+  );
+}
+
 async function installNativeResourceInstrumentation(driver) {
   const installed = await driver.execute(
     `if (globalThis.__voxleafNativeResourceInstrumentation !== undefined) {
@@ -4391,6 +4455,8 @@ async function run() {
     const rootMounted = await driver.execute(
       `return document.querySelector("#root")?.childElementCount > 0;`,
     );
+    stage = "native bilingual narration preference";
+    await exerciseNarrationLanguagePreference(driver);
     if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
       stage = "adaptive exact-host profile selection";
       const profileSelected = await selectAdaptiveTtsProfile(

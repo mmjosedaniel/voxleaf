@@ -13,11 +13,19 @@ import type {
   HardwareProfileMatchV1,
   HardwareProfileRejectionReasonV1,
 } from "./hardware-profile-matcher";
+import {
+  NARRATION_LANGUAGES_V1,
+  type NarrationLanguageV1,
+} from "./narration-language";
+import { profileSupportsNarrationLanguageV1 } from "./narration-profile-language-registry";
 
 export interface HardwareCompatibilityControlsProps {
   readonly coordinator: HardwareProfileCompatibilityCoordinator;
   readonly onRecoveryEpisodeReset?: () => void;
   readonly onSelectProfile?: (profileId: string) => Promise<boolean>;
+  readonly onSelectLanguage?: (
+    language: NarrationLanguageV1,
+  ) => Promise<boolean>;
 }
 
 const REASON_MESSAGES: Readonly<
@@ -92,6 +100,7 @@ export function HardwareCompatibilityControls({
   coordinator,
   onRecoveryEpisodeReset,
   onSelectProfile,
+  onSelectLanguage,
 }: HardwareCompatibilityControlsProps): ReactElement {
   const [selectionPending, setSelectionPending] = useState(false);
   const snapshot = useSyncExternalStore(
@@ -108,7 +117,8 @@ export function HardwareCompatibilityControls({
     (profile) =>
       profile.state === "compatible" &&
       (profile.supportState === "supported" ||
-        profile.supportState === "development-only"),
+        profile.supportState === "development-only") &&
+      profileSupportsNarrationLanguageV1(profile.profileId, snapshot.language),
   );
 
   const handleSelection = async (profileId: string): Promise<void> => {
@@ -118,6 +128,23 @@ export function HardwareCompatibilityControls({
         onSelectProfile === undefined
           ? await coordinator.selectProfile(profileId)
           : await onSelectProfile(profileId);
+      if (selected) {
+        onRecoveryEpisodeReset?.();
+      }
+    } finally {
+      setSelectionPending(false);
+    }
+  };
+
+  const handleLanguageSelection = async (
+    language: NarrationLanguageV1,
+  ): Promise<void> => {
+    setSelectionPending(true);
+    try {
+      const selected =
+        onSelectLanguage === undefined
+          ? await coordinator.selectLanguage(language)
+          : await onSelectLanguage(language);
       if (selected) {
         onRecoveryEpisodeReset?.();
       }
@@ -136,6 +163,7 @@ export function HardwareCompatibilityControls({
       className="hardware-compatibility"
       data-compatibility-status={snapshot.status}
       data-compatibility-profile={snapshot.activeProfileId ?? "none"}
+      data-narration-language={snapshot.language}
     >
       <summary>
         <span>Local narration compatibility</span>
@@ -154,6 +182,36 @@ export function HardwareCompatibilityControls({
             ? "A measured CPU fallback is available."
             : "No measured CPU fallback is available."}
         </p>
+        <fieldset disabled={selectionPending || !snapshot.canPersistLanguage}>
+          <legend>Narration language</legend>
+          {NARRATION_LANGUAGES_V1.map(({ value, label }) => (
+            <label key={value}>
+              <input
+                type="radio"
+                name="narration-language"
+                value={value}
+                checked={snapshot.language === value}
+                onChange={() => void handleLanguageSelection(value)}
+              />
+              <span>{label}</span>
+            </label>
+          ))}
+        </fieldset>
+        <p aria-live="polite" aria-atomic="true">
+          {snapshot.languageReason === "no-profile-for-language"
+            ? `No evaluated local narration profile is available for ${
+                snapshot.language === "en" ? "English" : "Spanish"
+              }.`
+            : `The selected narration language is ${
+                snapshot.language === "en" ? "English" : "Spanish"
+              }.`}
+        </p>
+        {!snapshot.canPersistLanguage ? (
+          <p>
+            A newer saved language preference is preserved and cannot be changed
+            by this version.
+          </p>
+        ) : null}
         {selectable.length === 0 ? null : (
           <fieldset
             disabled={selectionPending || !snapshot.canPersistSelection}

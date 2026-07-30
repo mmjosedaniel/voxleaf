@@ -52,9 +52,12 @@ result, Milestone 1A preserved v7 and froze layered v8 authority for exact
 local Qwen/Serena Spanish and Qwen/Aiden English controls. V8 reuses the same
 corpora, gates, stop conditions, and existing Qwen lock and excludes remote
 cloud inference, voice cloning, voice design, and a second English Qwen voice.
-This is authority and deterministic validation, not an implemented runtime
-boundary or support result. Product narration remains Spanish-only and the
-existing M010 support matrix remains authoritative.
+Milestone 2 implements the model-free product boundary: a closed bilingual
+preparation profile, bounded language preference, accessible explicit
+selection, exact profile/language admission, and identity-first cancellation
+and cleanup. No English engine or support result exists yet; Spanish Piper
+remains the only supported playable profile and the existing M010 support
+matrix remains authoritative.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
@@ -171,7 +174,8 @@ Desktop application
 |-- Piper/davefx CPU-fallback runtime
 |   [M010 complete; integrated and exact-host Piper arm validated]
 `-- Explicit bilingual narration, local Qwen controls, and candidate screen
-    [M010.1 v8 authority frozen; runtime not implemented]
+    [M010.1 Milestone 2 preparation/selection implemented;
+     English engine evaluation pending]
 
 EPUB package
 |-- Archive/package/navigation validation [implemented]
