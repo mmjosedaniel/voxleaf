@@ -96,17 +96,10 @@ fn main() {
                 if profile_id
                     .as_deref()
                     .and_then(std::ffi::OsStr::to_str)
-                    .zip(
-                        language
-                            .as_deref()
-                            .and_then(std::ffi::OsStr::to_str),
-                    )
+                    .zip(language.as_deref().and_then(std::ffi::OsStr::to_str))
                     .is_some_and(|(profile_id, language)| {
-                        tts_service_supervisor::run_bilingual_profile_host(
-                            profile_id,
-                            language,
-                        )
-                        .is_ok()
+                        tts_service_supervisor::run_bilingual_profile_host(profile_id, language)
+                            .is_ok()
                     })
                 {
                     0
