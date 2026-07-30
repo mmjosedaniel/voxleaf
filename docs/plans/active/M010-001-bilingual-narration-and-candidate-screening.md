@@ -1065,7 +1065,7 @@ tests/test_benchmark_v8_authority.py` passed 16 tests.
   ignored raw session, including generated audio, were deleted before the
   content-safe result was retained.
 
-Milestone 4 validation on 2026-07-29:
+Historical v8 Milestone 4 validation on 2026-07-29:
 
 - Exact Serena/Spanish and Aiden/English control artifacts, environments,
   offline controls, and interpreter-specific outbound isolation passed
@@ -1093,3 +1093,33 @@ Milestone 4 validation on 2026-07-29:
   generated audio, raw session, model weight, candidate environment, secret,
   or private host identity is tracked. The pytest cache-permission warning and
   existing CSS-highlight/chunk-size build warnings remain non-failing.
+
+Corrective Milestone 4 validation on 2026-07-30:
+
+- Exact outbound-isolated v9 MOSS and v11 Chatterbox executions each completed
+  10/10 Spanish/English generation cases and 8/8 cancellation trials. Their
+  content-safe metrics and limitations are retained in the schema-valid v9 and
+  v11 summaries.
+- One fluent bilingual maintainer reviewed ten blinded samples per candidate.
+  The guarded derivation verified the frozen authority, raw result, raw hash,
+  blinded map, sample identity set, score bounds, and scorecard identity before
+  cleanup.
+- The downloaded scorecards, private maps, generated waveforms, and complete
+  ignored v9/v11 raw sessions were deleted. Only content-safe summaries,
+  selection v11, and ADR-0029 remain.
+- Focused Ruff formatting/lint, strict mypy, and the 16-test candidate-result
+  plus v9/v11 authority suite passed.
+- `pnpm.cmd check:portable` passed formatting, lint, all TypeScript/Python type
+  checks, 209 shared tests, 577 EPUB tests, 429 desktop tests plus seven native
+  WebDriver-client tests, all 327 Python tests, portable desktop/package
+  builds, and both Python distributions.
+- `pnpm.cmd check` passed the same checks plus Rust formatting, Clippy, all 40
+  Rust tests, the Tauri release build, and Python source/wheel builds.
+- The initial sandboxed portable invocation stopped only because uv could not
+  access its user-local cache; the required local outside-sandbox rerun passed.
+  The existing pytest cache-permission warning and CSS-highlight/chunk-size
+  build warnings remain informational.
+- `git diff --check`, explicit v9/v11 summary validation after Prettier, and a
+  scoped privacy/artifact scan passed. No EPUB, generated audio, raw session,
+  scorecard, model weight, candidate environment, private path, email,
+  credential, or secret is tracked by this milestone.
