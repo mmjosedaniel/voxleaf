@@ -506,8 +506,9 @@ record this routing without changing runtime support.
 
 ### Milestone 5: Freeze and execute the corrective full evaluation
 
-**Status:** In progress as of 2026-07-30. Result-blind v12 authority is being
-frozen before any new result-bearing execution.
+**Status:** Complete as of 2026-07-30. Result-blind v12 authority was committed
+before execution; the complete matrix, three private quality reviews,
+content-safe derivation, cleanup, and maintainer decisions are recorded.
 
 1. Before any new result, freeze a new numbered authority that preserves the
    v8 Qwen, v9 MOSS, and v11 Chatterbox evidence unchanged.
@@ -664,6 +665,21 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-30:** Completed Milestone 5. Chatterbox finished the complete
+  bilingual v12 matrix with 5/5 cold loads, 20/20 warm attempts, 30/30
+  sustained attempts, and 8/8 cancellation trials. Spanish/English total
+  sustained RTF were 0.523/0.537; peak process-tree RAM was 4.88 GiB and peak
+  dedicated VRAM was 3.56 GiB. All privacy, offline, bounded-retention, and
+  cleanup audits passed. One fluent bilingual maintainer reviewed five fresh
+  samples for each Chatterbox language and each Qwen language profile.
+  Chatterbox had zero meaning-changing or wrong-language outputs and was
+  admitted for Spanish and English. Qwen/Serena Spanish scored strongly and
+  was retained; Qwen/Aiden English received 5.0 in every dimension and was
+  admitted as the English configuration of the existing engine. Every private
+  scorecard, waveform, map, and raw session was deleted after guarded
+  derivation. `selection-v12.md`, ADR-0031, and support/integration matrix v2
+  record the decisions; runtime availability remains unchanged until
+  Milestone 6.
 - **2026-07-30:** The exact v12 Chatterbox machine matrix completed all five
   cold loads, 50 generation attempts, and eight cancellation trials. Offline
   isolation, artifact, privacy, bounded-retention, and cleanup audits passed.

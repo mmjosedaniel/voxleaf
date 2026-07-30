@@ -1,0 +1,103 @@
+{
+  "audits": {
+    "artifacts": true,
+    "boundedRetention": true,
+    "cleanup": true,
+    "networkIsolation": true,
+    "offline": true,
+    "privacy": true
+  },
+  "authorityCommitSha": "0b90fa2c16cdb276550ad3c3a58a2d84e1509876",
+  "cancellation": {
+    "passedTrials": 8,
+    "processesRemaining": 0,
+    "requiredTrials": 8,
+    "staleUnits": 0
+  },
+  "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v4",
+  "candidateManifestSha256": "0107aee0e4cbea5ae0d26cddb6511340d57854061f2b1c4108166bcf1df45539",
+  "corpusSha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe",
+  "counts": {
+    "cancellationTrials": 8,
+    "coldLoads": 5,
+    "failedAttempts": 0,
+    "sustainedAttempts": 30,
+    "warmAttempts": 20
+  },
+  "decision": {
+    "rejectionRecorded": false,
+    "state": "pending-maintainer-decision"
+  },
+  "dependencyLockSha256": "30f3ca3c27842d88e04256d357e79c291b90636d4f7e20fca18d20713021b1ab",
+  "executionCommitSha": "3c7ace1f9cb02341c26b0ecf921d99031cd6010b",
+  "languagesEvaluated": ["es", "en"],
+  "limitations": [
+    "single-fluent-bilingual-maintainer",
+    "synthetic-ten-case-corpus",
+    "official-bundled-default-voice-only",
+    "cross-language-accent-observed-in-v11",
+    "native-speaking-rate-control-unavailable",
+    "experimental-torch-dependency-override",
+    "distribution-obligations-deferred-to-m011"
+  ],
+  "memory": {
+    "minimumAvailableSystemRamBytes": 4861624320,
+    "peakDedicatedVramBytes": 3820535808,
+    "peakProcessTreeRamBytes": 5236375552
+  },
+  "observations": [
+    "preferred-cold-load-target-exceeded",
+    "preferred-process-ram-target-exceeded"
+  ],
+  "performanceByLanguage": [
+    {
+      "firstAudioP95Seconds": 4.2122451,
+      "language": "es",
+      "sustainedP95Rtf": 0.5570133823529412,
+      "totalSustainedRtf": 0.5230276431219111,
+      "warmP95Rtf": 0.5394557624113475
+    },
+    {
+      "firstAudioP95Seconds": 3.7133615,
+      "language": "en",
+      "sustainedP95Rtf": 0.5902224137931035,
+      "totalSustainedRtf": 0.5374099185707341,
+      "warmP95Rtf": 0.5411782823129252
+    }
+  ],
+  "profileSha256": "b4144299538225bdac86983493b3a64b8cf2a8c291403aca21dfafe7d33cc267",
+  "qualityByLanguage": [
+    {
+      "dimensionMeans": {
+        "intelligibility": 5.0,
+        "language-stability": 4.6,
+        "naturalness": 4.0,
+        "overall-usefulness": 5.0,
+        "pronunciation": 4.4,
+        "prosody": 4.2
+      },
+      "language": "es",
+      "meaningChangingDefects": 0,
+      "sampleCount": 5,
+      "status": "reviewed-awaiting-decision",
+      "wrongLanguageOutputs": 0
+    },
+    {
+      "dimensionMeans": {
+        "intelligibility": 5.0,
+        "language-stability": 5.0,
+        "naturalness": 4.2,
+        "overall-usefulness": 5.0,
+        "pronunciation": 4.8,
+        "prosody": 4.0
+      },
+      "language": "en",
+      "meaningChangingDefects": 0,
+      "sampleCount": 5,
+      "status": "reviewed-awaiting-decision",
+      "wrongLanguageOutputs": 0
+    }
+  ],
+  "schemaVersion": "tts-bilingual-full-summary-v12",
+  "status": "measured-awaiting-decision"
+}

@@ -842,7 +842,7 @@ frozen v6 cycle and passed measured evidence before product admission.
 
 ## Milestone 10.1: Add bilingual narration and screen naturalness candidates
 
-**Status:** In progress; Milestones 1, 1A, 2, 3, and 4 complete as of
+**Status:** In progress; Milestones 1, 1A, 2, 3, 4, and 5 complete as of
 2026-07-30. Follow
 [`M010-001-bilingual-narration-and-candidate-screening.md`](active/M010-001-bilingual-narration-and-candidate-screening.md).
 This bounded pre-M011 follow-up responds to an explicit product need for
@@ -866,12 +866,13 @@ does not itself admit an English product profile. Milestone 3 independently
 admits exact Piper 1.4.2 / `en_US-joe-medium` for later integration after all
 machine, performance, memory, cancellation, quality, privacy, offline, and
 cleanup gates pass. It remains unavailable in the application until
-Milestone 6. Corrective Milestone 4 advances exact Chatterbox as the sole
-new-engine full-matrix survivor, defers MOSS without rejection after
-bilingual dialogue-tail omission, and retains Qwen/Serena Spanish plus
+Milestone 6. Corrective Milestone 5 admits exact Chatterbox for both Spanish
+and English after its complete bilingual machine/cancellation matrix and
+private quality review pass. It retains Qwen/Serena Spanish and admits
 Qwen/Aiden English as independent hardware-dependent constrained-buffer
-candidates. Qwen's approximately 1.44 RTF on this laptop is capacity evidence,
-not an automatic blocker or a claim about stronger compatible GPUs.
+configurations of the existing Qwen engine. Qwen's approximately 1.44 RTF
+on this laptop is capacity evidence, not an automatic blocker or a claim
+about stronger compatible GPUs. MOSS remains deferred without rejection.
 
 ### Goal
 
@@ -893,9 +894,10 @@ memory, or support-evidence rules.
   CustomVoice / native-English Aiden / English are evaluated independently.
   Shared weights establish identity only; results are not shared.
 - Chatterbox Multilingual V3 and MOSS-TTS-Nano ONNX were screened
-  sequentially. Chatterbox advances to the next frozen full matrix; MOSS is
-  deferred without rejection. CosyVoice is not executed in v8 because exact
-  intake did not establish a non-personal default voice path.
+  sequentially. Chatterbox then passed the frozen v12 full bilingual matrix
+  and is admitted for both languages; MOSS is deferred without rejection.
+  CosyVoice is not executed in v8 because exact intake did not establish a
+  non-personal default voice path.
 - At most one passing new engine is integrated. A failed screen produces an
   honest no-winner record and does not delay M011 indefinitely.
 - Language/profile changes replace work identity before cleanup, never reuse
@@ -923,7 +925,9 @@ versioned contracts and a new decision record.
 
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** Approved after M010.1; not started. The repository can build a
+**Status:** Approved after M010.1; not started. M010.1 Milestone 5 has admitted
+the bounded bilingual profiles, but Milestones 6-7 must still integrate and
+validate them before M011 begins. The repository can build a
 release executable for validation, but installer bundling, signing,
 model/runtime distribution, Piper license fulfillment, updater policy, and
 complete-MVP validation are not implemented.
@@ -961,14 +965,13 @@ pre-M011 work. Its preserved v7/v8 intake rejects CosyVoice before execution;
 any future reconsideration requires new authority. All other candidates remain
 post-MVP and require separate newly frozen authority.
 
-Retain Piper/davefx as the selected CPU fallback and Qwen/Serena as the
-optional GPU-dependent development profile. M010.1 also retains Qwen/Aiden
-for independent English review and the passing Piper/joe English baseline for
-Milestone 6 integration; this evidence does not change the current runtime
-support matrix by itself. Chatterbox has moved from backlog intake into the
-next pre-M011 full evaluation, while MOSS returns to targeted future
-investigation unless a new authority schedules it. After release, screen the
-remaining candidates in this order:
+Retain Piper/davefx as the selected CPU fallback. M010.1 admits Piper/joe
+English, Chatterbox Spanish/English, and Qwen/Aiden English for Milestone 6
+integration while retaining Qwen/Serena Spanish as the optional GPU-dependent
+development profile. This evidence does not change the current runtime support
+matrix by itself. MOSS returns to targeted future investigation unless a new
+authority schedules it. After release, screen the remaining candidates in
+this order:
 
 1. Pocket TTS Spanish as a balanced streaming CPU challenger, conditional on
    exact model/voice license and redistribution review.
