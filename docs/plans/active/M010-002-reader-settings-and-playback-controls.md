@@ -91,6 +91,15 @@ The shared historical persisted-reading-state schema permits a positive
 new global narration-speed behavior. This plan must choose explicit bounded
 desktop preference ownership rather than silently repurposing that schema.
 
+Milestone 1 is complete. The frozen
+[`reader settings and playback authority v1`](../../architecture/reader-settings-playback-authority-v1.md),
+accepted
+[`ADR-0033`](../../architecture/decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md),
+and executable desktop constants now close the shell, responsive, Settings,
+language/profile presentation, preference, rate, arithmetic, backend,
+resource, privacy, and validation inputs before production implementation.
+The current runtime remains unchanged: Spanish fallback and `1.0x`.
+
 ## Scope and non-goals
 
 ### In scope
@@ -385,11 +394,21 @@ No change may add:
 Expected result: authority and tests freeze every input before production
 backend or UI results exist.
 
-Actual result: Not run.
+Actual result: Passed. The pre-change desktop baseline passed 44 Vitest files
+with 433 tests plus 11 native helper tests. After freezing the authority,
+`pnpm.cmd --filter @voxleaf/desktop test` passed 45 Vitest files with 454 tests
+plus the same 11 native helper tests, and desktop type checking passed.
+`pnpm.cmd check:portable` passed TypeScript/Python formatting and linting,
+generated-contract verification, TypeScript/Python type checking, 20 shared
+files/209 tests, 34 EPUB files/580 tests, 45 desktop files/454 tests plus 11
+native helper tests, 347 Python tests, both package builds, the desktop
+production build, and the Python source/wheel build. `git diff --check`
+passed. The run retained one content-free pytest cache-write warning and the
+existing Vite Custom Highlight and chunk-size warnings.
 
 #### Status
 
-Not started.
+Complete.
 
 ### Milestone 2: Select and prove the bounded pitch-preserving backend
 
@@ -703,6 +722,19 @@ Do not rewrite accepted historical authority to make a result pass.
   the ExecPlan itself is not a benchmark hash input, so M010.1 was moved to
   `completed/` and all references were reconciled. All 347 Python tests then
   passed.
+- **2026-07-30:** Completed Milestone 1 on
+  `feat/m010-002-freeze-reader-settings-playback-authority`. Added executable
+  authority and 21 result-blind desktop tests, froze the architecture
+  authority and ADR-0033, and reconciled product, architecture, system
+  diagram, roadmap, testing, and ExecPlan status. The frozen comparison admits
+  only repository AudioWorklet WSOLA and HTMLMediaElement `preservesPitch`
+  with an in-memory WAV copy; direct AudioBufferSource rate control remains a
+  pitch-changing negative control. Focused desktop tests/type checking and
+  the complete portable gate pass. All 589 relative Markdown links across 100
+  documents resolve; the 14-file branch has zero private-path/email/key
+  pattern findings and zero prohibited book/audio/model artifact paths; and
+  `git diff --check` passes. No production runtime, preference, protocol,
+  support, model, dependency, or native-capability behavior changed.
 
 ## Discoveries and decisions
 
@@ -733,10 +765,33 @@ Do not rewrite accepted historical authority to make a result pass.
 - The v8-v12 benchmark chain hashes historical bilingual authority, not the
   M010.1 ExecPlan. The authority must remain byte-identical; the completed
   plan belongs under `docs/plans/completed/`.
+- Exact playback rates are persisted and calculated as integer percentages,
+  not floating-point preference values. This closes the value set and gives
+  deterministic rational source/effective-duration arithmetic.
+- The exact responsive targets are now 400 CSS pixels for the wide Settings
+  drawer, 360 CSS pixels for the compact drawer, 260 CSS pixels for the
+  optional wide contents panel, and a full-width sheet below 800 CSS pixels.
+- No current Web playback mechanism is assumed acceptable. Milestone 2 must
+  apply the frozen tone, impulse, speech, pitch, drift, latency, memory, CPU,
+  browser, packaged-host, and fluent-listening gates without tuning them
+  after results.
+- The 43,200,000-source-frame ceiling remains resource authority at every
+  rate. Effective listening duration changes threshold meaning only and can
+  reach 3,600,000 milliseconds at `0.50x` without retaining more PCM.
 
 ## Final validation results
 
-M010.2 implementation validation has not run because implementation has not
-started. The documentation/plan-creation checkpoint passes
-`pnpm.cmd check:portable`, changed-file relative-link validation, and
-`git diff --check`. No M010.2 runtime or product-support claim exists yet.
+M010.2 Milestone 1 validation passes. The executable authority adds 21
+result-blind tests, bringing the desktop suite to 45 Vitest files/454 tests
+plus 11 native helper tests. Desktop type checking and `pnpm.cmd
+check:portable` pass; the portable run also passes 209 shared tests, 580 EPUB
+tests, and 347 Python tests plus all formatting, linting, type checking,
+contract-generation, production-build, and package-build gates.
+All 589 relative Markdown links resolve, and the changed-tree privacy and
+prohibited-artifact scans report zero findings.
+
+The full plan remains active. Milestones 2-6 have not run, and no M010.2
+Settings, preference migration, English runtime fallback, time-stretch
+backend, effective-lead scheduling, or non-`1.00x` runtime behavior is
+claimed. Current production behavior remains the completed M010.1 interface,
+Spanish fallback, and `1.0x`.

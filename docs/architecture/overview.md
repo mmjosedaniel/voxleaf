@@ -66,15 +66,17 @@ bounded synchronization/cancellation, zero-audio-persistence, and privacy
 closeout pass. Pull request #159 passed the required Ubuntu and Windows checks
 and merged the M010.1 closeout.
 
-M010.2 is approved but not implemented. Its
+M010.2 Milestone 1 is complete. Its accepted
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
 requirements and
 [`active ExecPlan`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
-will compose the completed reader, preference, compatibility, playback, and
-synchronization boundaries into a reader-first Settings shell. They also
-require a newly frozen pitch-preserving playback authority before the current
-`1.0x` capability can change. No M010.2 arrow or runtime behavior is currently
-implemented.
+are now governed by the frozen
+[`reader settings and playback authority v1`](reader-settings-playback-authority-v1.md)
+and [ADR-0033](decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md).
+The authority fixes the shell, preferences, English migration, exact rational
+rates, source/effective-duration arithmetic, and closed backend comparison
+before implementation. No M010.2 runtime arrow is implemented: the current
+app remains Spanish-fallback and `1.0x`.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
@@ -702,8 +704,8 @@ as both the initial prepared selection and refill/resume target. It keeps the
 10-second low-water warning, `0` ms adaptive low-buffer wait, `1.0x` playback,
 100% default volume, and exact simultaneous resource ceilings. M008.1 later
 adds the distinct semantic generated-unit transition described above without
-revising those M008 values. Approved M010.2 may supersede only the playback
-rate and derived effective-listening-time portions after it freezes new
-authority and passes deterministic, browser, packaged, exact-host, quality,
+revising those M008 values. Frozen M010.2 authority may supersede only the
+playback-rate and derived effective-listening-time portions after later
+milestones pass deterministic, browser, packaged, exact-host, quality,
 resource, synchronization, privacy, and lifecycle gates. Source-frame/byte
 ceilings and M008.1 wall-clock transition timers remain unchanged.
