@@ -56,13 +56,14 @@ service matrix, and six packaged synthetic EPUB portfolio arms pass. MOSS
 remains deferred without rejection. Pull request #159 passed the required
 Ubuntu/Windows checks and merged the closeout.
 
-M010.2 is active. Milestone 1 has frozen its architecture/executable authority
-and result-blind backend comparison, but runtime behavior is not implemented.
-Later milestones will reorganize the reader around one fixed app bar,
-accessible Settings, compact narration, and the sole reader scroll viewport;
-introduce an English fallback that preserves valid saved
-language; and add bounded pitch-preserving playback speeds after synthesis.
-Installer distribution and license fulfillment remain deferred to M011.
+M010.2 is active. Milestones 1-2 froze its architecture/executable authority
+and result-blind backend comparison, then selected no pitch-preserving backend.
+Runtime behavior is not implemented. Later milestones may reorganize the
+reader around one fixed app bar, accessible Settings, compact narration, and
+the sole reader scroll viewport, and introduce an English fallback that
+preserves valid saved language. Non-default playback speed requires a new
+decision. Installer distribution and license fulfillment remain deferred to
+M011.
 The rest of this brief describes the intended complete product unless it
 explicitly identifies implemented behavior.
 
@@ -209,7 +210,7 @@ directions are separated below:
 | OpenAI Whisper                    | Rejected as TTS candidate                                                 | Automatic speech recognition: audio input and text output                                                                                                                                                                    | Optional fully local benchmark-only transcription may be assessed separately; it cannot generate narration or replace human quality review                            |
 | Process transport                 | Accepted, implemented, and validated                                      | Rust-owned child-process standard streams plus narrow optimized binary Tauri responses; no listener or renderer shell capability                                                                                             | Protocol v1 remains unchanged; production distribution remains blocked                                                                                                |
 | Internal audio                    | All admitted profile adapters and local packaged portfolio proof complete | Bounded mono 24-kHz float32-le units; Piper converts native 22.05 kHz inside its adapter; Chatterbox and Qwen return bounded complete units; sole-owner FIFO and one transient active-device copy                            | No audio persistence; one model child at a time; Qwen remains optional development-only and constrained-buffered                                                      |
-| Playback mechanism                | Web Audio `1.0x` path implemented; M010.2 Milestone 1 authority frozen     | One dedicated `AudioContext`, one gain node, and one active `AudioBufferSourceNode`; M010.2 must select a bounded pitch-preserving in-memory path for eleven fixed rates                                                     | Select from the frozen backends, validate source-frame progress, effective lead, quality, resources, packaged WebView2, and lifecycle before claiming adjustable speed |
+| Playback mechanism                | Web Audio `1.0x` path implemented; M010.2 Milestone 2 selected no backend  | One dedicated `AudioContext`, one gain node, and one active `AudioBufferSourceNode`; WSOLA failed the frozen CPU gate and packaged WebView2 rejected the media-element path under the unchanged CSP                           | Retain `1.00x`; non-default speed requires new result-blind authority or an explicit reduced-scope decision                                                            |
 
 ADR-0013 records the standard rejection evidence. ADR-0015 supersedes
 ADR-0014's scheduling and buffering details, rejects CPU and dual-worker

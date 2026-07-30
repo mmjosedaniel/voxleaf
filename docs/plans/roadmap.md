@@ -51,12 +51,13 @@ final exact-host metrics, privacy, bounded synchronization, and cleanup
 validation pass locally. Pull request #159 subsequently passed the required
 Ubuntu and Windows checks and merged the closeout.
 
-M010.2 is active before M011. Milestone 1 is complete: its architecture
-authority, executable constants, exhaustive result-blind tests, ADR, exact
-source/effective-duration arithmetic, and pitch-preserving backend comparison
-were frozen before production results. Runtime behavior remains unchanged;
-Milestone 2 is next. M011 remains deferred until this bounded portfolio
-follow-up closes.
+M010.2 is active before M011. Milestones 1-2 are complete: the architecture
+authority and result-blind comparison were frozen before results, then neither
+eligible backend passed every machine and packaged-host gate. ADR-0034 retains
+`1.00x`; runtime behavior remains unchanged. Reader/Settings milestones can
+proceed, but the original eleven-speed outcome awaits an explicit reduced-scope
+or newly frozen backend decision. M011 remains deferred until this bounded
+portfolio follow-up closes.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -943,7 +944,8 @@ versioned contracts and a new decision record.
 
 ## Milestone 10.2: Add reader settings and pitch-preserving playback controls
 
-**Status:** In progress. Milestone 1 is complete; Milestone 2 is next. Follow
+**Status:** In progress with the speed path blocked. Milestones 1-2 are
+complete; ADR-0034 selected no pitch-preserving backend. Follow
 [`M010-002-reader-settings-and-playback-controls.md`](active/M010-002-reader-settings-and-playback-controls.md)
 and the approved
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
@@ -958,7 +960,8 @@ Milestone 1 freezes
 and
 [`ADR-0033`](../architecture/decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md).
 The current runtime remains Spanish-fallback and `1.00x`; no Settings or
-time-stretch implementation is claimed yet.
+time-stretch implementation is claimed. Milestones 3-4 do not depend on the
+backend result, but Milestone 5 requires a new explicit scope/backend decision.
 
 ### Goal
 
@@ -1113,8 +1116,9 @@ The following decisions should be made when evidence is available, not assumed s
 8. **Reader/settings/playback-control gate:** M010.2 Milestone 1 freezes the
    new shell, Settings, English fallback, preference ownership, exact
    pitch-preserving rate set, source/effective-duration arithmetic, and
-   backend comparison before results. Later milestones must validate
-   packaged accessibility before changing M008's accepted `1.0x` policy.
+   backend comparison before results. Milestone 2 selects no backend and
+   retains M008's accepted `1.0x` policy. Later milestones must validate
+   packaged accessibility, and non-default speed requires a new decision.
 9. **Release gate:** define supported hardware and wall-clock startup
    expectations from measured results before release.
 
@@ -1176,8 +1180,9 @@ supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
 Milestones 1 through 10.1, M008.1, and M009.1 are complete, with their evidence
-retained under [`completed/`](completed/). M010.2 is active before M011; no
-M010.2 runtime behavior is implemented yet.
+retained under [`completed/`](completed/). M010.2 Milestones 1-2 are complete
+and M010.2 remains active before M011; no M010.2 runtime behavior is
+implemented.
 
 ## MVP completion boundary
 

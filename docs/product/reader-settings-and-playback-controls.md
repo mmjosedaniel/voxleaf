@@ -2,16 +2,22 @@
 
 ## Status
 
-Approved product direction for roadmap Milestone 10.2. Milestone 1 has frozen
+Approved product direction for roadmap Milestone 10.2. Milestone 1 froze
 the exact
 [`reader settings and playback authority v1`](../architecture/reader-settings-playback-authority-v1.md)
 and [ADR-0033](../architecture/decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md)
-before production results. The behavior in this document is not implemented
-until
+before production results. Milestone 2 then selected no pitch-preserving
+backend: WSOLA exceeded the frozen CPU gate and packaged WebView2 rejected the
+media-element path under the unchanged CSP. [ADR-0034](../architecture/decisions/ADR-0034-retain-fixed-speed-after-playback-backend-evaluation.md)
+therefore retains `1.00x`.
+
+The behavior in this document is not implemented until
 [`M010-002-reader-settings-and-playback-controls.md`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
 records passing implementation and validation. Current runtime behavior
 remains the completed M010.1 interface, Spanish fallback for missing or invalid
-language preference, and `1.0x` playback.
+language preference, and `1.0x` playback. Reader/Settings work can proceed
+independently, but non-default speed requires a new explicit scope/backend
+decision.
 
 This document replaces the ignored pre-M011 design discussion as the durable
 product scope. It does not change the completed M005 narration-preparation

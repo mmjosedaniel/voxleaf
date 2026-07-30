@@ -18,11 +18,11 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 ## Current plans
 
 - [`M010-002-reader-settings-and-playback-controls.md`](M010-002-reader-settings-and-playback-controls.md):
-  approved, not-yet-implemented pre-M011 follow-up. It freezes and implements
-  the reader-first app shell, accessible Settings drawer/sheet, English
-  fallback with valid-preference preservation, language- and gate-correct
-  profile presentation, bounded narration preferences, and engine-neutral
-  pitch-preserving playback speeds from `1.00x` through `0.50x`.
+  active pre-M011 follow-up. Milestones 1-2 froze and ran the backend
+  comparison, selected no passing backend, and retain `1.00x`. Reader-first
+  shell, accessible Settings, English fallback, profile presentation, and
+  bounded narration preferences remain planned; non-default speed awaits an
+  explicit scope/backend decision.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through

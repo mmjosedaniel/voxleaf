@@ -55,15 +55,15 @@ development-only Qwen arms deplete once and refill safely on this host.
 Pull request #159 passed the required Ubuntu and Windows checks and merged the
 M010.1 closeout.
 
-M010.2 is active before M011. Milestone 1 has frozen the exact authority,
-executable constants, result-blind tests, ADR, arithmetic, and backend
-comparison, but runtime behavior is not implemented. Later milestones will
-reorganize the ready reader around one fixed app bar, accessible Settings,
-compact narration, and the sole publication scroll viewport; make English the
-fallback only for missing/invalid/reset language state; preserve applicable
-Piper, Chatterbox, and development-only Qwen presentation; and add bounded
-pitch-preserving playback speeds from `1.00x` through `0.50x`. Current runtime
-behavior remains the completed M010.1 UI, Spanish fallback, and `1.0x`.
+M010.2 is active before M011. Milestones 1-2 froze the exact authority and
+closed backend comparison before results, then selected no pitch-preserving
+backend. Later milestones may reorganize the ready reader around one fixed app
+bar, accessible Settings, compact narration, and the sole publication scroll
+viewport; make English the fallback only for missing/invalid/reset language
+state; and preserve applicable Piper, Chatterbox, and development-only Qwen
+presentation. Non-default playback speed requires a new decision. Current
+runtime behavior remains the completed M010.1 UI, Spanish fallback, and
+`1.0x`.
 
 ## Current implemented flow
 
@@ -128,9 +128,11 @@ authority.
 
 ## Remaining target user flow
 
-1. M010.2 Milestone 1 has frozen the reader-first Settings shell, English
-   fallback, bounded narration preferences, and pitch-preserving playback
-   authority. Milestones 2-6 must prove and implement the controls described in
+1. M010.2 Milestones 1-2 froze the reader-first Settings shell, English
+   fallback, bounded narration preferences, and playback authority, then
+   selected no backend from the closed pitch-preserving comparison. The
+   reader/Settings work remains available, but the eleven-speed outcome is
+   blocked pending an explicit reduced-scope or new-backend decision in
    [`reader-settings-and-playback-controls.md`](reader-settings-and-playback-controls.md).
 2. M011 then packages and validates an end-user distribution, including model
    and voice license notices, provenance, corresponding-source or written-offer

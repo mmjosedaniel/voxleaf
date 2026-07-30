@@ -44,6 +44,7 @@ ADR-0002-short-description.md
 - [`ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md`](ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md): admit Chatterbox for both languages and Qwen/Aiden English integration while retaining Qwen/Serena Spanish and explicit compatibility limits.
 - [`ADR-0032-bound-chatterbox-complete-waveform-units.md`](ADR-0032-bound-chatterbox-complete-waveform-units.md): preserve bilingual normalization while giving complete-waveform Chatterbox inference a tighter measured packing profile.
 - [`ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md`](ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md): freeze the reader-first shell, bounded Settings preferences, English fallback migration, exact playback-rate arithmetic, and result-blind pitch-preserving backend comparison before implementation.
+- [`ADR-0034-retain-fixed-speed-after-playback-backend-evaluation.md`](ADR-0034-retain-fixed-speed-after-playback-backend-evaluation.md): retain `1.00x` after WSOLA exceeded the frozen CPU gate and packaged WebView2 rejected the in-memory media candidate under the unchanged CSP.
 
 ## Template
 

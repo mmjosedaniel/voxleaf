@@ -66,7 +66,7 @@ bounded synchronization/cancellation, zero-audio-persistence, and privacy
 closeout pass. Pull request #159 passed the required Ubuntu and Windows checks
 and merged the M010.1 closeout.
 
-M010.2 Milestone 1 is complete. Its accepted
+M010.2 Milestones 1-2 are complete. The accepted
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
 requirements and
 [`active ExecPlan`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
@@ -75,7 +75,9 @@ are now governed by the frozen
 and [ADR-0033](decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md).
 The authority fixes the shell, preferences, English migration, exact rational
 rates, source/effective-duration arithmetic, and closed backend comparison
-before implementation. No M010.2 runtime arrow is implemented: the current
+before implementation. ADR-0034 records that WSOLA failed the frozen CPU gate
+and the packaged host rejected the media-element path under the unchanged CSP,
+so no backend was selected. No M010.2 runtime arrow is implemented: the current
 app remains Spanish-fallback and `1.0x`.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-

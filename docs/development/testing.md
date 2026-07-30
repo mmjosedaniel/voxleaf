@@ -774,7 +774,7 @@ and merged the M010.1 closeout.
 
 ## M010.2 reader/settings/playback validation
 
-M010.2 Milestone 1 is complete but production behavior is not implemented.
+M010.2 Milestones 1-2 are complete but production behavior is not implemented.
 `reader-settings-playback-authority.test.ts` exhaustively freezes the exact
 shell and responsive values, Settings ordering and lifecycle neutrality,
 language/profile presentation, preference envelopes, every rate and invalid
@@ -782,6 +782,13 @@ input, source/effective-duration threshold arithmetic, backend candidates and
 gates, and unchanged M005/protocol/support/resource boundaries. The checkpoint
 passes 45 desktop test files with 454 Vitest tests plus 11 native helper tests
 and desktop type checking.
+
+The Milestone 2 synthetic comparison selected no backend. WSOLA passed signal
+and lifecycle checks but exceeded the frozen CPU limit in Chromium and
+packaged WebView2. `HTMLMediaElement.preservesPitch` passed Chromium but the
+unchanged packaged Tauri CSP rejected its in-memory `blob:` WAV. The negative
+control shifted pitch. No candidate reached listening; all experimental
+adapters were removed and current test/runtime playback remains `1.00x`.
 
 Later milestones must extend existing desktop, browser, and native-startup
 coverage rather than create an unrelated harness. Their model-free tests will

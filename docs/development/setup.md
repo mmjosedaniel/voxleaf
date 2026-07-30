@@ -42,8 +42,9 @@ archived. M010.1 implements explicit Spanish/English narration and bounded
 candidate screening; its local six-arm packaged portfolio validation and
 required Ubuntu/Windows checks pass, pull request #159 merged, and the plan is
 archived. M010.2 reader/settings/playback work is approved but not
-implemented. Production distribution, Piper license fulfillment, and
-installers remain M011 work.
+implemented; Milestone 2 selected no pitch-preserving backend, so playback
+remains `1.00x` pending an explicit scope decision. Production distribution,
+Piper license fulfillment, and installers remain M011 work.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
