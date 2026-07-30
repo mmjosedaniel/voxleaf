@@ -123,10 +123,12 @@ runtime or support state.
 - [superseding TTS feasibility profile v8](../../architecture/tts-feasibility-profile-v8.md)
 - [corrective TTS feasibility profile v9](../../architecture/tts-feasibility-profile-v9.md)
 - [Chatterbox CUDA feasibility profile v10](../../architecture/tts-feasibility-profile-v10.md)
+- [Chatterbox RTX 50 compatibility profile v11](../../architecture/tts-feasibility-profile-v11.md)
 - [ADR-0024](../../architecture/decisions/ADR-0024-freeze-bilingual-v7-authority.md)
 - [ADR-0025](../../architecture/decisions/ADR-0025-supersede-v7-with-local-qwen-bilingual-v8-authority.md)
 - [ADR-0026](../../architecture/decisions/ADR-0026-correct-bilingual-candidate-decision-authority.md)
 - [ADR-0027](../../architecture/decisions/ADR-0027-freeze-chatterbox-cuda-v10-correction.md)
+- [ADR-0028](../../architecture/decisions/ADR-0028-freeze-chatterbox-rtx50-compatibility-v11.md)
 - [v7 candidate manifest](../../../benchmarks/tts/candidates-v7.json)
 - [v7 evaluation profile](../../../benchmarks/tts/profile-v7.json)
 - [v8 candidate amendment](../../../benchmarks/tts/candidates-v8.json)
@@ -135,6 +137,8 @@ runtime or support state.
 - [v9 corrective evaluation profile](../../../benchmarks/tts/profile-v9.json)
 - [v10 Chatterbox candidate manifest](../../../benchmarks/tts/candidates-v10.json)
 - [v10 Chatterbox evaluation profile](../../../benchmarks/tts/profile-v10.json)
+- [v11 Chatterbox candidate manifest](../../../benchmarks/tts/candidates-v11.json)
+- [v11 Chatterbox evaluation profile](../../../benchmarks/tts/profile-v11.json)
 - [v7 synthetic corpus](../../../benchmarks/tts/corpus-v7.json)
 - [v2 normalization corpus](../../../benchmarks/tts/normalization-corpus-v2.json)
 
@@ -641,6 +645,15 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-29:** The exact v10 Torch 2.6.0+cu124 runtime reached local
+  Chatterbox model loading but stopped before inference on the exact NVIDIA
+  GeForce RTX 5060 Laptop GPU. The host reports CUDA capability 12.0
+  (`sm_120`), while the frozen Torch build supplies kernels only through
+  `sm_90`; the first CUDA operation failed because no compatible kernel image
+  was available. This remains a configuration observation,
+  not model evidence or rejection. Preserved v9/v10 and froze separate v11
+  experimental compatibility authority with exact Torch/Torchaudio
+  2.9.1+cu128 before another attempt.
 - **2026-07-29:** Corrective v9 completed real MOSS machine inference rather
   than reusing the historical configuration stop. All ten Spanish/English
   cases and all eight cancellation trials completed. Spanish warm p95 RTF was
@@ -913,13 +926,13 @@ services/tts/tests/test_benchmark_v7_authority.py` passed 7 tests.
 Milestone 1A focused validation on 2026-07-29:
 
 - `uv run --project services/tts --locked ruff check
-  services/tts/benchmarks/v8_authority.py
-  services/tts/tests/test_benchmark_v8_authority.py` passed.
+services/tts/benchmarks/v8_authority.py
+services/tts/tests/test_benchmark_v8_authority.py` passed.
 - `uv run --directory services/tts --locked mypy
-  benchmarks/v8_authority.py tests/test_benchmark_v8_authority.py` passed.
+benchmarks/v8_authority.py tests/test_benchmark_v8_authority.py` passed.
 - `uv run --project services/tts --locked pytest -p no:cacheprovider
-  services/tts/tests/test_benchmark_v7_authority.py
-  services/tts/tests/test_benchmark_v8_authority.py` passed 14 tests.
+services/tts/tests/test_benchmark_v7_authority.py
+services/tts/tests/test_benchmark_v8_authority.py` passed 14 tests.
 - The production authority-tree verifier accepted exact commit
   `95b0452ffb237284c5ffb54332c578b36e45fdf5`.
 - `pnpm.cmd check:portable` passed in 36.2 seconds: formatting, lint, all
@@ -954,8 +967,8 @@ Milestone 2 focused validation on 2026-07-29:
   preference, supervised fake-service, cancellation/recovery, EPUB lifecycle,
   synchronization, privacy, and no-external-request matrix.
 - `uv run --project services/tts --locked pytest
-  services/tts/tests/test_benchmark_v6_authority.py
-  services/tts/tests/test_benchmark_v8_authority.py` passed 14 tests after the
+services/tts/tests/test_benchmark_v6_authority.py
+services/tts/tests/test_benchmark_v8_authority.py` passed 14 tests after the
   four frozen authority inputs were restored to their exact recorded hashes.
 - `pnpm.cmd check:portable` passed formatting, lint, TypeScript and Python type
   checks, 209 shared tests, 577 EPUB tests, 429 desktop tests plus seven
@@ -977,12 +990,12 @@ Milestone 3 validation on 2026-07-29:
   quality gate with zero meaning-changing defects and zero wrong-language
   outputs.
 - `services/tts/.venv/Scripts/python.exe -m pytest -p no:cacheprovider
-  --basetemp <workspace-temp> tests/test_benchmark_bilingual_baseline.py
-  tests/test_benchmark_v8_authority.py` passed 16 tests.
+--basetemp <workspace-temp> tests/test_benchmark_bilingual_baseline.py
+tests/test_benchmark_v8_authority.py` passed 16 tests.
 - Focused Ruff and strict mypy passed the English adapter, runner, quality,
   result, and authority-test surfaces.
 - `services/tts/.venv/Scripts/python.exe -m pytest -p no:cacheprovider
-  --basetemp <workspace-temp> .` passed all 279 Python tests.
+--basetemp <workspace-temp> .` passed all 279 Python tests.
 - `pnpm.cmd check:portable` passed formatting, lint, TypeScript/Python type
   checks, 209 shared tests, 577 EPUB tests, 429 desktop tests plus seven
   native-driver client tests, all 279 Python tests, and portable builds.

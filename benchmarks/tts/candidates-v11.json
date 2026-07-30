@@ -1,0 +1,76 @@
+{
+  "candidateManifestVersion": "tts-candidate-manifest-v11",
+  "status": "frozen-before-chatterbox-rtx50-v11-results",
+  "frozenAt": "2026-07-29",
+  "supersedesCandidateConfiguration": {
+    "manifest": "benchmarks/tts/candidates-v10.json",
+    "sha256": "07332b38d5e480733538d75b9b8ae85ae44df5d921dd2fee4da12ba2f29f942c",
+    "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v3",
+    "reason": "torch-2-6-cu124-has-no-sm120-kernel-for-the-exact-host"
+  },
+  "preservesPriorEvidence": {
+    "v9Moss": true,
+    "v10ChatterboxConfigurationStop": true
+  },
+  "decisionPolicy": {
+    "automaticCandidateRejection": "forbidden",
+    "maintainerDecisionRequiredBeforeRejection": true,
+    "measurementFailureIsCandidateRejection": false,
+    "configurationFailureIsCandidateRejection": false,
+    "qualityReviewMayFollowAdvisoryPerformance": true,
+    "resultStateBeforeMaintainerDecision": "measured-awaiting-decision",
+    "automaticRetries": 0,
+    "oneLoadedModelAtATime": true,
+    "runtimeDownloads": "forbidden",
+    "remoteInferenceApis": "forbidden",
+    "referenceAudio": "forbidden",
+    "outboundNetworkDuringEvaluation": "blocked-for-exact-interpreter"
+  },
+  "profile": {
+    "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v4",
+    "identitySource": {
+      "manifest": "benchmarks/tts/candidates-v7.json",
+      "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v1"
+    },
+    "evaluationStage": "bounded-bilingual-compatibility-screen",
+    "languages": ["es", "en"],
+    "engine": {
+      "sourceRepository": "resemble-ai/chatterbox",
+      "sourceRevision": "5de7a54aa4e5e2baadb0182dde554908b48b85c2",
+      "installation": "git-revision"
+    },
+    "model": {
+      "repository": "ResembleAI/chatterbox",
+      "revision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+      "t3Model": "v3",
+      "artifactsInheritedUnchangedFromV7": true
+    },
+    "dependencyLock": {
+      "path": "services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v4/uv.lock",
+      "sha256": "30f3ca3c27842d88e04256d357e79c291b90636d4f7e20fca18d20713021b1ab"
+    },
+    "runtime": {
+      "python": "3.12",
+      "torch": "2.9.1+cu128",
+      "torchaudio": "2.9.1+cu128",
+      "provider": "cuda",
+      "precision": "bf16",
+      "dependencyOverride": "explicit-bounded-compatibility-experiment",
+      "upstreamPython312Requirement": "torch-2.6.0",
+      "overrideReason": "sm120-kernel-support"
+    },
+    "host": {
+      "minimumTotalDedicatedVramMiB": 8000,
+      "minimumAvailableDedicatedVramMiBAtPreflight": 6144,
+      "minimumTotalRamMiB": 24576,
+      "minimumLogicalProcessors": 8,
+      "requiredCudaCapability": "12.0"
+    },
+    "correction": {
+      "v10LoadStopWasModelResult": false,
+      "v10LoadStopWasCandidateRejection": false,
+      "cudaWheelSourceExplicit": true,
+      "dependencyOverrideMustRemainExperimental": true
+    }
+  }
+}
