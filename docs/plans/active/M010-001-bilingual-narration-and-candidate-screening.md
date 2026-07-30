@@ -664,6 +664,13 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-30:** The first v12 preflight stopped before model loading on
+  `result-before-authority`. The v12 authority tree and ancestry were valid;
+  the cause was the reused v11 helper's unreachable pre-squash hard-coded SHA.
+  Replaced that helper dependency with the same exact host/artifact/network
+  checks plus v12's commit-tree proof. Focused Ruff, strict mypy, and nine
+  authority/workflow tests pass. This was a pre-result implementation repair,
+  not a model failure or candidate decision.
 - **2026-07-30:** Committed the result-blind v12 authority at
   `0b90fa2c16cdb276550ad3c3a58a2d84e1509876` before implementing or running
   any result-bearing command. Added the generic bounded bilingual full
@@ -889,6 +896,12 @@ committed benchmark authority after results.
 
 ## Discoveries and decisions
 
+- V11's reusable preflight helper hard-coded the original branch authority SHA.
+  After GitHub squash-merged that work, the frozen v11 files remained exact
+  but the branch SHA was no longer an ancestor of `main`. V12 therefore
+  verifies the complete frozen authority tree at its supplied reachable
+  commit and strict ancestry directly; it does not inherit the obsolete v11
+  branch-ancestry assumption.
 - Current VoxLeaf normalization and product coordination are Spanish-specific;
   English narration is not a UI-only toggle.
 - A same-engine English voice is the lowest-risk bilingual baseline, but exact

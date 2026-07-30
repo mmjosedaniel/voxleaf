@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import multiprocessing
 import os
+import platform
 import re
 import sys
 import uuid
@@ -16,8 +17,9 @@ from benchmarks.bilingual_baseline import WindowsAvailableRamProbe
 from benchmarks.chatterbox_v11_screen import (
     CorrectivePreflightReceipt,
     ScreenConditions,
+    _candidate_paths,
     _factory,
-    run_corrective_preflight,
+    _load_candidate,
 )
 from benchmarks.contracts import BenchmarkRun, GenerationObservation
 from benchmarks.harness import BenchmarkHarness, SystemNanosecondClock, load_bilingual_corpus
@@ -30,6 +32,11 @@ from benchmarks.memory import (
     WindowsProcessResourceSampler,
 )
 from benchmarks.metrics import distribution, real_time_factor
+from benchmarks.preflight import (
+    GitRepositoryProbe,
+    WindowsFirewallNetworkProbe,
+    WindowsHostProbe,
+)
 from benchmarks.v7_authority import CORPUS_SHA256
 from benchmarks.v11_authority import LOCK_SHA256
 from benchmarks.v12_authority import (
@@ -82,12 +89,58 @@ def run_v12_preflight(
     """Verify v12 ancestry/tree plus the unchanged exact v11 runtime."""
 
     load_frozen_v12_authority(REPOSITORY_ROOT)
-    receipt = run_corrective_preflight(
-        candidate_id=CHATTERBOX_CANDIDATE_ID,
-        expected_commit_sha=execution_commit_sha,
-        conditions=conditions,
+    expected_python, artifact_root = _candidate_paths(CHATTERBOX_CANDIDATE_ID)
+    profile, configuration, languages, role = _load_candidate(
+        CHATTERBOX_CANDIDATE_ID,
+        artifact_root,
     )
-    failures = list(receipt.failures)
+    repository = GitRepositoryProbe().snapshot(REPOSITORY_ROOT)
+    host = WindowsHostProbe().snapshot(REPOSITORY_ROOT)
+    failures: list[str] = []
+    try:
+        candidate_python = expected_python.resolve(strict=True)
+    except OSError:
+        candidate_python = expected_python.resolve()
+        failures.append("candidate-environment")
+    network_isolation = WindowsFirewallNetworkProbe().active(candidate_python)
+    if not repository.clean:
+        failures.append("dirty-tree")
+    if repository.commit_sha != execution_commit_sha:
+        failures.append("source-revision")
+    if host.operating_system != "Windows":
+        failures.append("host-os")
+    if host.architecture != "x86_64":
+        failures.append("host-architecture")
+    if not re.fullmatch(r"3\.12\.[0-9]+", host.python_version):
+        failures.append("python-version")
+    if host.logical_processors < 8:
+        failures.append("logical-processors")
+    if host.total_ram_bytes < 24_576 * 1024**2:
+        failures.append("total-ram")
+    if (
+        host.total_vram_bytes is None
+        or host.total_vram_bytes < 8_000 * 1024**2
+        or host.free_vram_bytes is None
+        or host.free_vram_bytes < 6_144 * 1024**2
+        or not host.process_vram_available
+    ):
+        failures.append("vram")
+    if not host.power_online:
+        failures.append("power")
+    if not conditions.sleep_disabled:
+        failures.append("sleep")
+    if not conditions.background_load_acceptable:
+        failures.append("background-load")
+    if not conditions.thermal_state_acceptable:
+        failures.append("thermal-state")
+    if os.environ.get("HF_HUB_OFFLINE") != "1":
+        failures.append("offline-control")
+    if os.environ.get("TRANSFORMERS_OFFLINE") != "1":
+        failures.append("offline-control")
+    if not network_isolation:
+        failures.append("network-isolation")
+    if platform.system() == "Windows" and Path(sys.executable).resolve() == candidate_python:
+        failures.append("orchestrator-interpreter")
     if not git_authority_tree_matches(REPOSITORY_ROOT, authority_commit_sha):
         failures.append("authority-tree")
     if not git_is_strict_ancestor(
@@ -96,6 +149,19 @@ def run_v12_preflight(
         execution_commit_sha,
     ):
         failures.append("result-before-authority")
+    receipt = CorrectivePreflightReceipt(
+        expected_commit_sha=execution_commit_sha,
+        candidate_id=CHATTERBOX_CANDIDATE_ID,
+        candidate_python=candidate_python,
+        artifact_root=artifact_root,
+        profile=profile,
+        configuration=configuration,
+        languages=languages,
+        role=role,
+        host=host,
+        network_isolation=network_isolation,
+        failures=tuple(dict.fromkeys(failures)),
+    )
     return V12PreflightReceipt(
         authority_commit_sha=authority_commit_sha,
         execution=receipt,
