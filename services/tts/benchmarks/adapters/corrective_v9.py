@@ -30,6 +30,9 @@ CHATTERBOX_CANDIDATE_ID: Final = "chatterbox-multilingual-v3-cuda-bf16-default-v
 MOSS_CANDIDATE_ID: Final = "moss-tts-nano-100m-onnx-cpu-ava-v2"
 CHATTERBOX_LOCK_SHA256: Final = "9a5b2628499f522535dc79a70194dd604e40d9d7ab325a765ffc476f5c437c82"
 MOSS_LOCK_SHA256: Final = "49d96b6b5121320290ba951be4a8a343f3380c2fc320182d6003b1dcf0d47bcb"
+V7_CANDIDATES_SHA256: Final = "1c8b4591782c298d0af19ae91037eb6154e372f32d1c005d6a8dfdfe47bc0f53"
+V9_PROFILE_SHA256: Final = "6e0ea9f05d0046bee82b09732afc5e3d6f4822cc9d48548a4510836bf8c5fbca"
+V9_CANDIDATES_SHA256: Final = "4ac6aefad403c566126445498f084152d8dc14f449fff3d08f3eb14d00c707c5"
 
 
 class CorrectiveV9ConfigurationError(RuntimeError):
@@ -107,13 +110,12 @@ class MossV9Configuration:
 
 
 def _base_candidate(repository_root: Path, candidate_id: str) -> Mapping[str, object]:
+    path = repository_root / "benchmarks/tts/candidates-v7.json"
     try:
-        value = cast(
-            object,
-            json.loads(
-                (repository_root / "benchmarks/tts/candidates-v7.json").read_text(encoding="utf-8")
-            ),
-        )
+        payload = path.read_bytes()
+        if hashlib.sha256(payload).hexdigest() != V7_CANDIDATES_SHA256:
+            _fail("authority")
+        value = cast(object, json.loads(payload.decode("utf-8")))
     except (OSError, UnicodeError, json.JSONDecodeError):
         _fail("authority")
     candidates = _sequence(_mapping(value).get("candidates"))
@@ -128,10 +130,27 @@ def _base_candidate(repository_root: Path, candidate_id: str) -> Mapping[str, ob
 
 
 def _v9_profile(repository_root: Path, candidate_id: str) -> Mapping[str, object]:
-    from benchmarks.v9_authority import load_frozen_v9_authority
-
-    authority = load_frozen_v9_authority(repository_root)
-    profiles = _sequence(authority.candidates.get("profiles"))
+    profile_path = repository_root / "benchmarks/tts/profile-v9.json"
+    candidates_path = repository_root / "benchmarks/tts/candidates-v9.json"
+    try:
+        profile_payload = profile_path.read_bytes()
+        candidates_payload = candidates_path.read_bytes()
+        if (
+            hashlib.sha256(profile_payload).hexdigest() != V9_PROFILE_SHA256
+            or hashlib.sha256(candidates_payload).hexdigest() != V9_CANDIDATES_SHA256
+        ):
+            _fail("authority")
+        profile_authority = _mapping(json.loads(profile_payload.decode("utf-8")))
+        candidates_authority = _mapping(json.loads(candidates_payload.decode("utf-8")))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        _fail("authority")
+    decisions = _mapping(profile_authority.get("decisionRules"))
+    if (
+        decisions.get("noModelMayBeRejectedByHarness") is not True
+        or decisions.get("rejectionRequiresExplicitMaintainerDecision") is not True
+    ):
+        _fail("authority")
+    profiles = _sequence(candidates_authority.get("profiles"))
     selected = tuple(
         _mapping(profile)
         for profile in profiles
