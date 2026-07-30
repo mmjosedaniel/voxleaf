@@ -45,10 +45,9 @@ not turn this entire backlog into MVP scope:
    plan is archived and this work does not expand the backlog.
 
 Pocket TTS Spanish, the separate Chatterbox Latin American Spanish checkpoint,
-Kokoro, and additional voices stay in this backlog. The completed, byte-frozen
-[M010.1 ExecPlan](../plans/active/M010-001-bilingual-narration-and-candidate-screening.md)
-is retained at its authority path and remains the execution authority for the
-promoted subset.
+Kokoro, and additional voices stay in this backlog. The completed
+[M010.1 ExecPlan](../plans/completed/M010-001-bilingual-narration-and-candidate-screening.md)
+remains the execution authority for the promoted subset.
 
 ## Engine-specific text adaptation boundary
 

@@ -856,9 +856,7 @@ frozen v6 cycle and passed measured evidence before product admission.
 
 **Status:** Complete as of 2026-07-30. Pull request #159 passed the required
 Ubuntu and Windows checks and merged the closeout. Follow
-[`M010-001-bilingual-narration-and-candidate-screening.md`](active/M010-001-bilingual-narration-and-candidate-screening.md).
-The completed plan remains byte-for-byte at this frozen authority path because
-the v8-v12 benchmark verifiers hash it.
+[`M010-001-bilingual-narration-and-candidate-screening.md`](completed/M010-001-bilingual-narration-and-candidate-screening.md).
 This bounded pre-M011 follow-up responds to an explicit product need for
 English narration and a stronger portfolio demonstration. It does not reopen
 M010's completed Spanish Piper support decision.
@@ -1149,9 +1147,8 @@ records privacy-safe host detection, evidence-backed profile matching, exact
 Piper fallback admission and integration, identity-safe recovery, final
 support decisions, and passing replacement closeout checks.
 
-[`active/M010-001-bilingual-narration-and-candidate-screening.md`](active/M010-001-bilingual-narration-and-candidate-screening.md)
-is the completed M010.1 implementation authority, retained byte-for-byte at
-its frozen path for v8-v12 verification. Milestones 1 through 5 freeze and
+[`completed/M010-001-bilingual-narration-and-candidate-screening.md`](completed/M010-001-bilingual-narration-and-candidate-screening.md)
+is the completed M010.1 implementation authority. Milestones 1 through 5 freeze and
 execute the bilingual evidence path. Milestone 6 implements exact Piper
 Spanish/English, Chatterbox Spanish/English, and development-only Qwen
 Serena/Spanish plus Aiden/English bindings with one service tree and unchanged

@@ -157,8 +157,7 @@ desktop preference ownership rather than silently repurposing that schema.
 - `docs/product/project-brief.md`
 - `docs/plans/roadmap.md`
 - `docs/README.md`
-- `docs/plans/active/M010-001-bilingual-narration-and-candidate-screening.md`
-  (completed but retained byte-frozen at its authority path)
+- `docs/plans/completed/M010-001-bilingual-narration-and-candidate-screening.md`
 
 ### Completed boundaries that must remain valid
 
@@ -700,10 +699,10 @@ Do not rewrite accepted historical authority to make a result pass.
   warning plus existing Vite highlight/chunk-size warnings.
 - **2026-07-30:** An attempted current-status edit to historical bilingual
   authority caused the v8-v12 hash verifiers to fail closed. Restored that
-  authority and the completed M010.1 ExecPlan byte-for-byte, retained the
-  plan at its frozen active path, and documented current completion only in
-  non-frozen indexes, roadmap, product, and architecture status surfaces. All
-  347 Python tests then passed.
+  hashed authority byte-for-byte. A later source inspection confirmed that
+  the ExecPlan itself is not a benchmark hash input, so M010.1 was moved to
+  `completed/` and all references were reconciled. All 347 Python tests then
+  passed.
 
 ## Discoveries and decisions
 
@@ -731,9 +730,9 @@ Do not rewrite accepted historical authority to make a result pass.
   narration-start preference. Volume remains session-only.
 - The ignored concept images remain discussion artifacts and are not
   committed as implementation evidence.
-- The v8-v12 benchmark chain hashes historical bilingual authority, and the
-  completed M010.1 plan is retained at its frozen active path. Neither may be
-  rewritten or moved merely to refresh status text.
+- The v8-v12 benchmark chain hashes historical bilingual authority, not the
+  M010.1 ExecPlan. The authority must remain byte-identical; the completed
+  plan belongs under `docs/plans/completed/`.
 
 ## Final validation results
 

@@ -17,10 +17,6 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`M010-001-bilingual-narration-and-candidate-screening.md`](M010-001-bilingual-narration-and-candidate-screening.md):
-  completed by merged pull request #159, but intentionally retained
-  byte-for-byte at its frozen path because the v8-v12 benchmark authorities
-  hash it. It is historical authority, not active work.
 - [`M010-002-reader-settings-and-playback-controls.md`](M010-002-reader-settings-and-playback-controls.md):
   approved, not-yet-implemented pre-M011 follow-up. It freezes and implements
   the reader-first app shell, accessible Settings drawer/sheet, English
