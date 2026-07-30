@@ -2,16 +2,28 @@
 
 ## Status
 
-Approved product direction for roadmap Milestone 10.2. Milestone 1 has frozen
+Approved product direction for roadmap Milestone 10.2. Milestone 1 froze
 the exact
 [`reader settings and playback authority v1`](../architecture/reader-settings-playback-authority-v1.md)
 and [ADR-0033](../architecture/decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md)
-before production results. The behavior in this document is not implemented
-until
+before production results. Milestone 2 then selected no pitch-preserving
+backend: WSOLA exceeded the frozen CPU gate and packaged WebView2 rejected the
+media-element path under the unchanged CSP. [ADR-0034](../architecture/decisions/ADR-0034-retain-fixed-speed-after-playback-backend-evaluation.md)
+therefore retains `1.00x`.
+
+The maintainer subsequently approved a separate reduced-range, fee-free v2
+evaluation through
+[ADR-0035](../architecture/decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md).
+That decision does not rewrite the v1 result. Milestone 2A is next and must
+freeze the new authority before any v2 candidate is implemented or measured.
+
+The behavior in this document is not implemented until
 [`M010-002-reader-settings-and-playback-controls.md`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
 records passing implementation and validation. Current runtime behavior
 remains the completed M010.1 interface, Spanish fallback for missing or invalid
-language preference, and `1.0x` playback.
+language preference, and `1.0x` playback. Reader/Settings work can proceed
+independently, but non-default speed remains unavailable until the v2
+comparison admits a backend.
 
 This document replaces the ignored pre-M011 design discussion as the durable
 product scope. It does not change the completed M005 narration-preparation
@@ -158,10 +170,9 @@ normal UI.
 
 ### Fixed choices
 
-The compact narration bar offers exactly:
+The future compact narration bar offers exactly:
 
-`1.00x`, `0.95x`, `0.90x`, `0.85x`, `0.80x`, `0.75x`, `0.70x`, `0.65x`,
-`0.60x`, `0.55x`, and `0.50x`.
+`1.00x`, `0.95x`, `0.90x`, `0.85x`, `0.80x`, and `0.75x`.
 
 The default is `1.00x`. The last valid selection is a bounded, versioned
 global narration preference. Unknown, malformed, non-finite, or unlisted
@@ -186,6 +197,29 @@ validate a bounded in-memory time-stretch mechanism before product admission.
 Any production dependency requires purpose, alternative, license,
 distribution, memory, cancellation, and platform review.
 
+The v2 comparison is intentionally limited to:
+
+- `HTMLMediaElement.preservesPitch` with one bounded in-memory WAV and the
+  narrowly reviewed `media-src 'self' blob:` policy;
+- one exact locked Signalsmith Stretch Web Audio WASM/AudioWorklet package
+  after its package, source, transitive-dependency, and distribution audit; and
+- a materially optimized incremental repository-owned WSOLA implementation.
+
+A candidate is eligible only when it is built into the platform,
+repository-owned, or uses a permissive fee-free licence such as MIT, BSD, ISC,
+0BSD, or Apache-2.0. VoxLeaf will not buy a licence or accept royalties,
+subscriptions, commercial exceptions, copyleft/source-availability duties, or
+unknown distribution terms for this feature. SoundTouch, FFmpeg, Rubber Band,
+and model-specific speaking-rate controls are outside this comparison because
+they add licence/distribution complexity or change the wrong pipeline
+boundary.
+
+The media candidate may add only `media-src 'self' blob:` to the candidate
+test/runtime policy. It must not change `connect-src`, admit `data:`, remote
+media, wildcards, or add native capabilities. The change may remain only if
+that candidate passes the frozen browser, packaged-host, privacy, lifecycle,
+and resource gates and is selected.
+
 ### Progress and timing
 
 Audible progress remains authoritative in source sample frames. If the rate
@@ -202,7 +236,7 @@ Two duration meanings remain separate:
 
 Quick-start, Prepared, low-water, and underrun decisions use effective
 listening duration after the new authority is implemented. The UI may say
-`30 sec ready at 0.50x` to avoid confusing effective listening time with
+`30 sec ready at 0.75x` to avoid confusing effective listening time with
 stored media duration. Slower consumption may give inference more time to
 advance, but it does not improve or change model RTF and must not be reported
 as such.
@@ -288,7 +322,11 @@ exact-host evidence prove:
 - English is the correct fallback without overwriting valid saved language;
 - profile visibility remains language-, support-, development-, host-, and
   runtime-gated;
-- every admitted speed preserves pitch and correct source-frame progress;
+- exactly the six approved values are accepted, and every admitted speed
+  preserves pitch and correct source-frame progress;
+- any selected backend is fee-free, permissively distributable, and passes the
+  frozen CPU, RAM, work-memory, browser, packaged-host, lifecycle, privacy, and
+  listening gates;
 - effective lead, startup, low-water, and underrun semantics are truthful;
 - pause, resume, stop, seek, profile/language replacement, recovery, book
   replacement, and exit remain identity-safe at non-`1.0x` rates;

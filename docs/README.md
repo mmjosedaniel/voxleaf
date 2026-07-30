@@ -57,12 +57,12 @@ arms, exact-host metrics, privacy boundary, cancellation, synchronization, and
 cleanup evidence pass. Pull request #159 passed the required Ubuntu and
 Windows checks and merged the closeout.
 
-M010.2 is the approved active follow-up before M011. Milestone 1 is complete:
-the reader/settings/playback authority, executable constants, result-blind
-tests, ADR, exact duration arithmetic, and closed backend comparison were
-frozen before production implementation. Runtime behavior has not changed.
-The current app still uses its M010.1 interface, Spanish fallback, and
-`1.00x`; later M010.2 milestones own implementation.
+M010.2 is the approved active follow-up before M011. Milestones 1-2 are
+complete: the reader/settings/playback authority was frozen before results,
+then neither eligible backend passed every frozen gate. ADR-0034 retains
+`1.00x`. Runtime behavior has not changed; the current app still uses its
+M010.1 interface and Spanish fallback. ADR-0035 authorizes a separate
+fee-free v2 comparison for six rates ending at `0.75x`; Milestone 2A is next.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -71,7 +71,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`product/vision.md`](product/vision.md): product purpose, audience, and principles.
 - [`product/project-brief.md`](product/project-brief.md): detailed problem, intended experience, product boundaries, and candidate technical direction.
 - [`product/mvp.md`](product/mvp.md): MVP scope, non-goals, constraints, and acceptance criteria.
-- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and pitch-preserving playback-speed requirements; Milestone 1 authority is frozen but runtime work is not yet implemented.
+- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and six-value playback-speed requirements; runtime remains `1.00x` while the fee-free v2 comparison is frozen and executed.
 - [`product/post-mvp-tts-candidate-backlog.md`](product/post-mvp-tts-candidate-backlog.md): non-authoritative post-MVP intake order for Pocket TTS, Chatterbox LatAm, MOSS-TTS-Nano, Kokoro, and additional Piper voices.
 - [`product/glossary.md`](product/glossary.md): shared terminology.
 
@@ -135,6 +135,8 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md`](architecture/decisions/ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md): admits exact Chatterbox for both languages and Qwen/Aiden for English integration while retaining Qwen/Serena Spanish and explicit host/buffering limitations.
 - [`architecture/decisions/ADR-0032-bound-chatterbox-complete-waveform-units.md`](architecture/decisions/ADR-0032-bound-chatterbox-complete-waveform-units.md): bounds Chatterbox complete-waveform units without changing bilingual normalization or protocol v1.
 - [`architecture/decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md`](architecture/decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md): accepts the result-blind M010.2 Milestone 1 authority and keeps speed after synthesis with pitch preservation and source-frame progress.
+- [`architecture/decisions/ADR-0034-retain-fixed-speed-after-playback-backend-evaluation.md`](architecture/decisions/ADR-0034-retain-fixed-speed-after-playback-backend-evaluation.md): records that neither frozen backend passed every machine and packaged-host gate, retains `1.00x`, and requires a new decision before non-default speeds.
+- [`architecture/decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md`](architecture/decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md): authorizes a separate result-blind v2 comparison for six rates ending at `0.75x`, fee-free permissive candidates, and a narrowly reviewed media CSP without rewriting v1.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development
@@ -168,7 +170,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
 - [`plans/completed/M010-001-bilingual-narration-and-candidate-screening.md`](plans/completed/M010-001-bilingual-narration-and-candidate-screening.md): completed bilingual follow-up covering evaluation, exact profile integration, packaged portfolio validation, and passing Ubuntu/Windows closeout.
-- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): active pre-M011 reader-first settings and pitch-preserving playback-control follow-up; Milestone 1 authority is complete and Milestone 2 is next.
+- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): active pre-M011 reader-first settings and playback-control follow-up; Milestones 1-2 are complete, v1 selected no backend, and Milestone 2A next freezes the reduced-range fee-free v2 authority.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 
