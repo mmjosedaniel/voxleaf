@@ -624,6 +624,17 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-29:** Completed the independent Aiden/English control at execution
+  commit `1e93f97f0632b7c677160e5254326a9984348509`. All five first-attempt
+  generations completed, but the profile was rejected before quality on
+  first-audio, warm-RTF, cancellation, and process-tree RAM gates.
+  Content-safe evidence records 11.947 seconds first-audio p95, 1.454 warm
+  p95 RTF, 4,647,976,960 peak process-tree RAM, 4,791,521,280 peak dedicated
+  VRAM, and two of four cancellation trials completed before the
+  complete-waveform boundary failed the next trial. The private session,
+  generated audio, and exact temporary control files were deleted before
+  `qwen-aiden-english-control-result-v8.json` was retained. No Serena scores,
+  samples, or decision were reused.
 - **2026-07-29:** Installed and verified the exact Qwen interpreter outbound
   block, then completed the first permitted Serena/Spanish control at
   execution commit `5d821b9351a7335cc2cf205bccbb58974161f22f`.
