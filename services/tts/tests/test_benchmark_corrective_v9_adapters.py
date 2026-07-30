@@ -19,6 +19,7 @@ from benchmarks.adapters.corrective_v9 import (
     _restore_candidate_site_packages,
     load_chatterbox_v9_profile,
     load_chatterbox_v10_profile,
+    load_chatterbox_v11_profile,
     load_moss_v9_profile,
 )
 from benchmarks.contracts import GenerationRequest
@@ -168,6 +169,14 @@ def test_v10_chatterbox_profile_requires_the_exact_cuda_wheel_identity() -> None
     assert chatterbox.candidate_id == ("chatterbox-multilingual-v3-cuda-bf16-default-v3")
     assert chatterbox.torch_version == "2.6.0+cu124"
     assert chatterbox.torchaudio_version == "2.6.0+cu124"
+    assert len(chatterbox.artifacts) == 6
+
+
+def test_v11_chatterbox_profile_requires_the_exact_rtx50_compatibility_identity() -> None:
+    chatterbox = load_chatterbox_v11_profile(REPOSITORY_ROOT)
+    assert chatterbox.candidate_id == ("chatterbox-multilingual-v3-cuda-bf16-default-v4")
+    assert chatterbox.torch_version == "2.9.1+cu128"
+    assert chatterbox.torchaudio_version == "2.9.1+cu128"
     assert len(chatterbox.artifacts) == 6
 
 

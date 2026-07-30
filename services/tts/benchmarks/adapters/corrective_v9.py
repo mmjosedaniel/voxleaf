@@ -29,10 +29,14 @@ MOSS_MODEL_DIRECTORY: Final = "MOSS-TTS-Nano-100M-ONNX"
 MOSS_CODEC_DIRECTORY: Final = "MOSS-Audio-Tokenizer-Nano-ONNX"
 CHATTERBOX_CANDIDATE_ID: Final = "chatterbox-multilingual-v3-cuda-bf16-default-v2"
 CHATTERBOX_V10_CANDIDATE_ID: Final = "chatterbox-multilingual-v3-cuda-bf16-default-v3"
+CHATTERBOX_V11_CANDIDATE_ID: Final = "chatterbox-multilingual-v3-cuda-bf16-default-v4"
 MOSS_CANDIDATE_ID: Final = "moss-tts-nano-100m-onnx-cpu-ava-v2"
 CHATTERBOX_LOCK_SHA256: Final = "9a5b2628499f522535dc79a70194dd604e40d9d7ab325a765ffc476f5c437c82"
 CHATTERBOX_V10_LOCK_SHA256: Final = (
     "70d4d5c4a959bb0e8392c1877d6c5d329b345d3fb17faa140a34787e4632c3d1"
+)
+CHATTERBOX_V11_LOCK_SHA256: Final = (
+    "30f3ca3c27842d88e04256d357e79c291b90636d4f7e20fca18d20713021b1ab"
 )
 MOSS_LOCK_SHA256: Final = "49d96b6b5121320290ba951be4a8a343f3380c2fc320182d6003b1dcf0d47bcb"
 V7_CANDIDATES_SHA256: Final = "1c8b4591782c298d0af19ae91037eb6154e372f32d1c005d6a8dfdfe47bc0f53"
@@ -40,6 +44,8 @@ V9_PROFILE_SHA256: Final = "39499a63ba6194803ae3e8e88c2e3a77390454310a059e2aaa9c
 V9_CANDIDATES_SHA256: Final = "31249a583b8d43f90f7442797373e89b8993455e4cfe26e536cc1e1ca0ca8ad3"
 V10_PROFILE_SHA256: Final = "d6abd95698f81d5e868b1e59296f4be22830d7070bc7a5596c881e1b57adfc8b"
 V10_CANDIDATES_SHA256: Final = "07332b38d5e480733538d75b9b8ae85ae44df5d921dd2fee4da12ba2f29f942c"
+V11_PROFILE_SHA256: Final = "a48d5fd8c9624b0c8e7a394a45d050377990ff233486f9f0a96082ab675599c4"
+V11_CANDIDATES_SHA256: Final = "3bceb2c227be02c5f69b524afc3e008e3acf40d42ae47d38ce0b10462324cc06"
 
 
 class CorrectiveV9ConfigurationError(RuntimeError):
@@ -212,6 +218,34 @@ def _v10_chatterbox_profile(repository_root: Path) -> Mapping[str, object]:
     return selected
 
 
+def _v11_chatterbox_profile(repository_root: Path) -> Mapping[str, object]:
+    profile_path = repository_root / "benchmarks/tts/profile-v11.json"
+    candidates_path = repository_root / "benchmarks/tts/candidates-v11.json"
+    try:
+        profile_payload = profile_path.read_bytes()
+        candidates_payload = candidates_path.read_bytes()
+        if (
+            hashlib.sha256(profile_payload).hexdigest() != V11_PROFILE_SHA256
+            or hashlib.sha256(candidates_payload).hexdigest() != V11_CANDIDATES_SHA256
+        ):
+            _fail("authority")
+        profile_authority = _mapping(json.loads(profile_payload.decode("utf-8")))
+        candidates_authority = _mapping(json.loads(candidates_payload.decode("utf-8")))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        _fail("authority")
+    decision = _mapping(profile_authority.get("decision"))
+    execution = _mapping(profile_authority.get("executionPolicy"))
+    selected = _mapping(candidates_authority.get("profile"))
+    if (
+        decision.get("stateBeforeMaintainerReview") != "pending-maintainer-decision"
+        or decision.get("rejectionRecordedBeforeMaintainerReview") is not False
+        or execution.get("supportIntent") != "experimental-compatibility-only"
+        or selected.get("candidateId") != CHATTERBOX_V11_CANDIDATE_ID
+    ):
+        _fail("authority")
+    return selected
+
+
 def load_chatterbox_v9_profile(repository_root: Path) -> ChatterboxV9Profile:
     """Load the corrected exact Chatterbox V3 identity."""
 
@@ -302,6 +336,58 @@ def load_chatterbox_v10_profile(repository_root: Path) -> ChatterboxV9Profile:
         generation=generation,
         torch_version="2.6.0+cu124",
         torchaudio_version="2.6.0+cu124",
+    )
+
+
+def load_chatterbox_v11_profile(repository_root: Path) -> ChatterboxV9Profile:
+    """Load the experimental RTX 50 Chatterbox V3 compatibility identity."""
+
+    correction = _v11_chatterbox_profile(repository_root)
+    base = _base_candidate(
+        repository_root,
+        "chatterbox-multilingual-v3-cuda-bf16-default-v1",
+    )
+    engine = _mapping(correction.get("engine"))
+    model = _mapping(correction.get("model"))
+    lock = _mapping(correction.get("dependencyLock"))
+    runtime = _mapping(correction.get("runtime"))
+    host = _mapping(correction.get("host"))
+    base_model = _mapping(base.get("model"))
+    generation = _mapping(base.get("generation"))
+    raw_artifacts = _sequence(base_model.get("artifacts"))
+    if (
+        correction.get("evaluationStage") != "bounded-bilingual-compatibility-screen"
+        or correction.get("languages") != ["es", "en"]
+        or engine.get("sourceRevision") != "5de7a54aa4e5e2baadb0182dde554908b48b85c2"
+        or model.get("revision") != "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
+        or model.get("t3Model") != "v3"
+        or lock.get("sha256") != CHATTERBOX_V11_LOCK_SHA256
+        or runtime.get("torch") != "2.9.1+cu128"
+        or runtime.get("torchaudio") != "2.9.1+cu128"
+        or runtime.get("dependencyOverride") != "explicit-bounded-compatibility-experiment"
+        or host.get("requiredCudaCapability") != "12.0"
+        or base_model.get("nativeSampleRateHz") != OUTPUT_SAMPLE_RATE_HZ
+        or base_model.get("nativeChannels") != 1
+        or len(raw_artifacts) != 6
+    ):
+        _fail("authority")
+    artifacts = tuple(
+        Artifact(
+            root="model",
+            relative_path=cast(str, artifact.get("path")),
+            size_bytes=cast(int, artifact.get("sizeBytes")),
+            sha256=cast(str, artifact.get("sha256")),
+        )
+        for artifact in (_mapping(value) for value in raw_artifacts)
+    )
+    return ChatterboxV9Profile(
+        candidate_id=CHATTERBOX_V11_CANDIDATE_ID,
+        source_revision=cast(str, engine["sourceRevision"]),
+        model_revision=cast(str, model["revision"]),
+        artifacts=artifacts,
+        generation=generation,
+        torch_version="2.9.1+cu128",
+        torchaudio_version="2.9.1+cu128",
     )
 
 
@@ -473,6 +559,11 @@ class ChatterboxV9Adapter:
             torch = importlib.import_module("torch")
             module = importlib.import_module("chatterbox.mtl_tts")
             if not torch.cuda.is_available() or not torch.cuda.is_bf16_supported():
+                _fail("provider")
+            if self._profile.candidate_id == CHATTERBOX_V11_CANDIDATE_ID and (
+                tuple(torch.cuda.get_device_capability()) != (12, 0)
+                or "sm_120" not in torch.cuda.get_arch_list()
+            ):
                 _fail("provider")
             torch.cuda.reset_peak_memory_stats()
             model = module.ChatterboxMultilingualTTS.from_local(
