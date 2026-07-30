@@ -452,10 +452,10 @@ distribution and license fulfillment.
 
 ### Milestone 4: Run bounded sequential candidate and Qwen control screens
 
-**Status:** In progress. Both independent Qwen controls are complete and
-rejected before quality. Chatterbox Multilingual V3 is also rejected before
-model acquisition because its frozen package API cannot load the frozen V3
-checkpoint identity. The sequential MOSS screen remains.
+**Status:** Complete. Both independent Qwen controls were rejected before
+quality, and both new-engine screens stopped at their exact frozen
+model-identity boundaries before inference. Zero new-engine profiles advance
+to the Milestone 5 full matrix.
 
 1. Run exact Qwen/Serena Spanish and Qwen/Aiden English independently through
    the existing-engine control gates. Stop only the failing exact identity and
@@ -624,6 +624,20 @@ committed benchmark authority after results.
 
 ## Progress log
 
+- **2026-07-29:** Completed Milestone 4 with zero new-engine full-matrix
+  survivors. The exact MOSS source and environment installed successfully,
+  and exact revision
+  `f52645cb467506d8e18e746ddd59482685b74e58` was requested into the ignored
+  model root. The downloaded revision did not match the frozen v8 artifact
+  authority: for example, `moss_tts_decode_step.onnx` was 291,483 bytes
+  instead of 373,544 bytes, `moss_tts_local_cached.onnx` was absent, and
+  `tts_browser_onnx_meta.json` was 4,487 bytes instead of 96,845 bytes.
+  Execution stopped immediately with `model-load-failed`; the codec download,
+  firewall change, inference, audio generation, measurements, cancellations,
+  and quality review did not run. The ignored partial model root and candidate
+  environment were deleted before retaining only
+  `moss-bilingual-screen-result-v8.json`. CosyVoice remains rejected at intake
+  and was neither installed nor run.
 - **2026-07-29:** Rejected the exact Chatterbox Multilingual V3 screen before
   model acquisition or inference. The exact frozen environment installed
   successfully, but inspection of `chatterbox-tts==0.1.7` showed that its
@@ -816,6 +830,15 @@ committed benchmark authority after results.
   gate. Its lower prosody mean (3.8/5) is a documented limitation, not a gate
   failure, because intelligibility, naturalness, usefulness, language
   stability, meaning, and wrong-language criteria all passed unchanged.
+- Exact package or repository names do not establish a frozen model identity.
+  Chatterbox's pinned package loaded a V2 filename instead of the frozen V3
+  checkpoint, while MOSS's exact pinned revision contained ONNX filenames and
+  bytes different from the frozen artifact manifest. Both are deterministic
+  pre-inference rejections; silently switching package versions, revisions, or
+  artifact hashes after seeing the discrepancy would invalidate v8 authority.
+- Milestone 4 therefore advances no new engine. The rejected Serena and Aiden
+  controls remain independent evidence and do not reopen Qwen admission;
+  Piper/joe English remains the only profile admitted by M010.1 so far.
 
 ## Final validation results
 
@@ -930,3 +953,32 @@ Milestone 3 validation on 2026-07-29:
   scoped privacy/artifact scan passed. The exported scorecard and complete
   ignored raw session, including generated audio, were deleted before the
   content-safe result was retained.
+
+Milestone 4 validation on 2026-07-29:
+
+- Exact Serena/Spanish and Aiden/English control artifacts, environments,
+  offline controls, and interpreter-specific outbound isolation passed
+  preflight before their independent measured executions.
+- Each Qwen control completed all five first attempts but failed the frozen
+  performance, memory, and cancellation conjunction before quality. Their
+  private sessions and generated audio were deleted before retaining the two
+  content-safe summaries.
+- Chatterbox and MOSS stopped before inference at deterministic frozen
+  model-identity failures. Their ignored environments and partial MOSS model
+  download were deleted; neither result contains fabricated observations.
+- Frozen v8 schema validation passed for all four control/screen summaries.
+  Focused Ruff and strict mypy passed, and the focused screen/authority pytest
+  run passed 13 tests.
+- `pnpm.cmd check:portable` passed formatting, lint, TypeScript/Python type
+  checks, 209 shared tests, 577 EPUB tests, 429 desktop tests plus seven
+  native-driver client tests, all 284 Python tests, and portable builds.
+- `pnpm.cmd check` passed the same suites plus Rust formatting, Clippy, all 40
+  Rust tests, the Tauri release build, and Python source/wheel builds.
+- The first portable run correctly found that the four generated JSON
+  summaries needed repository Prettier formatting. Mechanical formatting
+  changed no values; all summaries passed schema validation again before both
+  aggregates passed.
+- `git diff --check` and the scoped privacy/artifact audit passed. No EPUB,
+  generated audio, raw session, model weight, candidate environment, secret,
+  or private host identity is tracked. The pytest cache-permission warning and
+  existing CSS-highlight/chunk-size build warnings remain non-failing.

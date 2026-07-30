@@ -37,9 +37,7 @@
     "privacy": "pass",
     "quality": "not-admitted"
   },
-  "languagesEvaluated": [
-    "en"
-  ],
+  "languagesEvaluated": ["en"],
   "limitations": [
     "bounded-screen-one-warm-attempt-per-case",
     "screen-warm-metrics-repeated-in-sustained-schema-fields",

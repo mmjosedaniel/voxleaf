@@ -15,7 +15,7 @@
     "requiredTrials": 8,
     "staleUnits": 0
   },
-  "candidateId": "chatterbox-multilingual-v3-cuda-bf16-default-v1",
+  "candidateId": "moss-tts-nano-100m-onnx-cpu-ava-v1",
   "candidateManifestSha256": "5245f6949cf035eee8de98fef21e8eea89d30b468d76039949e2100558401b0e",
   "corpusSha256": "cc140a35688dc0dff7e8c50a5355e920bd2847aa9deac2f7e6256160fb9afcfe",
   "counts": {
@@ -24,9 +24,9 @@
     "failedGenerations": 0,
     "firstAttempts": 0
   },
-  "dependencyLockSha256": "1fd89055fa3f603b0ee2613b40a263af8682de91f71275b5cd5f917c6f72ff00",
+  "dependencyLockSha256": "49d96b6b5121320290ba951be4a8a343f3380c2fc320182d6003b1dcf0d47bcb",
   "evaluationStage": "screen",
-  "executionCommitSha": "65edbb64644a439437d0d4c93beac5b88daebadf",
+  "executionCommitSha": "c0b446132a88fb504b0d8bb5c5f931513952c145",
   "gates": {
     "cancellation": "not-admitted",
     "cleanup": "pass",
@@ -40,9 +40,9 @@
   "languagesEvaluated": ["es", "en"],
   "limitations": [
     "model-load-failed",
-    "frozen-lock-loads-v2-checkpoint-filename",
-    "frozen-candidate-requires-v3-checkpoint-filename",
-    "runtime-network-model-substitution-forbidden"
+    "exact-revision-artifact-size-mismatch",
+    "frozen-artifact-name-missing",
+    "runtime-substitution-forbidden"
   ],
   "memory": null,
   "performanceByLanguage": [],
