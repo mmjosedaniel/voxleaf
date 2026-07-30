@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   BILINGUAL_PORTFOLIO_ARMS,
+  modelFreeLifecycleEnvironment,
   nativeRunnerArguments,
   selectPortfolioArms,
 } from "./bilingual-portfolio-host.mjs";
@@ -51,4 +52,16 @@ test("builds explicit packaged runner arguments", () => {
     "--tts-profile=piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
     "--tts-language=en",
   ]);
+});
+
+test("removes every exact model key from the generic lifecycle environment", () => {
+  const environment = Object.fromEntries(
+    BILINGUAL_PORTFOLIO_ARMS.flatMap(({ requiredEnvironment }) =>
+      requiredEnvironment.map((name) => [name, "private-value"]),
+    ),
+  );
+  environment.PATH = "retained";
+  const sanitized = modelFreeLifecycleEnvironment(environment);
+  assert.deepEqual(sanitized, { PATH: "retained" });
+  assert.notEqual(sanitized, environment);
 });

@@ -11,6 +11,7 @@ const FIREWALL_RULE_NAME = "VoxLeaf TTS Benchmark Offline";
 const PROFILE_ARGUMENT = "--profile=";
 const LANGUAGE_ARGUMENT = "--language=";
 const PREFLIGHT_ONLY_ARGUMENT = "--preflight-only";
+const LIFECYCLE_ONLY_ARGUMENT = "--lifecycle-only";
 const ARM_TIMEOUT_MS = 30 * 60 * 1_000;
 const PROCESS_CLEANUP_TIMEOUT_MS = 15_000;
 
@@ -96,6 +97,16 @@ export function nativeRunnerArguments({ profileId, language }) {
     `--tts-profile=${profileId}`,
     `--tts-language=${language}`,
   ]);
+}
+
+export function modelFreeLifecycleEnvironment(environment) {
+  const sanitized = { ...environment };
+  for (const { requiredEnvironment } of BILINGUAL_PORTFOLIO_ARMS) {
+    for (const name of requiredEnvironment) {
+      delete sanitized[name];
+    }
+  }
+  return sanitized;
 }
 
 function powershellText(script) {
@@ -207,14 +218,34 @@ async function assertProcessCleanup(executable, baselineProcessIds) {
 
 async function run() {
   const arms = selectPortfolioArms(process.argv.slice(2));
-  assertConfiguration(arms);
-  if (process.argv.includes(PREFLIGHT_ONLY_ARGUMENT)) {
+  const preflightOnly = process.argv.includes(PREFLIGHT_ONLY_ARGUMENT);
+  const lifecycleOnly = process.argv.includes(LIFECYCLE_ONLY_ARGUMENT);
+  if (preflightOnly && lifecycleOnly) {
+    throw new Error("Exact bilingual portfolio mode is invalid.");
+  }
+  if (!lifecycleOnly) {
+    assertConfiguration(arms);
+  }
+  if (preflightOnly) {
     console.log("Exact bilingual portfolio preflight passed.");
     return;
   }
 
   const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
   const nativeRunner = path.join(scriptDirectory, "native-startup-smoke.mjs");
+  if (lifecycleOnly) {
+    const result = spawnSync(process.execPath, [nativeRunner], {
+      env: modelFreeLifecycleEnvironment(process.env),
+      stdio: "inherit",
+      timeout: ARM_TIMEOUT_MS,
+      windowsHide: true,
+    });
+    if (result.status !== 0 || result.error) {
+      throw new Error("Exact bilingual portfolio lifecycle matrix failed.");
+    }
+    console.log("Exact bilingual portfolio lifecycle matrix passed.");
+    return;
+  }
   for (const arm of arms) {
     const python = process.env[arm.requiredEnvironment[1]];
     const baselineProcessIds = processIdsForExecutable(python);
