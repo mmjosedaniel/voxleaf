@@ -66,7 +66,7 @@ from benchmarks.v9_authority import (
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 CORPUS_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "corpus-v7.json"
 RAW_ROOT: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "raw" / "v9"
-AUTHORITY_COMMIT_SHA: Final = "6d4cdb14ec82ba053d1f3cdb03e3180cef34d277"
+AUTHORITY_COMMIT_SHA: Final = "4a80b628b3720c3ce71583ace9576a4113845ea8"
 CHATTERBOX_ENVIRONMENT: Final = Path(
     "services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v2"
 )
