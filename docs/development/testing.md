@@ -769,6 +769,33 @@ cancellation, synchronization, and cleanup observations. It is manual,
 Windows/exact-host only, excluded from CI, and must not be run with private
 EPUBs.
 
+Pull request #159 passed the required Ubuntu portable and Windows native checks
+and merged the M010.1 closeout.
+
+## M010.2 planned reader/settings/playback validation
+
+M010.2 is approved but not implemented. It must extend existing desktop,
+browser, and native-startup coverage rather than create an unrelated harness.
+Its model-free tests will cover:
+
+- fixed app bar and sole reader scroll ownership;
+- accessible Settings drawer/sheet focus, Escape, focus return, narrow/wide
+  layout, forced colors, and reduced motion;
+- lifecycle neutrality when Settings merely opens or closes;
+- English fallback and valid Spanish/English preference preservation;
+- language-, support-, development-, hardware-, and runtime-gated profiles;
+- bounded startup and playback-speed preferences;
+- all eleven exact playback rates and invalid inputs;
+- pitch-preserving backend source-frame progress and mid-unit rate changes;
+- effective-listening lead at startup, low water, refill, and underrun;
+- unchanged source-frame/byte/unit ceilings and transition-pause timers; and
+- pause, resume, seek, profile/language replacement, recovery, book
+  replacement, exit, and exact release ownership at non-`1.0x` rates.
+
+Exact-host listening uses repository-authored synthetic text and content-free
+measurements only. Default CI remains model-free. No private EPUB, waveform,
+model artifact, path, or raw host identity may enter a result or fixture.
+
 ## Deferred coverage
 
 The secure EPUB, reader, narration-preparation, M007 service/protocol, M008

@@ -40,7 +40,8 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 | Reader/narration synchronization                   | **Implemented and validated**                                   | Completed M009 implements the frozen segment authority, bounded content-free audible projection, one reader-owned Custom Highlight, focus-safe following, identity-first navigation, non-skipping heard-position persistence, passing exact-host proof, and repository/CI closeout.                                                                                                                                                                                                     |
 | Reader experience stabilization                    | **Complete and validated**                                      | Completed M009.1 repairs same-chapter active-range materialization; implements one reader scroll owner, stable compact chrome, collapsible narration detail, truthful loaded-duration text, and one bounded canonical paragraph leaf; and separates passive viewport inspection from explicit narration replacement. Deterministic, Chromium, packaged WebView2, private-EPUB, exact-host, repository, privacy, portable, and required Ubuntu/Windows checks pass.                      |
 | Hardware profiles, fallback, and resilience        | **Implemented and validated**                                   | Completed M010 implements detection, matching, preference/recheck UI, identity-safe recovery, and exact Piper/davefx plus Qwen/Serena runtime gates. M010.1 Milestone 6 extends the immutable registry and pre-start configuration boundary to Piper/joe, Chatterbox bilingual, and Qwen/Aiden without automatic failover or a second child tree. Distribution stays with M011.                                                                                                         |
-| Bilingual narration and candidate screening        | **Local implementation and exact-host validation complete**     | M010.1 implements exact profile/language registry, matching, UI selection, pre-start configuration, native supervision, Piper English, Chatterbox bilingual, and Qwen Serena/Aiden bindings without changing protocol v1. Both Piper voices and Chatterbox are supported when exact gates pass; both Qwen voices remain development-only. Six service arms and six packaged EPUB portfolio arms pass locally; required PR checks gate archival.                                         |
+| Bilingual narration and candidate screening        | **Complete and validated**                                      | Completed M010.1 implements exact profile/language registry, matching, UI selection, pre-start configuration, native supervision, Piper English, Chatterbox bilingual, and Qwen Serena/Aiden bindings without changing protocol v1. Both Piper voices and Chatterbox are supported when exact gates pass; both Qwen voices remain development-only. Six service arms, six packaged EPUB portfolio arms, and required Ubuntu/Windows checks pass.                     |
+| Reader settings and playback controls              | **Approved; not implemented**                                   | M010.2 will freeze and implement the reader-first fixed shell, accessible Settings, English fallback with valid-preference preservation, language/gate-correct profile presentation, bounded narration preferences, and pitch-preserving playback speeds. Current runtime remains the completed M010.1 interface, Spanish fallback, and `1.0x`.                                                                                                      |
 | Release packaging                                  | **Deferred**                                                    | M011 remains future work; installer bundling, signing, model/runtime distribution, updater policy, and complete-MVP validation are not implemented.                                                                                                                                                                                                                                                                                                                                     |
 
 ## Component and trust-boundary map
@@ -65,10 +66,10 @@ flowchart LR
             PICKER["Browser file input + FileReader<br/>Implemented"]:::implemented
             SESSION["Publication session owner<br/>Implemented"]:::implemented
             READER["Semantic React reader<br/>navigation, reflow, locator tracking<br/>Implemented"]:::implemented
-            STORE["WebView localStorage<br/>locator + display + bounded profile-ID preferences<br/>Implemented"]:::implemented
+            STORE["WebView localStorage<br/>locator + display + bounded language/profile preferences<br/>Implemented"]:::implemented
             SHELL["Tauri native supervisor<br/>model-free default or native-configured exact child<br/>M7 complete"]:::implemented
             CLIENT["Typed TTS client + one-unit handoff sink<br/>M7 complete<br/>consumed outside React"]:::implemented
-            PLAYBACK["Product narration coordinator + adaptive scheduler<br/>payload FIFO, Web Audio player, controls;<br/>semantic unit-transition timer;<br/>Piper-only nonspoken-unit omission"]:::implemented
+            PLAYBACK["Product narration coordinator + adaptive scheduler<br/>payload FIFO, Web Audio 1.0x player, controls;<br/>semantic unit-transition timer;<br/>Piper-only nonspoken-unit omission"]:::implemented
             PROJECTION["Bounded audible range projection<br/>exact start/completion + played frames<br/>M9 complete"]:::implemented
             SYNC["Reader segment projection, following,<br/>and synchronized user navigation<br/>M9 complete; M9.1 M2 materialization repair"]:::implemented
             HEARD_STORE["Heard-position persistence bridge<br/>exact boundaries + lifecycle flush<br/>M9 complete"]:::implemented
@@ -76,6 +77,7 @@ flowchart LR
             COMPAT["Privacy-safe detector + measured matcher<br/>exact language/profile registry, bounded preference,<br/>UI + hardware pre-start check"]:::implemented
             RUNTIME_GATE["Exact-profile runtime configuration gate<br/>native boolean at availability + pre-start<br/>M10 Milestone 6 corrective validation"]:::implemented
             RECOVERY["Identity-safe recovery controller<br/>verified cleanup + one explicit restart<br/>M10 Milestone 4 implemented"]:::implemented
+            SETTINGS_SPEED["Reader-first Settings + pitch-preserving playback<br/>M10.2 approved; not implemented"]:::planned
         end
 
         subgraph PACKAGES["TypeScript packages"]
@@ -96,7 +98,7 @@ flowchart LR
             TTS["Constrained local TTS service + protocol<br/>M7 complete and exact-host measured"]:::implemented
             PROD_TTS["Standard production TTS profile<br/>Blocked: no passing profile"]:::blocked
             CPU_FALLBACK["Piper/davefx CPU fallback<br/>Selected by v6 evidence;<br/>runtime integrated and packaged arm passed"]:::implemented
-            BILINGUAL["Bilingual preparation + exact selection<br/>M10.1 Milestones 2-7 locally validated;<br/>required PR checks pending"]:::implemented
+            BILINGUAL["Bilingual preparation + exact selection<br/>M10.1 complete; local + required CI pass"]:::implemented
         end
     end
 
@@ -119,6 +121,10 @@ flowchart LR
     RUNTIME_GATE -->|"exact runtime configured"| PLAYBACK
     PLAYBACK -.->|"classified failure + invalidated identity"| RECOVERY
     RECOVERY -.->|"explicit bounded restart after cleanup"| SHELL
+    SETTINGS_SPEED -.->|"planned presentation only"| READER
+    SETTINGS_SPEED -.->|"planned bounded preferences"| STORE
+    SETTINGS_SPEED -.->|"planned profile/language views"| COMPAT
+    SETTINGS_SPEED -.->|"planned rate + effective lead"| PLAYBACK
 
     PYTHON -.-> FEASIBILITY
     FEASIBILITY -.-> PROFILE_CYCLE
@@ -178,8 +184,16 @@ Spanish/English are supported exact bindings; Qwen Serena/Spanish and
 Aiden/English are development-only exact bindings. One native-owned service
 tree and protocol v1 remain unchanged. The six-arm exact-host service matrix
 and six packaged synthetic EPUB portfolio arms pass locally. Piper English
-composes bilingual normalization with Piper-v2 expansion-aware sizing; required
-pull-request checks still gate M010.1 archival.
+composes bilingual normalization with Piper-v2 expansion-aware sizing. Pull
+request #159 passed the required Ubuntu/Windows checks and merged the M010.1
+closeout.
+
+The dashed M010.2 node is approved planned work, not a current runtime
+relationship. It may compose the existing reader, store, compatibility, and
+playback nodes only after newly frozen authority proves lifecycle-neutral
+Settings, bounded preferences, English fallback migration, pitch-preserving
+source-frame playback, effective-listening lead, and unchanged resource/
+cancellation limits.
 M009 Milestone 3 makes the projection-to-reader edge solid: the reader maps
 the active source range, owns one production Custom Highlight entry, and
 performs focus-safe placement without creating passive-seek feedback. The
@@ -364,7 +378,8 @@ value remains a simultaneous ceiling, not a startup target.
 | Reader/narration synchronization                        | [M009 completed ExecPlan](../plans/completed/M009-synchronized-reading-and-narration.md), frozen [synchronization authority v1](synchronization-authority-v1.md), and accepted [ADR-0017](decisions/ADR-0017-segment-level-reader-narration-synchronization.md). Milestones 1-7 implement and validate the authority/proof, bounded audible projection, reader highlight/follow consumer, identity-first synchronized navigation, non-skipping heard persistence, exact-host packaged proof, and repository/CI closeout.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | Reader experience stabilization                         | [M009.1 completed ExecPlan](../plans/completed/M009-001-reader-experience-stabilization.md), frozen [reader-experience authority v1](reader-experience-authority-v1.md), and accepted [ADR-0018](decisions/ADR-0018-reader-experience-stabilization.md). The highlight repair, fixed shell, compact narration, truthful loaded-duration text, bounded paragraph leaf, and passive-scroll isolation are implemented and validated. Pull request #142 passed required Ubuntu/Windows checks and merged the closeout.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Hardware profiles, fallback, and operational resilience | [M010 completed ExecPlan](../plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md), frozen [hardware/profile/recovery authority v1](hardware-profile-recovery-authority-v1.md), accepted [ADR-0019](decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md), passing [Piper v6 result](../../benchmarks/tts/cpu-fallback-result-v6.json), [selection-v6](../../benchmarks/tts/selection-v6.md), [ADR-0020](decisions/ADR-0020-admit-piper-cpu-fallback.md), corrective [Qwen development VRAM authority v1](qwen-development-vram-admission-v1.md) and [ADR-0022](decisions/ADR-0022-qwen-development-vram-admission.md), final [support matrix v1](tts-support-matrix-v1.md) and [ADR-0023](decisions/ADR-0023-final-m010-support-and-recovery.md), implemented [Piper narration preparation profile v2](piper-narration-preparation-profile-v2.md), and frozen [runtime-configuration availability v1](tts-profile-runtime-configuration-availability-v1.md). Final support, margins, explicit fallback/recovery, limitations, distribution obligations, local validation, and replacement Ubuntu/Windows checks pass.                                   |
-| Bilingual narration and candidate screening             | [M010.1 active ExecPlan](../plans/active/M010-001-bilingual-narration-and-candidate-screening.md), implemented [bilingual product authority v1](bilingual-narration-authority-v1.md) and [normalization v2](narration-normalization-v2.md), frozen [v12 evaluation profile](tts-feasibility-profile-v12.md), content-safe [Chatterbox bilingual](../../benchmarks/tts/chatterbox-bilingual-full-result-v12.json), [Qwen Serena Spanish](../../benchmarks/tts/qwen-serena-spanish-quality-result-v12.json), and [Qwen Aiden English](../../benchmarks/tts/qwen-aiden-english-quality-result-v12.json) results, accepted [selection v12](../../benchmarks/tts/selection-v12.md), [ADR-0031](decisions/ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md), and current [support/integration matrix v2](tts-support-matrix-v2.md). Milestone 6 implements the exact language/profile service bindings while preserving protocol v1 and one-tree ownership. Milestone 7 locally validates all six packaged EPUB portfolio arms, exact-host metrics, synchronization, cancellation, bounded cleanup, privacy, and zero external requests; required PR checks remain before archival. |
+| Bilingual narration and candidate screening             | [M010.1 completed ExecPlan](../plans/completed/M010-001-bilingual-narration-and-candidate-screening.md), implemented [bilingual product authority v1](bilingual-narration-authority-v1.md) and [normalization v2](narration-normalization-v2.md), frozen [v12 evaluation profile](tts-feasibility-profile-v12.md), content-safe [Chatterbox bilingual](../../benchmarks/tts/chatterbox-bilingual-full-result-v12.json), [Qwen Serena Spanish](../../benchmarks/tts/qwen-serena-spanish-quality-result-v12.json), and [Qwen Aiden English](../../benchmarks/tts/qwen-aiden-english-quality-result-v12.json) results, accepted [selection v12](../../benchmarks/tts/selection-v12.md), [ADR-0031](decisions/ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md), and current [support/integration matrix v2](tts-support-matrix-v2.md). Milestone 6 implements the exact language/profile service bindings while preserving protocol v1 and one-tree ownership. Milestone 7 validates all six packaged EPUB portfolio arms, exact-host metrics, synchronization, cancellation, bounded cleanup, privacy, zero external requests, and required Ubuntu/Windows checks. |
+| Reader settings and playback controls                   | [M010.2 active ExecPlan](../plans/active/M010-002-reader-settings-and-playback-controls.md) and approved [product requirements](../product/reader-settings-and-playback-controls.md). This is planned authority only: no current app-shell, default-language, preference, time-stretch, effective-lead, or playback-rate implementation claim exists. |
 | Local-first desktop and future local process direction  | [ADR-0001](decisions/ADR-0001-local-first-desktop.md); ADR-0015 permits a constrained one-GPU development demo while the production profile and distribution boundary remain unresolved                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Roadmap status                                          | [Roadmap](../plans/roadmap.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
@@ -385,13 +400,18 @@ value remains a simultaneous ceiling, not a startup target.
 4. **Milestone 10 — Complete:** the final support matrix, ADR, exact safety
    margins, explicit fallback/recovery policy, runtime/license boundary,
    limitations, local validation, and replacement Ubuntu/Windows checks pass.
-5. **Milestone 10.1 — In progress:** Milestones 1/1A-6 freeze and execute the
+5. **Milestone 10.1 — Complete:** Milestones 1/1A-6 freeze and execute the
    bilingual evaluation, implement explicit preparation/selection, and
    integrate exact Piper Spanish/English, Chatterbox Spanish/English, and
    development-only Qwen Serena/Spanish plus Aiden/English service paths.
    Milestone 7's local packaged portfolio journeys and final metrics/privacy
-   evidence pass; required PR checks still gate plan archival.
-6. **Milestone 11 — Deferred:** complete installer/signing/distribution and
-   full MVP closeout after M010.1 closes or records no passing expansion.
+   evidence pass; pull request #159 passed required Ubuntu/Windows checks and
+   merged the closeout.
+6. **Milestone 10.2 — Approved, not implemented:** freeze and validate the
+   reader-first Settings shell, English fallback migration, bounded
+   preferences, pitch-preserving playback rates, source/effective-duration
+   timing, synchronization, accessibility, and packaged exact-host behavior.
+7. **Milestone 11 — Deferred:** complete installer/signing/distribution and
+   full MVP closeout after M010.2 closes.
 
 Update this document whenever a major component boundary, process/package dependency, trust boundary, persistence owner, external interaction, runtime flow, or roadmap implementation status changes. A completed plan may advance a node or arrow only when its definition of done and validation evidence are present.

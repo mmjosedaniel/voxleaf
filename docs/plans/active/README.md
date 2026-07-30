@@ -17,14 +17,12 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`M010-001-bilingual-narration-and-candidate-screening.md`](M010-001-bilingual-narration-and-candidate-screening.md):
-  approved, not-yet-implemented bounded follow-up before M011. It freezes
-  explicit Spanish/English narration and versioned locator-safe preparation,
-  evaluates one exact Piper English baseline, and sequentially screens
-  Chatterbox Multilingual, MOSS-TTS-Nano ONNX, and only conditionally
-  CosyVoice. It may integrate Piper English and at most one passing new engine;
-  current narration remains Spanish-only until its evidence and validation
-  pass.
+- [`M010-002-reader-settings-and-playback-controls.md`](M010-002-reader-settings-and-playback-controls.md):
+  approved, not-yet-implemented pre-M011 follow-up. It freezes and implements
+  the reader-first app shell, accessible Settings drawer/sheet, English
+  fallback with valid-preference preservation, language- and gate-correct
+  profile presentation, bounded narration preferences, and engine-neutral
+  pitch-preserving playback speeds from `1.00x` through `0.50x`.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through

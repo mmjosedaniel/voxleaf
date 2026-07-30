@@ -39,9 +39,11 @@ Piper/davefx the sole supported and automatically recommendable compatible
 profile, retains Qwen/Serena as development-only, and keeps automatic failover
 disabled. M008.1 and M010 passed replacement Ubuntu/Windows checks and are
 archived. M010.1 implements explicit Spanish/English narration and bounded
-candidate screening; its local six-arm packaged portfolio validation passes,
-while required pull-request checks still gate archival. Production
-distribution, Piper license fulfillment, and installers remain M011 work.
+candidate screening; its local six-arm packaged portfolio validation and
+required Ubuntu/Windows checks pass, pull request #159 merged, and the plan is
+archived. M010.2 reader/settings/playback work is approved but not
+implemented. Production distribution, Piper license fulfillment, and
+installers remain M011 work.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
