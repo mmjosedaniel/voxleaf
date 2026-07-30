@@ -54,6 +54,7 @@
     "test:tts:exact-host": "pnpm --filter @voxleaf/desktop test:tts:exact-host",
     "test:tts:adaptive-exact-host": "pnpm --filter @voxleaf/desktop test:tts:adaptive-exact-host",
     "test:tts:resilience-exact-host": "pnpm --filter @voxleaf/desktop test:tts:resilience-exact-host",
+    "test:tts:bilingual-profiles-exact-host": "pnpm --filter @voxleaf/desktop test:tts:bilingual-profiles-exact-host",
     "test:tts:handoff-host": "pnpm --filter @voxleaf/desktop tauri build && uv run --directory services/tts --locked python -m benchmarks.service_handoff_cli run",
     "test:python": "uv run --project services/tts --locked pytest services/tts",
     "test:rust": "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml",

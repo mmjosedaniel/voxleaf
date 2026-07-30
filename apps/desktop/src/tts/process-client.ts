@@ -6,6 +6,7 @@ import {
   type TtsProtocolControlV1,
   type TtsServiceStateV1,
 } from "@voxleaf/shared";
+import type { NarrationLanguageV1 } from "./narration-language";
 
 const MAX_AUDIO_PAYLOAD_BYTES = 1_920_000;
 const MAX_AUDIO_SAMPLE_COUNT = 480_000;
@@ -298,13 +299,16 @@ export class TtsProcessClient {
     }
   }
 
-  public async start(profileId?: string): Promise<TtsProcessClientObservation> {
+  public async start(
+    profileId?: string,
+    language?: NarrationLanguageV1,
+  ): Promise<TtsProcessClientObservation> {
     if (!["stopped", "failed"].includes(this.state)) {
       throw new TtsProcessClientError("tts-service-invalid-state");
     }
     const controls = await this.invokeControls(
       "start_tts_service",
-      profileId === undefined ? undefined : { profileId },
+      profileId === undefined ? undefined : { profileId, language },
     );
     expectKinds(controls, [
       "state",

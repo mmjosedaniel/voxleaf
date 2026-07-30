@@ -11,6 +11,7 @@ import {
 import {
   EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID,
   PIPER_CPU_FALLBACK_PROFILE_ID,
+  PIPER_ENGLISH_CPU_PROFILE_ID,
 } from "./hardware-profile-registry";
 
 function unknownQuantity() {
@@ -125,9 +126,16 @@ function preference(
 function languagePreference(
   language: "es" | "en" = "es",
 ): NarrationLanguagePreferenceRepository {
+  let selectedLanguage = language;
   return {
-    read: vi.fn(async () => ({ status: "ready" as const, language })),
-    write: vi.fn(async () => ({ status: "saved" as const })),
+    read: vi.fn(async () => ({
+      status: "ready" as const,
+      language: selectedLanguage,
+    })),
+    write: vi.fn(async (nextLanguage) => {
+      selectedLanguage = nextLanguage;
+      return { status: "saved" as const };
+    }),
   };
 }
 
@@ -171,7 +179,7 @@ describe("hardware profile compatibility coordinator", () => {
     expect(snapshot.activeProfileId).toBe(PIPER_CPU_FALLBACK_PROFILE_ID);
     expect(snapshot.selectionSource).toBe("recommendation");
     expect(snapshot.fallbackAvailable).toBe(true);
-    expect(snapshot.profiles).toHaveLength(4);
+    expect(snapshot.profiles).toHaveLength(7);
   });
 
   it.each([
@@ -312,7 +320,7 @@ describe("hardware profile compatibility coordinator", () => {
     expect(futurePreference.write).not.toHaveBeenCalled();
   });
 
-  it("persists explicit English, exposes no selectable profile, and rejects incompatible starts", async () => {
+  it("persists explicit English, selects its admitted CPU profile, and rejects a wrong-language start", async () => {
     const languageRepository = languagePreference();
     const subject = new HardwareProfileCompatibilityCoordinator(
       dependencies({ languagePreference: languageRepository }),
@@ -324,21 +332,21 @@ describe("hardware profile compatibility coordinator", () => {
     expect(subject.observe()).toMatchObject({
       language: "en",
       languagePreferenceStatus: "ready",
-      activeProfileId: undefined,
-      status: "unavailable",
-      languageReason: "no-profile-for-language",
-      fallbackAvailable: false,
+      activeProfileId: PIPER_ENGLISH_CPU_PROFILE_ID,
+      status: "compatible",
+      languageReason: undefined,
+      fallbackAvailable: true,
     });
     await expect(
       subject.selectProfile(PIPER_CPU_FALLBACK_PROFILE_ID),
     ).resolves.toBe(false);
     await expect(
       subject.isProfileStartAllowed(
-        PIPER_CPU_FALLBACK_PROFILE_ID,
+        PIPER_ENGLISH_CPU_PROFILE_ID,
         "before-profile-start",
         "en",
       ),
-    ).resolves.toBe(false);
+    ).resolves.toBe(true);
   });
 
   it("restores English explicitly and fails future language state closed to Spanish", async () => {
@@ -348,8 +356,8 @@ describe("hardware profile compatibility coordinator", () => {
     await english.check("application-start");
     expect(english.observe()).toMatchObject({
       language: "en",
-      activeProfileId: undefined,
-      status: "unavailable",
+      activeProfileId: PIPER_ENGLISH_CPU_PROFILE_ID,
+      status: "compatible",
     });
 
     const futureRepository: NarrationLanguagePreferenceRepository = {

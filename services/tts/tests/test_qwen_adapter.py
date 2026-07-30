@@ -15,9 +15,11 @@ import pytest
 
 from voxleaf_tts.engine import EngineFailure, EngineFailureCode
 from voxleaf_tts.qwen_adapter import (
-    CANDIDATE_ID,
+    AIDEN_CANDIDATE_ID,
+    AIDEN_ENGLISH_PROFILE,
     CODEC_SAMPLES_PER_TOKEN,
     ENGINE_VERSION,
+    ENGLISH_INSTRUCTION,
     GENERATION_SETTINGS,
     INSTRUCTION,
     LANGUAGE,
@@ -25,16 +27,19 @@ from voxleaf_tts.qwen_adapter import (
     MAX_SERVICE_CODEC_TOKENS,
     MODEL_REPOSITORY,
     MODEL_REVISION,
+    SERENA_CANDIDATE_ID,
+    SERENA_SPANISH_PROFILE,
     SERVICE_GENERATION_SETTINGS,
     SPEAKER,
     TORCH_VERSION,
     TORCHAUDIO_VERSION,
     ArtifactIdentity,
     QwenSerenaTtsEngine,
+    QwenVoiceProfile,
 )
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
-PROFILE_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "profile-v3.json"
+CANDIDATE_MANIFEST_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "candidates-v8.json"
 CANDIDATE_LOCK: Final = (
     REPOSITORY_ROOT
     / "services"
@@ -163,6 +168,7 @@ def _adapter(
     distribution_root: Path | None = None,
     cuda_available: bool = True,
     bf16_available: bool = True,
+    profile: QwenVoiceProfile = SERENA_SPANISH_PROFILE,
 ) -> tuple[QwenSerenaTtsEngine, dict[str, object], FakeModel]:
     monkeypatch.setenv("HF_HUB_OFFLINE", "1")
     monkeypatch.setenv("TRANSFORMERS_OFFLINE", "1")
@@ -205,6 +211,7 @@ def _adapter(
     root = distribution_root or distributions
     adapter = QwenSerenaTtsEngine(
         artifact_root,
+        profile=profile,
         artifacts=artifacts,
         importer=modules.__getitem__,
         version_reader=selected_versions.__getitem__,
@@ -225,19 +232,21 @@ def _segment(text: str = "Texto sintético local.") -> dict[str, object]:
     }
 
 
-def test_frozen_constants_match_profile_and_candidate_lock() -> None:
-    profile = json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
-    candidate = profile["candidate"]
+def test_frozen_constants_match_v8_bilingual_manifest_and_candidate_lock() -> None:
+    manifest = json.loads(CANDIDATE_MANIFEST_PATH.read_text(encoding="utf-8"))
+    candidates = {value["candidateId"]: value for value in manifest["addedCandidates"]}
+    candidate = candidates[SERENA_CANDIDATE_ID]
+    aiden = candidates[AIDEN_CANDIDATE_ID]
 
-    assert candidate["candidateId"] == CANDIDATE_ID
-    assert candidate["engine"] == {
-        "distribution": "qwen-tts",
-        "version": ENGINE_VERSION,
-        "wheelSha256": "11a290d8dabc7ef91a90c54478c8ab19b3edb1d85c0882313721892bdc4af15d",
-    }
+    assert candidate["engine"]["name"] == "qwen-tts"
+    assert candidate["engine"]["version"] == ENGINE_VERSION
+    assert (
+        candidate["engine"]["wheelSha256"]
+        == "11a290d8dabc7ef91a90c54478c8ab19b3edb1d85c0882313721892bdc4af15d"
+    )
     assert candidate["model"]["repository"] == MODEL_REPOSITORY
     assert candidate["model"]["revision"] == MODEL_REVISION
-    assert tuple(candidate["model"]["majorArtifacts"]) == tuple(
+    assert tuple(candidate["model"]["artifacts"]) == tuple(
         {
             "path": artifact.relative_path,
             "sha256": artifact.sha256,
@@ -245,16 +254,14 @@ def test_frozen_constants_match_profile_and_candidate_lock() -> None:
         }
         for artifact in MAJOR_ARTIFACTS
     )
-    assert candidate["voice"] == {
-        "mode": "built-in-customvoice",
-        "speaker": SPEAKER,
-        "language": LANGUAGE,
-        "instruction": INSTRUCTION,
-    }
-    assert candidate["runtime"]["torch"] == TORCH_VERSION
-    assert candidate["runtime"]["torchaudio"] == TORCHAUDIO_VERSION
-    assert candidate["runtime"]["precision"] == "bfloat16"
-    assert candidate["runtime"]["attention"] == "sdpa"
+    assert candidate["voice"]["speaker"] == SPEAKER
+    assert candidate["voice"]["languageArgument"] == LANGUAGE
+    assert candidate["voice"]["instruction"] == INSTRUCTION
+    assert aiden["voice"]["speaker"] == AIDEN_ENGLISH_PROFILE.speaker
+    assert aiden["voice"]["languageArgument"] == AIDEN_ENGLISH_PROFILE.language
+    assert aiden["voice"]["instruction"] == ENGLISH_INSTRUCTION
+    assert candidate["engine"]["precision"] == "bfloat16"
+    assert candidate["engine"]["attention"] == "sdpa"
     assert candidate["generation"] == {
         "batchSize": 1,
         "doSample": GENERATION_SETTINGS["do_sample"],
@@ -270,7 +277,8 @@ def test_frozen_constants_match_profile_and_candidate_lock() -> None:
     }
     assert (
         hashlib.sha256(CANDIDATE_LOCK.read_bytes()).hexdigest()
-        == (profile["authorities"]["candidateLock"]["sha256"])
+        == candidate["dependencyLock"]["sha256"]
+        == aiden["dependencyLock"]["sha256"]
     )
 
 
@@ -310,6 +318,32 @@ def test_exact_load_warm_and_complete_generation_use_frozen_identity(
     adapter.release_result()
     adapter.cleanup()
     assert calls["cleaned"] is True
+
+
+def test_aiden_profile_uses_the_exact_english_voice_language_and_instruction(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter, calls, _model = _adapter(
+        tmp_path,
+        monkeypatch,
+        profile=AIDEN_ENGLISH_PROFILE,
+    )
+
+    adapter.load()
+    adapter.warm()
+    adapter.begin("request:english", _segment("A bounded English segment."))
+    adapter.settle()
+
+    generations = calls["generations"]
+    assert isinstance(generations, list)
+    assert generations[-1] == {
+        "text": "A bounded English segment.",
+        "language": "English",
+        "speaker": "Aiden",
+        "instruct": ENGLISH_INSTRUCTION,
+        **SERVICE_GENERATION_SETTINGS,
+    }
 
 
 def test_product_generation_is_clamped_to_the_protocol_audio_ceiling() -> None:

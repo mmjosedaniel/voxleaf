@@ -123,6 +123,7 @@ class FakeServiceClient implements ProductNarrationServiceClient {
   public readonly synthesized: NarrationSegmentV1[] = [];
   public readonly cancelled: TtsGenerationScope[] = [];
   public readonly startedProfiles: Array<string | undefined> = [];
+  public readonly startedLanguages: Array<"es" | "en" | undefined> = [];
   public shutdownCount = 0;
   public synthesisSampleFrames = 360_000;
   public synthesisElapsedMs = 1_000;
@@ -159,8 +160,12 @@ class FakeServiceClient implements ProductNarrationServiceClient {
     });
   }
 
-  public async start(profileId?: string): Promise<TtsProcessClientObservation> {
+  public async start(
+    profileId?: string,
+    language?: "es" | "en",
+  ): Promise<TtsProcessClientObservation> {
     this.startedProfiles.push(profileId);
+    this.startedLanguages.push(language);
     this.state = "unloaded";
     return this.observe();
   }
@@ -610,6 +615,7 @@ describe("product narration coordinator", () => {
       "es",
     );
     expect(client.startedProfiles).toEqual([profileId]);
+    expect(client.startedLanguages).toEqual(["es"]);
     expect(prepareNarration).toHaveBeenCalledWith(
       expect.objectContaining({ profile: "narration-piper-v2" }),
     );
@@ -617,14 +623,14 @@ describe("product narration coordinator", () => {
   });
 
   it("prepares English through the engine-neutral bilingual profile", async () => {
-    const profileId = "qwen3-tts-0-6b-customvoice-cuda-bf16-v1";
+    const profileId = "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8";
     const profileCompatibility: ProductNarrationProfileCompatibility = {
       activeProfileId: vi.fn(() => profileId),
       activeLanguage: vi.fn(() => "en" as const),
       isProfileCurrentlyAllowed: vi.fn(() => true),
       isProfileStartAllowed: vi.fn(async () => true),
     };
-    const { coordinator, prepareNarration } = createHarness({
+    const { client, coordinator, prepareNarration } = createHarness({
       profileCompatibility,
     });
 
@@ -647,6 +653,7 @@ describe("product narration coordinator", () => {
       "before-profile-start",
       "en",
     );
+    expect(client.startedLanguages).toEqual(["en"]);
     await coordinator.close();
   });
 
@@ -694,7 +701,7 @@ describe("product narration coordinator", () => {
     await settleUntil(() => client.state === "generating");
 
     await coordinator.stopForConfigurationChange();
-    profileId = "qwen3-tts-0-6b-customvoice-cuda-bf16-v1";
+    profileId = "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8";
     language = "en";
     await coordinator.refreshSelectedProfile();
 
@@ -713,7 +720,7 @@ describe("product narration coordinator", () => {
     await settleUntil(() => coordinator.observe().state?.phase === "playing");
     expect(client.startedProfiles).toEqual([
       "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1",
-      "qwen3-tts-0-6b-customvoice-cuda-bf16-v1",
+      "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8",
     ]);
     expect(prepareNarration).toHaveBeenCalledTimes(2);
     expect(prepareNarration.mock.calls[1]?.[0]).toEqual(

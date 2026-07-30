@@ -84,6 +84,37 @@ fn main() {
                 1
             });
         }
+        Some(argument)
+            if argument
+                == std::ffi::OsStr::new(
+                    tts_service_supervisor::BILINGUAL_PROFILE_HOST_ARGUMENT,
+                ) =>
+        {
+            let profile_id = arguments.next();
+            let language = arguments.next();
+            std::process::exit(
+                if profile_id
+                    .as_deref()
+                    .and_then(std::ffi::OsStr::to_str)
+                    .zip(
+                        language
+                            .as_deref()
+                            .and_then(std::ffi::OsStr::to_str),
+                    )
+                    .is_some_and(|(profile_id, language)| {
+                        tts_service_supervisor::run_bilingual_profile_host(
+                            profile_id,
+                            language,
+                        )
+                        .is_ok()
+                    })
+                {
+                    0
+                } else {
+                    1
+                },
+            );
+        }
         Some(argument) if argument == std::ffi::OsStr::new(tts_service_handoff::HOST_ARGUMENT) => {
             std::process::exit(if tts_service_handoff::run_host().is_ok() {
                 0
