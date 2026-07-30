@@ -2,8 +2,12 @@
 
 ## Status
 
-Approved product direction for roadmap Milestone 10.2. The behavior in this
-document is not implemented until
+Approved product direction for roadmap Milestone 10.2. Milestone 1 has frozen
+the exact
+[`reader settings and playback authority v1`](../architecture/reader-settings-playback-authority-v1.md)
+and [ADR-0033](../architecture/decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md)
+before production results. The behavior in this document is not implemented
+until
 [`M010-002-reader-settings-and-playback-controls.md`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
 records passing implementation and validation. Current runtime behavior
 remains the completed M010.1 interface, Spanish fallback for missing or invalid

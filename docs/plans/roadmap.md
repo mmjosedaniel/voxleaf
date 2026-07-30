@@ -51,12 +51,11 @@ final exact-host metrics, privacy, bounded synchronization, and cleanup
 validation pass locally. Pull request #159 subsequently passed the required
 Ubuntu and Windows checks and merged the closeout.
 
-M010.2 is approved and active before M011. It has not changed implementation.
-It will freeze and implement a reader-first fixed shell, accessible Settings,
-English fallback with valid-preference preservation, language- and
-gate-correct profile presentation, bounded narration-start/playback
-preferences, and pitch-preserving engine-neutral playback speeds from
-`1.00x` through `0.50x`. M011 remains deferred until this bounded portfolio
+M010.2 is active before M011. Milestone 1 is complete: its architecture
+authority, executable constants, exhaustive result-blind tests, ADR, exact
+source/effective-duration arithmetic, and pitch-preserving backend comparison
+were frozen before production results. Runtime behavior remains unchanged;
+Milestone 2 is next. M011 remains deferred until this bounded portfolio
 follow-up closes.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
@@ -944,7 +943,7 @@ versioned contracts and a new decision record.
 
 ## Milestone 10.2: Add reader settings and pitch-preserving playback controls
 
-**Status:** Approved; not started. Follow
+**Status:** In progress. Milestone 1 is complete; Milestone 2 is next. Follow
 [`M010-002-reader-settings-and-playback-controls.md`](active/M010-002-reader-settings-and-playback-controls.md)
 and the approved
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
@@ -953,6 +952,13 @@ product requirements.
 This bounded portfolio-facing follow-up runs before M011. It does not change
 the completed M010.1 language/profile support matrix, TTS generation,
 normalization, protocol, or runtime/model distribution boundary.
+
+Milestone 1 freezes
+[`reader settings and playback authority v1`](../architecture/reader-settings-playback-authority-v1.md)
+and
+[`ADR-0033`](../architecture/decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md).
+The current runtime remains Spanish-fallback and `1.00x`; no Settings or
+time-stretch implementation is claimed yet.
 
 ### Goal
 
@@ -1104,9 +1110,10 @@ The following decisions should be made when evidence is available, not assumed s
    highlight/follow/navigation evidence plus passing repository, privacy, and
    required pull-request validation, plus the fixed reader viewport, compact
    narration surface, bounded paragraph leaf, and passive-scroll isolation.
-8. **Reader/settings/playback-control gate:** M010.2 must freeze and validate
-   the new shell, Settings, English fallback, preference ownership, exact
+8. **Reader/settings/playback-control gate:** M010.2 Milestone 1 freezes the
+   new shell, Settings, English fallback, preference ownership, exact
    pitch-preserving rate set, source/effective-duration arithmetic, and
+   backend comparison before results. Later milestones must validate
    packaged accessibility before changing M008's accepted `1.0x` policy.
 9. **Release gate:** define supported hardware and wall-clock startup
    expectations from measured results before release.

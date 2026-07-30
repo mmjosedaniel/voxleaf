@@ -57,12 +57,12 @@ arms, exact-host metrics, privacy boundary, cancellation, synchronization, and
 cleanup evidence pass. Pull request #159 passed the required Ubuntu and
 Windows checks and merged the closeout.
 
-M010.2 is the approved active follow-up before M011. It has not changed
-runtime behavior. Its product scope is a reader-first fixed shell, accessible
-Settings drawer/sheet, English fallback that preserves valid saved language,
-language- and gate-correct profile presentation, bounded narration
-preferences, and engine-neutral pitch-preserving playback speeds from
-`1.00x` through `0.50x`.
+M010.2 is the approved active follow-up before M011. Milestone 1 is complete:
+the reader/settings/playback authority, executable constants, result-blind
+tests, ADR, exact duration arithmetic, and closed backend comparison were
+frozen before production implementation. Runtime behavior has not changed.
+The current app still uses its M010.1 interface, Spanish fallback, and
+`1.00x`; later M010.2 milestones own implementation.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -71,7 +71,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`product/vision.md`](product/vision.md): product purpose, audience, and principles.
 - [`product/project-brief.md`](product/project-brief.md): detailed problem, intended experience, product boundaries, and candidate technical direction.
 - [`product/mvp.md`](product/mvp.md): MVP scope, non-goals, constraints, and acceptance criteria.
-- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and pitch-preserving playback-speed requirements; not yet implemented.
+- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and pitch-preserving playback-speed requirements; Milestone 1 authority is frozen but runtime work is not yet implemented.
 - [`product/post-mvp-tts-candidate-backlog.md`](product/post-mvp-tts-candidate-backlog.md): non-authoritative post-MVP intake order for Pocket TTS, Chatterbox LatAm, MOSS-TTS-Nano, Kokoro, and additional Piper voices.
 - [`product/glossary.md`](product/glossary.md): shared terminology.
 
@@ -84,6 +84,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/playback-transition-pause-policy-v1.md`](architecture/playback-transition-pause-policy-v1.md): frozen M008.1 semantic generated-unit transition mapping, eligibility, lifecycle, measurement, and privacy authority.
 - [`architecture/synchronization-authority-v1.md`](architecture/synchronization-authority-v1.md): frozen M009 segment-level position, transition, highlighting, following, navigation, observation, invalidation, and persistence authority.
 - [`architecture/reader-experience-authority-v1.md`](architecture/reader-experience-authority-v1.md): frozen M009.1 paint-aware highlight proof, reader scroll ownership, compact narration, text-only loaded duration, and bounded paragraph-leaf authority.
+- [`architecture/reader-settings-playback-authority-v1.md`](architecture/reader-settings-playback-authority-v1.md): frozen M010.2 Milestone 1 shell, Settings, English-fallback migration, bounded preference, exact playback-rate arithmetic, backend-comparison, resource, privacy, and validation authority.
 - [`architecture/hardware-profile-recovery-authority-v1.md`](architecture/hardware-profile-recovery-authority-v1.md): frozen M010 Milestone 1 privacy-safe host report, immutable profile/evidence shape, result-blind margins, matching/preference rules, failure taxonomy, and identity-first recovery authority.
 - [`architecture/qwen-development-vram-admission-v1.md`](architecture/qwen-development-vram-admission-v1.md): corrective development-only authority retaining generic total VRAM while admitting the exact Qwen demo with its measured peak plus a frozen 512-MiB available-VRAM reserve.
 - [`architecture/tts-support-matrix-v1.md`](architecture/tts-support-matrix-v1.md): final M010 product support matrix, admitted host margins, explicit selection/fallback policy, recovery policy, limitations, and runtime/license/distribution boundary.
@@ -133,6 +134,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0030-freeze-corrective-full-evaluation-v12.md`](architecture/decisions/ADR-0030-freeze-corrective-full-evaluation-v12.md): freezes the result-blind complete Chatterbox and independent Qwen quality authority before new audio or results.
 - [`architecture/decisions/ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md`](architecture/decisions/ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md): admits exact Chatterbox for both languages and Qwen/Aiden for English integration while retaining Qwen/Serena Spanish and explicit host/buffering limitations.
 - [`architecture/decisions/ADR-0032-bound-chatterbox-complete-waveform-units.md`](architecture/decisions/ADR-0032-bound-chatterbox-complete-waveform-units.md): bounds Chatterbox complete-waveform units without changing bilingual normalization or protocol v1.
+- [`architecture/decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md`](architecture/decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md): accepts the result-blind M010.2 Milestone 1 authority and keeps speed after synthesis with pitch preservation and source-frame progress.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development
@@ -166,7 +168,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
 - [`plans/completed/M010-001-bilingual-narration-and-candidate-screening.md`](plans/completed/M010-001-bilingual-narration-and-candidate-screening.md): completed bilingual follow-up covering evaluation, exact profile integration, packaged portfolio validation, and passing Ubuntu/Windows closeout.
-- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): approved pre-M011 reader-first settings and pitch-preserving playback-control follow-up; implementation has not started.
+- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): active pre-M011 reader-first settings and pitch-preserving playback-control follow-up; Milestone 1 authority is complete and Milestone 2 is next.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

@@ -772,11 +772,20 @@ EPUBs.
 Pull request #159 passed the required Ubuntu portable and Windows native checks
 and merged the M010.1 closeout.
 
-## M010.2 planned reader/settings/playback validation
+## M010.2 reader/settings/playback validation
 
-M010.2 is approved but not implemented. It must extend existing desktop,
-browser, and native-startup coverage rather than create an unrelated harness.
-Its model-free tests will cover:
+M010.2 Milestone 1 is complete but production behavior is not implemented.
+`reader-settings-playback-authority.test.ts` exhaustively freezes the exact
+shell and responsive values, Settings ordering and lifecycle neutrality,
+language/profile presentation, preference envelopes, every rate and invalid
+input, source/effective-duration threshold arithmetic, backend candidates and
+gates, and unchanged M005/protocol/support/resource boundaries. The checkpoint
+passes 45 desktop test files with 454 Vitest tests plus 11 native helper tests
+and desktop type checking.
+
+Later milestones must extend existing desktop, browser, and native-startup
+coverage rather than create an unrelated harness. Their model-free tests will
+cover:
 
 - fixed app bar and sole reader scroll ownership;
 - accessible Settings drawer/sheet focus, Escape, focus return, narrow/wide
