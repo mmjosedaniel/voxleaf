@@ -25,6 +25,10 @@ import {
   type NarrationStartPreferenceReadResult,
 } from "./persistence/narration-start-preference";
 import {
+  createWebStorageNarrationPlaybackPreferenceRepository,
+  type NarrationPlaybackPreferenceRepository,
+} from "./persistence/narration-playback-preference";
+import {
   ReaderPositionRestoreCoordinator,
   type ReadyReaderOpenRestoration,
 } from "./persistence/reader-position-restore-coordinator";
@@ -94,11 +98,13 @@ export interface AppProps {
   readonly readerPositionSaveEnvironment?: ReaderPositionSaveEnvironment;
   readonly hardwareCompatibilityCoordinator?: HardwareProfileCompatibilityCoordinator;
   readonly narrationStartPreferenceRepository?: NarrationStartPreferenceRepository;
+  readonly narrationPlaybackPreferenceRepository?: NarrationPlaybackPreferenceRepository;
   readonly createNarrationCoordinator?: (
     publication: OpenedPublication,
     initialLocator: ReadingLocatorV1,
     hardwareCompatibility: HardwareProfileCompatibilityCoordinator,
     narrationStartPreference: NarrationStartPreferenceRepository,
+    narrationPlaybackPreference: NarrationPlaybackPreferenceRepository,
   ) => ProductNarrationCoordinator;
   readonly ReadyPublicationContent?: ComponentType<ReadyPublicationContentProps>;
   readonly runRasterProbe?: typeof runRasterImageSafetyProbe;
@@ -239,10 +245,12 @@ function createDefaultNarrationCoordinator(
   initialLocator: ReadingLocatorV1,
   hardwareCompatibility: HardwareProfileCompatibilityCoordinator,
   narrationStartPreference: NarrationStartPreferenceRepository,
+  narrationPlaybackPreference: NarrationPlaybackPreferenceRepository,
 ): ProductNarrationCoordinator {
   return new ProductNarrationCoordinator(publication, initialLocator, {
     profileCompatibility: hardwareCompatibility,
     startPreferenceRepository: narrationStartPreference,
+    playbackPreferenceRepository: narrationPlaybackPreference,
   });
 }
 
@@ -253,6 +261,8 @@ export function App({
   hardwareCompatibilityCoordinator: suppliedHardwareCompatibilityCoordinator,
   narrationStartPreferenceRepository:
     suppliedNarrationStartPreferenceRepository,
+  narrationPlaybackPreferenceRepository:
+    suppliedNarrationPlaybackPreferenceRepository,
   createNarrationCoordinator = createDefaultNarrationCoordinator,
   ReadyPublicationContent = ReaderPublicationContent,
   runRasterProbe = runRasterImageSafetyProbe,
@@ -276,6 +286,11 @@ export function App({
     () =>
       suppliedNarrationStartPreferenceRepository ??
       createWebStorageNarrationStartPreferenceRepository(),
+  );
+  const [narrationPlaybackPreferenceRepository] = useState(
+    () =>
+      suppliedNarrationPlaybackPreferenceRepository ??
+      createWebStorageNarrationPlaybackPreferenceRepository(),
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -404,11 +419,13 @@ export function App({
             readyRestorationResult.position.locator,
             hardwareCompatibilityCoordinator,
             narrationStartPreferenceRepository,
+            narrationPlaybackPreferenceRepository,
           ),
     [
       createNarrationCoordinator,
       hardwareCompatibilityCoordinator,
       narrationStartPreferenceRepository,
+      narrationPlaybackPreferenceRepository,
       readyPublication,
       readyRestorationResult,
     ],
@@ -838,6 +855,11 @@ export function App({
           ? (await narrationStartPreferenceRepository.reset()).status ===
             "saved"
           : await narrationCoordinator.resetStartPreference();
+      const playbackReset =
+        narrationCoordinator === undefined
+          ? (await narrationPlaybackPreferenceRepository.reset()).status ===
+            "saved"
+          : await narrationCoordinator.resetPlaybackPreference();
       if (startReset) {
         setFallbackNarrationStart({
           selection: DEFAULT_NARRATION_START_PREFERENCE_V1,
@@ -848,11 +870,12 @@ export function App({
       if (languageReset) {
         await narrationCoordinator?.refreshSelectedProfile();
       }
-      return languageReset && startReset;
+      return languageReset && startReset && playbackReset;
     }, [
       hardwareCompatibilityCoordinator,
       narrationCoordinator,
       narrationStartPreferenceRepository,
+      narrationPlaybackPreferenceRepository,
     ]);
 
   const isBusy =

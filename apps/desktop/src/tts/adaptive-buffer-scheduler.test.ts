@@ -21,6 +21,7 @@ import {
   type AdaptiveBufferStartMode,
 } from "./adaptive-buffer-scheduler";
 import type { PlaybackTransitionPauseMs } from "./playback-transition-policy";
+import type { NarrationPlaybackRatePercentV3 } from "./reader-settings-playback-authority-v3";
 
 const IDENTITY = Object.freeze({
   sessionId: "session:synthetic-scheduler-1",
@@ -112,8 +113,14 @@ function ownedUnit(
 function makeReadyScheduler(
   clock: ManualClock,
   mode: AdaptiveBufferStartMode = { kind: "quick" },
+  playbackRatePercent: NarrationPlaybackRatePercentV3 = 100,
 ): AdaptiveBufferScheduler {
-  const scheduler = new AdaptiveBufferScheduler(clock, IDENTITY, mode);
+  const scheduler = new AdaptiveBufferScheduler(
+    clock,
+    IDENTITY,
+    mode,
+    playbackRatePercent,
+  );
   expect(scheduler.observe().nextAction).toEqual({ kind: "start-service" });
   scheduler.beginServiceStart();
   scheduler.markServiceStarted();
@@ -152,6 +159,68 @@ function assertWithinAuthority(
 }
 
 describe("adaptive buffer scheduler", () => {
+  it("uses effective listening lead while retaining source-frame authority", () => {
+    const scheduler = makeReadyScheduler(
+      createManualClock(0),
+      { kind: "quick" },
+      75,
+    );
+    const prepared = segment(1);
+    prepare(scheduler, [prepared]);
+    synthesize(scheduler, ownedUnit(prepared.segmentId, 11_249));
+    expect(scheduler.observe()).toMatchObject({
+      playbackState: "preparing",
+      playableDurationMs: 11_249,
+      effectiveListeningDurationMs: 14_998,
+      resourceSnapshot: {
+        audioSampleFrames: sampleFramesFromPlayableMilliseconds(11_249),
+      },
+    });
+
+    const schedulerAtThreshold = makeReadyScheduler(
+      createManualClock(0),
+      { kind: "quick" },
+      75,
+    );
+    prepare(schedulerAtThreshold, [prepared]);
+    synthesize(schedulerAtThreshold, ownedUnit(prepared.segmentId, 11_250));
+    expect(schedulerAtThreshold.observe()).toMatchObject({
+      playbackState: "playing",
+      playableDurationMs: 11_250,
+      effectiveListeningDurationMs: 15_000,
+    });
+  });
+
+  it("keeps the audible rate immutable and applies only the latest boundary selection", () => {
+    const scheduler = makeReadyScheduler(createManualClock(0));
+    const first = segment(1);
+    const second = segment(2);
+    prepare(scheduler, [first, second], true);
+    const firstUnit = ownedUnit(first.segmentId, 15_000);
+    synthesize(scheduler, firstUnit);
+    synthesize(scheduler, ownedUnit(second.segmentId, 15_000));
+
+    expect(scheduler.activateCurrentPlaybackRate()).toBe(100);
+    scheduler.selectPlaybackRatePercent(85);
+    scheduler.selectPlaybackRatePercent(75);
+    expect(scheduler.observe()).toMatchObject({
+      effectiveListeningDurationMs: 35_000,
+      playbackRateState: {
+        selectedRatePercent: 75,
+        activeRatePercent: 100,
+        pendingRatePercent: 75,
+      },
+    });
+
+    scheduler.consumeSampleFrames(firstUnit.metadata.sampleCountSamples);
+    expect(scheduler.activateCurrentPlaybackRate()).toBe(75);
+    expect(scheduler.observe().playbackRateState).toEqual({
+      selectedRatePercent: 75,
+      activeRatePercent: 75,
+      pendingRatePercent: null,
+    });
+  });
+
   it("retains only a bounded numeric transition pause with the matching audio unit", () => {
     const clock = createManualClock(0);
     const scheduler = makeReadyScheduler(clock);

@@ -40,6 +40,12 @@ function schedulerObservation(
     playbackState: "preparing",
     playableSampleFrames: sampleFramesFromPlayableMilliseconds(5_000),
     playableDurationMs: 5_000,
+    effectiveListeningDurationMs: 5_000,
+    playbackRateState: Object.freeze({
+      selectedRatePercent: 100,
+      activeRatePercent: null,
+      pendingRatePercent: null,
+    }),
     targetBufferMs: 15_000,
     lowBuffer: false,
     rangeComplete: false,
@@ -242,6 +248,7 @@ describe("adaptive preparation UI state", () => {
         playbackState: "buffering",
         playableSampleFrames: 0,
         playableDurationMs: 0,
+        effectiveListeningDurationMs: 0,
       }),
     });
 
@@ -269,6 +276,9 @@ describe("adaptive preparation UI state", () => {
       targetMs: 120_000,
       volumePercent: 65,
       playbackRate: 1,
+      selectedPlaybackRatePercent: 100,
+      activePlaybackRatePercent: null,
+      pendingPlaybackRatePercent: null,
     });
 
     const resources = {

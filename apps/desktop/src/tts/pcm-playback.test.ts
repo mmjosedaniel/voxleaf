@@ -4,7 +4,7 @@ import {
   VALID_SYNTHETIC_DOCUMENT_FIXTURE,
   type ManualClock,
 } from "@voxleaf/shared/testing";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { sampleFramesFromPlayableMilliseconds } from "./adaptive-buffer-authority";
 import {
@@ -44,8 +44,12 @@ interface FakeHandle extends PcmPlaybackHandle {
 
 class ManualPcmPlaybackBackend implements PcmPlaybackBackend {
   readonly startedSequences: number[] = [];
+  readonly startedRates: number[] = [];
+  readonly preparedRates: number[] = [];
   readonly observedVolumes: number[] = [];
   closeCount = 0;
+  releasePreparationCount = 0;
+  ratePrepared = false;
   active: FakeHandle | undefined;
   lastCallbacks: PcmPlaybackCallbacks | undefined;
 
@@ -74,7 +78,9 @@ class ManualPcmPlaybackBackend implements PcmPlaybackBackend {
       get playedSampleFrames() {
         return Math.min(
           durationFrames,
-          Math.floor((elapsedMs() * request.sampleRateHz) / 1_000),
+          Math.floor(
+            (elapsedMs() * request.sampleRateHz * request.playbackRate) / 1_000,
+          ),
         );
       },
       pause: () => {
@@ -110,10 +116,30 @@ class ManualPcmPlaybackBackend implements PcmPlaybackBackend {
       },
     };
     this.startedSequences.push(request.sequence);
+    this.startedRates.push(request.playbackRate);
     this.observedVolumes.push(volumePercent);
     this.lastCallbacks = callbacks;
     this.active = handle;
     return handle;
+  }
+
+  public preparePlaybackRate(
+    playbackRatePercent: 75 | 80 | 85 | 90 | 95 | 100,
+  ): Promise<void> {
+    this.preparedRates.push(playbackRatePercent);
+    this.ratePrepared = true;
+    return Promise.resolve();
+  }
+
+  public isPlaybackRatePrepared(
+    playbackRatePercent: 75 | 80 | 85 | 90 | 95 | 100,
+  ): boolean {
+    return playbackRatePercent === 100 || this.ratePrepared;
+  }
+
+  public releasePlaybackRatePreparation(): void {
+    this.ratePrepared = false;
+    this.releasePreparationCount += 1;
   }
 
   public pump(): void {
@@ -255,6 +281,38 @@ class FakeAudioContext {
   public close(): Promise<void> {
     this.closeCount += 1;
     return Promise.resolve();
+  }
+}
+
+class FakeWsolaPort {
+  onmessage: ((event: MessageEvent<unknown>) => void) | null = null;
+  readonly messages: unknown[] = [];
+  closeCount = 0;
+
+  public postMessage(message: unknown): void {
+    this.messages.push(message);
+  }
+
+  public close(): void {
+    this.closeCount += 1;
+  }
+
+  public emit(data: unknown): void {
+    this.onmessage?.({ data } as MessageEvent<unknown>);
+  }
+}
+
+class FakeWsolaNode {
+  readonly port = new FakeWsolaPort();
+  connectCount = 0;
+  disconnectCount = 0;
+
+  public connect(): void {
+    this.connectCount += 1;
+  }
+
+  public disconnect(): void {
+    this.disconnectCount += 1;
   }
 }
 
@@ -868,7 +926,7 @@ describe("adaptive PCM playback", () => {
     expect(() => player.waitForCleanup()).toThrowError(PcmPlaybackError);
   });
 
-  it("admits bounded volume and only the frozen 1.0x playback rate", () => {
+  it("admits bounded volume and only the frozen playback-rate set", () => {
     const clock = createManualClock(0);
     const scheduler = readyScheduler(clock, [segment(1)], true);
     synthesize(scheduler, segment(1), 16_000);
@@ -886,6 +944,61 @@ describe("adaptive PCM playback", () => {
       );
     }
     expect(() => player.setPlaybackRate(1.25)).toThrowError(PcmPlaybackError);
+  });
+
+  it("defers the latest speed selection to the next complete unit and reuses one stretcher", async () => {
+    const clock = createManualClock(0);
+    const segments = [segment(1), segment(2)];
+    const scheduler = readyScheduler(clock, segments, true);
+    const first = synthesize(scheduler, segments[0]!, 8_000);
+    const second = synthesize(scheduler, segments[1]!, 8_000);
+    const backend = new ManualPcmPlaybackBackend(clock);
+    const player = new AdaptivePcmPlayer(scheduler, backend);
+
+    expect(player.synchronize()).toMatchObject({
+      activeSequence: 0,
+      selectedPlaybackRatePercent: 100,
+      activePlaybackRatePercent: 100,
+      pendingPlaybackRatePercent: null,
+    });
+    player.setPlaybackRatePercent(85);
+    const selected = player.setPlaybackRatePercent(75);
+    expect(selected).toMatchObject({
+      activeSequence: 0,
+      selectedPlaybackRatePercent: 75,
+      activePlaybackRatePercent: 100,
+      pendingPlaybackRatePercent: 75,
+    });
+    expect(first.releaseCount).toBe(0);
+    expect(second.releaseCount).toBe(0);
+    expect(backend.startedRates).toEqual([1]);
+
+    await Promise.resolve();
+    clock.advanceBy(8_000);
+    backend.pump();
+    expect(player.synchronize()).toMatchObject({
+      activeSequence: 1,
+      selectedPlaybackRatePercent: 75,
+      activePlaybackRatePercent: 75,
+      pendingPlaybackRatePercent: null,
+    });
+    expect(backend.startedRates).toEqual([1, 0.75]);
+    expect(backend.preparedRates).toEqual([85]);
+    expect(first.releaseCount).toBe(1);
+    expect(second.releaseCount).toBe(0);
+
+    player.setPlaybackRatePercent(100);
+    clock.advanceBy(10_667);
+    backend.pump();
+    expect(player.synchronize()).toMatchObject({
+      state: "complete",
+      selectedPlaybackRatePercent: 100,
+      activePlaybackRatePercent: 75,
+      pendingPlaybackRatePercent: 100,
+      retainedAudioUnitCount: 0,
+    });
+    expect(second.releaseCount).toBe(1);
+    expect(backend.releasePreparationCount).toBe(1);
   });
 });
 
@@ -950,6 +1063,64 @@ describe("Web Audio PCM backend", () => {
 
     context.sources[0]!.end();
     expect(ended).toBe(1);
+    backend.close();
+    expect(context.closeCount).toBe(1);
+  });
+
+  it("reuses one admitted WSOLA node and releases it on the default-rate boundary", async () => {
+    const context = new FakeAudioContext();
+    const node = new FakeWsolaNode();
+    let created = 0;
+    const backend = new WebAudioPcmPlaybackBackend(
+      () => context as unknown as AudioContext,
+      async () => {
+        created += 1;
+        return {
+          node: node as unknown as AudioWorkletNode,
+          close: () => {
+            node.disconnect();
+            node.port.close();
+          },
+        };
+      },
+    );
+    await backend.preparePlaybackRate(75);
+    await backend.preparePlaybackRate(85);
+    expect(created).toBe(1);
+    expect(node.connectCount).toBe(1);
+    expect(backend.isPlaybackRatePrepared(75)).toBe(true);
+
+    const payload = new Uint8Array(16);
+    const callbacks = { ended: vi.fn(), failed: vi.fn() };
+    backend.start(
+      {
+        sequence: 4,
+        payload,
+        sampleRateHz: 24_000,
+        channelCount: 1,
+        sampleFormat: "float32-le",
+        sampleCountSamples: 4,
+        startSampleFrame: 0,
+        volumePercent: 80,
+        playbackRate: 0.75,
+      },
+      callbacks,
+    );
+    expect(node.port.messages).toMatchObject([
+      {
+        type: "arm",
+        ratePercent: 75,
+        unitSequence: 4,
+      },
+      { type: "start", unitSequence: 4 },
+    ]);
+    node.port.emit({ type: "ended", unitSequence: 4 });
+    expect(callbacks.ended).toHaveBeenCalledOnce();
+
+    backend.releasePlaybackRatePreparation();
+    expect(node.disconnectCount).toBe(1);
+    expect(node.port.closeCount).toBe(1);
+    expect(backend.isPlaybackRatePrepared(75)).toBe(false);
     backend.close();
     expect(context.closeCount).toBe(1);
   });

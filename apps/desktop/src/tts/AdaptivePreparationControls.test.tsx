@@ -37,6 +37,12 @@ function observation(
     playbackState: "preparing",
     playableSampleFrames: 120_000,
     playableDurationMs: 5_000,
+    effectiveListeningDurationMs: 5_000,
+    playbackRateState: Object.freeze({
+      selectedRatePercent: 100,
+      activeRatePercent: null,
+      pendingRatePercent: null,
+    }),
     targetBufferMs: 60_000,
     lowBuffer: false,
     rangeComplete: false,
@@ -148,7 +154,9 @@ describe("adaptive preparation controls", () => {
       "Preparing audio — 5 seconds of 1 minute ready. Calculating preparation time…",
     );
     expect(
-      screen.getByText("Playable audio loaded: 5 seconds. Starts at 1 minute."),
+      screen.getByText(
+        "Playable audio loaded: 5 seconds ready at 1.00×. Starts at 1 minute.",
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /Quick start/ })).toBeDisabled();
@@ -208,6 +216,7 @@ describe("adaptive preparation controls", () => {
             playbackState: "buffering",
             playableSampleFrames: 0,
             playableDurationMs: 0,
+            effectiveListeningDurationMs: 0,
           }),
           estimatedWaitMs: 21_000,
         })}

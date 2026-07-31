@@ -53,6 +53,14 @@ import {
   type NarrationStartPreferenceRepository,
 } from "../persistence/narration-start-preference";
 import {
+  createWebStorageNarrationPlaybackPreferenceRepository,
+  DEFAULT_NARRATION_PLAYBACK_RATE_PERCENT_V1,
+  type NarrationPlaybackPreferenceReadResult,
+  type NarrationPlaybackPreferenceRepository,
+} from "../persistence/narration-playback-preference";
+import type { NarrationPlaybackRatePercentV3 } from "./reader-settings-playback-authority-v3";
+import { minimumSourceSampleFramesForEffectiveListeningMillisecondsV3 } from "./reader-settings-playback-authority-v3";
+import {
   HARDWARE_PROFILE_AUTHORITY_V1,
   type RecoveryFailureCodeV1,
 } from "./hardware-profile-authority";
@@ -108,6 +116,10 @@ export interface ProductNarrationSnapshot {
   readonly startPreferenceStatus:
     "loading" | NarrationStartPreferenceReadResult["status"];
   readonly canPersistStartPreference: boolean;
+  readonly playbackRatePercent: NarrationPlaybackRatePercentV3;
+  readonly playbackPreferenceStatus:
+    "loading" | NarrationPlaybackPreferenceReadResult["status"];
+  readonly canPersistPlaybackPreference: boolean;
   readonly state: AdaptivePreparationUiState | undefined;
   readonly failure: ProductNarrationFailureCode | undefined;
   readonly preparationFailure: NarrationPreparationFailureDetail | undefined;
@@ -178,6 +190,7 @@ export interface ProductNarrationCoordinatorDependencies {
   readonly clock?: ProductNarrationClock;
   readonly profileCompatibility?: ProductNarrationProfileCompatibility;
   readonly startPreferenceRepository?: NarrationStartPreferenceRepository;
+  readonly playbackPreferenceRepository?: NarrationPlaybackPreferenceRepository;
   readonly createPlayer?: (
     scheduler: AdaptiveBufferScheduler,
   ) => AdaptivePcmPlayer;
@@ -334,6 +347,7 @@ export class ProductNarrationCoordinator {
   readonly #profileCompatibility:
     ProductNarrationProfileCompatibility | undefined;
   readonly #startPreferenceRepository: NarrationStartPreferenceRepository;
+  readonly #playbackPreferenceRepository: NarrationPlaybackPreferenceRepository;
   readonly #createPlayer: (
     scheduler: AdaptiveBufferScheduler,
   ) => AdaptivePcmPlayer;
@@ -363,6 +377,12 @@ export class ProductNarrationCoordinator {
     "loading";
   #canPersistStartPreference = true;
   #startPreferenceHydration: Promise<void> | undefined;
+  #playbackRatePercent: NarrationPlaybackRatePercentV3 =
+    DEFAULT_NARRATION_PLAYBACK_RATE_PERCENT_V1;
+  #playbackPreferenceStatus: ProductNarrationSnapshot["playbackPreferenceStatus"] =
+    "loading";
+  #canPersistPlaybackPreference = true;
+  #playbackPreferenceHydration: Promise<void> | undefined;
   #activeLocator: ReadingLocatorV1;
   #visibleLocator: ReadingLocatorV1;
   #latestHeardLocator: ReadingLocatorV1;
@@ -414,6 +434,9 @@ export class ProductNarrationCoordinator {
     this.#startPreferenceRepository =
       dependencies.startPreferenceRepository ??
       createWebStorageNarrationStartPreferenceRepository();
+    this.#playbackPreferenceRepository =
+      dependencies.playbackPreferenceRepository ??
+      createWebStorageNarrationPlaybackPreferenceRepository();
     this.#clock =
       dependencies.clock ??
       Object.freeze({
@@ -468,7 +491,10 @@ export class ProductNarrationCoordinator {
     if (this.#closed || this.#availability !== "checking") {
       return;
     }
-    await this.#hydrateStartPreference();
+    await Promise.all([
+      this.#hydrateStartPreference(),
+      this.#hydratePlaybackPreference(),
+    ]);
     if (this.#closed) {
       return;
     }
@@ -572,6 +598,60 @@ export class ProductNarrationCoordinator {
     return true;
   }
 
+  public async setPlaybackRatePercent(
+    playbackRatePercent: NarrationPlaybackRatePercentV3,
+  ): Promise<boolean> {
+    await this.#hydratePlaybackPreference();
+    if (this.#closed || !this.#canPersistPlaybackPreference) {
+      return false;
+    }
+    try {
+      this.#player?.setPlaybackRatePercent(playbackRatePercent);
+    } catch {
+      return false;
+    }
+    this.#playbackRatePercent = playbackRatePercent;
+    this.#publish();
+    const result =
+      await this.#playbackPreferenceRepository.write(playbackRatePercent);
+    if (this.#closed) {
+      return false;
+    }
+    if (result.status === "saved") {
+      this.#playbackPreferenceStatus = "ready";
+      this.#publish();
+      return true;
+    }
+    this.#playbackPreferenceStatus =
+      result.status === "invalid-selection" ? "malformed" : result.status;
+    this.#canPersistPlaybackPreference =
+      result.status !== "unsupported-version";
+    this.#publish();
+    return false;
+  }
+
+  public async resetPlaybackPreference(): Promise<boolean> {
+    await this.#hydratePlaybackPreference();
+    if (this.#closed || !this.#canPersistPlaybackPreference) {
+      return false;
+    }
+    const result = await this.#playbackPreferenceRepository.reset();
+    if (this.#closed || result.status !== "saved") {
+      return false;
+    }
+    try {
+      this.#player?.setPlaybackRatePercent(
+        DEFAULT_NARRATION_PLAYBACK_RATE_PERCENT_V1,
+      );
+    } catch {
+      return false;
+    }
+    this.#playbackRatePercent = DEFAULT_NARRATION_PLAYBACK_RATE_PERCENT_V1;
+    this.#playbackPreferenceStatus = "ready";
+    this.#publish();
+    return true;
+  }
+
   async #hydrateStartPreference(): Promise<void> {
     if (this.#startPreferenceStatus !== "loading") {
       return;
@@ -601,6 +681,38 @@ export class ProductNarrationCoordinator {
         this.#publish();
       });
     this.#startPreferenceHydration = hydration;
+    await hydration;
+  }
+
+  async #hydratePlaybackPreference(): Promise<void> {
+    if (this.#playbackPreferenceStatus !== "loading") {
+      return;
+    }
+    if (this.#playbackPreferenceHydration !== undefined) {
+      return this.#playbackPreferenceHydration;
+    }
+    const hydration = this.#playbackPreferenceRepository
+      .read()
+      .then((result) => {
+        if (this.#closed) {
+          return;
+        }
+        this.#playbackRatePercent = result.playbackRatePercent;
+        this.#playbackPreferenceStatus = result.status;
+        this.#canPersistPlaybackPreference =
+          result.status !== "unsupported-version";
+        this.#publish();
+      })
+      .catch(() => {
+        if (this.#closed) {
+          return;
+        }
+        this.#playbackRatePercent = DEFAULT_NARRATION_PLAYBACK_RATE_PERCENT_V1;
+        this.#playbackPreferenceStatus = "unavailable";
+        this.#canPersistPlaybackPreference = true;
+        this.#publish();
+      });
+    this.#playbackPreferenceHydration = hydration;
     await hydration;
   }
 
@@ -814,6 +926,7 @@ export class ProductNarrationCoordinator {
       this.#clock,
       identity,
       this.#selection,
+      this.#playbackRatePercent,
     );
     this.#player = this.#createPlayer(this.#scheduler);
     this.#playerAudibleUnsubscribe = this.#player.subscribeAudibleProgress(
@@ -1714,6 +1827,15 @@ export class ProductNarrationCoordinator {
         estimatedWaitMs = this.#estimator.estimate({
           playableSampleFrames: scheduler.playableSampleFrames,
           targetMs: scheduler.targetBufferMs,
+          targetSampleFrames:
+            scheduler.effectiveListeningDurationMs >= scheduler.targetBufferMs
+              ? scheduler.playableSampleFrames
+              : scheduler.playableSampleFrames +
+                minimumSourceSampleFramesForEffectiveListeningMillisecondsV3(
+                  scheduler.targetBufferMs -
+                    scheduler.effectiveListeningDurationMs,
+                  scheduler.playbackRateState.selectedRatePercent,
+                ),
           serviceState: scheduler.serviceState,
         })?.estimatedWaitMs;
       } catch {
@@ -1740,6 +1862,9 @@ export class ProductNarrationCoordinator {
       selection: this.#selection,
       startPreferenceStatus: this.#startPreferenceStatus,
       canPersistStartPreference: this.#canPersistStartPreference,
+      playbackRatePercent: this.#playbackRatePercent,
+      playbackPreferenceStatus: this.#playbackPreferenceStatus,
+      canPersistPlaybackPreference: this.#canPersistPlaybackPreference,
       state,
       failure: this.#failure,
       preparationFailure: this.#preparationFailure,

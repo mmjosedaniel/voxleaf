@@ -16,6 +16,7 @@ import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
 import { describe, expect, it, vi } from "vitest";
 
 import type { NarrationStartPreferenceRepository } from "../persistence/narration-start-preference";
+import type { NarrationPlaybackPreferenceRepository } from "../persistence/narration-playback-preference";
 
 import type { AdaptiveBufferScheduler } from "./adaptive-buffer-scheduler";
 import {
@@ -60,6 +61,8 @@ class FakePlaybackBackend implements PcmPlaybackBackend {
       }
     | undefined;
   public closed = false;
+  public ratePrepared = false;
+  public readonly preparedRates: number[] = [];
 
   public start(
     request: PcmPlaybackRequest,
@@ -80,6 +83,24 @@ class FakePlaybackBackend implements PcmPlaybackBackend {
     const active = this.active;
     this.active = undefined;
     active?.callbacks.ended();
+  }
+
+  public preparePlaybackRate(
+    playbackRatePercent: 75 | 80 | 85 | 90 | 95 | 100,
+  ): Promise<void> {
+    this.preparedRates.push(playbackRatePercent);
+    this.ratePrepared = true;
+    return Promise.resolve();
+  }
+
+  public isPlaybackRatePrepared(
+    playbackRatePercent: 75 | 80 | 85 | 90 | 95 | 100,
+  ): boolean {
+    return playbackRatePercent === 100 || this.ratePrepared;
+  }
+
+  public releasePlaybackRatePreparation(): void {
+    this.ratePrepared = false;
   }
 
   public close(): void {
@@ -389,6 +410,7 @@ function createHarness(
     readonly prepareNarration?: OpenedPublication["prepareNarration"];
     readonly profileCompatibility?: ProductNarrationProfileCompatibility;
     readonly startPreferenceRepository?: NarrationStartPreferenceRepository;
+    readonly playbackPreferenceRepository?: NarrationPlaybackPreferenceRepository;
   } = {},
 ) {
   const clock = new ManualClock();
@@ -434,6 +456,16 @@ function createHarness(
         read: vi.fn(async () => ({
           status: "missing" as const,
           selection: Object.freeze({ kind: "quick" as const }),
+        })),
+        write: vi.fn(async () => ({ status: "saved" as const })),
+        reset: vi.fn(async () => ({ status: "saved" as const })),
+      }),
+    playbackPreferenceRepository:
+      options.playbackPreferenceRepository ??
+      Object.freeze({
+        read: vi.fn(async () => ({
+          status: "missing" as const,
+          playbackRatePercent: 100 as const,
         })),
         write: vi.fn(async () => ({ status: "saved" as const })),
         reset: vi.fn(async () => ({ status: "saved" as const })),
@@ -1345,6 +1377,66 @@ describe("product narration coordinator", () => {
     ).resolves.toBe(false);
     expect(future.write).not.toHaveBeenCalled();
     await second.coordinator.close();
+  });
+
+  it("persists speed immediately while preserving TTS identity and queued source PCM until the boundary", async () => {
+    const playbackPreference: NarrationPlaybackPreferenceRepository = {
+      read: vi.fn(async () => ({
+        status: "missing" as const,
+        playbackRatePercent: 100 as const,
+      })),
+      write: vi.fn(async () => ({ status: "saved" as const })),
+      reset: vi.fn(async () => ({ status: "saved" as const })),
+    };
+    const result = completeSegments([
+      preparedSegment("Synthetic first sentence.", sourceRange(0, 12)),
+      preparedSegment("Synthetic second sentence.", sourceRange(12, 24)),
+    ]);
+    const { backend, client, coordinator } = createHarness({
+      result,
+      playbackPreferenceRepository: playbackPreference,
+    });
+    await coordinator.checkAvailability();
+    coordinator.start();
+    await settleUntil(
+      () =>
+        client.synthesized.length === 2 &&
+        backend.active !== undefined &&
+        coordinator.observe().metrics.retainedAudioUnitCount === 2,
+    );
+    const initialIdentity = {
+      sessionId: client.synthesized[0]!.sessionId,
+      generationId: client.synthesized[0]!.generationId,
+    };
+    const retainedBefore = coordinator.observe().metrics.retainedAudioUnitCount;
+
+    await expect(coordinator.setPlaybackRatePercent(75)).resolves.toBe(true);
+    expect(coordinator.observe()).toMatchObject({
+      playbackRatePercent: 75,
+      state: {
+        selectedPlaybackRatePercent: 75,
+        activePlaybackRatePercent: 100,
+        pendingPlaybackRatePercent: 75,
+      },
+    });
+    expect(playbackPreference.write).toHaveBeenCalledWith(75);
+    expect(client.cancelled).toEqual([]);
+    expect(client.shutdownCount).toBe(0);
+    expect(client.synthesized).toHaveLength(2);
+    expect(coordinator.observe().metrics.retainedAudioUnitCount).toBe(
+      retainedBefore,
+    );
+    expect(client.synthesized[1]).toMatchObject(initialIdentity);
+    expect(backend.active?.request.playbackRate).toBe(1);
+
+    await Promise.resolve();
+    backend.finish();
+    expect(backend.active?.request.playbackRate).toBe(0.75);
+    expect(coordinator.observe().state).toMatchObject({
+      activePlaybackRatePercent: 75,
+      pendingPlaybackRatePercent: null,
+    });
+    await coordinator.close();
   });
 
   it("publishes only a fixed failure when narration preparation is rejected", async () => {
