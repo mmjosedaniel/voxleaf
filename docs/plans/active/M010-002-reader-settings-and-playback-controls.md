@@ -127,8 +127,13 @@ the maintainer accepted
 It authorizes a separate v3 comparison in which the current audible unit keeps
 its rate, the newest pending selection applies to the next unit, TTS and queued
 PCM continue unchanged, first non-default activation is bounded to 1,000 ms
-p95, and additional process RAM is bounded to 200 MiB. Milestone 2C is next;
-production remains `1.00x`.
+p95, and additional process RAM is bounded to 200 MiB. Milestone 2C is complete:
+the immutable
+[`v3 authority`](../../architecture/reader-settings-playback-authority-v3.md),
+matching executable constants/tests, and
+[`ADR-0039`](../../architecture/decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md)
+were committed at `5991165` before candidate implementation or results.
+Milestone 2D is next; production remains `1.00x`.
 
 ## Scope and non-goals
 
@@ -766,11 +771,31 @@ Complete.
 Expected result: a new result-blind v3 authority is committed before candidate
 implementation or new measurement, while production remains `1.00x`.
 
-Actual result: Not run.
+Actual result: Complete. Commit `5991165` adds the separate immutable
+architecture and executable v3 authority plus 11 result-blind deterministic
+tests before candidate implementation or results. It freezes the six existing
+rates; latest-pending/immutable-active state; activation only before the first
+unit or between a completed unit and its queued successor; lifecycle-neutral
+speed selection; exactly media and a new repository-owned incremental WSOLA;
+Signalsmith exclusion; 1,000 ms p95 first activation; 250 ms p95 recurring
+handoff; 200 MiB additional process RAM under one Piper process; source-frame
+accounting; effective-duration arithmetic; one-stretcher/no-duplicate-FIFO
+ownership; zero settled `1.00x` time-stretch ownership; pause/resume,
+invalidation, privacy, listening, cleanup, licence/CSP/distribution, and strict
+result lineage.
+
+Normal local PowerShell outside the managed sandbox passed
+`pnpm.cmd --filter @voxleaf/desktop test` (47 Vitest files/479 tests plus 11
+native helper tests), `pnpm.cmd --filter @voxleaf/desktop typecheck`, and
+`pnpm.cmd check:portable`. The portable gate passed formatting, ESLint, Ruff,
+mypy, TypeScript/Python checks, shared (20 files/209 tests), EPUB (34/580),
+desktop (47/479 plus 11 helpers), TTS (347), and portable builds.
+`git diff --check` passed. Only the existing content-free pytest cache-write,
+CSS Custom Highlight minifier, and bundle-size warnings remained.
 
 #### Status
 
-Not started; next.
+Complete.
 
 ### Milestone 2D: Execute the boundary-deferred v3 comparison
 
@@ -813,7 +838,7 @@ Actual result: Not run.
 
 #### Status
 
-Not started; blocked on Milestone 2C.
+Not started; next.
 
 ### Milestone 3: Implement bounded settings preferences and English fallback
 
@@ -1291,6 +1316,17 @@ Do not rewrite accepted historical authority to make a result pass.
   documentation has zero private-path, private-key, GitHub-token, or API-key
   pattern findings. No runtime code, dependency, CSP, persisted preference, or
   playback behavior changed.
+- **2026-07-30:** Completed Milestone 2C. Commit `5991165` freezes
+  [`reader-settings-playback-authority-v3.md`](../../architecture/reader-settings-playback-authority-v3.md),
+  matching executable constants and 11 result-blind tests, and
+  [`ADR-0039`](../../architecture/decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md)
+  before candidate implementation or results. V3 retains the six rates,
+  permits 1,000 ms p95 only for first non-default activation, fixes recurring
+  successor handoff at 250 ms p95, permits 200 MiB additional process RAM under
+  one Piper process, compares exactly media and a new repository WSOLA, and
+  excludes undiagnosed Signalsmith. The complete desktop, typecheck, portable,
+  and whitespace gates passed in normal local PowerShell. Production remains
+  `1.00x`; Milestone 2D is next.
 
 ## Discoveries and decisions
 
@@ -1397,6 +1433,11 @@ Do not rewrite accepted historical authority to make a result pass.
   activation. It is not permission to insert a one-second pause between every
   generated unit. The admitted backend must be initialized while the current
   unit plays and reused for successors.
+- V3 fixes ordinary recurring complete-unit handoff at 250 ms p95. The prior
+  821.6 ms WSOLA observation was backend first-start latency and therefore fits
+  inside the separate 1,000 ms first-activation gate; it is not evidence that a
+  reused stretcher needs 821.6 ms between every pair of units. Milestone 2D must
+  measure the recurring path independently.
 - The accepted memory limit is 200 MiB of additional process RAM under one
   active local-inference process. Source PCM remains under the existing FIFO
   ceiling, and no second pre-stretched audio queue is permitted.
@@ -1405,7 +1446,7 @@ Do not rewrite accepted historical authority to make a result pass.
 
 ## Final validation results
 
-M010.2 Milestones 1-2B are complete. Milestone 1 validation added 21
+M010.2 Milestones 1-2C are complete. Milestone 1 validation added 21
 result-blind authority tests and passed the complete portable gate. Milestone
 2 produced the closed Chromium and packaged WebView2 evidence recorded above,
 selected no backend, removed all experimental adapters, and added no
@@ -1415,13 +1456,17 @@ results, retaining immutable v1 evidence and current `1.00x` runtime.
 Milestone 2B then completed the separate comparison, selected none under
 ADR-0037, removed every candidate artifact, and passed deterministic,
 Chromium, packaged WebView2, portable, full repository, privacy, and cleanup
-validation.
+validation. Milestone 2C then committed immutable v3 architecture/executable
+authority and 11 result-blind tests at `5991165` before candidate
+implementation or results. Normal host PowerShell passed all specified
+desktop, typecheck, portable, and whitespace gates.
 
 The full plan remains active. ADR-0035 supplies the reduced-range product
 decision, ADR-0036 freezes its v2 authority, and ADR-0037 records the
 no-selection result. ADR-0038 authorizes a separate boundary-deferred v3 with
-new first-activation and RAM limits but does not admit a backend. Milestone 2C
-must freeze v3 before Milestone 2D implements or measures candidates.
+new first-activation and RAM limits but does not admit a backend. ADR-0039 and
+commit `5991165` freeze v3 before Milestone 2D implements or measures
+candidates.
 Milestones 3-4 have not run and remain independent of the backend result;
 Milestone 5 is conditional on the future v3 result. No M010.2 Settings,
 preference migration, English runtime fallback, time-stretch backend,

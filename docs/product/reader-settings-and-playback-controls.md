@@ -24,13 +24,23 @@ before its first Chromium trial. [ADR-0037](../architecture/decisions/ADR-0037-r
 retains `1.00x` and removes every experimental dependency, adapter, runner, and
 prospective CSP change.
 
+ADR-0038 subsequently authorized a separate boundary-deferred v3 without
+rewriting either result. Milestone 2C froze the immutable
+[v3 authority](../architecture/reader-settings-playback-authority-v3.md) and
+[ADR-0039](../architecture/decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md)
+before candidate implementation or measurement. It fixes exactly media and a
+new repository WSOLA candidate, a 1,000 ms p95 first activation, a smaller
+250 ms p95 recurring handoff, 200 MiB additional process RAM, lifecycle-neutral
+speed selection, and zero material time-stretch ownership after settled
+`1.00x`.
+
 The behavior in this document is not implemented until
 [`M010-002-reader-settings-and-playback-controls.md`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
 records passing implementation and validation. Current runtime behavior
 remains the completed M010.1 interface, Spanish fallback for missing or invalid
 language preference, and `1.0x` playback. Reader/Settings work can proceed
-independently. Non-default speed and a speed selector are outside the remaining
-M010.2 implementation; a future attempt requires new result-blind authority.
+independently. Non-default speed and a speed selector remain conditional on
+Milestone 2D selecting one candidate under the frozen v3 authority.
 
 This document replaces the ignored pre-M011 design discussion as the durable
 product scope. It does not change the completed M005 narration-preparation
@@ -259,10 +269,10 @@ object URL, transformed copy, and work queue after the preceding slowed unit
 settles. VoxLeaf retains only the existing source-PCM FIFO; it must not retain
 a second pre-stretched audio queue.
 
-These values are prospective v3 requirements, not a retroactive reinterpretation
-of the 128 MiB and 250 ms v2 gates. Milestone 2C must freeze the exact
-candidates, recurring-unit handoff gate, listening rules, and executable
-authority before Milestone 2D implements or measures candidates.
+These values are not a retroactive reinterpretation of the 128 MiB and 250 ms
+v2 gates. Milestone 2C froze the exact candidates, 250 ms p95 recurring-unit
+handoff gate, listening rules, and executable authority before Milestone 2D
+implements or measures candidates.
 
 ### Progress and timing
 

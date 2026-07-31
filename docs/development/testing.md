@@ -779,7 +779,7 @@ and merged the M010.1 closeout.
 
 ## M010.2 reader/settings/playback validation
 
-M010.2 Milestones 1-2B are complete but production behavior is not implemented.
+M010.2 Milestones 1-2C are complete but production behavior is not implemented.
 `reader-settings-playback-authority.test.ts` exhaustively freezes the exact
 shell and responsive values, Settings ordering and lifecycle neutrality,
 language/profile presentation, preference envelopes, every rate and invalid
@@ -803,6 +803,17 @@ repository WSOLA identities; checks the fee-free licence manifest and
 pre-install audit stop; proves the current CSP is unchanged and the only
 prospective delta is `media-src 'self' blob:`; and retains the v1 arithmetic,
 resource, lifecycle, privacy, host, and result-lineage gates.
+
+`reader-settings-playback-authority-v3.test.ts` separately freezes the six
+rates, selected/pending/active state, latest-pending behavior, next-complete-unit
+activation, exact media and repository-WSOLA candidates, 1,000 ms p95 first
+activation, 250 ms p95 recurring handoff, 200 MiB process-RAM ceiling,
+lifecycle-neutral speed selection, zero settled `1.00x` stretcher ownership,
+fee-free licence/CSP policy, and strict authority/result lineage. It rejects
+mid-unit activation, recurring use of the first-activation allowance, queue
+invalidation on speed selection, retained `1.00x` resources, and post-freeze
+gate mutation. Authority commit `5991165` precedes all candidate work and
+results; runtime remains `1.00x`.
 
 Milestone 2B passed the media and incremental-WSOLA candidates in Chromium and
 packaged WebView2, while Signalsmith failed before its first Chromium trial.
