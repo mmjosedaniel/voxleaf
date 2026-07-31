@@ -1376,6 +1376,19 @@ Do not rewrite accepted historical authority to make a result pass.
   packaged/contention/listening runners, and temporary audio are removed.
   Production remains `1.00x`; Milestone 5 owns the six-rate product
   integration after Milestones 3-4.
+- **2026-07-31:** Closed Milestone 2D validation in normal local PowerShell.
+  The focused desktop suite passes 48 files/481 tests plus 11 native helper
+  tests; all six browser cases and the packaged WebView2 native-startup smoke
+  pass. `pnpm.cmd check:portable` passes formatting, linting, generated-contract
+  verification, TypeScript/Python types, 20 shared files/209 tests, 34 EPUB
+  files/580 tests, 48 desktop files/481 tests plus 11 helpers, 347 Python
+  tests, and all portable builds. Full `pnpm.cmd check` additionally passes
+  Rust formatting/clippy, 41 Rust tests, the release Tauri build, and Python
+  package builds. All 655 relative links across 109 documents resolve; the
+  18-path branch diff has zero private-pattern findings and zero prohibited
+  book/audio/model/secret/log artifact paths; and `git diff --check` passes.
+  Only the existing content-free pytest cache-write, CSS Highlight, and Vite
+  chunk-size advisories remain.
 
 ## Discoveries and decisions
 
@@ -1520,6 +1533,13 @@ validation. Milestone 2C then committed immutable v3 architecture/executable
 authority and 11 result-blind tests at `5991165` before candidate
 implementation or results. Normal host PowerShell passed all specified
 desktop, typecheck, portable, and whitespace gates.
+
+Milestone 2D validation also passes in normal host PowerShell: 48 desktop
+files/481 tests plus 11 native helpers, all six browser cases, the packaged
+WebView2 native-startup smoke, 347 Python tests, 41 Rust tests, portable and
+release builds, and the complete `pnpm.cmd check` gate. All 655 relative links
+across 109 documentation files resolve. The 18 changed paths contain no
+private-pattern or prohibited artifact finding, and `git diff --check` passes.
 
 The full plan remains active. ADR-0035 supplies the reduced-range product
 decision, ADR-0036 freezes its v2 authority, and ADR-0037 records the
