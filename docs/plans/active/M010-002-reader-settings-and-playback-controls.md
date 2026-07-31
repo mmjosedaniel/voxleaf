@@ -1239,10 +1239,10 @@ Do not rewrite accepted historical authority to make a result pass.
   session, while the same command in normal local PowerShell did. That
   sandbox observation is infrastructure evidence only; the successful
   outside-sandbox rerun owns both packaged candidate results.
-- Host-dependent acceptance now requires normal local PowerShell outside the
-  managed sandbox. Sandbox browser/WebDriver startup, resource, or teardown
-  failures are exploratory and inconclusive until the unchanged command is
-  repeated outside. Deterministic model-free checks may remain sandboxed.
+- Every final acceptance command now requires normal local PowerShell outside
+  the managed sandbox. Sandbox output is exploratory and inconclusive until
+  the unchanged command is repeated outside; it cannot pass or fail a task or
+  reject a candidate.
 - The outside-sandbox Signalsmith-only rerun reproduced its pre-trial
   initialization failure. Signalsmith was therefore not rejected because of
   WebView2 or sandbox session creation, although its adapter cause still needs

@@ -343,12 +343,13 @@ with six passes in 12.5 seconds. When every case has reported but the command
 does not exit, inspect for repository-owned leftovers and repeat the unchanged
 command outside the sandbox before classifying it as a test failure.
 
-Project testing policy therefore requires normal local PowerShell for every
-Playwright/Chromium, packaged WebView2, GPU/model, firewall, and exact-host
-resource acceptance run. Sandbox execution is permitted only as exploratory
-evidence for those commands. Unit, type, lint, format, schema, and other
-model-free deterministic checks may remain inside the sandbox when they do not
-touch a blocked host facility.
+Project testing policy therefore requires normal local PowerShell outside the
+managed sandbox for every final acceptance command, including unit,
+integration, format, lint, type, schema, build, Python, Rust,
+Playwright/Chromium, packaged WebView2, GPU/model, firewall, performance, and
+exact-host validation. Sandbox execution is exploratory only. Repeat the
+unchanged command outside before reporting pass, failure, or candidate
+rejection.
 
 ### Memory, temperature, or cleanup looks abnormal
 

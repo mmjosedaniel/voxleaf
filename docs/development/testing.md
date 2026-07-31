@@ -7,6 +7,11 @@
 - Use synthetic or public-domain text.
 - Never require proprietary EPUBs or committed model weights.
 - Separate correctness tests from hardware-dependent performance benchmarks.
+- Run every acceptance command from normal local PowerShell outside the
+  managed automation sandbox. Sandbox results are exploratory only and must be
+  repeated unchanged outside before reporting pass or failure. This applies to
+  unit, integration, format, lint, type, schema, build, Python, Rust, browser,
+  WebView2, model, firewall, performance, and exact-host validation.
 
 ## Deterministic foundation checks
 
@@ -809,12 +814,10 @@ were removed. The observed managed-sandbox WebDriver session-creation failure
 is infrastructure-only because the same packaged command and candidates
 completed from normal local PowerShell.
 
-Host-dependent browser evidence must now come from normal local PowerShell,
-outside the managed automation sandbox. This includes Playwright/Chromium,
-packaged WebView2, GPU/model, firewall, and exact-host resource runs. A
-sandbox-only session-creation failure, resource denial, or teardown timeout is
-inconclusive and must be repeated unchanged outside before it can reject a
-candidate. Deterministic model-free tests may remain sandboxed.
+All final acceptance evidence must now come from normal local PowerShell,
+outside the managed automation sandbox. Sandbox-only output is exploratory and
+must be repeated unchanged outside before it can pass or fail a task or reject
+a candidate.
 
 The historical Signalsmith-only Chromium runner was repeated outside the
 sandbox from implementation commit `f2e5fed`. It again failed before its first

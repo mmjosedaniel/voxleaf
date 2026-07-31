@@ -65,15 +65,15 @@ Behavior changes require relevant tests. As implementation is introduced, use th
 
 Never invent commands. Use only commands defined by repository configuration. Before declaring work complete, run every relevant available check and report the exact commands and outcomes.
 
-Run packaged WebView2, Playwright/Chromium, GPU/model, firewall, and other
-exact-host or GUI-dependent validation from a normal local PowerShell session
-outside the managed automation sandbox. A sandbox run may be exploratory, but
-a browser/WebDriver startup failure, inaccessible host resource, denied cache,
-or post-test teardown timeout is inconclusive until the unchanged command is
-repeated outside the sandbox. Only the outside-sandbox run may approve or
-reject host-dependent behavior. Deterministic unit, type, lint, formatting,
-schema, and model-free tests may run inside the sandbox when they do not
-require blocked host facilities.
+Run every test and validation command from a normal local PowerShell session
+outside the managed automation sandbox. This includes unit, integration,
+format, lint, type, schema, build, Python, Rust, Playwright/Chromium, packaged
+WebView2, GPU/model, firewall, performance, and exact-host commands. A sandbox
+run may be exploratory, but it is never final acceptance evidence. Repeat the
+unchanged command outside the sandbox before reporting pass, failure, or
+candidate rejection. This rule exists because the sandbox can deny required
+files, caches, processes, network/package access, drivers, hardware, output,
+or teardown even when the same command works locally.
 
 ## Definition of done
 
