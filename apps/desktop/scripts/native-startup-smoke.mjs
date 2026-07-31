@@ -63,6 +63,7 @@ const CHATTERBOX_BILINGUAL_PROFILE_ID =
   "chatterbox-multilingual-v3-cuda-bf16-default-v4";
 const PITCH_PRESERVING_V2_CANDIDATE_IDS = Object.freeze([
   "html-media-element-preserves-pitch-wav-v2",
+  "repository-incremental-audio-worklet-wsola-v2",
 ]);
 const EXACT_HOST_TTS_PROFILE_LANGUAGES = new Map([
   [EXACT_QWEN_SERENA_PROFILE_ID, Object.freeze(["es"])],

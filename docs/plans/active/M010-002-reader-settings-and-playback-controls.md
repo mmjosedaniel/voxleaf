@@ -659,7 +659,17 @@ upstream MIT notices and a final M011 distribution review. Synthetic
 Chromium/WebView2 adapters, bounded runners, and the materially new
 incremental WSOLA source are implemented for a strict-descendant checkpoint;
 no measurement in the working tree is authoritative until that checkpoint is
-committed and the frozen matrix is repeated.
+committed and the frozen matrix is repeated. Checkpoint `f2e5fed` is that
+strict descendant. The official Chromium arm then passed the media and
+incremental-WSOLA candidates and rejected Signalsmith before its first trial.
+Media measured 0.348 cents maximum pitch deviation, 0.042 ms maximum duration
+error, zero source-frame drift, 5.7 ms start p95, 1,536,044 bytes maximum work,
+116.949 MiB additional RAM, and no measured CPU increase. Incremental WSOLA
+measured the same maximum pitch deviation, zero duration error/frame drift,
+99.9 ms start p95, 803,840 bytes maximum work, 12.449 MiB additional RAM, and
+2.750 CPU percentage points. Both retained bounded cleanup with zero external
+requests and zero persisted audio bytes. Only these two Chromium passers
+advance to packaged WebView2.
 
 #### Status
 
@@ -1037,6 +1047,19 @@ Do not rewrite accepted historical authority to make a result pass.
   adapter were implemented for the strict-descendant implementation
   checkpoint. Pre-checkpoint exploratory output is explicitly
   non-authoritative.
+- **2026-07-30:** Committed the result-blind implementation checkpoint as
+  `f2e5fed`, a strict descendant of authority commit `abf99d6`, then ran the
+  official frozen Chromium arm. The exact media candidate passed every
+  signal, lifecycle, privacy, and resource gate: 0.348 cents maximum pitch
+  deviation, 0.042 ms maximum duration error, zero source-frame drift, 5.7 ms
+  start p95, 1,536,044 bytes maximum work, 116.949 MiB additional RAM, and no
+  measured CPU increase. Incremental WSOLA also passed: 0.348 cents maximum
+  pitch deviation, zero duration error/frame drift, 99.9 ms start p95,
+  803,840 bytes maximum work, 12.449 MiB additional RAM, and 2.750 CPU
+  percentage points. Signalsmith failed closed before its first trial and did
+  not advance. The arm made zero external requests and persisted zero audio
+  bytes. The packaged runner was narrowed to the two machine-passing Chromium
+  candidates without changing any frozen gate.
 
 ## Discoveries and decisions
 
