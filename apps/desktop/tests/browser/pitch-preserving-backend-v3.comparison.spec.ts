@@ -10,10 +10,9 @@ import {
   type Page,
 } from "@playwright/test";
 
-import {
-  applyPitchProbeResourceMetricsV3,
-  type PitchPreservingProbeCandidateIdV3,
-  type PitchProbeCandidateResultV3,
+import type {
+  PitchPreservingProbeCandidateIdV3,
+  PitchProbeCandidateResultV3,
 } from "../../src/tts/pitch-preserving-backend-probe-v3";
 import { READER_SETTINGS_PLAYBACK_AUTHORITY_V3 } from "../../src/tts/reader-settings-playback-authority-v3";
 
@@ -244,7 +243,7 @@ async function measureCandidate(
     ((afterCpu.cpuTimeSeconds - beforeCpu.cpuTimeSeconds) / elapsedSeconds) *
       100,
   );
-  return applyPitchProbeResourceMetricsV3(candidate, {
+  const resourceMetrics = Object.freeze({
     additionalProcessRamMiB:
       Math.max(0, peakWorkingSetBytes - baselineWorkingSetBytes) / MEBIBYTE,
     cpuIncreasePercentagePoints: Math.max(
@@ -252,6 +251,21 @@ async function measureCandidate(
       activeCpuPercentage - baselineCpuPercentage,
     ),
     maximumActiveTimeStretchers: 1,
+  });
+  const gates = READER_SETTINGS_PLAYBACK_AUTHORITY_V3.evaluation.machineGates;
+  const passes =
+    candidate.signalAndLifecycleGate === "pass" &&
+    resourceMetrics.additionalProcessRamMiB <=
+      gates.maximumAdditionalProcessRamMiB &&
+    resourceMetrics.cpuIncreasePercentagePoints <=
+      gates.maximumCpuIncreasePercentagePoints;
+  return Object.freeze({
+    ...candidate,
+    resourceMetrics,
+    machineGate: passes ? "pass" : "fail",
+    failureCode: passes
+      ? null
+      : (candidate.failureCode ?? "machine-gate-failed"),
   });
 }
 
