@@ -774,7 +774,7 @@ and merged the M010.1 closeout.
 
 ## M010.2 reader/settings/playback validation
 
-M010.2 Milestones 1-2 are complete but production behavior is not implemented.
+M010.2 Milestones 1-2A are complete but production behavior is not implemented.
 `reader-settings-playback-authority.test.ts` exhaustively freezes the exact
 shell and responsive values, Settings ordering and lifecycle neutrality,
 language/profile presentation, preference envelopes, every rate and invalid
@@ -791,12 +791,15 @@ control shifted pitch. No candidate reached listening; all experimental
 adapters were removed and current test/runtime playback remains `1.00x`.
 
 ADR-0035 authorizes a distinct reduced-range v2 comparison without changing
-those results. Milestone 2A must freeze exactly `1.00x`, `0.95x`, `0.90x`,
-`0.85x`, `0.80x`, and `0.75x`; the media-element, exact audited Signalsmith
-Stretch, and optimized repository WSOLA candidates; the fee-free permissive
-licence gate; and the narrowly bounded media CSP before implementation or
-measurement. Milestone 2B then runs deterministic, Chromium, packaged WebView2,
-concurrent-resource, lifecycle, privacy, and gated listening checks.
+those results. `reader-settings-playback-authority-v2.test.ts` now freezes
+exactly `1.00x`, `0.95x`, `0.90x`, `0.85x`, `0.80x`, and `0.75x`; rejects all
+other values; pins the media-element, Signalsmith 1.3.2, and new optimized
+repository WSOLA identities; checks the fee-free licence manifest and
+pre-install audit stop; proves the current CSP is unchanged and the only
+prospective delta is `media-src 'self' blob:`; and retains the v1 arithmetic,
+resource, lifecycle, privacy, host, and result-lineage gates. Milestone 2B next
+runs deterministic, Chromium, packaged WebView2, concurrent-resource,
+lifecycle, privacy, and gated listening checks.
 
 Later milestones must extend existing desktop, browser, and native-startup
 coverage rather than create an unrelated harness. Their model-free tests will

@@ -66,7 +66,7 @@ bounded synchronization/cancellation, zero-audio-persistence, and privacy
 closeout pass. Pull request #159 passed the required Ubuntu and Windows checks
 and merged the M010.1 closeout.
 
-M010.2 Milestones 1-2 are complete. The accepted
+M010.2 Milestones 1-2A are complete. The accepted
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
 requirements and
 [`active ExecPlan`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
@@ -83,8 +83,13 @@ app remains Spanish-fallback and `1.0x`.
 [ADR-0035](decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md)
 authorizes a separate result-blind v2 for six exact rates ending at `0.75x`,
 fee-free permissive candidates, and a narrowly bounded media CSP review without
-changing v1 evidence. Milestone 2A is next; no new dependency, CSP, preference,
-or playback behavior is implemented yet.
+changing v1 evidence.
+[ADR-0036](decisions/ADR-0036-freeze-reduced-range-fee-free-playback-authority-v2.md)
+and the separate
+[v2 authority](reader-settings-playback-authority-v2.md) now freeze exact
+candidate identities, licence/CSP policy, unchanged v1 gates, and strict result
+lineage. Milestone 2B is next; no new dependency, CSP, preference, or playback
+behavior is implemented yet.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps

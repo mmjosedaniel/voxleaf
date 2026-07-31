@@ -18,12 +18,12 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 ## Current plans
 
 - [`M010-002-reader-settings-and-playback-controls.md`](M010-002-reader-settings-and-playback-controls.md):
-  active pre-M011 follow-up. Milestones 1-2 froze and ran the backend
+  active pre-M011 follow-up. Milestones 1-2A froze and ran the v1 backend
   comparison, selected no passing backend, and retain `1.00x`. ADR-0035
-  authorizes a separate six-value, fee-free v2 comparison; Milestone 2A is
-  next. Reader-first shell, accessible Settings, English fallback, profile
-  presentation, and bounded narration preferences remain planned.
+  authorizes and ADR-0036 freezes a separate six-value, fee-free v2
+  comparison; Milestone 2B is next. Reader-first shell, accessible Settings,
+  English fallback, profile presentation, and bounded narration preferences
+  remain planned.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
-  synchronization work; it does not supersede completed Milestones 4 through
-  9.
+  synchronization work; it does not supersede completed Milestones 4 through 9.
