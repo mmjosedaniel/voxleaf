@@ -596,11 +596,11 @@ async function exerciseMediaBoundaryLifecycle(): Promise<BoundaryDeferredLifecyc
       const handoffStartedAt = nowMs();
       await arm();
       const playing = waitForMediaEvent(audio, "playing");
-      const ended = waitForMediaEvent(audio, "ended");
+      const ended = unit === 0 ? waitForMediaEvent(audio, "ended") : undefined;
       await audio.play();
       await playing;
       recurringUnitHandoffMs.push(nowMs() - handoffStartedAt);
-      if (unit === 0) {
+      if (ended !== undefined) {
         await ended;
       } else {
         await wait(250);
@@ -686,16 +686,19 @@ async function exerciseRepositoryWsolaBoundaryLifecycle(): Promise<BoundaryDefer
   };
   const start = async (
     unitSequence: number,
+    waitForCompletion: boolean,
   ): Promise<{
     readonly startedAt: number;
-    readonly ended: Promise<WorkletResponse>;
+    readonly ended: Promise<WorkletResponse> | undefined;
   }> => {
     const started = waitForWorkletMessage(
       controller.node,
       "started",
       unitSequence,
     );
-    const ended = waitForWorkletMessage(controller.node, "ended", unitSequence);
+    const ended = waitForCompletion
+      ? waitForWorkletMessage(controller.node, "ended", unitSequence)
+      : undefined;
     controller.node.port.postMessage({ type: "start" });
     await started;
     return Object.freeze({ startedAt: nowMs(), ended });
@@ -706,7 +709,10 @@ async function exerciseRepositoryWsolaBoundaryLifecycle(): Promise<BoundaryDefer
     await arm(0);
     const firstActivationMs = nowMs() - firstActivationStartedAt;
     const successorActiveRatePercent = activatedSuccessorRatePercent();
-    const firstUnit = await start(0);
+    const firstUnit = await start(0, true);
+    if (firstUnit.ended === undefined) {
+      throw new PitchPreservingBackendProbeErrorV3();
+    }
     const firstEnded = await firstUnit.ended;
     const firstDrift = (firstEnded.sourceFrames ?? 0) - BOUNDARY_UNIT_FRAMES;
 
@@ -714,9 +720,9 @@ async function exerciseRepositoryWsolaBoundaryLifecycle(): Promise<BoundaryDefer
     for (let unitSequence = 1; unitSequence <= 2; unitSequence += 1) {
       const handoffStartedAt = nowMs();
       await arm(unitSequence);
-      const active = await start(unitSequence);
+      const active = await start(unitSequence, unitSequence === 1);
       recurringUnitHandoffMs.push(active.startedAt - handoffStartedAt);
-      if (unitSequence === 1) {
+      if (active.ended !== undefined) {
         await active.ended;
       } else {
         await wait(250);
