@@ -779,7 +779,7 @@ and merged the M010.1 closeout.
 
 ## M010.2 reader/settings/playback validation
 
-M010.2 Milestones 1-2C are complete but production behavior is not implemented.
+M010.2 Milestones 1-2D are complete but production behavior is not implemented.
 `reader-settings-playback-authority.test.ts` exhaustively freezes the exact
 shell and responsive values, Settings ordering and lifecycle neutrality,
 language/profile presentation, preference envelopes, every rate and invalid
@@ -812,8 +812,8 @@ lifecycle-neutral speed selection, zero settled `1.00x` stretcher ownership,
 fee-free licence/CSP policy, and strict authority/result lineage. It rejects
 mid-unit activation, recurring use of the first-activation allowance, queue
 invalidation on speed selection, retained `1.00x` resources, and post-freeze
-gate mutation. Authority commit `5991165` precedes all candidate work and
-results; runtime remains `1.00x`.
+gate mutation. Merged authority commit `4132229` precedes all candidate work
+and results; runtime remains `1.00x`.
 
 Milestone 2B passed the media and incremental-WSOLA candidates in Chromium and
 packaged WebView2, while Signalsmith failed before its first Chromium trial.
@@ -839,6 +839,18 @@ temporary diagnostic run surfaced only the runner's content-safe
 remains unresolved. This is not the WebView2 sandbox failure and should be
 diagnosed before any future Signalsmith evaluation.
 
+Milestone 2D ran the separate v3 comparison entirely in normal local
+PowerShell. Both media and repository WSOLA passed Chromium, packaged WebView2,
+one-Piper contention, lifecycle, cleanup, privacy, and Spanish/English
+listening. The selected WSOLA path measured `605.4 ms` p95 first activation,
+`10.1 ms` p95 recurring handoff, `24.715 MiB` additional process RAM, and
+`3.077` CPU percentage points under contention. Listening minima were `5/4/5`
+with no omitted or repeated word. ADR-0040 selects it; the final tree removes
+the media path, test CSP, probes, runners, evaluator, and temporary WAVs while
+retaining only the selected controller/worklet and content-safe result. The
+new result regression test verifies one selected complete passer, zero
+external/audio persistence, and no dependency/CSP expansion.
+
 Later milestones must extend existing desktop, browser, and native-startup
 coverage rather than create an unrelated harness. Their model-free tests will
 cover:
@@ -849,11 +861,13 @@ cover:
 - lifecycle neutrality when Settings merely opens or closes;
 - English fallback and valid Spanish/English preference preservation;
 - language-, support-, development-, hardware-, and runtime-gated profiles;
-- bounded startup preferences and fixed-`1.00x` presentation;
-- unchanged fixed-speed source-frame progress and lead behavior;
+- bounded startup preferences before Milestone 5 adds the selected speed
+  preference;
+- the future six-value WSOLA connection, boundary-deferred activation,
+  effective-listening lead, and source-frame progress;
 - unchanged source-frame/byte/unit ceilings and transition-pause timers; and
 - pause, resume, seek, profile/language replacement, recovery, book
-  replacement, exit, and exact release ownership at `1.0x`.
+  replacement, exit, and exact release ownership at `1.00x`.
 
 Exact-host listening uses repository-authored synthetic text and content-free
 measurements only. Default CI remains model-free. No private EPUB, waveform,

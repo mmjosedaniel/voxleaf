@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "voxleaf-boundary-deferred-playback-result-v3",
+  "authorityCommitSha": "41322294c62ff3e35aa08e9f3ead27ce38bfc84d",
+  "chromiumExecutionCommitSha": "757b956836fb7ea9f4fa471e8258539ca350824f",
+  "packagedExecutionCommitSha": "c7c39b72eaf9305a5adb84443bdc582965b97b9b",
+  "listeningExecutionCommitSha": "757b956836fb7ea9f4fa471e8258539ca350824f",
+  "ratesEvaluatedPercent": [100, 95, 90, 85, 80, 75],
+  "listeningRatesPercent": [100, 85, 75],
+  "candidates": [
+    {
+      "candidateId": "html-media-element-preserves-pitch-wav-boundary-v3",
+      "chromium": {
+        "firstActivationP95Ms": 939.9000000059605,
+        "recurringUnitHandoffP95Ms": 2.699999988079071,
+        "pauseStopTeardownP95Ms": 0.699999988079071,
+        "maximumAdditionalWorkBytes": 1536044,
+        "maximumPitchDeviationCents": 0.3482717625143186,
+        "maximumRenderedDurationErrorMs": 0.041666666667879326,
+        "maximumSourceFrameDrift": 0,
+        "additionalProcessRamMiB": 145.875,
+        "cpuIncreasePercentagePoints": 1.5835887322056623,
+        "gate": "pass"
+      },
+      "packagedWebView2": {
+        "firstActivationP95Ms": 8.900000005960464,
+        "recurringUnitHandoffP95Ms": 3.100000023841858,
+        "pauseStopTeardownP95Ms": 0.699999988079071,
+        "additionalProcessRamMiB": 104.72265625,
+        "cpuIncreasePercentagePoints": 0,
+        "gate": "pass"
+      },
+      "piperContention": {
+        "firstActivationP95Ms": 17,
+        "recurringUnitHandoffP95Ms": 3.2999999821186066,
+        "pauseStopTeardownP95Ms": 0.6000000238418579,
+        "additionalProcessRamMiB": 189.3671875,
+        "cpuIncreasePercentagePoints": 5.340177116051675,
+        "gate": "pass"
+      },
+      "listening": {
+        "ratingCount": 12,
+        "minimumIntelligibility": 4,
+        "minimumNaturalness": 3,
+        "minimumArtifacts": 3,
+        "averageIntelligibility": 4.5,
+        "averageNaturalness": 3.5,
+        "averageArtifacts": 4.25,
+        "omittedOrRepeatedWordCount": 0,
+        "gate": "pass"
+      },
+      "selected": false,
+      "retainedCspChange": false,
+      "retainedDependencyChange": false
+    },
+    {
+      "candidateId": "repository-incremental-audio-worklet-wsola-boundary-v3",
+      "chromium": {
+        "firstActivationP95Ms": 71,
+        "recurringUnitHandoffP95Ms": 10,
+        "pauseStopTeardownP95Ms": 0.5,
+        "maximumAdditionalWorkBytes": 806528,
+        "maximumPitchDeviationCents": 0.24248673603153428,
+        "maximumRenderedDurationErrorMs": 0,
+        "maximumSourceFrameDrift": 0,
+        "additionalProcessRamMiB": 18.63671875,
+        "cpuIncreasePercentagePoints": 2.4870962475557783,
+        "gate": "pass"
+      },
+      "packagedWebView2": {
+        "firstActivationP95Ms": 87.30000001192093,
+        "recurringUnitHandoffP95Ms": 10,
+        "pauseStopTeardownP95Ms": 0.5,
+        "additionalProcessRamMiB": 20.3125,
+        "cpuIncreasePercentagePoints": 6.530029885689591,
+        "gate": "pass"
+      },
+      "piperContention": {
+        "firstActivationP95Ms": 605.4000000059605,
+        "recurringUnitHandoffP95Ms": 10.099999994039536,
+        "pauseStopTeardownP95Ms": 0.699999988079071,
+        "additionalProcessRamMiB": 24.71484375,
+        "cpuIncreasePercentagePoints": 3.0768788919042436,
+        "gate": "pass"
+      },
+      "listening": {
+        "ratingCount": 12,
+        "minimumIntelligibility": 5,
+        "minimumNaturalness": 4,
+        "minimumArtifacts": 5,
+        "averageIntelligibility": 5,
+        "averageNaturalness": 4,
+        "averageArtifacts": 5,
+        "omittedOrRepeatedWordCount": 0,
+        "gate": "pass"
+      },
+      "selected": true,
+      "retainedCspChange": false,
+      "retainedDependencyChange": false
+    }
+  ],
+  "selectedCandidateId": "repository-incremental-audio-worklet-wsola-boundary-v3",
+  "productionPlaybackRatePercent": 100,
+  "productionIntegrationMilestone": "M010-002-milestone-5",
+  "privacy": {
+    "externalRequestCount": 0,
+    "persistedGeneratedAudioBytes": 0,
+    "generatedAudioFilesAfterCleanup": 0,
+    "runtimeErrorCount": 0,
+    "severeBrowserLogCount": 0
+  }
+}

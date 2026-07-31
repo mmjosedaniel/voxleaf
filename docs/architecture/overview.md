@@ -66,7 +66,7 @@ bounded synchronization/cancellation, zero-audio-persistence, and privacy
 closeout pass. Pull request #159 passed the required Ubuntu and Windows checks
 and merged the M010.1 closeout.
 
-M010.2 Milestones 1-2C are complete. The accepted
+M010.2 Milestones 1-2D are complete. The accepted
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
 requirements and
 [`active ExecPlan`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
@@ -104,8 +104,13 @@ and the immutable
 [v3 authority](reader-settings-playback-authority-v3.md) now freeze exactly
 media and repository WSOLA, the selected/pending/active state, a 250 ms p95
 recurring handoff, `1.00x` release, lifecycle, resource, listening, licence/CSP,
-and strict lineage gates before Milestone 2D candidate work. Runtime remains
-`1.00x`.
+and strict lineage gates before Milestone 2D candidate work.
+[ADR-0040](decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md)
+selects repository WSOLA after both candidates passed Chromium, packaged
+WebView2, exact Piper contention, cleanup/privacy, and bilingual listening.
+Only the selected controller/worklet remains; no dependency or CSP expansion
+is retained. It is not connected to product playback yet, so runtime remains
+`1.00x` until Milestone 5 integration.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps

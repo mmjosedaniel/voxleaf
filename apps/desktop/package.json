@@ -21,10 +21,6 @@
     "test:tts:bilingual-profiles-exact-host": "tauri build && node scripts/bilingual-tts-profiles-host.mjs",
     "test:tts:bilingual-portfolio-exact-host": "pnpm run test:tts:bilingual-portfolio-exact-host:preflight && node scripts/bilingual-portfolio-host.mjs --preflight-only && tauri build && node scripts/bilingual-portfolio-host.mjs --lifecycle-only && node scripts/bilingual-portfolio-host.mjs",
     "test:tts:bilingual-portfolio-exact-host:preflight": "pnpm run test:tts:adaptive-exact-host:preflight && node --test scripts/bilingual-portfolio-host.node-test.mjs",
-    "test:playback:v3-chromium": "pnpm run build && node scripts/pitch-preserving-v3-host.mjs",
-    "test:playback:v3-exact-host": "tauri build --config src-tauri/tauri.pitch-preserving-v3.conf.json && node scripts/native-startup-smoke.mjs --pitch-preserving-v3",
-    "test:playback:v3-contention": "tauri build --config src-tauri/tauri.pitch-preserving-v3.conf.json && node scripts/pitch-preserving-v3-inference-contention-host.mjs",
-    "test:playback:v3-listening": "node scripts/pitch-preserving-v3-listening-host.mjs",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
