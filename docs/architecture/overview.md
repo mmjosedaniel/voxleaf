@@ -66,7 +66,7 @@ bounded synchronization/cancellation, zero-audio-persistence, and privacy
 closeout pass. Pull request #159 passed the required Ubuntu and Windows checks
 and merged the M010.1 closeout.
 
-M010.2 Milestones 1-3 are complete. The accepted
+M010.2 Milestones 1-4 are complete. The accepted
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
 requirements and
 [`active ExecPlan`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
@@ -84,7 +84,11 @@ bounded language v2 reads preserve valid v1/v2 Spanish or English, all safe
 fallback/reset cases use English, a separate bounded narration-start v1
 repository persists Quick/Prepared mode and its closed target, controls hydrate
 before use, and reset follows the existing identity-first configuration-stop
-path. The shell remains unchanged and playback remains `1.0x`.
+path. Milestone 4 implements the frozen reader-first presentation: one fixed
+compact app bar, compact publication/narration chrome, one publication scroll
+viewport, a collapsible contents overlay, and a lifecycle-neutral accessible
+Settings drawer/sheet. Reader reflow, compatibility, narration, and preference
+owners remain unchanged. Playback remains `1.0x` until Milestone 5.
 
 [ADR-0035](decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md)
 authorizes a separate result-blind v2 for six exact rates ending at `0.75x`,

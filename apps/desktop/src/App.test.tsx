@@ -156,6 +156,10 @@ function selectEpub(name = "private.epub"): void {
   });
 }
 
+function openSettings(): void {
+  fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+}
+
 function testLocatorAt(textOffsetCodePoints: number): ReadingLocatorV1 {
   return decodeReadingLocatorV1({
     ...TEST_LOCATED_BLOCK.startLocator,
@@ -321,6 +325,26 @@ class ControlledNarrationCoordinator {
 }
 
 describe("desktop reader lifecycle surface", () => {
+  it("opens Settings without publication state and restores focus on close", () => {
+    render(<App />);
+    const settings = screen.getByRole("button", { name: "Settings" });
+    settings.focus();
+    fireEvent.click(settings);
+
+    expect(
+      screen.getByRole("dialog", { name: "Settings" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Close Settings" }),
+    ).toHaveFocus();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close Settings" }));
+    expect(
+      screen.queryByRole("dialog", { name: "Settings" }),
+    ).not.toBeInTheDocument();
+    expect(settings).toHaveFocus();
+  });
+
   it("renders an accessible capability-free idle state", () => {
     const flow = createTestFlow(() => Promise.resolve({ status: "cancelled" }));
     render(<App openFlow={flow} />);
@@ -686,11 +710,13 @@ describe("desktop reader lifecycle surface", () => {
     render(<App openFlow={flow} />);
     selectEpub("first.epub");
     await screen.findByRole("heading", { name: "First private title" });
+    openSettings();
     const textSize = await screen.findByLabelText("Text size");
     fireEvent.change(textSize, {
       target: { value: "large" },
     });
     await waitFor(() => expect(textSize).toHaveValue("large"));
+    fireEvent.click(screen.getByRole("button", { name: "Close Settings" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Close EPUB" }));
 
@@ -715,6 +741,7 @@ describe("desktop reader lifecycle surface", () => {
     expect(
       await screen.findByRole("heading", { name: "Second safe title" }),
     ).toBeInTheDocument();
+    openSettings();
     expect(await screen.findByLabelText("Text size")).toHaveValue("large");
   });
 
@@ -733,6 +760,7 @@ describe("desktop reader lifecycle surface", () => {
 
     selectEpub("first.epub");
     await screen.findByRole("heading", { name: "First position book" });
+    openSettings();
     fireEvent.change(screen.getByLabelText("Text size"), {
       target: { value: "large" },
     });
@@ -889,9 +917,7 @@ describe("desktop reader lifecycle surface", () => {
     );
     selectEpub("reset.epub");
     await screen.findByRole("heading", { name: "Reset settings book" });
-    fireEvent.click(
-      screen.getByText("Local narration compatibility").closest("summary")!,
-    );
+    openSettings();
     fireEvent.click(
       screen.getByRole("button", { name: "Reset narration settings" }),
     );

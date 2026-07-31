@@ -7,8 +7,8 @@ import {
   formatPreparationDuration,
   loadedAudioStatusText,
   preparationTargetLabel,
-  PREPARED_TARGET_OPTIONS,
 } from "./adaptive-preparation-presentation";
+import { NarrationStartPreferenceControls } from "./NarrationStartPreferenceControls";
 
 export interface AdaptivePreparationControlsProps {
   readonly selection: AdaptiveBufferStartMode;
@@ -23,6 +23,8 @@ export interface AdaptivePreparationControlsProps {
   readonly selectionDisabled?: boolean;
   readonly startHint?: string;
   readonly showPlaybackControls?: boolean;
+  readonly showSelectionControls?: boolean;
+  readonly showPlayerSettings?: boolean;
 }
 
 function estimateText(estimatedWaitMs: number | undefined): string {
@@ -69,27 +71,10 @@ export function AdaptivePreparationControls({
   selectionDisabled = false,
   startHint,
   showPlaybackControls = true,
+  showSelectionControls = true,
+  showPlayerSettings = true,
 }: AdaptivePreparationControlsProps): ReactElement {
   const active = state !== undefined && state.phase !== "stopped";
-  const targetMs = selection.kind === "prepared" ? selection.targetMs : 60_000;
-  const handleModeChange = (event: ChangeEvent<HTMLInputElement>): void => {
-    onSelectionChange(
-      event.currentTarget.value === "quick"
-        ? Object.freeze({ kind: "quick" })
-        : Object.freeze({ kind: "prepared", targetMs }),
-    );
-  };
-  const handleTargetChange = (event: ChangeEvent<HTMLSelectElement>): void => {
-    const nextTarget = Number(event.currentTarget.value);
-    const selected = PREPARED_TARGET_OPTIONS.find(
-      (option) => option.targetMs === nextTarget,
-    );
-    if (selected !== undefined) {
-      onSelectionChange(
-        Object.freeze({ kind: "prepared", targetMs: selected.targetMs }),
-      );
-    }
-  };
   const handleVolumeChange = (event: ChangeEvent<HTMLInputElement>): void => {
     onVolumeChange(Number(event.currentTarget.value));
   };
@@ -103,52 +88,14 @@ export function AdaptivePreparationControls({
       <h3 id="adaptive-preparation-title">Local narration</h3>
       <p>Audio is generated only on this device and kept in bounded memory.</p>
 
-      <fieldset
-        className="adaptive-preparation-mode"
-        disabled={active || selectionDisabled}
-      >
-        <legend>How should playback start?</legend>
-        <label>
-          <input
-            type="radio"
-            name="adaptive-preparation-mode"
-            value="quick"
-            checked={selection.kind === "quick"}
-            onChange={handleModeChange}
-          />
-          <span>
-            <strong>Quick start</strong>
-            <small>Begin after about 15 seconds of audio is ready.</small>
-          </span>
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="adaptive-preparation-mode"
-            value="prepared"
-            checked={selection.kind === "prepared"}
-            onChange={handleModeChange}
-          />
-          <span>
-            <strong>Prepared playback</strong>
-            <small>Wait for a larger selected audio lead.</small>
-          </span>
-        </label>
-        <label className="adaptive-preparation-target">
-          <span>Prepared audio target</span>
-          <select
-            value={targetMs}
-            disabled={selection.kind !== "prepared"}
-            onChange={handleTargetChange}
-          >
-            {PREPARED_TARGET_OPTIONS.map((option) => (
-              <option key={option.targetMs} value={option.targetMs}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </fieldset>
+      {showSelectionControls ? (
+        <NarrationStartPreferenceControls
+          selection={selection}
+          active={active}
+          disabled={selectionDisabled}
+          onSelectionChange={onSelectionChange}
+        />
+      ) : null}
 
       {state === undefined ? (
         <>
@@ -232,25 +179,31 @@ export function AdaptivePreparationControls({
             </div>
           ) : null}
 
-          <div className="adaptive-preparation-settings">
-            <label>
-              <span>Volume: {state.volumePercent}%</span>
-              <input
-                type="range"
-                min={ADAPTIVE_BUFFER_AUTHORITY_V1.playback.minimumVolumePercent}
-                max={ADAPTIVE_BUFFER_AUTHORITY_V1.playback.maximumVolumePercent}
-                step={ADAPTIVE_BUFFER_AUTHORITY_V1.playback.volumeStepPercent}
-                value={state.volumePercent}
-                onChange={handleVolumeChange}
-              />
-            </label>
-            <label>
-              <span>Playback speed</span>
-              <select value={state.playbackRate} disabled>
-                <option value={1}>1.0× — only supported speed</option>
-              </select>
-            </label>
-          </div>
+          {showPlayerSettings ? (
+            <div className="adaptive-preparation-settings">
+              <label>
+                <span>Volume: {state.volumePercent}%</span>
+                <input
+                  type="range"
+                  min={
+                    ADAPTIVE_BUFFER_AUTHORITY_V1.playback.minimumVolumePercent
+                  }
+                  max={
+                    ADAPTIVE_BUFFER_AUTHORITY_V1.playback.maximumVolumePercent
+                  }
+                  step={ADAPTIVE_BUFFER_AUTHORITY_V1.playback.volumeStepPercent}
+                  value={state.volumePercent}
+                  onChange={handleVolumeChange}
+                />
+              </label>
+              <label>
+                <span>Playback speed</span>
+                <select value={state.playbackRate} disabled>
+                  <option value={1}>1.0× — only supported speed</option>
+                </select>
+              </label>
+            </div>
+          ) : null}
         </>
       )}
     </section>

@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { READER_EXPERIENCE_AUTHORITY_V1 } from "../../src/reader/reader-experience-authority";
 import { MAX_REFLOW_SETTLE_FRAMES } from "../../src/reader/reader-reflow-restoration";
 import { SYNCHRONIZATION_AUTHORITY_V1 } from "../../src/reader/synchronization-authority";
+import { closeSettings, openSettings } from "./settings-helpers";
 
 const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const POSITION_STORAGE_KEY = "voxleaf.reader.positions";
@@ -50,10 +51,12 @@ test("proves segment decoration and focus-safe following without DOM or selectio
     await expect(page.getByRole("status")).toHaveText(
       "The EPUB opened successfully.",
     );
-    await page.getByLabel("Text size").selectOption("extra-large");
-    await page.getByLabel("Line spacing").selectOption("spacious");
+    const settings = await openSettings(page);
+    await settings.getByLabel("Text size").selectOption("extra-large");
+    await settings.getByLabel("Line spacing").selectOption("spacious");
+    await closeSettings(page, settings);
 
-    const focusOwner = page.getByLabel("Theme");
+    const focusOwner = page.getByRole("button", { name: "Settings" });
     await focusOwner.focus();
     await expect(focusOwner).toBeFocused();
     const initialUrl = page.url();
@@ -66,6 +69,7 @@ test("proves segment decoration and focus-safe following without DOM or selectio
         minimumTextContrastRatio,
         reflowSettleFrames,
       }) => {
+        const focusOwnerBeforeProof = document.activeElement;
         const highlights = (
           CSS as typeof CSS & {
             highlights?: HighlightRegistry;
@@ -280,7 +284,6 @@ test("proves segment decoration and focus-safe following without DOM or selectio
           hasExplicitForegroundAndBackground &&
           textContrastRatio >= minimumTextContrastRatio &&
           hasNonColorUnderline;
-        const activeElement = document.activeElement;
         const result = {
           supported: true as const,
           fixtureReady: true as const,
@@ -298,7 +301,7 @@ test("proves segment decoration and focus-safe following without DOM or selectio
           hasNonColorUnderline,
           highlightVisiblyPerceivable,
           followed: outsideBefore && insideReaderViewport,
-          focusPreserved: activeElement?.getAttribute("name") === "theme",
+          focusPreserved: document.activeElement === focusOwnerBeforeProof,
           selectionPreserved:
             selection.rangeCount === 1 &&
             selection.toString() === selectionBefore &&
@@ -451,7 +454,9 @@ test("proves segment decoration and focus-safe following without DOM or selectio
       await expect(focusOwner).toBeFocused();
     };
 
-    await focusOwner.selectOption("dark");
+    const darkSettings = await openSettings(page);
+    await darkSettings.getByLabel("Theme").selectOption("dark");
+    await closeSettings(page, darkSettings);
     await proveSelectedTextDecoration();
     await page.emulateMedia({ forcedColors: "active" });
     await proveSelectedTextDecoration();

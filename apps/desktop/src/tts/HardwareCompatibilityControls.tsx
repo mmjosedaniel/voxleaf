@@ -21,6 +21,8 @@ import { profileSupportsNarrationLanguageV1 } from "./narration-profile-language
 
 export interface HardwareCompatibilityControlsProps {
   readonly coordinator: HardwareProfileCompatibilityCoordinator;
+  readonly presentation?: "combined" | "device" | "narration";
+  readonly ensureCheckedOnMount?: boolean;
   readonly onRecoveryEpisodeReset?: () => void;
   readonly onSelectProfile?: (profileId: string) => Promise<boolean>;
   readonly onSelectLanguage?: (
@@ -105,6 +107,8 @@ function profileState(profile: HardwareProfileMatchV1): string {
 
 export function HardwareCompatibilityControls({
   coordinator,
+  presentation = "combined",
+  ensureCheckedOnMount = true,
   onRecoveryEpisodeReset,
   onSelectProfile,
   onSelectLanguage,
@@ -118,8 +122,10 @@ export function HardwareCompatibilityControls({
   );
 
   useEffect(() => {
-    void coordinator.ensureChecked();
-  }, [coordinator]);
+    if (ensureCheckedOnMount) {
+      void coordinator.ensureChecked();
+    }
+  }, [coordinator, ensureCheckedOnMount]);
 
   const selectable = snapshot.profiles.filter(
     (profile) =>
@@ -181,96 +187,113 @@ export function HardwareCompatibilityControls({
     }
   };
 
-  return (
-    <details
-      className="hardware-compatibility"
-      data-compatibility-status={snapshot.status}
-      data-compatibility-profile={snapshot.activeProfileId ?? "none"}
-      data-narration-language={snapshot.language}
-    >
-      <summary>
-        <span>Local narration compatibility</span>
-        <span aria-live="polite" aria-atomic="true">
-          {statusMessage(snapshot)}
-        </span>
-      </summary>
-      <div className="hardware-compatibility-detail">
-        {snapshot.reason === undefined ? null : (
-          <p className="hardware-compatibility-reason">
-            {REASON_MESSAGES[snapshot.reason]}
-          </p>
-        )}
+  const dataAttributes = {
+    "data-compatibility-status": snapshot.status,
+    "data-compatibility-profile": snapshot.activeProfileId ?? "none",
+    "data-narration-language": snapshot.language,
+  } as const;
+
+  const narrationSettings = (
+    <div className="hardware-compatibility-narration">
+      <fieldset
+        disabled={
+          selectionPending ||
+          snapshot.status === "checking" ||
+          !snapshot.canPersistLanguage
+        }
+      >
+        <legend>Narration language</legend>
+        {NARRATION_LANGUAGES_V2.map(({ value, label }) => (
+          <label key={value}>
+            <input
+              type="radio"
+              name="narration-language"
+              value={value}
+              checked={snapshot.language === value}
+              onChange={() => void handleLanguageSelection(value)}
+            />
+            <span>{label}</span>
+          </label>
+        ))}
+      </fieldset>
+      <p aria-live="polite" aria-atomic="true">
+        {snapshot.languageReason === "no-profile-for-language"
+          ? `No evaluated local narration profile is available for ${
+              snapshot.language === "en" ? "English" : "Spanish"
+            }.`
+          : `The selected narration language is ${
+              snapshot.language === "en" ? "English" : "Spanish"
+            }.`}
+      </p>
+      {!snapshot.canPersistLanguage ? (
         <p>
-          {snapshot.fallbackAvailable
-            ? "A measured CPU fallback is available."
-            : "No measured CPU fallback is available."}
+          A newer saved language preference is preserved and cannot be changed
+          by this version.
         </p>
+      ) : null}
+      {selectable.length === 0 ? null : (
         <fieldset
           disabled={
             selectionPending ||
             snapshot.status === "checking" ||
-            !snapshot.canPersistLanguage
+            !snapshot.canPersistSelection
           }
         >
-          <legend>Narration language</legend>
-          {NARRATION_LANGUAGES_V2.map(({ value, label }) => (
-            <label key={value}>
+          <legend>Local narration profile</legend>
+          {selectable.map((profile) => (
+            <label key={profile.profileId}>
               <input
                 type="radio"
-                name="narration-language"
-                value={value}
-                checked={snapshot.language === value}
-                onChange={() => void handleLanguageSelection(value)}
+                name="hardware-profile"
+                value={profile.profileId}
+                checked={snapshot.activeProfileId === profile.profileId}
+                readOnly
+                onClick={() => void handleSelection(profile.profileId)}
               />
-              <span>{label}</span>
+              <span>{profileLabel(profile)}</span>
             </label>
           ))}
         </fieldset>
-        <p aria-live="polite" aria-atomic="true">
-          {snapshot.languageReason === "no-profile-for-language"
-            ? `No evaluated local narration profile is available for ${
-                snapshot.language === "en" ? "English" : "Spanish"
-              }.`
-            : `The selected narration language is ${
-                snapshot.language === "en" ? "English" : "Spanish"
-              }.`}
+      )}
+      {!snapshot.canPersistSelection ? (
+        <p>
+          A newer saved profile preference is preserved and cannot be changed by
+          this version.
         </p>
-        {!snapshot.canPersistLanguage ? (
-          <p>
-            A newer saved language preference is preserved and cannot be changed
-            by this version.
-          </p>
-        ) : null}
-        {selectable.length === 0 ? null : (
-          <fieldset
-            disabled={
-              selectionPending ||
-              snapshot.status === "checking" ||
-              !snapshot.canPersistSelection
-            }
-          >
-            <legend>Local narration profile</legend>
-            {selectable.map((profile) => (
-              <label key={profile.profileId}>
-                <input
-                  type="radio"
-                  name="hardware-profile"
-                  value={profile.profileId}
-                  checked={snapshot.activeProfileId === profile.profileId}
-                  readOnly
-                  onClick={() => void handleSelection(profile.profileId)}
-                />
-                <span>{profileLabel(profile)}</span>
-              </label>
-            ))}
-          </fieldset>
-        )}
-        {!snapshot.canPersistSelection ? (
-          <p>
-            A newer saved profile preference is preserved and cannot be changed
-            by this version.
-          </p>
-        ) : null}
+      ) : null}
+      <button
+        type="button"
+        disabled={
+          selectionPending ||
+          snapshot.status === "checking" ||
+          !snapshot.canPersistLanguage
+        }
+        onClick={() => void handleReset()}
+      >
+        Reset narration settings
+      </button>
+    </div>
+  );
+
+  const deviceSettings = (
+    <div className="hardware-compatibility-device">
+      <p className="hardware-compatibility-selected" aria-live="polite">
+        {presentation === "combined"
+          ? `Selected result: ${statusMessage(snapshot)}`
+          : statusMessage(snapshot)}
+      </p>
+      {snapshot.reason === undefined ? null : (
+        <p className="hardware-compatibility-reason">
+          {REASON_MESSAGES[snapshot.reason]}
+        </p>
+      )}
+      <p>
+        {snapshot.fallbackAvailable
+          ? "A measured CPU fallback is available."
+          : "No measured CPU fallback is available."}
+      </p>
+      <details className="hardware-compatibility-reasons">
+        <summary>Measured profile reasons</summary>
         <ul aria-label="Measured narration profiles">
           {snapshot.profiles.map((profile) => (
             <li
@@ -287,25 +310,69 @@ export function HardwareCompatibilityControls({
             </li>
           ))}
         </ul>
-        <button
-          type="button"
-          disabled={snapshot.status === "checking"}
-          onClick={() => void handleRecheck()}
-        >
-          Check compatibility again
-        </button>
-        <button
-          type="button"
-          disabled={
-            selectionPending ||
-            snapshot.status === "checking" ||
-            !snapshot.canPersistLanguage
-          }
-          onClick={() => void handleReset()}
-        >
-          Reset narration settings
-        </button>
+      </details>
+      <button
+        type="button"
+        disabled={snapshot.status === "checking"}
+        onClick={() => void handleRecheck()}
+      >
+        Check compatibility again
+      </button>
+    </div>
+  );
+
+  if (presentation === "narration") {
+    return (
+      <div className="hardware-compatibility" {...dataAttributes}>
+        {narrationSettings}
+      </div>
+    );
+  }
+  if (presentation === "device") {
+    return (
+      <div className="hardware-compatibility" {...dataAttributes}>
+        {deviceSettings}
+      </div>
+    );
+  }
+
+  return (
+    <details className="hardware-compatibility" {...dataAttributes}>
+      <summary>
+        <span>Local narration compatibility</span>
+        <span aria-live="polite" aria-atomic="true">
+          {statusMessage(snapshot)}
+        </span>
+      </summary>
+      <div className="hardware-compatibility-detail">
+        {narrationSettings}
+        {deviceSettings}
       </div>
     </details>
+  );
+}
+
+export interface HardwareCompatibilitySummaryProps {
+  readonly coordinator: HardwareProfileCompatibilityCoordinator;
+}
+
+export function HardwareCompatibilitySummary({
+  coordinator,
+}: HardwareCompatibilitySummaryProps): ReactElement {
+  const snapshot = useSyncExternalStore(
+    (listener) => coordinator.subscribe(listener),
+    () => coordinator.observe(),
+    () => coordinator.observe(),
+  );
+  return (
+    <p
+      className="hardware-compatibility-summary"
+      data-compatibility-status={snapshot.status}
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <span>Local narration</span>
+      <span>{statusMessage(snapshot)}</span>
+    </p>
   );
 }

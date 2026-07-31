@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX } from "../../src/reader/active-visual-locator";
+import { closeSettings, openSettings } from "./settings-helpers";
 
 const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const READER_POSITION_STORAGE_KEY = "voxleaf.reader.positions";
@@ -74,8 +75,10 @@ test("tracks real top, partial, between-block, and document-end geometry without
     await expect(page.getByRole("status")).toHaveText(
       "The EPUB opened successfully.",
     );
-    await page.getByLabel("Text size").selectOption("extra-large");
-    await page.getByLabel("Line spacing").selectOption("spacious");
+    const settings = await openSettings(page);
+    await settings.getByLabel("Text size").selectOption("extra-large");
+    await settings.getByLabel("Line spacing").selectOption("spacious");
+    await closeSettings(page, settings);
     await page.evaluate(
       () =>
         new Promise<void>((resolve) =>
@@ -93,7 +96,7 @@ test("tracks real top, partial, between-block, and document-end geometry without
       ".semantic-document h1, .semantic-document h2, .semantic-document h3, .semantic-document h4, .semantic-document h5, .semantic-document h6, .semantic-document p",
     );
     expect(await leaves.count()).toBeGreaterThanOrEqual(3);
-    const focusOwner = page.getByLabel("Theme");
+    const focusOwner = page.getByRole("button", { name: "Settings" });
     await focusOwner.focus();
     await expect(focusOwner).toBeFocused();
 

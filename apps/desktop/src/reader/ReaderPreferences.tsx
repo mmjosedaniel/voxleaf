@@ -38,6 +38,8 @@ export interface ReaderPreferencesControlsProps {
   readonly onChange: (preference: ReaderPreferenceName, value: string) => void;
 }
 
+export type ReaderSettingsSectionProps = ReaderPreferencesControlsProps;
+
 interface PreferenceSelectProps {
   readonly label: string;
   readonly name: ReaderPreferenceName;
@@ -105,6 +107,62 @@ export function ReaderPreferencesControls({
           value={preferences.contentWidth}
           onChange={onChange}
         />
+        <PreferenceSelect
+          label="Theme"
+          name="theme"
+          options={THEME_OPTIONS}
+          value={preferences.theme}
+          onChange={onChange}
+        />
+      </div>
+    </fieldset>
+  );
+}
+
+export function ReaderReadingSettingsControls({
+  disabled = false,
+  preferences,
+  onChange,
+}: ReaderSettingsSectionProps): ReactElement {
+  return (
+    <fieldset className="reader-preferences" disabled={disabled}>
+      <legend>Reading</legend>
+      <div className="reader-preference-grid reader-preference-grid-reading">
+        <PreferenceSelect
+          label="Text size"
+          name="textScale"
+          options={TEXT_SCALE_OPTIONS}
+          value={preferences.textScale}
+          onChange={onChange}
+        />
+        <PreferenceSelect
+          label="Line spacing"
+          name="lineSpacing"
+          options={LINE_SPACING_OPTIONS}
+          value={preferences.lineSpacing}
+          onChange={onChange}
+        />
+        <PreferenceSelect
+          label="Content width"
+          name="contentWidth"
+          options={CONTENT_WIDTH_OPTIONS}
+          value={preferences.contentWidth}
+          onChange={onChange}
+        />
+      </div>
+    </fieldset>
+  );
+}
+
+export function ReaderAppearanceSettingsControls({
+  disabled = false,
+  preferences,
+  onChange,
+}: ReaderSettingsSectionProps): ReactElement {
+  return (
+    <fieldset className="reader-preferences" disabled={disabled}>
+      <legend>Appearance</legend>
+      <div className="reader-preference-grid reader-preference-grid-appearance">
         <PreferenceSelect
           label="Theme"
           name="theme"

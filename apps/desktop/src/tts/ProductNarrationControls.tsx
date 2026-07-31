@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import { AdaptivePreparationControls } from "./AdaptivePreparationControls";
+import { ADAPTIVE_BUFFER_AUTHORITY_V1 } from "./adaptive-buffer-authority";
 import { loadedAudioStatusText } from "./adaptive-preparation-presentation";
 import {
   CHATTERBOX_BILINGUAL_PROFILE_ID,
@@ -134,6 +135,10 @@ export function ProductNarrationControls({
     operational &&
     state !== undefined &&
     (state.canStop || state.phase === "complete" || state.phase === "failed");
+  const startupPolicy =
+    snapshot.selection.kind === "quick"
+      ? "Quick start"
+      : `Prepared: ${snapshot.selection.targetMs / 60_000} minute${snapshot.selection.targetMs === 60_000 ? "" : "s"}`;
 
   return (
     <section
@@ -176,6 +181,7 @@ export function ProductNarrationControls({
               {loadedAudioStatusText(state)}
             </p>
           )}
+          <p className="product-narration-policy">{startupPolicy}</p>
           {state?.lowBuffer === true ? (
             <p className="product-narration-warning">
               Audio is running low and may briefly buffer.
@@ -204,6 +210,31 @@ export function ProductNarrationControls({
           role="group"
           aria-label="Narration playback controls"
         >
+          {state === undefined ? null : (
+            <label className="product-narration-volume">
+              <span className="visually-hidden">Narration volume</span>
+              <span aria-hidden="true">Volume</span>
+              <input
+                type="range"
+                min={ADAPTIVE_BUFFER_AUTHORITY_V1.playback.minimumVolumePercent}
+                max={ADAPTIVE_BUFFER_AUTHORITY_V1.playback.maximumVolumePercent}
+                step={ADAPTIVE_BUFFER_AUTHORITY_V1.playback.volumeStepPercent}
+                value={state.volumePercent}
+                aria-valuetext={`${state.volumePercent}%`}
+                onChange={(event) =>
+                  coordinator.setVolumePercent(
+                    Number(event.currentTarget.value),
+                  )
+                }
+              />
+            </label>
+          )}
+          <label className="product-narration-speed">
+            <span className="visually-hidden">Playback speed</span>
+            <select value={1} disabled aria-label="Playback speed">
+              <option value={1}>1.00×</option>
+            </select>
+          </label>
           {showStart ? (
             <button
               type="button"
@@ -273,6 +304,8 @@ export function ProductNarrationControls({
               snapshot.availability !== "available" || !operational
             }
             showPlaybackControls={false}
+            showSelectionControls={false}
+            showPlayerSettings={false}
             {...(state === undefined ? {} : { state })}
             {...(startHint === undefined ? {} : { startHint })}
             onSelectionChange={(selection) =>

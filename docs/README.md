@@ -57,7 +57,7 @@ arms, exact-host metrics, privacy boundary, cancellation, synchronization, and
 cleanup evidence pass. Pull request #159 passed the required Ubuntu and
 Windows checks and merged the closeout.
 
-M010.2 is the approved active follow-up before M011. Milestones 1-3 are
+M010.2 is the approved active follow-up before M011. Milestones 1-4 are
 complete: the reader/settings/playback authority was frozen before results,
 then neither v1 backend passed every frozen gate. ADR-0034 retains that
 historical `1.00x` result. Milestone 3 changes only bounded narration
@@ -75,9 +75,12 @@ recurring handoff, lifecycle, resource, licence/CSP, listening, and lineage
 rules. Milestone 2D selected the repository-owned incremental WSOLA v3
 backend after complete Chromium, packaged WebView2, exact Piper-contention,
 privacy, lifecycle, and bilingual-listening passes. ADR-0040 records the
-selection; no dependency or CSP expansion remains. Production still runs at
-`1.00x`, and Milestone 5 owns product integration after Milestone 4. Milestone
-3 implements the additive bilingual authority v2: valid saved Spanish or
+selection; no dependency or CSP expansion remains. Milestone 4 now implements
+the fixed compact app bar, compact publication/narration chrome, sole reader
+viewport, collapsible contents overlay, and accessible Settings drawer/sheet
+without changing domain ownership. Production still runs at `1.00x`, and
+Milestone 5 owns WSOLA product integration. Milestone 3 implements the additive
+bilingual authority v2: valid saved Spanish or
 English survives upgrade, missing/invalid/reset state defaults to English,
 Quick/Prepared startup is separately bounded and persisted, controls hydrate
 before use, and reset follows identity-first cleanup.
@@ -196,7 +199,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
 - [`plans/completed/M010-001-bilingual-narration-and-candidate-screening.md`](plans/completed/M010-001-bilingual-narration-and-candidate-screening.md): completed bilingual follow-up covering evaluation, exact profile integration, packaged portfolio validation, and passing Ubuntu/Windows closeout.
-- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): active pre-M011 reader-first settings and playback-control follow-up; Milestones 1-3 are complete, bounded English-default language/start preferences are implemented, v1/v2 selected none, and ADR-0040 selects repository WSOLA v3 for later Milestone 5 integration.
+- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): active pre-M011 reader-first settings and playback-control follow-up; Milestones 1-4 are complete, bounded English-default language/start preferences and the reader-first Settings shell are implemented, v1/v2 selected none, and ADR-0040 selects repository WSOLA v3 for Milestone 5 integration.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

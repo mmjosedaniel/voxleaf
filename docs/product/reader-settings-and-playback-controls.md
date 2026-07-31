@@ -52,13 +52,23 @@ identity-safe stop/cleanup path as direct language/profile selection. Volume
 remains session-only, reader appearance keeps its existing owner, and no
 playback-rate preference or selector was added.
 
-The remaining behavior in this document is not implemented until
+Milestone 4 now implements the reader-first presentation subset. The ready
+application has one fixed compact app bar, compact publication and narration
+chrome, one publication scroll viewport, a collapsible contents overlay, and
+an accessible five-section Settings drawer/sheet. Reader appearance,
+language/profile, Quick/Prepared startup, compatibility detail, recheck, and
+reset are presented in Settings while retaining their existing domain owners.
+Opening or closing Settings is lifecycle-neutral, and the synthetic raster
+probe is development-only. Playback speed remains a disabled `1.00x` status in
+the compact narration bar until Milestone 5 integrates WSOLA.
+
+The remaining playback behavior in this document is not implemented until
 [`M010-002-reader-settings-and-playback-controls.md`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
 records passing implementation and validation. Current runtime behavior
-remains the completed M010.1 interface plus the Milestone 3 preference
-behavior, and `1.0x` playback. Reader/Settings work remains Milestone 4.
-Non-default speed and a speed selector remain unavailable until Milestone 5
-integrates the selected backend and passes product validation.
+includes the Milestone 3 preference behavior and Milestone 4 reader/Settings
+shell at `1.0x` playback. Non-default speed and an actionable speed selector
+remain unavailable until Milestone 5 integrates the selected backend and
+passes product validation.
 
 This document replaces the ignored pre-M011 design discussion as the durable
 product scope. It does not change the completed M005 narration-preparation

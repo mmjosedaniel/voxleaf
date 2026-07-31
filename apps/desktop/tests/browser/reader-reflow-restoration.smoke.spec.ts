@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX } from "../../src/reader/active-visual-locator";
+import { closeSettings, openSettings } from "./settings-helpers";
 
 const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const POSITION_STORAGE_KEY = "voxleaf.reader.positions";
@@ -210,30 +211,43 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
       .locator(".semantic-document p")
       .filter({ hasText: "Preserved synthetic passage" });
     await expect(passage).toBeVisible();
-    await passage.evaluate((element, readingLineInset) => {
-      const viewport = document.querySelector<HTMLElement>(
-        '[data-reader-scroll-owner="true"]',
-      )!;
-      const bounds = element.getBoundingClientRect();
-      const lineHeight = Number.parseFloat(
-        getComputedStyle(element).lineHeight,
-      );
-      const readingLine =
-        viewport.getBoundingClientRect().top + readingLineInset;
-      const desiredTop = readingLine - lineHeight * 1.25;
-      viewport.scrollTop += bounds.top - desiredTop;
-    }, ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX);
-    await page.evaluate(
-      () =>
-        new Promise<void>((resolve) =>
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-        ),
+    await expect(page.locator(".semantic-reader")).not.toHaveAttribute(
+      "aria-busy",
+      "true",
     );
+    let initialPassage: PassageSignature | undefined;
+    await expect
+      .poll(async () => {
+        await passage.evaluate((element, readingLineInset) => {
+          const viewport = document.querySelector<HTMLElement>(
+            '[data-reader-scroll-owner="true"]',
+          )!;
+          const bounds = element.getBoundingClientRect();
+          const lineHeight = Number.parseFloat(
+            getComputedStyle(element).lineHeight,
+          );
+          const readingLine =
+            viewport.getBoundingClientRect().top + readingLineInset;
+          const desiredTop = readingLine - lineHeight * 1.25;
+          viewport.scrollTop += bounds.top - desiredTop;
+        }, ACTIVE_VISUAL_LOCATOR_READING_LINE_INSET_PX);
+        await page.evaluate(
+          () =>
+            new Promise<void>((resolve) =>
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => resolve()),
+              ),
+            ),
+        );
+        initialPassage = await passageAtReadingLine(page);
+        return initialPassage;
+      })
+      .toBeDefined();
 
-    const initialPassage = await passageAtReadingLine(page);
     expect(initialPassage).toBeDefined();
     expect(initialPassage!.textOffsetCodePoints).toBeGreaterThan(0);
 
+    const settings = await openSettings(page);
     let canonicalOffset: number | undefined;
     for (const [label, value] of [
       ["Text size", "small"],
@@ -250,7 +264,7 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
       ["Theme", "system"],
       ["Theme", "dark"],
     ] as const) {
-      const control = page.getByLabel(label);
+      const control = settings.getByLabel(label);
       await clearReflowRangeSamples(page);
       await control.evaluate((element: HTMLSelectElement, nextValue) => {
         element.focus({ preventScroll: true });
@@ -264,7 +278,7 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
     }
     expect(canonicalOffset).toBeGreaterThan(0);
 
-    const focusOwner = page.getByLabel("Theme");
+    const focusOwner = settings.getByLabel("Theme");
     await focusOwner.evaluate((element: HTMLSelectElement) =>
       element.focus({ preventScroll: true }),
     );
@@ -290,8 +304,8 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
       canonicalOffset,
     );
     await expect(focusOwner).toBeFocused();
-    await expect(page.getByLabel("Text size")).toHaveValue("large");
-    await expect(page.getByLabel("Line spacing")).toHaveValue("compact");
+    await expect(settings.getByLabel("Text size")).toHaveValue("large");
+    await expect(settings.getByLabel("Line spacing")).toHaveValue("compact");
 
     for (const viewport of [
       { width: 1_280, height: 720 },
@@ -355,6 +369,7 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
     expect(accessibleMediaState.focusOutlineStyle).not.toBe("none");
     expect(accessibleMediaState.focusOutlineWidth).toBeGreaterThan(0);
     await page.emulateMedia({ forcedColors: "none" });
+    await closeSettings(page, settings);
 
     await expect
       .poll(() =>
@@ -417,13 +432,20 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
     await expect(page.getByRole("status")).toHaveText(
       "Reading position restored.",
     );
-    await expect(page.getByLabel("Text size")).toHaveValue("large");
-    await expect(page.getByLabel("Line spacing")).toHaveValue("compact");
-    await expect(page.getByLabel("Content width")).toHaveValue("narrow");
-    await expect(page.getByLabel("Theme")).toHaveValue("dark");
+    const restoredSettings = await openSettings(page);
+    await expect(restoredSettings.getByLabel("Text size")).toHaveValue("large");
+    await expect(restoredSettings.getByLabel("Line spacing")).toHaveValue(
+      "compact",
+    );
+    await expect(restoredSettings.getByLabel("Content width")).toHaveValue(
+      "narrow",
+    );
+    await expect(restoredSettings.getByLabel("Theme")).toHaveValue("dark");
+    await closeSettings(page, restoredSettings);
     expect((await restoredRangeSample(page)).textOffsetCodePoints).toBe(
       canonicalOffset,
     );
+    await exactRestoreInput.focus();
     await expect(exactRestoreInput).toBeFocused();
 
     await page.evaluate((positionKey) => {
@@ -576,19 +598,34 @@ test("operates reader landmarks, skip links, preferences, and navigation by keyb
     await expect(toc).toBeFocused();
     await expect(page).toHaveURL(initialUrl);
 
-    await skipLink.focus();
+    await toc.getByRole("button", { name: "Close contents" }).click();
+    const settingsButton = page.getByRole("button", { name: "Settings" });
+    await settingsButton.focus();
+    await page.keyboard.press("Enter");
+    const settings = page.getByRole("dialog", { name: "Settings" });
+    await expect(
+      settings.getByRole("button", { name: "Close Settings" }),
+    ).toBeFocused();
     await page.keyboard.press("Tab");
-    await expect(page.getByLabel("Text size")).toBeFocused();
+    await expect(settings.getByLabel("Text size")).toBeFocused();
     await page.keyboard.press("End");
-    await expect(page.getByLabel("Text size")).toHaveValue("extra-large");
+    await expect(settings.getByLabel("Text size")).toHaveValue("extra-large");
     await page.keyboard.press("Tab");
-    await expect(page.getByLabel("Line spacing")).toBeFocused();
+    await expect(settings.getByLabel("Line spacing")).toBeFocused();
     await page.keyboard.press("Tab");
-    await expect(page.getByLabel("Content width")).toBeFocused();
+    await expect(settings.getByLabel("Content width")).toBeFocused();
     await page.keyboard.press("Tab");
-    await expect(page.getByLabel("Theme")).toBeFocused();
+    await expect(settings.getByLabel("Theme")).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(settingsButton).toBeFocused();
 
-    const continuation = toc.getByRole("button", { name: "Continuation" });
+    await page.getByRole("button", { name: "Show table of contents" }).click();
+    const reopenedToc = page.getByRole("navigation", {
+      name: "Table of contents",
+    });
+    const continuation = reopenedToc.getByRole("button", {
+      name: "Continuation",
+    });
     await continuation.focus();
     await page.keyboard.press("Enter");
     await expect(

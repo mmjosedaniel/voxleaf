@@ -15,11 +15,14 @@ import type { LocalPublicationOpenFlow } from "./publication/local-publication-o
 import {
   createWebStorageReaderPositionRepository,
   type ReaderPositionRepository,
+  type ReaderPreferencesReadResult,
 } from "./persistence/reader-position-repository";
 import { bindNarrationPositionPersistence } from "./persistence/narration-position-save-bridge";
 import {
   createWebStorageNarrationStartPreferenceRepository,
+  DEFAULT_NARRATION_START_PREFERENCE_V1,
   type NarrationStartPreferenceRepository,
+  type NarrationStartPreferenceReadResult,
 } from "./persistence/narration-start-preference";
 import {
   ReaderPositionRestoreCoordinator,
@@ -41,18 +44,25 @@ import {
   type ReaderFailureReason,
   type ReaderLifecycleState,
 } from "./reader/reader-lifecycle";
-import { type ReaderPreferencesV1 } from "./reader/reader-preferences";
+import {
+  DEFAULT_READER_PREFERENCES,
+  updateReaderPreference,
+  type ReaderPreferenceName,
+  type ReaderPreferencesV1,
+} from "./reader/reader-preferences";
 import {
   runRasterImageSafetyProbe,
   type RasterImageProbeResult,
 } from "./reader/raster-image-probe";
 import type { ReaderNarrationSource } from "./reader/segment-highlight-controller";
 import { useStrictModeSafeResourceCleanup } from "./strict-mode-resource-cleanup";
-import { HardwareCompatibilityControls } from "./tts/HardwareCompatibilityControls";
+import { ReaderSettingsDialog } from "./settings/ReaderSettingsDialog";
+import { HardwareCompatibilitySummary } from "./tts/HardwareCompatibilityControls";
 import { HardwareProfileCompatibilityCoordinator } from "./tts/hardware-profile-compatibility";
 import { ProductNarrationControls } from "./tts/ProductNarrationControls";
 import { ProductNarrationCoordinator } from "./tts/product-narration-coordinator";
 import type { NarrationLanguageV1 } from "./tts/narration-language";
+import type { AdaptiveBufferStartMode } from "./tts/adaptive-buffer-scheduler";
 
 type RasterImageProbeStatus =
   "accepted" | "cancelled" | "idle" | "rejected" | "running";
@@ -60,6 +70,7 @@ type RasterImageProbeStatus =
 export interface ReadyPublicationContentProps {
   readonly publication: OpenedPublication;
   readonly initialPreferences?: ReaderPreferencesV1;
+  readonly preferences?: ReaderPreferencesV1;
   readonly initialLocator?: ReadingLocatorV1;
   readonly restoreInitialLocator?: boolean;
   readonly onPreferencesChange?: (preferences: ReaderPreferencesV1) => void;
@@ -135,6 +146,10 @@ interface ReadyReaderRestoration {
 }
 
 type ReaderRestoration = LoadingReaderRestoration | ReadyReaderRestoration;
+
+type ReaderPreferenceStatus = "loading" | ReaderPreferencesReadResult["status"];
+type NarrationStartPreferenceStatus =
+  "loading" | NarrationStartPreferenceReadResult["status"];
 
 function statusMessage(state: ReaderLifecycleState): string {
   switch (state.status) {
@@ -262,6 +277,33 @@ export function App({
       suppliedNarrationStartPreferenceRepository ??
       createWebStorageNarrationStartPreferenceRepository(),
   );
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [readerPreferencePresentation, setReaderPreferencePresentation] =
+    useState<{
+      readonly preferences: ReaderPreferencesV1;
+      readonly status: ReaderPreferenceStatus;
+      readonly canPersist: boolean;
+    }>(() => ({
+      preferences: DEFAULT_READER_PREFERENCES,
+      status: "loading",
+      canPersist: true,
+    }));
+  const currentReaderPreferences = useRef<ReaderPreferencesV1>(
+    DEFAULT_READER_PREFERENCES,
+  );
+  useEffect(() => {
+    currentReaderPreferences.current = readerPreferencePresentation.preferences;
+  }, [readerPreferencePresentation.preferences]);
+  const [fallbackNarrationStart, setFallbackNarrationStart] = useState<{
+    readonly selection: AdaptiveBufferStartMode;
+    readonly status: NarrationStartPreferenceStatus;
+    readonly canPersist: boolean;
+  }>(() => ({
+    selection: DEFAULT_NARRATION_START_PREFERENCE_V1,
+    status: "loading",
+    canPersist: true,
+  }));
   useStrictModeSafeResourceCleanup(hardwareCompatibilityCoordinator);
   const subscribe = useCallback(
     (listener: () => void) => readerLifecycle.subscribe(listener),
@@ -283,6 +325,63 @@ export function App({
   >(undefined);
   const [dismissedRestorationSequence, setDismissedRestorationSequence] =
     useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    let active = true;
+    void readerPositionRepository
+      .readPreferences()
+      .then((result) => {
+        if (!active) {
+          return;
+        }
+        const preferences =
+          result.status === "ready"
+            ? result.preferences
+            : DEFAULT_READER_PREFERENCES;
+        readerPositionRestoreCoordinator.setPreferences(preferences);
+        setReaderPreferencePresentation({
+          preferences,
+          status: result.status,
+          canPersist: result.status !== "unsupported-version",
+        });
+      })
+      .catch(() => {
+        if (active) {
+          setReaderPreferencePresentation({
+            preferences: DEFAULT_READER_PREFERENCES,
+            status: "unavailable",
+            canPersist: true,
+          });
+        }
+      });
+    void narrationStartPreferenceRepository
+      .read()
+      .then((result) => {
+        if (active) {
+          setFallbackNarrationStart({
+            selection: result.selection,
+            status: result.status,
+            canPersist: result.status !== "unsupported-version",
+          });
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setFallbackNarrationStart({
+            selection: DEFAULT_NARRATION_START_PREFERENCE_V1,
+            status: "unavailable",
+            canPersist: true,
+          });
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [
+    narrationStartPreferenceRepository,
+    readerPositionRepository,
+    readerPositionRestoreCoordinator,
+  ]);
   const readyPublication =
     viewState.status === "ready" ? viewState.publication : undefined;
   const readyPublicationSequence =
@@ -316,6 +415,22 @@ export function App({
   );
 
   useStrictModeSafeResourceCleanup(narrationCoordinator);
+
+  useEffect(() => {
+    if (narrationCoordinator === undefined) {
+      return;
+    }
+    const reconcile = (): void => {
+      const snapshot = narrationCoordinator.observe();
+      setFallbackNarrationStart({
+        selection: snapshot.selection,
+        status: snapshot.startPreferenceStatus,
+        canPersist: snapshot.canPersistStartPreference,
+      });
+    };
+    reconcile();
+    return narrationCoordinator.subscribe(reconcile);
+  }, [narrationCoordinator]);
 
   useEffect(() => {
     void hardwareCompatibilityCoordinator.ensureChecked();
@@ -362,9 +477,15 @@ export function App({
       void readerPositionRestoreCoordinator
         .restore(publication)
         .then((result) => {
-          if (result.status !== "ready") {
+          if (!active || result.status !== "ready") {
             return;
           }
+          currentReaderPreferences.current = result.preferences;
+          setReaderPreferencePresentation({
+            preferences: result.preferences,
+            status: result.preferenceStatus,
+            canPersist: result.preferenceStatus !== "unsupported-version",
+          });
           setReaderRestoration((current) =>
             current?.status === "loading" &&
             current.publication === publication &&
@@ -556,11 +677,63 @@ export function App({
   };
   const handleReaderPreferencesChange = useCallback(
     (preferences: ReaderPreferencesV1): void => {
+      currentReaderPreferences.current = preferences;
       readerPositionRestoreCoordinator.setPreferences(preferences);
       positionSaveCoordinator?.savePreferences(preferences);
+      setReaderPreferencePresentation((current) => ({
+        ...current,
+        preferences,
+        status: "ready",
+      }));
     },
     [positionSaveCoordinator, readerPositionRestoreCoordinator],
   );
+  const handleReaderPreferenceSettingChange = useCallback(
+    (preference: ReaderPreferenceName, value: string): void => {
+      const previous = currentReaderPreferences.current;
+      const next = updateReaderPreference(previous, preference, value);
+      if (next === undefined || next === previous) {
+        return;
+      }
+      currentReaderPreferences.current = next;
+      readerPositionRestoreCoordinator.setPreferences(next);
+      if (positionSaveCoordinator === undefined) {
+        void readerPositionRepository.writePreferences(next);
+      } else {
+        positionSaveCoordinator.savePreferences(next);
+      }
+      setReaderPreferencePresentation((current) => ({
+        ...current,
+        preferences: next,
+        status: "ready",
+      }));
+    },
+    [
+      positionSaveCoordinator,
+      readerPositionRepository,
+      readerPositionRestoreCoordinator,
+    ],
+  );
+  const handleFallbackNarrationStartChange = useCallback(
+    (selection: AdaptiveBufferStartMode): void => {
+      void narrationStartPreferenceRepository
+        .write(selection)
+        .then((result) => {
+          if (result.status === "saved") {
+            setFallbackNarrationStart({
+              selection,
+              status: "ready",
+              canPersist: true,
+            });
+          }
+        });
+    },
+    [narrationStartPreferenceRepository],
+  );
+  const closeSettings = useCallback((): void => {
+    setSettingsOpen(false);
+    settingsButtonRef.current?.focus({ preventScroll: true });
+  }, []);
   const handleActiveLocatorChange = useCallback(
     (locator: ReadingLocatorV1): void => {
       narrationCoordinator?.updateVisibleLocator(locator);
@@ -665,6 +838,13 @@ export function App({
           ? (await narrationStartPreferenceRepository.reset()).status ===
             "saved"
           : await narrationCoordinator.resetStartPreference();
+      if (startReset) {
+        setFallbackNarrationStart({
+          selection: DEFAULT_NARRATION_START_PREFERENCE_V1,
+          status: "ready",
+          canPersist: true,
+        });
+      }
       if (languageReset) {
         await narrationCoordinator?.refreshSelectedProfile();
       }
@@ -704,26 +884,17 @@ export function App({
         aria-labelledby="shell-title"
         aria-busy={isBusy}
       >
-        <header
-          className={
-            ready ? "shell-header shell-header-reader" : "shell-header"
-          }
-        >
+        <header className="shell-header application-bar">
           <div className="shell-brand">
-            <p className="shell-label">Private local EPUB reader</p>
             <h1 id="shell-title">VoxLeaf</h1>
-            <p className="shell-description">
-              Choose a local EPUB to validate and open it entirely on this
-              device. VoxLeaf does not retain a filesystem path or upload the
-              book.
-            </p>
           </div>
           <div className="shell-open-controls">
             <label className="file-picker">
-              <span>Open a local EPUB</span>
+              <span>{ready ? "Replace EPUB" : "Open a local EPUB"}</span>
               <input
                 type="file"
                 accept=".epub,application/epub+zip"
+                aria-label="Open a local EPUB"
                 aria-describedby="open-status"
                 disabled={openDisabled}
                 onChange={handleSelection}
@@ -740,23 +911,39 @@ export function App({
                 : statusMessage(viewState)}
             </p>
           </div>
-          {ready ? (
-            <HardwareCompatibilityControls
-              coordinator={hardwareCompatibilityCoordinator}
-              onSelectProfile={handleHardwareProfileSelection}
-              onSelectLanguage={handleNarrationLanguageSelection}
-              onResetNarrationSettings={handleNarrationSettingsReset}
-              onRecoveryEpisodeReset={() =>
-                narrationCoordinator?.resetRecoveryEpisode()
-              }
-            />
-          ) : null}
+          <HardwareCompatibilitySummary
+            coordinator={hardwareCompatibilityCoordinator}
+          />
+          <div className="application-bar-actions">
+            <button
+              ref={settingsButtonRef}
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={settingsOpen}
+              onClick={() => setSettingsOpen(true)}
+            >
+              Settings
+            </button>
+            {ready ? (
+              <button
+                type="button"
+                className="close-publication"
+                onClick={handleClosePublication}
+              >
+                Close EPUB
+              </button>
+            ) : null}
+          </div>
         </header>
         {ready ? null : (
-          <HardwareCompatibilityControls
-            coordinator={hardwareCompatibilityCoordinator}
-            onResetNarrationSettings={handleNarrationSettingsReset}
-          />
+          <div className="shell-welcome">
+            <p className="shell-label">Private local EPUB reader</p>
+            <p className="shell-description">
+              Choose a local EPUB to validate and open it entirely on this
+              device. VoxLeaf does not retain a filesystem path or upload the
+              book.
+            </p>
+          </div>
         )}
         {viewState.status === "ready" ? (
           <ReaderErrorBoundary
@@ -779,13 +966,6 @@ export function App({
                       : `By ${viewState.summary.authors.join(", ")}`}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  className="close-publication"
-                  onClick={handleClosePublication}
-                >
-                  Close EPUB
-                </button>
               </header>
               {readyRestoration === undefined ? (
                 <p className="reader-restoring-state">
@@ -819,6 +999,7 @@ export function App({
                   <ReadyPublicationContent
                     publication={viewState.publication}
                     initialPreferences={readyRestoration.result.preferences}
+                    preferences={readerPreferencePresentation.preferences}
                     {...(readyRestoration.result.position.mode === "book-start"
                       ? {}
                       : {
@@ -863,7 +1044,7 @@ export function App({
             </button>
           </section>
         ) : null}
-        {!ready ? (
+        {!ready && import.meta.env.DEV ? (
           <div className="raster-probe">
             <button
               type="button"
@@ -875,6 +1056,28 @@ export function App({
             <p aria-live="polite">{RASTER_STATUS_MESSAGE[rasterStatus]}</p>
           </div>
         ) : null}
+        <ReaderSettingsDialog
+          open={settingsOpen}
+          onClose={closeSettings}
+          readerPreferences={readerPreferencePresentation.preferences}
+          readerPreferencesStatus={readerPreferencePresentation.status}
+          canPersistReaderPreferences={readerPreferencePresentation.canPersist}
+          onReaderPreferenceChange={handleReaderPreferenceSettingChange}
+          hardwareCompatibility={hardwareCompatibilityCoordinator}
+          {...(narrationCoordinator === undefined
+            ? {}
+            : { narrationCoordinator })}
+          fallbackNarrationStart={{
+            ...fallbackNarrationStart,
+            onSelectionChange: handleFallbackNarrationStartChange,
+          }}
+          onSelectProfile={handleHardwareProfileSelection}
+          onSelectLanguage={handleNarrationLanguageSelection}
+          onResetNarrationSettings={handleNarrationSettingsReset}
+          onRecoveryEpisodeReset={() =>
+            narrationCoordinator?.resetRecoveryEpisode()
+          }
+        />
       </section>
     </main>
   );

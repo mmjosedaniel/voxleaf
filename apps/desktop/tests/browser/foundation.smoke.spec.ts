@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { closeSettings, openSettings } from "./settings-helpers";
+
 const LOCAL_ORIGIN = "http://127.0.0.1:4173";
 const TEST_STORAGE_KEY = "voxleaf.browser-smoke";
 const READER_POSITIONS_STORAGE_KEY = "voxleaf.reader.positions";
@@ -83,31 +85,40 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
       "accept",
       ".epub,application/epub+zip",
     );
-    const compatibility = page.locator(".hardware-compatibility");
-    await expect(compatibility).toHaveAttribute(
+    const initialSettings = await openSettings(page);
+    const narrationCompatibility = initialSettings.locator(
+      ".hardware-compatibility-narration",
+    );
+    const deviceCompatibility = initialSettings.locator(
+      ".hardware-compatibility-device",
+    );
+    await expect(deviceCompatibility.locator("..")).toHaveAttribute(
       "data-compatibility-status",
       "failed",
     );
     await expect(
-      compatibility.getByText(
+      deviceCompatibility.getByText(
         "The local narration compatibility check failed.",
       ),
     ).toBeVisible();
-    await compatibility.locator("summary").click();
     await expect(
-      compatibility.getByRole("button", {
+      deviceCompatibility.getByRole("button", {
         name: "Check compatibility again",
       }),
     ).toBeVisible();
     await expect(
-      compatibility.getByRole("group", { name: "Narration language" }),
+      narrationCompatibility.getByRole("group", {
+        name: "Narration language",
+      }),
     ).toBeVisible();
     await expect(
-      compatibility.getByRole("radio", { name: "English" }),
+      narrationCompatibility.getByRole("radio", { name: "English" }),
     ).toBeChecked();
-    await compatibility.getByRole("radio", { name: "Spanish" }).click();
+    await narrationCompatibility
+      .getByRole("radio", { name: "Spanish" })
+      .click();
     await expect(
-      compatibility.getByText(
+      narrationCompatibility.getByText(
         "No evaluated local narration profile is available for Spanish.",
       ),
     ).toHaveAttribute("aria-live", "polite");
@@ -119,11 +130,11 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
         ),
       )
       .toEqual({ schemaVersion: 2, language: "es" });
-    await compatibility
+    await narrationCompatibility
       .getByRole("button", { name: "Reset narration settings" })
       .click();
     await expect(
-      compatibility.getByRole("radio", { name: "English" }),
+      narrationCompatibility.getByRole("radio", { name: "English" }),
     ).toBeChecked();
     await expect
       .poll(() =>
@@ -145,6 +156,7 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
         mode: "quick",
         preparedTargetMs: 60_000,
       });
+    await closeSettings(page, initialSettings);
 
     await fileInput.focus();
     await expect(fileInput).toBeFocused();
@@ -205,20 +217,27 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
       "data-narration-phase",
       narrationPhase ?? "idle",
     );
-    const appearance = page.getByRole("group", {
-      name: "Reader appearance",
+    const readerSettings = await openSettings(page);
+    const appearance = readerSettings.getByRole("group", {
+      name: "Appearance",
     });
     await expect(appearance).toBeVisible();
-    await expect(page.getByLabel("Text size")).toHaveValue("standard");
-    await expect(page.getByLabel("Line spacing")).toHaveValue("comfortable");
-    await expect(page.getByLabel("Content width")).toHaveValue("standard");
-    await expect(page.getByLabel("Theme")).toHaveValue("system");
+    await expect(readerSettings.getByLabel("Text size")).toHaveValue(
+      "standard",
+    );
+    await expect(readerSettings.getByLabel("Line spacing")).toHaveValue(
+      "comfortable",
+    );
+    await expect(readerSettings.getByLabel("Content width")).toHaveValue(
+      "standard",
+    );
+    await expect(readerSettings.getByLabel("Theme")).toHaveValue("system");
     await expect(reader).toHaveAttribute("data-reader-mode", "continuous");
 
-    await page.getByLabel("Text size").selectOption("extra-large");
-    await page.getByLabel("Line spacing").selectOption("spacious");
-    await page.getByLabel("Content width").selectOption("wide");
-    await page.getByLabel("Theme").selectOption("dark");
+    await readerSettings.getByLabel("Text size").selectOption("extra-large");
+    await readerSettings.getByLabel("Line spacing").selectOption("spacious");
+    await readerSettings.getByLabel("Content width").selectOption("wide");
+    await readerSettings.getByLabel("Theme").selectOption("dark");
     await expect(reader).toHaveAttribute(
       "data-reader-text-scale",
       "extra-large",
@@ -237,14 +256,14 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     ).toEqual({ colorScheme: "dark", inlineStyle: null });
 
     await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
-    await page.getByLabel("Theme").selectOption("system");
+    await readerSettings.getByLabel("Theme").selectOption("system");
     expect(
       await reader.evaluate((element) => ({
         colorScheme: getComputedStyle(element).colorScheme,
         transitionDuration: getComputedStyle(element).transitionDuration,
       })),
     ).toEqual({ colorScheme: "dark", transitionDuration: "0s" });
-    await page.getByLabel("Theme").selectOption("light");
+    await readerSettings.getByLabel("Theme").selectOption("light");
     await expect
       .poll(() =>
         reader.evaluate((element) => getComputedStyle(element).colorScheme),
@@ -252,8 +271,9 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
       .toBe("light");
 
     await page.emulateMedia({ forcedColors: "active" });
-    await page.getByLabel("Text size").focus();
+    await readerSettings.getByLabel("Text size").focus();
     const forcedColorFocus = await page
+      .getByRole("dialog", { name: "Settings" })
       .getByLabel("Text size")
       .evaluate((element) => ({
         forcedColors: matchMedia("(forced-colors: active)").matches,
@@ -263,9 +283,11 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     expect(forcedColorFocus.forcedColors).toBe(true);
     expect(forcedColorFocus.outlineStyle).not.toBe("none");
     expect(forcedColorFocus.outlineWidth).toBeGreaterThan(0);
-    await compatibility.locator("summary").focus();
-    const compatibilityForcedColorFocus = await compatibility
-      .locator("summary")
+    await readerSettings
+      .getByRole("button", { name: "Check compatibility again" })
+      .focus();
+    const compatibilityForcedColorFocus = await readerSettings
+      .getByRole("button", { name: "Check compatibility again" })
       .evaluate((element) => ({
         forcedColors: matchMedia("(forced-colors: active)").matches,
         outlineStyle: getComputedStyle(element).outlineStyle,
@@ -274,6 +296,7 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     expect(compatibilityForcedColorFocus.forcedColors).toBe(true);
     expect(compatibilityForcedColorFocus.outlineStyle).not.toBe("none");
     expect(compatibilityForcedColorFocus.outlineWidth).toBeGreaterThan(0);
+    await closeSettings(page, readerSettings);
     await page.evaluate(() => {
       const root = document.querySelector(".reader-content");
       if (root === null) {
@@ -347,6 +370,7 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
         theme: "light",
       });
 
+    await page.getByRole("button", { name: "Show table of contents" }).click();
     const toc = page.getByRole("navigation", { name: "Table of contents" });
     await expect(toc.getByText("Part One", { exact: true })).toBeVisible();
     await expect(toc.getByRole("button", { name: "Part One" })).toHaveCount(0);
@@ -506,6 +530,12 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     await page.evaluate(() => {
       document.documentElement.style.fontSize = "";
     });
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
 
     const stableChromeBeforeScroll = await page.evaluate(() => {
       const bounds = (selector: string): number => {
@@ -513,7 +543,7 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
         return element?.getBoundingClientRect().top ?? Number.NaN;
       };
       return {
-        application: bounds(".shell-header-reader"),
+        application: bounds(".application-bar"),
         publication: bounds(".publication-header"),
         narration: bounds(".product-narration"),
       };
@@ -544,7 +574,7 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
         };
         return {
           applicationStable:
-            Math.abs(bounds(".shell-header-reader") - before.application) < 0.5,
+            Math.abs(bounds(".application-bar") - before.application) < 0.5,
           publicationStable:
             Math.abs(bounds(".publication-header") - before.publication) < 0.5,
           narrationStable:
