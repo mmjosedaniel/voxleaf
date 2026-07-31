@@ -1201,42 +1201,6 @@ button.semantic-internal-link {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.raster-probe {
-  display: grid;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #d7dfd7;
-}
-
-.raster-probe button {
-  justify-self: start;
-  padding: 0.75rem 1rem;
-  border: 1px solid #52705e;
-  border-radius: 0.75rem;
-  color: #f8fbf7;
-  background: #24563a;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.raster-probe button:disabled {
-  cursor: wait;
-  opacity: 0.65;
-}
-
-.raster-probe button:focus-visible {
-  outline: 0.2rem solid #1d6b43;
-  outline-offset: 0.2rem;
-}
-
-.raster-probe p {
-  min-height: 1.5rem;
-  margin: 0;
-  color: #405047;
-}
-
 @media (prefers-color-scheme: dark) {
   .semantic-reader[data-reader-theme="system"] {
     --reader-surface: #14201a;
@@ -1457,9 +1421,16 @@ button.semantic-internal-link {
 .application-bar {
   display: grid;
   flex: 0 0 auto;
-  grid-template-columns: auto minmax(18rem, 1fr) minmax(11rem, auto) auto;
   gap: 0.75rem;
   align-items: center;
+}
+
+.application-bar-empty {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.application-bar-reader {
+  grid-template-columns: auto minmax(12rem, 1fr) auto;
 }
 
 .application-bar .shell-brand h1 {
@@ -1469,23 +1440,56 @@ button.semantic-internal-link {
 .application-bar .shell-open-controls {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(12rem, 1fr) minmax(10rem, auto);
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 0.6rem;
   align-items: center;
 }
 
-.application-bar .file-picker {
-  display: grid;
-  min-width: 0;
-  margin: 0;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.5rem;
+.file-picker-button {
+  position: relative;
+  display: inline-flex;
+  min-height: 2.75rem;
+  width: fit-content;
   align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid #1d603f;
+  border-radius: 0.65rem;
+  color: #f8fbf7;
+  background: #1d603f;
+  font-weight: 700;
+  cursor: pointer;
+  overflow: hidden;
 }
 
-.application-bar .file-picker input {
-  min-width: 0;
-  padding: 0.45rem 0.6rem;
+.file-picker-button:hover {
+  background: #174e34;
+}
+
+.file-picker-button:focus-within {
+  outline: 0.2rem solid #1d6b43;
+  outline-offset: 0.15rem;
+}
+
+.file-picker-button input {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.file-picker-button input:disabled {
+  cursor: not-allowed;
+}
+
+.file-picker-button input:focus-visible {
+  outline: 0;
 }
 
 .application-bar .open-status,
@@ -1741,30 +1745,18 @@ button.semantic-internal-link {
 }
 
 @media (max-width: 74.99rem) {
-  .application-bar {
-    grid-template-columns: auto minmax(14rem, 1fr) auto;
-  }
-
-  .application-bar .hardware-compatibility-summary {
-    display: none;
-  }
-
   .reader-settings-dialog {
     width: 22.5rem;
   }
 }
 
 @media (max-width: 49.99rem) {
-  .application-bar {
+  .application-bar-reader {
     grid-template-columns: auto minmax(0, 1fr) auto;
   }
 
   .application-bar .shell-open-controls {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .application-bar .file-picker > span {
-    display: none;
   }
 
   .application-bar .open-status {
@@ -1780,16 +1772,19 @@ button.semantic-internal-link {
 }
 
 @media (max-width: 35rem) {
+  .application-bar-reader,
+  .application-bar-empty {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
   .application-bar .shell-brand h1 {
     font-size: 1.45rem;
   }
 
-  .application-bar .file-picker input {
-    max-width: 9rem;
-  }
-
-  .application-bar-actions .close-publication {
-    display: none;
+  .application-bar-reader .shell-open-controls,
+  .application-bar-empty .shell-open-controls {
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
 }
 

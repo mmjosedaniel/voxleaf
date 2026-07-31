@@ -77,7 +77,7 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
       level: 1,
       name: "VoxLeaf",
     });
-    const fileInput = page.getByLabel("Open a local EPUB");
+    const fileInput = page.getByLabel("Open a book");
 
     await expect(main).toBeVisible();
     await expect(shell).toBeVisible();
@@ -87,6 +87,59 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
       "accept",
       ".epub,application/epub+zip",
     );
+    await expect(page.getByRole("button", { name: "Settings" })).toHaveCount(0);
+    expect(
+      await page.evaluate(() => {
+        const card = document.querySelector(".shell-card");
+        const action = document.querySelector(".file-picker-button");
+        const input = action?.querySelector('input[type="file"]');
+        if (
+          !(card instanceof HTMLElement) ||
+          !(action instanceof HTMLElement) ||
+          !(input instanceof HTMLInputElement)
+        ) {
+          return false;
+        }
+        const cardBounds = card.getBoundingClientRect();
+        const actionBounds = action.getBoundingClientRect();
+        return (
+          actionBounds.width > 0 &&
+          actionBounds.left >= cardBounds.left &&
+          actionBounds.right <= cardBounds.right &&
+          getComputedStyle(input).opacity === "0" &&
+          document.documentElement.scrollWidth <= window.innerWidth
+        );
+      }),
+    ).toBe(true);
+
+    await fileInput.focus();
+    await expect(fileInput).toBeFocused();
+
+    await fileInput.setInputFiles({
+      name: "private-browser-smoke.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from("not-an-epub"),
+    });
+    await expect(page.getByRole("status")).toHaveText(
+      "That file is not a valid supported EPUB.",
+    );
+    await expect(fileInput).toHaveValue("");
+    await expect(page.getByText("private-browser-smoke.epub")).toHaveCount(0);
+
+    const publicationBytes = await buildNavigationFixture();
+    await fileInput.setInputFiles({
+      name: "private-navigation-smoke.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from(publicationBytes),
+    });
+    await expect(page.getByRole("status")).toHaveText(
+      "The EPUB opened successfully.",
+    );
+    await expect(page.getByRole("button", { name: "Settings" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Close EPUB" })).toHaveCount(
+      0,
+    );
+
     const initialSettings = await openSettings(page);
     const narrationCompatibility = initialSettings.locator(
       ".hardware-compatibility-narration",
@@ -159,30 +212,6 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
         preparedTargetMs: 60_000,
       });
     await closeSettings(page, initialSettings);
-
-    await fileInput.focus();
-    await expect(fileInput).toBeFocused();
-
-    await fileInput.setInputFiles({
-      name: "private-browser-smoke.epub",
-      mimeType: "application/epub+zip",
-      buffer: Buffer.from("not-an-epub"),
-    });
-    await expect(page.getByRole("status")).toHaveText(
-      "That file is not a valid supported EPUB.",
-    );
-    await expect(fileInput).toHaveValue("");
-    await expect(page.getByText("private-browser-smoke.epub")).toHaveCount(0);
-
-    const publicationBytes = await buildNavigationFixture();
-    await fileInput.setInputFiles({
-      name: "private-navigation-smoke.epub",
-      mimeType: "application/epub+zip",
-      buffer: Buffer.from(publicationBytes),
-    });
-    await expect(page.getByRole("status")).toHaveText(
-      "The EPUB opened successfully.",
-    );
 
     const reader = page.locator(".semantic-reader");
     const readerViewport = page.getByRole("region", {
@@ -620,8 +649,6 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
         page.evaluate((key) => localStorage.getItem(key), TEST_STORAGE_KEY),
       )
       .toBeNull();
-    await page.getByRole("button", { name: "Close EPUB" }).click();
-    await expect(page.getByRole("status")).toHaveText("No local EPUB is open.");
     expect(unexpectedRequestCount).toBe(0);
   } finally {
     if (!page.isClosed() && page.url().startsWith(LOCAL_ORIGIN)) {

@@ -18,8 +18,8 @@ selection or model generation.
 After this plan passes:
 
 - the publication is the dominant application surface;
-- a fixed compact application bar exposes Open/Replace EPUB, concise
-  compatibility, Settings, and Close EPUB;
+- a fixed compact application bar exposes one stable styled Open a book
+  action; Settings appears only after a readable publication is ready;
 - publication metadata and narration controls remain outside the sole reader
   scroll viewport;
 - an accessible Settings drawer/sheet owns reader appearance, narration
@@ -35,9 +35,9 @@ After this plan passes:
 - loaded-audio status truthfully distinguishes source media duration from
   effective listening duration at the selected speed.
 
-The synthetic raster probe and raw diagnostics no longer appear in the normal
-portfolio interface. They remain available only through an explicit
-development/test gate.
+The synthetic raster probe and raw diagnostics no longer appear in the
+portfolio interface. Raster safety remains validated through deterministic
+owner tests and the packaged synthetic-EPUB production path.
 
 ## Current state
 
@@ -47,7 +47,8 @@ English selection, supported Piper language profiles, supported bilingual
 Chatterbox, and development-only Qwen Serena/Spanish plus Aiden/English behind
 the existing development and compatibility gates.
 
-The ready desktop currently spreads configuration across several surfaces:
+Before M010.2 implementation, the desktop spread configuration across several
+surfaces:
 
 - `App.tsx` renders a large brand/file-open header, a top-right
   `HardwareCompatibilityControls` disclosure, publication metadata, narration,
@@ -58,7 +59,8 @@ The ready desktop currently spreads configuration across several surfaces:
   volume, and a disabled fixed-speed selector inside narration detail;
 - `HardwareCompatibilityControls.tsx` renders language, profile,
   compatibility reasons, and recheck; and
-- the empty application exposes the synthetic raster safety probe.
+- before ADR-0041's Milestone 6 refinement, the empty application exposed the
+  synthetic raster safety probe.
 
 Completed M009.1 already provides one publication scroll owner, compact and
 collapsible narration, visible segment highlighting, passive-scroll isolation,
@@ -184,8 +186,8 @@ listening confirmation and required pull-request checks remain open.
 - Correct audible source-frame progress, mid-unit rate changes, effective
   listening lead, startup, low-water, underrun, and status calculations.
 - Preserve M008.1 transition pauses as unchanged wall-clock timers.
-- Gate the synthetic raster probe and raw diagnostics behind explicit
-  development/test state.
+- Remove the synthetic raster probe and raw diagnostics from product chrome;
+  retain deterministic and packaged production-path raster validation.
 - Validate responsive layout, accessibility, lifecycle neutrality, identity
   replacement, synchronization, bounded resources, privacy, and exact-host
   listening.
@@ -945,12 +947,14 @@ Complete.
    existing reader-owned reflow/locator update callbacks.
 3. Move language/profile, startup mode/target, recheck, and compatibility
    detail into the approved sections.
-4. Keep a concise compatibility result in the app bar.
+4. Keep compatibility results inside Settings after a readable publication is
+   ready.
 5. Implement wide drawer and narrow full-width sheet semantics, focus
    containment, Escape, focus restore, and no nested trap.
 6. Make the table of contents collapsible/overlay without creating another
    reading-position authority.
-7. Gate the raster probe and developer diagnostics.
+7. Remove the manual raster probe and retain the stronger deterministic plus
+   packaged publication-path evidence.
 8. Preserve normal-reader display at light, dark, forced-colors, reduced
    motion, and narrow/wide sizes.
 9. Prove that opening/closing Settings does not detect, load, stop, replace, or
@@ -969,9 +973,13 @@ Expected result: deterministic, browser, and packaged tests prove the fixed
 reader shell, accessible Settings, responsive behavior, and unchanged
 lifecycle ownership.
 
-Actual result: Implemented in checkpoint `486f01d`. The ready application now
-keeps Open/Replace, concise compatibility, Settings, and Close EPUB in one
-fixed app bar. Publication metadata, compact narration, chapter controls, and
+Actual result: Implemented in checkpoint `486f01d` and refined under ADR-0041
+during Milestone 6 validation. The application now keeps one mounted,
+custom-styled Open a book action across empty/ready transitions. Settings is
+available only after a readable publication is ready; compatibility detail
+lives there, while Replace/Close wording, native filename placeholders,
+routine bar status, and the manual raster probe are absent. Publication
+metadata, compact narration, chapter controls, and
 contents controls stay outside the sole publication scroll viewport. Settings
 uses the frozen Reading, Appearance, Narration, Device compatibility, and About
 order; it reuses the existing bounded preference, compatibility, profile,
@@ -979,7 +987,8 @@ language, startup, and reset owners. Wide windows use a right drawer, narrow
 windows use a full-width modal sheet, and focus containment, Escape dismissal,
 focus restoration, forced-colors, reduced-motion, and 320 px layout are
 covered. The contents navigation is a bounded overlay and cannot become
-locator authority. The synthetic raster probe is development-only.
+locator authority. Deterministic raster-owner suites and packaged startup's
+real synthetic-EPUB image path retain raster safety coverage.
 
 Opening and closing Settings is lifecycle-neutral in deterministic tests: it
 does not recheck hardware, start/stop/replace narration, change work identity,
@@ -1064,7 +1073,8 @@ Complete.
 1. Run repository-authored Spanish and English EPUB journeys across applicable
    Piper, Chatterbox, and gated Qwen profile presentation without running two
    model children simultaneously.
-2. Validate Settings before/after open; first-run English; preserved Spanish;
+2. Validate Settings is absent before open and available after open; first-run
+   English; preserved Spanish;
    profile/language replacement; quick/prepared restoration; admitted speed
    presentation or truthful fixed-speed fallback; and development-only
    visibility.
@@ -1131,6 +1141,20 @@ pass outside the sandbox. The complete Windows gate also passes 209 shared,
 580 EPUB, 518 desktop, 347 Python, and 41 Rust tests plus 12 native helpers and
 all release builds. Renewed human rate-direction confirmation remains required
 before closeout.
+
+The subsequent empty/ready shell review exposed host-localized native file
+text, empty-state Settings and compatibility overflow, redundant
+Replace/Close controls, and a manual raster probe whose evidence was weaker
+than the existing packaged publication path. ADR-0041 records the correction.
+One mounted, custom-styled Open a book action now preserves focus across
+opening; Settings appears only for a ready readable publication; routine
+status remains accessible without occupying the bar; and the manual probe plus
+its otherwise-unused adapter are removed. Identity-first replacement,
+application-exit cleanup, all raster owner tests, and the packaged synthetic-
+EPUB image proof remain unchanged. The complete App suite and all six Chromium
+journeys pass outside the sandbox after the correction. Packaged
+Tauri/WebView2 startup, portable validation, and the complete Windows/Rust gate
+also pass.
 
 #### Status
 
@@ -1597,6 +1621,18 @@ Do not rewrite accepted historical authority to make a result pass.
   complete Windows gate pass in normal local PowerShell. The earlier matrix
   remains valid for state and lifecycle evidence, but human audible-rate
   direction must be repeated.
+- **2026-07-31:** Milestone 6 shell review produced ADR-0041 and simplified the
+  empty/ready chrome. The native picker is now a stable styled Open a book
+  action without localized filename text; Settings appears only after a
+  readable publication is ready; compatibility detail stays inside Settings;
+  Replace/Close and routine visual status are removed; and the obsolete manual
+  raster probe/adapter are deleted while real raster tests remain. The App
+  suite passes 21/21 and the outside-sandbox Chromium matrix passes 6/6. The
+  packaged Tauri/WebView2 startup proves the empty-state gate, replacement
+  cleanup, real EPUB raster decode/release, restart restoration, and zero
+  external requests. `pnpm.cmd check:portable` and `pnpm.cmd check` pass 209
+  shared, 580 EPUB, 515 desktop, 347 Python, and 41 Rust tests plus 12 native
+  helpers, all lint/type/generated-contract checks, and portable/native builds.
 
 ## Discoveries and decisions
 
@@ -1818,11 +1854,14 @@ lifecycle, and listening gate passed. The retained selected source adds no
 dependency or CSP expansion.
 Milestone 3 has implemented and validated preference migration, English
 runtime fallback, closed narration-start persistence, pre-action hydration,
-and identity-safe reset. Milestone 4 implements the fixed app bar, compact
-reader-first shell, accessible five-section Settings drawer/sheet, collapsible
-contents overlay, and development-only raster diagnostics while retaining the
-existing domain owners and one reader scroll authority. Milestone 5 integrates
-the exact selected backend with one bounded worklet, a separate
+and identity-safe reset. Milestone 4 implements the compact reader-first shell,
+accessible five-section Settings drawer/sheet, and collapsible contents
+overlay while retaining the existing domain owners and one reader scroll
+authority. ADR-0041's Milestone 6 refinement keeps one styled Open a book
+action mounted across states, defers Settings until a readable publication is
+ready, removes redundant compatibility/Replace/Close chrome, and retires the
+manual raster probe while retaining packaged production-path evidence.
+Milestone 5 integrates the exact selected backend with one bounded worklet, a separate
 playback preference, six compact-bar values, immutable-current/latest-pending
 activation, and effective-lead scheduling. It changes no TTS/model input,
 source queue ceiling, progress authority, transition timer, dependency, CSP,

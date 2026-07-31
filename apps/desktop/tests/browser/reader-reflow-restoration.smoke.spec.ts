@@ -198,7 +198,7 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
     await page.setViewportSize({ width: 900, height: 500 });
     await page.goto("/");
     const publicationBytes = await buildReflowFixture();
-    await page.getByLabel("Open a local EPUB").setInputFiles({
+    await page.getByLabel("Open a book").setInputFiles({
       name: "private-reflow-smoke.epub",
       mimeType: "application/epub+zip",
       buffer: Buffer.from(publicationBytes),
@@ -422,7 +422,7 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
       });
 
     await page.reload();
-    const exactRestoreInput = page.getByLabel("Open a local EPUB");
+    const exactRestoreInput = page.getByLabel("Open a book");
     await exactRestoreInput.focus();
     await exactRestoreInput.setInputFiles({
       name: "private-reflow-smoke.epub",
@@ -467,7 +467,7 @@ test("preserves one canonical passage across preferences, rapid changes, viewpor
     }, POSITION_STORAGE_KEY);
 
     await page.reload();
-    const recoveredRestoreInput = page.getByLabel("Open a local EPUB");
+    const recoveredRestoreInput = page.getByLabel("Open a book");
     await recoveredRestoreInput.focus();
     await recoveredRestoreInput.setInputFiles({
       name: "private-reflow-smoke.epub",
@@ -549,7 +549,7 @@ test("operates reader landmarks, skip links, preferences, and navigation by keyb
     await page.setViewportSize({ width: 320, height: 640 });
     await page.goto("/");
     const publicationBytes = await buildNavigationFixture();
-    await page.getByLabel("Open a local EPUB").setInputFiles({
+    await page.getByLabel("Open a book").setInputFiles({
       name: "private-keyboard-smoke.epub",
       mimeType: "application/epub+zip",
       buffer: Buffer.from(publicationBytes),

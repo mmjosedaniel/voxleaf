@@ -67,7 +67,7 @@ test("tracks real top, partial, between-block, and document-end geometry without
     await page.setViewportSize({ width: 800, height: 400 });
     await page.goto("/");
     const publicationBytes = await buildVisualLocatorFixture();
-    await page.getByLabel("Open a local EPUB").setInputFiles({
+    await page.getByLabel("Open a book").setInputFiles({
       name: "private-visual-locator-smoke.epub",
       mimeType: "application/epub+zip",
       buffer: Buffer.from(publicationBytes),

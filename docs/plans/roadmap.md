@@ -1014,8 +1014,10 @@ comparison passes; otherwise preserve honest fixed-`1.00x` playback.
 
 ### Expected outcome
 
-- One fixed compact app bar exposes Open/Replace EPUB, concise compatibility,
-  Settings, and Close EPUB.
+- One fixed compact app bar exposes a stable styled Open a book action; the
+  ready state adds Settings, while empty-state compatibility, Replace/Close,
+  native filename placeholders, and manual raster diagnostics stay out of the
+  product chrome under ADR-0041.
 - Compact metadata and narration controls remain outside the sole publication
   scroll viewport.
 - A right-side Settings drawer on wide windows and full-width dialog-like

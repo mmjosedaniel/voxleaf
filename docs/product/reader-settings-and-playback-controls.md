@@ -97,17 +97,26 @@ control without changing model generation or persisting generated audio.
 
 ### Fixed application bar
 
-The ready reader uses a compact application bar outside the publication scroll
-viewport:
+The empty reader uses a compact application bar and welcome region outside the
+publication scroll viewport:
 
 - compact VoxLeaf identity;
-- Open EPUB or Replace EPUB;
-- one short compatibility status;
-- Settings; and
-- Close EPUB while a publication is open.
+- one custom-styled **Open a book** action backed by the capability-free native
+  file picker; and
+- privacy-oriented introductory copy plus visible opening/failure status only
+  when action is required.
+
+The ready reader keeps the same mounted Open a book action, compact VoxLeaf
+identity, and Settings. It does not expose Replace EPUB, Close EPUB, the native
+selected-file placeholder, or routine compatibility/lifecycle summaries in
+the bar. Settings and compatibility detail appear only after a readable
+publication is ready. Opening another book and exiting the application retain
+their existing bounded cleanup ownership.
 
 The full measured compatibility matrix, large branding, and reader
 preferences must not displace the book from the normal reading workspace.
+The manual synthetic raster probe is not product UI; real raster safety remains
+covered through the packaged synthetic-EPUB path and deterministic owner tests.
 
 ### Reader workspace
 

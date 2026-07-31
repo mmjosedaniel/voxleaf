@@ -4456,22 +4456,12 @@ async function finishNativeRenderInstrumentation(driver) {
   return measurement;
 }
 
-async function closeNativePublication(driver) {
-  assert(
-    (await driver.execute(
-      `const closeButton = document.querySelector("button.close-publication");
-       if (!(closeButton instanceof HTMLButtonElement)) {
-         return false;
-       }
-       closeButton.click();
-       return true;`,
-    )) === true,
-    "Native reader performance metrics were unavailable.",
-  );
+async function replaceNativePublicationForCleanup(driver, invalidFixturePath) {
+  await injectNativeFile(driver, invalidFixturePath);
   await waitForCondition(
     driver,
     `return document.querySelector('[role="status"]')?.textContent ===
-       "No local EPUB is open.";`,
+       "That file is not a valid supported EPUB.";`,
   );
 }
 
@@ -4586,7 +4576,7 @@ async function runNativeReaderPerformanceBenchmark(
         NATIVE_COMBINED_WORKING_SET_LIMIT_BYTES,
     "Native reader exceeded the approved performance limits.",
   );
-  await closeNativePublication(driver);
+  await replaceNativePublicationForCleanup(driver, fixtures.dismissal);
   await delay(OBSERVATION_WINDOW_MS);
   const exactClosedResources = await nativeResourceInstrumentation(driver);
   assert(
@@ -4688,7 +4678,7 @@ async function runNativeReaderPerformanceBenchmark(
        }`,
     );
 
-    await closeNativePublication(driver);
+    await replaceNativePublicationForCleanup(driver, fixtures.dismissal);
     await delay(OBSERVATION_WINDOW_MS);
     const settledResources = await nativeResourceInstrumentation(driver);
     assert(
@@ -4759,7 +4749,7 @@ async function runNativeReaderPerformanceBenchmark(
        ".semantic-document:not(.reader-chapter-too-large)",
      ) !== null;`,
   );
-  await closeNativePublication(driver);
+  await replaceNativePublicationForCleanup(driver, fixtures.dismissal);
   await delay(OBSERVATION_WINDOW_MS);
   const finalResources = await nativeResourceInstrumentation(driver);
   const storageBounds = await driver.execute(
@@ -4927,6 +4917,10 @@ async function run() {
   );
   const profileDirectory = path.join(temporaryDirectory, "webview-profile");
   const fixturePath = path.join(temporaryDirectory, "synthetic.epub");
+  const dismissalFixturePath = path.join(
+    temporaryDirectory,
+    "invalid-replacement.epub",
+  );
   const fileIngressFixturePaths = Object.freeze({
     exactLimit: path.join(temporaryDirectory, "exact-limit.epub"),
     overLimit: path.join(temporaryDirectory, "over-limit-file.epub"),
@@ -4934,6 +4928,7 @@ async function run() {
     replacement: path.join(temporaryDirectory, "replacement.epub"),
   });
   const performanceFixturePaths = Object.freeze({
+    dismissal: dismissalFixturePath,
     exact: path.join(temporaryDirectory, "exact.epub"),
     overLimit: path.join(temporaryDirectory, "over-limit.epub"),
     representative: path.join(temporaryDirectory, "representative.epub"),
@@ -5052,6 +5047,7 @@ async function run() {
       ),
     ]);
   }
+  await writeFile(dismissalFixturePath, "not-an-epub", { flag: "wx" });
 
   const driverPort = await reserveLoopbackPort();
   const nativeDriverPort = await reserveLoopbackPort();
@@ -5118,13 +5114,33 @@ async function run() {
     const rootMounted = await driver.execute(
       `return document.querySelector("#root")?.childElementCount > 0;`,
     );
-    stage = "native bilingual narration preference";
-    await openReaderSettings(driver);
-    await exerciseNarrationLanguagePreference(
-      driver,
-      ADAPTIVE_TTS_EXACT_HOST_MODE ? ADAPTIVE_TTS_LANGUAGE : "es",
+    assert(
+      (await driver.findElements(".application-bar-actions button")).length ===
+        0,
+      "Native Settings were available without an open publication.",
     );
+    if (READER_PERFORMANCE_MODE) {
+      stage = "native reader performance and resource benchmark";
+      await runNativeReaderPerformanceBenchmark(
+        driver,
+        performanceFixturePaths,
+        child.pid,
+        (nextStage) => {
+          stage = nextStage;
+        },
+      );
+      return;
+    }
     if (ADAPTIVE_TTS_EXACT_HOST_MODE) {
+      stage = "adaptive exact-host profile setup publication";
+      await injectNativeFile(driver, fixturePath);
+      await waitForCondition(
+        driver,
+        `return document.querySelector("article.semantic-document") !== null;`,
+      );
+      stage = "native bilingual narration preference";
+      await openReaderSettings(driver);
+      await exerciseNarrationLanguagePreference(driver, ADAPTIVE_TTS_LANGUAGE);
       stage = "adaptive exact-host profile selection";
       const profileSelected = await selectAdaptiveTtsProfile(
         driver,
@@ -5188,19 +5204,6 @@ async function run() {
       );
       return;
     }
-    await closeReaderSettings(driver);
-    if (READER_PERFORMANCE_MODE) {
-      stage = "native reader performance and resource benchmark";
-      await runNativeReaderPerformanceBenchmark(
-        driver,
-        performanceFixturePaths,
-        child.pid,
-        (nextStage) => {
-          stage = nextStage;
-        },
-      );
-      return;
-    }
 
     await exerciseNativeTtsProtocolProbe(driver, (nextStage) => {
       stage = nextStage;
@@ -5249,6 +5252,10 @@ async function run() {
            heading.getClientRects().length > 0,
        );`,
     );
+    stage = "native bilingual narration preference";
+    await openReaderSettings(driver);
+    await exerciseNarrationLanguagePreference(driver, "es");
+    await closeReaderSettings(driver);
     stage = "synthetic raster image presentation";
     await driver.execute(
       `document.querySelector(".semantic-raster-host")
@@ -5431,8 +5438,8 @@ async function run() {
       "Native reader preferences were not persisted or restored.",
     );
 
-    stage = "synthetic publication close";
-    await closeNativePublication(driver);
+    stage = "synthetic publication replacement cleanup";
+    await replaceNativePublicationForCleanup(driver, dismissalFixturePath);
     assert(
       (await driver.findElements('img[alt="Synthetic cover"]')).length === 0,
       "Native publication raster image remained mounted after close.",
@@ -5481,7 +5488,7 @@ async function run() {
     );
 
     console.log(
-      "Native startup smoke passed: root mounted, bounded TTS protocol and supervised fake-service lifecycle passed with binary delivery/cancellation/crash recovery, local file reselection/cancellation/replacement and exact/max-plus-one boundaries passed, narrow and accessible keyboard reader matrix and synchronization feasibility proof passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication closed, no errors, no external requests.",
+      "Native startup smoke passed: root mounted, bounded TTS protocol and supervised fake-service lifecycle passed with binary delivery/cancellation/crash recovery, local file reselection/cancellation/replacement and exact/max-plus-one boundaries passed, narrow and accessible keyboard reader matrix and synchronization feasibility proof passed, synthetic EPUB image decoded locally, exact position and preferences survived restart/reselection, publication replacement cleanup completed, no errors, no external requests.",
     );
   } catch (error) {
     console.error(
