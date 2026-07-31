@@ -32,13 +32,11 @@ const THEME_OPTIONS: readonly ReaderPreferenceOption[] = Object.freeze([
   Object.freeze({ value: "dark", label: "Dark" }),
 ]);
 
-export interface ReaderPreferencesControlsProps {
+interface ReaderSettingsSectionProps {
   readonly disabled?: boolean;
   readonly preferences: ReaderPreferencesV1;
   readonly onChange: (preference: ReaderPreferenceName, value: string) => void;
 }
-
-export type ReaderSettingsSectionProps = ReaderPreferencesControlsProps;
 
 interface PreferenceSelectProps {
   readonly label: string;
@@ -70,52 +68,6 @@ function PreferenceSelect({
         ))}
       </select>
     </label>
-  );
-}
-
-export function ReaderPreferencesControls({
-  disabled = false,
-  preferences,
-  onChange,
-}: ReaderPreferencesControlsProps): ReactElement {
-  return (
-    <fieldset className="reader-preferences" disabled={disabled}>
-      <legend>Reader appearance</legend>
-      <p>
-        Adjust the current continuous-scrolling view. These settings are saved
-        locally on this device.
-      </p>
-      <div className="reader-preference-grid">
-        <PreferenceSelect
-          label="Text size"
-          name="textScale"
-          options={TEXT_SCALE_OPTIONS}
-          value={preferences.textScale}
-          onChange={onChange}
-        />
-        <PreferenceSelect
-          label="Line spacing"
-          name="lineSpacing"
-          options={LINE_SPACING_OPTIONS}
-          value={preferences.lineSpacing}
-          onChange={onChange}
-        />
-        <PreferenceSelect
-          label="Content width"
-          name="contentWidth"
-          options={CONTENT_WIDTH_OPTIONS}
-          value={preferences.contentWidth}
-          onChange={onChange}
-        />
-        <PreferenceSelect
-          label="Theme"
-          name="theme"
-          options={THEME_OPTIONS}
-          value={preferences.theme}
-          onChange={onChange}
-        />
-      </div>
-    </fieldset>
   );
 }
 

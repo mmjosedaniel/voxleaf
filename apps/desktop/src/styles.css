@@ -114,11 +114,6 @@ body {
   background: #f4f7f2;
 }
 
-.shell-header-reader > .hardware-compatibility {
-  min-width: 0;
-  margin-top: 0;
-}
-
 .hardware-compatibility summary {
   display: flex;
   min-width: 0;
@@ -132,71 +127,12 @@ body {
   cursor: pointer;
 }
 
-.hardware-compatibility summary span:last-child {
-  color: #405047;
-  font-weight: 500;
-}
-
 .hardware-compatibility summary:focus,
 .hardware-compatibility summary:focus-visible,
 .hardware-compatibility button:focus-visible,
 .hardware-compatibility input:focus-visible {
   outline: 0.2rem solid #1d6b43;
   outline-offset: 0.15rem;
-}
-
-.hardware-compatibility-detail {
-  display: grid;
-  max-height: min(24rem, 45vh);
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border-top: 1px solid #b7c7b9;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-.hardware-compatibility-detail p,
-.hardware-compatibility-detail ul,
-.hardware-compatibility-detail fieldset {
-  margin: 0;
-}
-
-.hardware-compatibility-detail ul {
-  display: grid;
-  gap: 0.35rem;
-  padding-inline-start: 1.25rem;
-}
-
-.hardware-compatibility-detail fieldset {
-  display: grid;
-  gap: 0.4rem;
-  padding: 0.65rem;
-  border: 1px solid #b7c7b9;
-  border-radius: 0.55rem;
-}
-
-.hardware-compatibility-detail label {
-  display: flex;
-  gap: 0.45rem;
-  align-items: center;
-}
-
-.hardware-compatibility-detail button {
-  width: fit-content;
-  padding: 0.5rem 0.7rem;
-  border: 1px solid #52705e;
-  border-radius: 0.55rem;
-  color: #24563a;
-  background: #fdfefb;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.hardware-compatibility-detail button:disabled,
-.hardware-compatibility-detail fieldset:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
 }
 
 .hardware-compatibility-reason {
@@ -515,13 +451,6 @@ h1 {
   padding-inline: 0.35rem;
   color: var(--reader-heading);
   font-weight: 750;
-}
-
-.reader-preferences p {
-  margin: 0 0 0.75rem;
-  color: var(--reader-text-muted);
-  font-size: 0.9rem;
-  line-height: 1.5;
 }
 
 .reader-preference-grid {
@@ -1245,8 +1174,6 @@ button.semantic-internal-link {
   .adaptive-preparation-target select,
   .adaptive-preparation-settings select,
   .hardware-compatibility,
-  .hardware-compatibility-detail button,
-  .hardware-compatibility-detail fieldset,
   .product-narration,
   .product-narration-compact-actions button,
   .reader-preferences,
@@ -1493,8 +1420,7 @@ button.semantic-internal-link {
   outline: 0;
 }
 
-.application-bar .open-status,
-.hardware-compatibility-summary {
+.application-bar .open-status {
   min-height: 0;
   margin: 0;
   color: #405047;
