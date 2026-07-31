@@ -2,7 +2,7 @@
 
 ## Status and purpose
 
-VoxLeaf is pre-alpha. Milestones 1 through 10.1, M008.1, and M009.1 are
+VoxLeaf is pre-alpha. Milestones 1 through 10.2, M008.1, and M009.1 are
 complete. M010 records the final support/recovery decision. Privacy-safe host
 detection, immutable measured matching, bounded preference and compatibility
 UI, pre-start enforcement, and identity-safe one-attempt recovery are
@@ -51,8 +51,7 @@ final exact-host metrics, privacy, bounded synchronization, and cleanup
 validation pass locally. Pull request #159 subsequently passed the required
 Ubuntu and Windows checks and merged the closeout.
 
-M010.2 is active before M011. Milestones 1-5 are complete and Milestone 6 local
-automated validation passes: the architecture
+M010.2 is complete. Its architecture
 authority and result-blind comparison were frozen before results, then neither
 eligible backend passed every machine and packaged-host gate. ADR-0034 retains
 `1.00x`. Milestone 3 implements bounded language/start preferences, preserves
@@ -76,9 +75,10 @@ Milestone 4 implements the fixed app bar, compact publication/narration chrome,
 sole reader viewport, contents overlay, and accessible Settings drawer/sheet
 without changing reader, preference, compatibility, or narration ownership.
 The sequential six-arm packaged matrix, browser/native-startup, portable, and
-complete Windows repository checks pass outside the sandbox. Human
-intermediate-rate confirmation and required pull-request checks still gate
-archival. M011 remains deferred until this bounded portfolio follow-up closes.
+complete Windows repository checks pass outside the sandbox. Renewed maintainer
+listening confirms correct slowdown across every admitted rate, and pull
+request #170 passes the required Ubuntu and Windows checks. M011 is now the
+next roadmap milestone.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -966,15 +966,14 @@ versioned contracts and a new decision record.
 
 ## Milestone 10.2: Add reader settings and pitch-preserving playback controls
 
-**Status:** In progress. Milestones 1-5 are complete and Milestone 6 local
-automated validation passes; ADR-0034 selected no
+**Status:** Complete. ADR-0034 selected no
 pitch-preserving backend for v1. ADR-0035 authorizes and ADR-0036 freezes the
 reduced-range, fee-free v2 comparison; ADR-0037 also selects no v2 backend
 after inference contention. ADR-0038 authorizes a separate boundary-deferred
 v3 without rewriting those results; ADR-0039 froze its architecture and
 executable authority before candidate work. ADR-0040 selects repository WSOLA
 after the complete frozen comparison. Follow
-[`M010-002-reader-settings-and-playback-controls.md`](active/M010-002-reader-settings-and-playback-controls.md)
+[`M010-002-reader-settings-and-playback-controls.md`](completed/M010-002-reader-settings-and-playback-controls.md)
 and the approved
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
 product requirements.
@@ -1000,9 +999,9 @@ collapsible contents overlay, and accessible Settings drawer/sheet while
 retaining existing domain ownership. Milestone 5 integrates only the selected
 v3 WSOLA backend with six exact values, next-unit activation, content-free
 preference ownership, and effective-listening-duration scheduling. Milestone 6
-has passed its sequential six-arm packaged matrix and repository validation;
-human confirmation of the intermediate rates plus required pull-request checks
-remain before completion.
+passes its sequential six-arm packaged matrix and repository validation. The
+maintainer confirms the complete admitted range slows in the intended direction
+and remains usable, and pull request #170 passes both required checks.
 
 ### Goal
 
@@ -1070,9 +1069,8 @@ through newly frozen authority and regression evidence.
 
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** Approved after M010.2; not started. M010.1 is complete, but the
-approved M010.2 portfolio-facing reader/settings/playback follow-up remains
-before M011.
+**Status:** Approved; not started. M010.2 is complete, so M011 is the next
+roadmap milestone.
 The repository can build a
 release executable for validation, but installer bundling, signing,
 model/runtime distribution, Piper license fulfillment, updater policy, and
@@ -1175,7 +1173,8 @@ The following decisions should be made when evidence is available, not assumed s
    RAM limits. Milestone 2C froze its exact architecture/executable authority
    and 250 ms recurring handoff before Milestone 2D measured candidates.
    ADR-0040 selects repository WSOLA after every v3 gate passed. Milestone 5
-   must integrate that exact backend; runtime remains `1.00x` until then.
+   integrates that exact backend, and Milestone 6 closes automated, human,
+   privacy, repository, and pull-request validation.
 9. **Release gate:** define supported hardware and wall-clock startup
    expectations from measured results before release.
 
@@ -1224,11 +1223,11 @@ protocol v1. Milestone 7's local packaged portfolio journeys, final
 measurements, and privacy/repository validation pass. Pull request #159 passed
 the required Ubuntu/Windows checks and merged the closeout.
 
-[`active/M010-002-reader-settings-and-playback-controls.md`](active/M010-002-reader-settings-and-playback-controls.md)
-is the approved active pre-M011 implementation authority. It must freeze and
-validate its reader-first shell, accessible Settings, English fallback,
-bounded preference, pitch-preserving playback, and timing semantics before
-those planned behaviors may be described as implemented.
+[`completed/M010-002-reader-settings-and-playback-controls.md`](completed/M010-002-reader-settings-and-playback-controls.md)
+records the completed pre-M011 reader-first shell, accessible Settings, English
+fallback, bounded preference, pitch-preserving playback, timing semantics,
+portfolio validation, maintainer all-rate confirmation, and passing required
+checks.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by completed
@@ -1236,13 +1235,12 @@ M009/M009.1 for synchronization and reader stabilization. It does not
 supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
-Milestones 1 through 10.1, M008.1, and M009.1 are complete, with their evidence
-retained under [`completed/`](completed/). M010.2 Milestones 1-5 are complete,
-Milestone 6 local automated validation passes, and M010.2 remains active before M011. ADR-0037 closes v2 with no backend;
+Milestones 1 through 10.2, M008.1, and M009.1 are complete, with their evidence
+retained under [`completed/`](completed/). ADR-0037 closes v2 with no backend;
 ADR-0039 freezes the separate boundary-deferred v3, and ADR-0040 selects
 repository WSOLA. The bounded preference runtime, reader-first Settings shell,
-and non-default boundary-deferred playback integration are implemented. Human
-intermediate-rate confirmation and required PR checks remain before M011.
+and non-default boundary-deferred playback integration are implemented. The
+maintainer all-rate journey and required PR checks pass; M011 is next.
 
 ## MVP completion boundary
 

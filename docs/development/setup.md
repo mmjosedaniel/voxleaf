@@ -55,8 +55,9 @@ state transition, 250 ms recurring handoff, resource, cleanup, and lineage
 gates. Milestone 2D has now selected the repository-owned incremental WSOLA v3
 backend after the complete frozen machine and bilingual-listening matrix. It
 adds no dependency or CSP expansion. Milestone 6's sequential packaged
-portfolio and full local repository checks pass. Human confirmation of the
-intermediate playback rates and required PR checks still gate plan archival.
+portfolio and full local repository checks pass. Maintainer all-rate
+confirmation and pull request #170's required Ubuntu/Windows checks also pass,
+and M010.2 is archived.
 Production distribution, Piper license fulfillment, and installers remain
 M011 work.
 

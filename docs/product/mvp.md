@@ -55,8 +55,7 @@ development-only Qwen arms deplete once and refill safely on this host.
 Pull request #159 passed the required Ubuntu and Windows checks and merged the
 M010.1 closeout.
 
-M010.2 is active before M011. Milestones 1-5 are implemented and Milestone 6
-local automated validation passes. The early milestones froze the exact authorities,
+M010.2 is complete. Its early milestones froze the exact authorities,
 closed the result-blind comparisons, and selected repository WSOLA v3 after
 v1 and v2 selected no backend. Milestone 4 reorganizes the ready reader around
 one fixed app bar,
@@ -78,9 +77,8 @@ cleanup. Applicable Piper, Chatterbox, and development-only Qwen presentation
 remains gate-correct in the new Settings surface. The six-arm packaged
 portfolio exposes the engine-neutral rate control on every profile, exercises
 Piper Spanish/English at every rate, and runs Chatterbox Spanish/English plus
-development-only Qwen Serena/Aiden. Human
-confirmation of the intermediate rates and required pull-request checks still
-gate M010.2 archival.
+development-only Qwen Serena/Aiden. The maintainer confirms the full admitted
+rate range, and pull request #170 passes the required Ubuntu and Windows checks.
 
 ## Current implemented flow
 
@@ -149,16 +147,7 @@ authority.
 
 ## Remaining target user flow
 
-1. M010.2 Milestones 1-5 froze and implemented the reader-first Settings shell, English
-   fallback, bounded narration preferences, and playback authority; selected
-   the v3 WSOLA backend after the later closed comparisons; and implemented
-   the English-default language/start preference subset plus the fixed app bar,
-   compact reader chrome, sole publication viewport, contents overlay, and
-   accessible Settings drawer/sheet, and selected boundary-deferred WSOLA
-   backend. Milestone 6 local automated portfolio and repository checks pass;
-   intermediate-rate human confirmation and required PR checks remain under
-   [`reader-settings-and-playback-controls.md`](reader-settings-and-playback-controls.md).
-2. M011 then packages and validates an end-user distribution, including model
+1. M011 packages and validates an end-user distribution, including model
    and voice license notices, provenance, corresponding-source or written-offer
    mechanics, signing, updates, and complete-MVP validation.
 
@@ -230,10 +219,6 @@ Implemented and validated:
 
 Remaining:
 
-- Record the remaining M010.2 human intermediate-rate confirmation and
-  required pull-request checks, then archive the plan without weakening the
-  implemented bilingual, scroll, synchronization, buffering, recovery, or
-  exact support boundaries.
 - Provide compliant runtime/model distribution, installer packaging, and a
   validated end-user installation path in M011.
 
@@ -280,8 +265,7 @@ Remaining:
   to 1,000 ms p95 and 200 MiB additional process RAM, and `1.00x` bypasses
   time stretching.
 - Source frames remain memory and heard-progress authority; effective
-  listening duration governs startup, low-water, and underrun promises after
-  M010.2 is implemented.
+  listening duration governs startup, low-water, and underrun promises.
 
 ### Accessibility
 

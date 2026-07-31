@@ -148,8 +148,10 @@ listening sequence; [ADR-0040](../../architecture/decisions/ADR-0040-select-repo
 selects repository WSOLA for Milestone 5 integration. The selected source adds
 no dependency or CSP change. Milestone 5 now connects that backend to product
 playback at all six admitted rates. Milestone 6's sequential six-arm packaged
-portfolio and repository validation pass locally; final all-rate human
-listening confirmation and required pull-request checks remain open.
+portfolio and repository validation pass locally. The maintainer's renewed
+all-rate listening confirms that every admitted value now slows playback in
+the intended direction and remains usable. Pull request #170 then passed the
+required Ubuntu and Windows checks, so M010.2 is complete.
 
 ## Scope and non-goals
 
@@ -1122,9 +1124,10 @@ requests, and zero generated-audio files. Peak observed dedicated VRAM was
 3,734 MiB for Chatterbox and 5,090 MiB for Qwen; Piper used zero dedicated
 VRAM. The complete browser, native-startup, portable, and Windows repository
 commands also pass outside the sandbox. ADR-0040 already contains fluent
-Spanish/English listening at `1.00x`, `0.85x`, and `0.75x`; explicit human
-portfolio confirmation at the remaining admitted rates and required PR checks
-are still pending, so the plan is not archived yet.
+Spanish/English listening at `1.00x`, `0.85x`, and `0.75x`. On 2026-07-31 the
+maintainer repeated product listening after the clock correction and confirmed
+that the complete admitted range now slows playback correctly and remains
+usable. Pull request #170 subsequently passed both required foundation checks.
 
 The maintainer's subsequent product listening found that non-default values
 sped playback up instead of slowing it. The portfolio matrix had proved
@@ -1139,8 +1142,9 @@ type checking, 51 files/518 desktop tests plus 12 native helpers, all six
 Chromium journeys, packaged WebView2 startup, and the complete portable gate
 pass outside the sandbox. The complete Windows gate also passes 209 shared,
 580 EPUB, 518 desktop, 347 Python, and 41 Rust tests plus 12 native helpers and
-all release builds. Renewed human rate-direction confirmation remains required
-before closeout.
+all release builds. The maintainer subsequently repeated the product journey
+and confirmed the corrected audible direction across the admitted range. Pull
+request #170 then passed the required Ubuntu and Windows foundation checks.
 
 The subsequent empty/ready shell review exposed host-localized native file
 text, empty-state Settings and compatibility overflow, redundant
@@ -1158,8 +1162,8 @@ also pass.
 
 #### Status
 
-Local automated validation complete; human all-rate confirmation and required
-pull-request checks pending.
+Complete. Local automated validation, human all-rate confirmation, and the
+required pull-request checks pass.
 
 ## Testing and benchmark strategy
 
@@ -1621,6 +1625,11 @@ Do not rewrite accepted historical authority to make a result pass.
   complete Windows gate pass in normal local PowerShell. The earlier matrix
   remains valid for state and lifecycle evidence, but human audible-rate
   direction must be repeated.
+- **2026-07-31:** The maintainer repeated the product listening journey after
+  the 24,000 Hz clock correction and confirmed that every admitted non-default
+  value slows playback in the intended direction and remains usable. This
+  closes the final human all-rate gate without changing the frozen authority,
+  backend selection, source-PCM bounds, or prior automated evidence.
 - **2026-07-31:** Milestone 6 shell review produced ADR-0041 and simplified the
   empty/ready chrome. The native picker is now a stable styled Open a book
   action without localized filename text; Settings appears only after a
@@ -1633,6 +1642,10 @@ Do not rewrite accepted historical authority to make a result pass.
   external requests. `pnpm.cmd check:portable` and `pnpm.cmd check` pass 209
   shared, 580 EPUB, 515 desktop, 347 Python, and 41 Rust tests plus 12 native
   helpers, all lint/type/generated-contract checks, and portable/native builds.
+- **2026-07-31:** Pull request #170 passed the required Ubuntu portable and
+  Windows native foundation checks. With automated validation and maintainer
+  all-rate listening complete, archived M010.2 under `docs/plans/completed/`
+  and released M011 as the next roadmap milestone.
 
 ## Discoveries and decisions
 
@@ -1837,14 +1850,13 @@ their measured depletion. Every arm reports zero external requests, zero
 generated-audio files, zero retained/discarded units after cleanup, and no
 stale playback. Browser, native-startup, portable, and complete Windows checks
 pass outside the sandbox. ADR-0040 supplies prior bilingual human evidence at
-`1.00x`, `0.85x`, and `0.75x`; the remaining intermediate-rate portfolio
-listening confirmation and required pull-request checks are not yet complete.
-The post-matrix product clock correction also requires renewed audible-rate
-direction confirmation because the earlier matrix did not measure rendered
-duration. Its regression, desktop, Chromium, packaged startup, portable, and
-complete Windows checks pass outside the sandbox.
+`1.00x`, `0.85x`, and `0.75x`. The maintainer's renewed post-correction journey
+confirms the remaining admitted values and correct audible-rate direction. The
+clock regression, desktop, Chromium, packaged startup, portable, and complete
+Windows checks pass outside the sandbox. Pull request #170 also passes the
+required Ubuntu and Windows foundation checks.
 
-The full plan remains active. ADR-0035 supplies the reduced-range product
+The full plan is complete. ADR-0035 supplies the reduced-range product
 decision, ADR-0036 freezes its v2 authority, and ADR-0037 records the
 no-selection result. ADR-0038 authorizes a separate boundary-deferred v3 with
 new first-activation and RAM limits. ADR-0039 and authority commit `4132229`
@@ -1865,6 +1877,6 @@ Milestone 5 integrates the exact selected backend with one bounded worklet, a se
 playback preference, six compact-bar values, immutable-current/latest-pending
 activation, and effective-lead scheduling. It changes no TTS/model input,
 source queue ceiling, progress authority, transition timer, dependency, CSP,
-or persistence boundary. Milestone 6 is locally complete except for those two
-closeout gates. Keep this ExecPlan active until both are recorded, then move it
-to `completed/` without changing the frozen authority or historical results.
+or persistence boundary. The maintainer all-rate journey and pull request #170
+close both remaining gates, so this ExecPlan is archived without changing
+frozen authority or historical results.

@@ -70,9 +70,9 @@ compact narration bar exposes all six rates. Milestone 6's local automated
 portfolio and lifecycle matrix passes: every profile exposes the same
 engine-neutral six-rate presentation and both Piper language arms exercise all
 six rates within the frozen activation/handoff gates. Chatterbox and
-development-only Qwen retain their unchanged synthesis paths. Human
-confirmation of the intermediate portfolio rates and required pull-request
-checks still gate plan closeout.
+development-only Qwen retain their unchanged synthesis paths. Maintainer
+all-rate confirmation and pull request #170's required Ubuntu/Windows checks
+pass.
 
 A post-integration listening report on 2026-07-31 exposed a product-wiring
 defect that the state/handoff matrix did not measure: product PCM is fixed at
@@ -82,7 +82,8 @@ host clock consumed its output twice as quickly. The product now explicitly
 requests a 24,000 Hz `AudioContext`, matching the evaluated WSOLA clock without
 adding a transformed PCM copy, queue, dependency, CSP change, or model work.
 This correction preserves the candidate selection and requires renewed human
-rate-direction confirmation before M010.2 closes.
+rate-direction confirmation before M010.2 closes. The maintainer subsequently
+confirmed correct slowdown across the complete admitted range.
 
 ## Alternatives considered
 

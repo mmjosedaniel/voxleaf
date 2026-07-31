@@ -4,7 +4,7 @@ Documentation is organized by purpose so contributors and Codex can load only th
 
 ## Current project status
 
-Roadmap Milestones 1 through 10.1, M008.1, and M009.1 are complete. M008 provides
+Roadmap Milestones 1 through 10.2, M008.1, and M009.1 are complete. M008 provides
 the constrained one-GPU narration demo; M008.1 adds bounded semantic
 transitions between already-buffered units; M009 and M009.1 add synchronized
 highlighting, heard checkpoints, stable reader chrome, paragraph leaves, and
@@ -57,9 +57,8 @@ arms, exact-host metrics, privacy boundary, cancellation, synchronization, and
 cleanup evidence pass. Pull request #159 passed the required Ubuntu and
 Windows checks and merged the closeout.
 
-M010.2 is the approved active follow-up before M011. Milestones 1-5 are
-complete and Milestone 6 local automated validation passes: the reader/settings/playback authority was frozen before results,
-then neither v1 backend passed every frozen gate. ADR-0034 retains that
+M010.2 is complete. The reader/settings/playback authority was frozen before
+results, then neither v1 backend passed every frozen gate. ADR-0034 retains that
 historical `1.00x` result. Milestone 3 changes only bounded narration
 preferences: the current app now preserves valid Spanish/English state,
 defaults missing/invalid/reset state to English, and persists Quick/Prepared
@@ -90,9 +89,10 @@ before use, and reset follows identity-first cleanup.
 The sequential packaged closeout exposes the same six-rate presentation for
 all profiles and exercises Piper Spanish/English at all six rates while also
 running Chatterbox Spanish/English and development-only Qwen Serena/Aiden. It
-reports zero external requests, persisted audio, stale
-playback, or retained cleanup units. Human confirmation of the intermediate
-rates and required pull-request checks still gate plan archival.
+reports zero external requests, persisted audio, stale playback, or retained
+cleanup units. Renewed maintainer listening confirms correct slowdown across
+the admitted range, and pull request #170 passes the required Ubuntu and
+Windows checks.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -208,7 +208,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
 - [`plans/completed/M010-001-bilingual-narration-and-candidate-screening.md`](plans/completed/M010-001-bilingual-narration-and-candidate-screening.md): completed bilingual follow-up covering evaluation, exact profile integration, packaged portfolio validation, and passing Ubuntu/Windows closeout.
-- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): active pre-M011 reader-first settings and playback-control follow-up; Milestones 1-5 are complete and Milestone 6 local automated validation passes, including bounded English-default language/start/playback preferences, the reader-first Settings shell, six-rate boundary-deferred repository-WSOLA playback, and the sequential six-arm portfolio. Human intermediate-rate confirmation and required PR checks still gate archival.
+- [`plans/completed/M010-002-reader-settings-and-playback-controls.md`](plans/completed/M010-002-reader-settings-and-playback-controls.md): completed pre-M011 reader-first settings and playback-control follow-up, including bounded English-default language/start/playback preferences, the reader-first Settings shell, six-rate boundary-deferred repository-WSOLA playback, the sequential six-arm portfolio, renewed human all-rate confirmation, and passing Ubuntu/Windows closeout checks.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 
