@@ -677,8 +677,17 @@ PowerShell session created the packaged WebView2 session and reached candidate
 measurement. That run then stopped before the first candidate result because
 the PowerShell CPU counter serialized a decimal with the host locale while
 the Node harness required invariant numeric text. The affected WebView2
-result remains inconclusive pending the corrected outside-sandbox rerun;
-Chromium results are unaffected.
+result was inconclusive until the corrected outside-sandbox rerun. Execution
+commit `021c4a9` then passed both candidates in packaged WebView2. Media
+measured 0.348 cents maximum pitch deviation, 0.042 ms maximum duration error,
+zero frame drift, 14.6 ms start p95, 1,536,044 bytes maximum work, 102.383 MiB
+additional RAM, and no measured CPU increase. Incremental WSOLA measured the
+same pitch deviation, zero duration error/frame drift, 168.5 ms start p95,
+803,840 bytes maximum work, 19.016 MiB additional RAM, and 5.813 CPU
+percentage points. Both passed lifecycle/resource gates with one active
+stretcher or object URL as applicable, zero external requests, and zero
+persisted audio bytes. Chromium results remain unaffected. Both candidates
+advance to the bounded inference-contention and bilingual listening arms.
 
 #### Status
 
@@ -1079,6 +1088,30 @@ Do not rewrite accepted historical authority to make a result pass.
   evidence, not a candidate failure. The CPU query now emits invariant-culture
   numeric text; only the affected packaged WebView2 arm will be repeated.
   No Chromium, TTS, model, privacy, or listening result is invalidated.
+- **2026-07-30:** Repeated only the affected packaged arm outside the sandbox
+  from locale-safe execution commit `021c4a9`. Both Chromium passers also
+  passed packaged Windows WebView2. Media measured 0.348 cents maximum pitch
+  deviation, 0.042 ms maximum duration error, zero source-frame drift,
+  14.6 ms start p95, 1,536,044 bytes maximum work, 102.383 MiB additional RAM,
+  and no measured CPU increase. Incremental WSOLA measured 0.348 cents maximum
+  pitch deviation, zero duration error/frame drift, 168.5 ms start p95,
+  803,840 bytes maximum work, 19.016 MiB additional RAM, and 5.813 CPU
+  percentage points. Both retained bounded lifecycle cleanup, made zero
+  external requests, and persisted zero audio bytes. This closes the
+  previously inconclusive WebView2 result without rerunning or changing the
+  unaffected Chromium authority.
+- **2026-07-30:** Added the bounded post-machine harnesses required before a
+  selection. The contention runner keeps exactly one local Piper CPU inference
+  process active with repository-authored v7 text while the two candidates run
+  sequentially in packaged WebView2; synthesized bytes are discarded rather
+  than written. This is the conservative supported CPU-profile contention arm
+  and cannot create a second TTS tree or a second active stretcher. The
+  listening runner generates only the four frozen Spanish/English speech
+  inputs under an ignored temporary directory, blocks non-loopback browser
+  requests, presents both candidates at `1.00x`, `0.85x`, and `0.75x`, accepts
+  one fluent-maintainer scorecard, retains only content-free scores, and
+  removes every temporary WAV and manifest when the session ends. These
+  runners are candidate evaluation code and will be removed after selection.
 
 ## Discoveries and decisions
 
