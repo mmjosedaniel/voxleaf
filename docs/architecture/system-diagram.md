@@ -41,7 +41,7 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 | Reader experience stabilization                    | **Complete and validated**                                      | Completed M009.1 repairs same-chapter active-range materialization; implements one reader scroll owner, stable compact chrome, collapsible narration detail, truthful loaded-duration text, and one bounded canonical paragraph leaf; and separates passive viewport inspection from explicit narration replacement. Deterministic, Chromium, packaged WebView2, private-EPUB, exact-host, repository, privacy, portable, and required Ubuntu/Windows checks pass.                      |
 | Hardware profiles, fallback, and resilience        | **Implemented and validated**                                   | Completed M010 implements detection, matching, preference/recheck UI, identity-safe recovery, and exact Piper/davefx plus Qwen/Serena runtime gates. M010.1 Milestone 6 extends the immutable registry and pre-start configuration boundary to Piper/joe, Chatterbox bilingual, and Qwen/Aiden without automatic failover or a second child tree. Distribution stays with M011.                                                                                                         |
 | Bilingual narration and candidate screening        | **Complete and validated**                                      | Completed M010.1 implements exact profile/language registry, matching, UI selection, pre-start configuration, native supervision, Piper English, Chatterbox bilingual, and Qwen Serena/Aiden bindings without changing protocol v1. Both Piper voices and Chatterbox are supported when exact gates pass; both Qwen voices remain development-only. Six service arms, six packaged EPUB portfolio arms, and required Ubuntu/Windows checks pass.                                        |
-| Reader settings and playback controls              | **In progress; Settings implemented, speed pending**             | M010.2 Milestones 1-4 are complete. English-default language v2 and narration-start v1 preferences are bounded, and the fixed reader-first app bar, compact chrome, sole reader viewport, contents overlay, and accessible Settings drawer/sheet are implemented without changing domain ownership. ADR-0040 selects repository WSOLA without a dependency or CSP expansion. Milestone 5 owns the six-rate connection; runtime playback remains `1.00x`. |
+| Reader settings and playback controls              | **In progress; speed integration implemented**                   | M010.2 Milestones 1-5 are complete. English-default language v2 plus narration-start v1 and playback-rate v1 preferences are bounded; the reader-first shell is implemented; and ADR-0040's repository WSOLA now provides six boundary-deferred rates without restarting TTS, discarding source PCM, adding a dependency, or expanding CSP. Milestone 6 owns portfolio and repository closeout. |
 | Release packaging                                  | **Deferred**                                                    | M011 remains future work; installer bundling, signing, model/runtime distribution, updater policy, and complete-MVP validation are not implemented.                                                                                                                                                                                                                                                                                                                                     |
 
 ## Component and trust-boundary map
@@ -66,10 +66,10 @@ flowchart LR
             PICKER["Browser file input + FileReader<br/>Implemented"]:::implemented
             SESSION["Publication session owner<br/>Implemented"]:::implemented
             READER["Semantic React reader<br/>navigation, reflow, locator tracking<br/>Implemented"]:::implemented
-            STORE["WebView localStorage<br/>locator + display + bounded language/profile preferences<br/>Implemented"]:::implemented
+            STORE["WebView localStorage<br/>locator + display + bounded language/profile/start/rate preferences<br/>Implemented"]:::implemented
             SHELL["Tauri native supervisor<br/>model-free default or native-configured exact child<br/>M7 complete"]:::implemented
             CLIENT["Typed TTS client + one-unit handoff sink<br/>M7 complete<br/>consumed outside React"]:::implemented
-            PLAYBACK["Product narration coordinator + adaptive scheduler<br/>payload FIFO, Web Audio 1.0x player, controls;<br/>semantic unit-transition timer;<br/>Piper-only nonspoken-unit omission"]:::implemented
+            PLAYBACK["Product narration coordinator + adaptive scheduler<br/>source-PCM FIFO, Web Audio + boundary WSOLA;<br/>effective lead + source-frame progress;<br/>semantic unit-transition timer"]:::implemented
             PROJECTION["Bounded audible range projection<br/>exact start/completion + played frames<br/>M9 complete"]:::implemented
             SYNC["Reader segment projection, following,<br/>and synchronized user navigation<br/>M9 complete; M9.1 M2 materialization repair"]:::implemented
             HEARD_STORE["Heard-position persistence bridge<br/>exact boundaries + lifecycle flush<br/>M9 complete"]:::implemented
@@ -77,10 +77,10 @@ flowchart LR
             COMPAT["Privacy-safe detector + measured matcher<br/>exact language/profile registry, bounded preference,<br/>UI + hardware pre-start check"]:::implemented
             RUNTIME_GATE["Exact-profile runtime configuration gate<br/>native boolean at availability + pre-start<br/>M10 Milestone 6 corrective validation"]:::implemented
             RECOVERY["Identity-safe recovery controller<br/>verified cleanup + one explicit restart<br/>M10 Milestone 4 implemented"]:::implemented
-            SETTINGS_PREFS["Bounded narration preferences<br/>English fallback + Quick/Prepared start<br/>M10.2 M3 implemented"]:::implemented
+            SETTINGS_PREFS["Bounded narration preferences<br/>English fallback + Quick/Prepared start + playback rate<br/>M10.2 M3/M5 implemented"]:::implemented
             SETTINGS_SHELL["Reader-first app bar + Settings<br/>compact chrome + contents overlay;<br/>M10.2 M4 implemented"]:::implemented
-            SPEED_CONTROL["Boundary-deferred playback speed<br/>M10.2 M5 pending;<br/>WSOLA selected"]:::planned
-            WSOLA["Repository incremental WSOLA v3<br/>evaluation-selected source retained;<br/>product connection pending M5"]:::progress
+            SPEED_CONTROL["Six-value boundary-deferred playback speed<br/>selected/pending/active state;<br/>M10.2 M5 implemented"]:::implemented
+            WSOLA["Repository incremental WSOLA v3<br/>one reusable bounded worklet;<br/>M10.2 M5 implemented"]:::implemented
         end
 
         subgraph PACKAGES["TypeScript packages"]
@@ -124,12 +124,12 @@ flowchart LR
     RUNTIME_GATE -->|"exact runtime configured"| PLAYBACK
     PLAYBACK -.->|"classified failure + invalidated identity"| RECOVERY
     RECOVERY -.->|"explicit bounded restart after cleanup"| SHELL
-    SETTINGS_PREFS -->|"language v2 + narration-start v1"| STORE
+    SETTINGS_PREFS -->|"language v2 + start/rate v1"| STORE
     SETTINGS_PREFS -->|"language/profile filter + reset"| COMPAT
     SETTINGS_SHELL -->|"reader preferences through existing reflow owner"| READER
     SETTINGS_SHELL -->|"language/profile + measured detail views"| COMPAT
-    SPEED_CONTROL -.->|"planned six-rate controls"| PLAYBACK
-    WSOLA -.->|"planned boundary-deferred M5 integration"| PLAYBACK
+    SPEED_CONTROL -->|"six-rate boundary state"| PLAYBACK
+    WSOLA -->|"pitch-preserving successor-unit playback"| PLAYBACK
 
     PYTHON -.-> FEASIBILITY
     FEASIBILITY -.-> PROFILE_CYCLE
@@ -207,13 +207,12 @@ It adds no new locator, host-detection, profile, or playback authority. The
 contents overlay remains navigation-only, the publication viewport remains the
 sole reading scroll owner, and opening/closing Settings is lifecycle-neutral.
 
-The remaining dashed M010.2 speed node is not a current runtime relationship.
-Milestone 1
+The M010.2 speed node is now a solid runtime relationship. Milestone 1
 froze its lifecycle-neutral Settings, bounded preferences, English fallback
 migration, exact source/effective-duration arithmetic, backend candidates,
 pitch/resource gates, and unchanged cancellation/resource boundaries before
-results. Milestone 2 selected no backend and ADR-0034 retains `1.00x`; there is
-still no rate edge into playback. ADR-0035 authorized and
+results. Milestone 2 selected no backend and ADR-0034 retained `1.00x` for that
+v1 result. ADR-0035 authorized and
 ADR-0036 froze the separate six-rate, fee-free v2 authority. ADR-0037 records
 that no candidate survived the complete gate sequence; every dependency,
 candidate adapter, runner, and prospective `media-src 'self' blob:` delta was
@@ -222,12 +221,13 @@ becomes active only at the next complete-unit boundary while TTS and queued PCM
 continue unchanged. ADR-0039 and the immutable v3 authority now freeze exactly
 the media and repository-WSOLA candidates, selected/pending/active state,
 250 ms recurring handoff, resource/lifecycle, listening, licence/CSP, and
-strict lineage gates before Milestone 2D. No CSP, dependency, or runtime rate
-edge exists. Milestone 2D then selected repository WSOLA after the complete
+strict lineage gates before Milestone 2D. Milestone 2D then selected repository
+WSOLA after the complete
 machine, privacy, lifecycle, and bilingual-listening sequence. ADR-0040 retains
-only that controller/worklet and no CSP or dependency change. Its edge to the
-product player remains dashed until Milestone 5 integrates and validates it;
-the current player remains `1.00x`.
+only that controller/worklet and no CSP or dependency change. Milestone 5 makes
+its product edge solid: one reusable worklet applies the latest valid pending
+rate at the next complete-unit boundary, effective duration governs lead, and
+source frames/bytes continue to govern memory and audible progress.
 M009 Milestone 3 makes the projection-to-reader edge solid: the reader maps
 the active source range, owns one production Custom Highlight entry, and
 performs focus-safe placement without creating passive-seek feedback. The
@@ -413,7 +413,7 @@ value remains a simultaneous ceiling, not a startup target.
 | Reader experience stabilization                         | [M009.1 completed ExecPlan](../plans/completed/M009-001-reader-experience-stabilization.md), frozen [reader-experience authority v1](reader-experience-authority-v1.md), and accepted [ADR-0018](decisions/ADR-0018-reader-experience-stabilization.md). The highlight repair, fixed shell, compact narration, truthful loaded-duration text, bounded paragraph leaf, and passive-scroll isolation are implemented and validated. Pull request #142 passed required Ubuntu/Windows checks and merged the closeout.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Hardware profiles, fallback, and operational resilience | [M010 completed ExecPlan](../plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md), frozen [hardware/profile/recovery authority v1](hardware-profile-recovery-authority-v1.md), accepted [ADR-0019](decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md), passing [Piper v6 result](../../benchmarks/tts/cpu-fallback-result-v6.json), [selection-v6](../../benchmarks/tts/selection-v6.md), [ADR-0020](decisions/ADR-0020-admit-piper-cpu-fallback.md), corrective [Qwen development VRAM authority v1](qwen-development-vram-admission-v1.md) and [ADR-0022](decisions/ADR-0022-qwen-development-vram-admission.md), final [support matrix v1](tts-support-matrix-v1.md) and [ADR-0023](decisions/ADR-0023-final-m010-support-and-recovery.md), implemented [Piper narration preparation profile v2](piper-narration-preparation-profile-v2.md), and frozen [runtime-configuration availability v1](tts-profile-runtime-configuration-availability-v1.md). Final support, margins, explicit fallback/recovery, limitations, distribution obligations, local validation, and replacement Ubuntu/Windows checks pass.                                                                                                                                                                                                                                                                                                                        |
 | Bilingual narration and candidate screening             | [M010.1 completed ExecPlan](../plans/completed/M010-001-bilingual-narration-and-candidate-screening.md), implemented [bilingual product authority v1](bilingual-narration-authority-v1.md) and [normalization v2](narration-normalization-v2.md), frozen [v12 evaluation profile](tts-feasibility-profile-v12.md), content-safe [Chatterbox bilingual](../../benchmarks/tts/chatterbox-bilingual-full-result-v12.json), [Qwen Serena Spanish](../../benchmarks/tts/qwen-serena-spanish-quality-result-v12.json), and [Qwen Aiden English](../../benchmarks/tts/qwen-aiden-english-quality-result-v12.json) results, accepted [selection v12](../../benchmarks/tts/selection-v12.md), [ADR-0031](decisions/ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md), and current [support/integration matrix v2](tts-support-matrix-v2.md). Milestone 6 implements the exact language/profile service bindings while preserving protocol v1 and one-tree ownership. Milestone 7 validates all six packaged EPUB portfolio arms, exact-host metrics, synchronization, cancellation, bounded cleanup, privacy, zero external requests, and required Ubuntu/Windows checks.                                                                                                                                                                                                                                                                                                   |
-| Reader settings and playback controls                   | [M010.2 active ExecPlan](../plans/active/M010-002-reader-settings-and-playback-controls.md), approved [product requirements](../product/reader-settings-and-playback-controls.md), immutable [authority v1](reader-settings-playback-authority-v1.md), frozen playback [authority v2](reader-settings-playback-authority-v2.md) and [v3](reader-settings-playback-authority-v3.md), implemented [bilingual preference authority v2](bilingual-narration-authority-v2.md), ADR-0033 through WSOLA-selection ADR-0040, and aggregate [v3 result](../../benchmarks/playback/boundary-deferred-v3-result.json). Milestones 1-4 are complete. English-default language/start preferences and the reader-first app bar/Settings shell are implemented; playback remains `1.00x` until Milestone 5. |
+| Reader settings and playback controls                   | [M010.2 active ExecPlan](../plans/active/M010-002-reader-settings-and-playback-controls.md), approved [product requirements](../product/reader-settings-and-playback-controls.md), immutable [authority v1](reader-settings-playback-authority-v1.md), frozen playback [authority v2](reader-settings-playback-authority-v2.md) and [v3](reader-settings-playback-authority-v3.md), implemented [bilingual preference authority v2](bilingual-narration-authority-v2.md), ADR-0033 through WSOLA-selection ADR-0040, and aggregate [v3 result](../../benchmarks/playback/boundary-deferred-v3-result.json). Milestones 1-5 are complete. English-default language/start/rate preferences, the reader-first shell, and boundary-deferred six-rate WSOLA playback are implemented; Milestone 6 owns closeout. |
 | Local-first desktop and future local process direction  | [ADR-0001](decisions/ADR-0001-local-first-desktop.md); ADR-0015 permits a constrained one-GPU development demo while the production profile and distribution boundary remain unresolved                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Roadmap status                                          | [Roadmap](../plans/roadmap.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
@@ -441,7 +441,7 @@ value remains a simultaneous ceiling, not a startup target.
    Milestone 7's local packaged portfolio journeys and final metrics/privacy
    evidence pass; pull request #159 passed required Ubuntu/Windows checks and
    merged the closeout.
-6. **Milestone 10.2 — In progress; Milestones 1-4 complete:** v1 authority and
+6. **Milestone 10.2 — In progress; Milestones 1-5 complete:** v1 authority and
    comparison select no backend and retain `1.00x`. ADR-0035 authorizes a
    separate reduced-range, fee-free v2, and ADR-0036 freezes its six rates,
    candidates, licence/CSP policy, resource gates, and validation before
@@ -452,7 +452,8 @@ value remains a simultaneous ceiling, not a startup target.
    frozen v3 gate passes. Milestone 3 implements the bounded English-default
    language/start preference runtime. Milestone 4 implements the fixed compact
    app bar, sole reader viewport, contents overlay, and accessible Settings
-   drawer/sheet. Milestone 5 owns the selected backend connection.
+   drawer/sheet. Milestone 5 implements the selected backend connection,
+   boundary-deferred rate state, playback preference, and effective lead.
 7. **Milestone 11 — Deferred:** complete installer/signing/distribution and
    full MVP closeout after M010.2 closes.
 

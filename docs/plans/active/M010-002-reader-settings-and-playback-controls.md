@@ -1030,12 +1030,29 @@ Complete.
 Expected result: the selected v3 backend and six-value boundary-deferred
 behavior are integrated without TTS restart or queued-audio loss.
 
-Actual result: Not run.
+Actual result: Implementation checkpoint `c70e3fa` connects only the selected
+repository WSOLA v3 source to the existing Web Audio player. The scheduler and
+player now retain separate selected, pending, and active integer-percentage
+rates; keep the current unit immutable; apply the newest pending rate before
+the successor starts; prepare and reuse one worklet; and release it after the
+last slowed unit settles at `1.00x`. Speed-only changes preserve the active TTS
+session, generation identity, prepared text, queued source PCM, source-frame
+progress, transition timers, and existing source resource ceilings.
+
+A separate schema-v1 playback preference accepts exactly `100`, `95`, `90`,
+`85`, `80`, and `75`, fails safely to `100`, preserves unknown future state,
+and stores no content or identity. The compact narration bar exposes the six
+values and distinguishes selected, pending, and active state. Startup, refill,
+low-water, and loaded-duration presentation use exact effective listening
+duration; source frames/bytes continue to govern memory and audible progress.
+No dependency, media/object-URL path, CSP change, model input, generated-audio
+persistence, or external request was added. Deterministic desktop and browser
+coverage proves the boundary transition, latest-selection behavior, TTS/queue
+preservation, worklet reuse/release, exact rate options, and persisted envelope.
 
 #### Status
 
-Not started; Milestone 4 is complete, so this is the next implementation
-milestone.
+Complete.
 
 ### Milestone 6: Validate the portfolio reader and close the plan
 
@@ -1486,6 +1503,24 @@ Do not rewrite accepted historical authority to make a result pass.
   existing active token, and preserves the same preference/restoration result.
   The unchanged complete portable gate, six Chromium cases, and packaged
   Tauri/WebView2 matrix then pass outside the sandbox.
+- **2026-07-31:** Completed Milestone 5 on
+  `feat/m010-002-non-default-speed-integration`. Implementation checkpoint
+  `c70e3fa` adds the bounded playback preference, exact effective-lead
+  scheduling, selected/pending/active boundary state, one reusable repository
+  WSOLA worklet, compact six-rate selector, and identity/queue-preserving
+  coordinator integration. The default `1.00x` path remains direct Web Audio;
+  non-default processing owns no second FIFO and is released after the final
+  slowed unit settles back to default.
+- **2026-07-31:** Closed Milestone 5 validation in normal local PowerShell.
+  The focused desktop suite passes 51 files/517 tests plus 11 native helpers;
+  desktop TypeScript passes; all six production-Chromium journeys pass,
+  including the exact selector and content-free `0.75x` persistence envelope;
+  and the release Tauri/WebView2 lifecycle matrix passes with zero external
+  requests. `pnpm.cmd check:portable` passes formatting, lint, generated-
+  contract verification, TypeScript/Python types, 20 shared files/209 tests,
+  34 EPUB files/580 tests, the same desktop/Python suites, and portable builds.
+  `git diff --check` passes. The run retains only the existing non-failing
+  pytest cache-write, CSS Highlight parser, and Vite chunk-size advisories.
 
 ## Discoveries and decisions
 
@@ -1624,10 +1659,19 @@ Do not rewrite accepted historical authority to make a result pass.
 - The compatibility presentation can be split safely into a concise app-bar
   summary plus Narration and Device compatibility Settings views because all
   three subscribe to one coordinator and do not own host detection.
+- Effective lead can be derived without duplicating PCM: each queued unit keeps
+  its source duration, the current unit uses its immutable active rate, and
+  future units use the latest selected rate. This preserves exact source-memory
+  accounting while making startup and refill promises rate-correct.
+- Playback preference ownership must remain separate from persisted reading
+  position even though the historical shared locator envelope permits a
+  positive rate. The new envelope is content-free, versioned, closed to six
+  integer percentages, and can preserve unknown future state without changing
+  the current session.
 
 ## Final validation results
 
-M010.2 Milestones 1-4 are complete. Milestone 1 validation added 21
+M010.2 Milestones 1-5 are complete. Milestone 1 validation added 21
 result-blind authority tests and passed the complete portable gate. Milestone
 2 produced the closed Chromium and packaged WebView2 evidence recorded above,
 selected no backend, removed all experimental adapters, and added no
@@ -1649,6 +1693,14 @@ release builds, and the complete `pnpm.cmd check` gate. All 655 relative links
 across 109 documentation files resolve. The 18 changed paths contain no
 private-pattern or prohibited artifact finding, and `git diff --check` passes.
 
+Milestone 5 validation passes in normal host PowerShell: 51 desktop files/517
+tests plus 11 native helpers, desktop typecheck, all six Chromium cases, the
+release Tauri/WebView2 native-startup matrix, 347 Python tests, complete
+portable formatting/lint/type/test/build checks, and `git diff --check`. The
+browser case persists only the schema version and exact integer rate. No
+private text, generated audio, model artifact, dependency, CSP expansion, or
+external request is introduced.
+
 The full plan remains active. ADR-0035 supplies the reduced-range product
 decision, ADR-0036 freezes its v2 authority, and ADR-0037 records the
 no-selection result. ADR-0038 authorizes a separate boundary-deferred v3 with
@@ -1662,7 +1714,9 @@ runtime fallback, closed narration-start persistence, pre-action hydration,
 and identity-safe reset. Milestone 4 implements the fixed app bar, compact
 reader-first shell, accessible five-section Settings drawer/sheet, collapsible
 contents overlay, and development-only raster diagnostics while retaining the
-existing domain owners and one reader scroll authority. Milestone 5 must now
-integrate the exact selected backend. No production time-stretch connection,
-effective-lead scheduling, playback-rate preference, or non-`1.00x` runtime
-behavior is claimed.
+existing domain owners and one reader scroll authority. Milestone 5 integrates
+the exact selected backend with one bounded worklet, a separate
+playback preference, six compact-bar values, immutable-current/latest-pending
+activation, and effective-lead scheduling. It changes no TTS/model input,
+source queue ceiling, progress authority, transition timer, dependency, CSP,
+or persistence boundary. Milestone 6 is now the next and final plan milestone.

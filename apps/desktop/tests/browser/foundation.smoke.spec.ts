@@ -7,6 +7,7 @@ const TEST_STORAGE_KEY = "voxleaf.browser-smoke";
 const READER_POSITIONS_STORAGE_KEY = "voxleaf.reader.positions";
 const READER_PREFERENCES_STORAGE_KEY = "voxleaf.reader.preferences";
 const NARRATION_LANGUAGE_STORAGE_KEY = "voxleaf.narration.language-preference";
+const NARRATION_PLAYBACK_STORAGE_KEY = "voxleaf.narration.playback-preference";
 const NARRATION_START_STORAGE_KEY = "voxleaf.narration.start-preference";
 
 async function buildNavigationFixture(): Promise<Uint8Array> {
@@ -47,6 +48,7 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
       READER_POSITIONS_STORAGE_KEY,
       READER_PREFERENCES_STORAGE_KEY,
       NARRATION_LANGUAGE_STORAGE_KEY,
+      NARRATION_PLAYBACK_STORAGE_KEY,
       NARRATION_START_STORAGE_KEY,
     ],
   );
@@ -201,6 +203,22 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
     ).toEqual({ overflowY: "auto", containsArticle: true });
     await expect(page.getByRole("progressbar")).toHaveCount(0);
     await expect(page.locator(".paragraph-leaf")).toHaveCount(0);
+    const playbackSpeed = page.getByRole("combobox", {
+      name: "Playback speed",
+    });
+    await expect(playbackSpeed).toBeEnabled();
+    await expect(playbackSpeed).toHaveValue("100");
+    await expect(playbackSpeed.getByRole("option")).toHaveCount(6);
+    await playbackSpeed.selectOption("75");
+    await expect(playbackSpeed).toHaveValue("75");
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (key) => JSON.parse(localStorage.getItem(key) ?? "null"),
+          NARRATION_PLAYBACK_STORAGE_KEY,
+        ),
+      )
+      .toEqual({ schemaVersion: 1, playbackRatePercent: 75 });
     const narrationDetail = page.getByRole("button", {
       name: "Show narration details",
     });
