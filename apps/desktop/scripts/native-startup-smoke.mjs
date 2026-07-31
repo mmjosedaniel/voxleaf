@@ -1480,6 +1480,13 @@ async function runAdaptiveTtsExactHostMatrix(
     optionsAccepted === true,
     "Native application main landmark is not visible.",
   );
+  await waitForCondition(
+    driver,
+    `const speed = document.querySelector(
+       'select[aria-label="Playback speed"]',
+     );
+     return speed instanceof HTMLSelectElement && !speed.disabled;`,
+  );
   const playbackRateOptionsAccepted = await driver.execute(
     `const speed = document.querySelector(
        'select[aria-label="Playback speed"]',
@@ -1488,7 +1495,7 @@ async function runAdaptiveTtsExactHostMatrix(
        !speed.disabled &&
        JSON.stringify(
          Array.from(speed.options, (option) => Number(option.value)),
-       ) === JSON.stringify(${JSON.stringify([100, 95, 90, 85, 80, 75])}) &&
+       ) === JSON.stringify(${JSON.stringify(PORTFOLIO_PLAYBACK_RATE_PERCENTS)}) &&
        speed.value === "100";`,
   );
   assertNativeSmokeInvariant(
