@@ -2316,6 +2316,91 @@ async function selectAdaptiveTtsProfile(
   return true;
 }
 
+async function openReaderSettings(driver) {
+  const opened = await driver.execute(
+    `const button = Array.from(document.querySelectorAll("button")).find(
+       (candidate) => candidate.textContent?.trim() === "Settings",
+     );
+     if (!(button instanceof HTMLButtonElement)) {
+       return false;
+     }
+     button.click();
+     return true;`,
+  );
+  assert(opened === true, "Native reader Settings were unavailable.");
+  await waitForCondition(
+    driver,
+    `return document.querySelector('[role="dialog"][aria-modal="true"]') !== null;`,
+  );
+}
+
+async function closeReaderSettings(driver) {
+  const closed = await driver.execute(
+    `const button = Array.from(document.querySelectorAll("button")).find(
+       (candidate) => candidate.textContent?.trim() === "Close Settings",
+     );
+     if (!(button instanceof HTMLButtonElement)) {
+       return false;
+     }
+     button.click();
+     return true;`,
+  );
+  assert(closed === true, "Native reader Settings could not be closed.");
+  await waitForCondition(
+    driver,
+    `return document.querySelector('[role="dialog"][aria-modal="true"]') === null;`,
+  );
+}
+
+async function openReaderContents(driver) {
+  const opened = await driver.execute(
+    `const button = Array.from(document.querySelectorAll("button")).find(
+       (candidate) =>
+         candidate.textContent?.trim() === "Show table of contents",
+     );
+     if (!(button instanceof HTMLButtonElement)) {
+       return false;
+     }
+     button.click();
+     return true;`,
+  );
+  assert(opened === true, "Native reader table of contents was unavailable.");
+  await waitForCondition(
+    driver,
+    `return document.querySelector(
+       'nav.reader-toc[aria-label="Table of contents"]:not([hidden])',
+     ) !== null;`,
+  );
+}
+
+async function closeReaderContents(driver) {
+  const contentsOpen = await driver.execute(
+    `return document.querySelector(
+       'nav.reader-toc[aria-label="Table of contents"]:not([hidden])',
+     ) !== null;`,
+  );
+  if (contentsOpen !== true) {
+    return;
+  }
+  const closed = await driver.execute(
+    `const button = Array.from(document.querySelectorAll("button")).find(
+       (candidate) => candidate.textContent?.trim() === "Close contents",
+     );
+     if (!(button instanceof HTMLButtonElement)) {
+       return false;
+     }
+     button.click();
+     return true;`,
+  );
+  assert(closed === true, "Native reader table of contents could not close.");
+  await waitForCondition(
+    driver,
+    `return document.querySelector(
+       'nav.reader-toc[aria-label="Table of contents"]:not([hidden])',
+     ) === null;`,
+  );
+}
+
 async function selectNarrationLanguage(driver, language) {
   const serializedLanguage = JSON.stringify(language);
   const selected = await driver.execute(
@@ -3204,7 +3289,7 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
   const narrowLayout = await driver.execute(
     `const reader = document.querySelector(".semantic-reader");
      const article = document.querySelector(".semantic-document");
-     const controls = document.querySelector(".reader-preferences");
+     const controls = document.querySelector(".application-bar");
      const scrollOwners = Array.from(
        document.querySelectorAll('[data-reader-scroll-owner="true"]'),
      );
@@ -3347,8 +3432,19 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
   );
 
   setStage("native reader preference-control keyboard order");
-  const skipLink = await driver.findElement("a.reader-skip-link");
-  await driver.sendKeys(skipLink, WEBDRIVER_TAB);
+  await closeReaderContents(driver);
+  const settingsButton = await driver.findElement(
+    ".application-bar-actions button",
+  );
+  await driver.sendKeys(settingsButton, WEBDRIVER_ENTER);
+  await waitForCondition(
+    driver,
+    `return document.activeElement?.textContent?.trim() === "Close Settings";`,
+  );
+  const closeSettingsButton = await driver.findElement(
+    "button.reader-settings-close",
+  );
+  await driver.sendKeys(closeSettingsButton, WEBDRIVER_TAB);
   let textScaleControl = await driver.findElement('select[name="textScale"]');
   assert(
     (await driver.execute(
@@ -3381,6 +3477,8 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
     activeControl = await driver.findElement(`select[name="${expectedName}"]`);
   }
 
+  await closeReaderSettings(driver);
+  await openReaderContents(driver);
   const tocLinks = await driver.findElements("button.reader-toc-link");
   assert(
     tocLinks.length >= 2,
@@ -3421,6 +3519,7 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
     setStage,
   });
 
+  await openReaderSettings(driver);
   await runNativeReaderInteraction({
     action: async () => {
       assert(
@@ -3459,6 +3558,7 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
     label: "preference persistence",
     setStage,
   });
+  await closeReaderSettings(driver);
 
   setStage("native reader accessibility media assertion");
   await driver.executeCdp("Emulation.setEmulatedMedia", {
@@ -3469,6 +3569,7 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
       { name: "forced-colors", value: "active" },
     ],
   });
+  await openReaderContents(driver);
   const accessibilityMedia = await driver.execute(
     `const reader = document.querySelector(".semantic-reader");
      const navigation = document.querySelector(".reader-toc");
@@ -3533,6 +3634,7 @@ async function exerciseNativeReaderInteractionMatrix(driver, setStage) {
     media: "",
     features: [],
   });
+  await closeReaderContents(driver);
   await driver.setWindowRect(960, 720);
 }
 
@@ -3593,7 +3695,9 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
      const selectionText = firstText(selectionOwner);
      const targetText = firstText(target);
      const selection = document.getSelection();
-     const theme = document.querySelector('select[name="theme"]');
+     const focusOwner = Array.from(document.querySelectorAll("button")).find(
+       (candidate) => candidate.textContent?.trim() === "Settings",
+     );
      const readerViewport = document.querySelector(
        '[data-reader-scroll-owner="true"]',
      );
@@ -3603,13 +3707,13 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
        selectionText.data.length < 2 ||
        targetText.data.length < 2 ||
        selection === null ||
-       !(theme instanceof HTMLSelectElement) ||
+       !(focusOwner instanceof HTMLButtonElement) ||
        !(readerViewport instanceof HTMLElement)
      ) {
        return { supported: true, fixtureReady: false };
      }
 
-     theme.focus({ preventScroll: true });
+     focusOwner.focus({ preventScroll: true });
      const selected = document.createRange();
      selected.setStart(selectionText, 0);
      selected.setEnd(selectionText, 1);
@@ -3799,8 +3903,7 @@ async function exerciseNativeSynchronizationFeasibility(driver, setStage) {
            hasNonColorUnderline,
            highlightVisiblyPerceivable,
            followed: outsideBefore && insideReaderViewport,
-           focusPreserved:
-             document.activeElement?.getAttribute("name") === "theme",
+            focusPreserved: document.activeElement === focusOwner,
            selectionPreserved:
              selection.rangeCount === 1 &&
              selection.toString() === selectionBefore &&
@@ -4031,6 +4134,7 @@ async function runNativeReaderPerformanceBenchmark(
     `const article = document.querySelector(".semantic-document");
      return article !== null && article.children.length >= 250;`,
   );
+  await openReaderContents(driver);
   const deepTargetLinks = await driver.execute(
     `return document.querySelectorAll("button.reader-toc-link").length;`,
   );
@@ -4080,6 +4184,7 @@ async function runNativeReaderPerformanceBenchmark(
     renderInstrumentation.selectionStartedAt;
   const incrementalAppendMs =
     renderInstrumentation.completeAt - renderInstrumentation.firstContentAt;
+  await openReaderSettings(driver);
   const preferenceReflowMs = await driver.execute(
     `return new Promise((resolve, reject) => {
        const select = document.querySelector('select[name="textScale"]');
@@ -4095,8 +4200,9 @@ async function runNativeReaderPerformanceBenchmark(
            requestAnimationFrame(() => resolve(performance.now() - startedAt)),
          ),
        );
-     });`,
+      });`,
   );
+  await closeReaderSettings(driver);
   setStage("native exact-limit assertions");
   assert(
     maximumBatchScriptMs <= NATIVE_BATCH_SCRIPT_LIMIT_MS &&
@@ -4145,6 +4251,7 @@ async function runNativeReaderPerformanceBenchmark(
       );
     }
 
+    await openReaderContents(driver);
     const tocLinks = await driver.execute(
       `return document.querySelectorAll("button.reader-toc-link").length;`,
     );
@@ -4176,6 +4283,7 @@ async function runNativeReaderPerformanceBenchmark(
     );
 
     const chapterStartedAt = await driver.execute(`return performance.now();`);
+    await openReaderContents(driver);
     await driver.execute(
       `document.querySelectorAll("button.reader-toc-link")[1]?.click();
        return true;`,
@@ -4639,6 +4747,7 @@ async function run() {
       `return document.querySelector("#root")?.childElementCount > 0;`,
     );
     stage = "native bilingual narration preference";
+    await openReaderSettings(driver);
     await exerciseNarrationLanguagePreference(
       driver,
       ADAPTIVE_TTS_EXACT_HOST_MODE ? ADAPTIVE_TTS_LANGUAGE : "es",
@@ -4650,6 +4759,7 @@ async function run() {
         ADAPTIVE_TTS_PROFILE_ID,
         EXERCISE_EXACT_HOST_PROFILE_SWITCH,
       );
+      await closeReaderSettings(driver);
       if (!profileSelected) {
         stage = "adaptive exact-host unavailable-profile assertions";
         await delay(OBSERVATION_WINDOW_MS);
@@ -4706,6 +4816,7 @@ async function run() {
       );
       return;
     }
+    await closeReaderSettings(driver);
     if (READER_PERFORMANCE_MODE) {
       stage = "native reader performance and resource benchmark";
       await runNativeReaderPerformanceBenchmark(
@@ -4826,6 +4937,7 @@ async function run() {
     });
 
     stage = "synthetic restoration seed navigation";
+    await openReaderContents(driver);
     const restorationSeedLinks = await driver.findElements(
       "button.reader-toc-link",
     );
@@ -4948,13 +5060,7 @@ async function run() {
     );
 
     stage = "synthetic publication close";
-    const closeButton = await driver.findElement("button.close-publication");
-    await driver.click(closeButton);
-    await waitForCondition(
-      driver,
-      `return document.querySelector('[role="status"]')?.textContent ===
-         "No local EPUB is open.";`,
-    );
+    await closeNativePublication(driver);
     assert(
       (await driver.findElements('img[alt="Synthetic cover"]')).length === 0,
       "Native publication raster image remained mounted after close.",

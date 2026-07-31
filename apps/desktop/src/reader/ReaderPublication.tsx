@@ -42,7 +42,6 @@ import {
   type ReaderNarrationSource,
   type SegmentHighlightEnvironment,
 } from "./segment-highlight-controller";
-import { ReaderPreferencesControls } from "./ReaderPreferences";
 import {
   ChapterTooLargeContent,
   SemanticDocumentContent,
@@ -145,6 +144,7 @@ function NavigationNodeElement({
 export interface ReaderPublicationContentProps {
   readonly publication: OpenedPublication;
   readonly initialPreferences?: ReaderPreferencesV1;
+  readonly preferences?: ReaderPreferencesV1;
   readonly initialLocator?: ReadingLocatorV1;
   readonly restoreInitialLocator?: boolean;
   readonly onPreferencesChange?: (preferences: ReaderPreferencesV1) => void;
@@ -180,6 +180,7 @@ export interface ReaderInitialRestorationSettlement {
 export function ReaderPublicationContent({
   publication,
   initialPreferences = DEFAULT_READER_PREFERENCES,
+  preferences,
   initialLocator,
   restoreInitialLocator = false,
   onPreferencesChange,
@@ -304,6 +305,7 @@ export function ReaderPublicationContent({
   );
   const navigationId = useId();
   const contentId = useId();
+  const [contentsOpen, setContentsOpen] = useState(false);
   const activeLocatedBlocks = useMemo(
     () =>
       publication.locators.filter(
@@ -316,6 +318,7 @@ export function ReaderPublicationContent({
   const [readerContentRoot, setReaderContentRoot] =
     useState<HTMLDivElement | null>(null);
   const navigationRef = useRef<HTMLElement | null>(null);
+  const focusContentsAfterOpen = useRef(false);
   const destinationRef = useRef<HTMLElement | null>(null);
   const handledNavigationRevision = useRef(0);
   const pendingPositionSaveRevision = useRef<number | undefined>(undefined);
@@ -526,6 +529,7 @@ export function ReaderPublicationContent({
   );
   const activateTarget = useCallback(
     (target: SemanticDocumentTarget) => {
+      setContentsOpen(false);
       runProgrammaticNavigation(
         () => coordinator.navigateToTarget(target),
         "chapter-navigation",
@@ -587,6 +591,28 @@ export function ReaderPublicationContent({
       reflowRestorer,
     ],
   );
+  useLayoutEffect(() => {
+    if (initialRestorationPending || preferences === undefined) {
+      return;
+    }
+    const preferenceOrder: readonly ReaderPreferenceName[] = [
+      "textScale",
+      "lineSpacing",
+      "contentWidth",
+      "theme",
+    ];
+    const preference = preferenceOrder.find(
+      (candidate) => state.preferences[candidate] !== preferences[candidate],
+    );
+    if (preference !== undefined) {
+      updatePreference(preference, preferences[preference]);
+    }
+  }, [
+    initialRestorationPending,
+    preferences,
+    state.preferences,
+    updatePreference,
+  ]);
   const focusReaderContent = useCallback(
     (event: ReactMouseEvent<HTMLAnchorElement>): void => {
       event.preventDefault();
@@ -597,10 +623,17 @@ export function ReaderPublicationContent({
   const focusTableOfContents = useCallback(
     (event: ReactMouseEvent<HTMLAnchorElement>): void => {
       event.preventDefault();
-      navigationRef.current?.focus({ preventScroll: true });
+      focusContentsAfterOpen.current = true;
+      setContentsOpen(true);
     },
     [],
   );
+  useLayoutEffect(() => {
+    if (contentsOpen && focusContentsAfterOpen.current) {
+      focusContentsAfterOpen.current = false;
+      navigationRef.current?.focus({ preventScroll: true });
+    }
+  }, [contentsOpen]);
 
   useEffect(() => {
     const unsubscribe = activeDomRangeMapper.subscribe(() => {
@@ -739,124 +772,146 @@ export function ReaderPublicationContent({
       >
         Skip to reader content
       </a>
-      <div
-        ref={setReaderViewportRef}
-        className="reader-viewport"
-        data-reader-scroll-owner="true"
-        role="region"
-        tabIndex={-1}
-        aria-label="Publication reading viewport"
-      >
-        <ReaderPreferencesControls
-          disabled={initialRestorationPending}
-          preferences={state.preferences}
-          onChange={updatePreference}
-        />
-        <div className="reader-layout">
-          <nav
-            ref={navigationRef}
-            id={navigationId}
-            className="reader-toc"
-            aria-label="Table of contents"
-            tabIndex={-1}
+      <div className="reader-toolbar">
+        <button
+          type="button"
+          aria-expanded={contentsOpen}
+          aria-controls={navigationId}
+          onClick={() => setContentsOpen((open) => !open)}
+        >
+          {contentsOpen ? "Hide table of contents" : "Show table of contents"}
+        </button>
+        <div
+          className="reader-chapter-controls"
+          aria-label="Chapter navigation"
+        >
+          <button
+            type="button"
+            data-reader-action="previous-chapter"
+            disabled={!state.canGoPrevious}
+            onClick={() =>
+              runProgrammaticNavigation(
+                () => coordinator.goPrevious(),
+                "chapter-navigation",
+              )
+            }
           >
+            Previous chapter
+          </button>
+          <button
+            type="button"
+            data-reader-action="next-chapter"
+            disabled={!state.canGoNext}
+            onClick={() =>
+              runProgrammaticNavigation(
+                () => coordinator.goNext(),
+                "chapter-navigation",
+              )
+            }
+          >
+            Next chapter
+          </button>
+        </div>
+        <p
+          className="reader-navigation-status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {state.message}
+        </p>
+        <a
+          className="reader-return-link"
+          href={`#${navigationId}`}
+          onClick={focusTableOfContents}
+        >
+          Back to table of contents
+        </a>
+      </div>
+      <div className="reader-workspace">
+        {contentsOpen ? (
+          <button
+            type="button"
+            className="reader-toc-backdrop"
+            aria-label="Close table of contents"
+            onClick={() => setContentsOpen(false)}
+          />
+        ) : null}
+        <nav
+          ref={navigationRef}
+          id={navigationId}
+          className="reader-toc"
+          data-open={contentsOpen || undefined}
+          aria-label="Table of contents"
+          tabIndex={-1}
+          hidden={!contentsOpen}
+        >
+          <div className="reader-toc-heading">
             <h3>Table of contents</h3>
-            {publication.navigation.length === 0 ? (
-              <p className="reader-toc-empty">
-                No table of contents is available.
-              </p>
-            ) : (
-              <NavigationTree
-                nodes={publication.navigation}
-                coordinator={coordinator}
-                onNavigateTarget={activateTarget}
-              />
-            )}
-          </nav>
-          <div className="reader-reading-pane">
-            <div
-              className="reader-chapter-controls"
-              aria-label="Chapter navigation"
-            >
-              <button
-                type="button"
-                data-reader-action="previous-chapter"
-                disabled={!state.canGoPrevious}
-                onClick={() =>
-                  runProgrammaticNavigation(
-                    () => coordinator.goPrevious(),
-                    "chapter-navigation",
-                  )
-                }
-              >
-                Previous chapter
-              </button>
-              <button
-                type="button"
-                data-reader-action="next-chapter"
-                disabled={!state.canGoNext}
-                onClick={() =>
-                  runProgrammaticNavigation(
-                    () => coordinator.goNext(),
-                    "chapter-navigation",
-                  )
-                }
-              >
-                Next chapter
-              </button>
-            </div>
-            <p
-              className="reader-navigation-status"
-              aria-live="polite"
-              aria-atomic="true"
-            >
-              {state.message}
+            <button type="button" onClick={() => setContentsOpen(false)}>
+              Close contents
+            </button>
+          </div>
+          {publication.navigation.length === 0 ? (
+            <p className="reader-toc-empty">
+              No table of contents is available.
             </p>
-            <a
-              className="reader-return-link"
-              href={`#${navigationId}`}
-              onClick={focusTableOfContents}
-            >
-              Back to table of contents
-            </a>
-            <div
-              ref={setReaderContentRoot}
-              id={contentId}
-              className="reader-content"
-              onPointerOver={previewParagraphLeafAtPointer}
-              onPointerLeave={restoreVisualParagraphLeaf}
-              onPointerCancel={restoreVisualParagraphLeaf}
-            >
-              <ParagraphLeaf
-                contentRoot={readerContentRoot}
-                domRangeMapper={activeDomRangeMapper}
-                locatedBlock={leafSnapshot.locatedBlock}
-                state={leafSnapshot.state}
-                layoutRevision={[
-                  state.activeDocument.id,
-                  state.preferences.textScale,
-                  state.preferences.lineSpacing,
-                  state.preferences.contentWidth,
-                ].join(":")}
-                onActivate={activateParagraphLeaf}
-              />
-              {state.contentStatus === "chapter-too-large" ? (
-                <ChapterTooLargeContent readerRef={setReaderDocumentRef} />
-              ) : (
-                <SemanticDocumentContent
-                  key={state.activeLocator.spineItemIndex}
-                  document={state.activeDocument}
-                  targetAvailability={targetAvailability}
-                  onActivateTarget={activateTarget}
-                  destinationBlock={state.destinationBlock}
-                  destinationRef={setDestinationRef}
-                  readerRef={setReaderDocumentRef}
-                  rasterImageLoader={rasterImageLoader}
+          ) : (
+            <NavigationTree
+              nodes={publication.navigation}
+              coordinator={coordinator}
+              onNavigateTarget={activateTarget}
+            />
+          )}
+        </nav>
+        <div
+          ref={setReaderViewportRef}
+          className="reader-viewport"
+          data-reader-scroll-owner="true"
+          role="region"
+          tabIndex={-1}
+          aria-label="Publication reading viewport"
+        >
+          <div className="reader-layout">
+            <div className="reader-reading-pane">
+              <div
+                ref={setReaderContentRoot}
+                id={contentId}
+                className="reader-content"
+                onPointerOver={previewParagraphLeafAtPointer}
+                onPointerLeave={restoreVisualParagraphLeaf}
+                onPointerCancel={restoreVisualParagraphLeaf}
+              >
+                <ParagraphLeaf
+                  contentRoot={readerContentRoot}
                   domRangeMapper={activeDomRangeMapper}
-                  visualLocatorTracker={visualLocatorTracker}
-                  locatedBlocks={activeLocatedBlocks}
+                  locatedBlock={leafSnapshot.locatedBlock}
+                  state={leafSnapshot.state}
+                  layoutRevision={[
+                    state.activeDocument.id,
+                    state.preferences.textScale,
+                    state.preferences.lineSpacing,
+                    state.preferences.contentWidth,
+                  ].join(":")}
+                  onActivate={activateParagraphLeaf}
                 />
-              )}
+                {state.contentStatus === "chapter-too-large" ? (
+                  <ChapterTooLargeContent readerRef={setReaderDocumentRef} />
+                ) : (
+                  <SemanticDocumentContent
+                    key={state.activeLocator.spineItemIndex}
+                    document={state.activeDocument}
+                    targetAvailability={targetAvailability}
+                    onActivateTarget={activateTarget}
+                    destinationBlock={state.destinationBlock}
+                    destinationRef={setDestinationRef}
+                    readerRef={setReaderDocumentRef}
+                    rasterImageLoader={rasterImageLoader}
+                    domRangeMapper={activeDomRangeMapper}
+                    visualLocatorTracker={visualLocatorTracker}
+                    locatedBlocks={activeLocatedBlocks}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -32,6 +32,7 @@ import type {
   VisualLocatorRect,
 } from "./active-visual-locator";
 import type { ReaderReflowEnvironment } from "./reader-reflow-restoration";
+import { DEFAULT_READER_PREFERENCES } from "./reader-preferences";
 import { ReaderPublicationContent } from "./ReaderPublication";
 import { ReaderNavigationCoordinator } from "./reader-navigation";
 import type {
@@ -752,6 +753,16 @@ describe("reader navigation coordinator", () => {
 });
 
 describe("navigable publication reader", () => {
+  function openTableOfContents(): HTMLElement {
+    const toggle = screen.queryByRole("button", {
+      name: "Show table of contents",
+    });
+    if (toggle !== null) {
+      fireEvent.click(toggle);
+    }
+    return screen.getByRole("navigation", { name: "Table of contents" });
+  }
+
   let scrollIntoView: ReturnType<typeof vi.fn>;
   let originalScrollIntoView: typeof HTMLElement.prototype.scrollIntoView;
 
@@ -775,7 +786,7 @@ describe("navigable publication reader", () => {
     const reflowEnvironment = new ManualReaderReflowEnvironment();
     const onInitialRestorationSettled = vi.fn();
     const onSettledLocatorChange = vi.fn();
-    render(
+    const { container } = render(
       <>
         <button type="button">Focus owner</button>
         <ReaderPublicationContent
@@ -794,7 +805,10 @@ describe("navigable publication reader", () => {
     expect(
       screen.getByRole("heading", { name: "Continuation" }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Text size")).toBeDisabled();
+    expect(container.querySelector(".semantic-reader")).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
 
     act(() => reflowEnvironment.flushAll());
 
@@ -803,7 +817,9 @@ describe("navigable publication reader", () => {
       locator: CONTINUATION_LOCATED_BLOCK.startLocator,
     });
     expect(onSettledLocatorChange).not.toHaveBeenCalled();
-    expect(screen.getByLabelText("Text size")).toBeEnabled();
+    expect(container.querySelector(".semantic-reader")).not.toHaveAttribute(
+      "aria-busy",
+    );
     expect(focusOwner).toHaveFocus();
   });
 
@@ -832,9 +848,7 @@ describe("navigable publication reader", () => {
   it("preserves TOC order, explains unavailable entries, and navigates with one set of controls", () => {
     render(<ReaderPublicationContent publication={createPublication()} />);
 
-    const toc = screen.getByRole("navigation", {
-      name: "Table of contents",
-    });
+    const toc = openTableOfContents();
     expect(within(toc).getByText("Part One").tagName).toBe("SPAN");
     expect(
       within(toc).queryByRole("button", { name: "Part One" }),
@@ -1035,7 +1049,11 @@ describe("navigable publication reader", () => {
     expect(mapper.rangeFor(OPENING_LOCATED_BLOCK, 7)).toBeDefined();
     expect(mapper.rangeFor(CONTINUATION_LOCATED_BLOCK, 0)).toBeUndefined();
 
-    fireEvent.click(screen.getByRole("button", { name: "Continuation" }));
+    fireEvent.click(
+      within(openTableOfContents()).getByRole("button", {
+        name: "Continuation",
+      }),
+    );
 
     expect(mapper.registrationCount).toBe(1);
     expect(mapper.rangeFor(OPENING_LOCATED_BLOCK, 0)).toBeUndefined();
@@ -1056,7 +1074,9 @@ describe("navigable publication reader", () => {
         segmentHighlightEnvironment={highlightEnvironment}
       />,
     );
-    const focusOwner = screen.getByLabelText("Theme");
+    const focusOwner = screen.getByRole("button", {
+      name: "Show table of contents",
+    });
     focusOwner.focus();
 
     act(() => {
@@ -1132,9 +1152,10 @@ describe("navigable publication reader", () => {
         onSettledLocatorChange={onSettledLocatorChange}
       />,
     );
-    const continuationControl = screen.getByRole("button", {
-      name: "Continuation",
-    });
+    const continuationControl = within(openTableOfContents()).getByRole(
+      "button",
+      { name: "Continuation" },
+    );
     continuationControl.focus();
     environment.range = mapper.rangeFor(OPENING_LOCATED_BLOCK, 4);
     act(() => environment.flush());
@@ -1231,16 +1252,22 @@ describe("navigable publication reader", () => {
     const reflowEnvironment = new ManualReaderReflowEnvironment();
     const onSettledLocatorChange = vi.fn();
 
-    render(
+    const rendered = render(
       <ReaderPublicationContent
         publication={createPublication()}
+        preferences={DEFAULT_READER_PREFERENCES}
         reflowEnvironment={reflowEnvironment}
         onSettledLocatorChange={onSettledLocatorChange}
       />,
     );
-    fireEvent.change(screen.getByLabelText("Text size"), {
-      target: { value: "large" },
-    });
+    rendered.rerender(
+      <ReaderPublicationContent
+        publication={createPublication()}
+        preferences={{ ...DEFAULT_READER_PREFERENCES, textScale: "large" }}
+        reflowEnvironment={reflowEnvironment}
+        onSettledLocatorChange={onSettledLocatorChange}
+      />,
+    );
     expect(onSettledLocatorChange).not.toHaveBeenCalled();
 
     act(() => reflowEnvironment.flushAll());
@@ -1258,7 +1285,11 @@ describe("navigable publication reader", () => {
       <ReaderPublicationContent publication={createPublication()} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Continuation" }));
+    fireEvent.click(
+      within(openTableOfContents()).getByRole("button", {
+        name: "Continuation",
+      }),
+    );
 
     expect(
       Array.from(container.querySelectorAll("a")).map((link) =>
@@ -1279,38 +1310,39 @@ describe("navigable publication reader", () => {
     expect(window.location.href).toBe(initialUrl);
   });
 
-  it("exposes only approved appearance controls and applies closed layout tokens without persistence", () => {
+  it("keeps appearance controls outside the viewport and applies controlled layout tokens without persistence", () => {
     const storageWrite = vi.spyOn(Storage.prototype, "setItem");
-    const { container } = render(
-      <ReaderPublicationContent publication={createPublication()} />,
+    const publication = createPublication();
+    const rendered = render(
+      <ReaderPublicationContent
+        publication={publication}
+        preferences={DEFAULT_READER_PREFERENCES}
+      />,
     );
+    const { container } = rendered;
     const reader = container.querySelector(".semantic-reader");
 
     expect(
-      screen.getByRole("group", { name: "Reader appearance" }),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("Text size")).toHaveValue("standard");
-    expect(screen.getByLabelText("Line spacing")).toHaveValue("comfortable");
-    expect(screen.getByLabelText("Content width")).toHaveValue("standard");
-    expect(screen.getByLabelText("Theme")).toHaveValue("system");
+      screen.queryByRole("group", { name: "Reader appearance" }),
+    ).not.toBeInTheDocument();
     expect(reader).toHaveAttribute("data-reader-mode", "continuous");
     expect(reader).toHaveAttribute("data-reader-text-scale", "standard");
     expect(reader).toHaveAttribute("data-reader-line-spacing", "comfortable");
     expect(reader).toHaveAttribute("data-reader-content-width", "standard");
     expect(reader).toHaveAttribute("data-reader-theme", "system");
 
-    fireEvent.change(screen.getByLabelText("Text size"), {
-      target: { value: "extra-large" },
-    });
-    fireEvent.change(screen.getByLabelText("Line spacing"), {
-      target: { value: "spacious" },
-    });
-    fireEvent.change(screen.getByLabelText("Content width"), {
-      target: { value: "wide" },
-    });
-    fireEvent.change(screen.getByLabelText("Theme"), {
-      target: { value: "dark" },
-    });
+    rendered.rerender(
+      <ReaderPublicationContent
+        publication={publication}
+        preferences={{
+          schemaVersion: 1,
+          textScale: "extra-large",
+          lineSpacing: "spacious",
+          contentWidth: "wide",
+          theme: "dark",
+        }}
+      />,
+    );
 
     expect(reader).toHaveAttribute("data-reader-text-scale", "extra-large");
     expect(reader).toHaveAttribute("data-reader-line-spacing", "spacious");
@@ -1602,7 +1634,7 @@ describe("navigable publication reader", () => {
     );
 
     fireEvent.click(
-      screen.getByRole("button", {
+      within(openTableOfContents()).getByRole("button", {
         name: "Continuation",
       }),
     );

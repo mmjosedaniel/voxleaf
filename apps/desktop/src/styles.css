@@ -53,7 +53,7 @@ body {
   height: 100%;
   min-height: 0;
   flex-direction: column;
-  padding: clamp(0.75rem, 2vw, 1.25rem);
+  padding: clamp(0.5rem, 1.25vw, 0.9rem);
   overflow: hidden;
 }
 
@@ -276,9 +276,9 @@ h1 {
   min-height: 0;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 0.65rem;
-  margin-top: 0.65rem;
-  padding-top: 0.65rem;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
   overflow: hidden;
 }
 
@@ -315,7 +315,7 @@ h1 {
 .shell-card-reader .publication-summary h2 {
   display: -webkit-box;
   overflow: hidden;
-  font-size: clamp(1.15rem, 3vw, 1.65rem);
+  font-size: clamp(1.1rem, 2.5vw, 1.45rem);
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -388,7 +388,7 @@ h1 {
 .reader-viewport {
   min-height: 0;
   flex: 1 1 auto;
-  padding: 0.15rem 0.75rem 2rem;
+  padding: 2rem 0.75rem;
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
@@ -984,7 +984,7 @@ button.semantic-internal-link {
   gap: 0.75rem;
   align-items: center;
   justify-content: space-between;
-  padding: 0.65rem 0.75rem;
+  padding: 0.45rem 0.65rem;
 }
 
 .product-narration-summary {
@@ -1450,5 +1450,365 @@ button.semantic-internal-link {
 
   .product-narration-navigation button {
     flex: 1 1 12rem;
+  }
+}
+
+/* M010.2 reader-first application shell and Settings surface. */
+.application-bar {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: auto minmax(18rem, 1fr) minmax(11rem, auto) auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.application-bar .shell-brand h1 {
+  font-size: clamp(1.65rem, 2.5vw, 2.1rem);
+}
+
+.application-bar .shell-open-controls {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(12rem, 1fr) minmax(10rem, auto);
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.application-bar .file-picker {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.application-bar .file-picker input {
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+}
+
+.application-bar .open-status,
+.hardware-compatibility-summary {
+  min-height: 0;
+  margin: 0;
+  color: #405047;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.application-bar-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.application-bar-actions button,
+.reader-toolbar button,
+.reader-toc-heading button,
+.reader-settings-close {
+  min-height: 2.5rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid #52705e;
+  border-radius: 0.6rem;
+  color: #24563a;
+  background: #fdfefb;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shell-welcome {
+  margin-top: 2rem;
+}
+
+.settings-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  background: rgb(16 28 20 / 45%);
+}
+
+.reader-settings-dialog {
+  --reader-surface: #fdfefb;
+  --reader-surface-muted: #f4f7f2;
+  --reader-text: #263c30;
+  --reader-text-muted: #405047;
+  --reader-heading: #183d2a;
+  --reader-border: #b7c7b9;
+  --reader-focus: #1d6b43;
+  display: flex;
+  width: 25rem;
+  max-width: 100%;
+  height: 100%;
+  flex-direction: column;
+  color: var(--reader-text);
+  background: var(--reader-surface);
+  box-shadow: -1rem 0 3rem rgb(22 43 30 / 22%);
+}
+
+.reader-settings-header {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid var(--reader-border);
+}
+
+.reader-settings-header h2,
+.reader-settings-header p,
+.reader-settings-content h3,
+.reader-settings-content p {
+  margin-block-start: 0;
+}
+
+.reader-settings-header h2 {
+  margin-block-end: 0.25rem;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.reader-settings-eyebrow {
+  margin-block-end: 0.25rem;
+  color: var(--reader-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reader-settings-content {
+  display: grid;
+  gap: 0;
+  padding: 0 1rem 2rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.reader-settings-content > section {
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--reader-border);
+}
+
+.reader-settings-content > section:last-child {
+  border-bottom: 0;
+}
+
+.reader-settings-content .reader-preferences {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.reader-settings-content .reader-preference-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.reader-settings-content .hardware-compatibility {
+  margin-top: 0;
+}
+
+.reader-settings-content .hardware-compatibility-narration,
+.reader-settings-content .hardware-compatibility-device {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.reader-settings-content .hardware-compatibility-narration fieldset,
+.reader-settings-content .hardware-compatibility-device fieldset {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--reader-border);
+  border-radius: 0.55rem;
+}
+
+.reader-settings-content button,
+.reader-settings-content input,
+.reader-settings-content select {
+  min-height: 2.75rem;
+}
+
+.reader-settings-content button:focus,
+.reader-settings-content button:focus-visible,
+.reader-settings-content input:focus-visible,
+.reader-settings-content select:focus-visible,
+.application-bar button:focus-visible,
+.reader-toolbar button:focus-visible,
+.reader-toc-heading button:focus-visible {
+  outline: 0.2rem solid #1d6b43;
+  outline-offset: 0.15rem;
+}
+
+.reader-workspace {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.reader-toolbar {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+  padding: 0 0 0.35rem;
+}
+
+.reader-toolbar .reader-chapter-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.reader-toolbar .reader-navigation-status {
+  min-width: 8rem;
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+.reader-toolbar .reader-return-link {
+  margin: 0;
+}
+
+.reader-workspace .reader-viewport {
+  width: 100%;
+}
+
+.reader-workspace .reader-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.reader-workspace .reader-toc {
+  position: absolute;
+  z-index: 4;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: min(22rem, calc(100% - 2rem));
+  overflow-y: auto;
+  box-shadow: 0.75rem 0 2rem rgb(17 37 24 / 20%);
+}
+
+.reader-toc-heading {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.reader-toc-backdrop {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  border: 0;
+  background: rgb(16 28 20 / 32%);
+  cursor: pointer;
+}
+
+.product-narration-volume {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.product-narration-volume input {
+  width: 5rem;
+}
+
+.product-narration-speed select {
+  min-height: 2.5rem;
+  padding-inline: 0.55rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  margin: -1px;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+@media (max-width: 74.99rem) {
+  .application-bar {
+    grid-template-columns: auto minmax(14rem, 1fr) auto;
+  }
+
+  .application-bar .hardware-compatibility-summary {
+    display: none;
+  }
+
+  .reader-settings-dialog {
+    width: 22.5rem;
+  }
+}
+
+@media (max-width: 49.99rem) {
+  .application-bar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .application-bar .shell-open-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .application-bar .file-picker > span {
+    display: none;
+  }
+
+  .application-bar .open-status {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .reader-settings-dialog {
+    width: 100%;
+  }
+}
+
+@media (max-width: 35rem) {
+  .application-bar .shell-brand h1 {
+    font-size: 1.45rem;
+  }
+
+  .application-bar .file-picker input {
+    max-width: 9rem;
+  }
+
+  .application-bar-actions .close-publication {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-backdrop,
+  .reader-settings-dialog {
+    scroll-behavior: auto;
+  }
+}
+
+@media (forced-colors: active) {
+  .settings-backdrop,
+  .reader-toc-backdrop {
+    background: Canvas;
+  }
+
+  .reader-settings-dialog,
+  .reader-workspace .reader-toc {
+    border: 1px solid CanvasText;
+    box-shadow: none;
   }
 }

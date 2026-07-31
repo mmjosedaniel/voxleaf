@@ -237,6 +237,9 @@ describe("package-to-reader integration matrix", () => {
     expect(
       screen.getByRole("article", { name: "Current reading section" }),
     ).toHaveAttribute("lang", "en");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show table of contents" }),
+    );
     expect(screen.getByRole("button", { name: "Continuation" })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: "Continuation" }));
