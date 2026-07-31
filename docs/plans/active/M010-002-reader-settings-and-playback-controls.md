@@ -100,7 +100,12 @@ resource, privacy, and validation inputs before production implementation.
 Milestone 3 now implements the bounded preference subset: valid saved Spanish
 or English survives upgrade, safe fallback/reset state uses English, and
 Quick/Prepared startup is separately persisted and hydrated before use.
-Playback remains `1.0x` and the existing shell remains unchanged.
+Milestone 4 is also complete. The ready application now uses the frozen
+reader-first shell: a fixed compact app bar, compact publication and narration
+chrome, one publication scroll viewport, a collapsible contents overlay, and
+an accessible Settings drawer/sheet. Existing reader, compatibility, and
+narration coordinators retain domain ownership. Playback remains `1.0x` until
+Milestone 5 connects the selected WSOLA backend.
 
 Milestone 2 is also complete. Neither frozen eligible playback backend passed
 every machine and required-host gate, so
@@ -961,11 +966,34 @@ Expected result: deterministic, browser, and packaged tests prove the fixed
 reader shell, accessible Settings, responsive behavior, and unchanged
 lifecycle ownership.
 
-Actual result: Not run.
+Actual result: Implemented in checkpoint `486f01d`. The ready application now
+keeps Open/Replace, concise compatibility, Settings, and Close EPUB in one
+fixed app bar. Publication metadata, compact narration, chapter controls, and
+contents controls stay outside the sole publication scroll viewport. Settings
+uses the frozen Reading, Appearance, Narration, Device compatibility, and About
+order; it reuses the existing bounded preference, compatibility, profile,
+language, startup, and reset owners. Wide windows use a right drawer, narrow
+windows use a full-width modal sheet, and focus containment, Escape dismissal,
+focus restoration, forced-colors, reduced-motion, and 320 px layout are
+covered. The contents navigation is a bounded overlay and cannot become
+locator authority. The synthetic raster probe is development-only.
+
+Opening and closing Settings is lifecycle-neutral in deterministic tests: it
+does not recheck hardware, start/stop/replace narration, change work identity,
+write a preference, or move the reader locator. Host validation passes 50
+desktop files/503 tests plus 11 native helpers, TypeScript typecheck, all six
+Chromium smoke cases, and the packaged Tauri/WebView2 startup, narrow keyboard,
+synchronization, restart/restoration, privacy, cleanup, and zero-external-
+request matrix. The existing CSS Highlight and Vite chunk-size notices remain
+advisory. The complete portable gate also passes: formatting, TypeScript and
+Python lint/type checks, 20 shared files/209 tests, 34 EPUB files/580 tests, 50
+desktop files/503 tests plus 11 native helpers, 347 Python tests, generated
+contract verification, and portable web/Python builds. Pytest reported one
+non-failing cache-write warning; no product artifact or test result was lost.
 
 #### Status
 
-Not started.
+Complete.
 
 ### Milestone 5: Close non-default speed integration
 
@@ -1006,7 +1034,8 @@ Actual result: Not run.
 
 #### Status
 
-Not started; applicable after Milestone 4.
+Not started; Milestone 4 is complete, so this is the next implementation
+milestone.
 
 ### Milestone 6: Validate the portfolio reader and close the plan
 
@@ -1432,6 +1461,31 @@ Do not rewrite accepted historical authority to make a result pass.
   pass from normal local PowerShell. No model, protocol, dependency, CSP,
   audio persistence, reader-appearance owner, playback-rate preference, or
   non-`1.00x` behavior changed.
+- **2026-07-31:** Completed Milestone 4 on
+  `feat/m010-002-reader-first-settings-shell`. Checkpoint `486f01d` implements
+  the fixed reader-first app bar, compact publication/narration chrome, sole
+  reader viewport, five-section Settings drawer/sheet, lifecycle-neutral focus
+  contract, collapsible contents overlay, development-only raster probe, and
+  bar-only disabled `1.00x` speed presentation pending Milestone 5. It moves
+  presentation without duplicating reader reflow, compatibility, preference,
+  or narration ownership.
+- **2026-07-31:** Normal local PowerShell validation passes 50 desktop files/
+  503 tests plus 11 native helpers, desktop TypeScript typecheck, all six
+  production-Chromium smoke cases, and the packaged Tauri/WebView2 native
+  lifecycle matrix. The first browser rerun exposed stale inline-control/TOC
+  assumptions plus a genuine short-window reader-space regression; the final
+  layout preserves a usable reading line at 800x400 and all unchanged geometry,
+  focus, privacy, and synchronization assertions pass. The first native rerun
+  reached final cleanup before an obsolete physical-click path failed; the
+  unchanged final lifecycle assertion passes through the existing bounded DOM
+  cleanup helper.
+- **2026-07-31:** The first complete portable run exposed one React lint error:
+  restored preferences were copied into presentation state synchronously from
+  an effect. Checkpoint `c48faef` moves that reconciliation into the bounded
+  asynchronous restore completion, rejects a stale completion through the
+  existing active token, and preserves the same preference/restoration result.
+  The unchanged complete portable gate, six Chromium cases, and packaged
+  Tauri/WebView2 matrix then pass outside the sandbox.
 
 ## Discoveries and decisions
 
@@ -1559,10 +1613,21 @@ Do not rewrite accepted historical authority to make a result pass.
   under Piper contention it used about one-eighth the additional RAM, avoided
   object URLs and a CSP expansion, and received the stronger bilingual
   listening result.
+- Reader-first at short window heights requires budgeting fixed chrome, not
+  merely preventing document scrolling. Compact spacing plus a deliberate
+  reading-line inset leaves the sole reader viewport usable at 800x400 without
+  moving publication position authority into the app shell.
+- Settings controls remain views over their existing owners. Reader appearance
+  still enters the reader reflow/locator path; narration language/profile and
+  reset still enter compatibility and identity-safe cleanup; opening the modal
+  alone invokes none of them.
+- The compatibility presentation can be split safely into a concise app-bar
+  summary plus Narration and Device compatibility Settings views because all
+  three subscribe to one coordinator and do not own host detection.
 
 ## Final validation results
 
-M010.2 Milestones 1-3 are complete. Milestone 1 validation added 21
+M010.2 Milestones 1-4 are complete. Milestone 1 validation added 21
 result-blind authority tests and passed the complete portable gate. Milestone
 2 produced the closed Chromium and packaged WebView2 evidence recorded above,
 selected no backend, removed all experimental adapters, and added no
@@ -1594,9 +1659,10 @@ lifecycle, and listening gate passed. The retained selected source adds no
 dependency or CSP expansion.
 Milestone 3 has implemented and validated preference migration, English
 runtime fallback, closed narration-start persistence, pre-action hydration,
-and identity-safe reset. Milestone 4 remains independent of the backend result;
-Milestone 5 must integrate the exact selected backend after it completes. No
-M010.2 Settings shell, production time-stretch connection, effective-lead
-scheduling, playback-rate preference, or non-`1.00x` runtime behavior is
-claimed. Current production behavior remains the completed M010.1 shell plus
-the Milestone 3 bounded preferences, at `1.0x`.
+and identity-safe reset. Milestone 4 implements the fixed app bar, compact
+reader-first shell, accessible five-section Settings drawer/sheet, collapsible
+contents overlay, and development-only raster diagnostics while retaining the
+existing domain owners and one reader scroll authority. Milestone 5 must now
+integrate the exact selected backend. No production time-stretch connection,
+effective-lead scheduling, playback-rate preference, or non-`1.00x` runtime
+behavior is claimed.

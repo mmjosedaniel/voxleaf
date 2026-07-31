@@ -57,13 +57,15 @@ remains deferred without rejection. Pull request #159 passed the required
 Ubuntu/Windows checks and merged the closeout.
 
 M010.2 is active. Milestones 1-3 froze its architecture/executable authorities
-and result-blind backend comparison, then selected no pitch-preserving backend.
+and result-blind comparisons; v1 and v2 selected no backend, while v3 selected
+repository WSOLA.
 Milestone 3 now implements the bounded preference subset: valid saved Spanish
 or English survives upgrade, missing/invalid/reset state defaults to English,
 and Quick/Prepared startup is persisted separately after pre-action hydration
-and identity-safe reset. Milestone 4 may reorganize the reader around one fixed
-app bar, accessible Settings, compact narration, and the sole reader scroll
-viewport. ADR-0035 separately authorized
+and identity-safe reset. Milestone 4 now implements one fixed app bar,
+accessible Settings, compact narration, a collapsible contents overlay, and
+the sole reader scroll viewport while reusing existing domain owners. ADR-0035
+separately authorized
 and ADR-0036 froze a fee-free v2 comparison for six rates ending at `0.75x`.
 ADR-0037 selects no v2 backend after local-inference contention, removes every
 experiment, and retains `1.00x`. ADR-0038 now supplies the separate decision
