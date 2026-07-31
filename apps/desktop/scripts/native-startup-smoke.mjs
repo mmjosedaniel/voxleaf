@@ -2222,7 +2222,10 @@ async function runAdaptiveTtsExactHostMatrix(
 
     setStage("adaptive exact-host one-minute prepared checkpoint leaf start");
     const preparedButton = await driver.findElement(".paragraph-leaf");
-    await driver.sendKeys(preparedButton, WEBDRIVER_SPACE);
+    // The earlier active-leaf replacement proves keyboard activation. Use the
+    // native WebDriver click here so the prepared-mode lifecycle does not
+    // repeat WebView2's intermittent off-screen Space-key delivery.
+    await driver.click(preparedButton);
     await waitForCondition(
       driver,
       `return document.querySelector(".paragraph-leaf")
