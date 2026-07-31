@@ -417,18 +417,6 @@ export function App({
   useStrictModeSafeResourceCleanup(narrationCoordinator);
 
   useEffect(() => {
-    if (readyRestorationResult === undefined) {
-      return;
-    }
-    setReaderPreferencePresentation({
-      preferences: readyRestorationResult.preferences,
-      status: readyRestorationResult.preferenceStatus,
-      canPersist:
-        readyRestorationResult.preferenceStatus !== "unsupported-version",
-    });
-  }, [readyRestorationResult]);
-
-  useEffect(() => {
     if (narrationCoordinator === undefined) {
       return;
     }
@@ -489,9 +477,15 @@ export function App({
       void readerPositionRestoreCoordinator
         .restore(publication)
         .then((result) => {
-          if (result.status !== "ready") {
+          if (!active || result.status !== "ready") {
             return;
           }
+          currentReaderPreferences.current = result.preferences;
+          setReaderPreferencePresentation({
+            preferences: result.preferences,
+            status: result.preferenceStatus,
+            canPersist: result.preferenceStatus !== "unsupported-version",
+          });
           setReaderRestoration((current) =>
             current?.status === "loading" &&
             current.publication === publication &&
