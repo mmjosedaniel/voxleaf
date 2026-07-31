@@ -464,7 +464,7 @@ async function processCpuTimeSeconds(rootProcessId) {
     "$measurement = Get-Process -Id @($processIds) -ErrorAction SilentlyContinue | Measure-Object -Property CPU -Sum",
     "$sum = $measurement.Sum",
     "if ($null -eq $sum) { $sum = 0 }",
-    "[Console]::Out.Write([double]$sum)",
+    "[Console]::Out.Write(([double]$sum).ToString([Globalization.CultureInfo]::InvariantCulture))",
   ].join("; ");
   const output = await executeText("powershell.exe", [
     "-NoProfile",

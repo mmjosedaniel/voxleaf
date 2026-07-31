@@ -669,7 +669,16 @@ measured the same maximum pitch deviation, zero duration error/frame drift,
 99.9 ms start p95, 803,840 bytes maximum work, 12.449 MiB additional RAM, and
 2.750 CPU percentage points. Both retained bounded cleanup with zero external
 requests and zero persisted audio bytes. Only these two Chromium passers
-advance to packaged WebView2.
+advance to packaged WebView2. The first packaged attempt from the managed
+automation sandbox failed before application mount with
+`webdriver-session-not-created`; that observation is infrastructure-only and
+is not candidate evidence. Repeating the same command from a normal local
+PowerShell session created the packaged WebView2 session and reached candidate
+measurement. That run then stopped before the first candidate result because
+the PowerShell CPU counter serialized a decimal with the host locale while
+the Node harness required invariant numeric text. The affected WebView2
+result remains inconclusive pending the corrected outside-sandbox rerun;
+Chromium results are unaffected.
 
 #### Status
 
@@ -1060,6 +1069,16 @@ Do not rewrite accepted historical authority to make a result pass.
   not advance. The arm made zero external requests and persisted zero audio
   bytes. The packaged runner was narrowed to the two machine-passing Chromium
   candidates without changing any frozen gate.
+- **2026-07-30:** The first packaged v2 attempt inside the managed automation
+  sandbox failed at WebDriver session creation before the application or any
+  candidate ran. The same exact command from a normal local PowerShell session
+  built the release executable, created the isolated packaged WebView2
+  session, mounted the application, and reached the first candidate baseline.
+  It then failed while parsing a locale-formatted PowerShell CPU total. The
+  sandbox attempt is therefore recorded as inconclusive infrastructure
+  evidence, not a candidate failure. The CPU query now emits invariant-culture
+  numeric text; only the affected packaged WebView2 arm will be repeated.
+  No Chromium, TTS, model, privacy, or listening result is invalidated.
 
 ## Discoveries and decisions
 

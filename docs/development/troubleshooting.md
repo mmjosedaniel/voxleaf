@@ -328,7 +328,12 @@ Run packaged WebView2 commands from a normal local PowerShell session. A nested
 automation sandbox can produce `webdriver-session-not-created` or
 `chrome not reachable` before the application mounts even when the release
 binary and local driver can create a session normally. Confirm the same command
-outside that sandbox before treating the result as a product failure.
+outside that sandbox before treating the result as a product failure. Record
+the sandbox attempt as inconclusive infrastructure evidence: it cannot approve
+or reject a WebView2 candidate when no session was created. On the 2026-07-30
+M010.2 v2 comparison host, the sandbox attempt failed at session creation while
+the same local PowerShell command created the packaged session and reached
+candidate measurement.
 
 ### Memory, temperature, or cleanup looks abnormal
 
