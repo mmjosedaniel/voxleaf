@@ -44,9 +44,7 @@ const READER_PERFORMANCE_MODE = process.argv.includes("--reader-performance");
 const ADAPTIVE_TTS_EXACT_HOST_MODE = process.argv.includes(
   "--adaptive-tts-exact-host",
 );
-const PITCH_PRESERVING_V3_MODE = process.argv.includes(
-  "--pitch-preserving-v3",
-);
+const PITCH_PRESERVING_V3_MODE = process.argv.includes("--pitch-preserving-v3");
 const EXERCISE_EXACT_HOST_PROFILE_SWITCH = process.argv.includes(
   "--exercise-profile-switch",
 );
@@ -4534,10 +4532,7 @@ async function runNativePitchPreservingV3Comparison(
            });
          return true;`,
       );
-      assert(
-        started === true,
-        "Native pitch-preserving v3 comparison failed.",
-      );
+      assert(started === true, "Native pitch-preserving v3 comparison failed.");
       await waitForCondition(
         driver,
         `return globalThis.__voxleafPitchPreservingV3Observation?.status !==
@@ -4613,9 +4608,20 @@ async function runNativePitchPreservingV3Comparison(
     await driver.getLogs("performance"),
   );
   const generatedAudioFiles = await generatedAudioFileCount(temporaryDirectory);
+  const severeBrowserLogCount = browserLogs.filter(
+    (entry) => entry?.level === "SEVERE",
+  ).length;
+  console.log(
+    `PITCH_PRESERVING_V3_NATIVE_PRIVACY ${JSON.stringify({
+      externalLoadedResourceCount,
+      externalPerformanceRequestCount: performanceLogs.externalRequestCount,
+      generatedAudioFiles,
+      runtimeErrorCount: performanceLogs.runtimeErrorCount,
+      severeBrowserLogCount,
+    })}`,
+  );
   assert(
-    browserLogs.every((entry) => entry?.level !== "SEVERE") &&
-      performanceLogs.runtimeErrorCount === 0,
+    severeBrowserLogCount === 0 && performanceLogs.runtimeErrorCount === 0,
     "Native pitch-preserving v3 comparison failed.",
   );
   assert(
@@ -4643,8 +4649,7 @@ async function runNativePitchPreservingV3Comparison(
         machineGate: result.machineGate,
         maximumAdditionalWorkBytes: result.maximumAdditionalWorkBytes,
         maximumPitchDeviationCents: result.maximumPitchDeviationCents,
-        maximumRenderedDurationErrorMs:
-          result.maximumRenderedDurationErrorMs,
+        maximumRenderedDurationErrorMs: result.maximumRenderedDurationErrorMs,
         maximumSourceFrameDrift: result.maximumSourceFrameDrift,
         pauseStopTeardownP95Ms: result.pauseStopTeardownP95Ms,
         recurringUnitHandoffP95Ms: result.recurringUnitHandoffP95Ms,
