@@ -24,7 +24,7 @@ import {
 } from "./hardware-profile-registry";
 import type { HardwareProfileRegistryEntryV1 } from "./hardware-profile-authority";
 import {
-  DEFAULT_NARRATION_LANGUAGE_V1,
+  DEFAULT_NARRATION_LANGUAGE_V2,
   type NarrationLanguageV1,
 } from "./narration-language";
 import { profileSupportsNarrationLanguageV1 } from "./narration-profile-language-registry";
@@ -96,7 +96,7 @@ const INITIAL_SNAPSHOT: HardwareCompatibilitySnapshotV1 = Object.freeze({
   preferenceStatus: "missing",
   fallbackAvailable: false,
   canPersistSelection: true,
-  language: DEFAULT_NARRATION_LANGUAGE_V1,
+  language: DEFAULT_NARRATION_LANGUAGE_V2,
   languagePreferenceStatus: "missing",
   canPersistLanguage: true,
   languageReason: undefined,
@@ -340,16 +340,17 @@ export class HardwareProfileCompatibilityCoordinator {
   public async isProfileStartAllowed(
     profileId: string,
     trigger: "application-start" | "before-profile-start",
-    language: NarrationLanguageV1 = this.#snapshot.language,
+    language?: NarrationLanguageV1,
   ): Promise<boolean> {
     const snapshot =
       trigger === "application-start"
         ? await this.ensureChecked()
         : await this.check(trigger);
+    const expectedLanguage = language ?? snapshot.language;
     return (
       snapshot.activeProfileId === profileId &&
-      snapshot.language === language &&
-      profileSupportsNarrationLanguageV1(profileId, language)
+      snapshot.language === expectedLanguage &&
+      profileSupportsNarrationLanguageV1(profileId, expectedLanguage)
     );
   }
 
@@ -404,6 +405,23 @@ export class HardwareProfileCompatibilityCoordinator {
     if (this.#closed || result.status !== "saved") {
       return false;
     }
+    this.#applyLanguage(language);
+    return true;
+  }
+
+  public async resetLanguage(): Promise<boolean> {
+    if (this.#closed || !this.#snapshot.canPersistLanguage) {
+      return false;
+    }
+    const result = await this.#languagePreferenceRepository.reset();
+    if (this.#closed || result.status !== "saved") {
+      return false;
+    }
+    this.#applyLanguage(DEFAULT_NARRATION_LANGUAGE_V2);
+    return true;
+  }
+
+  #applyLanguage(language: NarrationLanguageV1): void {
     const replacement = chooseReplacementProfile(
       this.#snapshot.profiles,
       this.#snapshot.activeProfileId,
@@ -433,7 +451,6 @@ export class HardwareProfileCompatibilityCoordinator {
         replacement === undefined ? "no-profile-for-language" : undefined,
     });
     this.#publish();
-    return true;
   }
 
   public close(): void {
@@ -507,7 +524,7 @@ export class HardwareProfileCompatibilityCoordinator {
         preferenceStatus: "unavailable",
         fallbackAvailable: false,
         canPersistSelection: true,
-        language: DEFAULT_NARRATION_LANGUAGE_V1,
+        language: DEFAULT_NARRATION_LANGUAGE_V2,
         languagePreferenceStatus: "unavailable",
         canPersistLanguage: true,
         languageReason: "no-profile-for-language",

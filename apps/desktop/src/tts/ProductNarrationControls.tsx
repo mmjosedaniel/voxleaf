@@ -265,6 +265,10 @@ export function ProductNarrationControls({
         <div id={detailId} className="product-narration-detail">
           <AdaptivePreparationControls
             selection={snapshot.selection}
+            selectionDisabled={
+              snapshot.startPreferenceStatus === "loading" ||
+              !snapshot.canPersistStartPreference
+            }
             startDisabled={
               snapshot.availability !== "available" || !operational
             }
@@ -272,7 +276,7 @@ export function ProductNarrationControls({
             {...(state === undefined ? {} : { state })}
             {...(startHint === undefined ? {} : { startHint })}
             onSelectionChange={(selection) =>
-              coordinator.setSelection(selection)
+              void coordinator.setSelection(selection)
             }
             onStart={() => coordinator.start()}
             onPause={() => coordinator.pause()}

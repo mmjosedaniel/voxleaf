@@ -20,6 +20,7 @@ export interface AdaptivePreparationControlsProps {
   readonly onStop: () => void;
   readonly onVolumeChange: (volumePercent: number) => void;
   readonly startDisabled?: boolean;
+  readonly selectionDisabled?: boolean;
   readonly startHint?: string;
   readonly showPlaybackControls?: boolean;
 }
@@ -65,6 +66,7 @@ export function AdaptivePreparationControls({
   onStop,
   onVolumeChange,
   startDisabled = false,
+  selectionDisabled = false,
   startHint,
   showPlaybackControls = true,
 }: AdaptivePreparationControlsProps): ReactElement {
@@ -101,7 +103,10 @@ export function AdaptivePreparationControls({
       <h3 id="adaptive-preparation-title">Local narration</h3>
       <p>Audio is generated only on this device and kept in bounded memory.</p>
 
-      <fieldset className="adaptive-preparation-mode" disabled={active}>
+      <fieldset
+        className="adaptive-preparation-mode"
+        disabled={active || selectionDisabled}
+      >
         <legend>How should playback start?</legend>
         <label>
           <input

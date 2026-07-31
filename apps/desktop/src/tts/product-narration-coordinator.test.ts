@@ -15,6 +15,8 @@ import {
 import { VALID_SYNTHETIC_DOCUMENT_FIXTURE } from "@voxleaf/shared/testing";
 import { describe, expect, it, vi } from "vitest";
 
+import type { NarrationStartPreferenceRepository } from "../persistence/narration-start-preference";
+
 import type { AdaptiveBufferScheduler } from "./adaptive-buffer-scheduler";
 import {
   AdaptivePcmPlayer,
@@ -386,6 +388,7 @@ function createHarness(
     readonly blockSynthesis?: boolean;
     readonly prepareNarration?: OpenedPublication["prepareNarration"];
     readonly profileCompatibility?: ProductNarrationProfileCompatibility;
+    readonly startPreferenceRepository?: NarrationStartPreferenceRepository;
   } = {},
 ) {
   const clock = new ManualClock();
@@ -425,6 +428,16 @@ function createHarness(
         intervals.splice(index, 1);
       }
     },
+    startPreferenceRepository:
+      options.startPreferenceRepository ??
+      Object.freeze({
+        read: vi.fn(async () => ({
+          status: "missing" as const,
+          selection: Object.freeze({ kind: "quick" as const }),
+        })),
+        write: vi.fn(async () => ({ status: "saved" as const })),
+        reset: vi.fn(async () => ({ status: "saved" as const })),
+      }),
     ...(options.profileCompatibility === undefined
       ? {}
       : { profileCompatibility: options.profileCompatibility }),
@@ -933,7 +946,7 @@ describe("product narration coordinator", () => {
       expect.objectContaining({
         startLocator: START_LOCATOR,
         profile: "narration-bilingual-v2",
-        defaultLanguage: "es",
+        defaultLanguage: "en",
         maximumSegments: 8,
         signal: expect.any(AbortSignal),
       }),
@@ -1259,10 +1272,79 @@ describe("product narration coordinator", () => {
     coordinator.start();
     await settleUntil(() => coordinator.observe().state?.phase === "playing");
 
-    coordinator.setSelection({ kind: "prepared", targetMs: 60_000 });
+    await coordinator.setSelection({ kind: "prepared", targetMs: 60_000 });
 
     expect(coordinator.observe().selection).toEqual({ kind: "quick" });
     await coordinator.close();
+  });
+
+  it("hydrates a saved start preference before availability becomes actionable", async () => {
+    const repository: NarrationStartPreferenceRepository = {
+      read: vi.fn(async () => ({
+        status: "ready" as const,
+        selection: Object.freeze({
+          kind: "prepared" as const,
+          targetMs: 120_000 as const,
+        }),
+      })),
+      write: vi.fn(async () => ({ status: "saved" as const })),
+      reset: vi.fn(async () => ({ status: "saved" as const })),
+    };
+    const { coordinator } = createHarness({
+      startPreferenceRepository: repository,
+    });
+
+    expect(coordinator.observe()).toMatchObject({
+      availability: "checking",
+      startPreferenceStatus: "loading",
+      selection: { kind: "quick" },
+    });
+    await coordinator.checkAvailability();
+    expect(coordinator.observe()).toMatchObject({
+      availability: "available",
+      startPreferenceStatus: "ready",
+      selection: { kind: "prepared", targetMs: 120_000 },
+    });
+    expect(repository.write).not.toHaveBeenCalled();
+    await coordinator.close();
+  });
+
+  it("persists closed start choices and preserves unsupported future state", async () => {
+    const writable: NarrationStartPreferenceRepository = {
+      read: vi.fn(async () => ({
+        status: "missing" as const,
+        selection: Object.freeze({ kind: "quick" as const }),
+      })),
+      write: vi.fn(async () => ({ status: "saved" as const })),
+      reset: vi.fn(async () => ({ status: "saved" as const })),
+    };
+    const first = createHarness({ startPreferenceRepository: writable });
+    await first.coordinator.checkAvailability();
+    await expect(
+      first.coordinator.setSelection({ kind: "prepared", targetMs: 300_000 }),
+    ).resolves.toBe(true);
+    expect(writable.write).toHaveBeenCalledWith({
+      kind: "prepared",
+      targetMs: 300_000,
+    });
+    await first.coordinator.close();
+
+    const future: NarrationStartPreferenceRepository = {
+      read: vi.fn(async () => ({
+        status: "unsupported-version" as const,
+        selection: Object.freeze({ kind: "quick" as const }),
+      })),
+      write: vi.fn(async () => ({ status: "unsupported-version" as const })),
+      reset: vi.fn(async () => ({ status: "unsupported-version" as const })),
+    };
+    const second = createHarness({ startPreferenceRepository: future });
+    await second.coordinator.checkAvailability();
+    expect(second.coordinator.observe().canPersistStartPreference).toBe(false);
+    await expect(
+      second.coordinator.setSelection({ kind: "prepared", targetMs: 60_000 }),
+    ).resolves.toBe(false);
+    expect(future.write).not.toHaveBeenCalled();
+    await second.coordinator.close();
   });
 
   it("publishes only a fixed failure when narration preparation is rejected", async () => {

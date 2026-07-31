@@ -124,6 +124,7 @@ function languagePreference(): NarrationLanguagePreferenceRepository {
       language: "es" as const,
     })),
     write: vi.fn(async () => ({ status: "saved" as const })),
+    reset: vi.fn(async () => ({ status: "saved" as const })),
   };
 }
 
@@ -183,7 +184,7 @@ describe("hardware compatibility controls", () => {
     expect(fallback).toHaveAttribute("value", PIPER_CPU_FALLBACK_PROFILE_ID);
     expect(
       screen.getByRole("radio", {
-        name: "Qwen and Serena Spanish quality profile",
+        name: "Qwen and Serena Spanish quality profile (Development)",
       }),
     ).not.toBeChecked();
     expect(
@@ -200,7 +201,7 @@ describe("hardware compatibility controls", () => {
       "This profile did not pass the required product evaluation.",
     );
     const qwenProfile = screen
-      .getByText("Qwen and Serena Spanish quality profile:")
+      .getByText("Qwen and Serena Spanish quality profile (Development):")
       .closest("li");
     expect(qwenProfile).toHaveAttribute(
       "data-profile-id",
@@ -217,7 +218,7 @@ describe("hardware compatibility controls", () => {
     await waitFor(() => expect(subject.observe().status).toBe("compatible"));
 
     const qwenProfile = screen
-      .getByText("Qwen and Serena Spanish quality profile:")
+      .getByText("Qwen and Serena Spanish quality profile (Development):")
       .closest("li");
     expect(qwenProfile).toHaveAttribute("data-profile-state", "incompatible");
     expect(qwenProfile).toHaveAttribute(
@@ -229,7 +230,7 @@ describe("hardware compatibility controls", () => {
     );
     expect(
       screen.queryByRole("radio", {
-        name: "Qwen and Serena Spanish quality profile",
+        name: "Qwen and Serena Spanish quality profile (Development)",
       }),
     ).not.toBeInTheDocument();
     expect(
@@ -247,11 +248,11 @@ describe("hardware compatibility controls", () => {
 
     expect(
       screen.getByRole("radio", {
-        name: "Qwen and Serena Spanish quality profile",
+        name: "Qwen and Serena Spanish quality profile (Development)",
       }),
     ).toBeInTheDocument();
     const qwenProfile = screen
-      .getByText("Qwen and Serena Spanish quality profile:")
+      .getByText("Qwen and Serena Spanish quality profile (Development):")
       .closest("li");
     expect(qwenProfile).toHaveAttribute("data-profile-state", "compatible");
     expect(qwenProfile).toHaveAttribute("data-profile-reason", "none");
@@ -273,7 +274,7 @@ describe("hardware compatibility controls", () => {
     );
 
     const profile = screen.getByRole("radio", {
-      name: "Qwen and Serena Spanish quality profile",
+      name: "Qwen and Serena Spanish quality profile (Development)",
     });
     fireEvent.click(profile);
     await waitFor(() =>
@@ -333,6 +334,31 @@ describe("hardware compatibility controls", () => {
         name: "Piper and davefx Spanish fast CPU profile",
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it("exposes one explicit narration reset that returns language to English", async () => {
+    const languageRepository = languagePreference();
+    const subject = coordinator({ languagePreference: languageRepository });
+    const onResetNarrationSettings = vi.fn(async () => subject.resetLanguage());
+    render(
+      <HardwareCompatibilityControls
+        coordinator={subject}
+        onResetNarrationSettings={onResetNarrationSettings}
+      />,
+    );
+    await waitFor(() => expect(subject.observe().status).toBe("compatible"));
+    fireEvent.click(
+      screen.getByText("Local narration compatibility").closest("summary")!,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Reset narration settings" }),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("radio", { name: "English" })).toBeChecked(),
+    );
+    expect(onResetNarrationSettings).toHaveBeenCalledOnce();
+    expect(languageRepository.reset).toHaveBeenCalledOnce();
   });
 
   it("keeps unavailable and failure presentation content-free", async () => {

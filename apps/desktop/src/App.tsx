@@ -18,6 +18,10 @@ import {
 } from "./persistence/reader-position-repository";
 import { bindNarrationPositionPersistence } from "./persistence/narration-position-save-bridge";
 import {
+  createWebStorageNarrationStartPreferenceRepository,
+  type NarrationStartPreferenceRepository,
+} from "./persistence/narration-start-preference";
+import {
   ReaderPositionRestoreCoordinator,
   type ReadyReaderOpenRestoration,
 } from "./persistence/reader-position-restore-coordinator";
@@ -78,10 +82,12 @@ export interface AppProps {
   readonly readerPositionRepository?: ReaderPositionRepository;
   readonly readerPositionSaveEnvironment?: ReaderPositionSaveEnvironment;
   readonly hardwareCompatibilityCoordinator?: HardwareProfileCompatibilityCoordinator;
+  readonly narrationStartPreferenceRepository?: NarrationStartPreferenceRepository;
   readonly createNarrationCoordinator?: (
     publication: OpenedPublication,
     initialLocator: ReadingLocatorV1,
     hardwareCompatibility: HardwareProfileCompatibilityCoordinator,
+    narrationStartPreference: NarrationStartPreferenceRepository,
   ) => ProductNarrationCoordinator;
   readonly ReadyPublicationContent?: ComponentType<ReadyPublicationContentProps>;
   readonly runRasterProbe?: typeof runRasterImageSafetyProbe;
@@ -217,9 +223,11 @@ function createDefaultNarrationCoordinator(
   publication: OpenedPublication,
   initialLocator: ReadingLocatorV1,
   hardwareCompatibility: HardwareProfileCompatibilityCoordinator,
+  narrationStartPreference: NarrationStartPreferenceRepository,
 ): ProductNarrationCoordinator {
   return new ProductNarrationCoordinator(publication, initialLocator, {
     profileCompatibility: hardwareCompatibility,
+    startPreferenceRepository: narrationStartPreference,
   });
 }
 
@@ -228,6 +236,8 @@ export function App({
   readerPositionRepository: suppliedReaderPositionRepository,
   readerPositionSaveEnvironment,
   hardwareCompatibilityCoordinator: suppliedHardwareCompatibilityCoordinator,
+  narrationStartPreferenceRepository:
+    suppliedNarrationStartPreferenceRepository,
   createNarrationCoordinator = createDefaultNarrationCoordinator,
   ReadyPublicationContent = ReaderPublicationContent,
   runRasterProbe = runRasterImageSafetyProbe,
@@ -246,6 +256,11 @@ export function App({
     () =>
       suppliedHardwareCompatibilityCoordinator ??
       new HardwareProfileCompatibilityCoordinator(),
+  );
+  const [narrationStartPreferenceRepository] = useState(
+    () =>
+      suppliedNarrationStartPreferenceRepository ??
+      createWebStorageNarrationStartPreferenceRepository(),
   );
   useStrictModeSafeResourceCleanup(hardwareCompatibilityCoordinator);
   const subscribe = useCallback(
@@ -289,10 +304,12 @@ export function App({
             readyPublication,
             readyRestorationResult.position.locator,
             hardwareCompatibilityCoordinator,
+            narrationStartPreferenceRepository,
           ),
     [
       createNarrationCoordinator,
       hardwareCompatibilityCoordinator,
+      narrationStartPreferenceRepository,
       readyPublication,
       readyRestorationResult,
     ],
@@ -637,6 +654,26 @@ export function App({
     },
     [hardwareCompatibilityCoordinator, narrationCoordinator],
   );
+  const handleNarrationSettingsReset =
+    useCallback(async (): Promise<boolean> => {
+      await (narrationCoordinator?.stopForConfigurationChange?.() ??
+        narrationCoordinator?.stop());
+      const languageReset =
+        await hardwareCompatibilityCoordinator.resetLanguage();
+      const startReset =
+        narrationCoordinator === undefined
+          ? (await narrationStartPreferenceRepository.reset()).status ===
+            "saved"
+          : await narrationCoordinator.resetStartPreference();
+      if (languageReset) {
+        await narrationCoordinator?.refreshSelectedProfile();
+      }
+      return languageReset && startReset;
+    }, [
+      hardwareCompatibilityCoordinator,
+      narrationCoordinator,
+      narrationStartPreferenceRepository,
+    ]);
 
   const isBusy =
     viewState.status === "closing" ||
@@ -708,6 +745,7 @@ export function App({
               coordinator={hardwareCompatibilityCoordinator}
               onSelectProfile={handleHardwareProfileSelection}
               onSelectLanguage={handleNarrationLanguageSelection}
+              onResetNarrationSettings={handleNarrationSettingsReset}
               onRecoveryEpisodeReset={() =>
                 narrationCoordinator?.resetRecoveryEpisode()
               }
@@ -717,6 +755,7 @@ export function App({
         {ready ? null : (
           <HardwareCompatibilityControls
             coordinator={hardwareCompatibilityCoordinator}
+            onResetNarrationSettings={handleNarrationSettingsReset}
           />
         )}
         {viewState.status === "ready" ? (
