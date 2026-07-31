@@ -66,7 +66,8 @@ bounded synchronization/cancellation, zero-audio-persistence, and privacy
 closeout pass. Pull request #159 passed the required Ubuntu and Windows checks
 and merged the M010.1 closeout.
 
-M010.2 Milestones 1-5 are complete. The accepted
+M010.2 Milestones 1-5 are complete and Milestone 6 local automated validation
+passes. The accepted
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
 requirements and
 [`active ExecPlan`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
@@ -96,6 +97,15 @@ starting rate, the newest pending rate activates at the next complete-unit
 boundary, and speed-only changes preserve TTS identity and queued source PCM.
 Effective listening duration governs startup/refill presentation and decisions,
 while source frames and bytes remain memory/progress authority.
+The existing single-child packaged portfolio now validates engine-neutral
+six-rate presentation, exercises Piper Spanish/English at every admitted rate,
+and runs Chatterbox Spanish/English plus development-only Qwen Serena/Aiden in
+one sequential run. All six arms preserve synchronization and cleanup, make
+zero external requests, and persist zero audio. Qwen's measured depletion
+remains visible rather than being reclassified as real-time. Human
+confirmation of the intermediate rates and required pull-request checks still
+gate plan archival; no component or trust boundary remains to be implemented
+by M010.2.
 
 [ADR-0035](decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md)
 authorizes a separate result-blind v2 for six exact rates ending at `0.75x`,

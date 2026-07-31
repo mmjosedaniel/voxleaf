@@ -144,7 +144,10 @@ were committed at `5991165` before candidate implementation or results.
 Milestone 2D is complete. Both candidates passed the frozen machine and
 listening sequence; [ADR-0040](../../architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md)
 selects repository WSOLA for Milestone 5 integration. The selected source adds
-no dependency or CSP change. Production remains `1.00x`.
+no dependency or CSP change. Milestone 5 now connects that backend to product
+playback at all six admitted rates. Milestone 6's sequential six-arm packaged
+portfolio and repository validation pass locally; final all-rate human
+listening confirmation and required pull-request checks remain open.
 
 ## Scope and non-goals
 
@@ -1093,11 +1096,30 @@ admitted boundary-deferred speed range—or truthful fixed `1.00x` fallback—pa
 deterministic, browser, packaged, exact-host, privacy, bounded-resource, and
 required pull-request validation.
 
-Actual result: Not run.
+Actual result: The normal-local-PowerShell packaged portfolio command passed
+all six sequential arms on 2026-07-31. Piper Spanish and English exercised
+`1.00x`, `0.95x`, `0.90x`, `0.85x`, `0.80x`, and `0.75x`; newest-pending
+selection won, first non-default activation measured 750/300 ms, and recurring
+backend handoff overhead measured 0 ms p95 after excluding the existing 300 ms
+semantic transition pause. Both Piper arms sustained the one-minute quick
+observation without underruns and measured warm prepared RTF 0.07. Chatterbox
+Spanish/English sustained it at RTF 0.83/0.85. Qwen Serena/Aiden truthfully
+observed one underrun and bounded refill at RTF 2.12/2.04, preserving their
+development-only constrained-buffer status. Every arm passed highlighting,
+focus-safe following, leaf/chapter navigation, pause/resume, identity-first
+replacement, prepared playback, cancellation, final cleanup, zero external
+requests, and zero generated-audio files. Peak observed dedicated VRAM was
+3,734 MiB for Chatterbox and 5,090 MiB for Qwen; Piper used zero dedicated
+VRAM. The complete browser, native-startup, portable, and Windows repository
+commands also pass outside the sandbox. ADR-0040 already contains fluent
+Spanish/English listening at `1.00x`, `0.85x`, and `0.75x`; explicit human
+portfolio confirmation at the remaining admitted rates and required PR checks
+are still pending, so the plan is not archived yet.
 
 #### Status
 
-Ready after Milestones 2D and 3-5.
+Local automated validation complete; human all-rate confirmation and required
+pull-request checks pending.
 
 ## Testing and benchmark strategy
 
@@ -1132,16 +1154,19 @@ preference restoration; source-frame progress; and no external requests.
 ### Exact-host evidence
 
 Milestone 2B did not open exact-host listening because no candidate passed its
-machine gates. Milestone 6 still uses repository-authored synthetic Spanish
-and English text to validate the fixed-`1.00x` portfolio reader. Record only
+machine gates. Milestone 2D subsequently selected repository WSOLA under its
+separate authority. Milestone 6 uses repository-authored synthetic Spanish
+and English text to validate the engine-neutral six-rate presentation, exercise
+all six rates on the two supported Piper profiles, and run Chatterbox plus
+development-only Qwen without changing their synthesis paths. Record only
 content-free engine/profile ID, timing, drift, underrun, CPU/RAM,
 cancellation, and cleanup observations. Do not retain waveforms, EPUBs,
 prepared text, screenshots containing private books, raw host identity, model
 paths, or process arguments.
 
 Qwen remains optional development-only and does not need a support-state
-reevaluation. The plan validates engine-neutral presentation and unchanged
-fixed-speed playback, not that Qwen becomes real-time.
+reevaluation. The plan validates engine-neutral post-synthesis playback
+without claiming that Qwen becomes real-time.
 
 ### Repository commands
 
@@ -1521,6 +1546,29 @@ Do not rewrite accepted historical authority to make a result pass.
   34 EPUB files/580 tests, the same desktop/Python suites, and portable builds.
   `git diff --check` passes. The run retains only the existing non-failing
   pytest cache-write, CSS Highlight parser, and Vite chunk-size advisories.
+- **2026-07-31:** Extended the existing packaged bilingual portfolio harness
+  for Milestone 6. The frozen matrix remains six sequential model arms and now
+  exercises all six production playback rates on Piper Spanish and English.
+  The native journey verifies exact options, first activation, latest-pending
+  selection, boundary-deferred application, return to direct `1.00x`, and
+  content-free transition metrics without adding a second model process.
+- **2026-07-31:** The first full matrix exposed a WebView2/WebDriver interaction
+  race after active cancellation: the already-covered prepared checkpoint
+  leaf did not receive a repeated off-screen Space key. The focused arm passed
+  unchanged. Checkpoint `5206d4c` retains the earlier exact-host keyboard leaf
+  proof and uses native WebDriver click for the later prepared-lifecycle
+  repetition. The focused arm and then the complete six-arm matrix pass.
+- **2026-07-31:** Closed Milestone 6 local automated validation in normal
+  PowerShell. `pnpm.cmd test:tts:bilingual-portfolio-exact-host` passes Piper
+  Spanish/English, Chatterbox Spanish/English, and Qwen Serena/Aiden in order,
+  with no overlapping child, external request, persisted audio, stale
+  playback, or retained cleanup unit. Piper exercises all six admitted rates;
+  first activation is 750/300 ms and recurring backend overhead is 0 ms p95.
+  `pnpm.cmd test:browser` passes 6/6, `pnpm.cmd test:native-startup` passes,
+  `pnpm.cmd check:portable` passes, and `pnpm.cmd check` passes 209 shared,
+  580 EPUB, 517 desktop, 347 Python, 41 Rust, and 12 native-helper tests plus
+  all builds. Human confirmation of the intermediate portfolio rates and the
+  required pull-request checks remain open.
 
 ## Discoveries and decisions
 
@@ -1668,6 +1716,15 @@ Do not rewrite accepted historical authority to make a result pass.
   positive rate. The new envelope is content-free, versioned, closed to six
   integer percentages, and can preserve unknown future state without changing
   the current session.
+- The product exact-host matrix must not repeat an already-proven keyboard
+  gesture merely to test a later lifecycle state. WebView2 may acknowledge an
+  off-screen Space delivery without changing the control. The same journey
+  keeps its earlier keyboard leaf proof and uses native WebDriver click for the
+  prepared-mode lifecycle repetition.
+- Product contention does not change the selected backend gates: Piper's two
+  all-rate arms keep first activation below 1,000 ms and recurring backend
+  overhead below 250 ms while preserving the existing semantic pause as a
+  separate intentional wall-clock wait.
 
 ## Final validation results
 
@@ -1701,6 +1758,20 @@ browser case persists only the schema version and exact integer rate. No
 private text, generated audio, model artifact, dependency, CSP expansion, or
 external request is introduced.
 
+Milestone 6 local automated validation also passes in normal host PowerShell.
+The sequential packaged portfolio covers Piper Spanish/English, Chatterbox
+Spanish/English, and development-only Qwen Serena/Aiden without overlapping
+model children. The two Piper arms exercise every admitted rate and preserve
+latest-selection, boundary, identity, source-queue, highlight, progress, and
+cleanup authority. Chatterbox remains supported; both Qwen arms remain
+development-only and truthfully expose
+their measured depletion. Every arm reports zero external requests, zero
+generated-audio files, zero retained/discarded units after cleanup, and no
+stale playback. Browser, native-startup, portable, and complete Windows checks
+pass outside the sandbox. ADR-0040 supplies prior bilingual human evidence at
+`1.00x`, `0.85x`, and `0.75x`; the remaining intermediate-rate portfolio
+listening confirmation and required pull-request checks are not yet complete.
+
 The full plan remains active. ADR-0035 supplies the reduced-range product
 decision, ADR-0036 freezes its v2 authority, and ADR-0037 records the
 no-selection result. ADR-0038 authorizes a separate boundary-deferred v3 with
@@ -1719,4 +1790,6 @@ the exact selected backend with one bounded worklet, a separate
 playback preference, six compact-bar values, immutable-current/latest-pending
 activation, and effective-lead scheduling. It changes no TTS/model input,
 source queue ceiling, progress authority, transition timer, dependency, CSP,
-or persistence boundary. Milestone 6 is now the next and final plan milestone.
+or persistence boundary. Milestone 6 is locally complete except for those two
+closeout gates. Keep this ExecPlan active until both are recorded, then move it
+to `completed/` without changing the frozen authority or historical results.

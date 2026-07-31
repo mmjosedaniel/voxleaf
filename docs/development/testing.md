@@ -779,9 +779,9 @@ and merged the M010.1 closeout.
 
 ## M010.2 reader/settings/playback validation
 
-M010.2 Milestones 1-3 are complete. Milestone 3 implements the bounded
-preference subset while the Settings shell and non-default playback remain
-pending.
+M010.2 Milestones 1-5 are complete and Milestone 6 local automated validation
+passes. The bounded preferences, reader-first Settings shell, and six-rate
+boundary-deferred playback are implemented.
 `reader-settings-playback-authority.test.ts` exhaustively freezes the exact
 shell and responsive values, Settings ordering and lifecycle neutrality,
 language/profile presentation, preference envelopes, every rate and invalid
@@ -805,7 +805,7 @@ and lifecycle checks but exceeded the frozen CPU limit in Chromium and
 packaged WebView2. `HTMLMediaElement.preservesPitch` passed Chromium but the
 unchanged packaged Tauri CSP rejected its in-memory `blob:` WAV. The negative
 control shifted pitch. No candidate reached listening; all experimental
-adapters were removed and current test/runtime playback remains `1.00x`.
+adapters were removed and that historical v1 result retained `1.00x`.
 
 ADR-0035 authorizes a distinct reduced-range v2 comparison without changing
 those results. `reader-settings-playback-authority-v2.test.ts` now freezes
@@ -863,8 +863,8 @@ retaining only the selected controller/worklet and content-safe result. The
 new result regression test verifies one selected complete passer, zero
 external/audio persistence, and no dependency/CSP expansion.
 
-Later milestones must extend existing desktop, browser, and native-startup
-coverage rather than create an unrelated harness. Their model-free tests will
+Milestones 3-5 extend the existing desktop, browser, and native-startup
+coverage rather than create an unrelated harness. Their model-free tests
 cover:
 
 - fixed app bar and sole reader scroll ownership;
@@ -873,13 +873,26 @@ cover:
 - lifecycle neutrality when Settings merely opens or closes;
 - English fallback and valid Spanish/English preference preservation;
 - language-, support-, development-, hardware-, and runtime-gated profiles;
-- bounded startup preferences before Milestone 5 adds the selected speed
-  preference;
-- the future six-value WSOLA connection, boundary-deferred activation,
+- bounded startup and playback preferences;
+- the six-value WSOLA connection, boundary-deferred activation,
   effective-listening lead, and source-frame progress;
 - unchanged source-frame/byte/unit ceilings and transition-pause timers; and
 - pause, resume, seek, profile/language replacement, recovery, book
-  replacement, exit, and exact release ownership at `1.00x`.
+  replacement, exit, and exact release ownership at every admitted rate.
+
+Milestone 6 adds the existing `test:tts:bilingual-portfolio-exact-host`
+closeout path. It runs Piper Spanish/English, Chatterbox Spanish/English, and
+development-only Qwen Serena/Aiden sequentially with one model child at a
+time. Piper exercises all six rates, latest-pending selection, next-unit
+activation, return to direct `1.00x`, and content-free activation/handoff
+metrics. The 2026-07-31 host run measured first activation at 750/300 ms and
+recurring backend overhead at 0 ms p95; both Piper arms sustained one minute
+without underruns. Chatterbox sustained the same observation at RTF 0.83/0.85.
+Qwen truthfully depleted once and refilled at RTF 2.12/2.04. All arms passed
+highlight/follow, navigation, cancellation, cleanup, zero external requests,
+and zero generated-audio persistence. `test:browser`, `test:native-startup`,
+`check:portable`, and `check` also pass outside the sandbox. Required PR checks
+and human confirmation of the intermediate portfolio rates remain open.
 
 Exact-host listening uses repository-authored synthetic text and content-free
 measurements only. Default CI remains model-free. No private EPUB, waveform,

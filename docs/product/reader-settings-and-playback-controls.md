@@ -69,13 +69,14 @@ next complete unit starts. Source frames and bytes remain the memory and
 progress authority; returning to `1.00x` releases the stretcher after the final
 slowed unit settles.
 
-The remaining portfolio validation in this document is not complete until
+The local automated portfolio validation in this document now passes and
 [`M010-002-reader-settings-and-playback-controls.md`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
-records passing implementation and validation. Current runtime behavior
+records the exact results. Current runtime behavior
 includes the Milestone 3 preference behavior, Milestone 4 reader/Settings
-shell, and Milestone 5 non-default playback integration. Milestone 6 still
-owns exact-host portfolio listening, resource, lifecycle, privacy, and final
-plan-close validation.
+shell, and Milestone 5 non-default playback integration. Milestone 6's six-arm
+exact-host resource, lifecycle, privacy, and repository matrices pass. Human
+confirmation of the intermediate playback rates and required pull-request
+checks still gate final plan closeout.
 
 This document replaces the ignored pre-M011 design discussion as the durable
 product scope. It does not change the completed M005 narration-preparation

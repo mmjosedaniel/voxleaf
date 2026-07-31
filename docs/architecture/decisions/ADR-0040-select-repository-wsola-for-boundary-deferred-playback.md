@@ -66,9 +66,13 @@ duration only.
 
 The retained source is evaluation-proven and production-wired. A separate
 bounded playback preference owns only the schema version and exact rate; the
-compact narration bar exposes all six rates. Milestone 6 must still validate
-the portfolio exact-host listening and lifecycle matrix before this plan can
-close.
+compact narration bar exposes all six rates. Milestone 6's local automated
+portfolio and lifecycle matrix passes: every profile exposes the same
+engine-neutral six-rate presentation and both Piper language arms exercise all
+six rates within the frozen activation/handoff gates. Chatterbox and
+development-only Qwen retain their unchanged synthesis paths. Human
+confirmation of the intermediate portfolio rates and required pull-request
+checks still gate plan closeout.
 
 ## Alternatives considered
 

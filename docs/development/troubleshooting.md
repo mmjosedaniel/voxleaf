@@ -351,6 +351,14 @@ exact-host validation. Sandbox execution is exploratory only. Repeat the
 unchanged command outside before reporting pass, failure, or candidate
 rejection.
 
+If the exact-host portfolio times out only at the later prepared checkpoint
+leaf after an earlier keyboard leaf action passed, rerun the focused arm once
+before classifying a reader defect. WebView2 can acknowledge an off-screen
+Space delivery without activating that repeated control. The maintained
+harness proves keyboard activation earlier and uses native WebDriver click for
+the later prepared-lifecycle repetition. Do not add a broad retry, weaken leaf
+state assertions, or hide a reproducible product failure.
+
 ### Memory, temperature, or cleanup looks abnormal
 
 The accepted M008 matrix peaked at 2,828,034,048 process-tree working-set bytes,

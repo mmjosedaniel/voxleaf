@@ -51,7 +51,8 @@ final exact-host metrics, privacy, bounded synchronization, and cleanup
 validation pass locally. Pull request #159 subsequently passed the required
 Ubuntu and Windows checks and merged the closeout.
 
-M010.2 is active before M011. Milestones 1-5 are complete: the architecture
+M010.2 is active before M011. Milestones 1-5 are complete and Milestone 6 local
+automated validation passes: the architecture
 authority and result-blind comparison were frozen before results, then neither
 eligible backend passed every machine and packaged-host gate. ADR-0034 retains
 `1.00x`. Milestone 3 implements bounded language/start preferences, preserves
@@ -74,7 +75,10 @@ queued source PCM.
 Milestone 4 implements the fixed app bar, compact publication/narration chrome,
 sole reader viewport, contents overlay, and accessible Settings drawer/sheet
 without changing reader, preference, compatibility, or narration ownership.
-M011 remains deferred until this bounded portfolio follow-up closes.
+The sequential six-arm packaged matrix, browser/native-startup, portable, and
+complete Windows repository checks pass outside the sandbox. Human
+intermediate-rate confirmation and required pull-request checks still gate
+archival. M011 remains deferred until this bounded portfolio follow-up closes.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -962,7 +966,8 @@ versioned contracts and a new decision record.
 
 ## Milestone 10.2: Add reader settings and pitch-preserving playback controls
 
-**Status:** In progress. Milestones 1-5 are complete; ADR-0034 selected no
+**Status:** In progress. Milestones 1-5 are complete and Milestone 6 local
+automated validation passes; ADR-0034 selected no
 pitch-preserving backend for v1. ADR-0035 authorizes and ADR-0036 freezes the
 reduced-range, fee-free v2 comparison; ADR-0037 also selects no v2 backend
 after inference contention. ADR-0038 authorizes a separate boundary-deferred
@@ -995,7 +1000,9 @@ collapsible contents overlay, and accessible Settings drawer/sheet while
 retaining existing domain ownership. Milestone 5 integrates only the selected
 v3 WSOLA backend with six exact values, next-unit activation, content-free
 preference ownership, and effective-listening-duration scheduling. Milestone 6
-owns final portfolio and repository validation.
+has passed its sequential six-arm packaged matrix and repository validation;
+human confirmation of the intermediate rates plus required pull-request checks
+remain before completion.
 
 ### Goal
 
@@ -1228,12 +1235,12 @@ supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
 Milestones 1 through 10.1, M008.1, and M009.1 are complete, with their evidence
-retained under [`completed/`](completed/). M010.2 Milestones 1-5 are complete
-and M010.2 remains active before M011. ADR-0037 closes v2 with no backend;
+retained under [`completed/`](completed/). M010.2 Milestones 1-5 are complete,
+Milestone 6 local automated validation passes, and M010.2 remains active before M011. ADR-0037 closes v2 with no backend;
 ADR-0039 freezes the separate boundary-deferred v3, and ADR-0040 selects
 repository WSOLA. The bounded preference runtime, reader-first Settings shell,
-and non-default boundary-deferred playback integration are implemented;
-Milestone 6 remains before M011.
+and non-default boundary-deferred playback integration are implemented. Human
+intermediate-rate confirmation and required PR checks remain before M011.
 
 ## MVP completion boundary
 
