@@ -18,8 +18,8 @@ selection or model generation.
 After this plan passes:
 
 - the publication is the dominant application surface;
-- a fixed compact application bar exposes Open/Replace EPUB, concise
-  compatibility, Settings, and Close EPUB;
+- a fixed compact application bar exposes one stable styled Open a book
+  action; Settings appears only after a readable publication is ready;
 - publication metadata and narration controls remain outside the sole reader
   scroll viewport;
 - an accessible Settings drawer/sheet owns reader appearance, narration
@@ -35,9 +35,9 @@ After this plan passes:
 - loaded-audio status truthfully distinguishes source media duration from
   effective listening duration at the selected speed.
 
-The synthetic raster probe and raw diagnostics no longer appear in the normal
-portfolio interface. They remain available only through an explicit
-development/test gate.
+The synthetic raster probe and raw diagnostics no longer appear in the
+portfolio interface. Raster safety remains validated through deterministic
+owner tests and the packaged synthetic-EPUB production path.
 
 ## Current state
 
@@ -47,7 +47,8 @@ English selection, supported Piper language profiles, supported bilingual
 Chatterbox, and development-only Qwen Serena/Spanish plus Aiden/English behind
 the existing development and compatibility gates.
 
-The ready desktop currently spreads configuration across several surfaces:
+Before M010.2 implementation, the desktop spread configuration across several
+surfaces:
 
 - `App.tsx` renders a large brand/file-open header, a top-right
   `HardwareCompatibilityControls` disclosure, publication metadata, narration,
@@ -58,7 +59,8 @@ The ready desktop currently spreads configuration across several surfaces:
   volume, and a disabled fixed-speed selector inside narration detail;
 - `HardwareCompatibilityControls.tsx` renders language, profile,
   compatibility reasons, and recheck; and
-- the empty application exposes the synthetic raster safety probe.
+- before ADR-0041's Milestone 6 refinement, the empty application exposed the
+  synthetic raster safety probe.
 
 Completed M009.1 already provides one publication scroll owner, compact and
 collapsible narration, visible segment highlighting, passive-scroll isolation,
@@ -144,7 +146,12 @@ were committed at `5991165` before candidate implementation or results.
 Milestone 2D is complete. Both candidates passed the frozen machine and
 listening sequence; [ADR-0040](../../architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md)
 selects repository WSOLA for Milestone 5 integration. The selected source adds
-no dependency or CSP change. Production remains `1.00x`.
+no dependency or CSP change. Milestone 5 now connects that backend to product
+playback at all six admitted rates. Milestone 6's sequential six-arm packaged
+portfolio and repository validation pass locally. The maintainer's renewed
+all-rate listening confirms that every admitted value now slows playback in
+the intended direction and remains usable. Pull request #170 then passed the
+required Ubuntu and Windows checks, so M010.2 is complete.
 
 ## Scope and non-goals
 
@@ -181,8 +188,8 @@ no dependency or CSP change. Production remains `1.00x`.
 - Correct audible source-frame progress, mid-unit rate changes, effective
   listening lead, startup, low-water, underrun, and status calculations.
 - Preserve M008.1 transition pauses as unchanged wall-clock timers.
-- Gate the synthetic raster probe and raw diagnostics behind explicit
-  development/test state.
+- Remove the synthetic raster probe and raw diagnostics from product chrome;
+  retain deterministic and packaged production-path raster validation.
 - Validate responsive layout, accessibility, lifecycle neutrality, identity
   replacement, synchronization, bounded resources, privacy, and exact-host
   listening.
@@ -942,12 +949,14 @@ Complete.
    existing reader-owned reflow/locator update callbacks.
 3. Move language/profile, startup mode/target, recheck, and compatibility
    detail into the approved sections.
-4. Keep a concise compatibility result in the app bar.
+4. Keep compatibility results inside Settings after a readable publication is
+   ready.
 5. Implement wide drawer and narrow full-width sheet semantics, focus
    containment, Escape, focus restore, and no nested trap.
 6. Make the table of contents collapsible/overlay without creating another
    reading-position authority.
-7. Gate the raster probe and developer diagnostics.
+7. Remove the manual raster probe and retain the stronger deterministic plus
+   packaged publication-path evidence.
 8. Preserve normal-reader display at light, dark, forced-colors, reduced
    motion, and narrow/wide sizes.
 9. Prove that opening/closing Settings does not detect, load, stop, replace, or
@@ -966,9 +975,13 @@ Expected result: deterministic, browser, and packaged tests prove the fixed
 reader shell, accessible Settings, responsive behavior, and unchanged
 lifecycle ownership.
 
-Actual result: Implemented in checkpoint `486f01d`. The ready application now
-keeps Open/Replace, concise compatibility, Settings, and Close EPUB in one
-fixed app bar. Publication metadata, compact narration, chapter controls, and
+Actual result: Implemented in checkpoint `486f01d` and refined under ADR-0041
+during Milestone 6 validation. The application now keeps one mounted,
+custom-styled Open a book action across empty/ready transitions. Settings is
+available only after a readable publication is ready; compatibility detail
+lives there, while Replace/Close wording, native filename placeholders,
+routine bar status, and the manual raster probe are absent. Publication
+metadata, compact narration, chapter controls, and
 contents controls stay outside the sole publication scroll viewport. Settings
 uses the frozen Reading, Appearance, Narration, Device compatibility, and About
 order; it reuses the existing bounded preference, compatibility, profile,
@@ -976,7 +989,8 @@ language, startup, and reset owners. Wide windows use a right drawer, narrow
 windows use a full-width modal sheet, and focus containment, Escape dismissal,
 focus restoration, forced-colors, reduced-motion, and 320 px layout are
 covered. The contents navigation is a bounded overlay and cannot become
-locator authority. The synthetic raster probe is development-only.
+locator authority. Deterministic raster-owner suites and packaged startup's
+real synthetic-EPUB image path retain raster safety coverage.
 
 Opening and closing Settings is lifecycle-neutral in deterministic tests: it
 does not recheck hardware, start/stop/replace narration, change work identity,
@@ -1061,7 +1075,8 @@ Complete.
 1. Run repository-authored Spanish and English EPUB journeys across applicable
    Piper, Chatterbox, and gated Qwen profile presentation without running two
    model children simultaneously.
-2. Validate Settings before/after open; first-run English; preserved Spanish;
+2. Validate Settings is absent before open and available after open; first-run
+   English; preserved Spanish;
    profile/language replacement; quick/prepared restoration; admitted speed
    presentation or truthful fixed-speed fallback; and development-only
    visibility.
@@ -1093,11 +1108,62 @@ admitted boundary-deferred speed range—or truthful fixed `1.00x` fallback—pa
 deterministic, browser, packaged, exact-host, privacy, bounded-resource, and
 required pull-request validation.
 
-Actual result: Not run.
+Actual result: The normal-local-PowerShell packaged portfolio command passed
+all six sequential arms on 2026-07-31. Piper Spanish and English exercised
+`1.00x`, `0.95x`, `0.90x`, `0.85x`, `0.80x`, and `0.75x`; newest-pending
+selection won, first non-default activation measured 750/300 ms, and recurring
+backend handoff overhead measured 0 ms p95 after excluding the existing 300 ms
+semantic transition pause. Both Piper arms sustained the one-minute quick
+observation without underruns and measured warm prepared RTF 0.07. Chatterbox
+Spanish/English sustained it at RTF 0.83/0.85. Qwen Serena/Aiden truthfully
+observed one underrun and bounded refill at RTF 2.12/2.04, preserving their
+development-only constrained-buffer status. Every arm passed highlighting,
+focus-safe following, leaf/chapter navigation, pause/resume, identity-first
+replacement, prepared playback, cancellation, final cleanup, zero external
+requests, and zero generated-audio files. Peak observed dedicated VRAM was
+3,734 MiB for Chatterbox and 5,090 MiB for Qwen; Piper used zero dedicated
+VRAM. The complete browser, native-startup, portable, and Windows repository
+commands also pass outside the sandbox. ADR-0040 already contains fluent
+Spanish/English listening at `1.00x`, `0.85x`, and `0.75x`. On 2026-07-31 the
+maintainer repeated product listening after the clock correction and confirmed
+that the complete admitted range now slows playback correctly and remains
+usable. Pull request #170 subsequently passed both required foundation checks.
+
+The maintainer's subsequent product listening found that non-default values
+sped playback up instead of slowing it. The portfolio matrix had proved
+selection, boundary activation, and handoff timing but did not measure the
+product's audible output duration. Root cause was a product-only clock
+mismatch: 24,000 Hz protocol PCM and WSOLA window/hop constants were emitted
+through the device-default 48,000 Hz `AudioContext`. The player now requests
+the authoritative 24,000 Hz context explicitly. A regression fails when the
+default factory omits that option; the correction adds no PCM copy, second
+queue, dependency, CSP change, or model work. Focused playback tests, desktop
+type checking, 51 files/518 desktop tests plus 12 native helpers, all six
+Chromium journeys, packaged WebView2 startup, and the complete portable gate
+pass outside the sandbox. The complete Windows gate also passes 209 shared,
+580 EPUB, 518 desktop, 347 Python, and 41 Rust tests plus 12 native helpers and
+all release builds. The maintainer subsequently repeated the product journey
+and confirmed the corrected audible direction across the admitted range. Pull
+request #170 then passed the required Ubuntu and Windows foundation checks.
+
+The subsequent empty/ready shell review exposed host-localized native file
+text, empty-state Settings and compatibility overflow, redundant
+Replace/Close controls, and a manual raster probe whose evidence was weaker
+than the existing packaged publication path. ADR-0041 records the correction.
+One mounted, custom-styled Open a book action now preserves focus across
+opening; Settings appears only for a ready readable publication; routine
+status remains accessible without occupying the bar; and the manual probe plus
+its otherwise-unused adapter are removed. Identity-first replacement,
+application-exit cleanup, all raster owner tests, and the packaged synthetic-
+EPUB image proof remain unchanged. The complete App suite and all six Chromium
+journeys pass outside the sandbox after the correction. Packaged
+Tauri/WebView2 startup, portable validation, and the complete Windows/Rust gate
+also pass.
 
 #### Status
 
-Ready after Milestones 2D and 3-5.
+Complete. Local automated validation, human all-rate confirmation, and the
+required pull-request checks pass.
 
 ## Testing and benchmark strategy
 
@@ -1132,16 +1198,19 @@ preference restoration; source-frame progress; and no external requests.
 ### Exact-host evidence
 
 Milestone 2B did not open exact-host listening because no candidate passed its
-machine gates. Milestone 6 still uses repository-authored synthetic Spanish
-and English text to validate the fixed-`1.00x` portfolio reader. Record only
+machine gates. Milestone 2D subsequently selected repository WSOLA under its
+separate authority. Milestone 6 uses repository-authored synthetic Spanish
+and English text to validate the engine-neutral six-rate presentation, exercise
+all six rates on the two supported Piper profiles, and run Chatterbox plus
+development-only Qwen without changing their synthesis paths. Record only
 content-free engine/profile ID, timing, drift, underrun, CPU/RAM,
 cancellation, and cleanup observations. Do not retain waveforms, EPUBs,
 prepared text, screenshots containing private books, raw host identity, model
 paths, or process arguments.
 
 Qwen remains optional development-only and does not need a support-state
-reevaluation. The plan validates engine-neutral presentation and unchanged
-fixed-speed playback, not that Qwen becomes real-time.
+reevaluation. The plan validates engine-neutral post-synthesis playback
+without claiming that Qwen becomes real-time.
 
 ### Repository commands
 
@@ -1521,6 +1590,62 @@ Do not rewrite accepted historical authority to make a result pass.
   34 EPUB files/580 tests, the same desktop/Python suites, and portable builds.
   `git diff --check` passes. The run retains only the existing non-failing
   pytest cache-write, CSS Highlight parser, and Vite chunk-size advisories.
+- **2026-07-31:** Extended the existing packaged bilingual portfolio harness
+  for Milestone 6. The frozen matrix remains six sequential model arms and now
+  exercises all six production playback rates on Piper Spanish and English.
+  The native journey verifies exact options, first activation, latest-pending
+  selection, boundary-deferred application, return to direct `1.00x`, and
+  content-free transition metrics without adding a second model process.
+- **2026-07-31:** The first full matrix exposed a WebView2/WebDriver interaction
+  race after active cancellation: the already-covered prepared checkpoint
+  leaf did not receive a repeated off-screen Space key. The focused arm passed
+  unchanged. Checkpoint `5206d4c` retains the earlier exact-host keyboard leaf
+  proof and uses native WebDriver click for the later prepared-lifecycle
+  repetition. The focused arm and then the complete six-arm matrix pass.
+- **2026-07-31:** Closed Milestone 6 local automated validation in normal
+  PowerShell. `pnpm.cmd test:tts:bilingual-portfolio-exact-host` passes Piper
+  Spanish/English, Chatterbox Spanish/English, and Qwen Serena/Aiden in order,
+  with no overlapping child, external request, persisted audio, stale
+  playback, or retained cleanup unit. Piper exercises all six admitted rates;
+  first activation is 750/300 ms and recurring backend overhead is 0 ms p95.
+  `pnpm.cmd test:browser` passes 6/6, `pnpm.cmd test:native-startup` passes,
+  `pnpm.cmd check:portable` passes, and `pnpm.cmd check` passes 209 shared,
+  580 EPUB, 517 desktop, 347 Python, 41 Rust, and 12 native-helper tests plus
+  all builds. Human confirmation of the intermediate portfolio rates and the
+  required pull-request checks remain open.
+- **2026-07-31:** Maintainer listening exposed that the integrated non-default
+  speeds ran faster, despite correct selected/pending/active state. A new
+  regression reproduced the omitted `AudioContext` sample-rate option. The
+  product had sent fixed 24,000 Hz PCM through the host-default 48,000 Hz
+  render clock, so the worklet output was consumed twice as quickly. The
+  default player context now explicitly requests the authoritative 24,000 Hz
+  rate; no resampled copy or additional queue is introduced. The regression,
+  desktop typecheck, 51 files/518 desktop tests plus 12 native helpers, six
+  Chromium journeys, packaged WebView2 startup, portable validation, and the
+  complete Windows gate pass in normal local PowerShell. The earlier matrix
+  remains valid for state and lifecycle evidence, but human audible-rate
+  direction must be repeated.
+- **2026-07-31:** The maintainer repeated the product listening journey after
+  the 24,000 Hz clock correction and confirmed that every admitted non-default
+  value slows playback in the intended direction and remains usable. This
+  closes the final human all-rate gate without changing the frozen authority,
+  backend selection, source-PCM bounds, or prior automated evidence.
+- **2026-07-31:** Milestone 6 shell review produced ADR-0041 and simplified the
+  empty/ready chrome. The native picker is now a stable styled Open a book
+  action without localized filename text; Settings appears only after a
+  readable publication is ready; compatibility detail stays inside Settings;
+  Replace/Close and routine visual status are removed; and the obsolete manual
+  raster probe/adapter are deleted while real raster tests remain. The App
+  suite passes 21/21 and the outside-sandbox Chromium matrix passes 6/6. The
+  packaged Tauri/WebView2 startup proves the empty-state gate, replacement
+  cleanup, real EPUB raster decode/release, restart restoration, and zero
+  external requests. `pnpm.cmd check:portable` and `pnpm.cmd check` pass 209
+  shared, 580 EPUB, 515 desktop, 347 Python, and 41 Rust tests plus 12 native
+  helpers, all lint/type/generated-contract checks, and portable/native builds.
+- **2026-07-31:** Pull request #170 passed the required Ubuntu portable and
+  Windows native foundation checks. With automated validation and maintainer
+  all-rate listening complete, archived M010.2 under `docs/plans/completed/`
+  and released M011 as the next roadmap milestone.
 
 ## Discoveries and decisions
 
@@ -1668,6 +1793,19 @@ Do not rewrite accepted historical authority to make a result pass.
   positive rate. The new envelope is content-free, versioned, closed to six
   integer percentages, and can preserve unknown future state without changing
   the current session.
+- The product exact-host matrix must not repeat an already-proven keyboard
+  gesture merely to test a later lifecycle state. WebView2 may acknowledge an
+  off-screen Space delivery without changing the control. The same journey
+  keeps its earlier keyboard leaf proof and uses native WebDriver click for the
+  prepared-mode lifecycle repetition.
+- Product contention does not change the selected backend gates: Piper's two
+  all-rate arms keep first activation below 1,000 ms and recurring backend
+  overhead below 250 ms while preserving the existing semantic pause as a
+  separate intentional wall-clock wait.
+- State and handoff assertions alone cannot prove audible rate direction. The
+  product renderer must share the protocol's 24,000 Hz clock with the
+  evaluated WSOLA implementation; a device-default 48,000 Hz context can turn
+  mathematically correct slowdown output into audible speedup.
 
 ## Final validation results
 
@@ -1701,7 +1839,24 @@ browser case persists only the schema version and exact integer rate. No
 private text, generated audio, model artifact, dependency, CSP expansion, or
 external request is introduced.
 
-The full plan remains active. ADR-0035 supplies the reduced-range product
+Milestone 6 local automated validation also passes in normal host PowerShell.
+The sequential packaged portfolio covers Piper Spanish/English, Chatterbox
+Spanish/English, and development-only Qwen Serena/Aiden without overlapping
+model children. The two Piper arms exercise every admitted rate and preserve
+latest-selection, boundary, identity, source-queue, highlight, progress, and
+cleanup authority. Chatterbox remains supported; both Qwen arms remain
+development-only and truthfully expose
+their measured depletion. Every arm reports zero external requests, zero
+generated-audio files, zero retained/discarded units after cleanup, and no
+stale playback. Browser, native-startup, portable, and complete Windows checks
+pass outside the sandbox. ADR-0040 supplies prior bilingual human evidence at
+`1.00x`, `0.85x`, and `0.75x`. The maintainer's renewed post-correction journey
+confirms the remaining admitted values and correct audible-rate direction. The
+clock regression, desktop, Chromium, packaged startup, portable, and complete
+Windows checks pass outside the sandbox. Pull request #170 also passes the
+required Ubuntu and Windows foundation checks.
+
+The full plan is complete. ADR-0035 supplies the reduced-range product
 decision, ADR-0036 freezes its v2 authority, and ADR-0037 records the
 no-selection result. ADR-0038 authorizes a separate boundary-deferred v3 with
 new first-activation and RAM limits. ADR-0039 and authority commit `4132229`
@@ -1711,12 +1866,17 @@ lifecycle, and listening gate passed. The retained selected source adds no
 dependency or CSP expansion.
 Milestone 3 has implemented and validated preference migration, English
 runtime fallback, closed narration-start persistence, pre-action hydration,
-and identity-safe reset. Milestone 4 implements the fixed app bar, compact
-reader-first shell, accessible five-section Settings drawer/sheet, collapsible
-contents overlay, and development-only raster diagnostics while retaining the
-existing domain owners and one reader scroll authority. Milestone 5 integrates
-the exact selected backend with one bounded worklet, a separate
+and identity-safe reset. Milestone 4 implements the compact reader-first shell,
+accessible five-section Settings drawer/sheet, and collapsible contents
+overlay while retaining the existing domain owners and one reader scroll
+authority. ADR-0041's Milestone 6 refinement keeps one styled Open a book
+action mounted across states, defers Settings until a readable publication is
+ready, removes redundant compatibility/Replace/Close chrome, and retires the
+manual raster probe while retaining packaged production-path evidence.
+Milestone 5 integrates the exact selected backend with one bounded worklet, a separate
 playback preference, six compact-bar values, immutable-current/latest-pending
 activation, and effective-lead scheduling. It changes no TTS/model input,
 source queue ceiling, progress authority, transition timer, dependency, CSP,
-or persistence boundary. Milestone 6 is now the next and final plan milestone.
+or persistence boundary. The maintainer all-rate journey and pull request #170
+close both remaining gates, so this ExecPlan is archived without changing
+frozen authority or historical results.

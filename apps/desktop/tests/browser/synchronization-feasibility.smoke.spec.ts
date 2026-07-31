@@ -43,7 +43,7 @@ test("proves segment decoration and focus-safe following without DOM or selectio
     await page.setViewportSize({ width: 800, height: 400 });
     await page.goto("/");
     const publicationBytes = await buildSynchronizationFixture();
-    await page.getByLabel("Open a local EPUB").setInputFiles({
+    await page.getByLabel("Open a book").setInputFiles({
       name: "private-synchronization-feasibility.epub",
       mimeType: "application/epub+zip",
       buffer: Buffer.from(publicationBytes),

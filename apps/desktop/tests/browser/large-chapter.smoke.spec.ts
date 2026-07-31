@@ -36,7 +36,7 @@ test("rejects an oversized production chapter before partial rendering", async (
 
   try {
     await page.goto("/");
-    const fileInput = page.getByLabel("Open a local EPUB");
+    const fileInput = page.getByLabel("Open a book");
     const bytes = await buildOversizedChapterFixture();
     await fileInput.setInputFiles({
       name: "private-oversized-browser.epub",
@@ -69,8 +69,6 @@ test("rejects an oversized production chapter before partial rendering", async (
       0,
     );
 
-    await page.getByRole("button", { name: "Close EPUB" }).click();
-    await expect(page.getByRole("status")).toHaveText("No local EPUB is open.");
     expect(unexpectedRequestCount).toBe(0);
   } finally {
     await context.unroute("**/*");

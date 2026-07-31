@@ -69,13 +69,14 @@ next complete unit starts. Source frames and bytes remain the memory and
 progress authority; returning to `1.00x` releases the stretcher after the final
 slowed unit settles.
 
-The remaining portfolio validation in this document is not complete until
-[`M010-002-reader-settings-and-playback-controls.md`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
-records passing implementation and validation. Current runtime behavior
+The local automated portfolio validation in this document passes and
+[`M010-002-reader-settings-and-playback-controls.md`](../plans/completed/M010-002-reader-settings-and-playback-controls.md)
+records the exact results. Current runtime behavior
 includes the Milestone 3 preference behavior, Milestone 4 reader/Settings
-shell, and Milestone 5 non-default playback integration. Milestone 6 still
-owns exact-host portfolio listening, resource, lifecycle, privacy, and final
-plan-close validation.
+shell, and Milestone 5 non-default playback integration. Milestone 6's six-arm
+exact-host resource, lifecycle, privacy, and repository matrices pass. The
+maintainer confirms the full admitted rate range, and pull request #170 passes
+the required Ubuntu and Windows checks.
 
 This document replaces the ignored pre-M011 design discussion as the durable
 product scope. It does not change the completed M005 narration-preparation
@@ -96,17 +97,26 @@ control without changing model generation or persisting generated audio.
 
 ### Fixed application bar
 
-The ready reader uses a compact application bar outside the publication scroll
-viewport:
+The empty reader uses a compact application bar and welcome region outside the
+publication scroll viewport:
 
 - compact VoxLeaf identity;
-- Open EPUB or Replace EPUB;
-- one short compatibility status;
-- Settings; and
-- Close EPUB while a publication is open.
+- one custom-styled **Open a book** action backed by the capability-free native
+  file picker; and
+- privacy-oriented introductory copy plus visible opening/failure status only
+  when action is required.
+
+The ready reader keeps the same mounted Open a book action, compact VoxLeaf
+identity, and Settings. It does not expose Replace EPUB, Close EPUB, the native
+selected-file placeholder, or routine compatibility/lifecycle summaries in
+the bar. Settings and compatibility detail appear only after a readable
+publication is ready. Opening another book and exiting the application retain
+their existing bounded cleanup ownership.
 
 The full measured compatibility matrix, large branding, and reader
 preferences must not displace the book from the normal reading workspace.
+The manual synthetic raster probe is not product UI; real raster safety remains
+covered through the packaged synthetic-EPUB path and deterministic owner tests.
 
 ### Reader workspace
 
@@ -255,6 +265,12 @@ it changes rendered sample rate and pitch. Milestone 10.2 must freeze and
 validate a bounded in-memory time-stretch mechanism before product admission.
 Any production dependency requires purpose, alternative, license,
 distribution, memory, cancellation, and platform review.
+
+The retained repository WSOLA path must render on the same 24,000 Hz clock as
+the protocol PCM and the evaluated WSOLA window/hop configuration. It must not
+silently inherit a device-default 48,000 Hz `AudioContext`: doing so consumes
+24,000 Hz input twice as quickly and can make a selected slowdown sound faster.
+This clock requirement adds no resampled PCM copy or second queue.
 
 The completed v2 comparison was intentionally limited to:
 

@@ -28,7 +28,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { App, type ReadyPublicationContentProps } from "./App";
 import type { ReaderPositionRepository } from "./persistence/reader-position-repository";
 import type {
-  LocalPublicationCloseResult,
   LocalPublicationOpenFailureReason,
   LocalPublicationOpenFlow,
   LocalPublicationOpenResult,
@@ -151,7 +150,7 @@ function persistedState(locator: ReadingLocatorV1) {
 }
 
 function selectEpub(name = "private.epub"): void {
-  fireEvent.change(screen.getByLabelText("Open a local EPUB"), {
+  fireEvent.change(screen.getByLabelText("Open a book"), {
     target: { files: [new File(["book"], name)] },
   });
 }
@@ -337,24 +336,19 @@ class ControlledNarrationCoordinator {
 }
 
 describe("desktop reader lifecycle surface", () => {
-  it("opens Settings without publication state and restores focus on close", () => {
+  it("keeps the empty shell focused on one styled book-opening action", () => {
     render(<App />);
-    const settings = screen.getByRole("button", { name: "Settings" });
-    settings.focus();
-    fireEvent.click(settings);
-
+    const input = screen.getByLabelText("Open a book");
+    expect(input.closest("label")).toHaveClass("file-picker-button");
+    expect(screen.getByText("Open a book")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Settings" })).toBeNull();
+    expect(screen.queryByText("Local narration")).toBeNull();
+    expect(screen.queryByText("Open a local EPUB")).toBeNull();
     expect(
-      screen.getByRole("dialog", { name: "Settings" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Close Settings" }),
-    ).toHaveFocus();
-
-    fireEvent.click(screen.getByRole("button", { name: "Close Settings" }));
-    expect(
-      screen.queryByRole("dialog", { name: "Settings" }),
-    ).not.toBeInTheDocument();
-    expect(settings).toHaveFocus();
+      screen.queryByRole("button", {
+        name: "Run synthetic raster safety probe",
+      }),
+    ).toBeNull();
   });
 
   it("renders an accessible capability-free idle state", () => {
@@ -365,7 +359,7 @@ describe("desktop reader lifecycle surface", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "VoxLeaf" }),
     ).toBeInTheDocument();
-    const input = screen.getByLabelText("Open a local EPUB");
+    const input = screen.getByLabelText("Open a book");
     expect(input).toHaveAttribute("accept", ".epub,application/epub+zip");
     expect(input).toHaveAccessibleDescription("No local EPUB is open.");
     expect(screen.getByRole("status")).toHaveTextContent(
@@ -405,7 +399,11 @@ describe("desktop reader lifecycle surface", () => {
     ).toBeInTheDocument();
     expect(publication.readResource).not.toHaveBeenCalled();
     expect(publication.resolveTarget).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Close EPUB" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Settings" })).toBeEnabled();
+    expect(screen.getByText("Open a book")).toBeVisible();
+    expect(screen.queryByText("Replace EPUB")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Close EPUB" })).toBeNull();
+    expect(screen.queryByText("Local narration compatibility")).toBeNull();
     expect(screen.getByRole("main")).toHaveClass("app-shell-reader");
     expect(
       document.querySelectorAll('[data-reader-scroll-owner="true"]'),
@@ -419,7 +417,7 @@ describe("desktop reader lifecycle surface", () => {
       screen.getByRole("button", { name: "Show narration details" }),
     ).toHaveAttribute("aria-expanded", "false");
     expect(document.body).not.toHaveTextContent("private-title.epub");
-    expect(screen.getByLabelText("Open a local EPUB")).toHaveValue("");
+    expect(screen.getByLabelText("Open a book")).toHaveValue("");
   });
 
   it("does not cancel restoration during the React StrictMode mount probe", async () => {
@@ -624,7 +622,7 @@ describe("desktop reader lifecycle surface", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "Validating and opening the selected EPUB.",
     );
-    expect(screen.getByLabelText("Open a local EPUB")).toBeEnabled();
+    expect(screen.getByLabelText("Open a book")).toBeEnabled();
 
     await act(async () => {
       resolveOpen?.({ status: "cancelled" });
@@ -675,7 +673,7 @@ describe("desktop reader lifecycle surface", () => {
       expect(screen.getByRole("status")).toHaveTextContent(expectedMessage),
     );
     expect(document.body).not.toHaveTextContent("private.epub");
-    expect(screen.getByLabelText("Open a local EPUB")).toBeEnabled();
+    expect(screen.getByLabelText("Open a book")).toBeEnabled();
   });
 
   it("provides a recoverable empty-content state", async () => {
@@ -696,68 +694,12 @@ describe("desktop reader lifecycle surface", () => {
       "This EPUB has no supported readable content.",
     );
     expect(document.body).not.toHaveTextContent("Private empty title");
-    expect(screen.getByLabelText("Open a local EPUB")).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Close EPUB" })).toBeEnabled();
+    expect(screen.getByLabelText("Open a book")).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "Close EPUB" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Settings" })).toBeNull();
   });
 
-  it("hides publication data while closing and can reopen afterward", async () => {
-    let finishClose:
-      ((result: LocalPublicationCloseResult) => void) | undefined;
-    const first = createTestPublication("First private title");
-    const second = createTestPublication("Second safe title");
-    const open = vi
-      .fn<LocalPublicationOpenFlow["open"]>()
-      .mockResolvedValueOnce({ status: "ready", publication: first })
-      .mockResolvedValueOnce({ status: "ready", publication: second });
-    const close = vi
-      .fn<LocalPublicationOpenFlow["close"]>()
-      .mockImplementationOnce(
-        () =>
-          new Promise((resolve) => {
-            finishClose = resolve;
-          }),
-      )
-      .mockResolvedValue({ status: "closed" });
-    const flow = createTestFlow(open, close);
-    render(<App openFlow={flow} />);
-    selectEpub("first.epub");
-    await screen.findByRole("heading", { name: "First private title" });
-    openSettings();
-    const textSize = await screen.findByLabelText("Text size");
-    fireEvent.change(textSize, {
-      target: { value: "large" },
-    });
-    await waitFor(() => expect(textSize).toHaveValue("large"));
-    fireEvent.click(screen.getByRole("button", { name: "Close Settings" }));
-
-    fireEvent.click(screen.getByRole("button", { name: "Close EPUB" }));
-
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Closing the current EPUB.",
-    );
-    expect(screen.getByRole("region", { name: "VoxLeaf" })).toHaveAttribute(
-      "aria-busy",
-      "true",
-    );
-    expect(screen.queryByText("First private title")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Open a local EPUB")).toBeDisabled();
-
-    await act(async () => {
-      finishClose?.({ status: "closed" });
-    });
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "No local EPUB is open.",
-    );
-
-    selectEpub("second.epub");
-    expect(
-      await screen.findByRole("heading", { name: "Second safe title" }),
-    ).toBeInTheDocument();
-    openSettings();
-    expect(await screen.findByLabelText("Text size")).toHaveValue("large");
-  });
-
-  it("flushes validated position state before replacement and explicit close", async () => {
+  it("flushes validated position state before replacement", async () => {
     const first = createTestPublication("First position book");
     const second = createTestPublication("Second position book");
     const open = vi
@@ -789,17 +731,6 @@ describe("desktop reader lifecycle surface", () => {
     await waitFor(() =>
       expect(screen.getByRole("status")).toHaveTextContent(
         "The EPUB opened successfully.",
-      ),
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Close EPUB" }));
-    expect(writePosition).toHaveBeenCalledTimes(2);
-    expect(writePosition.mock.invocationCallOrder[1]).toBeLessThan(
-      vi.mocked(flow.close).mock.invocationCallOrder[0]!,
-    );
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "No local EPUB is open.",
       ),
     );
   });
@@ -861,12 +792,6 @@ describe("desktop reader lifecycle surface", () => {
     await act(async () => narration.stop());
     act(() =>
       readerProps?.onSettledLocatorChange?.(testLocatorAt(4), "reflow"),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Close EPUB" }));
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "No local EPUB is open.",
-      ),
     );
     expect(writePosition).toHaveBeenCalledTimes(2);
   });
@@ -945,27 +870,6 @@ describe("desktop reader lifecycle surface", () => {
     );
   });
 
-  it("shows a fixed terminal state when publication cleanup fails", async () => {
-    const publication = createTestPublication();
-    const flow = createTestFlow(
-      () => Promise.resolve({ status: "ready", publication }),
-      () => Promise.resolve({ status: "rejected", reason: "internal-failure" }),
-    );
-    render(<App openFlow={flow} />);
-    selectEpub();
-    await screen.findByRole("button", { name: "Close EPUB" });
-
-    fireEvent.click(screen.getByRole("button", { name: "Close EPUB" }));
-
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "VoxLeaf could not finish closing the EPUB.",
-      ),
-    );
-    expect(screen.getByLabelText("Open a local EPUB")).toBeDisabled();
-    expect(document.body).not.toHaveTextContent("Synthetic Reader Book");
-  });
-
   it("contains renderer failures, clears publication data, and starts cleanup", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     const publication = createTestPublication("Private renderer title");
@@ -999,7 +903,7 @@ describe("desktop reader lifecycle surface", () => {
     await screen.findByRole("heading", { name: "Synthetic Reader Book" });
 
     fireEvent(
-      screen.getByLabelText("Open a local EPUB"),
+      screen.getByLabelText("Open a book"),
       new Event("cancel", { bubbles: true }),
     );
 
@@ -1050,29 +954,6 @@ describe("desktop reader lifecycle surface", () => {
       screen.getByRole("heading", { name: "Current publication" }),
     ).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent("Prior private publication");
-  });
-
-  it("retains the independent content-free raster safety probe", async () => {
-    const flow = createTestFlow(() => Promise.resolve({ status: "cancelled" }));
-    const runRasterProbe = vi.fn(async () => ({
-      status: "accepted" as const,
-    }));
-    render(<App openFlow={flow} runRasterProbe={runRasterProbe} />);
-
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Run synthetic raster safety probe",
-      }),
-    );
-
-    await waitFor(() =>
-      expect(
-        screen.getByText("Bounded local raster decoding is available."),
-      ).toBeInTheDocument(),
-    );
-    expect(runRasterProbe).toHaveBeenCalledWith({
-      signal: expect.any(AbortSignal),
-    });
   });
 
   it("cleans publication ownership when the application unmounts", async () => {

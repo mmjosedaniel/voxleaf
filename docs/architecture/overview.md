@@ -2,7 +2,7 @@
 
 ## Status
 
-Mixed implementation status. Roadmap Milestones 1 through 10.1, M008.1, and
+Mixed implementation status. Roadmap Milestones 1 through 10.2, M008.1, and
 M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoration,
 locator-linked narration preparation, M007 service, exact-development M008
 coordinator/player path, M009 segment-level synchronization, and M009.1 reader
@@ -66,10 +66,10 @@ bounded synchronization/cancellation, zero-audio-persistence, and privacy
 closeout pass. Pull request #159 passed the required Ubuntu and Windows checks
 and merged the M010.1 closeout.
 
-M010.2 Milestones 1-5 are complete. The accepted
+M010.2 is complete. The accepted
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
 requirements and
-[`active ExecPlan`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
+[`completed ExecPlan`](../plans/completed/M010-002-reader-settings-and-playback-controls.md)
 are now governed by the frozen
 [`reader settings and playback authority v1`](reader-settings-playback-authority-v1.md)
 and [ADR-0033](decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md).
@@ -96,6 +96,15 @@ starting rate, the newest pending rate activates at the next complete-unit
 boundary, and speed-only changes preserve TTS identity and queued source PCM.
 Effective listening duration governs startup/refill presentation and decisions,
 while source frames and bytes remain memory/progress authority.
+The existing single-child packaged portfolio now validates engine-neutral
+six-rate presentation, exercises Piper Spanish/English at every admitted rate,
+and runs Chatterbox Spanish/English plus development-only Qwen Serena/Aiden in
+one sequential run. All six arms preserve synchronization and cleanup, make
+zero external requests, and persist zero audio. Qwen's measured depletion
+remains visible rather than being reclassified as real-time. The maintainer
+confirms the full admitted rate range, and pull request #170 passes the required
+Ubuntu and Windows checks. No component or trust boundary remains to be
+implemented by M010.2.
 
 [ADR-0035](decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md)
 authorizes a separate result-blind v2 for six exact rates ending at `0.75x`,
@@ -756,8 +765,8 @@ as both the initial prepared selection and refill/resume target. It keeps the
 10-second low-water warning, `0` ms adaptive low-buffer wait, `1.0x` playback,
 100% default volume, and exact simultaneous resource ceilings. M008.1 later
 adds the distinct semantic generated-unit transition described above without
-revising those M008 values. Frozen M010.2 authority may supersede only the
-playback-rate and derived effective-listening-time portions after later
-milestones pass deterministic, browser, packaged, exact-host, quality,
-resource, synchronization, privacy, and lifecycle gates. Source-frame/byte
-ceilings and M008.1 wall-clock transition timers remain unchanged.
+revising those M008 values. Completed M010.2 supersedes only the playback-rate
+and derived effective-listening-time portions after deterministic, browser,
+packaged, exact-host, quality, resource, synchronization, privacy, and lifecycle
+gates pass. Source-frame/byte ceilings and M008.1 wall-clock transition timers
+remain unchanged.

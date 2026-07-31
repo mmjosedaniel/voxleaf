@@ -56,9 +56,9 @@ service matrix, and six packaged synthetic EPUB portfolio arms pass. MOSS
 remains deferred without rejection. Pull request #159 passed the required
 Ubuntu/Windows checks and merged the closeout.
 
-M010.2 is active. Milestones 1-3 froze its architecture/executable authorities
-and result-blind comparisons; v1 and v2 selected no backend, while v3 selected
-repository WSOLA.
+M010.2 is complete. Milestones 1-5 froze and implemented its
+architecture/executable authorities and result-blind comparisons; v1 and v2
+selected no backend, while v3 selected repository WSOLA.
 Milestone 3 now implements the bounded preference subset: valid saved Spanish
 or English survives upgrade, missing/invalid/reset state defaults to English,
 and Quick/Prepared startup is persisted separately after pre-action hydration
@@ -74,9 +74,11 @@ for a boundary-deferred v3 comparison with no TTS/queue invalidation, a
 ceiling. ADR-0039 and the v3 architecture/executable authority freeze exactly
 media and repository WSOLA, the selected/pending/active transition, 250 ms p95
 recurring handoff, cleanup, and strict lineage. ADR-0040 selects repository
-WSOLA after the complete frozen comparison. Runtime remains `1.00x` until
-Milestone 5 integration. Installer distribution and license fulfillment remain
-deferred to M011.
+WSOLA after the complete frozen comparison. Milestone 5 integrates all six
+boundary-deferred rates. Milestone 6's six-arm packaged and complete local
+repository matrices pass; maintainer all-rate confirmation and pull request
+#170's required Ubuntu/Windows checks also pass. Installer distribution and
+license fulfillment remain deferred to M011.
 The rest of this brief describes the intended complete product unless it
 explicitly identifies implemented behavior.
 

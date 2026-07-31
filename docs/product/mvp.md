@@ -55,7 +55,7 @@ development-only Qwen arms deplete once and refill safely on this host.
 Pull request #159 passed the required Ubuntu and Windows checks and merged the
 M010.1 closeout.
 
-M010.2 is active before M011. Milestones 1-3 froze the exact authorities,
+M010.2 is complete. Its early milestones froze the exact authorities,
 closed the result-blind comparisons, and selected repository WSOLA v3 after
 v1 and v2 selected no backend. Milestone 4 reorganizes the ready reader around
 one fixed app bar,
@@ -68,14 +68,17 @@ which the current unit completes unchanged and the pending rate applies to the
 next unit without restarting TTS or discarding queued PCM. ADR-0039 and the v3
 architecture/executable authority now freeze that comparison before candidate
 work. ADR-0040 selects repository WSOLA after every v3 machine and listening
-gate passes. Runtime playback remains `1.00x` until Milestone 5 integrates it.
+gate passes. Milestone 5 integrates repository WSOLA at all six admitted rates.
 Milestone 3 implements the bounded preference subset: valid saved Spanish or
 English survives upgrade; missing, invalid, unavailable, over-limit, future,
 or explicitly reset language state uses English; Quick/Prepared startup and
 its closed target are separately persisted; and reset follows identity-first
 cleanup. Applicable Piper, Chatterbox, and development-only Qwen presentation
-remains gate-correct in the new Settings surface. Playback remains `1.0x` until
-Milestone 5.
+remains gate-correct in the new Settings surface. The six-arm packaged
+portfolio exposes the engine-neutral rate control on every profile, exercises
+Piper Spanish/English at every rate, and runs Chatterbox Spanish/English plus
+development-only Qwen Serena/Aiden. The maintainer confirms the full admitted
+rate range, and pull request #170 passes the required Ubuntu and Windows checks.
 
 ## Current implemented flow
 
@@ -122,6 +125,10 @@ Milestone 5.
     explicit restart. Restart uses fresh identities and the latest heard
     checkpoint; terminal failures direct the user to compatibility recheck or
     application restart.
+13. The compact narration bar applies `1.00x` through `0.75x` after synthesis.
+    The currently audible complete unit keeps its rate and the newest pending
+    choice starts at the next unit without restarting TTS or discarding queued
+    source PCM.
 
 The narration path is deliberately hidden when no exact local admitted
 configuration is available. Piper is the supported CPU fallback, Chatterbox
@@ -140,15 +147,7 @@ authority.
 
 ## Remaining target user flow
 
-1. M010.2 Milestones 1-4 froze the reader-first Settings shell, English
-   fallback, bounded narration preferences, and playback authority; selected
-   the v3 WSOLA backend after the later closed comparisons; and implemented
-   the English-default language/start preference subset plus the fixed app bar,
-   compact reader chrome, sole publication viewport, contents overlay, and
-   accessible Settings drawer/sheet. Milestone 5 connects the selected WSOLA
-   backend under
-   [`reader-settings-and-playback-controls.md`](reader-settings-and-playback-controls.md).
-2. M011 then packages and validates an end-user distribution, including model
+1. M011 packages and validates an end-user distribution, including model
    and voice license notices, provenance, corresponding-source or written-offer
    mechanics, signing, updates, and complete-MVP validation.
 
@@ -220,8 +219,6 @@ Implemented and validated:
 
 Remaining:
 
-- Implement and validate M010.2 without weakening the implemented bilingual,
-  scroll, synchronization, buffering, recovery, or exact support boundaries.
 - Provide compliant runtime/model distribution, installer packaging, and a
   validated end-user installation path in M011.
 
@@ -268,8 +265,7 @@ Remaining:
   to 1,000 ms p95 and 200 MiB additional process RAM, and `1.00x` bypasses
   time stretching.
 - Source frames remain memory and heard-progress authority; effective
-  listening duration governs startup, low-water, and underrun promises after
-  M010.2 is implemented.
+  listening duration governs startup, low-water, and underrun promises.
 
 ### Accessibility
 

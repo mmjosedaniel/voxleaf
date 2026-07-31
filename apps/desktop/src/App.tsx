@@ -54,22 +54,14 @@ import {
   type ReaderPreferenceName,
   type ReaderPreferencesV1,
 } from "./reader/reader-preferences";
-import {
-  runRasterImageSafetyProbe,
-  type RasterImageProbeResult,
-} from "./reader/raster-image-probe";
 import type { ReaderNarrationSource } from "./reader/segment-highlight-controller";
 import { useStrictModeSafeResourceCleanup } from "./strict-mode-resource-cleanup";
 import { ReaderSettingsDialog } from "./settings/ReaderSettingsDialog";
-import { HardwareCompatibilitySummary } from "./tts/HardwareCompatibilityControls";
 import { HardwareProfileCompatibilityCoordinator } from "./tts/hardware-profile-compatibility";
 import { ProductNarrationControls } from "./tts/ProductNarrationControls";
 import { ProductNarrationCoordinator } from "./tts/product-narration-coordinator";
 import type { NarrationLanguageV1 } from "./tts/narration-language";
 import type { AdaptiveBufferStartMode } from "./tts/adaptive-buffer-scheduler";
-
-type RasterImageProbeStatus =
-  "accepted" | "cancelled" | "idle" | "rejected" | "running";
 
 export interface ReadyPublicationContentProps {
   readonly publication: OpenedPublication;
@@ -107,7 +99,6 @@ export interface AppProps {
     narrationPlaybackPreference: NarrationPlaybackPreferenceRepository,
   ) => ProductNarrationCoordinator;
   readonly ReadyPublicationContent?: ComponentType<ReadyPublicationContentProps>;
-  readonly runRasterProbe?: typeof runRasterImageSafetyProbe;
 }
 
 const FAILURE_MESSAGE: Readonly<Record<ReaderFailureReason, string>> =
@@ -123,15 +114,6 @@ const FAILURE_MESSAGE: Readonly<Record<ReaderFailureReason, string>> =
       "VoxLeaf could not display that EPUB. Reopen it or choose another local EPUB.",
     "resource-exhausted": "That EPUB exceeds VoxLeaf's safe processing limits.",
     "unsupported-epub": "That EPUB uses features VoxLeaf does not support yet.",
-  });
-
-const RASTER_STATUS_MESSAGE: Readonly<Record<RasterImageProbeStatus, string>> =
-  Object.freeze({
-    accepted: "Bounded local raster decoding is available.",
-    cancelled: "Raster safety probe was cancelled.",
-    idle: "Raster safety probe has not run.",
-    rejected: "Bounded local raster decoding is unavailable.",
-    running: "Testing bounded local raster decoding.",
   });
 
 type ReaderRestorationSettlement =
@@ -234,12 +216,6 @@ function restorationNotice(
   return undefined;
 }
 
-function rasterStatusForResult(
-  result: RasterImageProbeResult,
-): RasterImageProbeStatus {
-  return result.status;
-}
-
 function createDefaultNarrationCoordinator(
   publication: OpenedPublication,
   initialLocator: ReadingLocatorV1,
@@ -265,7 +241,6 @@ export function App({
     suppliedNarrationPlaybackPreferenceRepository,
   createNarrationCoordinator = createDefaultNarrationCoordinator,
   ReadyPublicationContent = ReaderPublicationContent,
-  runRasterProbe = runRasterImageSafetyProbe,
 }: AppProps) {
   const [readerLifecycle] = useState(() =>
     createReaderLifecycle({
@@ -329,9 +304,6 @@ export function App({
     [readerLifecycle],
   );
   const viewState = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-  const activeRasterProbe = useRef<AbortController | undefined>(undefined);
-  const [rasterStatus, setRasterStatus] =
-    useState<RasterImageProbeStatus>("idle");
   const [readerPositionRestoreCoordinator] = useState(
     () => new ReaderPositionRestoreCoordinator(readerPositionRepository),
   );
@@ -644,8 +616,6 @@ export function App({
         if (currentCleanup.superseded) {
           return;
         }
-        activeRasterProbe.current?.abort();
-        activeRasterProbe.current = undefined;
         readerPositionRestoreCoordinator.close();
         closeActivePositionSaveCoordinator();
         void readerLifecycle.cleanup();
@@ -656,25 +626,6 @@ export function App({
     readerLifecycle,
     readerPositionRestoreCoordinator,
   ]);
-
-  const handleRasterProbe = async (): Promise<void> => {
-    activeRasterProbe.current?.abort();
-    const controller = new AbortController();
-    activeRasterProbe.current = controller;
-    setRasterStatus("running");
-
-    let result: RasterImageProbeResult;
-    try {
-      result = await runRasterProbe({ signal: controller.signal });
-    } catch {
-      result = Object.freeze({ status: "rejected" });
-    }
-    if (activeRasterProbe.current !== controller) {
-      return;
-    }
-    activeRasterProbe.current = undefined;
-    setRasterStatus(rasterStatusForResult(result));
-  };
 
   const handleSelection = (event: ChangeEvent<HTMLInputElement>): void => {
     const input = event.currentTarget;
@@ -687,6 +638,7 @@ export function App({
       return;
     }
 
+    setSettingsOpen(false);
     closeActivePositionSaveCoordinator();
     readerPositionRestoreCoordinator.cancel();
     void narrationCoordinator?.close();
@@ -796,17 +748,6 @@ export function App({
     },
     [readyPublication, readyPublicationSequence],
   );
-  const handleClosePublication = useCallback((): void => {
-    readerPositionRestoreCoordinator.cancel();
-    closeActivePositionSaveCoordinator();
-    void narrationCoordinator?.close();
-    void readerLifecycle.close();
-  }, [
-    closeActivePositionSaveCoordinator,
-    narrationCoordinator,
-    readerLifecycle,
-    readerPositionRestoreCoordinator,
-  ]);
   const handleRenderingFailure = useCallback((): void => {
     readerPositionRestoreCoordinator.cancel();
     closeActivePositionSaveCoordinator();
@@ -899,6 +840,33 @@ export function App({
     activeRestorationNotice !== undefined &&
     dismissedRestorationSequence !== readyPublicationSequence;
   const ready = viewState.status === "ready";
+  const showOpenStatus =
+    viewState.status !== "idle" && viewState.status !== "ready";
+  const openBookControl = (
+    <div className="shell-open-controls">
+      <label className="file-picker file-picker-button">
+        <span>Open a book</span>
+        <input
+          type="file"
+          accept=".epub,application/epub+zip"
+          aria-label="Open a book"
+          aria-describedby="open-status"
+          disabled={openDisabled}
+          onChange={handleSelection}
+        />
+      </label>
+      <p
+        id="open-status"
+        className={`${statusClassName}${showOpenStatus ? "" : " visually-hidden"}`}
+        role="status"
+        aria-live="polite"
+      >
+        {ready
+          ? readyStatusMessage(activeRestoration)
+          : statusMessage(viewState)}
+      </p>
+    </div>
+  );
 
   return (
     <main className={ready ? "app-shell app-shell-reader" : "app-shell"}>
@@ -907,56 +875,28 @@ export function App({
         aria-labelledby="shell-title"
         aria-busy={isBusy}
       >
-        <header className="shell-header application-bar">
+        <header
+          className={`shell-header application-bar ${
+            ready ? "application-bar-reader" : "application-bar-empty"
+          }`}
+        >
           <div className="shell-brand">
             <h1 id="shell-title">VoxLeaf</h1>
           </div>
-          <div className="shell-open-controls">
-            <label className="file-picker">
-              <span>{ready ? "Replace EPUB" : "Open a local EPUB"}</span>
-              <input
-                type="file"
-                accept=".epub,application/epub+zip"
-                aria-label="Open a local EPUB"
-                aria-describedby="open-status"
-                disabled={openDisabled}
-                onChange={handleSelection}
-              />
-            </label>
-            <p
-              id="open-status"
-              className={statusClassName}
-              role="status"
-              aria-live="polite"
-            >
-              {ready
-                ? readyStatusMessage(activeRestoration)
-                : statusMessage(viewState)}
-            </p>
-          </div>
-          <HardwareCompatibilitySummary
-            coordinator={hardwareCompatibilityCoordinator}
-          />
-          <div className="application-bar-actions">
-            <button
-              ref={settingsButtonRef}
-              type="button"
-              aria-haspopup="dialog"
-              aria-expanded={settingsOpen}
-              onClick={() => setSettingsOpen(true)}
-            >
-              Settings
-            </button>
-            {ready ? (
+          {openBookControl}
+          {ready ? (
+            <div className="application-bar-actions">
               <button
+                ref={settingsButtonRef}
                 type="button"
-                className="close-publication"
-                onClick={handleClosePublication}
+                aria-haspopup="dialog"
+                aria-expanded={settingsOpen}
+                onClick={() => setSettingsOpen(true)}
               >
-                Close EPUB
+                Settings
               </button>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </header>
         {ready ? null : (
           <div className="shell-welcome">
@@ -1055,32 +995,13 @@ export function App({
           >
             <h2 id="empty-publication-title">No readable content</h2>
             <p>
-              VoxLeaf could not find a supported readable passage. Close this
-              EPUB or choose another local EPUB.
+              VoxLeaf could not find a supported readable passage. Choose
+              another book to continue.
             </p>
-            <button
-              type="button"
-              className="close-publication"
-              onClick={handleClosePublication}
-            >
-              Close EPUB
-            </button>
           </section>
         ) : null}
-        {!ready && import.meta.env.DEV ? (
-          <div className="raster-probe">
-            <button
-              type="button"
-              disabled={rasterStatus === "running"}
-              onClick={() => void handleRasterProbe()}
-            >
-              Run synthetic raster safety probe
-            </button>
-            <p aria-live="polite">{RASTER_STATUS_MESSAGE[rasterStatus]}</p>
-          </div>
-        ) : null}
         <ReaderSettingsDialog
-          open={settingsOpen}
+          open={ready && settingsOpen}
           onClose={closeSettings}
           readerPreferences={readerPreferencePresentation.preferences}
           readerPreferencesStatus={readerPreferencePresentation.status}

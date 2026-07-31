@@ -193,6 +193,11 @@ roles fail; default tests and CI still load no model or generated audio.
   generated-target observation to Tauri/Cargo and preventing Windows `EBUSY`
   failures on the locked development executable.
 - `apps/desktop/src/file-ingress/local-epub-file.test.ts` verifies exact/max-plus-one size preflight without allocating a 100-MiB fixture, invalid sizes, caller-owned bytes, post-read length mismatch, active `FileReader` abort, and fixed content-free read failures. `apps/desktop/src/publication/publication-session.test.ts` proves one cancellable/replaced publication lifecycle, stale-success cleanup, shared close, reopen, and package-error redaction. `apps/desktop/src/publication/local-publication-open.test.ts` composes both boundaries and proves the real invalid-input path, replacement-at-selection cleanup, abort/stale-read rejection, bounded-byte handoff, closed read/package/close outcome mapping, unmount cleanup, and unexpected-failure containment. `apps/desktop/src/persistence/reader-position-repository.test.ts` proves the asynchronous replaceable Web Storage adapter, exact-identity lookup, strict nested/shared and app-local decoding, fixed-key isolation, most-recent replacement, 128-state eviction, serialized-size rejection, malformed-current repair, unsupported-version preservation/write disablement, no coercion or sensitive fields, independent preference/position migrations, and content-free read/write failures. `apps/desktop/src/persistence/reader-position-save-coordinator.test.ts` uses a manual clock and lifecycle port to prove the exact 499/500 ms passive boundary, latest-only supersession, immediate position/preference coalescing, passive-to-settled promotion, hidden/`pagehide`/close flushes, serialized bounded writes, stale-book rejection, failure containment, and content-free records. `apps/desktop/src/persistence/reader-position-restore-coordinator.test.ts` proves exact and nearest-valid resolution, every fixed repository fallback, identity mismatch, resolution failure, stale-read cancellation, one preference read per application owner, and close containment without exposing content. `apps/desktop/src/reader/reader-lifecycle.test.ts` proves immutable idle/opening/ready/empty/failure/closing states, zero-locator empty classification, prior-publication clearing, stale completion rejection, shared close, reopen, cleanup invalidation, renderer-failure cleanup, and content-free failures. `apps/desktop/src/reader/large-chapter-rendering.test.ts` proves recursive below/exact/above semantic-block and projected-node boundaries plus exact 250-block scheduling, one pending yield, cancellation, and stale-callback rejection. `apps/desktop/src/reader/SemanticDocument.test.tsx` proves exhaustive semantic headings, paragraphs, block quotes, ordered/unordered lists, text, emphasis, strong text, code, line breaks, inherited language/direction, source order, React text escaping, available/inert internal-target presentation, accessible unloaded raster fallback, omission of publisher attributes/styles/identities/URLs from rendered markup, first/next incremental batches, and no partial content above the ceiling. `apps/desktop/src/reader/active-visual-locator.test.ts` injects deterministic viewport, block, caret, scheduler, and observer ports to prove top/partial/between/end selection, source-order ties, exact code-point mapping, ambiguous-caret and structural block-start fallback, package normalization, geometry omission, duplicate suppression, visibility-bounded measurement, callback coalescing, nested suspension, and exhaustive cleanup. `apps/desktop/src/reader/ReaderPublication.test.tsx` proves canonical coordinator state, same-spine passive active-locator updates, exact and recovered target resolution, non-spine unavailability, chapter boundaries, hierarchical TOC order, fixed unavailable explanations, TOC/internal/chapter convergence, application-owned skip/return focus without URL mutation, passive focus/storage isolation, explicit-navigation tracker suspension and destination focus, initial target materialization/range settlement without focus movement or premature save, settled explicit/preference-reflow save intents, last-valid-locator preservation/recovery around an oversized destination, and omission of publisher anchors, hrefs, source fragments, DOM IDs, and browser-history mutation. `apps/desktop/src/reader/raster-image-policy.test.ts` verifies narrow GIF/JPEG/PNG/APNG/WebP metadata parsing, exact/max-plus-one dimensions/pixels/frames, static-only policy, malformed/type-mismatched rejection, and equal-or-stricter policy construction. `apps/desktop/src/reader/raster-image-source.test.ts` verifies one-decode concurrency, live source/pixel capacity, postdecode agreement, cancellation, fixed errors, no network calls, and exact object-URL release/close behavior. `apps/desktop/src/reader/publication-raster-image-loader.test.ts` verifies one serialized resource-read/decode path, the eight-outstanding-operation ceiling, queued cancellation, fixed unknown/read-failure fallback, caller-owned byte clearing, shared idempotent close, and content-free results. `apps/desktop/src/reader/SemanticRasterImage.test.tsx` verifies visibility-gated loading, semantic/missing alternative-text presentation, local ready rendering, late-result rejection, abort/release on unmount, final `<img>` failure fallback, and omission of resource identity. `apps/desktop/src/App.test.tsx` verifies the accessible six-state surface, busy/status semantics, accept hint, browser-picker cancellation, same-input clearing, validated metadata plus starting-spine semantic rendering without resource/target resolution when navigation is empty, zero-content recovery, exact/recovered restoration before reader settlement, delayed recovered-position rewrite, StrictMode mount-probe survival without closing live narration/restoration/persistence/application resources, final position flush ordering before replacement/close, preference writes, explicit close/reopen, fixed open/close/render failure messages, private-filename/metadata/error omission, stale-result rejection, render-boundary cleanup, real-unmount cleanup, and the independent synthetic raster-probe presentation.
+- ADR-0041 supersedes the older App-surface clauses above: the current suite
+  proves one stable custom Open a book action, no empty-state Settings or
+  compatibility chrome, replacement/unmount cleanup, and no manual raster
+  probe. Raster owners and the packaged production-path fixture retain the
+  security evidence.
 - `apps/desktop/scripts/native-webdriver-client.node-test.mjs` uses a loopback fake server to prove Tauri capability construction, W3C element/script/window-rect/CDP command routing, session cleanup, and containment of transport/protocol details behind fixed codes without launching a browser or native process.
 - `apps/desktop/tests/browser/foundation.smoke.spec.ts` runs the production Vite build in Playwright's pinned Chromium and proves the local open/render/image/navigation/layout/focus path, application-owned skip/return links, validated global preference persistence, and zero non-loopback requests. `active-visual-locator.smoke.spec.ts` drives the production tracker through top, partial-crossing, between-block, and terminal-block geometry with native caret invocation, then proves the debounced content-free position envelope without focus, URL, page-error, or network side effects. `reader-reflow-restoration.smoke.spec.ts` opens a repository-authored long reflow fixture, captures one nonzero semantic code-point through test-side Range instrumentation, and proves the same canonical range returns to the reading line across every closed text-scale, line-spacing, content-width, and theme token, superseding changes, 1,280/768/360/320-pixel viewports, and Chromium CSS zoom while focus and URL remain unchanged. Its keyboard scenario uses native Tab, End, Enter, Space, and PageDown behavior to prove skip/return focus, preference operation, TOC/chapter navigation, status semantics, focus preservation, narrow layout, forced colors, dark system media, reduced motion, and zero remote requests. The restoration scenario reloads and reselects the exact bytes to prove preference plus exact code-point restoration without focus movement, mutates only the synthetic saved offset, reloads/reselects again, and proves nearest-valid recovery plus post-settlement canonical rewrite and a content-free notice. The tests validate both bounded envelopes and absence of passage/filename data. `large-chapter.smoke.spec.ts` proves the 10,001-block fallback appears before publisher content and remains closable. Chromium evidence remains complementary to the packaged WebView2 matrix and is not a screen-reader-product certification.
 - `apps/desktop/tests/browser/reader-performance.benchmark.spec.ts` is a separate native-Windows Playwright benchmark. It retains Task 1.6's complete/incremental synthetic DOM profiles at 250, 2,000, 10,000, 20,000, and 50,000 blocks; generated one/eight-image and combined envelopes; and accepted prototype gates. Task 3.6 adds the production Vite/React exact-limit EPUB case, holds after the first 250-block commit, observes all 39 remaining callback-to-DOM commits, navigates to a deep target, reflows preferences, and measures incremental plus full-application DOM/heap/Chromium working-set growth. The command builds required workspace packages, records only content-free metrics, remains excluded from ordinary browser tests and CI, and does not replace Task 5.4's native WebView2 performance/resource evidence.
@@ -233,11 +238,25 @@ stable geometry/DOM observations before registering the highlight and taking
 the preservation baseline. It does not weaken viewport, focus, selection,
 contrast, underline, DOM, URL, or two-post-registration-frame assertions.
 
-### Native raster decode safety probe
+### Native raster decode safety
 
-ADR-0010 requires native Windows WebView2 evidence because jsdom cannot execute `HTMLImageElement.decode()` or prove the packaged CSP. `pnpm.cmd test:native-startup` now opens the comprehensive synthetic EPUB, scrolls its image host into the lazy-load margin, requires a visible 1×1 `<img>` with semantic alt text and an application-created `blob:` source, closes the publication, and verifies the image is removed with no page/console error or external request. For the isolated manager boundary, build and launch the release executable and activate **Run synthetic raster safety probe**. The fixed status must change from “Raster safety probe has not run” to “Bounded local raster decoding is available.” Repeat the probe to verify that the prior synthetic source was released and a new Blob URL can be decoded under `img-src 'self' blob:`.
+ADR-0010 requires native Windows WebView2 evidence because jsdom cannot execute
+`HTMLImageElement.decode()` or prove the packaged CSP. `pnpm.cmd
+test:native-startup` opens the comprehensive repository-authored synthetic
+EPUB, scrolls its image host into the lazy-load margin, requires a visible 1×1
+`<img>` with semantic alt text and an application-created `blob:` source, then
+replaces the publication and verifies that the image is removed with no
+page/console error or external request. ADR-0041 removed the weaker manual
+raster-probe button and its isolated application adapter; it is no longer a
+setup or acceptance step.
 
-Both native paths use caller-owned copies of one checked-in 68-byte repository-authored static PNG value. The isolated button probe never uses a selected file or publication resource and creates no visible image, filename, path, URL, bytes, or raw error. The automated comprehensive fixture proves publication integration without using private input. Fixed unavailable state remains failure evidence and must not be rewritten into success. Deterministic tests, rather than this one-pixel native smoke, own exact/max-plus-one dimensions, pixels, frames, concurrency, live capacity, cancellation, postdecode mismatch, queued/stale work, byte clearing, and exact revocation behavior. Repeat native startup after material Tauri/WebView2, CSP, Blob/object-URL, image-decoder, raster-loader, or raster-boundary changes.
+The automated fixture proves publication integration without using private
+input. Fixed unavailable state remains failure evidence and must not be
+rewritten into success. Deterministic tests own exact/max-plus-one dimensions,
+pixels, frames, concurrency, live capacity, cancellation, postdecode mismatch,
+queued/stale work, byte clearing, and exact revocation behavior. Repeat native
+startup after material Tauri/WebView2, CSP, Blob/object-URL, image-decoder,
+raster-loader, or raster-boundary changes.
 
 ### EPUB ingestion matrix traceability
 
@@ -779,9 +798,9 @@ and merged the M010.1 closeout.
 
 ## M010.2 reader/settings/playback validation
 
-M010.2 Milestones 1-3 are complete. Milestone 3 implements the bounded
-preference subset while the Settings shell and non-default playback remain
-pending.
+M010.2 Milestones 1-5 are complete and Milestone 6 local automated validation
+passes. The bounded preferences, reader-first Settings shell, and six-rate
+boundary-deferred playback are implemented.
 `reader-settings-playback-authority.test.ts` exhaustively freezes the exact
 shell and responsive values, Settings ordering and lifecycle neutrality,
 language/profile presentation, preference envelopes, every rate and invalid
@@ -805,7 +824,7 @@ and lifecycle checks but exceeded the frozen CPU limit in Chromium and
 packaged WebView2. `HTMLMediaElement.preservesPitch` passed Chromium but the
 unchanged packaged Tauri CSP rejected its in-memory `blob:` WAV. The negative
 control shifted pitch. No candidate reached listening; all experimental
-adapters were removed and current test/runtime playback remains `1.00x`.
+adapters were removed and that historical v1 result retained `1.00x`.
 
 ADR-0035 authorizes a distinct reduced-range v2 comparison without changing
 those results. `reader-settings-playback-authority-v2.test.ts` now freezes
@@ -863,8 +882,8 @@ retaining only the selected controller/worklet and content-safe result. The
 new result regression test verifies one selected complete passer, zero
 external/audio persistence, and no dependency/CSP expansion.
 
-Later milestones must extend existing desktop, browser, and native-startup
-coverage rather than create an unrelated harness. Their model-free tests will
+Milestones 3-5 extend the existing desktop, browser, and native-startup
+coverage rather than create an unrelated harness. Their model-free tests
 cover:
 
 - fixed app bar and sole reader scroll ownership;
@@ -873,13 +892,26 @@ cover:
 - lifecycle neutrality when Settings merely opens or closes;
 - English fallback and valid Spanish/English preference preservation;
 - language-, support-, development-, hardware-, and runtime-gated profiles;
-- bounded startup preferences before Milestone 5 adds the selected speed
-  preference;
-- the future six-value WSOLA connection, boundary-deferred activation,
+- bounded startup and playback preferences;
+- the six-value WSOLA connection, boundary-deferred activation,
   effective-listening lead, and source-frame progress;
 - unchanged source-frame/byte/unit ceilings and transition-pause timers; and
 - pause, resume, seek, profile/language replacement, recovery, book
-  replacement, exit, and exact release ownership at `1.00x`.
+  replacement, exit, and exact release ownership at every admitted rate.
+
+Milestone 6 adds the existing `test:tts:bilingual-portfolio-exact-host`
+closeout path. It runs Piper Spanish/English, Chatterbox Spanish/English, and
+development-only Qwen Serena/Aiden sequentially with one model child at a
+time. Piper exercises all six rates, latest-pending selection, next-unit
+activation, return to direct `1.00x`, and content-free activation/handoff
+metrics. The 2026-07-31 host run measured first activation at 750/300 ms and
+recurring backend overhead at 0 ms p95; both Piper arms sustained one minute
+without underruns. Chatterbox sustained the same observation at RTF 0.83/0.85.
+Qwen truthfully depleted once and refilled at RTF 2.12/2.04. All arms passed
+highlight/follow, navigation, cancellation, cleanup, zero external requests,
+and zero generated-audio persistence. `test:browser`, `test:native-startup`,
+`check:portable`, and `check` also pass outside the sandbox. Required PR checks
+and human confirmation of the intermediate portfolio rates remain open.
 
 Exact-host listening uses repository-authored synthetic text and content-free
 measurements only. Default CI remains model-free. No private EPUB, waveform,

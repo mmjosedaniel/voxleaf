@@ -826,7 +826,7 @@ test("measures the production React renderer at the accepted chapter limit", asy
       });
     });
 
-    await page.getByLabel("Open a local EPUB").setInputFiles({
+    await page.getByLabel("Open a book").setInputFiles({
       name: "private-production-limit.epub",
       mimeType: "application/epub+zip",
       buffer: Buffer.from(fixture),
@@ -1082,7 +1082,7 @@ test("proves production reader resources remain bounded across repeated lifecycl
 
     for (let cycle = 0; cycle < RESOURCE_STRESS_CYCLES; cycle += 1) {
       const openStartedAt = await page.evaluate(() => performance.now());
-      await page.getByLabel("Open a local EPUB").setInputFiles({
+      await page.getByLabel("Open a book").setInputFiles({
         name: "private-resource-stress.epub",
         mimeType: "application/epub+zip",
         buffer: Buffer.from(fixtures.representative),
@@ -1122,9 +1122,13 @@ test("proves production reader resources remain bounded across repeated lifecycl
         )
         .toBe(0);
 
-      await page.getByRole("button", { name: "Close EPUB" }).click();
+      await page.getByLabel("Open a book").setInputFiles({
+        name: "invalid-replacement.epub",
+        mimeType: "application/epub+zip",
+        buffer: Buffer.from("not-an-epub"),
+      });
       await expect(page.getByRole("status")).toHaveText(
-        "No local EPUB is open.",
+        "That file is not a valid supported EPUB.",
       );
       await page.waitForTimeout(OBSERVATION_WINDOW_MS);
       const settledResources = await productionResourceInstrumentation(page);
@@ -1171,7 +1175,7 @@ test("proves production reader resources remain bounded across repeated lifecycl
         RESOURCE_STRESS_WORKING_SET_GROWTH_LIMIT_BYTES,
     );
 
-    await page.getByLabel("Open a local EPUB").setInputFiles({
+    await page.getByLabel("Open a book").setInputFiles({
       name: "private-over-limit.epub",
       mimeType: "application/epub+zip",
       buffer: Buffer.from(fixtures.overLimit),
@@ -1183,7 +1187,7 @@ test("proves production reader resources remain bounded across repeated lifecycl
     await expect(page.locator(".reader-rendering-status")).toHaveCount(0);
     await expect(rejectedArticle.locator(":scope > *")).toHaveCount(3);
 
-    await page.getByLabel("Open a local EPUB").setInputFiles({
+    await page.getByLabel("Open a book").setInputFiles({
       name: "private-recovery.epub",
       mimeType: "application/epub+zip",
       buffer: Buffer.from(fixtures.representative),
@@ -1194,8 +1198,14 @@ test("proves production reader resources remain bounded across repeated lifecycl
         name: /Opening|Continuation/u,
       }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Close EPUB" }).click();
-    await expect(page.getByRole("status")).toHaveText("No local EPUB is open.");
+    await page.getByLabel("Open a book").setInputFiles({
+      name: "invalid-final-replacement.epub",
+      mimeType: "application/epub+zip",
+      buffer: Buffer.from("not-an-epub"),
+    });
+    await expect(page.getByRole("status")).toHaveText(
+      "That file is not a valid supported EPUB.",
+    );
     await page.waitForTimeout(OBSERVATION_WINDOW_MS);
 
     const finalResources = await productionResourceInstrumentation(page);

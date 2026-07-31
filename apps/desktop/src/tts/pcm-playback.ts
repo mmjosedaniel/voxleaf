@@ -806,7 +806,12 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
   #wsolaPreparationToken = 0;
 
   public constructor(
-    createAudioContext: AudioContextFactory = () => new AudioContext(),
+    createAudioContext: AudioContextFactory = () =>
+      // Protocol PCM and the retained WSOLA window/hop sizes are 24 kHz. A
+      // device-default 48 kHz context would consume this output twice as fast.
+      new AudioContext({
+        sampleRate: ADAPTIVE_BUFFER_AUTHORITY_V1.audioFormat.sampleRateHz,
+      }),
     createWsolaNode: IncrementalWsolaV3Factory = createIncrementalWsolaV3Node,
   ) {
     this.#createAudioContext = createAudioContext;

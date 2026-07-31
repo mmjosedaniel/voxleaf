@@ -66,9 +66,24 @@ duration only.
 
 The retained source is evaluation-proven and production-wired. A separate
 bounded playback preference owns only the schema version and exact rate; the
-compact narration bar exposes all six rates. Milestone 6 must still validate
-the portfolio exact-host listening and lifecycle matrix before this plan can
-close.
+compact narration bar exposes all six rates. Milestone 6's local automated
+portfolio and lifecycle matrix passes: every profile exposes the same
+engine-neutral six-rate presentation and both Piper language arms exercise all
+six rates within the frozen activation/handoff gates. Chatterbox and
+development-only Qwen retain their unchanged synthesis paths. Maintainer
+all-rate confirmation and pull request #170's required Ubuntu/Windows checks
+pass.
+
+A post-integration listening report on 2026-07-31 exposed a product-wiring
+defect that the state/handoff matrix did not measure: product PCM is fixed at
+24,000 Hz, but the default Web Audio context on the exact host rendered at
+48,000 Hz. The retained algorithm's rate arithmetic was correct, while the
+host clock consumed its output twice as quickly. The product now explicitly
+requests a 24,000 Hz `AudioContext`, matching the evaluated WSOLA clock without
+adding a transformed PCM copy, queue, dependency, CSP change, or model work.
+This correction preserves the candidate selection and requires renewed human
+rate-direction confirmation before M010.2 closes. The maintainer subsequently
+confirmed correct slowdown across the complete admitted range.
 
 ## Alternatives considered
 
