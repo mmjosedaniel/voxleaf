@@ -56,7 +56,7 @@ service matrix, and six packaged synthetic EPUB portfolio arms pass. MOSS
 remains deferred without rejection. Pull request #159 passed the required
 Ubuntu/Windows checks and merged the closeout.
 
-M010.2 is active. Milestones 1-2B froze its architecture/executable authority
+M010.2 is active. Milestones 1-2C froze its architecture/executable authorities
 and result-blind backend comparison, then selected no pitch-preserving backend.
 Runtime behavior is not implemented. Later milestones may reorganize the
 reader around one fixed app bar, accessible Settings, compact narration, and
@@ -67,8 +67,10 @@ ADR-0037 selects no v2 backend after local-inference contention, removes every
 experiment, and retains `1.00x`. ADR-0038 now supplies the separate decision
 for a boundary-deferred v3 comparison with no TTS/queue invalidation, a
 1,000 ms p95 first-activation ceiling, and 200 MiB additional-process-RAM
-ceiling. Milestone 2C must freeze its executable authority before candidate
-work. Installer distribution and license fulfillment remain deferred to M011.
+ceiling. ADR-0039 and the v3 architecture/executable authority freeze exactly
+media and repository WSOLA, the selected/pending/active transition, 250 ms p95
+recurring handoff, cleanup, and strict lineage. Milestone 2D is next. Installer
+distribution and license fulfillment remain deferred to M011.
 The rest of this brief describes the intended complete product unless it
 explicitly identifies implemented behavior.
 
@@ -215,7 +217,7 @@ directions are separated below:
 | OpenAI Whisper                    | Rejected as TTS candidate                                                                               | Automatic speech recognition: audio input and text output                                                                                                                                                                                                                      | Optional fully local benchmark-only transcription may be assessed separately; it cannot generate narration or replace human quality review                            |
 | Process transport                 | Accepted, implemented, and validated                                                                    | Rust-owned child-process standard streams plus narrow optimized binary Tauri responses; no listener or renderer shell capability                                                                                                                                               | Protocol v1 remains unchanged; production distribution remains blocked                                                                                                |
 | Internal audio                    | All admitted profile adapters and local packaged portfolio proof complete                               | Bounded mono 24-kHz float32-le units; Piper converts native 22.05 kHz inside its adapter; Chatterbox and Qwen return bounded complete units; sole-owner FIFO and one transient active-device copy                                                                              | No audio persistence; one model child at a time; Qwen remains optional development-only and constrained-buffered                                                      |
-| Playback mechanism                | Web Audio `1.0x` implemented; v1/v2 selected no backend; boundary-deferred v3 approved but not frozen | One dedicated `AudioContext`, one gain node, one active source unit, and a bounded FIFO of complete source PCM; ADR-0038 permits a pending rate to apply to the next unit without restarting TTS or discarding the queue | Freeze v3 in Milestone 2C, then compare media and repository WSOLA under the new activation/RAM gates; retain `1.00x` unless one passes every frozen gate |
+| Playback mechanism                | Web Audio `1.0x` implemented; v1/v2 selected no backend; boundary-deferred v3 frozen before candidate work | One dedicated `AudioContext`, one gain node, one active source unit, and a bounded FIFO of complete source PCM; ADR-0039 freezes selected/pending/active state and next-unit activation without restarting TTS or discarding the queue | Execute Milestone 2D's media and repository WSOLA comparison under the frozen activation/RAM/handoff gates; retain `1.00x` unless one passes every gate |
 
 ADR-0013 records the standard rejection evidence. ADR-0015 supersedes
 ADR-0014's scheduling and buffering details, rejects CPU and dual-worker

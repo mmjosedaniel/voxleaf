@@ -66,7 +66,7 @@ bounded synchronization/cancellation, zero-audio-persistence, and privacy
 closeout pass. Pull request #159 passed the required Ubuntu and Windows checks
 and merged the M010.1 closeout.
 
-M010.2 Milestones 1-2B are complete. The accepted
+M010.2 Milestones 1-2C are complete. The accepted
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
 requirements and
 [`active ExecPlan`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
@@ -98,8 +98,14 @@ remains `1.00x`.
 authorizes a distinct v3 direction: the active complete unit keeps its rate,
 the newest pending rate applies to the next queued unit without restarting TTS
 or releasing queued PCM, first activation is bounded to 1,000 ms p95, and
-additional process RAM to 200 MiB. Milestone 2C must freeze executable v3
-authority before any new candidate implementation or result.
+additional process RAM to 200 MiB.
+[ADR-0039](decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md)
+and the immutable
+[v3 authority](reader-settings-playback-authority-v3.md) now freeze exactly
+media and repository WSOLA, the selected/pending/active state, a 250 ms p95
+recurring handoff, `1.00x` release, lifecycle, resource, listening, licence/CSP,
+and strict lineage gates before Milestone 2D candidate work. Runtime remains
+`1.00x`.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps

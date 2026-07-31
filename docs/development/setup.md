@@ -41,15 +41,16 @@ disabled. M008.1 and M010 passed replacement Ubuntu/Windows checks and are
 archived. M010.1 implements explicit Spanish/English narration and bounded
 candidate screening; its local six-arm packaged portfolio validation and
 required Ubuntu/Windows checks pass, pull request #159 merged, and the plan is
-archived. M010.2 reader/settings/playback work is approved but not
-implemented; Milestone 2 selected no v1 pitch-preserving backend, so playback
+archived. M010.2 reader/settings/playback work is approved but not implemented;
+Milestone 2 selected no v1 pitch-preserving backend, so playback
 remains `1.00x`. ADR-0035 authorized and ADR-0036 froze the six-value
 fee-free v2 authority. ADR-0037 records that no candidate survived the
 inference-contention gate, so the dependency and prospective CSP delta were
-removed. ADR-0038 authorizes a separate boundary-deferred v3, but Milestone 2C
-must freeze its executable authority before candidate work; playback remains
-`1.00x`. Production distribution, Piper license fulfillment, and installers
-remain M011 work.
+removed. ADR-0038 authorizes a separate boundary-deferred v3; ADR-0039 and the
+immutable v3 architecture/executable authority now freeze its exact candidates,
+state transition, 250 ms recurring handoff, resource, cleanup, and lineage
+gates. Milestone 2D is next; playback remains `1.00x`. Production distribution,
+Piper license fulfillment, and installers remain M011 work.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,

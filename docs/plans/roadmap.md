@@ -51,7 +51,7 @@ final exact-host metrics, privacy, bounded synchronization, and cleanup
 validation pass locally. Pull request #159 subsequently passed the required
 Ubuntu and Windows checks and merged the closeout.
 
-M010.2 is active before M011. Milestones 1-2B are complete: the architecture
+M010.2 is active before M011. Milestones 1-2C are complete: the architecture
 authority and result-blind comparison were frozen before results, then neither
 eligible backend passed every machine and packaged-host gate. ADR-0034 retains
 `1.00x`; runtime behavior remains unchanged. ADR-0035 authorizes and ADR-0036
@@ -60,8 +60,10 @@ froze a separate fee-free v2 comparison for six exact rates ending at
 local-inference contention, removes every experiment, and retains `1.00x`.
 ADR-0038 now authorizes a separate boundary-deferred v3 with a 1,000 ms p95
 first-activation ceiling, 200 MiB additional-process-RAM ceiling, no TTS/queue
-invalidation, and `1.00x` bypass. Milestone 2C must freeze v3 before
-implementation or measurement. M011 remains deferred until this bounded
+invalidation, and `1.00x` bypass. ADR-0039 and the immutable v3 authority freeze
+exactly media and repository WSOLA, selected/pending/active state, a 250 ms p95
+recurring handoff, lifecycle, resource, listening, licence/CSP, and strict
+lineage rules. Milestone 2D is next. M011 remains deferred until this bounded
 portfolio follow-up closes.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
@@ -950,11 +952,12 @@ versioned contracts and a new decision record.
 
 ## Milestone 10.2: Add reader settings and pitch-preserving playback controls
 
-**Status:** In progress. Milestones 1-2B are complete; ADR-0034 selected no
+**Status:** In progress. Milestones 1-2C are complete; ADR-0034 selected no
 pitch-preserving backend for v1. ADR-0035 authorizes and ADR-0036 freezes the
 reduced-range, fee-free v2 comparison; ADR-0037 also selects no v2 backend
 after inference contention. ADR-0038 authorizes a separate boundary-deferred
-v3 without rewriting those results. Milestone 2C is next. Follow
+v3 without rewriting those results; ADR-0039 freezes its architecture and
+executable authority before candidate work. Milestone 2D is next. Follow
 [`M010-002-reader-settings-and-playback-controls.md`](active/M010-002-reader-settings-and-playback-controls.md)
 and the approved
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
@@ -1143,9 +1146,10 @@ The following decisions should be made when evidence is available, not assumed s
    ADR-0036 before Milestone 2B measured candidates. ADR-0037 selects none
    after inference contention and closes v2. ADR-0038 authorizes a new
    boundary-deferred v3 with 1,000 ms first-activation and 200 MiB additional
-   RAM limits; Milestone 2C must freeze its exact executable authority before
-   Milestone 2D measures candidates. Later milestones validate either the
-   admitted range or a truthful fixed-`1.00x` fallback.
+   RAM limits. Milestone 2C froze its exact architecture/executable authority
+   and 250 ms recurring handoff before Milestone 2D measures candidates. Later
+   milestones validate either the admitted range or a truthful fixed-`1.00x`
+   fallback.
 9. **Release gate:** define supported hardware and wall-clock startup
    expectations from measured results before release.
 
@@ -1207,10 +1211,10 @@ supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
 Milestones 1 through 10.1, M008.1, and M009.1 are complete, with their evidence
-retained under [`completed/`](completed/). M010.2 Milestones 1-2B are complete
+retained under [`completed/`](completed/). M010.2 Milestones 1-2C are complete
 and M010.2 remains active before M011. ADR-0037 closes v2 with no backend;
-ADR-0038 authorizes the separate boundary-deferred v3, Milestone 2C is next,
-and no M010.2 runtime behavior is implemented.
+ADR-0039 freezes the separate boundary-deferred v3, Milestone 2D is next, and
+no M010.2 runtime behavior is implemented.
 
 ## MVP completion boundary
 

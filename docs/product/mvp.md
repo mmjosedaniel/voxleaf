@@ -55,7 +55,7 @@ development-only Qwen arms deplete once and refill safely on this host.
 Pull request #159 passed the required Ubuntu and Windows checks and merged the
 M010.1 closeout.
 
-M010.2 is active before M011. Milestones 1-2 froze the exact authority and
+M010.2 is active before M011. Milestones 1-2C froze the exact authorities and
 closed backend comparison before results, then selected no pitch-preserving
 backend. Later milestones may reorganize the ready reader around one fixed app
 bar, accessible Settings, compact narration, and the sole publication scroll
@@ -63,11 +63,12 @@ viewport; make English the fallback only for missing/invalid/reset language
 state; and, under ADR-0035, evaluate a separate fee-free six-rate v2 ending at
 `0.75x`. V2 selected none; ADR-0038 authorizes a new boundary-deferred v3 in
 which the current unit completes unchanged and the pending rate applies to the
-next unit without restarting TTS or discarding queued PCM. Runtime playback
-remains `1.00x` until a frozen v3 comparison admits a backend. Later milestones
-also preserve applicable Piper, Chatterbox, and development-only Qwen
-presentation. Current runtime behavior remains the completed M010.1 UI,
-Spanish fallback, and `1.0x`.
+next unit without restarting TTS or discarding queued PCM. ADR-0039 and the v3
+architecture/executable authority now freeze that comparison before candidate
+work. Runtime playback remains `1.00x` until Milestone 2D admits a backend.
+Later milestones also preserve applicable Piper, Chatterbox, and
+development-only Qwen presentation. Current runtime behavior remains the
+completed M010.1 UI, Spanish fallback, and `1.0x`.
 
 ## Current implemented flow
 
