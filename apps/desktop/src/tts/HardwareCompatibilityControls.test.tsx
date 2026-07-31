@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 
 import { decodeHostProfileCompatibilityReportV1 } from "@voxleaf/shared";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -157,25 +158,39 @@ function coordinator(
   });
 }
 
+async function ensureChecked(
+  subject: HardwareProfileCompatibilityCoordinator,
+): Promise<void> {
+  await act(async () => {
+    await subject.ensureChecked();
+  });
+}
+
 describe("hardware compatibility controls", () => {
   it("announces the admitted fallback and exposes only admitted selection controls", async () => {
     const subject = coordinator();
-    render(<HardwareCompatibilityControls coordinator={subject} />);
+    render(
+      <>
+        <HardwareCompatibilityControls
+          coordinator={subject}
+          presentation="narration"
+        />
+        <HardwareCompatibilityControls
+          coordinator={subject}
+          presentation="device"
+        />
+      </>,
+    );
 
     expect(
       screen.getByText("Checking local narration compatibility."),
     ).toHaveAttribute("aria-live", "polite");
+    await ensureChecked(subject);
     await waitFor(() =>
       expect(
         screen.getByText("Local narration is compatible on this device."),
       ).toBeInTheDocument(),
     );
-
-    const summary = screen
-      .getByText("Local narration compatibility")
-      .closest("summary");
-    expect(summary).not.toBeNull();
-    fireEvent.click(summary!);
 
     const fallback = screen.getByRole("radio", {
       name: "Piper and davefx Spanish fast CPU profile",
@@ -213,8 +228,20 @@ describe("hardware compatibility controls", () => {
 
   it("exposes closed profile diagnostics for exact-host automation", async () => {
     const subject = coordinator({ availableDedicatedVramMiB: 6_507 });
-    render(<HardwareCompatibilityControls coordinator={subject} />);
+    render(
+      <>
+        <HardwareCompatibilityControls
+          coordinator={subject}
+          presentation="narration"
+        />
+        <HardwareCompatibilityControls
+          coordinator={subject}
+          presentation="device"
+        />
+      </>,
+    );
 
+    await ensureChecked(subject);
     await waitFor(() => expect(subject.observe().status).toBe("compatible"));
 
     const qwenProfile = screen
@@ -242,8 +269,20 @@ describe("hardware compatibility controls", () => {
 
   it("offers development-only Qwen at its frozen available-VRAM boundary", async () => {
     const subject = coordinator({ availableDedicatedVramMiB: 6_508 });
-    render(<HardwareCompatibilityControls coordinator={subject} />);
+    render(
+      <>
+        <HardwareCompatibilityControls
+          coordinator={subject}
+          presentation="narration"
+        />
+        <HardwareCompatibilityControls
+          coordinator={subject}
+          presentation="device"
+        />
+      </>,
+    );
 
+    await ensureChecked(subject);
     await waitFor(() => expect(subject.observe().status).toBe("compatible"));
 
     expect(
@@ -263,15 +302,21 @@ describe("hardware compatibility controls", () => {
     const subject = coordinator({ preference: preferenceRepository });
     const onRecoveryEpisodeReset = vi.fn();
     render(
-      <HardwareCompatibilityControls
-        coordinator={subject}
-        onRecoveryEpisodeReset={onRecoveryEpisodeReset}
-      />,
+      <>
+        <HardwareCompatibilityControls
+          coordinator={subject}
+          presentation="narration"
+          onRecoveryEpisodeReset={onRecoveryEpisodeReset}
+        />
+        <HardwareCompatibilityControls
+          coordinator={subject}
+          presentation="device"
+          onRecoveryEpisodeReset={onRecoveryEpisodeReset}
+        />
+      </>,
     );
+    await ensureChecked(subject);
     await waitFor(() => expect(subject.observe().status).toBe("compatible"));
-    fireEvent.click(
-      screen.getByText("Local narration compatibility").closest("summary")!,
-    );
 
     const profile = screen.getByRole("radio", {
       name: "Qwen and Serena Spanish quality profile (Development)",
@@ -298,11 +343,14 @@ describe("hardware compatibility controls", () => {
   it("offers an accessible bilingual radio group and selects the admitted English fallback", async () => {
     const languageRepository = languagePreference();
     const subject = coordinator({ languagePreference: languageRepository });
-    render(<HardwareCompatibilityControls coordinator={subject} />);
-    await waitFor(() => expect(subject.observe().status).toBe("compatible"));
-    fireEvent.click(
-      screen.getByText("Local narration compatibility").closest("summary")!,
+    render(
+      <HardwareCompatibilityControls
+        coordinator={subject}
+        presentation="narration"
+      />,
     );
+    await ensureChecked(subject);
+    await waitFor(() => expect(subject.observe().status).toBe("compatible"));
 
     const group = screen.getByRole("group", {
       name: "Narration language",
@@ -343,13 +391,12 @@ describe("hardware compatibility controls", () => {
     render(
       <HardwareCompatibilityControls
         coordinator={subject}
+        presentation="narration"
         onResetNarrationSettings={onResetNarrationSettings}
       />,
     );
+    await ensureChecked(subject);
     await waitFor(() => expect(subject.observe().status).toBe("compatible"));
-    fireEvent.click(
-      screen.getByText("Local narration compatibility").closest("summary")!,
-    );
 
     fireEvent.click(
       screen.getByRole("button", { name: "Reset narration settings" }),
@@ -367,8 +414,12 @@ describe("hardware compatibility controls", () => {
       availableRamMiB: 0,
     });
     const { unmount } = render(
-      <HardwareCompatibilityControls coordinator={unavailable} />,
+      <HardwareCompatibilityControls
+        coordinator={unavailable}
+        presentation="device"
+      />,
     );
+    await ensureChecked(unavailable);
     await waitFor(() =>
       expect(
         screen.getByText("Local narration is unavailable on this device."),
@@ -389,7 +440,13 @@ describe("hardware compatibility controls", () => {
       },
       preferenceRepository: preference(),
     });
-    render(<HardwareCompatibilityControls coordinator={failed} />);
+    render(
+      <HardwareCompatibilityControls
+        coordinator={failed}
+        presentation="device"
+      />,
+    );
+    await ensureChecked(failed);
     await waitFor(() =>
       expect(
         screen.getByText("The local narration compatibility check failed."),

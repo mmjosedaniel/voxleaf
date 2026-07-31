@@ -1,9 +1,4 @@
-import {
-  useEffect,
-  useState,
-  useSyncExternalStore,
-  type ReactElement,
-} from "react";
+import { useState, useSyncExternalStore, type ReactElement } from "react";
 
 import type {
   HardwareCompatibilitySnapshotV1,
@@ -21,8 +16,7 @@ import { profileSupportsNarrationLanguageV1 } from "./narration-profile-language
 
 export interface HardwareCompatibilityControlsProps {
   readonly coordinator: HardwareProfileCompatibilityCoordinator;
-  readonly presentation?: "combined" | "device" | "narration";
-  readonly ensureCheckedOnMount?: boolean;
+  readonly presentation: "device" | "narration";
   readonly onRecoveryEpisodeReset?: () => void;
   readonly onSelectProfile?: (profileId: string) => Promise<boolean>;
   readonly onSelectLanguage?: (
@@ -107,8 +101,7 @@ function profileState(profile: HardwareProfileMatchV1): string {
 
 export function HardwareCompatibilityControls({
   coordinator,
-  presentation = "combined",
-  ensureCheckedOnMount = true,
+  presentation,
   onRecoveryEpisodeReset,
   onSelectProfile,
   onSelectLanguage,
@@ -120,12 +113,6 @@ export function HardwareCompatibilityControls({
     () => coordinator.observe(),
     () => coordinator.observe(),
   );
-
-  useEffect(() => {
-    if (ensureCheckedOnMount) {
-      void coordinator.ensureChecked();
-    }
-  }, [coordinator, ensureCheckedOnMount]);
 
   const selectable = snapshot.profiles.filter(
     (profile) =>
@@ -278,9 +265,7 @@ export function HardwareCompatibilityControls({
   const deviceSettings = (
     <div className="hardware-compatibility-device">
       <p className="hardware-compatibility-selected" aria-live="polite">
-        {presentation === "combined"
-          ? `Selected result: ${statusMessage(snapshot)}`
-          : statusMessage(snapshot)}
+        {statusMessage(snapshot)}
       </p>
       {snapshot.reason === undefined ? null : (
         <p className="hardware-compatibility-reason">
@@ -328,51 +313,9 @@ export function HardwareCompatibilityControls({
       </div>
     );
   }
-  if (presentation === "device") {
-    return (
-      <div className="hardware-compatibility" {...dataAttributes}>
-        {deviceSettings}
-      </div>
-    );
-  }
-
   return (
-    <details className="hardware-compatibility" {...dataAttributes}>
-      <summary>
-        <span>Local narration compatibility</span>
-        <span aria-live="polite" aria-atomic="true">
-          {statusMessage(snapshot)}
-        </span>
-      </summary>
-      <div className="hardware-compatibility-detail">
-        {narrationSettings}
-        {deviceSettings}
-      </div>
-    </details>
-  );
-}
-
-export interface HardwareCompatibilitySummaryProps {
-  readonly coordinator: HardwareProfileCompatibilityCoordinator;
-}
-
-export function HardwareCompatibilitySummary({
-  coordinator,
-}: HardwareCompatibilitySummaryProps): ReactElement {
-  const snapshot = useSyncExternalStore(
-    (listener) => coordinator.subscribe(listener),
-    () => coordinator.observe(),
-    () => coordinator.observe(),
-  );
-  return (
-    <p
-      className="hardware-compatibility-summary"
-      data-compatibility-status={snapshot.status}
-      aria-live="polite"
-      aria-atomic="true"
-    >
-      <span>Local narration</span>
-      <span>{statusMessage(snapshot)}</span>
-    </p>
+    <div className="hardware-compatibility" {...dataAttributes}>
+      {deviceSettings}
+    </div>
   );
 }

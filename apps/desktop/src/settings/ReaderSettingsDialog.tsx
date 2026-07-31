@@ -244,7 +244,6 @@ export function ReaderSettingsDialog({
             <HardwareCompatibilityControls
               coordinator={hardwareCompatibility}
               presentation="narration"
-              ensureCheckedOnMount={false}
               onSelectProfile={onSelectProfile}
               onSelectLanguage={onSelectLanguage}
               onResetNarrationSettings={onResetNarrationSettings}
@@ -263,7 +262,6 @@ export function ReaderSettingsDialog({
             <HardwareCompatibilityControls
               coordinator={hardwareCompatibility}
               presentation="device"
-              ensureCheckedOnMount={false}
               onRecoveryEpisodeReset={onRecoveryEpisodeReset}
             />
           </section>
