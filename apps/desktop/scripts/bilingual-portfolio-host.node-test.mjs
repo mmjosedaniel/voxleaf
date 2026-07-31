@@ -5,6 +5,7 @@ import {
   BILINGUAL_PORTFOLIO_ARMS,
   modelFreeLifecycleEnvironment,
   nativeRunnerArguments,
+  PORTFOLIO_PLAYBACK_RATE_PERCENTS,
   selectPortfolioArms,
 } from "./bilingual-portfolio-host.mjs";
 
@@ -51,7 +52,25 @@ test("builds explicit packaged runner arguments", () => {
     "--exercise-profile-switch",
     "--tts-profile=piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
     "--tts-language=en",
+    "--exercise-playback-speeds",
   ]);
+  assert.deepEqual(nativeRunnerArguments(BILINGUAL_PORTFOLIO_ARMS[2]), [
+    "--adaptive-tts-exact-host",
+    "--exercise-profile-switch",
+    "--tts-profile=chatterbox-multilingual-v3-cuda-bf16-default-v4",
+    "--tts-language=es",
+  ]);
+});
+
+test("freezes the exact production playback-speed matrix", () => {
+  assert.deepEqual(PORTFOLIO_PLAYBACK_RATE_PERCENTS, [100, 95, 90, 85, 80, 75]);
+  assert.ok(Object.isFrozen(PORTFOLIO_PLAYBACK_RATE_PERCENTS));
+  assert.deepEqual(
+    BILINGUAL_PORTFOLIO_ARMS.filter(
+      ({ exercisePlaybackSpeeds }) => exercisePlaybackSpeeds === true,
+    ).map(({ language }) => language),
+    ["es", "en"],
+  );
 });
 
 test("removes every exact model key from the generic lifecycle environment", () => {

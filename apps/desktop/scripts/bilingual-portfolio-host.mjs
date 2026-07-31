@@ -15,10 +15,15 @@ const LIFECYCLE_ONLY_ARGUMENT = "--lifecycle-only";
 const ARM_TIMEOUT_MS = 30 * 60 * 1_000;
 const PROCESS_CLEANUP_TIMEOUT_MS = 15_000;
 
+export const PORTFOLIO_PLAYBACK_RATE_PERCENTS = Object.freeze([
+  100, 95, 90, 85, 80, 75,
+]);
+
 export const BILINGUAL_PORTFOLIO_ARMS = Object.freeze([
   Object.freeze({
     profileId: "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1",
     language: "es",
+    exercisePlaybackSpeeds: true,
     requiredEnvironment: Object.freeze([
       "VOXLEAF_TTS_PIPER_ENABLED",
       "VOXLEAF_TTS_PIPER_PYTHON",
@@ -28,6 +33,7 @@ export const BILINGUAL_PORTFOLIO_ARMS = Object.freeze([
   Object.freeze({
     profileId: "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
     language: "en",
+    exercisePlaybackSpeeds: true,
     requiredEnvironment: Object.freeze([
       "VOXLEAF_TTS_PIPER_EN_ENABLED",
       "VOXLEAF_TTS_PIPER_EN_PYTHON",
@@ -90,13 +96,21 @@ export function selectPortfolioArms(args) {
   return Object.freeze([...selected]);
 }
 
-export function nativeRunnerArguments({ profileId, language }) {
-  return Object.freeze([
+export function nativeRunnerArguments({
+  profileId,
+  language,
+  exercisePlaybackSpeeds = false,
+}) {
+  const arguments_ = [
     "--adaptive-tts-exact-host",
     "--exercise-profile-switch",
     `--tts-profile=${profileId}`,
     `--tts-language=${language}`,
-  ]);
+  ];
+  if (exercisePlaybackSpeeds) {
+    arguments_.push("--exercise-playback-speeds");
+  }
+  return Object.freeze(arguments_);
 }
 
 export function modelFreeLifecycleEnvironment(environment) {

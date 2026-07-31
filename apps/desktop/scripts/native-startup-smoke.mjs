@@ -26,6 +26,7 @@ import {
   assertNativeSmokeInvariants,
   nativeSmokeInvariantFailureCode,
 } from "./native-smoke-invariants.mjs";
+import { PORTFOLIO_PLAYBACK_RATE_PERCENTS } from "./bilingual-portfolio-host.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.resolve(scriptDirectory, "..");
@@ -45,6 +46,9 @@ const ADAPTIVE_TTS_EXACT_HOST_MODE = process.argv.includes(
 );
 const EXERCISE_EXACT_HOST_PROFILE_SWITCH = process.argv.includes(
   "--exercise-profile-switch",
+);
+const EXERCISE_PLAYBACK_SPEEDS = process.argv.includes(
+  "--exercise-playback-speeds",
 );
 const ADAPTIVE_TTS_PROFILE_ARGUMENT = "--tts-profile=";
 const ADAPTIVE_TTS_LANGUAGE_ARGUMENT = "--tts-language=";
@@ -95,6 +99,9 @@ if (
 }
 if (EXERCISE_EXACT_HOST_PROFILE_SWITCH && !ADAPTIVE_TTS_EXACT_HOST_MODE) {
   throw new Error("Exact-host profile switching requires adaptive TTS mode.");
+}
+if (EXERCISE_PLAYBACK_SPEEDS && !ADAPTIVE_TTS_EXACT_HOST_MODE) {
+  throw new Error("Playback-speed exercise requires adaptive TTS mode.");
 }
 if (
   EXPECTED_UNAVAILABLE_PROFILE_REASON !== undefined &&
@@ -1101,6 +1108,183 @@ async function waitForAdaptivePlaying(driver, timeoutMs) {
   throw new Error("Native synchronized narration proof failed.");
 }
 
+async function adaptivePlaybackRateObservation(driver) {
+  return driver.execute(
+    `const owner = document.querySelector(".product-narration");
+     const speed = document.querySelector(
+       'select[aria-label="Playback speed"]',
+     );
+     return owner === null || !(speed instanceof HTMLSelectElement)
+       ? null
+       : {
+           acceptedUnits: Number(
+             owner.getAttribute("data-narration-accepted-units"),
+           ),
+           activeRatePercent:
+             owner.getAttribute("data-narration-active-rate-percent"),
+           disabled: speed.disabled,
+           failure: owner.getAttribute("data-narration-failure"),
+           intentionalWaitMs: Number(
+             owner.getAttribute("data-narration-intentional-wait-ms"),
+           ),
+           options: Array.from(speed.options, (option) =>
+             Number(option.value),
+           ),
+           pendingRatePercent:
+             owner.getAttribute("data-narration-pending-rate-percent"),
+           phase: owner.getAttribute("data-narration-phase"),
+           playbackMs: Number(
+             owner.getAttribute("data-narration-playback-ms"),
+           ),
+           selectedRatePercent: Number(
+             owner.getAttribute("data-narration-selected-rate-percent"),
+           ),
+           value: Number(speed.value),
+         };`,
+  );
+}
+
+async function selectAdaptivePlaybackRate(driver, ratePercent) {
+  const changed = await driver.execute(
+    `const speed = document.querySelector(
+       'select[aria-label="Playback speed"]',
+     );
+     if (!(speed instanceof HTMLSelectElement) || speed.disabled) {
+       return false;
+     }
+     speed.value = ${String(ratePercent)};
+     speed.dispatchEvent(new Event("change", { bubbles: true }));
+     return true;`,
+  );
+  assert(changed === true, "Native synchronized narration proof failed.");
+  await waitForCondition(
+    driver,
+    `const owner = document.querySelector(".product-narration");
+     const speed = document.querySelector(
+       'select[aria-label="Playback speed"]',
+     );
+     return owner?.getAttribute(
+       "data-narration-selected-rate-percent",
+     ) === "${String(ratePercent)}" &&
+       speed instanceof HTMLSelectElement &&
+       speed.value === "${String(ratePercent)}";`,
+  );
+}
+
+async function waitForAdaptivePlaybackRateBoundary(
+  driver,
+  ratePercent,
+  before,
+) {
+  const selectedAtMs = Date.now();
+  await waitForCondition(
+    driver,
+    `const owner = document.querySelector(".product-narration");
+     return owner?.getAttribute("data-narration-phase") === "playing" &&
+       owner.getAttribute("data-narration-failure") === "none" &&
+       owner.getAttribute("data-narration-selected-rate-percent") ===
+         "${String(ratePercent)}" &&
+       owner.getAttribute("data-narration-active-rate-percent") ===
+         "${String(ratePercent)}" &&
+       owner.getAttribute("data-narration-pending-rate-percent") === "none";`,
+    4 * STARTUP_TIMEOUT_MS,
+  );
+  const after = await adaptivePlaybackRateObservation(driver);
+  assert(
+    after?.acceptedUnits >= before.acceptedUnits &&
+      after.playbackMs >= before.playbackMs &&
+      after.intentionalWaitMs >= before.intentionalWaitMs,
+    "Native synchronized narration proof failed.",
+  );
+  return Object.freeze({
+    activeRatePercent: ratePercent,
+    boundaryDeferredWallMs: Date.now() - selectedAtMs,
+    intentionalWaitDeltaMs: after.intentionalWaitMs - before.intentionalWaitMs,
+    playbackProgressDeltaMs: after.playbackMs - before.playbackMs,
+  });
+}
+
+async function exerciseAdaptivePlaybackSpeedMatrix(driver, setStage) {
+  setStage("adaptive exact-host playback-speed presentation");
+  const initial = await adaptivePlaybackRateObservation(driver);
+  assert(
+    initial?.disabled === false &&
+      JSON.stringify(initial.options) ===
+        JSON.stringify(PORTFOLIO_PLAYBACK_RATE_PERCENTS) &&
+      initial.selectedRatePercent === 100 &&
+      initial.value === 100 &&
+      initial.activeRatePercent === "100" &&
+      initial.pendingRatePercent === "none",
+    "Native synchronized narration proof failed.",
+  );
+
+  const transitions = [];
+  let before = initial;
+  for (const ratePercent of [95, 90, 85, 80]) {
+    setStage(`adaptive exact-host ${String(ratePercent)} percent boundary`);
+    await selectAdaptivePlaybackRate(driver, ratePercent);
+    const selected = await adaptivePlaybackRateObservation(driver);
+    assert(
+      selected?.selectedRatePercent === ratePercent &&
+        [before.activeRatePercent, String(ratePercent)].includes(
+          selected.activeRatePercent,
+        ) &&
+        [String(ratePercent), "none"].includes(selected.pendingRatePercent),
+      "Native synchronized narration proof failed.",
+    );
+    const transition = await waitForAdaptivePlaybackRateBoundary(
+      driver,
+      ratePercent,
+      before,
+    );
+    transitions.push(transition);
+    before = await adaptivePlaybackRateObservation(driver);
+  }
+
+  setStage("adaptive exact-host latest playback-speed selection wins");
+  await selectAdaptivePlaybackRate(driver, 90);
+  await selectAdaptivePlaybackRate(driver, 75);
+  const latestSelected = await adaptivePlaybackRateObservation(driver);
+  assert(
+    latestSelected?.selectedRatePercent === 75 &&
+      ["75", "none"].includes(latestSelected.pendingRatePercent) &&
+      ["80", "75"].includes(latestSelected.activeRatePercent),
+    "Native synchronized narration proof failed.",
+  );
+  transitions.push(
+    await waitForAdaptivePlaybackRateBoundary(driver, 75, before),
+  );
+
+  setStage("adaptive exact-host one-times playback bypass restoration");
+  before = await adaptivePlaybackRateObservation(driver);
+  await selectAdaptivePlaybackRate(driver, 100);
+  transitions.push(
+    await waitForAdaptivePlaybackRateBoundary(driver, 100, before),
+  );
+  const final = await adaptivePlaybackRateObservation(driver);
+  const firstActivationWaitMs = transitions[0].intentionalWaitDeltaMs;
+  const recurringWaitsMs = transitions
+    .slice(1)
+    .map(({ intentionalWaitDeltaMs }) => intentionalWaitDeltaMs);
+  assert(
+    firstActivationWaitMs <= 1_000 &&
+      recurringWaitsMs.every((value) => value <= 250) &&
+      final?.selectedRatePercent === 100 &&
+      final.activeRatePercent === "100" &&
+      final.pendingRatePercent === "none" &&
+      final.failure === "none" &&
+      final.phase === "playing",
+    "Native synchronized narration proof failed.",
+  );
+  return Object.freeze({
+    exercisedRatePercents: Object.freeze([100, 95, 90, 85, 80, 75]),
+    firstActivationWaitMs,
+    latestSelectionWins: true,
+    recurringWaitP95Ms: percentile95(recurringWaitsMs),
+    transitions: Object.freeze(transitions),
+  });
+}
+
 async function observeAdaptiveDepletionOrStablePlayback(driver) {
   const timeoutAt = Date.now() + 2 * STARTUP_TIMEOUT_MS;
   let observation;
@@ -1296,6 +1480,21 @@ async function runAdaptiveTtsExactHostMatrix(
     optionsAccepted === true,
     "Native application main landmark is not visible.",
   );
+  const playbackRateOptionsAccepted = await driver.execute(
+    `const speed = document.querySelector(
+       'select[aria-label="Playback speed"]',
+     );
+     return speed instanceof HTMLSelectElement &&
+       !speed.disabled &&
+       JSON.stringify(
+         Array.from(speed.options, (option) => Number(option.value)),
+       ) === JSON.stringify(${JSON.stringify([100, 95, 90, 85, 80, 75])}) &&
+       speed.value === "100";`,
+  );
+  assertNativeSmokeInvariant(
+    playbackRateOptionsAccepted === true,
+    "action-contract",
+  );
   await driver.sendKeys(detailToggle, WEBDRIVER_SPACE);
   await waitForCondition(
     driver,
@@ -1317,6 +1516,7 @@ async function runAdaptiveTtsExactHostMatrix(
   let preparedGpu;
   let cancellationMs;
   let pauseResumeObservation;
+  let playbackSpeedMatrix = null;
   let firstHighlightProof;
   let nextHighlightProof;
   let leafReplacementMs;
@@ -1490,6 +1690,13 @@ async function runAdaptiveTtsExactHostMatrix(
       pauseResumeObservation.highlightRetained,
       "Native synchronized narration proof failed.",
     );
+
+    if (EXERCISE_PLAYBACK_SPEEDS) {
+      playbackSpeedMatrix = await exerciseAdaptivePlaybackSpeedMatrix(
+        driver,
+        setStage,
+      );
+    }
 
     setStage("adaptive exact-host expanded active narration");
     const activeDetailToggle = await driver.findElement(
@@ -2189,6 +2396,10 @@ async function runAdaptiveTtsExactHostMatrix(
         resourceReleaseMs: cleanupResourceReleaseMs,
       },
       preparedOptionsAcceptedMs: [60_000, 120_000, 300_000, 600_000],
+      playbackSpeed: {
+        optionsAcceptedPercent: PORTFOLIO_PLAYBACK_RATE_PERCENTS,
+        exactMatrix: playbackSpeedMatrix,
+      },
       externalRequests: 0,
     })}`,
   );
