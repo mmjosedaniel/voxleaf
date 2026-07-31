@@ -34,13 +34,20 @@ new repository WSOLA candidate, a 1,000 ms p95 first activation, a smaller
 speed selection, and zero material time-stretch ownership after settled
 `1.00x`.
 
+Milestone 2D executed that authority without changing its gates.
+[ADR-0040](../architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md)
+selects the repository-owned incremental WSOLA v3 backend after both
+candidates passed the complete machine and listening sequence. WSOLA had the
+smaller contention footprint and stronger listening result, requires no
+dependency or CSP expansion, and is retained for Milestone 5 integration.
+
 The behavior in this document is not implemented until
 [`M010-002-reader-settings-and-playback-controls.md`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
 records passing implementation and validation. Current runtime behavior
 remains the completed M010.1 interface, Spanish fallback for missing or invalid
 language preference, and `1.0x` playback. Reader/Settings work can proceed
-independently. Non-default speed and a speed selector remain conditional on
-Milestone 2D selecting one candidate under the frozen v3 authority.
+independently. Non-default speed and a speed selector remain unavailable until
+Milestone 5 integrates the selected backend and passes product validation.
 
 This document replaces the ignored pre-M011 design discussion as the durable
 product scope. It does not change the completed M005 narration-preparation
@@ -186,9 +193,10 @@ normal UI.
 ## Playback-speed target and evaluation history
 
 The fixed choices and v2 evidence below remain historical. ADR-0038 separately
-authorizes a result-blind v3 comparison with boundary-deferred activation. None
-of these requirements are current runtime behavior; production remains
-`1.00x` until v3 admits one backend.
+authorized the completed result-blind v3 comparison with boundary-deferred
+activation. ADR-0040 selects repository WSOLA for later product integration.
+None of these requirements are current runtime behavior; production remains
+`1.00x` until Milestone 5 completes.
 
 ### Fixed choices
 
@@ -196,9 +204,9 @@ The frozen comparison evaluated exactly:
 
 `1.00x`, `0.95x`, `0.90x`, `0.85x`, `0.80x`, and `0.75x`.
 
-Production retains only `1.00x`; no speed preference is persisted and no speed
-selector is rendered. The closed value set remains historical authority for
-the v2 evidence.
+Production currently retains only `1.00x`; no speed preference is persisted
+and no speed selector is rendered. The same six-value set is admitted for the
+future v3 integration, while the v1/v2 results remain historical.
 
 ### Playback boundary
 
@@ -212,7 +220,7 @@ unchanged source PCM. Changing speed:
 - preserves queued PCM and existing source-frame memory accounting; and
 - applies consistently across admitted engines.
 
-Any future implementation must preserve pitch across its newly admitted range.
+The selected product integration must preserve pitch across its admitted range.
 Directly enabling `AudioBufferSourceNode.playbackRate` is insufficient because
 it changes rendered sample rate and pitch. Milestone 10.2 must freeze and
 validate a bounded in-memory time-stretch mechanism before product admission.
@@ -272,7 +280,11 @@ a second pre-stretched audio queue.
 These values are not a retroactive reinterpretation of the 128 MiB and 250 ms
 v2 gates. Milestone 2C froze the exact candidates, 250 ms p95 recurring-unit
 handoff gate, listening rules, and executable authority before Milestone 2D
-implements or measures candidates.
+implemented or measured candidates. Milestone 2D selected repository WSOLA
+with `605.4 ms` p95 first activation and `10.1 ms` p95 recurring handoff under
+exact Piper contention, `24.715 MiB` additional process RAM, and a passing
+bilingual listening result. The unselected media path and its candidate-only
+CSP were removed.
 
 ### Progress and timing
 

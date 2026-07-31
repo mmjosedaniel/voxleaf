@@ -57,10 +57,10 @@ arms, exact-host metrics, privacy boundary, cancellation, synchronization, and
 cleanup evidence pass. Pull request #159 passed the required Ubuntu and
 Windows checks and merged the closeout.
 
-M010.2 is the approved active follow-up before M011. Milestones 1-2C are
+M010.2 is the approved active follow-up before M011. Milestones 1-2D are
 complete: the reader/settings/playback authority was frozen before results,
-then neither eligible backend passed every frozen gate. ADR-0034 retains
-`1.00x`. Runtime behavior has not changed; the current app still uses its
+then neither v1 backend passed every frozen gate. ADR-0034 retains that
+historical `1.00x` result. Runtime behavior has not changed; the current app still uses its
 M010.1 interface and Spanish fallback. ADR-0035 authorizes and ADR-0036 freezes
 a separate fee-free v2 comparison for six rates ending at `0.75x`; ADR-0037
 records that both packaged passers failed under local-inference contention,
@@ -70,7 +70,11 @@ activation ceiling, a 200 MiB additional-process-RAM ceiling, and `1.00x`
 bypass. ADR-0039 and the immutable v3 architecture/executable authority now
 freeze the exact two candidates, selected/pending/active transition, 250 ms
 recurring handoff, lifecycle, resource, licence/CSP, listening, and lineage
-rules. Milestone 2D is next; no v3 candidate or runtime speed is implemented.
+rules. Milestone 2D selected the repository-owned incremental WSOLA v3
+backend after complete Chromium, packaged WebView2, exact Piper-contention,
+privacy, lifecycle, and bilingual-listening passes. ADR-0040 records the
+selection; no dependency or CSP expansion remains. Production still runs at
+`1.00x`, and Milestone 5 owns product integration after Milestones 3-4.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -79,7 +83,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`product/vision.md`](product/vision.md): product purpose, audience, and principles.
 - [`product/project-brief.md`](product/project-brief.md): detailed problem, intended experience, product boundaries, and candidate technical direction.
 - [`product/mvp.md`](product/mvp.md): MVP scope, non-goals, constraints, and acceptance criteria.
-- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and six-value boundary-deferred playback-speed requirements; runtime remains `1.00x` while v3 authority and evaluation remain prospective.
+- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and six-value boundary-deferred playback-speed requirements; repository WSOLA is selected for Milestone 5 integration while runtime remains `1.00x`.
 - [`product/post-mvp-tts-candidate-backlog.md`](product/post-mvp-tts-candidate-backlog.md): non-authoritative post-MVP intake order for Pocket TTS, Chatterbox LatAm, MOSS-TTS-Nano, Kokoro, and additional Piper voices.
 - [`product/glossary.md`](product/glossary.md): shared terminology.
 
@@ -151,6 +155,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0037-retain-fixed-speed-after-reduced-range-evaluation.md`](architecture/decisions/ADR-0037-retain-fixed-speed-after-reduced-range-evaluation.md): records the v2 no-selection result after inference contention, removes every unselected experiment, and retains `1.00x`.
 - [`architecture/decisions/ADR-0038-reopen-boundary-deferred-playback-evaluation.md`](architecture/decisions/ADR-0038-reopen-boundary-deferred-playback-evaluation.md): authorizes a separate v3 comparison where a pending rate applies at the next complete-unit boundary without restarting TTS or discarding queued PCM, under new first-activation and RAM limits.
 - [`architecture/decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md`](architecture/decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md): freezes the immutable v3 candidate, boundary-transition, recurring-handoff, resource, lifecycle, licence/CSP, listening, and strict result-lineage authority before implementation or measurement.
+- [`architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md`](architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md): selects repository-owned incremental WSOLA v3 after every frozen machine, privacy, lifecycle, and bilingual-listening gate passes, with production integration deferred to Milestone 5.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development
@@ -184,7 +189,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
 - [`plans/completed/M010-001-bilingual-narration-and-candidate-screening.md`](plans/completed/M010-001-bilingual-narration-and-candidate-screening.md): completed bilingual follow-up covering evaluation, exact profile integration, packaged portfolio validation, and passing Ubuntu/Windows closeout.
-- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): active pre-M011 reader-first settings and playback-control follow-up; Milestones 1-2C are complete, v1/v2 selected none, ADR-0039 freezes boundary-deferred v3, and Milestone 2D is next.
+- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): active pre-M011 reader-first settings and playback-control follow-up; Milestones 1-2D are complete, v1/v2 selected none, and ADR-0040 selects repository WSOLA v3 for later Milestone 5 integration.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

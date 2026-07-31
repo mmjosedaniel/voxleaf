@@ -50,6 +50,7 @@ ADR-0002-short-description.md
 - [`ADR-0037-retain-fixed-speed-after-reduced-range-evaluation.md`](ADR-0037-retain-fixed-speed-after-reduced-range-evaluation.md): select no v2 backend after the media candidate exceeded contention RAM and repository WSOLA exceeded contention start latency, remove every experiment, and retain `1.00x`.
 - [`ADR-0038-reopen-boundary-deferred-playback-evaluation.md`](ADR-0038-reopen-boundary-deferred-playback-evaluation.md): authorize a separate v3 comparison where a pending speed applies at the next complete-unit boundary without restarting TTS or discarding queued PCM, under 1,000 ms first-activation and 200 MiB additional-RAM limits.
 - [`ADR-0039-freeze-boundary-deferred-playback-authority-v3.md`](ADR-0039-freeze-boundary-deferred-playback-authority-v3.md): freeze the exact boundary-deferred v3 candidates, state transition, 250 ms recurring handoff, resource/lifecycle, licence/CSP, listening, and strict result-lineage rules before implementation or measurement.
+- [`ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md`](ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md): select the repository-owned incremental WSOLA v3 backend after complete Chromium, packaged WebView2, Piper-contention, privacy, lifecycle, and bilingual-listening passes, while deferring product activation to M010.2 Milestone 5.
 
 ## Template
 

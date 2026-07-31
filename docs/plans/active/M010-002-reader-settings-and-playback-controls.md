@@ -133,7 +133,10 @@ the immutable
 matching executable constants/tests, and
 [`ADR-0039`](../../architecture/decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md)
 were committed at `5991165` before candidate implementation or results.
-Milestone 2D is next; production remains `1.00x`.
+Milestone 2D is complete. Both candidates passed the frozen machine and
+listening sequence; [ADR-0040](../../architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md)
+selects repository WSOLA for Milestone 5 integration. The selected source adds
+no dependency or CSP change. Production remains `1.00x`.
 
 ## Scope and non-goals
 
@@ -834,11 +837,25 @@ Expected result: one fee-free pitch-preserving backend passes every frozen v3
 gate and reaches listening, or VoxLeaf again retains `1.00x` without weakening
 the authority.
 
-Actual result: Not run.
+Actual result: Both candidates passed every frozen Chromium, packaged
+WebView2, exact Piper-contention, lifecycle, cleanup, privacy, and bilingual
+listening gate. Repository WSOLA was selected because it had the stronger
+listening result and much smaller contention footprint. Its exact contention
+result was `605.4 ms` p95 first activation, `10.1 ms` p95 recurring handoff,
+`24.715 MiB` additional process RAM, and `3.077` CPU percentage points. Its
+maximum pitch deviation was `0.243` cents, work memory was `806,528` bytes,
+duration error/source-frame drift were zero, and listening minima were
+`5/5` intelligibility, `4/5` naturalness, and `5/5` artifacts with no
+omitted/repeated words. The unselected media candidate, prospective CSP,
+candidate probes/runners, evaluator, and generated WAVs were removed. The
+aggregate content-safe result is
+[`boundary-deferred-v3-result.json`](../../../benchmarks/playback/boundary-deferred-v3-result.json);
+ADR-0040 records the durable selection. Production remains `1.00x` pending
+Milestone 5.
 
 #### Status
 
-Not started; next.
+Complete.
 
 ### Milestone 3: Implement bounded settings preferences and English fallback
 
@@ -849,8 +866,9 @@ Not started; next.
    language state and explicit reset only.
 3. Preserve every valid saved Spanish or English preference.
 4. Add one versioned narration-start preference repository with closed values,
-   limits, migrations, and unavailable-store behavior. Do not create a
-   playback-rate preference or selector; ADR-0037 retains `1.00x`.
+   limits, migrations, and unavailable-store behavior. Do not create the
+   playback-rate preference or selector in this milestone; Milestone 5 owns
+   that state with the exact ADR-0040-selected backend.
 5. Hydrate preferences before the corresponding controls become actionable
    without starting a model.
 6. Keep volume session-only and reader appearance in its existing repository.
@@ -919,24 +937,24 @@ Not started.
 
 #### Work
 
-1. If Milestone 2D selects no backend, preserve literal-`1` playback and prove
-   Milestones 3-4 introduced no speed surface or lifecycle change.
-2. If Milestone 2D selects a backend, integrate only that exact admitted
-   candidate and its reviewed CSP/licence obligations.
-3. Represent selected, pending, and active playback rates separately. Keep the
+1. Integrate only the exact
+   `repository-incremental-audio-worklet-wsola-boundary-v3` implementation
+   selected by ADR-0040. Do not reintroduce the media candidate, object-URL
+   path, prospective CSP expansion, or any dependency.
+2. Represent selected, pending, and active playback rates separately. Keep the
    active unit immutable and apply the newest pending value before the next
    complete queued unit starts.
-4. Initialize or wake one stretcher during the remaining current unit, reuse it
+3. Initialize or wake one stretcher during the remaining current unit, reuse it
    across successor units, and bypass/release it after the final slowed unit
    settles at `1.00x`.
-5. Preserve TTS execution, generation identity, prepared narration, queued
+4. Preserve TTS execution, generation identity, prepared narration, queued
    source PCM, queue limits, source-frame progress, transition pauses, and
    invalidation behavior across a speed-only change.
-6. Add the bounded versioned playback-rate preference and compact selector only
+5. Add the bounded versioned playback-rate preference and compact selector only
    when a v3 backend is admitted.
-7. Implement effective-listening-duration startup, low-water, underrun, and UI
+6. Implement effective-listening-duration startup, low-water, underrun, and UI
    calculations without changing source-frame/byte memory ceilings.
-8. Retain the v1/v2 authorities and ADR-0034/ADR-0037 as historical evidence.
+7. Retain the v1/v2 authorities and ADR-0034/ADR-0037 as historical evidence.
 
 #### Validation
 
@@ -948,14 +966,13 @@ Not started.
 - `git diff --check`
 
 Expected result: the selected v3 backend and six-value boundary-deferred
-behavior are integrated without TTS restart or queued-audio loss, or fixed
-`1.00x` remains unchanged when v3 selects none.
+behavior are integrated without TTS restart or queued-audio loss.
 
 Actual result: Not run.
 
 #### Status
 
-Not started; conditional on Milestone 2D and after Milestones 3-4.
+Not started; applicable after Milestones 3-4.
 
 ### Milestone 6: Validate the portfolio reader and close the plan
 
@@ -1327,6 +1344,51 @@ Do not rewrite accepted historical authority to make a result pass.
   excludes undiagnosed Signalsmith. The complete desktop, typecheck, portable,
   and whitespace gates passed in normal local PowerShell. Production remains
   `1.00x`; Milestone 2D is next.
+- **2026-07-31:** Created
+  `feat/m010-002-execute-boundary-v3-comparison` from merged authority commit
+  `4132229`. Result-blind commit `84f4c75` added only the media and new
+  repository-WSOLA v3 probes, selected/pending/active boundary transition,
+  Chromium/packaged/contention runners, exact candidate-only media CSP, and
+  deterministic coverage. `e605271` isolated the worklet module from the host
+  loader, `d2b2471` exposed content-free packaged privacy counters, and
+  `c7c39b7` closed deliberately stopped terminal waits without changing either
+  candidate or a frozen gate.
+- **2026-07-31:** The official normal-PowerShell Chromium, packaged WebView2,
+  and one-Piper contention matrices passed for both candidates. The final
+  Chromium execution at `757b956` measured media at `939.9 ms` first
+  activation, `2.7 ms` recurring handoff, `145.875 MiB` additional RAM, and
+  `1.584` CPU points; WSOLA measured `71 ms`, `10 ms`, `18.637 MiB`, and
+  `2.487` points. Packaged WebView2 reported zero external requests,
+  generated-audio files, runtime errors, and severe browser logs. Under exact
+  Piper contention, media remained inside the new limit at `189.367 MiB`;
+  WSOLA measured `605.4 ms` first activation, `10.1 ms` recurring handoff,
+  `24.715 MiB` additional RAM, and `3.077` CPU points. Both passed.
+- **2026-07-31:** Commit `757b956` opened the candidate-neutral offline
+  listening gate with four repository-authored Piper cases. One fluent
+  maintainer for each language scored both candidates at `1.00x`, `0.85x`,
+  and `0.75x`. Media passed with minimum `4/3/3` and average
+  `4.5/3.5/4.25`; repository WSOLA passed with minimum `5/4/5` and average
+  `5/4/5`. Neither omitted or repeated a word. The runner recorded no
+  evaluator identity and deleted every generated WAV and manifest on exit.
+- **2026-07-31:** ADR-0040 selects repository WSOLA. The final tree retains
+  only the selected controller/worklet and content-safe aggregate result.
+  The media path, prospective CSP, candidate probes, desktop globals, browser/
+  packaged/contention/listening runners, and temporary audio are removed.
+  Production remains `1.00x`; Milestone 5 owns the six-rate product
+  integration after Milestones 3-4.
+- **2026-07-31:** Closed Milestone 2D validation in normal local PowerShell.
+  The focused desktop suite passes 48 files/481 tests plus 11 native helper
+  tests; all six browser cases and the packaged WebView2 native-startup smoke
+  pass. `pnpm.cmd check:portable` passes formatting, linting, generated-contract
+  verification, TypeScript/Python types, 20 shared files/209 tests, 34 EPUB
+  files/580 tests, 48 desktop files/481 tests plus 11 helpers, 347 Python
+  tests, and all portable builds. Full `pnpm.cmd check` additionally passes
+  Rust formatting/clippy, 41 Rust tests, the release Tauri build, and Python
+  package builds. All 655 relative links across 109 documents resolve; the
+  18-path branch diff has zero private-pattern findings and zero prohibited
+  book/audio/model/secret/log artifact paths; and `git diff --check` passes.
+  Only the existing content-free pytest cache-write, CSS Highlight, and Vite
+  chunk-size advisories remain.
 
 ## Discoveries and decisions
 
@@ -1443,10 +1505,21 @@ Do not rewrite accepted historical authority to make a result pass.
   ceiling, and no second pre-stretched audio queue is permitted.
 - At `1.00x`, time stretching is bypassed and must release material
   steady-state ownership after the previous slowed unit settles.
+- The first packaged v3 rerun surfaced an orphaned completion timeout only
+  when the final unit was deliberately stopped before `ended`. Creating an
+  `ended` waiter only for units expected to complete removed the severe
+  WebView2 log without changing candidate behavior or thresholds.
+- Both v3 candidates pass the relaxed first-activation/RAM authority. The v2
+  failures therefore reflected the earlier gates, not technical inability.
+  V3 does not rewrite those historical results.
+- Repository WSOLA is the narrower production candidate: compared with media
+  under Piper contention it used about one-eighth the additional RAM, avoided
+  object URLs and a CSP expansion, and received the stronger bilingual
+  listening result.
 
 ## Final validation results
 
-M010.2 Milestones 1-2C are complete. Milestone 1 validation added 21
+M010.2 Milestones 1-2D are complete. Milestone 1 validation added 21
 result-blind authority tests and passed the complete portable gate. Milestone
 2 produced the closed Chromium and packaged WebView2 evidence recorded above,
 selected no backend, removed all experimental adapters, and added no
@@ -1461,15 +1534,25 @@ authority and 11 result-blind tests at `5991165` before candidate
 implementation or results. Normal host PowerShell passed all specified
 desktop, typecheck, portable, and whitespace gates.
 
+Milestone 2D validation also passes in normal host PowerShell: 48 desktop
+files/481 tests plus 11 native helpers, all six browser cases, the packaged
+WebView2 native-startup smoke, 347 Python tests, 41 Rust tests, portable and
+release builds, and the complete `pnpm.cmd check` gate. All 655 relative links
+across 109 documentation files resolve. The 18 changed paths contain no
+private-pattern or prohibited artifact finding, and `git diff --check` passes.
+
 The full plan remains active. ADR-0035 supplies the reduced-range product
 decision, ADR-0036 freezes its v2 authority, and ADR-0037 records the
 no-selection result. ADR-0038 authorizes a separate boundary-deferred v3 with
-new first-activation and RAM limits but does not admit a backend. ADR-0039 and
-commit `5991165` freeze v3 before Milestone 2D implements or measures
-candidates.
+new first-activation and RAM limits. ADR-0039 and authority commit `4132229`
+freeze v3 before Milestone 2D implementation or measurement. Milestone 2D
+selects repository WSOLA under ADR-0040 after every frozen machine, privacy,
+lifecycle, and listening gate passed. The retained selected source adds no
+dependency or CSP expansion.
 Milestones 3-4 have not run and remain independent of the backend result;
-Milestone 5 is conditional on the future v3 result. No M010.2 Settings,
-preference migration, English runtime fallback, time-stretch backend,
-effective-lead scheduling, or non-`1.00x` runtime behavior is claimed.
+Milestone 5 must integrate the exact selected backend after they complete. No
+M010.2 Settings, preference migration, English runtime fallback, production
+time-stretch connection, effective-lead scheduling, or non-`1.00x` runtime
+behavior is claimed.
 Current production behavior remains the completed M010.1 interface, Spanish
 fallback, and `1.0x`.

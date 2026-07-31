@@ -204,7 +204,15 @@ prohibited.
 
 ## Current outcome
 
-This milestone freezes evaluation authority only. It admits no backend,
-implements no candidate, installs no dependency, changes no CSP, and enables no
-non-default speed. Milestone 2D must select one complete passer or retain
-`1.00x` without a speed selector.
+Milestone 2C froze evaluation authority only. Milestone 2D subsequently ran
+without changing these gates and selected
+`repository-incremental-audio-worklet-wsola-boundary-v3` after complete
+Chromium, packaged WebView2, exact Piper-contention, privacy, lifecycle, and
+Spanish/English listening passes. [ADR-0040](decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md)
+records the durable selection and the content-safe aggregate result is
+[`boundary-deferred-v3-result.json`](../../benchmarks/playback/boundary-deferred-v3-result.json).
+
+The selected controller/worklet is retained for Milestone 5 integration. It
+adds no dependency or CSP change. Production still exposes only `1.00x`; this
+evaluation result does not by itself enable a speed selector or non-default
+playback.

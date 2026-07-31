@@ -49,8 +49,12 @@ inference-contention gate, so the dependency and prospective CSP delta were
 removed. ADR-0038 authorizes a separate boundary-deferred v3; ADR-0039 and the
 immutable v3 architecture/executable authority now freeze its exact candidates,
 state transition, 250 ms recurring handoff, resource, cleanup, and lineage
-gates. Milestone 2D is next; playback remains `1.00x`. Production distribution,
-Piper license fulfillment, and installers remain M011 work.
+gates. Milestone 2D has now selected the repository-owned incremental WSOLA v3
+backend after the complete frozen machine and bilingual-listening matrix. It
+adds no dependency or CSP expansion. Product playback still remains `1.00x`;
+Milestone 5 owns the selected backend integration after Milestones 3-4.
+Production distribution, Piper license fulfillment, and installers remain
+M011 work.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
