@@ -1139,6 +1139,14 @@ Do not rewrite accepted historical authority to make a result pass.
   speech or evaluation artifact remains. Milestones 3-4 may proceed
   independently; Milestone 5 is closed as not applicable under this
   authority.
+- **2026-07-30:** After closeout, repeated the exact historical
+  Signalsmith-only Chromium runner from `f2e5fed` in normal local PowerShell.
+  It reproduced the same pre-trial failure outside the sandbox after the
+  15-second initialization boundary, with no signal/timing result and
+  85.160 MiB additional process RAM. A temporary diagnostic surfaced only the
+  content-safe probe error, so future work must diagnose adapter
+  initialization before reevaluation. The temporary detached worktree and all
+  generated artifacts were removed.
 - **2026-07-30:** Closed Milestone 2B validation. Desktop type checking,
   46 files/468 Vitest tests, and 11 native helper tests pass. The unchanged
   `pnpm.cmd test:browser` command passes all six Chromium cases and exits in
@@ -1231,9 +1239,22 @@ Do not rewrite accepted historical authority to make a result pass.
   session, while the same command in normal local PowerShell did. That
   sandbox observation is infrastructure evidence only; the successful
   outside-sandbox rerun owns both packaged candidate results.
+- Host-dependent acceptance now requires normal local PowerShell outside the
+  managed sandbox. Sandbox browser/WebDriver startup, resource, or teardown
+  failures are exploratory and inconclusive until the unchanged command is
+  repeated outside. Deterministic model-free checks may remain sandboxed.
+- The outside-sandbox Signalsmith-only rerun reproduced its pre-trial
+  initialization failure. Signalsmith was therefore not rejected because of
+  WebView2 or sandbox session creation, although its adapter cause still needs
+  diagnosis.
 - Neither packaged passer remained admissible beside one local Piper process:
   media exceeded the frozen RAM delta and incremental WSOLA exceeded frozen
   start latency. The frozen ordering therefore prohibited a listening screen.
+- The maintainer considers 821.6 ms WSOLA activation latency acceptable and
+  180.973 MiB media-process growth potentially acceptable when non-default
+  speed is opt-in and disabled at `1.00x`. Those observations do not rewrite
+  v2; any renewed comparison must freeze activation-scoped latency/resource
+  gates in a new authority before results.
 
 ## Final validation results
 

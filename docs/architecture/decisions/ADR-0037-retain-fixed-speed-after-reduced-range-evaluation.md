@@ -24,7 +24,11 @@ at `1.00x`.
 - `signalsmith-stretch@1.3.2` failed closed before its first Chromium trial.
   Its exact package and compiled source were fee-free MIT, but the published
   package omitted both upstream licence texts. Because it was not selected,
-  the package and all candidate code were removed.
+  the package and all candidate code were removed. A later isolated rerun from
+  the historical implementation commit reproduced the same pre-trial failure
+  outside the sandbox after the 15-second initialization boundary, so this was
+  not the WebView2 sandbox false negative. The adapter initialization cause
+  remains unresolved.
 - `HTMLMediaElement.preservesPitch` passed synthetic Chromium and packaged
   WebView2, but exceeded the frozen 128 MiB additional-process-RAM limit under
   one active local Piper inference process: 180.973 MiB.
@@ -48,6 +52,12 @@ portfolio reader with fixed `1.00x` playback.
 The application gains no playback-speed selector in M010.2. Existing
 source-frame progress, buffering, synchronization, and memory authority remain
 unchanged.
+
+The 128 MiB RAM and 250 ms start limits are historical v2 acceptance rules,
+not claims that 180.973 MiB or 821.6 ms are inherently unusable. A later
+product decision may freeze different activation-scoped limits—especially
+when time stretching is disabled at `1.00x`—but it must create new authority
+before new measurements rather than rewriting this result.
 
 The failed v2 evidence remains historical and reproducible through its
 authority and implementation commits, while the final tree carries no

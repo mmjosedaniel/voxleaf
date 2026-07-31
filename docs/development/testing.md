@@ -809,6 +809,22 @@ were removed. The observed managed-sandbox WebDriver session-creation failure
 is infrastructure-only because the same packaged command and candidates
 completed from normal local PowerShell.
 
+Host-dependent browser evidence must now come from normal local PowerShell,
+outside the managed automation sandbox. This includes Playwright/Chromium,
+packaged WebView2, GPU/model, firewall, and exact-host resource runs. A
+sandbox-only session-creation failure, resource denial, or teardown timeout is
+inconclusive and must be repeated unchanged outside before it can reject a
+candidate. Deterministic model-free tests may remain sandboxed.
+
+The historical Signalsmith-only Chromium runner was repeated outside the
+sandbox from implementation commit `f2e5fed`. It again failed before its first
+trial after the 15-second initialization boundary, produced no pitch/duration/
+frame/start metrics, and measured 85.160 MiB additional process RAM. A
+temporary diagnostic run surfaced only the runner's content-safe
+`PitchPreservingBackendProbeErrorV2`; the exact adapter initialization stage
+remains unresolved. This is not the WebView2 sandbox failure and should be
+diagnosed before any future Signalsmith evaluation.
+
 Later milestones must extend existing desktop, browser, and native-startup
 coverage rather than create an unrelated harness. Their model-free tests will
 cover:
