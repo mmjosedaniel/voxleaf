@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   createWebStorageNarrationLanguagePreferenceRepository,
-  NARRATION_LANGUAGE_PREFERENCE_V1,
+  NARRATION_LANGUAGE_PREFERENCE_V2,
 } from "./narration-language-preference";
 
 function memoryStorage(initial?: string) {
@@ -17,7 +17,7 @@ function memoryStorage(initial?: string) {
 }
 
 describe("narration language preference repository", () => {
-  it("defaults missing state to Spanish and stores one closed value", async () => {
+  it("defaults missing state to English and stores one closed V2 value", async () => {
     const storage = memoryStorage();
     const subject = createWebStorageNarrationLanguagePreferenceRepository(
       () => storage,
@@ -25,12 +25,12 @@ describe("narration language preference repository", () => {
 
     await expect(subject.read()).resolves.toEqual({
       status: "missing",
-      language: "es",
+      language: "en",
     });
     await expect(subject.write("en")).resolves.toEqual({ status: "saved" });
     expect(storage.setItem).toHaveBeenCalledWith(
-      NARRATION_LANGUAGE_PREFERENCE_V1.storageKey,
-      JSON.stringify({ schemaVersion: 1, language: "en" }),
+      NARRATION_LANGUAGE_PREFERENCE_V2.storageKey,
+      JSON.stringify({ schemaVersion: 2, language: "en" }),
     );
     await expect(subject.read()).resolves.toEqual({
       status: "ready",
@@ -46,25 +46,38 @@ describe("narration language preference repository", () => {
     '{"schemaVersion":0,"language":"en"}',
     '{"schemaVersion":1,"language":"fr"}',
     '{"schemaVersion":1,"language":"en","book":"private"}',
-  ])("fails malformed state closed to Spanish", async (value) => {
+  ])("fails malformed state closed to English", async (value) => {
     const subject = createWebStorageNarrationLanguagePreferenceRepository(() =>
       memoryStorage(value),
     );
     await expect(subject.read()).resolves.toEqual({
       status: "malformed",
-      language: "es",
+      language: "en",
     });
   });
 
+  it.each(["es", "en"] as const)(
+    "preserves a valid V1 %s selection during migration",
+    async (language) => {
+      const subject = createWebStorageNarrationLanguagePreferenceRepository(
+        () => memoryStorage(JSON.stringify({ schemaVersion: 1, language })),
+      );
+      await expect(subject.read()).resolves.toEqual({
+        status: "ready",
+        language,
+      });
+    },
+  );
+
   it("preserves a future version without overwriting it", async () => {
-    const future = '{"schemaVersion":2,"language":"en"}';
+    const future = '{"schemaVersion":3,"language":"es"}';
     const storage = memoryStorage(future);
     const subject = createWebStorageNarrationLanguagePreferenceRepository(
       () => storage,
     );
     await expect(subject.read()).resolves.toEqual({
       status: "unsupported-version",
-      language: "es",
+      language: "en",
     });
     await expect(subject.write("es")).resolves.toEqual({
       status: "unsupported-version",
@@ -75,13 +88,13 @@ describe("narration language preference repository", () => {
 
   it("bounds retained state and maps storage failures without details", async () => {
     const oversized = "x".repeat(
-      NARRATION_LANGUAGE_PREFERENCE_V1.maximumEnvelopeUtf16CodeUnits + 1,
+      NARRATION_LANGUAGE_PREFERENCE_V2.maximumEnvelopeUtf8Bytes + 1,
     );
     await expect(
       createWebStorageNarrationLanguagePreferenceRepository(() =>
         memoryStorage(oversized),
       ).read(),
-    ).resolves.toEqual({ status: "over-limit", language: "es" });
+    ).resolves.toEqual({ status: "over-limit", language: "en" });
 
     const failed = createWebStorageNarrationLanguagePreferenceRepository(
       () => ({
@@ -93,7 +106,19 @@ describe("narration language preference repository", () => {
     );
     await expect(failed.read()).resolves.toEqual({
       status: "unavailable",
-      language: "es",
+      language: "en",
     });
+  });
+
+  it("explicitly resets recoverable state to English", async () => {
+    const storage = memoryStorage("{");
+    const subject = createWebStorageNarrationLanguagePreferenceRepository(
+      () => storage,
+    );
+
+    await expect(subject.reset()).resolves.toEqual({ status: "saved" });
+    expect(storage.value()).toBe(
+      JSON.stringify({ schemaVersion: 2, language: "en" }),
+    );
   });
 });

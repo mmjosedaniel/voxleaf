@@ -39,6 +39,10 @@ import type {
   ProductNarrationSnapshot,
 } from "./tts/product-narration-coordinator";
 import { INITIAL_OPERATIONAL_RECOVERY_SNAPSHOT_V1 } from "./tts/operational-recovery";
+import type {
+  HardwareCompatibilitySnapshotV1,
+  HardwareProfileCompatibilityCoordinator,
+} from "./tts/hardware-profile-compatibility";
 
 afterEach(() => {
   cleanup();
@@ -167,6 +171,8 @@ function narrationSnapshot(
     profileId: "qwen3-tts-12hz-1-7b-customvoice-serena-cuda-bf16-v1",
     language: "es",
     selection: Object.freeze({ kind: "quick" }),
+    startPreferenceStatus: "ready",
+    canPersistStartPreference: true,
     state: undefined,
     failure: undefined,
     preparationFailure: undefined,
@@ -198,6 +204,7 @@ class ControlledNarrationCoordinator {
   readonly #audibleListeners = new Set<
     (observation: ProductNarrationAudibleProgressObservation) => void
   >();
+  public readonly configurationEvents: string[] = [];
 
   public subscribe(listener: () => void): () => void {
     this.#listeners.add(listener);
@@ -237,6 +244,23 @@ class ControlledNarrationCoordinator {
     this.#publish(narrationSnapshot("inactive"));
     return Promise.resolve();
   }
+
+  public stopForConfigurationChange(): Promise<void> {
+    this.configurationEvents.push("stop");
+    return this.stop();
+  }
+
+  public resetStartPreference(): Promise<boolean> {
+    this.configurationEvents.push("start-reset");
+    return Promise.resolve(true);
+  }
+
+  public refreshSelectedProfile(): Promise<void> {
+    this.configurationEvents.push("refresh");
+    return Promise.resolve();
+  }
+
+  public resetRecoveryEpisode(): void {}
 
   public close(): Promise<void> {
     return this.stop();
@@ -805,6 +829,81 @@ describe("desktop reader lifecycle surface", () => {
       ),
     );
     expect(writePosition).toHaveBeenCalledTimes(2);
+  });
+
+  it("stops narration before resetting language and start preferences", async () => {
+    const publication = createTestPublication("Reset settings book");
+    const flow = createTestFlow(() =>
+      Promise.resolve({ status: "ready", publication }),
+    );
+    const narration = new ControlledNarrationCoordinator();
+    const listeners = new Set<() => void>();
+    const snapshot: HardwareCompatibilitySnapshotV1 = Object.freeze({
+      status: "compatible",
+      reason: undefined,
+      profiles: Object.freeze([]),
+      activeProfileId: undefined,
+      selectionSource: undefined,
+      preferenceStatus: "missing",
+      fallbackAvailable: false,
+      canPersistSelection: true,
+      language: "es",
+      languagePreferenceStatus: "ready",
+      canPersistLanguage: true,
+      languageReason: "no-profile-for-language",
+    });
+    const hardware = {
+      subscribe: (listener: () => void) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+      observe: () => snapshot,
+      ensureChecked: vi.fn(async () => snapshot),
+      check: vi.fn(async () => snapshot),
+      resetLanguage: vi.fn(async () => {
+        narration.configurationEvents.push("language-reset");
+        return true;
+      }),
+      close: vi.fn(),
+    } as unknown as HardwareProfileCompatibilityCoordinator;
+
+    function SettledReader(props: ReadyPublicationContentProps) {
+      useEffect(() => {
+        props.onInitialRestorationSettled?.({
+          status: "settled",
+          locator: props.publication.locators[0]!.startLocator,
+        });
+      }, [props]);
+      return <div>Settled reset reader</div>;
+    }
+
+    render(
+      <App
+        openFlow={flow}
+        hardwareCompatibilityCoordinator={hardware}
+        createNarrationCoordinator={() =>
+          narration as unknown as ProductNarrationCoordinator
+        }
+        ReadyPublicationContent={SettledReader}
+      />,
+    );
+    selectEpub("reset.epub");
+    await screen.findByRole("heading", { name: "Reset settings book" });
+    fireEvent.click(
+      screen.getByText("Local narration compatibility").closest("summary")!,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Reset narration settings" }),
+    );
+
+    await waitFor(() =>
+      expect(narration.configurationEvents).toEqual([
+        "stop",
+        "language-reset",
+        "start-reset",
+        "refresh",
+      ]),
+    );
   });
 
   it("shows a fixed terminal state when publication cleanup fails", async () => {

@@ -59,6 +59,8 @@ function snapshot(
     profileId: "qwen3-tts-12hz-1-7b-customvoice-serena-cuda-bf16-v1",
     language: "es",
     selection: Object.freeze({ kind: "quick" }),
+    startPreferenceStatus: "ready",
+    canPersistStartPreference: true,
     state: phase === undefined ? undefined : uiState(phase),
     failure: phase === "failed" ? "tts-service-failed" : undefined,
     preparationFailure: undefined,

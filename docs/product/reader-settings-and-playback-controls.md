@@ -41,13 +41,24 @@ candidates passed the complete machine and listening sequence. WSOLA had the
 smaller contention footprint and stronger listening result, requires no
 dependency or CSP expansion, and is retained for Milestone 5 integration.
 
-The behavior in this document is not implemented until
+Milestone 3 now implements the English-fallback and bounded narration-
+preference subset under
+[`bilingual-narration-authority-v2`](../architecture/bilingual-narration-authority-v2.md).
+Valid saved Spanish or English survives upgrade; missing, invalid, unavailable,
+over-limit, future-version, or explicitly reset state uses English. Quick or
+Prepared mode and its closed Prepared target are now separately persisted and
+hydrated before their controls become actionable. Reset first uses the same
+identity-safe stop/cleanup path as direct language/profile selection. Volume
+remains session-only, reader appearance keeps its existing owner, and no
+playback-rate preference or selector was added.
+
+The remaining behavior in this document is not implemented until
 [`M010-002-reader-settings-and-playback-controls.md`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
 records passing implementation and validation. Current runtime behavior
-remains the completed M010.1 interface, Spanish fallback for missing or invalid
-language preference, and `1.0x` playback. Reader/Settings work can proceed
-independently. Non-default speed and a speed selector remain unavailable until
-Milestone 5 integrates the selected backend and passes product validation.
+remains the completed M010.1 interface plus the Milestone 3 preference
+behavior, and `1.0x` playback. Reader/Settings work remains Milestone 4.
+Non-default speed and a speed selector remain unavailable until Milestone 5
+integrates the selected backend and passes product validation.
 
 This document replaces the ignored pre-M011 design discussion as the durable
 product scope. It does not change the completed M005 narration-preparation
@@ -166,8 +177,10 @@ A valid saved Spanish or English choice must be preserved during upgrade.
 Opening a different EPUB does not reset language. VoxLeaf still does not infer
 book language, translate text, or switch languages automatically.
 
-The implementation must update the frozen bilingual product authority through
-a new version or amendment before changing the current Spanish fallback.
+The implemented
+[`bilingual-narration-authority-v2`](../architecture/bilingual-narration-authority-v2.md)
+additively supersedes the historical Spanish fallback without rewriting its
+frozen v1 evidence.
 
 ### Language-specific profiles
 

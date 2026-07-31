@@ -136,6 +136,10 @@ function languagePreference(
       selectedLanguage = nextLanguage;
       return { status: "saved" as const };
     }),
+    reset: vi.fn(async () => {
+      selectedLanguage = "en";
+      return { status: "saved" as const };
+    }),
   };
 }
 
@@ -349,7 +353,24 @@ describe("hardware profile compatibility coordinator", () => {
     ).resolves.toBe(true);
   });
 
-  it("restores English explicitly and fails future language state closed to Spanish", async () => {
+  it("resets language explicitly to English and selects an English profile", async () => {
+    const languageRepository = languagePreference("es");
+    const subject = new HardwareProfileCompatibilityCoordinator(
+      dependencies({ languagePreference: languageRepository }),
+    );
+    await subject.check("application-start");
+
+    await expect(subject.resetLanguage()).resolves.toBe(true);
+    expect(languageRepository.reset).toHaveBeenCalledOnce();
+    expect(subject.observe()).toMatchObject({
+      language: "en",
+      languagePreferenceStatus: "ready",
+      activeProfileId: PIPER_ENGLISH_CPU_PROFILE_ID,
+      status: "compatible",
+    });
+  });
+
+  it("restores English explicitly and fails future language state closed to English", async () => {
     const english = new HardwareProfileCompatibilityCoordinator(
       dependencies({ languagePreference: languagePreference("en") }),
     );
@@ -363,18 +384,19 @@ describe("hardware profile compatibility coordinator", () => {
     const futureRepository: NarrationLanguagePreferenceRepository = {
       read: vi.fn(async () => ({
         status: "unsupported-version" as const,
-        language: "es" as const,
+        language: "en" as const,
       })),
       write: vi.fn(async () => ({ status: "saved" as const })),
+      reset: vi.fn(async () => ({ status: "unsupported-version" as const })),
     };
     const future = new HardwareProfileCompatibilityCoordinator(
       dependencies({ languagePreference: futureRepository }),
     );
     await future.check("application-start");
     expect(future.observe()).toMatchObject({
-      language: "es",
+      language: "en",
       canPersistLanguage: false,
-      activeProfileId: PIPER_CPU_FALLBACK_PROFILE_ID,
+      activeProfileId: PIPER_ENGLISH_CPU_PROFILE_ID,
     });
     await expect(future.selectLanguage("en")).resolves.toBe(false);
     expect(futureRepository.write).not.toHaveBeenCalled();

@@ -97,7 +97,10 @@ accepted
 and executable desktop constants now close the shell, responsive, Settings,
 language/profile presentation, preference, rate, arithmetic, backend,
 resource, privacy, and validation inputs before production implementation.
-The current runtime remains unchanged: Spanish fallback and `1.0x`.
+Milestone 3 now implements the bounded preference subset: valid saved Spanish
+or English survives upgrade, safe fallback/reset state uses English, and
+Quick/Prepared startup is separately persisted and hydrated before use.
+Playback remains `1.0x` and the existing shell remains unchanged.
 
 Milestone 2 is also complete. Neither frozen eligible playback backend passed
 every machine and required-host gate, so
@@ -887,11 +890,42 @@ Complete.
 Expected result: bounded preference tests cover every valid/default/malformed/
 future/unavailable case and existing Spanish selections survive upgrade.
 
-Actual result: Not run.
+Actual result: Complete. Additive
+[`bilingual narration authority v2`](../../architecture/bilingual-narration-authority-v2.md)
+preserves the hashed v1 evidence while making English the runtime fallback for
+missing, malformed, over-limit, unavailable, future, otherwise invalid, and
+explicit-reset state. Language preference v2 keeps the existing storage key,
+accepts exact valid v1/v2 Spanish or English envelopes, writes only the exact
+two-field v2 envelope, enforces 256 UTF-8 bytes, and preserves future versions
+from overwrite.
+
+The new narration-start v1 repository stores only Quick or Prepared plus the
+closed 1-, 2-, 5-, or 10-minute target in an exact three-field, 256-byte
+envelope. Missing/invalid/unavailable state defaults to Quick without a write;
+future state is preserved. The product coordinator hydrates this state before
+start controls become actionable and never starts a model during hydration.
+Language/profile controls likewise remain disabled during compatibility
+hydration. Explicit reset uses the same configuration-stop path as direct
+selection before writing English/Quick, recomputing the profile, and requiring
+a new Play action. Applicable profile filtering is unchanged and both Qwen
+choices now carry an explicit Development label. Volume remains session-only,
+reader appearance retains its existing repository, and no playback-rate
+preference or selector was added.
+
+Normal local PowerShell outside the sandbox passed the desktop suite (49
+Vitest files/499 tests plus 11 native helpers), desktop type checking, all six
+Playwright cases, the release-packaged WebView2 native-startup smoke, and
+`pnpm.cmd check:portable`. The portable gate passed formatting, TypeScript/
+Python lint and types, 20 shared files/209 tests, 34 EPUB files/580 tests, the
+desktop suite, 347 Python tests, and all portable builds. `git diff --check`,
+relative-link, privacy, and prohibited-artifact checks also pass. The first
+browser and packaged attempts correctly exposed stale Spanish/schema-v1 test
+expectations; their unchanged reruns passed after the harnesses were updated
+to assert English first-run, schema-v2 retention, and reset behavior.
 
 #### Status
 
-Not started.
+Complete.
 
 ### Milestone 4: Implement the reader-first shell and accessible Settings
 
@@ -972,7 +1006,7 @@ Actual result: Not run.
 
 #### Status
 
-Not started; applicable after Milestones 3-4.
+Not started; applicable after Milestone 4.
 
 ### Milestone 6: Validate the portfolio reader and close the plan
 
@@ -1389,6 +1423,15 @@ Do not rewrite accepted historical authority to make a result pass.
   book/audio/model/secret/log artifact paths; and `git diff --check` passes.
   Only the existing content-free pytest cache-write, CSS Highlight, and Vite
   chunk-size advisories remain.
+- **2026-07-31:** Completed Milestone 3 on
+  `feat/m010-002-bounded-settings-english-fallback`. Implementation checkpoint
+  `ef46ff3` adds language preference v2, narration-start preference v1,
+  pre-action hydration, language-specific filtering, explicit Development
+  labels, and identity-first English/Quick reset. Deterministic, browser,
+  packaged WebView2, portable, link, privacy, artifact, and whitespace checks
+  pass from normal local PowerShell. No model, protocol, dependency, CSP,
+  audio persistence, reader-appearance owner, playback-rate preference, or
+  non-`1.00x` behavior changed.
 
 ## Discoveries and decisions
 
@@ -1519,7 +1562,7 @@ Do not rewrite accepted historical authority to make a result pass.
 
 ## Final validation results
 
-M010.2 Milestones 1-2D are complete. Milestone 1 validation added 21
+M010.2 Milestones 1-3 are complete. Milestone 1 validation added 21
 result-blind authority tests and passed the complete portable gate. Milestone
 2 produced the closed Chromium and packaged WebView2 evidence recorded above,
 selected no backend, removed all experimental adapters, and added no
@@ -1549,10 +1592,11 @@ freeze v3 before Milestone 2D implementation or measurement. Milestone 2D
 selects repository WSOLA under ADR-0040 after every frozen machine, privacy,
 lifecycle, and listening gate passed. The retained selected source adds no
 dependency or CSP expansion.
-Milestones 3-4 have not run and remain independent of the backend result;
-Milestone 5 must integrate the exact selected backend after they complete. No
-M010.2 Settings, preference migration, English runtime fallback, production
-time-stretch connection, effective-lead scheduling, or non-`1.00x` runtime
-behavior is claimed.
-Current production behavior remains the completed M010.1 interface, Spanish
-fallback, and `1.0x`.
+Milestone 3 has implemented and validated preference migration, English
+runtime fallback, closed narration-start persistence, pre-action hydration,
+and identity-safe reset. Milestone 4 remains independent of the backend result;
+Milestone 5 must integrate the exact selected backend after it completes. No
+M010.2 Settings shell, production time-stretch connection, effective-lead
+scheduling, playback-rate preference, or non-`1.00x` runtime behavior is
+claimed. Current production behavior remains the completed M010.1 shell plus
+the Milestone 3 bounded preferences, at `1.0x`.

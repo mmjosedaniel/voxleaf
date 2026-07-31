@@ -43,9 +43,15 @@ import {
   PIPER_ENGLISH_CPU_PROFILE_ID,
 } from "./hardware-profile-registry";
 import {
-  DEFAULT_NARRATION_LANGUAGE_V1,
+  DEFAULT_NARRATION_LANGUAGE_V2,
   type NarrationLanguageV1,
 } from "./narration-language";
+import {
+  createWebStorageNarrationStartPreferenceRepository,
+  DEFAULT_NARRATION_START_PREFERENCE_V1,
+  type NarrationStartPreferenceReadResult,
+  type NarrationStartPreferenceRepository,
+} from "../persistence/narration-start-preference";
 import {
   HARDWARE_PROFILE_AUTHORITY_V1,
   type RecoveryFailureCodeV1,
@@ -99,6 +105,9 @@ export interface ProductNarrationSnapshot {
   readonly profileId: string;
   readonly language: NarrationLanguageV1;
   readonly selection: AdaptiveBufferStartMode;
+  readonly startPreferenceStatus:
+    "loading" | NarrationStartPreferenceReadResult["status"];
+  readonly canPersistStartPreference: boolean;
   readonly state: AdaptivePreparationUiState | undefined;
   readonly failure: ProductNarrationFailureCode | undefined;
   readonly preparationFailure: NarrationPreparationFailureDetail | undefined;
@@ -168,6 +177,7 @@ export interface ProductNarrationCoordinatorDependencies {
   readonly client?: ProductNarrationServiceClient;
   readonly clock?: ProductNarrationClock;
   readonly profileCompatibility?: ProductNarrationProfileCompatibility;
+  readonly startPreferenceRepository?: NarrationStartPreferenceRepository;
   readonly createPlayer?: (
     scheduler: AdaptiveBufferScheduler,
   ) => AdaptivePcmPlayer;
@@ -323,6 +333,7 @@ export class ProductNarrationCoordinator {
   readonly #clock: ProductNarrationClock;
   readonly #profileCompatibility:
     ProductNarrationProfileCompatibility | undefined;
+  readonly #startPreferenceRepository: NarrationStartPreferenceRepository;
   readonly #createPlayer: (
     scheduler: AdaptiveBufferScheduler,
   ) => AdaptivePcmPlayer;
@@ -346,8 +357,12 @@ export class ProductNarrationCoordinator {
   readonly #knownBoundaries: LocatorRangeV1[] = [];
   #availability: ProductNarrationSnapshot["availability"] = "checking";
   #profileId = EXACT_QWEN_SERENA_DEVELOPMENT_PROFILE_ID;
-  #language = DEFAULT_NARRATION_LANGUAGE_V1;
-  #selection: AdaptiveBufferStartMode = Object.freeze({ kind: "quick" });
+  #language = DEFAULT_NARRATION_LANGUAGE_V2;
+  #selection: AdaptiveBufferStartMode = DEFAULT_NARRATION_START_PREFERENCE_V1;
+  #startPreferenceStatus: ProductNarrationSnapshot["startPreferenceStatus"] =
+    "loading";
+  #canPersistStartPreference = true;
+  #startPreferenceHydration: Promise<void> | undefined;
   #activeLocator: ReadingLocatorV1;
   #visibleLocator: ReadingLocatorV1;
   #latestHeardLocator: ReadingLocatorV1;
@@ -396,6 +411,9 @@ export class ProductNarrationCoordinator {
     this.#latestHeardLocator = initialLocator;
     this.#client = dependencies.client ?? new TtsProcessClient();
     this.#profileCompatibility = dependencies.profileCompatibility;
+    this.#startPreferenceRepository =
+      dependencies.startPreferenceRepository ??
+      createWebStorageNarrationStartPreferenceRepository();
     this.#clock =
       dependencies.clock ??
       Object.freeze({
@@ -450,13 +468,17 @@ export class ProductNarrationCoordinator {
     if (this.#closed || this.#availability !== "checking") {
       return;
     }
+    await this.#hydrateStartPreference();
+    if (this.#closed) {
+      return;
+    }
     let availability: TtsExactDemoAvailability;
     if (this.#profileCompatibility === undefined) {
       availability = await this.#client.exactDemoAvailability();
     } else {
       this.#language =
         this.#profileCompatibility.activeLanguage?.() ??
-        DEFAULT_NARRATION_LANGUAGE_V1;
+        DEFAULT_NARRATION_LANGUAGE_V2;
       const profileId = this.#profileCompatibility.activeProfileId?.();
       if (profileId === undefined) {
         this.#availability = "unavailable";
@@ -497,25 +519,89 @@ export class ProductNarrationCoordinator {
     }
     this.#language =
       this.#profileCompatibility?.activeLanguage?.() ??
-      DEFAULT_NARRATION_LANGUAGE_V1;
+      DEFAULT_NARRATION_LANGUAGE_V2;
     this.#availability = "checking";
     this.#publish();
     await this.checkAvailability();
   }
 
-  public setSelection(selection: AdaptiveBufferStartMode): void {
+  public async setSelection(
+    selection: AdaptiveBufferStartMode,
+  ): Promise<boolean> {
+    await this.#hydrateStartPreference();
     if (
       this.#closed ||
       isActivePhase(this.#snapshot.state) ||
-      this.#recovery.observe().phase !== "operational"
+      this.#recovery.observe().phase !== "operational" ||
+      !this.#canPersistStartPreference
     ) {
-      return;
+      return false;
+    }
+    const result = await this.#startPreferenceRepository.write(selection);
+    if (this.#closed || result.status !== "saved") {
+      return false;
     }
     this.#selection = Object.freeze({ ...selection });
+    this.#startPreferenceStatus = "ready";
     this.#failure = undefined;
     this.#preparationFailure = undefined;
     this.#terminalState = undefined;
     this.#publish();
+    return true;
+  }
+
+  public async resetStartPreference(): Promise<boolean> {
+    await this.#hydrateStartPreference();
+    if (
+      this.#closed ||
+      isActivePhase(this.#snapshot.state) ||
+      !this.#canPersistStartPreference
+    ) {
+      return false;
+    }
+    const result = await this.#startPreferenceRepository.reset();
+    if (this.#closed || result.status !== "saved") {
+      return false;
+    }
+    this.#selection = DEFAULT_NARRATION_START_PREFERENCE_V1;
+    this.#startPreferenceStatus = "ready";
+    this.#failure = undefined;
+    this.#preparationFailure = undefined;
+    this.#terminalState = undefined;
+    this.#publish();
+    return true;
+  }
+
+  async #hydrateStartPreference(): Promise<void> {
+    if (this.#startPreferenceStatus !== "loading") {
+      return;
+    }
+    if (this.#startPreferenceHydration !== undefined) {
+      return this.#startPreferenceHydration;
+    }
+    const hydration = this.#startPreferenceRepository
+      .read()
+      .then((result) => {
+        if (this.#closed) {
+          return;
+        }
+        this.#selection = result.selection;
+        this.#startPreferenceStatus = result.status;
+        this.#canPersistStartPreference =
+          result.status !== "unsupported-version";
+        this.#publish();
+      })
+      .catch(() => {
+        if (this.#closed) {
+          return;
+        }
+        this.#selection = DEFAULT_NARRATION_START_PREFERENCE_V1;
+        this.#startPreferenceStatus = "unavailable";
+        this.#canPersistStartPreference = true;
+        this.#publish();
+      });
+    this.#startPreferenceHydration = hydration;
+    await hydration;
   }
 
   public updateVisibleLocator(locator: ReadingLocatorV1): void {
@@ -1652,6 +1738,8 @@ export class ProductNarrationCoordinator {
       profileId: this.#profileId,
       language: this.#language,
       selection: this.#selection,
+      startPreferenceStatus: this.#startPreferenceStatus,
+      canPersistStartPreference: this.#canPersistStartPreference,
       state,
       failure: this.#failure,
       preparationFailure: this.#preparationFailure,

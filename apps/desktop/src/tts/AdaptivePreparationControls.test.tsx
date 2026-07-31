@@ -113,6 +113,22 @@ describe("adaptive preparation controls", () => {
     expect(callbacks.onStart).toHaveBeenCalledOnce();
   });
 
+  it("keeps start preferences inert until their repository is hydrated", () => {
+    const callbacks = handlers();
+    render(
+      <AdaptivePreparationControls
+        selection={{ kind: "quick" }}
+        selectionDisabled
+        {...callbacks}
+      />,
+    );
+
+    expect(
+      screen.getByRole("radio", { name: /Prepared playback/ }),
+    ).toBeDisabled();
+    expect(callbacks.onSelectionChange).not.toHaveBeenCalled();
+  });
+
   it("announces truthful preparation progress and exposes the frozen controls", () => {
     const callbacks = handlers();
     const state = createAdaptivePreparationUiState({

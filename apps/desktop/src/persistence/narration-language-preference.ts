@@ -1,5 +1,5 @@
 import {
-  DEFAULT_NARRATION_LANGUAGE_V1,
+  DEFAULT_NARRATION_LANGUAGE_V2,
   isNarrationLanguageV1,
   type NarrationLanguageV1,
 } from "../tts/narration-language";
@@ -13,7 +13,7 @@ export type NarrationLanguagePreferenceReadResult =
         | "over-limit"
         | "unavailable"
         | "unsupported-version";
-      language: typeof DEFAULT_NARRATION_LANGUAGE_V1;
+      language: typeof DEFAULT_NARRATION_LANGUAGE_V2;
     }>;
 
 export type NarrationLanguagePreferenceWriteResult =
@@ -31,6 +31,7 @@ export interface NarrationLanguagePreferenceRepository {
   write(
     language: NarrationLanguageV1,
   ): Promise<NarrationLanguagePreferenceWriteResult>;
+  reset(): Promise<NarrationLanguagePreferenceWriteResult>;
 }
 
 interface LanguagePreferenceStorage {
@@ -44,9 +45,15 @@ export const NARRATION_LANGUAGE_PREFERENCE_V1 = Object.freeze({
   maximumEnvelopeUtf16CodeUnits: 96,
 });
 
+export const NARRATION_LANGUAGE_PREFERENCE_V2 = Object.freeze({
+  storageKey: NARRATION_LANGUAGE_PREFERENCE_V1.storageKey,
+  schemaVersion: 2,
+  maximumEnvelopeUtf8Bytes: 256,
+});
+
 const FAIL_CLOSED = Object.freeze({
   status: "malformed" as const,
-  language: DEFAULT_NARRATION_LANGUAGE_V1,
+  language: DEFAULT_NARRATION_LANGUAGE_V2,
 });
 
 function failed(
@@ -61,12 +68,16 @@ function failed(
     ? FAIL_CLOSED
     : Object.freeze({
         status,
-        language: DEFAULT_NARRATION_LANGUAGE_V1,
+        language: DEFAULT_NARRATION_LANGUAGE_V2,
       });
 }
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function utf8Bytes(value: string): number {
+  return new TextEncoder().encode(value).byteLength;
 }
 
 export function createWebStorageNarrationLanguagePreferenceRepository(
@@ -77,7 +88,7 @@ export function createWebStorageNarrationLanguagePreferenceRepository(
       let serialized: string | null;
       try {
         serialized = storage().getItem(
-          NARRATION_LANGUAGE_PREFERENCE_V1.storageKey,
+          NARRATION_LANGUAGE_PREFERENCE_V2.storageKey,
         );
       } catch {
         return failed("unavailable");
@@ -86,8 +97,8 @@ export function createWebStorageNarrationLanguagePreferenceRepository(
         return failed("missing");
       }
       if (
-        serialized.length >
-        NARRATION_LANGUAGE_PREFERENCE_V1.maximumEnvelopeUtf16CodeUnits
+        utf8Bytes(serialized) >
+        NARRATION_LANGUAGE_PREFERENCE_V2.maximumEnvelopeUtf8Bytes
       ) {
         return failed("over-limit");
       }
@@ -108,9 +119,16 @@ export function createWebStorageNarrationLanguagePreferenceRepository(
         return failed("malformed");
       }
       if (
-        decoded.schemaVersion !== NARRATION_LANGUAGE_PREFERENCE_V1.schemaVersion
+        decoded.schemaVersion > NARRATION_LANGUAGE_PREFERENCE_V2.schemaVersion
       ) {
         return failed("unsupported-version");
+      }
+      if (
+        decoded.schemaVersion !==
+          NARRATION_LANGUAGE_PREFERENCE_V1.schemaVersion &&
+        decoded.schemaVersion !== NARRATION_LANGUAGE_PREFERENCE_V2.schemaVersion
+      ) {
+        return failed("malformed");
       }
       if (
         Object.keys(decoded).length !== 2 ||
@@ -133,49 +151,50 @@ export function createWebStorageNarrationLanguagePreferenceRepository(
       }
       try {
         const current = storage().getItem(
-          NARRATION_LANGUAGE_PREFERENCE_V1.storageKey,
+          NARRATION_LANGUAGE_PREFERENCE_V2.storageKey,
         );
-        if (
-          current !== null &&
-          current.length >
-            NARRATION_LANGUAGE_PREFERENCE_V1.maximumEnvelopeUtf16CodeUnits
-        ) {
-          return Object.freeze({ status: "over-limit" });
-        }
         if (current !== null) {
-          const decoded: unknown = JSON.parse(current);
-          if (
-            isRecord(decoded) &&
-            typeof decoded.schemaVersion === "number" &&
-            Number.isSafeInteger(decoded.schemaVersion) &&
-            decoded.schemaVersion >
-              NARRATION_LANGUAGE_PREFERENCE_V1.schemaVersion
-          ) {
-            return Object.freeze({ status: "unsupported-version" });
+          try {
+            const decoded: unknown = JSON.parse(current);
+            if (
+              isRecord(decoded) &&
+              typeof decoded.schemaVersion === "number" &&
+              Number.isSafeInteger(decoded.schemaVersion) &&
+              decoded.schemaVersion >
+                NARRATION_LANGUAGE_PREFERENCE_V2.schemaVersion
+            ) {
+              return Object.freeze({ status: "unsupported-version" });
+            }
+          } catch {
+            // A malformed prior value is recoverable through an explicit write.
           }
         }
       } catch {
         return Object.freeze({ status: "unavailable" });
       }
       const serialized = JSON.stringify({
-        schemaVersion: NARRATION_LANGUAGE_PREFERENCE_V1.schemaVersion,
+        schemaVersion: NARRATION_LANGUAGE_PREFERENCE_V2.schemaVersion,
         language,
       });
       if (
-        serialized.length >
-        NARRATION_LANGUAGE_PREFERENCE_V1.maximumEnvelopeUtf16CodeUnits
+        utf8Bytes(serialized) >
+        NARRATION_LANGUAGE_PREFERENCE_V2.maximumEnvelopeUtf8Bytes
       ) {
         return Object.freeze({ status: "over-limit" });
       }
       try {
         storage().setItem(
-          NARRATION_LANGUAGE_PREFERENCE_V1.storageKey,
+          NARRATION_LANGUAGE_PREFERENCE_V2.storageKey,
           serialized,
         );
       } catch {
         return Object.freeze({ status: "unavailable" });
       }
       return Object.freeze({ status: "saved" });
+    },
+
+    async reset(): Promise<NarrationLanguagePreferenceWriteResult> {
+      return this.write(DEFAULT_NARRATION_LANGUAGE_V2);
     },
   });
 }

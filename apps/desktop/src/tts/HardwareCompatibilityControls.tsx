@@ -14,7 +14,7 @@ import type {
   HardwareProfileRejectionReasonV1,
 } from "./hardware-profile-matcher";
 import {
-  NARRATION_LANGUAGES_V1,
+  NARRATION_LANGUAGES_V2,
   type NarrationLanguageV1,
 } from "./narration-language";
 import { profileSupportsNarrationLanguageV1 } from "./narration-profile-language-registry";
@@ -26,6 +26,7 @@ export interface HardwareCompatibilityControlsProps {
   readonly onSelectLanguage?: (
     language: NarrationLanguageV1,
   ) => Promise<boolean>;
+  readonly onResetNarrationSettings?: () => Promise<boolean>;
 }
 
 const REASON_MESSAGES: Readonly<
@@ -72,9 +73,9 @@ function statusMessage(snapshot: HardwareCompatibilitySnapshotV1): string {
 function profileLabel(profile: HardwareProfileMatchV1): string {
   switch (profile.profileId) {
     case "qwen3-tts-1-7b-customvoice-cuda-bf16-serena-es-v8":
-      return "Qwen and Serena Spanish quality profile";
+      return "Qwen and Serena Spanish quality profile (Development)";
     case "qwen3-tts-1-7b-customvoice-cuda-bf16-aiden-en-v8":
-      return "Qwen and Aiden English quality profile";
+      return "Qwen and Aiden English quality profile (Development)";
     case "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1":
       return "Piper and davefx Spanish fast CPU profile";
     case "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1":
@@ -107,6 +108,7 @@ export function HardwareCompatibilityControls({
   onRecoveryEpisodeReset,
   onSelectProfile,
   onSelectLanguage,
+  onResetNarrationSettings,
 }: HardwareCompatibilityControlsProps): ReactElement {
   const [selectionPending, setSelectionPending] = useState(false);
   const snapshot = useSyncExternalStore(
@@ -164,6 +166,21 @@ export function HardwareCompatibilityControls({
     onRecoveryEpisodeReset?.();
   };
 
+  const handleReset = async (): Promise<void> => {
+    setSelectionPending(true);
+    try {
+      const reset =
+        onResetNarrationSettings === undefined
+          ? await coordinator.resetLanguage()
+          : await onResetNarrationSettings();
+      if (reset) {
+        onRecoveryEpisodeReset?.();
+      }
+    } finally {
+      setSelectionPending(false);
+    }
+  };
+
   return (
     <details
       className="hardware-compatibility"
@@ -188,9 +205,15 @@ export function HardwareCompatibilityControls({
             ? "A measured CPU fallback is available."
             : "No measured CPU fallback is available."}
         </p>
-        <fieldset disabled={selectionPending || !snapshot.canPersistLanguage}>
+        <fieldset
+          disabled={
+            selectionPending ||
+            snapshot.status === "checking" ||
+            !snapshot.canPersistLanguage
+          }
+        >
           <legend>Narration language</legend>
-          {NARRATION_LANGUAGES_V1.map(({ value, label }) => (
+          {NARRATION_LANGUAGES_V2.map(({ value, label }) => (
             <label key={value}>
               <input
                 type="radio"
@@ -220,7 +243,11 @@ export function HardwareCompatibilityControls({
         ) : null}
         {selectable.length === 0 ? null : (
           <fieldset
-            disabled={selectionPending || !snapshot.canPersistSelection}
+            disabled={
+              selectionPending ||
+              snapshot.status === "checking" ||
+              !snapshot.canPersistSelection
+            }
           >
             <legend>Local narration profile</legend>
             {selectable.map((profile) => (
@@ -266,6 +293,17 @@ export function HardwareCompatibilityControls({
           onClick={() => void handleRecheck()}
         >
           Check compatibility again
+        </button>
+        <button
+          type="button"
+          disabled={
+            selectionPending ||
+            snapshot.status === "checking" ||
+            !snapshot.canPersistLanguage
+          }
+          onClick={() => void handleReset()}
+        >
+          Reset narration settings
         </button>
       </div>
     </details>

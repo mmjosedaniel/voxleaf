@@ -57,11 +57,13 @@ arms, exact-host metrics, privacy boundary, cancellation, synchronization, and
 cleanup evidence pass. Pull request #159 passed the required Ubuntu and
 Windows checks and merged the closeout.
 
-M010.2 is the approved active follow-up before M011. Milestones 1-2D are
+M010.2 is the approved active follow-up before M011. Milestones 1-3 are
 complete: the reader/settings/playback authority was frozen before results,
 then neither v1 backend passed every frozen gate. ADR-0034 retains that
-historical `1.00x` result. Runtime behavior has not changed; the current app still uses its
-M010.1 interface and Spanish fallback. ADR-0035 authorizes and ADR-0036 freezes
+historical `1.00x` result. Milestone 3 changes only bounded narration
+preferences: the current app now preserves valid Spanish/English state,
+defaults missing/invalid/reset state to English, and persists Quick/Prepared
+startup. ADR-0035 authorizes and ADR-0036 freezes
 a separate fee-free v2 comparison for six rates ending at `0.75x`; ADR-0037
 records that both packaged passers failed under local-inference contention,
 removes every experiment, and retains `1.00x`. ADR-0038 authorizes a new
@@ -74,7 +76,11 @@ rules. Milestone 2D selected the repository-owned incremental WSOLA v3
 backend after complete Chromium, packaged WebView2, exact Piper-contention,
 privacy, lifecycle, and bilingual-listening passes. ADR-0040 records the
 selection; no dependency or CSP expansion remains. Production still runs at
-`1.00x`, and Milestone 5 owns product integration after Milestones 3-4.
+`1.00x`, and Milestone 5 owns product integration after Milestone 4. Milestone
+3 implements the additive bilingual authority v2: valid saved Spanish or
+English survives upgrade, missing/invalid/reset state defaults to English,
+Quick/Prepared startup is separately bounded and persisted, controls hydrate
+before use, and reset follows identity-first cleanup.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -104,6 +110,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/tts-support-matrix-v1.md`](architecture/tts-support-matrix-v1.md): final M010 product support matrix, admitted host margins, explicit selection/fallback policy, recovery policy, limitations, and runtime/license/distribution boundary.
 - [`architecture/tts-support-matrix-v2.md`](architecture/tts-support-matrix-v2.md): current M010.1 executable support matrix for Piper Spanish/English, Chatterbox Spanish/English, development-only Qwen Serena/Aiden, and preserved deferred/unsupported records.
 - [`architecture/bilingual-narration-authority-v1.md`](architecture/bilingual-narration-authority-v1.md): implemented M010.1 product authority for explicit Spanish/English selection, bounded preference, identity-first language changes, accessibility, and unsupported combinations.
+- [`architecture/bilingual-narration-authority-v2.md`](architecture/bilingual-narration-authority-v2.md): implemented M010.2 additive authority for English fallback, v1-choice preservation, bounded language/start preferences, pre-action hydration, and identity-first explicit reset.
 - [`architecture/narration-normalization-v1.md`](architecture/narration-normalization-v1.md): accepted test-only neutral/Spanish normalization corpus policy for Milestone 5.
 - [`architecture/narration-normalization-v2.md`](architecture/narration-normalization-v2.md): implemented additive Spanish/English normalization authority and synthetic corpus for M010.1; historical combinations remain closed and Spanish regressions remain passing.
 - [`architecture/narration-preparation-limits-v1.md`](architecture/narration-preparation-limits-v1.md): accepted test-only `narration-v1` chunk, work, retention, checkpoint, and yield limits.
@@ -189,7 +196,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
 - [`plans/completed/M010-001-bilingual-narration-and-candidate-screening.md`](plans/completed/M010-001-bilingual-narration-and-candidate-screening.md): completed bilingual follow-up covering evaluation, exact profile integration, packaged portfolio validation, and passing Ubuntu/Windows closeout.
-- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): active pre-M011 reader-first settings and playback-control follow-up; Milestones 1-2D are complete, v1/v2 selected none, and ADR-0040 selects repository WSOLA v3 for later Milestone 5 integration.
+- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): active pre-M011 reader-first settings and playback-control follow-up; Milestones 1-3 are complete, bounded English-default language/start preferences are implemented, v1/v2 selected none, and ADR-0040 selects repository WSOLA v3 for later Milestone 5 integration.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

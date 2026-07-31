@@ -66,7 +66,7 @@ bounded synchronization/cancellation, zero-audio-persistence, and privacy
 closeout pass. Pull request #159 passed the required Ubuntu and Windows checks
 and merged the M010.1 closeout.
 
-M010.2 Milestones 1-2D are complete. The accepted
+M010.2 Milestones 1-3 are complete. The accepted
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
 requirements and
 [`active ExecPlan`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
@@ -77,8 +77,14 @@ The authority fixes the shell, preferences, English migration, exact rational
 rates, source/effective-duration arithmetic, and closed backend comparison
 before implementation. ADR-0034 records that WSOLA failed the frozen CPU gate
 and the packaged host rejected the media-element path under the unchanged CSP,
-so no backend was selected. No M010.2 runtime arrow is implemented: the current
-app remains Spanish-fallback and `1.0x`.
+so no backend was selected. Milestone 3 now implements the first M010.2 runtime
+edge under
+[`bilingual narration authority v2`](bilingual-narration-authority-v2.md):
+bounded language v2 reads preserve valid v1/v2 Spanish or English, all safe
+fallback/reset cases use English, a separate bounded narration-start v1
+repository persists Quick/Prepared mode and its closed target, controls hydrate
+before use, and reset follows the existing identity-first configuration-stop
+path. The shell remains unchanged and playback remains `1.0x`.
 
 [ADR-0035](decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md)
 authorizes a separate result-blind v2 for six exact rates ending at `0.75x`,

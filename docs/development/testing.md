@@ -779,7 +779,9 @@ and merged the M010.1 closeout.
 
 ## M010.2 reader/settings/playback validation
 
-M010.2 Milestones 1-2D are complete but production behavior is not implemented.
+M010.2 Milestones 1-3 are complete. Milestone 3 implements the bounded
+preference subset while the Settings shell and non-default playback remain
+pending.
 `reader-settings-playback-authority.test.ts` exhaustively freezes the exact
 shell and responsive values, Settings ordering and lifecycle neutrality,
 language/profile presentation, preference envelopes, every rate and invalid
@@ -787,6 +789,16 @@ input, source/effective-duration threshold arithmetic, backend candidates and
 gates, and unchanged M005/protocol/support/resource boundaries. The checkpoint
 passes 45 desktop test files with 454 Vitest tests plus 11 native helper tests
 and desktop type checking.
+
+Milestone 3 adds repository and lifecycle coverage for language preference v2
+and narration-start preference v1. Tests prove valid v1/v2 Spanish and English
+retention, English fallback for every safe failure/reset state, exact UTF-8
+limits and future-version preservation, every closed Quick/Prepared target,
+no write during default hydration, controls disabled before hydration, profile
+filtering, explicit Development labels, and stop-before-reset ordering. The
+outside-sandbox acceptance run passes 49 desktop files/499 Vitest tests plus
+11 native helpers, desktop type checking, all six browser cases, the release-
+packaged WebView2 startup smoke, and the complete portable gate.
 
 The Milestone 2 synthetic comparison selected no backend. WSOLA passed signal
 and lifecycle checks but exceeded the frozen CPU limit in Chromium and
