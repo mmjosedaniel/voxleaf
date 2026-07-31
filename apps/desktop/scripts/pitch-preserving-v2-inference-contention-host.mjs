@@ -131,14 +131,17 @@ async function run() {
         code,
       })),
       inferenceExited.then(() => ({ kind: "inference-exit", code: null })),
-      delay(MATRIX_TIMEOUT_MS).then(() => ({ kind: "timeout", code: null })),
+      delay(MATRIX_TIMEOUT_MS, undefined, { ref: false }).then(() => ({
+        kind: "timeout",
+        code: null,
+      })),
     ]);
     if (outcome.kind !== "matrix-exit" || outcome.code !== 0) {
       await stopChild(matrix);
       fail();
     }
     console.log(
-      "Pitch-preserving v2 inference-contention matrix passed with one local Piper CPU process and one sequential stretcher.",
+      "Pitch-preserving v2 inference-contention matrix completed with one local Piper CPU process and one sequential stretcher.",
     );
   } finally {
     await stopChild(inference);

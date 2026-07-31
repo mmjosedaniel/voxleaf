@@ -1112,6 +1112,16 @@ Do not rewrite accepted historical authority to make a result pass.
   one fluent-maintainer scorecard, retains only content-free scores, and
   removes every temporary WAV and manifest when the session ends. These
   runners are candidate evaluation code and will be removed after selection.
+- **2026-07-30:** The first contention execution completed both candidates,
+  but an unreferenced safety-timeout defect kept the already-finished Node
+  coordinator alive and made the command appear stalled. Process inspection
+  proved Piper and WebView2 had closed before the coordinator was terminated;
+  no child remained. Its recovered log is exploratory only because the timer
+  correction was not yet committed. It indicated a media RAM failure and a
+  repository-WSOLA start-latency failure under one active Piper process. The
+  timeout now uses a non-retaining timer, and the result wording distinguishes
+  matrix completion from candidate admission. A clean-commit repetition owns
+  the authoritative contention result.
 
 ## Discoveries and decisions
 

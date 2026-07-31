@@ -297,7 +297,9 @@ async function run() {
     await page.goto(`${LOCAL_ORIGIN}/pitch-preserving-v2-listening.html`);
     const completed = await Promise.race([
       result,
-      delay(SESSION_TIMEOUT_MS).then(() => fail("timeout")),
+      delay(SESSION_TIMEOUT_MS, undefined, { ref: false }).then(() =>
+        fail("timeout"),
+      ),
     ]);
     await mkdir(resultRoot, { recursive: true });
     const resultPath = path.join(
