@@ -177,6 +177,9 @@ function narrationSnapshot(
     selection: Object.freeze({ kind: "quick" }),
     startPreferenceStatus: "ready",
     canPersistStartPreference: true,
+    playbackRatePercent: 100,
+    playbackPreferenceStatus: "ready",
+    canPersistPlaybackPreference: true,
     state: undefined,
     failure: undefined,
     preparationFailure: undefined,
@@ -256,6 +259,15 @@ class ControlledNarrationCoordinator {
 
   public resetStartPreference(): Promise<boolean> {
     this.configurationEvents.push("start-reset");
+    return Promise.resolve(true);
+  }
+
+  public resetPlaybackPreference(): Promise<boolean> {
+    this.configurationEvents.push("playback-reset");
+    return Promise.resolve(true);
+  }
+
+  public setPlaybackRatePercent(): Promise<boolean> {
     return Promise.resolve(true);
   }
 
@@ -927,6 +939,7 @@ describe("desktop reader lifecycle surface", () => {
         "stop",
         "language-reset",
         "start-reset",
+        "playback-reset",
         "refresh",
       ]),
     );

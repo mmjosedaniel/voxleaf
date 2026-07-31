@@ -57,7 +57,7 @@ arms, exact-host metrics, privacy boundary, cancellation, synchronization, and
 cleanup evidence pass. Pull request #159 passed the required Ubuntu and
 Windows checks and merged the closeout.
 
-M010.2 is the approved active follow-up before M011. Milestones 1-4 are
+M010.2 is the approved active follow-up before M011. Milestones 1-5 are
 complete: the reader/settings/playback authority was frozen before results,
 then neither v1 backend passed every frozen gate. ADR-0034 retains that
 historical `1.00x` result. Milestone 3 changes only bounded narration
@@ -75,11 +75,14 @@ recurring handoff, lifecycle, resource, licence/CSP, listening, and lineage
 rules. Milestone 2D selected the repository-owned incremental WSOLA v3
 backend after complete Chromium, packaged WebView2, exact Piper-contention,
 privacy, lifecycle, and bilingual-listening passes. ADR-0040 records the
-selection; no dependency or CSP expansion remains. Milestone 4 now implements
+selection; no dependency or CSP expansion remains. Milestone 5 now connects
+that exact backend to the bounded player with six boundary-deferred rates,
+effective-listening-duration scheduling, and a separate content-free playback
+preference while source PCM remains the progress and memory authority.
+Milestone 4 implements
 the fixed compact app bar, compact publication/narration chrome, sole reader
 viewport, collapsible contents overlay, and accessible Settings drawer/sheet
-without changing domain ownership. Production still runs at `1.00x`, and
-Milestone 5 owns WSOLA product integration. Milestone 3 implements the additive
+without changing domain ownership. Milestone 3 implements the additive
 bilingual authority v2: valid saved Spanish or
 English survives upgrade, missing/invalid/reset state defaults to English,
 Quick/Prepared startup is separately bounded and persisted, controls hydrate
@@ -165,7 +168,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0037-retain-fixed-speed-after-reduced-range-evaluation.md`](architecture/decisions/ADR-0037-retain-fixed-speed-after-reduced-range-evaluation.md): records the v2 no-selection result after inference contention, removes every unselected experiment, and retains `1.00x`.
 - [`architecture/decisions/ADR-0038-reopen-boundary-deferred-playback-evaluation.md`](architecture/decisions/ADR-0038-reopen-boundary-deferred-playback-evaluation.md): authorizes a separate v3 comparison where a pending rate applies at the next complete-unit boundary without restarting TTS or discarding queued PCM, under new first-activation and RAM limits.
 - [`architecture/decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md`](architecture/decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md): freezes the immutable v3 candidate, boundary-transition, recurring-handoff, resource, lifecycle, licence/CSP, listening, and strict result-lineage authority before implementation or measurement.
-- [`architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md`](architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md): selects repository-owned incremental WSOLA v3 after every frozen machine, privacy, lifecycle, and bilingual-listening gate passes, with production integration deferred to Milestone 5.
+- [`architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md`](architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md): selects repository-owned incremental WSOLA v3 after every frozen machine, privacy, lifecycle, and bilingual-listening gate passes; Milestone 5 implements the exact selection without dependency or CSP expansion.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development
@@ -199,7 +202,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
 - [`plans/completed/M010-001-bilingual-narration-and-candidate-screening.md`](plans/completed/M010-001-bilingual-narration-and-candidate-screening.md): completed bilingual follow-up covering evaluation, exact profile integration, packaged portfolio validation, and passing Ubuntu/Windows closeout.
-- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): active pre-M011 reader-first settings and playback-control follow-up; Milestones 1-4 are complete, bounded English-default language/start preferences and the reader-first Settings shell are implemented, v1/v2 selected none, and ADR-0040 selects repository WSOLA v3 for Milestone 5 integration.
+- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): active pre-M011 reader-first settings and playback-control follow-up; Milestones 1-5 are complete, including bounded English-default language/start/playback preferences, the reader-first Settings shell, and six-rate boundary-deferred repository-WSOLA playback. Milestone 6 owns the final portfolio and repository closeout.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

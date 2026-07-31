@@ -20,6 +20,9 @@ function snapshot(): ProductNarrationSnapshot {
     selection: Object.freeze({ kind: "quick" }),
     startPreferenceStatus: "ready",
     canPersistStartPreference: true,
+    playbackRatePercent: 100,
+    playbackPreferenceStatus: "ready",
+    canPersistPlaybackPreference: true,
     state: undefined,
     failure: undefined,
     preparationFailure: undefined,
@@ -58,6 +61,7 @@ describe("product narration controls", () => {
       resume: vi.fn(),
       stop: vi.fn(async () => undefined),
       setVolumePercent: vi.fn(),
+      setPlaybackRatePercent: vi.fn(async () => true),
       goToPreviousBoundary: vi.fn(),
       goToNextBoundary: vi.fn(),
       startAtVisibleLocator: vi.fn(),
@@ -127,6 +131,12 @@ describe("product narration controls", () => {
       "false",
     );
     expect(narration).toHaveAttribute("data-narration-failure", "none");
+    const speed = screen.getByRole("combobox", { name: "Playback speed" });
+    expect(speed).toBeEnabled();
+    expect(speed).toHaveValue("100");
+    expect(screen.getAllByRole("option")).toHaveLength(6);
+    fireEvent.change(speed, { target: { value: "75" } });
+    expect(coordinator.setPlaybackRatePercent).toHaveBeenCalledWith(75);
 
     fireEvent.click(previous);
     fireEvent.click(next);
@@ -157,6 +167,9 @@ describe("product narration controls", () => {
         canStop: false,
         volumePercent: 100,
         playbackRate: 1,
+        selectedPlaybackRatePercent: 100,
+        activePlaybackRatePercent: null,
+        pendingPlaybackRatePercent: null,
       }),
       failure: "tts-service-failed",
       recovery: Object.freeze({
@@ -195,7 +208,7 @@ describe("product narration controls", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Playable audio loaded: 12 seconds. Active target: 15 seconds.",
+        "Playable audio loaded: 12 seconds ready at 1.00×. Active target: 15 seconds.",
       ),
     ).toBeInTheDocument();
     expect(

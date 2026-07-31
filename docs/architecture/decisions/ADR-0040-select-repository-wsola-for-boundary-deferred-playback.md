@@ -42,32 +42,33 @@ Remove the unselected media adapter, its prospective
 `media-src 'self' blob:` test policy, all candidate probes and host/listening
 runners, and every temporary generated WAV.
 
-This decision selects an implementation candidate; it does not enable
-non-default playback in the current product. Production remains literal
-`1.00x` until Milestone 5 connects this exact backend to the bounded player,
-implements selected/pending/active state and effective-listening-duration
-accounting, and passes its integration gates.
+Milestone 5 implements this decision in commit `c70e3fa`. The bounded player
+now connects this exact backend, maintains selected/pending/active rate state,
+applies the newest valid selection only at a complete-unit boundary, and uses
+effective listening duration for startup and refill decisions while retaining
+source frames and bytes as memory/progress authority.
 
 The content-safe aggregate result is
 [`boundary-deferred-v3-result.json`](../../../benchmarks/playback/boundary-deferred-v3-result.json).
 
 ## Consequences
 
-Milestones 3 and 4 can proceed with bounded preferences, English fallback,
-reader-first chrome, and accessible Settings. Milestone 5 is now applicable
-and must integrate only the selected v3 controller/worklet. It must not
-reintroduce the media candidate, change the six rates, alter TTS requests,
-discard queued source PCM, or activate a pending rate inside the currently
-audible unit.
+Milestones 3 and 4 implement bounded preferences, English fallback,
+reader-first chrome, and accessible Settings. Milestone 5 integrates only the
+selected v3 controller/worklet and does not reintroduce the media candidate,
+change the six rates, alter TTS requests, discard queued source PCM, or
+activate a pending rate inside the currently audible unit.
 
 At `1.00x`, the player must bypass and release time-stretch ownership after the
 preceding slowed unit settles. Source sample frames and bytes remain the
 memory/progress authority; slower playback changes effective listening
 duration only.
 
-The retained source is evaluation-proven but not yet production-wired. User
-documentation and the UI must continue to report fixed `1.00x` behavior until
-Milestone 5 completes.
+The retained source is evaluation-proven and production-wired. A separate
+bounded playback preference owns only the schema version and exact rate; the
+compact narration bar exposes all six rates. Milestone 6 must still validate
+the portfolio exact-host listening and lifecycle matrix before this plan can
+close.
 
 ## Alternatives considered
 

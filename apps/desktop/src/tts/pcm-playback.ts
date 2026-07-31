@@ -6,6 +6,14 @@ import {
   AdaptiveBufferScheduler,
   type AdaptiveBufferPlaybackUnit,
 } from "./adaptive-buffer-scheduler";
+import {
+  isNarrationPlaybackRatePercentV3,
+  type NarrationPlaybackRatePercentV3,
+} from "./reader-settings-playback-authority-v3";
+import {
+  createIncrementalWsolaV3Node,
+  type IncrementalWsolaV3Node,
+} from "./playback-backends/incremental-wsola-v3";
 
 const CLEANUP_UNITS_PER_TURN = 4;
 
@@ -31,7 +39,7 @@ export interface PcmPlaybackRequest {
   readonly sampleCountSamples: number;
   readonly startSampleFrame: number;
   readonly volumePercent: number;
-  readonly playbackRate: 1;
+  readonly playbackRate: number;
 }
 
 export interface PcmPlaybackHandle {
@@ -53,6 +61,13 @@ export interface PcmPlaybackBackend {
     request: PcmPlaybackRequest,
     callbacks: PcmPlaybackCallbacks,
   ): PcmPlaybackHandle;
+  preparePlaybackRate?(
+    playbackRatePercent: NarrationPlaybackRatePercentV3,
+  ): Promise<void>;
+  isPlaybackRatePrepared?(
+    playbackRatePercent: NarrationPlaybackRatePercentV3,
+  ): boolean;
+  releasePlaybackRatePreparation?(): void;
   close(): void;
 }
 
@@ -72,7 +87,11 @@ export interface AdaptivePcmPlayerObservation {
   readonly lowBuffer: boolean;
   readonly underrunCount: number;
   readonly volumePercent: number;
-  readonly playbackRate: 1;
+  readonly playbackRate: number;
+  readonly selectedPlaybackRatePercent: NarrationPlaybackRatePercentV3;
+  readonly activePlaybackRatePercent: NarrationPlaybackRatePercentV3 | null;
+  readonly pendingPlaybackRatePercent: NarrationPlaybackRatePercentV3 | null;
+  readonly playbackRatePreparationActive: boolean;
   readonly activeSequence: number | undefined;
   readonly intentionalTransitionPauseActive: boolean;
   readonly intentionalTransitionPauseMs: number;
@@ -148,6 +167,7 @@ function validVolumePercent(value: number): boolean {
 function requestFrom(
   unit: AdaptiveBufferPlaybackUnit,
   volumePercent: number,
+  playbackRatePercent: NarrationPlaybackRatePercentV3,
 ): PcmPlaybackRequest {
   return Object.freeze({
     sequence: unit.sequence,
@@ -158,7 +178,7 @@ function requestFrom(
     sampleCountSamples: unit.metadata.sampleCountSamples,
     startSampleFrame: unit.consumedSampleFrames,
     volumePercent,
-    playbackRate: 1,
+    playbackRate: playbackRatePercent / 100,
   });
 }
 
@@ -187,6 +207,8 @@ export class AdaptivePcmPlayer {
   #transitionPauseToken = 0;
   #completedTransitionPauseCount = 0;
   #completedTransitionPauseMs = 0;
+  #playbackRatePreparation: Promise<void> | undefined;
+  #playbackRatePreparationToken = 0;
 
   public constructor(
     scheduler: AdaptiveBufferScheduler,
@@ -214,7 +236,12 @@ export class AdaptivePcmPlayer {
       this.#handle === undefined &&
       this.#transitionPause === undefined
     ) {
-      this.#startCurrentUnit();
+      const nextRate = this.#scheduler.nextPlaybackRatePercent();
+      if (this.#isPlaybackRatePrepared(nextRate)) {
+        this.#startCurrentUnit();
+      } else {
+        this.#preparePlaybackRate(nextRate);
+      }
     }
     return this.#observation();
   }
@@ -273,10 +300,29 @@ export class AdaptivePcmPlayer {
   }
 
   public setPlaybackRate(playbackRate: number): AdaptivePcmPlayerObservation {
+    const playbackRatePercent = Math.round(playbackRate * 100);
     if (
-      playbackRate !== ADAPTIVE_BUFFER_AUTHORITY_V1.playback.defaultPlaybackRate
+      playbackRatePercent / 100 !== playbackRate ||
+      !isNarrationPlaybackRatePercentV3(playbackRatePercent)
     ) {
       throw new PcmPlaybackError("unsupported-rate");
+    }
+    return this.setPlaybackRatePercent(playbackRatePercent);
+  }
+
+  public setPlaybackRatePercent(
+    playbackRatePercent: NarrationPlaybackRatePercentV3,
+  ): AdaptivePcmPlayerObservation {
+    this.#expectActive();
+    const state =
+      this.#scheduler.selectPlaybackRatePercent(playbackRatePercent);
+    if (state.pendingRatePercent !== null && playbackRatePercent !== 100) {
+      this.#preparePlaybackRate(playbackRatePercent);
+    } else if (
+      playbackRatePercent === 100 &&
+      (state.activeRatePercent === null || state.activeRatePercent === 100)
+    ) {
+      this.#releasePlaybackRatePreparation();
     }
     return this.#observation();
   }
@@ -328,9 +374,10 @@ export class AdaptivePcmPlayer {
     this.#playbackStartSampleFrame = unit.consumedSampleFrames;
     this.#reportedSampleFrames = unit.consumedSampleFrames;
     const sequence = unit.sequence;
+    const playbackRatePercent = this.#scheduler.activateCurrentPlaybackRate();
     try {
       this.#handle = this.#backend.start(
-        requestFrom(unit, this.#volumePercent),
+        requestFrom(unit, this.#volumePercent, playbackRatePercent),
         Object.freeze({
           ended: () => {
             this.#handleEnded(sequence);
@@ -383,6 +430,12 @@ export class AdaptivePcmPlayer {
     this.#playbackStartSampleFrame = 0;
     this.#reportedSampleFrames = 0;
     const observation = this.#scheduler.observe();
+    if (
+      observation.playbackRateState.selectedRatePercent === 100 &&
+      observation.playbackRateState.activeRatePercent !== 100
+    ) {
+      this.#releasePlaybackRatePreparation();
+    }
     if (observation.playbackState === "buffering") {
       this.#underrunCount += 1;
     } else if (
@@ -435,6 +488,8 @@ export class AdaptivePcmPlayer {
       return this.#invalidationTransition ?? "shutdown";
     }
     this.#terminalState = terminalState;
+    this.#playbackRatePreparationToken += 1;
+    this.#playbackRatePreparation = undefined;
     this.#cancelPendingTransitionPause();
     const transition = this.#scheduler.invalidate();
     this.#invalidationTransition = transition;
@@ -646,16 +701,77 @@ export class AdaptivePcmPlayer {
     }
   }
 
+  #isPlaybackRatePrepared(
+    playbackRatePercent: NarrationPlaybackRatePercentV3,
+  ): boolean {
+    return (
+      playbackRatePercent === 100 ||
+      this.#backend.isPlaybackRatePrepared?.(playbackRatePercent) === true
+    );
+  }
+
+  #preparePlaybackRate(
+    playbackRatePercent: NarrationPlaybackRatePercentV3,
+  ): void {
+    if (
+      playbackRatePercent === 100 ||
+      this.#isPlaybackRatePrepared(playbackRatePercent) ||
+      this.#playbackRatePreparation !== undefined
+    ) {
+      return;
+    }
+    const prepare = this.#backend.preparePlaybackRate;
+    if (prepare === undefined) {
+      throw new PcmPlaybackError("unsupported-rate");
+    }
+    const token = ++this.#playbackRatePreparationToken;
+    const preparation = prepare.call(this.#backend, playbackRatePercent);
+    this.#playbackRatePreparation = preparation;
+    void preparation
+      .then(() => {
+        if (token !== this.#playbackRatePreparationToken) {
+          return;
+        }
+        this.#playbackRatePreparation = undefined;
+        const state = this.#scheduler.observe().playbackRateState;
+        if (
+          state.selectedRatePercent === 100 &&
+          (state.activeRatePercent === null || state.activeRatePercent === 100)
+        ) {
+          this.#releasePlaybackRatePreparation();
+        }
+      })
+      .catch(() => {
+        if (token === this.#playbackRatePreparationToken) {
+          this.#playbackRatePreparation = undefined;
+          this.#fail();
+        }
+      });
+  }
+
+  #releasePlaybackRatePreparation(): void {
+    this.#playbackRatePreparationToken += 1;
+    this.#playbackRatePreparation = undefined;
+    this.#backend.releasePlaybackRatePreparation?.();
+  }
+
   #observation(): AdaptivePcmPlayerObservation {
     const scheduler = this.#scheduler.observe();
     return Object.freeze({
       state: this.#terminalState ?? scheduler.playbackState,
       playableSampleFrames: scheduler.playableSampleFrames,
-      playableDurationMs: scheduler.playableDurationMs,
+      playableDurationMs: scheduler.effectiveListeningDurationMs,
       lowBuffer: scheduler.lowBuffer,
       underrunCount: this.#underrunCount,
       volumePercent: this.#volumePercent,
-      playbackRate: 1,
+      playbackRate: scheduler.playbackRateState.selectedRatePercent / 100,
+      selectedPlaybackRatePercent:
+        scheduler.playbackRateState.selectedRatePercent,
+      activePlaybackRatePercent: scheduler.playbackRateState.activeRatePercent,
+      pendingPlaybackRatePercent:
+        scheduler.playbackRateState.pendingRatePercent,
+      playbackRatePreparationActive:
+        this.#playbackRatePreparation !== undefined,
       activeSequence: this.#handle?.sequence,
       intentionalTransitionPauseActive:
         this.#transitionPause?.startedAtMs !== undefined &&
@@ -670,21 +786,76 @@ export class AdaptivePcmPlayer {
 }
 
 interface WebAudioPlaybackHandle extends PcmPlaybackHandle {
+  readonly playbackRate: number;
   complete(): void;
 }
 
 type AudioContextFactory = () => AudioContext;
+type IncrementalWsolaV3Factory = (
+  context: AudioContext,
+) => Promise<IncrementalWsolaV3Node>;
 
 export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
   readonly #createAudioContext: AudioContextFactory;
+  readonly #createWsolaNode: IncrementalWsolaV3Factory;
   #context: AudioContext | undefined;
   #gain: GainNode | undefined;
   #active: WebAudioPlaybackHandle | undefined;
+  #wsola: IncrementalWsolaV3Node | undefined;
+  #wsolaPreparation: Promise<void> | undefined;
+  #wsolaPreparationToken = 0;
 
   public constructor(
     createAudioContext: AudioContextFactory = () => new AudioContext(),
+    createWsolaNode: IncrementalWsolaV3Factory = createIncrementalWsolaV3Node,
   ) {
     this.#createAudioContext = createAudioContext;
+    this.#createWsolaNode = createWsolaNode;
+  }
+
+  public async preparePlaybackRate(
+    playbackRatePercent: NarrationPlaybackRatePercentV3,
+  ): Promise<void> {
+    if (playbackRatePercent === 100 || this.#wsola !== undefined) {
+      return;
+    }
+    if (this.#wsolaPreparation !== undefined) {
+      return this.#wsolaPreparation;
+    }
+    const context = this.#ensureAudioGraph();
+    const token = this.#wsolaPreparationToken;
+    const preparation = this.#createWsolaNode(context).then((created) => {
+      if (token !== this.#wsolaPreparationToken || this.#context !== context) {
+        created.close();
+        return;
+      }
+      created.node.connect(this.#gain!);
+      this.#wsola = created;
+    });
+    this.#wsolaPreparation = preparation;
+    try {
+      await preparation;
+    } finally {
+      if (this.#wsolaPreparation === preparation) {
+        this.#wsolaPreparation = undefined;
+      }
+    }
+  }
+
+  public isPlaybackRatePrepared(
+    playbackRatePercent: NarrationPlaybackRatePercentV3,
+  ): boolean {
+    return playbackRatePercent === 100 || this.#wsola !== undefined;
+  }
+
+  public releasePlaybackRatePreparation(): void {
+    if (this.#active !== undefined && this.#active.playbackRate !== 1) {
+      return;
+    }
+    this.#wsolaPreparationToken += 1;
+    this.#wsolaPreparation = undefined;
+    this.#wsola?.close();
+    this.#wsola = undefined;
   }
 
   public start(
@@ -694,6 +865,19 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
     if (this.#active !== undefined) {
       throw new PcmPlaybackError("invalid-state");
     }
+    const playbackRatePercent = Math.round(request.playbackRate * 100);
+    if (
+      playbackRatePercent / 100 !== request.playbackRate ||
+      !isNarrationPlaybackRatePercentV3(playbackRatePercent)
+    ) {
+      throw new PcmPlaybackError("unsupported-rate");
+    }
+    return playbackRatePercent === 100
+      ? this.#startDirect(request, callbacks)
+      : this.#startWsola(request, callbacks, playbackRatePercent);
+  }
+
+  #ensureAudioGraph(): AudioContext {
     const context = this.#context ?? this.#createAudioContext();
     this.#context = context;
     const gain = this.#gain ?? context.createGain();
@@ -701,18 +885,15 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       gain.connect(context.destination);
       this.#gain = gain;
     }
-    gain.gain.value = request.volumePercent / 100;
+    return context;
+  }
 
+  #readRemainingPcm(request: PcmPlaybackRequest): Float32Array {
     const remaining = request.sampleCountSamples - request.startSampleFrame;
     if (remaining <= 0) {
       throw new PcmPlaybackError("invalid-state");
     }
-    const audioBuffer = context.createBuffer(
-      request.channelCount,
-      remaining,
-      request.sampleRateHz,
-    );
-    const channel = audioBuffer.getChannelData(0);
+    const input = new Float32Array(remaining);
     const data = new DataView(
       request.payload.buffer,
       request.payload.byteOffset,
@@ -727,8 +908,29 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
       if (!Number.isFinite(value)) {
         throw new PcmPlaybackError("playback-failure");
       }
-      channel[index] = value;
+      input[index] = value;
     }
+    return input;
+  }
+
+  #startDirect(
+    request: PcmPlaybackRequest,
+    callbacks: PcmPlaybackCallbacks,
+  ): PcmPlaybackHandle {
+    this.releasePlaybackRatePreparation();
+    const context = this.#ensureAudioGraph();
+    const gain = this.#gain!;
+    gain.gain.value = request.volumePercent / 100;
+
+    const input = this.#readRemainingPcm(request);
+    const remaining = input.length;
+    const audioBuffer = context.createBuffer(
+      request.channelCount,
+      remaining,
+      request.sampleRateHz,
+    );
+    const channel = audioBuffer.getChannelData(0);
+    channel.set(input);
 
     const source = context.createBufferSource();
     source.buffer = audioBuffer;
@@ -738,6 +940,7 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
     let stopped = false;
     const handle: WebAudioPlaybackHandle = {
       sequence: request.sequence,
+      playbackRate: 1,
       get playedSampleFrames() {
         if (stopped) {
           return remaining;
@@ -780,12 +983,126 @@ export class WebAudioPcmPlaybackBackend implements PcmPlaybackBackend {
     return handle;
   }
 
+  #startWsola(
+    request: PcmPlaybackRequest,
+    callbacks: PcmPlaybackCallbacks,
+    playbackRatePercent: NarrationPlaybackRatePercentV3,
+  ): PcmPlaybackHandle {
+    const context = this.#ensureAudioGraph();
+    const gain = this.#gain!;
+    const wsola = this.#wsola;
+    if (wsola === undefined) {
+      throw new PcmPlaybackError("invalid-state");
+    }
+    gain.gain.value = request.volumePercent / 100;
+    const input = this.#readRemainingPcm(request);
+    const remaining = input.length;
+    const startedAt = context.currentTime;
+    let stopped = false;
+    const handle: WebAudioPlaybackHandle = {
+      sequence: request.sequence,
+      playbackRate: request.playbackRate,
+      get playedSampleFrames() {
+        if (stopped) {
+          return remaining;
+        }
+        return Math.min(
+          remaining,
+          Math.floor(
+            (context.currentTime - startedAt) *
+              request.sampleRateHz *
+              request.playbackRate,
+          ),
+        );
+      },
+      pause: () => {
+        wsola.node.port.postMessage({
+          type: "pause",
+          unitSequence: request.sequence,
+        });
+        void context.suspend().catch(callbacks.failed);
+      },
+      resume: () => {
+        wsola.node.port.postMessage({
+          type: "resume",
+          unitSequence: request.sequence,
+        });
+        void context.resume().catch(callbacks.failed);
+      },
+      stop: () => {
+        if (!stopped) {
+          stopped = true;
+          wsola.node.port.onmessage = null;
+          wsola.node.port.postMessage({
+            type: "stop",
+            unitSequence: request.sequence,
+          });
+          if (this.#active === handle) {
+            this.#active = undefined;
+          }
+        }
+      },
+      setVolumePercent: (volumePercent) => {
+        gain.gain.value = volumePercent / 100;
+      },
+      complete: () => {
+        stopped = true;
+      },
+    };
+    wsola.node.port.onmessage = (event: MessageEvent<unknown>) => {
+      const message = event.data;
+      if (typeof message !== "object" || message === null) {
+        return;
+      }
+      const type = Reflect.get(message, "type");
+      const unitSequence = Reflect.get(message, "unitSequence");
+      if (type === "failed") {
+        if (!stopped && this.#active === handle) {
+          handle.stop();
+          callbacks.failed();
+        }
+        return;
+      }
+      if (
+        type === "ended" &&
+        unitSequence === request.sequence &&
+        !stopped &&
+        this.#active === handle
+      ) {
+        handle.complete();
+        wsola.node.port.onmessage = null;
+        this.#active = undefined;
+        callbacks.ended();
+      }
+    };
+    this.#active = handle;
+    wsola.node.port.postMessage(
+      {
+        type: "arm",
+        input,
+        ratePercent: playbackRatePercent,
+        unitSequence: request.sequence,
+      },
+      [input.buffer],
+    );
+    wsola.node.port.postMessage({
+      type: "start",
+      unitSequence: request.sequence,
+    });
+    void context.resume().catch(callbacks.failed);
+    return handle;
+  }
+
   public close(): void {
     this.#active?.stop();
     this.#active = undefined;
     const context = this.#context;
     this.#context = undefined;
     this.#gain = undefined;
+    this.#wsolaPreparationToken += 1;
+    this.#wsolaPreparation = undefined;
+    this.#wsola?.close();
+    this.#wsola = undefined;
     if (context !== undefined) {
       void context.close();
     }

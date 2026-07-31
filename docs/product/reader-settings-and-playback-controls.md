@@ -39,7 +39,7 @@ Milestone 2D executed that authority without changing its gates.
 selects the repository-owned incremental WSOLA v3 backend after both
 candidates passed the complete machine and listening sequence. WSOLA had the
 smaller contention footprint and stronger listening result, requires no
-dependency or CSP expansion, and is retained for Milestone 5 integration.
+dependency or CSP expansion, and Milestone 5 now integrates that exact source.
 
 Milestone 3 now implements the English-fallback and bounded narration-
 preference subset under
@@ -49,8 +49,7 @@ over-limit, future-version, or explicitly reset state uses English. Quick or
 Prepared mode and its closed Prepared target are now separately persisted and
 hydrated before their controls become actionable. Reset first uses the same
 identity-safe stop/cleanup path as direct language/profile selection. Volume
-remains session-only, reader appearance keeps its existing owner, and no
-playback-rate preference or selector was added.
+remains session-only and reader appearance keeps its existing owner.
 
 Milestone 4 now implements the reader-first presentation subset. The ready
 application has one fixed compact app bar, compact publication and narration
@@ -59,16 +58,24 @@ an accessible five-section Settings drawer/sheet. Reader appearance,
 language/profile, Quick/Prepared startup, compatibility detail, recheck, and
 reset are presented in Settings while retaining their existing domain owners.
 Opening or closing Settings is lifecycle-neutral, and the synthetic raster
-probe is development-only. Playback speed remains a disabled `1.00x` status in
-the compact narration bar until Milestone 5 integrates WSOLA.
+probe is development-only.
 
-The remaining playback behavior in this document is not implemented until
+Milestone 5 implements the six-value compact playback selector, a separate
+bounded content-free playback-preference envelope, selected/pending/active
+boundary state, effective-listening-duration scheduling, and the exact
+repository WSOLA backend. A speed-only change keeps the active unit immutable,
+preserves TTS and queued source PCM, and applies the newest selection when the
+next complete unit starts. Source frames and bytes remain the memory and
+progress authority; returning to `1.00x` releases the stretcher after the final
+slowed unit settles.
+
+The remaining portfolio validation in this document is not complete until
 [`M010-002-reader-settings-and-playback-controls.md`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
 records passing implementation and validation. Current runtime behavior
-includes the Milestone 3 preference behavior and Milestone 4 reader/Settings
-shell at `1.0x` playback. Non-default speed and an actionable speed selector
-remain unavailable until Milestone 5 integrates the selected backend and
-passes product validation.
+includes the Milestone 3 preference behavior, Milestone 4 reader/Settings
+shell, and Milestone 5 non-default playback integration. Milestone 6 still
+owns exact-host portfolio listening, resource, lifecycle, privacy, and final
+plan-close validation.
 
 This document replaces the ignored pre-M011 design discussion as the durable
 product scope. It does not change the completed M005 narration-preparation
@@ -217,9 +224,8 @@ normal UI.
 
 The fixed choices and v2 evidence below remain historical. ADR-0038 separately
 authorized the completed result-blind v3 comparison with boundary-deferred
-activation. ADR-0040 selects repository WSOLA for later product integration.
-None of these requirements are current runtime behavior; production remains
-`1.00x` until Milestone 5 completes.
+activation. ADR-0040 selects repository WSOLA, and Milestone 5 implements that
+selection without rewriting the earlier results.
 
 ### Fixed choices
 
@@ -227,9 +233,9 @@ The frozen comparison evaluated exactly:
 
 `1.00x`, `0.95x`, `0.90x`, `0.85x`, `0.80x`, and `0.75x`.
 
-Production currently retains only `1.00x`; no speed preference is persisted
-and no speed selector is rendered. The same six-value set is admitted for the
-future v3 integration, while the v1/v2 results remain historical.
+Production exposes exactly those six values in the compact narration bar and
+persists the latest valid selection in its own bounded content-free envelope.
+The v1/v2 results remain historical.
 
 ### Playback boundary
 
@@ -273,8 +279,8 @@ unchanged.
 
 ### Approved v3 boundary-deferred behavior
 
-VoxLeaf already retains complete source-PCM units in one bounded FIFO and
-plays one unit at a time. A future v3 speed selection therefore takes effect
+VoxLeaf retains complete source-PCM units in one bounded FIFO and plays one
+unit at a time. A v3 speed selection therefore takes effect
 at the next generated-unit boundary rather than modifying the unit already
 being heard:
 
@@ -325,7 +331,7 @@ Two duration meanings remain separate:
   playback rate and governs promises about how long the available lead lasts.
 
 Quick-start, Prepared, low-water, and underrun decisions use effective
-listening duration after the new authority is implemented. The UI may say
+listening duration. The UI may say
 `30 sec ready at 0.75x` to avoid confusing effective listening time with
 stored media duration. Slower consumption may give inference more time to
 advance, but it does not improve or change model RTF and must not be reported

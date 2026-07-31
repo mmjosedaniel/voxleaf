@@ -34,6 +34,7 @@ export interface AdaptivePreparationTimingObservation {
 export interface AdaptivePreparationEstimateInput {
   readonly playableSampleFrames: number;
   readonly targetMs: number;
+  readonly targetSampleFrames?: number;
   readonly serviceState: AdaptiveBufferServiceState;
 }
 
@@ -81,11 +82,15 @@ export class AdaptivePreparationEstimator {
     }
     let targetSampleFrames: number;
     try {
-      targetSampleFrames = sampleFramesFromPlayableMilliseconds(input.targetMs);
+      targetSampleFrames =
+        input.targetSampleFrames ??
+        sampleFramesFromPlayableMilliseconds(input.targetMs);
     } catch {
       throw new AdaptivePreparationError("invalid-estimate-observation");
     }
     if (
+      !Number.isSafeInteger(targetSampleFrames) ||
+      targetSampleFrames < 0 ||
       this.#observations.length === 0 ||
       [
         "cancelling",
@@ -264,7 +269,10 @@ export interface AdaptivePreparationUiState {
   readonly canResume: boolean;
   readonly canStop: boolean;
   readonly volumePercent: number;
-  readonly playbackRate: 1;
+  readonly playbackRate: number;
+  readonly selectedPlaybackRatePercent: number;
+  readonly activePlaybackRatePercent: number | null;
+  readonly pendingPlaybackRatePercent: number | null;
 }
 
 export interface AdaptivePreparationUiInput {
@@ -300,9 +308,10 @@ function phaseFrom(
 export function createAdaptivePreparationUiState(
   input: AdaptivePreparationUiInput,
 ): AdaptivePreparationUiState {
-  const readyMs = playableMillisecondsFromSampleFrames(
+  const sourceReadyMs = playableMillisecondsFromSampleFrames(
     input.scheduler.playableSampleFrames,
   );
+  const readyMs = input.scheduler.effectiveListeningDurationMs;
   const targetMs = input.scheduler.targetBufferMs;
   const volumePercent =
     input.volumePercent ??
@@ -313,7 +322,7 @@ export function createAdaptivePreparationUiState(
       ADAPTIVE_BUFFER_AUTHORITY_V1.playback.minimumVolumePercent ||
     volumePercent >
       ADAPTIVE_BUFFER_AUTHORITY_V1.playback.maximumVolumePercent ||
-    readyMs !== input.scheduler.playableDurationMs ||
+    sourceReadyMs !== input.scheduler.playableDurationMs ||
     (input.mode.kind === "quick" &&
       targetMs !== ADAPTIVE_BUFFER_AUTHORITY_V1.thresholds.quickStartMs &&
       targetMs !== ADAPTIVE_BUFFER_AUTHORITY_V1.thresholds.refillResumeMs) ||
@@ -359,6 +368,12 @@ export function createAdaptivePreparationUiState(
     canResume: phase === "paused",
     canStop: !["complete", "failed", "stopped"].includes(phase),
     volumePercent,
-    playbackRate: 1,
+    playbackRate: input.scheduler.playbackRateState.selectedRatePercent / 100,
+    selectedPlaybackRatePercent:
+      input.scheduler.playbackRateState.selectedRatePercent,
+    activePlaybackRatePercent:
+      input.scheduler.playbackRateState.activeRatePercent,
+    pendingPlaybackRatePercent:
+      input.scheduler.playbackRateState.pendingRatePercent,
   });
 }

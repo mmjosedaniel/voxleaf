@@ -198,6 +198,9 @@ function narrationSnapshot(
     selection: Object.freeze({ kind: "quick" }),
     startPreferenceStatus: "ready",
     canPersistStartPreference: true,
+    playbackRatePercent: 100,
+    playbackPreferenceStatus: "ready",
+    canPersistPlaybackPreference: true,
     state:
       phase === undefined
         ? undefined
@@ -217,6 +220,9 @@ function narrationSnapshot(
             canStop: phase === "playing" || phase === "preparing",
             volumePercent: 100,
             playbackRate: 1,
+            selectedPlaybackRatePercent: 100,
+            activePlaybackRatePercent: null,
+            pendingPlaybackRatePercent: null,
           }),
     failure: undefined,
     preparationFailure: undefined,

@@ -66,7 +66,7 @@ bounded synchronization/cancellation, zero-audio-persistence, and privacy
 closeout pass. Pull request #159 passed the required Ubuntu and Windows checks
 and merged the M010.1 closeout.
 
-M010.2 Milestones 1-4 are complete. The accepted
+M010.2 Milestones 1-5 are complete. The accepted
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
 requirements and
 [`active ExecPlan`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
@@ -88,7 +88,14 @@ path. Milestone 4 implements the frozen reader-first presentation: one fixed
 compact app bar, compact publication/narration chrome, one publication scroll
 viewport, a collapsible contents overlay, and a lifecycle-neutral accessible
 Settings drawer/sheet. Reader reflow, compatibility, narration, and preference
-owners remain unchanged. Playback remains `1.0x` until Milestone 5.
+owners remain unchanged. Milestone 5 connects the selected repository WSOLA
+backend to the existing Web Audio player. The compact narration bar exposes
+exactly `1.00x`, `0.95x`, `0.90x`, `0.85x`, `0.80x`, and `0.75x`; a separate
+bounded content-free preference owns the selection. The active unit keeps its
+starting rate, the newest pending rate activates at the next complete-unit
+boundary, and speed-only changes preserve TTS identity and queued source PCM.
+Effective listening duration governs startup/refill presentation and decisions,
+while source frames and bytes remain memory/progress authority.
 
 [ADR-0035](decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md)
 authorizes a separate result-blind v2 for six exact rates ending at `0.75x`,
@@ -119,8 +126,9 @@ and strict lineage gates before Milestone 2D candidate work.
 selects repository WSOLA after both candidates passed Chromium, packaged
 WebView2, exact Piper contention, cleanup/privacy, and bilingual listening.
 Only the selected controller/worklet remains; no dependency or CSP expansion
-is retained. It is not connected to product playback yet, so runtime remains
-`1.00x` until Milestone 5 integration.
+is retained. Milestone 5 connects it to product playback with boundary-
+deferred state, content-free preference ownership, and effective-lead
+accounting.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps

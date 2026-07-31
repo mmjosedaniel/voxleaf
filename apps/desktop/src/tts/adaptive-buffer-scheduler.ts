@@ -5,13 +5,20 @@ import {
   createAdaptiveBufferThresholds,
   evaluateAdaptiveBufferResources,
   playableMillisecondsFromSampleFrames,
-  sampleFramesFromPlayableMilliseconds,
   type AdaptiveBufferResourceSnapshot,
 } from "./adaptive-buffer-authority";
 import {
   isPlaybackTransitionPauseMs,
   type PlaybackTransitionPauseMs,
 } from "./playback-transition-policy";
+import {
+  activateNarrationPlaybackRateAtBoundaryV3,
+  effectiveListeningMillisecondsFromSampleFramesV3,
+  initialNarrationPlaybackRateStateV3,
+  selectNarrationPlaybackRateV3,
+  type NarrationPlaybackRatePercentV3,
+  type NarrationPlaybackRateStateV3,
+} from "./reader-settings-playback-authority-v3";
 
 const BYTES_PER_SAMPLE =
   ADAPTIVE_BUFFER_AUTHORITY_V1.audioFormat.bytesPerSample;
@@ -137,6 +144,8 @@ export interface AdaptiveBufferSchedulerObservation {
   readonly playbackState: AdaptiveBufferPlaybackState;
   readonly playableSampleFrames: number;
   readonly playableDurationMs: number;
+  readonly effectiveListeningDurationMs: number;
+  readonly playbackRateState: NarrationPlaybackRateStateV3;
   readonly targetBufferMs: number;
   readonly lowBuffer: boolean;
   readonly rangeComplete: boolean;
@@ -311,11 +320,14 @@ export class AdaptiveBufferScheduler {
   #resources = emptyResources();
   #rangeComplete = false;
   #initialPlaybackStarted = false;
+  #playbackRateState = initialNarrationPlaybackRateStateV3();
+  #activePlaybackSequence: number | undefined;
 
   public constructor(
     clock: AdaptiveBufferSchedulerClock,
     identity: AdaptiveBufferWorkIdentity,
     mode: AdaptiveBufferStartMode,
+    playbackRatePercent: NarrationPlaybackRatePercentV3 = 100,
   ) {
     assertClock(clock);
     if (identity.sessionId.length === 0 || identity.generationId.length === 0) {
@@ -332,11 +344,18 @@ export class AdaptiveBufferScheduler {
     this.#clock = clock;
     this.#identity = Object.freeze({ ...identity });
     this.#mode = Object.freeze({ ...mode });
+    if (playbackRatePercent !== 100) {
+      this.#playbackRateState = selectNarrationPlaybackRateV3(
+        this.#playbackRateState,
+        playbackRatePercent,
+      );
+    }
   }
 
   public observe(): AdaptiveBufferSchedulerObservation {
     assertClock(this.#clock);
     const playableSampleFrames = this.#playableSampleFrames();
+    const effectiveListeningDurationMs = this.#effectiveListeningDurationMs();
     const targetBufferMs = this.#targetBufferMs();
     return Object.freeze({
       observedAtMs: this.#clock.nowMs,
@@ -345,15 +364,15 @@ export class AdaptiveBufferScheduler {
       playableSampleFrames,
       playableDurationMs:
         playableMillisecondsFromSampleFrames(playableSampleFrames),
+      effectiveListeningDurationMs,
+      playbackRateState: this.#playbackRateState,
       targetBufferMs,
       lowBuffer:
         this.#playbackState === "playing" &&
-        playableSampleFrames <=
-          sampleFramesFromPlayableMilliseconds(
-            Math.min(
-              ADAPTIVE_BUFFER_AUTHORITY_V1.thresholds.lowWaterMarkMs,
-              targetBufferMs,
-            ),
+        effectiveListeningDurationMs <=
+          Math.min(
+            ADAPTIVE_BUFFER_AUTHORITY_V1.thresholds.lowWaterMarkMs,
+            targetBufferMs,
           ),
       rangeComplete: this.#rangeComplete,
       pendingSegmentCount: this.#pendingSegments.length,
@@ -597,6 +616,45 @@ export class AdaptiveBufferScheduler {
     });
   }
 
+  public selectPlaybackRatePercent(
+    playbackRatePercent: NarrationPlaybackRatePercentV3,
+  ): NarrationPlaybackRateStateV3 {
+    if (this.#identity === undefined || this.#playbackState === "stopped") {
+      throw new AdaptiveBufferSchedulerError("invalid-state");
+    }
+    this.#playbackRateState = selectNarrationPlaybackRateV3(
+      this.#playbackRateState,
+      playbackRatePercent,
+    );
+    this.#refreshPlaybackState();
+    return this.#playbackRateState;
+  }
+
+  public nextPlaybackRatePercent(): NarrationPlaybackRatePercentV3 {
+    return (
+      this.#playbackRateState.pendingRatePercent ??
+      this.#playbackRateState.selectedRatePercent
+    );
+  }
+
+  public activateCurrentPlaybackRate(): NarrationPlaybackRatePercentV3 {
+    const current = this.#audioUnits[0];
+    if (
+      current === undefined ||
+      this.#activePlaybackSequence === current.sequence
+    ) {
+      throw new AdaptiveBufferSchedulerError("invalid-state");
+    }
+    this.#playbackRateState = activateNarrationPlaybackRateAtBoundaryV3(
+      this.#playbackRateState,
+      this.#playbackRateState.activeRatePercent === null
+        ? "initial-unit-start"
+        : "after-complete-unit-ended-before-successor-start",
+    );
+    this.#activePlaybackSequence = current.sequence;
+    return this.#playbackRateState.activeRatePercent!;
+  }
+
   public failActiveSynthesis(): void {
     if (
       this.#activeSynthesis === undefined ||
@@ -699,6 +757,7 @@ export class AdaptiveBufferScheduler {
     };
     this.#activeSynthesis = undefined;
     this.#rangeComplete = false;
+    this.#activePlaybackSequence = undefined;
     this.#playbackState = "stopped";
     this.#serviceState = transition === "cancel" ? "cancelling" : "stopping";
     return transition;
@@ -809,10 +868,7 @@ export class AdaptiveBufferScheduler {
   }
 
   #shouldProduce(): boolean {
-    return (
-      this.#playableSampleFrames() <
-      sampleFramesFromPlayableMilliseconds(this.#targetBufferMs())
-    );
+    return this.#effectiveListeningDurationMs() < this.#targetBufferMs();
   }
 
   #canReserveServiceUnit(): boolean {
@@ -831,6 +887,21 @@ export class AdaptiveBufferScheduler {
         total + retained.sampleFrames - retained.consumedSampleFrames,
       0,
     );
+  }
+
+  #effectiveListeningDurationMs(): number {
+    return this.#audioUnits.reduce((total, retained) => {
+      const remaining = retained.sampleFrames - retained.consumedSampleFrames;
+      const rate =
+        retained.sequence === this.#activePlaybackSequence &&
+        this.#playbackRateState.activeRatePercent !== null
+          ? this.#playbackRateState.activeRatePercent
+          : this.#playbackRateState.selectedRatePercent;
+      return (
+        total +
+        effectiveListeningMillisecondsFromSampleFramesV3(remaining, rate)
+      );
+    }, 0);
   }
 
   #settleActivePromptResources(
@@ -886,6 +957,7 @@ export class AdaptiveBufferScheduler {
 
   #refreshPlaybackState(): void {
     const playableFrames = this.#playableSampleFrames();
+    const effectiveListeningDurationMs = this.#effectiveListeningDurationMs();
     if (this.#playbackState === "stopped" || this.#identity === undefined) {
       return;
     }
@@ -916,13 +988,10 @@ export class AdaptiveBufferScheduler {
       this.#rangeComplete &&
         this.#pendingSegments.length === 0 &&
         this.#activeSynthesis === undefined
-        ? playableMillisecondsFromSampleFrames(playableFrames)
+        ? effectiveListeningDurationMs
         : undefined,
     );
-    if (
-      playableFrames >=
-      sampleFramesFromPlayableMilliseconds(target.targetBufferMs)
-    ) {
+    if (effectiveListeningDurationMs >= target.targetBufferMs) {
       this.#playbackState = "playing";
       this.#initialPlaybackStarted = true;
     }

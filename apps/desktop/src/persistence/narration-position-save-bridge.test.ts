@@ -47,6 +47,9 @@ function uiState(
     canStop: true,
     volumePercent: 100,
     playbackRate: 1,
+    selectedPlaybackRatePercent: 100,
+    activePlaybackRatePercent: null,
+    pendingPlaybackRatePercent: null,
   });
 }
 
@@ -61,6 +64,9 @@ function snapshot(
     selection: Object.freeze({ kind: "quick" }),
     startPreferenceStatus: "ready",
     canPersistStartPreference: true,
+    playbackRatePercent: 100,
+    playbackPreferenceStatus: "ready",
+    canPersistPlaybackPreference: true,
     state: phase === undefined ? undefined : uiState(phase),
     failure: phase === "failed" ? "tts-service-failed" : undefined,
     preparationFailure: undefined,

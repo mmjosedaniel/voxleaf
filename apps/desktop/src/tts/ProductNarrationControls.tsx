@@ -17,6 +17,10 @@ import {
   PIPER_ENGLISH_CPU_PROFILE_ID,
 } from "./hardware-profile-registry";
 import type { ProductNarrationCoordinator } from "./product-narration-coordinator";
+import {
+  isNarrationPlaybackRatePercentV3,
+  NARRATION_PLAYBACK_RATES_V3,
+} from "./reader-settings-playback-authority-v3";
 
 export interface ProductNarrationControlsProps {
   readonly coordinator: ProductNarrationCoordinator;
@@ -169,6 +173,13 @@ export function ProductNarrationControls({
       data-narration-discarded-units={snapshot.metrics.discardedAudioUnitCount}
       data-narration-play-intent={snapshot.navigation.playIntent}
       data-narration-navigation-settling={String(snapshot.navigation.settling)}
+      data-narration-selected-rate-percent={snapshot.playbackRatePercent}
+      data-narration-active-rate-percent={
+        snapshot.state?.activePlaybackRatePercent ?? "none"
+      }
+      data-narration-pending-rate-percent={
+        snapshot.state?.pendingPlaybackRatePercent ?? "none"
+      }
     >
       <div className="product-narration-compact">
         <div className="product-narration-summary">
@@ -182,6 +193,14 @@ export function ProductNarrationControls({
             </p>
           )}
           <p className="product-narration-policy">{startupPolicy}</p>
+          {state !== undefined &&
+          state.pendingPlaybackRatePercent !== null &&
+          state.activePlaybackRatePercent !== null ? (
+            <p className="product-narration-rate-pending" role="status">
+              {(state.selectedPlaybackRatePercent / 100).toFixed(2)}× will apply
+              after the current audio section.
+            </p>
+          ) : null}
           {state?.lowBuffer === true ? (
             <p className="product-narration-warning">
               Audio is running low and may briefly buffer.
@@ -231,8 +250,25 @@ export function ProductNarrationControls({
           )}
           <label className="product-narration-speed">
             <span className="visually-hidden">Playback speed</span>
-            <select value={1} disabled aria-label="Playback speed">
-              <option value={1}>1.00×</option>
+            <select
+              value={snapshot.playbackRatePercent}
+              disabled={
+                snapshot.playbackPreferenceStatus === "loading" ||
+                !snapshot.canPersistPlaybackPreference
+              }
+              aria-label="Playback speed"
+              onChange={(event) => {
+                const playbackRatePercent = Number(event.currentTarget.value);
+                if (isNarrationPlaybackRatePercentV3(playbackRatePercent)) {
+                  void coordinator.setPlaybackRatePercent(playbackRatePercent);
+                }
+              }}
+            >
+              {NARRATION_PLAYBACK_RATES_V3.map((rate) => (
+                <option key={rate.percent} value={rate.percent}>
+                  {(rate.percent / 100).toFixed(2)}×
+                </option>
+              ))}
             </select>
           </label>
           {showStart ? (
