@@ -93,7 +93,13 @@ lineage.
 records that the packaged passers failed under one active local Piper process,
 so no backend was selected, listening did not open, and every experimental
 dependency, adapter, runner, and prospective CSP change was removed. Playback
-remains `1.00x`; Milestone 3 is next.
+remains `1.00x`.
+[ADR-0038](decisions/ADR-0038-reopen-boundary-deferred-playback-evaluation.md)
+authorizes a distinct v3 direction: the active complete unit keeps its rate,
+the newest pending rate applies to the next queued unit without restarting TTS
+or releasing queued PCM, first activation is bounded to 1,000 ms p95, and
+additional process RAM to 200 MiB. Milestone 2C must freeze executable v3
+authority before any new candidate implementation or result.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps

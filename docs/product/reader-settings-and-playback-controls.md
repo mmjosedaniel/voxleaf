@@ -173,11 +173,12 @@ Device compatibility details. Internal profile identifiers, paths, process
 arguments, raw host facts, model errors, and book-derived text stay out of the
 normal UI.
 
-## Evaluated playback-speed target
+## Playback-speed target and evaluation history
 
-The following requirements record the closed v2 comparison. They are not
-current runtime behavior and are not an implementation target for the
-remaining M010.2 milestones after ADR-0037.
+The fixed choices and v2 evidence below remain historical. ADR-0038 separately
+authorizes a result-blind v3 comparison with boundary-deferred activation. None
+of these requirements are current runtime behavior; production remains
+`1.00x` until v3 admits one backend.
 
 ### Fixed choices
 
@@ -229,12 +230,47 @@ The media candidate could add only `media-src 'self' blob:` to the candidate
 test policy. It did not pass every gate, so the production CSP remains
 unchanged.
 
+### Approved v3 boundary-deferred behavior
+
+VoxLeaf already retains complete source-PCM units in one bounded FIFO and
+plays one unit at a time. A future v3 speed selection therefore takes effect
+at the next generated-unit boundary rather than modifying the unit already
+being heard:
+
+- the current unit keeps the rate with which it started;
+- the newest valid pending selection wins if the user changes it more than
+  once before the boundary;
+- the selected and active audible values remain distinguishable until the
+  next unit begins;
+- TTS generation continues and existing queued source PCM remains valid;
+- speed alone does not cancel or restart the model, replace generation
+  identity, regenerate audio, release the queue, or alter narration text; and
+- the next queued unit adopts the pending value before playback starts.
+
+Entering a non-default value may initialize one stretcher while the current
+unit continues. V3 permits at most 1,000 ms p95 for that first activation and
+at most 200 MiB additional process RAM under local-inference contention. The
+one-second allowance is not a recurring inter-unit pause: the same bounded
+backend must be reused or prepared so successor units do not repeatedly pay
+the full activation cost.
+
+At `1.00x`, the time-stretch path is bypassed and must release its stretcher,
+object URL, transformed copy, and work queue after the preceding slowed unit
+settles. VoxLeaf retains only the existing source-PCM FIFO; it must not retain
+a second pre-stretched audio queue.
+
+These values are prospective v3 requirements, not a retroactive reinterpretation
+of the 128 MiB and 250 ms v2 gates. Milestone 2C must freeze the exact
+candidates, recurring-unit handoff gate, listening rules, and executable
+authority before Milestone 2D implements or measures candidates.
+
 ### Progress and timing
 
-Audible progress remains authoritative in source sample frames. If the rate
-changes during an active unit, the player first settles progress at the old
-rate, then applies the new rate. Highlighting and heard-position persistence
-must never advance beyond source frames actually consumed.
+Audible progress remains authoritative in source sample frames. Under the v3
+direction, the active unit never changes rate: it completes under its immutable
+active value, and the successor starts at the newest pending value.
+Highlighting and heard-position persistence must never advance beyond source
+frames actually consumed.
 
 Two duration meanings remain separate:
 
@@ -333,6 +369,10 @@ exact-host evidence prove:
   runtime-gated;
 - exactly the six approved values are accepted, and every admitted speed
   preserves pitch and correct source-frame progress;
+- a speed-only change is applied at the next complete-unit boundary without
+  cancelling TTS, replacing identity, or discarding queued PCM;
+- first non-default activation remains within 1,000 ms p95 and 200 MiB
+  additional process RAM, while `1.00x` bypasses and releases time stretching;
 - any selected backend is fee-free, permissively distributable, and passes the
   frozen CPU, RAM, work-memory, browser, packaged-host, lifecycle, privacy, and
   listening gates;

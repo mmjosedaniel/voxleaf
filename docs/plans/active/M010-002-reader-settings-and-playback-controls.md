@@ -121,6 +121,15 @@ complete. The frozen v2 comparison selected no backend, and
 retains `1.00x`. Every experimental adapter, runner, dependency, and
 prospective CSP change was removed.
 
+After reviewing the complete-unit FIFO and the exact-host v2 resource results,
+the maintainer accepted
+[`ADR-0038`](../../architecture/decisions/ADR-0038-reopen-boundary-deferred-playback-evaluation.md).
+It authorizes a separate v3 comparison in which the current audible unit keeps
+its rate, the newest pending selection applies to the next unit, TTS and queued
+PCM continue unchanged, first non-default activation is bounded to 1,000 ms
+p95, and additional process RAM is bounded to 200 MiB. Milestone 2C is next;
+production remains `1.00x`.
+
 ## Scope and non-goals
 
 ### In scope
@@ -131,6 +140,8 @@ prospective CSP change was removed.
   in-memory time-stretch backend.
 - Freeze and execute a separate reduced-range v2 comparison without changing
   the completed v1 result.
+- Freeze and execute a separate boundary-deferred v3 comparison without
+  changing completed v1/v2 evidence.
 - Implement a fixed compact app bar and reader-first ready layout.
 - Implement an accessible right-side Settings drawer on wide windows and
   full-width dialog-like sheet on narrow windows.
@@ -713,6 +724,97 @@ authority admits a backend.
 
 Complete.
 
+### Milestone 2C: Freeze boundary-deferred v3 authority
+
+#### Work
+
+1. Add a separate immutable architecture/executable authority version; do not
+   modify v1, v2, or their committed results.
+2. Freeze the six existing rates and the rule that the current unit's active
+   rate is immutable while the latest valid pending value applies to the next
+   complete queued unit.
+3. Freeze speed-only lifecycle behavior: no TTS cancel/restart, identity
+   replacement, prepared-text change, PCM regeneration, or queue release.
+4. Freeze exactly the media and repository-owned incremental WSOLA candidates.
+   Do not include Signalsmith unless its pre-trial initialization failure is
+   diagnosed before the authority checkpoint.
+5. Freeze a 1,000 ms p95 first non-default activation ceiling, 200 MiB
+   additional-process-RAM ceiling under one local inference process, an exact
+   smaller recurring-unit handoff ceiling, and zero material time-stretch
+   steady-state ownership at `1.00x`.
+6. Freeze latest-pending-value behavior, active/selected UI state,
+   one-stretcher ownership, no duplicate transformed-audio FIFO, source-frame
+   progress, effective-duration arithmetic, pause/resume, invalidation,
+   privacy, listening, and cleanup gates.
+7. Freeze candidate licence/CSP/distribution rules and strict
+   authority-commit/result-commit lineage before implementing or measuring
+   either candidate.
+8. Add result-blind deterministic tests proving the authority rejects a
+   mid-unit activation, a recurring one-second handoff allowance, queue
+   invalidation on speed-only change, a retained stretcher at `1.00x`, and
+   post-authority gate mutation.
+9. Record one freeze ADR and reconcile the roadmap, product requirements,
+   system diagram, and this ExecPlan.
+
+#### Validation
+
+- `pnpm.cmd --filter @voxleaf/desktop test`
+- `pnpm.cmd --filter @voxleaf/desktop typecheck`
+- `pnpm.cmd check:portable`
+- `git diff --check`
+
+Expected result: a new result-blind v3 authority is committed before candidate
+implementation or new measurement, while production remains `1.00x`.
+
+Actual result: Not run.
+
+#### Status
+
+Not started; next.
+
+### Milestone 2D: Execute the boundary-deferred v3 comparison
+
+#### Work
+
+1. Reintroduce only the smallest candidate-only media and repository-WSOLA
+   adapters needed by the frozen v3 authority.
+2. Implement the synthetic active-rate/pending-rate transition so the current
+   unit finishes unchanged and the next unit adopts the newest pending value.
+3. Start or wake at most one candidate while the current unit continues;
+   measure first activation separately from recurring successor-unit handoff.
+4. Repeat deterministic Chromium and packaged WebView2 signal, pitch,
+   source-frame, lifecycle, CSP, privacy, and cleanup arms outside the managed
+   sandbox.
+5. Repeat the exact-host local-inference contention arm sequentially with one
+   TTS child and one stretcher, measuring first activation, recurring handoff,
+   CPU, additional process RAM, work memory, and `1.00x` release.
+6. Advance only complete machine passers to repository-authored
+   Spanish/English listening at `1.00x`, `0.85x`, and `0.75x`.
+7. Select exactly one candidate or none without changing v3 gates after
+   results. Retain a dependency or CSP delta only if its candidate wins.
+8. Remove every unselected adapter, runner, object URL, generated audio,
+   temporary licence material, and dependency; record one durable decision ADR.
+9. Update Milestones 3, 5, and 6 with the actual selected or fixed-speed path.
+
+#### Validation
+
+- `pnpm.cmd --filter @voxleaf/desktop test`
+- `pnpm.cmd test:browser`
+- `pnpm.cmd test:native-startup`
+- `pnpm.cmd check:portable`
+- `pnpm.cmd check`
+- `git diff --check`
+
+Expected result: one fee-free pitch-preserving backend passes every frozen v3
+gate and reaches listening, or VoxLeaf again retains `1.00x` without weakening
+the authority.
+
+Actual result: Not run.
+
+#### Status
+
+Not started; blocked on Milestone 2C.
+
 ### Milestone 3: Implement bounded settings preferences and English fallback
 
 #### Work
@@ -792,11 +894,24 @@ Not started.
 
 #### Work
 
-1. Preserve literal-`1` playback, source-frame progress, source-duration lead,
-   and the existing synchronization boundary.
-2. Verify Milestones 3-4 do not introduce a speed selector, playback-rate
-   preference, time-stretch dependency, CSP delta, or rate-change lifecycle.
-3. Retain the v1/v2 authorities and ADR-0034/ADR-0037 as historical evidence.
+1. If Milestone 2D selects no backend, preserve literal-`1` playback and prove
+   Milestones 3-4 introduced no speed surface or lifecycle change.
+2. If Milestone 2D selects a backend, integrate only that exact admitted
+   candidate and its reviewed CSP/licence obligations.
+3. Represent selected, pending, and active playback rates separately. Keep the
+   active unit immutable and apply the newest pending value before the next
+   complete queued unit starts.
+4. Initialize or wake one stretcher during the remaining current unit, reuse it
+   across successor units, and bypass/release it after the final slowed unit
+   settles at `1.00x`.
+5. Preserve TTS execution, generation identity, prepared narration, queued
+   source PCM, queue limits, source-frame progress, transition pauses, and
+   invalidation behavior across a speed-only change.
+6. Add the bounded versioned playback-rate preference and compact selector only
+   when a v3 backend is admitted.
+7. Implement effective-listening-duration startup, low-water, underrun, and UI
+   calculations without changing source-frame/byte memory ceilings.
+8. Retain the v1/v2 authorities and ADR-0034/ADR-0037 as historical evidence.
 
 #### Validation
 
@@ -807,18 +922,15 @@ Not started.
 - `pnpm.cmd check:portable`
 - `git diff --check`
 
-Expected result: fixed `1.00x` behavior remains unchanged and no unadmitted
-speed surface or backend enters production.
+Expected result: the selected v3 backend and six-value boundary-deferred
+behavior are integrated without TTS restart or queued-audio loss, or fixed
+`1.00x` remains unchanged when v3 selects none.
 
-Actual result: Not applicable under ADR-0037. The v2 comparison selected no
-backend, so runtime remains `1.00x` and this plan will not add a speed
-selector, speed preference, effective-lead scheduling, or time-stretch
-integration.
+Actual result: Not run.
 
 #### Status
 
-Closed by the Milestone 2B no-selection result. A future attempt requires new
-result-blind authority.
+Not started; conditional on Milestone 2D and after Milestones 3-4.
 
 ### Milestone 6: Validate the portfolio reader and close the plan
 
@@ -828,11 +940,13 @@ result-blind authority.
    Piper, Chatterbox, and gated Qwen profile presentation without running two
    model children simultaneously.
 2. Validate Settings before/after open; first-run English; preserved Spanish;
-   profile/language replacement; quick/prepared restoration; fixed-speed
-   presentation; and development-only visibility.
-3. Run fixed-`1.00x` exact-host listening journeys for pitch, intelligibility,
-   start, progress, highlight, leaf navigation, pause/resume, buffering, stop,
-   recovery, book replacement, and exit.
+   profile/language replacement; quick/prepared restoration; admitted speed
+   presentation or truthful fixed-speed fallback; and development-only
+   visibility.
+3. Run exact-host listening journeys for `1.00x` and every admitted
+   non-default rate, including boundary-deferred activation, latest-selection
+   wins, pitch, intelligibility, start, progress, highlight, leaf navigation,
+   pause/resume, buffering, stop, recovery, book replacement, and exit.
 4. Measure content-free CPU/RAM impact, playable/effective lead, underruns,
    progress drift, cancellation latency, cleanup, and retained source
    frames/bytes/units under the existing source-duration authority.
@@ -853,16 +967,15 @@ result-blind authority.
 - `git diff --check`
 
 Expected result: the portfolio-facing reader, Settings, English fallback, and
-fixed `1.00x` playback pass deterministic, browser, packaged, exact-host,
-privacy, bounded-resource, and required pull-request validation.
+admitted boundary-deferred speed range—or truthful fixed `1.00x` fallback—pass
+deterministic, browser, packaged, exact-host, privacy, bounded-resource, and
+required pull-request validation.
 
-Actual result: Not run. The frozen no-selection result fixes final scope at
-reader-first Settings, English fallback, fixed `1.00x` playback, and no
-time-stretch backend.
+Actual result: Not run.
 
 #### Status
 
-Ready after Milestones 3-4.
+Ready after Milestones 2D and 3-5.
 
 ## Testing and benchmark strategy
 
@@ -1162,6 +1275,22 @@ Do not rewrite accepted historical authority to make a result pass.
   and zero prohibited book/audio/model artifact paths, and no repository test
   process remains. The runs retain only the existing content-free pytest
   cache-write and Vite highlight/chunk-size warnings.
+- **2026-07-30:** Reviewed the implemented playback owner after v2 closeout.
+  It retains complete source-PCM units in one bounded FIFO, exposes one current
+  playback unit, releases that unit only after its source frames are consumed,
+  and starts the successor separately. ADR-0038 therefore reopens a distinct
+  v3 evaluation with boundary-deferred rate activation: the current unit keeps
+  its rate, the newest pending rate applies to the next unit, TTS and queued
+  PCM continue unchanged, first activation is bounded to 1,000 ms p95, and
+  additional process RAM is bounded to 200 MiB. Historical v1/v2 results are
+  unchanged. Milestone 2C is now next.
+- **2026-07-30:** Reconciled the product requirements, roadmap, architecture
+  overview/system diagram, setup guidance, documentation indexes, ADR-0037,
+  and this ExecPlan with ADR-0038. Outside-sandbox `git diff --check` passed;
+  all 627 relative Markdown links under `docs/` resolve; and the changed
+  documentation has zero private-path, private-key, GitHub-token, or API-key
+  pattern findings. No runtime code, dependency, CSP, persisted preference, or
+  playback behavior changed.
 
 ## Discoveries and decisions
 
@@ -1255,6 +1384,24 @@ Do not rewrite accepted historical authority to make a result pass.
   speed is opt-in and disabled at `1.00x`. Those observations do not rewrite
   v2; any renewed comparison must freeze activation-scoped latency/resource
   gates in a new authority before results.
+- The current player and scheduler make boundary-deferred speed changes
+  credible: complete source PCM is queued independently from the one active
+  backend handle, and consuming the final source frame releases one unit before
+  the successor starts. A speed-only change therefore needs no model restart,
+  generation replacement, or queue invalidation.
+- V3 uses separate selected, pending, and active values. The active value is
+  immutable for one generated unit, the newest pending value wins, and the
+  next unit adopts it. This removes mid-unit progress settlement from the
+  candidate design.
+- The accepted 1,000 ms p95 allowance is only for first non-default
+  activation. It is not permission to insert a one-second pause between every
+  generated unit. The admitted backend must be initialized while the current
+  unit plays and reused for successors.
+- The accepted memory limit is 200 MiB of additional process RAM under one
+  active local-inference process. Source PCM remains under the existing FIFO
+  ceiling, and no second pre-stretched audio queue is permitted.
+- At `1.00x`, time stretching is bypassed and must release material
+  steady-state ownership after the previous slowed unit settles.
 
 ## Final validation results
 
@@ -1272,10 +1419,12 @@ validation.
 
 The full plan remains active. ADR-0035 supplies the reduced-range product
 decision, ADR-0036 freezes its v2 authority, and ADR-0037 records the
-no-selection result. Milestones 3-4 have not run and remain independent of the
-backend result. Milestone 5 is not applicable under the current decision. No
-M010.2 Settings, preference migration, English runtime fallback,
-time-stretch backend, effective-lead scheduling, or non-`1.00x` runtime
-behavior is claimed.
+no-selection result. ADR-0038 authorizes a separate boundary-deferred v3 with
+new first-activation and RAM limits but does not admit a backend. Milestone 2C
+must freeze v3 before Milestone 2D implements or measures candidates.
+Milestones 3-4 have not run and remain independent of the backend result;
+Milestone 5 is conditional on the future v3 result. No M010.2 Settings,
+preference migration, English runtime fallback, time-stretch backend,
+effective-lead scheduling, or non-`1.00x` runtime behavior is claimed.
 Current production behavior remains the completed M010.1 interface, Spanish
 fallback, and `1.0x`.

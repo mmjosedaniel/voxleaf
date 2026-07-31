@@ -64,9 +64,11 @@ the sole reader scroll viewport, and introduce an English fallback that
 preserves valid saved Spanish/English choices. ADR-0035 separately authorized
 and ADR-0036 froze a fee-free v2 comparison for six rates ending at `0.75x`.
 ADR-0037 selects no v2 backend after local-inference contention, removes every
-experiment, and retains `1.00x`; Milestone 3 is next. Non-default playback
-speed requires a new decision. Installer distribution and license fulfillment
-remain deferred to M011.
+experiment, and retains `1.00x`. ADR-0038 now supplies the separate decision
+for a boundary-deferred v3 comparison with no TTS/queue invalidation, a
+1,000 ms p95 first-activation ceiling, and 200 MiB additional-process-RAM
+ceiling. Milestone 2C must freeze its executable authority before candidate
+work. Installer distribution and license fulfillment remain deferred to M011.
 The rest of this brief describes the intended complete product unless it
 explicitly identifies implemented behavior.
 
@@ -213,7 +215,7 @@ directions are separated below:
 | OpenAI Whisper                    | Rejected as TTS candidate                                                                               | Automatic speech recognition: audio input and text output                                                                                                                                                                                                                      | Optional fully local benchmark-only transcription may be assessed separately; it cannot generate narration or replace human quality review                            |
 | Process transport                 | Accepted, implemented, and validated                                                                    | Rust-owned child-process standard streams plus narrow optimized binary Tauri responses; no listener or renderer shell capability                                                                                                                                               | Protocol v1 remains unchanged; production distribution remains blocked                                                                                                |
 | Internal audio                    | All admitted profile adapters and local packaged portfolio proof complete                               | Bounded mono 24-kHz float32-le units; Piper converts native 22.05 kHz inside its adapter; Chatterbox and Qwen return bounded complete units; sole-owner FIFO and one transient active-device copy                                                                              | No audio persistence; one model child at a time; Qwen remains optional development-only and constrained-buffered                                                      |
-| Playback mechanism                | Web Audio `1.0x` path implemented; M010.2 v1 selected no backend; fee-free six-rate v2 authority frozen | One dedicated `AudioContext`, one gain node, and one active `AudioBufferSourceNode`; v1 WSOLA failed the CPU gate and packaged WebView2 rejected the media path under unchanged CSP; ADR-0036 freezes the separate media, Signalsmith 1.3.2, and optimized WSOLA v2 comparison | Run Milestone 2B and retain `1.00x` until one v2 candidate passes every frozen resource, lifecycle, privacy, browser, packaged-host, licence, and listening gate      |
+| Playback mechanism                | Web Audio `1.0x` implemented; v1/v2 selected no backend; boundary-deferred v3 approved but not frozen | One dedicated `AudioContext`, one gain node, one active source unit, and a bounded FIFO of complete source PCM; ADR-0038 permits a pending rate to apply to the next unit without restarting TTS or discarding the queue | Freeze v3 in Milestone 2C, then compare media and repository WSOLA under the new activation/RAM gates; retain `1.00x` unless one passes every frozen gate |
 
 ADR-0013 records the standard rejection evidence. ADR-0015 supersedes
 ADR-0014's scheduling and buffering details, rejects CPU and dual-worker

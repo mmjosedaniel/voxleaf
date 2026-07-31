@@ -64,7 +64,11 @@ then neither eligible backend passed every frozen gate. ADR-0034 retains
 M010.1 interface and Spanish fallback. ADR-0035 authorizes and ADR-0036 freezes
 a separate fee-free v2 comparison for six rates ending at `0.75x`; ADR-0037
 records that both packaged passers failed under local-inference contention,
-removes every experiment, and retains `1.00x`.
+removes every experiment, and retains `1.00x`. ADR-0038 authorizes a new
+boundary-deferred v3 with no TTS/queue invalidation, a 1,000 ms p95 first
+activation ceiling, a 200 MiB additional-process-RAM ceiling, and `1.00x`
+bypass. Milestone 2C must freeze its executable authority before new candidate
+work.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -73,7 +77,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`product/vision.md`](product/vision.md): product purpose, audience, and principles.
 - [`product/project-brief.md`](product/project-brief.md): detailed problem, intended experience, product boundaries, and candidate technical direction.
 - [`product/mvp.md`](product/mvp.md): MVP scope, non-goals, constraints, and acceptance criteria.
-- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and six-value playback-speed requirements; runtime remains `1.00x` while the fee-free v2 comparison is frozen and executed.
+- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and six-value boundary-deferred playback-speed requirements; runtime remains `1.00x` while v3 authority and evaluation remain prospective.
 - [`product/post-mvp-tts-candidate-backlog.md`](product/post-mvp-tts-candidate-backlog.md): non-authoritative post-MVP intake order for Pocket TTS, Chatterbox LatAm, MOSS-TTS-Nano, Kokoro, and additional Piper voices.
 - [`product/glossary.md`](product/glossary.md): shared terminology.
 
@@ -142,6 +146,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md`](architecture/decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md): authorizes a separate result-blind v2 comparison for six rates ending at `0.75x`, fee-free permissive candidates, and a narrowly reviewed media CSP without rewriting v1.
 - [`architecture/decisions/ADR-0036-freeze-reduced-range-fee-free-playback-authority-v2.md`](architecture/decisions/ADR-0036-freeze-reduced-range-fee-free-playback-authority-v2.md): accepts the executable v2 authority before candidate implementation or results and preserves `1.00x` until one candidate passes.
 - [`architecture/decisions/ADR-0037-retain-fixed-speed-after-reduced-range-evaluation.md`](architecture/decisions/ADR-0037-retain-fixed-speed-after-reduced-range-evaluation.md): records the v2 no-selection result after inference contention, removes every unselected experiment, and retains `1.00x`.
+- [`architecture/decisions/ADR-0038-reopen-boundary-deferred-playback-evaluation.md`](architecture/decisions/ADR-0038-reopen-boundary-deferred-playback-evaluation.md): authorizes a separate v3 comparison where a pending rate applies at the next complete-unit boundary without restarting TTS or discarding queued PCM, under new first-activation and RAM limits.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development
@@ -175,7 +180,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M008-001-boundary-aware-audio-transitions.md`](plans/completed/M008-001-boundary-aware-audio-transitions.md): completed focused follow-up for bounded semantic pauses between independently generated buffered units, including the packaged synchronization-probe stabilization and passing replacement CI.
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
 - [`plans/completed/M010-001-bilingual-narration-and-candidate-screening.md`](plans/completed/M010-001-bilingual-narration-and-candidate-screening.md): completed bilingual follow-up covering evaluation, exact profile integration, packaged portfolio validation, and passing Ubuntu/Windows closeout.
-- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): active pre-M011 reader-first settings and playback-control follow-up; Milestones 1-2B are complete, both backend comparisons selected none, and Milestone 3 is next.
+- [`plans/active/M010-002-reader-settings-and-playback-controls.md`](plans/active/M010-002-reader-settings-and-playback-controls.md): active pre-M011 reader-first settings and playback-control follow-up; Milestones 1-2B are complete, v1/v2 selected none, ADR-0038 authorizes a boundary-deferred v3, and Milestone 2C is next.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

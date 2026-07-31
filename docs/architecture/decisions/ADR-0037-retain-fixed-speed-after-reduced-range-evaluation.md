@@ -57,7 +57,8 @@ The 128 MiB RAM and 250 ms start limits are historical v2 acceptance rules,
 not claims that 180.973 MiB or 821.6 ms are inherently unusable. A later
 product decision may freeze different activation-scoped limits—especially
 when time stretching is disabled at `1.00x`—but it must create new authority
-before new measurements rather than rewriting this result.
+before new measurements rather than rewriting this result. ADR-0038 makes that
+separate prospective decision without changing this result.
 
 The failed v2 evidence remains historical and reproducible through its
 authority and implementation commits, while the final tree carries no
