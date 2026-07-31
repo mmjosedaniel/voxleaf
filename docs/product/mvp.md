@@ -61,12 +61,13 @@ backend. Later milestones may reorganize the ready reader around one fixed app
 bar, accessible Settings, compact narration, and the sole publication scroll
 viewport; make English the fallback only for missing/invalid/reset language
 state; and, under ADR-0035, evaluate a separate fee-free six-rate v2 ending at
-`0.75x`. Runtime playback remains `1.00x` until that comparison admits a
-backend.
-state; and preserve applicable Piper, Chatterbox, and development-only Qwen
-presentation. Non-default playback speed requires a new decision. Current
-runtime behavior remains the completed M010.1 UI, Spanish fallback, and
-`1.0x`.
+`0.75x`. V2 selected none; ADR-0038 authorizes a new boundary-deferred v3 in
+which the current unit completes unchanged and the pending rate applies to the
+next unit without restarting TTS or discarding queued PCM. Runtime playback
+remains `1.00x` until a frozen v3 comparison admits a backend. Later milestones
+also preserve applicable Piper, Chatterbox, and development-only Qwen
+presentation. Current runtime behavior remains the completed M010.1 UI,
+Spanish fallback, and `1.0x`.
 
 ## Current implemented flow
 
@@ -251,6 +252,11 @@ Remaining:
   `0.95x`, `0.90x`, `0.85x`, `0.80x`, and `0.75x`, preserves pitch, and
   neither regenerates audio nor changes model RTF. It may use only an admitted
   fee-free permissive backend.
+- A speed selected during one audible generated unit becomes active at the next
+  unit. The current unit, TTS process, generation identity, and queued source
+  PCM remain unchanged; first non-default activation is prospectively bounded
+  to 1,000 ms p95 and 200 MiB additional process RAM, and `1.00x` bypasses
+  time stretching.
 - Source frames remain memory and heard-progress authority; effective
   listening duration governs startup, low-water, and underrun promises after
   M010.2 is implemented.

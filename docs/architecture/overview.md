@@ -66,7 +66,7 @@ bounded synchronization/cancellation, zero-audio-persistence, and privacy
 closeout pass. Pull request #159 passed the required Ubuntu and Windows checks
 and merged the M010.1 closeout.
 
-M010.2 Milestones 1-2A are complete. The accepted
+M010.2 Milestones 1-2B are complete. The accepted
 [`reader settings and playback controls`](../product/reader-settings-and-playback-controls.md)
 requirements and
 [`active ExecPlan`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
@@ -88,8 +88,18 @@ changing v1 evidence.
 and the separate
 [v2 authority](reader-settings-playback-authority-v2.md) now freeze exact
 candidate identities, licence/CSP policy, unchanged v1 gates, and strict result
-lineage. Milestone 2B is next; no new dependency, CSP, preference, or playback
-behavior is implemented yet.
+lineage.
+[ADR-0037](decisions/ADR-0037-retain-fixed-speed-after-reduced-range-evaluation.md)
+records that the packaged passers failed under one active local Piper process,
+so no backend was selected, listening did not open, and every experimental
+dependency, adapter, runner, and prospective CSP change was removed. Playback
+remains `1.00x`.
+[ADR-0038](decisions/ADR-0038-reopen-boundary-deferred-playback-evaluation.md)
+authorizes a distinct v3 direction: the active complete unit keeps its rate,
+the newest pending rate applies to the next queued unit without restarting TTS
+or releasing queued PCM, first activation is bounded to 1,000 ms p95, and
+additional process RAM to 200 MiB. Milestone 2C must freeze executable v3
+authority before any new candidate implementation or result.
 
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps

@@ -17,15 +17,20 @@ evaluation through
 That decision does not rewrite the v1 result. Milestone 2A froze the separate
 [v2 authority](../architecture/reader-settings-playback-authority-v2.md) and
 [ADR-0036](../architecture/decisions/ADR-0036-freeze-reduced-range-fee-free-playback-authority-v2.md)
-before candidate implementation or measurement. Milestone 2B is next.
+before candidate implementation or measurement. Milestone 2B then selected no
+backend: the media path exceeded the frozen contention RAM limit and
+incremental WSOLA exceeded frozen contention start latency. Signalsmith failed
+before its first Chromium trial. [ADR-0037](../architecture/decisions/ADR-0037-retain-fixed-speed-after-reduced-range-evaluation.md)
+retains `1.00x` and removes every experimental dependency, adapter, runner, and
+prospective CSP change.
 
 The behavior in this document is not implemented until
 [`M010-002-reader-settings-and-playback-controls.md`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
 records passing implementation and validation. Current runtime behavior
 remains the completed M010.1 interface, Spanish fallback for missing or invalid
 language preference, and `1.0x` playback. Reader/Settings work can proceed
-independently, but non-default speed remains unavailable until the v2
-comparison admits a backend.
+independently. Non-default speed and a speed selector are outside the remaining
+M010.2 implementation; a future attempt requires new result-blind authority.
 
 This document replaces the ignored pre-M011 design discussion as the durable
 product scope. It does not change the completed M005 narration-preparation
@@ -168,17 +173,22 @@ Device compatibility details. Internal profile identifiers, paths, process
 arguments, raw host facts, model errors, and book-derived text stay out of the
 normal UI.
 
-## Playback-speed authority target
+## Playback-speed target and evaluation history
+
+The fixed choices and v2 evidence below remain historical. ADR-0038 separately
+authorizes a result-blind v3 comparison with boundary-deferred activation. None
+of these requirements are current runtime behavior; production remains
+`1.00x` until v3 admits one backend.
 
 ### Fixed choices
 
-The future compact narration bar offers exactly:
+The frozen comparison evaluated exactly:
 
 `1.00x`, `0.95x`, `0.90x`, `0.85x`, `0.80x`, and `0.75x`.
 
-The default is `1.00x`. The last valid selection is a bounded, versioned
-global narration preference. Unknown, malformed, non-finite, or unlisted
-values fail closed to `1.00x`.
+Production retains only `1.00x`; no speed preference is persisted and no speed
+selector is rendered. The closed value set remains historical authority for
+the v2 evidence.
 
 ### Playback boundary
 
@@ -192,14 +202,14 @@ unchanged source PCM. Changing speed:
 - preserves queued PCM and existing source-frame memory accounting; and
 - applies consistently across admitted engines.
 
-The implementation must preserve pitch across the full admitted range.
+Any future implementation must preserve pitch across its newly admitted range.
 Directly enabling `AudioBufferSourceNode.playbackRate` is insufficient because
 it changes rendered sample rate and pitch. Milestone 10.2 must freeze and
 validate a bounded in-memory time-stretch mechanism before product admission.
 Any production dependency requires purpose, alternative, license,
 distribution, memory, cancellation, and platform review.
 
-The v2 comparison is intentionally limited to:
+The completed v2 comparison was intentionally limited to:
 
 - `HTMLMediaElement.preservesPitch` with one bounded in-memory WAV and the
   narrowly reviewed `media-src 'self' blob:` policy;
@@ -216,18 +226,51 @@ and model-specific speaking-rate controls are outside this comparison because
 they add licence/distribution complexity or change the wrong pipeline
 boundary.
 
-The media candidate may add only `media-src 'self' blob:` to the candidate
-test/runtime policy. It must not change `connect-src`, admit `data:`, remote
-media, wildcards, or add native capabilities. The change may remain only if
-that candidate passes the frozen browser, packaged-host, privacy, lifecycle,
-and resource gates and is selected.
+The media candidate could add only `media-src 'self' blob:` to the candidate
+test policy. It did not pass every gate, so the production CSP remains
+unchanged.
+
+### Approved v3 boundary-deferred behavior
+
+VoxLeaf already retains complete source-PCM units in one bounded FIFO and
+plays one unit at a time. A future v3 speed selection therefore takes effect
+at the next generated-unit boundary rather than modifying the unit already
+being heard:
+
+- the current unit keeps the rate with which it started;
+- the newest valid pending selection wins if the user changes it more than
+  once before the boundary;
+- the selected and active audible values remain distinguishable until the
+  next unit begins;
+- TTS generation continues and existing queued source PCM remains valid;
+- speed alone does not cancel or restart the model, replace generation
+  identity, regenerate audio, release the queue, or alter narration text; and
+- the next queued unit adopts the pending value before playback starts.
+
+Entering a non-default value may initialize one stretcher while the current
+unit continues. V3 permits at most 1,000 ms p95 for that first activation and
+at most 200 MiB additional process RAM under local-inference contention. The
+one-second allowance is not a recurring inter-unit pause: the same bounded
+backend must be reused or prepared so successor units do not repeatedly pay
+the full activation cost.
+
+At `1.00x`, the time-stretch path is bypassed and must release its stretcher,
+object URL, transformed copy, and work queue after the preceding slowed unit
+settles. VoxLeaf retains only the existing source-PCM FIFO; it must not retain
+a second pre-stretched audio queue.
+
+These values are prospective v3 requirements, not a retroactive reinterpretation
+of the 128 MiB and 250 ms v2 gates. Milestone 2C must freeze the exact
+candidates, recurring-unit handoff gate, listening rules, and executable
+authority before Milestone 2D implements or measures candidates.
 
 ### Progress and timing
 
-Audible progress remains authoritative in source sample frames. If the rate
-changes during an active unit, the player first settles progress at the old
-rate, then applies the new rate. Highlighting and heard-position persistence
-must never advance beyond source frames actually consumed.
+Audible progress remains authoritative in source sample frames. Under the v3
+direction, the active unit never changes rate: it completes under its immutable
+active value, and the successor starts at the newest pending value.
+Highlighting and heard-position persistence must never advance beyond source
+frames actually consumed.
 
 Two duration meanings remain separate:
 
@@ -326,6 +369,10 @@ exact-host evidence prove:
   runtime-gated;
 - exactly the six approved values are accepted, and every admitted speed
   preserves pitch and correct source-frame progress;
+- a speed-only change is applied at the next complete-unit boundary without
+  cancelling TTS, replacing identity, or discarding queued PCM;
+- first non-default activation remains within 1,000 ms p95 and 200 MiB
+  additional process RAM, while `1.00x` bypasses and releases time stretching;
 - any selected backend is fee-free, permissively distributable, and passes the
   frozen CPU, RAM, work-memory, browser, packaged-host, lifecycle, privacy, and
   listening gates;

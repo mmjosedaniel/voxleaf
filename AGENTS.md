@@ -65,6 +65,16 @@ Behavior changes require relevant tests. As implementation is introduced, use th
 
 Never invent commands. Use only commands defined by repository configuration. Before declaring work complete, run every relevant available check and report the exact commands and outcomes.
 
+Run every test and validation command from a normal local PowerShell session
+outside the managed automation sandbox. This includes unit, integration,
+format, lint, type, schema, build, Python, Rust, Playwright/Chromium, packaged
+WebView2, GPU/model, firewall, performance, and exact-host commands. A sandbox
+run may be exploratory, but it is never final acceptance evidence. Repeat the
+unchanged command outside the sandbox before reporting pass, failure, or
+candidate rejection. This rule exists because the sandbox can deny required
+files, caches, processes, network/package access, drivers, hardware, output,
+or teardown even when the same command works locally.
+
 ## Definition of done
 
 A task is complete only when:

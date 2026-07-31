@@ -47,6 +47,8 @@ ADR-0002-short-description.md
 - [`ADR-0034-retain-fixed-speed-after-playback-backend-evaluation.md`](ADR-0034-retain-fixed-speed-after-playback-backend-evaluation.md): retain `1.00x` after WSOLA exceeded the frozen CPU gate and packaged WebView2 rejected the in-memory media candidate under the unchanged CSP.
 - [`ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md`](ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md): reopen a separate result-blind comparison for six rates ending at `0.75x`, a narrowly reviewed media CSP, and fee-free permissive candidates without rewriting the failed v1 evidence.
 - [`ADR-0036-freeze-reduced-range-fee-free-playback-authority-v2.md`](ADR-0036-freeze-reduced-range-fee-free-playback-authority-v2.md): freeze the exact six-rate, three-candidate, fee-free licence, media-only CSP, lifecycle, resource, and result-lineage authority before v2 implementation or results.
+- [`ADR-0037-retain-fixed-speed-after-reduced-range-evaluation.md`](ADR-0037-retain-fixed-speed-after-reduced-range-evaluation.md): select no v2 backend after the media candidate exceeded contention RAM and repository WSOLA exceeded contention start latency, remove every experiment, and retain `1.00x`.
+- [`ADR-0038-reopen-boundary-deferred-playback-evaluation.md`](ADR-0038-reopen-boundary-deferred-playback-evaluation.md): authorize a separate v3 comparison where a pending speed applies at the next complete-unit boundary without restarting TTS or discarding queued PCM, under 1,000 ms first-activation and 200 MiB additional-RAM limits.
 
 ## Template
 

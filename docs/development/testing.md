@@ -7,6 +7,11 @@
 - Use synthetic or public-domain text.
 - Never require proprietary EPUBs or committed model weights.
 - Separate correctness tests from hardware-dependent performance benchmarks.
+- Run every acceptance command from normal local PowerShell outside the
+  managed automation sandbox. Sandbox results are exploratory only and must be
+  repeated unchanged outside before reporting pass or failure. This applies to
+  unit, integration, format, lint, type, schema, build, Python, Rust, browser,
+  WebView2, model, firewall, performance, and exact-host validation.
 
 ## Deterministic foundation checks
 
@@ -774,7 +779,7 @@ and merged the M010.1 closeout.
 
 ## M010.2 reader/settings/playback validation
 
-M010.2 Milestones 1-2A are complete but production behavior is not implemented.
+M010.2 Milestones 1-2B are complete but production behavior is not implemented.
 `reader-settings-playback-authority.test.ts` exhaustively freezes the exact
 shell and responsive values, Settings ordering and lifecycle neutrality,
 language/profile presentation, preference envelopes, every rate and invalid
@@ -797,9 +802,31 @@ other values; pins the media-element, Signalsmith 1.3.2, and new optimized
 repository WSOLA identities; checks the fee-free licence manifest and
 pre-install audit stop; proves the current CSP is unchanged and the only
 prospective delta is `media-src 'self' blob:`; and retains the v1 arithmetic,
-resource, lifecycle, privacy, host, and result-lineage gates. Milestone 2B next
-runs deterministic, Chromium, packaged WebView2, concurrent-resource,
-lifecycle, privacy, and gated listening checks.
+resource, lifecycle, privacy, host, and result-lineage gates.
+
+Milestone 2B passed the media and incremental-WSOLA candidates in Chromium and
+packaged WebView2, while Signalsmith failed before its first Chromium trial.
+Under exactly one active local Piper process, media exceeded the frozen
+additional-RAM limit at 180.973 MiB and WSOLA exceeded frozen start latency at
+821.6 ms p95. No candidate reached listening. ADR-0037 selects none; all
+experimental adapters, runners, dependency/CSP changes, and temporary speech
+were removed. The observed managed-sandbox WebDriver session-creation failure
+is infrastructure-only because the same packaged command and candidates
+completed from normal local PowerShell.
+
+All final acceptance evidence must now come from normal local PowerShell,
+outside the managed automation sandbox. Sandbox-only output is exploratory and
+must be repeated unchanged outside before it can pass or fail a task or reject
+a candidate.
+
+The historical Signalsmith-only Chromium runner was repeated outside the
+sandbox from implementation commit `f2e5fed`. It again failed before its first
+trial after the 15-second initialization boundary, produced no pitch/duration/
+frame/start metrics, and measured 85.160 MiB additional process RAM. A
+temporary diagnostic run surfaced only the runner's content-safe
+`PitchPreservingBackendProbeErrorV2`; the exact adapter initialization stage
+remains unresolved. This is not the WebView2 sandbox failure and should be
+diagnosed before any future Signalsmith evaluation.
 
 Later milestones must extend existing desktop, browser, and native-startup
 coverage rather than create an unrelated harness. Their model-free tests will
@@ -811,13 +838,11 @@ cover:
 - lifecycle neutrality when Settings merely opens or closes;
 - English fallback and valid Spanish/English preference preservation;
 - language-, support-, development-, hardware-, and runtime-gated profiles;
-- bounded startup and playback-speed preferences;
-- all six exact playback rates and invalid inputs;
-- pitch-preserving backend source-frame progress and mid-unit rate changes;
-- effective-listening lead at startup, low water, refill, and underrun;
+- bounded startup preferences and fixed-`1.00x` presentation;
+- unchanged fixed-speed source-frame progress and lead behavior;
 - unchanged source-frame/byte/unit ceilings and transition-pause timers; and
 - pause, resume, seek, profile/language replacement, recovery, book
-  replacement, exit, and exact release ownership at non-`1.0x` rates.
+  replacement, exit, and exact release ownership at `1.0x`.
 
 Exact-host listening uses repository-authored synthetic text and content-free
 measurements only. Default CI remains model-free. No private EPUB, waveform,

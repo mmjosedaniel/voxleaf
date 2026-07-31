@@ -328,7 +328,28 @@ Run packaged WebView2 commands from a normal local PowerShell session. A nested
 automation sandbox can produce `webdriver-session-not-created` or
 `chrome not reachable` before the application mounts even when the release
 binary and local driver can create a session normally. Confirm the same command
-outside that sandbox before treating the result as a product failure.
+outside that sandbox before treating the result as a product failure. Record
+the sandbox attempt as inconclusive infrastructure evidence: it cannot approve
+or reject a WebView2 candidate when no session was created. On the 2026-07-30
+M010.2 v2 comparison host, the sandbox attempt failed at session creation while
+the same local PowerShell command created the packaged session and reached
+candidate measurement.
+
+The same managed sandbox can also retain the Playwright/Vite coordinator after
+all Chromium cases finish. On the same host, `pnpm.cmd test:browser` displayed
+all six passing cases but did not complete teardown before the sandbox command
+timeout; the identical command from normal local PowerShell exited cleanly
+with six passes in 12.5 seconds. When every case has reported but the command
+does not exit, inspect for repository-owned leftovers and repeat the unchanged
+command outside the sandbox before classifying it as a test failure.
+
+Project testing policy therefore requires normal local PowerShell outside the
+managed sandbox for every final acceptance command, including unit,
+integration, format, lint, type, schema, build, Python, Rust,
+Playwright/Chromium, packaged WebView2, GPU/model, firewall, performance, and
+exact-host validation. Sandbox execution is exploratory only. Repeat the
+unchanged command outside before reporting pass, failure, or candidate
+rejection.
 
 ### Memory, temperature, or cleanup looks abnormal
 
