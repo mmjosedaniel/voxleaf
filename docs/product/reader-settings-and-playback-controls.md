@@ -257,6 +257,12 @@ validate a bounded in-memory time-stretch mechanism before product admission.
 Any production dependency requires purpose, alternative, license,
 distribution, memory, cancellation, and platform review.
 
+The retained repository WSOLA path must render on the same 24,000 Hz clock as
+the protocol PCM and the evaluated WSOLA window/hop configuration. It must not
+silently inherit a device-default 48,000 Hz `AudioContext`: doing so consumes
+24,000 Hz input twice as quickly and can make a selected slowdown sound faster.
+This clock requirement adds no resampled PCM copy or second queue.
+
 The completed v2 comparison was intentionally limited to:
 
 - `HTMLMediaElement.preservesPitch` with one bounded in-memory WAV and the

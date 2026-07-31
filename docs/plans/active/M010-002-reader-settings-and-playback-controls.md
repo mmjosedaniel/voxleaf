@@ -1116,6 +1116,22 @@ Spanish/English listening at `1.00x`, `0.85x`, and `0.75x`; explicit human
 portfolio confirmation at the remaining admitted rates and required PR checks
 are still pending, so the plan is not archived yet.
 
+The maintainer's subsequent product listening found that non-default values
+sped playback up instead of slowing it. The portfolio matrix had proved
+selection, boundary activation, and handoff timing but did not measure the
+product's audible output duration. Root cause was a product-only clock
+mismatch: 24,000 Hz protocol PCM and WSOLA window/hop constants were emitted
+through the device-default 48,000 Hz `AudioContext`. The player now requests
+the authoritative 24,000 Hz context explicitly. A regression fails when the
+default factory omits that option; the correction adds no PCM copy, second
+queue, dependency, CSP change, or model work. Focused playback tests, desktop
+type checking, 51 files/518 desktop tests plus 12 native helpers, all six
+Chromium journeys, packaged WebView2 startup, and the complete portable gate
+pass outside the sandbox. The complete Windows gate also passes 209 shared,
+580 EPUB, 518 desktop, 347 Python, and 41 Rust tests plus 12 native helpers and
+all release builds. Renewed human rate-direction confirmation remains required
+before closeout.
+
 #### Status
 
 Local automated validation complete; human all-rate confirmation and required
@@ -1569,6 +1585,18 @@ Do not rewrite accepted historical authority to make a result pass.
   580 EPUB, 517 desktop, 347 Python, 41 Rust, and 12 native-helper tests plus
   all builds. Human confirmation of the intermediate portfolio rates and the
   required pull-request checks remain open.
+- **2026-07-31:** Maintainer listening exposed that the integrated non-default
+  speeds ran faster, despite correct selected/pending/active state. A new
+  regression reproduced the omitted `AudioContext` sample-rate option. The
+  product had sent fixed 24,000 Hz PCM through the host-default 48,000 Hz
+  render clock, so the worklet output was consumed twice as quickly. The
+  default player context now explicitly requests the authoritative 24,000 Hz
+  rate; no resampled copy or additional queue is introduced. The regression,
+  desktop typecheck, 51 files/518 desktop tests plus 12 native helpers, six
+  Chromium journeys, packaged WebView2 startup, portable validation, and the
+  complete Windows gate pass in normal local PowerShell. The earlier matrix
+  remains valid for state and lifecycle evidence, but human audible-rate
+  direction must be repeated.
 
 ## Discoveries and decisions
 
@@ -1725,6 +1753,10 @@ Do not rewrite accepted historical authority to make a result pass.
   all-rate arms keep first activation below 1,000 ms and recurring backend
   overhead below 250 ms while preserving the existing semantic pause as a
   separate intentional wall-clock wait.
+- State and handoff assertions alone cannot prove audible rate direction. The
+  product renderer must share the protocol's 24,000 Hz clock with the
+  evaluated WSOLA implementation; a device-default 48,000 Hz context can turn
+  mathematically correct slowdown output into audible speedup.
 
 ## Final validation results
 
@@ -1771,6 +1803,10 @@ stale playback. Browser, native-startup, portable, and complete Windows checks
 pass outside the sandbox. ADR-0040 supplies prior bilingual human evidence at
 `1.00x`, `0.85x`, and `0.75x`; the remaining intermediate-rate portfolio
 listening confirmation and required pull-request checks are not yet complete.
+The post-matrix product clock correction also requires renewed audible-rate
+direction confirmation because the earlier matrix did not measure rendered
+duration. Its regression, desktop, Chromium, packaged startup, portable, and
+complete Windows checks pass outside the sandbox.
 
 The full plan remains active. ADR-0035 supplies the reduced-range product
 decision, ADR-0036 freezes its v2 authority, and ADR-0037 records the

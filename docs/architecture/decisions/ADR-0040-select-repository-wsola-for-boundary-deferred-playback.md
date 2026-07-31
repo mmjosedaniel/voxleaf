@@ -74,6 +74,16 @@ development-only Qwen retain their unchanged synthesis paths. Human
 confirmation of the intermediate portfolio rates and required pull-request
 checks still gate plan closeout.
 
+A post-integration listening report on 2026-07-31 exposed a product-wiring
+defect that the state/handoff matrix did not measure: product PCM is fixed at
+24,000 Hz, but the default Web Audio context on the exact host rendered at
+48,000 Hz. The retained algorithm's rate arithmetic was correct, while the
+host clock consumed its output twice as quickly. The product now explicitly
+requests a 24,000 Hz `AudioContext`, matching the evaluated WSOLA clock without
+adding a transformed PCM copy, queue, dependency, CSP change, or model work.
+This correction preserves the candidate selection and requires renewed human
+rate-direction confirmation before M010.2 closes.
+
 ## Alternatives considered
 
 - **Select the media-element candidate.** It passed every frozen gate, but

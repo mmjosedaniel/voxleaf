@@ -1003,6 +1003,34 @@ describe("adaptive PCM playback", () => {
 });
 
 describe("Web Audio PCM backend", () => {
+  it("requests a rendering clock that matches the fixed narration PCM rate", async () => {
+    const context = new FakeAudioContext();
+    const audioContextConstructor = vi.fn(function () {
+      return context;
+    });
+    const node = new FakeWsolaNode();
+    vi.stubGlobal("AudioContext", audioContextConstructor);
+
+    try {
+      const backend = new WebAudioPcmPlaybackBackend(undefined, async () => ({
+        node: node as unknown as AudioWorkletNode,
+        close: () => {
+          node.disconnect();
+          node.port.close();
+        },
+      }));
+
+      await backend.preparePlaybackRate(75);
+
+      expect(audioContextConstructor).toHaveBeenCalledWith({
+        sampleRate: 24_000,
+      });
+      backend.close();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("decodes exact little-endian float32 PCM into one bounded device buffer", () => {
     const context = new FakeAudioContext();
     const backend = new WebAudioPcmPlaybackBackend(
