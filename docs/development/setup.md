@@ -41,9 +41,11 @@ disabled. M008.1 and M010 passed replacement Ubuntu/Windows checks and are
 archived. M010.1 implements explicit Spanish/English narration and bounded
 candidate screening; its local six-arm packaged portfolio validation and
 required Ubuntu/Windows checks pass, pull request #159 merged, and the plan is
-archived. M010.2 reader/settings/playback work is approved but not implemented;
-Milestone 2 selected no v1 pitch-preserving backend, so playback
-remains `1.00x`. ADR-0035 authorized and ADR-0036 froze the six-value
+archived. M010.2 Milestone 3 now implements bounded English-default language
+and Quick/Prepared start preferences with valid Spanish/English preservation,
+pre-action hydration, and identity-first reset. The reader-first Settings
+shell remains pending. Milestone 2 selected no v1 pitch-preserving backend, so
+playback remains `1.00x`. ADR-0035 authorized and ADR-0036 froze the six-value
 fee-free v2 authority. ADR-0037 records that no candidate survived the
 inference-contention gate, so the dependency and prospective CSP delta were
 removed. ADR-0038 authorizes a separate boundary-deferred v3; ADR-0039 and the
@@ -52,7 +54,7 @@ state transition, 250 ms recurring handoff, resource, cleanup, and lineage
 gates. Milestone 2D has now selected the repository-owned incremental WSOLA v3
 backend after the complete frozen machine and bilingual-listening matrix. It
 adds no dependency or CSP expansion. Product playback still remains `1.00x`;
-Milestone 5 owns the selected backend integration after Milestones 3-4.
+Milestone 5 owns the selected backend integration after Milestone 4.
 Production distribution, Piper license fulfillment, and installers remain
 M011 work.
 

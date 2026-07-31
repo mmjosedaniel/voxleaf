@@ -51,10 +51,13 @@ final exact-host metrics, privacy, bounded synchronization, and cleanup
 validation pass locally. Pull request #159 subsequently passed the required
 Ubuntu and Windows checks and merged the closeout.
 
-M010.2 is active before M011. Milestones 1-2D are complete: the architecture
+M010.2 is active before M011. Milestones 1-3 are complete: the architecture
 authority and result-blind comparison were frozen before results, then neither
 eligible backend passed every machine and packaged-host gate. ADR-0034 retains
-`1.00x`; runtime behavior remains unchanged. ADR-0035 authorizes and ADR-0036
+`1.00x`. Milestone 3 implements bounded language/start preferences, preserves
+valid saved Spanish/English, defaults safe fallback/reset state to English,
+hydrates before use, and resets through identity-first cleanup. ADR-0035
+authorizes and ADR-0036
 froze a separate fee-free v2 comparison for six exact rates ending at
 `0.75x` without rewriting v1. ADR-0037 records that no v2 candidate survived
 local-inference contention, removes every experiment, and retains `1.00x`.
@@ -66,7 +69,7 @@ recurring handoff, lifecycle, resource, listening, licence/CSP, and strict
 lineage rules. ADR-0040 selects repository WSOLA after both candidates passed
 the complete v3 matrix; no dependency or CSP expansion remains. Production
 continues at `1.00x` until Milestone 5 integrates the selected backend after
-Milestones 3-4. M011 remains deferred until this bounded portfolio follow-up
+Milestone 4. M011 remains deferred until this bounded portfolio follow-up
 closes.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
@@ -955,7 +958,7 @@ versioned contracts and a new decision record.
 
 ## Milestone 10.2: Add reader settings and pitch-preserving playback controls
 
-**Status:** In progress. Milestones 1-2D are complete; ADR-0034 selected no
+**Status:** In progress. Milestones 1-3 are complete; ADR-0034 selected no
 pitch-preserving backend for v1. ADR-0035 authorizes and ADR-0036 freezes the
 reduced-range, fee-free v2 comparison; ADR-0037 also selects no v2 backend
 after inference contention. ADR-0038 authorizes a separate boundary-deferred
@@ -980,10 +983,11 @@ Milestone 2A separately freezes
 and
 [`ADR-0036`](../architecture/decisions/ADR-0036-freeze-reduced-range-fee-free-playback-authority-v2.md)
 before the Milestone 2B comparison.
-The current runtime remains Spanish-fallback and `1.00x`; no Settings or
-production time-stretch integration is claimed. Milestones 3-4 do not depend
-on the backend result. Milestone 5 must integrate only the selected v3 WSOLA
-backend.
+The current runtime preserves valid saved Spanish/English, defaults safe
+fallback/reset state to English, and persists the closed Quick/Prepared start
+choice under bilingual authority v2. No Settings shell or production
+time-stretch integration is claimed. Milestone 4 does not depend on the
+backend result. Milestone 5 must integrate only the selected v3 WSOLA backend.
 
 ### Goal
 
@@ -1216,11 +1220,12 @@ supersede completed authority or turn the failed `v3` profile into a standard
 production selection.
 
 Milestones 1 through 10.1, M008.1, and M009.1 are complete, with their evidence
-retained under [`completed/`](completed/). M010.2 Milestones 1-2D are complete
+retained under [`completed/`](completed/). M010.2 Milestones 1-3 are complete
 and M010.2 remains active before M011. ADR-0037 closes v2 with no backend;
 ADR-0039 freezes the separate boundary-deferred v3, and ADR-0040 selects
-repository WSOLA for Milestone 5 integration. No M010.2 production runtime
-behavior is implemented yet.
+repository WSOLA for Milestone 5 integration. The bounded preference runtime
+is implemented; the reader-first Settings shell and non-default playback
+runtime remain pending.
 
 ## MVP completion boundary
 

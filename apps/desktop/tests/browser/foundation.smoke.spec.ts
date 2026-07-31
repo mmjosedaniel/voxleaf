@@ -5,6 +5,7 @@ const TEST_STORAGE_KEY = "voxleaf.browser-smoke";
 const READER_POSITIONS_STORAGE_KEY = "voxleaf.reader.positions";
 const READER_PREFERENCES_STORAGE_KEY = "voxleaf.reader.preferences";
 const NARRATION_LANGUAGE_STORAGE_KEY = "voxleaf.narration.language-preference";
+const NARRATION_START_STORAGE_KEY = "voxleaf.narration.start-preference";
 
 async function buildNavigationFixture(): Promise<Uint8Array> {
   const fixtureModuleUrl = new URL(
@@ -44,6 +45,7 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
       READER_POSITIONS_STORAGE_KEY,
       READER_PREFERENCES_STORAGE_KEY,
       NARRATION_LANGUAGE_STORAGE_KEY,
+      NARRATION_START_STORAGE_KEY,
     ],
   );
   await page.addInitScript(() => {
@@ -101,12 +103,12 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
       compatibility.getByRole("group", { name: "Narration language" }),
     ).toBeVisible();
     await expect(
-      compatibility.getByRole("radio", { name: "Spanish" }),
+      compatibility.getByRole("radio", { name: "English" }),
     ).toBeChecked();
-    await compatibility.getByRole("radio", { name: "English" }).click();
+    await compatibility.getByRole("radio", { name: "Spanish" }).click();
     await expect(
       compatibility.getByText(
-        "No evaluated local narration profile is available for English.",
+        "No evaluated local narration profile is available for Spanish.",
       ),
     ).toHaveAttribute("aria-live", "polite");
     await expect
@@ -116,8 +118,33 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
           NARRATION_LANGUAGE_STORAGE_KEY,
         ),
       )
-      .toEqual({ schemaVersion: 1, language: "en" });
-    await compatibility.getByRole("radio", { name: "Spanish" }).click();
+      .toEqual({ schemaVersion: 2, language: "es" });
+    await compatibility
+      .getByRole("button", { name: "Reset narration settings" })
+      .click();
+    await expect(
+      compatibility.getByRole("radio", { name: "English" }),
+    ).toBeChecked();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (key) => JSON.parse(localStorage.getItem(key) ?? "null"),
+          NARRATION_LANGUAGE_STORAGE_KEY,
+        ),
+      )
+      .toEqual({ schemaVersion: 2, language: "en" });
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (key) => JSON.parse(localStorage.getItem(key) ?? "null"),
+          NARRATION_START_STORAGE_KEY,
+        ),
+      )
+      .toEqual({
+        schemaVersion: 1,
+        mode: "quick",
+        preparedTargetMs: 60_000,
+      });
 
     await fileInput.focus();
     await expect(fileInput).toBeFocused();
@@ -561,6 +588,7 @@ test("controls the browser boundary and exposes the local EPUB open shell", asyn
           READER_POSITIONS_STORAGE_KEY,
           READER_PREFERENCES_STORAGE_KEY,
           NARRATION_LANGUAGE_STORAGE_KEY,
+          NARRATION_START_STORAGE_KEY,
         ],
       );
     }

@@ -55,7 +55,7 @@ development-only Qwen arms deplete once and refill safely on this host.
 Pull request #159 passed the required Ubuntu and Windows checks and merged the
 M010.1 closeout.
 
-M010.2 is active before M011. Milestones 1-2D froze the exact authorities and
+M010.2 is active before M011. Milestones 1-3 froze the exact authorities and
 closed backend comparison before results, then selected no pitch-preserving
 backend. Later milestones may reorganize the ready reader around one fixed app
 bar, accessible Settings, compact narration, and the sole publication scroll
@@ -67,9 +67,13 @@ next unit without restarting TTS or discarding queued PCM. ADR-0039 and the v3
 architecture/executable authority now freeze that comparison before candidate
 work. ADR-0040 selects repository WSOLA after every v3 machine and listening
 gate passes. Runtime playback remains `1.00x` until Milestone 5 integrates it.
-Later milestones also preserve applicable Piper, Chatterbox, and
-development-only Qwen presentation. Current runtime behavior remains the
-completed M010.1 UI, Spanish fallback, and `1.0x`.
+Milestone 3 implements the bounded preference subset: valid saved Spanish or
+English survives upgrade; missing, invalid, unavailable, over-limit, future,
+or explicitly reset language state uses English; Quick/Prepared startup and
+its closed target are separately persisted; and reset follows identity-first
+cleanup. Later milestones preserve applicable Piper, Chatterbox, and
+development-only Qwen presentation. The current shell remains the completed
+M010.1 UI and playback remains `1.0x`.
 
 ## Current implemented flow
 
@@ -134,10 +138,11 @@ authority.
 
 ## Remaining target user flow
 
-1. M010.2 Milestones 1-2 froze the reader-first Settings shell, English
-   fallback, bounded narration preferences, and playback authority, then
-   selected no backend from the closed v1 pitch-preserving comparison. The
-   reader/Settings work remains available, and ADR-0035 authorizes the
+1. M010.2 Milestones 1-3 froze the reader-first Settings shell, English
+   fallback, bounded narration preferences, and playback authority; selected
+   the v3 WSOLA backend after the later closed comparisons; and implemented
+   the English-default language/start preference subset. The reader/Settings
+   shell remains Milestone 4, and ADR-0035 authorizes the
    separate six-rate, fee-free v2 whose authority must be frozen next in
    [`reader-settings-and-playback-controls.md`](reader-settings-and-playback-controls.md).
 2. M011 then packages and validates an end-user distribution, including model

@@ -2344,7 +2344,26 @@ async function exerciseNarrationLanguagePreference(driver, finalLanguage) {
      return owner?.getAttribute("data-compatibility-status") !== "checking" &&
        document.querySelectorAll('input[name="narration-language"]').length === 2;`,
   );
-  await selectNarrationLanguage(driver, "en");
+  const initial = await driver.execute(
+    `const owner = document.querySelector(".hardware-compatibility");
+     const english = document.querySelector(
+       'input[name="narration-language"][value="en"]',
+     );
+     return {
+       language: owner?.getAttribute("data-narration-language") ?? null,
+       englishChecked:
+         english instanceof HTMLInputElement ? english.checked : false,
+       persisted:
+         localStorage.getItem("voxleaf.narration.language-preference") !== null,
+     };`,
+  );
+  assert(
+    initial?.language === "en" &&
+      initial?.englishChecked === true &&
+      initial?.persisted === false,
+    "Native narration language proof failed.",
+  );
+  await selectNarrationLanguage(driver, "es");
   const persisted = await driver.execute(
     `const serialized = localStorage.getItem(
        "voxleaf.narration.language-preference",
@@ -2361,16 +2380,16 @@ async function exerciseNarrationLanguagePreference(driver, finalLanguage) {
      };`,
   );
   assert(
-    persisted?.schemaVersion === 1 &&
-      persisted?.language === "en" &&
-      persisted?.serializedLength <= 96 &&
+    persisted?.schemaVersion === 2 &&
+      persisted?.language === "es" &&
+      persisted?.serializedLength <= 256 &&
       JSON.stringify(persisted?.keys) ===
         JSON.stringify(["language", "schemaVersion"]),
     "Native narration language proof failed.",
   );
-  await selectNarrationLanguage(driver, "es");
-  if (finalLanguage === "en") {
-    await selectNarrationLanguage(driver, "en");
+  await selectNarrationLanguage(driver, "en");
+  if (finalLanguage === "es") {
+    await selectNarrationLanguage(driver, "es");
   }
   const finalPersistedLanguage = await driver.execute(
     `const value = JSON.parse(
