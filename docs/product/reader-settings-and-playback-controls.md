@@ -14,8 +14,10 @@ therefore retains `1.00x`.
 The maintainer subsequently approved a separate reduced-range, fee-free v2
 evaluation through
 [ADR-0035](../architecture/decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md).
-That decision does not rewrite the v1 result. Milestone 2A is next and must
-freeze the new authority before any v2 candidate is implemented or measured.
+That decision does not rewrite the v1 result. Milestone 2A froze the separate
+[v2 authority](../architecture/reader-settings-playback-authority-v2.md) and
+[ADR-0036](../architecture/decisions/ADR-0036-freeze-reduced-range-fee-free-playback-authority-v2.md)
+before candidate implementation or measurement. Milestone 2B is next.
 
 The behavior in this document is not implemented until
 [`M010-002-reader-settings-and-playback-controls.md`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
@@ -150,10 +152,10 @@ a new version or amendment before changing the current Spanish fallback.
 Only profiles declared for the selected language may be presented as
 selectable:
 
-| Language | Profiles when their existing gates pass |
-| --- | --- |
-| English | Piper/joe, Chatterbox bilingual, Qwen3-TTS/Aiden |
-| Spanish | Piper/davefx, Chatterbox bilingual, Qwen3-TTS/Serena |
+| Language | Profiles when their existing gates pass              |
+| -------- | ---------------------------------------------------- |
+| English  | Piper/joe, Chatterbox bilingual, Qwen3-TTS/Aiden     |
+| Spanish  | Piper/davefx, Chatterbox bilingual, Qwen3-TTS/Serena |
 
 Piper and Chatterbox retain their completed M010.1 support states. Qwen
 remains development-only. A compatible Qwen profile may appear with an

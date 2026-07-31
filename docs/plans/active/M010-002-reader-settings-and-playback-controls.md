@@ -111,7 +111,12 @@ The maintainer has now made the required follow-up decision. Accepted
 reduces the future product range to six exact values ending at `0.75x`,
 prohibits any candidate that requires a paid licence or non-permissive
 distribution path, and authorizes a new result-blind v2 comparison without
-rewriting v1. Milestone 2A is next. Runtime remains `1.00x`.
+rewriting v1. Milestone 2A is complete: the separate
+[`reader settings and playback authority v2`](../../architecture/reader-settings-playback-authority-v2.md),
+matching executable desktop constants/tests, and
+[`ADR-0036`](../../architecture/decisions/ADR-0036-freeze-reduced-range-fee-free-playback-authority-v2.md)
+were committed before candidate implementation or results. Milestone 2B is
+next. Runtime remains `1.00x`.
 
 ## Scope and non-goals
 
@@ -207,6 +212,8 @@ rewriting v1. Milestone 2A is next. Runtime remains `1.00x`.
 - `docs/architecture/decisions/ADR-0033-freeze-reader-settings-and-pitch-preserving-playback-authority.md`
 - `docs/architecture/decisions/ADR-0034-retain-fixed-speed-after-playback-backend-evaluation.md`
 - `docs/architecture/decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md`
+- `docs/architecture/reader-settings-playback-authority-v2.md`
+- `docs/architecture/decisions/ADR-0036-freeze-reduced-range-fee-free-playback-authority-v2.md`
 
 ### Likely implementation surfaces
 
@@ -564,11 +571,45 @@ Expected result: the reduced rates, three candidates, exact CSP, licence
 eligibility, unchanged resource/privacy limits, and pass/fail gates are
 result-blind and executable before candidate code or measurements exist.
 
-Actual result: Not run.
+Actual result: Complete. Commit `abf99d6` freezes the separate v2 architecture
+and executable authority before any candidate implementation or result. The
+closed set contains exactly six rates from `1.00x` through `0.75x`; rejects
+the old `0.70x`-through-`0.50x` values; and retains exact rational
+source/effective-duration arithmetic.
+
+Only three candidate identities are admitted: the named host media APIs and
+one bounded in-memory WAV; published `signalsmith-stretch@1.3.2` pinned to its
+registry integrity, tarball, repository, Git head, entry points, declared
+dependency state, size, and file count; and new repository-owned incremental
+WSOLA v2 source paths whose implementation commit must be a strict descendant
+of the authority commit. The rejected v1 WSOLA prototype cannot be relabelled.
+
+The licence manifest admits only host APIs, repository-owned MIT code, or
+exact reviewed fee-free permissive code. Signalsmith's published MIT metadata
+is frozen, but its package/source/transitive/shipped-artifact audit remains a
+mandatory Milestone 2B pre-install stop. Paid, royalty, subscription,
+paid-seat, commercial-exception, copyleft, source-availability, unknown, or
+ambiguous terms fail closed.
+
+The media-only prospective CSP delta is exactly
+`media-src 'self' blob:`. Executable tests read the current Tauri config and
+prove it remains unchanged, including the existing `connect-src`; remote,
+`data:`, wildcard media and native capability changes are prohibited. One
+object URL, one stretcher, one candidate at a time, existing source/unit/work
+bounds, deterministic lifecycle cleanup, zero external requests, and zero
+persisted audio are frozen. All v1 machine, required-host, bilingual input,
+and privacy gates remain unchanged. Deterministic rates are the five
+non-default values; listening rates are `1.00x`, `0.85x`, and `0.75x`.
+
+Before documentation reconciliation, all 468 desktop Vitest tests plus 11
+native helper tests and desktop type checking passed. The final portable,
+link, privacy, artifact, and diff checks are recorded in the progress log.
+No package, CSP, preference, runtime, model, protocol, or native capability
+changed.
 
 #### Status
 
-Not started.
+Complete.
 
 ### Milestone 2B: Execute the reduced-range fee-free comparison
 
@@ -949,6 +990,25 @@ Do not rewrite accepted historical authority to make a result pass.
   artifact paths; and `git diff --check` passes. The run retained the existing
   content-free pytest cache-write warning and Vite highlight/chunk-size
   warnings.
+- **2026-07-30:** Completed Milestone 2A on
+  `feat/m010-002-freeze-reduced-range-v2-authority`. Authority checkpoint
+  `abf99d6` adds a separate architecture v2, executable constants and 14
+  result-blind tests, and ADR-0036 without changing immutable v1. It freezes
+  six rates, exact media/Signalsmith 1.3.2/new repository WSOLA identities,
+  fee-free licence rules, the media-only CSP delta, inherited v1 gates,
+  bounded lifecycle cleanup, and strict commit lineage. Published package
+  metadata reports MIT and no declared dependencies; the complete
+  package/source/transitive/shipped-artifact audit remains a Milestone 2B
+  pre-install requirement. No dependency, CSP, candidate, result, runtime, or
+  native capability was added. `pnpm.cmd check:portable` passed formatting,
+  linting, generated-contract verification, TypeScript/Python types, 20 shared
+  files/209 tests, 34 EPUB files/580 tests, 46 desktop files/468 tests plus 11
+  native helpers, 347 Python tests, and all portable builds. All 361 relative
+  links across 13 changed Markdown documents resolve; the branch diff has zero
+  private-path/email/key findings and zero prohibited book/audio/model
+  artifact paths; and `git diff --check` passes. The run retains the existing
+  content-free pytest cache-write warning and Vite highlight/chunk-size
+  warnings.
 
 ## Discoveries and decisions
 
@@ -1010,20 +1070,30 @@ Do not rewrite accepted historical authority to make a result pass.
   ADR-0035, the future minimum is `0.75x`, so 30 minutes of retained source
   audio represents at most 40 minutes (2,400,000 milliseconds) of effective
   listening time.
+- The published package name is `signalsmith-stretch`, not the initially
+  considered scoped spelling. Version 1.3.2 publishes MIT metadata, exact
+  integrity and Git-head identity, four files, and no declared dependency,
+  optional-dependency, or peer-dependency entries. This narrows identity but
+  does not replace the Milestone 2B shipped-artifact and distribution audit.
+- Freezing a prospective CSP string does not authorize it at runtime. The
+  current Tauri CSP remains byte-identical; only a machine-passing media
+  candidate may retain the exact `media-src 'self' blob:` delta.
 
 ## Final validation results
 
-M010.2 Milestones 1-2 are complete. Milestone 1 validation added 21
+M010.2 Milestones 1-2A are complete. Milestone 1 validation added 21
 result-blind authority tests and passed the complete portable gate. Milestone
 2 produced the closed Chromium and packaged WebView2 evidence recorded above,
 selected no backend, removed all experimental adapters, and added no
-dependency, capability, persisted audio, or external request.
+dependency, capability, persisted audio, or external request. Milestone 2A
+then committed the separate executable v2 authority before implementation or
+results, retaining immutable v1 evidence and current `1.00x` runtime.
 
 The full plan remains active. ADR-0035 supplies the reduced-range product
-decision; Milestone 2A is next and must freeze v2 before any new candidate
-implementation or result. Milestones 3-4 have not run and remain independent
-of the backend result. Milestone 5 depends on Milestone 2B admitting one
-backend. No M010.2 Settings, preference migration, English runtime fallback,
-time-stretch backend, effective-lead scheduling, or non-`1.00x` runtime
-behavior is claimed. Current production behavior remains the completed
-M010.1 interface, Spanish fallback, and `1.0x`.
+decision and ADR-0036 freezes its v2 authority; Milestone 2B is next.
+Milestones 3-4 have not run and remain independent of the backend result.
+Milestone 5 depends on Milestone 2B admitting one backend. No M010.2 Settings,
+preference migration, English runtime fallback, time-stretch backend,
+effective-lead scheduling, or non-`1.00x` runtime behavior is claimed.
+Current production behavior remains the completed M010.1 interface, Spanish
+fallback, and `1.0x`.

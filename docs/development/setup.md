@@ -43,8 +43,9 @@ candidate screening; its local six-arm packaged portfolio validation and
 required Ubuntu/Windows checks pass, pull request #159 merged, and the plan is
 archived. M010.2 reader/settings/playback work is approved but not
 implemented; Milestone 2 selected no v1 pitch-preserving backend, so playback
-remains `1.00x`. ADR-0035 authorizes a six-value fee-free v2 comparison and
-Milestone 2A is next. Production distribution, Piper license fulfillment, and
+remains `1.00x`. ADR-0035 authorizes and ADR-0036 freezes the six-value
+fee-free v2 authority without installing a dependency or changing CSP;
+Milestone 2B is next. Production distribution, Piper license fulfillment, and
 installers remain M011 work.
 
 M009.1 keeps passive viewport inspection separate from the active narration
