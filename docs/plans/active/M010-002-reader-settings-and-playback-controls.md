@@ -106,7 +106,7 @@ retains the implemented `1.00x` player. No listening gate was opened and every
 experimental adapter was removed. Milestones 3-4 can be implemented
 independently.
 
-The maintainer has now made the required follow-up decision. Accepted
+The maintainer made the required follow-up decision. Accepted
 [`ADR-0035`](../../architecture/decisions/ADR-0035-reopen-reduced-range-fee-free-playback-evaluation.md)
 reduces the future product range to six exact values ending at `0.75x`,
 prohibits any candidate that requires a paid licence or non-permissive
@@ -116,7 +116,10 @@ rewriting v1. Milestone 2A is complete: the separate
 matching executable desktop constants/tests, and
 [`ADR-0036`](../../architecture/decisions/ADR-0036-freeze-reduced-range-fee-free-playback-authority-v2.md)
 were committed before candidate implementation or results. Milestone 2B is
-next. Runtime remains `1.00x`.
+complete. The frozen v2 comparison selected no backend, and
+[`ADR-0037`](../../architecture/decisions/ADR-0037-retain-fixed-speed-after-reduced-range-evaluation.md)
+retains `1.00x`. Every experimental adapter, runner, dependency, and
+prospective CSP change was removed.
 
 ## Scope and non-goals
 
@@ -649,7 +652,8 @@ Expected result: one fee-free pitch-preserving backend passes every frozen v2
 gate for the six-value range, or VoxLeaf honestly retains `1.00x` and proceeds
 without a speed selector.
 
-Actual result: In progress. The mandatory pre-install Signalsmith audit passed
+Actual result: Complete with no backend selected. The mandatory pre-install
+Signalsmith audit passed
 before the exact package was added to the candidate-only comparison tree.
 The published tarball matches the frozen integrity, four-file manifest, and
 dependency-free metadata. Its frozen source commit is MIT; the compiled
@@ -687,11 +691,27 @@ same pitch deviation, zero duration error/frame drift, 168.5 ms start p95,
 percentage points. Both passed lifecycle/resource gates with one active
 stretcher or object URL as applicable, zero external requests, and zero
 persisted audio bytes. Chromium results remain unaffected. Both candidates
-advance to the bounded inference-contention and bilingual listening arms.
+advanced to the bounded inference-contention arm.
+
+The authoritative clean contention run came from execution commit `a35f63a`
+with exactly one local Piper CPU inference process and one sequential playback
+candidate. The media candidate retained passing signal and lifecycle results
+but failed the frozen machine gate because additional process RAM reached
+180.973 MiB, above 128 MiB. Incremental WSOLA failed the signal/lifecycle and
+machine gates because start p95 reached 821.6 ms, above 250 ms; it used
+24.000 MiB additional RAM and 3.420 CPU percentage points. Both arms made zero
+external requests and persisted zero audio bytes.
+
+No candidate passed every frozen machine gate, so the listening gate did not
+open. ADR-0037 selects none and retains `1.00x`. The exact Signalsmith
+dependency, prospective media CSP, adapters, worklets, listening/contention
+runners, and temporary generated speech were removed. Milestones 3-4 remain
+independent; Milestone 5 is not applicable unless a future result-blind
+authority admits a backend.
 
 #### Status
 
-In progress.
+Complete.
 
 ### Milestone 3: Implement bounded settings preferences and English fallback
 
@@ -701,10 +721,9 @@ In progress.
 2. Change the application fallback to English for missing/invalid/unavailable
    language state and explicit reset only.
 3. Preserve every valid saved Spanish or English preference.
-4. Add separate versioned narration-start and narration-playback preference
-   repositories with closed values, limits, migrations, and unavailable-store
-   behavior. Create the playback preference and expose its selector only if
-   Milestone 2B admits a backend; otherwise keep the runtime fixed at `1.00x`.
+4. Add one versioned narration-start preference repository with closed values,
+   limits, migrations, and unavailable-store behavior. Do not create a
+   playback-rate preference or selector; ADR-0037 retains `1.00x`.
 5. Hydrate preferences before the corresponding controls become actionable
    without starting a model.
 6. Keep volume session-only and reader appearance in its existing repository.
@@ -769,28 +788,15 @@ Actual result: Not run.
 
 Not started.
 
-### Milestone 5: Integrate speed into playback, scheduling, and synchronization
+### Milestone 5: Close non-default speed integration
 
 #### Work
 
-1. Replace literal-`1` playback types with the closed rate type.
-2. Integrate the selected pitch-preserving backend into the sole active-unit
-   playback boundary.
-3. Implement old-rate settlement and source-frame continuation for mid-unit
-   changes.
-4. Keep pause/resume, transition timers, volume, stop, seek, replacement,
-   failure, cleanup, and release ownership correct at every rate.
-5. Add effective-listening-lead arithmetic to startup, prepared, low-water,
-   refill, and underrun decisions while leaving source-frame/byte ceilings
-   unchanged.
-6. Expose the canonical selector in the compact narration bar and remove the
-   disabled duplicate from details.
-7. Report loaded duration truthfully, including the selected rate when the
-   displayed amount is effective listening time.
-8. Verify rate changes never call preparation, synthesis, service restart,
-   profile replacement, or generation invalidation.
-9. Verify audible highlighting and persisted heard locator follow consumed
-   source frames across pauses and rate changes.
+1. Preserve literal-`1` playback, source-frame progress, source-duration lead,
+   and the existing synchronization boundary.
+2. Verify Milestones 3-4 do not introduce a speed selector, playback-rate
+   preference, time-stretch dependency, CSP delta, or rate-change lifecycle.
+3. Retain the v1/v2 authorities and ADR-0034/ADR-0037 as historical evidence.
 
 #### Validation
 
@@ -801,18 +807,18 @@ Not started.
 - `pnpm.cmd check:portable`
 - `git diff --check`
 
-Expected result: every approved rate, threshold edge, mid-unit change,
-navigation/lifecycle action, progress projection, and release path passes
-without changed model input or unbounded retention.
+Expected result: fixed `1.00x` behavior remains unchanged and no unadmitted
+speed surface or backend enters production.
 
-Actual result: Not run. ADR-0035 supplies the follow-up product decision, but
-this milestone still depends on Milestones 2A-2B freezing and admitting one
-v2 backend. If no v2 candidate passes, omit the speed selector and retain
-`1.00x`; do not block the reader-first Settings work.
+Actual result: Not applicable under ADR-0037. The v2 comparison selected no
+backend, so runtime remains `1.00x` and this plan will not add a speed
+selector, speed preference, effective-lead scheduling, or time-stretch
+integration.
 
 #### Status
 
-Blocked until Milestone 2B records one admitted backend.
+Closed by the Milestone 2B no-selection result. A future attempt requires new
+result-blind authority.
 
 ### Milestone 6: Validate the portfolio reader and close the plan
 
@@ -822,15 +828,14 @@ Blocked until Milestone 2B records one admitted backend.
    Piper, Chatterbox, and gated Qwen profile presentation without running two
    model children simultaneously.
 2. Validate Settings before/after open; first-run English; preserved Spanish;
-   profile/language replacement; quick/prepared restoration; speed
-   restoration; and development-only visibility.
-3. Run `1.00x`, `0.85x`, and `0.75x` exact-host listening journeys
-   for pitch, intelligibility, start, progress, highlight, leaf navigation,
-   pause/resume, buffering, rate change, stop, recovery, book replacement, and
-   exit.
+   profile/language replacement; quick/prepared restoration; fixed-speed
+   presentation; and development-only visibility.
+3. Run fixed-`1.00x` exact-host listening journeys for pitch, intelligibility,
+   start, progress, highlight, leaf navigation, pause/resume, buffering, stop,
+   recovery, book replacement, and exit.
 4. Measure content-free CPU/RAM impact, playable/effective lead, underruns,
    progress drift, cancellation latency, cleanup, and retained source
-   frames/bytes/units.
+   frames/bytes/units under the existing source-duration authority.
 5. Confirm zero external requests and zero generated-audio persistence.
 6. Run privacy, artifact, link, and scope scans.
 7. Reconcile authority, ADR, product docs, architecture overview, system
@@ -848,18 +853,16 @@ Blocked until Milestone 2B records one admitted backend.
 - `git diff --check`
 
 Expected result: the portfolio-facing reader, Settings, English fallback, and
-pitch-preserving speeds pass deterministic, browser, packaged, exact-host,
+fixed `1.00x` playback pass deterministic, browser, packaged, exact-host,
 privacy, bounded-resource, and required pull-request validation.
 
-Actual result: Not run. The reduced-range closeout depends on the Milestone 2B
-decision. If one backend is admitted, Milestones 5-6 validate all six exact
-rates plus the three frozen listening rates. If none is admitted, closeout
-must validate the reader/Settings outcome honestly without a speed selector.
+Actual result: Not run. The frozen no-selection result fixes final scope at
+reader-first Settings, English fallback, fixed `1.00x` playback, and no
+time-stretch backend.
 
 #### Status
 
-Blocked until Milestone 2B records the v2 result and closes the applicable
-Milestone 5-6 path.
+Ready after Milestones 3-4.
 
 ## Testing and benchmark strategy
 
@@ -893,16 +896,17 @@ preference restoration; source-frame progress; and no external requests.
 
 ### Exact-host evidence
 
-Exact-host listening is required because deterministic tone tests cannot prove
-natural voice quality. Use repository-authored synthetic Spanish and English
-text only. Record content-free rate, engine/profile ID, timing, drift,
-underrun, CPU/RAM, cancellation, and cleanup observations. Do not retain
-waveforms, EPUBs, prepared text, screenshots containing private books, raw
-host identity, model paths, or process arguments.
+Milestone 2B did not open exact-host listening because no candidate passed its
+machine gates. Milestone 6 still uses repository-authored synthetic Spanish
+and English text to validate the fixed-`1.00x` portfolio reader. Record only
+content-free engine/profile ID, timing, drift, underrun, CPU/RAM,
+cancellation, and cleanup observations. Do not retain waveforms, EPUBs,
+prepared text, screenshots containing private books, raw host identity, model
+paths, or process arguments.
 
 Qwen remains optional development-only and does not need a support-state
-reevaluation. The plan validates that presentation and playback-rate handling
-are engine-neutral, not that Qwen becomes real-time.
+reevaluation. The plan validates engine-neutral presentation and unchanged
+fixed-speed playback, not that Qwen becomes real-time.
 
 ### Repository commands
 
@@ -1122,6 +1126,34 @@ Do not rewrite accepted historical authority to make a result pass.
   timeout now uses a non-retaining timer, and the result wording distinguishes
   matrix completion from candidate admission. A clean-commit repetition owns
   the authoritative contention result.
+- **2026-07-30:** Repeated the complete contention arm from clean execution
+  commit `a35f63a`. The process exited naturally and left no Piper, WebView2,
+  Tauri driver, or release VoxLeaf process. Media failed only the frozen
+  machine gate at 180.973 MiB additional RAM against 128 MiB. Incremental
+  WSOLA failed at 821.6 ms start p95 against 250 ms while remaining within RAM
+  and CPU limits. Both persisted zero audio bytes and made zero external
+  requests. Because neither passed, the listening gate did not open.
+- **2026-07-30:** ADR-0037 selected no backend and retained `1.00x`. Removed
+  Signalsmith, the prospective media CSP, candidate adapters/worklets,
+  evaluation globals/configuration, and every temporary runner. No generated
+  speech or evaluation artifact remains. Milestones 3-4 may proceed
+  independently; Milestone 5 is closed as not applicable under this
+  authority.
+- **2026-07-30:** Closed Milestone 2B validation. Desktop type checking,
+  46 files/468 Vitest tests, and 11 native helper tests pass. The unchanged
+  `pnpm.cmd test:browser` command passes all six Chromium cases and exits in
+  12.5 seconds from normal local PowerShell; its managed-sandbox run displayed
+  all passes but retained the Playwright/Vite coordinator until timeout, now
+  documented as infrastructure-only. The outside-sandbox packaged WebView2
+  startup smoke passes. `pnpm.cmd check:portable` passes 20 shared files/209
+  tests, 34 EPUB files/580 tests, 46 desktop files/468 tests plus 11 helpers,
+  347 Python tests, and all portable builds. Full `pnpm.cmd check` additionally
+  passes Rust formatting/clippy, 41 Rust tests, and release/package builds.
+  `git diff --check` passes; all 366 relative links across 13 changed Markdown
+  files resolve. The 30-file final change has zero private-pattern findings
+  and zero prohibited book/audio/model artifact paths, and no repository test
+  process remains. The runs retain only the existing content-free pytest
+  cache-write and Vite highlight/chunk-size warnings.
 
 ## Discoveries and decisions
 
@@ -1195,22 +1227,34 @@ Do not rewrite accepted historical authority to make a result pass.
 - Freezing a prospective CSP string does not authorize it at runtime. The
   current Tauri CSP remains byte-identical; only a machine-passing media
   candidate may retain the exact `media-src 'self' blob:` delta.
+- The managed automation sandbox could not create the packaged WebView2
+  session, while the same command in normal local PowerShell did. That
+  sandbox observation is infrastructure evidence only; the successful
+  outside-sandbox rerun owns both packaged candidate results.
+- Neither packaged passer remained admissible beside one local Piper process:
+  media exceeded the frozen RAM delta and incremental WSOLA exceeded frozen
+  start latency. The frozen ordering therefore prohibited a listening screen.
 
 ## Final validation results
 
-M010.2 Milestones 1-2A are complete. Milestone 1 validation added 21
+M010.2 Milestones 1-2B are complete. Milestone 1 validation added 21
 result-blind authority tests and passed the complete portable gate. Milestone
 2 produced the closed Chromium and packaged WebView2 evidence recorded above,
 selected no backend, removed all experimental adapters, and added no
 dependency, capability, persisted audio, or external request. Milestone 2A
 then committed the separate executable v2 authority before implementation or
 results, retaining immutable v1 evidence and current `1.00x` runtime.
+Milestone 2B then completed the separate comparison, selected none under
+ADR-0037, removed every candidate artifact, and passed deterministic,
+Chromium, packaged WebView2, portable, full repository, privacy, and cleanup
+validation.
 
 The full plan remains active. ADR-0035 supplies the reduced-range product
-decision and ADR-0036 freezes its v2 authority; Milestone 2B is next.
-Milestones 3-4 have not run and remain independent of the backend result.
-Milestone 5 depends on Milestone 2B admitting one backend. No M010.2 Settings,
-preference migration, English runtime fallback, time-stretch backend,
-effective-lead scheduling, or non-`1.00x` runtime behavior is claimed.
+decision, ADR-0036 freezes its v2 authority, and ADR-0037 records the
+no-selection result. Milestones 3-4 have not run and remain independent of the
+backend result. Milestone 5 is not applicable under the current decision. No
+M010.2 Settings, preference migration, English runtime fallback,
+time-stretch backend, effective-lead scheduling, or non-`1.00x` runtime
+behavior is claimed.
 Current production behavior remains the completed M010.1 interface, Spanish
 fallback, and `1.0x`.

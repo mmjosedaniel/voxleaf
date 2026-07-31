@@ -21,10 +21,6 @@
     "test:tts:bilingual-profiles-exact-host": "tauri build && node scripts/bilingual-tts-profiles-host.mjs",
     "test:tts:bilingual-portfolio-exact-host": "pnpm run test:tts:bilingual-portfolio-exact-host:preflight && node scripts/bilingual-portfolio-host.mjs --preflight-only && tauri build && node scripts/bilingual-portfolio-host.mjs --lifecycle-only && node scripts/bilingual-portfolio-host.mjs",
     "test:tts:bilingual-portfolio-exact-host:preflight": "pnpm run test:tts:adaptive-exact-host:preflight && node --test scripts/bilingual-portfolio-host.node-test.mjs",
-    "test:playback:v2-chromium": "pnpm run build && node scripts/pitch-preserving-v2-host.mjs",
-    "test:playback:v2-exact-host": "tauri build --config src-tauri/tauri.pitch-preserving-v2.conf.json && node scripts/native-startup-smoke.mjs --pitch-preserving-v2",
-    "test:playback:v2-inference-contention": "node scripts/pitch-preserving-v2-inference-contention-host.mjs",
-    "test:playback:v2-listening": "node scripts/pitch-preserving-v2-listening-host.mjs",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -32,8 +28,7 @@
     "@voxleaf/epub": "workspace:*",
     "@voxleaf/shared": "workspace:*",
     "react": "19.2.7",
-    "react-dom": "19.2.7",
-    "signalsmith-stretch": "1.3.2"
+    "react-dom": "19.2.7"
   },
   "devDependencies": {
     "@playwright/test": "1.61.1",

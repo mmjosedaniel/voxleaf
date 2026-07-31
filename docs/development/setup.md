@@ -43,10 +43,11 @@ candidate screening; its local six-arm packaged portfolio validation and
 required Ubuntu/Windows checks pass, pull request #159 merged, and the plan is
 archived. M010.2 reader/settings/playback work is approved but not
 implemented; Milestone 2 selected no v1 pitch-preserving backend, so playback
-remains `1.00x`. ADR-0035 authorizes and ADR-0036 freezes the six-value
-fee-free v2 authority without installing a dependency or changing CSP;
-Milestone 2B is next. Production distribution, Piper license fulfillment, and
-installers remain M011 work.
+remains `1.00x`. ADR-0035 authorized and ADR-0036 froze the six-value
+fee-free v2 authority. ADR-0037 records that no candidate survived the
+inference-contention gate, so the dependency and prospective CSP delta were
+removed and Milestone 3 is next. Production distribution, Piper license
+fulfillment, and installers remain M011 work.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,

@@ -17,15 +17,20 @@ evaluation through
 That decision does not rewrite the v1 result. Milestone 2A froze the separate
 [v2 authority](../architecture/reader-settings-playback-authority-v2.md) and
 [ADR-0036](../architecture/decisions/ADR-0036-freeze-reduced-range-fee-free-playback-authority-v2.md)
-before candidate implementation or measurement. Milestone 2B is next.
+before candidate implementation or measurement. Milestone 2B then selected no
+backend: the media path exceeded the frozen contention RAM limit and
+incremental WSOLA exceeded frozen contention start latency. Signalsmith failed
+before its first Chromium trial. [ADR-0037](../architecture/decisions/ADR-0037-retain-fixed-speed-after-reduced-range-evaluation.md)
+retains `1.00x` and removes every experimental dependency, adapter, runner, and
+prospective CSP change.
 
 The behavior in this document is not implemented until
 [`M010-002-reader-settings-and-playback-controls.md`](../plans/active/M010-002-reader-settings-and-playback-controls.md)
 records passing implementation and validation. Current runtime behavior
 remains the completed M010.1 interface, Spanish fallback for missing or invalid
 language preference, and `1.0x` playback. Reader/Settings work can proceed
-independently, but non-default speed remains unavailable until the v2
-comparison admits a backend.
+independently. Non-default speed and a speed selector are outside the remaining
+M010.2 implementation; a future attempt requires new result-blind authority.
 
 This document replaces the ignored pre-M011 design discussion as the durable
 product scope. It does not change the completed M005 narration-preparation
@@ -168,17 +173,21 @@ Device compatibility details. Internal profile identifiers, paths, process
 arguments, raw host facts, model errors, and book-derived text stay out of the
 normal UI.
 
-## Playback-speed authority target
+## Evaluated playback-speed target
+
+The following requirements record the closed v2 comparison. They are not
+current runtime behavior and are not an implementation target for the
+remaining M010.2 milestones after ADR-0037.
 
 ### Fixed choices
 
-The future compact narration bar offers exactly:
+The frozen comparison evaluated exactly:
 
 `1.00x`, `0.95x`, `0.90x`, `0.85x`, `0.80x`, and `0.75x`.
 
-The default is `1.00x`. The last valid selection is a bounded, versioned
-global narration preference. Unknown, malformed, non-finite, or unlisted
-values fail closed to `1.00x`.
+Production retains only `1.00x`; no speed preference is persisted and no speed
+selector is rendered. The closed value set remains historical authority for
+the v2 evidence.
 
 ### Playback boundary
 
@@ -192,14 +201,14 @@ unchanged source PCM. Changing speed:
 - preserves queued PCM and existing source-frame memory accounting; and
 - applies consistently across admitted engines.
 
-The implementation must preserve pitch across the full admitted range.
+Any future implementation must preserve pitch across its newly admitted range.
 Directly enabling `AudioBufferSourceNode.playbackRate` is insufficient because
 it changes rendered sample rate and pitch. Milestone 10.2 must freeze and
 validate a bounded in-memory time-stretch mechanism before product admission.
 Any production dependency requires purpose, alternative, license,
 distribution, memory, cancellation, and platform review.
 
-The v2 comparison is intentionally limited to:
+The completed v2 comparison was intentionally limited to:
 
 - `HTMLMediaElement.preservesPitch` with one bounded in-memory WAV and the
   narrowly reviewed `media-src 'self' blob:` policy;
@@ -216,11 +225,9 @@ and model-specific speaking-rate controls are outside this comparison because
 they add licence/distribution complexity or change the wrong pipeline
 boundary.
 
-The media candidate may add only `media-src 'self' blob:` to the candidate
-test/runtime policy. It must not change `connect-src`, admit `data:`, remote
-media, wildcards, or add native capabilities. The change may remain only if
-that candidate passes the frozen browser, packaged-host, privacy, lifecycle,
-and resource gates and is selected.
+The media candidate could add only `media-src 'self' blob:` to the candidate
+test policy. It did not pass every gate, so the production CSP remains
+unchanged.
 
 ### Progress and timing
 

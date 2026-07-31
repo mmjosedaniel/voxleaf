@@ -335,6 +335,14 @@ M010.2 v2 comparison host, the sandbox attempt failed at session creation while
 the same local PowerShell command created the packaged session and reached
 candidate measurement.
 
+The same managed sandbox can also retain the Playwright/Vite coordinator after
+all Chromium cases finish. On the same host, `pnpm.cmd test:browser` displayed
+all six passing cases but did not complete teardown before the sandbox command
+timeout; the identical command from normal local PowerShell exited cleanly
+with six passes in 12.5 seconds. When every case has reported but the command
+does not exit, inspect for repository-owned leftovers and repeat the unchanged
+command outside the sandbox before classifying it as a test failure.
+
 ### Memory, temperature, or cleanup looks abnormal
 
 The accepted M008 matrix peaked at 2,828,034,048 process-tree working-set bytes,

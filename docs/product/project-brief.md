@@ -56,17 +56,17 @@ service matrix, and six packaged synthetic EPUB portfolio arms pass. MOSS
 remains deferred without rejection. Pull request #159 passed the required
 Ubuntu/Windows checks and merged the closeout.
 
-M010.2 is active. Milestones 1-2A froze its architecture/executable authority
+M010.2 is active. Milestones 1-2B froze its architecture/executable authority
 and result-blind backend comparison, then selected no pitch-preserving backend.
 Runtime behavior is not implemented. Later milestones may reorganize the
 reader around one fixed app bar, accessible Settings, compact narration, and
 the sole reader scroll viewport, and introduce an English fallback that
-preserves valid saved Spanish/English choices. ADR-0035 separately authorizes
-and ADR-0036 freezes a fee-free v2 comparison for six rates ending at `0.75x`;
-Milestone 2B is next and runtime remains `1.00x`.
-preserves valid saved language. Non-default playback speed requires a new
-decision. Installer distribution and license fulfillment remain deferred to
-M011.
+preserves valid saved Spanish/English choices. ADR-0035 separately authorized
+and ADR-0036 froze a fee-free v2 comparison for six rates ending at `0.75x`.
+ADR-0037 selects no v2 backend after local-inference contention, removes every
+experiment, and retains `1.00x`; Milestone 3 is next. Non-default playback
+speed requires a new decision. Installer distribution and license fulfillment
+remain deferred to M011.
 The rest of this brief describes the intended complete product unless it
 explicitly identifies implemented behavior.
 
