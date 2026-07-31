@@ -12,6 +12,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { performance } from "node:perf_hooks";
 import process from "node:process";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL, URL } from "node:url";
@@ -43,6 +44,7 @@ const READER_PERFORMANCE_MODE = process.argv.includes("--reader-performance");
 const ADAPTIVE_TTS_EXACT_HOST_MODE = process.argv.includes(
   "--adaptive-tts-exact-host",
 );
+const PITCH_PRESERVING_V2_MODE = process.argv.includes("--pitch-preserving-v2");
 const EXERCISE_EXACT_HOST_PROFILE_SWITCH = process.argv.includes(
   "--exercise-profile-switch",
 );
@@ -59,6 +61,9 @@ const PIPER_CPU_FALLBACK_PROFILE_ID =
 const PIPER_ENGLISH_CPU_PROFILE_ID = "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1";
 const CHATTERBOX_BILINGUAL_PROFILE_ID =
   "chatterbox-multilingual-v3-cuda-bf16-default-v4";
+const PITCH_PRESERVING_V2_CANDIDATE_IDS = Object.freeze([
+  "html-media-element-preserves-pitch-wav-v2",
+]);
 const EXACT_HOST_TTS_PROFILE_LANGUAGES = new Map([
   [EXACT_QWEN_SERENA_PROFILE_ID, Object.freeze(["es"])],
   [EXACT_QWEN_AIDEN_PROFILE_ID, Object.freeze(["en"])],
@@ -302,6 +307,14 @@ const FIXED_FAILURE_CODES = new Map([
     "Native TTS service lifecycle probe failed.",
     "tts-service-lifecycle-probe-failed",
   ],
+  [
+    "Native pitch-preserving v2 comparison failed.",
+    "pitch-preserving-v2-comparison-failed",
+  ],
+  [
+    "Native pitch-preserving v2 metrics were unavailable.",
+    "pitch-preserving-v2-metrics-unavailable",
+  ],
   ["Native driver logs were invalid.", "native-driver-log-invalid"],
 ]);
 
@@ -434,6 +447,47 @@ async function processWorkingSetBytes(rootProcessId) {
     "Native reader performance metrics were unavailable.",
   );
   return workingSetBytes;
+}
+
+async function processCpuTimeSeconds(rootProcessId) {
+  assert(
+    Number.isSafeInteger(rootProcessId) && rootProcessId > 0,
+    "Native pitch-preserving v2 metrics were unavailable.",
+  );
+  const measurementQuery = [
+    `$rootProcessId = ${String(rootProcessId)}`,
+    "$processes = Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId",
+    "$processIds = [System.Collections.Generic.HashSet[int]]::new()",
+    "[void]$processIds.Add($rootProcessId)",
+    "do { $added = $false; foreach ($candidate in $processes) { if ($processIds.Contains([int]$candidate.ParentProcessId) -and $processIds.Add([int]$candidate.ProcessId)) { $added = $true } } } while ($added)",
+    "$measurement = Get-Process -Id @($processIds) -ErrorAction SilentlyContinue | Measure-Object -Property CPU -Sum",
+    "$sum = $measurement.Sum",
+    "if ($null -eq $sum) { $sum = 0 }",
+    "[Console]::Out.Write([double]$sum)",
+  ].join("; ");
+  const output = await executeText("powershell.exe", [
+    "-NoProfile",
+    "-NonInteractive",
+    "-Command",
+    measurementQuery,
+  ]);
+  const cpuTimeSeconds = Number(output.trim());
+  assert(
+    Number.isFinite(cpuTimeSeconds) && cpuTimeSeconds >= 0,
+    "Native pitch-preserving v2 metrics were unavailable.",
+  );
+  return cpuTimeSeconds;
+}
+
+async function processCpuPercentage(rootProcessId, durationMs) {
+  const before = await processCpuTimeSeconds(rootProcessId);
+  const startedAt = performance.now();
+  await delay(durationMs);
+  const after = await processCpuTimeSeconds(rootProcessId);
+  return Math.max(
+    0,
+    ((after - before) / ((performance.now() - startedAt) / 1_000)) * 100,
+  );
 }
 
 async function nativeMemorySnapshot(driver, rootProcessId, setStage, label) {
@@ -4397,6 +4451,181 @@ function inspectPerformanceLogs(logs) {
   return { externalRequestCount, runtimeErrorCount };
 }
 
+async function runNativePitchPreservingV2Comparison(
+  driver,
+  rootProcessId,
+  temporaryDirectory,
+  setStage,
+) {
+  const results = [];
+  for (const candidateId of PITCH_PRESERVING_V2_CANDIDATE_IDS) {
+    setStage(`native pitch-preserving v2 ${candidateId} baseline`);
+    const baselineCpuPercentage = await processCpuPercentage(
+      rootProcessId,
+      1_000,
+    );
+    const baselineWorkingSetBytes = await processWorkingSetBytes(rootProcessId);
+    const beforeCpuTimeSeconds = await processCpuTimeSeconds(rootProcessId);
+    const startedAt = performance.now();
+    let peakWorkingSetBytes = baselineWorkingSetBytes;
+    let sampling = true;
+    const sampler = (async () => {
+      while (sampling) {
+        peakWorkingSetBytes = Math.max(
+          peakWorkingSetBytes,
+          await processWorkingSetBytes(rootProcessId),
+        );
+        await delay(100);
+      }
+    })();
+
+    let observation;
+    try {
+      setStage(`native pitch-preserving v2 ${candidateId} execution`);
+      const serializedCandidateId = JSON.stringify(candidateId);
+      const started = await driver.execute(
+        `const run =
+         globalThis.__voxleafRunPitchPreservingBackendCandidateProbeV2;
+       if (typeof run !== "function") {
+         return false;
+       }
+       globalThis.__voxleafPitchPreservingV2Observation = {
+         status: "pending",
+       };
+       run(${serializedCandidateId})
+         .then((result) => {
+           globalThis.__voxleafPitchPreservingV2Observation = {
+             status: "complete",
+             result,
+           };
+         })
+         .catch(() => {
+           globalThis.__voxleafPitchPreservingV2Observation = {
+             status: "failed",
+           };
+         });
+       return true;`,
+      );
+      assert(started === true, "Native pitch-preserving v2 comparison failed.");
+      await waitForCondition(
+        driver,
+        `return globalThis.__voxleafPitchPreservingV2Observation?.status !==
+         "pending";`,
+        720_000,
+      );
+      observation = await driver.execute(
+        `const value =
+         globalThis.__voxleafPitchPreservingV2Observation;
+       delete globalThis.__voxleafPitchPreservingV2Observation;
+       return value;`,
+      );
+    } finally {
+      sampling = false;
+      await sampler;
+    }
+    assert(
+      observation?.status === "complete" &&
+        observation.result?.candidateId === candidateId,
+      "Native pitch-preserving v2 comparison failed.",
+    );
+    const elapsedSeconds = (performance.now() - startedAt) / 1_000;
+    const afterCpuTimeSeconds = await processCpuTimeSeconds(rootProcessId);
+    const activeCpuPercentage = Math.max(
+      0,
+      (afterCpuTimeSeconds - beforeCpuTimeSeconds) / elapsedSeconds,
+    );
+    const resourceMetrics = Object.freeze({
+      additionalProcessRamMiB:
+        Math.max(0, peakWorkingSetBytes - baselineWorkingSetBytes) / MEBIBYTE,
+      cpuIncreasePercentagePoints: Math.max(
+        0,
+        activeCpuPercentage * 100 - baselineCpuPercentage,
+      ),
+      maximumActiveTimeStretchers: 1,
+    });
+    const machinePasses =
+      observation.result.signalAndLifecycleGate === "pass" &&
+      resourceMetrics.additionalProcessRamMiB <= 128 &&
+      resourceMetrics.cpuIncreasePercentagePoints <= 20;
+    results.push(
+      Object.freeze({
+        ...observation.result,
+        resourceMetrics,
+        machineGate: machinePasses ? "pass" : "fail",
+        failureCode: machinePasses
+          ? null
+          : (observation.result.failureCode ?? "machine-gate-failed"),
+      }),
+    );
+  }
+
+  setStage("native pitch-preserving v2 privacy assertions");
+  const externalLoadedResourceCount = await driver.execute(
+    `return performance.getEntriesByType("resource").filter((entry) => {
+       try {
+         const url = new URL(entry.name);
+         return !(
+           url.protocol === "tauri:" ||
+           url.protocol === "ipc:" ||
+           url.protocol === "data:" ||
+           url.protocol === "blob:" ||
+           url.hostname === "tauri.localhost" ||
+           url.hostname === "ipc.localhost"
+         );
+       } catch {
+         return true;
+       }
+     }).length;`,
+  );
+  const browserLogs = await driver.getLogs("browser");
+  const performanceLogs = inspectPerformanceLogs(
+    await driver.getLogs("performance"),
+  );
+  const generatedAudioFiles = await generatedAudioFileCount(temporaryDirectory);
+  assert(
+    browserLogs.every((entry) => entry?.level !== "SEVERE") &&
+      performanceLogs.runtimeErrorCount === 0,
+    "Native pitch-preserving v2 comparison failed.",
+  );
+  assert(
+    externalLoadedResourceCount === 0 &&
+      performanceLogs.externalRequestCount === 0 &&
+      generatedAudioFiles === 0,
+    "Native pitch-preserving v2 comparison failed.",
+  );
+  for (const result of results) {
+    assert(
+      result.capability === "available" &&
+        result.trials?.length === 15 &&
+        result.machineGate !== "resource-measurement-required" &&
+        result.activeObjectUrlsAfterCleanup === 0,
+      "Native pitch-preserving v2 comparison failed.",
+    );
+  }
+  console.log(
+    `PITCH_PRESERVING_V2_NATIVE_RESULT ${JSON.stringify({
+      authorityVersion: 2,
+      candidates: results.map((result) => ({
+        backendStartP95Ms: result.backendStartP95Ms,
+        candidateId: result.candidateId,
+        machineGate: result.machineGate,
+        maximumAdditionalWorkBytes: result.maximumAdditionalWorkBytes,
+        maximumPitchDeviationCents: result.maximumPitchDeviationCents,
+        maximumRenderedDurationErrorMs: result.maximumRenderedDurationErrorMs,
+        maximumSourceFrameDrift: result.maximumSourceFrameDrift,
+        pauseStopTeardownP95Ms: result.pauseStopTeardownP95Ms,
+        rateSettlementP95Ms: result.rateSettlementP95Ms,
+        resourceMetrics: result.resourceMetrics,
+        signalAndLifecycleGate: result.signalAndLifecycleGate,
+      })),
+      externalRequests: 0,
+      host: "packaged-windows-webview2",
+      persistedGeneratedAudioBytes: 0,
+    })}`,
+  );
+  return Object.freeze(results);
+}
+
 async function stopChild(child) {
   if (child.exitCode !== null || child.pid === undefined) {
     return;
@@ -4414,9 +4643,11 @@ async function stopChild(child) {
 async function run() {
   const runLabel = READER_PERFORMANCE_MODE
     ? "Native reader performance benchmark"
-    : ADAPTIVE_TTS_EXACT_HOST_MODE
-      ? "Adaptive exact-host TTS matrix"
-      : "Native startup smoke";
+    : PITCH_PRESERVING_V2_MODE
+      ? "Native pitch-preserving v2 comparison"
+      : ADAPTIVE_TTS_EXACT_HOST_MODE
+        ? "Adaptive exact-host TTS matrix"
+        : "Native startup smoke";
   assert(
     process.platform === "win32",
     "Native startup smoke must run on Windows.",
@@ -4593,7 +4824,7 @@ async function run() {
   const collectedPerformanceLogs = [];
 
   try {
-    if (!ADAPTIVE_TTS_EXACT_HOST_MODE) {
+    if (!ADAPTIVE_TTS_EXACT_HOST_MODE && !PITCH_PRESERVING_V2_MODE) {
       stage = "native TTS supervisor host matrix";
       await exerciseNativeTtsSupervisorHost();
     }
@@ -4619,6 +4850,17 @@ async function run() {
     const rootMounted = await driver.execute(
       `return document.querySelector("#root")?.childElementCount > 0;`,
     );
+    if (PITCH_PRESERVING_V2_MODE) {
+      await runNativePitchPreservingV2Comparison(
+        driver,
+        child.pid,
+        temporaryDirectory,
+        (nextStage) => {
+          stage = nextStage;
+        },
+      );
+      return;
+    }
     stage = "native bilingual narration preference";
     await exerciseNarrationLanguagePreference(
       driver,

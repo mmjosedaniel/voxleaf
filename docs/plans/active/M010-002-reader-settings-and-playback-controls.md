@@ -649,11 +649,21 @@ Expected result: one fee-free pitch-preserving backend passes every frozen v2
 gate for the six-value range, or VoxLeaf honestly retains `1.00x` and proceeds
 without a speed selector.
 
-Actual result: Not run.
+Actual result: In progress. The mandatory pre-install Signalsmith audit passed
+before the exact package was added to the candidate-only comparison tree.
+The published tarball matches the frozen integrity, four-file manifest, and
+dependency-free metadata. Its frozen source commit is MIT; the compiled
+`signalsmith-linear` source is also MIT and has no shipped runtime dependency.
+The tarball omits the licence text, so selection would require carrying both
+upstream MIT notices and a final M011 distribution review. Synthetic
+Chromium/WebView2 adapters, bounded runners, and the materially new
+incremental WSOLA source are implemented for a strict-descendant checkpoint;
+no measurement in the working tree is authoritative until that checkpoint is
+committed and the frozen matrix is repeated.
 
 #### Status
 
-Not started.
+In progress.
 
 ### Milestone 3: Implement bounded settings preferences and English fallback
 
@@ -1009,6 +1019,24 @@ Do not rewrite accepted historical authority to make a result pass.
   artifact paths; and `git diff --check` passes. The run retains the existing
   content-free pytest cache-write warning and Vite highlight/chunk-size
   warnings.
+- **2026-07-30:** Began Milestone 2B on
+  `feat/m010-002-execute-reduced-range-v2-comparison`. Before installation,
+  the exact `signalsmith-stretch@1.3.2` registry tarball matched the frozen
+  SHA-512 integrity, 96,347-byte archive, four-file/232,286-byte unpacked
+  manifest, dependency-free package metadata, and source commit
+  `222093b4cc13ddb4d07c826bc3c1559326091731`. The upstream source licence is
+  MIT. Its compiled `signalsmith-linear` source is tag `0.1.2`, commit
+  `fa5dbc0abfbd161e9a9cc10a7b418fa9dfc83a45`, also MIT, with no shipped
+  production dependency. The npm tarball does not include either licence
+  text; if selected, VoxLeaf must ship both notices and complete M011
+  distribution review. No purchase, royalty, subscription, copyleft,
+  source-availability, commercial exception, or ambiguous right was found.
+  The exact package was then installed candidate-only. A bounded Chromium
+  runner, exact media-only packaged CSP runner, in-memory WAV adapter,
+  self-hosted Signalsmith worklet module, and new incremental repository WSOLA
+  adapter were implemented for the strict-descendant implementation
+  checkpoint. Pre-checkpoint exploratory output is explicitly
+  non-authoritative.
 
 ## Discoveries and decisions
 
@@ -1032,6 +1060,10 @@ Do not rewrite accepted historical authority to make a result pass.
   Spanish and English preferences remain authoritative.
 - Qwen/Aiden and Qwen/Serena remain visible only through their existing
   language binding and development gate. M010.2 does not change support.
+- Signalsmith's exact package and source are fee-free MIT, including the
+  compiled `signalsmith-linear` source, but the published npm tarball omits
+  both licence texts. Selection would therefore retain an explicit notice
+  obligation; rejection must remove the package and its experimental code.
 - Quick/Prepared startup and target should become a separate bounded
   narration-start preference. Volume remains session-only.
 - The ignored concept images remain discussion artifacts and are not
