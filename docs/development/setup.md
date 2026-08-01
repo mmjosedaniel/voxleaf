@@ -58,9 +58,12 @@ adds no dependency or CSP expansion. Milestone 6's sequential packaged
 portfolio and full local repository checks pass. Maintainer all-rate
 confirmation and pull request #170's required Ubuntu/Windows checks also pass,
 and M010.2 is archived.
-M011 Milestone 3 now implements the deterministic licence-complete Piper core
-payload. Installer integration, optional Chatterbox acquisition, clean-host
-release validation, and signing remain M011 work.
+M011 Milestone 3 implements the deterministic licence-complete Piper core
+payload. Milestone 4 adds the deliberately withheld optional-Chatterbox
+acquisition lifecycle and source-package checks; no end-user artifact or
+Download action is enabled until final release evidence exists. Installer
+integration, a published optional artifact, clean-host release validation, and
+signing remain M011 work.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
@@ -521,6 +524,24 @@ intentional authority update, because that command rewrites the tracked runtime
 manifest and package evidence. This standalone payload is not yet an end-user
 installer; M011 Milestone 5 owns Tauri resource integration and per-user
 install/repair/uninstall proof.
+
+### Check the M011 optional Chatterbox package source authority
+
+Milestone 4 has a deliberately withheld optional-package manifest. This command
+checks only the tracked source manifest: it performs no model download, archive
+build, installation, acquisition, or narration.
+
+```powershell
+pnpm.cmd package:chatterbox-optional:check-source
+```
+
+The `package:chatterbox-optional` builder is a release-maintainer operation,
+not an end-user setup step. It requires an explicitly supplied, absolute,
+ignored exact-model root, enough controlled build capacity, and the final
+licence/provenance review. It creates all runtime, archive, and model output
+only beneath ignored `services/tts/release/optional/chatterbox/dist`; it does
+not update the checked-in withheld download manifest. Do not run it merely to
+use the application or to enable the optional profile.
 
 ## Local TTS feasibility preflight
 

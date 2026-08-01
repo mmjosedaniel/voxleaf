@@ -610,6 +610,41 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:atomic-waker@1.1.2",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "Apache-2.0 OR MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "atomic-waker",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/atomic-waker/1.1.2",
+      "versionOrRevision": "1.1.2"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:autocfg@1.5.1",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -955,6 +990,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/bs58/0.5.1",
       "versionOrRevision": "0.5.1"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:bumpalo@3.20.3",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "bumpalo",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/bumpalo/3.20.3",
+      "versionOrRevision": "3.20.3"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -2640,6 +2710,251 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:futures-channel@0.3.33",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "262590f4fe6afeb0bc83be1daa64e52657fe185690a958af7f3ad0e92085c5ae"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "futures-channel",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/futures-channel/0.3.33",
+      "versionOrRevision": "0.3.33"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:futures-core@0.3.33",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "2cd50c473c80f6d7c3670a752354b8e569b1a7cbfdc0419ec88e5edad85e0dc7"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "futures-core",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/futures-core/0.3.33",
+      "versionOrRevision": "0.3.33"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:futures-io@0.3.33",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "4577ecaa3c4f96589d473f679a71b596316f6641bc350038b962a5daf0085d7a"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "futures-io",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/futures-io/0.3.33",
+      "versionOrRevision": "0.3.33"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:futures-macro@0.3.33",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "2d6d3cde68c518367be28956066ddfef33813991b77a55005a69dae04bf3b10b"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "futures-macro",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/futures-macro/0.3.33",
+      "versionOrRevision": "0.3.33"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:futures-sink@0.3.33",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "e34418ac499d6305c2fb5ad0ed2f6ac998c5f8ca209b4510f7f94242c647e307"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "futures-sink",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/futures-sink/0.3.33",
+      "versionOrRevision": "0.3.33"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:futures-task@0.3.33",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "b231ed28831efb4a61a08580c4bc233ec56bc009f4cd8f52da2c3cb97df0c109"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "futures-task",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/futures-task/0.3.33",
+      "versionOrRevision": "0.3.33"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:futures-util@0.3.33",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "a77a90a256fce34da66415271e30f94ee91c57b04b8a2c042d9cf3220179deaa"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "futures-util",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/futures-util/0.3.33",
+      "versionOrRevision": "0.3.33"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:generic-array@0.14.7",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -2955,6 +3270,76 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:http-body-util@0.1.4",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "e9f41fd6a08e4d4ec69df65976da761afd5ad5e58a9d4acb46bd1c953a9e3ff2"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "http-body-util",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/http-body-util/0.1.4",
+      "versionOrRevision": "0.1.4"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:http-body@1.1.0",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "ca2a8f2913ee65f60facd6a5905613afaa448497a0230cc41ce022d93290bc2c"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "http-body",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/http-body/1.1.0",
+      "versionOrRevision": "1.1.0"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:http@1.4.2",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -2985,6 +3370,146 @@
       "scope": "core",
       "source": "https://crates.io/crates/http/1.4.2",
       "versionOrRevision": "1.4.2"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:httparse@1.10.1",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "6dbf3de79e51f3d586ab4cb9d5c3e2c14aa28ed23d180cf89b4df0454a69cc87"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "httparse",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/httparse/1.10.1",
+      "versionOrRevision": "1.10.1"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:hyper-tls@0.6.0",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "70206fc6890eaca9fde8a0bf71caa2ddfc9fe045ac9e5c70df101a7dbde866e0"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT/Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "hyper-tls",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/hyper-tls/0.6.0",
+      "versionOrRevision": "0.6.0"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:hyper-util@0.1.20",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "96547c2556ec9d12fb1578c4eaf448b04993e7fb79cbaad930a656880a6bdfa0"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "hyper-util",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/hyper-util/0.1.20",
+      "versionOrRevision": "0.1.20"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:hyper@1.11.0",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "d22053281f852e11534f5198498373cbb59295120a20771d90f7ed1897490a72"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "hyper",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/hyper/1.11.0",
+      "versionOrRevision": "1.11.0"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -3480,6 +4005,41 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:ipnet@2.12.0",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "d98f6fed1fde3f8c21bc40a1abb88dd75e67924f9cffc3ef95607bad8017f8e2"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "ipnet",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/ipnet/2.12.0",
+      "versionOrRevision": "2.12.0"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:itoa@1.0.18",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -3965,6 +4525,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/muda/0.19.3",
       "versionOrRevision": "0.19.3"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:native-tls@0.2.18",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "465500e14ea162429d264d44189adc38b199b62b1c21eea9f69e4b73cb03bbf2"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "native-tls",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/native-tls/0.2.18",
+      "versionOrRevision": "0.2.18"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -4950,6 +5545,41 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:reqwest@0.13.4",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "219c5811de6525e5416c7d5d53bb656d3afdbc6c5af816e0802bcfa42dbdc1c3"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "reqwest",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/reqwest/0.13.4",
+      "versionOrRevision": "0.13.4"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:rustc-hash@2.1.3",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -5020,6 +5650,41 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:rustls-pki-types@1.15.1",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "2f4925028c7eb5d1fcdaf196971378ed9d2c1c4efc7dc5d011256f76c99c0a96"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT OR Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "rustls-pki-types",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/rustls-pki-types/1.15.1",
+      "versionOrRevision": "1.15.1"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:same-file@1.0.6",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -5050,6 +5715,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/same-file/1.0.6",
       "versionOrRevision": "1.0.6"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:schannel@0.1.29",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "91c1b7e4904c873ef0710c1f407dde2e6287de2bebc1bbbf7d430bb7cbffd939"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "schannel",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/schannel/0.1.29",
+      "versionOrRevision": "0.1.29"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -5895,6 +6595,41 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:slab@0.4.12",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "slab",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/slab/0.4.12",
+      "versionOrRevision": "0.4.12"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:smallvec@1.15.2",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -6205,6 +6940,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/syn/3.0.2",
       "versionOrRevision": "3.0.2"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:sync_wrapper@1.0.2",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "0bf256ce5efdfa370213c1dabab5935a12e49f2c58d15e9eac2870d3b4f27263"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "sync_wrapper",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/sync_wrapper/1.0.2",
+      "versionOrRevision": "1.0.2"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -6945,6 +7715,76 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:tokio-native-tls@0.3.1",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "bbae76ab933c85776efabc971569dd6119c580d8f5d448769dec1764bf796ef2"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "tokio-native-tls",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/tokio-native-tls/0.3.1",
+      "versionOrRevision": "0.3.1"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:tokio-util@0.7.18",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "9ae9cec805b01e8fc3fd2fe289f89149a9b66dd16786abd8b19cfa7b48cb0098"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "tokio-util",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/tokio-util/0.7.18",
+      "versionOrRevision": "0.7.18"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:tokio@1.53.1",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -7190,6 +8030,146 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:tower-http@0.6.11",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "4cfcf7e2740e6fc6d4d688b4ef00650406bb94adf4731e43c096c3a19fe40840"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "tower-http",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/tower-http/0.6.11",
+      "versionOrRevision": "0.6.11"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:tower-layer@0.3.3",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "121c2a6cda46980bb0fcd1647ffaf6cd3fc79a013de288782836f6df9c48780e"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "tower-layer",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/tower-layer/0.3.3",
+      "versionOrRevision": "0.3.3"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:tower-service@0.3.3",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "tower-service",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/tower-service/0.3.3",
+      "versionOrRevision": "0.3.3"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:tower@0.5.3",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "ebe5ef63511595f1344e2d5cfa636d973292adc0eec1f0ad45fae9f0851ab1d4"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "tower",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/tower/0.5.3",
+      "versionOrRevision": "0.5.3"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:tracing-core@0.1.36",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -7290,6 +8270,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/tray-icon/0.24.1",
       "versionOrRevision": "0.24.1"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:try-lock@0.2.5",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "try-lock",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/try-lock/0.2.5",
+      "versionOrRevision": "0.2.5"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -7916,6 +8931,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/walkdir/2.5.0",
       "versionOrRevision": "2.5.0"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:want@0.3.1",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "bfa7760aed19e106de2c7c0b581b509f2f25d3dacaf737cb82ac61bc6d760b0e"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "want",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/want/0.3.1",
+      "versionOrRevision": "0.3.1"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -9041,6 +10091,41 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:zeroize@1.9.0",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "e13c156562582aa81c60cb29407084cdb54c4164760106ab78e6c5b0858cf64e"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "Apache-2.0 OR MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "zeroize",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/zeroize/1.9.0",
+      "versionOrRevision": "1.9.0"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:zerotrie@0.2.4",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -9146,6 +10231,41 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
+      "id": "cargo:zip@2.4.2",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "fabe6324e908f85a1c52063ce7aa26b68dcb7eb6dbc83a2d148403c9bc3eba50"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "zip",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/zip/2.4.2",
+      "versionOrRevision": "2.4.2"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
       "id": "cargo:zmij@1.0.23",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
@@ -9176,6 +10296,41 @@
       "scope": "core",
       "source": "https://crates.io/crates/zmij/1.0.23",
       "versionOrRevision": "1.0.23"
+    },
+    {
+      "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
+      "auditRef": "production-rust",
+      "ecosystem": "rust",
+      "id": "cargo:zopfli@0.8.3",
+      "inclusion": {
+        "processBoundary": "native Tauri desktop/build boundary",
+        "purpose": "Windows x64 desktop runtime or build dependency.",
+        "runtimeReachability": "required by the frozen release graph"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "lock": "apps/desktop/src-tauri/Cargo.lock",
+        "value": "f05cd8797d63865425ff89b5c4a48804f35ba0ce8d125800027ad6017d2b5249"
+      },
+      "license": {
+        "evidence": "Cargo package metadata",
+        "expression": "Apache-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+      },
+      "name": "zopfli",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://crates.io/crates/zopfli/0.8.3",
+      "versionOrRevision": "0.8.3"
     },
     {
       "artifactState": "production lock closed; final bundled asset hash belongs to packaging",
@@ -12960,7 +14115,7 @@
   "lockIdentities": {
     "cargo": {
       "path": "apps/desktop/src-tauri/Cargo.lock",
-      "sha256": "35d2d513c713a1dc45906282809a8d2ee932cfb041afb71423ef8aea9e82d6aa"
+      "sha256": "acdb928c2b85d1fd0114a5d034fb39faa800803feca5c476ddc7c703febb0baa"
     },
     "chatterboxOptional": {
       "path": "services/tts/release/profiles/chatterbox/requirements.lock",

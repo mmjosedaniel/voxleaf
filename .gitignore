@@ -47,6 +47,7 @@ models/
 weights/
 checkpoints/
 model-cache/
+services/tts/release/optional/chatterbox/dist/
 *.safetensors
 *.ckpt
 *.pt

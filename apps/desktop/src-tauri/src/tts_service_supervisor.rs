@@ -16,6 +16,7 @@ use serde_json::{Value, json};
 use tauri::{State, ipc::Response};
 
 use crate::{
+    tts_optional_chatterbox::discover_installed_chatterbox_runtime,
     tts_protocol_contract::{
         MAX_AUDIO_BYTES, MAX_IDENTIFIER_CODE_POINTS, MAX_IDENTIFIER_UTF8_BYTES,
         MAX_NARRATION_CODE_POINTS, MAX_NARRATION_UTF8_BYTES, valid_identifier,
@@ -279,6 +280,31 @@ impl ExactRuntime {
         })
     }
 
+    fn chatterbox(language: &str) -> Result<Self, TtsNativeFailure> {
+        if !matches!(language, "es" | "en") {
+            return Err(TtsNativeFailure::InvalidInput);
+        }
+        match discover_installed_chatterbox_runtime() {
+            Ok(Some(runtime)) => Ok(Self {
+                python: runtime.python,
+                model_root: runtime.model_root,
+                service_source: runtime.site_packages.clone(),
+                service_site_packages: runtime.site_packages,
+                service_module: "voxleaf_tts.chatterbox_service",
+                runtime_environment: vec![(
+                    "VOXLEAF_TTS_RUNTIME_CHATTERBOX_LANGUAGE",
+                    if language == "es" { "es" } else { "en" },
+                )],
+            }),
+            Ok(None) => Self::chatterbox_from_environment(language),
+            // Command-line validation and explicitly gated development sessions
+            // run before the installed application's Local App Data root exists.
+            // End-user discovery still fails closed: the only fallback is the
+            // separately gated exact development environment.
+            Err(_) => Self::chatterbox_from_environment(language),
+        }
+    }
+
     fn for_profile(profile_id: &str, language: Option<&str>) -> Result<Self, TtsNativeFailure> {
         match profile_id {
             QWEN_SERENA_PROFILE_ID if language.is_none_or(|value| value == "es") => {
@@ -293,7 +319,7 @@ impl ExactRuntime {
             PIPER_ENGLISH_PROFILE_ID if language.is_none_or(|value| value == "en") => {
                 Self::piper(profile_id)
             }
-            CHATTERBOX_PROFILE_ID => Self::chatterbox_from_environment(language.unwrap_or("es")),
+            CHATTERBOX_PROFILE_ID => Self::chatterbox(language.unwrap_or("es")),
             _ => Err(TtsNativeFailure::InvalidInput),
         }
     }

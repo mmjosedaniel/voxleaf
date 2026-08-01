@@ -1,0 +1,48 @@
+{
+  "availability": "withheld",
+  "identity": {
+    "engineVersion": "0.1.7",
+    "modelId": "ResembleAI/chatterbox",
+    "modelRevision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+    "packageVersion": "1",
+    "profileId": "chatterbox-multilingual-v3-cuda-bf16-default-v4"
+  },
+  "languages": ["en", "es"],
+  "layout": {
+    "installed": "profiles/chatterbox-multilingual-v3-cuda-bf16-default-v4/1",
+    "root": "app-local-data/tts",
+    "staging": "staging/chatterbox-multilingual-v3-cuda-bf16-default-v4/operation"
+  },
+  "licences": {
+    "chatterbox": "MIT",
+    "defaultConditioning": "MIT",
+    "model": "MIT",
+    "perth": "MIT"
+  },
+  "requirements": {
+    "minimumAvailableDedicatedVramMiB": 6144,
+    "minimumAvailableRamMiB": 4096,
+    "minimumLogicalProcessors": 8,
+    "minimumTotalDedicatedVramMiB": 7680,
+    "minimumTotalRamMiB": 24576,
+    "platform": "windows-x86_64",
+    "precision": "bfloat16",
+    "provider": "cuda"
+  },
+  "provenance": {
+    "chatterboxSource": "https://github.com/resemble-ai/chatterbox/tree/5de7a54aa4e5e2baadb0182dde554908b48b85c2",
+    "modelCard": "https://huggingface.co/ResembleAI/chatterbox/tree/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+    "perthSource": "https://github.com/resemble-ai/perth/tree/ce86c2b567491eef3108ed3c137bd7bf1ddda52e"
+  },
+  "runtime": {
+    "adapterSha256": "f7fd0e9f745954dbe5881a5428972793f619335a643a7d3b768368a6fdca707e",
+    "dependencyLock": {
+      "path": "services/tts/release/profiles/chatterbox/requirements.lock",
+      "sha256": "a0dedaff6d4a0548d59dc5b1a7d0c1940f9f9bb4afeb556deba90eee481a393a"
+    },
+    "serviceSha256": "feedf00f006699fea7fae2bed1d5192709be2e8b124ac48339bc99b44b284727",
+    "torchVersion": "2.9.1+cu128"
+  },
+  "schemaVersion": 1,
+  "withholdingReason": "release-artifact-not-published"
+}

@@ -9,6 +9,12 @@ model download. Keep Piper Spanish/English as the small core narration family
 and add Chatterbox Spanish/English only as an explicit, integrity-checked,
 removable GPU quality download.
 
+Acquire the six approved Chatterbox model-data files directly from their
+official, revision-pinned Hugging Face repository instead of republishing the
+weights in a VoxLeaf archive. Keep the reviewed Chatterbox runtime a separate,
+closed release input: Hugging Face model acquisition must not execute repository
+code, depend on system Python, or silently resolve unpinned packages.
+
 Keep the first distribution proportional to a portfolio MVP. Close the
 security, licence, dependency, integrity, packaging, clean-host, privacy, and
 support claims that protect an ordinary user. Do not delay the MVP for
@@ -62,16 +68,21 @@ The repository can build a Tauri release executable for validation and now
 builds a deterministic, manifest-verified Piper core payload. However,
 `apps/desktop/src-tauri/tauri.conf.json` still uses version `0.0.0` and
 `bundle.active` is `false`. There is no end-user installer, signed release,
-updater policy, optional-model acquisition flow, or clean-machine install/
-uninstall proof.
+updater policy, enabled network-backed optional-model acquisition, or
+clean-machine install/uninstall proof.
 
 Milestones 2 and 3 now provide the release dependency and Piper payload
 boundaries: a 15-entry private core lock, a separate 79-package Chatterbox
 lock, automated Node/Rust/Python release audits, bounded dependency-update
-intake, a deterministic 367-component inventory, and a verified bilingual
+intake, a deterministic 400-component inventory, and a verified bilingual
 Piper payload with its runtime, notices, model cards, and exact GPL source.
-Installer, optional acquisition, signing, and clean-host release evidence
-remain future milestones.
+Milestone 4A now adds the native-owned optional-package lifecycle and its
+withheld manifest/source-build boundary. Milestone 4B is planned to replace the
+single republished model/archive assumption with a split, verified acquisition:
+six exact model-data files come from the official revision-pinned Hugging Face
+repository, while the reviewed runtime remains independently locked and
+verified. Installer integration, enabled optional acquisition, signing, and
+clean-host release evidence remain future work.
 
 The current TTS runtimes are ignored developer assets selected through
 environment variables. Development firewall rules target exact candidate
@@ -128,10 +139,13 @@ That document is planning input, not proof that a release gate passes.
 - Produce a minimal locked production service/profile environment instead of
   copying complete benchmark environments into the installer.
 - Implement one native-owned, fixed-manifest artifact acquisition boundary
-  with explicit consent, bounded download/staging, digest verification,
-  atomic versioned installation, cancellation, failure cleanup, offline use,
-  and application-owned removal. The renderer supplies only a closed profile
-  ID and never an artifact URL, executable path, archive, or destination.
+  with explicit consent, bounded download/staging, per-artifact digest
+  verification, atomic versioned installation, cancellation, failure cleanup,
+  offline use, and application-owned removal. The six model-data files come
+  only from the exact official Hugging Face repository revision. The runtime
+  comes only from its separately frozen release graph and approved origin. The
+  renderer supplies only a closed profile ID and never a repository, revision,
+  URL, executable path, archive, digest, or destination.
 - Preserve the active working profile and narration until the user explicitly
   activates a successfully installed optional profile. Selecting an absent
   Chatterbox option opens acquisition consent; it does not silently download,
@@ -196,6 +210,8 @@ That document is planning input, not proof that a release gate passes.
 - `services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v4/`
 - `services/tts/src/voxleaf_tts/chatterbox_adapter.py`
 - `services/tts/src/voxleaf_tts/chatterbox_service.py`
+- `services/tts/release/optional/chatterbox/optional-package-manifest-v1.json`
+- `services/tts/release/optional/chatterbox/source-manifest-v1.json`
 - `package.json`, `pnpm-lock.yaml`, and `rust-toolchain.toml`
 - `.github/workflows/`
 - `.github/dependabot.yml` once introduced
@@ -207,6 +223,9 @@ That document is planning input, not proof that a release gate passes.
 - [`docs/architecture/overview.md`](../../architecture/overview.md)
 - [`docs/architecture/tts-support-matrix-v2.md`](../../architecture/tts-support-matrix-v2.md)
 - [`docs/architecture/mvp-release-authority-v1.md`](../../architecture/mvp-release-authority-v1.md)
+- [Hugging Face Hub download guidance](https://huggingface.co/docs/huggingface_hub/guides/download)
+- [Hugging Face pickle-scanning guidance](https://huggingface.co/docs/hub/security-pickle)
+- [PyTorch `torch.load` security guidance](https://docs.pytorch.org/docs/stable/generated/torch.load.html)
 - [`docs/development/dependencies.md`](../../development/dependencies.md)
 - [`docs/development/testing.md`](../../development/testing.md)
 - [`docs/development/release-security-and-distribution.md`](../../development/release-security-and-distribution.md)
@@ -230,10 +249,21 @@ That document is planning input, not proof that a release gate passes.
   manifests, readiness states, size disclosures, checksums, and release
   decisions. Installing or removing one optional version cannot mutate the
   desktop binary or Piper runtime.
-- Chatterbox acquisition is native-owned and allowlisted. It uses HTTPS plus a
-  frozen cryptographic digest, bounded content length and staging space, a
-  versioned application-owned destination, and atomic promotion. Partial or
-  cancelled artifacts are never executable.
+- Chatterbox acquisition is native-owned and manifest-closed. It uses HTTPS,
+  full revision identity, an exact six-file model allowlist, frozen per-file
+  cryptographic digests and byte sizes, bounded staging space, a versioned
+  application-owned destination, and atomic promotion. Partial or cancelled
+  artifacts are never eligible for deserialization or execution.
+- Hugging Face supplies model data only. VoxLeaf does not download or execute
+  Python, configuration scripts, plugins, or arbitrary repository contents
+  from the model repository. The exact Chatterbox runtime remains a separate
+  reviewed graph, and Milestone 4B must freeze its delivery origin before
+  enabling acquisition.
+- The application never resolves `main`, a mutable tag, the latest snapshot,
+  or an arbitrary repository. It requests only the full frozen commit and six
+  filenames, controls any cache beneath its staging root, and verifies the
+  frozen expected SHA-256 and size after transfer regardless of transport
+  metadata or Hugging Face scanning status.
 - Opening Settings, checking compatibility, selecting a language, or restoring
   preferences cannot start a download. Only explicit confirmation in the
   acquisition UI may do so.
@@ -340,15 +370,22 @@ documentation/validation checkpoint is recorded with this plan update.
 5. Commit core runtime/acquisition and compliance evidence as a logical
    checkpoint.
 
-### Milestone 4: Implement optional Chatterbox acquisition and removal
+### Milestone 4A: Implement the withheld optional Chatterbox lifecycle
 
-**Status:** Not started.
+**Status:** Complete as a fail-closed foundation on 2026-08-01. The repository
+contains one native-owned, content-safe lifecycle for the closed Chatterbox
+profile, but no end-user acquisition has been authorized. The compiled manifest
+is deliberately `withheld`: it has no downloadable URL, archive digest, or byte
+claim, and opening Settings cannot create staging state or make a network
+request. Milestone 4B owns the superseding official-source acquisition and all
+real download/install evidence.
 
-1. Freeze and check in the exact optional-package manifest selected by
-   Milestones 1 and 2: closed profile identity, version/revision, allowed HTTPS
-   sources, byte ceilings, digests, required free space, application-owned
-   staging/install paths, licence/provenance references, and supported host
-   facts. No renderer-provided URL or path is accepted.
+1. Freeze and check in the exact withheld optional-package and source manifests
+   selected by Milestones 1 and 2: closed profile identity, version/revision,
+   application-owned staging/install paths, licence/provenance references,
+   supported host facts, exact runtime identities, and six model-file
+   sizes/digests. No renderer-provided URL or path is accepted, and the
+   withheld product manifest carries no downloadable artifact.
 2. Implement native-owned bounded download, cancellation, restart-safe partial
    cleanup, verification before extraction/use, traversal-safe staging, atomic
    version promotion, exact runtime discovery, and explicit package removal.
@@ -361,14 +398,105 @@ documentation/validation checkpoint is recorded with this plan update.
    declined, cancelled, or fails. After verified installation, offer an
    explicit activation action that reuses the existing identity-first profile
    switch; never start a model implicitly.
-5. Prove wrong hash, wrong size, truncation, traversal, stale version,
-   insufficient disk, network interruption, cancellation, process restart,
-   incompatible hardware, and removal behavior. All failures remain
-   content-free and leave Piper usable.
-6. Measure final download bytes, installed bytes, peak temporary disk use,
-   install/remove time, cold load, RTF, RAM, and VRAM. Prove Spanish and English
-   installed narration offline and commit implementation plus content-safe
-   evidence as a separate checkpoint.
+5. Prove the closed manifest, wrong hash, wrong size, truncation, traversal,
+   stale version, insufficient disk, cancellation, process restart,
+   incompatible hardware, and removal behavior without enabling a real network
+   source. All failures remain content-free and leave Piper usable.
+6. Commit the fail-closed implementation and content-safe deterministic
+   evidence as a separate checkpoint. Carry real acquisition, package-size,
+   installed bilingual, performance, and clean-host evidence into Milestone 4B.
+
+**Actual results (2026-08-01):**
+
+- `optional-package-manifest-v1.json` freezes the one profile identity,
+  versions, languages, license/provenance references, app-owned layout,
+  native hardware facts, service/adapter/lock identities, and a truthful
+  `release-artifact-not-published` withholding state. A separate source
+  manifest freezes six exact model artifacts and the minimal package contents;
+  ignored `dist/` output prevents model, runtime, archive, or generated-audio
+  leakage into Git.
+- The native profile manager accepts only that compiled manifest and a closed
+  profile ID. It owns confirmation, bounded HTTPS download, cancellation,
+  exact size/SHA-256 verification, traversal/link-safe extraction, atomic
+  promotion, verified runtime discovery, removal, and content-free errors. It
+  independently rechecks the closed CUDA/BF16 host facts before acquisition;
+  the renderer never provides a URL, executable, archive, digest, or path.
+- Settings has a non-acquiring withheld state plus the confirmation, progress,
+  cancel, explicit activation, and removal states needed after a real artifact
+  exists. Current Piper narration is not switched by selection or acquisition.
+- `pnpm.cmd package:chatterbox-optional:check-source`, focused Python builder
+  tests, native integrity/cancellation/hardware-gate tests, and desktop client
+  tests pass outside the automation sandbox. These tests prove the withheld and
+  hostile-artifact boundaries; they are not installed-package or performance
+  evidence.
+
+The former requirement to build and publish one archive containing both runtime
+and weights is not carried forward as the selected plan. Its hostile-archive,
+state-machine, cancellation, cleanup, and fixed-identity tests remain useful
+foundation evidence. Milestone 4B must supersede the transport/manifest shape
+before enabling Download; until then Piper remains the only release-core
+narration claim.
+
+### Milestone 4B: Freeze and implement verified official Chatterbox acquisition
+
+**Status:** Not started. This milestone must begin from a dedicated branch after
+Milestone 4A is merged. It changes distribution authority, not the evaluated
+Chatterbox profile or its bilingual narration behavior.
+
+1. Before changing acquisition code or producing results, accept an additive
+   ADR and immutable authority that supersede only the single-archive portion
+   of `mvp-release-authority-v1`. Preserve v1 and Milestone 4A as historical
+   evidence. Freeze the trust, redirect/cache, cancellation, cleanup, runtime,
+   model-deserialization, and result-lineage boundaries.
+2. Freeze `ResembleAI/chatterbox` at full revision
+   `5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18` and exactly these six model-data
+   files: `t3_mtl23ls_v3.safetensors`, `s3gen.pt`, `ve.pt`, `conds.pt`,
+   `grapheme_mtl_merged_expanded_v1.json`, and `Cangjie5_TC.json`. Retain the
+   existing per-file byte sizes and SHA-256 values. Reject mutable revisions,
+   repository-wide snapshots, unexpected files, and renderer-supplied source
+   data.
+3. Freeze the separate runtime-delivery topology before implementation. The
+   exact 79-package Windows/Python 3.12 graph, VoxLeaf service/adapter, CPython,
+   Chatterbox, PerTh, and CUDA/PyTorch inputs must come from reviewed immutable
+   origins and pass the existing lock/inventory/audit policy. The user must not
+   need system Python, `pip`, Git, a development shell, or administrator rights.
+   If no safe bounded runtime origin can be authorized, keep Chatterbox withheld
+   and allow the Piper MVP to continue.
+4. Replace the one-archive manifest with a closed multi-artifact manifest that
+   separately identifies runtime and model data. Implement explicit consent,
+   total and per-file byte ceilings, bounded concurrency, progress,
+   cancellation, restart cleanup, app-owned cache/staging, and retry without
+   sending EPUB text, narration text, audio, local paths, host identity, or
+   credentials. A public model must not require or discover a user Hugging Face
+   token.
+5. Verify every downloaded file's name, byte size, and SHA-256 before it can be
+   promoted. Load the principal T3 file through `safetensors` and retain
+   `weights_only=True` for every approved `.pt` load site. Treat Hub malware and
+   pickle scans as defense-in-depth, never as a replacement for VoxLeaf's frozen
+   hashes or safe loader settings. Downloaded model repositories may supply no
+   executable code.
+6. Promote the complete verified runtime/model set atomically to the versioned
+   application-owned profile root. Preserve separate explicit activation,
+   existing narration identity, offline use, removal, and cleanup of all
+   acquisition cache/staging state. An absent, declined, partial, corrupt,
+   interrupted, stale, or removed profile must leave Piper usable.
+7. Add deterministic tests for mutable-revision rejection, unexpected files,
+   redirect/source substitution, wrong size/hash, truncated and oversized
+   files, unavailable source, cancellation at each file boundary, restart,
+   insufficient disk, duplicate cache state, atomic promotion, safe `.pt`
+   loading, removal, and zero profile mutation before explicit activation.
+8. From normal local PowerShell outside the sandbox, perform a real clean-user
+   installation on a compatible Windows GPU host. Record total download,
+   runtime/model installed bytes, peak staging/cache/free-space requirement,
+   acquisition/remove time, offline restart, cold load, RTF, RAM, and VRAM;
+   prove Spanish and English narration with external connectivity denied after
+   installation.
+9. Review licences, model card/provenance, notices, component inventory, and
+   security/audit evidence for the exact acquired graph. Enable Download and
+   change `withheld` only after all deterministic, exact-host, and clean-host
+   gates pass; otherwise retain the fail-closed state and truthful limitation.
+   Commit authority, implementation, and final evidence at separate logical
+   checkpoints.
 
 ### Milestone 5: Build the versioned Windows package and signing path
 
@@ -466,18 +594,20 @@ pnpm.cmd audit:release
 pnpm.cmd inventory:release:check
 ```
 
-The optional-acquisition and installer-lifecycle commands do not exist yet;
-Milestones 4 and 5 must add them to repository configuration and documentation
-before they may become acceptance evidence.
+The Milestone 4A source check exists as
+`pnpm.cmd package:chatterbox-optional:check-source`; its archive builder and
+focused state-machine tests remain foundation evidence only. Milestone 4B must
+add a distinct official-source acquisition validation command before a real
+network-backed result may become acceptance evidence. Installer-lifecycle
+commands remain Milestone 5 work.
 
-Milestone 4 must add deterministic tests for the optional acquisition state
-machine and native manifest boundary before any network-backed host run. Those
-tests cover explicit consent, absent versus installed availability, byte/free-
-space limits, digest and version rejection, traversal-safe extraction, atomic
-promotion, cancellation, restart recovery, package removal, and zero profile
-or narration mutation before explicit activation. Host evidence then uses only
-the frozen synthetic bilingual corpus and records no URL containing user data,
-book text, prepared text, PCM, local path, or raw host identity.
+Milestone 4A supplies deterministic tests for the withheld optional-acquisition
+state machine and archive boundary. Milestone 4B must extend or replace them
+before any network-backed host run with the exact-revision, six-file,
+multi-artifact, cache, redirect, per-file integrity, safe-loading, and runtime/
+model atomic-install cases above. Host evidence then uses only the frozen
+synthetic bilingual corpus and records no URL containing user data, book text,
+prepared text, PCM, local path, token, or raw host identity.
 
 Every result must distinguish:
 
@@ -520,6 +650,19 @@ the corresponding release claim.
   hash, size, version, and destination native-owned and manifest-closed. Roll
   back the optional acquisition path rather than expose arbitrary renderer
   download or path selection.
+- **The official Hub changes transport/CDN behavior or becomes unavailable.**
+  Freeze repository/revision/file identity rather than mutable delivery URLs,
+  bound and review the necessary official transport path, and still require the
+  repository SHA-256 and size after download. Fail closed and leave Piper usable
+  instead of accepting an unreviewed redirect, mirror, or latest snapshot.
+- **Official model hosting does not provide the complete runtime.** Keep model
+  and runtime authority separate. If the locked runtime cannot be delivered
+  without system tooling, an unaudited installer, or an unapproved origin,
+  retain `withheld`; do not treat successful weight download as installation.
+- **An approved `.pt` file remains a risky serialization surface.** Require the
+  exact reviewed loader with `weights_only=True`, fixed hashes, and bounded
+  resources. Prefer a future upstream `safetensors` replacement when compatible,
+  but do not convert or substitute evaluated weights silently.
 - **Licence or default-voice/model provenance remains ambiguous.** Withhold the
   optional package and stop for qualified review; local evaluation is not
   redistribution authority.
@@ -669,6 +812,23 @@ and never edit prior benchmark authority to make a release pass.
   bundle-size, and pytest cache-write warnings remain. Installer, optional-
   acquisition, signing, OS-level offline observation, and clean-host lifecycle
   commands remain inapplicable until later M011 milestones implement them.
+- **2026-08-01:** Milestone 4A implemented the fail-closed native optional
+  lifecycle, Settings controls, closed source manifest, hostile-archive checks,
+  cancellation, atomic promotion, verified discovery, and owned removal. Its
+  public manifest remains `withheld`, so no end-user network request is enabled.
+- **2026-08-01:** After reviewing GitHub Release, object-storage, Google Drive,
+  and official model-source options, selected a planned Milestone 4B that
+  acquires only the six exact model-data files from the official revision-pinned
+  `ResembleAI/chatterbox` Hugging Face repository. Runtime delivery remains a
+  separate unresolved release input and must be frozen before code; this
+  planning decision does not enable Download or claim installation evidence.
+- **2026-08-01:** Reconciled the roadmap, product MVP/brief, architecture
+  overview/system diagram, documentation index, and release-security boundary
+  around the split official-model/separate-runtime plan. From normal local
+  PowerShell outside the sandbox, `git diff --check`, relative Markdown-link
+  resolution for all eight changed documents, and pending-diff private-pattern
+  scanning passed. No code, manifest, dependency, runtime, download, model, GPU,
+  installer, or clean-host test is applicable to this planning-only change.
 
 ## Discoveries and decisions
 
@@ -682,6 +842,16 @@ and never edit prior benchmark authority to make a release pass.
   not an approximately 8-GiB expansion of the core installer. It is acquired
   only after explicit consent and activated only through a separate explicit
   action after verification.
+- **Decision:** M011 no longer plans to republish the six Chatterbox model files
+  inside one VoxLeaf-hosted archive. Milestone 4B will acquire those exact files
+  from the official Hugging Face repository at a full frozen commit and verify
+  frozen expected size/SHA-256 values. This changes distribution provenance,
+  not model identity or evaluation evidence.
+- **Decision:** Direct official model acquisition does not authorize remote
+  code. Runtime delivery, dependency execution, and model-data loading remain
+  separate authorities; model repository content is data-only, principal
+  weights use `safetensors`, and approved `.pt` inputs retain
+  `weights_only=True`.
 - **Decision:** Piper-core, optional-Chatterbox, and signed-public readiness are
   independent decisions. Failure of one narrows its claim without rewriting
   historical support evidence or automatically failing the others.
@@ -759,9 +929,11 @@ M011 is complete only when:
 
 - every included artifact, runtime, voice, dependency, licence, source, and
   hash is identified and its obligations are fulfilled;
-- every optional Chatterbox artifact has the same evidence plus an exact
-  consent, download, verification, installation, offline-use, and removal
-  lifecycle, or the download action and availability claim are absent;
+- every optional Chatterbox runtime artifact and each of the six official
+  Hugging Face model-data files has the same evidence plus exact revision,
+  consent, bounded download/cache, per-file verification, atomic installation,
+  safe loading, offline-use, and removal lifecycle, or the download action and
+  availability claim are absent;
 - the package installs and uninstalls safely on a clean normal-user Windows
   host without developer tooling or manual firewall configuration;
 - normal English/Spanish reading and narration remain local, bounded,

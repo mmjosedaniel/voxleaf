@@ -1550,6 +1550,26 @@ button.semantic-internal-link {
   padding: 0.75rem;
 }
 
+.reader-settings-content .optional-chatterbox-controls {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-top: 1px solid var(--reader-border);
+}
+
+.reader-settings-content .optional-chatterbox-controls h4,
+.reader-settings-content .optional-chatterbox-controls p {
+  margin: 0;
+}
+
+.reader-settings-content .optional-chatterbox-confirmation,
+.reader-settings-content .optional-chatterbox-controls > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .reader-settings-content .hardware-compatibility-narration fieldset,
 .reader-settings-content .hardware-compatibility-device fieldset {
   display: grid;

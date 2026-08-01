@@ -87,7 +87,12 @@ as a separately gated optional GPU quality download rather than embedding its
 approximately 8.02-GiB developer footprint in the core installer. The plan
 separates Piper-core readiness, optional-Chatterbox readiness, and signed
 public publication so one failed or externally blocked gate cannot create a
-false claim for another.
+false claim for another. M011 Milestone 4A now preserves a fail-closed native
+optional lifecycle with acquisition withheld. Planned Milestone 4B replaces the
+single republished-model archive with six exact model-data files downloaded
+from the official revision-pinned `ResembleAI/chatterbox` Hugging Face
+repository. The reviewed Chatterbox runtime remains a separate release input;
+its immutable origin must be frozen before acquisition is enabled.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -1078,20 +1083,39 @@ through newly frozen authority and regression evidence.
 
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** In progress. Milestones 1 through 3 completed on 2026-08-01. Milestone 1 froze
+**Status:** In progress. Milestones 1 through 3 and the fail-closed Milestone 4A
+foundation completed on 2026-08-01. Milestone 4B is not started. Milestone 1 froze
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
-accepting
+accepted
 [ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
 before dependency or package results. Milestone 2 then closed a 15-entry
 private Piper core lock, a separately gated 79-package Chatterbox lock,
 repository-owned release audits, bounded dependency-update intake, and an
-exact 367-component release inventory. Milestone 3 implements the deterministic
+exact 400-component release inventory. Milestone 3 implements the deterministic
 private CPython/Piper core, both frozen voices, complete notices and exact
 Piper/espeak source fulfillment, bilingual offline smoke, measurements, and
 native fixed-manifest verification. M010.2 is complete. The repository can
-build a release executable and the standalone core payload for validation, but
-installer bundling, optional Chatterbox acquisition, signing, updater policy,
-and complete-MVP validation are not implemented.
+build a release executable and the standalone core payload for validation.
+Milestone 4A also implements native-owned withheld/download/install/remove
+controls and deterministic source/archive checks for optional Chatterbox, but
+end-user acquisition remains disabled. Milestone 4B will freeze and implement
+official-source acquisition for exactly six model-data files from full
+Hugging Face revision `5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18`, with
+per-file size/SHA-256 verification and no model-repository code execution. It
+must separately freeze delivery of the exact reviewed runtime; Hugging Face
+weights alone are not a complete installation. Installer bundling, enabled
+optional acquisition, signing, updater policy, and complete-MVP validation are
+not implemented.
+
+The remaining M011 execution order is explicit:
+
+```text
+completed 1 -> completed 2 -> completed 3 -> completed 4A
+    -> 4B official-source Chatterbox acquisition
+    -> 5 Windows package/signing path
+    -> 6 clean-host matrix
+    -> 7 release decision and closeout
+```
 
 ### Goal
 
@@ -1116,6 +1140,11 @@ explicit verified optional GPU quality package.
   with measured download, storage, hardware, startup, and licence information.
   Decline/cancel performs no network request or profile change. Verification
   and installation complete before a separate explicit activation action.
+- Chatterbox model acquisition requests only six allowlisted data files from
+  the official `ResembleAI/chatterbox` repository at one full immutable
+  revision. It never resolves `main`, downloads a repository snapshot, executes
+  Hub code, or trusts transport metadata instead of the frozen per-file hashes.
+  Runtime acquisition is separately closed and verified.
 - Production packaging includes the desktop shell, local service, exact
   minimal private embedded Python/Piper runtime, both exact voices,
   notices/provenance, and one native-owned fixed-manifest Chatterbox acquisition
@@ -1136,7 +1165,7 @@ explicit verified optional GPU quality package.
   application-owned cleanup pass on a clean normal-user Windows host without
   discovering or deleting user books.
 - A compatible clean GPU host proves Chatterbox absent/declined, bounded
-  download, hash/size failure, cancellation, verified install, explicit
+  multi-file download, revision/file/hash/size failure, cancellation, verified install, explicit
   activation, offline Spanish/English narration, restart, removal, and Piper
   operation after removal. Core and optional results are reported separately.
 - Supported, development-only, excluded, and unsupported profiles/hardware,
@@ -1156,6 +1185,8 @@ and the proportional security boundary is
 The frozen result-blind package, threat, optional-profile, cleanup, licence,
 integrity, and claim authority is
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md).
+Milestone 4B must accept an additive authority and ADR that supersede only its
+single-archive acquisition shape before implementation or results.
 
 ### Major risks and unknowns
 
@@ -1169,6 +1200,14 @@ integrity, and claim authority is
   environment and 2.99 GiB for model artifacts. The final optional package
   needs a minimal lock plus measured download, installed, staging, and free-
   space disclosure; those development sizes are not release claims.
+- Direct official Hugging Face acquisition removes the need for VoxLeaf to
+  republish model weights, but it does not distribute the approximately
+  4.83-GiB measured minimal runtime graph. Milestone 4B must freeze an immutable,
+  verified runtime origin or retain Chatterbox as withheld.
+- Hugging Face transport may use redirects, cache metadata, and content-addressed
+  storage. The implementation must constrain that external interaction while
+  treating full revision, filename, size, and repository SHA-256 as authority;
+  an unreviewed mirror or mutable fallback is not acceptable.
 - The current service child has application-level containment but ordinary
   user filesystem/network authority; it must not be advertised as sandboxed.
 - Piper's GPL/phonemizer and voice-provenance obligations may block or narrow
@@ -1323,7 +1362,10 @@ ADR-0039 freezes the separate boundary-deferred v3, and ADR-0040 selects
 repository WSOLA. The bounded preference runtime, reader-first Settings shell,
 and non-default boundary-deferred playback integration are implemented. The
 maintainer all-rate journey and required PR checks pass; M011 Milestones 1-3
-are complete and optional Chatterbox acquisition is next.
+and the fail-closed Milestone 4A foundation are complete. Milestone 4B is
+planned to freeze and implement official revision-pinned Hugging Face model
+data plus separately verified runtime delivery before optional clean-host
+evidence.
 
 ## MVP completion boundary
 

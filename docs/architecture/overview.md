@@ -145,12 +145,15 @@ M011 is in progress. Milestone 1 freezes
 or package results. Milestone 2 closes the exact production component identity:
 a 15-entry private Piper core lock, a separately gated 79-package Chatterbox
 lock, repository-owned Node/Rust/Python release audits, bounded Dependabot
-intake, and a deterministic 367-component inventory. Milestone 3 packages the
+intake, and a deterministic 400-component inventory. Milestone 3 packages the
 core as a deterministic private CPython/Piper runtime with both voices,
 complete notices, and exact corresponding-source archives. Native discovery
 accepts only the fixed install-relative root after exact manifest/file/hash
-verification. It does not yet implement an installer or optional-profile
-acquisition. The core topology is deliberately smaller than
+verification. Milestone 4A now implements the native-owned optional-profile
+lifecycle and its source-package checker, but its compiled manifest is
+deliberately withheld. Planned Milestone 4B replaces the single republished
+model/archive assumption with exact multi-artifact acquisition. The core
+topology is deliberately smaller than
 the implemented development matrix: Windows x64 plus Piper davefx/Spanish and
 Piper joe/English in one private embedded Python/Piper runtime. Supported
 Chatterbox Spanish/English is planned as a
@@ -161,11 +164,20 @@ plus 2.99 GiB of model artifacts. Milestone 2 replaces that environment graph
 with the explicit 79-package runtime lock and proves the adapter offline in a
 4.83-GiB isolated smoke environment; neither number is a final compressed or
 installed package measurement. M011 has fulfilled the Piper/phonemizer/voice
-payload obligations. It must still fulfill Chatterbox model/runtime provenance
-obligations and implement native-owned
-fixed-manifest acquisition with explicit consent, bounded staging, digest
-verification, atomic versioned installation, separate activation, offline
-use, and application-owned removal. Piper-core portfolio readiness, optional-
+payload obligations. The optional source manifest already freezes the intended
+Chatterbox runtime/model identity and per-model-file sizes and SHA-256 values.
+Milestone 4B will acquire those six model-data files only from full revision
+`5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18` of the official
+`ResembleAI/chatterbox` Hugging Face repository. It may not resolve mutable
+revisions, download arbitrary repository contents, execute Hub code, or rely on
+Hub scanning instead of local verification. The 79-package reviewed runtime is
+a separate release input and still needs a frozen immutable delivery origin.
+Final notices, transport/cache policy, installed/staging sizes, and clean-host
+evidence remain open. The implemented native lifecycle uses explicit consent,
+bounded application-owned staging, per-artifact digest verification, atomic
+versioned installation, separate activation, offline use, and application-owned
+removal only after that new authority and manifest are approved.
+Piper-core portfolio readiness, optional-
 Chatterbox readiness, and signed public publication are separate decisions;
 signing is an external authorization for the last only. Automatic updates,
 enterprise process sandboxing, external certification, cross-platform
@@ -289,8 +301,9 @@ Desktop application
 |-- Reader-first Settings and six boundary-deferred playback rates
 |   [M010.2 complete; repository WSOLA, English fallback, packaged validation]
 |-- Windows x64 MVP core plus optional quality package
-|   [M011 M1-M3; verified bilingual Piper payload implemented;
-|    installer and optional acquisition planned]
+|   [M011 M1-M3 + M4A; verified bilingual Piper payload and withheld
+|    optional lifecycle implemented; M4B official model/runtime acquisition
+|    and installer planned]
 `-- Explicit bilingual narration and exact language/profile selection
     [M010.1 Milestones 2-6; Piper ES/EN and Chatterbox supported,
      Qwen Serena/Aiden development-only]
@@ -751,7 +764,9 @@ failover. Recovery stays identity-first, cleanup-verified, limited to one
 explicit action, and constrained to one service tree. M011 owns distribution,
 including Piper GPL/phonemizer notices, corresponding-source or written-offer
 mechanics, CC0 voice provenance, the separate optional Chatterbox dependency/
-licence/artifact/acquisition lifecycle, installer size, signing, and updates.
+licence/artifact/acquisition lifecycle, including exact official Hugging Face
+model data plus separately verified runtime delivery, installer size, signing,
+and updates.
 
 The implemented audio-frame v1 boundary describes payload-free in-memory frame metadata with frame, session, generation, and narration-segment identities; monotonic sequence; positive sample rate, per-channel sample-frame count, and channel count; and an explicit end-of-segment marker. Duration is derived from sample count divided by sample rate. Public helpers return conservative whole milliseconds using exact integer arithmetic, sum samples before truncating once, and reject unsafe duration overflow. Contiguous single-segment runs reject duplicate frame IDs, sequence gaps or reversals, identity or format changes, and frames after the segment-end marker. The contract selects no codec, payload representation, audio API, player, or buffer policy.
 

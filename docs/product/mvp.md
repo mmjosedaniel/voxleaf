@@ -80,7 +80,8 @@ Piper Spanish/English at every rate, and runs Chatterbox Spanish/English plus
 development-only Qwen Serena/Aiden. The maintainer confirms the full admitted
 rate range, and pull request #170 passes the required Ubuntu and Windows checks.
 
-M011 is in progress with Milestones 1 through 3 complete. Its implemented
+M011 is in progress with Milestones 1 through 3 and the fail-closed Milestone
+4A foundation complete. Its implemented
 standalone core payload targets Windows x64 with the measured Piper
 davefx/Spanish and Piper joe/English CPU profiles. Chatterbox Spanish/English
 is planned as a separately gated optional GPU quality download, not part of
@@ -91,7 +92,12 @@ installation/removal, and clean-host gates pass. A portfolio-ready local build
 may close without a signing certificate; a general public installer may not.
 The deterministic core contains a private CPython/Piper runtime, both voices,
 notices/model cards, and exact GPL source, and is verified natively before use.
-It is not yet integrated into an end-user installer.
+It is not yet integrated into an end-user installer. Planned Milestone 4B will
+obtain only the six approved model-data files from the official
+`ResembleAI/chatterbox` Hugging Face repository at a full frozen revision and
+verify every file's expected name, byte size, and SHA-256. It will not execute
+model-repository code. The exact reviewed Chatterbox runtime is a separate
+release input and still needs an approved immutable delivery origin.
 
 ## Current implemented flow
 
@@ -168,11 +174,13 @@ authority.
 2. M011 has created the integrity-checked standalone Piper Spanish/English
    runtime and voice payload. Installer integration must still prove use
    without a developer shell or manual firewall rule.
-3. M011 next derives the already locked Chatterbox production package and implements explicit
-   consent, bounded native download, digest verification, atomic installation,
-   separate activation, offline use, and application-owned removal. If this
-   independent gate fails, the download action and end-user claim remain absent
-   while the Piper core can continue.
+3. M011 Milestone 4B next freezes and implements the split Chatterbox
+   acquisition: exact reviewed runtime delivery plus exactly six model-data
+   files from the official full-revision Hugging Face source. It adds explicit
+   consent, bounded native download/cache, per-file digest verification, safe
+   model loading, atomic installation, separate activation, offline use, and
+   application-owned removal. If this independent gate fails, the download
+   action and end-user claim remain absent while the Piper core can continue.
 4. M011 packages and validates a versioned Windows x64 installation, repair,
    manual update, and uninstall lifecycle on a clean normal-user host.
 5. M011 decides Piper-core portfolio readiness, optional Chatterbox readiness,
@@ -339,6 +347,16 @@ Remaining:
   discloses measured download, installed/staging storage, hardware, cold-load,
   and licence information. Decline/cancel causes no network request or profile
   change; verified installation completes before separate explicit activation.
+- Optional model acquisition is fixed to the official
+  `ResembleAI/chatterbox` repository, one full commit, and six approved data
+  files with frozen expected byte sizes and SHA-256 values. VoxLeaf never
+  resolves `main`, downloads arbitrary snapshot contents, executes Hub code, or
+  accepts repository/revision/file/URL input from the renderer. Hub security
+  scanning is defense-in-depth and does not replace local integrity checks.
+- The Chatterbox runtime is not supplied by the model repository. It retains a
+  separate exact dependency/source manifest and must have a reviewed immutable
+  delivery origin before the profile can become downloadable. A completed
+  model download without the verified runtime is never treated as installed.
 - Every bundled or deliberately acquired runtime/model/voice artifact is
   pinned and integrity-checked before use; normal reading and narration make
   no external request and no silent download occurs.

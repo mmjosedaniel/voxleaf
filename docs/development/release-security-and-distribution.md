@@ -7,7 +7,8 @@ Milestone 11 must close. It is deliberately proportional to VoxLeaf's first
 MVP and portfolio goal. It is not a security certification and does not claim
 that an end-user installer already exists.
 
-M011 Milestones 1 through 3 are complete. The result-blind
+M011 Milestones 1 through 3 and the fail-closed Milestone 4A foundation are
+complete. The result-blind
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
 [ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
 now govern the package topology, optional-profile lifecycle, threat model,
@@ -16,8 +17,10 @@ before implementation or package measurements. Milestone 2 closes the exact
 dependency graphs, repeatable advisory checks, bounded update intake, and
 content-safe component inventory. Milestone 3 adds the deterministic bilingual
 Piper core, full notices/corresponding-source fulfillment, exact payload
-measurements, offline process-level smoke, and native fixed-manifest verifier
-without claiming that an installer or optional download lifecycle exists.
+measurements, offline process-level smoke, and native fixed-manifest verifier.
+Milestone 4A adds the optional lifecycle and UI in a deliberately withheld
+state; Milestone 4B must accept additive official-source authority and pass real
+acquisition evidence before any Download action is enabled.
 
 ## Current assessment
 
@@ -101,14 +104,14 @@ The 2026-08-01 production-graph checkpoint establishes:
   audit blind spots for URL-pinned Chatterbox, PerTh, Torch, and Torchaudio;
 - bounded weekly dependency-update proposals with no automatic merge, signing,
   or publication authority; and
-- a deterministic 363-record component/licence inventory covering production
+- a deterministic 400-record component/licence inventory covering production
   Node, Windows-target Rust, both Python graphs, exact voice/model artifacts,
   and excluded Qwen status.
 
 The approximately 107.53-MiB Piper-core and 4.83-GiB Chatterbox virtual
 environments are content-safe graph-smoke measurements, not release download,
 installed, staging, or free-space promises. Final packaged artifacts and
-licence/source fulfillment remain Milestones 3 and 4. The optional package is
+licence/source fulfillment remain Milestone 4B work. The optional profile is
 still unavailable to end users until those independent gates and acquisition
 implementation pass.
 
@@ -146,6 +149,15 @@ local development measurements, not a promised download or installed-package
 size. M011 must measure and disclose the final compressed download size,
 installed size, temporary staging allowance, and required free-space margin
 for the exact production package.
+
+The selected Milestone 4B planning direction does not republish the six model
+files in a VoxLeaf-hosted archive. VoxLeaf will request them from the official
+`ResembleAI/chatterbox` Hugging Face repository at full revision
+`5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18`. The separate approximately
+4.83-GiB measured minimal runtime graph is not provided by that model
+repository. Its exact delivery origin remains a required pre-implementation
+authority decision; direct weight acquisition alone is not an installed
+profile.
 
 Selecting an available-but-uninstalled Chatterbox profile may open an
 accessible acquisition confirmation. The confirmation must state that the
@@ -222,25 +234,64 @@ Before the application may offer **Download and enable Chatterbox**, M011 must:
 3. verify the Chatterbox code, model, tokenizer/codec, conditioning/default
    voice, watermarking/runtime components, and every redistributed artifact's
    licence, source revision, model card, provenance, and commercial-use terms;
-4. freeze an application-owned manifest containing exact URLs, identities,
-   versions, byte limits, cryptographic digests, installed paths, and required
-   free space; the renderer supplies only a closed profile ID and never an URL,
-   executable, archive, or destination path;
-5. download through the native acquisition boundary to a bounded temporary
-   file, verify before extraction or use, reject traversal and substitution,
-   install by atomic versioned promotion, and clean incomplete or cancelled
-   state without touching books or other user files;
-6. expose bounded progress, cancellation, retry, failure, installed version,
+4. accept an additive authority before implementation that supersedes only the
+   historical single-archive acquisition shape. Freeze the official model
+   repository, full commit, six filenames, per-file sizes/SHA-256 values,
+   transport/cache boundary, safe loader behavior, and the separate immutable
+   runtime-delivery origin;
+5. download only `t3_mtl23ls_v3.safetensors`, `s3gen.pt`, `ve.pt`, `conds.pt`,
+   `grapheme_mtl_merged_expanded_v1.json`, and `Cangjie5_TC.json` from that
+   frozen official revision. Never resolve `main`, accept renderer-provided
+   source data, download a repository-wide snapshot, execute Hub code, or
+   require a user Hugging Face token for the public model;
+6. download runtime and model artifacts through the native acquisition boundary
+   into bounded application-owned cache/staging, verify every name, size, and
+   cryptographic digest before use, reject source/redirect substitution, and
+   install only the complete set by atomic versioned promotion. Clean incomplete
+   or cancelled state without touching books or other user files;
+7. retain `safetensors` loading for the principal T3 weights and
+   `torch.load(..., weights_only=True)` for each approved `.pt` load site.
+   Treat Hugging Face malware/pickle scanning as defense-in-depth, not local
+   integrity or safe-deserialization authority;
+8. expose bounded progress, cancellation, retry, failure, installed version,
    storage use, notices, and profile removal in accessible product UI;
-7. prove that normal EPUB reading and both Piper voices remain usable while the
+9. prove that normal EPUB reading and both Piper voices remain usable while the
    package is absent, declined, cancelled, corrupt, incompatible, or removed;
-8. prove installed Chatterbox Spanish/English narration offline on a compatible
+10. prove installed Chatterbox Spanish/English narration offline on a compatible
    clean Windows GPU host, with one service tree, existing cancellation and
    memory bounds, no generated-audio persistence, and truthful cold-load and
    resource disclosure; and
-9. remove the optional package and its application-owned staging/cache state
+11. remove the optional package and its application-owned staging/cache state
    without deleting the desktop application, preferences, reading progress, or
    user EPUBs.
+
+**Current M011 Milestone 4A status:** the repository implements the native-owned
+state machine, a compiled closed-profile manifest, renderer-free request
+authority, bounded staging, cancellation, archive checks, atomic promotion,
+verified discovery, explicit activation, and owned removal. The checked-in
+manifest is deliberately `withheld` because no final multi-artifact acquisition
+has been frozen, audited, or authorized. It contains no downloadable URL,
+digest, or byte claim, so the shipped controls cannot initiate a download or
+create optional-profile staging. This is a fail-closed implementation state,
+not optional-package release evidence. Planned Milestone 4B replaces the model
+portion of that archive with the exact official Hugging Face file set above,
+while retaining the hostile-archive work as regression evidence for any
+remaining runtime archive. It must first freeze the runtime origin, final
+multi-artifact manifest, transport/cache policy, notices/provenance, and
+clean-host matrix before the manifest can enable acquisition.
+
+Hugging Face documents full-commit downloads, per-file downloads, filtered
+snapshots, and application-selected cache/local directories. VoxLeaf uses the
+full-commit and exact-file concepts but retains its own post-download
+size/SHA-256 verification and application-owned cleanup. Hugging Face also
+warns that Pickle deserialization can execute code and that its scanning is not
+complete trust authority; PyTorch similarly warns against untrusted
+`torch.load` inputs. These upstream controls justify defense in depth, not
+blind trust:
+
+- [Hugging Face Hub download guidance](https://huggingface.co/docs/huggingface_hub/guides/download)
+- [Hugging Face pickle-scanning guidance](https://huggingface.co/docs/hub/security-pickle)
+- [PyTorch `torch.load` documentation](https://docs.pytorch.org/docs/stable/generated/torch.load.html)
 
 The current exact-host evidence remains useful capacity input: approximately
 0.52-0.54 sustained RTF, greater-than-30-second cold load, about 4.88 GiB peak
