@@ -17,15 +17,13 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`M010-002-reader-settings-and-playback-controls.md`](M010-002-reader-settings-and-playback-controls.md):
-  active pre-M011 follow-up. Milestones 1-2D froze and ran both historical backend
-  comparisons, selected no passing backend, removed every experiment, and
-  retain `1.00x` through ADR-0037. ADR-0038 authorizes a separate
-  boundary-deferred v3; ADR-0039 freezes its immutable authority before
-  candidate work, and ADR-0040 selects repository WSOLA after the complete v3
-  matrix. Runtime remains `1.00x` until Milestone 5 integration.
-  Reader-first shell, accessible Settings, English fallback, profile
-  presentation, and bounded narration preferences remain planned.
+- [`M011-package-validate-and-release-mvp.md`](M011-package-validate-and-release-mvp.md):
+  approved next-milestone plan. It freezes and implements the Windows x64/
+  Piper Spanish-English core, a separately gated optional Chatterbox GPU
+  download with explicit consent and verified lifecycle, exact core/optional
+  dependency/licence/integrity boundaries, clean-host complete-MVP validation,
+  signing path, and independent core/optional/public release decisions.
+  Implementation has not started.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through 9.

@@ -35,3 +35,35 @@ Security fixes should include regression tests when practical.
 The visual reader must render only sanitized local EPUB resources. Restored reading locators are untrusted persisted input and must be validated against the currently opened book before use.
 
 Derived narration text has the same sensitive-content boundary as source book text. It must remain local and ephemeral, must not be persisted or logged, and must be produced only from the already-sanitized semantic model rather than by reopening publisher markup or URLs.
+
+## Current release readiness
+
+VoxLeaf is pre-alpha. The current repository is appropriate for controlled
+local development and maintainer-operated portfolio demonstrations, but it is
+not yet approved as a general public Windows installer.
+
+The native supervisor provides strict profile selection, framed protocol
+bounds, identity-first cancellation, and process-tree cleanup. It does not
+turn the Python TTS child into an operating-system sandbox: an enabled
+interpreter still has the ordinary filesystem and network authority of the
+current Windows user. Development firewall rules and offline environment
+variables are additional local controls, not end-user installation or sandbox
+evidence.
+
+Roadmap Milestone 11 owns exact shipped dependency audits, runtime/model/voice
+integrity and acquisition, third-party licence and provenance fulfillment,
+normal-user packaging, uninstall safety, clean-host privacy validation, and
+the signing path. Its planned core contains Piper Spanish/English; Chatterbox
+Spanish/English is a separate optional GPU download only after explicit
+consent, minimal dependency/advisory closure, fixed-manifest integrity checks,
+atomic installation, offline proof, and application-owned removal. Qwen is not
+part of the first distributable product. Piper-core readiness,
+optional-Chatterbox readiness, and signed public publication are separate
+gates. An unsigned local build may be demonstrated honestly, but must not be
+offered as a trusted general-public installer.
+
+See
+[`docs/development/release-security-and-distribution.md`](docs/development/release-security-and-distribution.md)
+for the proportional MVP boundary and
+[`docs/plans/active/M011-package-validate-and-release-mvp.md`](docs/plans/active/M011-package-validate-and-release-mvp.md)
+for the implementation and validation plan.

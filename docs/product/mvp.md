@@ -2,7 +2,7 @@
 
 ## Implementation status
 
-The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; the optional low-buffer throughput wait remains disabled; playback is `1.0x`; and the simultaneous 30-minute ceiling is never a startup target. M008.1 now applies a separate bounded semantic transition pause between independently generated units when the next unit is already buffered. Artificial hard/token splits remain continuous, genuine buffering replaces rather than compounds the pause, and no silent PCM is created. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. M008's final policy run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute, which exceeds the MVP target.
+The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the historical no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; the optional low-buffer throughput wait remains disabled; and the simultaneous 30-minute ceiling is never a startup target. M008.1 now applies a separate bounded semantic transition pause between independently generated units when the next unit is already buffered. M010.2 later supersedes only M008's fixed playback-rate policy with six validated boundary-deferred values from `1.00x` through `0.75x`. Artificial hard/token splits remain continuous, genuine buffering replaces rather than compounds the pause, and no silent PCM is created. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. M008's historical Qwen policy run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute; that constrained profile exceeded the MVP target and is not the M011 baseline Piper release family.
 
 Completed M009 connects audible segments to highlighting, focus-safe following,
 identity-first navigation, and bounded non-skipping heard-position persistence.
@@ -80,6 +80,16 @@ Piper Spanish/English at every rate, and runs Chatterbox Spanish/English plus
 development-only Qwen Serena/Aiden. The maintainer confirms the full admitted
 rate range, and pull request #170 passes the required Ubuntu and Windows checks.
 
+M011 is approved and has a detailed active ExecPlan, but implementation has
+not started. Its core release candidate is Windows x64 with the measured Piper
+davefx/Spanish and Piper joe/English CPU profiles. Chatterbox Spanish/English
+is planned as a separately gated optional GPU quality download, not part of
+the core installer; Qwen remains development-only. This keeps the portfolio
+MVP small while permitting a higher-quality demonstration after Chatterbox's
+exact dependency, advisory, licence, artifact, integrity, size, hardware,
+installation/removal, and clean-host gates pass. A portfolio-ready local build
+may close without a signing certificate; a general public installer may not.
+
 ## Current implemented flow
 
 1. The user opens VoxLeaf. VoxLeaf performs one bounded local compatibility
@@ -133,9 +143,10 @@ rate range, and pull request #170 passes the required Ubuntu and Windows checks.
 The narration path is deliberately hidden when no exact local admitted
 configuration is available. Piper is the supported CPU fallback, Chatterbox
 is the supported bilingual GPU profile, and Qwen remains constrained and
-development-only. Installer delivery and license
-fulfillment remain M011 work, so neither local artifact setup is yet a
-general end-user distribution.
+development-only. M011 will keep Piper in the core distribution and expose
+Chatterbox only as an explicit verified optional download. Installer delivery,
+optional acquisition, and licence fulfillment remain M011 work, so neither
+local artifact setup is yet a general end-user distribution.
 
 The highlight/follow path above passed repository-authored synthetic,
 Chromium, packaged WebView2, exact-host, M009.1 clean-host, and ephemeral
@@ -147,9 +158,20 @@ authority.
 
 ## Remaining target user flow
 
-1. M011 packages and validates an end-user distribution, including model
-   and voice license notices, provenance, corresponding-source or written-offer
-   mechanics, signing, updates, and complete-MVP validation.
+1. M011 freezes the exact Piper core, optional Chatterbox package, threat
+   model, acquisition, dependency, and licence authority before packaging
+   results.
+2. M011 creates an integrity-checked Piper Spanish/English runtime and voice
+   distribution that requires no developer shell or manual firewall rule.
+3. M011 derives a minimal Chatterbox production graph and implements explicit
+   consent, bounded native download, digest verification, atomic installation,
+   separate activation, offline use, and application-owned removal. If this
+   independent gate fails, the download action and end-user claim remain absent
+   while the Piper core can continue.
+4. M011 packages and validates a versioned Windows x64 installation, repair,
+   manual update, and uninstall lifecycle on a clean normal-user host.
+5. M011 decides Piper-core portfolio readiness, optional Chatterbox readiness,
+   and signed public-installer publication independently.
 
 M010.1 is a deliberately narrow pre-M011 exception to the earlier post-MVP
 candidate order because English narration and a stronger portfolio demo are
@@ -219,8 +241,12 @@ Implemented and validated:
 
 Remaining:
 
-- Provide compliant runtime/model distribution, installer packaging, and a
-  validated end-user installation path in M011.
+- Provide compliant minimal Piper runtime/voice distribution, exact shipped
+  dependency and licence closure, installer packaging, and a validated
+  normal-user Windows path in M011.
+- Provide the separately gated optional Chatterbox download only after its
+  minimal graph, advisory/licence/provenance, integrity, size, GPU,
+  install/remove, offline, and clean-host evidence passes.
 
 ## Target acceptance criteria
 
@@ -298,6 +324,38 @@ Remaining:
 - Model-loading failure does not corrupt saved reading progress.
 - Unsupported acceleration falls back safely or produces an actionable compatibility message.
 
+### Distribution and release security
+
+- The first Windows x64 package includes only frozen, required components and
+  excludes benchmark tools, private artifacts, generated audio, model caches,
+  and optional TTS profiles that have not passed exact distribution gates.
+- Chatterbox weights and GPU runtime do not enter the core installer. A
+  compatible-but-absent selection may open an accessible confirmation that
+  discloses measured download, installed/staging storage, hardware, cold-load,
+  and licence information. Decline/cancel causes no network request or profile
+  change; verified installation completes before separate explicit activation.
+- Every bundled or deliberately acquired runtime/model/voice artifact is
+  pinned and integrity-checked before use; normal reading and narration make
+  no external request and no silent download occurs.
+- Exact shipped Node, Rust, Python, native, model, and voice components have a
+  versioned content-safe inventory with source, licence, reason, and hash.
+- No known high or critical reachable vulnerability is silently shipped;
+  advisory-tool blind spots and any narrow time-bounded exception are stated.
+- Piper/phonemizer GPL obligations, applicable corresponding-source mechanics,
+  davefx/joe voice provenance/model cards, CC0 terms, and the root MIT notice
+  are fulfilled before distribution.
+- A clean normal-user Windows host can install, run, repair/reinstall, replace
+  a version manually, and uninstall VoxLeaf without a repository, build tools,
+  administrator-created firewall rule, or deletion of user books.
+- A compatible clean GPU host can decline, cancel, retry, install, use offline,
+  restart, and remove the optional Chatterbox package. Corrupt, truncated,
+  oversized, stale, insufficient-space, or incompatible packages fail closed
+  and leave Piper usable.
+- Portfolio-ready local evidence may use an unsigned maintainer build with an
+  explicit label. A general public installer additionally requires protected
+  external signing credentials, signature verification, and a published
+  checksum.
+
 ## Non-goals for the first version
 
 - Producing or exporting complete audiobook files.
@@ -311,3 +369,7 @@ Remaining:
 - User voice cloning or reference-voice enrollment without a separate accepted consent, privacy, persistence, deletion, and abuse-safeguard decision.
 - Mobile applications.
 - A plugin marketplace.
+- Automatic updates, enterprise process sandboxing, external penetration
+  certification, formal reproducible-build guarantees, and non-Windows
+  installers; these are deferred unless M011 finds one is required to prevent
+  a concrete release-blocking risk.

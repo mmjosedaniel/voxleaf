@@ -78,7 +78,15 @@ The sequential six-arm packaged matrix, browser/native-startup, portable, and
 complete Windows repository checks pass outside the sandbox. Renewed maintainer
 listening confirms correct slowdown across every admitted rate, and pull
 request #170 passes the required Ubuntu and Windows checks. M011 is now the
-next roadmap milestone.
+next roadmap milestone. Its detailed
+[`M011 ExecPlan`](active/M011-package-validate-and-release-mvp.md) scopes the
+core distributable candidate to Windows x64 and the measured Piper
+Spanish/English CPU family. It now adds supported Chatterbox Spanish/English
+as a separately gated optional GPU quality download rather than embedding its
+approximately 8.02-GiB developer footprint in the core installer. The plan
+separates Piper-core readiness, optional-Chatterbox readiness, and signed
+public publication so one failed or externally blocked gate cannot create a
+false claim for another.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -1069,8 +1077,8 @@ through newly frozen authority and regression evidence.
 
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** Approved; not started. M010.2 is complete, so M011 is the next
-roadmap milestone.
+**Status:** Approved with a detailed active ExecPlan; implementation not
+started. M010.2 is complete, so M011 is the next roadmap milestone.
 The repository can build a
 release executable for validation, but installer bundling, signing,
 model/runtime distribution, Piper license fulfillment, updater policy, and
@@ -1078,27 +1086,88 @@ complete-MVP validation are not implemented.
 
 ### Goal
 
-Produce a documented Windows installation and demonstrate that the complete MVP meets its functional, privacy, accessibility, reliability, and performance criteria.
+Produce a documented Windows x64 installation and demonstrate that the
+complete MVP meets its functional, privacy, accessibility, dependency,
+licence, integrity, reliability, and performance criteria. Keep Piper
+Spanish/English in the portfolio-sized core and provide Chatterbox only as an
+explicit verified optional GPU quality package.
 
 ### Expected outcome
 
-- A user can install or follow verified local setup instructions, open a safe EPUB, read visually, restore progress, and listen through a supported local voice.
-- Production packaging includes the desktop shell, local service, required runtimes, and a deliberate model acquisition strategy.
-- Unit, integration, end-to-end, accessibility, security, build, packaging, and hardware-specific performance checks are documented and pass at the applicable levels.
+- A normal Windows user can install VoxLeaf without a repository checkout,
+  developer shell, manual firewall rule, or separately installed build tools;
+  open a safe EPUB; read visually; restore progress; and listen through an
+  included local Spanish or English voice.
+- The core distributable profile family is Piper davefx/Spanish plus Piper
+  joe/English. Chatterbox Spanish/English is offered as an optional download
+  only after its exact minimal dependency, advisory, licence, artifact, size,
+  hardware, integrity, removal, and clean-host gates independently pass. Qwen
+  remains development-only and outside the first distributable product.
+- Selecting compatible but absent Chatterbox opens an accessible confirmation
+  with measured download, storage, hardware, startup, and licence information.
+  Decline/cancel performs no network request or profile change. Verification
+  and installation complete before a separate explicit activation action.
+- Production packaging includes the desktop shell, local service, exact
+  minimal runtime, notices/provenance, and a deliberate integrity-checked
+  Piper bundle/acquisition strategy plus one native-owned fixed-manifest
+  Chatterbox acquisition boundary with no silent runtime download.
+- Exact shipped JavaScript, Rust, Python, native, model, and voice components
+  are inventoried and audited. Unused release packages are removed, known
+  high/critical reachable vulnerabilities block release, and audit blind
+  spots are recorded instead of being reported as clean.
+- Piper/phonemizer GPL obligations, applicable source mechanics, voice
+  provenance/model cards, CC0 terms, the root MIT licence, and other included
+  notices are fulfilled before distribution.
+- Unit, integration, hostile-EPUB, end-to-end, accessibility, security,
+  dependency, build, packaging, and hardware-specific performance checks are
+  documented and pass at the applicable levels.
 - A sustained reading test covers playback, buffering, page and chapter transitions, pause, seek, resume, cancellation, service failure, and restoration.
 - Privacy review confirms that normal reading requires no remote service and persists no generated narration.
-- Supported and unsupported hardware, known limitations, benchmark results, setup, troubleshooting, and recovery are documented honestly.
+- Install, repair/reinstall, manual version replacement, uninstall, and
+  application-owned cleanup pass on a clean normal-user Windows host without
+  discovering or deleting user books.
+- A compatible clean GPU host proves Chatterbox absent/declined, bounded
+  download, hash/size failure, cancellation, verified install, explicit
+  activation, offline Spanish/English narration, restart, removal, and Piper
+  operation after removal. Core and optional results are reported separately.
+- Supported, development-only, excluded, and unsupported profiles/hardware,
+  known limitations, benchmark results, setup, troubleshooting, recovery,
+  checksums, and audit limitations are documented honestly.
+- A portfolio-ready local MVP may close without a certificate after the
+  preceding gates pass. Offering a general public installer additionally
+  requires protected external signing credentials, signature verification,
+  checksums, and documented SmartScreen/antivirus observation.
 
 ### Dependencies
 
-All earlier milestones. Packaging exploration should begin during Milestones 6 and 7 because model and Python distribution risks can invalidate late assumptions.
+All earlier milestones. The detailed implementation authority is
+[`M011-package-validate-and-release-mvp.md`](active/M011-package-validate-and-release-mvp.md),
+and the proportional security boundary is
+[`release-security-and-distribution.md`](../development/release-security-and-distribution.md).
 
 ### Major risks and unknowns
 
-- Installer size, code signing, antivirus behavior, WebView and native dependencies, Python embedding, model downloads, and GPU runtime compatibility.
+- Installer size, code signing, antivirus behavior, WebView and native
+  dependencies, Python embedding, model/voice acquisition, and GPU runtime
+  compatibility.
+- Candidate environments currently contain known advisories and packages not
+  used by their exact adapters. Copying a benchmark environment into a release
+  would enlarge both vulnerability and licence surface.
+- The current Chatterbox development state uses approximately 5.03 GiB for its
+  environment and 2.99 GiB for model artifacts. The final optional package
+  needs a minimal lock plus measured download, installed, staging, and free-
+  space disclosure; those development sizes are not release claims.
+- The current service child has application-level containment but ordinary
+  user filesystem/network authority; it must not be advertised as sandboxed.
+- Piper's GPL/phonemizer and voice-provenance obligations may change bundle
+  versus acquisition mechanics.
 - Hardware-specific benchmarks may expose an unsupported default model or buffer policy.
 - Accessibility and long-session failures are expensive to fix if postponed until final packaging.
 - Portfolio or release claims must reflect validated behavior rather than the intended architecture.
+- Automatic updates, AppContainer, external penetration testing, formal
+  reproducible-build guarantees, cross-platform packaging, and bundling every
+  engine are deliberately deferred unless new evidence makes one essential to
+  the first MVP.
 
 ## Post-MVP local TTS candidate backlog
 

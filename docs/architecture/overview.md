@@ -139,6 +139,27 @@ is retained. Milestone 5 connects it to product playback with boundary-
 deferred state, content-free preference ownership, and effective-lead
 accounting.
 
+M011 is approved with a detailed active ExecPlan; no packaging implementation
+or release evidence exists yet. The core topology is deliberately smaller than
+the implemented development matrix: Windows x64 plus Piper davefx/Spanish and
+Piper joe/English. Supported Chatterbox Spanish/English is planned as a
+separate optional GPU quality package, never silently downloaded or embedded
+in the core installer; Qwen remains outside the first distributable product.
+The currently measured Chatterbox developer state occupies about 5.03 GiB of
+environment plus 2.99 GiB of model artifacts, so it cannot stand in for the
+minimal release graph or final download/storage measurements. M011 must close
+shipped/downloadable dependency auditing, remove dormant web/UI packages,
+resolve or block release for relevant advisories, fulfill Piper/phonemizer and
+Chatterbox model/runtime provenance obligations, and implement native-owned
+fixed-manifest acquisition with explicit consent, bounded staging, digest
+verification, atomic versioned installation, separate activation, offline
+use, and application-owned removal. Piper-core portfolio readiness, optional-
+Chatterbox readiness, and signed public publication are separate decisions;
+signing is an external authorization for the last only. Automatic updates,
+enterprise process sandboxing, external certification, cross-platform
+packages, Qwen distribution, and bundling every engine remain post-MVP unless
+new evidence makes one release-critical.
+
 M009.1 exact-host use additionally exposed that the original automatic passive-
 scroll seek conflicted with reader inspection. The implemented correction keeps
 the visible-passage target separate from the active narration locator: passive
@@ -253,6 +274,10 @@ Desktop application
 |   [M010 Milestone 4 complete; one explicit verified-cleanup restart]
 |-- Piper/davefx CPU-fallback runtime
 |   [M010 complete; integrated and exact-host Piper arm validated]
+|-- Reader-first Settings and six boundary-deferred playback rates
+|   [M010.2 complete; repository WSOLA, English fallback, packaged validation]
+|-- Windows x64 MVP core plus optional quality package
+|   [M011 approved planned; Piper ES/EN core + Chatterbox download; not implemented]
 `-- Explicit bilingual narration and exact language/profile selection
     [M010.1 Milestones 2-6; Piper ES/EN and Chatterbox supported,
      Qwen Serena/Aiden development-only]
@@ -712,7 +737,8 @@ unselectable `unsupported` evidence. Fallback never means automatic engine
 failover. Recovery stays identity-first, cleanup-verified, limited to one
 explicit action, and constrained to one service tree. M011 owns distribution,
 including Piper GPL/phonemizer notices, corresponding-source or written-offer
-mechanics, CC0 voice provenance, installer size, signing, and updates.
+mechanics, CC0 voice provenance, the separate optional Chatterbox dependency/
+licence/artifact/acquisition lifecycle, installer size, signing, and updates.
 
 The implemented audio-frame v1 boundary describes payload-free in-memory frame metadata with frame, session, generation, and narration-segment identities; monotonic sequence; positive sample rate, per-channel sample-frame count, and channel count; and an explicit end-of-segment marker. Duration is derived from sample count divided by sample rate. Public helpers return conservative whole milliseconds using exact integer arithmetic, sum samples before truncating once, and reject unsafe duration overflow. Contiguous single-segment runs reject duplicate frame IDs, sequence gaps or reversals, identity or format changes, and frames after the segment-end marker. The contract selects no codec, payload representation, audio API, player, or buffer policy.
 

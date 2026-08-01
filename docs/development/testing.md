@@ -911,11 +911,51 @@ Qwen truthfully depleted once and refilled at RTF 2.12/2.04. All arms passed
 highlight/follow, navigation, cancellation, cleanup, zero external requests,
 and zero generated-audio persistence. `test:browser`, `test:native-startup`,
 `check:portable`, and `check` also pass outside the sandbox. Required PR checks
-and human confirmation of the intermediate portfolio rates remain open.
+and maintainer confirmation of every admitted rate subsequently passed, so
+M010.2 is complete.
 
 Exact-host listening uses repository-authored synthetic text and content-free
 measurements only. Default CI remains model-free. No private EPUB, waveform,
 model artifact, path, or raw host identity may enter a result or fixture.
+
+## M011 packaging and release validation
+
+M011 is approved planned; none of the following is current pass evidence. Its
+active
+[`ExecPlan`](../plans/active/M011-package-validate-and-release-mvp.md)
+requires a clean normal-user Windows package matrix in addition to the
+existing deterministic, Chromium, packaged WebView2, and exact-host suites.
+
+The release matrix must distinguish:
+
+- exact shipped Node, Rust, base Python, and core/optional-profile dependency
+  audits, including packages the advisory source cannot identify;
+- integrity and licence/provenance validation for every bundled or explicitly
+  acquired runtime, engine, phonemizer, model, and voice;
+- install, first start, repair/reinstall, manual version replacement,
+  application restart, and uninstall without developer tools or a manual
+  firewall rule;
+- a synthetic/public-domain Spanish and English journey across restoration,
+  narration, all six playback rates, synchronization, cancellation, recovery,
+  cleanup, privacy, accessibility, resource, and hostile-EPUB regression;
+- normal reading/narration with external connectivity unavailable and zero
+  generated-audio persistence; and
+- deterministic optional-Chatterbox acquisition tests for consent, closed
+  manifest identity, size/disk limits, wrong digest/version, traversal,
+  interruption, cancellation, atomic install, restart recovery, explicit
+  activation, removal, and unchanged Piper availability;
+- a compatible clean-GPU-host Chatterbox arm covering absent/declined,
+  verified download, Spanish/English offline narration, cold load, RTF,
+  RAM/VRAM, application restart, removal, and Piper use afterward; and
+- Piper-core portfolio, optional-Chatterbox, and signed public-installer
+  evidence as separate decisions.
+
+M011 audit, acquisition, and installer-lifecycle commands do not exist yet.
+The milestones that implement them must first add and document repository-owned
+commands; until then, do not invent a command or describe the release gate as
+passing.
+All final M011 commands run outside the automation sandbox under the existing
+repository testing rule.
 
 ## Deferred coverage
 
@@ -925,10 +965,12 @@ M010 Windows host matching/recovery now have their scoped deterministic,
 packaged, and exact-host evidence. Default tests and CI still load no candidate
 or model; model-backed timing, profile, navigation, persistence, and cleanup
 matrices remain separate exact-host commands. Non-Windows hardware support,
-installer behavior, license-complete distribution, and complete packaged
-bilingual-profile MVP end-to-end coverage remain deferred. The examples below
-are requirements for
-those later roadmap milestones, not claims about current coverage.
+automatic updates, enterprise sandboxing, and cross-platform packaging remain
+deferred. Windows installer behavior, licence-complete distribution, and the
+minimum packaged bilingual Piper core plus separately gated optional
+Chatterbox acquisition/removal lifecycle are now approved M011 work but remain
+unimplemented. The examples below are requirements, not claims about current
+coverage.
 
 ## Test levels
 

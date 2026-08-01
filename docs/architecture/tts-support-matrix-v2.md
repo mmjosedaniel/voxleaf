@@ -16,16 +16,16 @@ as production support. `deferred` and `unsupported` remain non-selectable.
 
 ## Current matrix
 
-| Exact profile                                                                | Language            | Current state              | Next boundary                                                                                                 |
-| ---------------------------------------------------------------------------- | ------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Piper 1.4.2 / davefx / ONNX CPU                                              | Spanish             | **Supported**              | Retain as a lightweight CPU profile; M011 owns packaging and distribution obligations.                        |
-| Piper 1.4.2 / joe / ONNX CPU                                                 | English             | **Supported**              | Retain as the language-matched lightweight CPU profile; M011 owns packaging and distribution obligations.     |
-| Chatterbox Multilingual V3 / bundled default conditioning / CUDA bfloat16 v4 | Spanish and English | **Supported**              | Nominal 8-GB GPU class (7,680 MiB DXGI floor), at least 6,144 MiB free; disclose measured cold-load/RAM cost. |
-| Qwen3-TTS 1.7B CustomVoice / Serena / CUDA bfloat16 v8                       | Spanish             | **Development-only**       | Keep constrained buffering and require the exact Qwen developer gate and measured host.                       |
-| Qwen3-TTS 1.7B CustomVoice / Aiden / CUDA bfloat16 v8                        | English             | **Development-only**       | Keep constrained buffering and require the exact Qwen developer gate and measured host.                       |
-| MOSS-TTS-Nano 100M ONNX / Ava                                                | Spanish and English | **Deferred, not rejected** | Future separately frozen dialogue/punctuation and voice/accent investigation.                                 |
-| Qwen3-TTS 0.6B CustomVoice / Aiden                                           | Historical profile  | **Unsupported**            | Preserve historical rejection; do not confuse it with the implemented 1.7B Aiden v8 profile.                  |
-| Supertonic 3 / F1                                                            | Spanish             | **Unsupported**            | Preserve historical rejection.                                                                                |
+| Exact profile                                                                | Language            | Current state              | Next boundary                                                                                                                                           |
+| ---------------------------------------------------------------------------- | ------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Piper 1.4.2 / davefx / ONNX CPU                                              | Spanish             | **Supported**              | Retain as a lightweight CPU profile; M011 owns packaging and distribution obligations.                                                                  |
+| Piper 1.4.2 / joe / ONNX CPU                                                 | English             | **Supported**              | Retain as the language-matched lightweight CPU profile; M011 owns packaging and distribution obligations.                                               |
+| Chatterbox Multilingual V3 / bundled default conditioning / CUDA bfloat16 v4 | Spanish and English | **Supported**              | M011 separately gates an optional explicit download; retain the 8-GB GPU/6,144-MiB-free host floors and disclose final package/cold-load/RAM/VRAM cost. |
+| Qwen3-TTS 1.7B CustomVoice / Serena / CUDA bfloat16 v8                       | Spanish             | **Development-only**       | Keep constrained buffering and require the exact Qwen developer gate and measured host.                                                                 |
+| Qwen3-TTS 1.7B CustomVoice / Aiden / CUDA bfloat16 v8                        | English             | **Development-only**       | Keep constrained buffering and require the exact Qwen developer gate and measured host.                                                                 |
+| MOSS-TTS-Nano 100M ONNX / Ava                                                | Spanish and English | **Deferred, not rejected** | Future separately frozen dialogue/punctuation and voice/accent investigation.                                                                           |
+| Qwen3-TTS 0.6B CustomVoice / Aiden                                           | Historical profile  | **Unsupported**            | Preserve historical rejection; do not confuse it with the implemented 1.7B Aiden v8 profile.                                                            |
+| Supertonic 3 / F1                                                            | Spanish             | **Unsupported**            | Preserve historical rejection.                                                                                                                          |
 
 ## Invariants
 
@@ -44,5 +44,7 @@ M010's original runtime closeout. This v2 matrix is the current executable
 M010.1 overlay. Milestone 7's six packaged bilingual portfolio journeys pass
 locally; pull request #159 passed required Ubuntu/Windows checks and merged the
 plan closeout. M010.2 may reorganize presentation and playback controls but
-must not change this matrix. M011 remains responsible for distribution,
-licensing fulfillment, installers, and production support claims.
+must not change this matrix. M011 keeps Piper in the core and treats Chatterbox
+as a separate optional-download release gate; it remains responsible for
+distribution, licensing fulfillment, acquisition/removal, installers, and
+production support claims.
