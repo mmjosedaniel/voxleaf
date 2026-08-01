@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_READER_PREFERENCES } from "../reader/reader-preferences";
 import { DEFAULT_NARRATION_START_PREFERENCE_V1 } from "../persistence/narration-start-preference";
 import { HardwareProfileCompatibilityCoordinator } from "../tts/hardware-profile-compatibility";
+import { OptionalChatterboxClient } from "../tts/optional-chatterbox-client";
 import { ReaderSettingsDialog } from "./ReaderSettingsDialog";
 
 afterEach(() => cleanup());
@@ -23,6 +24,19 @@ function renderSettings(overrides: { readonly onClose?: () => void } = {}) {
   const onSelectLanguage = vi.fn(async () => true);
   const onResetNarrationSettings = vi.fn(async () => true);
   const onRecoveryEpisodeReset = vi.fn();
+  const optionalChatterbox = new OptionalChatterboxClient(async () => ({
+    profileId: "chatterbox-multilingual-v3-cuda-bf16-default-v4",
+    state: "withheld",
+    downloadBytes: null,
+    downloadedBytes: 0,
+    installedBytes: null,
+    temporaryBytes: null,
+    minimumFreeBytes: null,
+    coldStartSeconds: null,
+    licenseSummary:
+      "Chatterbox, its reviewed model/default conditioning, and PerTh are MIT-licensed.",
+    failure: null,
+  }));
 
   const rendered = render(
     <ReaderSettingsDialog
@@ -43,6 +57,9 @@ function renderSettings(overrides: { readonly onClose?: () => void } = {}) {
       onSelectLanguage={onSelectLanguage}
       onResetNarrationSettings={onResetNarrationSettings}
       onRecoveryEpisodeReset={onRecoveryEpisodeReset}
+      optionalChatterbox={optionalChatterbox}
+      onActivateChatterbox={vi.fn(async () => true)}
+      onRemoveChatterbox={vi.fn(async () => undefined)}
     />,
   );
 

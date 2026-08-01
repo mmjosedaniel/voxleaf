@@ -17,9 +17,11 @@ import type {
 } from "../reader/reader-preferences";
 import type { AdaptiveBufferStartMode } from "../tts/adaptive-buffer-scheduler";
 import { HardwareCompatibilityControls } from "../tts/HardwareCompatibilityControls";
+import { OptionalChatterboxControls } from "../tts/OptionalChatterboxControls";
 import type { HardwareProfileCompatibilityCoordinator } from "../tts/hardware-profile-compatibility";
 import type { NarrationLanguageV1 } from "../tts/narration-language";
 import { NarrationStartPreferenceControls } from "../tts/NarrationStartPreferenceControls";
+import { OptionalChatterboxClient } from "../tts/optional-chatterbox-client";
 import type { ProductNarrationCoordinator } from "../tts/product-narration-coordinator";
 
 const FOCUSABLE_SELECTOR = [
@@ -66,6 +68,9 @@ export interface ReaderSettingsDialogProps {
   ) => Promise<boolean>;
   readonly onResetNarrationSettings: () => Promise<boolean>;
   readonly onRecoveryEpisodeReset: () => void;
+  readonly optionalChatterbox: OptionalChatterboxClient;
+  readonly onActivateChatterbox: () => Promise<boolean>;
+  readonly onRemoveChatterbox: () => Promise<void>;
 }
 
 function CoordinatorNarrationStartSettings({
@@ -135,6 +140,9 @@ export function ReaderSettingsDialog({
   onSelectLanguage,
   onResetNarrationSettings,
   onRecoveryEpisodeReset,
+  optionalChatterbox,
+  onActivateChatterbox,
+  onRemoveChatterbox,
 }: ReaderSettingsDialogProps): ReactElement | null {
   const titleId = useId();
   const descriptionId = useId();
@@ -248,6 +256,11 @@ export function ReaderSettingsDialog({
               onSelectLanguage={onSelectLanguage}
               onResetNarrationSettings={onResetNarrationSettings}
               onRecoveryEpisodeReset={onRecoveryEpisodeReset}
+            />
+            <OptionalChatterboxControls
+              client={optionalChatterbox}
+              onActivate={onActivateChatterbox}
+              onRemove={onRemoveChatterbox}
             />
             <NarrationStartSettings
               {...(narrationCoordinator === undefined

@@ -62,6 +62,10 @@ import { ProductNarrationControls } from "./tts/ProductNarrationControls";
 import { ProductNarrationCoordinator } from "./tts/product-narration-coordinator";
 import type { NarrationLanguageV1 } from "./tts/narration-language";
 import type { AdaptiveBufferStartMode } from "./tts/adaptive-buffer-scheduler";
+import {
+  CHATTERBOX_OPTIONAL_PROFILE_ID,
+  OptionalChatterboxClient,
+} from "./tts/optional-chatterbox-client";
 
 export interface ReadyPublicationContentProps {
   readonly publication: OpenedPublication;
@@ -267,6 +271,7 @@ export function App({
       suppliedNarrationPlaybackPreferenceRepository ??
       createWebStorageNarrationPlaybackPreferenceRepository(),
   );
+  const [optionalChatterbox] = useState(() => new OptionalChatterboxClient());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsButtonRef = useRef<HTMLButtonElement | null>(null);
   const [readerPreferencePresentation, setReaderPreferencePresentation] =
@@ -761,6 +766,17 @@ export function App({
   ]);
   const handleHardwareProfileSelection = useCallback(
     async (profileId: string): Promise<boolean> => {
+      if (profileId === CHATTERBOX_OPTIONAL_PROFILE_ID) {
+        // The exact developer environment remains a separately explicit
+        // development-only path. Packaged-reader selection must instead use
+        // the native-owned optional package lifecycle.
+        if (!import.meta.env.DEV) {
+          const optional = await optionalChatterbox.select();
+          if (optional.state !== "installed") {
+            return false;
+          }
+        }
+      }
       await (narrationCoordinator?.stopForConfigurationChange?.() ??
         narrationCoordinator?.stop());
       const selected =
@@ -770,7 +786,21 @@ export function App({
       }
       return selected;
     },
-    [hardwareCompatibilityCoordinator, narrationCoordinator],
+    [
+      hardwareCompatibilityCoordinator,
+      narrationCoordinator,
+      optionalChatterbox,
+    ],
+  );
+  const handleChatterboxRemoval = useCallback(async (): Promise<void> => {
+    await (narrationCoordinator?.stopForConfigurationChange?.() ??
+      narrationCoordinator?.stop());
+    await optionalChatterbox.remove();
+    await narrationCoordinator?.refreshSelectedProfile();
+  }, [narrationCoordinator, optionalChatterbox]);
+  const handleChatterboxActivation = useCallback(
+    () => handleHardwareProfileSelection(CHATTERBOX_OPTIONAL_PROFILE_ID),
+    [handleHardwareProfileSelection],
   );
   const handleNarrationLanguageSelection = useCallback(
     async (language: NarrationLanguageV1): Promise<boolean> => {
@@ -1021,6 +1051,9 @@ export function App({
           onRecoveryEpisodeReset={() =>
             narrationCoordinator?.resetRecoveryEpisode()
           }
+          optionalChatterbox={optionalChatterbox}
+          onActivateChatterbox={handleChatterboxActivation}
+          onRemoveChatterbox={handleChatterboxRemoval}
         />
       </section>
     </main>

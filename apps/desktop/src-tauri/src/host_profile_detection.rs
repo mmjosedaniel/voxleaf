@@ -1019,6 +1019,65 @@ fn detect_host_profile() -> HostProfileCompatibilityReportV1 {
     }
 }
 
+fn quantity_at_least(quantity: Quantity, required: u64) -> bool {
+    matches!(quantity, Quantity::Known { value } if value >= required)
+}
+
+/// Apply the closed optional-profile hardware facts without returning the raw
+/// host report to another native caller. The renderer's compatibility view is
+/// explanatory only; acquisition independently rechecks this gate before it
+/// is allowed to open a network connection.
+pub(crate) fn optional_cuda_bf16_profile_admitted(
+    minimum_logical_processors: u64,
+    minimum_total_ram_mi_b: u64,
+    minimum_available_ram_mi_b: u64,
+    minimum_total_dedicated_vram_mi_b: u64,
+    minimum_available_dedicated_vram_mi_b: u64,
+) -> bool {
+    optional_cuda_bf16_profile_admitted_from_report(
+        detect_host_profile(),
+        minimum_logical_processors,
+        minimum_total_ram_mi_b,
+        minimum_available_ram_mi_b,
+        minimum_total_dedicated_vram_mi_b,
+        minimum_available_dedicated_vram_mi_b,
+    )
+}
+
+fn optional_cuda_bf16_profile_admitted_from_report(
+    report: HostProfileCompatibilityReportV1,
+    minimum_logical_processors: u64,
+    minimum_total_ram_mi_b: u64,
+    minimum_available_ram_mi_b: u64,
+    minimum_total_dedicated_vram_mi_b: u64,
+    minimum_available_dedicated_vram_mi_b: u64,
+) -> bool {
+    let cuda = report.providers.cuda;
+    report.schema_version == SCHEMA_VERSION
+        && report.platform.operating_system == OperatingSystem::Windows
+        && report.platform.architecture == Architecture::X86_64
+        && quantity_at_least(
+            report.processor.logical_processor_count,
+            minimum_logical_processors,
+        )
+        && quantity_at_least(report.memory.total_physical_mi_b, minimum_total_ram_mi_b)
+        && quantity_at_least(
+            report.memory.available_physical_mi_b,
+            minimum_available_ram_mi_b,
+        )
+        && cuda.availability == Availability::Available
+        && cuda.device_class == DeviceClass::DiscreteGpu
+        && cuda.precisions.bfloat16 == Availability::Available
+        && quantity_at_least(
+            cuda.dedicated_memory_mi_b,
+            minimum_total_dedicated_vram_mi_b,
+        )
+        && quantity_at_least(
+            cuda.available_dedicated_memory_mi_b,
+            minimum_available_dedicated_vram_mi_b,
+        )
+}
+
 #[tauri::command]
 pub async fn detect_host_profile_compatibility()
 -> Result<HostProfileCompatibilityReportV1, &'static str> {
@@ -1093,6 +1152,25 @@ mod tests {
             }]),
             directml_devices: ProbeValue::Unavailable,
         }
+    }
+
+    #[test]
+    fn optional_download_gate_requires_the_closed_cuda_bfloat16_facts() {
+        let report = normalize_snapshot(complete_snapshot());
+        assert!(optional_cuda_bf16_profile_admitted_from_report(
+            report, 8, 24_576, 4_096, 7_680, 6_144,
+        ));
+
+        let mut insufficient = complete_snapshot();
+        insufficient.cuda_devices = ProbeValue::Unknown;
+        assert!(!optional_cuda_bf16_profile_admitted_from_report(
+            normalize_snapshot(insufficient),
+            8,
+            24_576,
+            4_096,
+            7_680,
+            6_144,
+        ));
     }
 
     fn report(snapshot: NativeHostSnapshot) -> HostProfileCompatibilityReportV1 {

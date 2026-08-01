@@ -7,6 +7,7 @@ use tauri::Manager;
 #[cfg(test)]
 mod hardware_profile_authority;
 mod host_profile_detection;
+mod tts_optional_chatterbox;
 mod tts_protocol_contract;
 mod tts_protocol_probe;
 mod tts_release_core;
@@ -123,11 +124,24 @@ fn main() {
         .manage(Arc::new(
             tts_service_supervisor::TtsServiceSupervisor::default(),
         ))
+        .manage(Arc::new(
+            tts_optional_chatterbox::OptionalChatterboxManager::default(),
+        ))
+        .setup(|app| {
+            tts_optional_chatterbox::configure_application_data_root(&app.handle())
+                .map_err(|_| "failed to configure optional-profile data root")?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             host_profile_detection::detect_host_profile_compatibility,
             tts_protocol_probe::run_tts_protocol_probe,
             tts_service_supervisor::exact_tts_demo_available,
             tts_service_supervisor::tts_profile_configuration_available,
+            tts_optional_chatterbox::optional_chatterbox_snapshot,
+            tts_optional_chatterbox::select_optional_chatterbox,
+            tts_optional_chatterbox::download_optional_chatterbox,
+            tts_optional_chatterbox::cancel_optional_chatterbox,
+            tts_optional_chatterbox::remove_optional_chatterbox,
             tts_service_supervisor::start_tts_service,
             tts_service_supervisor::prepare_tts_service,
             tts_service_supervisor::health_tts_service,
