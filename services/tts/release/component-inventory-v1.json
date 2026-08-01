@@ -12,7 +12,7 @@
   },
   "components": [
     {
-      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 3 or 4",
+      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 4",
       "auditRef": "chatterbox-optional",
       "ecosystem": "model-artifact",
       "id": "artifact:chatterbox-cangjie@5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
@@ -30,7 +30,7 @@
         "evidence": "exact adapter allowlist and upstream model card",
         "expression": "MIT model-card evidence; fulfillment pending M011 Milestone 4",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "pending M011 Milestone 4 licence/provenance fulfillment"
       },
       "name": "Cangjie5_TC.json",
       "ownership": {
@@ -47,7 +47,7 @@
       "versionOrRevision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
     },
     {
-      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 3 or 4",
+      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 4",
       "auditRef": "chatterbox-optional",
       "ecosystem": "model-artifact",
       "id": "artifact:chatterbox-conds@5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
@@ -65,7 +65,7 @@
         "evidence": "exact adapter allowlist and upstream model card",
         "expression": "MIT model-card evidence; fulfillment pending M011 Milestone 4",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "pending M011 Milestone 4 licence/provenance fulfillment"
       },
       "name": "conds.pt",
       "ownership": {
@@ -82,7 +82,7 @@
       "versionOrRevision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
     },
     {
-      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 3 or 4",
+      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 4",
       "auditRef": "chatterbox-optional",
       "ecosystem": "model-artifact",
       "id": "artifact:chatterbox-graphemes@5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
@@ -100,7 +100,7 @@
         "evidence": "exact adapter allowlist and upstream model card",
         "expression": "MIT model-card evidence; fulfillment pending M011 Milestone 4",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "pending M011 Milestone 4 licence/provenance fulfillment"
       },
       "name": "grapheme_mtl_merged_expanded_v1.json",
       "ownership": {
@@ -117,7 +117,7 @@
       "versionOrRevision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
     },
     {
-      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 3 or 4",
+      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 4",
       "auditRef": "chatterbox-optional",
       "ecosystem": "model-artifact",
       "id": "artifact:chatterbox-s3gen@5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
@@ -135,7 +135,7 @@
         "evidence": "exact adapter allowlist and upstream model card",
         "expression": "MIT model-card evidence; fulfillment pending M011 Milestone 4",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "pending M011 Milestone 4 licence/provenance fulfillment"
       },
       "name": "s3gen.pt",
       "ownership": {
@@ -152,7 +152,7 @@
       "versionOrRevision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
     },
     {
-      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 3 or 4",
+      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 4",
       "auditRef": "chatterbox-optional",
       "ecosystem": "model-artifact",
       "id": "artifact:chatterbox-t3@5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
@@ -170,7 +170,7 @@
         "evidence": "exact adapter allowlist and upstream model card",
         "expression": "MIT model-card evidence; fulfillment pending M011 Milestone 4",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "pending M011 Milestone 4 licence/provenance fulfillment"
       },
       "name": "t3_mtl23ls_v3.safetensors",
       "ownership": {
@@ -187,7 +187,7 @@
       "versionOrRevision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
     },
     {
-      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 3 or 4",
+      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 4",
       "auditRef": "chatterbox-optional",
       "ecosystem": "model-artifact",
       "id": "artifact:chatterbox-ve@5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
@@ -205,7 +205,7 @@
         "evidence": "exact adapter allowlist and upstream model card",
         "expression": "MIT model-card evidence; fulfillment pending M011 Milestone 4",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "pending M011 Milestone 4 licence/provenance fulfillment"
       },
       "name": "ve.pt",
       "ownership": {
@@ -222,7 +222,7 @@
       "versionOrRevision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
     },
     {
-      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 3 or 4",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "model-artifact",
       "id": "artifact:piper-davefx-card@0d907f158acc877ddeebcbf827659ee13bea8bcd",
@@ -238,9 +238,9 @@
       },
       "license": {
         "evidence": "exact adapter allowlist and upstream model card",
-        "expression": "CC0-1.0 provenance evidence",
+        "expression": "MIT repository licence; CC0-1.0 training-data provenance",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled by exact repository licence declaration and bundled model cards"
       },
       "name": "MODEL_CARD",
       "ownership": {
@@ -257,7 +257,7 @@
       "versionOrRevision": "0d907f158acc877ddeebcbf827659ee13bea8bcd"
     },
     {
-      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 3 or 4",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "model-artifact",
       "id": "artifact:piper-davefx-config@0d907f158acc877ddeebcbf827659ee13bea8bcd",
@@ -273,9 +273,9 @@
       },
       "license": {
         "evidence": "exact adapter allowlist and upstream model card",
-        "expression": "CC0-1.0 provenance; redistribution review pending M011 Milestone 3",
+        "expression": "MIT repository licence; CC0-1.0 training-data provenance",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled by exact repository licence declaration and bundled model cards"
       },
       "name": "es_ES-davefx-medium.onnx.json",
       "ownership": {
@@ -292,7 +292,7 @@
       "versionOrRevision": "0d907f158acc877ddeebcbf827659ee13bea8bcd"
     },
     {
-      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 3 or 4",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "model-artifact",
       "id": "artifact:piper-davefx-onnx@0d907f158acc877ddeebcbf827659ee13bea8bcd",
@@ -308,9 +308,9 @@
       },
       "license": {
         "evidence": "exact adapter allowlist and upstream model card",
-        "expression": "CC0-1.0 provenance; redistribution review pending M011 Milestone 3",
+        "expression": "MIT repository licence; CC0-1.0 training-data provenance",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled by exact repository licence declaration and bundled model cards"
       },
       "name": "es_ES-davefx-medium.onnx",
       "ownership": {
@@ -327,7 +327,7 @@
       "versionOrRevision": "0d907f158acc877ddeebcbf827659ee13bea8bcd"
     },
     {
-      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 3 or 4",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "model-artifact",
       "id": "artifact:piper-joe-card@0d907f158acc877ddeebcbf827659ee13bea8bcd",
@@ -343,9 +343,9 @@
       },
       "license": {
         "evidence": "exact adapter allowlist and upstream model card",
-        "expression": "CC0-1.0 provenance evidence",
+        "expression": "MIT repository licence; CC0-1.0 training-data provenance",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled by exact repository licence declaration and bundled model cards"
       },
       "name": "MODEL_CARD",
       "ownership": {
@@ -362,7 +362,7 @@
       "versionOrRevision": "0d907f158acc877ddeebcbf827659ee13bea8bcd"
     },
     {
-      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 3 or 4",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "model-artifact",
       "id": "artifact:piper-joe-config@0d907f158acc877ddeebcbf827659ee13bea8bcd",
@@ -378,9 +378,9 @@
       },
       "license": {
         "evidence": "exact adapter allowlist and upstream model card",
-        "expression": "CC0-1.0 provenance; redistribution review pending M011 Milestone 3",
+        "expression": "MIT repository licence; CC0-1.0 training-data provenance",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled by exact repository licence declaration and bundled model cards"
       },
       "name": "en_US-joe-medium.onnx.json",
       "ownership": {
@@ -397,7 +397,7 @@
       "versionOrRevision": "0d907f158acc877ddeebcbf827659ee13bea8bcd"
     },
     {
-      "artifactState": "identity frozen; redistribution mechanics close in M011 Milestone 3 or 4",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "model-artifact",
       "id": "artifact:piper-joe-onnx@0d907f158acc877ddeebcbf827659ee13bea8bcd",
@@ -413,9 +413,9 @@
       },
       "license": {
         "evidence": "exact adapter allowlist and upstream model card",
-        "expression": "CC0-1.0 provenance; redistribution review pending M011 Milestone 3",
+        "expression": "MIT repository licence; CC0-1.0 training-data provenance",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled by exact repository licence declaration and bundled model cards"
       },
       "name": "en_US-joe-medium.onnx",
       "ownership": {
@@ -9454,7 +9454,7 @@
       "versionOrRevision": "excluded from M011 MVP"
     },
     {
-      "artifactState": "dependency lock closed; packaged artifact selection belongs to M011 Milestone 3",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
       "id": "pypi:attrs@26.1.0",
@@ -9474,7 +9474,7 @@
         "evidence": "installed package License-Expression",
         "expression": "MIT",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
       },
       "name": "attrs",
       "ownership": {
@@ -9491,7 +9491,7 @@
       "versionOrRevision": "26.1.0"
     },
     {
-      "artifactState": "dependency lock closed; packaged artifact selection belongs to M011 Milestone 3",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
       "id": "pypi:flatbuffers@25.12.19",
@@ -9511,7 +9511,7 @@
         "evidence": "installed package licence classifier",
         "expression": "Apache-2.0",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
       },
       "name": "flatbuffers",
       "ownership": {
@@ -9528,7 +9528,7 @@
       "versionOrRevision": "25.12.19"
     },
     {
-      "artifactState": "dependency lock closed; packaged artifact selection belongs to M011 Milestone 3",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
       "id": "pypi:jsonschema-specifications@2025.9.1",
@@ -9548,7 +9548,7 @@
         "evidence": "installed package License-Expression",
         "expression": "MIT",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
       },
       "name": "jsonschema-specifications",
       "ownership": {
@@ -9565,7 +9565,7 @@
       "versionOrRevision": "2025.9.1"
     },
     {
-      "artifactState": "dependency lock closed; packaged artifact selection belongs to M011 Milestone 3",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
       "id": "pypi:jsonschema@4.26.0",
@@ -9585,7 +9585,7 @@
         "evidence": "installed package License-Expression",
         "expression": "MIT",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
       },
       "name": "jsonschema",
       "ownership": {
@@ -9602,7 +9602,7 @@
       "versionOrRevision": "4.26.0"
     },
     {
-      "artifactState": "dependency lock closed; packaged artifact selection belongs to M011 Milestone 3",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
       "id": "pypi:numpy@2.5.1",
@@ -9622,7 +9622,7 @@
         "evidence": "reviewed package metadata/source licence",
         "expression": "BSD-3-Clause AND bundled-third-party-notices",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
       },
       "name": "numpy",
       "ownership": {
@@ -9639,7 +9639,7 @@
       "versionOrRevision": "2.5.1"
     },
     {
-      "artifactState": "dependency lock closed; packaged artifact selection belongs to M011 Milestone 3",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
       "id": "pypi:onnxruntime@1.27.0",
@@ -9659,7 +9659,7 @@
         "evidence": "installed package licence classifier",
         "expression": "MIT",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
       },
       "name": "onnxruntime",
       "ownership": {
@@ -9676,7 +9676,7 @@
       "versionOrRevision": "1.27.0"
     },
     {
-      "artifactState": "dependency lock closed; packaged artifact selection belongs to M011 Milestone 3",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
       "id": "pypi:packaging@26.2",
@@ -9696,7 +9696,7 @@
         "evidence": "installed package License-Expression",
         "expression": "Apache-2.0 OR BSD-2-Clause",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
       },
       "name": "packaging",
       "ownership": {
@@ -9713,7 +9713,7 @@
       "versionOrRevision": "26.2"
     },
     {
-      "artifactState": "dependency lock closed; packaged artifact selection belongs to M011 Milestone 3",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
       "id": "pypi:pathvalidate@3.3.1",
@@ -9733,7 +9733,7 @@
         "evidence": "installed package licence classifier",
         "expression": "MIT",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
       },
       "name": "pathvalidate",
       "ownership": {
@@ -9750,7 +9750,7 @@
       "versionOrRevision": "3.3.1"
     },
     {
-      "artifactState": "dependency lock closed; packaged artifact selection belongs to M011 Milestone 3",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
       "id": "pypi:piper-tts@1.4.2",
@@ -9770,7 +9770,7 @@
         "evidence": "installed package License field",
         "expression": "GPL-3.0-or-later",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
       },
       "name": "piper-tts",
       "ownership": {
@@ -9787,7 +9787,7 @@
       "versionOrRevision": "1.4.2"
     },
     {
-      "artifactState": "dependency lock closed; packaged artifact selection belongs to M011 Milestone 3",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
       "id": "pypi:protobuf@7.35.1",
@@ -9807,7 +9807,7 @@
         "evidence": "installed package License field",
         "expression": "BSD-3-Clause",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
       },
       "name": "protobuf",
       "ownership": {
@@ -9824,7 +9824,7 @@
       "versionOrRevision": "7.35.1"
     },
     {
-      "artifactState": "dependency lock closed; packaged artifact selection belongs to M011 Milestone 3",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
       "id": "pypi:referencing@0.37.0",
@@ -9844,7 +9844,7 @@
         "evidence": "installed package License-Expression",
         "expression": "MIT",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
       },
       "name": "referencing",
       "ownership": {
@@ -9861,7 +9861,7 @@
       "versionOrRevision": "0.37.0"
     },
     {
-      "artifactState": "dependency lock closed; packaged artifact selection belongs to M011 Milestone 3",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
       "id": "pypi:rpds-py@2026.6.3",
@@ -9881,7 +9881,7 @@
         "evidence": "installed package License-Expression",
         "expression": "MIT",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
       },
       "name": "rpds-py",
       "ownership": {
@@ -9898,7 +9898,7 @@
       "versionOrRevision": "2026.6.3"
     },
     {
-      "artifactState": "dependency lock closed; packaged artifact selection belongs to M011 Milestone 3",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
       "id": "pypi:typing-extensions@4.16.0",
@@ -9918,7 +9918,7 @@
         "evidence": "installed package License-Expression",
         "expression": "PSF-2.0",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
       },
       "name": "typing-extensions",
       "ownership": {
@@ -9935,7 +9935,7 @@
       "versionOrRevision": "4.16.0"
     },
     {
-      "artifactState": "dependency lock closed; packaged artifact selection belongs to M011 Milestone 3",
+      "artifactState": "packaged in the deterministic Piper core payload",
       "auditRef": "piper-core",
       "ecosystem": "python",
       "id": "pypi:voxleaf-tts@0.0.0",
@@ -9949,7 +9949,7 @@
         "evidence": "repository LICENSE",
         "expression": "MIT",
         "noticeOwner": "M011 release notices",
-        "redistributionStatus": "pending M011 licence/provenance fulfillment"
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
       },
       "name": "voxleaf-tts",
       "ownership": {
@@ -12808,19 +12808,159 @@
       "scope": "optional",
       "source": "https://pypi.org/project/zipp/4.1.0/",
       "versionOrRevision": "4.1.0"
+    },
+    {
+      "artifactState": "included in the deterministic Piper core distribution",
+      "auditRef": "piper-core",
+      "ecosystem": "release-artifact",
+      "id": "release:cpython-embedded@3.12.10",
+      "inclusion": {
+        "processBoundary": "private local TTS child",
+        "purpose": "Private embedded interpreter extracted into the core runtime.",
+        "runtimeReachability": "runtime executable and standard library"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "sizeBytes": 11133606,
+        "value": "4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3"
+      },
+      "license": {
+        "evidence": "official CPython embedded distribution and bundled licence",
+        "expression": "PSF-2.0",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
+      },
+      "name": "python-3.12.10-embed-amd64.zip",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip",
+      "versionOrRevision": "3.12.10"
+    },
+    {
+      "artifactState": "included in the deterministic Piper core distribution",
+      "auditRef": "piper-core",
+      "ecosystem": "release-artifact",
+      "id": "release:espeak-ng-corresponding-source@212928b394a96e8fd2096616bfd54e17845c48f6",
+      "inclusion": {
+        "processBoundary": "private local TTS child",
+        "purpose": "Exact phonemizer corresponding source included with the binary core.",
+        "runtimeReachability": "compliance source; not executable"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "sizeBytes": 17815706,
+        "value": "1f201cabc73e569a7cb434d40d3b30980f923010f8ecd4d1c4ae94691ac2888a"
+      },
+      "license": {
+        "evidence": "exact upstream source archive and bundled GPL notice",
+        "expression": "GPL-3.0-or-later",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
+      },
+      "name": "espeak-ng-212928b-source.tar.gz",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://codeload.github.com/espeak-ng/espeak-ng/tar.gz/212928b394a96e8fd2096616bfd54e17845c48f6",
+      "versionOrRevision": "212928b394a96e8fd2096616bfd54e17845c48f6"
+    },
+    {
+      "artifactState": "included in the deterministic Piper core distribution",
+      "auditRef": "piper-core",
+      "ecosystem": "release-artifact",
+      "id": "release:piper-corresponding-source@d6975e21a440c0d8b6e5fb7c41027409af13d44d",
+      "inclusion": {
+        "processBoundary": "private local TTS child",
+        "purpose": "Exact Piper corresponding source included with the binary core.",
+        "runtimeReachability": "compliance source; not executable"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "sizeBytes": 4836428,
+        "value": "ebf535912b5760e33ff5c01a483bfc9c58b13c18c7c6ccfb4cec0184dc14f747"
+      },
+      "license": {
+        "evidence": "exact upstream source archive and bundled GPL notice",
+        "expression": "GPL-3.0-or-later",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
+      },
+      "name": "piper1-gpl-d6975e21-source.tar.gz",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://codeload.github.com/OHF-Voice/piper1-gpl/tar.gz/d6975e21a440c0d8b6e5fb7c41027409af13d44d",
+      "versionOrRevision": "d6975e21a440c0d8b6e5fb7c41027409af13d44d"
+    },
+    {
+      "artifactState": "included in the deterministic Piper core distribution",
+      "auditRef": "piper-core",
+      "ecosystem": "release-artifact",
+      "id": "release:piper-voices-licence-declaration@0d907f158acc877ddeebcbf827659ee13bea8bcd",
+      "inclusion": {
+        "processBoundary": "private local TTS child",
+        "purpose": "Voice repository licence and provenance evidence.",
+        "runtimeReachability": "compliance evidence; not executable"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "sizeBytes": 497,
+        "value": "33e93643fce5180886300f9f0070eeeab8af148efb8e84361f8904def80fd9fb"
+      },
+      "license": {
+        "evidence": "exact upstream repository licence declaration bundled with the core",
+        "expression": "MIT",
+        "noticeOwner": "M011 release notices",
+        "redistributionStatus": "fulfilled in the Piper core notices and exact source bundle"
+      },
+      "name": "piper-voices repository README",
+      "ownership": {
+        "installOrStagingOwner": "VoxLeaf native release boundary",
+        "removalOwner": "VoxLeaf installer or native profile manager"
+      },
+      "platform": "Windows x64",
+      "provenance": {
+        "humanIdentityDeclared": false,
+        "voiceOrModel": false
+      },
+      "scope": "core",
+      "source": "https://huggingface.co/rhasspy/piper-voices/blob/0d907f158acc877ddeebcbf827659ee13bea8bcd/README.md",
+      "versionOrRevision": "0d907f158acc877ddeebcbf827659ee13bea8bcd"
     }
   ],
   "formatDecision": "Repository-owned JSON is used because release scope, reachability, ownership, profile state, and pending package-artifact fields are not represented proportionately by one ecosystem SBOM tool. Exact ecosystem locks remain the machine authority.",
   "inventoryDate": "2026-08-01",
   "limitations": [
-    "Package-source hashes close dependency identity; final installer/runtime/archive hashes and byte sizes are added by M011 Milestones 3-5.",
+    "Package-source hashes close dependency identity; the Piper runtime/archive identity is closed by M011 Milestone 3 and the final installer identity belongs to Milestone 5.",
     "Python URL requirements are explicit advisory blind spots even though their source/wheel identity and SHA-256 are frozen.",
-    "Licence/provenance evidence is inventory input, not final redistribution clearance; M011 Milestones 3 and 4 own notice/source/model fulfillment."
+    "Piper core notice/source/model fulfillment closed in M011 Milestone 3; optional Chatterbox fulfillment remains owned by Milestone 4."
   ],
   "lockIdentities": {
     "cargo": {
       "path": "apps/desktop/src-tauri/Cargo.lock",
-      "sha256": "0622fa5e9ae47a4e02cd314e2c98d8f74097e75c1394237723032134e38fe954"
+      "sha256": "35d2d513c713a1dc45906282809a8d2ee932cfb041afb71423ef8aea9e82d6aa"
     },
     "chatterboxOptional": {
       "path": "services/tts/release/profiles/chatterbox/requirements.lock",

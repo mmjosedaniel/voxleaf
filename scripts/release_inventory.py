@@ -222,6 +222,8 @@ def _component(
     process_boundary: str,
     audit_ref: str,
     artifact_state: str,
+    redistribution_status: str = "pending M011 licence/provenance fulfillment",
+    runtime_reachability: str = "required by the frozen release graph",
 ) -> dict[str, Any]:
     return {
         "id": component_id,
@@ -236,7 +238,7 @@ def _component(
             "expression": license_expression,
             "evidence": license_evidence,
             "noticeOwner": "M011 release notices",
-            "redistributionStatus": "pending M011 licence/provenance fulfillment",
+            "redistributionStatus": redistribution_status,
         },
         "provenance": {
             "humanIdentityDeclared": False,
@@ -244,7 +246,7 @@ def _component(
         },
         "inclusion": {
             "purpose": purpose,
-            "runtimeReachability": "required by the frozen release graph",
+            "runtimeReachability": runtime_reachability,
             "processBoundary": process_boundary,
         },
         "auditRef": audit_ref,
@@ -297,7 +299,8 @@ def _uv_components(licenses: dict[str, dict[str, str]]) -> list[dict[str, Any]]:
                 purpose="Minimal private local-service and Piper runtime graph.",
                 process_boundary="private local TTS child",
                 audit_ref="piper-core",
-                artifact_state="dependency lock closed; packaged artifact selection belongs to M011 Milestone 3",
+                artifact_state="packaged in the deterministic Piper core payload",
+                redistribution_status="fulfilled in the Piper core notices and exact source bundle",
             )
         )
     return components
@@ -481,7 +484,7 @@ def _model_artifacts() -> list[dict[str, Any]]:
             "0d907f158acc877ddeebcbf827659ee13bea8bcd",
             63201294,
             "6658b03b1a6c316ee4c265a9896abc1393353c2d9e1bca7d66c2c442e222a917",
-            "CC0-1.0 provenance; redistribution review pending M011 Milestone 3",
+            "MIT repository licence; CC0-1.0 training-data provenance",
         ),
         (
             "core",
@@ -490,7 +493,7 @@ def _model_artifacts() -> list[dict[str, Any]]:
             "0d907f158acc877ddeebcbf827659ee13bea8bcd",
             4817,
             "0e0dda87c732f6f38771ff274a6380d9252f327dca77aa2963d5fbdf9ec54842",
-            "CC0-1.0 provenance; redistribution review pending M011 Milestone 3",
+            "MIT repository licence; CC0-1.0 training-data provenance",
         ),
         (
             "core",
@@ -499,7 +502,7 @@ def _model_artifacts() -> list[dict[str, Any]]:
             "0d907f158acc877ddeebcbf827659ee13bea8bcd",
             276,
             "420703b5d8ea239b729f13d83f31eea9bae5fcb89447de23ebc94aa8a4768f95",
-            "CC0-1.0 provenance evidence",
+            "MIT repository licence; CC0-1.0 training-data provenance",
         ),
         (
             "core",
@@ -508,7 +511,7 @@ def _model_artifacts() -> list[dict[str, Any]]:
             "0d907f158acc877ddeebcbf827659ee13bea8bcd",
             63201294,
             "58afce0321b8d9c46d7cdf9c16500cc55a793b4220212dba6b70fb788b3baf06",
-            "CC0-1.0 provenance; redistribution review pending M011 Milestone 3",
+            "MIT repository licence; CC0-1.0 training-data provenance",
         ),
         (
             "core",
@@ -517,7 +520,7 @@ def _model_artifacts() -> list[dict[str, Any]]:
             "0d907f158acc877ddeebcbf827659ee13bea8bcd",
             4794,
             "3d6d5410b3795cb1950595247ef8f06190719e6fdbfa3a2356d8ec368e1aad33",
-            "CC0-1.0 provenance; redistribution review pending M011 Milestone 3",
+            "MIT repository licence; CC0-1.0 training-data provenance",
         ),
         (
             "core",
@@ -526,7 +529,7 @@ def _model_artifacts() -> list[dict[str, Any]]:
             "0d907f158acc877ddeebcbf827659ee13bea8bcd",
             281,
             "d2caa63aca0fccb155105e959e393e5c0c0f03a1f388ef5ba217b83ef860c760",
-            "CC0-1.0 provenance evidence",
+            "MIT repository licence; CC0-1.0 training-data provenance",
         ),
         (
             "optional",
@@ -611,7 +614,16 @@ def _model_artifacts() -> list[dict[str, Any]]:
                 purpose="Frozen local narration voice/model artifact.",
                 process_boundary="private local TTS child",
                 audit_ref="piper-core" if scope == "core" else "chatterbox-optional",
-                artifact_state="identity frozen; redistribution mechanics close in M011 Milestone 3 or 4",
+                artifact_state=(
+                    "packaged in the deterministic Piper core payload"
+                    if scope == "core"
+                    else "identity frozen; redistribution mechanics close in M011 Milestone 4"
+                ),
+                redistribution_status=(
+                    "fulfilled by exact repository licence declaration and bundled model cards"
+                    if scope == "core"
+                    else "pending M011 Milestone 4 licence/provenance fulfillment"
+                ),
             )
         )
     result.append(
@@ -634,6 +646,90 @@ def _model_artifacts() -> list[dict[str, Any]]:
     return result
 
 
+def _core_distribution_artifacts() -> list[dict[str, Any]]:
+    artifacts = [
+        (
+            "cpython-embedded",
+            "python-3.12.10-embed-amd64.zip",
+            "3.12.10",
+            "https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip",
+            11133606,
+            "4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3",
+            "PSF-2.0",
+            "official CPython embedded distribution and bundled licence",
+            "Private embedded interpreter extracted into the core runtime.",
+            "runtime executable and standard library",
+        ),
+        (
+            "piper-corresponding-source",
+            "piper1-gpl-d6975e21-source.tar.gz",
+            "d6975e21a440c0d8b6e5fb7c41027409af13d44d",
+            "https://codeload.github.com/OHF-Voice/piper1-gpl/tar.gz/d6975e21a440c0d8b6e5fb7c41027409af13d44d",
+            4836428,
+            "ebf535912b5760e33ff5c01a483bfc9c58b13c18c7c6ccfb4cec0184dc14f747",
+            "GPL-3.0-or-later",
+            "exact upstream source archive and bundled GPL notice",
+            "Exact Piper corresponding source included with the binary core.",
+            "compliance source; not executable",
+        ),
+        (
+            "espeak-ng-corresponding-source",
+            "espeak-ng-212928b-source.tar.gz",
+            "212928b394a96e8fd2096616bfd54e17845c48f6",
+            "https://codeload.github.com/espeak-ng/espeak-ng/tar.gz/212928b394a96e8fd2096616bfd54e17845c48f6",
+            17815706,
+            "1f201cabc73e569a7cb434d40d3b30980f923010f8ecd4d1c4ae94691ac2888a",
+            "GPL-3.0-or-later",
+            "exact upstream source archive and bundled GPL notice",
+            "Exact phonemizer corresponding source included with the binary core.",
+            "compliance source; not executable",
+        ),
+        (
+            "piper-voices-licence-declaration",
+            "piper-voices repository README",
+            "0d907f158acc877ddeebcbf827659ee13bea8bcd",
+            "https://huggingface.co/rhasspy/piper-voices/blob/0d907f158acc877ddeebcbf827659ee13bea8bcd/README.md",
+            497,
+            "33e93643fce5180886300f9f0070eeeab8af148efb8e84361f8904def80fd9fb",
+            "MIT",
+            "exact upstream repository licence declaration bundled with the core",
+            "Voice repository licence and provenance evidence.",
+            "compliance evidence; not executable",
+        ),
+    ]
+    return [
+        _component(
+            component_id=f"release:{component_id}@{version}",
+            scope="core",
+            ecosystem="release-artifact",
+            name=name,
+            version=version,
+            source=source,
+            license_expression=license_expression,
+            license_evidence=license_evidence,
+            integrity={"algorithm": "SHA-256", "value": digest, "sizeBytes": size},
+            purpose=purpose,
+            process_boundary="private local TTS child",
+            audit_ref="piper-core",
+            artifact_state="included in the deterministic Piper core distribution",
+            redistribution_status="fulfilled in the Piper core notices and exact source bundle",
+            runtime_reachability=runtime_reachability,
+        )
+        for (
+            component_id,
+            name,
+            version,
+            source,
+            size,
+            digest,
+            license_expression,
+            license_evidence,
+            purpose,
+            runtime_reachability,
+        ) in artifacts
+    ]
+
+
 def build_inventory() -> dict[str, Any]:
     licenses = _python_licenses()
     audit_policy = json.loads(AUDIT_POLICY.read_text(encoding="utf-8"))
@@ -643,6 +739,7 @@ def build_inventory() -> dict[str, Any]:
         *_uv_components(licenses),
         *_chatterbox_components(licenses),
         *_model_artifacts(),
+        *_core_distribution_artifacts(),
     ]
     components.sort(key=lambda component: cast(str, component["id"]))
     return {
@@ -672,9 +769,9 @@ def build_inventory() -> dict[str, Any]:
             "policy": "services/tts/release/audit-policy.json",
         },
         "limitations": [
-            "Package-source hashes close dependency identity; final installer/runtime/archive hashes and byte sizes are added by M011 Milestones 3-5.",
+            "Package-source hashes close dependency identity; the Piper runtime/archive identity is closed by M011 Milestone 3 and the final installer identity belongs to Milestone 5.",
             "Python URL requirements are explicit advisory blind spots even though their source/wheel identity and SHA-256 are frozen.",
-            "Licence/provenance evidence is inventory input, not final redistribution clearance; M011 Milestones 3 and 4 own notice/source/model fulfillment.",
+            "Piper core notice/source/model fulfillment closed in M011 Milestone 3; optional Chatterbox fulfillment remains owned by Milestone 4.",
         ],
         "components": components,
     }
