@@ -9,6 +9,7 @@ mod hardware_profile_authority;
 mod host_profile_detection;
 mod tts_protocol_contract;
 mod tts_protocol_probe;
+mod tts_release_core;
 mod tts_service_fake_child;
 mod tts_service_handoff;
 mod tts_service_protocol;

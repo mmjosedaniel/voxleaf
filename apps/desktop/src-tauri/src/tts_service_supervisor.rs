@@ -20,6 +20,7 @@ use crate::{
         MAX_AUDIO_BYTES, MAX_IDENTIFIER_CODE_POINTS, MAX_IDENTIFIER_UTF8_BYTES,
         MAX_NARRATION_CODE_POINTS, MAX_NARRATION_UTF8_BYTES, valid_identifier,
     },
+    tts_release_core::{PackagedCoreError, discover_packaged_piper_runtime},
     tts_service_fake_child::{
         CRASH_SCENARIO, DESCENDANT_SCENARIO, NORMAL_SCENARIO, PENDING_SCENARIO,
     },
@@ -204,6 +205,26 @@ impl ExactRuntime {
         })
     }
 
+    fn piper(profile_id: &str) -> Result<Self, TtsNativeFailure> {
+        match discover_packaged_piper_runtime(profile_id) {
+            Ok(Some(runtime)) => Ok(Self {
+                python: runtime.python,
+                model_root: runtime.model_root,
+                service_source: runtime.site_packages.clone(),
+                service_site_packages: runtime.site_packages,
+                service_module: "voxleaf_tts.piper_service",
+                runtime_environment: vec![(
+                    "VOXLEAF_TTS_RUNTIME_PIPER_VOICE",
+                    runtime.runtime_voice,
+                )],
+            }),
+            Ok(None) => Self::piper_from_environment(profile_id),
+            Err(PackagedCoreError::Invalid | PackagedCoreError::Unavailable) => {
+                Err(TtsNativeFailure::ChildUnavailable)
+            }
+        }
+    }
+
     fn chatterbox_from_environment(language: &str) -> Result<Self, TtsNativeFailure> {
         if !matches!(language, "es" | "en") {
             return Err(TtsNativeFailure::InvalidInput);
@@ -267,10 +288,10 @@ impl ExactRuntime {
                 Self::qwen_from_environment(profile_id)
             }
             PIPER_SPANISH_PROFILE_ID if language.is_none_or(|value| value == "es") => {
-                Self::piper_from_environment(profile_id)
+                Self::piper(profile_id)
             }
             PIPER_ENGLISH_PROFILE_ID if language.is_none_or(|value| value == "en") => {
-                Self::piper_from_environment(profile_id)
+                Self::piper(profile_id)
             }
             CHATTERBOX_PROFILE_ID => Self::chatterbox_from_environment(language.unwrap_or("es")),
             _ => Err(TtsNativeFailure::InvalidInput),
@@ -360,7 +381,7 @@ impl ServiceChild {
                 .unwrap_or(Self::Unavailable);
         }
         if std::env::var_os(PIPER_ENABLED_KEY).as_deref() == Some(std::ffi::OsStr::new("1")) {
-            return ExactRuntime::piper_from_environment(PIPER_SPANISH_PROFILE_ID)
+            return ExactRuntime::piper(PIPER_SPANISH_PROFILE_ID)
                 .map(Self::Exact)
                 .unwrap_or(Self::Unavailable);
         }
@@ -1363,8 +1384,7 @@ pub fn run_exact_host() -> Result<(), &'static str> {
 }
 
 pub fn run_piper_host() -> Result<(), &'static str> {
-    let runtime = ExactRuntime::piper_from_environment(PIPER_SPANISH_PROFILE_ID)
-        .map_err(TtsNativeFailure::code)?;
+    let runtime = ExactRuntime::piper(PIPER_SPANISH_PROFILE_ID).map_err(TtsNativeFailure::code)?;
     run_profile_host(runtime, verify_piper_capabilities)
 }
 
