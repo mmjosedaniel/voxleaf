@@ -96,6 +96,13 @@ pub(crate) struct OptionalProfileSnapshot {
     pub temporary_bytes: Option<u64>,
     pub minimum_free_bytes: Option<u64>,
     pub cold_start_seconds: Option<u64>,
+    pub minimum_logical_processors: u64,
+    pub minimum_total_ram_mi_b: u64,
+    pub minimum_available_ram_mi_b: u64,
+    pub measured_peak_dedicated_vram_mi_b: u64,
+    pub minimum_total_dedicated_vram_mi_b: u64,
+    pub minimum_available_dedicated_vram_mi_b: u64,
+    pub recommended_total_dedicated_vram_mi_b: u64,
     pub license_summary: &'static str,
     pub failure: Option<&'static str>,
 }
@@ -155,8 +162,10 @@ struct OptionalRequirements {
     minimum_logical_processors: u64,
     minimum_total_ram_mi_b: u64,
     minimum_available_ram_mi_b: u64,
+    measured_peak_dedicated_vram_mi_b: u64,
     minimum_total_dedicated_vram_mi_b: u64,
     minimum_available_dedicated_vram_mi_b: u64,
+    recommended_total_dedicated_vram_mi_b: u64,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -395,8 +404,10 @@ fn validate_manifest(manifest: &OptionalPackageManifest) -> Result<(), OptionalP
         || requirements.minimum_logical_processors != 8
         || requirements.minimum_total_ram_mi_b != 24_576
         || requirements.minimum_available_ram_mi_b != 4_096
-        || requirements.minimum_total_dedicated_vram_mi_b != 7_680
-        || requirements.minimum_available_dedicated_vram_mi_b != 6_144
+        || requirements.measured_peak_dedicated_vram_mi_b != 3_644
+        || requirements.minimum_total_dedicated_vram_mi_b != 5_632
+        || requirements.minimum_available_dedicated_vram_mi_b != 4_668
+        || requirements.recommended_total_dedicated_vram_mi_b != 7_680
         || manifest.provenance.chatterbox_source != CHATTERBOX_SOURCE
         || manifest.provenance.model_card != MODEL_CARD_SOURCE
         || manifest.provenance.perth_source != PERTH_SOURCE
@@ -439,6 +450,12 @@ fn validate_manifest(manifest: &OptionalPackageManifest) -> Result<(), OptionalP
         &manifest.withholding_reason,
     ) {
         ("withheld", None, None, Some(reason)) if reason == "runtime-artifacts-not-published" => {
+            Ok(())
+        }
+        ("withheld", Some(runtime_artifact), None, Some(reason))
+            if reason == "clean-host-validation-pending"
+                && validate_runtime_artifact(runtime_artifact, limits) =>
+        {
             Ok(())
         }
         ("downloadable", Some(runtime_artifact), Some(measurements), None)
@@ -511,6 +528,7 @@ fn snapshot_from(
     failure: Option<&'static str>,
 ) -> OptionalProfileSnapshot {
     let measurements = manifest.measurements.as_ref();
+    let requirements = &manifest.requirements;
     OptionalProfileSnapshot {
         profile_id: PROFILE_ID,
         state,
@@ -520,6 +538,13 @@ fn snapshot_from(
         temporary_bytes: measurements.map(|value| value.temporary_bytes),
         minimum_free_bytes: measurements.map(|value| value.minimum_free_bytes),
         cold_start_seconds: measurements.map(|value| value.cold_start_seconds),
+        minimum_logical_processors: requirements.minimum_logical_processors,
+        minimum_total_ram_mi_b: requirements.minimum_total_ram_mi_b,
+        minimum_available_ram_mi_b: requirements.minimum_available_ram_mi_b,
+        measured_peak_dedicated_vram_mi_b: requirements.measured_peak_dedicated_vram_mi_b,
+        minimum_total_dedicated_vram_mi_b: requirements.minimum_total_dedicated_vram_mi_b,
+        minimum_available_dedicated_vram_mi_b: requirements.minimum_available_dedicated_vram_mi_b,
+        recommended_total_dedicated_vram_mi_b: requirements.recommended_total_dedicated_vram_mi_b,
         license_summary: "Chatterbox, its reviewed model/default conditioning, and PerTh are MIT-licensed.",
         failure,
     }
@@ -1637,15 +1662,27 @@ mod tests {
     }
 
     #[test]
-    fn checked_in_authority_is_withheld_until_a_real_release_artifact_exists() {
+    fn checked_in_authority_records_the_release_but_remains_withheld_for_clean_host() {
         let manifest = exact_manifest().expect("checked in manifest should be valid");
         assert_eq!(manifest.availability, "withheld");
-        assert!(manifest.runtime_artifact.is_none());
+        let runtime = manifest
+            .runtime_artifact
+            .as_ref()
+            .expect("published runtime identity should be frozen");
+        assert_eq!(runtime.parts.len(), 3);
+        assert_eq!(
+            runtime
+                .parts
+                .iter()
+                .map(|part| part.download_bytes)
+                .sum::<u64>(),
+            5_022_941_463
+        );
         assert!(manifest.measurements.is_none());
         assert_eq!(manifest.model_artifacts.len(), 6);
         assert_eq!(
             manifest.withholding_reason.as_deref(),
-            Some("runtime-artifacts-not-published")
+            Some("clean-host-validation-pending")
         );
     }
 

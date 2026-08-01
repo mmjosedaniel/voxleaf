@@ -22,6 +22,13 @@ export interface OptionalChatterboxSnapshot {
   readonly temporaryBytes: number | undefined;
   readonly minimumFreeBytes: number | undefined;
   readonly coldStartSeconds: number | undefined;
+  readonly minimumLogicalProcessors: number;
+  readonly minimumTotalRamMiB: number;
+  readonly minimumAvailableRamMiB: number;
+  readonly measuredPeakDedicatedVramMiB: number;
+  readonly minimumTotalDedicatedVramMiB: number;
+  readonly minimumAvailableDedicatedVramMiB: number;
+  readonly recommendedTotalDedicatedVramMiB: number;
   readonly licenseSummary: string;
   readonly failure: string | undefined;
 }
@@ -51,6 +58,13 @@ const INITIAL_SNAPSHOT: OptionalChatterboxSnapshot = Object.freeze({
   temporaryBytes: undefined,
   minimumFreeBytes: undefined,
   coldStartSeconds: undefined,
+  minimumLogicalProcessors: 8,
+  minimumTotalRamMiB: 24_576,
+  minimumAvailableRamMiB: 4_096,
+  measuredPeakDedicatedVramMiB: 3_644,
+  minimumTotalDedicatedVramMiB: 5_632,
+  minimumAvailableDedicatedVramMiB: 4_668,
+  recommendedTotalDedicatedVramMiB: 7_680,
   licenseSummary:
     "Chatterbox, its reviewed model/default conditioning, and PerTh are MIT-licensed.",
   failure: undefined,
@@ -101,6 +115,22 @@ function decodeSnapshot(value: unknown): OptionalChatterboxSnapshot {
     }
     return number;
   });
+  const requiredNumbers = [
+    "minimumLogicalProcessors",
+    "minimumTotalRamMiB",
+    "minimumAvailableRamMiB",
+    "measuredPeakDedicatedVramMiB",
+    "minimumTotalDedicatedVramMiB",
+    "minimumAvailableDedicatedVramMiB",
+    "recommendedTotalDedicatedVramMiB",
+  ] as const;
+  const requiredValues = requiredNumbers.map((key) => {
+    const number = boundedOptionalNumber(object[key]);
+    if (number === undefined || number === 0) {
+      throw new Error("optional-chatterbox-invalid-response");
+    }
+    return number;
+  });
   return Object.freeze({
     profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
     state: state as OptionalChatterboxState,
@@ -110,6 +140,13 @@ function decodeSnapshot(value: unknown): OptionalChatterboxSnapshot {
     temporaryBytes: values[2],
     minimumFreeBytes: values[3],
     coldStartSeconds: values[4],
+    minimumLogicalProcessors: requiredValues[0]!,
+    minimumTotalRamMiB: requiredValues[1]!,
+    minimumAvailableRamMiB: requiredValues[2]!,
+    measuredPeakDedicatedVramMiB: requiredValues[3]!,
+    minimumTotalDedicatedVramMiB: requiredValues[4]!,
+    minimumAvailableDedicatedVramMiB: requiredValues[5]!,
+    recommendedTotalDedicatedVramMiB: requiredValues[6]!,
     licenseSummary: object.licenseSummary,
     failure: typeof object.failure === "string" ? object.failure : undefined,
   });

@@ -97,8 +97,14 @@ the six approved model-data files from the official
 `ResembleAI/chatterbox` Hugging Face repository at a full frozen revision and
 verify every file's expected name, byte size, and SHA-256. It will not execute
 model-repository code. The exact reviewed Chatterbox runtime has reproducible
-three-part identity, but those assets are not yet published and clean-host
-acquisition has not passed; therefore the product manifest remains withheld.
+three-part identity and is published under `chatterbox-runtime-v2`, but clean-
+host acquisition has not passed; therefore the product manifest remains
+withheld and the application does not expose Download.
+Chatterbox's measured `3,644`-MiB VRAM peak no longer inherits the evaluated
+host's 8-GB capacity as an absolute minimum. ADR-0044 admits at `5,632` MiB
+total and `4,668` MiB currently available, keeps nominal 8-GB hardware as the
+evaluated recommendation, and requires all three quantities to be disclosed
+before download consent.
 
 ## Current implemented flow
 
@@ -180,9 +186,10 @@ authority.
    files from the official full-revision Hugging Face source. It adds explicit
    consent, bounded native download/cache, per-file digest verification, safe
    model loading, atomic installation, separate activation, offline use, and
-   application-owned removal. Runtime publication and clean-host validation
-   remain, so the download action and end-user claim stay absent while the
-   Piper core can continue.
+   application-owned removal. Runtime publication is complete; clean-host
+   acquisition, offline bilingual narration, removal, reinstall, and final
+   audit validation remain, so the download action and end-user claim stay
+   absent while the Piper core can continue.
 4. M011 packages and validates a versioned Windows x64 installation, repair,
    manual update, and uninstall lifecycle on a clean normal-user host.
 5. M011 decides Piper-core portfolio readiness, optional Chatterbox readiness,
@@ -349,6 +356,11 @@ Remaining:
   discloses measured download, installed/staging storage, hardware, cold-load,
   and licence information. Decline/cancel causes no network request or profile
   change; verified installation completes before separate explicit activation.
+- Chatterbox requires `5,632` MiB total and `4,668` MiB available dedicated
+  VRAM under the current measured-capacity policy. A nominal 8-GB GPU remains
+  recommended and is the evaluated class. Admission of an otherwise compatible
+  6-GB-class host is conditional on the live available-memory check and is not
+  represented as separate clean-host validation evidence.
 - Optional model acquisition is fixed to the official
   `ResembleAI/chatterbox` repository, one full commit, and six approved data
   files with frozen expected byte sizes and SHA-256 values. VoxLeaf never
@@ -357,7 +369,7 @@ Remaining:
   scanning is defense-in-depth and does not replace local integrity checks.
 - The Chatterbox runtime is not supplied by the model repository. It retains a
   separate exact dependency/source manifest and reproducible three-part
-  delivery identity. Those exact parts must be published and pass clean-host
+  delivery identity. Those exact parts are published and must pass clean-host
   acquisition before the profile becomes downloadable. A completed model
   download without the verified runtime is never treated as installed.
 - Every bundled or deliberately acquired runtime/model/voice artifact is

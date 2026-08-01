@@ -81,8 +81,9 @@ manifest/source-build boundary. Milestone 4B now replaces the single
 republished model/archive assumption with a split, verified acquisition:
 six exact model-data files come from the official revision-pinned Hugging Face
 repository, while the reviewed runtime is independently locked, reproducibly
-split, and verified. External publication, clean-host evidence, installer
-integration, enabled optional acquisition, and signing remain future work.
+split, verified, and published as `chatterbox-runtime-v2`. Clean-host evidence,
+installer integration, enabled optional acquisition, and signing remain future
+work.
 
 The current TTS runtimes are ignored developer assets selected through
 environment variables. Development firewall rules target exact candidate
@@ -439,13 +440,21 @@ narration claim.
 
 ### Milestone 4B: Freeze and implement verified official Chatterbox acquisition
 
-**Status:** Deterministic authority and implementation complete on 2026-08-01;
-blocked at the external publication and clean-host gates. The product manifest
-remains truthfully `withheld`. Publishing the three measured runtime assets,
-authorizing their final URLs, and running a clean-user online/offline GPU matrix
-are required before Download may be enabled. This milestone changes
+**Status:** Deterministic authority, implementation, and authorized runtime
+publication complete on 2026-08-01; clean-host validation remains open. The
+product manifest truthfully records the three published assets while remaining
+`withheld`. Running a clean-user online/offline GPU matrix and closing the
+remaining lifecycle/audit gates are required before Download may be enabled.
+This milestone changes
 distribution authority, not the evaluated Chatterbox profile or its bilingual
 narration behavior.
+
+ADR-0044 subsequently corrects product admission without rewriting evaluation
+history: `5,632` MiB total and `4,668` MiB available dedicated VRAM are the
+technical gates, and `7,680` MiB reported total (nominal 8 GB) remains the
+recommended/evaluated class. Consent must disclose that distinction together
+with measured peak, RAM/CPU, transfer, installed/staging, cold-load, and
+licence facts.
 
 1. Before changing acquisition code or producing results, accept an additive
    ADR and immutable authority that supersede only the single-archive portion
@@ -515,14 +524,17 @@ discards verified parts before extraction, and atomically promotes only the
 complete runtime/model set. The calculated peak staging use is
 13,254,834,850 bytes, below the frozen 15,000,000,000-byte ceiling.
 
-Steps 8 and 9 cannot honestly complete yet. The measured parts have not been
-published under `chatterbox-runtime-v2`; consequently no final URLs or clean-
-user acquisition exist, and installed offline bilingual/runtime/resource
-evidence cannot be produced. The content-safe
+The publication portion of Steps 8 and 9 is complete. An authorized maintainer
+published the three measured parts under
+[`chatterbox-runtime-v2`](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v2),
+and the checked-in manifest freezes their exact URLs, sizes, SHA-256 values,
+archive identity, installed size, and runtime-manifest identity. Clean-user
+acquisition and installed offline bilingual/runtime/resource evidence still
+cannot be produced on this development host. The content-safe
 [`runtime-package-evidence-v2.json`](../../../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json)
-records the reproducible local result and explicit remaining gates. This is an
-external-publication blocker for optional Chatterbox only; Piper core and the
-rest of M011 may continue independently.
+records the reproducible local result, successful public release, and explicit
+remaining gates. This is now a clean-host blocker for optional Chatterbox only;
+Piper core and the rest of M011 may continue independently.
 
 ### Milestone 5: Build the versioned Windows package and signing path
 
@@ -888,11 +900,15 @@ and never edit prior benchmark authority to make a release pass.
   parts during extraction and exceeded the 15-billion-byte authority; verified
   parts are now removed before extraction, bringing the peak inside the frozen
   bound.
-- **2026-08-01:** Retained `withheld` because the three exact runtime parts are
-  not yet published and no clean-user online acquisition/offline bilingual
-  matrix can run. Creating that public release is an externally authorized
-  operation. No model weights, runtime archives, generated audio, book content,
-  local paths, secrets, or user data enter Git.
+- **2026-08-01:** Published the three exact runtime parts after explicit user
+  authorization under
+  [`chatterbox-runtime-v2`](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v2).
+  GitHub reports all three assets uploaded with the frozen byte sizes and
+  SHA-256 digests. The repository records their immutable URLs and identities
+  but retains `withheld` with `clean-host-validation-pending`; no clean-user
+  online acquisition/offline bilingual matrix has run. No model weights,
+  runtime archives, generated audio, book content, local paths, secrets, or
+  user data enter Git.
 - **2026-08-01:** Final deterministic validation passed from normal local
   PowerShell outside the automation sandbox. `pnpm.cmd audit:release` reported
   pass with the four already disclosed optional-graph advisory blind spots;
@@ -908,6 +924,24 @@ and never edit prior benchmark authority to make a release pass.
   third-party Python. `services/tts/pyproject.toml` now excludes only the two
   application-owned release `dist` roots; the unchanged command then passed on
   159 VoxLeaf source files, and both complete gates passed afterward.
+- **2026-08-01:** Accepted ADR-0044 after reviewing the already accepted v12
+  capacity evidence. The current product registry and optional-package
+  preflight now admit Chatterbox at `5,632` MiB total and `4,668` MiB free
+  dedicated VRAM, retain `7,680` MiB as the recommended/evaluated class, and
+  expose measured/minimum/recommended GPU plus CPU/RAM/storage facts in the
+  explicit confirmation. Historical benchmark manifests and results remain
+  unchanged.
+- **2026-08-01:** Verified the public release through `gh release view`: it is
+  neither a draft nor prerelease, all three assets report `uploaded`, and their
+  byte sizes and SHA-256 digests match the frozen manifest. Outside-sandbox
+  focused validation passed 24 TypeScript tests, 16 Python tests, 12 optional-
+  controller Rust tests, 12 host-detection Rust tests, and both Chatterbox
+  authority checks. `pnpm.cmd check:portable` and `pnpm.cmd check` then passed
+  format, lint, type, 20 shared files/209 tests, 34 EPUB files/580 tests, 53
+  desktop files/518 tests, 12 Node tests, 59 Rust tests, 381 Python tests,
+  portable builds, the Tauri release build, and the Python package build.
+  `pnpm.cmd audit:release` and `pnpm.cmd inventory:release:check` also passed;
+  the four already disclosed optional-graph advisory blind spots remain.
 
 ## Discoveries and decisions
 
@@ -948,6 +982,11 @@ and never edit prior benchmark authority to make a release pass.
 - **Decision:** Piper-core, optional-Chatterbox, and signed-public readiness are
   independent decisions. Failure of one narrows its claim without rewriting
   historical support evidence or automatically failing the others.
+- **Decision:** Chatterbox's evaluated nominal 8-GB host is a recommendation,
+  not its technical minimum. Product admission uses the `3,644`-MiB measured
+  peak plus the frozen `1,024`-MiB reserve (`4,668` MiB available), together
+  with a `5,632`-MiB total floor for 6-GB-class hardware. A passing gate does
+  not invent separate lower-capacity clean-host evidence.
 - **Decision:** Code signing is a public-publication gate, not a prerequisite
   for a private local build or recorded portfolio demonstration.
 - **Decision:** Automatic updates, enterprise process isolation, formal SBOM

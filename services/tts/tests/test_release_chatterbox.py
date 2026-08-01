@@ -65,8 +65,24 @@ def test_acquisition_manifest_matches_the_runtime_and_official_model_authority()
     manifest = load_acquisition_manifest()
     assert manifest["schemaVersion"] == 2
     assert manifest["availability"] == "withheld"
-    assert manifest["runtimeArtifact"] is None
-    assert manifest["withholdingReason"] == "runtime-artifacts-not-published"
+    runtime = manifest["runtimeArtifact"]
+    assert isinstance(runtime, dict)
+    assert len(runtime["parts"]) == 3
+    assert sum(part["downloadBytes"] for part in runtime["parts"]) == 5_022_941_463
+    assert manifest["measurements"] is None
+    assert manifest["withholdingReason"] == "clean-host-validation-pending"
+    assert manifest["requirements"] == {
+        "measuredPeakDedicatedVramMiB": 3_644,
+        "minimumAvailableDedicatedVramMiB": 4_668,
+        "minimumAvailableRamMiB": 4_096,
+        "minimumLogicalProcessors": 8,
+        "minimumTotalDedicatedVramMiB": 5_632,
+        "minimumTotalRamMiB": 24_576,
+        "platform": "windows-x86_64",
+        "precision": "bfloat16",
+        "provider": "cuda",
+        "recommendedTotalDedicatedVramMiB": 7_680,
+    }
 
 
 def test_v2_runtime_evidence_is_content_safe_and_arithmetically_closed() -> None:
@@ -77,7 +93,8 @@ def test_v2_runtime_evidence_is_content_safe_and_arithmetically_closed() -> None
     assert isinstance(measurements, dict)
 
     assert distribution["availability"] == "withheld"
-    assert distribution["published"] is False
+    assert distribution["published"] is True
+    assert distribution["withholdingReason"] == "clean-host-validation-pending"
     assert measurements["reproducibleBuildCount"] == 2
 
 
@@ -105,6 +122,31 @@ def test_v2_runtime_evidence_rejects_measurement_drift(tmp_path: Path) -> None:
         match="^chatterbox-runtime-evidence-invalid$",
     ):
         load_runtime_evidence(tmp_path)
+
+
+def test_published_withheld_manifest_rejects_runtime_identity_drift(tmp_path: Path) -> None:
+    root = Path(__file__).resolve().parents[3]
+    relative_files = (
+        "services/tts/release/optional/chatterbox/source-manifest-v2.json",
+        "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+        "services/tts/release/profiles/chatterbox/requirements.lock",
+    )
+    for relative in relative_files:
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((root / relative).read_bytes())
+    manifest_path = (
+        tmp_path / "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json"
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["runtimeArtifact"]["parts"][0]["sha256"] = "0" * 64
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(
+        ReleaseChatterboxError,
+        match="^chatterbox-acquisition-manifest-invalid$",
+    ):
+        load_acquisition_manifest(tmp_path)
 
 
 @pytest.mark.parametrize(

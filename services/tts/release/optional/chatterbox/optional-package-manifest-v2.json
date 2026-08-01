@@ -76,14 +76,16 @@
     "perthSource": "https://github.com/resemble-ai/perth/tree/ce86c2b567491eef3108ed3c137bd7bf1ddda52e"
   },
   "requirements": {
-    "minimumAvailableDedicatedVramMiB": 6144,
+    "measuredPeakDedicatedVramMiB": 3644,
+    "minimumAvailableDedicatedVramMiB": 4668,
     "minimumAvailableRamMiB": 4096,
     "minimumLogicalProcessors": 8,
-    "minimumTotalDedicatedVramMiB": 7680,
+    "minimumTotalDedicatedVramMiB": 5632,
     "minimumTotalRamMiB": 24576,
     "platform": "windows-x86_64",
     "precision": "bfloat16",
-    "provider": "cuda"
+    "provider": "cuda",
+    "recommendedTotalDedicatedVramMiB": 7680
   },
   "runtime": {
     "adapterSha256": "f7fd0e9f745954dbe5881a5428972793f619335a643a7d3b768368a6fdca707e",
@@ -95,7 +97,31 @@
     "serviceSha256": "feedf00f006699fea7fae2bed1d5192709be2e8b124ac48339bc99b44b284727",
     "torchVersion": "2.9.1+cu128"
   },
-  "runtimeArtifact": null,
+  "runtimeArtifact": {
+    "archiveSha256": "af6b4f46f6b21df02d30cdfe992f77f9bda68111edd9042cd32a619c6376aee6",
+    "installedBytes": 5019513881,
+    "parts": [
+      {
+        "downloadBytes": 1900000000,
+        "filename": "voxleaf-chatterbox-runtime-v2.zip.part-001",
+        "sha256": "168f46ae0d11c132ef414732064e81337390be9f578a8f14346b2bdab7bd386b",
+        "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-001"
+      },
+      {
+        "downloadBytes": 1900000000,
+        "filename": "voxleaf-chatterbox-runtime-v2.zip.part-002",
+        "sha256": "35a23ce31119f1ccd386b7b9a2e3dca48b6b2d8d66d83cf0c4d649a085967bee",
+        "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-002"
+      },
+      {
+        "downloadBytes": 1222941463,
+        "filename": "voxleaf-chatterbox-runtime-v2.zip.part-003",
+        "sha256": "9959167239073cd14f84388e5965576b4caa6c2e28e02927aa4efd71c8e14101",
+        "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-003"
+      }
+    ],
+    "runtimeManifestSha256": "cb5055580a28a0c97e50535a8317ea506081230b70e0099d8fe0194591e1c635"
+  },
   "schemaVersion": 2,
-  "withholdingReason": "runtime-artifacts-not-published"
+  "withholdingReason": "clean-host-validation-pending"
 }

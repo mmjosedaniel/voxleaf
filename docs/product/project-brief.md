@@ -95,10 +95,15 @@ Milestone 4B now implements acquisition of only six allowlisted model-data files
 official `ResembleAI/chatterbox` Hugging Face repository at one full frozen
 revision, verifies each size and SHA-256, and executes no model-repository code.
 The reviewed Chatterbox runtime remains a distinct release input with a
-reproducible three-part identity. Those parts must be externally published and
-pass clean-host validation before optional installation is enabled.
+reproducible three-part identity. The exact three parts are published under
+`chatterbox-runtime-v2`; they must pass clean-host validation before optional
+installation is enabled.
 Piper-core readiness, Chatterbox-package readiness, and signed public
 publication are separate decisions.
+ADR-0044 distinguishes Chatterbox's `3,644`-MiB measured peak from its host
+class: `5,632` MiB total and `4,668` MiB available are now the product admission
+floors, while nominal 8-GB hardware remains recommended and is the only class
+represented by the existing exact-host evaluation.
 The rest of this brief describes the intended complete product unless it
 explicitly identifies implemented behavior.
 

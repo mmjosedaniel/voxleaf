@@ -262,12 +262,26 @@ def load_acquisition_manifest(root: Path | None = None) -> dict[str, object]:
         raise ReleaseChatterboxError("chatterbox-acquisition-manifest-invalid")
     identity = _object(manifest.get("identity"), "chatterbox-acquisition-manifest-invalid")
     runtime = _object(manifest.get("runtime"), "chatterbox-acquisition-manifest-invalid")
+    requirements = _object(manifest.get("requirements"), "chatterbox-acquisition-manifest-invalid")
     if (
         identity.get("packageVersion") != "2"
         or identity.get("profileId") != source["profileId"]
         or identity.get("modelRevision") != "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
         or runtime.get("releaseTag") != "chatterbox-runtime-v2"
     ):
+        raise ReleaseChatterboxError("chatterbox-acquisition-manifest-invalid")
+    if requirements != {
+        "measuredPeakDedicatedVramMiB": 3_644,
+        "minimumAvailableDedicatedVramMiB": 4_668,
+        "minimumAvailableRamMiB": 4_096,
+        "minimumLogicalProcessors": 8,
+        "minimumTotalDedicatedVramMiB": 5_632,
+        "minimumTotalRamMiB": 24_576,
+        "platform": "windows-x86_64",
+        "precision": "bfloat16",
+        "provider": "cuda",
+        "recommendedTotalDedicatedVramMiB": 7_680,
+    }:
         raise ReleaseChatterboxError("chatterbox-acquisition-manifest-invalid")
     source_models: dict[str, dict[str, object]] = {}
     for value in _array(source["modelFiles"], "chatterbox-acquisition-manifest-invalid"):
@@ -290,12 +304,54 @@ def load_acquisition_manifest(root: Path | None = None) -> dict[str, object]:
             "url": matching_source["url"],
         }:
             raise ReleaseChatterboxError("chatterbox-acquisition-manifest-invalid")
-    if availability == "withheld" and (
-        manifest.get("runtimeArtifact") is not None
-        or manifest.get("measurements") is not None
-        or manifest.get("withholdingReason") != "runtime-artifacts-not-published"
-    ):
-        raise ReleaseChatterboxError("chatterbox-acquisition-manifest-invalid")
+    runtime_artifact = manifest.get("runtimeArtifact")
+    withholding_reason = manifest.get("withholdingReason")
+    if availability == "withheld":
+        initial_withholding = (
+            runtime_artifact is None
+            and manifest.get("measurements") is None
+            and withholding_reason == "runtime-artifacts-not-published"
+        )
+        published_withholding = (
+            runtime_artifact
+            == {
+                "archiveSha256": "af6b4f46f6b21df02d30cdfe992f77f9bda68111edd9042cd32a619c6376aee6",
+                "installedBytes": 5_019_513_881,
+                "parts": [
+                    {
+                        "downloadBytes": 1_900_000_000,
+                        "filename": "voxleaf-chatterbox-runtime-v2.zip.part-001",
+                        "sha256": (
+                            "168f46ae0d11c132ef414732064e81337390be9f578a8f14346b2bdab7bd386b"
+                        ),
+                        "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-001",
+                    },
+                    {
+                        "downloadBytes": 1_900_000_000,
+                        "filename": "voxleaf-chatterbox-runtime-v2.zip.part-002",
+                        "sha256": (
+                            "35a23ce31119f1ccd386b7b9a2e3dca48b6b2d8d66d83cf0c4d649a085967bee"
+                        ),
+                        "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-002",
+                    },
+                    {
+                        "downloadBytes": 1_222_941_463,
+                        "filename": "voxleaf-chatterbox-runtime-v2.zip.part-003",
+                        "sha256": (
+                            "9959167239073cd14f84388e5965576b4caa6c2e28e02927aa4efd71c8e14101"
+                        ),
+                        "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-003",
+                    },
+                ],
+                "runtimeManifestSha256": (
+                    "cb5055580a28a0c97e50535a8317ea506081230b70e0099d8fe0194591e1c635"
+                ),
+            }
+            and manifest.get("measurements") is None
+            and withholding_reason == "clean-host-validation-pending"
+        )
+        if not initial_withholding and not published_withholding:
+            raise ReleaseChatterboxError("chatterbox-acquisition-manifest-invalid")
     return manifest
 
 
@@ -344,7 +400,7 @@ def load_runtime_evidence(root: Path | None = None) -> dict[str, object]:
         "availability": acquisition["availability"],
         "modelRepositoryCodeExecuted": False,
         "modelSource": "official-revision-pinned-hugging-face",
-        "published": False,
+        "published": True,
         "runtimeReleaseTag": "chatterbox-runtime-v2",
         "withholdingReason": acquisition["withholdingReason"],
     }:

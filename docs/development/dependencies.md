@@ -81,8 +81,8 @@ does not approve copying an evaluation environment into an installer. M011
 Milestone 2 closes both production graphs, and Milestone 3 packages the exact
 Piper graph as the standalone core payload. Milestones 4A-4B implement the
 native multi-artifact lifecycle and deterministic runtime-only builder for the
-separate Chatterbox graph, but its release manifest is intentionally withheld
-until the measured parts pass publication, licence, and clean-host gates. Its
+separate Chatterbox graph. The measured parts are published, but its release
+manifest is intentionally withheld until licence and clean-host gates pass. Its
 baseline Windows x64 payload uses the two measured Piper voices and derives
 the smallest locked production service/profile graph from actual adapter and
 runtime needs. Chatterbox Spanish/English remains a separate optional GPU

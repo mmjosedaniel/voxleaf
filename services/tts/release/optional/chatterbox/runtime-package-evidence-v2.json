@@ -9,9 +9,9 @@
     "availability": "withheld",
     "modelRepositoryCodeExecuted": false,
     "modelSource": "official-revision-pinned-hugging-face",
-    "published": false,
+    "published": true,
     "runtimeReleaseTag": "chatterbox-runtime-v2",
-    "withholdingReason": "runtime-artifacts-not-published"
+    "withholdingReason": "clean-host-validation-pending"
   },
   "measurements": {
     "archiveSha256": "af6b4f46f6b21df02d30cdfe992f77f9bda68111edd9042cd32a619c6376aee6",
@@ -43,9 +43,9 @@
     }
   ],
   "remainingGates": [
-    "Publish the three exact runtime parts under the frozen GitHub Release tag.",
-    "Replace the withheld manifest with the published URLs and measured identities in a later commit.",
-    "Pass clean-user online acquisition, offline bilingual narration, removal, audit, and licence gates."
+    "Pass compatible normal-user clean-host online acquisition with the three published runtime parts and six revision-pinned model files.",
+    "Pass offline English and Spanish narration plus removal and reinstall lifecycle validation.",
+    "Pass the final privacy, dependency, licence, integrity, and support audit gates before changing availability to downloadable."
   ],
   "schemaVersion": 2
 }

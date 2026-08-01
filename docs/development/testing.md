@@ -922,9 +922,9 @@ model artifact, path, or raw host identity may enter a result or fixture.
 
 M011 Milestones 1 through 3 and the deterministic Milestones 4A-4B boundary are
 implemented. The dependency/audit, standalone Piper-core, optional runtime-
-package, and acquisition-controller evidence below is current; external
-runtime publication, clean-host optional installation, installer, and signing
-remain requirements rather than pass evidence. Its
+package, acquisition-controller, and public runtime identity evidence below is
+current; clean-host optional installation, installer, and signing remain
+requirements rather than pass evidence. Its
 active
 [`ExecPlan`](../plans/active/M011-package-validate-and-release-mvp.md)
 requires a clean normal-user Windows package matrix in addition to the
@@ -972,8 +972,9 @@ rejection, safe model-load sites, deterministic splitting, closed redirects,
 wrong/truncated/oversized artifacts, cancellation, bounded reassembly/
 extraction, staging cleanup, runtime tampering/staleness, atomic promotion, and
 absence of profile mutation before explicit activation. Two outside-sandbox
-builds produced identical v2 hashes/sizes. The resulting parts are not release
-assets until an authorized maintainer publishes them and clean-host gates pass.
+builds produced identical v2 hashes/sizes. An authorized maintainer published
+the exact resulting parts under `chatterbox-runtime-v2`; the manifest remains
+withheld until the clean-host gates pass.
 
 The remaining release matrix must distinguish:
 
@@ -1000,9 +1001,10 @@ The remaining release matrix must distinguish:
   evidence as separate decisions.
 
 M011 audit, Piper-core assembly, optional runtime assembly, and v2 acquisition-
-authority validation commands now exist. The current optional manifest is
-withheld, so no end-user acquisition is reachable. Publication, clean-host
-installation/offline use, and installer-lifecycle evidence remain later work;
+authority validation commands now exist. The current optional manifest records
+the published runtime but remains withheld, so no end-user acquisition is
+reachable. Clean-host installation/offline use and installer-lifecycle
+evidence remain later work;
 do not describe those release gates as passing.
 All final M011 commands run outside the automation sandbox under the existing
 repository testing rule.

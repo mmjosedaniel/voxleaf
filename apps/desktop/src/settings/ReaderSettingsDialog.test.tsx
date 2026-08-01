@@ -33,6 +33,13 @@ function renderSettings(overrides: { readonly onClose?: () => void } = {}) {
     temporaryBytes: null,
     minimumFreeBytes: null,
     coldStartSeconds: null,
+    minimumLogicalProcessors: 8,
+    minimumTotalRamMiB: 24_576,
+    minimumAvailableRamMiB: 4_096,
+    measuredPeakDedicatedVramMiB: 3_644,
+    minimumTotalDedicatedVramMiB: 5_632,
+    minimumAvailableDedicatedVramMiB: 4_668,
+    recommendedTotalDedicatedVramMiB: 7_680,
     licenseSummary:
       "Chatterbox, its reviewed model/default conditioning, and PerTh are MIT-licensed.",
     failure: null,

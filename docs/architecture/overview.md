@@ -178,8 +178,9 @@ bytes, and a 13,254,834,850-byte peak staging calculation. Native acquisition
 uses explicit consent, sequential application-owned transfers, closed
 redirects, per-artifact digest verification, safe extraction/loading, atomic
 versioned installation, separate activation, offline use, and application-
-owned removal. External runtime-asset publication and clean-host online/offline
-evidence remain open, so Download is not yet enabled.
+owned removal. The exact runtime assets are published under
+`chatterbox-runtime-v2`; clean-host online/offline evidence remains open, so
+Download is not yet enabled.
 Piper-core portfolio readiness, optional-
 Chatterbox readiness, and signed public publication are separate decisions;
 signing is an external authorization for the last only. Automatic updates,
@@ -769,6 +770,13 @@ mechanics, CC0 voice provenance, the separate optional Chatterbox dependency/
 licence/artifact/acquisition lifecycle, including exact official Hugging Face
 model data plus separately verified runtime delivery, installer size, signing,
 and updates.
+
+ADR-0044 separates Chatterbox's measured VRAM capacity from the size of the
+evaluated host. The supported registry and native acquisition preflight require
+`5,632` MiB total and `4,668` MiB currently available dedicated VRAM, derived
+from the `3,644`-MiB measured peak plus a `1,024`-MiB reserve. The nominal
+8-GB class remains recommended, disclosed, and the only currently evaluated
+class; historical benchmark authority stays unchanged.
 
 The implemented audio-frame v1 boundary describes payload-free in-memory frame metadata with frame, session, generation, and narration-segment identities; monotonic sequence; positive sample rate, per-channel sample-frame count, and channel count; and an explicit end-of-segment marker. Duration is derived from sample count divided by sample rate. Public helpers return conservative whole milliseconds using exact integer arithmetic, sum samples before truncating once, and reject unsafe duration overflow. Contiguous single-segment runs reject duplicate frame IDs, sequence gaps or reversals, identity or format changes, and frames after the segment-end marker. The contract selects no codec, payload representation, audio API, player, or buffer policy.
 

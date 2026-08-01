@@ -19,9 +19,9 @@ content-safe component inventory. Milestone 3 adds the deterministic bilingual
 Piper core, full notices/corresponding-source fulfillment, exact payload
 measurements, offline process-level smoke, and native fixed-manifest verifier.
 Milestone 4A adds the optional lifecycle and UI in a deliberately withheld
-state. Milestone 4B accepts additive official-source authority and implements
-the closed controller; external publication and clean-host acquisition evidence
-must still pass before any Download action is enabled.
+state. Milestone 4B accepts additive official-source authority, implements the
+closed controller, and publishes the exact runtime parts; clean-host acquisition
+evidence must still pass before any Download action is enabled.
 
 ## Current assessment
 
@@ -280,11 +280,12 @@ archive and three part hashes across two builds. Aggregate download is
 8,231,893,387 bytes; aggregate installation is 8,228,465,805 bytes; calculated
 peak staging is 13,254,834,850 bytes after verified parts are discarded before
 extraction. These are local package facts, not end-user availability evidence.
-The checked-in v2 manifest remains `withheld` because the three runtime parts
-have not been published and clean-user online acquisition, offline bilingual
-narration, removal, licence/audit, and resource gates have not run. This is a
-fail-closed external-publication blocker for optional Chatterbox, not a failure
-of the Piper core or an authorization to claim Download works.
+The checked-in v2 manifest remains `withheld` even though the exact three
+runtime parts are published under `chatterbox-runtime-v2`: clean-user online
+acquisition, offline bilingual narration, removal, reinstall, licence/audit,
+and resource gates have not run. This is a fail-closed clean-host blocker for
+optional Chatterbox, not a failure of the Piper core or an authorization to
+claim Download works.
 
 Hugging Face documents full-commit downloads, per-file downloads, filtered
 snapshots, and application-selected cache/local directories. VoxLeaf uses the
@@ -304,6 +305,12 @@ The current exact-host evidence remains useful capacity input: approximately
 process-tree RAM, and about 3.56 GiB dedicated VRAM. M011 must repeat the
 applicable measurements against the exact production package; it must not
 present the benchmark environment's figures as release-package proof.
+ADR-0044 uses the existing result-blind capacity reserve rather than treating
+the evaluated GPU size as model consumption. Optional acquisition now requires
+`5,632` MiB total and `4,668` MiB available dedicated VRAM, recommends the
+evaluated nominal 8-GB class, and discloses the `3,644`-MiB measured peak. A
+passing lower-class gate is an admission result, not a claim that every 6-GB
+GPU/driver combination completed clean-host validation.
 
 Authoritative licence inputs for the current baseline include the exact
 [`piper-tts` 1.4.2 package record](https://pypi.org/project/piper-tts/1.4.2/),

@@ -1086,9 +1086,9 @@ through newly frozen authority and regression evidence.
 ## Milestone 11: Package, validate, and release the MVP
 
 **Status:** In progress. Milestones 1 through 3 and the fail-closed Milestone 4A
-foundation completed on 2026-08-01. Milestone 4B's deterministic authority and
-implementation are complete, but its external publication and clean-host gates
-remain blocked. Milestone 1 froze
+foundation completed on 2026-08-01. Milestone 4B's deterministic authority,
+implementation, and authorized runtime publication are complete, but its
+clean-host gates remain open. Milestone 1 froze
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
 accepted
 [ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
@@ -1106,9 +1106,10 @@ end-user acquisition remains disabled. Milestone 4B freezes and implements
 official-source acquisition for exactly six model-data files from full
 Hugging Face revision `5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18`, with
 per-file size/SHA-256 verification and no model-repository code execution. It
-also reproducibly builds and splits the exact reviewed runtime. The three
-runtime parts still require authorized publication and clean-host validation;
-Hugging Face weights alone are not a complete installation. Installer bundling, enabled
+also reproducibly builds, splits, and publishes the exact reviewed runtime as
+`chatterbox-runtime-v2`. The runtime and Hugging Face weights still require
+clean-host validation; either set alone is not a complete installation.
+Installer bundling, enabled
 optional acquisition, signing, updater policy, and complete-MVP validation are
 not implemented.
 
@@ -1116,7 +1117,8 @@ The remaining M011 execution order is explicit:
 
 ```text
 completed 1 -> completed 2 -> completed 3 -> completed 4A
-    -> 4B deterministic implementation complete; publication/clean host blocked
+    -> 4B deterministic implementation + runtime publication complete;
+       clean host pending
     -> 5 Windows package/signing path
     -> 6 clean-host matrix
     -> 7 release decision and closeout
@@ -1207,10 +1209,9 @@ they supersede only the historical single-archive acquisition shape.
   local reproducible-package facts, not clean-host acquisition or release-
   availability proof.
 - Direct official Hugging Face acquisition removes the need for VoxLeaf to
-  republish model weights. The reviewed runtime now has an immutable measured
-  three-part identity, but an authorized maintainer must publish those exact
-  parts before clean-host acquisition can run; until then Chatterbox stays
-  withheld.
+  republish model weights. The reviewed runtime's immutable measured three-
+  part identity is published under `chatterbox-runtime-v2`; Chatterbox remains
+  withheld until clean-host acquisition and lifecycle validation pass.
 - Hugging Face transport may use redirects, cache metadata, and content-addressed
   storage. The implementation must constrain that external interaction while
   treating full revision, filename, size, and repository SHA-256 as authority;
@@ -1221,6 +1222,10 @@ they supersede only the historical single-archive acquisition shape.
   the frozen bundled core unless corresponding-source, notice, and exact
   provenance mechanics are fulfilled. A topology change requires a new ADR.
 - Hardware-specific benchmarks may expose an unsupported default model or buffer policy.
+- Chatterbox admission no longer treats the evaluated 8-GB host class as the
+  model's technical minimum. ADR-0044 requires `5,632` MiB total and `4,668`
+  MiB free dedicated VRAM, retains 8 GB as recommended/evaluated, and requires
+  that distinction in download consent.
 - Accessibility and long-session failures are expensive to fix if postponed until final packaging.
 - Portfolio or release claims must reflect validated behavior rather than the intended architecture.
 - Automatic updates, AppContainer, external penetration testing, formal
@@ -1371,8 +1376,8 @@ and non-default boundary-deferred playback integration are implemented. The
 maintainer all-rate journey and required PR checks pass; M011 Milestones 1-3
 and the fail-closed Milestones 4A-4B deterministic foundation are complete.
 Milestone 4B freezes and implements official revision-pinned Hugging Face model
-data plus separately verified split-runtime delivery, but external publication
-and optional clean-host evidence remain blocked.
+data plus separately verified split-runtime delivery and publication, but
+optional clean-host evidence remains open.
 
 ## MVP completion boundary
 
