@@ -128,7 +128,7 @@ fn main() {
             tts_optional_chatterbox::OptionalChatterboxManager::default(),
         ))
         .setup(|app| {
-            tts_optional_chatterbox::configure_application_data_root(&app.handle())
+            tts_optional_chatterbox::configure_application_data_root(app.handle())
                 .map_err(|_| "failed to configure optional-profile data root")?;
             Ok(())
         })
