@@ -15,6 +15,7 @@ CHATTERBOX_REQUIREMENTS = RELEASE_ROOT / "profiles" / "chatterbox" / "requiremen
 CHATTERBOX_LOCK = RELEASE_ROOT / "profiles" / "chatterbox" / "requirements.lock"
 AUDIT_POLICY = RELEASE_ROOT / "audit-policy.json"
 COMPONENT_INVENTORY = RELEASE_ROOT / "component-inventory-v1.json"
+PYTHON_LICENSE_EVIDENCE = RELEASE_ROOT / "python-license-evidence.json"
 
 WEB_AND_DEVELOPMENT_PACKAGES = {
     "fastapi",
@@ -165,6 +166,22 @@ def test_release_component_inventory_is_complete_and_content_safe() -> None:
     } == {"Qwen development profiles"}
     assert inventory["lockIdentities"]["piperCore"]["sha256"] == _sha256(CORE_LOCK)
     assert inventory["lockIdentities"]["chatterboxOptional"]["sha256"] == _sha256(CHATTERBOX_LOCK)
+
+
+def test_python_licence_evidence_contains_only_exact_release_components() -> None:
+    inventory = json.loads(COMPONENT_INVENTORY.read_text(encoding="utf-8"))
+    evidence = json.loads(PYTHON_LICENSE_EVIDENCE.read_text(encoding="utf-8"))
+    records = evidence["records"]
+    identities = [f"{record['name']}=={record['version']}" for record in records]
+    expected = {
+        f"{component['name']}=={component['versionOrRevision']}"
+        for component in inventory["components"]
+        if component["ecosystem"] == "python"
+    }
+    assert evidence["schemaVersion"] == 1
+    assert len(records) == 85
+    assert identities == sorted(identities)
+    assert set(identities) == expected
 
 
 def _sha256(path: Path) -> str:

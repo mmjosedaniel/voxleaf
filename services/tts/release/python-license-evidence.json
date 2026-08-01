@@ -1,90 +1,6 @@
 {
   "records": [
     {
-      "evidence": "installed package License-Expression",
-      "license": "MIT",
-      "name": "attrs",
-      "version": "26.1.0"
-    },
-    {
-      "evidence": "installed package licence classifier",
-      "license": "Apache-2.0",
-      "name": "flatbuffers",
-      "version": "25.12.19"
-    },
-    {
-      "evidence": "installed package License-Expression",
-      "license": "MIT",
-      "name": "jsonschema",
-      "version": "4.26.0"
-    },
-    {
-      "evidence": "installed package License-Expression",
-      "license": "MIT",
-      "name": "jsonschema-specifications",
-      "version": "2025.9.1"
-    },
-    {
-      "evidence": "reviewed package metadata/source licence",
-      "license": "BSD-3-Clause AND bundled-third-party-notices",
-      "name": "numpy",
-      "version": "2.5.1"
-    },
-    {
-      "evidence": "installed package licence classifier",
-      "license": "MIT",
-      "name": "onnxruntime",
-      "version": "1.27.0"
-    },
-    {
-      "evidence": "installed package License-Expression",
-      "license": "Apache-2.0 OR BSD-2-Clause",
-      "name": "packaging",
-      "version": "26.2"
-    },
-    {
-      "evidence": "installed package licence classifier",
-      "license": "MIT",
-      "name": "pathvalidate",
-      "version": "3.3.1"
-    },
-    {
-      "evidence": "installed package License field",
-      "license": "GPL-3.0-or-later",
-      "name": "piper-tts",
-      "version": "1.4.2"
-    },
-    {
-      "evidence": "installed package License field",
-      "license": "BSD-3-Clause",
-      "name": "protobuf",
-      "version": "7.35.1"
-    },
-    {
-      "evidence": "installed package License-Expression",
-      "license": "MIT",
-      "name": "referencing",
-      "version": "0.37.0"
-    },
-    {
-      "evidence": "installed package License-Expression",
-      "license": "MIT",
-      "name": "rpds-py",
-      "version": "2026.6.3"
-    },
-    {
-      "evidence": "installed package License-Expression",
-      "license": "PSF-2.0",
-      "name": "typing-extensions",
-      "version": "4.16.0"
-    },
-    {
-      "evidence": "repository LICENSE",
-      "license": "MIT",
-      "name": "voxleaf-tts",
-      "version": "0.0.0"
-    },
-    {
       "evidence": "installed package License field",
       "license": "BSD-3-Clause",
       "name": "antlr4-python3-runtime",
@@ -95,6 +11,12 @@
       "license": "MIT",
       "name": "anyio",
       "version": "4.14.2"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "attrs",
+      "version": "26.1.0"
     },
     {
       "evidence": "installed package License-Expression",
@@ -175,6 +97,12 @@
       "version": "3.32.0"
     },
     {
+      "evidence": "installed package licence classifier",
+      "license": "Apache-2.0",
+      "name": "flatbuffers",
+      "version": "25.12.19"
+    },
+    {
       "evidence": "installed package License-Expression",
       "license": "BSD-3-Clause",
       "name": "fsspec",
@@ -233,6 +161,18 @@
       "license": "BSD-3-Clause",
       "name": "joblib",
       "version": "1.5.3"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "jsonschema-specifications",
+      "version": "2025.9.1"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "jsonschema",
+      "version": "4.26.0"
     },
     {
       "evidence": "installed package License-Expression",
@@ -313,6 +253,12 @@
       "version": "1.26.4"
     },
     {
+      "evidence": "reviewed package metadata/source licence",
+      "license": "BSD-3-Clause AND bundled-third-party-notices",
+      "name": "numpy",
+      "version": "2.5.1"
+    },
+    {
       "evidence": "installed package licence classifier",
       "license": "BSD-3-Clause",
       "name": "omegaconf",
@@ -325,10 +271,34 @@
       "version": "1.22.0"
     },
     {
+      "evidence": "installed package licence classifier",
+      "license": "MIT",
+      "name": "onnxruntime",
+      "version": "1.27.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "Apache-2.0 OR BSD-2-Clause",
+      "name": "packaging",
+      "version": "26.2"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "MIT",
+      "name": "pathvalidate",
+      "version": "3.3.1"
+    },
+    {
       "evidence": "installed package License-Expression",
       "license": "MIT-CMU",
       "name": "pillow",
       "version": "12.3.0"
+    },
+    {
+      "evidence": "installed package License field",
+      "license": "GPL-3.0-or-later",
+      "name": "piper-tts",
+      "version": "1.4.2"
     },
     {
       "evidence": "installed package License-Expression",
@@ -341,6 +311,12 @@
       "license": "BSD-3-Clause",
       "name": "pooch",
       "version": "1.9.0"
+    },
+    {
+      "evidence": "installed package License field",
+      "license": "BSD-3-Clause",
+      "name": "protobuf",
+      "version": "7.35.1"
     },
     {
       "evidence": "installed package License-Expression",
@@ -359,6 +335,12 @@
       "license": "MIT",
       "name": "pyyaml",
       "version": "6.0.3"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "referencing",
+      "version": "0.37.0"
     },
     {
       "evidence": "installed package License-Expression",
@@ -383,6 +365,12 @@
       "license": "MIT",
       "name": "rich",
       "version": "15.0.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "rpds-py",
+      "version": "2026.6.3"
     },
     {
       "evidence": "installed package License field",
@@ -500,9 +488,21 @@
     },
     {
       "evidence": "installed package License-Expression",
+      "license": "PSF-2.0",
+      "name": "typing-extensions",
+      "version": "4.16.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
       "license": "MIT",
       "name": "urllib3",
       "version": "2.7.0"
+    },
+    {
+      "evidence": "repository LICENSE",
+      "license": "MIT",
+      "name": "voxleaf-tts",
+      "version": "0.0.0"
     },
     {
       "evidence": "installed package License-Expression",

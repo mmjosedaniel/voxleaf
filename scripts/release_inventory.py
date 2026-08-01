@@ -132,6 +132,26 @@ def _normalize_license(record: dict[str, Any]) -> tuple[str, str]:
 
 
 def capture_python_licenses(interpreters: list[Path]) -> None:
+    required: set[str] = set()
+    for package in cast(
+        list[dict[str, Any]],
+        tomllib.loads(CORE_LOCK.read_text(encoding="utf-8"))["package"],
+    ):
+        name = _normalize_name(cast(str, package["name"]))
+        if name != "voxleaf-release-core-runtime":
+            required.add(f"{name}=={package['version']}")
+    for block in _requirement_blocks(CHATTERBOX_LOCK):
+        first_line = block.splitlines()[0]
+        pinned = re.match(r"^([a-zA-Z0-9._-]+)==([^ \\]+)", first_line)
+        direct = re.match(r"^([a-zA-Z0-9._-]+) @ ([^ \\]+)", first_line)
+        if pinned is not None:
+            required.add(f"{_normalize_name(pinned.group(1))}=={pinned.group(2)}")
+        elif direct is not None:
+            name = _normalize_name(direct.group(1))
+            required.add(f"{name}=={CHATTERBOX_URL_VERSIONS[name]}")
+        else:
+            raise ValueError(f"Unsupported requirement: {first_line}")
+
     records: dict[str, dict[str, str]] = {}
     for interpreter in interpreters:
         completed = subprocess.run(
@@ -144,8 +164,11 @@ def capture_python_licenses(interpreters: list[Path]) -> None:
         for raw_record in cast(list[dict[str, Any]], json.loads(completed.stdout)):
             name = _normalize_name(cast(str, raw_record["name"]))
             version = cast(str, raw_record["version"])
+            identity = f"{name}=={version}"
+            if identity not in required:
+                continue
             license_expression, evidence = _normalize_license(raw_record)
-            records[f"{name}=={version}"] = {
+            records[identity] = {
                 "name": name,
                 "version": version,
                 "license": license_expression,
@@ -157,14 +180,23 @@ def capture_python_licenses(interpreters: list[Path]) -> None:
         "license": "MIT",
         "evidence": "repository LICENSE",
     }
+    missing = required - records.keys()
+    if missing:
+        raise ValueError(
+            "Missing Python licence evidence for: " + ", ".join(sorted(missing))
+        )
     PYTHON_LICENSE_PATH.write_text(
         json.dumps(
-            {"schemaVersion": 1, "records": list(records.values())},
+            {
+                "schemaVersion": 1,
+                "records": [records[identity] for identity in sorted(records)],
+            },
             indent=2,
             sort_keys=True,
         )
         + "\n",
         encoding="utf-8",
+        newline="\n",
     )
 
 
@@ -663,11 +695,11 @@ def main() -> int:
         return 0
     rendered = json.dumps(build_inventory(), indent=2, sort_keys=True) + "\n"
     if args.write:
-        INVENTORY_PATH.write_text(rendered, encoding="utf-8")
+        INVENTORY_PATH.write_text(rendered, encoding="utf-8", newline="\n")
         return 0
     if (
         not INVENTORY_PATH.is_file()
-        or INVENTORY_PATH.read_text(encoding="utf-8") != rendered
+        or INVENTORY_PATH.read_bytes().decode("utf-8") != rendered
     ):
         print("release-component-inventory:stale", file=sys.stderr)
         return 1

@@ -77,7 +77,8 @@ Ryan, Base voice cloning, and VoiceDesign add no graph and remain outside v8.
 
 The active
 [`M011 ExecPlan`](../plans/active/M011-package-validate-and-release-mvp.md)
-does not approve copying an evaluation environment into an installer. Its
+does not approve copying an evaluation environment into an installer. M011
+Milestone 2 now closes, but does not yet package, both production graphs. Its
 baseline Windows x64 payload uses the two measured Piper voices and must derive
 the smallest locked production service/profile graph from actual adapter and
 runtime needs. Chatterbox Spanish/English is planned as a separate optional GPU
@@ -88,10 +89,13 @@ the first distributable product.
 The measured Chatterbox developer state is approximately 5.03 GiB for its
 isolated environment and 2.99 GiB for model artifacts. Its installed package
 metadata hard-declares Gradio even though the VoxLeaf adapter imports only the
-local Chatterbox inference path and starts no Gradio/Starlette server. M011
-must therefore construct and validate the production graph deliberately rather
-than copy that lock. The 8.02-GiB development footprint is planning evidence,
-not a promised compressed download or final installed size.
+local Chatterbox inference path and starts no Gradio/Starlette server. The
+exact optional lock now contains 79 packages and excludes Gradio, Starlette,
+FastAPI, Uvicorn, pre-commit, Matplotlib, TensorBoard, pandas, pykakasi, and
+pyloudnorm. A hash-locked smoke environment occupied about 4.83 GiB and
+completed exact local English and Spanish generation. That is graph-validation
+evidence, not a promised compressed download or final installed size. The
+historical 8.02-GiB developer footprint remains planning evidence only.
 
 The 2026-07-31 pre-M011 planning audit found no known vulnerability at the
 selected audit level in the locked production Node graph, base Python service,
@@ -102,16 +106,29 @@ but that does not justify shipping dormant vulnerable web packages. CUDA Torch
 and Torchaudio builds plus the local VoxLeaf package were not identified by the
 advisory service; this is an audit limitation, not a clean result.
 
-M011 must repeat advisory checks against the exact shipped Node, Rust, base
-Python, and included/downloadable-profile locks; remove unused release
-packages, including dormant Chatterbox web/UI stacks; enable
-bounded dependency-update intake; and generate a versioned content-safe
-component/licence inventory with source, identity, version/revision, hash,
-licence, inclusion reason, and core/optional/not-shipped status. A standard
-SBOM is preferred
-when proportionate, but the MVP gate is the complete reviewable inventory, not
-the name of its format. No known high or critical reachable core or optional
-package vulnerability may be silently accepted. See
+Milestone 2 adds repository-owned checks for the exact production Node, Rust,
+base Python, Piper-core, and optional Chatterbox locks. The 2026-08-01 run
+reported no known vulnerabilities in packages understood by the selected
+tools. RustSec separately reports 17 informational notices: five unmaintained
+Unicode crates remain in the Windows build graph and twelve GTK/proc-macro
+notices are not Windows-target reachable. The exact Chatterbox source archives
+and CUDA Torch/Torchaudio wheels remain four explicit advisory blind spots;
+their revision/origin/SHA-256 evidence is frozen and they are not described as
+clean. `diffusers` is updated to `0.38.0`, `transformers` to `5.5.0`, and the
+dormant web/UI packages are absent.
+
+Weekly bounded Dependabot intake now proposes Node, Rust, base/core/optional
+Python, and GitHub Actions changes without merge, signing, or publication
+authority. The deterministic
+[`component-inventory-v1.json`](../../services/tts/release/component-inventory-v1.json)
+contains 363 exact core/optional/not-shipped records and is regenerated from
+the ecosystem locks plus reviewed licence metadata. Repository-owned JSON was
+selected instead of adding several SBOM generators because one cross-ecosystem
+record must retain release scope, Windows reachability, process/cleanup owner,
+profile state, audit blind spots, and future packaging state. Final selected
+installer/runtime/archive hashes and sizes remain Milestones 3-5 work; this
+inventory does not invent them. No known high or critical reachable core or
+optional package vulnerability may be silently accepted. See
 [`release-security-and-distribution.md`](release-security-and-distribution.md).
 
 ## Shipped application dependencies

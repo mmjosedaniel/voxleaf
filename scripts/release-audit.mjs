@@ -48,7 +48,9 @@ function parseJsonOutput(result, label) {
   try {
     return JSON.parse(result.stdout.slice(firstBrace));
   } catch (error) {
-    throw new Error(`${label} returned invalid JSON: ${error.message}`);
+    throw new Error(`${label} returned invalid JSON: ${error.message}`, {
+      cause: error,
+    });
   }
 }
 
