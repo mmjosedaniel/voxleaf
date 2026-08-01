@@ -4,7 +4,7 @@
     "targets": ["nsis"],
     "createUpdaterArtifacts": false,
     "publisher": "VoxLeaf Project",
-    "category": "Book",
+    "category": "Reference",
     "shortDescription": "Private local EPUB reader with local narration",
     "longDescription": "VoxLeaf opens local EPUB files and generates bounded narration locally without uploading book contents.",
     "icon": ["icons/icon.ico"],

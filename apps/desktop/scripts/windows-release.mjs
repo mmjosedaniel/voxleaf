@@ -103,6 +103,7 @@ export function validateClosedReleaseValues(documents) {
     bundle?.active !== true ||
     JSON.stringify(bundle.targets) !== JSON.stringify(["nsis"]) ||
     bundle.createUpdaterArtifacts !== false ||
+    bundle.category !== "Reference" ||
     windows?.allowDowngrades !== false ||
     windows?.webviewInstallMode?.type !== "embedBootstrapper" ||
     windows?.webviewInstallMode?.silent !== true ||
