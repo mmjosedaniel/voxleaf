@@ -94,9 +94,13 @@ cleanup units. Renewed maintainer listening confirms correct slowdown across
 the admitted range, and pull request #170 passes the required Ubuntu and
 Windows checks.
 
-M011 is the next approved milestone and now has a detailed active
+M011 is in progress and has a detailed active
 [`packaging and release ExecPlan`](plans/active/M011-package-validate-and-release-mvp.md).
-Its proportional
+Milestone 1 freezes
+[`mvp-release-authority-v1`](architecture/mvp-release-authority-v1.md) and
+accepts
+[ADR-0042](architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
+before dependency or package results. Its proportional
 [`release security and distribution boundary`](development/release-security-and-distribution.md)
 targets a Windows x64 portfolio MVP with Piper Spanish/English in the small
 core and Chatterbox Spanish/English as a separately gated optional GPU quality
