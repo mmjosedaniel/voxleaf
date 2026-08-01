@@ -1,6 +1,6 @@
 {
   "name": "@voxleaf/desktop",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +9,7 @@
     "build": "vite build",
     "dev": "vite",
     "tauri": "tauri",
-    "test": "vitest run && node --test scripts/native-webdriver-client.node-test.mjs scripts/bilingual-portfolio-host.node-test.mjs",
+    "test": "vitest run && node --test scripts/native-webdriver-client.node-test.mjs scripts/bilingual-portfolio-host.node-test.mjs scripts/windows-release.node-test.mjs",
     "test:browser": "playwright test",
     "test:browser:install": "playwright install chromium",
     "test:native-driver-client": "node --test scripts/native-webdriver-client.node-test.mjs",

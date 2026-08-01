@@ -41,6 +41,7 @@ htmlcov/
 target/
 src-tauri/target/
 **/src-tauri/gen/
+apps/desktop/src-tauri/tauri.release.signed.*.conf.json
 
 # Models and machine-learning artifacts
 models/
