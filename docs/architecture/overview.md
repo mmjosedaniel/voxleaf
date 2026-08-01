@@ -139,10 +139,14 @@ is retained. Milestone 5 connects it to product playback with boundary-
 deferred state, content-free preference ownership, and effective-lead
 accounting.
 
-M011 is approved with a detailed active ExecPlan; no packaging implementation
-or release evidence exists yet. The core topology is deliberately smaller than
+M011 is in progress. Milestone 1 freezes
+[`mvp-release-authority-v1`](mvp-release-authority-v1.md) and accepts
+[ADR-0042](decisions/ADR-0042-freeze-mvp-release-authority.md) before dependency
+or package results; no packaging implementation or release evidence exists
+yet. The core topology is deliberately smaller than
 the implemented development matrix: Windows x64 plus Piper davefx/Spanish and
-Piper joe/English. Supported Chatterbox Spanish/English is planned as a
+Piper joe/English in one private embedded Python/Piper runtime. Supported
+Chatterbox Spanish/English is planned as a
 separate optional GPU quality package, never silently downloaded or embedded
 in the core installer; Qwen remains outside the first distributable product.
 The currently measured Chatterbox developer state occupies about 5.03 GiB of

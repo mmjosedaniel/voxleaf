@@ -28,9 +28,9 @@ After the applicable M011 release gate passes:
 - normal reading and narration work without an external service, persistent
   generated audio, administrator-created firewall rules, or a background
   listener;
-- first-run/core acquisition, if retained, and optional-profile acquisition are
-  explicit, integrity-checked, cancellable, and complete before the respective
-  offline narration is offered;
+- core installation and optional-profile acquisition are explicit and
+  integrity-checked; optional acquisition is cancellable and complete before
+  its offline narration is offered;
 - installation, repair/reinstall, application restart, and uninstall have
   documented content-safe behavior;
 - the product discloses its exact included profiles, requirements, licences,
@@ -196,6 +196,7 @@ That document is planning input, not proof that a release gate passes.
 - [`docs/architecture/system-diagram.md`](../../architecture/system-diagram.md)
 - [`docs/architecture/overview.md`](../../architecture/overview.md)
 - [`docs/architecture/tts-support-matrix-v2.md`](../../architecture/tts-support-matrix-v2.md)
+- [`docs/architecture/mvp-release-authority-v1.md`](../../architecture/mvp-release-authority-v1.md)
 - [`docs/development/dependencies.md`](../../development/dependencies.md)
 - [`docs/development/testing.md`](../../development/testing.md)
 - [`docs/development/release-security-and-distribution.md`](../../development/release-security-and-distribution.md)
@@ -248,7 +249,12 @@ That document is planning input, not proof that a release gate passes.
 
 ### Milestone 1: Freeze core, optional-profile, security, and release authority
 
-**Status:** Not started.
+**Status:** Complete as of 2026-08-01. The frozen
+[`mvp-release-authority-v1`](../../architecture/mvp-release-authority-v1.md)
+and accepted
+[ADR-0042](../../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
+precede dependency, packaging, acquisition, and clean-host results. Authority
+checkpoint commit: `a5ec9b1`.
 
 1. Enumerate the exact Windows package topology: desktop binary, local service,
    Python/runtime strategy, Piper engine/phonemizer, davefx/joe voices, core
@@ -306,9 +312,11 @@ That document is planning input, not proof that a release gate passes.
 
 **Status:** Not started.
 
-1. Choose bundle versus explicit first-run acquisition for the frozen Piper
-   runtime and voices using measured installer/download size, offline behavior,
-   and licence obligations.
+1. Derive and package the frozen bundled private Python/Piper runtime and both
+   voices from the exact minimal production graph. Measure compressed and
+   installed size plus offline behavior. If licence or packaging evidence makes
+   this topology impossible, stop and supersede the authority before replacing
+   it with acquisition or a narrower core.
 2. Implement the fixed manifest, digest verification, atomic staging, partial-
    failure cleanup, exact runtime discovery, and content-free errors. Do not
    accept a renderer-provided executable or model path.
@@ -356,8 +364,8 @@ That document is planning input, not proof that a release gate passes.
 
 1. Replace development identity/version labels with a deliberate first MVP
    version and enable only the frozen Windows bundle targets.
-2. Package the desktop, service, exact minimal Piper runtime/acquisition
-   support, optional-profile acquisition controller/manifest, licences,
+2. Package the desktop, service, exact minimal private Piper runtime and both
+   voices, optional-profile acquisition controller/manifest, licences,
    notices, inventory, and user documentation. Keep Chatterbox weights/runtime,
    benchmark tools, candidate audio, private artifacts, and excluded model
    environments out of the core installer.
@@ -470,12 +478,14 @@ the corresponding release claim.
 ## Risks and rollback strategy
 
 - **Piper GPL/phonemizer obligations are larger than expected.** Prefer explicit
-  compliant acquisition or narrow the included profile; never ship first and
-  repair notices later.
+  compliant fulfillment for the frozen bundled core. If that cannot pass, stop
+  for qualified review and a superseding ADR; never silently switch to network
+  acquisition, narrow the core after results, or repair notices later.
 - **Embedded Python makes the installer too large or fragile.** Compare one
-  minimal embedded runtime with a deliberate verified acquisition. Roll back
-  to the smaller authority-approved topology rather than requiring developer
-  Python.
+  minimal embedded runtime against the frozen dependency graph and remove
+  non-product packages. If it still cannot pass, stop for a superseding ADR
+  rather than requiring developer/system Python or silently adding a core
+  download.
 - **A release audit finds a vulnerable package.** Update, remove, or replace it;
   if unreachable and unavoidable, document a time-bounded exception. Exclude
   the affected optional profile rather than blocking the entire Piper MVP.
@@ -533,6 +543,37 @@ and never edit prior benchmark authority to make a release pass.
   8.02 GiB as planning input only and added explicit minimal-graph,
   acquisition-consent, integrity, lifecycle, offline, and independent-release
   gates before end-user availability.
+- **2026-08-01:** Inspected the actual Tauri and supervisor topology before
+  freezing M011: application version `0.0.0`, `bundle.active: false`, no Tauri
+  capabilities/plugins, a restrictive CSP, and repository-relative Python,
+  Piper, Chatterbox, and model roots configured through development-only
+  environment variables. Confirmed that none is a production package path.
+- **2026-08-01:** Froze
+  [`mvp-release-authority-v1`](../../architecture/mvp-release-authority-v1.md)
+  and accepted
+  [ADR-0042](../../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
+  in separate authority checkpoint `a5ec9b1`. The authority fixes a per-user
+  Windows x64 core with a private embedded production Python/Piper runtime and
+  both voices, plus a separate native-owned optional Chatterbox state machine,
+  threat table, cleanup roots, dependency/licence/integrity policy, and
+  independent release claims.
+- **2026-08-01:** Rechecked primary upstream licence inputs. Piper 1.4.2 is
+  GPL-3.0 and both selected voice model cards identify CC0 datasets;
+  Chatterbox's source/model card identify MIT and its official path retains
+  PerTh watermarking. These remain intake evidence: Milestones 2-4 must pin
+  exact production revisions and fulfill every transitive/runtime obligation
+  before distribution.
+- **2026-08-01:** Validated Milestone 1 from normal local PowerShell outside the
+  sandbox. Prettier passed for all nine touched authority/canonical Markdown
+  files; relative-link, pending-diff private-pattern, tracked EPUB/audio/model-
+  artifact, and `git diff --check` validation passed. `pnpm.cmd check:portable`
+  passed: 20 shared test files/209 tests, 34 EPUB files/580 tests, 51 desktop
+  files/515 tests, 12 native-runner Node tests, and 347 Python tests, plus
+  linting, type checking, contract generation checks, and portable builds. It
+  retained pre-existing non-failing Vite highlight/chunk-size warnings and one
+  pytest cache-write warning. No installer, acquisition, model, GPU, signing,
+  or clean-host command is applicable yet because Milestone 1 adds authority,
+  not those future implementations.
 
 ## Discoveries and decisions
 
@@ -554,6 +595,17 @@ and never edit prior benchmark authority to make a release pass.
 - **Decision:** Automatic updates, enterprise process isolation, formal SBOM
   certification, external pentesting, and cross-platform packaging are
   post-MVP unless new evidence makes one release-critical.
+- **Decision:** The core uses a private embedded Windows Python/Piper runtime
+  and bundles davefx plus joe. It does not depend on system Python or a silent
+  first-run core download. Changing that topology requires a superseding ADR.
+- **Decision:** Release-owned roots are resolved natively from Windows Known
+  Folders. The renderer supplies no install, staging, archive, URL, executable,
+  hash, or destination path. Uninstall/repair can touch only exact
+  installer/application-owned roots and never discovers EPUBs.
+- **Decision:** A known critical finding blocks its executable graph. A known
+  high reachable finding also blocks; a proven-unreachable high finding needs
+  a written owner, evidence, compensating control, and expiry within 30 days or
+  the next release. Audit blind spots are recorded rather than treated clean.
 - **Discovery:** The current offline/process containment is strong application
   discipline but not an OS sandbox. Documentation and release claims must not
   describe it as one.
@@ -564,6 +616,11 @@ and never edit prior benchmark authority to make a release pass.
   Gradio even though VoxLeaf does not start its UI/server path. The production
   lock therefore needs deliberate minimal dependency construction and cannot
   inherit the benchmark lock unchanged.
+- **Discovery:** Historical benchmark hashes identify evaluated inputs but are
+  not release-manifest hashes. Final core and optional filenames, byte sizes,
+  SHA-256 values, compressed/install/staging sizes, and free-space requirements
+  remain unavailable until Milestones 2-4 create the minimal production
+  graphs. Recording that absence avoids inventing release evidence.
 
 ## Final validation
 

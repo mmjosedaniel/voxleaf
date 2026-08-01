@@ -7,6 +7,13 @@ Milestone 11 must close. It is deliberately proportional to VoxLeaf's first
 MVP and portfolio goal. It is not a security certification and does not claim
 that an end-user installer already exists.
 
+M011 Milestone 1 is complete. The result-blind
+[`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
+[ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
+now govern the package topology, optional-profile lifecycle, threat model,
+dependency/licence/integrity policy, cleanup ownership, and release claims
+before implementation or package measurements.
+
 ## Current assessment
 
 The current repository is suitable for controlled local development and a
@@ -84,7 +91,7 @@ quality profile:
 - The application starts with English as the product fallback while retaining
   explicit Spanish selection.
 - Normal reading and installed-profile narration make no external request.
-  Piper setup and optional Chatterbox acquisition must be explicit,
+  Bundled Piper installation and optional Chatterbox acquisition must be explicit,
   reviewable, integrity-checked, and complete before the corresponding offline
   narration is offered. Silent model download is prohibited.
 - The installer must not require the user to create firewall rules. Runtime
@@ -118,9 +125,10 @@ profiles than the development repository.
 
 The following work is required before the corresponding release claim:
 
-1. **Frozen payload and threat model.** Record the exact application, service,
-   runtime, voice, model, acquisition, network, persistence, cleanup, and
-   privilege boundaries before packaging.
+1. **Frozen payload and threat model — complete.**
+   [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md)
+   records the exact application, service, runtime, voice, model, acquisition,
+   network, persistence, cleanup, and privilege boundaries before packaging.
 2. **Shipped dependency closure.** Audit the locked Node, Rust, base Python,
    and every included or downloadable profile graph; remove unused runtime/web
    packages;
@@ -138,8 +146,8 @@ The following work is required before the corresponding release claim:
    acquired artifact, verify its digest before use, prevent path substitution,
    retain zero silent runtime download, and prove normal reading/narration with
    external connectivity unavailable.
-5. **Windows package lifecycle.** Build a versioned per-user package where
-   practical; document size and prerequisites; install without a development
+5. **Windows package lifecycle.** Build a versioned per-user package; document
+   size and prerequisites; install without a development
    shell, administrator-created firewall rule, or repository checkout; and
    verify repair/reinstall, uninstall, and cleanup of application-owned files
    without deleting user books.

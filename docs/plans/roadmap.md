@@ -77,8 +77,9 @@ without changing reader, preference, compatibility, or narration ownership.
 The sequential six-arm packaged matrix, browser/native-startup, portable, and
 complete Windows repository checks pass outside the sandbox. Renewed maintainer
 listening confirms correct slowdown across every admitted rate, and pull
-request #170 passes the required Ubuntu and Windows checks. M011 is now the
-next roadmap milestone. Its detailed
+request #170 passes the required Ubuntu and Windows checks. M011 is now in
+progress. Milestone 1 freezes the exact result-blind release authority; its
+detailed
 [`M011 ExecPlan`](active/M011-package-validate-and-release-mvp.md) scopes the
 core distributable candidate to Windows x64 and the measured Piper
 Spanish/English CPU family. It now adds supported Chatterbox Spanish/English
@@ -1077,8 +1078,11 @@ through newly frozen authority and regression evidence.
 
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** Approved with a detailed active ExecPlan; implementation not
-started. M010.2 is complete, so M011 is the next roadmap milestone.
+**Status:** In progress. Milestone 1 completed on 2026-08-01 by freezing
+[`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
+accepting
+[ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
+before dependency or package results. Milestone 2 is next. M010.2 is complete.
 The repository can build a
 release executable for validation, but installer bundling, signing,
 model/runtime distribution, Piper license fulfillment, updater policy, and
@@ -1108,9 +1112,9 @@ explicit verified optional GPU quality package.
   Decline/cancel performs no network request or profile change. Verification
   and installation complete before a separate explicit activation action.
 - Production packaging includes the desktop shell, local service, exact
-  minimal runtime, notices/provenance, and a deliberate integrity-checked
-  Piper bundle/acquisition strategy plus one native-owned fixed-manifest
-  Chatterbox acquisition boundary with no silent runtime download.
+  minimal private embedded Python/Piper runtime, both exact voices,
+  notices/provenance, and one native-owned fixed-manifest Chatterbox acquisition
+  boundary with no silent runtime download.
 - Exact shipped JavaScript, Rust, Python, native, model, and voice components
   are inventoried and audited. Unused release packages are removed, known
   high/critical reachable vulnerabilities block release, and audit blind
@@ -1144,6 +1148,9 @@ All earlier milestones. The detailed implementation authority is
 [`M011-package-validate-and-release-mvp.md`](active/M011-package-validate-and-release-mvp.md),
 and the proportional security boundary is
 [`release-security-and-distribution.md`](../development/release-security-and-distribution.md).
+The frozen result-blind package, threat, optional-profile, cleanup, licence,
+integrity, and claim authority is
+[`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md).
 
 ### Major risks and unknowns
 
@@ -1159,8 +1166,9 @@ and the proportional security boundary is
   space disclosure; those development sizes are not release claims.
 - The current service child has application-level containment but ordinary
   user filesystem/network authority; it must not be advertised as sandboxed.
-- Piper's GPL/phonemizer and voice-provenance obligations may change bundle
-  versus acquisition mechanics.
+- Piper's GPL/phonemizer and voice-provenance obligations may block or narrow
+  the frozen bundled core unless corresponding-source, notice, and exact
+  provenance mechanics are fulfilled. A topology change requires a new ADR.
 - Hardware-specific benchmarks may expose an unsupported default model or buffer policy.
 - Accessibility and long-session failures are expensive to fix if postponed until final packaging.
 - Portfolio or release claims must reflect validated behavior rather than the intended architecture.
