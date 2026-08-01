@@ -94,6 +94,20 @@ cleanup units. Renewed maintainer listening confirms correct slowdown across
 the admitted range, and pull request #170 passes the required Ubuntu and
 Windows checks.
 
+M011 is the next approved milestone and now has a detailed active
+[`packaging and release ExecPlan`](plans/active/M011-package-validate-and-release-mvp.md).
+Its proportional
+[`release security and distribution boundary`](development/release-security-and-distribution.md)
+targets a Windows x64 portfolio MVP with Piper Spanish/English in the small
+core and Chatterbox Spanish/English as a separately gated optional GPU quality
+download. The Chatterbox path requires explicit consent, a minimal audited
+graph, fixed-manifest integrity verification, atomic installation, separate
+activation, offline clean-host proof, and application-owned removal; Qwen stays
+development-only and outside the first distributable product. Piper-core,
+optional-Chatterbox, and signed-public readiness are separate gates. Signing
+does not block a truthful local demo, but an unsigned general download is not
+approved.
+
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
 ## Product
@@ -186,12 +200,14 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
   availability, startup, buffering, cancellation, resource, and recovery
   guidance.
 - [`development/dependencies.md`](development/dependencies.md): dependency ownership, purpose, alternatives, and review policy.
+- [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current pre-M011 security assessment, Piper core plus optional Chatterbox acquisition boundary, mandatory release gates, independent core/optional/public decisions, and deliberately deferred enterprise hardening.
 - [`development/git-workflow.md`](development/git-workflow.md): branches, commits, and pull requests.
 
 ## Plans
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
+- [`plans/active/M011-package-validate-and-release-mvp.md`](plans/active/M011-package-validate-and-release-mvp.md): approved detailed plan for the Windows/Piper core, optional integrity-checked Chatterbox download/removal package, core/optional dependency and licence closure, clean-host validation, signing path, and independent core/optional/public release decisions.
 - [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.
 - [`plans/completed/M002-shared-contracts-and-test-harness.md`](plans/completed/M002-shared-contracts-and-test-harness.md): completed ExecPlan and validation evidence for roadmap Milestone 2.
 - [`plans/completed/M003-secure-epub-ingestion-and-document-model.md`](plans/completed/M003-secure-epub-ingestion-and-document-model.md): completed ExecPlan and validation evidence for secure EPUB ingestion and the framework-independent document model in roadmap Milestone 3.

@@ -73,6 +73,47 @@ Aiden/English. Shared weights and environment establish only artifact
 identity; they do not share language/voice results. Alibaba Cloud remote TTS,
 Ryan, Base voice cloning, and VoiceDesign add no graph and remain outside v8.
 
+## M011 release dependency boundary
+
+The active
+[`M011 ExecPlan`](../plans/active/M011-package-validate-and-release-mvp.md)
+does not approve copying an evaluation environment into an installer. Its
+baseline Windows x64 payload uses the two measured Piper voices and must derive
+the smallest locked production service/profile graph from actual adapter and
+runtime needs. Chatterbox Spanish/English is planned as a separate optional GPU
+download and must receive its own minimal production lock, audit, inventory,
+manifest, and release decision; Qwen remains a development environment outside
+the first distributable product.
+
+The measured Chatterbox developer state is approximately 5.03 GiB for its
+isolated environment and 2.99 GiB for model artifacts. Its installed package
+metadata hard-declares Gradio even though the VoxLeaf adapter imports only the
+local Chatterbox inference path and starts no Gradio/Starlette server. M011
+must therefore construct and validate the production graph deliberately rather
+than copy that lock. The 8.02-GiB development footprint is planning evidence,
+not a promised compressed download or final installed size.
+
+The 2026-07-31 pre-M011 planning audit found no known vulnerability at the
+selected audit level in the locked production Node graph, base Python service,
+or exact Piper environment. It found known advisories in Qwen's
+`transformers` and in Chatterbox's `diffusers`, `gradio`, `starlette`, and
+`transformers`. Gradio and Starlette are not used by the exact local adapter,
+but that does not justify shipping dormant vulnerable web packages. CUDA Torch
+and Torchaudio builds plus the local VoxLeaf package were not identified by the
+advisory service; this is an audit limitation, not a clean result.
+
+M011 must repeat advisory checks against the exact shipped Node, Rust, base
+Python, and included/downloadable-profile locks; remove unused release
+packages, including dormant Chatterbox web/UI stacks; enable
+bounded dependency-update intake; and generate a versioned content-safe
+component/licence inventory with source, identity, version/revision, hash,
+licence, inclusion reason, and core/optional/not-shipped status. A standard
+SBOM is preferred
+when proportionate, but the MVP gate is the complete reviewable inventory, not
+the name of its format. No known high or critical reachable core or optional
+package vulnerability may be silently accepted. See
+[`release-security-and-distribution.md`](release-security-and-distribution.md).
+
 ## Shipped application dependencies
 
 These are the only direct libraries that can participate in the current application's runtime output.
