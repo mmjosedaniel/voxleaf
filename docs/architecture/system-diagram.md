@@ -42,7 +42,7 @@ Solid arrows are implemented runtime or package relationships. Dashed arrows are
 | Hardware profiles, fallback, and resilience        | **Implemented and validated**                                 | Completed M010 implements detection, matching, preference/recheck UI, identity-safe recovery, and exact Piper/davefx plus Qwen/Serena runtime gates. M010.1 Milestone 6 extends the immutable registry and pre-start configuration boundary to Piper/joe, Chatterbox bilingual, and Qwen/Aiden without automatic failover or a second child tree. Distribution stays with M011.                                                                                                         |
 | Bilingual narration and candidate screening        | **Complete and validated**                                    | Completed M010.1 implements exact profile/language registry, matching, UI selection, pre-start configuration, native supervision, Piper English, Chatterbox bilingual, and Qwen Serena/Aiden bindings without changing protocol v1. Both Piper voices and Chatterbox are supported when exact gates pass; both Qwen voices remain development-only. Six service arms, six packaged EPUB portfolio arms, and required Ubuntu/Windows checks pass.                                        |
 | Reader settings and playback controls              | **Complete and validated**                                    | Completed M010.2 bounds English-default language v2 plus narration-start v1 and playback-rate v1 preferences; implements the reader-first shell; and uses ADR-0040's repository WSOLA for six boundary-deferred rates without restarting TTS, discarding source PCM, adding a dependency, or expanding CSP. Milestone 6's six-arm packaged/repository checks, maintainer all-rate confirmation, and pull request #170 Ubuntu/Windows checks pass.                                       |
-| Release packaging                                  | **Milestone 1 authority frozen; implementation planned**      | M011 release authority v1 freezes the Windows x64/private embedded Piper core, separate optional Chatterbox manifest/acquisition/removal boundary, trust and cleanup boundaries, dependency/licence/integrity policy, normal-user install/uninstall, and independent Piper-core, Chatterbox-package, unsigned-local, and signed-public decisions. No installer, production graph, acquisition flow, signing path, or complete-MVP release evidence is implemented yet.                  |
+| Release packaging                                  | **Milestones 1-2 complete; packaging implementation planned** | M011 release authority v1 freezes the Windows x64/private embedded Piper core and separate optional Chatterbox boundary. Milestone 2 closes the 15-entry core and 79-package optional production locks, automated audits, bounded update intake, and a deterministic 363-component inventory with explicit audit blind spots. Installer, acquisition, signing, final artifact measurements, and complete-MVP release evidence remain planned.                                           |
 
 ## Component and trust-boundary map
 
@@ -63,6 +63,7 @@ flowchart LR
     SIGN["Trusted Windows signing authority<br/>External; public installer only"]:::external
     ARTIFACT_SOURCE["Pinned Chatterbox package source<br/>External; acquisition only"]:::external
     PACKAGE["Windows x64 per-user MVP core package<br/>M11 M1 authority frozen;<br/>private embedded Piper Spanish/English"]:::planned
+    RELEASE_GRAPH["Release locks + audit + inventory<br/>M11 M2 implemented;<br/>363 components + explicit blind spots"]:::implemented
 
     subgraph DEVICE["User device / local-only trust boundary"]
         subgraph DESKTOP["apps/desktop"]
@@ -103,8 +104,8 @@ flowchart LR
             PROFILE_CYCLE["TTS profile blocker resolution<br/>Complete: M6.1<br/>batch-one v3 failed; demo exception"]:::implemented
             BATCH_PROBE["Short-unit and dual-worker probe<br/>Complete: M6.2<br/>CPU + dual worker rejected"]:::implemented
             TTS["Constrained local TTS service + protocol<br/>M7 complete and exact-host measured"]:::implemented
-            PROD_TTS["Minimum distributable TTS family<br/>M11 M1 authority frozen:<br/>private embedded Piper Spanish/English"]:::planned
-            CHATTERBOX_PACKAGE["Optional Chatterbox GPU package<br/>minimal runtime + bilingual model;<br/>M11 authority frozen; separately gated planned"]:::planned
+            PROD_TTS["Minimum distributable TTS family<br/>M11 M2: 15-entry core graph locked;<br/>runtime packaging planned"]:::progress
+            CHATTERBOX_PACKAGE["Optional Chatterbox GPU package<br/>M11 M2: 79-package graph locked;<br/>acquisition/package planned"]:::progress
             CPU_FALLBACK["Piper davefx/joe CPU family<br/>Spanish/English supported;<br/>packaged portfolio passed"]:::implemented
             BILINGUAL["Bilingual preparation + exact selection<br/>M10.1 complete; local + required CI pass"]:::implemented
         end
@@ -143,6 +144,8 @@ flowchart LR
     BATCH_PROBE -.->|"selection-v5 + ADR-0015:<br/>one GPU demo only"| TTS
     TTS -.->|"M11 distribution validation required"| PROD_TTS
     CPU_FALLBACK -.->|"M11 baseline release family"| PROD_TTS
+    RELEASE_GRAPH -->|"closed core identity"| PROD_TTS
+    RELEASE_GRAPH -->|"separately gated optional identity"| CHATTERBOX_PACKAGE
     SHELL -.->|"versioned package + minimal service/runtime"| PACKAGE
     PROD_TTS -.->|"integrity/licence/clean-host gates"| PACKAGE
     SIGN -.->|"required only for public publication"| PACKAGE
@@ -206,13 +209,16 @@ composes bilingual normalization with Piper-v2 expansion-aware sizing. Pull
 request #159 passed the required Ubuntu/Windows checks and merged the M010.1
 closeout.
 
-The M011 package and acquisition nodes now have frozen authority but remain
-planned, not runtime edges. The core payload combines the implemented
-desktop/service boundary with one private embedded Python/Piper runtime and
-only the Piper Spanish/English release family after exact dependency, licence,
-provenance, integrity, install/uninstall, and clean-host gates pass.
-Chatterbox's implemented local adapter gains a distribution edge only through
-the separate optional package after explicit user consent, a native-owned
+The M011 package and acquisition runtime nodes retain frozen authority and
+remain planned. Milestone 2 implements their repository dependency identity:
+the private Piper core has an exact 15-entry lock, the Chatterbox option has a
+separate 79-package lock, and one release audit/inventory boundary records 363
+components plus explicit audit blind spots. Those graphs are not installer or
+download-size evidence. The core payload combines the implemented desktop/
+service boundary with one private embedded Python/Piper runtime only after the
+remaining licence, provenance, integrity, install/uninstall, and clean-host
+gates pass. Chatterbox's implemented local adapter gains a distribution edge
+only through the separate optional package after explicit user consent, a native-owned
 fixed manifest, bounded staging, digest verification, atomic versioned
 installation, clean-host GPU proof, and application-owned removal. Selecting
 an absent profile does not download or replace active narration; successful
@@ -447,7 +453,7 @@ value remains a simultaneous ceiling, not a startup target.
 | Hardware profiles, fallback, and operational resilience | [M010 completed ExecPlan](../plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md), frozen [hardware/profile/recovery authority v1](hardware-profile-recovery-authority-v1.md), accepted [ADR-0019](decisions/ADR-0019-privacy-safe-hardware-profiles-and-recovery.md), passing [Piper v6 result](../../benchmarks/tts/cpu-fallback-result-v6.json), [selection-v6](../../benchmarks/tts/selection-v6.md), [ADR-0020](decisions/ADR-0020-admit-piper-cpu-fallback.md), corrective [Qwen development VRAM authority v1](qwen-development-vram-admission-v1.md) and [ADR-0022](decisions/ADR-0022-qwen-development-vram-admission.md), final [support matrix v1](tts-support-matrix-v1.md) and [ADR-0023](decisions/ADR-0023-final-m010-support-and-recovery.md), implemented [Piper narration preparation profile v2](piper-narration-preparation-profile-v2.md), and frozen [runtime-configuration availability v1](tts-profile-runtime-configuration-availability-v1.md). Final support, margins, explicit fallback/recovery, limitations, distribution obligations, local validation, and replacement Ubuntu/Windows checks pass.                      |
 | Bilingual narration and candidate screening             | [M010.1 completed ExecPlan](../plans/completed/M010-001-bilingual-narration-and-candidate-screening.md), implemented [bilingual product authority v1](bilingual-narration-authority-v1.md) and [normalization v2](narration-normalization-v2.md), frozen [v12 evaluation profile](tts-feasibility-profile-v12.md), content-safe [Chatterbox bilingual](../../benchmarks/tts/chatterbox-bilingual-full-result-v12.json), [Qwen Serena Spanish](../../benchmarks/tts/qwen-serena-spanish-quality-result-v12.json), and [Qwen Aiden English](../../benchmarks/tts/qwen-aiden-english-quality-result-v12.json) results, accepted [selection v12](../../benchmarks/tts/selection-v12.md), [ADR-0031](decisions/ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md), and current [support/integration matrix v2](tts-support-matrix-v2.md). Milestone 6 implements the exact language/profile service bindings while preserving protocol v1 and one-tree ownership. Milestone 7 validates all six packaged EPUB portfolio arms, exact-host metrics, synchronization, cancellation, bounded cleanup, privacy, zero external requests, and required Ubuntu/Windows checks. |
 | Reader settings and playback controls                   | [M010.2 completed ExecPlan](../plans/completed/M010-002-reader-settings-and-playback-controls.md), approved [product requirements](../product/reader-settings-and-playback-controls.md), immutable [authority v1](reader-settings-playback-authority-v1.md), frozen playback [authority v2](reader-settings-playback-authority-v2.md) and [v3](reader-settings-playback-authority-v3.md), implemented [bilingual preference authority v2](bilingual-narration-authority-v2.md), ADR-0033 through WSOLA-selection ADR-0040, and aggregate [v3 result](../../benchmarks/playback/boundary-deferred-v3-result.json). English-default language/start/rate preferences, the reader-first shell, boundary-deferred six-rate WSOLA playback, and the sequential six-arm portfolio are implemented and validated. Maintainer all-rate confirmation and pull request #170 Ubuntu/Windows checks pass.                                                                                                                                                                                                                                                                                      |
-| MVP packaging and release                               | [Active M011 ExecPlan](../plans/active/M011-package-validate-and-release-mvp.md), frozen [release authority v1](mvp-release-authority-v1.md), accepted [ADR-0042](decisions/ADR-0042-freeze-mvp-release-authority.md), and [release security/distribution boundary](../development/release-security-and-distribution.md). Milestone 1 freezes the per-user Windows x64/private embedded Piper core, separately gated native-owned optional Chatterbox acquisition/removal topology, trust and cleanup boundaries, dependency/licence/integrity policy, and independent core/optional/local/public claims. No installer, production dependency graph, acquisition flow, or release evidence exists yet.                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| MVP packaging and release                               | [Active M011 ExecPlan](../plans/active/M011-package-validate-and-release-mvp.md), frozen [release authority v1](mvp-release-authority-v1.md), accepted [ADR-0042](decisions/ADR-0042-freeze-mvp-release-authority.md), [release security/distribution boundary](../development/release-security-and-distribution.md), and exact [component inventory](../../services/tts/release/component-inventory-v1.json). Milestone 1 freezes the core/optional topology and claims. Milestone 2 closes the 15-entry Piper core and 79-package Chatterbox locks, automated ecosystem audits, bounded update intake, and 363-component inventory. Installer, acquisition, compliance fulfillment, final artifact measurements, signing, and complete release evidence remain future milestones.                                                                                                                                                                                                                                                                                                                                                                                               |
 | Local-first desktop and future local process direction  | [ADR-0001](decisions/ADR-0001-local-first-desktop.md); ADR-0015 permits a constrained one-GPU development demo, M010/M010.1 implement exact local profiles, and M011 owns their narrower distributable payload                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | Roadmap status                                          | [Roadmap](../plans/roadmap.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
@@ -493,9 +499,11 @@ value remains a simultaneous ceiling, not a startup target.
    pass.
 7. **Milestone 11 — In progress:** Milestone 1 freezes the exact minimum
    Windows/Piper payload, optional Chatterbox topology, threat model, cleanup,
-   and independent release claims. Milestone 2 is next: close shipped dependencies,
-   integrity, licences, and provenance; implement normal-user package and
-   cleanup; validate the complete clean-host MVP; and decide portfolio-ready
-   local versus signed public-installer release separately.
+   and independent release claims. Milestone 2 closes shipped/downloadable
+   dependency identity, audit policy, bounded update intake, and the exact
+   component inventory. Milestone 3 is next: implement compliant Piper runtime
+   and voice distribution, followed by optional acquisition, normal-user
+   package/cleanup, complete clean-host validation, and separate portfolio-ready
+   local versus signed public-installer decisions.
 
 Update this document whenever a major component boundary, process/package dependency, trust boundary, persistence owner, external interaction, runtime flow, or roadmap implementation status changes. A completed plan may advance a node or arrow only when its definition of done and validation evidence are present.

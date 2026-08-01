@@ -1,0 +1,72 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Bogota
+    open-pull-requests-limit: 4
+    labels:
+      - dependencies
+    groups:
+      production-node:
+        dependency-type: production
+      development-node:
+        dependency-type: development
+
+  - package-ecosystem: cargo
+    directory: /apps/desktop/src-tauri
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:15"
+      timezone: America/Bogota
+    open-pull-requests-limit: 4
+    labels:
+      - dependencies
+
+  - package-ecosystem: pip
+    directory: /services/tts
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:30"
+      timezone: America/Bogota
+    open-pull-requests-limit: 4
+    labels:
+      - dependencies
+
+  - package-ecosystem: pip
+    directory: /services/tts/release/core
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:45"
+      timezone: America/Bogota
+    open-pull-requests-limit: 4
+    labels:
+      - dependencies
+
+  - package-ecosystem: pip
+    directory: /services/tts/release/profiles/chatterbox
+    schedule:
+      interval: weekly
+      day: monday
+      time: "10:00"
+      timezone: America/Bogota
+    open-pull-requests-limit: 4
+    labels:
+      - dependencies
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "10:15"
+      timezone: America/Bogota
+    open-pull-requests-limit: 4
+    labels:
+      - dependencies

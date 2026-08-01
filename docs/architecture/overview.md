@@ -142,19 +142,22 @@ accounting.
 M011 is in progress. Milestone 1 freezes
 [`mvp-release-authority-v1`](mvp-release-authority-v1.md) and accepts
 [ADR-0042](decisions/ADR-0042-freeze-mvp-release-authority.md) before dependency
-or package results; no packaging implementation or release evidence exists
-yet. The core topology is deliberately smaller than
+or package results. Milestone 2 closes the exact production component identity:
+a 15-entry private Piper core lock, a separately gated 79-package Chatterbox
+lock, repository-owned Node/Rust/Python release audits, bounded Dependabot
+intake, and a deterministic 363-component inventory. It does not yet implement
+an installer or optional-profile acquisition. The core topology is deliberately smaller than
 the implemented development matrix: Windows x64 plus Piper davefx/Spanish and
 Piper joe/English in one private embedded Python/Piper runtime. Supported
 Chatterbox Spanish/English is planned as a
 separate optional GPU quality package, never silently downloaded or embedded
 in the core installer; Qwen remains outside the first distributable product.
-The currently measured Chatterbox developer state occupies about 5.03 GiB of
-environment plus 2.99 GiB of model artifacts, so it cannot stand in for the
-minimal release graph or final download/storage measurements. M011 must close
-shipped/downloadable dependency auditing, remove dormant web/UI packages,
-resolve or block release for relevant advisories, fulfill Piper/phonemizer and
-Chatterbox model/runtime provenance obligations, and implement native-owned
+The prior Chatterbox developer state occupied about 5.03 GiB of environment
+plus 2.99 GiB of model artifacts. Milestone 2 replaces that environment graph
+with the explicit 79-package runtime lock and proves the adapter offline in a
+4.83-GiB isolated smoke environment; neither number is a final compressed or
+installed package measurement. M011 must still fulfill Piper/phonemizer and
+Chatterbox model/runtime provenance obligations and implement native-owned
 fixed-manifest acquisition with explicit consent, bounded staging, digest
 verification, atomic versioned installation, separate activation, offline
 use, and application-owned removal. Piper-core portfolio readiness, optional-
@@ -281,7 +284,7 @@ Desktop application
 |-- Reader-first Settings and six boundary-deferred playback rates
 |   [M010.2 complete; repository WSOLA, English fallback, packaged validation]
 |-- Windows x64 MVP core plus optional quality package
-|   [M011 approved planned; Piper ES/EN core + Chatterbox download; not implemented]
+|   [M011 M1-M2; dependency/audit/inventory identity closed; packaging planned]
 `-- Explicit bilingual narration and exact language/profile selection
     [M010.1 Milestones 2-6; Piper ES/EN and Chatterbox supported,
      Qwen Serena/Aiden development-only]

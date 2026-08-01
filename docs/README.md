@@ -107,7 +107,11 @@ core and Chatterbox Spanish/English as a separately gated optional GPU quality
 download. The Chatterbox path requires explicit consent, a minimal audited
 graph, fixed-manifest integrity verification, atomic installation, separate
 activation, offline clean-host proof, and application-owned removal; Qwen stays
-development-only and outside the first distributable product. Piper-core,
+development-only and outside the first distributable product. Milestone 2
+closes the exact 15-entry core and 79-package optional locks, automated
+production audits, bounded dependency-update intake, and a deterministic
+363-component release inventory. It does not yet create an installer or the
+optional acquisition flow. Piper-core,
 optional-Chatterbox, and signed-public readiness are separate gates. Signing
 does not block a truthful local demo, but an unsigned general download is not
 approved.
@@ -205,7 +209,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
   availability, startup, buffering, cancellation, resource, and recovery
   guidance.
 - [`development/dependencies.md`](development/dependencies.md): dependency ownership, purpose, alternatives, and review policy.
-- [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current pre-M011 security assessment, Piper core plus optional Chatterbox acquisition boundary, mandatory release gates, independent core/optional/public decisions, and deliberately deferred enterprise hardening.
+- [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current M011 security assessment, closed Piper core and optional Chatterbox dependency/audit boundary, mandatory remaining release gates, independent core/optional/public decisions, and deliberately deferred enterprise hardening.
 - [`development/git-workflow.md`](development/git-workflow.md): branches, commits, and pull requests.
 
 ## Plans

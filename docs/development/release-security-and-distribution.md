@@ -7,12 +7,15 @@ Milestone 11 must close. It is deliberately proportional to VoxLeaf's first
 MVP and portfolio goal. It is not a security certification and does not claim
 that an end-user installer already exists.
 
-M011 Milestone 1 is complete. The result-blind
+M011 Milestones 1 and 2 are complete. The result-blind
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
 [ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
 now govern the package topology, optional-profile lifecycle, threat model,
 dependency/licence/integrity policy, cleanup ownership, and release claims
-before implementation or package measurements.
+before implementation or package measurements. Milestone 2 closes the exact
+dependency graphs, repeatable advisory checks, bounded update intake, and
+content-safe component inventory without claiming that an installer or
+download lifecycle already exists.
 
 ## Current assessment
 
@@ -71,6 +74,41 @@ may be retained only when it is required, its release use is understood, and
 no known high or critical reachable vulnerability remains. Exceptions require
 a narrow written reachability rationale, owner, and review date; silently
 ignoring an advisory is not acceptable.
+
+## Milestone 2 dependency closure
+
+The 2026-08-01 production-graph checkpoint establishes:
+
+- a 15-entry private core lock (14 installed distributions plus its virtual
+  root) containing the VoxLeaf service, Piper 1.4.2, ONNX Runtime 1.27.0, and
+  only their required protocol/runtime dependencies;
+- a separate 79-package Chatterbox Windows/Python 3.12 lock derived from the
+  exact bilingual local adapter path, with commit-pinned Chatterbox and PerTh
+  archives plus exact CUDA 12.8 Torch/Torchaudio wheels;
+- removal of Gradio, Starlette, FastAPI, Uvicorn, pre-commit, Matplotlib,
+  TensorBoard, pandas, pykakasi, pyloudnorm, and other unused web/training/UI
+  edges from the optional graph;
+- `diffusers` 0.38.0 and `transformers` 5.5.0, both proven by exact local model
+  load and bounded English/Spanish generation before admission to the lock;
+- repository-owned `pnpm audit`, RustSec, and `pip-audit` orchestration against
+  production Node, Windows-target Rust, base Python, Piper core, and optional
+  Chatterbox identities;
+- zero known vulnerabilities in components understood by those tools, 17
+  frozen RustSec informational notices (five Windows-build-reachable
+  unmaintained Unicode crates), and four explicitly recorded optional Python
+  audit blind spots for URL-pinned Chatterbox, PerTh, Torch, and Torchaudio;
+- bounded weekly dependency-update proposals with no automatic merge, signing,
+  or publication authority; and
+- a deterministic 363-record component/licence inventory covering production
+  Node, Windows-target Rust, both Python graphs, exact voice/model artifacts,
+  and excluded Qwen status.
+
+The approximately 107.53-MiB Piper-core and 4.83-GiB Chatterbox virtual
+environments are content-safe graph-smoke measurements, not release download,
+installed, staging, or free-space promises. Final packaged artifacts and
+licence/source fulfillment remain Milestones 3 and 4. The optional package is
+still unavailable to end users until those independent gates and acquisition
+implementation pass.
 
 ## Minimum distributable MVP
 

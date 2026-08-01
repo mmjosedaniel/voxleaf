@@ -61,8 +61,15 @@ identity-first recovery, and six boundary-deferred playback rates.
 The repository can build a Tauri release executable for validation, but
 `apps/desktop/src-tauri/tauri.conf.json` still uses version `0.0.0` and
 `bundle.active` is `false`. There is no end-user installer, signed release,
-updater policy, runtime/model acquisition flow, release dependency audit,
-third-party notice bundle, or clean-machine install/uninstall proof.
+updater policy, runtime/model acquisition flow, third-party notice bundle, or
+clean-machine install/uninstall proof.
+
+Milestone 2 now provides the repository release dependency boundary without
+claiming packaging: a 15-entry private Piper core lock, a separate 79-package
+Chatterbox lock, automated Node/Rust/Python release audits, bounded dependency-
+update intake, and a deterministic 363-component inventory. Installer,
+acquisition, compliance fulfillment, final artifact measurements, and clean-
+host release evidence remain future milestones.
 
 The current TTS runtimes are ignored developer assets selected through
 environment variables. Development firewall rules target exact candidate
@@ -90,8 +97,9 @@ The content-safe planning audit on 2026-07-31 found:
   whose web surfaces are not used by the current local adapter;
 - CUDA Torch/Torchaudio and the local VoxLeaf package were not identified by
   the advisory service and therefore need explicit limitation records;
-- no automated RustSec/per-profile Python audit, dependency-update intake, or
-  versioned shipped-component inventory; and
+- at that time, no automated RustSec/per-profile Python audit, dependency-update
+  intake, or versioned shipped-component inventory; Milestone 2 now supplies
+  each repository boundary; and
 - no tracked EPUB, generated audio, model weight, signing credential, or
   private user data.
 
@@ -282,7 +290,7 @@ checkpoint commit: `a5ec9b1`.
 
 ### Milestone 2: Close the core and optional dependency/component graphs
 
-**Status:** Not started.
+**Status:** Complete (2026-08-01).
 
 1. Build the smallest production Python/Piper graph from actual adapter imports
    and package needs; do not reuse benchmark-only or web-serving dependencies.
@@ -446,10 +454,17 @@ pnpm.cmd benchmark:reader:native
 ```
 
 Run focused package/service tests while changing those areas, then repeat the
-unchanged complete applicable commands after packaging. The M011 release-audit,
-optional-acquisition, and installer-lifecycle commands do not exist yet;
-Milestones 2, 4, and 5 must add them to repository configuration and
-documentation before they may become acceptance evidence.
+unchanged complete applicable commands after packaging. Milestone 2 adds the
+following deterministic release-graph commands:
+
+```powershell
+pnpm.cmd audit:release
+pnpm.cmd inventory:release:check
+```
+
+The optional-acquisition and installer-lifecycle commands do not exist yet;
+Milestones 4 and 5 must add them to repository configuration and documentation
+before they may become acceptance evidence.
 
 Milestone 4 must add deterministic tests for the optional acquisition state
 machine and native manifest boundary before any network-backed host run. Those
@@ -574,6 +589,43 @@ and never edit prior benchmark authority to make a release pass.
   pytest cache-write warning. No installer, acquisition, model, GPU, signing,
   or clean-host command is applicable yet because Milestone 1 adds authority,
   not those future implementations.
+- **2026-08-01:** Derived the private Piper core directly from production
+  imports and locked 15 entries, including the local service root. An isolated
+  Windows smoke environment measured 107.53 MiB and produced content-free
+  Spanish and English audio through the exact adapter without network access.
+- **2026-08-01:** Replaced the approximately 5.03-GiB Chatterbox developer
+  environment graph with an explicit 79-package optional lock. The graph omits
+  dormant Gradio, Starlette, FastAPI, Uvicorn, pre-commit, Matplotlib,
+  TensorBoard, pandas, pykakasi, and pyloudnorm surfaces; pins exact source
+  archive revisions and CUDA wheels; and updates `diffusers` and `transformers`.
+  Isolated load, warm-up, English, and Spanish adapter smoke evidence passed.
+  The 4.83-GiB isolated graph footprint is not a compressed download or final
+  installed package measurement.
+- **2026-08-01:** Added `pnpm.cmd audit:release`. The frozen Node, base Python,
+  Piper-core, and Chatterbox registry graphs report no known vulnerability at
+  the selected audit level. Rust reports zero vulnerabilities and 17 exact
+  informational notices, of which five unmaintained Unicode crates are
+  reachable from the Windows target graph. Four exact source/CUDA packages
+  remain recorded audit blind spots rather than being represented as clean.
+- **2026-08-01:** Added weekly bounded Dependabot intake for npm, Cargo, the
+  base/core/optional Python locks, and GitHub Actions without automatic merge
+  or release authority. Added a deterministic 363-component inventory with
+  exact lock identities, scope, purpose, provenance, licence evidence,
+  integrity, audit reference, process/cleanup ownership, and artifact state.
+- **2026-08-01:** Validated Milestone 2 from normal local PowerShell outside the
+  sandbox. `pnpm.cmd audit:release` and `pnpm.cmd inventory:release:check`
+  passed. Exact offline adapter smoke produced 177,216 Spanish and 197,276
+  English Piper payload bytes through the locked core, and 222,720 English
+  Chatterbox payload bytes through the optional lock; an earlier Spanish
+  Chatterbox smoke passed from the same graph. The release/Piper/Chatterbox/
+  service coverage contains 43 passing tests. `pnpm.cmd check:portable` and
+  `pnpm.cmd check` passed formatting, lint, types, 20 shared files/209 tests,
+  34 EPUB files/580 tests, 51 desktop files/515 tests, 12 Node native-runner
+  tests, 41 Rust tests, 353 Python tests, portable builds, the Tauri Windows
+  release build, and Python artifacts. Existing non-failing Custom Highlight,
+  bundle-size, Diffusers deprecation, offline Cangjie-map, and pytest cache-
+  write warnings remain. No network acquisition, installer lifecycle, signing,
+  or clean-host command is applicable until later M011 milestones implement it.
 
 ## Discoveries and decisions
 
@@ -616,6 +668,31 @@ and never edit prior benchmark authority to make a release pass.
   Gradio even though VoxLeaf does not start its UI/server path. The production
   lock therefore needs deliberate minimal dependency construction and cannot
   inherit the benchmark lock unchanged.
+- **Decision:** The optional graph is compiled from an explicit complete
+  `--no-deps` input because the upstream Chatterbox metadata hard-declares
+  unused web, UI, training, and developer surfaces. Every retained transitive
+  package is nevertheless exact and hash locked.
+- **Decision:** One repository-owned cross-ecosystem inventory is proportional
+  for this MVP because it must preserve release scope, runtime reachability,
+  process/cleanup ownership, profile status, and audit blind spots that would
+  otherwise require several new SBOM generators. A standards export may be
+  added later without changing the recorded component identity.
+- **Discovery:** Registry advisory services cannot identify the exact
+  Chatterbox/PerTh source archives or CUDA Torch/Torchaudio wheels. Those four
+  artifacts are frozen as explicit blind spots with provenance and hashes;
+  their absence from an advisory database is never presented as a clean result.
+- **Discovery:** Cargo's cross-platform lock reports informational notices that
+  do not all reach the Windows product. Release automation freezes the complete
+  notice set and separately verifies the five notices reachable from the
+  Windows target graph so either kind of change requires review.
+- **Decision:** Environment directory sizes are graph-smoke observations only.
+  Compressed download, installed, staging, and free-space requirements remain
+  Milestones 3 and 4 measurements and are not inferred from developer or smoke
+  environments.
+- **Discovery:** Python's default Windows text writer converted generated JSON
+  line endings to CRLF while the repository format gate requires LF. The
+  generator now writes and byte-checks canonical LF output so inventory
+  regeneration and global formatting remain the same authority.
 - **Discovery:** Historical benchmark hashes identify evaluated inputs but are
   not release-manifest hashes. Final core and optional filenames, byte sizes,
   SHA-256 values, compressed/install/staging sizes, and free-space requirements

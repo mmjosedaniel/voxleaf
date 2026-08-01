@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "auditDate": "2026-08-01",
+  "tools": {
+    "cargoAudit": "0.22.2",
+    "pipAudit": "2.10.1",
+    "pnpm": "11.15.1",
+    "python": "3.12"
+  },
+  "rustInformationalWarnings": [
+    {
+      "id": "RUSTSEC-2024-0370",
+      "package": "proc-macro-error",
+      "version": "1.0.4",
+      "kind": "unmaintained",
+      "windowsReachable": false
+    },
+    {
+      "id": "RUSTSEC-2024-0411",
+      "package": "gdkwayland-sys",
+      "version": "0.18.2",
+      "kind": "unmaintained",
+      "windowsReachable": false
+    },
+    {
+      "id": "RUSTSEC-2024-0412",
+      "package": "gdk",
+      "version": "0.18.2",
+      "kind": "unmaintained",
+      "windowsReachable": false
+    },
+    {
+      "id": "RUSTSEC-2024-0413",
+      "package": "atk",
+      "version": "0.18.2",
+      "kind": "unmaintained",
+      "windowsReachable": false
+    },
+    {
+      "id": "RUSTSEC-2024-0414",
+      "package": "gdkx11-sys",
+      "version": "0.18.2",
+      "kind": "unmaintained",
+      "windowsReachable": false
+    },
+    {
+      "id": "RUSTSEC-2024-0415",
+      "package": "gtk",
+      "version": "0.18.2",
+      "kind": "unmaintained",
+      "windowsReachable": false
+    },
+    {
+      "id": "RUSTSEC-2024-0416",
+      "package": "atk-sys",
+      "version": "0.18.2",
+      "kind": "unmaintained",
+      "windowsReachable": false
+    },
+    {
+      "id": "RUSTSEC-2024-0417",
+      "package": "gdkx11",
+      "version": "0.18.2",
+      "kind": "unmaintained",
+      "windowsReachable": false
+    },
+    {
+      "id": "RUSTSEC-2024-0418",
+      "package": "gdk-sys",
+      "version": "0.18.2",
+      "kind": "unmaintained",
+      "windowsReachable": false
+    },
+    {
+      "id": "RUSTSEC-2024-0419",
+      "package": "gtk3-macros",
+      "version": "0.18.2",
+      "kind": "unmaintained",
+      "windowsReachable": false
+    },
+    {
+      "id": "RUSTSEC-2024-0420",
+      "package": "gtk-sys",
+      "version": "0.18.2",
+      "kind": "unmaintained",
+      "windowsReachable": false
+    },
+    {
+      "id": "RUSTSEC-2024-0429",
+      "package": "glib",
+      "version": "0.18.5",
+      "kind": "unsound",
+      "windowsReachable": false
+    },
+    {
+      "id": "RUSTSEC-2025-0075",
+      "package": "unic-char-range",
+      "version": "0.9.0",
+      "kind": "unmaintained",
+      "windowsReachable": true
+    },
+    {
+      "id": "RUSTSEC-2025-0080",
+      "package": "unic-common",
+      "version": "0.9.0",
+      "kind": "unmaintained",
+      "windowsReachable": true
+    },
+    {
+      "id": "RUSTSEC-2025-0081",
+      "package": "unic-char-property",
+      "version": "0.9.0",
+      "kind": "unmaintained",
+      "windowsReachable": true
+    },
+    {
+      "id": "RUSTSEC-2025-0098",
+      "package": "unic-ucd-version",
+      "version": "0.9.0",
+      "kind": "unmaintained",
+      "windowsReachable": true
+    },
+    {
+      "id": "RUSTSEC-2025-0100",
+      "package": "unic-ucd-ident",
+      "version": "0.9.0",
+      "kind": "unmaintained",
+      "windowsReachable": true
+    }
+  ],
+  "pythonGraphs": [
+    {
+      "id": "base-service",
+      "lock": "services/tts/uv.lock",
+      "project": "services/tts",
+      "expectedBlindSpots": []
+    },
+    {
+      "id": "piper-core",
+      "lock": "services/tts/release/core/uv.lock",
+      "project": "services/tts/release/core",
+      "excludedFirstPartyRequirements": ["../.."],
+      "expectedBlindSpots": []
+    },
+    {
+      "id": "chatterbox-optional",
+      "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+      "requirements": "services/tts/release/profiles/chatterbox/requirements.lock",
+      "expectedBlindSpots": [
+        {
+          "name": "chatterbox-tts",
+          "version": "0.1.7",
+          "reason": "The advisory service cannot identify a commit-pinned URL requirement; source revision and archive SHA-256 require manual review."
+        },
+        {
+          "name": "resemble-perth",
+          "version": "1.0.1",
+          "reason": "The advisory service cannot identify a commit-pinned URL requirement; source revision and archive SHA-256 require manual review."
+        },
+        {
+          "name": "torch",
+          "version": "2.9.1+cu128",
+          "reason": "The advisory service cannot identify the exact CUDA wheel URL; its version, origin, and wheel SHA-256 require manual review."
+        },
+        {
+          "name": "torchaudio",
+          "version": "2.9.1+cu128",
+          "reason": "The advisory service cannot identify the exact CUDA wheel URL; its version, origin, and wheel SHA-256 require manual review."
+        }
+      ]
+    }
+  ]
+}
