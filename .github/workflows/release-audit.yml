@@ -69,3 +69,6 @@ jobs:
 
       - name: Audit exact production graphs
         run: pnpm.cmd audit:release
+
+      - name: Verify release component inventory
+        run: pnpm.cmd inventory:release:check

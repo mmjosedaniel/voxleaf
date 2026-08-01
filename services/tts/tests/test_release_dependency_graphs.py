@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import tomllib
@@ -13,6 +14,7 @@ CORE_LOCK = RELEASE_ROOT / "core" / "uv.lock"
 CHATTERBOX_REQUIREMENTS = RELEASE_ROOT / "profiles" / "chatterbox" / "requirements.in"
 CHATTERBOX_LOCK = RELEASE_ROOT / "profiles" / "chatterbox" / "requirements.lock"
 AUDIT_POLICY = RELEASE_ROOT / "audit-policy.json"
+COMPONENT_INVENTORY = RELEASE_ROOT / "component-inventory-v1.json"
 
 WEB_AND_DEVELOPMENT_PACKAGES = {
     "fastapi",
@@ -121,3 +123,49 @@ def test_release_audit_policy_never_treats_unknown_url_packages_as_clean() -> No
     assert all("manual review" in blind_spot["reason"] for blind_spot in blind_spots)
     assert policy["rustInformationalWarnings"]
     assert all("windowsReachable" in warning for warning in policy["rustInformationalWarnings"])
+
+
+def test_release_component_inventory_is_complete_and_content_safe() -> None:
+    inventory = json.loads(COMPONENT_INVENTORY.read_text(encoding="utf-8"))
+    components = inventory["components"]
+    assert len(components) == 363
+    assert len({component["id"] for component in components}) == len(components)
+    assert {component["scope"] for component in components} == {
+        "core",
+        "optional",
+        "not-shipped",
+    }
+    required_fields = {
+        "id",
+        "scope",
+        "ecosystem",
+        "name",
+        "versionOrRevision",
+        "platform",
+        "source",
+        "integrity",
+        "license",
+        "provenance",
+        "inclusion",
+        "auditRef",
+        "artifactState",
+        "ownership",
+    }
+    assert all(required_fields <= component.keys() for component in components)
+    assert all(component["license"]["expression"] for component in components)
+    assert all("book" not in json.dumps(component).lower() for component in components)
+    optional_names = {
+        component["name"]
+        for component in components
+        if component["scope"] == "optional" and component["ecosystem"] == "python"
+    }
+    assert not WEB_AND_DEVELOPMENT_PACKAGES & optional_names
+    assert {
+        component["name"] for component in components if component["scope"] == "not-shipped"
+    } == {"Qwen development profiles"}
+    assert inventory["lockIdentities"]["piperCore"]["sha256"] == _sha256(CORE_LOCK)
+    assert inventory["lockIdentities"]["chatterboxOptional"]["sha256"] == _sha256(CHATTERBOX_LOCK)
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()

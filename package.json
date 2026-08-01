@@ -29,6 +29,8 @@
     "benchmark:reader": "pnpm run build:packages && pnpm --filter @voxleaf/desktop benchmark:reader",
     "benchmark:reader:native": "pnpm run build:packages && pnpm --filter @voxleaf/desktop benchmark:reader:native",
     "audit:release": "node scripts/release-audit.mjs",
+    "inventory:release": "uv run --project services/tts --locked python scripts/release_inventory.py --write",
+    "inventory:release:check": "uv run --project services/tts --locked python scripts/release_inventory.py --check",
     "build": "pnpm run build:packages && pnpm run build:desktop && pnpm run build:python",
     "build:desktop": "pnpm --filter @voxleaf/desktop tauri build",
     "build:packages": "pnpm --filter @voxleaf/epub --filter @voxleaf/shared build",

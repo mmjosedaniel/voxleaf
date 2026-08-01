@@ -1,0 +1,515 @@
+{
+  "records": [
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "attrs",
+      "version": "26.1.0"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "Apache-2.0",
+      "name": "flatbuffers",
+      "version": "25.12.19"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "jsonschema",
+      "version": "4.26.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "jsonschema-specifications",
+      "version": "2025.9.1"
+    },
+    {
+      "evidence": "reviewed package metadata/source licence",
+      "license": "BSD-3-Clause AND bundled-third-party-notices",
+      "name": "numpy",
+      "version": "2.5.1"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "MIT",
+      "name": "onnxruntime",
+      "version": "1.27.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "Apache-2.0 OR BSD-2-Clause",
+      "name": "packaging",
+      "version": "26.2"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "MIT",
+      "name": "pathvalidate",
+      "version": "3.3.1"
+    },
+    {
+      "evidence": "installed package License field",
+      "license": "GPL-3.0-or-later",
+      "name": "piper-tts",
+      "version": "1.4.2"
+    },
+    {
+      "evidence": "installed package License field",
+      "license": "BSD-3-Clause",
+      "name": "protobuf",
+      "version": "7.35.1"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "referencing",
+      "version": "0.37.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "rpds-py",
+      "version": "2026.6.3"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "PSF-2.0",
+      "name": "typing-extensions",
+      "version": "4.16.0"
+    },
+    {
+      "evidence": "repository LICENSE",
+      "license": "MIT",
+      "name": "voxleaf-tts",
+      "version": "0.0.0"
+    },
+    {
+      "evidence": "installed package License field",
+      "license": "BSD-3-Clause",
+      "name": "antlr4-python3-runtime",
+      "version": "4.9.3"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "anyio",
+      "version": "4.14.2"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "audioread",
+      "version": "3.1.0"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "MIT",
+      "name": "catalogue",
+      "version": "2.0.10"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "MPL-2.0",
+      "name": "certifi",
+      "version": "2026.7.22"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT-0",
+      "name": "cffi",
+      "version": "2.1.0"
+    },
+    {
+      "evidence": "installed package License field",
+      "license": "MIT",
+      "name": "charset-normalizer",
+      "version": "3.4.9"
+    },
+    {
+      "evidence": "reviewed package metadata/source licence",
+      "license": "MIT",
+      "name": "chatterbox-tts",
+      "version": "0.1.7"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "BSD-3-Clause",
+      "name": "click",
+      "version": "8.4.2"
+    },
+    {
+      "evidence": "reviewed package metadata/source licence",
+      "license": "BSD-3-Clause",
+      "name": "colorama",
+      "version": "0.4.6"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "MIT",
+      "name": "conformer",
+      "version": "0.3.2"
+    },
+    {
+      "evidence": "installed package License field",
+      "license": "BSD-2-Clause",
+      "name": "decorator",
+      "version": "5.3.1"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "Apache-2.0",
+      "name": "diffusers",
+      "version": "0.38.0"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "MIT",
+      "name": "einops",
+      "version": "0.8.2"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "filelock",
+      "version": "3.32.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "BSD-3-Clause",
+      "name": "fsspec",
+      "version": "2026.7.0"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "MIT",
+      "name": "h11",
+      "version": "0.16.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "Apache-2.0",
+      "name": "hf-xet",
+      "version": "1.3.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "BSD-3-Clause",
+      "name": "httpcore",
+      "version": "1.0.9"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "BSD-3-Clause",
+      "name": "httpx",
+      "version": "0.28.1"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "Apache-2.0",
+      "name": "huggingface-hub",
+      "version": "1.25.1"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "BSD-3-Clause",
+      "name": "idna",
+      "version": "3.18"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "Apache-2.0",
+      "name": "importlib-metadata",
+      "version": "9.0.0"
+    },
+    {
+      "evidence": "reviewed package metadata/source licence",
+      "license": "BSD-3-Clause",
+      "name": "jinja2",
+      "version": "3.1.6"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "BSD-3-Clause",
+      "name": "joblib",
+      "version": "1.5.3"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "BSD-3-Clause",
+      "name": "lazy-loader",
+      "version": "0.5"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "ISC",
+      "name": "librosa",
+      "version": "0.11.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "BSD-2-Clause AND Apache-2.0 WITH LLVM-exception",
+      "name": "llvmlite",
+      "version": "0.48.0"
+    },
+    {
+      "evidence": "reviewed package metadata/source licence",
+      "license": "MIT",
+      "name": "markdown-it-py",
+      "version": "4.2.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "BSD-3-Clause",
+      "name": "markupsafe",
+      "version": "3.0.3"
+    },
+    {
+      "evidence": "reviewed package metadata/source licence",
+      "license": "MIT",
+      "name": "mdurl",
+      "version": "0.1.2"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "Apache-2.0",
+      "name": "ml-dtypes",
+      "version": "0.5.4"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "BSD-3-Clause",
+      "name": "mpmath",
+      "version": "1.3.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "Apache-2.0",
+      "name": "msgpack",
+      "version": "1.2.1"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "narwhals",
+      "version": "2.24.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "BSD-3-Clause",
+      "name": "networkx",
+      "version": "3.6.1"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "BSD-3-Clause",
+      "name": "numba",
+      "version": "0.66.0"
+    },
+    {
+      "evidence": "reviewed package metadata/source licence",
+      "license": "BSD-3-Clause AND bundled-third-party-notices",
+      "name": "numpy",
+      "version": "1.26.4"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "BSD-3-Clause",
+      "name": "omegaconf",
+      "version": "2.3.1"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "Apache-2.0",
+      "name": "onnx",
+      "version": "1.22.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT-CMU",
+      "name": "pillow",
+      "version": "12.3.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "platformdirs",
+      "version": "4.11.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "BSD-3-Clause",
+      "name": "pooch",
+      "version": "1.9.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "BSD-3-Clause",
+      "name": "pycparser",
+      "version": "3.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "BSD-2-Clause",
+      "name": "pygments",
+      "version": "2.20.0"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "MIT",
+      "name": "pyyaml",
+      "version": "6.0.3"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "Apache-2.0 AND CNRI-Python",
+      "name": "regex",
+      "version": "2026.7.19"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "Apache-2.0",
+      "name": "requests",
+      "version": "2.34.2"
+    },
+    {
+      "evidence": "reviewed package metadata/source licence",
+      "license": "MIT",
+      "name": "resemble-perth",
+      "version": "1.0.1"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "MIT",
+      "name": "rich",
+      "version": "15.0.0"
+    },
+    {
+      "evidence": "installed package License field",
+      "license": "Apache-2.0",
+      "name": "s3tokenizer",
+      "version": "0.3.0"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "Apache-2.0",
+      "name": "safetensors",
+      "version": "0.8.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "BSD-3-Clause",
+      "name": "scikit-learn",
+      "version": "1.9.0"
+    },
+    {
+      "evidence": "reviewed package metadata/source licence",
+      "license": "BSD-3-Clause AND bundled-third-party-notices",
+      "name": "scipy",
+      "version": "1.17.1"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "setuptools",
+      "version": "83.0.0"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "ISC",
+      "name": "shellingham",
+      "version": "1.5.4"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "MIT",
+      "name": "six",
+      "version": "1.17.0"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "BSD-3-Clause",
+      "name": "soundfile",
+      "version": "0.14.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "LGPL-2.1-or-later",
+      "name": "soxr",
+      "version": "1.1.0"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "MIT",
+      "name": "spacy-pkuseg",
+      "version": "1.0.1"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "MIT",
+      "name": "srsly",
+      "version": "2.5.3"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "BSD-3-Clause",
+      "name": "sympy",
+      "version": "1.14.0"
+    },
+    {
+      "evidence": "installed package licence classifier",
+      "license": "BSD-3-Clause",
+      "name": "threadpoolctl",
+      "version": "3.6.0"
+    },
+    {
+      "evidence": "reviewed package metadata/source licence",
+      "license": "Apache-2.0",
+      "name": "tokenizers",
+      "version": "0.22.2"
+    },
+    {
+      "evidence": "reviewed package metadata/source licence",
+      "license": "BSD-3-Clause",
+      "name": "torch",
+      "version": "2.9.1+cu128"
+    },
+    {
+      "evidence": "reviewed package metadata/source licence",
+      "license": "BSD-3-Clause",
+      "name": "torchaudio",
+      "version": "2.9.1+cu128"
+    },
+    {
+      "evidence": "installed package License field",
+      "license": "MPL-2.0 AND MIT",
+      "name": "tqdm",
+      "version": "4.70.0"
+    },
+    {
+      "evidence": "installed package License field",
+      "license": "Apache-2.0",
+      "name": "transformers",
+      "version": "5.5.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "typer",
+      "version": "0.27.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "urllib3",
+      "version": "2.7.0"
+    },
+    {
+      "evidence": "installed package License-Expression",
+      "license": "MIT",
+      "name": "zipp",
+      "version": "4.1.0"
+    }
+  ],
+  "schemaVersion": 1
+}
