@@ -28,6 +28,7 @@
     "benchmark:tts:screen:submit": "uv run --directory services/tts --locked python -m benchmarks.customvoice_screen_cli submit",
     "benchmark:reader": "pnpm run build:packages && pnpm --filter @voxleaf/desktop benchmark:reader",
     "benchmark:reader:native": "pnpm run build:packages && pnpm --filter @voxleaf/desktop benchmark:reader:native",
+    "audit:release": "node scripts/release-audit.mjs",
     "build": "pnpm run build:packages && pnpm run build:desktop && pnpm run build:python",
     "build:desktop": "pnpm --filter @voxleaf/desktop tauri build",
     "build:packages": "pnpm --filter @voxleaf/epub --filter @voxleaf/shared build",
