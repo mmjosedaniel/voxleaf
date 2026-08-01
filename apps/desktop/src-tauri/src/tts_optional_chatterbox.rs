@@ -1,7 +1,8 @@
 //! Native-owned acquisition and removal for the optional Chatterbox package.
 //!
 //! The renderer can request only the one reviewed profile identifier. It never
-//! provides a URL, archive, hash, executable path, or installation root.
+//! provides a URL, archive, hash, executable path, or installation root. The
+//! runtime and six official model-data files are separate verified artifacts.
 
 use std::{
     collections::HashSet,
@@ -21,8 +22,11 @@ use tauri::{AppHandle, Manager, State};
 use zip::ZipArchive;
 
 pub(crate) const PROFILE_ID: &str = "chatterbox-multilingual-v3-cuda-bf16-default-v4";
-const PACKAGE_ID: &str = "voxleaf-chatterbox-v1";
-const RUNTIME_MANIFEST_NAME: &str = "runtime-manifest-v1.json";
+const PACKAGE_ID: &str = "voxleaf-chatterbox-v2";
+const PACKAGE_VERSION: &str = "2";
+const RUNTIME_MANIFEST_NAME: &str = "runtime-manifest-v2.json";
+const MODEL_REVISION: &str = "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18";
+const MODEL_DOWNLOAD_BASE: &str = "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/";
 const CHATTERBOX_SOURCE: &str =
     "https://github.com/resemble-ai/chatterbox/tree/5de7a54aa4e5e2baadb0182dde554908b48b85c2";
 const MODEL_CARD_SOURCE: &str =
@@ -30,9 +34,42 @@ const MODEL_CARD_SOURCE: &str =
 const PERTH_SOURCE: &str =
     "https://github.com/resemble-ai/perth/tree/ce86c2b567491eef3108ed3c137bd7bf1ddda52e";
 const MANIFEST_BYTES: &[u8] = include_bytes!(
-    "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v1.json"
+    "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json"
 );
 const COPY_BUFFER_BYTES: usize = 1024 * 1024;
+const MODEL_DOWNLOAD_BYTES: u64 = 3_208_951_924;
+const MODEL_FILES: [(&str, u64, &str); 6] = [
+    (
+        "t3_mtl23ls_v3.safetensors",
+        2_143_989_928,
+        "5abca8321ede76f8e61f1cc0d19aea6c946b28871017ce8726f8a69203f05953",
+    ),
+    (
+        "s3gen.pt",
+        1_057_165_844,
+        "9b9ff07e60b20c136e2b1b3d7563a24604e8d2c4c267888d1ee929dd0151d2a3",
+    ),
+    (
+        "ve.pt",
+        5_698_626,
+        "4b16d836bc598509860f6fa068165a8bb5e9ac84f05582dfcf278a5a372879f1",
+    ),
+    (
+        "conds.pt",
+        107_374,
+        "6552d70568833628ba019c6b03459e77fe71ca197d5c560cef9411bee9d87f4e",
+    ),
+    (
+        "grapheme_mtl_merged_expanded_v1.json",
+        69_989,
+        "69632f47220a788a52ce2661d096453c5655e9bf25289d89a8d832c46ee07dbf",
+    ),
+    (
+        "Cangjie5_TC.json",
+        1_920_163,
+        "7073fd9de919443ae88e0bd2449917a65fe54898a4413ed1edcc4b67f28bce8c",
+    ),
+];
 static APPLICATION_DATA_ROOT: OnceLock<PathBuf> = OnceLock::new();
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -72,11 +109,14 @@ struct OptionalPackageManifest {
     languages: Vec<String>,
     layout: OptionalLayout,
     licences: OptionalLicences,
+    limits: AcquisitionLimits,
+    measurements: Option<AcquisitionMeasurements>,
+    model_artifacts: Vec<ModelArtifact>,
     requirements: OptionalRequirements,
     provenance: OptionalProvenance,
     runtime: OptionalRuntime,
     withholding_reason: Option<String>,
-    artifact: Option<DownloadArtifact>,
+    runtime_artifact: Option<RuntimeArtifact>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -134,6 +174,7 @@ struct OptionalRuntime {
     service_sha256: String,
     torch_version: String,
     dependency_lock: LockedDependency,
+    release_tag: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -145,15 +186,88 @@ struct LockedDependency {
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct DownloadArtifact {
+struct AcquisitionLimits {
+    maximum_concurrency: u64,
+    maximum_installed_bytes: u64,
+    maximum_redirects: usize,
+    maximum_runtime_archive_bytes: u64,
+    maximum_runtime_installed_bytes: u64,
+    maximum_runtime_part_bytes: u64,
+    maximum_runtime_parts: usize,
+    maximum_staging_bytes: u64,
+    maximum_transfer_bytes: u64,
+    maximum_user_disclosed_free_bytes: u64,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct AcquisitionMeasurements {
+    cold_start_seconds: u64,
+    download_bytes: u64,
+    installed_bytes: u64,
+    minimum_free_bytes: u64,
+    temporary_bytes: u64,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ModelArtifact {
+    filename: String,
     url: String,
     sha256: String,
     download_bytes: u64,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RuntimePart {
+    filename: String,
+    url: String,
+    sha256: String,
+    download_bytes: u64,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RuntimeArtifact {
+    archive_sha256: String,
     installed_bytes: u64,
-    temporary_bytes: u64,
-    minimum_free_bytes: u64,
-    cold_start_seconds: u64,
+    parts: Vec<RuntimePart>,
     runtime_manifest_sha256: String,
+}
+
+trait DownloadIdentity {
+    fn url(&self) -> &str;
+    fn sha256(&self) -> &str;
+    fn download_bytes(&self) -> u64;
+}
+
+impl DownloadIdentity for ModelArtifact {
+    fn url(&self) -> &str {
+        &self.url
+    }
+
+    fn sha256(&self) -> &str {
+        &self.sha256
+    }
+
+    fn download_bytes(&self) -> u64 {
+        self.download_bytes
+    }
+}
+
+impl DownloadIdentity for RuntimePart {
+    fn url(&self) -> &str {
+        &self.url
+    }
+
+    fn sha256(&self) -> &str {
+        &self.sha256
+    }
+
+    fn download_bytes(&self) -> u64 {
+        self.download_bytes
+    }
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -255,17 +369,18 @@ fn validate_manifest(manifest: &OptionalPackageManifest) -> Result<(), OptionalP
     let identity = &manifest.identity;
     let requirements = &manifest.requirements;
     let runtime = &manifest.runtime;
-    if manifest.schema_version != 1
+    let limits = &manifest.limits;
+    if manifest.schema_version != 2
         || !matches!(manifest.availability.as_str(), "withheld" | "downloadable")
         || identity.profile_id != PROFILE_ID
-        || identity.package_version != "1"
+        || identity.package_version != PACKAGE_VERSION
         || identity.engine_version != "0.1.7"
         || identity.model_id != "ResembleAI/chatterbox"
-        || identity.model_revision != "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
+        || identity.model_revision != MODEL_REVISION
         || manifest.languages.as_slice() != ["en".to_owned(), "es".to_owned()]
         || manifest.layout.root != "app-local-data/tts"
         || manifest.layout.staging != format!("staging/{PROFILE_ID}/operation")
-        || manifest.layout.installed != format!("profiles/{PROFILE_ID}/1")
+        || manifest.layout.installed != format!("profiles/{PROFILE_ID}/{PACKAGE_VERSION}")
         || ![
             &manifest.licences.chatterbox,
             &manifest.licences.model,
@@ -288,33 +403,105 @@ fn validate_manifest(manifest: &OptionalPackageManifest) -> Result<(), OptionalP
         || !validate_sha256(&runtime.adapter_sha256)
         || !validate_sha256(&runtime.service_sha256)
         || runtime.torch_version != "2.9.1+cu128"
+        || runtime.release_tag != "chatterbox-runtime-v2"
         || runtime.dependency_lock.path
             != "services/tts/release/profiles/chatterbox/requirements.lock"
         || !validate_sha256(&runtime.dependency_lock.sha256)
+        || limits.maximum_concurrency != 1
+        || limits.maximum_redirects != 2
+        || limits.maximum_runtime_part_bytes != 1_900_000_000
+        || limits.maximum_runtime_parts != 4
+        || limits.maximum_runtime_archive_bytes != 5_500_000_000
+        || limits.maximum_runtime_installed_bytes != 5_500_000_000
+        || limits.maximum_transfer_bytes != 9_000_000_000
+        || limits.maximum_installed_bytes != 9_000_000_000
+        || limits.maximum_staging_bytes != 15_000_000_000
+        || limits.maximum_user_disclosed_free_bytes != 20_000_000_000
     {
         return Err(OptionalProfileError::Invalid);
     }
+    if manifest.model_artifacts.len() != MODEL_FILES.len() {
+        return Err(OptionalProfileError::Invalid);
+    }
+    for (artifact, (filename, bytes, sha256)) in manifest.model_artifacts.iter().zip(MODEL_FILES) {
+        if artifact.filename != filename
+            || artifact.download_bytes != bytes
+            || artifact.sha256 != sha256
+            || artifact.url != format!("{MODEL_DOWNLOAD_BASE}{filename}")
+        {
+            return Err(OptionalProfileError::Invalid);
+        }
+    }
     match (
         &manifest.availability[..],
-        &manifest.artifact,
+        &manifest.runtime_artifact,
+        &manifest.measurements,
         &manifest.withholding_reason,
     ) {
-        ("withheld", None, Some(reason)) if reason == "release-artifact-not-published" => Ok(()),
-        ("downloadable", Some(artifact), None)
-            if artifact.url.starts_with("https://")
-                && !artifact.url.contains('?')
-                && validate_sha256(&artifact.sha256)
-                && validate_sha256(&artifact.runtime_manifest_sha256)
-                && artifact.download_bytes > 0
-                && artifact.installed_bytes > 0
-                && artifact.temporary_bytes >= artifact.download_bytes
-                && artifact.minimum_free_bytes >= artifact.temporary_bytes
-                && artifact.cold_start_seconds > 0 =>
+        ("withheld", None, None, Some(reason)) if reason == "runtime-artifacts-not-published" => {
+            Ok(())
+        }
+        ("downloadable", Some(runtime_artifact), Some(measurements), None)
+            if validate_runtime_artifact(runtime_artifact, limits)
+                && validate_measurements(manifest, runtime_artifact, measurements) =>
         {
             Ok(())
         }
         _ => Err(OptionalProfileError::Invalid),
     }
+}
+
+fn validate_runtime_artifact(artifact: &RuntimeArtifact, limits: &AcquisitionLimits) -> bool {
+    if artifact.parts.is_empty()
+        || artifact.parts.len() > limits.maximum_runtime_parts
+        || artifact.installed_bytes == 0
+        || artifact.installed_bytes > limits.maximum_runtime_installed_bytes
+        || !validate_sha256(&artifact.archive_sha256)
+        || !validate_sha256(&artifact.runtime_manifest_sha256)
+    {
+        return false;
+    }
+    let mut total = 0_u64;
+    for (index, part) in artifact.parts.iter().enumerate() {
+        let expected_filename = format!("voxleaf-chatterbox-runtime-v2.zip.part-{:03}", index + 1);
+        let expected_url = format!(
+            "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/{expected_filename}"
+        );
+        if part.filename != expected_filename
+            || part.url != expected_url
+            || part.download_bytes == 0
+            || part.download_bytes > limits.maximum_runtime_part_bytes
+            || !validate_sha256(&part.sha256)
+        {
+            return false;
+        }
+        total = match total.checked_add(part.download_bytes) {
+            Some(value) => value,
+            None => return false,
+        };
+    }
+    total <= limits.maximum_runtime_archive_bytes
+}
+
+fn validate_measurements(
+    manifest: &OptionalPackageManifest,
+    runtime: &RuntimeArtifact,
+    measurements: &AcquisitionMeasurements,
+) -> bool {
+    let runtime_download = runtime
+        .parts
+        .iter()
+        .map(|part| part.download_bytes)
+        .sum::<u64>();
+    measurements.download_bytes == runtime_download + MODEL_DOWNLOAD_BYTES
+        && measurements.download_bytes <= manifest.limits.maximum_transfer_bytes
+        && measurements.installed_bytes == runtime.installed_bytes + MODEL_DOWNLOAD_BYTES
+        && measurements.installed_bytes <= manifest.limits.maximum_installed_bytes
+        && measurements.temporary_bytes >= measurements.download_bytes
+        && measurements.temporary_bytes <= manifest.limits.maximum_staging_bytes
+        && measurements.minimum_free_bytes >= measurements.temporary_bytes
+        && measurements.minimum_free_bytes <= manifest.limits.maximum_user_disclosed_free_bytes
+        && measurements.cold_start_seconds > 0
 }
 
 fn snapshot_from(
@@ -323,16 +510,16 @@ fn snapshot_from(
     downloaded_bytes: u64,
     failure: Option<&'static str>,
 ) -> OptionalProfileSnapshot {
-    let artifact = manifest.artifact.as_ref();
+    let measurements = manifest.measurements.as_ref();
     OptionalProfileSnapshot {
         profile_id: PROFILE_ID,
         state,
-        download_bytes: artifact.map(|value| value.download_bytes),
+        download_bytes: measurements.map(|value| value.download_bytes),
         downloaded_bytes,
-        installed_bytes: artifact.map(|value| value.installed_bytes),
-        temporary_bytes: artifact.map(|value| value.temporary_bytes),
-        minimum_free_bytes: artifact.map(|value| value.minimum_free_bytes),
-        cold_start_seconds: artifact.map(|value| value.cold_start_seconds),
+        installed_bytes: measurements.map(|value| value.installed_bytes),
+        temporary_bytes: measurements.map(|value| value.temporary_bytes),
+        minimum_free_bytes: measurements.map(|value| value.minimum_free_bytes),
+        cold_start_seconds: measurements.map(|value| value.cold_start_seconds),
         license_summary: "Chatterbox, its reviewed model/default conditioning, and PerTh are MIT-licensed.",
         failure,
     }
@@ -368,12 +555,33 @@ fn sha256_file(path: &Path) -> Result<String, OptionalProfileError> {
     }
 }
 
+fn sha256_file_cancelled(
+    path: &Path,
+    cancelled: &AtomicBool,
+) -> Result<String, OptionalProfileError> {
+    let mut file = File::open(path).map_err(|_| OptionalProfileError::VerificationFailed)?;
+    let mut digest = Sha256::new();
+    let mut buffer = [0_u8; COPY_BUFFER_BYTES];
+    loop {
+        if cancelled.load(Ordering::Acquire) {
+            return Err(OptionalProfileError::Cancelled);
+        }
+        let read = file
+            .read(&mut buffer)
+            .map_err(|_| OptionalProfileError::VerificationFailed)?;
+        if read == 0 {
+            return Ok(format!("{:x}", digest.finalize()));
+        }
+        digest.update(&buffer[..read]);
+    }
+}
+
 fn profile_root(root: &Path) -> PathBuf {
     root.join("profiles").join(PROFILE_ID)
 }
 
 fn package_root(root: &Path) -> PathBuf {
-    profile_root(root).join("1")
+    profile_root(root).join(PACKAGE_VERSION)
 }
 
 fn staging_root(root: &Path) -> PathBuf {
@@ -452,20 +660,24 @@ fn resolve_file(root: &Path, value: &str) -> Result<PathBuf, OptionalProfileErro
 
 fn verify_runtime(
     root: &Path,
-    authority: &DownloadArtifact,
+    manifest_authority: &OptionalPackageManifest,
 ) -> Result<InstalledChatterboxRuntime, OptionalProfileError> {
+    let runtime_authority = manifest_authority
+        .runtime_artifact
+        .as_ref()
+        .ok_or(OptionalProfileError::VerificationFailed)?;
     let manifest_path = root.join(RUNTIME_MANIFEST_NAME);
     let manifest_bytes =
         fs::read(&manifest_path).map_err(|_| OptionalProfileError::VerificationFailed)?;
     let manifest_hash = format!("{:x}", Sha256::digest(&manifest_bytes));
-    if manifest_hash != authority.runtime_manifest_sha256 {
+    if manifest_hash != runtime_authority.runtime_manifest_sha256 {
         return Err(OptionalProfileError::VerificationFailed);
     }
     let manifest = serde_json::from_slice::<InstalledRuntimeManifest>(&manifest_bytes)
         .map_err(|_| OptionalProfileError::VerificationFailed)?;
-    if manifest.schema_version != 1
+    if manifest.schema_version != 2
         || manifest.package_id != PACKAGE_ID
-        || manifest.package_version != "1"
+        || manifest.package_version != PACKAGE_VERSION
         || manifest.profile_id != PROFILE_ID
         || manifest.service_module != "voxleaf_tts.chatterbox_service"
         || manifest.files.is_empty()
@@ -486,6 +698,20 @@ fn verify_runtime(
     let mut actual = HashSet::new();
     collect_files(root, root, &canonical_root, &mut actual)?;
     actual.remove(RUNTIME_MANIFEST_NAME);
+    for artifact in &manifest_authority.model_artifacts {
+        let relative = format!("models/{}", artifact.filename);
+        let model = root.join(&relative);
+        let metadata =
+            fs::symlink_metadata(&model).map_err(|_| OptionalProfileError::VerificationFailed)?;
+        if !metadata.is_file()
+            || metadata.file_type().is_symlink()
+            || metadata.len() != artifact.download_bytes
+            || sha256_file(&model)? != artifact.sha256
+            || !actual.remove(&relative)
+        {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+    }
     if actual != expected {
         return Err(OptionalProfileError::VerificationFailed);
     }
@@ -600,12 +826,12 @@ fn extract_archive(
 fn promote(
     root: &Path,
     staging: &Path,
-    artifact: &DownloadArtifact,
+    manifest: &OptionalPackageManifest,
 ) -> Result<(), OptionalProfileError> {
     let destination = package_root(root);
     let parent = destination.parent().ok_or(OptionalProfileError::Invalid)?;
     fs::create_dir_all(parent).map_err(|_| OptionalProfileError::CleanupFailed)?;
-    verify_runtime(staging, artifact)?;
+    verify_runtime(staging, manifest)?;
     let backup = parent.join(".previous");
     let _ = fs::remove_dir_all(&backup);
     let moved_previous = if destination.exists() {
@@ -649,27 +875,88 @@ fn available_space(root: &Path) -> Result<u64, OptionalProfileError> {
     }
 }
 
-fn download_archive(
-    artifact: &DownloadArtifact,
+#[derive(Clone, Copy)]
+enum DownloadSource {
+    GithubRelease,
+    HuggingFace,
+}
+
+fn redirect_host_allowed(source: DownloadSource, url: &reqwest::Url) -> bool {
+    if url.scheme() != "https" || !url.username().is_empty() || url.password().is_some() {
+        return false;
+    }
+    let Some(host) = url.host_str() else {
+        return false;
+    };
+    match source {
+        DownloadSource::GithubRelease => matches!(
+            host,
+            "github.com" | "release-assets.githubusercontent.com" | "objects.githubusercontent.com"
+        ),
+        DownloadSource::HuggingFace => {
+            host == "huggingface.co"
+                || host == "cdn-lfs.huggingface.co"
+                || host.ends_with(".cdn.hf.co")
+                || host.ends_with(".xethub.hf.co")
+        }
+    }
+}
+
+fn redirect_allowed(
+    source: DownloadSource,
+    url: &reqwest::Url,
+    redirects: usize,
+    maximum_redirects: usize,
+) -> bool {
+    redirects <= maximum_redirects && redirect_host_allowed(source, url) && url.fragment().is_none()
+}
+
+fn download_artifact(
+    artifact: &impl DownloadIdentity,
+    source: DownloadSource,
+    maximum_redirects: usize,
     destination: &Path,
     cancelled: &AtomicBool,
     on_progress: impl Fn(u64),
 ) -> Result<(), OptionalProfileError> {
+    let initial =
+        reqwest::Url::parse(artifact.url()).map_err(|_| OptionalProfileError::DownloadFailed)?;
+    if !redirect_allowed(source, &initial, 0, maximum_redirects) {
+        return Err(OptionalProfileError::DownloadFailed);
+    }
     let client = reqwest::blocking::Client::builder()
-        .redirect(reqwest::redirect::Policy::none())
+        .redirect(reqwest::redirect::Policy::custom(move |attempt| {
+            if !redirect_allowed(
+                source,
+                attempt.url(),
+                attempt.previous().len(),
+                maximum_redirects,
+            ) {
+                attempt.error("optional-profile-redirect-rejected")
+            } else {
+                attempt.follow()
+            }
+        }))
         .no_proxy()
         .build()
         .map_err(|_| OptionalProfileError::DownloadFailed)?;
     let mut response = client
-        .get(&artifact.url)
-        .header(reqwest::header::USER_AGENT, "VoxLeaf-optional-profile/1")
+        .get(artifact.url())
+        .header(reqwest::header::USER_AGENT, "VoxLeaf-optional-profile/2")
         .send()
         .map_err(|_| OptionalProfileError::DownloadFailed)?;
-    if !response.status().is_success() || response.content_length() != Some(artifact.download_bytes)
+    if !response.status().is_success()
+        || response.content_length() != Some(artifact.download_bytes())
     {
         return Err(OptionalProfileError::DownloadFailed);
     }
-    let mut output = File::create(destination).map_err(|_| OptionalProfileError::DownloadFailed)?;
+    let filename = destination
+        .file_name()
+        .and_then(|value| value.to_str())
+        .ok_or(OptionalProfileError::DownloadFailed)?;
+    let partial = destination.with_file_name(format!(".{filename}.partial"));
+    let _ = fs::remove_file(&partial);
+    let mut output = File::create(&partial).map_err(|_| OptionalProfileError::DownloadFailed)?;
     let mut buffer = [0_u8; COPY_BUFFER_BYTES];
     let mut downloaded = 0_u64;
     loop {
@@ -684,7 +971,7 @@ fn download_archive(
         }
         downloaded = downloaded
             .checked_add(read as u64)
-            .filter(|value| *value <= artifact.download_bytes)
+            .filter(|value| *value <= artifact.download_bytes())
             .ok_or(OptionalProfileError::DownloadFailed)?;
         output
             .write_all(&buffer[..read])
@@ -694,7 +981,82 @@ fn download_archive(
     output
         .flush()
         .map_err(|_| OptionalProfileError::DownloadFailed)?;
-    if downloaded != artifact.download_bytes || sha256_file(destination)? != artifact.sha256 {
+    drop(output);
+    if downloaded != artifact.download_bytes() {
+        let _ = fs::remove_file(&partial);
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    if let Err(error) = verify_downloaded_artifact(artifact, &partial, cancelled) {
+        let _ = fs::remove_file(&partial);
+        return Err(error);
+    }
+    fs::rename(&partial, destination).map_err(|_| OptionalProfileError::DownloadFailed)?;
+    Ok(())
+}
+
+fn verify_downloaded_artifact(
+    artifact: &impl DownloadIdentity,
+    path: &Path,
+    cancelled: &AtomicBool,
+) -> Result<(), OptionalProfileError> {
+    let metadata =
+        fs::symlink_metadata(path).map_err(|_| OptionalProfileError::VerificationFailed)?;
+    if !metadata.is_file()
+        || metadata.file_type().is_symlink()
+        || metadata.len() != artifact.download_bytes()
+        || sha256_file_cancelled(path, cancelled)? != artifact.sha256()
+    {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    Ok(())
+}
+
+fn sufficient_space(available: u64, required: u64) -> bool {
+    available >= required
+}
+
+fn reassemble_runtime(
+    directory: &Path,
+    artifact: &RuntimeArtifact,
+    maximum_bytes: u64,
+    destination: &Path,
+    cancelled: &AtomicBool,
+) -> Result<(), OptionalProfileError> {
+    let mut output =
+        File::create(destination).map_err(|_| OptionalProfileError::VerificationFailed)?;
+    let mut digest = Sha256::new();
+    let mut written = 0_u64;
+    let mut buffer = [0_u8; COPY_BUFFER_BYTES];
+    for part in &artifact.parts {
+        if cancelled.load(Ordering::Acquire) {
+            return Err(OptionalProfileError::Cancelled);
+        }
+        let mut input = File::open(directory.join(&part.filename))
+            .map_err(|_| OptionalProfileError::VerificationFailed)?;
+        loop {
+            if cancelled.load(Ordering::Acquire) {
+                return Err(OptionalProfileError::Cancelled);
+            }
+            let read = input
+                .read(&mut buffer)
+                .map_err(|_| OptionalProfileError::VerificationFailed)?;
+            if read == 0 {
+                break;
+            }
+            written = written
+                .checked_add(read as u64)
+                .filter(|value| *value <= maximum_bytes)
+                .ok_or(OptionalProfileError::VerificationFailed)?;
+            output
+                .write_all(&buffer[..read])
+                .map_err(|_| OptionalProfileError::VerificationFailed)?;
+            digest.update(&buffer[..read]);
+        }
+    }
+    output
+        .flush()
+        .map_err(|_| OptionalProfileError::VerificationFailed)?;
+    if format!("{:x}", digest.finalize()) != artifact.archive_sha256 {
         return Err(OptionalProfileError::VerificationFailed);
     }
     Ok(())
@@ -759,11 +1121,11 @@ impl OptionalChatterboxManager {
                 None,
             ));
         }
-        let artifact = manifest
-            .artifact
+        let _runtime_artifact = manifest
+            .runtime_artifact
             .as_ref()
             .ok_or(OptionalProfileError::Invalid)?;
-        match verify_runtime(&package_root(root), artifact) {
+        match verify_runtime(&package_root(root), &manifest) {
             Ok(_) => Ok(snapshot_from(
                 &manifest,
                 OptionalProfileState::Installed,
@@ -813,8 +1175,12 @@ impl OptionalChatterboxManager {
 
     fn download_at(&self, root: &Path) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
         let manifest = exact_manifest()?;
-        let artifact = manifest
-            .artifact
+        let runtime_artifact = manifest
+            .runtime_artifact
+            .as_ref()
+            .ok_or(OptionalProfileError::Unavailable)?;
+        let measurements = manifest
+            .measurements
             .as_ref()
             .ok_or(OptionalProfileError::Unavailable)?;
         if manifest.availability != "downloadable" {
@@ -836,38 +1202,100 @@ impl OptionalChatterboxManager {
 
         let result = (|| {
             fs::create_dir_all(root).map_err(|_| OptionalProfileError::CleanupFailed)?;
-            if available_space(root)? < artifact.minimum_free_bytes {
+            if !sufficient_space(available_space(root)?, measurements.minimum_free_bytes) {
                 return Err(OptionalProfileError::InsufficientSpace);
             }
             clean_staging(root)?;
             let staging = staging_root(root).join("operation");
             fs::create_dir_all(&staging).map_err(|_| OptionalProfileError::CleanupFailed)?;
-            let archive = staging.join("package.zip");
-            download_archive(artifact, &archive, &cancellation, |downloaded| {
-                self.set_operation(
-                    OptionalProfileState::Downloading,
-                    downloaded,
-                    None,
-                    Some(Arc::clone(&cancellation)),
-                );
-            })?;
+            let downloads = staging.join("downloads");
+            let runtime_downloads = downloads.join("runtime");
+            let model_downloads = downloads.join("models");
+            fs::create_dir_all(&runtime_downloads)
+                .and_then(|_| fs::create_dir_all(&model_downloads))
+                .map_err(|_| OptionalProfileError::CleanupFailed)?;
+            let mut downloaded_base = 0_u64;
+            for part in &runtime_artifact.parts {
+                if cancellation.load(Ordering::Acquire) {
+                    return Err(OptionalProfileError::Cancelled);
+                }
+                let base = downloaded_base;
+                download_artifact(
+                    part,
+                    DownloadSource::GithubRelease,
+                    manifest.limits.maximum_redirects,
+                    &runtime_downloads.join(&part.filename),
+                    &cancellation,
+                    |downloaded| {
+                        self.set_operation(
+                            OptionalProfileState::Downloading,
+                            base + downloaded,
+                            None,
+                            Some(Arc::clone(&cancellation)),
+                        );
+                    },
+                )?;
+                downloaded_base += part.download_bytes;
+            }
+            for model in &manifest.model_artifacts {
+                if cancellation.load(Ordering::Acquire) {
+                    return Err(OptionalProfileError::Cancelled);
+                }
+                let base = downloaded_base;
+                download_artifact(
+                    model,
+                    DownloadSource::HuggingFace,
+                    manifest.limits.maximum_redirects,
+                    &model_downloads.join(&model.filename),
+                    &cancellation,
+                    |downloaded| {
+                        self.set_operation(
+                            OptionalProfileState::Downloading,
+                            base + downloaded,
+                            None,
+                            Some(Arc::clone(&cancellation)),
+                        );
+                    },
+                )?;
+                downloaded_base += model.download_bytes;
+            }
             self.set_operation(
                 OptionalProfileState::Verifying,
-                artifact.download_bytes,
+                measurements.download_bytes,
                 None,
                 Some(Arc::clone(&cancellation)),
             );
             if cancellation.load(Ordering::Acquire) {
                 return Err(OptionalProfileError::Cancelled);
             }
+            let archive = staging.join("runtime.zip");
+            reassemble_runtime(
+                &runtime_downloads,
+                runtime_artifact,
+                manifest.limits.maximum_runtime_archive_bytes,
+                &archive,
+                &cancellation,
+            )?;
             let extracted = staging.join("package");
             extract_archive(
                 &archive,
                 &extracted,
-                artifact.installed_bytes,
+                runtime_artifact.installed_bytes,
                 &cancellation,
             )?;
-            promote(root, &extracted, artifact)?;
+            let models = extracted.join("models");
+            fs::create_dir_all(&models).map_err(|_| OptionalProfileError::VerificationFailed)?;
+            for model in &manifest.model_artifacts {
+                if cancellation.load(Ordering::Acquire) {
+                    return Err(OptionalProfileError::Cancelled);
+                }
+                fs::rename(
+                    model_downloads.join(&model.filename),
+                    models.join(&model.filename),
+                )
+                .map_err(|_| OptionalProfileError::VerificationFailed)?;
+            }
+            promote(root, &extracted, &manifest)?;
             clean_staging(root)?;
             Ok(())
         })();
@@ -877,7 +1305,17 @@ impl OptionalChatterboxManager {
                 Ok(snapshot_from(
                     &manifest,
                     OptionalProfileState::Installed,
-                    artifact.download_bytes,
+                    measurements.download_bytes,
+                    None,
+                ))
+            }
+            Err(OptionalProfileError::Cancelled) => {
+                clean_staging(root)?;
+                self.clear_operation();
+                Ok(snapshot_from(
+                    &manifest,
+                    OptionalProfileState::Absent,
+                    0,
                     None,
                 ))
             }
@@ -958,12 +1396,8 @@ pub(crate) fn discover_installed_chatterbox_runtime()
     if manifest.availability != "downloadable" {
         return Ok(None);
     }
-    let artifact = manifest
-        .artifact
-        .as_ref()
-        .ok_or(OptionalProfileError::Invalid)?;
     let root = OptionalChatterboxManager::profile_root_for()?;
-    match verify_runtime(&package_root(root), artifact) {
+    match verify_runtime(&package_root(root), &manifest) {
         Ok(runtime) => Ok(Some(runtime)),
         Err(OptionalProfileError::VerificationFailed) => Ok(None),
         Err(error) => Err(error),
@@ -1113,15 +1547,16 @@ mod tests {
         }
     }
 
-    fn downloadable_manifest(runtime_manifest_sha256: String) -> DownloadArtifact {
-        DownloadArtifact {
-            url: "https://downloads.example.invalid/voxleaf-chatterbox-v1.zip".to_owned(),
-            sha256: "0".repeat(64),
-            download_bytes: 10,
+    fn runtime_artifact(runtime_manifest_sha256: String) -> RuntimeArtifact {
+        RuntimeArtifact {
+            archive_sha256: "0".repeat(64),
             installed_bytes: 1_024,
-            temporary_bytes: 1_024,
-            minimum_free_bytes: 2_048,
-            cold_start_seconds: 31,
+            parts: vec![RuntimePart {
+                filename: "voxleaf-chatterbox-runtime-v2.zip.part-001".to_owned(),
+                url: "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-001".to_owned(),
+                sha256: "1".repeat(64),
+                download_bytes: 10,
+            }],
             runtime_manifest_sha256,
         }
     }
@@ -1130,18 +1565,24 @@ mod tests {
         let mut manifest = exact_manifest().expect("checked in manifest should be valid");
         manifest.availability = "downloadable".to_owned();
         manifest.withholding_reason = None;
-        manifest.artifact = Some(downloadable_manifest("0".repeat(64)));
+        manifest.runtime_artifact = Some(runtime_artifact("0".repeat(64)));
+        manifest.measurements = Some(AcquisitionMeasurements {
+            cold_start_seconds: 31,
+            download_bytes: MODEL_DOWNLOAD_BYTES + 10,
+            installed_bytes: MODEL_DOWNLOAD_BYTES + 1_024,
+            minimum_free_bytes: 7_500_000_000,
+            temporary_bytes: 7_000_000_000,
+        });
         manifest
     }
 
-    fn write_runtime(root: &Path) -> DownloadArtifact {
+    fn write_runtime(root: &Path) -> OptionalPackageManifest {
         let files = [
             ("runtime/python.exe", b"python".as_slice()),
             (
                 "runtime/Lib/site-packages/voxleaf_tts/chatterbox_service.py",
                 b"service".as_slice(),
             ),
-            ("models/t3_mtl23ls_v3.safetensors", b"model".as_slice()),
         ];
         let mut records = Vec::new();
         for (relative, contents) in files {
@@ -1156,9 +1597,9 @@ mod tests {
             }));
         }
         let manifest = serde_json::to_vec(&serde_json::json!({
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "packageId": PACKAGE_ID,
-            "packageVersion": "1",
+            "packageVersion": PACKAGE_VERSION,
             "profileId": PROFILE_ID,
             "pythonPath": "runtime/python.exe",
             "sitePackagesPath": "runtime/Lib/site-packages",
@@ -1168,17 +1609,35 @@ mod tests {
         }))
         .expect("manifest should render");
         fs::write(root.join(RUNTIME_MANIFEST_NAME), &manifest).expect("manifest should be written");
-        downloadable_manifest(format!("{:x}", Sha256::digest(&manifest)))
+        let model = root.join("models/model.safetensors");
+        fs::create_dir_all(model.parent().expect("model parent should exist"))
+            .expect("model directory should be created");
+        fs::write(&model, b"model").expect("model should be written");
+        let mut authority = downloadable_package_manifest();
+        authority.model_artifacts = vec![ModelArtifact {
+            filename: "model.safetensors".to_owned(),
+            url: "https://huggingface.co/example/model.safetensors".to_owned(),
+            sha256: format!("{:x}", Sha256::digest(b"model")),
+            download_bytes: 5,
+        }];
+        authority
+            .runtime_artifact
+            .as_mut()
+            .expect("runtime authority should exist")
+            .runtime_manifest_sha256 = format!("{:x}", Sha256::digest(&manifest));
+        authority
     }
 
     #[test]
     fn checked_in_authority_is_withheld_until_a_real_release_artifact_exists() {
         let manifest = exact_manifest().expect("checked in manifest should be valid");
         assert_eq!(manifest.availability, "withheld");
-        assert!(manifest.artifact.is_none());
+        assert!(manifest.runtime_artifact.is_none());
+        assert!(manifest.measurements.is_none());
+        assert_eq!(manifest.model_artifacts.len(), 6);
         assert_eq!(
             manifest.withholding_reason.as_deref(),
-            Some("release-artifact-not-published")
+            Some("runtime-artifacts-not-published")
         );
     }
 
@@ -1188,10 +1647,11 @@ mod tests {
         assert!(validate_manifest(&manifest).is_ok());
 
         manifest
-            .artifact
+            .runtime_artifact
             .as_mut()
             .expect("test artifact should exist")
-            .url = "http://downloads.example.invalid/voxleaf-chatterbox-v1.zip".to_owned();
+            .parts[0]
+            .url = "http://github.com/unsafe-runtime-part".to_owned();
         assert_eq!(
             validate_manifest(&manifest),
             Err(OptionalProfileError::Invalid)
@@ -1199,9 +1659,9 @@ mod tests {
 
         let mut manifest = downloadable_package_manifest();
         manifest
-            .artifact
+            .measurements
             .as_mut()
-            .expect("test artifact should exist")
+            .expect("test measurements should exist")
             .minimum_free_bytes = 1_023;
         assert_eq!(
             validate_manifest(&manifest),
@@ -1210,15 +1670,166 @@ mod tests {
     }
 
     #[test]
+    fn redirect_policy_rejects_source_substitution_and_non_https_targets() {
+        assert!(redirect_host_allowed(
+            DownloadSource::HuggingFace,
+            &reqwest::Url::parse("https://us.aws.cdn.hf.co/object").expect("URL should parse"),
+        ));
+        assert!(redirect_host_allowed(
+            DownloadSource::GithubRelease,
+            &reqwest::Url::parse("https://release-assets.githubusercontent.com/object")
+                .expect("URL should parse"),
+        ));
+        assert!(!redirect_host_allowed(
+            DownloadSource::HuggingFace,
+            &reqwest::Url::parse("https://example.invalid/substitution").expect("URL should parse"),
+        ));
+        assert!(!redirect_allowed(
+            DownloadSource::HuggingFace,
+            &reqwest::Url::parse("https://huggingface.co/third-redirect")
+                .expect("URL should parse"),
+            3,
+            2,
+        ));
+        assert!(!redirect_host_allowed(
+            DownloadSource::GithubRelease,
+            &reqwest::Url::parse("http://github.com/runtime").expect("URL should parse"),
+        ));
+    }
+
+    #[test]
+    fn manifest_rejects_mutable_model_revision_and_unexpected_files() {
+        let mut manifest = downloadable_package_manifest();
+        manifest.model_artifacts[0].url =
+            "https://huggingface.co/ResembleAI/chatterbox/resolve/main/t3_mtl23ls_v3.safetensors"
+                .to_owned();
+        assert_eq!(
+            validate_manifest(&manifest),
+            Err(OptionalProfileError::Invalid)
+        );
+
+        let mut manifest = downloadable_package_manifest();
+        manifest
+            .model_artifacts
+            .push(manifest.model_artifacts[0].clone());
+        assert_eq!(
+            validate_manifest(&manifest),
+            Err(OptionalProfileError::Invalid)
+        );
+    }
+
+    #[test]
+    fn downloaded_file_validation_rejects_truncation_oversize_hash_and_cancellation() {
+        let root = TestRoot::new();
+        let path = root.0.join("artifact.bin");
+        let mut artifact = RuntimePart {
+            filename: "artifact.bin".to_owned(),
+            url: "https://github.com/mmjosedaniel/voxleaf/releases/download/test/artifact.bin"
+                .to_owned(),
+            sha256: format!("{:x}", Sha256::digest(b"data")),
+            download_bytes: 4,
+        };
+        fs::write(&path, b"data").expect("fixture should be written");
+        assert!(verify_downloaded_artifact(&artifact, &path, &AtomicBool::new(false)).is_ok());
+
+        fs::write(&path, b"dat").expect("truncated fixture should be written");
+        assert_eq!(
+            verify_downloaded_artifact(&artifact, &path, &AtomicBool::new(false)),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+        fs::write(&path, b"data!").expect("oversized fixture should be written");
+        assert_eq!(
+            verify_downloaded_artifact(&artifact, &path, &AtomicBool::new(false)),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+        fs::write(&path, b"data").expect("fixture should be restored");
+        artifact.sha256 = "f".repeat(64);
+        assert_eq!(
+            verify_downloaded_artifact(&artifact, &path, &AtomicBool::new(false)),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+        artifact.sha256 = format!("{:x}", Sha256::digest(b"data"));
+        assert_eq!(
+            verify_downloaded_artifact(&artifact, &path, &AtomicBool::new(true)),
+            Err(OptionalProfileError::Cancelled)
+        );
+    }
+
+    #[test]
+    fn runtime_reassembly_is_ordered_bounded_and_cancellable() {
+        let root = TestRoot::new();
+        fs::write(root.0.join("part-1"), b"abc").expect("first part should be written");
+        fs::write(root.0.join("part-2"), b"def").expect("second part should be written");
+        let artifact = RuntimeArtifact {
+            archive_sha256: format!("{:x}", Sha256::digest(b"abcdef")),
+            installed_bytes: 1,
+            parts: vec![
+                RuntimePart {
+                    filename: "part-1".to_owned(),
+                    url: "https://github.com/part-1".to_owned(),
+                    sha256: format!("{:x}", Sha256::digest(b"abc")),
+                    download_bytes: 3,
+                },
+                RuntimePart {
+                    filename: "part-2".to_owned(),
+                    url: "https://github.com/part-2".to_owned(),
+                    sha256: format!("{:x}", Sha256::digest(b"def")),
+                    download_bytes: 3,
+                },
+            ],
+            runtime_manifest_sha256: "0".repeat(64),
+        };
+        let joined = root.0.join("joined.zip");
+        assert!(
+            reassemble_runtime(&root.0, &artifact, 6, &joined, &AtomicBool::new(false),).is_ok()
+        );
+        assert_eq!(
+            fs::read(&joined).expect("joined file should be readable"),
+            b"abcdef"
+        );
+        assert_eq!(
+            reassemble_runtime(&root.0, &artifact, 5, &joined, &AtomicBool::new(false),),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+        assert_eq!(
+            reassemble_runtime(&root.0, &artifact, 6, &joined, &AtomicBool::new(true),),
+            Err(OptionalProfileError::Cancelled)
+        );
+    }
+
+    #[test]
+    fn promotion_replaces_only_the_versioned_package_after_complete_verification() {
+        let root = TestRoot::new();
+        let staging = root.0.join("staged-package");
+        let authority = write_runtime(&staging);
+        let previous = package_root(&root.0);
+        fs::create_dir_all(&previous).expect("previous package should be created");
+        fs::write(previous.join("stale.txt"), b"stale").expect("stale fixture should be written");
+
+        promote(&root.0, &staging, &authority).expect("verified package should promote");
+
+        assert!(!staging.exists());
+        assert!(!previous.join("stale.txt").exists());
+        assert!(previous.join("runtime/python.exe").is_file());
+        assert!(!profile_root(&root.0).join(".previous").exists());
+    }
+
+    #[test]
+    fn free_space_gate_is_inclusive_and_result_blind() {
+        assert!(sufficient_space(20, 20));
+        assert!(!sufficient_space(19, 20));
+    }
+
+    #[test]
     fn runtime_discovery_rejects_mutated_stale_and_traversal_payloads() {
         let root = TestRoot::new();
-        let artifact = write_runtime(&root.0);
-        assert!(verify_runtime(&root.0, &artifact).is_ok());
+        let authority = write_runtime(&root.0);
+        assert!(verify_runtime(&root.0, &authority).is_ok());
 
-        fs::write(root.0.join("models/t3_mtl23ls_v3.safetensors"), b"changed")
+        fs::write(root.0.join("models/model.safetensors"), b"changed")
             .expect("mutation should succeed");
         assert_eq!(
-            verify_runtime(&root.0, &artifact),
+            verify_runtime(&root.0, &authority),
             Err(OptionalProfileError::VerificationFailed)
         );
 

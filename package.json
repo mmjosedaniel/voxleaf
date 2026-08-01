@@ -35,6 +35,7 @@
     "package:piper-core:check": "uv run --directory services/tts --locked python -m voxleaf_tts.release_core check",
     "package:piper-core:write-manifest": "uv run --directory services/tts --locked python -m voxleaf_tts.release_core write-manifest",
     "package:chatterbox-optional:check-source": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox check-source",
+    "package:chatterbox-optional:check-acquisition": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox check-acquisition",
     "package:chatterbox-optional": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox build",
     "build": "pnpm run build:packages && pnpm run build:desktop && pnpm run build:python",
     "build:desktop": "pnpm --filter @voxleaf/desktop tauri build",

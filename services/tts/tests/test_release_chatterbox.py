@@ -9,11 +9,15 @@ import pytest
 from voxleaf_tts.release_chatterbox import (
     PACKAGE_DIRECTORY_NAME,
     ReleaseChatterboxError,
+    _configure_embedded_python,
     build_runtime_manifest,
+    load_acquisition_manifest,
     load_source_manifest,
     render_manifest,
     safe_relative_path,
+    split_archive,
     verify_package_tree,
+    verify_safe_model_load_sites,
 )
 
 
@@ -40,11 +44,28 @@ def _manifest(files: dict[str, bytes]) -> dict[str, object]:
 def test_source_manifest_closes_the_one_optional_profile_and_six_model_files() -> None:
     manifest = load_source_manifest()
     assert manifest["packageId"] == PACKAGE_DIRECTORY_NAME
+    assert manifest["packageVersion"] == "2"
     assert manifest["profileId"] == "chatterbox-multilingual-v3-cuda-bf16-default-v4"
     assert manifest["platform"] == "windows-x86_64"
     model_files = manifest["modelFiles"]
     assert isinstance(model_files, list)
     assert len(model_files) == 6
+    assert all(
+        isinstance(artifact, dict)
+        and str(artifact["url"]).startswith(
+            "https://huggingface.co/ResembleAI/chatterbox/resolve/"
+            "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/"
+        )
+        for artifact in model_files
+    )
+
+
+def test_acquisition_manifest_matches_the_runtime_and_official_model_authority() -> None:
+    manifest = load_acquisition_manifest()
+    assert manifest["schemaVersion"] == 2
+    assert manifest["availability"] == "withheld"
+    assert manifest["runtimeArtifact"] is None
+    assert manifest["withholdingReason"] == "runtime-artifacts-not-published"
 
 
 @pytest.mark.parametrize(
@@ -84,3 +105,56 @@ def test_generated_runtime_manifest_is_canonical_and_content_free(tmp_path: Path
     assert manifest["serviceModule"] == "voxleaf_tts.chatterbox_service"
     assert b"private-user-name" not in rendered
     assert b"Desktop" not in rendered
+
+
+def test_runtime_archive_is_split_into_bounded_ordered_verified_parts(tmp_path: Path) -> None:
+    archive = tmp_path / "voxleaf-chatterbox-runtime-v2.zip"
+    archive.write_bytes(b"abcdefghij")
+
+    parts = split_archive(archive, maximum_part_bytes=4)
+
+    assert [part.filename for part in parts] == [
+        "voxleaf-chatterbox-runtime-v2.zip.part-001",
+        "voxleaf-chatterbox-runtime-v2.zip.part-002",
+        "voxleaf-chatterbox-runtime-v2.zip.part-003",
+    ]
+    assert [part.size_bytes for part in parts] == [4, 4, 2]
+    assert b"".join((tmp_path / part.filename).read_bytes() for part in parts) == b"abcdefghij"
+    assert all(
+        part.sha256 == hashlib.sha256((tmp_path / part.filename).read_bytes()).hexdigest()
+        for part in parts
+    )
+
+
+def test_safe_model_loader_requires_safetensors_and_weights_only(tmp_path: Path) -> None:
+    loader = tmp_path / "chatterbox/mtl_tts.py"
+    loader.parent.mkdir(parents=True)
+    loader.write_text(
+        "\n".join(
+            (
+                "import torch",
+                "from safetensors.torch import load_file as load_safetensors",
+                "a = torch.load('conds.pt', weights_only=True)",
+                "b = torch.load('ve.pt', weights_only=True)",
+                "c = torch.load('s3gen.pt', weights_only=True)",
+                "d = load_safetensors('t3.safetensors')",
+            )
+        ),
+        encoding="utf-8",
+    )
+    verify_safe_model_load_sites(tmp_path)
+
+    loader.write_text("import torch\na = torch.load('conds.pt')\n", encoding="utf-8")
+    with pytest.raises(ReleaseChatterboxError, match="^chatterbox-package-safe-loader-invalid$"):
+        verify_safe_model_load_sites(tmp_path)
+
+
+def test_embedded_runtime_enables_only_its_private_site_packages(tmp_path: Path) -> None:
+    pth = tmp_path / "python312._pth"
+    pth.write_text("python312.zip\n.\n#import site\n", encoding="utf-8")
+
+    _configure_embedded_python(tmp_path)
+
+    assert pth.read_text(encoding="utf-8") == (
+        "python312.zip\n.\nLib\\site-packages\nimport site\n"
+    )
