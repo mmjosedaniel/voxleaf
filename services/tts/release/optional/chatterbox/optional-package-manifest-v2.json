@@ -1,0 +1,127 @@
+{
+  "availability": "withheld",
+  "identity": {
+    "engineVersion": "0.1.7",
+    "modelId": "ResembleAI/chatterbox",
+    "modelRevision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+    "packageVersion": "2",
+    "profileId": "chatterbox-multilingual-v3-cuda-bf16-default-v4"
+  },
+  "languages": ["en", "es"],
+  "layout": {
+    "installed": "profiles/chatterbox-multilingual-v3-cuda-bf16-default-v4/2",
+    "root": "app-local-data/tts",
+    "staging": "staging/chatterbox-multilingual-v3-cuda-bf16-default-v4/operation"
+  },
+  "licences": {
+    "chatterbox": "MIT",
+    "defaultConditioning": "MIT",
+    "model": "MIT",
+    "perth": "MIT"
+  },
+  "limits": {
+    "maximumConcurrency": 1,
+    "maximumInstalledBytes": 9000000000,
+    "maximumRedirects": 2,
+    "maximumRuntimeArchiveBytes": 5500000000,
+    "maximumRuntimeInstalledBytes": 5500000000,
+    "maximumRuntimePartBytes": 1900000000,
+    "maximumRuntimeParts": 4,
+    "maximumStagingBytes": 15000000000,
+    "maximumTransferBytes": 9000000000,
+    "maximumUserDisclosedFreeBytes": 20000000000
+  },
+  "measurements": null,
+  "modelArtifacts": [
+    {
+      "downloadBytes": 2143989928,
+      "filename": "t3_mtl23ls_v3.safetensors",
+      "sha256": "5abca8321ede76f8e61f1cc0d19aea6c946b28871017ce8726f8a69203f05953",
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/t3_mtl23ls_v3.safetensors"
+    },
+    {
+      "downloadBytes": 1057165844,
+      "filename": "s3gen.pt",
+      "sha256": "9b9ff07e60b20c136e2b1b3d7563a24604e8d2c4c267888d1ee929dd0151d2a3",
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/s3gen.pt"
+    },
+    {
+      "downloadBytes": 5698626,
+      "filename": "ve.pt",
+      "sha256": "4b16d836bc598509860f6fa068165a8bb5e9ac84f05582dfcf278a5a372879f1",
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/ve.pt"
+    },
+    {
+      "downloadBytes": 107374,
+      "filename": "conds.pt",
+      "sha256": "6552d70568833628ba019c6b03459e77fe71ca197d5c560cef9411bee9d87f4e",
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/conds.pt"
+    },
+    {
+      "downloadBytes": 69989,
+      "filename": "grapheme_mtl_merged_expanded_v1.json",
+      "sha256": "69632f47220a788a52ce2661d096453c5655e9bf25289d89a8d832c46ee07dbf",
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/grapheme_mtl_merged_expanded_v1.json"
+    },
+    {
+      "downloadBytes": 1920163,
+      "filename": "Cangjie5_TC.json",
+      "sha256": "7073fd9de919443ae88e0bd2449917a65fe54898a4413ed1edcc4b67f28bce8c",
+      "url": "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/Cangjie5_TC.json"
+    }
+  ],
+  "provenance": {
+    "chatterboxSource": "https://github.com/resemble-ai/chatterbox/tree/5de7a54aa4e5e2baadb0182dde554908b48b85c2",
+    "modelCard": "https://huggingface.co/ResembleAI/chatterbox/tree/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+    "perthSource": "https://github.com/resemble-ai/perth/tree/ce86c2b567491eef3108ed3c137bd7bf1ddda52e"
+  },
+  "requirements": {
+    "measuredPeakDedicatedVramMiB": 3644,
+    "minimumAvailableDedicatedVramMiB": 4668,
+    "minimumAvailableRamMiB": 4096,
+    "minimumLogicalProcessors": 8,
+    "minimumTotalDedicatedVramMiB": 5632,
+    "minimumTotalRamMiB": 24576,
+    "platform": "windows-x86_64",
+    "precision": "bfloat16",
+    "provider": "cuda",
+    "recommendedTotalDedicatedVramMiB": 7680
+  },
+  "runtime": {
+    "adapterSha256": "f7fd0e9f745954dbe5881a5428972793f619335a643a7d3b768368a6fdca707e",
+    "dependencyLock": {
+      "path": "services/tts/release/profiles/chatterbox/requirements.lock",
+      "sha256": "a0dedaff6d4a0548d59dc5b1a7d0c1940f9f9bb4afeb556deba90eee481a393a"
+    },
+    "releaseTag": "chatterbox-runtime-v2",
+    "serviceSha256": "feedf00f006699fea7fae2bed1d5192709be2e8b124ac48339bc99b44b284727",
+    "torchVersion": "2.9.1+cu128"
+  },
+  "runtimeArtifact": {
+    "archiveSha256": "af6b4f46f6b21df02d30cdfe992f77f9bda68111edd9042cd32a619c6376aee6",
+    "installedBytes": 5019513881,
+    "parts": [
+      {
+        "downloadBytes": 1900000000,
+        "filename": "voxleaf-chatterbox-runtime-v2.zip.part-001",
+        "sha256": "168f46ae0d11c132ef414732064e81337390be9f578a8f14346b2bdab7bd386b",
+        "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-001"
+      },
+      {
+        "downloadBytes": 1900000000,
+        "filename": "voxleaf-chatterbox-runtime-v2.zip.part-002",
+        "sha256": "35a23ce31119f1ccd386b7b9a2e3dca48b6b2d8d66d83cf0c4d649a085967bee",
+        "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-002"
+      },
+      {
+        "downloadBytes": 1222941463,
+        "filename": "voxleaf-chatterbox-runtime-v2.zip.part-003",
+        "sha256": "9959167239073cd14f84388e5965576b4caa6c2e28e02927aa4efd71c8e14101",
+        "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-003"
+      }
+    ],
+    "runtimeManifestSha256": "cb5055580a28a0c97e50535a8317ea506081230b70e0099d8fe0194591e1c635"
+  },
+  "schemaVersion": 2,
+  "withholdingReason": "clean-host-validation-pending"
+}

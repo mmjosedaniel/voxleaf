@@ -60,9 +60,9 @@ confirmation and pull request #170's required Ubuntu/Windows checks also pass,
 and M010.2 is archived.
 M011 Milestone 3 implements the deterministic licence-complete Piper core
 payload. Milestone 4 adds the deliberately withheld optional-Chatterbox
-acquisition lifecycle and source-package checks; no end-user artifact or
-Download action is enabled until final release evidence exists. Installer
-integration, a published optional artifact, clean-host release validation, and
+acquisition lifecycle and source-package checks; the exact runtime parts are
+published, but no end-user Download action is enabled until final release
+evidence exists. Installer integration, clean-host release validation, and
 signing remain M011 work.
 
 M009.1 keeps passive viewport inspection separate from the active narration

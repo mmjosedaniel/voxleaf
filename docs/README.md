@@ -105,17 +105,23 @@ before dependency or package results. Its proportional
 [`release security and distribution boundary`](development/release-security-and-distribution.md)
 targets a Windows x64 portfolio MVP with Piper Spanish/English in the small
 core and Chatterbox Spanish/English as a separately gated optional GPU quality
-download. Milestone 4A now implements the fail-closed native lifecycle and
-Settings controls, but its manifest is deliberately withheld. Planned
-Milestone 4B replaces the single republished model/archive assumption with six
-allowlisted model-data files acquired directly from the official
+download. Milestone 4A implements the fail-closed native lifecycle and
+Settings controls. Milestone 4B now implements the split acquisition while its
+v2 manifest remains deliberately withheld: six allowlisted model-data files
+are acquired directly from the official
 `ResembleAI/chatterbox` Hugging Face repository at one full frozen revision.
 Each file remains bounded and SHA-256 verified; no model-repository code may
-execute. The reviewed Chatterbox runtime remains a separate locked release
-input whose immutable delivery origin must be frozen before Download is
-enabled. The eventual path also requires explicit consent, atomic installation,
+execute. The reviewed Chatterbox runtime is reproducibly built, split into
+three bounded assets, and published under the immutable
+[`chatterbox-runtime-v2`](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v2)
+release. Download remains disabled until those assets and the six frozen model
+files pass clean-host acquisition and lifecycle validation. The eventual path
+also requires explicit consent, atomic installation,
 separate activation, offline clean-host proof, and application-owned removal;
 Qwen stays development-only and outside the first distributable product.
+ADR-0044 corrects only current Chatterbox product admission: the measured
+`3,644`-MiB peak now yields a `5,632`-MiB-total/`4,668`-MiB-free technical gate,
+while the evaluated nominal 8-GB class remains recommended and disclosed.
 Milestone 2
 closes the exact 15-entry core and 79-package optional locks, automated
 audits, bounded update intake, and the component inventory. Milestone 3 adds
@@ -151,7 +157,9 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/reader-settings-playback-authority-v1.md`](architecture/reader-settings-playback-authority-v1.md): frozen M010.2 Milestone 1 shell, Settings, English-fallback migration, bounded preference, exact playback-rate arithmetic, backend-comparison, resource, privacy, and validation authority.
 - [`architecture/reader-settings-playback-authority-v2.md`](architecture/reader-settings-playback-authority-v2.md): frozen M010.2 Milestone 2A six-rate, exact-candidate, fee-free licence, media-only CSP, lifecycle, resource, and result-lineage comparison authority.
 - [`architecture/reader-settings-playback-authority-v3.md`](architecture/reader-settings-playback-authority-v3.md): frozen M010.2 Milestone 2C selected/pending/active rate state, exact boundary-deferred candidates, first-activation/recurring-handoff, resource, lifecycle, licence/CSP, listening, and strict result-lineage authority.
-- [`architecture/mvp-release-authority-v1.md`](architecture/mvp-release-authority-v1.md): frozen historical M011 Windows/Piper core and single-archive optional Chatterbox topology, trust, cleanup, dependency/licence/integrity, signing, and independent release-claim authority; planned Milestone 4B must additively supersede only its Chatterbox acquisition shape before implementation.
+- [`architecture/mvp-release-authority-v1.md`](architecture/mvp-release-authority-v1.md): frozen historical M011 Windows/Piper core and single-archive optional Chatterbox topology, trust, cleanup, dependency/licence/integrity, signing, and independent release-claim authority; Milestone 4B additively supersedes only its Chatterbox acquisition shape through authority v2.
+- [`architecture/chatterbox-official-acquisition-authority-v2.md`](architecture/chatterbox-official-acquisition-authority-v2.md): accepted M011 Milestone 4B authority for a separately verified split runtime and the six exact official revision-pinned Hugging Face model files, with closed redirects, limits, cancellation, safe loading, atomic promotion, and fail-closed release gates.
+- [`../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json`](../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json): content-safe reproducible runtime/part/aggregate size evidence, verified public release identity, and the remaining clean-host gates that keep Chatterbox withheld.
 - [`architecture/hardware-profile-recovery-authority-v1.md`](architecture/hardware-profile-recovery-authority-v1.md): frozen M010 Milestone 1 privacy-safe host report, immutable profile/evidence shape, result-blind margins, matching/preference rules, failure taxonomy, and identity-first recovery authority.
 - [`architecture/qwen-development-vram-admission-v1.md`](architecture/qwen-development-vram-admission-v1.md): corrective development-only authority retaining generic total VRAM while admitting the exact Qwen demo with its measured peak plus a frozen 512-MiB available-VRAM reserve.
 - [`architecture/tts-support-matrix-v1.md`](architecture/tts-support-matrix-v1.md): final M010 product support matrix, admitted host margins, explicit selection/fallback policy, recovery policy, limitations, and runtime/license/distribution boundary.
@@ -210,6 +218,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0038-reopen-boundary-deferred-playback-evaluation.md`](architecture/decisions/ADR-0038-reopen-boundary-deferred-playback-evaluation.md): authorizes a separate v3 comparison where a pending rate applies at the next complete-unit boundary without restarting TTS or discarding queued PCM, under new first-activation and RAM limits.
 - [`architecture/decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md`](architecture/decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md): freezes the immutable v3 candidate, boundary-transition, recurring-handoff, resource, lifecycle, licence/CSP, listening, and strict result-lineage authority before implementation or measurement.
 - [`architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md`](architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md): selects repository-owned incremental WSOLA v3 after every frozen machine, privacy, lifecycle, and bilingual-listening gate passes; Milestone 5 implements the exact selection without dependency or CSP expansion.
+- [`architecture/decisions/ADR-0044-use-measured-capacity-for-chatterbox-vram-admission.md`](architecture/decisions/ADR-0044-use-measured-capacity-for-chatterbox-vram-admission.md): replaces the conservative 8-GB Chatterbox minimum with the measured-capacity 6-GB-class/4,668-MiB-free product gate while retaining 8 GB as recommended and evaluated.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development
@@ -228,7 +237,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
-- [`plans/active/M011-package-validate-and-release-mvp.md`](plans/active/M011-package-validate-and-release-mvp.md): approved detailed plan for the Windows/Piper core, fail-closed optional Chatterbox lifecycle, planned exact-revision Hugging Face model-data acquisition plus separate reviewed runtime delivery, clean-host validation, signing path, and independent core/optional/public release decisions.
+- [`plans/active/M011-package-validate-and-release-mvp.md`](plans/active/M011-package-validate-and-release-mvp.md): approved detailed plan for the Windows/Piper core, fail-closed optional Chatterbox lifecycle, implemented exact-revision Hugging Face model-data plus published split-runtime acquisition boundary, remaining clean-host gate, signing path, and independent core/optional/public release decisions.
 - [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.
 - [`plans/completed/M002-shared-contracts-and-test-harness.md`](plans/completed/M002-shared-contracts-and-test-harness.md): completed ExecPlan and validation evidence for roadmap Milestone 2.
 - [`plans/completed/M003-secure-epub-ingestion-and-document-model.md`](plans/completed/M003-secure-epub-ingestion-and-document-model.md): completed ExecPlan and validation evidence for secure EPUB ingestion and the framework-independent document model in roadmap Milestone 3.

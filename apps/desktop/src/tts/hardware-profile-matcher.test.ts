@@ -253,7 +253,7 @@ describe("hardware profile matcher v1", () => {
     ).toBe("dedicated-vram");
   });
 
-  it("admits the evaluated nominal 8-GB Chatterbox host through its DXGI quantity", () => {
+  it("admits the measured-capacity Chatterbox floor and retains headroom gates", () => {
     const profile = HARDWARE_PROFILE_REGISTRY_V1.find(
       (entry) => entry.identity.profileId === CHATTERBOX_BILINGUAL_PROFILE_ID,
     )!;
@@ -278,8 +278,8 @@ describe("hardware profile matcher v1", () => {
             ...value.providers,
             cuda: {
               ...value.providers.cuda,
-              dedicatedMemoryMiB: knownQuantity(7_679),
-              availableDedicatedMemoryMiB: knownQuantity(7_042),
+              dedicatedMemoryMiB: knownQuantity(5_631),
+              availableDedicatedMemoryMiB: knownQuantity(5_631),
             },
           },
         })),
@@ -295,7 +295,7 @@ describe("hardware profile matcher v1", () => {
             cuda: {
               ...value.providers.cuda,
               dedicatedMemoryMiB: knownQuantity(7_810),
-              availableDedicatedMemoryMiB: knownQuantity(6_143),
+              availableDedicatedMemoryMiB: knownQuantity(4_667),
             },
           },
         })),

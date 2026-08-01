@@ -53,6 +53,8 @@ ADR-0002-short-description.md
 - [`ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md`](ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md): select the repository-owned incremental WSOLA v3 backend after complete Chromium, packaged WebView2, Piper-contention, privacy, lifecycle, and bilingual-listening passes, while deferring product activation to M010.2 Milestone 5.
 - [`ADR-0041-simplify-empty-and-ready-reader-chrome.md`](ADR-0041-simplify-empty-and-ready-reader-chrome.md): expose one stable styled Open a book action, defer Settings until a publication is ready, remove redundant Close/compatibility chrome, and retire the manual raster probe while preserving production-path validation.
 - [`ADR-0042-freeze-mvp-release-authority.md`](ADR-0042-freeze-mvp-release-authority.md): freeze the Windows/Piper core, native-owned optional Chatterbox lifecycle, trust and cleanup boundaries, dependency/licence/integrity policy, and independent portfolio/public release claims before M011 packaging results.
+- [`ADR-0043-freeze-verified-official-chatterbox-acquisition.md`](ADR-0043-freeze-verified-official-chatterbox-acquisition.md): supersede only the historical single-archive Chatterbox transport with one split verified runtime from a versioned VoxLeaf GitHub Release and six exact revision-pinned official Hugging Face model files.
+- [`ADR-0044-use-measured-capacity-for-chatterbox-vram-admission.md`](ADR-0044-use-measured-capacity-for-chatterbox-vram-admission.md): replace the conservative 8-GB Chatterbox minimum with a measured-capacity 6-GB-class/4,668-MiB-free gate while retaining 8 GB as recommended and evaluated.
 
 ## Template
 

@@ -23,6 +23,10 @@ function displayBytes(value: number | undefined): string {
   return `${(value / 1_073_741_824).toFixed(2)} GiB`;
 }
 
+function displayMiB(value: number): string {
+  return `${(value / 1_024).toFixed(2)} GiB`;
+}
+
 function StatusCopy({
   snapshot,
 }: Readonly<{ snapshot: OptionalChatterboxSnapshot }>): ReactElement {
@@ -54,8 +58,9 @@ function StatusCopy({
     case "withheld":
       return (
         <p>
-          The optional Chatterbox download is not published for end users yet.
-          Piper remains available without it.
+          The optional Chatterbox download is not available to end users yet.
+          Clean-host validation is still pending. Piper remains available
+          without it.
         </p>
       );
   }
@@ -101,12 +106,27 @@ export function OptionalChatterboxControls({
       {snapshot.state === "confirming" ? (
         <div className="optional-chatterbox-confirmation">
           <p>
-            Spanish and English, GPU required. Download{" "}
+            Spanish and English on Windows x64. Download{" "}
             {displayBytes(snapshot.downloadBytes)}; install{" "}
             {displayBytes(snapshot.installedBytes)}; temporary storage{" "}
             {displayBytes(snapshot.temporaryBytes)}; free space required{" "}
             {displayBytes(snapshot.minimumFreeBytes)}. Cold start is about{" "}
             {snapshot.coldStartSeconds ?? "a measured"} seconds.
+          </p>
+          <p>
+            GPU: Chatterbox measured{" "}
+            {displayMiB(snapshot.measuredPeakDedicatedVramMiB)} VRAM. VoxLeaf
+            requires {displayMiB(snapshot.minimumTotalDedicatedVramMiB)} total
+            and {displayMiB(snapshot.minimumAvailableDedicatedVramMiB)}{" "}
+            available. A nominal 8-GB GPU (
+            {displayMiB(snapshot.recommendedTotalDedicatedVramMiB)} reported) is
+            recommended and was the evaluated class; 6-GB-class hardware is
+            admitted only when the available memory check passes.
+          </p>
+          <p>
+            System: {snapshot.minimumLogicalProcessors} logical processors,{" "}
+            {displayMiB(snapshot.minimumTotalRamMiB)} RAM total, and{" "}
+            {displayMiB(snapshot.minimumAvailableRamMiB)} RAM available.
           </p>
           <p>{snapshot.licenseSummary}</p>
           <button

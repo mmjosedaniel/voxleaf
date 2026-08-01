@@ -24,6 +24,10 @@ dev = [
 python_version = "3.12"
 strict = true
 files = ["src", "benchmarks", "tests"]
+exclude = [
+    '^release[\\/]core[\\/]dist[\\/]',
+    '^release[\\/]optional[\\/]chatterbox[\\/]dist[\\/]',
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

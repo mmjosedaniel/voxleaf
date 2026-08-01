@@ -19,6 +19,13 @@ function snapshot(state: "confirming" | "installed") {
     temporaryBytes: 3_221_225_472,
     minimumFreeBytes: 4_294_967_296,
     coldStartSeconds: 31,
+    minimumLogicalProcessors: 8,
+    minimumTotalRamMiB: 24_576,
+    minimumAvailableRamMiB: 4_096,
+    measuredPeakDedicatedVramMiB: 3_644,
+    minimumTotalDedicatedVramMiB: 5_632,
+    minimumAvailableDedicatedVramMiB: 4_668,
+    recommendedTotalDedicatedVramMiB: 7_680,
     licenseSummary:
       "Chatterbox, its reviewed model/default conditioning, and PerTh are MIT-licensed.",
     failure: null,
@@ -47,6 +54,13 @@ describe("optional Chatterbox controls", () => {
       await screen.findByRole("button", { name: "Download Chatterbox" }),
     ).toBeInTheDocument();
     expect(screen.getByText(/Download 1.00 GiB/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Chatterbox measured 3.56 GiB VRAM/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/6-GB-class hardware is admitted/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/24.00 GiB RAM total/)).toBeInTheDocument();
     expect(invoke).toHaveBeenCalledTimes(1);
 
     fireEvent.click(

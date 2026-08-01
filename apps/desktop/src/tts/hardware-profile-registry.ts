@@ -219,11 +219,13 @@ export const HARDWARE_PROFILE_REGISTRY_V1 = Object.freeze([
       measuredArtifactFootprintMiB: 8_211,
       minimumTotalRamMiB: 24_576,
       minimumAvailableRamMiB: 4_096,
-      // DXGI reports the evaluated nominal 8-GB RTX 5060 as 7,810 MiB of
-      // usable dedicated memory. Keep an 8-GB-class floor without confusing
-      // nominal decimal capacity with the probe's usable binary quantity.
-      minimumTotalDedicatedVramMiB: 7_680,
-      minimumAvailableDedicatedVramMiB: 6_144,
+      // Chatterbox peaked at 3,644 MiB. The product gate uses that measured
+      // peak plus the frozen 1,024-MiB capacity reserve. A 5,632-MiB total
+      // floor admits nominal 6-GB devices without claiming they were part of
+      // the exact-host evaluation; the evaluated 8-GB class remains the
+      // recommendation disclosed by the optional-package flow.
+      minimumTotalDedicatedVramMiB: 5_632,
+      minimumAvailableDedicatedVramMiB: 4_668,
     },
     evidence: {
       authorityCommitSha: "0b90fa2c16cdb276550ad3c3a58a2d84e1509876",

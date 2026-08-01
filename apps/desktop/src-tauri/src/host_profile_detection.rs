@@ -1158,7 +1158,7 @@ mod tests {
     fn optional_download_gate_requires_the_closed_cuda_bfloat16_facts() {
         let report = normalize_snapshot(complete_snapshot());
         assert!(optional_cuda_bf16_profile_admitted_from_report(
-            report, 8, 24_576, 4_096, 7_680, 6_144,
+            report, 8, 24_576, 4_096, 5_632, 4_668,
         ));
 
         let mut insufficient = complete_snapshot();
@@ -1168,8 +1168,8 @@ mod tests {
             8,
             24_576,
             4_096,
-            7_680,
-            6_144,
+            5_632,
+            4_668,
         ));
     }
 
