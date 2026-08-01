@@ -145,12 +145,14 @@ M011 is in progress. Milestone 1 freezes
 or package results. Milestone 2 closes the exact production component identity:
 a 15-entry private Piper core lock, a separately gated 79-package Chatterbox
 lock, repository-owned Node/Rust/Python release audits, bounded Dependabot
-intake, and a deterministic 367-component inventory. Milestone 3 packages the
+intake, and a deterministic 400-component inventory. Milestone 3 packages the
 core as a deterministic private CPython/Piper runtime with both voices,
 complete notices, and exact corresponding-source archives. Native discovery
 accepts only the fixed install-relative root after exact manifest/file/hash
-verification. It does not yet implement an installer or optional-profile
-acquisition. The core topology is deliberately smaller than
+verification. Milestone 4 now implements the native-owned optional-profile
+lifecycle and its source-package checker, but its compiled manifest is
+deliberately withheld until a real archive is built, audited, and authorized
+for publication. The core topology is deliberately smaller than
 the implemented development matrix: Windows x64 plus Piper davefx/Spanish and
 Piper joe/English in one private embedded Python/Piper runtime. Supported
 Chatterbox Spanish/English is planned as a
@@ -161,11 +163,13 @@ plus 2.99 GiB of model artifacts. Milestone 2 replaces that environment graph
 with the explicit 79-package runtime lock and proves the adapter offline in a
 4.83-GiB isolated smoke environment; neither number is a final compressed or
 installed package measurement. M011 has fulfilled the Piper/phonemizer/voice
-payload obligations. It must still fulfill Chatterbox model/runtime provenance
-obligations and implement native-owned
-fixed-manifest acquisition with explicit consent, bounded staging, digest
-verification, atomic versioned installation, separate activation, offline
-use, and application-owned removal. Piper-core portfolio readiness, optional-
+payload obligations. The optional source manifest freezes the intended
+Chatterbox runtime/model identity, while final redistributed-artifact notices,
+provenance, URL, digest, sizes, and clean-host evidence remain open. The
+implemented native lifecycle uses explicit consent, bounded staging, digest
+verification, atomic versioned installation, separate activation, offline use,
+and application-owned removal only after that new manifest is approved.
+Piper-core portfolio readiness, optional-
 Chatterbox readiness, and signed public publication are separate decisions;
 signing is an external authorization for the last only. Automatic updates,
 enterprise process sandboxing, external certification, cross-platform

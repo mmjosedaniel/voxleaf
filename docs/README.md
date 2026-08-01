@@ -105,15 +105,18 @@ before dependency or package results. Its proportional
 [`release security and distribution boundary`](development/release-security-and-distribution.md)
 targets a Windows x64 portfolio MVP with Piper Spanish/English in the small
 core and Chatterbox Spanish/English as a separately gated optional GPU quality
-download. The Chatterbox path requires explicit consent, a minimal audited
-graph, fixed-manifest integrity verification, atomic installation, separate
-activation, offline clean-host proof, and application-owned removal; Qwen stays
-development-only and outside the first distributable product. Milestone 2
+download. Milestone 4 now implements the native-owned lifecycle and Settings
+controls, but its manifest is deliberately withheld until a real archive is
+built, audited, and authorized for publication. The eventual Chatterbox path
+requires explicit consent, a minimal audited graph, fixed-manifest integrity
+verification, atomic installation, separate activation, offline clean-host
+proof, and application-owned removal; Qwen stays development-only and outside
+the first distributable product. Milestone 2
 closes the exact 15-entry core and 79-package optional locks, automated
 audits, bounded update intake, and the component inventory. Milestone 3 adds
 the deterministic bilingual Piper core, complete notices/source fulfillment,
-offline smoke evidence, and native fixed-manifest verification. Installer and
-clean-host release claims remain open.
+offline smoke evidence, and native fixed-manifest verification. The optional
+archive, installer, and clean-host release claims remain open.
 Piper-core, optional-Chatterbox, and signed-public readiness are separate
 gates. Signing
 does not block a truthful local demo, but an unsigned general download is not

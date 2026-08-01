@@ -1078,20 +1078,23 @@ through newly frozen authority and regression evidence.
 
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** In progress. Milestones 1 through 3 completed on 2026-08-01. Milestone 1 froze
+**Status:** In progress. Milestones 1 through 3 completed on 2026-08-01. Milestone 4 has implemented the withheld optional-package lifecycle but has not produced a distributable Chatterbox artifact. Milestone 1 froze
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
 accepting
 [ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
 before dependency or package results. Milestone 2 then closed a 15-entry
 private Piper core lock, a separately gated 79-package Chatterbox lock,
 repository-owned release audits, bounded dependency-update intake, and an
-exact 367-component release inventory. Milestone 3 implements the deterministic
+exact 400-component release inventory. Milestone 3 implements the deterministic
 private CPython/Piper core, both frozen voices, complete notices and exact
 Piper/espeak source fulfillment, bilingual offline smoke, measurements, and
 native fixed-manifest verification. M010.2 is complete. The repository can
-build a release executable and the standalone core payload for validation, but
-installer bundling, optional Chatterbox acquisition, signing, updater policy,
-and complete-MVP validation are not implemented.
+build a release executable and the standalone core payload for validation.
+Milestone 4 also implements native-owned withheld/download/install/remove
+controls and deterministic source checks for optional Chatterbox, but no
+audited archive is published and end-user acquisition remains disabled.
+Installer bundling, a published optional artifact, signing, updater policy, and
+complete-MVP validation are not implemented.
 
 ### Goal
 
@@ -1323,7 +1326,8 @@ ADR-0039 freezes the separate boundary-deferred v3, and ADR-0040 selects
 repository WSOLA. The bounded preference runtime, reader-first Settings shell,
 and non-default boundary-deferred playback integration are implemented. The
 maintainer all-rate journey and required PR checks pass; M011 Milestones 1-3
-are complete and optional Chatterbox acquisition is next.
+are complete, and Milestone 4 now has a withheld optional-Chatterbox lifecycle
+awaiting a real audited artifact and clean-host evidence.
 
 ## MVP completion boundary
 

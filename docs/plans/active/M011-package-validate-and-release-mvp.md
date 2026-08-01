@@ -68,10 +68,11 @@ uninstall proof.
 Milestones 2 and 3 now provide the release dependency and Piper payload
 boundaries: a 15-entry private core lock, a separate 79-package Chatterbox
 lock, automated Node/Rust/Python release audits, bounded dependency-update
-intake, a deterministic 367-component inventory, and a verified bilingual
+intake, a deterministic 400-component inventory, and a verified bilingual
 Piper payload with its runtime, notices, model cards, and exact GPL source.
-Installer, optional acquisition, signing, and clean-host release evidence
-remain future milestones.
+Milestone 4 now adds the native-owned optional-package lifecycle and its
+withheld manifest/source-build boundary. Installer integration, a published
+optional artifact, signing, and clean-host release evidence remain future work.
 
 The current TTS runtimes are ignored developer assets selected through
 environment variables. Development firewall rules target exact candidate
@@ -342,7 +343,12 @@ documentation/validation checkpoint is recorded with this plan update.
 
 ### Milestone 4: Implement optional Chatterbox acquisition and removal
 
-**Status:** Not started.
+**Status:** In progress. The repository now contains one native-owned,
+content-safe lifecycle for the closed Chatterbox profile, but no end-user
+artifact has been built, audited, or authorized for publication. The compiled
+manifest is therefore deliberately `withheld`: it has no downloadable URL,
+archive digest, or byte claim, and opening Settings cannot create staging state
+or make a network request.
 
 1. Freeze and check in the exact optional-package manifest selected by
    Milestones 1 and 2: closed profile identity, version/revision, allowed HTTPS
@@ -369,6 +375,44 @@ documentation/validation checkpoint is recorded with this plan update.
    install/remove time, cold load, RTF, RAM, and VRAM. Prove Spanish and English
    installed narration offline and commit implementation plus content-safe
    evidence as a separate checkpoint.
+
+**Actual results (2026-08-01):**
+
+- `optional-package-manifest-v1.json` freezes the one profile identity,
+  versions, languages, license/provenance references, app-owned layout,
+  native hardware facts, service/adapter/lock identities, and a truthful
+  `release-artifact-not-published` withholding state. A separate source
+  manifest freezes six exact model artifacts and the minimal package contents;
+  ignored `dist/` output prevents model, runtime, archive, or generated-audio
+  leakage into Git.
+- The native profile manager accepts only that compiled manifest and a closed
+  profile ID. It owns confirmation, bounded HTTPS download, cancellation,
+  exact size/SHA-256 verification, traversal/link-safe extraction, atomic
+  promotion, verified runtime discovery, removal, and content-free errors. It
+  independently rechecks the closed CUDA/BF16 host facts before acquisition;
+  the renderer never provides a URL, executable, archive, digest, or path.
+- Settings has a non-acquiring withheld state plus the confirmation, progress,
+  cancel, explicit activation, and removal states needed after a real artifact
+  exists. Current Piper narration is not switched by selection or acquisition.
+- `pnpm.cmd package:chatterbox-optional:check-source`, focused Python builder
+  tests, native integrity/cancellation/hardware-gate tests, and desktop client
+  tests pass outside the automation sandbox. These tests prove the withheld and
+  hostile-artifact boundaries; they are not installed-package or performance
+  evidence.
+
+**Remaining blockers for this milestone:**
+
+1. A release maintainer must provide sufficient controlled build capacity and
+   the exact model root, then build and audit the minimal archive. This cannot
+   be replaced by the historical developer-environment footprint.
+2. The resulting artifact needs an approved immutable HTTPS publication origin,
+   final URL/digest/byte/free-space values, complete redistributed-notice and
+   provenance review, and a manifest revision before any Download action may be
+   enabled.
+3. A compatible clean normal-user Windows GPU host must run the full
+   install/offline bilingual/resource/removal matrix. Until that evidence exists,
+   Chatterbox is not an end-user-downloadable profile and Piper remains the
+   only release-core narration claim.
 
 ### Milestone 5: Build the versioned Windows package and signing path
 

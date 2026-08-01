@@ -242,6 +242,19 @@ Before the application may offer **Download and enable Chatterbox**, M011 must:
    without deleting the desktop application, preferences, reading progress, or
    user EPUBs.
 
+**Current M011 Milestone 4 status:** the repository implements the native-owned
+state machine, a compiled closed-profile manifest, renderer-free request
+authority, bounded staging, cancellation, archive checks, atomic promotion,
+verified discovery, explicit activation, and owned removal. The checked-in
+manifest is deliberately `withheld` because no final archive has been built,
+audited, or authorized for publication. It contains no archive URL, final
+digest, or byte claim, so the shipped controls cannot initiate a download or
+create optional-package staging. This is a fail-closed implementation state,
+not optional-package release evidence. A release maintainer must first produce
+the real artifact and final notices/provenance, approve immutable HTTPS
+publication, and complete the clean-host matrix before the manifest can enable
+acquisition.
+
 The current exact-host evidence remains useful capacity input: approximately
 0.52-0.54 sustained RTF, greater-than-30-second cold load, about 4.88 GiB peak
 process-tree RAM, and about 3.56 GiB dedicated VRAM. M011 must repeat the

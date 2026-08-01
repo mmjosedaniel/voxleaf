@@ -920,10 +920,11 @@ model artifact, path, or raw host identity may enter a result or fixture.
 
 ## M011 packaging and release validation
 
-M011 Milestones 1 through 3 are implemented. The dependency/audit and
-standalone Piper-core evidence below is current; installer, optional-package,
-clean-host, and publication items remain requirements rather than pass
-evidence. Its
+M011 Milestones 1 through 3 are implemented. Milestone 4 also implements the
+withheld optional-package lifecycle and its source-boundary checks. The
+dependency/audit and standalone Piper-core evidence below is current; a real
+optional archive, installer, clean-host, and publication items remain
+requirements rather than pass evidence. Its
 active
 [`ExecPlan`](../plans/active/M011-package-validate-and-release-mvp.md)
 requires a clean normal-user Windows package matrix in addition to the
@@ -953,6 +954,21 @@ prior-package preservation, fixed profile mapping, and content-free errors.
 The native verifier embeds the trusted manifest and accepts only the fixed
 install-relative `resources/tts/voxleaf-piper-core-v1` root.
 
+Milestone 4 adds the following safe source-boundary command:
+
+```powershell
+pnpm.cmd package:chatterbox-optional:check-source
+```
+
+It validates the versioned optional source manifest without fetching an archive,
+reading model bytes, creating a runtime, or enabling an end-user download.
+`test_release_chatterbox.py`, `tts_optional_chatterbox` native tests, and the
+typed Settings-client tests cover the withheld state, closed renderer request,
+native hardware recheck, traversal rejection, runtime tampering/staleness,
+and cancellation before payload promotion. A real archive is intentionally not
+created or measured until its source, build capacity, notices/provenance,
+immutable publication origin, and clean-host evaluation are authorized.
+
 The remaining release matrix must distinguish:
 
 - exact shipped Node, Rust, base Python, and core/optional-profile dependency
@@ -977,10 +993,10 @@ The remaining release matrix must distinguish:
 - Piper-core portfolio, optional-Chatterbox, and signed public-installer
   evidence as separate decisions.
 
-M011 audit and Piper-core assembly commands now exist. Optional acquisition and
-installer-lifecycle commands do not; the milestones that implement them must
-first add and document repository-owned commands. Do not describe those later
-release gates as passing.
+M011 audit, Piper-core assembly, and optional-source validation commands now
+exist. The current optional manifest is withheld, so no end-user acquisition
+command is available. Installer-lifecycle and real optional-package evidence
+remain later work; do not describe those release gates as passing.
 All final M011 commands run outside the automation sandbox under the existing
 repository testing rule.
 
