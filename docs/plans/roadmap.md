@@ -1078,18 +1078,20 @@ through newly frozen authority and regression evidence.
 
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** In progress. Milestones 1 and 2 completed on 2026-08-01. Milestone 1 froze
+**Status:** In progress. Milestones 1 through 3 completed on 2026-08-01. Milestone 1 froze
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
 accepting
 [ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
 before dependency or package results. Milestone 2 then closed a 15-entry
 private Piper core lock, a separately gated 79-package Chatterbox lock,
 repository-owned release audits, bounded dependency-update intake, and an
-exact 363-component release inventory. Milestone 3 is next. M010.2 is complete.
-The repository can build a
-release executable for validation, but installer bundling, signing,
-model/runtime distribution, Piper license fulfillment, updater policy, and
-complete-MVP validation are not implemented.
+exact 367-component release inventory. Milestone 3 implements the deterministic
+private CPython/Piper core, both frozen voices, complete notices and exact
+Piper/espeak source fulfillment, bilingual offline smoke, measurements, and
+native fixed-manifest verification. M010.2 is complete. The repository can
+build a release executable and the standalone core payload for validation, but
+installer bundling, optional Chatterbox acquisition, signing, updater policy,
+and complete-MVP validation are not implemented.
 
 ### Goal
 
@@ -1320,7 +1322,8 @@ retained under [`completed/`](completed/). ADR-0037 closes v2 with no backend;
 ADR-0039 freezes the separate boundary-deferred v3, and ADR-0040 selects
 repository WSOLA. The bounded preference runtime, reader-first Settings shell,
 and non-default boundary-deferred playback integration are implemented. The
-maintainer all-rate journey and required PR checks pass; M011 is next.
+maintainer all-rate journey and required PR checks pass; M011 Milestones 1-3
+are complete and optional Chatterbox acquisition is next.
 
 ## MVP completion boundary
 

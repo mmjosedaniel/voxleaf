@@ -18,8 +18,8 @@
     },
     {
       "path": "notices/PIPER-SOURCE-FULFILLMENT.md",
-      "sha256": "ceadbb0788b54365d406a724ad9da3783c948bf6f1149037237b4b46d1728f05",
-      "sizeBytes": 1428
+      "sha256": "e51a7d87eedb100b4186170aabd61351f16d3ad889e0f814f72b41628c6e9edc",
+      "sizeBytes": 1650
     },
     {
       "path": "notices/PIPER-VOICES-MIT.txt",
@@ -10054,7 +10054,7 @@
   ],
   "packageId": "voxleaf-piper-core-v1",
   "packageVersion": "1",
-  "payloadBytes": 280810040,
+  "payloadBytes": 280810262,
   "platform": "windows-x86_64",
   "runtime": {
     "profiles": [

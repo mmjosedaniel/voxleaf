@@ -1,10 +1,13 @@
 # Piper corresponding-source fulfillment
 
-The `voxleaf-piper-core-v1` binary payload distributes the unmodified
-`piper-tts` 1.4.2 Windows wheel identified by SHA-256
+The `voxleaf-piper-core-v1` binary payload derives its executable Piper runtime
+from the `piper-tts` 1.4.2 Windows wheel identified by SHA-256
 `9c4a3a11f5889ea9d0df4414dce2bd9bee5ce7d9cf604c8fd5e307441d4c031f`.
 PyPI's provenance record binds that release to upstream commit
 `d6975e21a440c0d8b6e5fb7c41027409af13d44d` and tag `v1.4.2`.
+VoxLeaf omits dormant server, download, training, command-line, and Chinese-
+phonemization helpers that its local adapter cannot reach. It does not modify
+the retained upstream files.
 
 Rather than relying on a later written offer, the same payload includes:
 
@@ -22,5 +25,6 @@ such as CMake, a Windows C/C++ toolchain, Python development headers, and the
 locked ONNX Runtime dependency are not installed by VoxLeaf; they are ordinary
 tools used to rebuild the upstream wheel from these sources.
 
-VoxLeaf does not modify Piper or espeak-ng in this payload. The repository's
-own service and adapter source remains available under the VoxLeaf MIT licence.
+VoxLeaf does not modify espeak-ng or the retained Piper files in this payload.
+The repository's own service and adapter source remains available under the
+VoxLeaf MIT licence.

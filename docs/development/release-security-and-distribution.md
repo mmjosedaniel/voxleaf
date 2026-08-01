@@ -7,15 +7,17 @@ Milestone 11 must close. It is deliberately proportional to VoxLeaf's first
 MVP and portfolio goal. It is not a security certification and does not claim
 that an end-user installer already exists.
 
-M011 Milestones 1 and 2 are complete. The result-blind
+M011 Milestones 1 through 3 are complete. The result-blind
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
 [ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
 now govern the package topology, optional-profile lifecycle, threat model,
 dependency/licence/integrity policy, cleanup ownership, and release claims
 before implementation or package measurements. Milestone 2 closes the exact
 dependency graphs, repeatable advisory checks, bounded update intake, and
-content-safe component inventory without claiming that an installer or
-download lifecycle already exists.
+content-safe component inventory. Milestone 3 adds the deterministic bilingual
+Piper core, full notices/corresponding-source fulfillment, exact payload
+measurements, offline process-level smoke, and native fixed-manifest verifier
+without claiming that an installer or optional download lifecycle exists.
 
 ## Current assessment
 
@@ -167,20 +169,23 @@ The following work is required before the corresponding release claim:
    [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md)
    records the exact application, service, runtime, voice, model, acquisition,
    network, persistence, cleanup, and privilege boundaries before packaging.
-2. **Shipped dependency closure.** Audit the locked Node, Rust, base Python,
+2. **Shipped dependency closure — complete for the core; optional package
+   remains separately gated.** Audit the locked Node, Rust, base Python,
    and every included or downloadable profile graph; remove unused runtime/web
    packages;
    enable automated dependency-update intake; and produce a content-safe
    shipped-component and licence inventory. A formal enterprise-grade SBOM is
    desirable but is not a blocker if the versioned inventory contains the
    same release-relevant identity, version, source, licence, and hash data.
-3. **Licence and provenance fulfillment.** Preserve the repository MIT notice
+3. **Licence and provenance fulfillment — complete for Piper core; optional
+   package remains separately gated.** Preserve the repository MIT notice
    and satisfy Piper GPL-3.0-or-later and bundled phonemizer obligations,
    corresponding-source or other applicable GPL mechanics, voice model-card
    and CC0 provenance, and every runtime notice. The root MIT licence does not
    replace third-party terms. Profiles excluded from the payload must not be
    represented as redistributed.
-4. **Integrity and offline behavior.** Pin every shipped or deliberately
+4. **Integrity and offline behavior — core payload mechanics complete;
+   OS-level release observation remains open.** Pin every shipped or deliberately
    acquired artifact, verify its digest before use, prevent path substitution,
    retain zero silent runtime download, and prove normal reading/narration with
    external connectivity unavailable.
@@ -248,13 +253,13 @@ Authoritative licence inputs for the current baseline include the exact
 the
 [`OHF-Voice/piper1-gpl` source repository](https://github.com/OHF-Voice/piper1-gpl),
 and the exact
-[`davefx`](https://huggingface.co/rhasspy/piper-voices/blob/main/es/es_ES/davefx/medium/MODEL_CARD)
+[`davefx`](https://huggingface.co/rhasspy/piper-voices/blob/0d907f158acc877ddeebcbf827659ee13bea8bcd/es/es_ES/davefx/medium/MODEL_CARD)
 and
-[`joe`](https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/joe/medium/MODEL_CARD)
-voice model cards. M011 must pin/archive the exact release and card revisions
-used by VoxLeaf rather than relying on a mutable `main` page. This planning
-record is not legal advice; ambiguous redistribution terms require maintainer
-or qualified legal review before publication.
+[`joe`](https://huggingface.co/rhasspy/piper-voices/blob/0d907f158acc877ddeebcbf827659ee13bea8bcd/en/en_US/joe/medium/MODEL_CARD)
+voice model cards. Milestone 3 pins and bundles these exact revisions plus the
+repository licence declaration. This record is not legal advice; newly
+ambiguous redistribution terms require maintainer or qualified legal review
+before publication.
 
 ## Portfolio and public-distribution gates
 
