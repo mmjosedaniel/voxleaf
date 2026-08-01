@@ -439,9 +439,11 @@ narration claim.
 
 ### Milestone 4B: Freeze and implement verified official Chatterbox acquisition
 
-**Status:** Not started. This milestone must begin from a dedicated branch after
-Milestone 4A is merged. It changes distribution authority, not the evaluated
-Chatterbox profile or its bilingual narration behavior.
+**Status:** In progress since 2026-08-01 on the dedicated post-4A branch. The
+result-blind authority checkpoint is accepted; implementation, artifact
+publication, exact-host evidence, and the final optional-profile decision remain.
+This milestone changes distribution authority, not the evaluated Chatterbox
+profile or its bilingual narration behavior.
 
 1. Before changing acquisition code or producing results, accept an additive
    ADR and immutable authority that supersede only the single-archive portion
@@ -829,6 +831,17 @@ and never edit prior benchmark authority to make a release pass.
   resolution for all eight changed documents, and pending-diff private-pattern
   scanning passed. No code, manifest, dependency, runtime, download, model, GPU,
   installer, or clean-host test is applicable to this planning-only change.
+- **2026-08-01:** Began Milestone 4B from merged Milestone 4A and accepted
+  [ADR-0043](../../architecture/decisions/ADR-0043-freeze-verified-official-chatterbox-acquisition.md)
+  plus immutable
+  [Chatterbox acquisition authority v2](../../architecture/chatterbox-official-acquisition-authority-v2.md)
+  before code or results. The authority selects a runtime-only deterministic
+  archive split into sub-2-GiB assets under versioned VoxLeaf GitHub Release
+  `chatterbox-runtime-v2`, plus the exact six files from the frozen official
+  Hugging Face commit. It fixes sequential transfer, redirect, hash/size,
+  staging, cancellation, safe-loading, atomicity, cleanup, lineage, and
+  fail-closed publication gates. The checked-in product remains withheld until
+  implementation and real release evidence pass.
 
 ## Discoveries and decisions
 
