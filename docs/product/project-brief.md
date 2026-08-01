@@ -91,12 +91,12 @@ consent, bounded acquisition, verification, installation, activation, and
 removal for Chatterbox; and defers enterprise sandboxing, automatic updates,
 external certification, cross-platform packages, and bundling every engine.
 Milestone 4A implements that lifecycle in a deliberately withheld state.
-Planned Milestone 4B acquires only six allowlisted model-data files from the
+Milestone 4B now implements acquisition of only six allowlisted model-data files from the
 official `ResembleAI/chatterbox` Hugging Face repository at one full frozen
 revision, verifies each size and SHA-256, and executes no model-repository code.
-The reviewed Chatterbox runtime remains a distinct release input and must gain
-its own immutable verified delivery origin before optional installation is
-enabled.
+The reviewed Chatterbox runtime remains a distinct release input with a
+reproducible three-part identity. Those parts must be externally published and
+pass clean-host validation before optional installation is enabled.
 Piper-core readiness, Chatterbox-package readiness, and signed public
 publication are separate decisions.
 The rest of this brief describes the intended complete product unless it
@@ -104,7 +104,7 @@ explicitly identifies implemented behavior.
 
 ## Summary
 
-VoxLeaf is a privacy-first desktop EPUB reader being built to turn book text into natural-sounding speech entirely on the user's computer. A reader can open a supported local EPUB, navigate its chapters, read its formatted semantic content, and restore a saved logical passage. On exact configured hosts, the user can start bounded quick or prepared local narration through supported Piper or Chatterbox profiles, while Qwen remains an explicitly gated development-only constrained-buffer option. M011 now owns the approved Windows/Piper core plus optional-download Chatterbox distribution plan. Its native acquisition lifecycle exists only in a fail-closed withheld state; no end-user installer or network-backed acquisition is enabled yet.
+VoxLeaf is a privacy-first desktop EPUB reader being built to turn book text into natural-sounding speech entirely on the user's computer. A reader can open a supported local EPUB, navigate its chapters, read its formatted semantic content, and restore a saved logical passage. On exact configured hosts, the user can start bounded quick or prepared local narration through supported Piper or Chatterbox profiles, while Qwen remains an explicitly gated development-only constrained-buffer option. M011 now owns the approved Windows/Piper core plus optional-download Chatterbox distribution plan. Its exact multi-artifact native acquisition controller is implemented but remains fail-closed and withheld; no end-user installer or network-backed acquisition is enabled yet.
 
 The intended narration pipeline will generate progressively instead of converting a complete book or chapter into an audiobook. It will retain only a bounded amount of audio in memory, play it while preparing later segments, and discard it after playback.
 

@@ -920,11 +920,11 @@ model artifact, path, or raw host identity may enter a result or fixture.
 
 ## M011 packaging and release validation
 
-M011 Milestones 1 through 3 are implemented. Milestone 4 also implements the
-withheld optional-package lifecycle and its source-boundary checks. The
-dependency/audit and standalone Piper-core evidence below is current; a real
-optional archive, installer, clean-host, and publication items remain
-requirements rather than pass evidence. Its
+M011 Milestones 1 through 3 and the deterministic Milestones 4A-4B boundary are
+implemented. The dependency/audit, standalone Piper-core, optional runtime-
+package, and acquisition-controller evidence below is current; external
+runtime publication, clean-host optional installation, installer, and signing
+remain requirements rather than pass evidence. Its
 active
 [`ExecPlan`](../plans/active/M011-package-validate-and-release-mvp.md)
 requires a clean normal-user Windows package matrix in addition to the
@@ -954,20 +954,26 @@ prior-package preservation, fixed profile mapping, and content-free errors.
 The native verifier embeds the trusted manifest and accepts only the fixed
 install-relative `resources/tts/voxleaf-piper-core-v1` root.
 
-Milestone 4 adds the following safe source-boundary command:
+Milestones 4A-4B add these safe authority/build commands:
 
 ```powershell
 pnpm.cmd package:chatterbox-optional:check-source
+pnpm.cmd package:chatterbox-optional:check-acquisition
+pnpm.cmd package:chatterbox-optional
 ```
 
-It validates the versioned optional source manifest without fetching an archive,
-reading model bytes, creating a runtime, or enabling an end-user download.
-`test_release_chatterbox.py`, `tts_optional_chatterbox` native tests, and the
-typed Settings-client tests cover the withheld state, closed renderer request,
-native hardware recheck, traversal rejection, runtime tampering/staleness,
-and cancellation before payload promotion. A real archive is intentionally not
-created or measured until its source, build capacity, notices/provenance,
-immutable publication origin, and clean-host evaluation are authorized.
+The two checks validate the versioned source and v2 acquisition manifests
+without networking, reading model bytes, creating a runtime, or enabling an
+end-user download. The build command is maintainer-only and writes ignored
+runtime/ZIP/part outputs; `--no-sync` is used only after the exact environment
+has already been synchronized. `test_release_chatterbox.py` and
+`tts_optional_chatterbox` native tests cover withheld authority, mutable source
+rejection, safe model-load sites, deterministic splitting, closed redirects,
+wrong/truncated/oversized artifacts, cancellation, bounded reassembly/
+extraction, staging cleanup, runtime tampering/staleness, atomic promotion, and
+absence of profile mutation before explicit activation. Two outside-sandbox
+builds produced identical v2 hashes/sizes. The resulting parts are not release
+assets until an authorized maintainer publishes them and clean-host gates pass.
 
 The remaining release matrix must distinguish:
 
@@ -993,10 +999,11 @@ The remaining release matrix must distinguish:
 - Piper-core portfolio, optional-Chatterbox, and signed public-installer
   evidence as separate decisions.
 
-M011 audit, Piper-core assembly, and optional-source validation commands now
-exist. The current optional manifest is withheld, so no end-user acquisition
-command is available. Installer-lifecycle and real optional-package evidence
-remain later work; do not describe those release gates as passing.
+M011 audit, Piper-core assembly, optional runtime assembly, and v2 acquisition-
+authority validation commands now exist. The current optional manifest is
+withheld, so no end-user acquisition is reachable. Publication, clean-host
+installation/offline use, and installer-lifecycle evidence remain later work;
+do not describe those release gates as passing.
 All final M011 commands run outside the automation sandbox under the existing
 repository testing rule.
 

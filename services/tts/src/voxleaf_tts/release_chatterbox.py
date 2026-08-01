@@ -137,6 +137,13 @@ def _sha256(value: object, code: str) -> str:
     return text
 
 
+def _commit_sha(value: object, code: str) -> str:
+    text = _text(value, code)
+    if len(text) != 40 or any(character not in "0123456789abcdef" for character in text):
+        raise ReleaseChatterboxError(code)
+    return text
+
+
 def _load_json(path: Path, code: str) -> dict[str, object]:
     try:
         return _object(json.loads(path.read_text(encoding="utf-8")), code)
@@ -290,6 +297,127 @@ def load_acquisition_manifest(root: Path | None = None) -> dict[str, object]:
     ):
         raise ReleaseChatterboxError("chatterbox-acquisition-manifest-invalid")
     return manifest
+
+
+def load_runtime_evidence(root: Path | None = None) -> dict[str, object]:
+    """Validate content-safe v2 runtime measurements and internal arithmetic."""
+
+    base = root or repository_root()
+    source = load_source_manifest(base)
+    acquisition = load_acquisition_manifest(base)
+    evidence = _load_json(
+        base / "services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json",
+        "chatterbox-runtime-evidence-invalid",
+    )
+    if (
+        set(evidence)
+        != {
+            "authority",
+            "distribution",
+            "measurements",
+            "parts",
+            "remainingGates",
+            "schemaVersion",
+        }
+        or evidence.get("schemaVersion") != 2
+    ):
+        raise ReleaseChatterboxError("chatterbox-runtime-evidence-invalid")
+    authority = _object(evidence["authority"], "chatterbox-runtime-evidence-invalid")
+    if set(authority) != {
+        "authorityCommitSha",
+        "implementationCommitSha",
+        "modelRevision",
+        "runtimeBuildCommitSha",
+    }:
+        raise ReleaseChatterboxError("chatterbox-runtime-evidence-invalid")
+    commits = tuple(
+        _commit_sha(authority[name], "chatterbox-runtime-evidence-invalid")
+        for name in ("authorityCommitSha", "implementationCommitSha", "runtimeBuildCommitSha")
+    )
+    if (
+        len(set(commits)) != 3
+        or authority["modelRevision"] != "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18"
+    ):
+        raise ReleaseChatterboxError("chatterbox-runtime-evidence-invalid")
+    distribution = _object(evidence["distribution"], "chatterbox-runtime-evidence-invalid")
+    if distribution != {
+        "availability": acquisition["availability"],
+        "modelRepositoryCodeExecuted": False,
+        "modelSource": "official-revision-pinned-hugging-face",
+        "published": False,
+        "runtimeReleaseTag": "chatterbox-runtime-v2",
+        "withholdingReason": acquisition["withholdingReason"],
+    }:
+        raise ReleaseChatterboxError("chatterbox-runtime-evidence-invalid")
+    parts = _array(evidence["parts"], "chatterbox-runtime-evidence-invalid")
+    if not 1 <= len(parts) <= 4:
+        raise ReleaseChatterboxError("chatterbox-runtime-evidence-invalid")
+    runtime_archive_bytes = 0
+    for index, value in enumerate(parts, start=1):
+        part = _object(value, "chatterbox-runtime-evidence-invalid")
+        if set(part) != {"filename", "sha256", "sizeBytes"} or part["filename"] != (
+            f"voxleaf-chatterbox-runtime-v2.zip.part-{index:03}"
+        ):
+            raise ReleaseChatterboxError("chatterbox-runtime-evidence-invalid")
+        _sha256(part["sha256"], "chatterbox-runtime-evidence-invalid")
+        runtime_archive_bytes += _positive(part["sizeBytes"], "chatterbox-runtime-evidence-invalid")
+    measurements = _object(evidence["measurements"], "chatterbox-runtime-evidence-invalid")
+    expected_keys = {
+        "archiveSha256",
+        "fileCount",
+        "modelDownloadBytes",
+        "peakStagingBytes",
+        "reproducibleBuildCount",
+        "runtimeArchiveBytes",
+        "runtimeInstalledBytes",
+        "runtimeManifestSha256",
+        "totalDownloadBytes",
+        "totalInstalledBytes",
+    }
+    model_bytes = sum(
+        _positive(
+            _object(value, "chatterbox-runtime-evidence-invalid")["sizeBytes"],
+            "chatterbox-runtime-evidence-invalid",
+        )
+        for value in _array(source["modelFiles"], "chatterbox-runtime-evidence-invalid")
+    )
+    runtime_installed_bytes = _positive(
+        measurements.get("runtimeInstalledBytes"), "chatterbox-runtime-evidence-invalid"
+    )
+    total_download_bytes = _positive(
+        measurements.get("totalDownloadBytes"), "chatterbox-runtime-evidence-invalid"
+    )
+    total_installed_bytes = _positive(
+        measurements.get("totalInstalledBytes"), "chatterbox-runtime-evidence-invalid"
+    )
+    peak_staging_bytes = _positive(
+        measurements.get("peakStagingBytes"), "chatterbox-runtime-evidence-invalid"
+    )
+    file_count = _positive(measurements.get("fileCount"), "chatterbox-runtime-evidence-invalid")
+    reproducible_build_count = _positive(
+        measurements.get("reproducibleBuildCount"), "chatterbox-runtime-evidence-invalid"
+    )
+    _sha256(measurements.get("archiveSha256"), "chatterbox-runtime-evidence-invalid")
+    _sha256(measurements.get("runtimeManifestSha256"), "chatterbox-runtime-evidence-invalid")
+    if (
+        set(measurements) != expected_keys
+        or measurements["modelDownloadBytes"] != model_bytes
+        or measurements["runtimeArchiveBytes"] != runtime_archive_bytes
+        or total_download_bytes != runtime_archive_bytes + model_bytes
+        or total_installed_bytes != runtime_installed_bytes + model_bytes
+        or peak_staging_bytes != total_download_bytes + runtime_archive_bytes
+        or runtime_installed_bytes > 5_500_000_000
+        or file_count <= 0
+        or reproducible_build_count < 2
+        or total_download_bytes > 9_000_000_000
+        or total_installed_bytes > 9_000_000_000
+        or peak_staging_bytes > 15_000_000_000
+    ):
+        raise ReleaseChatterboxError("chatterbox-runtime-evidence-invalid")
+    gates = _array(evidence["remainingGates"], "chatterbox-runtime-evidence-invalid")
+    if len(gates) != 3 or any(not isinstance(gate, str) or not gate for gate in gates):
+        raise ReleaseChatterboxError("chatterbox-runtime-evidence-invalid")
+    return evidence
 
 
 def _artifact(value: object) -> dict[str, object]:
@@ -737,6 +865,7 @@ def main(arguments: list[str] | None = None) -> int:
         return 0
     if args.command == "check-acquisition":
         load_acquisition_manifest()
+        load_runtime_evidence()
         print("chatterbox-official-acquisition:current")
         return 0
     print(measurement_json(build_package(synchronise=not args.no_sync)))

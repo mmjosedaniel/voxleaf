@@ -1,0 +1,51 @@
+{
+  "authority": {
+    "authorityCommitSha": "f286b71f41fbcf0917862f5b0a72cdb3975342fb",
+    "implementationCommitSha": "a518a70fb28e28be21e8d52abfd1faa2f6f6466e",
+    "modelRevision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+    "runtimeBuildCommitSha": "814fd2f70bd3588d31022207eb976c0ff93712a3"
+  },
+  "distribution": {
+    "availability": "withheld",
+    "modelRepositoryCodeExecuted": false,
+    "modelSource": "official-revision-pinned-hugging-face",
+    "published": false,
+    "runtimeReleaseTag": "chatterbox-runtime-v2",
+    "withholdingReason": "runtime-artifacts-not-published"
+  },
+  "measurements": {
+    "archiveSha256": "af6b4f46f6b21df02d30cdfe992f77f9bda68111edd9042cd32a619c6376aee6",
+    "fileCount": 12669,
+    "modelDownloadBytes": 3208951924,
+    "peakStagingBytes": 13254834850,
+    "reproducibleBuildCount": 2,
+    "runtimeArchiveBytes": 5022941463,
+    "runtimeInstalledBytes": 5019513881,
+    "runtimeManifestSha256": "cb5055580a28a0c97e50535a8317ea506081230b70e0099d8fe0194591e1c635",
+    "totalDownloadBytes": 8231893387,
+    "totalInstalledBytes": 8228465805
+  },
+  "parts": [
+    {
+      "filename": "voxleaf-chatterbox-runtime-v2.zip.part-001",
+      "sha256": "168f46ae0d11c132ef414732064e81337390be9f578a8f14346b2bdab7bd386b",
+      "sizeBytes": 1900000000
+    },
+    {
+      "filename": "voxleaf-chatterbox-runtime-v2.zip.part-002",
+      "sha256": "35a23ce31119f1ccd386b7b9a2e3dca48b6b2d8d66d83cf0c4d649a085967bee",
+      "sizeBytes": 1900000000
+    },
+    {
+      "filename": "voxleaf-chatterbox-runtime-v2.zip.part-003",
+      "sha256": "9959167239073cd14f84388e5965576b4caa6c2e28e02927aa4efd71c8e14101",
+      "sizeBytes": 1222941463
+    }
+  ],
+  "remainingGates": [
+    "Publish the three exact runtime parts under the frozen GitHub Release tag.",
+    "Replace the withheld manifest with the published URLs and measured identities in a later commit.",
+    "Pass clean-user online acquisition, offline bilingual narration, removal, audit, and licence gates."
+  ],
+  "schemaVersion": 2
+}

@@ -12,6 +12,7 @@ from voxleaf_tts.release_chatterbox import (
     _configure_embedded_python,
     build_runtime_manifest,
     load_acquisition_manifest,
+    load_runtime_evidence,
     load_source_manifest,
     render_manifest,
     safe_relative_path,
@@ -66,6 +67,44 @@ def test_acquisition_manifest_matches_the_runtime_and_official_model_authority()
     assert manifest["availability"] == "withheld"
     assert manifest["runtimeArtifact"] is None
     assert manifest["withholdingReason"] == "runtime-artifacts-not-published"
+
+
+def test_v2_runtime_evidence_is_content_safe_and_arithmetically_closed() -> None:
+    evidence = load_runtime_evidence()
+    distribution = evidence["distribution"]
+    measurements = evidence["measurements"]
+    assert isinstance(distribution, dict)
+    assert isinstance(measurements, dict)
+
+    assert distribution["availability"] == "withheld"
+    assert distribution["published"] is False
+    assert measurements["reproducibleBuildCount"] == 2
+
+
+def test_v2_runtime_evidence_rejects_measurement_drift(tmp_path: Path) -> None:
+    root = Path(__file__).resolve().parents[3]
+    relative_files = (
+        "services/tts/release/optional/chatterbox/source-manifest-v2.json",
+        "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+        "services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json",
+        "services/tts/release/profiles/chatterbox/requirements.lock",
+    )
+    for relative in relative_files:
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((root / relative).read_bytes())
+    evidence_path = (
+        tmp_path / "services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json"
+    )
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+    evidence["measurements"]["peakStagingBytes"] += 1
+    evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+
+    with pytest.raises(
+        ReleaseChatterboxError,
+        match="^chatterbox-runtime-evidence-invalid$",
+    ):
+        load_runtime_evidence(tmp_path)
 
 
 @pytest.mark.parametrize(

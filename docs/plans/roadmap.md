@@ -87,12 +87,14 @@ as a separately gated optional GPU quality download rather than embedding its
 approximately 8.02-GiB developer footprint in the core installer. The plan
 separates Piper-core readiness, optional-Chatterbox readiness, and signed
 public publication so one failed or externally blocked gate cannot create a
-false claim for another. M011 Milestone 4A now preserves a fail-closed native
-optional lifecycle with acquisition withheld. Planned Milestone 4B replaces the
-single republished-model archive with six exact model-data files downloaded
-from the official revision-pinned `ResembleAI/chatterbox` Hugging Face
-repository. The reviewed Chatterbox runtime remains a separate release input;
-its immutable origin must be frozen before acquisition is enabled.
+false claim for another. M011 Milestone 4A preserves a fail-closed native
+optional lifecycle with acquisition withheld. Milestone 4B now freezes and
+implements the split acquisition: six exact model-data files come from the
+official revision-pinned `ResembleAI/chatterbox` Hugging Face repository, while
+a reproducible reviewed runtime is divided into three bounded GitHub Release
+assets. The deterministic controller, measurements, and hostile-input tests
+pass; availability remains withheld until an authorized maintainer publishes
+those assets and the clean-user online/offline GPU matrix passes.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -1084,7 +1086,9 @@ through newly frozen authority and regression evidence.
 ## Milestone 11: Package, validate, and release the MVP
 
 **Status:** In progress. Milestones 1 through 3 and the fail-closed Milestone 4A
-foundation completed on 2026-08-01. Milestone 4B is not started. Milestone 1 froze
+foundation completed on 2026-08-01. Milestone 4B's deterministic authority and
+implementation are complete, but its external publication and clean-host gates
+remain blocked. Milestone 1 froze
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
 accepted
 [ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
@@ -1098,12 +1102,13 @@ native fixed-manifest verification. M010.2 is complete. The repository can
 build a release executable and the standalone core payload for validation.
 Milestone 4A also implements native-owned withheld/download/install/remove
 controls and deterministic source/archive checks for optional Chatterbox, but
-end-user acquisition remains disabled. Milestone 4B will freeze and implement
+end-user acquisition remains disabled. Milestone 4B freezes and implements
 official-source acquisition for exactly six model-data files from full
 Hugging Face revision `5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18`, with
 per-file size/SHA-256 verification and no model-repository code execution. It
-must separately freeze delivery of the exact reviewed runtime; Hugging Face
-weights alone are not a complete installation. Installer bundling, enabled
+also reproducibly builds and splits the exact reviewed runtime. The three
+runtime parts still require authorized publication and clean-host validation;
+Hugging Face weights alone are not a complete installation. Installer bundling, enabled
 optional acquisition, signing, updater policy, and complete-MVP validation are
 not implemented.
 
@@ -1111,7 +1116,7 @@ The remaining M011 execution order is explicit:
 
 ```text
 completed 1 -> completed 2 -> completed 3 -> completed 4A
-    -> 4B official-source Chatterbox acquisition
+    -> 4B deterministic implementation complete; publication/clean host blocked
     -> 5 Windows package/signing path
     -> 6 clean-host matrix
     -> 7 release decision and closeout
@@ -1185,8 +1190,8 @@ and the proportional security boundary is
 The frozen result-blind package, threat, optional-profile, cleanup, licence,
 integrity, and claim authority is
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md).
-Milestone 4B must accept an additive authority and ADR that supersede only its
-single-archive acquisition shape before implementation or results.
+Milestone 4B accepted additive authority and ADR-0043 before implementation;
+they supersede only the historical single-archive acquisition shape.
 
 ### Major risks and unknowns
 
@@ -1196,14 +1201,16 @@ single-archive acquisition shape before implementation or results.
 - Candidate environments currently contain known advisories and packages not
   used by their exact adapters. Copying a benchmark environment into a release
   would enlarge both vulnerability and licence surface.
-- The current Chatterbox development state uses approximately 5.03 GiB for its
-  environment and 2.99 GiB for model artifacts. The final optional package
-  needs a minimal lock plus measured download, installed, staging, and free-
-  space disclosure; those development sizes are not release claims.
+- The deterministic Chatterbox v2 result measures 5,022,941,463 runtime-
+  download bytes, 5,019,513,881 runtime-installed bytes, 3,208,951,924 model-
+  download bytes, and a calculated 13,254,834,850-byte staging peak. These are
+  local reproducible-package facts, not clean-host acquisition or release-
+  availability proof.
 - Direct official Hugging Face acquisition removes the need for VoxLeaf to
-  republish model weights, but it does not distribute the approximately
-  4.83-GiB measured minimal runtime graph. Milestone 4B must freeze an immutable,
-  verified runtime origin or retain Chatterbox as withheld.
+  republish model weights. The reviewed runtime now has an immutable measured
+  three-part identity, but an authorized maintainer must publish those exact
+  parts before clean-host acquisition can run; until then Chatterbox stays
+  withheld.
 - Hugging Face transport may use redirects, cache metadata, and content-addressed
   storage. The implementation must constrain that external interaction while
   treating full revision, filename, size, and repository SHA-256 as authority;
@@ -1362,10 +1369,10 @@ ADR-0039 freezes the separate boundary-deferred v3, and ADR-0040 selects
 repository WSOLA. The bounded preference runtime, reader-first Settings shell,
 and non-default boundary-deferred playback integration are implemented. The
 maintainer all-rate journey and required PR checks pass; M011 Milestones 1-3
-and the fail-closed Milestone 4A foundation are complete. Milestone 4B is
-planned to freeze and implement official revision-pinned Hugging Face model
-data plus separately verified runtime delivery before optional clean-host
-evidence.
+and the fail-closed Milestones 4A-4B deterministic foundation are complete.
+Milestone 4B freezes and implements official revision-pinned Hugging Face model
+data plus separately verified split-runtime delivery, but external publication
+and optional clean-host evidence remain blocked.
 
 ## MVP completion boundary
 

@@ -7,8 +7,8 @@ Milestone 11 must close. It is deliberately proportional to VoxLeaf's first
 MVP and portfolio goal. It is not a security certification and does not claim
 that an end-user installer already exists.
 
-M011 Milestones 1 through 3 and the fail-closed Milestone 4A foundation are
-complete. The result-blind
+M011 Milestones 1 through 3 and the fail-closed Milestones 4A-4B deterministic
+foundation are complete. The result-blind
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
 [ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
 now govern the package topology, optional-profile lifecycle, threat model,
@@ -19,8 +19,9 @@ content-safe component inventory. Milestone 3 adds the deterministic bilingual
 Piper core, full notices/corresponding-source fulfillment, exact payload
 measurements, offline process-level smoke, and native fixed-manifest verifier.
 Milestone 4A adds the optional lifecycle and UI in a deliberately withheld
-state; Milestone 4B must accept additive official-source authority and pass real
-acquisition evidence before any Download action is enabled.
+state. Milestone 4B accepts additive official-source authority and implements
+the closed controller; external publication and clean-host acquisition evidence
+must still pass before any Download action is enabled.
 
 ## Current assessment
 
@@ -265,20 +266,25 @@ Before the application may offer **Download and enable Chatterbox**, M011 must:
    without deleting the desktop application, preferences, reading progress, or
    user EPUBs.
 
-**Current M011 Milestone 4A status:** the repository implements the native-owned
-state machine, a compiled closed-profile manifest, renderer-free request
-authority, bounded staging, cancellation, archive checks, atomic promotion,
-verified discovery, explicit activation, and owned removal. The checked-in
-manifest is deliberately `withheld` because no final multi-artifact acquisition
-has been frozen, audited, or authorized. It contains no downloadable URL,
-digest, or byte claim, so the shipped controls cannot initiate a download or
-create optional-profile staging. This is a fail-closed implementation state,
-not optional-package release evidence. Planned Milestone 4B replaces the model
-portion of that archive with the exact official Hugging Face file set above,
-while retaining the hostile-archive work as regression evidence for any
-remaining runtime archive. It must first freeze the runtime origin, final
-multi-artifact manifest, transport/cache policy, notices/provenance, and
-clean-host matrix before the manifest can enable acquisition.
+**Current M011 Milestone 4B status:** the repository implements the native-owned
+state machine and v2 closed multi-artifact controller. It fixes the exact six
+official model URLs at one full revision, separately identifies three bounded
+runtime parts, closes redirect hosts/counts, streams exact size/SHA-256
+verification, cancels and cleans partial state, safely reassembles/extracts,
+verifies approved model-load sites and the complete installed tree, and promotes
+only a complete versioned profile. It never executes model-repository code or
+accepts renderer-supplied network/path authority.
+
+The deterministic runtime-only builder produces the same 5,022,941,463-byte
+archive and three part hashes across two builds. Aggregate download is
+8,231,893,387 bytes; aggregate installation is 8,228,465,805 bytes; calculated
+peak staging is 13,254,834,850 bytes after verified parts are discarded before
+extraction. These are local package facts, not end-user availability evidence.
+The checked-in v2 manifest remains `withheld` because the three runtime parts
+have not been published and clean-user online acquisition, offline bilingual
+narration, removal, licence/audit, and resource gates have not run. This is a
+fail-closed external-publication blocker for optional Chatterbox, not a failure
+of the Piper core or an authorization to claim Download works.
 
 Hugging Face documents full-commit downloads, per-file downloads, filtered
 snapshots, and application-selected cache/local directories. VoxLeaf uses the

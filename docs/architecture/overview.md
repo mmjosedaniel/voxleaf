@@ -149,10 +149,10 @@ intake, and a deterministic 400-component inventory. Milestone 3 packages the
 core as a deterministic private CPython/Piper runtime with both voices,
 complete notices, and exact corresponding-source archives. Native discovery
 accepts only the fixed install-relative root after exact manifest/file/hash
-verification. Milestone 4A now implements the native-owned optional-profile
-lifecycle and its source-package checker, but its compiled manifest is
-deliberately withheld. Planned Milestone 4B replaces the single republished
-model/archive assumption with exact multi-artifact acquisition. The core
+verification. Milestone 4A implements the native-owned optional-profile
+lifecycle and its source-package checker. Milestone 4B now implements exact
+multi-artifact acquisition, while its compiled v2 manifest remains deliberately
+withheld. The core
 topology is deliberately smaller than
 the implemented development matrix: Windows x64 plus Piper davefx/Spanish and
 Piper joe/English in one private embedded Python/Piper runtime. Supported
@@ -166,17 +166,20 @@ with the explicit 79-package runtime lock and proves the adapter offline in a
 installed package measurement. M011 has fulfilled the Piper/phonemizer/voice
 payload obligations. The optional source manifest already freezes the intended
 Chatterbox runtime/model identity and per-model-file sizes and SHA-256 values.
-Milestone 4B will acquire those six model-data files only from full revision
+Milestone 4B acquires those six model-data files only from full revision
 `5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18` of the official
 `ResembleAI/chatterbox` Hugging Face repository. It may not resolve mutable
 revisions, download arbitrary repository contents, execute Hub code, or rely on
 Hub scanning instead of local verification. The 79-package reviewed runtime is
-a separate release input and still needs a frozen immutable delivery origin.
-Final notices, transport/cache policy, installed/staging sizes, and clean-host
-evidence remain open. The implemented native lifecycle uses explicit consent,
-bounded application-owned staging, per-artifact digest verification, atomic
-versioned installation, separate activation, offline use, and application-owned
-removal only after that new authority and manifest are approved.
+a separate deterministic 5,022,941,463-byte archive split into three bounded
+assets with reproducible SHA-256 evidence. Together with the model files, the
+implementation measures 8,231,893,387 download bytes, 8,228,465,805 installed
+bytes, and a 13,254,834,850-byte peak staging calculation. Native acquisition
+uses explicit consent, sequential application-owned transfers, closed
+redirects, per-artifact digest verification, safe extraction/loading, atomic
+versioned installation, separate activation, offline use, and application-
+owned removal. External runtime-asset publication and clean-host online/offline
+evidence remain open, so Download is not yet enabled.
 Piper-core portfolio readiness, optional-
 Chatterbox readiness, and signed public publication are separate decisions;
 signing is an external authorization for the last only. Automatic updates,
@@ -301,9 +304,8 @@ Desktop application
 |-- Reader-first Settings and six boundary-deferred playback rates
 |   [M010.2 complete; repository WSOLA, English fallback, packaged validation]
 |-- Windows x64 MVP core plus optional quality package
-|   [M011 M1-M3 + M4A; verified bilingual Piper payload and withheld
-|    optional lifecycle implemented; M4B official model/runtime acquisition
-|    and installer planned]
+|   [M011 M1-M4B; verified bilingual Piper payload plus withheld exact
+|    model/split-runtime acquisition implemented; publication and installer planned]
 `-- Explicit bilingual narration and exact language/profile selection
     [M010.1 Milestones 2-6; Piper ES/EN and Chatterbox supported,
      Qwen Serena/Aiden development-only]

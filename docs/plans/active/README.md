@@ -23,7 +23,10 @@ Follow `.agents/PLANS.md` and update the progress log while working.
   download with explicit consent and verified lifecycle, exact core/optional
   dependency/licence/integrity boundaries, clean-host complete-MVP validation,
   signing path, and independent core/optional/public release decisions.
-  Implementation has not started.
+  Milestones 1-3 and 4A are complete. Milestone 4B's deterministic acquisition
+  implementation is complete but remains blocked at externally authorized
+  runtime publication and clean-host validation; later packaging/signing/
+  release milestones remain active.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through 9.

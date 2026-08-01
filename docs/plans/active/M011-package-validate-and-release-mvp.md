@@ -76,13 +76,13 @@ boundaries: a 15-entry private core lock, a separate 79-package Chatterbox
 lock, automated Node/Rust/Python release audits, bounded dependency-update
 intake, a deterministic 400-component inventory, and a verified bilingual
 Piper payload with its runtime, notices, model cards, and exact GPL source.
-Milestone 4A now adds the native-owned optional-package lifecycle and its
-withheld manifest/source-build boundary. Milestone 4B is planned to replace the
-single republished model/archive assumption with a split, verified acquisition:
+Milestone 4A adds the native-owned optional-package lifecycle and its withheld
+manifest/source-build boundary. Milestone 4B now replaces the single
+republished model/archive assumption with a split, verified acquisition:
 six exact model-data files come from the official revision-pinned Hugging Face
-repository, while the reviewed runtime remains independently locked and
-verified. Installer integration, enabled optional acquisition, signing, and
-clean-host release evidence remain future work.
+repository, while the reviewed runtime is independently locked, reproducibly
+split, and verified. External publication, clean-host evidence, installer
+integration, enabled optional acquisition, and signing remain future work.
 
 The current TTS runtimes are ignored developer assets selected through
 environment variables. Development firewall rules target exact candidate
@@ -257,8 +257,8 @@ That document is planning input, not proof that a release gate passes.
 - Hugging Face supplies model data only. VoxLeaf does not download or execute
   Python, configuration scripts, plugins, or arbitrary repository contents
   from the model repository. The exact Chatterbox runtime remains a separate
-  reviewed graph, and Milestone 4B must freeze its delivery origin before
-  enabling acquisition.
+  reviewed graph with a frozen three-part delivery identity. Publishing and
+  clean-host validation must still pass before enabling acquisition.
 - The application never resolves `main`, a mutable tag, the latest snapshot,
   or an arbitrary repository. It requests only the full frozen commit and six
   filenames, controls any cache beneath its staging root, and verifies the
@@ -439,11 +439,13 @@ narration claim.
 
 ### Milestone 4B: Freeze and implement verified official Chatterbox acquisition
 
-**Status:** In progress since 2026-08-01 on the dedicated post-4A branch. The
-result-blind authority checkpoint is accepted; implementation, artifact
-publication, exact-host evidence, and the final optional-profile decision remain.
-This milestone changes distribution authority, not the evaluated Chatterbox
-profile or its bilingual narration behavior.
+**Status:** Deterministic authority and implementation complete on 2026-08-01;
+blocked at the external publication and clean-host gates. The product manifest
+remains truthfully `withheld`. Publishing the three measured runtime assets,
+authorizing their final URLs, and running a clean-user online/offline GPU matrix
+are required before Download may be enabled. This milestone changes
+distribution authority, not the evaluated Chatterbox profile or its bilingual
+narration behavior.
 
 1. Before changing acquisition code or producing results, accept an additive
    ADR and immutable authority that supersede only the single-archive portion
@@ -499,6 +501,28 @@ profile or its bilingual narration behavior.
    gates pass; otherwise retain the fail-closed state and truthful limitation.
    Commit authority, implementation, and final evidence at separate logical
    checkpoints.
+
+**Actual result:** Steps 1 through 7 are implemented and pass deterministic
+validation. The v2 builder creates a runtime-only Windows/Python 3.12 payload
+from the frozen 79-package graph, proves the approved safe model-load sites,
+configures the private embedded runtime, excludes development/test material,
+and reproducibly emits three parts beneath the frozen 1.9-billion-byte
+per-part ceiling. Two builds produced identical archive, manifest, part, size,
+and file-count evidence. The native controller downloads those parts and the
+six exact official model files sequentially, closes redirect hosts/counts,
+streams exact size/hash verification, reassembles and extracts with bounds,
+discards verified parts before extraction, and atomically promotes only the
+complete runtime/model set. The calculated peak staging use is
+13,254,834,850 bytes, below the frozen 15,000,000,000-byte ceiling.
+
+Steps 8 and 9 cannot honestly complete yet. The measured parts have not been
+published under `chatterbox-runtime-v2`; consequently no final URLs or clean-
+user acquisition exist, and installed offline bilingual/runtime/resource
+evidence cannot be produced. The content-safe
+[`runtime-package-evidence-v2.json`](../../../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json)
+records the reproducible local result and explicit remaining gates. This is an
+external-publication blocker for optional Chatterbox only; Piper core and the
+rest of M011 may continue independently.
 
 ### Milestone 5: Build the versioned Windows package and signing path
 
@@ -842,6 +866,48 @@ and never edit prior benchmark authority to make a release pass.
   staging, cancellation, safe-loading, atomicity, cleanup, lineage, and
   fail-closed publication gates. The checked-in product remains withheld until
   implementation and real release evidence pass.
+- **2026-08-01:** Completed the deterministic Milestone 4B implementation. The
+  v2 source/product manifests freeze the exact split topology; Python builds a
+  runtime-only package from the frozen graph, verifies safe Chatterbox load
+  sites, and emits a deterministic ZIP split into three bounded parts. Rust
+  implements native-only sequential download, closed redirects, exact size and
+  SHA-256 checks, cancellation, bounded reassembly/extraction, verified-part
+  cleanup, complete-tree verification, atomic promotion, and owned removal.
+  Fifteen focused Python tests and twelve focused Rust tests pass outside the
+  sandbox, as do Ruff, mypy, Clippy, source authority, and acquisition authority
+  checks.
+- **2026-08-01:** Rebuilt the committed runtime twice with identical evidence:
+  archive SHA-256
+  `af6b4f46f6b21df02d30cdfe992f77f9bda68111edd9042cd32a619c6376aee6`,
+  5,022,941,463 compressed bytes, 5,019,513,881 installed runtime bytes,
+  12,669 files, and runtime-manifest SHA-256
+  `cb5055580a28a0c97e50535a8317ea506081230b70e0099d8fe0194591e1c635`.
+  With the six official model files, total transfer is 8,231,893,387 bytes,
+  total installation is 8,228,465,805 bytes, and calculated peak staging is
+  13,254,834,850 bytes. The initial measured flow would have retained runtime
+  parts during extraction and exceeded the 15-billion-byte authority; verified
+  parts are now removed before extraction, bringing the peak inside the frozen
+  bound.
+- **2026-08-01:** Retained `withheld` because the three exact runtime parts are
+  not yet published and no clean-user online acquisition/offline bilingual
+  matrix can run. Creating that public release is an externally authorized
+  operation. No model weights, runtime archives, generated audio, book content,
+  local paths, secrets, or user data enter Git.
+- **2026-08-01:** Final deterministic validation passed from normal local
+  PowerShell outside the automation sandbox. `pnpm.cmd audit:release` reported
+  pass with the four already disclosed optional-graph advisory blind spots;
+  `pnpm.cmd inventory:release:check`, both optional-manifest checks,
+  `pnpm.cmd check:portable`, and `pnpm.cmd check` passed. The full gates include
+  20 shared files/209 tests, 34 EPUB files/580 tests, 53 desktop files/518
+  tests, 12 Node tests, 59 Rust tests, and 380 Python tests plus format, lint,
+  type, generated-contract, portable, Tauri release, and Python package builds.
+  The existing Custom Highlight, bundle-size, and pytest cache-write warnings
+  remain non-failing.
+- **2026-08-01:** The first portable run exposed that repository `mypy .`
+  traversed the ignored 5-GB maintainer build output and type-checked embedded
+  third-party Python. `services/tts/pyproject.toml` now excludes only the two
+  application-owned release `dist` roots; the unchanged command then passed on
+  159 VoxLeaf source files, and both complete gates passed afterward.
 
 ## Discoveries and decisions
 
@@ -855,8 +921,8 @@ and never edit prior benchmark authority to make a release pass.
   not an approximately 8-GiB expansion of the core installer. It is acquired
   only after explicit consent and activated only through a separate explicit
   action after verification.
-- **Decision:** M011 no longer plans to republish the six Chatterbox model files
-  inside one VoxLeaf-hosted archive. Milestone 4B will acquire those exact files
+- **Decision:** M011 does not republish the six Chatterbox model files inside
+  one VoxLeaf-hosted archive. Milestone 4B acquires those exact files
   from the official Hugging Face repository at a full frozen commit and verify
   frozen expected size/SHA-256 values. This changes distribution provenance,
   not model identity or evaluation evidence.
@@ -865,6 +931,20 @@ and never edit prior benchmark authority to make a release pass.
   separate authorities; model repository content is data-only, principal
   weights use `safetensors`, and approved `.pt` inputs retain
   `weights_only=True`.
+- **Decision:** The separately reviewed runtime is one deterministic runtime-
+  only ZIP split into at most four sub-2-GB GitHub Release assets. The exact
+  model files remain official Hugging Face downloads, so VoxLeaf neither
+  republishes weights nor executes repository code.
+- **Discovery:** The initial package build exposed Windows path-length risk and
+  an incomplete embedded-Python search path. Short application-owned staging,
+  removal of test/development-only payloads, and an explicit
+  `Lib\\site-packages` entry in `python312._pth` make the private runtime
+  executable without system Python while preserving the frozen graph.
+- **Discovery:** Download, reassembled archive, extracted runtime, and model
+  files cannot all coexist with the source parts under the 15-GB staging
+  ceiling. Removing the verified runtime parts immediately after successful
+  archive verification yields a calculated 13,254,834,850-byte peak without
+  weakening retry cleanup or atomic promotion.
 - **Decision:** Piper-core, optional-Chatterbox, and signed-public readiness are
   independent decisions. Failure of one narrows its claim without rewriting
   historical support evidence or automatically failing the others.
