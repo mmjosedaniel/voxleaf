@@ -58,8 +58,9 @@ adds no dependency or CSP expansion. Milestone 6's sequential packaged
 portfolio and full local repository checks pass. Maintainer all-rate
 confirmation and pull request #170's required Ubuntu/Windows checks also pass,
 and M010.2 is archived.
-Production distribution, Piper license fulfillment, and installers remain
-M011 work.
+M011 Milestone 3 now implements the deterministic licence-complete Piper core
+payload. Installer integration, optional Chatterbox acquisition, clean-host
+release validation, and signing remain M011 work.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
@@ -496,6 +497,30 @@ pnpm.cmd check
 The Tauri build produces the React frontend and a release-mode Windows executable. Installer bundling is intentionally disabled during foundation validation. The Python commands create only an isolated development environment, validate the model-free service package and its offline canonical schema registry, and build source and wheel distributions under the ignored `services/tts/dist` directory. `uv run --directory services/tts --locked python -m voxleaf_tts.service` is the internal binary standard-stream service entry point; it is not an interactive shell command and expects framed protocol input. None of the root commands starts that service, downloads models, reads books, requires GPU hardware, or persists generated audio.
 
 The root `check` command does not start the development server. The development server runs only when explicitly requested with the focused `dev` command above.
+
+### Build the M011 Piper core payload
+
+Milestone 3's release-core builder requires the exact davefx and joe artifacts
+in their ignored `models/tts/piper-...` roots recorded by
+`services/tts/release/core/source-manifest-v1.json`. It downloads only the
+fixed hash/size-pinned public CPython, Piper source, espeak-ng source, and voice
+licence declaration into ignored build cache; ordinary application runtime
+performs no download. From the repository root:
+
+```powershell
+pnpm.cmd package:piper-core
+pnpm.cmd package:piper-core:check
+```
+
+The output lives under ignored `services/tts/release/core/dist`. It includes a
+private interpreter, only the production Piper service closure, both voices,
+notices/model cards, and exact Piper/espeak source. It never uses system Python
+at product runtime, installs nothing into `PATH`, and persists no generated
+audio. Maintainers run `pnpm.cmd package:piper-core:write-manifest` only for an
+intentional authority update, because that command rewrites the tracked runtime
+manifest and package evidence. This standalone payload is not yet an end-user
+installer; M011 Milestone 5 owns Tauri resource integration and per-user
+install/repair/uninstall proof.
 
 ## Local TTS feasibility preflight
 

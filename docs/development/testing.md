@@ -920,13 +920,40 @@ model artifact, path, or raw host identity may enter a result or fixture.
 
 ## M011 packaging and release validation
 
-M011 is approved planned; none of the following is current pass evidence. Its
+M011 Milestones 1 through 3 are implemented. The dependency/audit and
+standalone Piper-core evidence below is current; installer, optional-package,
+clean-host, and publication items remain requirements rather than pass
+evidence. Its
 active
 [`ExecPlan`](../plans/active/M011-package-validate-and-release-mvp.md)
 requires a clean normal-user Windows package matrix in addition to the
 existing deterministic, Chromium, packaged WebView2, and exact-host suites.
 
-The release matrix must distinguish:
+Milestone 3 adds these repository-owned commands:
+
+```powershell
+pnpm.cmd package:piper-core
+pnpm.cmd package:piper-core:check
+```
+
+The build uses only fixed HTTPS build inputs plus the two exact ignored local
+voice roots, constructs an atomic deterministic payload under ignored
+`services/tts/release/core/dist`, verifies every manifest path/size/SHA-256,
+creates the fixed ZIP, and runs Spanish/English smoke with Python socket APIs
+denied. It persists no audio or narration text. `package:piper-core:check`
+revalidates the complete installed file set, archive, authority hashes, and
+tracked content-safe evidence. Maintainers use
+`pnpm.cmd package:piper-core:write-manifest` only when intentionally updating
+the frozen payload authority; ordinary validation must not rewrite it.
+
+Focused deterministic coverage is in `test_release_core.py` and the native
+`tts_release_core` tests. They prove traversal rejection, exact-manifest
+acceptance, substituted/truncated/stale rejection, atomic failure cleanup,
+prior-package preservation, fixed profile mapping, and content-free errors.
+The native verifier embeds the trusted manifest and accepts only the fixed
+install-relative `resources/tts/voxleaf-piper-core-v1` root.
+
+The remaining release matrix must distinguish:
 
 - exact shipped Node, Rust, base Python, and core/optional-profile dependency
   audits, including packages the advisory source cannot identify;
@@ -950,10 +977,10 @@ The release matrix must distinguish:
 - Piper-core portfolio, optional-Chatterbox, and signed public-installer
   evidence as separate decisions.
 
-M011 audit, acquisition, and installer-lifecycle commands do not exist yet.
-The milestones that implement them must first add and document repository-owned
-commands; until then, do not invent a command or describe the release gate as
-passing.
+M011 audit and Piper-core assembly commands now exist. Optional acquisition and
+installer-lifecycle commands do not; the milestones that implement them must
+first add and document repository-owned commands. Do not describe those later
+release gates as passing.
 All final M011 commands run outside the automation sandbox under the existing
 repository testing rule.
 
@@ -967,10 +994,10 @@ or model; model-backed timing, profile, navigation, persistence, and cleanup
 matrices remain separate exact-host commands. Non-Windows hardware support,
 automatic updates, enterprise sandboxing, and cross-platform packaging remain
 deferred. Windows installer behavior, licence-complete distribution, and the
-minimum packaged bilingual Piper core plus separately gated optional
-Chatterbox acquisition/removal lifecycle are now approved M011 work but remain
-unimplemented. The examples below are requirements, not claims about current
-coverage.
+minimum bilingual Piper payload is implemented, while installer integration
+and separately gated optional Chatterbox acquisition/removal remain approved
+M011 work. The examples below are requirements, not claims about those later
+gates.
 
 ## Test levels
 

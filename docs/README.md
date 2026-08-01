@@ -40,8 +40,9 @@ The historical M010
 [`tts-support-matrix-v1`](architecture/tts-support-matrix-v1.md) makes
 Piper/davefx the sole supported and automatically recommendable profile when
 compatible and configured, keeps Qwen/Serena development-only, and records
-that automatic engine failover remains disabled. M011 still owns runtime/model
-distribution and license fulfillment. M010.1's completed v2 overlay is
+that automatic engine failover remains disabled. M011 now owns the implemented
+verified Piper core payload and still owns its installer plus optional-model
+distribution. M010.1's completed v2 overlay is
 described below.
 
 M010.1 is complete. Milestones 1 through 5 freeze and execute the
@@ -109,10 +110,12 @@ graph, fixed-manifest integrity verification, atomic installation, separate
 activation, offline clean-host proof, and application-owned removal; Qwen stays
 development-only and outside the first distributable product. Milestone 2
 closes the exact 15-entry core and 79-package optional locks, automated
-production audits, bounded dependency-update intake, and a deterministic
-363-component release inventory. It does not yet create an installer or the
-optional acquisition flow. Piper-core,
-optional-Chatterbox, and signed-public readiness are separate gates. Signing
+audits, bounded update intake, and the component inventory. Milestone 3 adds
+the deterministic bilingual Piper core, complete notices/source fulfillment,
+offline smoke evidence, and native fixed-manifest verification. Installer and
+clean-host release claims remain open.
+Piper-core, optional-Chatterbox, and signed-public readiness are separate
+gates. Signing
 does not block a truthful local demo, but an unsigned general download is not
 approved.
 

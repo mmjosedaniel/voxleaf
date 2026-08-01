@@ -145,8 +145,12 @@ M011 is in progress. Milestone 1 freezes
 or package results. Milestone 2 closes the exact production component identity:
 a 15-entry private Piper core lock, a separately gated 79-package Chatterbox
 lock, repository-owned Node/Rust/Python release audits, bounded Dependabot
-intake, and a deterministic 363-component inventory. It does not yet implement
-an installer or optional-profile acquisition. The core topology is deliberately smaller than
+intake, and a deterministic 367-component inventory. Milestone 3 packages the
+core as a deterministic private CPython/Piper runtime with both voices,
+complete notices, and exact corresponding-source archives. Native discovery
+accepts only the fixed install-relative root after exact manifest/file/hash
+verification. It does not yet implement an installer or optional-profile
+acquisition. The core topology is deliberately smaller than
 the implemented development matrix: Windows x64 plus Piper davefx/Spanish and
 Piper joe/English in one private embedded Python/Piper runtime. Supported
 Chatterbox Spanish/English is planned as a
@@ -156,8 +160,9 @@ The prior Chatterbox developer state occupied about 5.03 GiB of environment
 plus 2.99 GiB of model artifacts. Milestone 2 replaces that environment graph
 with the explicit 79-package runtime lock and proves the adapter offline in a
 4.83-GiB isolated smoke environment; neither number is a final compressed or
-installed package measurement. M011 must still fulfill Piper/phonemizer and
-Chatterbox model/runtime provenance obligations and implement native-owned
+installed package measurement. M011 has fulfilled the Piper/phonemizer/voice
+payload obligations. It must still fulfill Chatterbox model/runtime provenance
+obligations and implement native-owned
 fixed-manifest acquisition with explicit consent, bounded staging, digest
 verification, atomic versioned installation, separate activation, offline
 use, and application-owned removal. Piper-core portfolio readiness, optional-
@@ -284,7 +289,8 @@ Desktop application
 |-- Reader-first Settings and six boundary-deferred playback rates
 |   [M010.2 complete; repository WSOLA, English fallback, packaged validation]
 |-- Windows x64 MVP core plus optional quality package
-|   [M011 M1-M2; dependency/audit/inventory identity closed; packaging planned]
+|   [M011 M1-M3; verified bilingual Piper payload implemented;
+|    installer and optional acquisition planned]
 `-- Explicit bilingual narration and exact language/profile selection
     [M010.1 Milestones 2-6; Piper ES/EN and Chatterbox supported,
      Qwen Serena/Aiden development-only]

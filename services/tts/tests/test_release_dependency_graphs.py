@@ -129,7 +129,7 @@ def test_release_audit_policy_never_treats_unknown_url_packages_as_clean() -> No
 def test_release_component_inventory_is_complete_and_content_safe() -> None:
     inventory = json.loads(COMPONENT_INVENTORY.read_text(encoding="utf-8"))
     components = inventory["components"]
-    assert len(components) == 363
+    assert len(components) == 367
     assert len({component["id"] for component in components}) == len(components)
     assert {component["scope"] for component in components} == {
         "core",

@@ -1,0 +1,44 @@
+{
+  "authority": {
+    "runtimeManifestSha256": "02ab9abba01cc090f30822db01da836b73ca129048279ca3c7ed5c2648ded3f5",
+    "sourceManifestSha256": "06b70e728fb2c46040f61f727422eadbc6ebe9001c4e885d5a2db6c0869c3949"
+  },
+  "distribution": {
+    "englishVoiceBundled": true,
+    "firstRunDownloadRequired": false,
+    "noticesAndModelCardsBundled": true,
+    "phonemizerSourceBundled": true,
+    "piperSourceBundled": true,
+    "pythonRuntimeBundled": true,
+    "spanishVoiceBundled": true,
+    "systemPythonRequired": false
+  },
+  "failureMatrix": {
+    "partialStagingRemoved": true,
+    "previousPackagePreservedOnFailure": true,
+    "staleArtifactRejected": true,
+    "substitutedArtifactRejected": true,
+    "truncatedArtifactRejected": true
+  },
+  "limitations": [
+    "This is the deterministic Piper core payload, not the final installer measurement.",
+    "The child runs as the ordinary user and is integrity checked but not OS sandboxed.",
+    "Final clean-host, OS-level offline, install, repair, and uninstall evidence belongs to later M011 milestones."
+  ],
+  "measurements": {
+    "archiveSha256": "b1438ded5e39bea518714f09af018ee558db9505bde285c9e90991c59f7e1497",
+    "compressedBytes": 191241682,
+    "fileCount": 2011,
+    "installedBytes": 281215331
+  },
+  "offlineSmoke": {
+    "audioPersisted": false,
+    "englishPayloadBytes": 221796,
+    "networkProcessApisDenied": true,
+    "spanishPayloadBytes": 232944
+  },
+  "packageId": "voxleaf-piper-core-v1",
+  "packageVersion": "1",
+  "platform": "windows-x86_64",
+  "schemaVersion": 1
+}

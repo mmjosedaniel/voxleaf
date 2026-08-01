@@ -58,18 +58,20 @@ native-supervised TTS child, bounded in-memory audio, English/Spanish selection,
 supported Piper and Chatterbox profiles, development-only Qwen profiles,
 identity-first recovery, and six boundary-deferred playback rates.
 
-The repository can build a Tauri release executable for validation, but
+The repository can build a Tauri release executable for validation and now
+builds a deterministic, manifest-verified Piper core payload. However,
 `apps/desktop/src-tauri/tauri.conf.json` still uses version `0.0.0` and
 `bundle.active` is `false`. There is no end-user installer, signed release,
-updater policy, runtime/model acquisition flow, third-party notice bundle, or
-clean-machine install/uninstall proof.
+updater policy, optional-model acquisition flow, or clean-machine install/
+uninstall proof.
 
-Milestone 2 now provides the repository release dependency boundary without
-claiming packaging: a 15-entry private Piper core lock, a separate 79-package
-Chatterbox lock, automated Node/Rust/Python release audits, bounded dependency-
-update intake, and a deterministic 363-component inventory. Installer,
-acquisition, compliance fulfillment, final artifact measurements, and clean-
-host release evidence remain future milestones.
+Milestones 2 and 3 now provide the release dependency and Piper payload
+boundaries: a 15-entry private core lock, a separate 79-package Chatterbox
+lock, automated Node/Rust/Python release audits, bounded dependency-update
+intake, a deterministic 367-component inventory, and a verified bilingual
+Piper payload with its runtime, notices, model cards, and exact GPL source.
+Installer, optional acquisition, signing, and clean-host release evidence
+remain future milestones.
 
 The current TTS runtimes are ignored developer assets selected through
 environment variables. Development firewall rules target exact candidate
@@ -318,7 +320,9 @@ checkpoint commit: `a5ec9b1`.
 
 ### Milestone 3: Implement compliant Piper core runtime and voice distribution
 
-**Status:** Not started.
+**Status:** Complete (2026-08-01). Checkpoints `16981cc` and `98a2971`
+implement the deterministic payload and native verifier. The final
+documentation/validation checkpoint is recorded with this plan update.
 
 1. Derive and package the frozen bundled private Python/Piper runtime and both
    voices from the exact minimal production graph. Measure compressed and
@@ -626,6 +630,45 @@ and never edit prior benchmark authority to make a release pass.
   bundle-size, Diffusers deprecation, offline Cangjie-map, and pytest cache-
   write warnings remain. No network acquisition, installer lifecycle, signing,
   or clean-host command is applicable until later M011 milestones implement it.
+- **2026-08-01:** Built `voxleaf-piper-core-v1` from the exact 15-entry lock,
+  official CPython 3.12.10 embeddable runtime, Piper 1.4.2, and exact davefx/
+  Spanish plus joe/English artifacts. The final deterministic payload contains
+  2,011 files, measures 281,215,331 installed bytes and 191,241,682 compressed
+  bytes, and records its ZIP SHA-256 as
+  `b1438ded5e39bea518714f09af018ee558db9505bde285c9e90991c59f7e1497`.
+- **2026-08-01:** Added fixed source/runtime manifests, safe bounded download
+  for build inputs, traversal-safe extraction, atomic staging, partial cleanup,
+  deterministic ZIP output, bilingual offline smoke, content-free failures,
+  and self-checking package evidence. Removed dormant Piper server/download/
+  training helpers and unused Qwen/Chatterbox service modules from the core.
+- **2026-08-01:** Bundled the root/Python/Piper/espeak/voice/dependency notices,
+  both exact voice model cards, and complete exact Piper plus espeak-ng source
+  archives. The PyPI sdist alone was not treated as sufficient corresponding-
+  source evidence because it does not carry the complete native/espeak build
+  tree.
+- **2026-08-01:** Added native fixed-path discovery relative to the installed
+  executable. The trusted native binary embeds the exact runtime manifest and
+  verifies its bytes, complete file set, sizes, SHA-256 values, path containment,
+  and closed profile mapping before starting Piper. A missing payload may use
+  the separately gated development environment; a present invalid payload
+  fails closed and never accepts a renderer path.
+- **2026-08-01:** Repeated the unchanged package build from normal local
+  PowerShell and reproduced ZIP SHA-256
+  `b1438ded5e39bea518714f09af018ee558db9505bde285c9e90991c59f7e1497`
+  with identical compressed and installed bytes. The two offline smoke payload
+  lengths varied, as audio synthesis output is not the archive authority; both
+  remained positive 24-kHz payloads and no audio was persisted.
+- **2026-08-01:** Closed Milestone 3 validation outside the sandbox.
+  `pnpm.cmd audit:release`, `pnpm.cmd inventory:release:check`,
+  `pnpm.cmd package:piper-core:check`, `pnpm.cmd check:portable`, and
+  `pnpm.cmd check` passed. The complete gates include 20 shared files/209
+  tests, 34 EPUB files/580 tests, 51 desktop files/515 tests, 12 Node native-
+  runner tests, 46 Rust tests, and 365 Python tests plus formatting, lint,
+  types, generated contracts, portable builds, the Tauri Windows release
+  executable, and Python artifacts. The known non-failing Custom Highlight,
+  bundle-size, and pytest cache-write warnings remain. Installer, optional-
+  acquisition, signing, OS-level offline observation, and clean-host lifecycle
+  commands remain inapplicable until later M011 milestones implement them.
 
 ## Discoveries and decisions
 
@@ -685,6 +728,17 @@ and never edit prior benchmark authority to make a release pass.
   do not all reach the Windows product. Release automation freezes the complete
   notice set and separately verifies the five notices reachable from the
   Windows target graph so either kind of change requires review.
+- **Discovery:** The Piper PyPI sdist is not by itself the complete
+  corresponding source for the shipped native phonemizer. The compliant core
+  therefore carries the exact full Piper Git archive and the exact espeak-ng
+  revision named by Piper's build configuration.
+- **Decision:** Core discovery is native and fixed below the installed
+  executable at `resources/tts/voxleaf-piper-core-v1`. The installed manifest
+  must be byte-identical to native authority and every declared file must pass
+  set, size, SHA-256, symlink, and root-containment verification before use.
+- **Decision:** M011 Milestone 3 measures the standalone core payload, not the
+  final installer. OS-level offline observation, per-user install/repair/
+  uninstall, and full clean-host reader proof remain Milestones 5 and 6.
 - **Decision:** Environment directory sizes are graph-smoke observations only.
   Compressed download, installed, staging, and free-space requirements remain
   Milestones 3 and 4 measurements and are not inferred from developer or smoke
