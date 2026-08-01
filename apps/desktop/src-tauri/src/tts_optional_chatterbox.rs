@@ -1062,6 +1062,10 @@ fn reassemble_runtime(
     Ok(())
 }
 
+fn discard_verified_runtime_parts(parts_root: &Path) -> Result<(), OptionalProfileError> {
+    fs::remove_dir_all(parts_root).map_err(|_| OptionalProfileError::CleanupFailed)
+}
+
 impl OptionalChatterboxManager {
     fn profile_root_for() -> Result<&'static PathBuf, OptionalProfileError> {
         APPLICATION_DATA_ROOT
@@ -1276,6 +1280,10 @@ impl OptionalChatterboxManager {
                 &archive,
                 &cancellation,
             )?;
+            // The verified archive is now authoritative. Remove its source
+            // parts before extraction so the operation stays below the frozen
+            // 15 GB staging ceiling even while model files remain staged.
+            discard_verified_runtime_parts(&runtime_downloads)?;
             let extracted = staging.join("package");
             extract_archive(
                 &archive,
@@ -1787,6 +1795,13 @@ mod tests {
             fs::read(&joined).expect("joined file should be readable"),
             b"abcdef"
         );
+        discard_verified_runtime_parts(&root.0).expect("verified parts should be discarded");
+        assert!(!root.0.exists());
+
+        let root = TestRoot::new();
+        fs::write(root.0.join("part-1"), b"abc").expect("first part should be written");
+        fs::write(root.0.join("part-2"), b"def").expect("second part should be written");
+        let joined = root.0.join("joined.zip");
         assert_eq!(
             reassemble_runtime(&root.0, &artifact, 5, &joined, &AtomicBool::new(false),),
             Err(OptionalProfileError::VerificationFailed)
