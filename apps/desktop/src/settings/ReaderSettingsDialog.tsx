@@ -1,7 +1,9 @@
+import { getVersion } from "@tauri-apps/api/app";
 import {
   useEffect,
   useId,
   useRef,
+  useState,
   useSyncExternalStore,
   type KeyboardEvent,
   type ReactElement,
@@ -71,6 +73,7 @@ export interface ReaderSettingsDialogProps {
   readonly optionalChatterbox: OptionalChatterboxClient;
   readonly onActivateChatterbox: () => Promise<boolean>;
   readonly onRemoveChatterbox: () => Promise<void>;
+  readonly loadApplicationVersion?: () => Promise<string>;
 }
 
 function CoordinatorNarrationStartSettings({
@@ -143,17 +146,43 @@ export function ReaderSettingsDialog({
   optionalChatterbox,
   onActivateChatterbox,
   onRemoveChatterbox,
+  loadApplicationVersion = getVersion,
 }: ReaderSettingsDialogProps): ReactElement | null {
   const titleId = useId();
   const descriptionId = useId();
   const dialogRef = useRef<HTMLElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [applicationVersion, setApplicationVersion] = useState<
+    string | undefined
+  >();
 
   useEffect(() => {
     if (open) {
       closeButtonRef.current?.focus({ preventScroll: true });
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    let current = true;
+    void loadApplicationVersion()
+      .then((version) => {
+        const normalized = version.trim();
+        if (current && normalized.length > 0 && normalized.length <= 64) {
+          setApplicationVersion(normalized);
+        }
+      })
+      .catch(() => {
+        if (current) {
+          setApplicationVersion(undefined);
+        }
+      });
+    return () => {
+      current = false;
+    };
+  }, [loadApplicationVersion, open]);
 
   if (!open) {
     return null;
@@ -284,7 +313,11 @@ export function ReaderSettingsDialog({
             aria-labelledby={`${titleId}-about`}
           >
             <h3 id={`${titleId}-about`}>About</h3>
-            <p>VoxLeaf 0.0.0 development build.</p>
+            <p>
+              {applicationVersion === undefined
+                ? "VoxLeaf version unavailable."
+                : `VoxLeaf ${applicationVersion}.`}
+            </p>
             <p>
               EPUB processing and speech generation run locally. Generated
               narration is kept in bounded memory and is not saved by default.

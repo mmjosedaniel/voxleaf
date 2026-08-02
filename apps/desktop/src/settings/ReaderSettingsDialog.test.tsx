@@ -15,7 +15,12 @@ import { ReaderSettingsDialog } from "./ReaderSettingsDialog";
 
 afterEach(() => cleanup());
 
-function renderSettings(overrides: { readonly onClose?: () => void } = {}) {
+function renderSettings(
+  overrides: {
+    readonly onClose?: () => void;
+    readonly loadApplicationVersion?: () => Promise<string>;
+  } = {},
+) {
   const hardwareCompatibility = new HardwareProfileCompatibilityCoordinator();
   const ensureChecked = vi.spyOn(hardwareCompatibility, "ensureChecked");
   const onClose = overrides.onClose ?? vi.fn();
@@ -67,6 +72,9 @@ function renderSettings(overrides: { readonly onClose?: () => void } = {}) {
       optionalChatterbox={optionalChatterbox}
       onActivateChatterbox={vi.fn(async () => true)}
       onRemoveChatterbox={vi.fn(async () => undefined)}
+      loadApplicationVersion={
+        overrides.loadApplicationVersion ?? (async () => "0.1.0")
+      }
     />,
   );
 
@@ -102,6 +110,12 @@ describe("reader Settings dialog", () => {
     expect(
       within(dialog).queryByLabelText("Playback speed"),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows the installed application version instead of a stale placeholder", async () => {
+    renderSettings({ loadApplicationVersion: async () => "0.1.0" });
+    expect(await screen.findByText("VoxLeaf 0.1.0.")).toBeInTheDocument();
+    expect(screen.queryByText(/0\.0\.0/)).not.toBeInTheDocument();
   });
 
   it("contains focus, closes with Escape, and performs no lifecycle action on open", () => {

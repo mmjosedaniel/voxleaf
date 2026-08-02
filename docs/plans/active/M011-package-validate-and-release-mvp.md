@@ -662,9 +662,12 @@ Actual result on 2026-08-01:
   `281,213,569` installed bytes and `191,240,146` compressed bytes, with archive
   SHA-256
   `17fe3456bd7fca519b3e3b0c3b0bbf2579c733e13b660d740c5a56a0781f0843`.
-  A later clean-host console-window correction produced the current exact
-  unsigned installer at `181,654,077` bytes with SHA-256
+  A later clean-host console-window correction produced an unsigned predecessor
+  at `181,654,077` bytes with SHA-256
   `d207fec2cc29de31f86eab67dc4b3cd17c27ef6175cecf4b2ef3d4292b5ed895`.
+  Correcting the stale Settings version label produced the current exact
+  unsigned installer at `181,658,228` bytes with SHA-256
+  `f167dacdb4221cdd989ed5ed92d070b5fd5d9ecab89a9af6e54feec5be3a6b12`.
 - The exact installed Piper service completed first and repeated synthesis in
   both languages with zero generated `.pyc` files. The complete installed
   WebView2 portfolio matrix then passed for davefx/Spanish and joe/English:
@@ -694,6 +697,13 @@ Actual result on 2026-08-01:
   `694` ms. Its install/repair/uninstall lifecycle and exact Defender scan also
   pass locally. Visual absence of the console still requires confirmation by
   rerunning this rebuilt installer on the independent host.
+- The independent-host Settings review also exposed a stale hard-coded
+  `0.0.0 development build` label even though the package, Tauri configuration,
+  and native crate are versioned `0.1.0`. Settings now reads the native package
+  version through Tauri, bounds the displayed value, fails closed to a generic
+  unavailable label, and has a focused regression proving `0.1.0` replaces the
+  stale placeholder. The rebuilt installer and static package gate pass; this
+  exact new hash still requires an independent-host UI recheck.
 - `package:piper-core:check`, `package:windows:check`, both optional Chatterbox
   authority checks, the exact release audit, component-inventory check, and 12
   native optional-package hostile/integrity/cancellation/removal tests pass

@@ -7,6 +7,10 @@ It installs below the current user's Local App Data folder and does not require
 administrator access, a repository checkout, Node.js, Rust, system Python, a
 firewall rule, or a modification to `PATH`.
 
+The **About** section in Settings reads the installed application version from
+the native package metadata. It must therefore show `VoxLeaf 0.1.0` for this
+release rather than a development placeholder.
+
 The installer contains the private Piper runtime and the Spanish davefx and
 English joe voices. It does not contain Chatterbox, Qwen, benchmark tools,
 model-development environments, books, generated audio, or private user data.
