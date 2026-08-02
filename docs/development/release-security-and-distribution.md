@@ -232,12 +232,17 @@ automatic updater. Ordinary development and repository builds remain
 unbundled. The exact resource allowlist excludes Chatterbox runtime/weights,
 Qwen, benchmark tools, candidate environments, books, audio, and private data.
 
-The measured unsigned local installer is `181,654,713` bytes with SHA-256
-`9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c`.
-Its local install/first-start/repair/uninstall matrix passed outside the
-automation sandbox, and Windows Defender reported no threats for the exact
-artifact. SmartScreen was not observed, so no reputation claim is made. This is
-content-safe local evidence, not clean-host or public-release acceptance.
+The current measured unsigned local installer is `181,651,989` bytes with
+SHA-256
+`f7157be21d82a4f3d28f0390c2c3bb90eba903b6acaffaf307959c30ec332a2d`.
+Its installed bilingual portfolio matrix and two consecutive local install/
+first-start/repair/uninstall cycles passed outside the automation sandbox.
+Windows Defender reported no threats for the exact artifact. SmartScreen was
+not observed, so no reputation claim is made. This is content-safe development-
+host evidence, not clean-host or public-release acceptance. The optional
+Chatterbox manifest remains withheld until a separate compatible clean-GPU host
+passes download, offline bilingual narration, restart, removal, and Piper-after-
+removal validation.
 
 The signing command accepts only an externally protected certificate
 thumbprint and HTTPS timestamp URL. It emits the release configuration outside
@@ -292,12 +297,12 @@ Before the application may offer **Download and enable Chatterbox**, M011 must:
 9. prove that normal EPUB reading and both Piper voices remain usable while the
    package is absent, declined, cancelled, corrupt, incompatible, or removed;
 10. prove installed Chatterbox Spanish/English narration offline on a compatible
-   clean Windows GPU host, with one service tree, existing cancellation and
-   memory bounds, no generated-audio persistence, and truthful cold-load and
-   resource disclosure; and
+    clean Windows GPU host, with one service tree, existing cancellation and
+    memory bounds, no generated-audio persistence, and truthful cold-load and
+    resource disclosure; and
 11. remove the optional package and its application-owned staging/cache state
-   without deleting the desktop application, preferences, reading progress, or
-   user EPUBs.
+    without deleting the desktop application, preferences, reading progress, or
+    user EPUBs.
 
 **Current M011 Milestone 4B status:** the repository implements the native-owned
 state machine and v2 closed multi-artifact controller. It fixes the exact six

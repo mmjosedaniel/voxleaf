@@ -66,11 +66,12 @@ identity-first recovery, and six boundary-deferred playback rates.
 
 The repository now has deliberate application version `0.1.0` and a separate
 release-only Tauri configuration that builds a per-user Windows x64 NSIS
-installer while leaving ordinary development builds unbundled. The measured
-unsigned local installer contains the deterministic, manifest-verified Piper
-core and both voices, and its install, first-start, same-version repair, and
-uninstall lifecycle passed on the development host. It is not signed, is not a
-general-public release, and is not clean-host acceptance evidence.
+installer while leaving ordinary development builds unbundled. The current
+measured unsigned local installer contains the deterministic, manifest-verified
+Piper core and both voices. Its installed Spanish/English portfolio matrix, two
+install/first-start/same-version-repair/uninstall cycles, and exact-artifact
+Defender scan pass on the development host. It is not signed, is not a general-
+public release, and is not clean-host acceptance evidence.
 
 Milestones 2 and 3 now provide the release dependency and Piper payload
 boundaries: a 15-entry private core lock, a separate 79-package Chatterbox
@@ -610,7 +611,10 @@ Actual result on 2026-08-01:
 
 ### Milestone 6: Validate the clean-host portfolio and release matrix
 
-**Status:** Not started.
+**Status:** In progress. The exact-package rehearsal and deterministic release
+matrix pass on the development host. Independent clean normal-user Windows and
+clean compatible-GPU hosts are unavailable, so clean-host acceptance and the
+optional Chatterbox gate remain blocked rather than inferred from local state.
 
 1. Install the exact candidate on a clean normal-user Windows host and prove
    no hidden developer prerequisite or external runtime mutation is needed.
@@ -636,6 +640,69 @@ Actual result on 2026-08-01:
    redownloading unnecessarily.
 7. Run install/repair/uninstall twice to expose stale state, locked-file, and
    cleanup failures. Commit content-safe results separately from authority.
+
+Actual result on 2026-08-01:
+
+- Added a closed `--executable=<absolute installed executable>` input to the
+  packaged WebView2 harness so release acceptance targets the installed binary
+  rather than silently rebuilding or exercising the repository executable.
+- The first installed run exposed four package-only defects. Native manifest
+  hashing allocated a 1-MiB buffer on the stack and overflowed the application
+  thread; the packaged interpreter wrote `.pyc` files into its verified tree;
+  Windows returned the interpreter through a canonical `\\?\` path that did not
+  compare equal to its ordinary runtime root; and the core builder could reuse
+  an already installed stale local `voxleaf-tts` package. Hashing now uses heap
+  storage, the supervisor disables bytecode writes, the Piper boundary safely
+  normalizes only Windows verbatim prefixes for containment, and the builder
+  explicitly reinstalls the current local package. Focused regressions protect
+  all four behaviors.
+- Regeneration after those fixes produced a 2,009-file Piper core measuring
+  `281,213,569` installed bytes and `191,240,146` compressed bytes, with archive
+  SHA-256
+  `17fe3456bd7fca519b3e3b0c3b0bbf2579c733e13b660d740c5a56a0781f0843`.
+  The exact unsigned installer is `181,651,989` bytes with SHA-256
+  `f7157be21d82a4f3d28f0390c2c3bb90eba903b6acaffaf307959c30ec332a2d`.
+- The exact installed Piper service completed first and repeated synthesis in
+  both languages with zero generated `.pyc` files. The complete installed
+  WebView2 portfolio matrix then passed for davefx/Spanish and joe/English:
+  Quick start reached audible playback in `5,152` ms and `4,718` ms,
+  respectively; warm prepared RTF was `0.12` and `0.11`; neither arm observed
+  an underrun; all six `1.00x` through `0.75x` rates, Quick/Prepared modes,
+  highlighting, leaf replacement, pause/resume, seek, chapter replacement,
+  bounded cleanup, reduced motion, and forced colors passed. The arms recorded
+  zero external requests, zero generated-audio files, zero dedicated-GPU use,
+  and peak process-tree working sets of `1,120,894,976` and `1,142,972,416`
+  bytes. Cancellation completed in `369` ms and `1,421` ms.
+- Two consecutive exact installer cycles passed current-user installation,
+  first start, same-version repair, uninstall, install-root removal, and
+  preservation of an unrelated synthetic file. Microsoft Defender was enabled
+  and reported zero detections for the exact installer; SmartScreen was not
+  observed. The committed package evidence remains `unsigned-local` and keeps
+  `cleanHostStillRequired: true`.
+- `package:piper-core:check`, `package:windows:check`, both optional Chatterbox
+  authority checks, the exact release audit, component-inventory check, and 12
+  native optional-package hostile/integrity/cancellation/removal tests pass
+  outside the sandbox. The audit retains the four already disclosed optional-
+  graph blind spots instead of representing them as clean.
+- Complete outside-sandbox repository validation passes: `check:portable` and
+  `check` cover formatting, linting, generated contracts, type checks, 20 shared
+  files/209 tests, 34 EPUB files/580 tests, 53 desktop files/518 tests, 16
+  native-runner Node tests, 61 Rust tests, 384 Python tests, portable artifacts,
+  the Tauri release executable, and Python source/wheel builds. The six Chromium
+  reader/accessibility/reflow/synchronization smokes also pass. Existing non-
+  failing Custom Highlight, JavaScript chunk-size, and pytest cache-write
+  warnings remain. The final content-safe scan found no pending secret/private-
+  path pattern, tracked prohibited book/audio/model artifact, or generated audio
+  in application-owned roots. The canonical system diagram was reviewed and
+  remains accurate because these fixes preserve the frozen runtime topology.
+- This machine contains prior VoxLeaf development/application state and cannot
+  prove absence of hidden prerequisites, first-ever user-data behavior, cross-
+  version replacement, or explicit application-data removal. Windows Sandbox/
+  Hyper-V and a separate clean Windows host are unavailable. A separate
+  compatible clean-GPU host is also unavailable, so no real Chatterbox download,
+  bilingual offline narration, restart/removal, or Piper-after-removal result is
+  admitted. The optional manifest therefore remains withheld with
+  `clean-host-validation-pending`.
 
 ### Milestone 7: Record the MVP release decision and close validation
 
@@ -1036,6 +1103,30 @@ and never edit prior benchmark authority to make a release pass.
   its Defender scan and exact-artifact lifecycle both pass. The final
   PowerShell parse, three focused Node tests, JSON/JavaScript format check, and
   package authority check also pass outside the sandbox.
+- **2026-08-01:** Began Milestone 6 from the merged Milestone 5 release. Extended
+  the native harness to accept one absolute installed executable and confirmed
+  its model-free packaged WebView2/service lifecycle before exercising a real
+  profile.
+- **2026-08-01:** Installed-package validation exposed and fixed a native hash
+  stack overflow, Python bytecode mutation of the verified package, Windows
+  verbatim-path containment mismatch, and stale local-package reuse during core
+  regeneration. The regenerated core and Windows installer identities are
+  recorded in the Milestone 6 actual result and committed release evidence.
+- **2026-08-01:** The installed Spanish and English Piper portfolio matrices
+  passed outside the sandbox with all six rates, zero external requests, zero
+  generated-audio files, bounded cleanup, and content-safe performance/resource
+  measurements. Two consecutive installer/repair/uninstall cycles and the exact
+  Defender scan also passed.
+- **2026-08-01:** Deterministic Piper/core/Windows/optional authority, release
+  audit, component inventory, and hostile optional-package gates pass. The host
+  is not clean and no independent normal-user Windows or compatible clean-GPU
+  host is available. Milestone 6 therefore remains in progress and the
+  Chatterbox manifest remains withheld; no local result is relabeled as clean-
+  host acceptance.
+- **2026-08-01:** Complete portable and Windows repository gates plus all six
+  Chromium smokes passed outside the sandbox. A final content-safe privacy and
+  tracked-artifact scan reported zero findings. The system diagram was reviewed
+  and needs no topology change for the package-integrity fixes.
 
 ## Discoveries and decisions
 
@@ -1161,6 +1252,16 @@ and never edit prior benchmark authority to make a release pass.
   SHA-256 values, compressed/install/staging sizes, and free-space requirements
   remain unavailable until Milestones 2-4 create the minimal production
   graphs. Recording that absence avoids inventing release evidence.
+- **Discovery:** A repository build can pass while an installed immutable
+  Python payload fails because Windows canonicalizes executable paths and the
+  interpreter normally writes bytecode beside imported modules. Installed-
+  artifact verification must therefore exercise the actual executable, disable
+  runtime mutation, and retain exact tree verification across repeat runs.
+- **Decision:** Current-host install and portfolio rehearsals are necessary
+  package evidence but never substitute for a fresh normal-user OS state. Prior
+  application data, developer tooling, caches, drivers, and WebView state make
+  this host unsuitable for the clean-host claim even when every measured arm
+  passes.
 
 ## Final validation
 

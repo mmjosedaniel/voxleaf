@@ -987,15 +987,34 @@ pnpm.cmd package:windows:signed
 
 The check validates the frozen version, NSIS/current-user target, exact resource
 allowlist, exclusion boundary, uninstall hooks, and verified Piper payload.
-The unsigned build produced
-`VoxLeaf_0.1.0_x64-setup.exe` at `181,654,713` bytes with SHA-256
-`9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c`.
+The current unsigned build produced
+`VoxLeaf_0.1.0_x64-setup.exe` at `181,651,989` bytes with SHA-256
+`f7157be21d82a4f3d28f0390c2c3bb90eba903b6acaffaf307959c30ec332a2d`.
 The outside-sandbox lifecycle command passed installation, first start, same-
 version repair, uninstall, and unrelated-file preservation on the development
 host. Windows Defender reported no threats; SmartScreen was not observed. The
 signed command is fail-closed and remains unexecuted without an authorized
 external certificate. None of these local results substitutes for Milestone
 6's clean-user matrix.
+
+Milestone 6 adds an installed-artifact form of the native harness. It accepts
+exactly one absolute executable and does not build or select a repository
+binary implicitly:
+
+```powershell
+$app = (Resolve-Path "$env:LOCALAPPDATA\VoxLeaf\voxleaf-desktop.exe").Path
+node apps/desktop/scripts/native-startup-smoke.mjs "--executable=$app"
+```
+
+The current-host release rehearsal used that boundary for complete installed
+Spanish and English Piper matrices, including all six playback rates, and
+recorded zero external requests and zero generated-audio files. Two consecutive
+installer/first-start/repair/uninstall cycles and an exact-installer Defender
+scan also passed. The rehearsal exposed package-only stack-allocation,
+bytecode-mutation, canonical-Windows-path, and stale-local-package defects;
+focused regressions now protect each fix. This remains development-host
+evidence: independent clean normal-user Windows and clean compatible-GPU
+Chatterbox arms are still required.
 
 The remaining release matrix must distinguish:
 
