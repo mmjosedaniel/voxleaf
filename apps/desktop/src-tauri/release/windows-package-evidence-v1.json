@@ -16,13 +16,13 @@
     "updaterIncluded": false,
     "installer": {
       "fileName": "VoxLeaf_0.1.0_x64-setup.exe",
-      "sizeBytes": 181651989,
-      "sha256": "f7157be21d82a4f3d28f0390c2c3bb90eba903b6acaffaf307959c30ec332a2d"
+      "sizeBytes": 181654077,
+      "sha256": "d207fec2cc29de31f86eab67dc4b3cd17c27ef6175cecf4b2ef3d4292b5ed895"
     },
     "applicationBinary": {
       "fileName": "voxleaf-desktop.exe",
       "sizeBytes": 12189696,
-      "sha256": "a8d69ef4926cbea15c1e236aa9ece4f9417198a5ddc775462d7c16b83b850ae1"
+      "sha256": "6b714d24f81d733c120904f7461985d77cc531068c6a39fea2813467d9b7060c"
     }
   },
   "payload": {

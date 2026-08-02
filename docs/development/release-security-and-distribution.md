@@ -232,9 +232,9 @@ automatic updater. Ordinary development and repository builds remain
 unbundled. The exact resource allowlist excludes Chatterbox runtime/weights,
 Qwen, benchmark tools, candidate environments, books, audio, and private data.
 
-The current measured unsigned local installer is `181,651,989` bytes with
+The current measured unsigned local installer is `181,654,077` bytes with
 SHA-256
-`f7157be21d82a4f3d28f0390c2c3bb90eba903b6acaffaf307959c30ec332a2d`.
+`d207fec2cc29de31f86eab67dc4b3cd17c27ef6175cecf4b2ef3d4292b5ed895`.
 Its installed bilingual portfolio matrix and two consecutive local install/
 first-start/repair/uninstall cycles passed outside the automation sandbox.
 Windows Defender reported no threats for the exact artifact. SmartScreen was
@@ -243,6 +243,13 @@ host evidence, not clean-host or public-release acceptance. The optional
 Chatterbox manifest remains withheld until a separate compatible clean-GPU host
 passes download, offline bilingual narration, restart, removal, and Piper-after-
 removal validation.
+
+An independent Windows-host attempt exposed a visible blank console for the
+private Piper child. The rebuilt candidate now starts every supervised child
+with Windows `CREATE_NO_WINDOW` while retaining the same pipe protocol and Job
+Object termination boundary. Local installed narration, lifecycle, and Defender
+validation pass for the corrected artifact; independent visual confirmation is
+still required before the clean-host core gate closes.
 
 The signing command accepts only an externally protected certificate
 thumbprint and HTTPS timestamp URL. It emits the release configuration outside

@@ -988,8 +988,8 @@ pnpm.cmd package:windows:signed
 The check validates the frozen version, NSIS/current-user target, exact resource
 allowlist, exclusion boundary, uninstall hooks, and verified Piper payload.
 The current unsigned build produced
-`VoxLeaf_0.1.0_x64-setup.exe` at `181,651,989` bytes with SHA-256
-`f7157be21d82a4f3d28f0390c2c3bb90eba903b6acaffaf307959c30ec332a2d`.
+`VoxLeaf_0.1.0_x64-setup.exe` at `181,654,077` bytes with SHA-256
+`d207fec2cc29de31f86eab67dc4b3cd17c27ef6175cecf4b2ef3d4292b5ed895`.
 The outside-sandbox lifecycle command passed installation, first start, same-
 version repair, uninstall, and unrelated-file preservation on the development
 host. Windows Defender reported no threats; SmartScreen was not observed. The
@@ -1015,6 +1015,15 @@ bytecode-mutation, canonical-Windows-path, and stale-local-package defects;
 focused regressions now protect each fix. This remains development-host
 evidence: independent clean normal-user Windows and clean compatible-GPU
 Chatterbox arms are still required.
+
+The first independent Windows-host attempt exposed a blank console when the
+private packaged Python/Piper child started. Standard-stream redirection alone
+does not suppress a console-subsystem child window under a GUI parent. The
+supervisor now applies Windows `CREATE_NO_WINDOW` to its child command before
+spawn; the focused Windows regression freezes that flag, and the rebuilt
+installed Piper matrix proves that protocol, narration, cancellation, and
+cleanup remain intact. Visual clean-host confirmation must use the current hash
+above rather than an earlier installer.
 
 The remaining release matrix must distinguish:
 

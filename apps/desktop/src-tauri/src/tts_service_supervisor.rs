@@ -15,6 +15,11 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use tauri::{State, ipc::Response};
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+#[cfg(windows)]
+use windows_sys::Win32::System::Threading::CREATE_NO_WINDOW;
+
 use crate::{
     tts_optional_chatterbox::discover_installed_chatterbox_runtime,
     tts_protocol_contract::{
@@ -73,6 +78,14 @@ const POLL_INTERVAL: Duration = Duration::from_millis(5);
 
 static SERVICE_COUNTER: AtomicU64 = AtomicU64::new(1);
 static REQUEST_COUNTER: AtomicU64 = AtomicU64::new(1);
+
+#[cfg(windows)]
+const SUPERVISED_CHILD_CREATION_FLAGS: u32 = CREATE_NO_WINDOW;
+
+fn configure_supervised_child(command: &mut Command) {
+    #[cfg(windows)]
+    command.creation_flags(SUPERVISED_CHILD_CREATION_FLAGS);
+}
 
 #[derive(Clone)]
 struct ExactRuntime {
@@ -469,8 +482,9 @@ struct ChildProcess {
 
 impl ChildProcess {
     fn spawn(child_configuration: &ServiceChild) -> Result<Self, TtsNativeFailure> {
-        let child = child_configuration
-            .command()?
+        let mut command = child_configuration.command()?;
+        configure_supervised_child(&mut command);
+        let child = command
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -1678,5 +1692,12 @@ mod tests {
         assert!(command.get_envs().any(|(key, value)| {
             key == "PYTHONDONTWRITEBYTECODE" && value == Some(std::ffi::OsStr::new("1"))
         }));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn supervised_children_use_the_windows_no_console_flag() {
+        assert_eq!(SUPERVISED_CHILD_CREATION_FLAGS, CREATE_NO_WINDOW);
+        assert_eq!(SUPERVISED_CHILD_CREATION_FLAGS, 0x0800_0000);
     }
 }

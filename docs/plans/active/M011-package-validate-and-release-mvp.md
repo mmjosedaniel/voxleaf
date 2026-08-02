@@ -612,9 +612,11 @@ Actual result on 2026-08-01:
 ### Milestone 6: Validate the clean-host portfolio and release matrix
 
 **Status:** In progress. The exact-package rehearsal and deterministic release
-matrix pass on the development host. Independent clean normal-user Windows and
-clean compatible-GPU hosts are unavailable, so clean-host acceptance and the
-optional Chatterbox gate remain blocked rather than inferred from local state.
+matrix pass on the development host. An independent normal-user Windows host is
+now available and its first run exposed the console-window defect fixed below;
+the corrected core rerun is pending. A clean compatible-GPU host remains
+unavailable, so the optional Chatterbox gate stays blocked rather than inferred
+from local state.
 
 1. Install the exact candidate on a clean normal-user Windows host and prove
    no hidden developer prerequisite or external runtime mutation is needed.
@@ -660,8 +662,9 @@ Actual result on 2026-08-01:
   `281,213,569` installed bytes and `191,240,146` compressed bytes, with archive
   SHA-256
   `17fe3456bd7fca519b3e3b0c3b0bbf2579c733e13b660d740c5a56a0781f0843`.
-  The exact unsigned installer is `181,651,989` bytes with SHA-256
-  `f7157be21d82a4f3d28f0390c2c3bb90eba903b6acaffaf307959c30ec332a2d`.
+  A later clean-host console-window correction produced the current exact
+  unsigned installer at `181,654,077` bytes with SHA-256
+  `d207fec2cc29de31f86eab67dc4b3cd17c27ef6175cecf4b2ef3d4292b5ed895`.
 - The exact installed Piper service completed first and repeated synthesis in
   both languages with zero generated `.pyc` files. The complete installed
   WebView2 portfolio matrix then passed for davefx/Spanish and joe/English:
@@ -679,6 +682,18 @@ Actual result on 2026-08-01:
   and reported zero detections for the exact installer; SmartScreen was not
   observed. The committed package evidence remains `unsigned-local` and keeps
   `cleanHostStillRequired: true`.
+- The first independent Windows-host attempt installed and opened a public-
+  domain book, but exposed a blank console whenever the packaged Piper child
+  started. The GUI application was correctly built with the Windows subsystem;
+  its private console-subsystem `python.exe` child lacked `CREATE_NO_WINDOW`.
+  The supervisor now applies that flag to every supervised child while
+  preserving piped protocol streams and Job Object cancellation. A Windows-only
+  regression freezes the exact flag. The rebuilt installed Spanish Piper matrix
+  passes with Quick start in `4,200` ms, warm prepared RTF `0.09`, zero
+  underruns, zero external requests, zero generated-audio files, and cleanup in
+  `694` ms. Its install/repair/uninstall lifecycle and exact Defender scan also
+  pass locally. Visual absence of the console still requires confirmation by
+  rerunning this rebuilt installer on the independent host.
 - `package:piper-core:check`, `package:windows:check`, both optional Chatterbox
   authority checks, the exact release audit, component-inventory check, and 12
   native optional-package hostile/integrity/cancellation/removal tests pass
@@ -698,10 +713,11 @@ Actual result on 2026-08-01:
 - This machine contains prior VoxLeaf development/application state and cannot
   prove absence of hidden prerequisites, first-ever user-data behavior, cross-
   version replacement, or explicit application-data removal. Windows Sandbox/
-  Hyper-V and a separate clean Windows host are unavailable. A separate
-  compatible clean-GPU host is also unavailable, so no real Chatterbox download,
-  bilingual offline narration, restart/removal, or Piper-after-removal result is
-  admitted. The optional manifest therefore remains withheld with
+  Hyper-V are unavailable. The separate normal-user Windows arm is now underway,
+  but its 4-GB-class GPU is below the Chatterbox gate. No compatible clean-GPU
+  host is available, so no real Chatterbox download, bilingual offline
+  narration, restart/removal, or Piper-after-removal result is admitted. The
+  optional manifest therefore remains withheld with
   `clean-host-validation-pending`.
 
 ### Milestone 7: Record the MVP release decision and close validation
@@ -1118,15 +1134,23 @@ and never edit prior benchmark authority to make a release pass.
   measurements. Two consecutive installer/repair/uninstall cycles and the exact
   Defender scan also passed.
 - **2026-08-01:** Deterministic Piper/core/Windows/optional authority, release
-  audit, component inventory, and hostile optional-package gates pass. The host
-  is not clean and no independent normal-user Windows or compatible clean-GPU
-  host is available. Milestone 6 therefore remains in progress and the
-  Chatterbox manifest remains withheld; no local result is relabeled as clean-
-  host acceptance.
+  audit, component inventory, and hostile optional-package gates pass. The
+  development host is not clean; an independent normal-user Windows core arm is
+  now underway, but no compatible clean-GPU host is available. Milestone 6
+  therefore remains in progress and the Chatterbox manifest remains withheld;
+  no local result is relabeled as clean-host acceptance.
 - **2026-08-01:** Complete portable and Windows repository gates plus all six
   Chromium smokes passed outside the sandbox. A final content-safe privacy and
   tracked-artifact scan reported zero findings. The system diagram was reviewed
   and needs no topology change for the package-integrity fixes.
+- **2026-08-01:** The first independent Windows-host run installed the unsigned
+  candidate and opened a public-domain EPUB, then exposed a blank console for
+  packaged Piper. Root cause was the missing Windows `CREATE_NO_WINDOW` child-
+  creation flag. The minimal native fix, seven focused supervisor tests,
+  rebuilt-package lifecycle, Defender scan, and complete installed Spanish
+  Piper matrix pass outside the sandbox. Independent visual confirmation remains
+  pending against installer SHA-256
+  `d207fec2cc29de31f86eab67dc4b3cd17c27ef6175cecf4b2ef3d4292b5ed895`.
 
 ## Discoveries and decisions
 
@@ -1262,6 +1286,11 @@ and never edit prior benchmark authority to make a release pass.
   application data, developer tooling, caches, drivers, and WebView state make
   this host unsuitable for the clean-host claim even when every measured arm
   passes.
+- **Discovery:** Redirecting a console-subsystem child's standard streams does
+  not suppress its window when a Windows GUI parent has no console. Every
+  packaged TTS child must additionally use `CREATE_NO_WINDOW`; switching to
+  `pythonw.exe` is unnecessary and would complicate the frozen standard-stream
+  protocol.
 
 ## Final validation
 
