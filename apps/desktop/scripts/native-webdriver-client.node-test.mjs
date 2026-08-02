@@ -14,9 +14,52 @@ import {
   assertNativeSmokeInvariants,
   nativeSmokeInvariantFailureCode,
   NativeSmokeInvariantError,
+  resolveNativeSmokeExecutable,
 } from "./native-smoke-invariants.mjs";
 
 const ELEMENT_KEY = "element-6066-11e4-a52e-4f735466cecf";
+
+test("resolves one absolute installed executable without accepting ambiguous paths", () => {
+  assert.equal(
+    resolveNativeSmokeExecutable(
+      [
+        "--executable=C:\\Users\\tester\\AppData\\Local\\VoxLeaf\\voxleaf-desktop.exe",
+      ],
+      "C:\\fallback\\voxleaf-desktop.exe",
+      "win32",
+    ),
+    "C:\\Users\\tester\\AppData\\Local\\VoxLeaf\\voxleaf-desktop.exe",
+  );
+  assert.equal(
+    resolveNativeSmokeExecutable(
+      [],
+      "C:\\fallback\\voxleaf-desktop.exe",
+      "win32",
+    ),
+    "C:\\fallback\\voxleaf-desktop.exe",
+  );
+  assert.throws(
+    () =>
+      resolveNativeSmokeExecutable(
+        ["--executable=relative.exe"],
+        "C:\\fallback\\voxleaf-desktop.exe",
+        "win32",
+      ),
+    /must be an absolute path/u,
+  );
+  assert.throws(
+    () =>
+      resolveNativeSmokeExecutable(
+        [
+          "--executable=C:\\one\\voxleaf-desktop.exe",
+          "--executable=C:\\two\\voxleaf-desktop.exe",
+        ],
+        "C:\\fallback\\voxleaf-desktop.exe",
+        "win32",
+      ),
+    /provided more than once/u,
+  );
+});
 
 async function startServer(handler) {
   const requests = [];

@@ -25,17 +25,21 @@ import {
   assertNativeSmokeInvariant,
   assertNativeSmokeInvariants,
   nativeSmokeInvariantFailureCode,
+  resolveNativeSmokeExecutable,
 } from "./native-smoke-invariants.mjs";
 import { PORTFOLIO_PLAYBACK_RATE_PERCENTS } from "./bilingual-portfolio-host.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.resolve(scriptDirectory, "..");
-const executablePath = path.join(
-  desktopRoot,
-  "src-tauri",
-  "target",
-  "release",
-  "voxleaf-desktop.exe",
+const executablePath = resolveNativeSmokeExecutable(
+  process.argv.slice(2),
+  path.join(
+    desktopRoot,
+    "src-tauri",
+    "target",
+    "release",
+    "voxleaf-desktop.exe",
+  ),
 );
 const STARTUP_TIMEOUT_MS = 90_000;
 const INTERACTION_TIMEOUT_MS = 15_000;
