@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -9,12 +15,15 @@ import { OptionalChatterboxControls } from "./OptionalChatterboxControls";
 
 afterEach(() => cleanup());
 
-function snapshot(state: "absent" | "confirming" | "installed") {
+function snapshot(
+  state: "absent" | "confirming" | "downloading" | "installed",
+  downloadedBytes = 0,
+) {
   return {
     profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
     state,
     downloadBytes: 1_073_741_824,
-    downloadedBytes: 0,
+    downloadedBytes,
     installedBytes: 2_147_483_648,
     temporaryBytes: 3_221_225_472,
     minimumFreeBytes: 4_294_967_296,
@@ -102,5 +111,50 @@ describe("optional Chatterbox controls", () => {
     expect(invoke).toHaveBeenNthCalledWith(2, "download_optional_chatterbox", {
       profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
     });
+  });
+
+  it("polls and exposes native progress while the download command remains active", async () => {
+    let downloadStarted = false;
+    const invoke = vi.fn((command: string): Promise<unknown> => {
+      if (command === "download_optional_chatterbox") {
+        downloadStarted = true;
+        return new Promise(() => undefined);
+      }
+      return Promise.resolve(
+        downloadStarted
+          ? snapshot("downloading", 536_870_912)
+          : snapshot("confirming"),
+      );
+    });
+    const client = new OptionalChatterboxClient(invoke);
+
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={vi.fn(async () => true)}
+        onRemove={vi.fn(async () => undefined)}
+      />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Download Chatterbox" }),
+    );
+
+    expect(
+      await screen.findByText("Starting the Chatterbox download."),
+    ).toBeInTheDocument();
+    const progress = await screen.findByRole(
+      "progressbar",
+      { name: "Chatterbox download progress" },
+      { timeout: 1_000 },
+    );
+    expect(progress).toHaveAttribute("max", "1073741824");
+    expect(progress).toHaveAttribute("value", "536870912");
+    await waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith(
+        "optional_chatterbox_snapshot",
+        undefined,
+      ),
+    );
   });
 });

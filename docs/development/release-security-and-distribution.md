@@ -343,6 +343,21 @@ root, and cannot be attached to a public release or counted as clean-host
 evidence. No renderer flag, environment override, arbitrary URL, or bundled
 Chatterbox payload is introduced.
 
+The first real Download attempts on that local validation build exposed two
+package-only defects rather than a Chatterbox model failure. The renderer did
+not poll native progress until the long-running command returned, and the
+native optional-package path allocated 1-MiB buffers on worker-thread stacks;
+Windows recorded stack-overflow exception `c00000fd`. The corrected build polls
+as soon as explicit consent starts the operation, displays an accessible
+byte-based progress bar, and uses heap-backed buffers for hashing, transfer,
+extraction, and runtime reassembly. The current unsigned local validation
+installer is `181,637,194` bytes with SHA-256
+`a22219872d96684725011acb90bfa6185bd8da80775182f9dec39224db789054`;
+Microsoft Defender reports no threats for that exact file. This correction does
+not relax the validation-only boundary: a maintainer rerun of the complete
+download, activation, offline narration, restart, removal, and Piper fallback
+journey is still required before any optional-profile readiness decision.
+
 Hugging Face documents full-commit downloads, per-file downloads, filtered
 snapshots, and application-selected cache/local directories. VoxLeaf uses the
 full-commit and exact-file concepts but retains its own post-download

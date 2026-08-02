@@ -1570,6 +1570,11 @@ button.semantic-internal-link {
   align-items: center;
 }
 
+.reader-settings-content .optional-chatterbox-progress progress {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
 .reader-settings-content .hardware-compatibility-narration fieldset,
 .reader-settings-content .hardware-compatibility-device fieldset {
   display: grid;

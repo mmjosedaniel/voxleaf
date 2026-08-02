@@ -614,10 +614,14 @@ fn safe_relative_path(value: &str) -> Result<PathBuf, OptionalProfileError> {
     Ok(path)
 }
 
+fn copy_buffer() -> Vec<u8> {
+    vec![0_u8; COPY_BUFFER_BYTES]
+}
+
 fn sha256_file(path: &Path) -> Result<String, OptionalProfileError> {
     let mut file = File::open(path).map_err(|_| OptionalProfileError::VerificationFailed)?;
     let mut digest = Sha256::new();
-    let mut buffer = [0_u8; COPY_BUFFER_BYTES];
+    let mut buffer = copy_buffer();
     loop {
         let read = file
             .read(&mut buffer)
@@ -635,7 +639,7 @@ fn sha256_file_cancelled(
 ) -> Result<String, OptionalProfileError> {
     let mut file = File::open(path).map_err(|_| OptionalProfileError::VerificationFailed)?;
     let mut digest = Sha256::new();
-    let mut buffer = [0_u8; COPY_BUFFER_BYTES];
+    let mut buffer = copy_buffer();
     loop {
         if cancelled.load(Ordering::Acquire) {
             return Err(OptionalProfileError::Cancelled);
@@ -871,7 +875,7 @@ fn extract_archive(
         let mut output =
             File::create(destination).map_err(|_| OptionalProfileError::VerificationFailed)?;
         let mut copied = 0_u64;
-        let mut buffer = [0_u8; COPY_BUFFER_BYTES];
+        let mut buffer = copy_buffer();
         loop {
             if cancelled.load(Ordering::Acquire) {
                 return Err(OptionalProfileError::Cancelled);
@@ -1031,7 +1035,7 @@ fn download_artifact(
     let partial = destination.with_file_name(format!(".{filename}.partial"));
     let _ = fs::remove_file(&partial);
     let mut output = File::create(&partial).map_err(|_| OptionalProfileError::DownloadFailed)?;
-    let mut buffer = [0_u8; COPY_BUFFER_BYTES];
+    let mut buffer = copy_buffer();
     let mut downloaded = 0_u64;
     loop {
         if cancelled.load(Ordering::Acquire) {
@@ -1100,7 +1104,7 @@ fn reassemble_runtime(
         File::create(destination).map_err(|_| OptionalProfileError::VerificationFailed)?;
     let mut digest = Sha256::new();
     let mut written = 0_u64;
-    let mut buffer = [0_u8; COPY_BUFFER_BYTES];
+    let mut buffer = copy_buffer();
     for part in &artifact.parts {
         if cancelled.load(Ordering::Acquire) {
             return Err(OptionalProfileError::Cancelled);
@@ -2015,6 +2019,22 @@ mod tests {
             Err(OptionalProfileError::Cancelled)
         );
         assert!(!root.0.join("extract/runtime/python.exe").exists());
+    }
+
+    #[test]
+    fn hashes_optional_payloads_without_a_large_stack_allocation() {
+        let root = TestRoot::new();
+        let path = root.0.join("payload.bin");
+        fs::write(&path, vec![7_u8; 2 * COPY_BUFFER_BYTES]).expect("fixture should be written");
+        let expected = format!("{:x}", Sha256::digest(vec![7_u8; 2 * COPY_BUFFER_BYTES]));
+        let actual = std::thread::Builder::new()
+            .stack_size(256 * 1024)
+            .spawn(move || sha256_file(&path))
+            .expect("bounded-stack worker should start")
+            .join()
+            .expect("bounded-stack hashing should not overflow")
+            .expect("fixture should hash");
+        assert_eq!(actual, expected);
     }
 
     #[cfg(not(feature = "chatterbox-acquisition-validation"))]

@@ -772,12 +772,32 @@ Actual result on 2026-08-01:
   it remains unsigned and its exact Windows Defender scan reports no threats.
   The maintainer must reinstall this corrected artifact before continuing the
   real lifecycle.
+- The next installed attempt reached explicit consent, but displayed neither
+  transfer progress nor a progress bar and then terminated. The Windows
+  Application log recorded `APPCRASH` with exception `c00000fd`, proving a
+  native stack overflow rather than a model, GPU, or renderer failure. The
+  optional controller still allocated five 1-MiB copy buffers on worker-thread
+  stacks during hashing, download, extraction, and runtime reassembly even
+  though the packaged Piper path had already moved its equivalent buffer to the
+  heap. One shared heap-backed buffer factory now closes every optional-package
+  copy path. A 256-KiB-stack regression proves hashing no longer overflows.
+- The renderer also waited for the long-running native download command to
+  return before it could observe `downloading`, so its existing polling loop
+  never began during a real transfer. The explicit Download action now starts
+  polling immediately, shows a bounded accessible `<progress>` element from the
+  native byte counters, preserves verifying/cancel states, and does not expose
+  URLs, paths, or payload content. The corrected local validation installer is
+  `181,637,194` bytes with SHA-256
+  `a22219872d96684725011acb90bfa6185bd8da80775182f9dec39224db789054`;
+  it remains unsigned and Microsoft Defender reports no threats. The real
+  download/install/activation/offline/removal journey still requires maintainer
+  rerun and is not inferred from these focused fixes.
 - Final implementation validation ran outside the sandbox. The normal and
-  feature-enabled Rust suites each pass 62 tests; feature-enabled Clippy passes
+  feature-enabled Rust suites each pass 63 tests; feature-enabled Clippy passes
   with warnings denied; the static validation-package and ordinary-package
   closure checks pass; and `check:portable` passes formatting, TypeScript/
   Python lint and types, 20 shared files/209 tests, 34 EPUB files/580 tests, 53
-  desktop files/519 tests, 17 Node tests, 384 Python tests, and portable builds.
+  desktop files/521 tests, 17 Node tests, 384 Python tests, and portable builds.
   The existing Custom Highlight, bundle-size, and pytest cache-write warnings
   remain non-failing. The system diagram now distinguishes the validation
   package without changing the runtime trust boundary.
@@ -1213,6 +1233,18 @@ and never edit prior benchmark authority to make a release pass.
   Piper matrix pass outside the sandbox. Independent visual confirmation remains
   pending against installer SHA-256
   `d207fec2cc29de31f86eab67dc4b3cd17c27ef6175cecf4b2ef3d4292b5ed895`.
+- **2026-08-02:** The first real validation-build Download attempt exposed two
+  independent defects: the UI did not poll while the native command remained
+  active, and native optional-package I/O retained five 1-MiB stack buffers.
+  Windows recorded `c00000fd` for the resulting process termination. Progress
+  is now visible and byte-bounded while the command runs; all optional copy
+  paths use heap storage. Focused UI/native tests, the full 521-test desktop
+  suite, the 63-test feature-enabled Rust suite, types, format, and feature
+  Clippy pass outside the sandbox. The rebuilt unsigned validation installer is
+  `181,637,194` bytes, SHA-256
+  `a22219872d96684725011acb90bfa6185bd8da80775182f9dec39224db789054`,
+  and its exact Defender scan reports no threats. Maintainer lifecycle rerun is
+  still required.
 
 ## Discoveries and decisions
 
