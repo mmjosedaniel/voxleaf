@@ -10,6 +10,7 @@ from voxleaf_tts.release_core import (
     PACKAGE_DIRECTORY_NAME,
     PackageMeasurement,
     ReleaseCoreError,
+    _excluded_site_file,
     atomic_stage,
     build_runtime_manifest,
     load_source_manifest,
@@ -63,6 +64,17 @@ def test_source_manifest_closes_runtime_sources_and_both_voices() -> None:
     assert {voice["language"] for voice in voices} == {"en", "es"}
     assert {voice["runtimeVoice"] for voice in voices} == {"davefx-es", "joe-en"}
     assert all(len(voice["artifacts"]) == 3 for voice in voices)
+
+
+def test_core_excludes_release_builders_and_their_stale_install_metadata() -> None:
+    for relative in (
+        "voxleaf_tts/release_core.py",
+        "voxleaf_tts/release_chatterbox.py",
+        "voxleaf_tts-0.0.0.dist-info/RECORD",
+        "voxleaf_tts-0.0.0.dist-info/uv_cache.json",
+    ):
+        assert _excluded_site_file(Path(relative))
+    assert not _excluded_site_file(Path("voxleaf_tts/piper_service.py"))
 
 
 @pytest.mark.parametrize(

@@ -64,12 +64,13 @@ native-supervised TTS child, bounded in-memory audio, English/Spanish selection,
 supported Piper and Chatterbox profiles, development-only Qwen profiles,
 identity-first recovery, and six boundary-deferred playback rates.
 
-The repository can build a Tauri release executable for validation and now
-builds a deterministic, manifest-verified Piper core payload. However,
-`apps/desktop/src-tauri/tauri.conf.json` still uses version `0.0.0` and
-`bundle.active` is `false`. There is no end-user installer, signed release,
-updater policy, enabled network-backed optional-model acquisition, or
-clean-machine install/uninstall proof.
+The repository now has deliberate application version `0.1.0` and a separate
+release-only Tauri configuration that builds a per-user Windows x64 NSIS
+installer while leaving ordinary development builds unbundled. The measured
+unsigned local installer contains the deterministic, manifest-verified Piper
+core and both voices, and its install, first-start, same-version repair, and
+uninstall lifecycle passed on the development host. It is not signed, is not a
+general-public release, and is not clean-host acceptance evidence.
 
 Milestones 2 and 3 now provide the release dependency and Piper payload
 boundaries: a 15-entry private core lock, a separate 79-package Chatterbox
@@ -81,9 +82,10 @@ manifest/source-build boundary. Milestone 4B now replaces the single
 republished model/archive assumption with a split, verified acquisition:
 six exact model-data files come from the official revision-pinned Hugging Face
 repository, while the reviewed runtime is independently locked, reproducibly
-split, verified, and published as `chatterbox-runtime-v2`. Clean-host evidence,
-installer integration, enabled optional acquisition, and signing remain future
-work.
+split, verified, and published as `chatterbox-runtime-v2`. Milestone 5
+integrates only the acquisition authority into the core installer; Chatterbox
+runtime and model bytes remain excluded. Clean-host acquisition, enabled
+optional acquisition, and public signing remain future work.
 
 The current TTS runtimes are ignored developer assets selected through
 environment variables. Development firewall rules target exact candidate
@@ -538,7 +540,9 @@ Piper core and the rest of M011 may continue independently.
 
 ### Milestone 5: Build the versioned Windows package and signing path
 
-**Status:** Not started.
+**Status:** Complete for the unsigned local package and signing automation.
+Public signed publication remains externally blocked by the absence of an
+authorized trusted certificate; clean-host acceptance remains Milestone 6.
 
 1. Replace development identity/version labels with a deliberate first MVP
    version and enable only the frozen Windows bundle targets.
@@ -555,6 +559,54 @@ Piper core and the rest of M011 may continue independently.
    emits a checksum. Never weaken the unsigned local development path.
 5. Record antivirus/SmartScreen observations without claiming universal
    reputation. Commit the package lifecycle separately.
+
+Actual result on 2026-08-01:
+
+- VoxLeaf now uses deliberate version `0.1.0`. Ordinary Tauri builds remain
+  unbundled, while `tauri.release.conf.json` enables only a per-user Windows
+  x64 NSIS target, embeds the WebView2 bootstrapper, disables automatic update
+  and downgrade behavior, and uses the release title `VoxLeaf`.
+- The exact installer resource map contains the desktop/service, verified
+  `voxleaf-piper-core-v1` runtime, davefx/Spanish and joe/English voices,
+  optional-acquisition authority, inventory, notices, licence, and user guide.
+  Chatterbox runtime/weights, Qwen, benchmark tools, candidate environments,
+  books, generated audio, and private artifacts are excluded.
+- The first package build correctly stopped on a stale Piper manifest. Review
+  found that release-builder modules and mutable installation metadata had
+  entered the payload. The builder now excludes those non-product files, a
+  regression test protects the boundary, and the regenerated deterministic
+  core archive is `191,239,969` bytes with SHA-256
+  `d8dffd398908b136e54009143a9e30d23af9f36dd1389198599be62a059bca81`.
+- The unsigned installer
+  `VoxLeaf_0.1.0_x64-setup.exe` is `181,654,713` bytes with SHA-256
+  `9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c`.
+  Its application binary is `12,190,720` bytes with SHA-256
+  `be44c22f10f0c31ef463e6e2b2a67177cd5cd0de1900561922fb7b5e67b27aee`.
+- Local outside-sandbox lifecycle validation passed per-user installation,
+  first start, same-version repair, uninstall, and preservation of an unrelated
+  synthetic file. Silent uninstall preserves application data; interactive
+  uninstall offers removal only for the exact VoxLeaf-owned data root. Cross-
+  version replacement and clean-user application-data removal remain in the
+  Milestone 6 clean-host matrix.
+- The release script emits an adjacent SHA-256 file. Its signed mode accepts
+  only an external certificate thumbprint and HTTPS timestamp URL, verifies
+  Authenticode on both executable and installer, and never weakens the unsigned
+  local path. No signing credential exists in the repository or current
+  environment, so the measured package is explicitly `unsigned-local` and
+  `publicPublicationAllowed: false`.
+- Microsoft Defender reported no threats for the exact installer. SmartScreen
+  was not observed, and no universal antivirus or reputation claim is made.
+  The content-safe result is recorded in
+  `apps/desktop/src-tauri/release/windows-package-evidence-v1.json`.
+- Pull request #190 exposed two clean-runner closure defects after the local
+  package result: the ordinary repository test still required the ignored,
+  generated Piper `dist` directory, and the component inventory still recorded
+  desktop version `0.0.0`. Static release validation now checks only tracked
+  resources, while package construction separately requires and verifies the
+  generated core. The regenerated inventory records version `0.1.0` and the
+  current Cargo lock. Focused release/inventory checks plus complete portable
+  and Windows repository gates pass outside the sandbox; the pull-request
+  rerun remains the final CI confirmation.
 
 ### Milestone 6: Validate the clean-host portfolio and release matrix
 
@@ -942,6 +994,48 @@ and never edit prior benchmark authority to make a release pass.
   portable builds, the Tauri release build, and the Python package build.
   `pnpm.cmd audit:release` and `pnpm.cmd inventory:release:check` also passed;
   the four already disclosed optional-graph advisory blind spots remain.
+- **2026-08-01:** Milestone 5 set the first package identity to `0.1.0` and
+  added a release-only, current-user NSIS configuration. The exact resource map
+  includes the bilingual Piper core plus release notices, inventory, optional-
+  acquisition authority, and user documentation while excluding all
+  Chatterbox/Qwen/model/benchmark/private content.
+- **2026-08-01:** The first build stopped safely on a stale Piper manifest.
+  Inspection found release-builder modules and mutable distribution metadata in
+  the staged runtime. The production-closure builder and regression tests now
+  exclude them; the regenerated deterministic core and verifier pass.
+- **2026-08-01:** `pnpm.cmd package:windows` produced the unsigned
+  `181,654,713`-byte `VoxLeaf_0.1.0_x64-setup.exe` with SHA-256
+  `9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c`.
+  Outside-sandbox install, first-start, repair, uninstall, unrelated-file
+  preservation, package closure, and Defender checks passed. SmartScreen was
+  not observed. Clean-host and cross-version evidence remain Milestone 6.
+- **2026-08-01:** Implemented a fail-closed signing path that consumes only a
+  protected external certificate and timestamp URL, verifies both signatures,
+  and emits the checksum/evidence. No credential is available locally, so the
+  exact artifact remains an unsigned local/portfolio candidate and public
+  publication stays externally blocked without blocking Milestone 6 work.
+- **2026-08-01:** The first complete repository gate found that the new Node
+  scripts relied on unconfigured `process` and `structuredClone` globals. The
+  release script now imports `node:process` explicitly and the JSON-only test
+  uses a JSON clone; this changes no package bytes or runtime behavior.
+- **2026-08-01:** Final outside-sandbox `pnpm.cmd check` passed formatting,
+  ESLint, Clippy, Ruff, TypeScript/Python type checks, 20 shared test files/209
+  tests, 34 EPUB files/580 tests, 53 desktop files/518 tests, 15 native-runner
+  Node tests, 59 Rust tests, 382 Python tests, Tauri release build, and Python
+  source/wheel builds. `pnpm.cmd package:windows:check` and
+  `pnpm.cmd package:piper-core:check` also passed. The signed command failed
+  closed with `windows-release-signing-thumbprint-unavailable` after external
+  signing variables were deliberately absent. Existing non-failing Custom
+  Highlight, JavaScript chunk-size, and pytest cache-write warnings remain.
+- **2026-08-01:** A final release rebuild exposed that native Defender status
+  text was being captured alongside the function's fixed status token. The
+  script now suppresses only that informational output and still treats the
+  scanner exit code as authoritative. The final exact installer is
+  `181,654,713` bytes with SHA-256
+  `9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c`;
+  its Defender scan and exact-artifact lifecycle both pass. The final
+  PowerShell parse, three focused Node tests, JSON/JavaScript format check, and
+  package authority check also pass outside the sandbox.
 
 ## Discoveries and decisions
 
@@ -989,6 +1083,19 @@ and never edit prior benchmark authority to make a release pass.
   not invent separate lower-capacity clean-host evidence.
 - **Decision:** Code signing is a public-publication gate, not a prerequisite
   for a private local build or recorded portfolio demonstration.
+- **Decision:** Ordinary `pnpm build` remains unbundled. Only the explicit
+  Windows release command merges the reviewed release configuration, limiting
+  accidental installer creation and keeping development iteration unchanged.
+- **Decision:** The first package is version `0.1.0`, Windows x64, current-user
+  NSIS only. It embeds the Microsoft WebView2 bootstrapper, uses no updater,
+  rejects downgrades, and documents manual signed version replacement.
+- **Discovery:** Release assembly code and volatile package-manager metadata
+  can enter an embedded Python payload unless the production closure excludes
+  them explicitly. The Piper builder and tests now enforce that exclusion.
+- **Decision:** Milestone 5 local lifecycle evidence is useful but does not
+  substitute for Milestone 6. Clean-user prerequisites, cross-version
+  replacement, full reader/narration behavior, optional acquisition, and
+  application-data removal remain clean-host release gates.
 - **Decision:** Automatic updates, enterprise process isolation, formal SBOM
   certification, external pentesting, and cross-platform packaging are
   post-MVP unless new evidence makes one release-critical.

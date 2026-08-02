@@ -5,10 +5,10 @@
 This document records the security and distribution boundary that roadmap
 Milestone 11 must close. It is deliberately proportional to VoxLeaf's first
 MVP and portfolio goal. It is not a security certification and does not claim
-that an end-user installer already exists.
+that the current unsigned installer is ready for general-public distribution.
 
-M011 Milestones 1 through 3 and the fail-closed Milestones 4A-4B deterministic
-foundation are complete. The result-blind
+M011 Milestones 1 through 5 are complete at their documented boundaries. The
+result-blind
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
 [ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
 now govern the package topology, optional-profile lifecycle, threat model,
@@ -21,7 +21,10 @@ measurements, offline process-level smoke, and native fixed-manifest verifier.
 Milestone 4A adds the optional lifecycle and UI in a deliberately withheld
 state. Milestone 4B accepts additive official-source authority, implements the
 closed controller, and publishes the exact runtime parts; clean-host acquisition
-evidence must still pass before any Download action is enabled.
+evidence must still pass before any Download action is enabled. Milestone 5
+builds the versioned unsigned local Windows package and implements the external-
+credential signing path; clean-host acceptance and signed public publication
+remain separate open gates.
 
 ## Current assessment
 
@@ -202,11 +205,13 @@ The following work is required before the corresponding release claim:
    acquired artifact, verify its digest before use, prevent path substitution,
    retain zero silent runtime download, and prove normal reading/narration with
    external connectivity unavailable.
-5. **Windows package lifecycle.** Build a versioned per-user package; document
-   size and prerequisites; install without a development
-   shell, administrator-created firewall rule, or repository checkout; and
-   verify repair/reinstall, uninstall, and cleanup of application-owned files
-   without deleting user books.
+5. **Windows package lifecycle — local path complete; clean-host replacement
+   remains open.** The versioned per-user package documents size and
+   prerequisites and passed local install, first start, same-version repair,
+   uninstall, exact-root cleanup behavior, and unrelated-file preservation
+   without a development shell, administrator-created firewall rule, or
+   repository checkout. Cross-version replacement and destructive application-
+   data removal remain isolated to Milestone 6's clean host.
 6. **Clean-host product validation.** On a normal Windows host, exercise
    installation, first start, synthetic/public-domain EPUB open, English and
    Spanish narration, restoration, all admitted playback rates, cancellation,
@@ -217,6 +222,34 @@ The following work is required before the corresponding release claim:
    startup/resource measurements, known limitations, dependency-audit status,
    hashes, licences, troubleshooting, and recovery behavior. A failed gate
    narrows or blocks the claim instead of being relabeled as support.
+
+## Implemented Windows package and signing path
+
+VoxLeaf `0.1.0` has a release-only Windows x64 NSIS configuration. It installs
+for the current user, includes the exact verified Piper Spanish/English core,
+embeds Microsoft's WebView2 bootstrapper, rejects downgrades, and includes no
+automatic updater. Ordinary development and repository builds remain
+unbundled. The exact resource allowlist excludes Chatterbox runtime/weights,
+Qwen, benchmark tools, candidate environments, books, audio, and private data.
+
+The measured unsigned local installer is `181,654,713` bytes with SHA-256
+`9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c`.
+Its local install/first-start/repair/uninstall matrix passed outside the
+automation sandbox, and Windows Defender reported no threats for the exact
+artifact. SmartScreen was not observed, so no reputation claim is made. This is
+content-safe local evidence, not clean-host or public-release acceptance.
+
+The signing command accepts only an externally protected certificate
+thumbprint and HTTPS timestamp URL. It emits the release configuration outside
+Git, verifies Authenticode on the executable and installer, and writes the
+adjacent checksum. No credential is committed or logged. Because no trusted
+certificate is currently authorized, the exact measured artifact remains
+`unsigned-local` and public publication is blocked. See the
+[Windows package guide](../user/windows-release.md) for installation,
+replacement, removal, and verification behavior and the
+[official Tauri Windows installer documentation](https://v2.tauri.app/distribute/windows-installer/)
+and [code-signing documentation](https://v2.tauri.app/distribute/sign/windows/)
+for the upstream platform mechanisms.
 
 ## Optional Chatterbox acquisition boundary
 

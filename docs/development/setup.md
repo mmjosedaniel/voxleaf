@@ -497,7 +497,17 @@ pnpm.cmd check
 
 `format` intentionally rewrites supported TypeScript, JavaScript, JSON, CSS, YAML, Rust, and Python files. The other commands are suitable for validation: `format:check`, `lint`, `typecheck`, and `test` do not intentionally modify tracked source; `build` writes only ignored build output. `check` runs those five validation stages in order and stops on the first failure. Each aggregate command delegates to the same focused pnpm, Cargo, and uv commands documented above, so focused commands remain available for diagnosis.
 
-The Tauri build produces the React frontend and a release-mode Windows executable. Installer bundling is intentionally disabled during foundation validation. The Python commands create only an isolated development environment, validate the model-free service package and its offline canonical schema registry, and build source and wheel distributions under the ignored `services/tts/dist` directory. `uv run --directory services/tts --locked python -m voxleaf_tts.service` is the internal binary standard-stream service entry point; it is not an interactive shell command and expects framed protocol input. None of the root commands starts that service, downloads models, reads books, requires GPU hardware, or persists generated audio.
+The ordinary Tauri build produces the React frontend and a release-mode Windows
+executable without installer bundling. The separate M011 release command below
+is the only path that enables the reviewed NSIS configuration. The Python
+commands create only an isolated development environment, validate the model-
+free service package and its offline canonical schema registry, and build
+source and wheel distributions under the ignored `services/tts/dist`
+directory. `uv run --directory services/tts --locked python -m voxleaf_tts.service`
+is the internal binary standard-stream service entry point; it is not an
+interactive shell command and expects framed protocol input. None of the root
+commands starts that service, downloads models, reads books, requires GPU
+hardware, or persists generated audio.
 
 The root `check` command does not start the development server. The development server runs only when explicitly requested with the focused `dev` command above.
 
@@ -521,9 +531,42 @@ notices/model cards, and exact Piper/espeak source. It never uses system Python
 at product runtime, installs nothing into `PATH`, and persists no generated
 audio. Maintainers run `pnpm.cmd package:piper-core:write-manifest` only for an
 intentional authority update, because that command rewrites the tracked runtime
-manifest and package evidence. This standalone payload is not yet an end-user
-installer; M011 Milestone 5 owns Tauri resource integration and per-user
-install/repair/uninstall proof.
+manifest and package evidence. This standalone payload is also consumed by the
+explicit M011 Windows package command; ordinary development builds do not
+bundle it.
+
+### Build the M011 Windows package
+
+From a normal local PowerShell session outside the automation sandbox:
+
+```powershell
+pnpm.cmd package:windows:check
+pnpm.cmd package:windows
+pnpm.cmd package:windows:lifecycle
+```
+
+`package:windows` rebuilds and verifies the exact Piper core, then creates the
+ignored current-user NSIS artifact at
+`apps/desktop/src-tauri/target/release/bundle/nsis/VoxLeaf_0.1.0_x64-setup.exe`.
+It also writes an adjacent SHA-256 file and refreshes the tracked content-safe
+package evidence. The installer includes the WebView2 bootstrapper; when the
+Windows prerequisite is absent, that Microsoft bootstrapper can require
+network access. Normal EPUB reading and Piper narration remain local.
+
+The signed maintainer path is:
+
+```powershell
+$env:VOXLEAF_WINDOWS_CERTIFICATE_THUMBPRINT = '<external certificate thumbprint>'
+$env:VOXLEAF_WINDOWS_TIMESTAMP_URL = '<authorized HTTPS timestamp URL>'
+pnpm.cmd package:windows:signed
+```
+
+Those values are external release credentials/configuration, never repository
+content. The command fails closed when the certificate, private key, timestamp
+URL, or resulting Authenticode signatures are unavailable or invalid. The
+unsigned command remains valid for local validation only. See
+[`docs/user/windows-release.md`](../user/windows-release.md) for the end-user
+package behavior.
 
 ### Check the M011 optional Chatterbox package source authority
 

@@ -2,7 +2,7 @@
 
 A privacy-first desktop EPUB reader in development, designed for on-device neural text-to-speech and in-memory audio streaming.
 
-> **Status:** pre-alpha. Roadmap Milestones 1 through 10.2, M008.1, and M009.1 are complete. M010.2 implements the reader-first Settings shell, English-default bounded preferences, and repository-owned pitch-preserving playback at `1.00x` through `0.75x`. Its six-arm packaged portfolio, repository checks, renewed human all-rate confirmation, and pull request #170 Ubuntu/Windows checks pass. Piper/davefx Spanish and Piper/joe English remain supported CPU profiles; Chatterbox Multilingual V3 remains a supported Spanish/English GPU profile; and Qwen3-TTS Serena/Spanish plus Aiden/English remain gated development-only profiles. M011 is in progress: the small Windows x64/Piper core and deterministic optional Chatterbox acquisition controller exist, but no end-user installer is available and Chatterbox Download remains withheld pending externally authorized runtime publication and clean-host validation.
+> **Status:** pre-alpha. Roadmap Milestones 1 through 10.2, M008.1, and M009.1 are complete. M010.2 implements the reader-first Settings shell, English-default bounded preferences, and repository-owned pitch-preserving playback at `1.00x` through `0.75x`. Its six-arm packaged portfolio, repository checks, renewed human all-rate confirmation, and pull request #170 Ubuntu/Windows checks pass. Piper/davefx Spanish and Piper/joe English remain supported CPU profiles; Chatterbox Multilingual V3 remains a supported Spanish/English GPU profile; and Qwen3-TTS Serena/Spanish plus Aiden/English remain gated development-only profiles. M011 is in progress: version `0.1.0` has a local unsigned Windows x64/Piper installer and an external-credential signing path. The installer is not yet a public release, and Chatterbox Download remains withheld pending clean-host validation.
 
 ## Goal
 
@@ -34,7 +34,7 @@ The MVP is allowed to:
 
 The canonical [system architecture diagram](docs/architecture/system-diagram.md) distinguishes implemented components, approved planned work, blocked boundaries, foundations, external systems, and deferred work. The framework-independent `@voxleaf/epub` package validates in-memory EPUB bytes and exposes safe semantic documents, bounded resources, deterministic locators, and `OpenedPublication.prepareNarration`. The desktop connects those ephemeral locator-linked prepared segments to one selected local service, sole-owner in-memory buffering, Web Audio playback, synchronized highlighting, and heard-position persistence without changing displayed text or retaining generated audio.
 
-Tauri, React, TypeScript, the direct semantic DOM reader, bounded WebView `localStorage` persistence, constrained Web Audio playback, segment-level reader/narration synchronization, privacy-safe host matching, and explicit recovery are accepted and implemented within their documented limits. The accepted local process transport is Rust-owned child standard streams with complete bounded 24-kHz mono float32-le units returned through narrow binary Tauri responses. Native supervision selects exactly one verified isolated Piper, Chatterbox, or Qwen child for the selected language. Piper/davefx Spanish, Piper/joe English, and Chatterbox Spanish/English are supported when their exact host and runtime gates pass. Qwen Serena/Spanish and Aiden/English remain development-only constrained-buffer choices, while historical Qwen 0.6B/Aiden and Supertonic/F1 remain unsupported. The current matrix is recorded in [`tts-support-matrix-v2.md`](docs/architecture/tts-support-matrix-v2.md). M011 keeps Piper Spanish/English in the baseline distributable core and implements Chatterbox's explicit integrity-checked removable acquisition boundary using six exact official model files plus a reproducible three-part runtime. The downloadable manifest remains withheld until the runtime assets are published and clean-host gates pass; Qwen stays outside the first distributable product. Piper-core, optional-Chatterbox, and signed-public readiness are separate decisions. See the [M011 ExecPlan](docs/plans/active/M011-package-validate-and-release-mvp.md) and the [release security boundary](docs/development/release-security-and-distribution.md).
+Tauri, React, TypeScript, the direct semantic DOM reader, bounded WebView `localStorage` persistence, constrained Web Audio playback, segment-level reader/narration synchronization, privacy-safe host matching, and explicit recovery are accepted and implemented within their documented limits. The accepted local process transport is Rust-owned child standard streams with complete bounded 24-kHz mono float32-le units returned through narrow binary Tauri responses. Native supervision selects exactly one verified isolated Piper, Chatterbox, or Qwen child for the selected language. Piper/davefx Spanish, Piper/joe English, and Chatterbox Spanish/English are supported when their exact host and runtime gates pass. Qwen Serena/Spanish and Aiden/English remain development-only constrained-buffer choices, while historical Qwen 0.6B/Aiden and Supertonic/F1 remain unsupported. The current matrix is recorded in [`tts-support-matrix-v2.md`](docs/architecture/tts-support-matrix-v2.md). M011 keeps Piper Spanish/English in the baseline distributable core and implements Chatterbox's explicit integrity-checked removable acquisition boundary using six exact official model files plus a reproducible three-part runtime. The optional manifest remains withheld until clean-host gates pass; Qwen stays outside the first distributable product. The exact Piper core is integrated into the versioned local NSIS package, but Piper-core, optional-Chatterbox, and signed-public readiness remain separate decisions. See the [M011 ExecPlan](docs/plans/active/M011-package-validate-and-release-mvp.md) and the [release security boundary](docs/development/release-security-and-distribution.md).
 
 ## Privacy principles
 
@@ -123,7 +123,20 @@ pass; it is not a supported production or real-time profile. These commands
 configure local development assets only and do not replace M011 packaging or
 license fulfillment.
 
-The native executable is written to the ignored Tauri target directory. Installer bundling is intentionally disabled.
+Ordinary builds write the native executable to the ignored Tauri target
+directory and intentionally remain unbundled. To build the reviewed local
+Windows package from normal PowerShell, run:
+
+```powershell
+pnpm.cmd package:windows:check
+pnpm.cmd package:windows
+```
+
+The ignored installer is written below
+`apps/desktop/src-tauri/target/release/bundle/nsis`. It is unsigned unless an
+authorized maintainer uses the protected signing path, so it must not be
+published as a trusted general-public download. See the
+[Windows package guide](docs/user/windows-release.md).
 
 See [`docs/development/setup.md`](docs/development/setup.md) for tool versions, focused commands, Windows and WSL boundaries, and generated outputs. See [`docs/development/testing.md`](docs/development/testing.md) for current test coverage and [`docs/development/dependencies.md`](docs/development/dependencies.md) for the dependency inventory and decision rationale.
 

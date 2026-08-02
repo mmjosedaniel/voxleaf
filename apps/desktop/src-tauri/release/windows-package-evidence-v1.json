@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "application": {
+    "identifier": "com.voxleaf.desktop",
+    "platform": "windows-x86_64",
+    "version": "0.1.0"
+  },
+  "authority": {
+    "releaseConfigSha256": "7ed038dfa601718696374312cef9ffddc900b35dde13443548900e0b21c9d635",
+    "piperRuntimeManifestSha256": "651ac03b435d40f411fc13308e792c212576cc0acae745d970080b71fcd26dda"
+  },
+  "package": {
+    "target": "nsis",
+    "installMode": "current-user",
+    "webview2Bootstrapper": "embedded",
+    "updaterIncluded": false,
+    "installer": {
+      "fileName": "VoxLeaf_0.1.0_x64-setup.exe",
+      "sizeBytes": 181654713,
+      "sha256": "9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c"
+    },
+    "applicationBinary": {
+      "fileName": "voxleaf-desktop.exe",
+      "sizeBytes": 12190720,
+      "sha256": "be44c22f10f0c31ef463e6e2b2a67177cd5cd0de1900561922fb7b5e67b27aee"
+    }
+  },
+  "payload": {
+    "piperCoreBundled": true,
+    "spanishVoiceBundled": true,
+    "englishVoiceBundled": true,
+    "optionalAcquisitionAuthorityBundled": true,
+    "chatterboxRuntimeOrWeightsBundled": false,
+    "qwenBundled": false,
+    "benchmarkToolsBundled": false,
+    "generatedAudioOrBooksBundled": false
+  },
+  "signature": {
+    "status": "unsigned-local",
+    "executableAndInstallerVerified": false,
+    "publicPublicationAllowed": false,
+    "checksumFileName": "VoxLeaf_0.1.0_x64-setup.exe.sha256",
+    "credentialStoredInRepository": false
+  },
+  "lifecycle": {
+    "status": "local-install-first-start-repair-uninstall-passed",
+    "cleanHostStillRequired": true,
+    "explicitApplicationDataRemovalStructurallyVerified": true,
+    "silentUninstallPreservesApplicationData": true
+  },
+  "observations": {
+    "antivirus": "windows-defender-no-threats",
+    "smartScreen": "not-observed",
+    "universalReputationClaimed": false
+  },
+  "limitations": [
+    "This artifact is not clean-host acceptance evidence; that belongs to M011 Milestone 6.",
+    "This unsigned artifact is restricted to local or maintainer-operated portfolio validation.",
+    "WebView2 installation can require Microsoft network access when the Windows prerequisite is absent."
+  ]
+}

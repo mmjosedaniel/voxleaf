@@ -122,13 +122,17 @@ Qwen stays development-only and outside the first distributable product.
 ADR-0044 corrects only current Chatterbox product admission: the measured
 `3,644`-MiB peak now yields a `5,632`-MiB-total/`4,668`-MiB-free technical gate,
 while the evaluated nominal 8-GB class remains recommended and disclosed.
-Milestone 2
+Milestone 5 now packages version `0.1.0` as a release-only current-user Windows
+x64 NSIS installer containing the exact verified bilingual Piper core. Local
+installation, first start, repair, uninstall, unrelated-file preservation, and
+Defender checks pass outside the sandbox. The artifact is unsigned and not a
+public release; clean-host validation and authorized public signing remain
+open. Milestone 2
 closes the exact 15-entry core and 79-package optional locks, automated
 audits, bounded update intake, and the component inventory. Milestone 3 adds
 the deterministic bilingual Piper core, complete notices/source fulfillment,
 offline smoke evidence, and native fixed-manifest verification. Enabled
-official-source acquisition, runtime delivery, installer, and clean-host
-release claims remain open.
+official-source acquisition and clean-host release claims remain open.
 Piper-core, optional-Chatterbox, and signed-public readiness are separate
 gates. Signing
 does not block a truthful local demo, but an unsigned general download is not
@@ -230,14 +234,15 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
   availability, startup, buffering, cancellation, resource, and recovery
   guidance.
 - [`development/dependencies.md`](development/dependencies.md): dependency ownership, purpose, alternatives, and review policy.
-- [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current M011 security assessment, closed Piper core and optional Chatterbox dependency/audit boundary, mandatory remaining release gates, independent core/optional/public decisions, and deliberately deferred enterprise hardening.
+- [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current M011 security assessment, implemented local Windows package/signing path, closed Piper core and optional Chatterbox dependency/audit boundary, remaining clean-host/public gates, independent core/optional/public decisions, and deliberately deferred enterprise hardening.
+- [`user/windows-release.md`](user/windows-release.md): current-user Windows install, repair/replacement, uninstall, checksum, signature, prerequisite, and payload-exclusion guidance for the versioned local package.
 - [`development/git-workflow.md`](development/git-workflow.md): branches, commits, and pull requests.
 
 ## Plans
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
-- [`plans/active/M011-package-validate-and-release-mvp.md`](plans/active/M011-package-validate-and-release-mvp.md): approved detailed plan for the Windows/Piper core, fail-closed optional Chatterbox lifecycle, implemented exact-revision Hugging Face model-data plus published split-runtime acquisition boundary, remaining clean-host gate, signing path, and independent core/optional/public release decisions.
+- [`plans/active/M011-package-validate-and-release-mvp.md`](plans/active/M011-package-validate-and-release-mvp.md): approved detailed plan for the Windows/Piper core, implemented versioned local NSIS/signing path, fail-closed optional Chatterbox lifecycle, exact-revision Hugging Face model-data plus published split-runtime acquisition boundary, remaining clean-host/public-signing gates, and independent core/optional/public release decisions.
 - [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.
 - [`plans/completed/M002-shared-contracts-and-test-harness.md`](plans/completed/M002-shared-contracts-and-test-harness.md): completed ExecPlan and validation evidence for roadmap Milestone 2.
 - [`plans/completed/M003-secure-epub-ingestion-and-document-model.md`](plans/completed/M003-secure-epub-ingestion-and-document-model.md): completed ExecPlan and validation evidence for secure EPUB ingestion and the framework-independent document model in roadmap Milestone 3.
