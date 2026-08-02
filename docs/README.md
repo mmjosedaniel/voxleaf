@@ -122,6 +122,11 @@ Qwen stays development-only and outside the first distributable product.
 ADR-0044 corrects only current Chatterbox product admission: the measured
 `3,644`-MiB peak now yields a `5,632`-MiB-total/`4,668`-MiB-free technical gate,
 while the evaluated nominal 8-GB class remains recommended and disclosed.
+ADR-0045 adds a distinct unsigned local validation installer for the only
+available compatible computer. It compile-time-enables the same native closed
+manifest with exact measured disclosures while the ordinary installer remains
+`withheld`; the resulting local journey cannot substitute for clean-host or
+public-release evidence.
 Milestone 5 now packages version `0.1.0` as a release-only current-user Windows
 x64 NSIS installer containing the exact verified bilingual Piper core. Local
 installation, first start, repair, uninstall, unrelated-file preservation, and

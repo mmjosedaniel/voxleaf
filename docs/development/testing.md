@@ -1057,6 +1057,24 @@ manifest records the published runtime but remains withheld, so no end-user
 acquisition is reachable. Clean-host installation/offline use, cross-version
 replacement, application-data removal, and complete product behavior remain
 Milestone 6 work; do not describe those release gates as passing.
+
+ADR-0045 adds a separate local validation build because no second compatible
+GPU computer is available. Its static check proves that the ordinary manifest
+remains `withheld`, the validation overlay is exact and not public-authorized,
+the product/identifier/data root are distinct, Chatterbox bytes are not bundled,
+and the Cargo feature is explicit. Native tests must pass both without and with
+`chatterbox-acquisition-validation`; the feature-enabled arm must expose
+consent without creating staging or contacting the network. Building and using
+this installer on the development computer is useful functional evidence but
+is never called clean-host acceptance.
+
+```powershell
+pnpm.cmd package:windows:chatterbox-validation:check
+cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml tts_optional_chatterbox
+cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --features chatterbox-acquisition-validation tts_optional_chatterbox
+pnpm.cmd package:windows:chatterbox-validation
+```
+
 All final M011 commands run outside the automation sandbox under the existing
 repository testing rule.
 

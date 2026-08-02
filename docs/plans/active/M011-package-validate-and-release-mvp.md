@@ -615,7 +615,9 @@ Actual result on 2026-08-01:
 matrix pass on the development host. An independent normal-user Windows host is
 now available and its first run exposed the console-window defect fixed below;
 the corrected core rerun is pending. A clean compatible-GPU host remains
-unavailable, so the optional Chatterbox gate stays blocked rather than inferred
+unavailable. A separately identified local validation installer is now ready
+for the maintainer's compatible computer, but its real Chatterbox journey has
+not run, so the optional clean-host gate stays blocked rather than inferred
 from local state.
 
 The maintainer has no second compatible-GPU computer. ADR-0045 therefore
@@ -741,6 +743,31 @@ Actual result on 2026-08-01:
   narration, restart/removal, or Piper-after-removal result is admitted. The
   optional manifest therefore remains withheld with
   `clean-host-validation-pending`.
+- Because that 4-GB host cannot run Chatterbox and no other compatible computer
+  is available, ADR-0045 freezes a non-public validation route rather than
+  weakening the ordinary package. The implementation adds a closed Cargo
+  feature, exact additive overlay, separate Windows product/identifier/data
+  root, separate NSIS uninstall boundary, static package checker, and focused
+  default/feature-native tests. The canonical manifest remains `withheld`.
+- `pnpm.cmd package:windows:chatterbox-validation` passed outside the sandbox,
+  rebuilt the exact Piper core, compiled only the validation feature, produced
+  `VoxLeaf-Chatterbox-Validation_0.1.0_x64-setup.exe` at `181,658,209` bytes,
+  wrote SHA-256
+  `91d48f2cf586a68048bb6520cde735ec271c580a4d3af58707c4ca19e945eb39`,
+  confirmed it is unsigned, and completed a Windows Defender scan with no
+  threats. The installer includes neither Chatterbox runtime nor weights. The
+  real consent/download/activation/offline narration/restart/removal journey is
+  now ready for maintainer execution on the current compatible computer; no
+  result from that journey is recorded yet.
+- Final implementation validation ran outside the sandbox. The normal and
+  feature-enabled Rust suites each pass 62 tests; feature-enabled Clippy passes
+  with warnings denied; the static validation-package and ordinary-package
+  closure checks pass; and `check:portable` passes formatting, TypeScript/
+  Python lint and types, 20 shared files/209 tests, 34 EPUB files/580 tests, 53
+  desktop files/519 tests, 17 Node tests, 384 Python tests, and portable builds.
+  The existing Custom Highlight, bundle-size, and pytest cache-write warnings
+  remain non-failing. The system diagram now distinguishes the validation
+  package without changing the runtime trust boundary.
 
 ### Milestone 7: Record the MVP release decision and close validation
 

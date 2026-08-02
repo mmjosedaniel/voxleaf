@@ -586,6 +586,25 @@ only beneath ignored `services/tts/release/optional/chatterbox/dist`; it does
 not update the checked-in withheld download manifest. Do not run it merely to
 use the application or to enable the optional profile.
 
+### Build the local Chatterbox acquisition validation installer
+
+ADR-0045 authorizes one separate unsigned build for the maintainer's current
+compatible Windows computer. It does not enable Chatterbox in the ordinary
+VoxLeaf package and it is not a public-release artifact.
+
+```powershell
+pnpm.cmd package:windows:chatterbox-validation:check
+pnpm.cmd package:windows:chatterbox-validation
+```
+
+The build has the distinct identity `com.voxleaf.desktop.chatterbox-validation`
+and can coexist with ordinary VoxLeaf. It contains Piper but not Chatterbox
+runtime or model bytes. Settings exposes the real download only in this build;
+the native host and free-space gates still run before consent/download, and
+the user must explicitly approve the approximately 7.67-GiB transfer. The
+ignored installer and checksum are created beneath
+`apps/desktop/src-tauri/target/release/bundle/nsis` and must remain local.
+
 ## Local TTS feasibility preflight
 
 Milestone 6's hardware benchmark is explicit, manual, native-Windows work. It

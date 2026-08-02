@@ -334,6 +334,15 @@ and resource gates have not run. This is a fail-closed clean-host blocker for
 optional Chatterbox, not a failure of the Piper core or an authorization to
 claim Download works.
 
+ADR-0045 permits one compile-time, separately identified validation build on
+the maintainer's only compatible computer. Its exact overlay supplies the
+measured disclosure fields and `downloadable` state without changing the
+canonical manifest, URLs, hashes, limits, hardware gate, or normal package.
+This path remains unsigned and local-only, uses a distinct application-data
+root, and cannot be attached to a public release or counted as clean-host
+evidence. No renderer flag, environment override, arbitrary URL, or bundled
+Chatterbox payload is introduced.
+
 Hugging Face documents full-commit downloads, per-file downloads, filtered
 snapshots, and application-selected cache/local directories. VoxLeaf uses the
 full-commit and exact-file concepts but retains its own post-download

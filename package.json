@@ -40,6 +40,8 @@
     "package:chatterbox-optional": "uv run --directory services/tts --locked python -m voxleaf_tts.release_chatterbox build",
     "package:windows": "pnpm run package:piper-core && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows-release.ps1",
     "package:windows:check": "node apps/desktop/scripts/windows-release.mjs check --require-core",
+    "package:windows:chatterbox-validation": "pnpm run package:piper-core && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows-chatterbox-validation.ps1 -ScanWithDefender",
+    "package:windows:chatterbox-validation:check": "node apps/desktop/scripts/chatterbox-validation-release.mjs check --require-core",
     "package:windows:lifecycle": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-windows-package-lifecycle.ps1",
     "package:windows:signed": "pnpm run package:piper-core && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows-release.ps1 -Sign -ScanWithDefender",
     "build": "pnpm run build:packages && pnpm run build:desktop && pnpm run build:python",

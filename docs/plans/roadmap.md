@@ -95,6 +95,10 @@ a reproducible reviewed runtime is divided into three bounded GitHub Release
 assets. The deterministic controller, measurements, and hostile-input tests
 pass; availability remains withheld until an authorized maintainer publishes
 those assets and the clean-user online/offline GPU matrix passes.
+ADR-0045 additionally permits a separately identified unsigned local
+validation installer on the only available compatible computer. That build
+may expose and fix the real acquisition lifecycle, but it does not change the
+normal withheld manifest or satisfy the clean-host/public-signing gates.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 

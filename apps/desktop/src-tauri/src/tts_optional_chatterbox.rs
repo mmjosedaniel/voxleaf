@@ -36,6 +36,10 @@ const PERTH_SOURCE: &str =
 const MANIFEST_BYTES: &[u8] = include_bytes!(
     "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json"
 );
+#[cfg(feature = "chatterbox-acquisition-validation")]
+const VALIDATION_OVERLAY_BYTES: &[u8] = include_bytes!(
+    "../../../../services/tts/release/optional/chatterbox/optional-package-validation-overlay-v1.json"
+);
 const COPY_BUFFER_BYTES: usize = 1024 * 1024;
 const MODEL_DOWNLOAD_BYTES: u64 = 3_208_951_924;
 const MODEL_FILES: [(&str, u64, &str); 6] = [
@@ -218,6 +222,17 @@ struct AcquisitionMeasurements {
     temporary_bytes: u64,
 }
 
+#[cfg(feature = "chatterbox-acquisition-validation")]
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ValidationOverlay {
+    schema_version: u8,
+    purpose: String,
+    availability: String,
+    public_publication_allowed: bool,
+    measurements: AcquisitionMeasurements,
+}
+
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ModelArtifact {
@@ -363,8 +378,42 @@ pub(crate) struct OptionalChatterboxManager {
 fn exact_manifest() -> Result<OptionalPackageManifest, OptionalProfileError> {
     let manifest = serde_json::from_slice::<OptionalPackageManifest>(MANIFEST_BYTES)
         .map_err(|_| OptionalProfileError::Invalid)?;
+    #[cfg(feature = "chatterbox-acquisition-validation")]
+    let manifest = {
+        let mut validation_manifest = manifest;
+        apply_validation_overlay(&mut validation_manifest)?;
+        validation_manifest
+    };
     validate_manifest(&manifest)?;
     Ok(manifest)
+}
+
+#[cfg(feature = "chatterbox-acquisition-validation")]
+fn apply_validation_overlay(
+    manifest: &mut OptionalPackageManifest,
+) -> Result<(), OptionalProfileError> {
+    let overlay = serde_json::from_slice::<ValidationOverlay>(VALIDATION_OVERLAY_BYTES)
+        .map_err(|_| OptionalProfileError::Invalid)?;
+    let measurements = &overlay.measurements;
+    if overlay.schema_version != 1
+        || overlay.purpose != "local-validation-only"
+        || overlay.availability != "downloadable"
+        || overlay.public_publication_allowed
+        || measurements.cold_start_seconds != 60
+        || measurements.download_bytes != 8_231_893_387
+        || measurements.installed_bytes != 8_228_465_805
+        || measurements.minimum_free_bytes != 20_000_000_000
+        || measurements.temporary_bytes != 13_254_834_850
+        || manifest.availability != "withheld"
+        || manifest.measurements.is_some()
+        || manifest.withholding_reason.as_deref() != Some("clean-host-validation-pending")
+    {
+        return Err(OptionalProfileError::Invalid);
+    }
+    manifest.availability = overlay.availability;
+    manifest.measurements = Some(overlay.measurements);
+    manifest.withholding_reason = None;
+    Ok(())
 }
 
 fn validate_sha256(value: &str) -> bool {
@@ -1661,6 +1710,7 @@ mod tests {
         authority
     }
 
+    #[cfg(not(feature = "chatterbox-acquisition-validation"))]
     #[test]
     fn checked_in_authority_records_the_release_but_remains_withheld_for_clean_host() {
         let manifest = exact_manifest().expect("checked in manifest should be valid");
@@ -1684,6 +1734,22 @@ mod tests {
             manifest.withholding_reason.as_deref(),
             Some("clean-host-validation-pending")
         );
+    }
+
+    #[cfg(feature = "chatterbox-acquisition-validation")]
+    #[test]
+    fn validation_feature_applies_only_the_frozen_download_disclosures() {
+        let manifest = exact_manifest().expect("validation manifest should be valid");
+        assert_eq!(manifest.availability, "downloadable");
+        assert!(manifest.withholding_reason.is_none());
+        let measurements = manifest
+            .measurements
+            .expect("validation measurements should be present");
+        assert_eq!(measurements.cold_start_seconds, 60);
+        assert_eq!(measurements.download_bytes, 8_231_893_387);
+        assert_eq!(measurements.installed_bytes, 8_228_465_805);
+        assert_eq!(measurements.temporary_bytes, 13_254_834_850);
+        assert_eq!(measurements.minimum_free_bytes, 20_000_000_000);
     }
 
     #[test]
@@ -1951,6 +2017,7 @@ mod tests {
         assert!(!root.0.join("extract/runtime/python.exe").exists());
     }
 
+    #[cfg(not(feature = "chatterbox-acquisition-validation"))]
     #[test]
     fn withholding_does_not_create_staging_or_change_the_existing_profile() {
         let root = TestRoot::new();
@@ -1967,6 +2034,25 @@ mod tests {
             .select_at(&root.0)
             .expect("select should be contained");
         assert_eq!(selected.state, OptionalProfileState::Withheld);
+        assert!(!staging_root(&root.0).exists());
+        assert!(!profile_root(&root.0).exists());
+    }
+
+    #[cfg(feature = "chatterbox-acquisition-validation")]
+    #[test]
+    fn validation_selection_requires_confirmation_without_creating_staging() {
+        let root = TestRoot::new();
+        let manager = OptionalChatterboxManager::default();
+        let before = manager
+            .snapshot_at(&root.0)
+            .expect("snapshot should succeed");
+        assert_eq!(before.state, OptionalProfileState::Absent);
+        let selected = manager
+            .select_at(&root.0)
+            .expect("selection should reach consent");
+        assert_eq!(selected.state, OptionalProfileState::Confirming);
+        assert_eq!(selected.download_bytes, Some(8_231_893_387));
+        assert_eq!(selected.minimum_free_bytes, Some(20_000_000_000));
         assert!(!staging_root(&root.0).exists());
         assert!(!profile_root(&root.0).exists());
     }

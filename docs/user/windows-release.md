@@ -24,6 +24,18 @@ download. Public distribution requires a trusted signature, successful
 signature verification, a matching published SHA-256 checksum, and the release
 checks documented by the project.
 
+### Maintainer-only Chatterbox validation build
+
+`VoxLeaf-Chatterbox-Validation 0.1.0` is a separate unsigned package used only
+to test the optional download on the maintainer's compatible computer. It has a
+different Windows identity and data root, does not replace ordinary VoxLeaf,
+and is not a public installer. Before downloading, Settings discloses an
+approximately 7.67-GiB transfer, approximately 7.66-GiB final installation,
+approximately 12.35-GiB temporary peak, 20-GB free-space requirement, GPU/RAM/
+CPU requirements, licences, and estimated cold start. Native checks may still
+reject the computer. The download starts only after explicit confirmation and
+every artifact is verified before activation.
+
 ## Repair or replace a version
 
 Close VoxLeaf so its local narration child process is stopped. Running the same
