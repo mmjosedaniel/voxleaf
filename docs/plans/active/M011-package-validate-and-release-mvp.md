@@ -598,6 +598,15 @@ Actual result on 2026-08-01:
   was not observed, and no universal antivirus or reputation claim is made.
   The content-safe result is recorded in
   `apps/desktop/src-tauri/release/windows-package-evidence-v1.json`.
+- Pull request #190 exposed two clean-runner closure defects after the local
+  package result: the ordinary repository test still required the ignored,
+  generated Piper `dist` directory, and the component inventory still recorded
+  desktop version `0.0.0`. Static release validation now checks only tracked
+  resources, while package construction separately requires and verifies the
+  generated core. The regenerated inventory records version `0.1.0` and the
+  current Cargo lock. Focused release/inventory checks plus complete portable
+  and Windows repository gates pass outside the sandbox; the pull-request
+  rerun remains the final CI confirmation.
 
 ### Milestone 6: Validate the clean-host portfolio and release matrix
 

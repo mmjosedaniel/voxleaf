@@ -8800,7 +8800,7 @@
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
       "auditRef": "production-rust",
       "ecosystem": "rust",
-      "id": "cargo:voxleaf-desktop@0.0.0",
+      "id": "cargo:voxleaf-desktop@0.1.0",
       "inclusion": {
         "processBoundary": "native Tauri desktop/build boundary",
         "purpose": "Windows x64 desktop runtime or build dependency.",
@@ -8825,7 +8825,7 @@
       },
       "scope": "core",
       "source": "repository:apps/desktop/src-tauri",
-      "versionOrRevision": "0.0.0"
+      "versionOrRevision": "0.1.0"
     },
     {
       "artifactState": "Windows target lock closed; final executable hash belongs to packaging",
@@ -14115,7 +14115,7 @@
   "lockIdentities": {
     "cargo": {
       "path": "apps/desktop/src-tauri/Cargo.lock",
-      "sha256": "acdb928c2b85d1fd0114a5d034fb39faa800803feca5c476ddc7c703febb0baa"
+      "sha256": "faa4815994d3a8701ba6ad435265248e14a448c16e102c0ec4238bcab02303a8"
     },
     "chatterboxOptional": {
       "path": "services/tts/release/profiles/chatterbox/requirements.lock",

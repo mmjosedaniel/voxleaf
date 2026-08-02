@@ -8,12 +8,25 @@ import {
   APP_VERSION,
   createPackageEvidence,
   loadReleaseDocuments,
+  releaseResourceSources,
   repositoryRoot,
   validateClosedReleaseValues,
   validateReleaseConfiguration,
 } from "./windows-release.mjs";
 
 test("the checked-in Windows release configuration is closed and current", async () => {
+  assert.equal(
+    releaseResourceSources(false).some((source) =>
+      source.includes("release/core/dist"),
+    ),
+    false,
+  );
+  assert.equal(
+    releaseResourceSources(true).some((source) =>
+      source.includes("release/core/dist"),
+    ),
+    true,
+  );
   await validateReleaseConfiguration(repositoryRoot(), false);
 });
 

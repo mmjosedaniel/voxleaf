@@ -16,13 +16,15 @@ export const LIFECYCLE_STATUSES = new Set([
   "local-install-first-start-repair-uninstall-passed",
 ]);
 
+const PIPER_CORE_RESOURCE =
+  "../../../services/tts/release/core/dist/voxleaf-piper-core-v1/";
+
 const EXPECTED_RESOURCES = Object.freeze({
   "../../../LICENSE": "resources/notices/VOXLEAF-MIT.txt",
   "../../../docs/user/windows-release.md": "resources/docs/WINDOWS-RELEASE.md",
   "../../../services/tts/release/component-inventory-v1.json":
     "resources/release/component-inventory-v1.json",
-  "../../../services/tts/release/core/dist/voxleaf-piper-core-v1/":
-    "resources/tts/voxleaf-piper-core-v1/",
+  [PIPER_CORE_RESOURCE]: "resources/tts/voxleaf-piper-core-v1/",
   "../../../services/tts/release/optional/chatterbox/THIRD-PARTY-NOTICES.md":
     "resources/release/optional/chatterbox/THIRD-PARTY-NOTICES.md",
   "../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json":
@@ -47,6 +49,12 @@ function sortedEntries(value) {
 
 export function repositoryRoot() {
   return path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+}
+
+export function releaseResourceSources(requireCore = false) {
+  return Object.keys(EXPECTED_RESOURCES).filter(
+    (source) => requireCore || source !== PIPER_CORE_RESOURCE,
+  );
 }
 
 export async function loadReleaseDocuments(root) {
@@ -141,7 +149,7 @@ export async function validateReleaseConfiguration(root, requireCore = false) {
   const documents = await loadReleaseDocuments(root);
   validateClosedReleaseValues(documents);
   const srcTauri = path.join(root, "apps/desktop/src-tauri");
-  for (const source of Object.keys(EXPECTED_RESOURCES)) {
+  for (const source of releaseResourceSources(requireCore)) {
     const resolved = path.resolve(srcTauri, source);
     if (
       !(await stat(resolved)).isFile() &&
