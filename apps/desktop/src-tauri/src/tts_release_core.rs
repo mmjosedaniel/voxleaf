@@ -291,7 +291,7 @@ fn resolve_required_directory(
 fn sha256_file(path: &Path) -> Result<String, PackagedCoreError> {
     let mut file = File::open(path).map_err(|_| PackagedCoreError::Invalid)?;
     let mut digest = Sha256::new();
-    let mut buffer = [0_u8; 1024 * 1024];
+    let mut buffer = vec![0_u8; 1024 * 1024];
     loop {
         let read = file
             .read(&mut buffer)
@@ -439,5 +439,21 @@ mod tests {
     #[test]
     fn io_errors_remain_content_free() {
         assert_eq!(format!("{:?}", PackagedCoreError::Invalid), "Invalid");
+    }
+
+    #[test]
+    fn hashes_the_packaged_payload_without_a_large_stack_allocation() {
+        let root = TestRoot::new();
+        let path = root.0.join("payload.bin");
+        fs::write(&path, vec![7_u8; 2 * 1024 * 1024]).expect("fixture should be written");
+        let expected = format!("{:x}", Sha256::digest(vec![7_u8; 2 * 1024 * 1024]));
+        let actual = std::thread::Builder::new()
+            .stack_size(256 * 1024)
+            .spawn(move || sha256_file(&path))
+            .expect("bounded-stack worker should start")
+            .join()
+            .expect("bounded-stack hashing should not overflow")
+            .expect("fixture should hash");
+        assert_eq!(actual, expected);
     }
 }

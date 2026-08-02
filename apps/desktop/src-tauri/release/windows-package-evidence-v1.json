@@ -7,7 +7,7 @@
   },
   "authority": {
     "releaseConfigSha256": "7ed038dfa601718696374312cef9ffddc900b35dde13443548900e0b21c9d635",
-    "piperRuntimeManifestSha256": "651ac03b435d40f411fc13308e792c212576cc0acae745d970080b71fcd26dda"
+    "piperRuntimeManifestSha256": "45aad7d39d04066c8875040c1389dc9047d0c56d94a586ed814dfb432c5620c8"
   },
   "package": {
     "target": "nsis",
@@ -16,13 +16,13 @@
     "updaterIncluded": false,
     "installer": {
       "fileName": "VoxLeaf_0.1.0_x64-setup.exe",
-      "sizeBytes": 181654713,
-      "sha256": "9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c"
+      "sizeBytes": 181651989,
+      "sha256": "f7157be21d82a4f3d28f0390c2c3bb90eba903b6acaffaf307959c30ec332a2d"
     },
     "applicationBinary": {
       "fileName": "voxleaf-desktop.exe",
-      "sizeBytes": 12190720,
-      "sha256": "be44c22f10f0c31ef463e6e2b2a67177cd5cd0de1900561922fb7b5e67b27aee"
+      "sizeBytes": 12189696,
+      "sha256": "a8d69ef4926cbea15c1e236aa9ece4f9417198a5ddc775462d7c16b83b850ae1"
     }
   },
   "payload": {

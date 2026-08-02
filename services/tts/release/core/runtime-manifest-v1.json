@@ -9808,8 +9808,8 @@
     },
     {
       "path": "runtime/Lib/site-packages/voxleaf_tts/piper_adapter.py",
-      "sha256": "61e7edebd5eb21455186f9cbcd8ba90543567c88e2203887f109ce95fc4905be",
-      "sizeBytes": 17385
+      "sha256": "b762a6648ccfb52bc68dce8b45c1aa6d72aa4b70ad201837d97719d2173026f2",
+      "sizeBytes": 18017
     },
     {
       "path": "runtime/Lib/site-packages/voxleaf_tts/piper_service.py",
@@ -10044,7 +10044,7 @@
   ],
   "packageId": "voxleaf-piper-core-v1",
   "packageVersion": "1",
-  "payloadBytes": 280808272,
+  "payloadBytes": 280808904,
   "platform": "windows-x86_64",
   "runtime": {
     "profiles": [

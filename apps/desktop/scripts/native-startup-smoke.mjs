@@ -1443,6 +1443,22 @@ async function runAdaptiveTtsExactHostMatrix(
   setStage("adaptive exact-host collapsed reader experience");
   const initialReaderExperience =
     await adaptiveReaderExperienceObservation(driver);
+  if (
+    initialReaderExperience?.readerScrollOwnerCount !== 1 ||
+    initialReaderExperience.readerScrollOwnerVisible !== true ||
+    initialReaderExperience.compactVisible !== true ||
+    initialReaderExperience.detailExpanded !== false ||
+    initialReaderExperience.detailVisible !== false ||
+    initialReaderExperience.progressBarCount !== 0 ||
+    initialReaderExperience.leafCount !== 1 ||
+    initialReaderExperience.leafVisible !== true ||
+    initialReaderExperience.leafState !== "checkpoint" ||
+    initialReaderExperience.leafAriaCurrent !== false
+  ) {
+    console.error(
+      `Adaptive reader experience observation: ${JSON.stringify(initialReaderExperience)}`,
+    );
+  }
   assert(
     initialReaderExperience?.readerScrollOwnerCount === 1 &&
       initialReaderExperience.readerScrollOwnerVisible === true &&
@@ -1452,7 +1468,7 @@ async function runAdaptiveTtsExactHostMatrix(
       initialReaderExperience.progressBarCount === 0 &&
       initialReaderExperience.leafCount === 1 &&
       initialReaderExperience.leafVisible === true &&
-      initialReaderExperience.leafState === "preview" &&
+      initialReaderExperience.leafState === "checkpoint" &&
       initialReaderExperience.leafAriaCurrent === false,
     "Native synchronized narration proof failed.",
   );
@@ -2779,22 +2795,39 @@ async function closeReaderContents(driver) {
 
 async function selectNarrationLanguage(driver, language) {
   const serializedLanguage = JSON.stringify(language);
-  const selected = await driver.execute(
-    `const language = ${serializedLanguage};
+  await waitForCondition(
+    driver,
+    `const owner = document.querySelector(".hardware-compatibility");
      const input = Array.from(
        document.querySelectorAll('input[name="narration-language"]'),
-     ).find((candidate) => candidate.value === language);
-     if (!(input instanceof HTMLInputElement)) {
+     ).find((candidate) => candidate.value === ${serializedLanguage});
+     return owner?.getAttribute("data-compatibility-status") !== "checking" &&
+       input instanceof HTMLInputElement &&
+       input.disabled === false;`,
+  );
+  const selected = await driver.execute(
+    `const input = document.querySelector(
+       'input[name="narration-language"][value="${language}"]',
+     );
+     const setter = Object.getOwnPropertyDescriptor(
+       HTMLInputElement.prototype,
+       "checked",
+     )?.set;
+     if (!(input instanceof HTMLInputElement) || setter === undefined) {
        return false;
      }
-     input.click();
+     setter.call(input, true);
+     input.dispatchEvent(new MouseEvent("click", { bubbles: true }));
      return true;`,
   );
   assert(selected === true, "Native narration language proof failed.");
   await waitForCondition(
     driver,
-    `return document.querySelector(".hardware-compatibility")
-       ?.getAttribute("data-narration-language") === ${serializedLanguage};`,
+    `const owner = document.querySelector(".hardware-compatibility");
+     return owner?.getAttribute("data-narration-language") ===
+         ${serializedLanguage} &&
+       owner?.getAttribute("data-compatibility-status") !== "checking";`,
+    INTERACTION_TIMEOUT_MS,
   );
 }
 

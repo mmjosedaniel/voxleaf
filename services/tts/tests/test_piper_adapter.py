@@ -7,7 +7,7 @@ import json
 import struct
 import sys
 from collections.abc import Iterator
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from types import ModuleType, SimpleNamespace
 from typing import Final
 
@@ -33,7 +33,22 @@ from voxleaf_tts.piper_adapter import (
     ArtifactIdentity,
     PiperCpuTtsEngine,
     PiperVoiceProfile,
+    _is_within,
 )
+
+
+def test_windows_verbatim_runtime_executable_remains_within_runtime_root() -> None:
+    runtime_root = PureWindowsPath(r"C:\Program Files\VoxLeaf\runtime")
+
+    assert _is_within(
+        PureWindowsPath(r"\\?\C:\Program Files\VoxLeaf\runtime\python.exe"),
+        runtime_root,
+    )
+    assert not _is_within(
+        PureWindowsPath(r"\\?\C:\Program Files\Outside\python.exe"),
+        runtime_root,
+    )
+
 
 REPOSITORY_ROOT: Final = Path(__file__).resolve().parents[3]
 PROFILE_PATH: Final = REPOSITORY_ROOT / "benchmarks" / "tts" / "profile-v6.json"

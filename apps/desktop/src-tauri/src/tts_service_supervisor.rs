@@ -335,6 +335,7 @@ impl ExactRuntime {
             .current_dir(&self.model_root)
             .env("PYTHONPATH", python_path)
             .env("PYTHONNOUSERSITE", "1")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
             .env("PYTHONUTF8", "1")
             .env("HF_HUB_OFFLINE", "1")
             .env("TRANSFORMERS_OFFLINE", "1")
@@ -1661,5 +1662,21 @@ mod tests {
             ExactRuntime::for_profile(CHATTERBOX_PROFILE_ID, Some("fr")),
             Err(TtsNativeFailure::InvalidInput)
         ));
+    }
+
+    #[test]
+    fn exact_runtime_never_writes_bytecode_into_verified_packages() {
+        let runtime = ExactRuntime {
+            python: PathBuf::from("python.exe"),
+            model_root: PathBuf::from("model"),
+            service_source: PathBuf::from("source"),
+            service_site_packages: PathBuf::from("site-packages"),
+            service_module: "voxleaf_tts.piper_service",
+            runtime_environment: Vec::new(),
+        };
+        let command = runtime.command().expect("command should be created");
+        assert!(command.get_envs().any(|(key, value)| {
+            key == "PYTHONDONTWRITEBYTECODE" && value == Some(std::ffi::OsStr::new("1"))
+        }));
     }
 }

@@ -621,6 +621,8 @@ def _sync_core_environment(root: Path) -> None:
                 str(root / "services/tts/release/core"),
                 "--locked",
                 "--no-dev",
+                "--reinstall-package",
+                "voxleaf-tts",
             ],
             cwd=root,
             check=True,
