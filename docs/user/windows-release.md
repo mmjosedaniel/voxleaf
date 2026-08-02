@@ -36,6 +36,11 @@ CPU requirements, licences, and estimated cold start. Native checks may still
 reject the computer. The download starts only after explicit confirmation and
 every artifact is verified before activation.
 
+In this validation build, an absent compatible package shows **Review
+Chatterbox download**. That action performs the native admission check and
+opens the measured confirmation; only the separate **Download Chatterbox**
+action starts network transfer.
+
 ## Repair or replace a version
 
 Close VoxLeaf so its local narration child process is stopped. Running the same

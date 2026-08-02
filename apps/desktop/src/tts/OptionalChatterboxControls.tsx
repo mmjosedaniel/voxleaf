@@ -103,6 +103,15 @@ export function OptionalChatterboxControls({
     >
       <h4 id="optional-chatterbox-heading">Chatterbox quality voice</h4>
       <StatusCopy snapshot={snapshot} />
+      {snapshot.state === "absent" ? (
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => run(() => client.select())}
+        >
+          Review Chatterbox download
+        </button>
+      ) : null}
       {snapshot.state === "confirming" ? (
         <div className="optional-chatterbox-confirmation">
           <p>

@@ -759,6 +759,19 @@ Actual result on 2026-08-01:
   real consent/download/activation/offline narration/restart/removal journey is
   now ready for maintainer execution on the current compatible computer; no
   result from that journey is recorded yet.
+- The first installed UI inspection found that the native validation manifest
+  correctly reported `absent`, but the renderer displayed only “not installed.”
+  The confirmation and Download controls were reachable only from `confirming`,
+  while no absent-state action invoked the already implemented native
+  `select_optional_chatterbox` boundary. A focused regression reproduced the
+  missing button. The minimal fix adds **Review Chatterbox download** for
+  `absent`; it performs native hardware admission and reaches the existing
+  disclosure without starting a network transfer. The corrected installer is
+  `181,652,666` bytes with SHA-256
+  `6b4d59a0f8a8dd53f5177efe034a3851cd14150bd3a4a67568a6811a00f22e26`;
+  it remains unsigned and its exact Windows Defender scan reports no threats.
+  The maintainer must reinstall this corrected artifact before continuing the
+  real lifecycle.
 - Final implementation validation ran outside the sandbox. The normal and
   feature-enabled Rust suites each pass 62 tests; feature-enabled Clippy passes
   with warnings denied; the static validation-package and ordinary-package

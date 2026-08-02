@@ -9,7 +9,7 @@ import { OptionalChatterboxControls } from "./OptionalChatterboxControls";
 
 afterEach(() => cleanup());
 
-function snapshot(state: "confirming" | "installed") {
+function snapshot(state: "absent" | "confirming" | "installed") {
   return {
     profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
     state,
@@ -33,6 +33,36 @@ function snapshot(state: "confirming" | "installed") {
 }
 
 describe("optional Chatterbox controls", () => {
+  it("lets an absent compatible package reach explicit download confirmation", async () => {
+    const invoke = vi.fn(async (command: string) =>
+      snapshot(
+        command === "optional_chatterbox_snapshot" ? "absent" : "confirming",
+      ),
+    );
+    const client = new OptionalChatterboxClient(invoke);
+
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={vi.fn(async () => true)}
+        onRemove={vi.fn(async () => undefined)}
+      />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Review Chatterbox download",
+      }),
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Download Chatterbox" }),
+    ).toBeInTheDocument();
+    expect(invoke).toHaveBeenNthCalledWith(2, "select_optional_chatterbox", {
+      profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
+    });
+  });
+
   it("shows measured disclosure and starts only after the explicit Download action", async () => {
     const invoke = vi.fn(async (command: string) => {
       if (command === "optional_chatterbox_snapshot") {
