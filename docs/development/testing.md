@@ -920,11 +920,11 @@ model artifact, path, or raw host identity may enter a result or fixture.
 
 ## M011 packaging and release validation
 
-M011 Milestones 1 through 3 and the deterministic Milestones 4A-4B boundary are
-implemented. The dependency/audit, standalone Piper-core, optional runtime-
-package, acquisition-controller, and public runtime identity evidence below is
-current; clean-host optional installation, installer, and signing remain
-requirements rather than pass evidence. Its
+M011 Milestones 1 through 5 are implemented at their documented boundaries.
+The dependency/audit, standalone Piper-core, optional runtime-package,
+acquisition-controller, public runtime identity, and local Windows package
+evidence below is current. Clean-host validation and signed public publication
+remain requirements rather than pass evidence. Its
 active
 [`ExecPlan`](../plans/active/M011-package-validate-and-release-mvp.md)
 requires a clean normal-user Windows package matrix in addition to the
@@ -976,6 +976,27 @@ builds produced identical v2 hashes/sizes. An authorized maintainer published
 the exact resulting parts under `chatterbox-runtime-v2`; the manifest remains
 withheld until the clean-host gates pass.
 
+Milestone 5 adds these Windows-only commands:
+
+```powershell
+pnpm.cmd package:windows:check
+pnpm.cmd package:windows
+pnpm.cmd package:windows:lifecycle
+pnpm.cmd package:windows:signed
+```
+
+The check validates the frozen version, NSIS/current-user target, exact resource
+allowlist, exclusion boundary, uninstall hooks, and verified Piper payload.
+The unsigned build produced
+`VoxLeaf_0.1.0_x64-setup.exe` at `181,654,713` bytes with SHA-256
+`9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c`.
+The outside-sandbox lifecycle command passed installation, first start, same-
+version repair, uninstall, and unrelated-file preservation on the development
+host. Windows Defender reported no threats; SmartScreen was not observed. The
+signed command is fail-closed and remains unexecuted without an authorized
+external certificate. None of these local results substitutes for Milestone
+6's clean-user matrix.
+
 The remaining release matrix must distinguish:
 
 - exact shipped Node, Rust, base Python, and core/optional-profile dependency
@@ -1000,12 +1021,12 @@ The remaining release matrix must distinguish:
 - Piper-core portfolio, optional-Chatterbox, and signed public-installer
   evidence as separate decisions.
 
-M011 audit, Piper-core assembly, optional runtime assembly, and v2 acquisition-
-authority validation commands now exist. The current optional manifest records
-the published runtime but remains withheld, so no end-user acquisition is
-reachable. Clean-host installation/offline use and installer-lifecycle
-evidence remain later work;
-do not describe those release gates as passing.
+M011 audit, Piper-core assembly, optional runtime assembly, v2 acquisition-
+authority, and local installer commands now exist. The current optional
+manifest records the published runtime but remains withheld, so no end-user
+acquisition is reachable. Clean-host installation/offline use, cross-version
+replacement, application-data removal, and complete product behavior remain
+Milestone 6 work; do not describe those release gates as passing.
 All final M011 commands run outside the automation sandbox under the existing
 repository testing rule.
 
@@ -1018,11 +1039,10 @@ packaged, and exact-host evidence. Default tests and CI still load no candidate
 or model; model-backed timing, profile, navigation, persistence, and cleanup
 matrices remain separate exact-host commands. Non-Windows hardware support,
 automatic updates, enterprise sandboxing, and cross-platform packaging remain
-deferred. Windows installer behavior, licence-complete distribution, and the
-minimum bilingual Piper payload is implemented, while installer integration
-and separately gated optional Chatterbox acquisition/removal remain approved
-M011 work. The examples below are requirements, not claims about those later
-gates.
+deferred. The minimum bilingual Piper payload and local Windows installer path
+are implemented. Clean-host product validation and separately gated optional
+Chatterbox acquisition/removal remain approved M011 work. The examples below
+are requirements, not claims about those later gates.
 
 ## Test levels
 

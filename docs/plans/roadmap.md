@@ -1085,10 +1085,9 @@ through newly frozen authority and regression evidence.
 
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** In progress. Milestones 1 through 3 and the fail-closed Milestone 4A
-foundation completed on 2026-08-01. Milestone 4B's deterministic authority,
-implementation, and authorized runtime publication are complete, but its
-clean-host gates remain open. Milestone 1 froze
+**Status:** In progress. Milestones 1 through 5 are complete. Milestone 4B's
+deterministic authority, implementation, and authorized runtime publication are
+complete, but its clean-host gates remain open. Milestone 1 froze
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
 accepted
 [ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
@@ -1098,8 +1097,7 @@ repository-owned release audits, bounded dependency-update intake, and an
 exact 400-component release inventory. Milestone 3 implements the deterministic
 private CPython/Piper core, both frozen voices, complete notices and exact
 Piper/espeak source fulfillment, bilingual offline smoke, measurements, and
-native fixed-manifest verification. M010.2 is complete. The repository can
-build a release executable and the standalone core payload for validation.
+native fixed-manifest verification. M010.2 is complete.
 Milestone 4A also implements native-owned withheld/download/install/remove
 controls and deterministic source/archive checks for optional Chatterbox, but
 end-user acquisition remains disabled. Milestone 4B freezes and implements
@@ -1109,9 +1107,16 @@ per-file size/SHA-256 verification and no model-repository code execution. It
 also reproducibly builds, splits, and publishes the exact reviewed runtime as
 `chatterbox-runtime-v2`. The runtime and Hugging Face weights still require
 clean-host validation; either set alone is not a complete installation.
-Installer bundling, enabled
-optional acquisition, signing, updater policy, and complete-MVP validation are
-not implemented.
+Milestone 5 sets version `0.1.0` and builds the release-only Windows x64
+current-user NSIS installer with the exact private Piper core, both voices,
+notices, inventory, acquisition authority, and user guide. The measured local
+installer is `181,654,713` bytes with SHA-256
+`9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c`;
+installation, first start, repair, uninstall, unrelated-file preservation, and
+Defender checks pass outside the sandbox. Signing automation is implemented,
+but no trusted certificate is available, so public publication remains
+blocked. Enabled optional acquisition and complete clean-host validation remain
+open; automatic updates are deliberately excluded from the first MVP.
 
 The remaining M011 execution order is explicit:
 
@@ -1119,7 +1124,8 @@ The remaining M011 execution order is explicit:
 completed 1 -> completed 2 -> completed 3 -> completed 4A
     -> 4B deterministic implementation + runtime publication complete;
        clean host pending
-    -> 5 Windows package/signing path
+    -> completed 5 Windows package/signing path;
+       public signing externally blocked
     -> 6 clean-host matrix
     -> 7 release decision and closeout
 ```

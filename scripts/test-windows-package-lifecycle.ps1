@@ -18,7 +18,13 @@ if (Test-Path -LiteralPath $installRoot) {
   throw "windows-release-lifecycle-preexisting-install"
 }
 
-$sentinelDirectory = Join-Path ([IO.Path]::GetTempPath()) "voxleaf-package-lifecycle-sentinel"
+$temporaryRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+$sentinelDirectory = [IO.Path]::GetFullPath(
+  (Join-Path $temporaryRoot "voxleaf-package-lifecycle-$([Guid]::NewGuid().ToString('N'))")
+)
+if (-not $sentinelDirectory.StartsWith($temporaryRoot, [StringComparison]::OrdinalIgnoreCase)) {
+  throw "windows-release-lifecycle-temporary-root-invalid"
+}
 $sentinel = Join-Path $sentinelDirectory "synthetic-public-domain.epub"
 New-Item -ItemType Directory -Path $sentinelDirectory -Force | Out-Null
 [IO.File]::WriteAllText($sentinel, "synthetic sentinel; not a real publication")

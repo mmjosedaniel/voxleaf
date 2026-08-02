@@ -52,7 +52,7 @@ function Invoke-DefenderArtifactScan {
   if (-not $scanner) {
     return "not-available"
   }
-  & $scanner -Scan -ScanType 3 -File $Path -DisableRemediation
+  $null = & $scanner -Scan -ScanType 3 -File $Path -DisableRemediation
   if ($LASTEXITCODE -ne 0) {
     throw "windows-release-antivirus-scan-failed"
   }

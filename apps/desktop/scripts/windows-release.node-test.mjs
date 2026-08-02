@@ -28,7 +28,7 @@ test("the release authority rejects broader targets, elevation, and optional pay
         "../../../services/tts/release/optional/chatterbox/dist/"
       ] = "resources/tts/chatterbox/"),
   ]) {
-    const value = structuredClone(source);
+    const value = JSON.parse(JSON.stringify(source));
     mutate(value);
     assert.throws(
       () => validateClosedReleaseValues(value),

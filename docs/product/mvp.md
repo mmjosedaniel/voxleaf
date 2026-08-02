@@ -80,8 +80,8 @@ Piper Spanish/English at every rate, and runs Chatterbox Spanish/English plus
 development-only Qwen Serena/Aiden. The maintainer confirms the full admitted
 rate range, and pull request #170 passes the required Ubuntu and Windows checks.
 
-M011 is in progress with Milestones 1 through 3 and the fail-closed Milestones
-4A-4B deterministic foundation complete. Its implemented
+M011 is in progress with Milestones 1 through 5 complete at their documented
+boundaries. Its implemented
 standalone core payload targets Windows x64 with the measured Piper
 davefx/Spanish and Piper joe/English CPU profiles. Chatterbox Spanish/English
 is a separately gated optional GPU quality download, not part of
@@ -92,7 +92,11 @@ installation/removal, and clean-host gates pass. A portfolio-ready local build
 may close without a signing certificate; a general public installer may not.
 The deterministic core contains a private CPython/Piper runtime, both voices,
 notices/model cards, and exact GPL source, and is verified natively before use.
-It is not yet integrated into an end-user installer. Milestone 4B obtains only
+Milestone 5 packages that core in the versioned `0.1.0` per-user Windows x64
+NSIS path. Its local unsigned installer, first start, same-version repair,
+uninstall, unrelated-file preservation, checksum, and Defender checks pass;
+clean-host acceptance and trusted public signing remain open. Milestone 4B
+obtains only
 the six approved model-data files from the official
 `ResembleAI/chatterbox` Hugging Face repository at a full frozen revision and
 verify every file's expected name, byte size, and SHA-256. It will not execute
@@ -161,9 +165,9 @@ configuration is available. Piper is the supported CPU fallback, Chatterbox
 is the supported bilingual GPU profile, and Qwen remains constrained and
 development-only. M011 keeps Piper in the core distribution and will expose
 Chatterbox only as an explicit verified optional download. Piper payload and
-licence/source fulfillment are implemented; installer delivery and optional
-acquisition remain M011 work, so no current local artifact setup is yet a
-general end-user distribution.
+licence/source fulfillment plus the local installer path are implemented;
+clean-host installer acceptance and optional acquisition remain M011 work, so
+the current unsigned artifact is not a general end-user distribution.
 
 The highlight/follow path above passed repository-authored synthetic,
 Chromium, packaged WebView2, exact-host, M009.1 clean-host, and ephemeral
@@ -179,8 +183,9 @@ authority.
    model, acquisition, dependency, and licence authority before packaging
    results.
 2. M011 has created the integrity-checked standalone Piper Spanish/English
-   runtime and voice payload. Installer integration must still prove use
-   without a developer shell or manual firewall rule.
+   runtime and voice payload and integrated it into the versioned per-user NSIS
+   package. Local lifecycle validation passes without a developer shell or
+   manual firewall rule; clean-host proof remains open.
 3. M011 Milestone 4B freezes and implements the split Chatterbox acquisition:
    exact reviewed runtime delivery plus exactly six model-data
    files from the official full-revision Hugging Face source. It adds explicit
@@ -190,8 +195,10 @@ authority.
    acquisition, offline bilingual narration, removal, reinstall, and final
    audit validation remain, so the download action and end-user claim stay
    absent while the Piper core can continue.
-4. M011 packages and validates a versioned Windows x64 installation, repair,
-   manual update, and uninstall lifecycle on a clean normal-user host.
+4. M011 Milestone 5 packages version `0.1.0` and validates its local Windows x64
+   installation, first start, repair, and uninstall path. Milestone 6 repeats
+   the complete lifecycle, manual replacement, and product matrix on a clean
+   normal-user host.
 5. M011 decides Piper-core portfolio readiness, optional Chatterbox readiness,
    and signed public-installer publication independently.
 

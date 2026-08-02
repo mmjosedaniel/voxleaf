@@ -180,7 +180,16 @@ redirects, per-artifact digest verification, safe extraction/loading, atomic
 versioned installation, separate activation, offline use, and application-
 owned removal. The exact runtime assets are published under
 `chatterbox-runtime-v2`; clean-host online/offline evidence remains open, so
-Download is not yet enabled.
+Download is not yet enabled. Milestone 5 sets release version `0.1.0` and
+packages the exact bilingual Piper core in a current-user Windows x64 NSIS
+installer through a release-only configuration. The local unsigned artifact is
+`181,654,713` bytes with SHA-256
+`9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c`.
+Outside-sandbox installation, first start, same-version repair, uninstall,
+unrelated-file preservation, and Defender observation pass. Signing automation
+uses only protected external credentials and verifies Authenticode, but no
+certificate is currently authorized; public publication and the complete
+clean-host matrix remain open.
 Piper-core portfolio readiness, optional-
 Chatterbox readiness, and signed public publication are separate decisions;
 signing is an external authorization for the last only. Automatic updates,
@@ -305,8 +314,8 @@ Desktop application
 |-- Reader-first Settings and six boundary-deferred playback rates
 |   [M010.2 complete; repository WSOLA, English fallback, packaged validation]
 |-- Windows x64 MVP core plus optional quality package
-|   [M011 M1-M4B; verified bilingual Piper payload plus withheld exact
-|    model/split-runtime acquisition implemented; publication and installer planned]
+|   [M011 M1-M5; versioned Piper NSIS package and withheld exact optional
+|    acquisition implemented; clean-host and public-signing gates pending]
 `-- Explicit bilingual narration and exact language/profile selection
     [M010.1 Milestones 2-6; Piper ES/EN and Chatterbox supported,
      Qwen Serena/Aiden development-only]
