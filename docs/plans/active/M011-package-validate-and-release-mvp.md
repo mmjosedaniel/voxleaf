@@ -618,6 +618,14 @@ the corrected core rerun is pending. A clean compatible-GPU host remains
 unavailable, so the optional Chatterbox gate stays blocked rather than inferred
 from local state.
 
+The maintainer has no second compatible-GPU computer. ADR-0045 therefore
+authorizes a separately identified, unsigned, local-validation-only installer
+for the current compatible host. It must use a native compile-time feature and
+the exact checked-in validation overlay, preserve every URL/hash/hardware/disk
+gate, and keep the ordinary installer manifest `withheld`. Its results may fix
+the acquisition flow and record development-host measurements, but they do not
+become clean-host or public-release evidence.
+
 1. Install the exact candidate on a clean normal-user Windows host and prove
    no hidden developer prerequisite or external runtime mutation is needed.
 2. Run a synthetic/public-domain English and Spanish EPUB journey covering
@@ -642,6 +650,10 @@ from local state.
    redownloading unnecessarily.
 7. Run install/repair/uninstall twice to expose stale state, locked-file, and
    cleanup failures. Commit content-safe results separately from authority.
+8. Build the ADR-0045 validation-only package with a distinct Windows identity,
+   prove that it alone exposes explicit Chatterbox consent, and execute the real
+   installed lifecycle on the current compatible host. Keep its artifact local
+   and unsigned, and preserve the independent clean-host blocker.
 
 Actual result on 2026-08-01:
 
