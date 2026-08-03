@@ -988,16 +988,15 @@ pnpm.cmd package:windows:signed
 The check validates the frozen version, NSIS/current-user target, exact resource
 allowlist, exclusion boundary, uninstall hooks, and verified Piper payload.
 The current unsigned build produced
-`VoxLeaf_0.1.0_x64-setup.exe` at `181,658,228` bytes with SHA-256
-`f167dacdb4221cdd989ed5ed92d070b5fd5d9ecab89a9af6e54feec5be3a6b12`.
-Its immediate predecessor passed the outside-sandbox lifecycle command for
-installation, first start, same-version repair, uninstall, and unrelated-file
-preservation on the development host. Windows Defender reported no threats for
-that predecessor; SmartScreen was not observed. The current hash passes the
-static package gate and still requires the remaining Milestone 6 lifecycle and
-independent-host checks. The signed command is fail-closed and remains
-unexecuted without an authorized external certificate. None of these local
-results substitutes for Milestone 6's clean-user matrix.
+`VoxLeaf_0.1.0_x64-setup.exe` at `181,685,408` bytes with SHA-256
+`355226cfb390ee9e1a080e6ff04d1f8d1232813a2fa495eb3600ab6867284f82`.
+It passes the outside-sandbox lifecycle command for installation, first start,
+same-version repair, uninstall, and unrelated-file preservation, followed by a
+final reinstall and visible installed-start smoke on the development host. An
+exact predecessor passed Windows Defender; Defender was not run against the
+current hash, and SmartScreen was not observed. The signed command is fail-
+closed and remains unexecuted without an authorized external certificate. None
+of these local results substitutes for Milestone 6's clean-user matrix.
 
 Milestone 6 adds an installed-artifact form of the native harness. It accepts
 exactly one absolute executable and does not build or select a repository

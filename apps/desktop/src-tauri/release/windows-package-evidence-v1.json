@@ -16,13 +16,13 @@
     "updaterIncluded": false,
     "installer": {
       "fileName": "VoxLeaf_0.1.0_x64-setup.exe",
-      "sizeBytes": 181658228,
-      "sha256": "f167dacdb4221cdd989ed5ed92d070b5fd5d9ecab89a9af6e54feec5be3a6b12"
+      "sizeBytes": 181685408,
+      "sha256": "355226cfb390ee9e1a080e6ff04d1f8d1232813a2fa495eb3600ab6867284f82"
     },
     "applicationBinary": {
       "fileName": "voxleaf-desktop.exe",
-      "sizeBytes": 12189696,
-      "sha256": "84747bb08f1616ff0f6a6755b6f099a221a909c978840ada95974823b6a101b0"
+      "sizeBytes": 12338688,
+      "sha256": "3c45cd7c016681f05cc9154fe6cf698fef928364db4ffa4a65e056d7674840cb"
     }
   },
   "payload": {
@@ -43,7 +43,7 @@
     "credentialStoredInRepository": false
   },
   "lifecycle": {
-    "status": "not-run",
+    "status": "local-install-first-start-repair-uninstall-passed",
     "cleanHostStillRequired": true,
     "explicitApplicationDataRemovalStructurallyVerified": true,
     "silentUninstallPreservesApplicationData": true

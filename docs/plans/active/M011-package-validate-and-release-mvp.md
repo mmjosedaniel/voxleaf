@@ -1369,6 +1369,25 @@ and never edit prior benchmark authority to make a release pass.
   package cleanup rejects out-of-root junction/reparse targets. The package lock
   remains process-local; cross-process locking or single-instance enforcement is
   retained as release-hardening work before public optional-profile readiness.
+- **2026-08-03:** Pre-push validation of a later maintainability branch exposed
+  a deterministic default-feature Rust regression already present in `main`.
+  `snapshot_at` had correctly stopped deleting staging during a read-only status
+  refresh when package operations were serialized, but the explicit withheld
+  `select_at` path had not inherited that cleanup. The existing test created an
+  incomplete application-owned staging file and failed because it remained
+  after selection. The bounded correction keeps snapshots read-only and moves
+  cleanup to explicit selection under the existing installed-runtime lock. It
+  removes only the exact contained Chatterbox staging root, leaves profiles and
+  user EPUBs untouched, and does not enable acquisition or change release
+  authority. Default and validation-feature focused tests each pass 20 cases;
+  the complete gate passes with 72 Rust tests, and the six-case browser suite
+  passes. Static package checks, the rebuilt Windows package, install/first-
+  start/repair/uninstall lifecycle, final reinstall, and visible installed-app
+  startup also pass. The exact rebuilt unsigned installer is `181,685,408`
+  bytes with SHA-256
+  `355226cfb390ee9e1a080e6ff04d1f8d1232813a2fa495eb3600ab6867284f82`.
+  Defender was not run against this hash, SmartScreen was not observed, and
+  clean-host plus public-signing acceptance remain open.
 
 ## Discoveries and decisions
 
