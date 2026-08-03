@@ -142,6 +142,14 @@ content-safe model/service probes and the exact installed Spanish WebView2
 matrix now pass after conventionalizing only canonical verbatim paths at the
 child-process boundary. English narration, restart, removal/reinstall,
 Piper-after-removal, clean-host validation, and public signing remain open.
+Maintainer review also identified a planned M011 Milestone 6A lifecycle-
+feedback closeout. It must keep Settings visibly populated during profile
+transitions, distinguish truthful first-Play startup phases, make optional-
+package removal discoverable, explain that acquisition cancellation deletes
+only incomplete staging, and separate optional-package retention from ordinary
+preferences in the uninstall journey. Milestone 6A is not implemented by this
+documentation update and does not change Chatterbox's withheld, clean-host, or
+public-signing gates.
 Milestone 5 now packages version `0.1.0` as a release-only current-user Windows
 x64 NSIS installer containing the exact verified bilingual Piper core. Local
 installation, first start, repair, uninstall, unrelated-file preservation, and
@@ -165,7 +173,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`product/vision.md`](product/vision.md): product purpose, audience, and principles.
 - [`product/project-brief.md`](product/project-brief.md): detailed problem, intended experience, product boundaries, and candidate technical direction.
 - [`product/mvp.md`](product/mvp.md): MVP scope, non-goals, constraints, and acceptance criteria.
-- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and implemented six-value boundary-deferred repository-WSOLA playback requirements.
+- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and implemented six-value boundary-deferred repository-WSOLA playback requirements, plus the explicitly planned M011 lifecycle-feedback addendum.
 - [`product/post-mvp-tts-candidate-backlog.md`](product/post-mvp-tts-candidate-backlog.md): non-authoritative post-MVP intake order for Pocket TTS, Chatterbox LatAm, MOSS-TTS-Nano, Kokoro, and additional Piper voices.
 - [`product/glossary.md`](product/glossary.md): shared terminology.
 

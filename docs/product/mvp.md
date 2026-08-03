@@ -199,7 +199,15 @@ authority.
    installation, first start, repair, and uninstall path. Milestone 6 repeats
    the complete lifecycle, manual replacement, and product matrix on a clean
    normal-user host.
-5. M011 decides Piper-core portfolio readiness, optional Chatterbox readiness,
+5. Planned M011 Milestone 6A closes the user-visible optional-package lifecycle
+   before affected Milestone 6 evidence is repeated. Settings remains populated
+   during a profile transition, long first-Play work exposes truthful content-
+   free phases, download cancellation explains its incomplete-staging cleanup,
+   installed Chatterbox has a discoverable independent removal action, and the
+   Windows uninstall journey distinguishes optional-package data from ordinary
+   preferences. This documentation target is not an implementation or release-
+   readiness claim.
+6. M011 decides Piper-core portfolio readiness, optional Chatterbox readiness,
    and signed public-installer publication independently.
 
 M010.1 is a deliberately narrow pre-M011 exception to the earlier post-MVP
@@ -363,6 +371,10 @@ Remaining:
   discloses measured download, installed/staging storage, hardware, cold-load,
   and licence information. Decline/cancel causes no network request or profile
   change; verified installation completes before separate explicit activation.
+- Cancelling an acquisition already in progress removes the current operation's
+  incomplete application-owned staging and partial files, returns the optional
+  package to absent, and retains no unsupported resumable state. It never
+  removes a verified installed package or changes the active narration profile.
 - Chatterbox requires `5,632` MiB total and `4,668` MiB available dedicated
   VRAM under the current measured-capacity policy. A nominal 8-GB GPU remains
   recommended and is the evaluated class. Admission of an otherwise compatible
@@ -396,6 +408,28 @@ Remaining:
   restart, and remove the optional Chatterbox package. Corrupt, truncated,
   oversized, stale, insufficient-space, or incompatible packages fail closed
   and leave Piper usable.
+- Settings remains structurally populated while a language/profile transition
+  is pending and announces the real bounded phase without fabricating a
+  percentage. M011 does not expose a profile-selection Cancel action until an
+  explicit rollback contract can restore the prior profile preference,
+  narration identity, and recovery state safely.
+- First Chatterbox Play distinguishes the most specific content-free phases the
+  desktop can prove, including installed-package verification, local service
+  and model startup, first-audio generation, and buffering. Before audio owns
+  playback, the existing safe Stop path is presented as cancellation of startup
+  and must leave no stale audio or orphan service.
+- Installed optional-package state, measured storage, and **Remove Chatterbox**
+  remain discoverable independently of the profile selector. Removal stops any
+  owned Chatterbox service and deletes only the exact runtime, model, removable
+  cache, and staging roots; it does not delete preferences, reading progress,
+  Piper, or EPUBs.
+- Interactive uninstall distinguishes optional Chatterbox data from preferences
+  and recovery state, explains the consequence and default of each choice, and
+  limits deletion to exact VoxLeaf-owned roots. Silent removal remains non-
+  destructive unless an explicit documented flag requests a bounded data class.
+  If optional data is intentionally retained, the user is told that management
+  requires reinstalling the same VoxLeaf product identity; no residual model-
+  manager executable is left behind.
 - Portfolio-ready local evidence may use an unsigned maintainer build with an
   explicit label. A general public installer additionally requires protected
   external signing credentials, signature verification, and a published

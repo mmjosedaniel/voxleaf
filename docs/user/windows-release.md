@@ -41,6 +41,12 @@ Chatterbox download**. That action performs the native admission check and
 opens the measured confirmation; only the separate **Download Chatterbox**
 action starts network transfer.
 
+During download or verification, **Cancel download** signals the native
+operation and removes that operation's incomplete staging and partial files
+when cancellation settles. It returns Chatterbox to not installed, does not
+retain a resumable partial download, and never removes a package that had
+already completed verified installation.
+
 The final `181,694,782`-byte validation installer has SHA-256
 `289c93e63d07e0001b667d964396ea5a611a5bf38f411f9158e92e829d35f148`.
 It repairs the first installed runtime closure, moves only its exact verified
@@ -66,6 +72,12 @@ Use only one running VoxLeaf validation instance while Chatterbox is being
 installed, verified, or removed. Cross-process optional-package coordination is
 still a public-release gate, not a completed claim of this unsigned build.
 
+After verified installation, Settings exposes **Activate Chatterbox** and
+**Remove Chatterbox** as separate actions. Removal first contains an owned
+Chatterbox child and then deletes only the exact optional runtime, model,
+removable cache, and staging data. It does not uninstall VoxLeaf, remove Piper,
+delete preferences or reading progress, or search for EPUB files.
+
 The exact installed Spanish Chatterbox playback matrix now passes on the
 maintainer's compatible computer. Quick startup took `45.990` seconds in that
 validation run, so the UI can remain in preparation while integrity verification
@@ -73,6 +85,14 @@ and cold model load complete. This is development-host evidence, not general
 hardware or public-release proof. English narration, application restart,
 removal/reinstall, Piper-after-removal, independent clean-host validation, and
 public signing remain open.
+
+The current validation build reports generic preparation/buffering while the
+first integrity pass and cold model load run. Planned M011 Milestone 6A will
+keep Settings visibly populated during profile transitions and add truthful
+content-free phases for verification, local service/model startup, first-audio
+generation, and buffering. It will also present the existing safe Stop path as
+**Cancel start** before audio owns playback. Those refinements are not current
+behavior and do not make this build public-release evidence.
 
 ## Repair or replace a version
 
@@ -92,6 +112,20 @@ Use **Installed apps** in Windows. Interactive uninstall asks whether to remove
 VoxLeaf preferences, recovery state, staging data, and optional profiles. The
 default and silent uninstall preserve that application data. Either choice is
 limited to VoxLeaf-owned roots and never searches for or deletes EPUB files.
+
+In the current installer this is one combined data decision. If Chatterbox data
+is preserved, Windows removes the application UI that normally exposes
+**Remove Chatterbox**. The supported recovery is to reinstall the same VoxLeaf
+product identity (ordinary VoxLeaf or the separate Chatterbox validation build),
+remove Chatterbox from Settings, and uninstall again. Do not guess at or broadly
+delete Local App Data paths.
+
+Planned M011 Milestone 6A will separate the optional Chatterbox package/cache/
+staging decision from preferences and recovery state, explain the default and
+space consequence of each choice, and retain non-destructive silent behavior
+unless an explicit bounded removal flag is supplied. This planned journey must
+pass install, repair, uninstall, reinstall, unrelated-file preservation, and
+optional-data outcome checks before it replaces the current instructions.
 
 ## Verify a release artifact
 

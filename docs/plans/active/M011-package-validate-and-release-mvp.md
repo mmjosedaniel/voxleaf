@@ -157,6 +157,11 @@ That document is planning input, not proof that a release gate passes.
   activates a successfully installed optional profile. Selecting an absent
   Chatterbox option opens acquisition consent; it does not silently download,
   stop playback, or switch the service identity.
+- Close the release-facing optional-package lifecycle feedback exposed by the
+  installed validation journey: stable Settings transitions, truthful first-
+  Play startup phases, explicit incomplete-download cleanup copy, discoverable
+  Chatterbox removal, and independently understandable optional-package versus
+  preference retention during uninstall.
 - Audit every shipped JavaScript, Rust, Python, native runtime, voice, and
   model component; remove unused release packages; enable dependency-update
   intake; and generate a versioned content-safe component/licence inventory.
@@ -195,6 +200,9 @@ That document is planning input, not proof that a release gate passes.
   the core installer solely to make the portfolio appear larger.
 - Automatic/background model download, automatic optional-profile updates, or
   downloading Chatterbox merely because Settings was opened.
+- A residual standalone model manager or cleanup executable left behind after
+  VoxLeaf is uninstalled. Intentional optional-data retention uses a documented
+  reinstall-and-remove route for the same product identity.
 - Cloud inference, telemetry, analytics, account systems, DRM, audiobook
   export, or generated-audio persistence.
 - Reopening EPUB semantics, protocol v1, TTS evaluation decisions, buffer
@@ -209,8 +217,12 @@ That document is planning input, not proof that a release gate passes.
 - `apps/desktop/scripts/`
 - `apps/desktop/src/settings/ReaderSettingsDialog.tsx`
 - `apps/desktop/src/tts/HardwareCompatibilityControls.tsx`
+- `apps/desktop/src/tts/OptionalChatterboxControls.tsx`
+- `apps/desktop/src/tts/ProductNarrationControls.tsx`
 - `apps/desktop/src/tts/narration-profile-language-registry.ts`
 - `apps/desktop/src/tts/hardware-profile-compatibility.ts`
+- `apps/desktop/src-tauri/windows/nsis-hooks.nsh`
+- `apps/desktop/src-tauri/windows/nsis-chatterbox-validation-hooks.nsh`
 - `services/tts/pyproject.toml`
 - `services/tts/uv.lock`
 - `services/tts/benchmarks/candidates/piper_1_4_2_cpu/`
@@ -226,6 +238,7 @@ That document is planning input, not proof that a release gate passes.
   artifacts
 - [`docs/product/mvp.md`](../../product/mvp.md)
 - [`docs/product/project-brief.md`](../../product/project-brief.md)
+- [`docs/product/reader-settings-and-playback-controls.md`](../../product/reader-settings-and-playback-controls.md)
 - [`docs/architecture/system-diagram.md`](../../architecture/system-diagram.md)
 - [`docs/architecture/overview.md`](../../architecture/overview.md)
 - [`docs/architecture/tts-support-matrix-v2.md`](../../architecture/tts-support-matrix-v2.md)
@@ -236,6 +249,7 @@ That document is planning input, not proof that a release gate passes.
 - [`docs/development/dependencies.md`](../../development/dependencies.md)
 - [`docs/development/testing.md`](../../development/testing.md)
 - [`docs/development/release-security-and-distribution.md`](../../development/release-security-and-distribution.md)
+- [`docs/user/windows-release.md`](../../user/windows-release.md)
 - [ADR-0023](../../architecture/decisions/ADR-0023-final-m010-support-and-recovery.md)
   and
   [ADR-0031](../../architecture/decisions/ADR-0031-admit-chatterbox-bilingual-and-qwen-language-profiles.md)
@@ -274,6 +288,10 @@ That document is planning input, not proof that a release gate passes.
 - Opening Settings, checking compatibility, selecting a language, or restoring
   preferences cannot start a download. Only explicit confirmation in the
   acquisition UI may do so.
+- Settings and narration startup feedback may expose only product-defined,
+  content-free phases and bounded aggregate byte progress. They must not expose
+  paths, URLs, raw host facts, book text, narration text, PCM, or a fabricated
+  non-byte percentage or fixed cold-load duration.
 - Optional-package installation does not automatically start a model or
   replace active narration. The existing identity-first profile switch occurs
   only after installation succeeds and the user explicitly activates the
@@ -283,6 +301,13 @@ That document is planning input, not proof that a release gate passes.
 - The installer and uninstaller must never discover or delete user books.
   Application-owned runtime/cache/configuration paths must be explicit and
   bounded before cleanup is implemented.
+- Download cancellation removes only the current incomplete acquisition
+  staging operation and never a verified installed package. Profile-selection
+  cancellation remains absent until a rollback contract can restore preference,
+  narration identity, service ownership, and recovery state safely.
+- Splitting optional-package and preference choices in uninstall must preserve
+  the exact owned cleanup roots. Any new destructive default or deletion scope
+  requires additive authority before implementation or measurement.
 - Generated audio remains memory-only and is released through the existing
   ownership/lifecycle path.
 - Network denial during normal reading/narration remains acceptance evidence;
@@ -866,6 +891,114 @@ Actual result on 2026-08-01:
   application restart, removal/reinstall, Piper-after-removal, independent
   clean-host evidence, and public signing remain pending.
 
+### Milestone 6A: Close Chatterbox lifecycle feedback and uninstall behavior
+
+**Status:** Planned. This corrective submilestone records requirements
+discovered during installed-product review. It does not close or weaken any
+Milestone 6 clean-host, optional-support, or public-signing gate, and this plan
+update is not implementation evidence.
+
+The objective is to let a user understand every long-running Chatterbox state,
+interrupt work only where the underlying lifecycle can safely honor
+cancellation, remove the optional package independently, and make an informed
+Windows uninstall choice without confusing application-owned model data with
+preferences or EPUBs. Preserve the native-owned manifest, integrity,
+containment, atomic installation, one-child, protocol v1, and identity-first
+cleanup boundaries.
+
+1. Keep Settings structurally populated while a language/profile selection is
+   pending. Preserve the current values and optional-package management surface,
+   disable only conflicting actions, and announce a bounded content-free phase
+   such as stopping narration, checking installed package state, or applying
+   the profile. Use an indeterminate treatment for non-byte work and never
+   fabricate a percentage or fixed duration.
+2. Do not add a profile-selection Cancel action in this closeout. A selection
+   may already have invalidated narration identity or begun preference/recovery
+   changes. Cancellation becomes eligible only after additive authority and a
+   rollback contract prove restoration of the prior profile, persisted
+   preference, identities, service ownership, and recovery episode.
+3. Keep Chatterbox package state distinct from profile selection. Whenever
+   application-owned optional-package data exists, expose installed state,
+   measured storage, active/inactive status, and a discoverable
+   **Remove Chatterbox** action. Removal must first contain an owned service and
+   then delete only the exact optional runtime, model, removable cache, and
+   staging roots; it must leave Piper, preferences, reading progress, and EPUBs
+   untouched.
+4. Make the acquisition cancellation outcome explicit before download:
+   cancelling download or verification removes the current operation's
+   incomplete staging and partial files, retains no unsupported resumable state,
+   and never removes a verified installed package. Determinate progress remains
+   limited to bounded byte transfer; verification and removal use truthful
+   indeterminate phases.
+5. Distinguish first-Play startup from ordinary playback. Expose the most
+   specific phase the current desktop/client boundary can prove: installed-
+   package verification, combined local service/model startup where necessary,
+   narration preparation, first-audio generation, buffering, then playing. If a
+   separate model-load phase would require changing protocol v1, combine the
+   phase instead of inferring it or silently widening this submilestone.
+6. Before audible ownership, present the existing safe Stop path as
+   **Cancel start** (or equivalent). Prove that it makes pending work stale
+   before teardown, terminates or contains the child as applicable, releases
+   retained audio/work, and cannot emit stale playback. Return to **Stop** once
+   playback begins.
+7. Separate the interactive NSIS choice for optional Chatterbox runtime/model/
+   cache/staging from ordinary preferences and recovery state. State the default
+   and consequence of each choice and preserve non-destructive silent uninstall
+   unless an explicit bounded flag selects a data class. Accept additive
+   authority before changing any destructive default or cleanup scope. Do not
+   leave a residual model-manager executable; document same-product reinstall
+   and removal when optional data is intentionally retained.
+8. Keep the supported Windows uninstall route discoverable through
+   **Installed apps** and the About/user guidance. Extend the existing package
+   lifecycle validation rather than inventing a parallel uninstaller.
+Validation is split by authority and every final command runs in a normal local
+PowerShell session outside the managed sandbox:
+
+```powershell
+pnpm.cmd --filter @voxleaf/desktop test
+cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml tts_optional_chatterbox
+cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --features chatterbox-acquisition-validation tts_optional_chatterbox
+pnpm.cmd test:browser
+pnpm.cmd test:native-startup
+pnpm.cmd package:windows:check
+pnpm.cmd package:windows:chatterbox-validation:check
+pnpm.cmd package:windows:lifecycle
+pnpm.cmd test:tts:bilingual-portfolio-exact-host
+```
+
+Focused desktop tests must cover pending selection with stable content,
+selection failure, generic versus Chatterbox startup phases, accessible live-
+region behavior, **Cancel start**, installed/failed removal discovery, and copy
+that matches native cancellation cleanup. Native tests retain cancel,
+verification, promotion, busy-operation, exact-root removal, symlink/reparse,
+and unrelated-data containment coverage. Extend the existing
+`package:windows:lifecycle` implementation under that same command to exercise
+each new silent data-class flag; retain a manual interactive clean-host arm for
+the actual NSIS choices and displayed consequences.
+
+The compatible development-host and eventual clean-host arms repeat startup
+cancellation, Spanish/English offline narration, restart, removal/reinstall,
+Piper-after-removal, and application uninstall outcomes. Keep deterministic,
+packaged, development-host, clean-host, and signed-public results separate.
+
+Acceptance requires all of the following:
+
+- Settings never becomes an unexplained blank region solely because a profile
+  transition is pending, and assistive technology receives restrained phase
+  updates.
+- Every long Chatterbox start exposes a truthful content-free phase; supported
+  cancellation leaves no stale playback, orphan process, generated-audio file,
+  leaked path/content, or unbounded retained work.
+- Visible download-cancellation copy and native behavior agree exactly: only
+  the current incomplete staging operation is deleted.
+- Installed or failed optional state gives the user a discoverable, contained
+  removal route without making Piper or reader data unavailable.
+- Installer/uninstaller UI and documentation distinguish optional-package data
+  from preferences/recovery and prove install, repair, uninstall, reinstall,
+  unrelated-file preservation, and each optional-data outcome.
+- The affected Milestone 6 host/package arms are rerun after implementation;
+  development-host UI evidence does not close clean-host or public readiness.
+
 ### Milestone 7: Record the MVP release decision and close validation
 
 **Status:** Not started.
@@ -876,7 +1009,8 @@ Actual result on 2026-08-01:
 2. Publish exact core/optional/excluded profiles, supported hardware, core
    installer size, optional download/installed/staging sizes, prerequisites,
    hashes, licences, vulnerability-audit limitations, startup/resource
-   measurements, known limitations, removal, and recovery behavior.
+   measurements, known limitations, lifecycle phase/cancellation semantics,
+   optional-data uninstall choices, removal, and recovery behavior.
 3. Decide separately whether evidence closes the Piper portfolio-ready core,
    the downloadable Chatterbox portfolio profile, and signed public installer
    publication. Do not block the Piper core solely because Chatterbox or
@@ -993,6 +1127,19 @@ the corresponding release claim.
 - **Installer cleanup risks user data.** Stop and redesign around explicit
   application-owned paths. Rollback/uninstall must never glob for EPUBs or
   model-like files outside that ownership boundary.
+- **Profile-transition cancellation cannot restore a coherent prior state.**
+  Omit the action unless a separately approved rollback contract restores the
+  preference, active identities, service ownership, and recovery episode. A
+  visible indeterminate phase and actionable failure are safer than partial
+  rollback.
+- **Progress copy overpromises cold startup.** Chatterbox cold load varies and
+  existing boundaries may combine service and model startup. Expose only phases
+  that the desktop can prove, never infer package paths or raw errors, and never
+  present a fake non-byte percentage or fixed countdown.
+- **Separating uninstall choices broadens deletion or creates orphaned data.**
+  Preserve the exact current VoxLeaf-owned roots, require additive authority for
+  any destructive default/scope change, test every silent flag and interactive
+  choice, and document same-product reinstall-and-remove when data is retained.
 - **Clean-host performance regresses.** Narrow supported hardware or initial
   prepared policy truthfully; do not weaken resource/cancellation/privacy
   bounds merely to pass.
@@ -1388,12 +1535,34 @@ and never edit prior benchmark authority to make a release pass.
   `355226cfb390ee9e1a080e6ff04d1f8d1232813a2fa495eb3600ab6867284f82`.
   Defender was not run against this hash, SmartScreen was not observed, and
   clean-host plus public-signing acceptance remain open.
+- **2026-08-03:** Product review identified release-facing gaps in Chatterbox
+  removal discoverability, Settings transition feedback, first-Play cold-start
+  feedback, download-cancellation explanation, and the combined application-
+  data uninstall choice. Milestone 6A is added as planned work inside M011
+  because these findings directly affect optional-package release readiness.
+  The documentation records no implementation or acceptance result: the current
+  controller behavior, one combined uninstall data choice, remaining Milestone 6
+  arms, withheld manifest, clean-host blocker, and public-signing blocker remain
+  unchanged. The canonical system diagram and architecture overview were
+  reviewed and remain accurate because this planning change preserves process,
+  protocol, storage-ownership, and runtime topology; implementation that changes
+  one of those boundaries must update architecture and accept the required
+  additive authority first.
 
 ## Discoveries and decisions
 
 - **Decision:** M011 absorbs the security audit; a separate M010.3 is not
   required because the findings concern packaging, distribution, licences,
   dependency closure, signing, and complete-MVP validation.
+- **Decision:** M011 also absorbs the corrective lifecycle-feedback and uninstall
+  closeout as Milestone 6A. A second ExecPlan or M012 would incorrectly defer
+  release-readiness gaps discovered while M011 is still active.
+- **Decision:** Milestone 6A does not expose profile-selection cancellation.
+  Visible progress is required, but cancellation waits for explicit rollback
+  authority that can restore preference, identity, service, and recovery state.
+- **Decision:** Optional-package and preference choices may be separated in the
+  NSIS journey only within the existing owned roots. Changing a destructive
+  default or deletion scope requires additive authority before implementation.
 - **Decision:** The minimum distributable MVP is intentionally smaller than the
   local development matrix. This lowers installer, vulnerability, licence,
   GPU, and support risk without removing implemented engines from source.
@@ -1572,6 +1741,12 @@ M011 is complete only when:
   consent, bounded download/cache, per-file verification, atomic installation,
   safe loading, process-receipt invalidation, offline-use, and removal lifecycle,
   or the download action and availability claim are absent;
+- Settings and first-Play startup expose truthful accessible lifecycle phases,
+  acquisition cancellation states its incomplete-staging cleanup, and supported
+  startup cancellation leaves no stale audio or orphan service;
+- installed optional-package removal remains independently discoverable, and
+  Windows uninstall distinguishes optional-package data from preferences/
+  recovery while preserving exact cleanup roots and unrelated files;
 - the package installs and uninstalls safely on a clean normal-user Windows
   host without developer tooling or manual firewall configuration;
 - normal English/Spanish reading and narration remain local, bounded,
