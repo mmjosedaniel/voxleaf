@@ -105,7 +105,7 @@ export function validateUninstallAuthority({
   for (const value of [
     "NSIS_HOOK_PREUNINSTALL",
     "NSIS_HOOK_POSTUNINSTALL",
-    "DeleteAppDataCheckboxState \"0\"",
+    'DeleteAppDataCheckboxState "0"',
     ...UNINSTALL_FLAG_OPTIONS,
     ...OPTIONAL_UNINSTALL_ROOTS,
     "EBWebView\\Default\\Local Storage",
@@ -116,8 +116,9 @@ export function validateUninstallAuthority({
     if (!normalizedHooks.includes(value)) fail("uninstall-authority");
   }
   if (
-    normalizedHooks.includes(`RMDir /r \"$LOCALAPPDATA\\${identity}\"`) ||
-    normalizedHooks.includes("RMDir /r \"$LOCALAPPDATA\\${BUNDLEID}\"") ||
+    normalizedHooks.includes(`RMDir /r "$LOCALAPPDATA\\${identity}"`) ||
+    normalizedHooks.includes(`RMDir /r \\"$LOCALAPPDATA\\${identity}\\"`) ||
+    normalizedHooks.includes('RMDir /r "$LOCALAPPDATA\\${BUNDLEID}"') ||
     !normalizedHooks.includes(`$LOCALAPPDATA\\${identity}`)
   ) {
     fail("uninstall-scope");

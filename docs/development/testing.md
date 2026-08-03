@@ -982,21 +982,30 @@ Milestone 5 adds these Windows-only commands:
 pnpm.cmd package:windows:check
 pnpm.cmd package:windows
 pnpm.cmd package:windows:lifecycle
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-windows-package-lifecycle.ps1 -Product chatterbox-validation
 pnpm.cmd package:windows:signed
 ```
 
 The check validates the frozen version, NSIS/current-user target, exact resource
 allowlist, exclusion boundary, uninstall hooks, and verified Piper payload.
 The current unsigned build produced
-`VoxLeaf_0.1.0_x64-setup.exe` at `181,685,408` bytes with SHA-256
-`355226cfb390ee9e1a080e6ff04d1f8d1232813a2fa495eb3600ab6867284f82`.
-It passes the outside-sandbox lifecycle command for installation, first start,
-same-version repair, uninstall, and unrelated-file preservation, followed by a
-final reinstall and visible installed-start smoke on the development host. An
-exact predecessor passed Windows Defender; Defender was not run against the
-current hash, and SmartScreen was not observed. The signed command is fail-
-closed and remains unexecuted without an authorized external certificate. None
-of these local results substitutes for Milestone 6's clean-user matrix.
+`VoxLeaf_0.1.0_x64-setup.exe` at `181,704,648` bytes with SHA-256
+`56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
+Milestone 6A extends the outside-sandbox lifecycle harness across the ordinary
+and isolated validation identities. It backs up and restores pre-existing
+application data, hash-checks exact optional/preference fixtures through repair,
+and executes six silent outcomes: default preserve, Chatterbox only,
+preferences/recovery only, both explicit options, legacy combined removal, and
+invalid values preserve. Every arm verifies unrelated siblings plus an external
+synthetic EPUB sentinel and leaves the interactive NSIS journey for the clean-
+host manual arm. The exact validation artifact is `181,685,311` bytes with
+SHA-256
+`262391035327925b3bf5a9ea422ba381e89c59a20fc1cec1966ee37ae34f775f` and
+passed Windows Defender; Defender was not run against the current ordinary
+hash, and SmartScreen was not observed.
+The signed command is fail-closed and remains unexecuted without an authorized
+external certificate. None of these local results substitutes for Milestone
+6's clean-user matrix.
 
 Milestone 6 adds an installed-artifact form of the native harness. It accepts
 exactly one absolute executable and does not build or select a repository
@@ -1053,9 +1062,10 @@ The remaining release matrix must distinguish:
 M011 audit, Piper-core assembly, optional runtime assembly, v2 acquisition-
 authority, and local installer commands now exist. The current optional
 manifest records the published runtime but remains withheld, so no end-user
-acquisition is reachable. Clean-host installation/offline use, cross-version
-replacement, application-data removal, and complete product behavior remain
-Milestone 6 work; do not describe those release gates as passing.
+acquisition is reachable. Development-host bounded application-data removal now
+passes, but clean-host installation/offline use, cross-version replacement,
+interactive uninstall, and complete product behavior remain Milestone 6 work;
+do not describe those release gates as passing.
 
 ADR-0045 adds a separate local validation build because no second compatible
 GPU computer is available. Its static check proves that the ordinary manifest

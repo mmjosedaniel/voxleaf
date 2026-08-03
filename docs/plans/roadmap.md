@@ -113,8 +113,9 @@ forms. The first-use correction also repairs only allowlisted generated cache
 data and reuses the completed verification through a metadata-guarded
 process-memory receipt under the MVP no-hostile-same-user-tampering assumption;
 every application restart verifies the authority again. The installed Spanish
-matrix now passes. English, restart, removal/reinstall, clean-host, and signing
-remain M011 Milestone 6 work.
+and English development-host arms now pass. Restart, real package removal/
+reinstall, Piper-after-removal, clean-host, and signing remain M011 Milestone 6
+work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -1146,17 +1147,19 @@ keeps authority-file hash verification and canonical native containment intact,
 repairs only allowlisted generated caches, holds a successful metadata-guarded
 verification receipt only for the current application process under the MVP
 no-hostile-same-user-tampering assumption, and converts verbatim paths
-only at the child-process boundary. The exact installed Spanish WebView2 matrix
-now passes with zero external requests or generated files. English narration,
-restart, removal/reinstall, Piper-after-removal, independent clean-host proof,
-and public signing remain pending, so optional readiness remains open.
-Product review also identified a planned corrective Milestone 6A for lifecycle
-feedback and uninstall closeout. It does not reopen the verified acquisition
-topology: it keeps Settings populated during transitions, makes first-Play
-startup phases and supported cancellation truthful, makes optional removal
-discoverable, clarifies incomplete-download cleanup, and separates optional-
-package retention from preferences in the Windows uninstall journey. The
-roadmap update does not claim that Milestone 6A is implemented.
+only at the child-process boundary. The exact installed Spanish and English
+WebView2 arms now pass with zero external requests or generated files.
+Application restart, real package removal/reinstall, Piper-after-removal,
+independent clean-host proof, and public signing remain pending, so optional
+readiness remains open.
+Corrective Milestone 6A now closes the development-host lifecycle-feedback and
+uninstall implementation without reopening the verified acquisition topology.
+Settings stays populated during transitions; first-Play phases and supported
+cancellation are truthful; optional removal is discoverable; incomplete-
+download cleanup is explicit; and the Windows uninstall journey separates
+optional-package retention from preferences. Focused desktop tests, both static
+package authorities, rebuilt local installers, and the six-outcome lifecycle
+matrix pass for both product identities.
 [ADR-0047](../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md)
 accepts default interactive Chatterbox removal, default preference/recovery
 retention, and non-destructive silent uninstall without an explicit bounded
@@ -1172,8 +1175,8 @@ completed 1 -> completed 2 -> completed 3 -> completed 4A
     -> completed 5 Windows package/signing path;
        public signing externally blocked
     -> 6 clean-host matrix in progress
-       -> 6A planned lifecycle-feedback and uninstall closeout
-       -> rerun affected 6 host/package evidence
+       -> completed 6A lifecycle-feedback and development-host uninstall closeout
+       -> rerun affected 6 clean-host/manual package evidence
     -> 7 release decision and closeout
 ```
 
@@ -1300,8 +1303,9 @@ every existing owned cleanup root and release gate.
   MiB free dedicated VRAM, retains 8 GB as recommended/evaluated, and requires
   that distinction in download consent.
 - Profile-transition cancellation without transactional rollback could corrupt
-  active identity, persisted preference, or recovery state. Milestone 6A must
-  omit that action unless additive authority and tests close the rollback.
+  active identity, persisted preference, or recovery state. Milestone 6A omits
+  that action; adding it still requires additive authority and tests that close
+  the rollback.
 - Splitting uninstall choices must not broaden deletion beyond exact existing
   VoxLeaf-owned roots. ADR-0047 authorizes only its exact interactive defaults
   and silent options; any further destructive default or cleanup-scope change

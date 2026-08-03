@@ -199,14 +199,15 @@ authority.
    installation, first start, repair, and uninstall path. Milestone 6 repeats
    the complete lifecycle, manual replacement, and product matrix on a clean
    normal-user host.
-5. Planned M011 Milestone 6A closes the user-visible optional-package lifecycle
-   before affected Milestone 6 evidence is repeated. Settings remains populated
-   during a profile transition, long first-Play work exposes truthful content-
-   free phases, download cancellation explains its incomplete-staging cleanup,
-   installed Chatterbox has a discoverable independent removal action, and the
-   Windows uninstall journey distinguishes optional-package data from ordinary
-   preferences. This documentation target is not an implementation or release-
-   readiness claim.
+5. Implemented M011 Milestone 6A closes the user-visible optional-package
+   lifecycle before affected Milestone 6 evidence is repeated. Settings remains
+   populated during a profile transition, long first-Play work exposes truthful
+   content-free phases, download cancellation explains its incomplete-staging
+   cleanup, installed Chatterbox has a discoverable independent removal action,
+   and the Windows uninstall journey distinguishes optional-package data from
+   ordinary preferences. Focused and packaged development-host validation
+   passes; clean-host, optional-support, and public-release readiness remain
+   separate open gates.
 6. M011 decides Piper-core portfolio readiness, optional Chatterbox readiness,
    and signed public-installer publication independently.
 

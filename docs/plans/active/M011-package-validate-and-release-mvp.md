@@ -87,9 +87,10 @@ split, verified, and published as `chatterbox-runtime-v2`. Milestone 5
 integrates only the acquisition authority into the core installer; Chatterbox
 runtime and model bytes remain excluded. The validation-only package has now
 completed the explicit download and verified installation on the compatible
-development host. Its exact installed Spanish Chatterbox supervisor and
-WebView2 narration arms now pass, but English narration, restart, removal/
-reinstall, independent clean-host acquisition, and public signing remain open.
+development host. Its exact installed Spanish and English Chatterbox supervisor
+and WebView2 narration arms now pass, but restart, real package removal/
+reinstall, Piper-after-removal, independent clean-host acquisition, and public
+signing remain open.
 
 The current TTS runtimes are ignored developer assets selected through
 environment variables. Development firewall rules target exact candidate
@@ -651,11 +652,11 @@ unavailable. The separately identified validation installer completed explicit
 Chatterbox download and verified installation on the maintainer's compatible
 computer. Direct content-safe runtime and framed-service probes now reach model
 load, warmup, and synthetic synthesis. The installed supervisor and exact
-WebView2 Spanish matrix now also pass after the child-process path correction
-described below. English narration, application restart, removal/reinstall,
-Piper-after-removal, independent clean-host evidence, and public signing remain
-open; optional clean-host readiness and public support are not inferred from
-the development-host Spanish result.
+WebView2 Spanish and English arms now also pass after the child-process path
+correction described below. Application restart, real package removal/
+reinstall, Piper-after-removal, independent clean-host evidence, and public
+signing remain open; optional clean-host readiness and public support are not
+inferred from the development-host results.
 
 The maintainer has no second compatible-GPU computer. ADR-0045 therefore
 authorizes a separately identified, unsigned, local-validation-only installer
@@ -891,17 +892,18 @@ Actual result on 2026-08-01:
   Prepared RTF is `1.23`; peak dedicated VRAM is `3,808` MiB; peak process-tree
   working set is `4,865,605,632` bytes; cancellation is `469` ms; cleanup is
   `756` ms; and the arm records zero generated files and zero external requests.
-  This closes the Spanish development-host arm only. English narration,
-  application restart, removal/reinstall, Piper-after-removal, independent
-  clean-host evidence, and public signing remain pending.
+  At that checkpoint this closed the Spanish development-host arm only; the
+  later Milestone 6A affected-evidence rerun below supersedes the remaining
+  English development-host item.
 
 ### Milestone 6A: Close Chatterbox lifecycle feedback and uninstall behavior
 
-**Status:** Implemented with focused and packaged development-host validation;
-final broad repository validation is in progress. This corrective submilestone
-does not close or weaken any Milestone 6 clean-host, optional-support, or
-public-signing gate. The interactive NSIS journey remains an explicit manual
-clean-host validation arm rather than being inferred from silent automation.
+**Status:** Complete on 2026-08-03 for implementation, focused and broad
+repository validation, and packaged development-host evidence. This corrective
+submilestone does not close or weaken any Milestone 6 clean-host,
+optional-support, or public-signing gate. The interactive NSIS journey remains
+an explicit manual clean-host validation arm rather than being inferred from
+silent automation.
 
 The objective is to let a user understand every long-running Chatterbox state,
 interrupt work only where the underlying lifecycle can safely honor
@@ -960,6 +962,7 @@ cleanup boundaries.
 8. Keep the supported Windows uninstall route discoverable through
    **Installed apps** and the About/user guidance. Extend the existing package
    lifecycle validation rather than inventing a parallel uninstaller.
+
 Validation is split by authority and every final command runs in a normal local
 PowerShell session outside the managed sandbox:
 
@@ -1606,16 +1609,62 @@ and never edit prior benchmark authority to make a release pass.
   the call to the matching uppercase register made the matrix pass and a Node
   mutation test now freezes that exact authority. No test fixture, backup, or
   quarantine data remained after restoration.
-- **2026-08-03:** Rebuilt both unsigned installers outside the sandbox. The
-  ordinary artifact is `181,695,447` bytes with SHA-256
+- **2026-08-03:** Rebuilt both unsigned checkpoint installers outside the
+  sandbox. The checkpoint ordinary artifact is `181,695,447` bytes with SHA-256
   `9337e8a6dec522f7d6310c18312f20ba6ef1b4a6ce02dfad6567188df3a9727e`;
-  the isolated validation artifact is `181,695,404` bytes with SHA-256
+  the checkpoint isolated validation artifact is `181,695,404` bytes with SHA-256
   `f8c7b40d10d75aae38ef3b58d102c1608916339f61ab3c13f0688ed76cdea03e`
   and its Defender scan reports no threats. Both static package authorities,
   PowerShell parsing, 53 desktop files/535 tests, and 18 Node script tests pass.
   Computer Use policy blocked opening `uninstall.exe`, so no visual result is
   inferred: default checkbox copy/state and actual interactive deletion remain
   in the required normal-user clean-host arm.
+- **2026-08-03:** Completed the Milestone 6A broad outside-sandbox validation.
+  `pnpm.cmd check:portable` passes end to end, including 20 shared files/209
+  tests, 34 EPUB files/580 tests, 53 desktop files/535 tests plus 18 Node script
+  tests, 384 Python tests, Ruff, ESLint, Prettier, TypeScript, mypy over 159
+  source files, and all portable builds. `pnpm.cmd check` also passes, adding
+  rustfmt, Clippy, all 72 Rust tests, and the native release build. The only
+  Python output is the already-known
+  non-failing pytest cache-permission warning; Vite retains its existing
+  `::highlight` and large-chunk warnings. Both 20-test focused Rust variants,
+  the six-case browser suite, the content-safe native packaged startup smoke,
+  desktop typecheck, and both Windows package static authorities also pass.
+- **2026-08-03:** Repeated the affected exact installed Chatterbox evidence with
+  external connectivity denied. The Spanish arm passes with Quick startup
+  `39.966` seconds, lead `21.680` seconds, Prepared RTF `0.93`, cancellation
+  `422` ms, peak process-tree working set `4,861,247,488` bytes, peak dedicated
+  VRAM `3,711` MiB, zero underruns, zero generated-audio files, and zero external
+  requests. The English arm passes with Quick startup `33.905` seconds, lead
+  `18.680` seconds, Prepared RTF `0.93`, cancellation `313` ms, peak process-tree
+  working set `4,896,034,816` bytes, peak dedicated VRAM `3,731` MiB, zero
+  underruns, zero generated-audio files, and zero external requests. The generic
+  repository exact-host entry point correctly found no optional package under
+  the ordinary identity; the two passing arms therefore used its exact installed
+  executable boundary with the isolated validation identity. These are
+  development-host results, not clean-host evidence.
+- **2026-08-03:** Built the final unsigned artifacts outside the sandbox. The
+  ordinary installer is `181,704,648` bytes with SHA-256
+  `56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
+  The isolated validation installer is `181,685,311` bytes with SHA-256
+  `262391035327925b3bf5a9ea422ba381e89c59a20fc1cec1966ee37ae34f775f`;
+  Windows Defender reports no threats for that artifact. Against those exact
+  installers, both product identities pass installation, first start, repair,
+  all six silent uninstall outcomes, unrelated-data preservation, and restoration
+  of pre-existing application data. The two development installations were
+  restored afterward, and no lifecycle backup, quarantine, or temporary fixture
+  remains. The final diff received an independent read-only review with no
+  blocking finding. Milestone 6A is complete; interactive normal-user clean-host
+  uninstall, restart, real optional-package removal/reinstall,
+  Piper-after-removal, clean-host acquisition, and public signing remain in
+  Milestone 6.
+- **2026-08-03:** Final source review caught that a lint cleanup could make the
+  static uninstall validator recognize a normalized broad-root mutation while
+  missing the same unsafe statement with NSIS-escaped quotes. The validator now
+  rejects both representations, and the mutation suite freezes both. Focused
+  Node tests, ESLint, Prettier, and both package static authorities pass again;
+  this build-time validation correction does not change either final installer
+  payload or hash.
 
 ## Discoveries and decisions
 

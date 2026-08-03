@@ -56,10 +56,12 @@ test("the release authority rejects broad uninstall roots and incomplete lifecyc
     (value) =>
       (value.nsisHooks += '\\nRMDir /r "$LOCALAPPDATA\\\\com.voxleaf.desktop"'),
     (value) =>
-      (value.lifecycleScript = "default chatterbox-only preferences-only both legacy invalid"),
-    (value) => (value.lifecycleScript += "\\nnot-exercised"),
+      (value.nsisHooks += String.raw`\nRMDir /r \"$LOCALAPPDATA\\com.voxleaf.desktop\"`),
     (value) =>
-      (value.nsisHooks = value.nsisHooks.replaceAll("w R0", "w r0")),
+      (value.lifecycleScript =
+        "default chatterbox-only preferences-only both legacy invalid"),
+    (value) => (value.lifecycleScript += "\\nnot-exercised"),
+    (value) => (value.nsisHooks = value.nsisHooks.replaceAll("w R0", "w r0")),
   ]) {
     const value = { ...source };
     mutate(value);

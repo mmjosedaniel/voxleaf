@@ -8,10 +8,10 @@ Accepted on 2026-08-03.
 
 [ADR-0042](ADR-0042-freeze-mvp-release-authority.md) and
 [`mvp-release-authority-v1`](../mvp-release-authority-v1.md) froze one explicit
-application-data choice for Windows uninstall. The implemented NSIS hook
-therefore preserves all application data by default and, during interactive
-uninstall, offers one combined choice that removes preferences, recovery state,
-staging, and optional profiles together.
+application-data choice for Windows uninstall. When this additive decision was
+accepted, the implemented NSIS hook therefore preserved all application data by
+default and, during interactive uninstall, offered one combined choice that
+removed preferences, recovery state, staging, and optional profiles together.
 
 Installed-product review found two problems with that combined choice. A user
 cannot remove the large optional Chatterbox package while retaining ordinary
@@ -77,9 +77,18 @@ signing gate.
 - NSIS hooks and lifecycle validation must distinguish the two data classes for
   both ordinary VoxLeaf and the separately identified Chatterbox validation
   product.
-- Release documentation must distinguish this accepted target from the current
-  one-prompt implementation until Milestone 6A passes focused, packaged, and
-  clean-host validation.
+- Release documentation must distinguish the implemented development-host
+  behavior from clean-host interactive acceptance until the remaining manual
+  Milestone 6 arm passes.
+
+## Implementation status
+
+M011 Milestone 6A implements the two choices for both the ordinary and isolated
+validation identities. Focused desktop tests, static package authority, and an
+automated development-host matrix prove repair-time preservation plus six
+silent option outcomes. The manual interactive NSIS journey on a normal-user
+clean host remains open, so this result does not enable Chatterbox or close the
+clean-host and signing gates.
 
 ## Alternatives considered
 

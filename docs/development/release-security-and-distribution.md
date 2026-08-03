@@ -353,7 +353,7 @@ and resource gates have not run. This is a fail-closed clean-host blocker for
 optional Chatterbox, not a failure of the Piper core or an authorization to
 claim Download works.
 
-### Planned M011 Milestone 6A lifecycle closeout
+### Implemented M011 Milestone 6A lifecycle closeout
 
 The native controller already owns bounded transfer progress, cancellation,
 partial-staging cleanup, atomic promotion, verification, and contained package
@@ -383,10 +383,15 @@ repeated:
   and requires the consequence of each independent choice to be shown. Users
   who intentionally retain optional data receive a supported reinstall-and-
   remove route. VoxLeaf does not leave a residual model-manager executable.
-This subsection records planned release acceptance only. Until implementation,
-focused regressions, installed lifecycle evidence, and the remaining independent
-host gates pass, the current validation-build UI and one combined uninstall data
-choice remain the actual behavior and Chatterbox remains withheld.
+
+The user-visible behavior, split NSIS authority, and focused regressions are now
+implemented. Both unsigned local product identities build and pass static
+package checks plus a development-host lifecycle matrix covering first start,
+repair-time data preservation, default preservation, each data class alone,
+both explicit classes, the legacy combined option, invalid-value preservation,
+and unrelated-file containment. Chatterbox remains withheld: interactive NSIS
+confirmation on a normal-user clean host, the independent optional-support
+matrix, and public-signing gates have not been closed by that local automation.
 
 ADR-0045 permits one compile-time, separately identified validation build on
 the maintainer's only compatible computer. Its exact overlay supplies the

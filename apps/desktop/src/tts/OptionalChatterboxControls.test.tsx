@@ -165,7 +165,9 @@ describe("optional Chatterbox controls", () => {
     );
 
     expect(
-      await screen.findByText(/removes only this operation's incomplete staging/),
+      await screen.findByText(
+        /removes only this operation's incomplete staging/,
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText(/It cannot resume later/)).toBeInTheDocument();
     expect(

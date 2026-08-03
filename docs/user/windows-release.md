@@ -47,15 +47,16 @@ when cancellation settles. It returns Chatterbox to not installed, does not
 retain a resumable partial download, and never removes a package that had
 already completed verified installation.
 
-The final `181,694,782`-byte validation installer has SHA-256
-`289c93e63d07e0001b667d964396ea5a611a5bf38f411f9158e92e829d35f148`.
-It repairs the first installed runtime closure, moves only its exact verified
-legacy package to a Windows-safe short application-data path, and converts
-native verbatim paths to conventional Windows paths only when starting the
-embedded Python child. Microsoft Defender reports no threats for that exact
-unsigned file. Reinstalling this build preserves and reuses an already verified
-Chatterbox download; it does not download the optional package again. The first
-integrity pass and model cold load can still take tens of seconds.
+The validation installer is unsigned and ships with an adjacent SHA-256 file;
+verify that checksum before use. The exact local artifact and Defender result
+are recorded in the active M011 ExecPlan rather than embedded here, because this
+document is itself part of the installer payload. The build repairs the first
+installed runtime closure, moves only its exact verified legacy package to a
+Windows-safe short application-data path, and converts native verbatim paths to
+conventional Windows paths only when starting the embedded Python child.
+Reinstalling preserves and reuses an already verified Chatterbox download; it
+does not download the optional package again. The first integrity pass and model
+cold load can still take tens of seconds.
 
 Download, installation, activation, and first narration are separate steps.
 Activation is explicit and does not load the model. On the first Chatterbox
@@ -78,21 +79,23 @@ Chatterbox child and then deletes only the exact optional runtime, model,
 removable cache, and staging data. It does not uninstall VoxLeaf, remove Piper,
 delete preferences or reading progress, or search for EPUB files.
 
-The exact installed Spanish Chatterbox playback matrix now passes on the
-maintainer's compatible computer. Quick startup took `45.990` seconds in that
-validation run, so the UI can remain in preparation while integrity verification
-and cold model load complete. This is development-host evidence, not general
-hardware or public-release proof. English narration, application restart,
-removal/reinstall, Piper-after-removal, independent clean-host validation, and
-public signing remain open.
+The exact installed Spanish and English Chatterbox playback arms now pass on the
+maintainer's compatible computer. The Milestone 6A rerun measured Quick startup
+at about `40.0` seconds in Spanish and `33.9` seconds in English, so the UI can
+remain in preparation while integrity verification and cold model load complete.
+Both arms recorded zero underruns, generated-audio files, and external requests.
+This is development-host evidence, not general hardware or public-release
+proof. Application restart, real package removal/reinstall, Piper-after-removal,
+independent clean-host validation, and public signing remain open.
 
-The current validation build reports generic preparation/buffering while the
-first integrity pass and cold model load run. Planned M011 Milestone 6A will
-keep Settings visibly populated during profile transitions and add truthful
-content-free phases for verification, local service/model startup, first-audio
-generation, and buffering. It will also present the existing safe Stop path as
-**Cancel start** before audio owns playback. Those refinements are not current
-behavior and do not make this build public-release evidence.
+Settings stays populated during profile transitions and reports a truthful
+content-free applying phase instead of going blank. First Chatterbox Play can
+report installed-package verification, combined local service/model startup,
+narration preparation, first-audio generation, and buffering before playback.
+While no audio owns playback, the existing safe Stop path is labelled
+**Cancel start**; once playback begins it returns to **Stop**. No fixed duration
+or invented percentage is shown for verification or model loading. This
+feedback does not make the validation build public-release evidence.
 
 ## Repair or replace a version
 
@@ -108,27 +111,38 @@ outside the core program directory.
 
 ## Uninstall
 
-Use **Installed apps** in Windows. Interactive uninstall asks whether to remove
-VoxLeaf preferences, recovery state, staging data, and optional profiles. The
-default and silent uninstall preserve that application data. Either choice is
-limited to VoxLeaf-owned roots and never searches for or deletes EPUB files.
+Use **Installed apps** in Windows. When an exact application-owned Chatterbox
+root exists, interactive uninstall first offers a separate Chatterbox choice.
+It is selected by default, explains that removal reclaims about 8.23 GB and
+requires acquisition again, and can be unchecked independently. The following
+preference/recovery choice is not selected by default. Neither choice searches
+for or deletes EPUB files, Piper, generated narration, or unrelated Local App
+Data entries. This split follows
+[ADR-0047](../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md).
 
-In the current installer this is one combined data decision. If Chatterbox data
-is preserved, Windows removes the application UI that normally exposes
-**Remove Chatterbox**. The supported recovery is to reinstall the same VoxLeaf
-product identity (ordinary VoxLeaf or the separate Chatterbox validation build),
-remove Chatterbox from Settings, and uninstall again. Do not guess at or broadly
-delete Local App Data paths.
+Silent uninstall preserves both data classes unless an exact option authorizes
+one of them:
 
-Planned M011 Milestone 6A will separate the optional Chatterbox package/cache/
-staging decision from preferences and recovery state. Accepted
-[ADR-0047](../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md)
-selects Chatterbox removal by default and preference/recovery retention by
-default, explains the storage consequence of each independent choice, and
-retains non-destructive silent behavior unless an explicit bounded removal
-option is supplied. This planned journey must pass install, repair, uninstall,
-reinstall, unrelated-file preservation, and optional-data outcome checks before
-it replaces the current instructions.
+```text
+/REMOVE_CHATTERBOX_DATA=1
+/REMOVE_PREFERENCES_AND_RECOVERY=1
+/REMOVE_APP_DATA=1
+```
+
+The first option removes only the exact optional runtime, model, removable
+cache, and acquisition staging roots. The second removes only bounded reader
+preferences, reading positions, and recovery state. Supplying both composes the
+two removals; the legacy third option also selects both. Missing options and
+values other than exact `1` preserve data. Repair/version replacement always
+preserves both classes.
+
+If Chatterbox is intentionally retained, Windows removes the application UI
+that exposes **Remove Chatterbox**. Reinstall the same VoxLeaf product identity
+(ordinary VoxLeaf or the separate Chatterbox validation build), remove
+Chatterbox from Settings, and uninstall again. Do not guess at or broadly delete
+Local App Data paths. Automated development-host lifecycle validation covers
+repair and all six silent outcomes for both identities; the actual interactive
+journey remains part of the normal-user clean-host release arm.
 
 ## Verify a release artifact
 
