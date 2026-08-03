@@ -50,6 +50,28 @@ test("the release authority rejects broader targets, elevation, and optional pay
   }
 });
 
+test("the release authority rejects broad uninstall roots and incomplete lifecycle matrices", async () => {
+  const source = await loadReleaseDocuments(repositoryRoot());
+  for (const mutate of [
+    (value) =>
+      (value.nsisHooks += '\\nRMDir /r "$LOCALAPPDATA\\\\com.voxleaf.desktop"'),
+    (value) =>
+      (value.nsisHooks += String.raw`\nRMDir /r \"$LOCALAPPDATA\\com.voxleaf.desktop\"`),
+    (value) =>
+      (value.lifecycleScript =
+        "default chatterbox-only preferences-only both legacy invalid"),
+    (value) => (value.lifecycleScript += "\\nnot-exercised"),
+    (value) => (value.nsisHooks = value.nsisHooks.replaceAll("w R0", "w r0")),
+  ]) {
+    const value = { ...source };
+    mutate(value);
+    assert.throws(
+      () => validateClosedReleaseValues(value),
+      /windows-release:(uninstall-authority|uninstall-scope|lifecycle-flag-coverage|lifecycle-not-exercised)/,
+    );
+  }
+});
+
 test("content-safe evidence distinguishes unsigned local and signed public gates", async () => {
   const temporary = await mkdtemp(
     path.join(os.tmpdir(), "voxleaf-release-test-"),

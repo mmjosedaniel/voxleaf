@@ -3,7 +3,11 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
-import { APP_VERSION, repositoryRoot } from "./windows-release.mjs";
+import {
+  APP_VERSION,
+  repositoryRoot,
+  validateUninstallAuthority,
+} from "./windows-release.mjs";
 
 const PRODUCT_NAME = "VoxLeaf-Chatterbox-Validation";
 const IDENTIFIER = "com.voxleaf.desktop.chatterbox-validation";
@@ -44,6 +48,10 @@ export async function validateChatterboxValidationRelease(
     path.join(srcTauri, "windows/nsis-chatterbox-validation-hooks.nsh"),
     "utf8",
   );
+  const lifecycleScript = await readFile(
+    path.join(root, "scripts/test-windows-package-lifecycle.ps1"),
+    "utf8",
+  );
 
   if (
     config.productName !== PRODUCT_NAME ||
@@ -58,6 +66,15 @@ export async function validateChatterboxValidationRelease(
       "windows/nsis-chatterbox-validation-hooks.nsh"
   ) {
     fail("identity-or-bundle");
+  }
+  if (
+    JSON.stringify(config.bundle.windows?.nsis?.customLanguageFiles) !==
+    JSON.stringify({
+      English: "windows/nsis-English.nsh",
+      Spanish: "windows/nsis-Spanish.nsh",
+    })
+  ) {
+    fail("uninstall-language-authority");
   }
   if (
     canonical.availability !== "withheld" ||
@@ -92,10 +109,13 @@ export async function validateChatterboxValidationRelease(
     fail("resource-closure");
   }
   if (!cargo.includes(`${FEATURE} = []`)) fail("cargo-feature");
-  if (
-    !hooks.includes(`$LOCALAPPDATA\\${IDENTIFIER}`) ||
-    hooks.includes('$LOCALAPPDATA\\com.voxleaf.desktop"')
-  ) {
+  try {
+    validateUninstallAuthority({
+      nsisHooks: hooks,
+      lifecycleScript,
+      identity: IDENTIFIER,
+    });
+  } catch {
     fail("data-root-isolation");
   }
   if (requireCore) {

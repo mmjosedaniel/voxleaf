@@ -340,6 +340,40 @@ describe("hardware compatibility controls", () => {
     expect(onRecoveryEpisodeReset).toHaveBeenCalledTimes(2);
   });
 
+  it("keeps narration settings populated and announces a pending selection", async () => {
+    const subject = coordinator();
+    let settle: ((value: boolean) => void) | undefined;
+    const onSelectProfile = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          settle = resolve;
+        }),
+    );
+    render(
+      <HardwareCompatibilityControls
+        coordinator={subject}
+        presentation="narration"
+        onSelectProfile={onSelectProfile}
+      />,
+    );
+    await ensureChecked(subject);
+    const profile = await screen.findByRole("radio", {
+      name: "Qwen and Serena Spanish quality profile (Development)",
+    });
+
+    fireEvent.click(profile);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Applying narration settings. Existing settings remain available.",
+    );
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+    expect(profile).toBeInTheDocument();
+    expect(profile).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /cancel/i })).toBeNull();
+
+    settle?.(true);
+    await waitFor(() => expect(profile).toBeEnabled());
+  });
+
   it("offers an accessible bilingual radio group and selects the admitted English fallback", async () => {
     const languageRepository = languagePreference();
     const subject = coordinator({ languagePreference: languageRepository });

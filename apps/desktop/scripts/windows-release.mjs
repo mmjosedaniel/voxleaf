@@ -73,7 +73,70 @@ export async function loadReleaseDocuments(root) {
       path.join(srcTauri, "windows/nsis-hooks.nsh"),
       "utf8",
     ),
+    lifecycleScript: await readFile(
+      path.join(root, "scripts/test-windows-package-lifecycle.ps1"),
+      "utf8",
+    ),
   };
+}
+
+const UNINSTALL_FLAGS = Object.freeze([
+  "/REMOVE_CHATTERBOX_DATA=1",
+  "/REMOVE_PREFERENCES_AND_RECOVERY=1",
+  "/REMOVE_APP_DATA=1",
+]);
+const UNINSTALL_FLAG_OPTIONS = Object.freeze(
+  UNINSTALL_FLAGS.map((flag) => flag.slice(0, -1)),
+);
+
+const OPTIONAL_UNINSTALL_ROOTS = Object.freeze([
+  "tts\\cb\\2",
+  "tts\\profiles\\chatterbox-multilingual-v3-cuda-bf16-default-v4\\2",
+  "tts\\staging\\chatterbox-multilingual-v3-cuda-bf16-default-v4",
+  "tts\\cb\\cache",
+]);
+
+export function validateUninstallAuthority({
+  nsisHooks,
+  lifecycleScript,
+  identity,
+}) {
+  const normalizedHooks = nsisHooks.replaceAll("\\\\", "\\");
+  for (const value of [
+    "NSIS_HOOK_PREUNINSTALL",
+    "NSIS_HOOK_POSTUNINSTALL",
+    'DeleteAppDataCheckboxState "0"',
+    ...UNINSTALL_FLAG_OPTIONS,
+    ...OPTIONAL_UNINSTALL_ROOTS,
+    "EBWebView\\Default\\Local Storage",
+    "GetFileAttributesW(w R0)",
+    ".R1",
+    "0x400",
+  ]) {
+    if (!normalizedHooks.includes(value)) fail("uninstall-authority");
+  }
+  if (
+    normalizedHooks.includes(`RMDir /r "$LOCALAPPDATA\\${identity}"`) ||
+    normalizedHooks.includes(`RMDir /r \\"$LOCALAPPDATA\\${identity}\\"`) ||
+    normalizedHooks.includes('RMDir /r "$LOCALAPPDATA\\${BUNDLEID}"') ||
+    !normalizedHooks.includes(`$LOCALAPPDATA\\${identity}`)
+  ) {
+    fail("uninstall-scope");
+  }
+  for (const flag of UNINSTALL_FLAGS) {
+    if (!lifecycleScript.includes(flag)) fail("lifecycle-flag-coverage");
+  }
+  for (const scenario of [
+    "default",
+    "chatterbox-only",
+    "preferences-only",
+    "both",
+    "legacy",
+    "invalid",
+  ]) {
+    if (!lifecycleScript.includes(scenario)) fail("lifecycle-matrix-coverage");
+  }
+  if (/not-exercised/i.test(lifecycleScript)) fail("lifecycle-not-exercised");
 }
 
 export function validateClosedReleaseValues(documents) {
@@ -84,6 +147,7 @@ export function validateClosedReleaseValues(documents) {
     baseConfig,
     releaseConfig,
     nsisHooks,
+    lifecycleScript,
   } = documents;
   if (
     rootPackage.version !== APP_VERSION ||
@@ -124,22 +188,25 @@ export function validateClosedReleaseValues(documents) {
     fail("bundle-authority");
   }
   if (
+    JSON.stringify(nsis.customLanguageFiles) !==
+    JSON.stringify({
+      English: "windows/nsis-English.nsh",
+      Spanish: "windows/nsis-Spanish.nsh",
+    })
+  ) {
+    fail("uninstall-language-authority");
+  }
+  if (
     JSON.stringify(sortedEntries(bundle.resources)) !==
     JSON.stringify(sortedEntries(EXPECTED_RESOURCES))
   ) {
     fail("resource-closure");
   }
-  for (const value of [
-    "NSIS_HOOK_PREUNINSTALL",
-    "NSIS_HOOK_POSTUNINSTALL",
-    "$LOCALAPPDATA\\com.voxleaf.desktop",
-    "IfSilent preserve_application_data",
-    "/REMOVE_APP_DATA=",
-  ]) {
-    if (!nsisHooks.includes(value)) {
-      fail("uninstall-authority");
-    }
-  }
+  validateUninstallAuthority({
+    nsisHooks,
+    lifecycleScript,
+    identity: "com.voxleaf.desktop",
+  });
   if (/\.pfx|\.p12|certificateThumbprint|signCommand/i.test(nsisHooks)) {
     fail("tracked-signing-credential");
   }

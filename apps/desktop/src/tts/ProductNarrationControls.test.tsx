@@ -236,6 +236,67 @@ describe("product narration controls", () => {
     expect(coordinator.recover).toHaveBeenCalledOnce();
   });
 
+  it("uses truthful first-start phases and lets the safe stop path cancel startup", () => {
+    let current: ProductNarrationSnapshot = Object.freeze({
+      ...snapshot(),
+      state: Object.freeze({
+        mode: Object.freeze({ kind: "quick" }),
+        phase: "preparing",
+        readyMs: 0,
+        targetMs: 15_000,
+        progressValueMs: 0,
+        estimatedWaitMs: undefined,
+        lowBuffer: false,
+        allRemainingAudioReady: false,
+        resourceCeilingReached: false,
+        pauseContinuesPreparation: false,
+        canPause: false,
+        canResume: false,
+        canStop: true,
+        volumePercent: 100,
+        playbackRate: 1,
+        selectedPlaybackRatePercent: 100,
+        activePlaybackRatePercent: null,
+        pendingPlaybackRatePercent: null,
+      }),
+      serviceState: "starting",
+    });
+    const coordinator = {
+      subscribe: vi.fn(() => () => undefined),
+      observe: vi.fn(() => current),
+      checkAvailability: vi.fn(async () => undefined),
+      setSelection: vi.fn(),
+      start: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(async () => undefined),
+      setVolumePercent: vi.fn(),
+      setPlaybackRatePercent: vi.fn(async () => true),
+      goToPreviousBoundary: vi.fn(),
+      goToNextBoundary: vi.fn(),
+      startAtVisibleLocator: vi.fn(),
+    } as unknown as ProductNarrationCoordinator;
+
+    const subject = render(
+      <ProductNarrationControls coordinator={coordinator} />,
+    );
+
+    expect(
+      screen.getByText("Starting the local narration service and model."),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel start" }));
+    expect(coordinator.stop).toHaveBeenCalledOnce();
+
+    current = Object.freeze({
+      ...current,
+      state: Object.freeze({ ...current.state!, phase: "playing" }),
+      serviceState: "ready",
+    });
+    subject.rerender(<ProductNarrationControls coordinator={coordinator} />);
+    expect(screen.getByRole("button", { name: "Stop" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cancel start" })).toBeNull();
+  });
+
   it("reports preparation failure without calling it active cleanup", () => {
     const current: ProductNarrationSnapshot = Object.freeze({
       ...snapshot(),

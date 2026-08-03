@@ -83,14 +83,15 @@ product scope. It does not change the completed M005 narration-preparation
 boundary, protocol v1, TTS model input, generated audio, support decisions, or
 release-distribution status.
 
-## Planned M011 lifecycle-feedback addendum
+## Implemented M011 lifecycle-feedback addendum
 
 M011 Milestone 6A additively closes release-facing gaps discovered after the
 completed M010.2 Settings shell reached the installed Chatterbox validation
-journey. This section is an approved product target, not implemented behavior or
-evidence that the optional package is ready for end users. It does not reopen
-the M010.2 reader layout, playback-rate authority, TTS protocol v1, one-child
-ownership, hardware gates, or Chatterbox's withheld release state.
+journey. Focused desktop regressions and the packaged development-host lifecycle
+matrix now cover this behavior. That implementation is not evidence that the
+optional package is ready for end users: it does not reopen the M010.2 reader
+layout, playback-rate authority, TTS protocol v1, one-child ownership, hardware
+gates, or Chatterbox's withheld release state.
 
 ### Stable Settings transitions
 

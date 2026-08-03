@@ -138,20 +138,23 @@ one successful complete-verification receipt only in native process memory;
 within-process reuse is guarded by tree metadata and is not claimed to resist
 malicious same-user tampering (ADR-0046 defines this MVP limitation); every new
 application process verifies the full authority again. Direct
-content-safe model/service probes and the exact installed Spanish WebView2
-matrix now pass after conventionalizing only canonical verbatim paths at the
-child-process boundary. English narration, restart, removal/reinstall,
-Piper-after-removal, clean-host validation, and public signing remain open.
-Maintainer review also identified a planned M011 Milestone 6A lifecycle-
-feedback closeout. It must keep Settings visibly populated during profile
-transitions, distinguish truthful first-Play startup phases, make optional-
-package removal discoverable, explain that acquisition cancellation deletes
-only incomplete staging, and separate optional-package retention from ordinary
-preferences in the uninstall journey. ADR-0047 now accepts default interactive
-Chatterbox removal, default preference/recovery retention, and non-destructive
-silent uninstall unless an explicit bounded option is supplied. Milestone 6A is
-not implemented by this documentation update and does not change Chatterbox's
-withheld, clean-host, or public-signing gates.
+content-safe model/service probes and the exact installed Spanish and English
+WebView2 arms now pass after conventionalizing only canonical verbatim paths at
+the child-process boundary. Application restart, real package removal/
+reinstall, Piper-after-removal, clean-host validation, and public signing remain
+open.
+M011 Milestone 6A is complete for implementation and development-host evidence.
+It keeps Settings visibly populated during profile transitions, distinguishes
+truthful first-Play startup phases, makes optional-
+package removal discoverable, explains that acquisition cancellation deletes
+only incomplete staging, and separates optional-package retention from ordinary
+preferences in the uninstall journey. ADR-0047's defaults are implemented:
+interactive Chatterbox removal is selected when exact optional data exists,
+preference/recovery removal is not selected, and silent uninstall preserves
+both unless an explicit bounded option is supplied. Focused desktop regressions
+and the six-outcome packaged lifecycle matrix pass for both local product
+identities on the development host. This does not change Chatterbox's withheld,
+manual clean-host, optional-support, or public-signing gates.
 Milestone 5 now packages version `0.1.0` as a release-only current-user Windows
 x64 NSIS installer containing the exact verified bilingual Piper core. Local
 installation, first start, repair, uninstall, unrelated-file preservation, and
@@ -175,7 +178,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`product/vision.md`](product/vision.md): product purpose, audience, and principles.
 - [`product/project-brief.md`](product/project-brief.md): detailed problem, intended experience, product boundaries, and candidate technical direction.
 - [`product/mvp.md`](product/mvp.md): MVP scope, non-goals, constraints, and acceptance criteria.
-- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and implemented six-value boundary-deferred repository-WSOLA playback requirements, plus the explicitly planned M011 lifecycle-feedback addendum.
+- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and implemented six-value boundary-deferred repository-WSOLA playback requirements, plus the implemented M011 lifecycle-feedback addendum.
 - [`product/post-mvp-tts-candidate-backlog.md`](product/post-mvp-tts-candidate-backlog.md): non-authoritative post-MVP intake order for Pocket TTS, Chatterbox LatAm, MOSS-TTS-Nano, Kokoro, and additional Piper voices.
 - [`product/glossary.md`](product/glossary.md): shared terminology.
 
