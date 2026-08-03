@@ -214,6 +214,14 @@ export function ReaderSettingsDialog({
     }
   };
 
+  const handleChatterboxActivation = async (): Promise<boolean> => {
+    const activated = await onActivateChatterbox();
+    if (activated) {
+      onRecoveryEpisodeReset();
+    }
+    return activated;
+  };
+
   return (
     <div
       className="settings-backdrop"
@@ -288,7 +296,7 @@ export function ReaderSettingsDialog({
             />
             <OptionalChatterboxControls
               client={optionalChatterbox}
-              onActivate={onActivateChatterbox}
+              onActivate={handleChatterboxActivation}
               onRemove={onRemoveChatterbox}
             />
             <NarrationStartSettings

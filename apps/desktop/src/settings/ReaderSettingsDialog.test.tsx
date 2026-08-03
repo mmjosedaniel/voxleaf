@@ -3,6 +3,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -19,6 +20,8 @@ function renderSettings(
   overrides: {
     readonly onClose?: () => void;
     readonly loadApplicationVersion?: () => Promise<string>;
+    readonly chatterboxState?: "withheld" | "installed";
+    readonly onActivateChatterbox?: () => Promise<boolean>;
   } = {},
 ) {
   const hardwareCompatibility = new HardwareProfileCompatibilityCoordinator();
@@ -29,9 +32,11 @@ function renderSettings(
   const onSelectLanguage = vi.fn(async () => true);
   const onResetNarrationSettings = vi.fn(async () => true);
   const onRecoveryEpisodeReset = vi.fn();
+  const onActivateChatterbox =
+    overrides.onActivateChatterbox ?? vi.fn(async () => true);
   const optionalChatterbox = new OptionalChatterboxClient(async () => ({
     profileId: "chatterbox-multilingual-v3-cuda-bf16-default-v4",
-    state: "withheld",
+    state: overrides.chatterboxState ?? "withheld",
     downloadBytes: null,
     downloadedBytes: 0,
     installedBytes: null,
@@ -70,7 +75,7 @@ function renderSettings(
       onResetNarrationSettings={onResetNarrationSettings}
       onRecoveryEpisodeReset={onRecoveryEpisodeReset}
       optionalChatterbox={optionalChatterbox}
-      onActivateChatterbox={vi.fn(async () => true)}
+      onActivateChatterbox={onActivateChatterbox}
       onRemoveChatterbox={vi.fn(async () => undefined)}
       loadApplicationVersion={
         overrides.loadApplicationVersion ?? (async () => "0.1.0")
@@ -87,6 +92,7 @@ function renderSettings(
     onSelectLanguage,
     onResetNarrationSettings,
     onRecoveryEpisodeReset,
+    onActivateChatterbox,
   };
 }
 
@@ -151,5 +157,34 @@ describe("reader Settings dialog", () => {
       "contentWidth",
       "wide",
     );
+  });
+
+  it("clears an existing recovery episode after Chatterbox activates", async () => {
+    const subject = renderSettings({ chatterboxState: "installed" });
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Activate Chatterbox" }),
+    );
+
+    await waitFor(() =>
+      expect(subject.onActivateChatterbox).toHaveBeenCalledTimes(1),
+    );
+    expect(subject.onRecoveryEpisodeReset).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves recovery when Chatterbox activation is rejected", async () => {
+    const subject = renderSettings({
+      chatterboxState: "installed",
+      onActivateChatterbox: vi.fn(async () => false),
+    });
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Activate Chatterbox" }),
+    );
+
+    await waitFor(() =>
+      expect(subject.onActivateChatterbox).toHaveBeenCalledTimes(1),
+    );
+    expect(subject.onRecoveryEpisodeReset).not.toHaveBeenCalled();
   });
 });

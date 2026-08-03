@@ -358,6 +358,21 @@ not relax the validation-only boundary: a maintainer rerun of the complete
 download, activation, offline narration, restart, removal, and Piper fallback
 journey is still required before any optional-profile readiness decision.
 
+The subsequent explicit download completed and installed the verified package,
+but installation did not itself select Chatterbox, as required by the frozen
+identity boundary. A separate UI defect made that distinction harder to recover
+from: optional activation selected the profile but did not reset an existing
+narration recovery episode, so the compact bar could remain on **Restart local
+narration** while Piper was still the supervised child. Successful optional
+activation now performs the same recovery reset as ordinary profile selection,
+failed activation preserves the existing failure, and Settings states clearly
+that an installed package must still be activated. This correction neither
+auto-activates downloaded code nor weakens the explicit-consent boundary. The
+resulting unsigned local validation installer is `181,628,621` bytes with
+SHA-256
+`c9de20363a329dd0f7e0bc8d66f8e795246f8c180dca5e32718d767cfc73971b`;
+its exact Microsoft Defender scan reports no threats.
+
 Hugging Face documents full-commit downloads, per-file downloads, filtered
 snapshots, and application-selected cache/local directories. VoxLeaf uses the
 full-commit and exact-file concepts but retains its own post-download

@@ -52,7 +52,12 @@ function StatusCopy({
     case "verifying":
       return <p aria-live="polite">Verifying the downloaded package.</p>;
     case "installed":
-      return <p>The verified Chatterbox package is installed locally.</p>;
+      return (
+        <p>
+          The verified Chatterbox package is installed locally. Activate it
+          before starting narration.
+        </p>
+      );
     case "removing":
       return <p aria-live="polite">Removing the local Chatterbox package.</p>;
     case "failed":

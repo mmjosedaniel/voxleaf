@@ -108,6 +108,9 @@ describe("optional Chatterbox controls", () => {
     expect(
       await screen.findByRole("button", { name: "Activate Chatterbox" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Activate it before starting narration/),
+    ).toBeInTheDocument();
     expect(invoke).toHaveBeenNthCalledWith(2, "download_optional_chatterbox", {
       profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
     });

@@ -798,6 +798,23 @@ Actual result on 2026-08-01:
   closure checks pass; and `check:portable` passes formatting, TypeScript/
   Python lint and types, 20 shared files/209 tests, 34 EPUB files/580 tests, 53
   desktop files/521 tests, 17 Node tests, 384 Python tests, and portable builds.
+- The maintainer then completed the explicit Chatterbox download and verified
+  installation on the compatible development host. The first narration attempt
+  did not load Chatterbox: process observation showed that the supervised child
+  still used Piper, while the UI retained a prior `recovery-available` episode.
+  Installation and activation are intentionally separate, but the optional
+  activation path did not clear recovery as the ordinary profile selector does.
+  A focused failing regression reproduced the stale episode. Successful
+  Chatterbox activation now resets it exactly once; rejected activation leaves
+  recovery intact. Installed-state copy now explicitly instructs the user to
+  activate the profile before narration. Nine focused renderer tests, the
+  desktop typecheck, and the complete 53-file/523-test desktop plus 17-test
+  native-runner suite pass outside the sandbox. The rebuilt unsigned validation
+  installer is `181,628,621` bytes with SHA-256
+  `c9de20363a329dd0f7e0bc8d66f8e795246f8c180dca5e32718d767cfc73971b`;
+  Microsoft Defender reports no threats. This fixes activation handoff only;
+  bilingual offline narration, restart, removal, and Piper-after-removal remain
+  pending validation and are not inferred from installation.
   The existing Custom Highlight, bundle-size, and pytest cache-write warnings
   remain non-failing. The system diagram now distinguishes the validation
   package without changing the runtime trust boundary.
