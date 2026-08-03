@@ -12,7 +12,9 @@ import {
 
 export interface OptionalChatterboxControlsProps {
   readonly client: OptionalChatterboxClient;
+  readonly active?: boolean;
   readonly onActivate: () => Promise<boolean>;
+  readonly onRecheck: () => Promise<boolean>;
   readonly onRemove: () => Promise<void>;
 }
 
@@ -30,9 +32,11 @@ function displayMiB(value: number): string {
 function StatusCopy({
   snapshot,
   downloadRequested,
+  active,
 }: Readonly<{
   snapshot: OptionalChatterboxSnapshot;
   downloadRequested: boolean;
+  active: boolean;
 }>): ReactElement {
   if (downloadRequested && snapshot.state === "confirming") {
     return <p aria-live="polite">Starting the Chatterbox download.</p>;
@@ -54,19 +58,76 @@ function StatusCopy({
     case "installed":
       return (
         <p>
-          The verified Chatterbox package is installed locally. Activate it
-          before starting narration.
+          {active
+            ? "The verified Chatterbox package is installed and selected."
+            : "The verified Chatterbox package is installed locally. Activate it before starting narration."}
         </p>
       );
     case "removing":
       return <p aria-live="polite">Removing the local Chatterbox package.</p>;
     case "failed":
-      return (
-        <p role="status">
-          Chatterbox setup did not complete. The current narration profile was
-          not changed.
-        </p>
-      );
+      switch (snapshot.failure) {
+        case "installed-package-invalid":
+        case "tts-optional-profile-invalid":
+          return (
+            <p role="status">
+              The local Chatterbox package did not pass its integrity check.
+              Piper remains available. Check it again or remove and download
+              Chatterbox again.
+            </p>
+          );
+        case "tts-optional-profile-incompatible-host":
+          return (
+            <p role="status">
+              This device does not currently meet the Chatterbox requirements.
+              Piper remains available. Free system resources, then check again.
+            </p>
+          );
+        case "tts-optional-profile-insufficient-space":
+          return (
+            <p role="status">
+              Chatterbox needs more free application storage. Piper remains
+              available. Free storage, then check again.
+            </p>
+          );
+        case "tts-optional-profile-busy":
+          return (
+            <p role="status">
+              Another Chatterbox operation is still active. Wait for it to
+              finish, then check again.
+            </p>
+          );
+        case "tts-optional-profile-cancelled":
+          return (
+            <p role="status">
+              The Chatterbox operation was cancelled. Piper remains available.
+              Check the optional package when you are ready to continue.
+            </p>
+          );
+        case "tts-optional-profile-cleanup-failed":
+          return (
+            <p role="status">
+              Chatterbox could not finish cleaning its application-owned files.
+              Restart VoxLeaf, then check again.
+            </p>
+          );
+        case "tts-optional-profile-download-failed":
+          return (
+            <p role="status">
+              The Chatterbox download did not complete. Piper remains available.
+              Check your connection, then try again.
+            </p>
+          );
+        case "tts-optional-profile-unavailable":
+        case "optional-profile-operation-failed":
+        case undefined:
+          return (
+            <p role="status">
+              Chatterbox setup did not complete. Piper remains available. Check
+              the optional package again before retrying.
+            </p>
+          );
+      }
     case "withheld":
       return (
         <p>
@@ -80,7 +141,9 @@ function StatusCopy({
 
 export function OptionalChatterboxControls({
   client,
+  active = false,
   onActivate,
+  onRecheck,
   onRemove,
 }: OptionalChatterboxControlsProps): ReactElement {
   const snapshot = useSyncExternalStore(
@@ -127,7 +190,11 @@ export function OptionalChatterboxControls({
       data-optional-profile-state={snapshot.state}
     >
       <h4 id="optional-chatterbox-heading">Chatterbox quality voice</h4>
-      <StatusCopy snapshot={snapshot} downloadRequested={downloadRequested} />
+      <StatusCopy
+        snapshot={snapshot}
+        downloadRequested={downloadRequested}
+        active={active}
+      />
       {snapshot.state === "absent" ? (
         <button
           type="button"
@@ -196,12 +263,40 @@ export function OptionalChatterboxControls({
       ) : null}
       {snapshot.state === "installed" ? (
         <div>
+          {active ? null : (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => run(onActivate)}
+            >
+              Activate Chatterbox
+            </button>
+          )}
           <button
             type="button"
             disabled={pending}
-            onClick={() => run(onActivate)}
+            onClick={() => run(onRemove)}
           >
-            Activate Chatterbox
+            Remove Chatterbox
+          </button>
+        </div>
+      ) : null}
+      {snapshot.state === "failed" ? (
+        <div>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() =>
+              run(
+                snapshot.failure === "tts-optional-profile-incompatible-host"
+                  ? onRecheck
+                  : () => client.refresh(),
+              )
+            }
+          >
+            {snapshot.failure === "tts-optional-profile-incompatible-host"
+              ? "Recheck device compatibility"
+              : "Check Chatterbox again"}
           </button>
           <button
             type="button"

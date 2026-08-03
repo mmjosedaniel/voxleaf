@@ -87,6 +87,52 @@ fn configure_supervised_child(command: &mut Command) {
     command.creation_flags(SUPERVISED_CHILD_CREATION_FLAGS);
 }
 
+#[cfg(windows)]
+// Keep canonical/verbatim paths for native containment checks, but hand
+// conventional Windows paths to embedded Python and model libraries. The
+// verified Chatterbox runtime rejects otherwise valid `\\?\` child paths.
+fn child_process_path(path: &Path) -> PathBuf {
+    use std::{
+        ffi::OsString,
+        os::windows::ffi::{OsStrExt, OsStringExt},
+    };
+
+    const VERBATIM_PREFIX: [u16; 4] = [b'\\' as u16, b'\\' as u16, b'?' as u16, b'\\' as u16];
+    const VERBATIM_UNC_PREFIX: [u16; 8] = [
+        b'\\' as u16,
+        b'\\' as u16,
+        b'?' as u16,
+        b'\\' as u16,
+        b'U' as u16,
+        b'N' as u16,
+        b'C' as u16,
+        b'\\' as u16,
+    ];
+
+    let encoded = path.as_os_str().encode_wide().collect::<Vec<_>>();
+    if encoded.starts_with(&VERBATIM_UNC_PREFIX) {
+        let mut normalized = vec![b'\\' as u16, b'\\' as u16];
+        normalized.extend_from_slice(&encoded[VERBATIM_UNC_PREFIX.len()..]);
+        return PathBuf::from(OsString::from_wide(&normalized));
+    }
+    if encoded.starts_with(&VERBATIM_PREFIX)
+        && encoded.get(VERBATIM_PREFIX.len()).is_some_and(|value| {
+            (b'A' as u16..=b'Z' as u16).contains(value)
+                || (b'a' as u16..=b'z' as u16).contains(value)
+        })
+        && encoded.get(VERBATIM_PREFIX.len() + 1) == Some(&(b':' as u16))
+        && encoded.get(VERBATIM_PREFIX.len() + 2) == Some(&(b'\\' as u16))
+    {
+        return PathBuf::from(OsString::from_wide(&encoded[VERBATIM_PREFIX.len()..]));
+    }
+    path.to_path_buf()
+}
+
+#[cfg(not(windows))]
+fn child_process_path(path: &Path) -> PathBuf {
+    path.to_path_buf()
+}
+
 #[derive(Clone)]
 struct ExactRuntime {
     python: PathBuf,
@@ -344,14 +390,20 @@ impl ExactRuntime {
     }
 
     fn command(&self) -> Result<Command, TtsNativeFailure> {
-        let python_path = std::env::join_paths([&self.service_source, &self.service_site_packages])
-            .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
-        let mut command = Command::new(&self.python);
+        let service_source = child_process_path(&self.service_source);
+        let service_site_packages = child_process_path(&self.service_site_packages);
+        let python_path = if service_source == service_site_packages {
+            service_source.clone().into_os_string()
+        } else {
+            std::env::join_paths([&service_source, &service_site_packages])
+                .map_err(|_| TtsNativeFailure::ChildUnavailable)?
+        };
+        let mut command = Command::new(child_process_path(&self.python));
         command
             .arg("-s")
             .arg("-m")
             .arg(self.service_module)
-            .current_dir(&self.model_root)
+            .current_dir(child_process_path(&self.model_root))
             .env("PYTHONPATH", python_path)
             .env("PYTHONNOUSERSITE", "1")
             .env("PYTHONDONTWRITEBYTECODE", "1")
@@ -374,7 +426,7 @@ impl ExactRuntime {
             .env_remove(CHATTERBOX_MODEL_ROOT_KEY);
         if let Some(cache_root) = &self.numba_cache_root {
             fs::create_dir_all(cache_root).map_err(|_| TtsNativeFailure::ChildUnavailable)?;
-            command.env("NUMBA_CACHE_DIR", cache_root);
+            command.env("NUMBA_CACHE_DIR", child_process_path(cache_root));
         }
         for (key, value) in &self.runtime_environment {
             command.env(key, value);
@@ -808,7 +860,8 @@ impl TtsServiceSupervisor {
             return Err(TtsNativeFailure::ProtocolRejected);
         }
         let control = decode_control(&frame.payload)?;
-        if control_kind(&control)? != expected_kind {
+        let actual_kind = control_kind(&control)?;
+        if actual_kind != expected_kind {
             return Err(TtsNativeFailure::ProtocolRejected);
         }
         if expected_kind != "protocolRejected"
@@ -1730,6 +1783,94 @@ mod tests {
             })
         );
         fs::remove_dir_all(cache).expect("test cache should be removed");
+    }
+
+    #[cfg(all(windows, feature = "chatterbox-acquisition-validation"))]
+    #[test]
+    #[ignore = "requires the exact installed Chatterbox package and evaluated GPU"]
+    fn installed_chatterbox_supervisor_completes_the_synthetic_lifecycle() {
+        let package_root = std::env::var_os("VOXLEAF_CHATTERBOX_VALIDATION_PACKAGE_ROOT")
+            .map(PathBuf::from)
+            .expect("validation package root should be configured");
+        let runtime_root = package_root.join("runtime");
+        let site_packages = runtime_root.join("Lib/site-packages");
+        let runtime = ExactRuntime {
+            python: runtime_root
+                .join("python.exe")
+                .canonicalize()
+                .expect("installed Python should exist"),
+            model_root: package_root
+                .join("models")
+                .canonicalize()
+                .expect("installed model root should exist"),
+            service_source: site_packages
+                .canonicalize()
+                .expect("installed service source should exist"),
+            service_site_packages: site_packages
+                .canonicalize()
+                .expect("installed site-packages should exist"),
+            service_module: "voxleaf_tts.chatterbox_service",
+            runtime_environment: vec![("VOXLEAF_TTS_RUNTIME_CHATTERBOX_LANGUAGE", "es")],
+            numba_cache_root: Some(
+                package_root
+                    .parent()
+                    .expect("installed package should have a profile root")
+                    .join("cache"),
+            ),
+        };
+        let supervisor = TtsServiceSupervisor::with_child(ServiceChild::Exact(runtime));
+
+        supervisor.start().expect("installed service should start");
+        supervisor
+            .prepare()
+            .expect("installed service should load and warm");
+        let audio = supervisor
+            .synthesize(fixture_segment())
+            .expect("installed service should synthesize the canonical fixture");
+        verify_exact_audio(&audio).expect("installed audio should be bounded");
+        supervisor
+            .shutdown()
+            .expect("installed service should shut down");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn exact_runtime_removes_verbatim_prefixes_at_the_child_process_boundary() {
+        let runtime = ExactRuntime {
+            python: PathBuf::from(r"\\?\C:\runtime\python.exe"),
+            model_root: PathBuf::from(r"\\?\C:\models"),
+            service_source: PathBuf::from(r"\\?\C:\source"),
+            service_site_packages: PathBuf::from(r"\\?\C:\site-packages"),
+            service_module: "voxleaf_tts.chatterbox_service",
+            runtime_environment: Vec::new(),
+            numba_cache_root: None,
+        };
+
+        let command = runtime.command().expect("command should be created");
+        assert_eq!(
+            command.get_program(),
+            std::ffi::OsStr::new(r"C:\runtime\python.exe")
+        );
+        assert_eq!(command.get_current_dir(), Some(Path::new(r"C:\models")));
+        let python_path = command
+            .get_envs()
+            .find_map(|(key, value)| (key == "PYTHONPATH").then_some(value).flatten())
+            .expect("PYTHONPATH should be configured");
+        assert_eq!(
+            std::env::split_paths(python_path).collect::<Vec<_>>(),
+            [
+                PathBuf::from(r"C:\source"),
+                PathBuf::from(r"C:\site-packages")
+            ]
+        );
+        assert_eq!(
+            child_process_path(Path::new(r"\\?\UNC\server\share\runtime")),
+            PathBuf::from(r"\\server\share\runtime")
+        );
+        assert_eq!(
+            child_process_path(Path::new(r"\\?\Volume{authority}\runtime")),
+            PathBuf::from(r"\\?\Volume{authority}\runtime")
+        );
     }
 
     #[cfg(windows)]

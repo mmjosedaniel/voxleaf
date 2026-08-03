@@ -132,8 +132,16 @@ parts omitted two generated VoxLeaf service modules and the historical
 installed root produced a failing 261-character Python path. The validation
 build now migrates only the exact legacy manifest to the shorter `cb/2` root,
 applies the hash-frozen two-file correction locally, and fully verifies the
-corrected package without another optional-payload download. Exact installed
-narration and lifecycle validation remain open.
+corrected package without another optional-payload download. Its first-use
+clarification permits repair of only allowlisted generated cache data and keeps
+one successful complete-verification receipt only in native process memory;
+within-process reuse is guarded by tree metadata and is not claimed to resist
+malicious same-user tampering (ADR-0046 defines this MVP limitation); every new
+application process verifies the full authority again. Direct
+content-safe model/service probes and the exact installed Spanish WebView2
+matrix now pass after conventionalizing only canonical verbatim paths at the
+child-process boundary. English narration, restart, removal/reinstall,
+Piper-after-removal, clean-host validation, and public signing remain open.
 Milestone 5 now packages version `0.1.0` as a release-only current-user Windows
 x64 NSIS installer containing the exact verified bilingual Piper core. Local
 installation, first start, repair, uninstall, unrelated-file preservation, and

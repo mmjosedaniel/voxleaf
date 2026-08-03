@@ -16,7 +16,7 @@ import { OptionalChatterboxControls } from "./OptionalChatterboxControls";
 afterEach(() => cleanup());
 
 function snapshot(
-  state: "absent" | "confirming" | "downloading" | "installed",
+  state: "absent" | "confirming" | "downloading" | "failed" | "installed",
   downloadedBytes = 0,
 ) {
   return {
@@ -54,6 +54,7 @@ describe("optional Chatterbox controls", () => {
       <OptionalChatterboxControls
         client={client}
         onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
         onRemove={vi.fn(async () => undefined)}
       />,
     );
@@ -85,6 +86,7 @@ describe("optional Chatterbox controls", () => {
       <OptionalChatterboxControls
         client={client}
         onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
         onRemove={vi.fn(async () => undefined)}
       />,
     );
@@ -116,6 +118,67 @@ describe("optional Chatterbox controls", () => {
     });
   });
 
+  it("shows an installed selected profile as active without redundant activation", async () => {
+    const client = new OptionalChatterboxClient(async () =>
+      snapshot("installed"),
+    );
+
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        active
+        onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
+        onRemove={vi.fn(async () => undefined)}
+      />,
+    );
+
+    expect(
+      await screen.findByText(
+        "The verified Chatterbox package is installed and selected.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Activate Chatterbox" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Remove Chatterbox" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows safe actionable failure copy and lets the user check again", async () => {
+    const invoke = vi.fn(async () => ({
+      ...snapshot("failed"),
+      failure: "tts-optional-profile-incompatible-host",
+    }));
+    const client = new OptionalChatterboxClient(invoke);
+    const onRecheck = vi.fn(async () => true);
+
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={vi.fn(async () => true)}
+        onRecheck={onRecheck}
+        onRemove={vi.fn(async () => undefined)}
+      />,
+    );
+
+    expect(
+      await screen.findByText(
+        /does not currently meet the Chatterbox requirements/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("tts-optional-profile-incompatible-host"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Recheck device compatibility" }),
+    );
+    await waitFor(() => expect(onRecheck).toHaveBeenCalledTimes(1));
+    expect(invoke).toHaveBeenCalledTimes(1);
+  });
+
   it("polls and exposes native progress while the download command remains active", async () => {
     let downloadStarted = false;
     const invoke = vi.fn((command: string): Promise<unknown> => {
@@ -135,6 +198,7 @@ describe("optional Chatterbox controls", () => {
       <OptionalChatterboxControls
         client={client}
         onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
         onRemove={vi.fn(async () => undefined)}
       />,
     );

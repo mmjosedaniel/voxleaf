@@ -42,6 +42,8 @@ const executablePath = resolveNativeSmokeExecutable(
   ),
 );
 const STARTUP_TIMEOUT_MS = 90_000;
+const OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS = 180_000;
+const OPTIONAL_PROFILE_VERIFICATION_TIMEOUT_MS = 300_000;
 const INTERACTION_TIMEOUT_MS = 15_000;
 const OBSERVATION_WINDOW_MS = 500;
 const READER_PERFORMANCE_MODE = process.argv.includes("--reader-performance");
@@ -2592,6 +2594,27 @@ async function selectAdaptiveTtsProfile(
   exerciseSwitch = false,
 ) {
   const serializedProfileId = JSON.stringify(profileId);
+  if (profileId === CHATTERBOX_BILINGUAL_PROFILE_ID) {
+    await waitForCondition(
+      driver,
+      `const state = document.querySelector(".optional-chatterbox-controls")
+         ?.getAttribute("data-optional-profile-state");
+       return state === "installed" || state === "failed";`,
+      OPTIONAL_PROFILE_VERIFICATION_TIMEOUT_MS,
+    );
+    const optionalState = await driver.execute(
+      `return document.querySelector(".optional-chatterbox-controls")
+         ?.getAttribute("data-optional-profile-state") ?? "missing";`,
+    );
+    console.log(`ADAPTIVE_TTS_OPTIONAL_PROFILE ${JSON.stringify({
+      profileId,
+      state: optionalState,
+    })}`);
+    assert(
+      optionalState === "installed",
+      "Native synchronized narration proof failed.",
+    );
+  }
   await waitForCondition(
     driver,
     `const owner = document.querySelector(".hardware-compatibility");
@@ -2671,20 +2694,37 @@ async function selectAdaptiveTtsProfile(
        if (!(alternate instanceof HTMLInputElement)) {
          return false;
        }
-       alternate.click();
-       return alternate.value;`,
+       const active = document.querySelector(".hardware-compatibility")
+         ?.getAttribute("data-compatibility-profile");
+       const changed = active !== alternate.value;
+       if (changed) {
+         alternate.click();
+       }
+       return { profileId: alternate.value, changed };`,
     );
     assert(
-      typeof switched === "string" && switched.length > 0,
+      typeof switched?.profileId === "string" &&
+        switched.profileId.length > 0,
       "Native synchronized narration proof failed.",
     );
-    await waitForCondition(
-      driver,
-      `return document.querySelector(".hardware-compatibility")
-         ?.getAttribute("data-compatibility-profile") ===
-         ${JSON.stringify(switched)};`,
-    );
+    if (switched.changed === true) {
+      await waitForCondition(
+        driver,
+        `return document.querySelector(".hardware-compatibility")
+           ?.getAttribute("data-compatibility-profile") ===
+           ${JSON.stringify(switched.profileId)};`,
+      );
+    }
   }
+  await waitForCondition(
+    driver,
+    `const profileId = ${serializedProfileId};
+     const input = Array.from(
+       document.querySelectorAll('input[name="hardware-profile"]'),
+     ).find((candidate) => candidate.value === profileId);
+     return input instanceof HTMLInputElement && !input.matches(":disabled");`,
+    OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS,
+  );
   const selected = await driver.execute(
     `const profileId = ${serializedProfileId};
      const input = Array.from(
@@ -2704,6 +2744,9 @@ async function selectAdaptiveTtsProfile(
     `return document.querySelector(".hardware-compatibility")
        ?.getAttribute("data-compatibility-profile") ===
        ${serializedProfileId};`,
+    profileId === CHATTERBOX_BILINGUAL_PROFILE_ID
+      ? OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS
+      : STARTUP_TIMEOUT_MS,
   );
   return true;
 }

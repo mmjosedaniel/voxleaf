@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted on 2026-08-02.
+Accepted on 2026-08-02; clarified on 2026-08-02 after installed first-use
+diagnostics.
 
 ## Context
 
@@ -29,6 +30,16 @@ Replacing them would require another multi-gigabyte release and download even
 though the correction consists of two repository-owned modules totalling
 37,101 bytes plus a shorter application-owned directory.
 
+A later installed-product attempt retained the selected Chatterbox identity but
+returned contained recovery before audible narration. Content-safe direct
+runtime and framed-service probes passed with conventional Windows paths, while
+the same service failed model load with `engine-failure` when given the
+canonical verbatim `\\?\` paths produced by Rust. Product review also found two
+related first-use costs: generated Python/Numba cache entries could make a
+previously correct installation appear invalid, and independent snapshot,
+activation, availability, configuration, and start paths could each repeat
+complete hashing of the same multi-gigabyte tree.
+
 ## Decision
 
 Keep the published v2 runtime parts immutable and apply one native-owned,
@@ -53,6 +64,55 @@ fail-closed installation correction:
   transient cache; and
 - removal owns both the corrected root and the exact historical root.
 
+Generated interpreter caches are not package authority. A repair may remove
+only allowlisted bytecode/compilation cache entries under exact
+application-owned cache locations; it may never change, ignore, or replace an
+authority-listed runtime or model file. Complete SHA-256 verification of the
+corrected manifest remains mandatory after cache repair.
+
+After complete size/SHA-256 verification succeeds, the native process may
+retain one in-memory receipt keyed to the exact package authority. On reuse,
+VoxLeaf recomputes a tree-metadata stamp covering contained paths, sizes, and
+modification times. An observed authority or metadata mismatch forces complete
+verification. The receipt:
+
+- is never serialized or used across application processes;
+- is invalidated before installation, repair, or removal, and is not reused
+  when the authority key or observed tree-metadata stamp differs; and
+- permits later snapshot/activation/start checks in that same process to avoid
+  hashing the unchanged multi-gigabyte tree again.
+
+Every application launch begins without a receipt and must complete package
+verification again before using Chatterbox. A receipt is an optimization of
+repeated checks, not an alternative trust authority.
+
+This optimization is not continuous cryptographic verification. It protects
+against stale, incomplete, corrupted, or observably changed package state. It
+does not guarantee detection of a malicious process already running as the
+same Windows user that preserves metadata or modifies files after the check.
+Protection against a compromised same-user account is outside the portfolio
+MVP threat model.
+
+Package preparation, verification, promotion, and removal share one native
+critical section. Renderer snapshot refreshes are deduplicated, and an older
+asynchronous response cannot replace a newer selection result. This prevents
+Settings polling, activation, and Play from racing over cache cleanup or
+publishing stale optional-profile state; download and cancellation remain
+concurrent outside the package-mutation critical section.
+
+The critical section is process-local. The validation build therefore supports
+one running VoxLeaf instance while optional-package installation, verification,
+or removal is active. Cross-process package locking or enforced single-instance
+startup remains an explicit Milestone 6 release-hardening item; the current
+unsigned validation build is not promoted as a multi-instance public release.
+
+Canonical paths remain the native trust and containment representation. At the
+final child-process construction boundary only, convert `\\?\C:\...` to
+`C:\...` and `\\?\UNC\server\share\...` to `\\server\share\...` for the
+already-verified executable, working directory, `PYTHONPATH`, and cache path.
+This conversion accepts no renderer-supplied path and does not alter discovery,
+hashing, containment, or installed-package authority.
+
 The correction performs no network request, accepts no renderer path or bytes,
 does not modify model weights or third-party runtime files, does not activate a
 profile, and never treats an unknown or partially matching package as eligible.
@@ -67,15 +127,31 @@ approximately 7.67-GiB optional payload again. The corrected installed total is
 manifest. The longest measured final runtime path falls from the failing 261
 characters to 218 characters.
 
-The initial integrity pass and Chatterbox cold model load may still take tens
-of seconds; this ADR fixes startup failure, not the disclosed cold-load cost.
+The first Chatterbox access in each application process still performs the full
+integrity pass, and the first narration start still performs the model cold
+load. Together they may take tens of seconds. Repeated compatibility, activation,
+and start checks in the same process may reuse the verification receipt, but
+activation remains explicit and does not load or start the model by itself.
+The focused Windows path regression passes, and the exact installed supervisor
+completes load, warmup, synthetic synthesis, and shutdown. Two unchanged cold
+runs took `29.61` and `82.34` seconds, so cold initialization is variable rather
+than a fixed `29.61`-second duration. The final unsigned validation
+installer is `181,694,782` bytes with SHA-256
+`289c93e63d07e0001b667d964396ea5a611a5bf38f411f9158e92e829d35f148`;
+Defender reports no threats for that exact file. Its installed Spanish WebView2
+matrix passes with `45.990`-second Quick command-to-audible, `1.23` warm
+Prepared RTF, `3,808`-MiB peak VRAM, `4,865,605,632`-byte peak process-tree
+working set, `469`-ms cancellation, `756`-ms cleanup, and zero generated files
+or external requests. This proves only the development-host Spanish arm and
+does not remove the disclosed cold-load cost.
 Runtime libraries no longer mutate their verified installation with Numba
 cache data. The cache contains compiled implementation data rather than book
 text or generated audio and remains inside the application-owned removable
 profile boundary.
-The validation build remains unsigned and local-only, and this development-host
-correction does not satisfy the independent clean-host, bilingual lifecycle,
-removal/reinstall, signing, or public-release gates.
+The validation build remains unsigned and local-only. English narration,
+application restart, removal/reinstall, Piper-after-removal, independent clean-
+host evidence, multi-instance package coordination, signing, and public-release
+gates remain open.
 
 ## Alternatives considered
 
@@ -89,3 +165,8 @@ removal/reinstall, signing, or public-release gates.
   independent 261-character Transformers failure would remain.
 - **Skip complete verification after repair.** Rejected because it would weaken
   the closed optional-package trust boundary.
+- **Persist a verification stamp across application launches.** Rejected because
+  filesystem state can change while VoxLeaf is not running. A process-lifetime
+  receipt avoids repeated work within one run under the MVP assumption that no
+  hostile same-user process mutates the application-owned package during that
+  run. It creates no durable trust outside the frozen manifest and hashes.

@@ -23,7 +23,10 @@ import { OptionalChatterboxControls } from "../tts/OptionalChatterboxControls";
 import type { HardwareProfileCompatibilityCoordinator } from "../tts/hardware-profile-compatibility";
 import type { NarrationLanguageV1 } from "../tts/narration-language";
 import { NarrationStartPreferenceControls } from "../tts/NarrationStartPreferenceControls";
-import { OptionalChatterboxClient } from "../tts/optional-chatterbox-client";
+import {
+  CHATTERBOX_OPTIONAL_PROFILE_ID,
+  OptionalChatterboxClient,
+} from "../tts/optional-chatterbox-client";
 import type { ProductNarrationCoordinator } from "../tts/product-narration-coordinator";
 
 const FOCUSABLE_SELECTOR = [
@@ -126,6 +129,36 @@ function focusableElements(root: HTMLElement): HTMLElement[] {
   ).filter(
     (element) =>
       !element.hidden && element.getAttribute("aria-hidden") !== "true",
+  );
+}
+
+function OptionalChatterboxSettings({
+  client,
+  hardwareCompatibility,
+  onActivate,
+  onRemove,
+}: Readonly<{
+  client: OptionalChatterboxClient;
+  hardwareCompatibility: HardwareProfileCompatibilityCoordinator;
+  onActivate: () => Promise<boolean>;
+  onRemove: () => Promise<void>;
+}>): ReactElement {
+  const compatibility = useSyncExternalStore(
+    (listener) => hardwareCompatibility.subscribe(listener),
+    () => hardwareCompatibility.observe(),
+    () => hardwareCompatibility.observe(),
+  );
+  return (
+    <OptionalChatterboxControls
+      client={client}
+      active={compatibility.activeProfileId === CHATTERBOX_OPTIONAL_PROFILE_ID}
+      onActivate={onActivate}
+      onRecheck={async () => {
+        await hardwareCompatibility.check("explicit-recheck");
+        return onActivate();
+      }}
+      onRemove={onRemove}
+    />
   );
 }
 
@@ -294,8 +327,9 @@ export function ReaderSettingsDialog({
               onResetNarrationSettings={onResetNarrationSettings}
               onRecoveryEpisodeReset={onRecoveryEpisodeReset}
             />
-            <OptionalChatterboxControls
+            <OptionalChatterboxSettings
               client={optionalChatterbox}
+              hardwareCompatibility={hardwareCompatibility}
               onActivate={handleChatterboxActivation}
               onRemove={onRemoveChatterbox}
             />

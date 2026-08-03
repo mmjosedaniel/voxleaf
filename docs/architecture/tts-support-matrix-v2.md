@@ -20,7 +20,7 @@ as production support. `deferred` and `unsupported` remain non-selectable.
 | ---------------------------------------------------------------------------- | ------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Piper 1.4.2 / davefx / ONNX CPU                                              | Spanish             | **Supported**              | Retain as a lightweight CPU profile; M011 owns packaging and distribution obligations.                                                                  |
 | Piper 1.4.2 / joe / ONNX CPU                                                 | English             | **Supported**              | Retain as the language-matched lightweight CPU profile; M011 owns packaging and distribution obligations.                                               |
-| Chatterbox Multilingual V3 / bundled default conditioning / CUDA bfloat16 v4 | Spanish and English | **Supported**              | M011 separately gates an optional explicit download. ADR-0044 requires 5,632 MiB total and 4,668 MiB free VRAM, recommends the evaluated 8-GB class, and requires package/cold-load/RAM/VRAM disclosure. |
+| Chatterbox Multilingual V3 / bundled default conditioning / CUDA bfloat16 v4 | Spanish and English | **Supported**              | M011 separately gates an optional explicit download. ADR-0044 requires 5,632 MiB total and 4,668 MiB free VRAM, recommends the evaluated 8-GB class, and requires package/cold-load/RAM/VRAM disclosure. The installed development-host Spanish matrix passes; English/restart/removal/reinstall and clean-host gates remain. |
 | Qwen3-TTS 1.7B CustomVoice / Serena / CUDA bfloat16 v8                       | Spanish             | **Development-only**       | Keep constrained buffering and require the exact Qwen developer gate and measured host.                                                                 |
 | Qwen3-TTS 1.7B CustomVoice / Aiden / CUDA bfloat16 v8                        | English             | **Development-only**       | Keep constrained buffering and require the exact Qwen developer gate and measured host.                                                                 |
 | MOSS-TTS-Nano 100M ONNX / Ava                                                | Spanish and English | **Deferred, not rejected** | Future separately frozen dialogue/punctuation and voice/accent investigation.                                                                           |
@@ -47,4 +47,11 @@ plan closeout. M010.2 may reorganize presentation and playback controls but
 must not change this matrix. M011 keeps Piper in the core and treats Chatterbox
 as a separate optional-download release gate; it remains responsible for
 distribution, licensing fulfillment, acquisition/removal, installers, and
-production support claims.
+production support claims. A process-lifetime verification receipt may avoid
+repeating complete Chatterbox tree hashing within one application run, but it
+is not persisted and does not change this support decision: every application
+process must verify the exact installed authority before first use, and M011
+still requires English narration, restart, removal/reinstall,
+Piper-after-removal, clean-host, and public-signing evidence.
+The receipt is a performance optimization, not same-user tamper protection;
+full hash verification occurs when each application process first creates it.

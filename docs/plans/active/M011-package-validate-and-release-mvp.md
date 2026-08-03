@@ -85,8 +85,11 @@ six exact model-data files come from the official revision-pinned Hugging Face
 repository, while the reviewed runtime is independently locked, reproducibly
 split, verified, and published as `chatterbox-runtime-v2`. Milestone 5
 integrates only the acquisition authority into the core installer; Chatterbox
-runtime and model bytes remain excluded. Clean-host acquisition, enabled
-optional acquisition, and public signing remain future work.
+runtime and model bytes remain excluded. The validation-only package has now
+completed the explicit download and verified installation on the compatible
+development host. Its exact installed Spanish Chatterbox supervisor and
+WebView2 narration arms now pass, but English narration, restart, removal/
+reinstall, independent clean-host acquisition, and public signing remain open.
 
 The current TTS runtimes are ignored developer assets selected through
 environment variables. Development firewall rules target exact candidate
@@ -615,10 +618,15 @@ Actual result on 2026-08-01:
 matrix pass on the development host. An independent normal-user Windows host is
 now available and its first run exposed the console-window defect fixed below;
 the corrected core rerun is pending. A clean compatible-GPU host remains
-unavailable. A separately identified local validation installer is now ready
-for the maintainer's compatible computer, but its real Chatterbox journey has
-not run, so the optional clean-host gate stays blocked rather than inferred
-from local state.
+unavailable. The separately identified validation installer completed explicit
+Chatterbox download and verified installation on the maintainer's compatible
+computer. Direct content-safe runtime and framed-service probes now reach model
+load, warmup, and synthetic synthesis. The installed supervisor and exact
+WebView2 Spanish matrix now also pass after the child-process path correction
+described below. English narration, application restart, removal/reinstall,
+Piper-after-removal, independent clean-host evidence, and public signing remain
+open; optional clean-host readiness and public support are not inferred from
+the development-host Spanish result.
 
 The maintainer has no second compatible-GPU computer. ADR-0045 therefore
 authorizes a separately identified, unsigned, local-validation-only installer
@@ -818,6 +826,45 @@ Actual result on 2026-08-01:
   The existing Custom Highlight, bundle-size, and pytest cache-write warnings
   remain non-failing. The system diagram now distinguishes the validation
   package without changing the runtime trust boundary.
+- The following installed UI attempts retained the Chatterbox selection but
+  still returned the generic contained-recovery message before audible output.
+  Direct framed service execution passed when given conventional Windows paths
+  and failed during model load with `engine-failure` when given the canonical
+  verbatim `\\?\` paths used by the native supervisor. Rust canonicalization
+  was therefore correct for trust and containment but incompatible with the
+  embedded Python/model-library child boundary. The fix retains canonical paths
+  for native verification and strips only a Windows verbatim prefix when
+  constructing the child command, including correct `\\?\UNC\` to `\\server\`
+  conversion. A focused Windows regression passes, and the exact installed
+  supervisor completes load, warmup, synthetic synthesis, and shutdown. Two
+  unchanged cold runs took `29.61` and `82.34` seconds, demonstrating observed
+  cold-run variability rather than a fixed startup duration.
+- Native review found that snapshot, selection, availability, configuration,
+  and service-start paths could each repeat complete verification of the same
+  approximately 8.23-GB installed tree. The correction permits removal only of
+  allowlisted interpreter-generated cache entries that are outside manifest
+  authority, then performs complete hash verification of every authority file.
+  A successful verification creates an exact-package receipt held only in the
+  current native process. The receipt is never persisted, is invalidated by
+  install/repair/removal, and is not reused when the authority key or observed
+  path/size/modification-time stamp differs. It cannot outlive application restart; the first access in every new
+  application process therefore performs the complete verification again. This
+  avoids repeated content hashing under the MVP assumption that no hostile
+  same-user process mutates the application-owned package during that run. The
+  receipt does not replace the initial full hash authority and is not a
+  boundary against a compromised current-user account.
+- The final unsigned validation installer is `181,694,782` bytes with
+  SHA-256
+  `289c93e63d07e0001b667d964396ea5a611a5bf38f411f9158e92e829d35f148`;
+  Microsoft Defender reports no threats for that exact file. Its exact installed
+  WebView2 Spanish matrix passes: Quick command-to-audible is `45.990` seconds;
+  Prepared startup is `82.096` seconds with `66.48` seconds retained; warm
+  Prepared RTF is `1.23`; peak dedicated VRAM is `3,808` MiB; peak process-tree
+  working set is `4,865,605,632` bytes; cancellation is `469` ms; cleanup is
+  `756` ms; and the arm records zero generated files and zero external requests.
+  This closes the Spanish development-host arm only. English narration,
+  application restart, removal/reinstall, Piper-after-removal, independent
+  clean-host evidence, and public signing remain pending.
 
 ### Milestone 7: Record the MVP release decision and close validation
 
@@ -1281,6 +1328,47 @@ and never edit prior benchmark authority to make a release pass.
   `0bcd54de8881f855ea8a707c91a8b73554425699b7223ce9c33144149268c449`,
   and Defender reports no threats. Maintainer narration/lifecycle rerun remains
   required before this Milestone 6 arm can close.
+- **2026-08-02:** A later installed-product rerun still returned contained
+  recovery after explicit Chatterbox activation. The exact installed runtime
+  separately passed content-safe Python, CUDA/BF16, model load/warmup, protocol
+  handshake, synthetic synthesis, and shutdown probes, so the result does not
+  reject Chatterbox or the host. Investigation found redundant complete-tree
+  verification at several product coordination boundaries. The corrective
+  design repairs only allowlisted generated bytecode/compilation cache entries,
+  preserves complete SHA-256 verification for every authority-listed file, and
+  reuses that successful result only through an in-memory process-lifetime
+  receipt. No receipt is written to disk, and application restart requires a
+  new complete verification. The rebuilt installed UI and lifecycle matrix have
+  not yet run, so this is implementation/diagnostic evidence rather than a pass.
+- **2026-08-02:** The remaining installed failure was a child-process path
+  representation defect. Native verification correctly retained canonical
+  Windows verbatim paths, but embedded Python/model loading failed with
+  `engine-failure` when those `\\?\` paths crossed the child boundary; the same
+  framed service passed with conventional paths. The supervisor now removes
+  only the verbatim prefix for child program/current-directory/environment
+  values, including UNC conversion, without weakening native containment. The
+  focused Windows regression and exact installed supervisor lifecycle pass; the
+  final unsigned `181,694,782`-byte installer (SHA-256
+  `289c93e63d07e0001b667d964396ea5a611a5bf38f411f9158e92e829d35f148`)
+  passes Defender, and its exact Spanish WebView2 arm passes with `45.990`-
+  second Quick command-to-audible, `1.23` warm Prepared RTF, `3,808`-MiB peak
+  VRAM, `4,865,605,632`-byte peak process-tree working set, `469`-ms
+  cancellation, `756`-ms cleanup, and zero generated files/external requests.
+  Milestone 6 stays in progress for English, restart, removal/reinstall,
+  Piper-after-removal, clean-host, and public-signing gates.
+- **2026-08-02:** Final review found that Settings refresh, explicit activation,
+  and service discovery could overlap package cache repair and verification.
+  Native package preparation/verification/promotion/removal is now serialized;
+  renderer refreshes are deduplicated and stale asynchronous completions cannot
+  overwrite newer profile state. Cache cleanup also rejects symlinks and Windows
+  reparse points before deleting only allowlisted `.nbi`/`.nbc` files. The final
+  installed Spanish matrix passes after a Piper-to-Chatterbox transition without
+  a second activation or recovery state. This closes the reported activation/
+  Play defect but does not close the remaining Milestone 6 arms. The native
+  removal boundary also rejects an active download/verifier, and every recursive
+  package cleanup rejects out-of-root junction/reparse targets. The package lock
+  remains process-local; cross-process locking or single-instance enforcement is
+  retained as release-hardening work before public optional-profile readiness.
 
 ## Discoveries and decisions
 
@@ -1324,6 +1412,27 @@ and never edit prior benchmark authority to make a release pass.
   writes outside the verified runtime into a profile-owned removable cache that
   removal deletes; migration cleans only the exact known `.nbi`/`.nbc` cache
   class before complete legacy verification.
+- **Decision:** Interpreter-generated bytecode and compilation caches are
+  derived transient data, never installed-package authority. Repair may remove
+  only the frozen cache file classes under exact application-owned cache roots;
+  it may not modify or excuse any manifest-listed runtime/model file, and the
+  complete authority tree must still pass hashes before use.
+- **Decision:** A successful corrected-package verification may be represented
+  by one native in-memory receipt keyed to the exact package/manifest identity.
+  The receipt is scoped to one application process, is never serialized, and is
+  invalidated by installation, repair, or removal. An authority-key or observed
+  tree-metadata mismatch prevents its reuse. It prevents repeated
+  multi-gigabyte hashing during snapshot/activation/start in one run; it does
+  not authorize trust across an application restart and does not claim
+  protection from deliberate metadata-preserving tampering by another process
+  running as the current Windows user.
+- **Decision:** Canonical/verbatim Windows paths remain mandatory inside native
+  trust and containment checks. Only when constructing the already-approved
+  child process may the supervisor convert `\\?\C:\...` to `C:\...` and
+  `\\?\UNC\server\share\...` to `\\server\share\...`, because the embedded
+  Python/model stack does not reliably accept verbatim paths. No renderer input,
+  path discovery, package authority, or containment comparison uses the
+  converted representation.
 - **Discovery:** Download, reassembled archive, extracted runtime, and model
   files cannot all coexist with the source parts under the 15-GB staging
   ceiling. Removing the verified runtime parts immediately after successful
@@ -1442,8 +1551,8 @@ M011 is complete only when:
 - every optional Chatterbox runtime artifact and each of the six official
   Hugging Face model-data files has the same evidence plus exact revision,
   consent, bounded download/cache, per-file verification, atomic installation,
-  safe loading, offline-use, and removal lifecycle, or the download action and
-  availability claim are absent;
+  safe loading, process-receipt invalidation, offline-use, and removal lifecycle,
+  or the download action and availability claim are absent;
 - the package installs and uninstalls safely on a clean normal-user Windows
   host without developer tooling or manual firewall configuration;
 - normal English/Spanish reading and narration remain local, bounded,

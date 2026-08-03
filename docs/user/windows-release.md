@@ -41,13 +41,38 @@ Chatterbox download**. That action performs the native admission check and
 opens the measured confirmation; only the separate **Download Chatterbox**
 action starts network transfer.
 
-Validation installer SHA-256
-`0bcd54de8881f855ea8a707c91a8b73554425699b7223ce9c33144149268c449`
-repairs the first installed runtime closure and moves only its exact verified
-legacy package to a Windows-safe short application-data path. Reinstalling this
-build preserves and reuses an already verified Chatterbox download; it does not
-download the optional package again. The first integrity pass and model cold
-load can still take tens of seconds.
+The final `181,694,782`-byte validation installer has SHA-256
+`289c93e63d07e0001b667d964396ea5a611a5bf38f411f9158e92e829d35f148`.
+It repairs the first installed runtime closure, moves only its exact verified
+legacy package to a Windows-safe short application-data path, and converts
+native verbatim paths to conventional Windows paths only when starting the
+embedded Python child. Microsoft Defender reports no threats for that exact
+unsigned file. Reinstalling this build preserves and reuses an already verified
+Chatterbox download; it does not download the optional package again. The first
+integrity pass and model cold load can still take tens of seconds.
+
+Download, installation, activation, and first narration are separate steps.
+Activation is explicit and does not load the model. On the first Chatterbox
+access after each VoxLeaf launch, native code verifies every authority-listed
+runtime and model file. It may safely remove only known interpreter-generated
+cache files, never an authority file. The successful result is remembered only
+in memory for that VoxLeaf process so repeated Settings checks or Play attempts
+do not rehash the complete package. Those repeated checks compare package paths,
+sizes, and timestamps instead. This catches ordinary package changes but is not
+designed to defend against malicious software already running as the same
+Windows user. Closing and reopening VoxLeaf discards the temporary receipt and
+requires a new complete verification; no durable trust stamp is stored.
+Use only one running VoxLeaf validation instance while Chatterbox is being
+installed, verified, or removed. Cross-process optional-package coordination is
+still a public-release gate, not a completed claim of this unsigned build.
+
+The exact installed Spanish Chatterbox playback matrix now passes on the
+maintainer's compatible computer. Quick startup took `45.990` seconds in that
+validation run, so the UI can remain in preparation while integrity verification
+and cold model load complete. This is development-host evidence, not general
+hardware or public-release proof. English narration, application restart,
+removal/reinstall, Piper-after-removal, independent clean-host validation, and
+public signing remain open.
 
 ## Repair or replace a version
 
