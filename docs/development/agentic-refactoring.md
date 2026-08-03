@@ -149,6 +149,32 @@ evidence by itself.
 12. Run a broader package gate after a package group and the complete applicable
     repository gate before the PR.
 
+## Durable traceability
+
+Chat history, task commentary, and uncommitted agent packets are not durable
+repository authority. Every refactor campaign that requires an ExecPlan must
+keep a content-safe summary for each accepted unit in that active plan before
+the unit is committed. Record:
+
+- the target ID, audit decision, risk, exact allowlist, behavior invariants, and
+  diff ceiling from the accepted Audit Packet;
+- the baseline report identifier, exact commands, environment, and outcome;
+- the frozen Approved Work Order goal and required transformations;
+- the post-change validation verdict and any correction loop;
+- the accepted commit identity and broader package/final gate outcomes; and
+- the next inventory position, including skipped and blocked units.
+
+Do not paste private content, complete chat transcripts, or dynamic book/model
+data into the plan. The exact conversational packet may remain task-local, but
+the repository summary must be sufficient for a later Codex task to understand
+what was authorized and validated without relying on that conversation.
+
+One genuinely isolated unit that does not meet `.agents/PLANS.md` criteria may
+rely on its focused commit, tests, and pull-request review. Multiple units,
+multiple packages, or a staged campaign require the ExecPlan first; creating a
+retrospective plan may recover observed evidence but cannot fabricate a missing
+baseline or historical approval.
+
 Do not attempt all files in one task. A practical task audits at most 20 paths
 or completes at most three accepted change batches. This preserves review
 quality and keeps each task resumable from the ExecPlan.

@@ -1836,6 +1836,7 @@ impl OptionalChatterboxManager {
     fn select_at(&self, root: &Path) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
         let manifest = exact_manifest()?;
         if manifest.availability == "withheld" {
+            with_installed_runtime_lock(|| clean_staging(root))?;
             return Ok(snapshot_from(
                 &manifest,
                 OptionalProfileState::Withheld,
@@ -2934,7 +2935,7 @@ mod tests {
 
     #[cfg(not(feature = "chatterbox-acquisition-validation"))]
     #[test]
-    fn withholding_does_not_create_staging_or_change_the_existing_profile() {
+    fn withheld_snapshot_is_read_only() {
         let root = TestRoot::new();
         let stale_staging = staging_root(&root.0).join("operation/package.zip");
         fs::create_dir_all(stale_staging.parent().expect("parent should exist"))
@@ -2945,6 +2946,20 @@ mod tests {
             .snapshot_at(&root.0)
             .expect("snapshot should succeed");
         assert_eq!(before.state, OptionalProfileState::Withheld);
+        assert!(stale_staging.exists());
+        assert!(!profile_root(&root.0).exists());
+    }
+
+    #[cfg(not(feature = "chatterbox-acquisition-validation"))]
+    #[test]
+    fn withheld_selection_cleans_stale_staging_without_changing_profile() {
+        let root = TestRoot::new();
+        let stale_staging = staging_root(&root.0).join("operation/package.zip");
+        fs::create_dir_all(stale_staging.parent().expect("parent should exist"))
+            .expect("staging fixture should be created");
+        fs::write(&stale_staging, b"incomplete").expect("staging fixture should be written");
+        let manager = OptionalChatterboxManager::default();
+
         let selected = manager
             .select_at(&root.0)
             .expect("select should be contained");

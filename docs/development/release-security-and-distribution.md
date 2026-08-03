@@ -232,16 +232,17 @@ automatic updater. Ordinary development and repository builds remain
 unbundled. The exact resource allowlist excludes Chatterbox runtime/weights,
 Qwen, benchmark tools, candidate environments, books, audio, and private data.
 
-The current measured unsigned local installer is `181,658,228` bytes with
+The current measured unsigned local installer is `181,685,408` bytes with
 SHA-256
-`f167dacdb4221cdd989ed5ed92d070b5fd5d9ecab89a9af6e54feec5be3a6b12`.
-Its immediate predecessor passed the installed bilingual portfolio matrix and
-two consecutive local install/first-start/repair/uninstall cycles outside the
-automation sandbox, and Microsoft Defender reported no threats for that exact
-predecessor. The current hash passes the static release-package gate but still
-requires the remaining lifecycle, Defender, and independent-host checks.
-SmartScreen was not observed, so no reputation claim is made. This is content-
-safe development-host evidence, not clean-host or public-release acceptance.
+`355226cfb390ee9e1a080e6ff04d1f8d1232813a2fa495eb3600ab6867284f82`.
+The current hash passes the static release-package gate, local install/first-
+start/repair/uninstall lifecycle, final reinstall, and visible installed-start
+smoke outside the automation sandbox. An exact predecessor passed the installed
+bilingual portfolio matrix and Microsoft Defender, but Defender was not run
+against the current hash. SmartScreen was not observed, so no reputation claim
+is made. Independent clean-host checks and signing remain required. This is
+content-safe development-host evidence, not clean-host or public-release
+acceptance.
 The optional Chatterbox manifest remains withheld until a separate compatible
 clean-GPU host passes download, offline bilingual narration, restart, removal,
 and Piper-after-removal validation.
