@@ -132,6 +132,9 @@ describe("reader Settings dialog", () => {
     expect(
       within(dialog).queryByLabelText("Playback speed"),
     ).not.toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/open VoxLeaf in Windows Installed apps/),
+    ).toBeInTheDocument();
   });
 
   it("shows the installed application version instead of a stale placeholder", async () => {

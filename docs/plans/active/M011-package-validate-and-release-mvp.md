@@ -897,10 +897,11 @@ Actual result on 2026-08-01:
 
 ### Milestone 6A: Close Chatterbox lifecycle feedback and uninstall behavior
 
-**Status:** Planned. This corrective submilestone records requirements
-discovered during installed-product review. It does not close or weaken any
-Milestone 6 clean-host, optional-support, or public-signing gate, and this plan
-update is not implementation evidence.
+**Status:** Implemented with focused and packaged development-host validation;
+final broad repository validation is in progress. This corrective submilestone
+does not close or weaken any Milestone 6 clean-host, optional-support, or
+public-signing gate. The interactive NSIS journey remains an explicit manual
+clean-host validation arm rather than being inferred from silent automation.
 
 The objective is to let a user understand every long-running Chatterbox state,
 interrupt work only where the underlying lifecycle can safely honor
@@ -1583,6 +1584,38 @@ and never edit prior benchmark authority to make a release pass.
   observations; the existing safe stop path is labelled **Cancel start** only
   before audible ownership. The unchanged authoritative desktop command passed
   outside the sandbox with 53 files/535 tests and all 17 Node script tests.
+- **2026-08-03:** Completed the packaged uninstall checkpoint for both the
+  ordinary and isolated Chatterbox-validation product identities. Interactive
+  uninstall now presents Chatterbox data separately and selected by default
+  when an exact optional root exists; the existing Tauri checkbox is bounded to
+  preferences, reading positions, and recovery state and remains unchecked by
+  default. Silent uninstall preserves both classes unless
+  `/REMOVE_CHATTERBOX_DATA=1`,
+  `/REMOVE_PREFERENCES_AND_RECOVERY=1`, or compatibility option
+  `/REMOVE_APP_DATA=1` explicitly selects exact data. Recursive cleanup checks
+  every exact ancestor and rejects reparse points before deleting only the four
+  optional roots or WebView2 `Local Storage`; unrelated siblings and EPUB
+  sentinels stay outside the cleanup authority.
+- **2026-08-03:** The extended lifecycle harness safely backed up and restored
+  pre-existing application data, then passed installation, first start, repair,
+  and six silent uninstall outcomes for both product identities: default
+  preserve, Chatterbox only, preferences/recovery only, both explicit options,
+  legacy both, and invalid values preserve. Each arm hash-checked selected and
+  unrelated markers. The first real run exposed that NSIS `System::Call` wrote
+  file attributes to `$R1` while the guard read a different register; changing
+  the call to the matching uppercase register made the matrix pass and a Node
+  mutation test now freezes that exact authority. No test fixture, backup, or
+  quarantine data remained after restoration.
+- **2026-08-03:** Rebuilt both unsigned installers outside the sandbox. The
+  ordinary artifact is `181,695,447` bytes with SHA-256
+  `9337e8a6dec522f7d6310c18312f20ba6ef1b4a6ce02dfad6567188df3a9727e`;
+  the isolated validation artifact is `181,695,404` bytes with SHA-256
+  `f8c7b40d10d75aae38ef3b58d102c1608916339f61ab3c13f0688ed76cdea03e`
+  and its Defender scan reports no threats. Both static package authorities,
+  PowerShell parsing, 53 desktop files/535 tests, and 18 Node script tests pass.
+  Computer Use policy blocked opening `uninstall.exe`, so no visual result is
+  inferred: default checkbox copy/state and actual interactive deletion remain
+  in the required normal-user clean-host arm.
 
 ## Discoveries and decisions
 

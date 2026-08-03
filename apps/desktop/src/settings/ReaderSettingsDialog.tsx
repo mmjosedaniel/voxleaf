@@ -386,6 +386,12 @@ export function ReaderSettingsDialog({
               EPUB processing and speech generation run locally. Generated
               narration is kept in bounded memory and is not saved by default.
             </p>
+            <p>
+              To uninstall VoxLeaf and choose whether to remove Chatterbox or
+              reader state, open VoxLeaf in Windows Installed apps. If you keep
+              Chatterbox, reinstall this same VoxLeaf product to manage or
+              remove it later.
+            </p>
           </section>
         </div>
       </section>
