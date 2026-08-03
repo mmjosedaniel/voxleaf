@@ -7,6 +7,10 @@ M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoratio
 locator-linked narration preparation, M007 service, exact-development M008
 coordinator/player path, M009 segment-level synchronization, and M009.1 reader
 stabilization are implemented and validated within their documented scopes.
+The implemented EPUB source profile is still reflowable EPUB 3 with XHTML
+navigation. Accepted ADR-0048 and active Milestone 3.1 plan a bounded OPF
+2.0/NCX extension before M011 release closeout; no EPUB 2 implementation is
+claimed yet.
 M009.1 implements the
 [`reader-experience-authority-v1`](reader-experience-authority-v1.md): stronger
 paint-aware evidence, the same-spine materialization repair, one dedicated
@@ -603,7 +607,28 @@ The application now reads validated global preferences before mounting the ready
 
 [ADR-0007](decisions/ADR-0007-secure-epub-ingestion-boundary.md) establishes the accepted Milestone 3 support profile and the single authority for archive, XML, graph, content, resource, and processing limits. Ingestion accepts bounded in-memory EPUB bytes, validates the ZIP/OCF structure before interpreting publication data, resolves only case-sensitive virtual in-container paths, and never extracts to disk or performs network access.
 
-The initial profile accepts EPUB 3 reflowable XHTML with EPUB navigation and supported local raster resources. Its bounded compatibility policy validates and ignores legacy EPUB 2 `meta name/content` values inside an otherwise supported EPUB 3 package and permits only the inert HTML doctype in XHTML content/navigation; it still performs no DTD/entity processing and rejects all package/container, external, internal-subset, and non-HTML doctypes. EPUB 2/NCX-only, fixed-layout-only, protected, remotely dependent, active, SVG-dependent, and media-dependent publications remain explicit unsupported inputs unless safe supported fallbacks preserve the required reading path. XHTML is projected into immutable allowlisted semantic values; publisher HTML, live DOM nodes, CSS, executable SVG, and scripts never cross the ingestion boundary.
+The implemented profile accepts EPUB 3 reflowable XHTML with EPUB navigation
+and supported local raster resources. Its bounded compatibility policy
+validates and ignores legacy EPUB 2 `meta name/content` values inside an
+otherwise supported EPUB 3 package and permits only the inert HTML doctype in
+XHTML content/navigation; it still performs no DTD/entity processing and
+rejects all package/container, external, internal-subset, and non-HTML
+doctypes. EPUB 2/NCX-only, fixed-layout-only, protected, remotely dependent,
+active, SVG-dependent, and media-dependent publications therefore remain
+explicit unsupported inputs in the current build unless safe supported
+fallbacks preserve the required reading path. XHTML is projected into
+immutable allowlisted semantic values; publisher HTML, live DOM nodes, CSS,
+executable SVG, and scripts never cross the ingestion boundary.
+
+[ADR-0048](decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md)
+accepts a future additive profile for exact OPF `version="2.0"`, local safe
+XHTML, NCX selected by `spine@toc`, exact inert NCX/XHTML 1.1 declarations,
+and validated/ignored guide data. The active Milestone 3.1 ExecPlan must
+implement that profile through the same internal semantic/navigation tree and
+prove unchanged locator policy and relative resolution behavior while keeping
+each archive's distinct exact-byte identity, plus unchanged reader/restoration,
+narration, privacy, cancellation, limits, and public contracts, before this
+section can describe EPUB 2 as implemented.
 
 `@voxleaf/shared` continues to own serialized book, locator, and operational-error contracts. `@voxleaf/epub` owns package relationships, immutable semantic nodes, detailed navigation, bounded resource handles, locator and semantic-target indexes, and fixed EPUB detail codes. The desktop now consumes those detailed navigation and target-resolution values without moving package matching into React or changing a serialized contract. Exact EPUB bytes define the book's `sha256` identity; source-derived or generated structural anchors contain no prose or host path. Expected failures and diagnostics remain content-free, and the EPUB package performs no logging.
 

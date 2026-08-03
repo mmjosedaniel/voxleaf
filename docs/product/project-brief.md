@@ -18,6 +18,11 @@ paragraph leaf, and separates passive viewport inspection from explicit
 narration replacement. Its private-EPUB, exact-host, repository/privacy,
 portable, packaged, and required CI validation pass.
 
+The implemented ingestion source profile is currently bounded reflowable EPUB
+3 with XHTML navigation. Accepted pre-release Milestone 3.1 and ADR-0048 add a
+planned OPF 2.0/NCX profile without changing the public reader or narration
+model. Current builds remain EPUB 3-only until that plan passes.
+
 M008.1 adds one engine-neutral playback transition policy after exact listening
 showed that independently generated units could sound joined even though
 punctuation inside each unit was acceptable. The desktop converts the
@@ -111,6 +116,12 @@ explicitly identifies implemented behavior.
 
 VoxLeaf is a privacy-first desktop EPUB reader being built to turn book text into natural-sounding speech entirely on the user's computer. A reader can open a supported local EPUB, navigate its chapters, read its formatted semantic content, and restore a saved logical passage. On exact configured hosts, the user can start bounded quick or prepared local narration through supported Piper or Chatterbox profiles, while Qwen remains an explicitly gated development-only constrained-buffer option. M011 now owns the approved Windows/Piper core plus optional-download Chatterbox distribution plan. Its exact multi-artifact native acquisition controller is implemented but remains fail-closed and withheld. Version `0.1.0` has a measured local unsigned current-user NSIS installer containing the verified Piper core; it is not yet clean-host accepted or approved for public distribution.
 
+For document compatibility, “supported local EPUB” currently means the
+bounded EPUB 3 profile. The approved
+[M003.1 ExecPlan](../plans/active/M003-001-bounded-epub2-and-ncx-compatibility.md)
+must implement and validate reflowable OPF 2.0/NCX before M011 records the
+final MVP release decision.
+
 The intended narration pipeline will generate progressively instead of converting a complete book or chapter into an audiobook. It will retain only a bounded amount of audio in memory, play it while preparing later segments, and discard it after playback.
 
 ```text
@@ -179,6 +190,14 @@ The user should be able to select a chapter or paragraph, move forward or backwa
 ### EPUB reading
 
 The implemented EPUB pipeline extracts metadata, navigation, ordered readable XHTML content, stable structural locators, and meaningful block boundaries. It excludes scripts, hidden content, navigation noise, and unsafe external references before values reach the reader. Supported static images may appear in the visual reader but are not narrated in the MVP.
+
+Today that pipeline accepts the ADR-0007 EPUB 3/XHTML-navigation profile. The
+accepted ADR-0048 extension is deliberately narrower than full EPUB 2: exact
+OPF `version="2.0"`, local safe XHTML, one NCX selected through `spine@toc`,
+and a validated/ignored guide. DTBook, deprecated OEB content, SVG spine
+documents, arbitrary DTD/entity processing, missing-NCX recovery, active,
+remote, protected, media, and fixed-layout publications remain outside the
+planned profile.
 
 EPUB content is presented as a normal reflowable ereader, with readable typography, bounded static images, continuous scrolling, and chapter navigation. [ADR-0008](../architecture/decisions/ADR-0008-visual-reader-architecture.md) selects continuous vertical scrolling as the sole initial mode and defers pagination. A displayed page number is not a stable position because visible layout changes with the viewport, font size, and line spacing. The implemented reader persists its shared structural logical locator and Unicode-code-point offset, rather than a page or quotation, and uses package-owned exact/nearest-valid resolution to reconstruct the visible passage after exact-file reselection.
 

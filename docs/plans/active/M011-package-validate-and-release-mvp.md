@@ -64,6 +64,14 @@ native-supervised TTS child, bounded in-memory audio, English/Spanish selection,
 supported Piper and Chatterbox profiles, development-only Qwen profiles,
 identity-first recovery, and six boundary-deferred playback rates.
 
+That secure-ingestion implementation currently accepts the bounded EPUB 3
+profile only. [ADR-0048](../../architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md)
+and the separate active
+[Milestone 3.1 ExecPlan](M003-001-bounded-epub2-and-ncx-compatibility.md)
+now authorize EPUB 2/NCX work before this plan's Milestone 7. M011 does not own
+that parser implementation; its final release decision must consume the
+completed M003.1 result and rerun only the affected packaged reader evidence.
+
 The repository now has deliberate application version `0.1.0` and a separate
 release-only Tauri configuration that builds a per-user Windows x64 NSIS
 installer while leaving ordinary development builds unbundled. The current
@@ -209,6 +217,9 @@ That document is planning input, not proof that a release gate passes.
 - Reopening EPUB semantics, protocol v1, TTS evaluation decisions, buffer
   ceilings, synchronization, reader behavior, or playback-rate authority
   unless packaging exposes a concrete defect.
+- The separately approved M003.1 EPUB 2/NCX implementation. It may proceed in
+  parallel with independent M011 validation, but M011 Milestone 7 waits for
+  its final result and affected packaged-reader regression.
 
 ## Relevant files and documentation
 
@@ -647,8 +658,10 @@ Actual result on 2026-08-01:
 **Status:** In progress. The exact-package rehearsal and deterministic release
 matrix pass on the development host. An independent normal-user Windows host is
 now available and its first run exposed the console-window defect fixed below;
-the corrected core rerun is pending. A clean compatible-GPU host remains
-unavailable. The separately identified validation installer completed explicit
+the user later reported that VoxLeaf worked on that older 4-GB-VRAM/16-GB-RAM
+computer, but the exact installer/hash and complete required matrix were not
+recorded, so the formal corrected core rerun remains pending. A clean
+compatible-GPU host remains unavailable. The separately identified validation installer completed explicit
 Chatterbox download and verified installation on the maintainer's compatible
 computer. Direct content-safe runtime and framed-service probes now reach model
 load, warmup, and synthetic synthesis. The installed supervisor and exact
@@ -1017,7 +1030,8 @@ Acceptance requires all of the following:
 
 **Status:** Not started.
 
-1. Reconcile product, architecture, setup, testing, troubleshooting,
+1. Require the completed M003.1 bounded EPUB 2/NCX result, then reconcile
+   product, architecture, setup, testing, troubleshooting,
    dependencies, security, system diagram, roadmap, support matrix, and release
    documentation with measured results.
 2. Publish exact core/optional/excluded profiles, supported hardware, core
@@ -1665,6 +1679,20 @@ and never edit prior benchmark authority to make a release pass.
   Node tests, ESLint, Prettier, and both package static authorities pass again;
   this build-time validation correction does not change either final installer
   payload or hash.
+- **2026-08-03:** The user reported that VoxLeaf worked when tested on the
+  independent older Windows computer with 4 GB VRAM and 16 GB RAM. The report
+  does not identify the exact installer/hash, version/commit, Windows account,
+  Piper language/profile, offline condition, or the individual install,
+  repair, restart, restoration, narration, privacy, and uninstall actions.
+  It is therefore retained as a successful exploratory independent-host
+  observation, not a formal clean-host/Piper-core pass. The declared 4-GB GPU
+  remains below ADR-0044's Chatterbox gate and cannot close any positive
+  optional-profile arm.
+- **2026-08-03:** Accepted ADR-0048 and created a separate active M003.1
+  ExecPlan for bounded EPUB 2/NCX compatibility before this plan's final
+  release decision. No M011 package, TTS, installer, Chatterbox, signing, or
+  clean-host authority changed. Milestone 7 now waits for the completed M003.1
+  result and its affected packaged-reader regression.
 
 ## Discoveries and decisions
 
@@ -1674,6 +1702,10 @@ and never edit prior benchmark authority to make a release pass.
 - **Decision:** M011 also absorbs the corrective lifecycle-feedback and uninstall
   closeout as Milestone 6A. A second ExecPlan or M012 would incorrectly defer
   release-readiness gaps discovered while M011 is still active.
+- **Decision:** EPUB 2/NCX is not another M011 release-readiness correction.
+  It changes the completed EPUB parser/security profile and therefore belongs
+  to the separate M003.1 ExecPlan under ADR-0048. M011 Milestone 7 consumes its
+  completed result without relabeling it as Milestone 6B.
 - **Decision:** Milestone 6A does not expose profile-selection cancellation.
   Visible progress is required, but cancellation waits for explicit rollback
   authority that can restore preference, identity, service, and recovery state.
@@ -1854,6 +1886,9 @@ and never edit prior benchmark authority to make a release pass.
 
 M011 is complete only when:
 
+- M003.1 has completed its bounded EPUB 2/NCX implementation and affected
+  packaged-reader validation, or the product owner has explicitly removed
+  EPUB 2 from the MVP promise and recorded that scope decision;
 - every included artifact, runtime, voice, dependency, licence, source, and
   hash is identified and its obligations are fulfilled;
 - every optional Chatterbox runtime artifact and each of the six official
