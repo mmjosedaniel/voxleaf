@@ -54,6 +54,37 @@ Before changing code or architecture:
 - Do not silently change public contracts.
 - Do not rewrite unrelated code.
 
+## Systematic refactoring
+
+- Use `$orchestrate-safe-refactor` for a multi-file clean-code, readability, or
+  maintainability campaign and `$validate-safe-refactor` for its independent
+  acceptance gate.
+- Audit every target without forcing a modification. `SKIP` is a valid result
+  when no concrete maintainability problem exists.
+- Work in cohesive units consisting normally of one production file, its tests,
+  and at most two directly coupled support files; do not treat an arbitrary file
+  boundary as a behavior boundary.
+- Keep the primary task as director, permit exactly one implementation agent to
+  write at a time, and require a baseline plus post-change validation outside
+  the sandbox before accepting a unit.
+- Start the director with workspace-write permission. Treat custom-agent
+  sandbox settings as requested defaults, not hard isolation: child agents can
+  inherit or be constrained by the primary task's active permission mode.
+- Keep the Git index empty between units. Stage only the exact allowlisted
+  paths, require those paths to have no pre-existing worktree changes, inspect
+  the staged names and diff before committing, and never carry a rejected
+  worker patch into the next unit.
+- Reuse one auditor, one worker, and one validator task throughout a campaign
+  batch. Also reuse one Luna Git-steward task when the current Codex surface
+  exposes that model. Do not silently substitute another model: if Luna is
+  unavailable, record that fact and let Sol execute the same Git Action Order
+  directly. Bind accepted-change orders to the exact HEAD and approved path
+  identities. Git may mutate only while source writing and validation are idle.
+- Never manually refactor generated sources, frozen evaluation authority,
+  historical evidence, or completed ExecPlans.
+- Require an ExecPlan before a significant, multi-package, or multi-stage
+  refactor campaign.
+
 ## Testing expectations
 
 Behavior changes require relevant tests. As implementation is introduced, use the smallest applicable level:

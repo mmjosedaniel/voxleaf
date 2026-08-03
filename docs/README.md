@@ -257,7 +257,8 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`development/dependencies.md`](development/dependencies.md): dependency ownership, purpose, alternatives, and review policy.
 - [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current M011 security assessment, implemented local Windows package/signing path, closed Piper core and optional Chatterbox dependency/audit boundary, remaining clean-host/public gates, independent core/optional/public decisions, and deliberately deferred enterprise hardening.
 - [`user/windows-release.md`](user/windows-release.md): current-user Windows install, repair/replacement, uninstall, checksum, signature, prerequisite, and payload-exclusion guidance for the versioned local package.
-- [`development/git-workflow.md`](development/git-workflow.md): branches, commits, and pull requests.
+- [`development/git-workflow.md`](development/git-workflow.md): branches, commits, pull requests, and the bounded Luna Git-steward authority.
+- [`development/agentic-refactoring.md`](development/agentic-refactoring.md): bounded Sol-directed audit, Terra implementation, independent validation, Luna Git stewardship, safety contracts, and the reusable prompt for behavior-preserving TypeScript maintainability campaigns.
 
 ## Plans
 

@@ -10,6 +10,11 @@ VoxLeaf is a pre-alpha portfolio project. The [system architecture diagram](docs
 4. Search existing issues and plans before creating overlapping work.
 5. Create an ExecPlan for changes that affect multiple components or introduce a TTS model.
 
+For a systematic clean-code or readability campaign, follow
+[`docs/development/agentic-refactoring.md`](docs/development/agentic-refactoring.md)
+and invoke `$orchestrate-safe-refactor`. Audit every target, but never force a
+change where no evidence-backed maintainability problem exists.
+
 ## Change expectations
 
 - Keep changes focused.

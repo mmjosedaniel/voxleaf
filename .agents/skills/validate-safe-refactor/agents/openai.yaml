@@ -1,0 +1,4 @@
+interface:
+  display_name: "Refactor Validation Gate"
+  short_description: "Verify refactors without weakening behavior"
+  default_prompt: "Use $validate-safe-refactor to verify a bounded VoxLeaf refactor with the correct tests and invariants."
