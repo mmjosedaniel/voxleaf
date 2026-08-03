@@ -51,6 +51,9 @@ function availabilityMessage(
       }
       return "The selected local narration profile is available.";
     case "checking":
+      if (profileId === CHATTERBOX_BILINGUAL_PROFILE_ID) {
+        return "Verifying the installed Chatterbox package.";
+      }
       return "Checking the selected local narration profile.";
     case "unavailable":
       return "The selected local narration profile is not configured on this device.";
@@ -84,9 +87,29 @@ function phaseMessage(
       ? "Local narration compatibility changed."
       : "Local narration failed.";
   }
+  if (snapshot.state?.phase === "preparing") {
+    switch (snapshot.serviceState) {
+      case "stopped":
+        return snapshot.profileId === CHATTERBOX_BILINGUAL_PROFILE_ID
+          ? "Verifying the installed Chatterbox package."
+          : "Checking local narration configuration.";
+      case "starting":
+      case "handshaking":
+      case "unloaded":
+      case "loading":
+      case "warming":
+        return "Starting the local narration service and model.";
+      case "ready":
+        return "Preparing narration.";
+      case "generating":
+        return "Generating the first audio.";
+      default:
+        return "Preparing local narration.";
+    }
+  }
   switch (snapshot.state?.phase) {
     case "buffering":
-      return "Buffering local narration.";
+      return "Buffering generated narration.";
     case "complete":
       return "Narration complete.";
     case "failed":
@@ -97,8 +120,6 @@ function phaseMessage(
       return "Narration paused.";
     case "playing":
       return "Narration playing.";
-    case "preparing":
-      return "Preparing local narration.";
     case "stopped":
       return "Narration stopped.";
     case undefined:
@@ -139,6 +160,10 @@ export function ProductNarrationControls({
     operational &&
     state !== undefined &&
     (state.canStop || state.phase === "complete" || state.phase === "failed");
+  const startupCanBeCancelled =
+    snapshot.metrics.commandToAudibleMs === undefined &&
+    (state?.phase === "preparing" || state?.phase === "buffering");
+  const stopLabel = startupCanBeCancelled ? "Cancel start" : "Stop";
   const startupPolicy =
     snapshot.selection.kind === "quick"
       ? "Quick start"
@@ -305,7 +330,7 @@ export function ProductNarrationControls({
               data-narration-action="stop"
               onClick={() => void coordinator.stop()}
             >
-              Stop
+              {stopLabel}
             </button>
           ) : null}
           {canRestart ? (

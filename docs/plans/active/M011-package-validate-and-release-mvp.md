@@ -1564,6 +1564,25 @@ and never edit prior benchmark authority to make a release pass.
   removal and reader-state retention by default, silent uninstall preserves both
   without an explicit bounded option, and the existing explicit full-data option
   remains compatible. This is accepted authority, not implementation evidence.
+- **2026-08-03:** Began Milestone 6A implementation on branch
+  `codex/m011-6a-lifecycle-implementation` from updated `main` at `d5d8a3c`.
+  Pre-change validation from normal local PowerShell passed with 53 desktop test
+  files/532 tests plus 17 Node script tests, 20 focused optional-Chatterbox Rust
+  tests in the ordinary build, 20 in the
+  `chatterbox-acquisition-validation` build, and both Windows package static
+  checks current.
+- **2026-08-03:** Completed the first Milestone 6A product-feedback checkpoint.
+  Settings now remains populated and announces a content-free applying phase
+  while profile/language/reset selection is pending, without exposing an
+  unauthorised rollback button. Conflicting narration settings and optional-
+  package actions are disabled for that transition. The Chatterbox surface now
+  states active status, manifest-authoritative installed storage, discoverable
+  removal, and exact incomplete-staging cancellation semantics. First Play now
+  exposes package verification, combined local service/model startup, narration
+  preparation, first-audio generation, buffering, and playing from existing
+  observations; the existing safe stop path is labelled **Cancel start** only
+  before audible ownership. The unchanged authoritative desktop command passed
+  outside the sandbox with 53 files/535 tests and all 17 Node script tests.
 
 ## Discoveries and decisions
 

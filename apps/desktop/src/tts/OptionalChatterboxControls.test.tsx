@@ -144,6 +144,33 @@ describe("optional Chatterbox controls", () => {
     expect(
       screen.getByRole("button", { name: "Remove Chatterbox" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("Chatterbox is active.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Local package storage: 2.00 GiB."),
+    ).toBeInTheDocument();
+  });
+
+  it("explains the bounded cleanup caused by cancelling acquisition", async () => {
+    const client = new OptionalChatterboxClient(async () =>
+      snapshot("confirming"),
+    );
+
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
+        onRemove={vi.fn(async () => undefined)}
+      />,
+    );
+
+    expect(
+      await screen.findByText(/removes only this operation's incomplete staging/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/It cannot resume later/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/never removes a verified installed package/),
+    ).toBeInTheDocument();
   });
 
   it("shows safe actionable failure copy and lets the user check again", async () => {
@@ -171,6 +198,10 @@ describe("optional Chatterbox controls", () => {
     expect(
       screen.queryByText("tts-optional-profile-incompatible-host"),
     ).not.toBeInTheDocument();
+    expect(screen.getByText("Chatterbox is not active.")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Remove Chatterbox" }),
+    ).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", { name: "Recheck device compatibility" }),

@@ -81,7 +81,11 @@ export interface ReaderSettingsDialogProps {
 
 function CoordinatorNarrationStartSettings({
   coordinator,
-}: Readonly<{ coordinator: ProductNarrationCoordinator }>): ReactElement {
+  disabled = false,
+}: Readonly<{
+  coordinator: ProductNarrationCoordinator;
+  disabled?: boolean;
+}>): ReactElement {
   const snapshot = useSyncExternalStore(
     (listener) => coordinator.subscribe(listener),
     () => coordinator.observe(),
@@ -94,6 +98,7 @@ function CoordinatorNarrationStartSettings({
       selection={snapshot.selection}
       active={active}
       disabled={
+        disabled ||
         snapshot.startPreferenceStatus === "loading" ||
         !snapshot.canPersistStartPreference
       }
@@ -107,17 +112,26 @@ function CoordinatorNarrationStartSettings({
 function NarrationStartSettings({
   coordinator,
   fallback,
+  disabled = false,
 }: Readonly<{
   coordinator?: ProductNarrationCoordinator;
   fallback: FallbackNarrationStartState;
+  disabled?: boolean;
 }>): ReactElement {
   if (coordinator !== undefined) {
-    return <CoordinatorNarrationStartSettings coordinator={coordinator} />;
+    return (
+      <CoordinatorNarrationStartSettings
+        coordinator={coordinator}
+        disabled={disabled}
+      />
+    );
   }
   return (
     <NarrationStartPreferenceControls
       selection={fallback.selection}
-      disabled={fallback.status === "loading" || !fallback.canPersist}
+      disabled={
+        disabled || fallback.status === "loading" || !fallback.canPersist
+      }
       onSelectionChange={fallback.onSelectionChange}
     />
   );
@@ -137,11 +151,13 @@ function OptionalChatterboxSettings({
   hardwareCompatibility,
   onActivate,
   onRemove,
+  disabled = false,
 }: Readonly<{
   client: OptionalChatterboxClient;
   hardwareCompatibility: HardwareProfileCompatibilityCoordinator;
   onActivate: () => Promise<boolean>;
   onRemove: () => Promise<void>;
+  disabled?: boolean;
 }>): ReactElement {
   const compatibility = useSyncExternalStore(
     (listener) => hardwareCompatibility.subscribe(listener),
@@ -158,6 +174,7 @@ function OptionalChatterboxSettings({
         return onActivate();
       }}
       onRemove={onRemove}
+      disabled={disabled}
     />
   );
 }
@@ -188,6 +205,8 @@ export function ReaderSettingsDialog({
   const [applicationVersion, setApplicationVersion] = useState<
     string | undefined
   >();
+  const [narrationSelectionPending, setNarrationSelectionPending] =
+    useState(false);
 
   useEffect(() => {
     if (open) {
@@ -326,18 +345,21 @@ export function ReaderSettingsDialog({
               onSelectLanguage={onSelectLanguage}
               onResetNarrationSettings={onResetNarrationSettings}
               onRecoveryEpisodeReset={onRecoveryEpisodeReset}
+              onSelectionPendingChange={setNarrationSelectionPending}
             />
             <OptionalChatterboxSettings
               client={optionalChatterbox}
               hardwareCompatibility={hardwareCompatibility}
               onActivate={handleChatterboxActivation}
               onRemove={onRemoveChatterbox}
+              disabled={narrationSelectionPending}
             />
             <NarrationStartSettings
               {...(narrationCoordinator === undefined
                 ? {}
                 : { coordinator: narrationCoordinator })}
               fallback={fallbackNarrationStart}
+              disabled={narrationSelectionPending}
             />
           </section>
 

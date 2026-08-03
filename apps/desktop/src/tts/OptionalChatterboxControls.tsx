@@ -16,6 +16,7 @@ export interface OptionalChatterboxControlsProps {
   readonly onActivate: () => Promise<boolean>;
   readonly onRecheck: () => Promise<boolean>;
   readonly onRemove: () => Promise<void>;
+  readonly disabled?: boolean;
 }
 
 function displayBytes(value: number | undefined): string {
@@ -28,6 +29,9 @@ function displayBytes(value: number | undefined): string {
 function displayMiB(value: number): string {
   return `${(value / 1_024).toFixed(2)} GiB`;
 }
+
+const CANCELLATION_SCOPE_COPY =
+  "Cancelling download or verification removes only this operation's incomplete staging and partial files. It cannot resume later and never removes a verified installed package.";
 
 function renderOptionalChatterboxFailure(
   failure: OptionalChatterboxSnapshot["failure"],
@@ -151,6 +155,7 @@ export function OptionalChatterboxControls({
   onActivate,
   onRecheck,
   onRemove,
+  disabled = false,
 }: OptionalChatterboxControlsProps): ReactElement {
   const snapshot = useSyncExternalStore(
     (listener) => client.subscribe(listener),
@@ -159,6 +164,7 @@ export function OptionalChatterboxControls({
   );
   const [pending, setPending] = useState(false);
   const [downloadRequested, setDownloadRequested] = useState(false);
+  const storageFootprintBytes = snapshot.installedBytes;
 
   useEffect(() => {
     void client.refresh();
@@ -201,10 +207,18 @@ export function OptionalChatterboxControls({
         downloadRequested={downloadRequested}
         active={active}
       />
+      {snapshot.state === "installed" || snapshot.state === "failed" ? (
+        <>
+          <p>{`Chatterbox is ${active ? "active" : "not active"}.`}</p>
+          {storageFootprintBytes === undefined ? null : (
+            <p>{`Local package storage: ${displayBytes(storageFootprintBytes)}.`}</p>
+          )}
+        </>
+      ) : null}
       {snapshot.state === "absent" ? (
         <button
           type="button"
-          disabled={pending}
+          disabled={disabled || pending}
           onClick={() => run(() => client.select())}
         >
           Review Chatterbox download
@@ -236,12 +250,17 @@ export function OptionalChatterboxControls({
             {displayMiB(snapshot.minimumAvailableRamMiB)} RAM available.
           </p>
           <p>{snapshot.licenseSummary}</p>
-          <button type="button" disabled={pending} onClick={download}>
+          <p>{CANCELLATION_SCOPE_COPY}</p>
+          <button
+            type="button"
+            disabled={disabled || pending}
+            onClick={download}
+          >
             Download Chatterbox
           </button>
           <button
             type="button"
-            disabled={pending}
+            disabled={disabled || pending}
             onClick={() => run(() => client.cancel())}
           >
             Cancel
@@ -258,9 +277,10 @@ export function OptionalChatterboxControls({
               value={snapshot.downloadedBytes}
             />
           ) : null}
+          <p>{CANCELLATION_SCOPE_COPY}</p>
           <button
             type="button"
-            disabled={pending && !downloadRequested}
+            disabled={disabled || (pending && !downloadRequested)}
             onClick={() => run(() => client.cancel())}
           >
             Cancel download
@@ -272,7 +292,7 @@ export function OptionalChatterboxControls({
           {active ? null : (
             <button
               type="button"
-              disabled={pending}
+              disabled={disabled || pending}
               onClick={() => run(onActivate)}
             >
               Activate Chatterbox
@@ -280,7 +300,7 @@ export function OptionalChatterboxControls({
           )}
           <button
             type="button"
-            disabled={pending}
+            disabled={disabled || pending}
             onClick={() => run(onRemove)}
           >
             Remove Chatterbox
@@ -291,7 +311,7 @@ export function OptionalChatterboxControls({
         <div>
           <button
             type="button"
-            disabled={pending}
+            disabled={disabled || pending}
             onClick={() =>
               run(
                 snapshot.failure === "tts-optional-profile-incompatible-host"
@@ -306,7 +326,7 @@ export function OptionalChatterboxControls({
           </button>
           <button
             type="button"
-            disabled={pending}
+            disabled={disabled || pending}
             onClick={() => run(onRemove)}
           >
             Remove Chatterbox
