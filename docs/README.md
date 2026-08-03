@@ -142,6 +142,16 @@ content-safe model/service probes and the exact installed Spanish WebView2
 matrix now pass after conventionalizing only canonical verbatim paths at the
 child-process boundary. English narration, restart, removal/reinstall,
 Piper-after-removal, clean-host validation, and public signing remain open.
+Maintainer review also identified a planned M011 Milestone 6A lifecycle-
+feedback closeout. It must keep Settings visibly populated during profile
+transitions, distinguish truthful first-Play startup phases, make optional-
+package removal discoverable, explain that acquisition cancellation deletes
+only incomplete staging, and separate optional-package retention from ordinary
+preferences in the uninstall journey. ADR-0047 now accepts default interactive
+Chatterbox removal, default preference/recovery retention, and non-destructive
+silent uninstall unless an explicit bounded option is supplied. Milestone 6A is
+not implemented by this documentation update and does not change Chatterbox's
+withheld, clean-host, or public-signing gates.
 Milestone 5 now packages version `0.1.0` as a release-only current-user Windows
 x64 NSIS installer containing the exact verified bilingual Piper core. Local
 installation, first start, repair, uninstall, unrelated-file preservation, and
@@ -165,7 +175,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`product/vision.md`](product/vision.md): product purpose, audience, and principles.
 - [`product/project-brief.md`](product/project-brief.md): detailed problem, intended experience, product boundaries, and candidate technical direction.
 - [`product/mvp.md`](product/mvp.md): MVP scope, non-goals, constraints, and acceptance criteria.
-- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and implemented six-value boundary-deferred repository-WSOLA playback requirements.
+- [`product/reader-settings-and-playback-controls.md`](product/reader-settings-and-playback-controls.md): approved M010.2 reader-first shell, Settings, English-default, profile-visibility, persistence, and implemented six-value boundary-deferred repository-WSOLA playback requirements, plus the explicitly planned M011 lifecycle-feedback addendum.
 - [`product/post-mvp-tts-candidate-backlog.md`](product/post-mvp-tts-candidate-backlog.md): non-authoritative post-MVP intake order for Pocket TTS, Chatterbox LatAm, MOSS-TTS-Nano, Kokoro, and additional Piper voices.
 - [`product/glossary.md`](product/glossary.md): shared terminology.
 
@@ -182,6 +192,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/reader-settings-playback-authority-v2.md`](architecture/reader-settings-playback-authority-v2.md): frozen M010.2 Milestone 2A six-rate, exact-candidate, fee-free licence, media-only CSP, lifecycle, resource, and result-lineage comparison authority.
 - [`architecture/reader-settings-playback-authority-v3.md`](architecture/reader-settings-playback-authority-v3.md): frozen M010.2 Milestone 2C selected/pending/active rate state, exact boundary-deferred candidates, first-activation/recurring-handoff, resource, lifecycle, licence/CSP, listening, and strict result-lineage authority.
 - [`architecture/mvp-release-authority-v1.md`](architecture/mvp-release-authority-v1.md): frozen historical M011 Windows/Piper core and single-archive optional Chatterbox topology, trust, cleanup, dependency/licence/integrity, signing, and independent release-claim authority; Milestone 4B additively supersedes only its Chatterbox acquisition shape through authority v2.
+- [`architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md`](architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md): accepted additive installer authority separating default interactive Chatterbox removal from default reader-state retention while keeping silent uninstall non-destructive without explicit bounded options.
 - [`architecture/chatterbox-official-acquisition-authority-v2.md`](architecture/chatterbox-official-acquisition-authority-v2.md): accepted M011 Milestone 4B authority for a separately verified split runtime and the six exact official revision-pinned Hugging Face model files, with closed redirects, limits, cancellation, safe loading, atomic promotion, and fail-closed release gates.
 - [`../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json`](../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json): content-safe reproducible runtime/part/aggregate size evidence, verified public release identity, and the remaining clean-host gates that keep Chatterbox withheld.
 - [`architecture/hardware-profile-recovery-authority-v1.md`](architecture/hardware-profile-recovery-authority-v1.md): frozen M010 Milestone 1 privacy-safe host report, immutable profile/evidence shape, result-blind margins, matching/preference rules, failure taxonomy, and identity-first recovery authority.

@@ -296,14 +296,19 @@ Before the application may offer **Download and enable Chatterbox**, M011 must:
 6. download runtime and model artifacts through the native acquisition boundary
    into bounded application-owned cache/staging, verify every name, size, and
    cryptographic digest before use, reject source/redirect substitution, and
-   install only the complete set by atomic versioned promotion. Clean incomplete
-   or cancelled state without touching books or other user files;
+   install only the complete set by atomic versioned promotion. Cancellation
+   removes the current operation's entire incomplete-staging tree and partial
+   files, returns to absent, retains no unsupported resumable state, and never
+   mutates a verified installed package, books, preferences, or other user files;
 7. retain `safetensors` loading for the principal T3 weights and
    `torch.load(..., weights_only=True)` for each approved `.pt` load site.
    Treat Hugging Face malware/pickle scanning as defense-in-depth, not local
    integrity or safe-deserialization authority;
-8. expose bounded progress, cancellation, retry, failure, installed version,
-   storage use, notices, and profile removal in accessible product UI;
+8. expose bounded byte progress, truthful indeterminate verification/removal
+   phases, cancellation outcome, retry, failure, installed version, storage use,
+   notices, and discoverable profile removal in accessible product UI. Keep
+   Settings populated during transitions and do not fabricate a non-byte
+   percentage or fixed cold-load duration;
 9. prove that normal EPUB reading and both Piper voices remain usable while the
    package is absent, declined, cancelled, corrupt, incompatible, or removed;
 10. prove installed Chatterbox Spanish/English narration offline on a compatible
@@ -312,7 +317,18 @@ Before the application may offer **Download and enable Chatterbox**, M011 must:
     resource disclosure; and
 11. remove the optional package and its application-owned staging/cache state
     without deleting the desktop application, preferences, reading progress, or
-    user EPUBs.
+    user EPUBs; and
+12. follow accepted
+    [ADR-0047](../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md),
+    which preserves the exact owned cleanup roots and separates optional-package
+    retention from ordinary preferences/recovery.
+    Interactive uninstall selects Chatterbox removal and reader-state retention
+    by default; silent uninstall preserves both classes without an explicit
+    bounded option. The separate silent options are
+    `/REMOVE_CHATTERBOX_DATA=1` and
+    `/REMOVE_PREFERENCES_AND_RECOVERY=1`; `/REMOVE_APP_DATA=1` remains the
+    explicit composition of both. Any further destructive default or deletion-
+    scope change requires new authority before implementation or measurement.
 
 **Current M011 Milestone 4B status:** the repository implements the native-owned
 state machine and v2 closed multi-artifact controller. It fixes the exact six
@@ -336,6 +352,41 @@ acquisition, offline bilingual narration, removal, reinstall, licence/audit,
 and resource gates have not run. This is a fail-closed clean-host blocker for
 optional Chatterbox, not a failure of the Piper core or an authorization to
 claim Download works.
+
+### Planned M011 Milestone 6A lifecycle closeout
+
+The native controller already owns bounded transfer progress, cancellation,
+partial-staging cleanup, atomic promotion, verification, and contained package
+removal. Milestone 6A does not reopen those authorities. It makes their user-
+visible consequences complete before the affected Milestone 6 host evidence is
+repeated:
+
+- Settings must retain its structure and announce a real content-free phase
+  while profile selection or installed-package inspection is pending. The first
+  closeout omits selection cancellation until a rollback contract exists.
+- First Chatterbox Play must distinguish installed-package verification,
+  combined service/model startup where that is the truthful boundary, first-
+  audio generation, buffering, and playback. Before audible ownership, the
+  identity-safe Stop action is presented as startup cancellation and must leave
+  no stale audio or orphan service.
+- Acquisition copy must say that cancelling download/verification removes the
+  current incomplete staging operation and does not remove a completed package.
+- Installed optional-package state and **Remove Chatterbox** must remain
+  discoverable independently of the selected profile. Removal still targets
+  only the exact runtime/model/cache/staging roots and leaves Piper plus reader
+  data intact.
+- The NSIS journey must distinguish optional-package data from preferences and
+  recovery state.
+  [ADR-0047](../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md)
+  selects optional Chatterbox removal and reader-state retention by default,
+  retains non-destructive silent uninstall without an explicit bounded option,
+  and requires the consequence of each independent choice to be shown. Users
+  who intentionally retain optional data receive a supported reinstall-and-
+  remove route. VoxLeaf does not leave a residual model-manager executable.
+This subsection records planned release acceptance only. Until implementation,
+focused regressions, installed lifecycle evidence, and the remaining independent
+host gates pass, the current validation-build UI and one combined uninstall data
+choice remain the actual behavior and Chatterbox remains withheld.
 
 ADR-0045 permits one compile-time, separately identified validation build on
 the maintainer's only compatible computer. Its exact overlay supplies the
