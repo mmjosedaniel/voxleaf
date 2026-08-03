@@ -7,6 +7,11 @@ import {
 const encoder = new TextEncoder();
 const EPUB_MIMETYPE = "application/epub+zip";
 
+export const EPUB2_CANONICAL_NCX_DOCTYPE =
+  '<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">';
+export const EPUB2_CANONICAL_XHTML11_DOCTYPE =
+  '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">';
+
 const FIXED_ZIP_OPTIONS = Object.freeze({
   bufferedWrite: true,
   dataDescriptor: false,
@@ -234,6 +239,36 @@ export interface MinimalEpubFixtureOptions {
   readonly mutations?: readonly EpubFixtureMutation[];
 }
 
+export type Epub2FixtureMetadataForm = "direct" | "deprecated-wrappers";
+
+export interface MinimalEpub2PackageDocumentOptions {
+  readonly metadataForm?: Epub2FixtureMetadataForm;
+  /** Raw optional OPF 2 guide markup placed after the spine. */
+  readonly guide?: string;
+}
+
+export interface MinimalEpub2FixtureOptions {
+  /** `null` omits the entry; `undefined` uses the valid synthetic default. */
+  readonly mimetype?: EpubFixtureContent | null;
+  /** `null` omits the entry; `undefined` uses the valid synthetic default. */
+  readonly containerDocument?: EpubFixtureContent | null;
+  /** Overrides metadata-form and guide generation when supplied. */
+  readonly packageDocument?: EpubFixtureContent | null;
+  /** `null` omits the entry; `undefined` uses the valid synthetic NCX. */
+  readonly ncxDocument?: EpubFixtureContent | null;
+  /** `null` omits the entry; `undefined` uses the valid synthetic XHTML. */
+  readonly chapterDocument?: EpubFixtureContent | null;
+  readonly metadataForm?: Epub2FixtureMetadataForm;
+  /** Raw optional OPF 2 guide markup placed after the generated spine. */
+  readonly guide?: string;
+  /** Raw test-only declaration prepended exactly to the NCX document. */
+  readonly ncxDoctype?: string;
+  /** Raw test-only declaration prepended exactly to the XHTML document. */
+  readonly chapterDoctype?: string;
+  readonly additionalEntries?: readonly EpubFixtureEntry[];
+  readonly mutations?: readonly EpubFixtureMutation[];
+}
+
 function fail(
   code:
     | "fixture-entry-invalid"
@@ -326,6 +361,16 @@ function concatenate(left: Uint8Array, right: Uint8Array): Uint8Array {
   output.set(left);
   output.set(right, left.byteLength);
   return output;
+}
+
+function prependFixtureText(
+  content: EpubFixtureContent,
+  prefix: string | undefined,
+): EpubFixtureContent {
+  if (prefix === undefined) {
+    return typeof content === "string" ? content : content.slice();
+  }
+  return concatenate(encoder.encode(prefix), contentBytes(content));
 }
 
 function replaceFixtureBytes(
@@ -446,6 +491,81 @@ export async function buildMinimalEpubFixture(
     entries,
     "EPUB/text/chapter.xhtml",
     options.chapterDocument,
+    minimalChapterDocument(),
+    "deflate",
+  );
+  entries.push(...(options.additionalEntries ?? []));
+
+  const archive = await buildDeterministicZipFixture(entries);
+  return options.mutations === undefined
+    ? archive
+    : applyEpubFixtureMutations(archive, options.mutations);
+}
+
+/**
+ * Builds a deterministic synthetic OPF 2/NCX archive without changing the
+ * EPUB 3 defaults of `buildMinimalEpubFixture`. Production currently rejects
+ * these bytes as `unsupported-version`; later milestones replace that boundary.
+ */
+export async function buildMinimalEpub2Fixture(
+  options: MinimalEpub2FixtureOptions = {},
+): Promise<Uint8Array> {
+  const entries: EpubFixtureEntry[] = [];
+  addOptionalEntry(
+    entries,
+    "mimetype",
+    options.mimetype,
+    EPUB_MIMETYPE,
+    "stored",
+  );
+  addOptionalEntry(
+    entries,
+    "META-INF/container.xml",
+    options.containerDocument,
+    minimalContainerDocument(),
+    "deflate",
+  );
+  const packageDocument =
+    options.packageDocument === undefined
+      ? minimalEpub2PackageDocument({
+          ...(options.metadataForm === undefined
+            ? {}
+            : { metadataForm: options.metadataForm }),
+          ...(options.guide === undefined ? {} : { guide: options.guide }),
+        })
+      : options.packageDocument;
+  addOptionalEntry(
+    entries,
+    "EPUB/package.opf",
+    packageDocument,
+    minimalEpub2PackageDocument(),
+    "deflate",
+  );
+  const ncxDocument =
+    options.ncxDocument === null
+      ? null
+      : prependFixtureText(
+          options.ncxDocument ?? minimalNcxDocument(),
+          options.ncxDoctype,
+        );
+  addOptionalEntry(
+    entries,
+    "EPUB/toc.ncx",
+    ncxDocument,
+    minimalNcxDocument(),
+    "deflate",
+  );
+  const chapterDocument =
+    options.chapterDocument === null
+      ? null
+      : prependFixtureText(
+          options.chapterDocument ?? minimalChapterDocument(),
+          options.chapterDoctype,
+        );
+  addOptionalEntry(
+    entries,
+    "EPUB/text/chapter.xhtml",
+    chapterDocument,
     minimalChapterDocument(),
     "deflate",
   );
@@ -697,6 +817,27 @@ export function minimalContainerDocument(): string {
 
 export function minimalPackageDocument(): string {
   return `<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:minimal</dc:identifier><dc:title>Synthetic minimal publication</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">2026-07-22T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="chapter"/></spine></package>`;
+}
+
+export function minimalEpub2Guide(): string {
+  return '<guide><reference type="text" title="Synthetic opening" href="text/chapter.xhtml#chapter-one"/></guide>';
+}
+
+export function minimalEpub2PackageDocument(
+  options: MinimalEpub2PackageDocumentOptions = {},
+): string {
+  const dcMetadata =
+    '<dc:identifier id="pub-id">urn:synthetic:minimal-epub2</dc:identifier><dc:title>Synthetic minimal EPUB 2 publication</dc:title><dc:language>en</dc:language><dc:creator>Synthetic EPUB 2 Author</dc:creator>';
+  const metadata =
+    (options.metadataForm ?? "direct") === "deprecated-wrappers"
+      ? `<metadata><dc-metadata>${dcMetadata}</dc-metadata><x-metadata><meta name="generator" content="repository-authored-synthetic"/></x-metadata></metadata>`
+      : `<metadata>${dcMetadata}</metadata>`;
+  const guide = options.guide ?? "";
+  return `<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0" unique-identifier="pub-id">${metadata}<manifest><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/><item id="chapter" href="text/chapter.xhtml" media-type="application/xhtml+xml"/></manifest><spine toc="ncx"><itemref idref="chapter"/></spine>${guide}</package>`;
+}
+
+export function minimalNcxDocument(): string {
+  return '<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="urn:synthetic:minimal-epub2"/></head><docTitle><text>Synthetic minimal EPUB 2 publication</text></docTitle><navMap><navPoint id="chapter-one" playOrder="1"><navLabel><text>Chapter One</text></navLabel><content src="text/chapter.xhtml#chapter-one"/></navPoint></navMap></ncx>';
 }
 
 export function minimalNavigationDocument(): string {

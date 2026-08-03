@@ -229,9 +229,28 @@ Baseline actual result on 2026-08-03, before fixture or production edits:
 - `pnpm.cmd --filter @voxleaf/epub build` passed.
 - `git diff --check` passed.
 
+Milestone 1 actual result on 2026-08-03:
+
+- Added test-only `buildMinimalEpub2Fixture`, explicit raw package/NCX
+  overrides, direct and deprecated-wrapper metadata generation, optional
+  `guide`, and raw NCX/XHTML doctype inputs. The existing EPUB 3 builder and
+  production parser are unchanged.
+- Added focused deterministic ZIP/content coverage and a public privacy-safe
+  characterization. Two new tests pass; exact OPF `version="2.0"` still returns
+  `unsupported-version` with no publication, input mutation, network, Worker,
+  path, guide metadata, or other sensitive result.
+- No dependency, opaque binary, committed EPUB, shared contract, production
+  source, renderer, persistence, narration, TTS, audio, or installer behavior
+  changed.
+- `pnpm.cmd --filter @voxleaf/epub typecheck` passed.
+- `pnpm.cmd --filter @voxleaf/epub test` passed with 34 files and 582 tests.
+- `pnpm.cmd --filter @voxleaf/epub build` passed.
+- `pnpm.cmd format:check:typescript` and `pnpm.cmd lint:typescript` passed.
+- `git diff --check` passed after the result documentation update.
+
 #### Status
 
-In progress.
+Complete.
 
 ### Milestone 2: Admit the bounded OPF 2 package profile
 
@@ -456,6 +475,16 @@ unsupported rather than ship a partially navigable profile.
   the sandbox: typecheck passed; 34 test files and 580 tests passed; build and
   `git diff --check` passed. Milestone 1 is now in progress; EPUB 2 remains
   unsupported and no fixture or production source had changed at this point.
+- **2026-08-03:** Completed Milestone 1 with one additive test-support builder
+  and two tests. The builder covers direct and deprecated-wrapper metadata,
+  explicit package/NCX inputs, optional guide markup, and raw doctype prefixes
+  without changing EPUB 3 defaults. The public characterization remains green
+  at `unsupported-version`, redacts the synthetic privacy canary, mutates no
+  caller bytes, and constructs no Worker or network request. The first
+  post-change typecheck exposed a test-only ZIP `Entry` union guard and one
+  missing import; both were corrected before any checkpoint. Final external
+  typecheck, 34-file/582-test suite, build, Prettier check, ESLint, and diff
+  check pass. No production support is claimed.
 
 ## Discoveries and decisions
 
@@ -481,10 +510,19 @@ unsupported rather than ship a partially navigable profile.
   parser, and fixture matrix all encode EPUB 3 as a literal, so compatibility
   needs coordinated package-internal changes even though the downstream
   public model can remain unchanged.
+- **Discovery:** A separate OPF2/NCX builder preserves the existing EPUB 3
+  fixture API and byte-generation path while giving later milestones explicit
+  package, NCX, guide, metadata-form, doctype, omission, additional-entry, and
+  mutation controls. ZIP entry inspection must narrow directory entries before
+  test extraction; no production abstraction is needed.
 
 ## Final validation results
 
-Not started. Record exact commands, file/test counts, browser/native results,
-privacy/capability audits, final diff review, and pull-request checks here as
-each milestone completes. Do not move this plan to `completed/` or describe
-EPUB 2 as supported before every applicable gate passes.
+Milestone 1 passed on 2026-08-03 from normal local PowerShell outside the
+managed sandbox: focused typecheck, 34 files/582 tests, build, TypeScript
+Prettier, ESLint, and `git diff --check` are green. The diff contains only
+test-support, two focused/public tests, and actual-result documentation; no
+dependency or opaque artifact was added. Full-plan browser/native, supported
+EPUB 2, privacy/hostile-input, and pull-request validation remain not started.
+Do not move this plan to `completed/` or describe EPUB 2 as supported before
+every later milestone and applicable gate passes.
