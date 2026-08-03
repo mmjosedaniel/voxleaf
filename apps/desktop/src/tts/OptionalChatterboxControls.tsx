@@ -29,6 +29,73 @@ function displayMiB(value: number): string {
   return `${(value / 1_024).toFixed(2)} GiB`;
 }
 
+function renderOptionalChatterboxFailure(
+  failure: OptionalChatterboxSnapshot["failure"],
+): ReactElement {
+  switch (failure) {
+    case "installed-package-invalid":
+    case "tts-optional-profile-invalid":
+      return (
+        <p role="status">
+          The local Chatterbox package did not pass its integrity check. Piper
+          remains available. Check it again or remove and download Chatterbox
+          again.
+        </p>
+      );
+    case "tts-optional-profile-incompatible-host":
+      return (
+        <p role="status">
+          This device does not currently meet the Chatterbox requirements. Piper
+          remains available. Free system resources, then check again.
+        </p>
+      );
+    case "tts-optional-profile-insufficient-space":
+      return (
+        <p role="status">
+          Chatterbox needs more free application storage. Piper remains
+          available. Free storage, then check again.
+        </p>
+      );
+    case "tts-optional-profile-busy":
+      return (
+        <p role="status">
+          Another Chatterbox operation is still active. Wait for it to finish,
+          then check again.
+        </p>
+      );
+    case "tts-optional-profile-cancelled":
+      return (
+        <p role="status">
+          The Chatterbox operation was cancelled. Piper remains available. Check
+          the optional package when you are ready to continue.
+        </p>
+      );
+    case "tts-optional-profile-cleanup-failed":
+      return (
+        <p role="status">
+          Chatterbox could not finish cleaning its application-owned files.
+          Restart VoxLeaf, then check again.
+        </p>
+      );
+    case "tts-optional-profile-download-failed":
+      return (
+        <p role="status">
+          The Chatterbox download did not complete. Piper remains available.
+          Check your connection, then try again.
+        </p>
+      );
+    case "tts-optional-profile-unavailable":
+    case "optional-profile-operation-failed":
+    case undefined:
+      return (
+        <p role="status">
+          Chatterbox setup did not complete. Piper remains available. Check the
+          optional package again before retrying.
+        </p>
+      );
+  }
+}
+
 function StatusCopy({
   snapshot,
   downloadRequested,
@@ -66,68 +133,7 @@ function StatusCopy({
     case "removing":
       return <p aria-live="polite">Removing the local Chatterbox package.</p>;
     case "failed":
-      switch (snapshot.failure) {
-        case "installed-package-invalid":
-        case "tts-optional-profile-invalid":
-          return (
-            <p role="status">
-              The local Chatterbox package did not pass its integrity check.
-              Piper remains available. Check it again or remove and download
-              Chatterbox again.
-            </p>
-          );
-        case "tts-optional-profile-incompatible-host":
-          return (
-            <p role="status">
-              This device does not currently meet the Chatterbox requirements.
-              Piper remains available. Free system resources, then check again.
-            </p>
-          );
-        case "tts-optional-profile-insufficient-space":
-          return (
-            <p role="status">
-              Chatterbox needs more free application storage. Piper remains
-              available. Free storage, then check again.
-            </p>
-          );
-        case "tts-optional-profile-busy":
-          return (
-            <p role="status">
-              Another Chatterbox operation is still active. Wait for it to
-              finish, then check again.
-            </p>
-          );
-        case "tts-optional-profile-cancelled":
-          return (
-            <p role="status">
-              The Chatterbox operation was cancelled. Piper remains available.
-              Check the optional package when you are ready to continue.
-            </p>
-          );
-        case "tts-optional-profile-cleanup-failed":
-          return (
-            <p role="status">
-              Chatterbox could not finish cleaning its application-owned files.
-              Restart VoxLeaf, then check again.
-            </p>
-          );
-        case "tts-optional-profile-download-failed":
-          return (
-            <p role="status">
-              The Chatterbox download did not complete. Piper remains available.
-              Check your connection, then try again.
-            </p>
-          );
-        case "tts-optional-profile-unavailable":
-        case "optional-profile-operation-failed":
-        case undefined:
-          return (
-            <p role="status">
-              Chatterbox setup did not complete. Piper remains available. Check
-              the optional package again before retrying.
-            </p>
-          );
-      }
+      return renderOptionalChatterboxFailure(snapshot.failure);
     case "withheld":
       return (
         <p>
