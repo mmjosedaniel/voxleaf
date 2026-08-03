@@ -25,19 +25,25 @@ import {
   assertNativeSmokeInvariant,
   assertNativeSmokeInvariants,
   nativeSmokeInvariantFailureCode,
+  resolveNativeSmokeExecutable,
 } from "./native-smoke-invariants.mjs";
 import { PORTFOLIO_PLAYBACK_RATE_PERCENTS } from "./bilingual-portfolio-host.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.resolve(scriptDirectory, "..");
-const executablePath = path.join(
-  desktopRoot,
-  "src-tauri",
-  "target",
-  "release",
-  "voxleaf-desktop.exe",
+const executablePath = resolveNativeSmokeExecutable(
+  process.argv.slice(2),
+  path.join(
+    desktopRoot,
+    "src-tauri",
+    "target",
+    "release",
+    "voxleaf-desktop.exe",
+  ),
 );
 const STARTUP_TIMEOUT_MS = 90_000;
+const OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS = 180_000;
+const OPTIONAL_PROFILE_VERIFICATION_TIMEOUT_MS = 300_000;
 const INTERACTION_TIMEOUT_MS = 15_000;
 const OBSERVATION_WINDOW_MS = 500;
 const READER_PERFORMANCE_MODE = process.argv.includes("--reader-performance");
@@ -1439,6 +1445,22 @@ async function runAdaptiveTtsExactHostMatrix(
   setStage("adaptive exact-host collapsed reader experience");
   const initialReaderExperience =
     await adaptiveReaderExperienceObservation(driver);
+  if (
+    initialReaderExperience?.readerScrollOwnerCount !== 1 ||
+    initialReaderExperience.readerScrollOwnerVisible !== true ||
+    initialReaderExperience.compactVisible !== true ||
+    initialReaderExperience.detailExpanded !== false ||
+    initialReaderExperience.detailVisible !== false ||
+    initialReaderExperience.progressBarCount !== 0 ||
+    initialReaderExperience.leafCount !== 1 ||
+    initialReaderExperience.leafVisible !== true ||
+    initialReaderExperience.leafState !== "checkpoint" ||
+    initialReaderExperience.leafAriaCurrent !== false
+  ) {
+    console.error(
+      `Adaptive reader experience observation: ${JSON.stringify(initialReaderExperience)}`,
+    );
+  }
   assert(
     initialReaderExperience?.readerScrollOwnerCount === 1 &&
       initialReaderExperience.readerScrollOwnerVisible === true &&
@@ -1448,7 +1470,7 @@ async function runAdaptiveTtsExactHostMatrix(
       initialReaderExperience.progressBarCount === 0 &&
       initialReaderExperience.leafCount === 1 &&
       initialReaderExperience.leafVisible === true &&
-      initialReaderExperience.leafState === "preview" &&
+      initialReaderExperience.leafState === "checkpoint" &&
       initialReaderExperience.leafAriaCurrent === false,
     "Native synchronized narration proof failed.",
   );
@@ -2572,6 +2594,27 @@ async function selectAdaptiveTtsProfile(
   exerciseSwitch = false,
 ) {
   const serializedProfileId = JSON.stringify(profileId);
+  if (profileId === CHATTERBOX_BILINGUAL_PROFILE_ID) {
+    await waitForCondition(
+      driver,
+      `const state = document.querySelector(".optional-chatterbox-controls")
+         ?.getAttribute("data-optional-profile-state");
+       return state === "installed" || state === "failed";`,
+      OPTIONAL_PROFILE_VERIFICATION_TIMEOUT_MS,
+    );
+    const optionalState = await driver.execute(
+      `return document.querySelector(".optional-chatterbox-controls")
+         ?.getAttribute("data-optional-profile-state") ?? "missing";`,
+    );
+    console.log(`ADAPTIVE_TTS_OPTIONAL_PROFILE ${JSON.stringify({
+      profileId,
+      state: optionalState,
+    })}`);
+    assert(
+      optionalState === "installed",
+      "Native synchronized narration proof failed.",
+    );
+  }
   await waitForCondition(
     driver,
     `const owner = document.querySelector(".hardware-compatibility");
@@ -2651,20 +2694,37 @@ async function selectAdaptiveTtsProfile(
        if (!(alternate instanceof HTMLInputElement)) {
          return false;
        }
-       alternate.click();
-       return alternate.value;`,
+       const active = document.querySelector(".hardware-compatibility")
+         ?.getAttribute("data-compatibility-profile");
+       const changed = active !== alternate.value;
+       if (changed) {
+         alternate.click();
+       }
+       return { profileId: alternate.value, changed };`,
     );
     assert(
-      typeof switched === "string" && switched.length > 0,
+      typeof switched?.profileId === "string" &&
+        switched.profileId.length > 0,
       "Native synchronized narration proof failed.",
     );
-    await waitForCondition(
-      driver,
-      `return document.querySelector(".hardware-compatibility")
-         ?.getAttribute("data-compatibility-profile") ===
-         ${JSON.stringify(switched)};`,
-    );
+    if (switched.changed === true) {
+      await waitForCondition(
+        driver,
+        `return document.querySelector(".hardware-compatibility")
+           ?.getAttribute("data-compatibility-profile") ===
+           ${JSON.stringify(switched.profileId)};`,
+      );
+    }
   }
+  await waitForCondition(
+    driver,
+    `const profileId = ${serializedProfileId};
+     const input = Array.from(
+       document.querySelectorAll('input[name="hardware-profile"]'),
+     ).find((candidate) => candidate.value === profileId);
+     return input instanceof HTMLInputElement && !input.matches(":disabled");`,
+    OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS,
+  );
   const selected = await driver.execute(
     `const profileId = ${serializedProfileId};
      const input = Array.from(
@@ -2684,6 +2744,9 @@ async function selectAdaptiveTtsProfile(
     `return document.querySelector(".hardware-compatibility")
        ?.getAttribute("data-compatibility-profile") ===
        ${serializedProfileId};`,
+    profileId === CHATTERBOX_BILINGUAL_PROFILE_ID
+      ? OPTIONAL_PROFILE_SELECTION_TIMEOUT_MS
+      : STARTUP_TIMEOUT_MS,
   );
   return true;
 }
@@ -2775,22 +2838,39 @@ async function closeReaderContents(driver) {
 
 async function selectNarrationLanguage(driver, language) {
   const serializedLanguage = JSON.stringify(language);
-  const selected = await driver.execute(
-    `const language = ${serializedLanguage};
+  await waitForCondition(
+    driver,
+    `const owner = document.querySelector(".hardware-compatibility");
      const input = Array.from(
        document.querySelectorAll('input[name="narration-language"]'),
-     ).find((candidate) => candidate.value === language);
-     if (!(input instanceof HTMLInputElement)) {
+     ).find((candidate) => candidate.value === ${serializedLanguage});
+     return owner?.getAttribute("data-compatibility-status") !== "checking" &&
+       input instanceof HTMLInputElement &&
+       input.disabled === false;`,
+  );
+  const selected = await driver.execute(
+    `const input = document.querySelector(
+       'input[name="narration-language"][value="${language}"]',
+     );
+     const setter = Object.getOwnPropertyDescriptor(
+       HTMLInputElement.prototype,
+       "checked",
+     )?.set;
+     if (!(input instanceof HTMLInputElement) || setter === undefined) {
        return false;
      }
-     input.click();
+     setter.call(input, true);
+     input.dispatchEvent(new MouseEvent("click", { bubbles: true }));
      return true;`,
   );
   assert(selected === true, "Native narration language proof failed.");
   await waitForCondition(
     driver,
-    `return document.querySelector(".hardware-compatibility")
-       ?.getAttribute("data-narration-language") === ${serializedLanguage};`,
+    `const owner = document.querySelector(".hardware-compatibility");
+     return owner?.getAttribute("data-narration-language") ===
+         ${serializedLanguage} &&
+       owner?.getAttribute("data-compatibility-status") !== "checking";`,
+    INTERACTION_TIMEOUT_MS,
   );
 }
 

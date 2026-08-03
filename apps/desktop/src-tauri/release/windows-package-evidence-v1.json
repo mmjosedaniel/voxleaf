@@ -7,7 +7,7 @@
   },
   "authority": {
     "releaseConfigSha256": "7ed038dfa601718696374312cef9ffddc900b35dde13443548900e0b21c9d635",
-    "piperRuntimeManifestSha256": "651ac03b435d40f411fc13308e792c212576cc0acae745d970080b71fcd26dda"
+    "piperRuntimeManifestSha256": "45aad7d39d04066c8875040c1389dc9047d0c56d94a586ed814dfb432c5620c8"
   },
   "package": {
     "target": "nsis",
@@ -16,13 +16,13 @@
     "updaterIncluded": false,
     "installer": {
       "fileName": "VoxLeaf_0.1.0_x64-setup.exe",
-      "sizeBytes": 181654713,
-      "sha256": "9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c"
+      "sizeBytes": 181658228,
+      "sha256": "f167dacdb4221cdd989ed5ed92d070b5fd5d9ecab89a9af6e54feec5be3a6b12"
     },
     "applicationBinary": {
       "fileName": "voxleaf-desktop.exe",
-      "sizeBytes": 12190720,
-      "sha256": "be44c22f10f0c31ef463e6e2b2a67177cd5cd0de1900561922fb7b5e67b27aee"
+      "sizeBytes": 12189696,
+      "sha256": "84747bb08f1616ff0f6a6755b6f099a221a909c978840ada95974823b6a101b0"
     }
   },
   "payload": {
@@ -43,13 +43,13 @@
     "credentialStoredInRepository": false
   },
   "lifecycle": {
-    "status": "local-install-first-start-repair-uninstall-passed",
+    "status": "not-run",
     "cleanHostStillRequired": true,
     "explicitApplicationDataRemovalStructurallyVerified": true,
     "silentUninstallPreservesApplicationData": true
   },
   "observations": {
-    "antivirus": "windows-defender-no-threats",
+    "antivirus": "not-run",
     "smartScreen": "not-observed",
     "universalReputationClaimed": false
   },

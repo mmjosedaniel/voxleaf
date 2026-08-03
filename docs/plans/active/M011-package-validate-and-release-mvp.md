@@ -66,11 +66,12 @@ identity-first recovery, and six boundary-deferred playback rates.
 
 The repository now has deliberate application version `0.1.0` and a separate
 release-only Tauri configuration that builds a per-user Windows x64 NSIS
-installer while leaving ordinary development builds unbundled. The measured
-unsigned local installer contains the deterministic, manifest-verified Piper
-core and both voices, and its install, first-start, same-version repair, and
-uninstall lifecycle passed on the development host. It is not signed, is not a
-general-public release, and is not clean-host acceptance evidence.
+installer while leaving ordinary development builds unbundled. The current
+measured unsigned local installer contains the deterministic, manifest-verified
+Piper core and both voices. Its installed Spanish/English portfolio matrix, two
+install/first-start/same-version-repair/uninstall cycles, and exact-artifact
+Defender scan pass on the development host. It is not signed, is not a general-
+public release, and is not clean-host acceptance evidence.
 
 Milestones 2 and 3 now provide the release dependency and Piper payload
 boundaries: a 15-entry private core lock, a separate 79-package Chatterbox
@@ -84,8 +85,11 @@ six exact model-data files come from the official revision-pinned Hugging Face
 repository, while the reviewed runtime is independently locked, reproducibly
 split, verified, and published as `chatterbox-runtime-v2`. Milestone 5
 integrates only the acquisition authority into the core installer; Chatterbox
-runtime and model bytes remain excluded. Clean-host acquisition, enabled
-optional acquisition, and public signing remain future work.
+runtime and model bytes remain excluded. The validation-only package has now
+completed the explicit download and verified installation on the compatible
+development host. Its exact installed Spanish Chatterbox supervisor and
+WebView2 narration arms now pass, but English narration, restart, removal/
+reinstall, independent clean-host acquisition, and public signing remain open.
 
 The current TTS runtimes are ignored developer assets selected through
 environment variables. Development firewall rules target exact candidate
@@ -610,7 +614,27 @@ Actual result on 2026-08-01:
 
 ### Milestone 6: Validate the clean-host portfolio and release matrix
 
-**Status:** Not started.
+**Status:** In progress. The exact-package rehearsal and deterministic release
+matrix pass on the development host. An independent normal-user Windows host is
+now available and its first run exposed the console-window defect fixed below;
+the corrected core rerun is pending. A clean compatible-GPU host remains
+unavailable. The separately identified validation installer completed explicit
+Chatterbox download and verified installation on the maintainer's compatible
+computer. Direct content-safe runtime and framed-service probes now reach model
+load, warmup, and synthetic synthesis. The installed supervisor and exact
+WebView2 Spanish matrix now also pass after the child-process path correction
+described below. English narration, application restart, removal/reinstall,
+Piper-after-removal, independent clean-host evidence, and public signing remain
+open; optional clean-host readiness and public support are not inferred from
+the development-host Spanish result.
+
+The maintainer has no second compatible-GPU computer. ADR-0045 therefore
+authorizes a separately identified, unsigned, local-validation-only installer
+for the current compatible host. It must use a native compile-time feature and
+the exact checked-in validation overlay, preserve every URL/hash/hardware/disk
+gate, and keep the ordinary installer manifest `withheld`. Its results may fix
+the acquisition flow and record development-host measurements, but they do not
+become clean-host or public-release evidence.
 
 1. Install the exact candidate on a clean normal-user Windows host and prove
    no hidden developer prerequisite or external runtime mutation is needed.
@@ -636,6 +660,211 @@ Actual result on 2026-08-01:
    redownloading unnecessarily.
 7. Run install/repair/uninstall twice to expose stale state, locked-file, and
    cleanup failures. Commit content-safe results separately from authority.
+8. Build the ADR-0045 validation-only package with a distinct Windows identity,
+   prove that it alone exposes explicit Chatterbox consent, and execute the real
+   installed lifecycle on the current compatible host. Keep its artifact local
+   and unsigned, and preserve the independent clean-host blocker.
+
+Actual result on 2026-08-01:
+
+- Added a closed `--executable=<absolute installed executable>` input to the
+  packaged WebView2 harness so release acceptance targets the installed binary
+  rather than silently rebuilding or exercising the repository executable.
+- The first installed run exposed four package-only defects. Native manifest
+  hashing allocated a 1-MiB buffer on the stack and overflowed the application
+  thread; the packaged interpreter wrote `.pyc` files into its verified tree;
+  Windows returned the interpreter through a canonical `\\?\` path that did not
+  compare equal to its ordinary runtime root; and the core builder could reuse
+  an already installed stale local `voxleaf-tts` package. Hashing now uses heap
+  storage, the supervisor disables bytecode writes, the Piper boundary safely
+  normalizes only Windows verbatim prefixes for containment, and the builder
+  explicitly reinstalls the current local package. Focused regressions protect
+  all four behaviors.
+- Regeneration after those fixes produced a 2,009-file Piper core measuring
+  `281,213,569` installed bytes and `191,240,146` compressed bytes, with archive
+  SHA-256
+  `17fe3456bd7fca519b3e3b0c3b0bbf2579c733e13b660d740c5a56a0781f0843`.
+  A later clean-host console-window correction produced an unsigned predecessor
+  at `181,654,077` bytes with SHA-256
+  `d207fec2cc29de31f86eab67dc4b3cd17c27ef6175cecf4b2ef3d4292b5ed895`.
+  Correcting the stale Settings version label produced the current exact
+  unsigned installer at `181,658,228` bytes with SHA-256
+  `f167dacdb4221cdd989ed5ed92d070b5fd5d9ecab89a9af6e54feec5be3a6b12`.
+- The exact installed Piper service completed first and repeated synthesis in
+  both languages with zero generated `.pyc` files. The complete installed
+  WebView2 portfolio matrix then passed for davefx/Spanish and joe/English:
+  Quick start reached audible playback in `5,152` ms and `4,718` ms,
+  respectively; warm prepared RTF was `0.12` and `0.11`; neither arm observed
+  an underrun; all six `1.00x` through `0.75x` rates, Quick/Prepared modes,
+  highlighting, leaf replacement, pause/resume, seek, chapter replacement,
+  bounded cleanup, reduced motion, and forced colors passed. The arms recorded
+  zero external requests, zero generated-audio files, zero dedicated-GPU use,
+  and peak process-tree working sets of `1,120,894,976` and `1,142,972,416`
+  bytes. Cancellation completed in `369` ms and `1,421` ms.
+- Two consecutive exact installer cycles passed current-user installation,
+  first start, same-version repair, uninstall, install-root removal, and
+  preservation of an unrelated synthetic file. Microsoft Defender was enabled
+  and reported zero detections for the exact installer; SmartScreen was not
+  observed. The committed package evidence remains `unsigned-local` and keeps
+  `cleanHostStillRequired: true`.
+- The first independent Windows-host attempt installed and opened a public-
+  domain book, but exposed a blank console whenever the packaged Piper child
+  started. The GUI application was correctly built with the Windows subsystem;
+  its private console-subsystem `python.exe` child lacked `CREATE_NO_WINDOW`.
+  The supervisor now applies that flag to every supervised child while
+  preserving piped protocol streams and Job Object cancellation. A Windows-only
+  regression freezes the exact flag. The rebuilt installed Spanish Piper matrix
+  passes with Quick start in `4,200` ms, warm prepared RTF `0.09`, zero
+  underruns, zero external requests, zero generated-audio files, and cleanup in
+  `694` ms. Its install/repair/uninstall lifecycle and exact Defender scan also
+  pass locally. Visual absence of the console still requires confirmation by
+  rerunning this rebuilt installer on the independent host.
+- The independent-host Settings review also exposed a stale hard-coded
+  `0.0.0 development build` label even though the package, Tauri configuration,
+  and native crate are versioned `0.1.0`. Settings now reads the native package
+  version through Tauri, bounds the displayed value, fails closed to a generic
+  unavailable label, and has a focused regression proving `0.1.0` replaces the
+  stale placeholder. The rebuilt installer and static package gate pass; this
+  exact new hash still requires an independent-host UI recheck.
+- `package:piper-core:check`, `package:windows:check`, both optional Chatterbox
+  authority checks, the exact release audit, component-inventory check, and 12
+  native optional-package hostile/integrity/cancellation/removal tests pass
+  outside the sandbox. The audit retains the four already disclosed optional-
+  graph blind spots instead of representing them as clean.
+- Complete outside-sandbox repository validation passes: `check:portable` and
+  `check` cover formatting, linting, generated contracts, type checks, 20 shared
+  files/209 tests, 34 EPUB files/580 tests, 53 desktop files/518 tests, 16
+  native-runner Node tests, 61 Rust tests, 384 Python tests, portable artifacts,
+  the Tauri release executable, and Python source/wheel builds. The six Chromium
+  reader/accessibility/reflow/synchronization smokes also pass. Existing non-
+  failing Custom Highlight, JavaScript chunk-size, and pytest cache-write
+  warnings remain. The final content-safe scan found no pending secret/private-
+  path pattern, tracked prohibited book/audio/model artifact, or generated audio
+  in application-owned roots. The canonical system diagram was reviewed and
+  remains accurate because these fixes preserve the frozen runtime topology.
+- This machine contains prior VoxLeaf development/application state and cannot
+  prove absence of hidden prerequisites, first-ever user-data behavior, cross-
+  version replacement, or explicit application-data removal. Windows Sandbox/
+  Hyper-V are unavailable. The separate normal-user Windows arm is now underway,
+  but its 4-GB-class GPU is below the Chatterbox gate. No compatible clean-GPU
+  host is available, so no real Chatterbox download, bilingual offline
+  narration, restart/removal, or Piper-after-removal result is admitted. The
+  optional manifest therefore remains withheld with
+  `clean-host-validation-pending`.
+- Because that 4-GB host cannot run Chatterbox and no other compatible computer
+  is available, ADR-0045 freezes a non-public validation route rather than
+  weakening the ordinary package. The implementation adds a closed Cargo
+  feature, exact additive overlay, separate Windows product/identifier/data
+  root, separate NSIS uninstall boundary, static package checker, and focused
+  default/feature-native tests. The canonical manifest remains `withheld`.
+- `pnpm.cmd package:windows:chatterbox-validation` passed outside the sandbox,
+  rebuilt the exact Piper core, compiled only the validation feature, produced
+  `VoxLeaf-Chatterbox-Validation_0.1.0_x64-setup.exe` at `181,658,209` bytes,
+  wrote SHA-256
+  `91d48f2cf586a68048bb6520cde735ec271c580a4d3af58707c4ca19e945eb39`,
+  confirmed it is unsigned, and completed a Windows Defender scan with no
+  threats. The installer includes neither Chatterbox runtime nor weights. The
+  real consent/download/activation/offline narration/restart/removal journey is
+  now ready for maintainer execution on the current compatible computer; no
+  result from that journey is recorded yet.
+- The first installed UI inspection found that the native validation manifest
+  correctly reported `absent`, but the renderer displayed only “not installed.”
+  The confirmation and Download controls were reachable only from `confirming`,
+  while no absent-state action invoked the already implemented native
+  `select_optional_chatterbox` boundary. A focused regression reproduced the
+  missing button. The minimal fix adds **Review Chatterbox download** for
+  `absent`; it performs native hardware admission and reaches the existing
+  disclosure without starting a network transfer. The corrected installer is
+  `181,652,666` bytes with SHA-256
+  `6b4d59a0f8a8dd53f5177efe034a3851cd14150bd3a4a67568a6811a00f22e26`;
+  it remains unsigned and its exact Windows Defender scan reports no threats.
+  The maintainer must reinstall this corrected artifact before continuing the
+  real lifecycle.
+- The next installed attempt reached explicit consent, but displayed neither
+  transfer progress nor a progress bar and then terminated. The Windows
+  Application log recorded `APPCRASH` with exception `c00000fd`, proving a
+  native stack overflow rather than a model, GPU, or renderer failure. The
+  optional controller still allocated five 1-MiB copy buffers on worker-thread
+  stacks during hashing, download, extraction, and runtime reassembly even
+  though the packaged Piper path had already moved its equivalent buffer to the
+  heap. One shared heap-backed buffer factory now closes every optional-package
+  copy path. A 256-KiB-stack regression proves hashing no longer overflows.
+- The renderer also waited for the long-running native download command to
+  return before it could observe `downloading`, so its existing polling loop
+  never began during a real transfer. The explicit Download action now starts
+  polling immediately, shows a bounded accessible `<progress>` element from the
+  native byte counters, preserves verifying/cancel states, and does not expose
+  URLs, paths, or payload content. The corrected local validation installer is
+  `181,637,194` bytes with SHA-256
+  `a22219872d96684725011acb90bfa6185bd8da80775182f9dec39224db789054`;
+  it remains unsigned and Microsoft Defender reports no threats. The real
+  download/install/activation/offline/removal journey still requires maintainer
+  rerun and is not inferred from these focused fixes.
+- Final implementation validation ran outside the sandbox. The normal and
+  feature-enabled Rust suites each pass 63 tests; feature-enabled Clippy passes
+  with warnings denied; the static validation-package and ordinary-package
+  closure checks pass; and `check:portable` passes formatting, TypeScript/
+  Python lint and types, 20 shared files/209 tests, 34 EPUB files/580 tests, 53
+  desktop files/521 tests, 17 Node tests, 384 Python tests, and portable builds.
+- The maintainer then completed the explicit Chatterbox download and verified
+  installation on the compatible development host. The first narration attempt
+  did not load Chatterbox: process observation showed that the supervised child
+  still used Piper, while the UI retained a prior `recovery-available` episode.
+  Installation and activation are intentionally separate, but the optional
+  activation path did not clear recovery as the ordinary profile selector does.
+  A focused failing regression reproduced the stale episode. Successful
+  Chatterbox activation now resets it exactly once; rejected activation leaves
+  recovery intact. Installed-state copy now explicitly instructs the user to
+  activate the profile before narration. Nine focused renderer tests, the
+  desktop typecheck, and the complete 53-file/523-test desktop plus 17-test
+  native-runner suite pass outside the sandbox. The rebuilt unsigned validation
+  installer is `181,628,621` bytes with SHA-256
+  `c9de20363a329dd0f7e0bc8d66f8e795246f8c180dca5e32718d767cfc73971b`;
+  Microsoft Defender reports no threats. This fixes activation handoff only;
+  bilingual offline narration, restart, removal, and Piper-after-removal remain
+  pending validation and are not inferred from installation.
+  The existing Custom Highlight, bundle-size, and pytest cache-write warnings
+  remain non-failing. The system diagram now distinguishes the validation
+  package without changing the runtime trust boundary.
+- The following installed UI attempts retained the Chatterbox selection but
+  still returned the generic contained-recovery message before audible output.
+  Direct framed service execution passed when given conventional Windows paths
+  and failed during model load with `engine-failure` when given the canonical
+  verbatim `\\?\` paths used by the native supervisor. Rust canonicalization
+  was therefore correct for trust and containment but incompatible with the
+  embedded Python/model-library child boundary. The fix retains canonical paths
+  for native verification and strips only a Windows verbatim prefix when
+  constructing the child command, including correct `\\?\UNC\` to `\\server\`
+  conversion. A focused Windows regression passes, and the exact installed
+  supervisor completes load, warmup, synthetic synthesis, and shutdown. Two
+  unchanged cold runs took `29.61` and `82.34` seconds, demonstrating observed
+  cold-run variability rather than a fixed startup duration.
+- Native review found that snapshot, selection, availability, configuration,
+  and service-start paths could each repeat complete verification of the same
+  approximately 8.23-GB installed tree. The correction permits removal only of
+  allowlisted interpreter-generated cache entries that are outside manifest
+  authority, then performs complete hash verification of every authority file.
+  A successful verification creates an exact-package receipt held only in the
+  current native process. The receipt is never persisted, is invalidated by
+  install/repair/removal, and is not reused when the authority key or observed
+  path/size/modification-time stamp differs. It cannot outlive application restart; the first access in every new
+  application process therefore performs the complete verification again. This
+  avoids repeated content hashing under the MVP assumption that no hostile
+  same-user process mutates the application-owned package during that run. The
+  receipt does not replace the initial full hash authority and is not a
+  boundary against a compromised current-user account.
+- The final unsigned validation installer is `181,694,782` bytes with
+  SHA-256
+  `289c93e63d07e0001b667d964396ea5a611a5bf38f411f9158e92e829d35f148`;
+  Microsoft Defender reports no threats for that exact file. Its exact installed
+  WebView2 Spanish matrix passes: Quick command-to-audible is `45.990` seconds;
+  Prepared startup is `82.096` seconds with `66.48` seconds retained; warm
+  Prepared RTF is `1.23`; peak dedicated VRAM is `3,808` MiB; peak process-tree
+  working set is `4,865,605,632` bytes; cancellation is `469` ms; cleanup is
+  `756` ms; and the arm records zero generated files and zero external requests.
+  This closes the Spanish development-host arm only. English narration,
+  application restart, removal/reinstall, Piper-after-removal, independent
+  clean-host evidence, and public signing remain pending.
 
 ### Milestone 7: Record the MVP release decision and close validation
 
@@ -1036,6 +1265,110 @@ and never edit prior benchmark authority to make a release pass.
   its Defender scan and exact-artifact lifecycle both pass. The final
   PowerShell parse, three focused Node tests, JSON/JavaScript format check, and
   package authority check also pass outside the sandbox.
+- **2026-08-01:** Began Milestone 6 from the merged Milestone 5 release. Extended
+  the native harness to accept one absolute installed executable and confirmed
+  its model-free packaged WebView2/service lifecycle before exercising a real
+  profile.
+- **2026-08-01:** Installed-package validation exposed and fixed a native hash
+  stack overflow, Python bytecode mutation of the verified package, Windows
+  verbatim-path containment mismatch, and stale local-package reuse during core
+  regeneration. The regenerated core and Windows installer identities are
+  recorded in the Milestone 6 actual result and committed release evidence.
+- **2026-08-01:** The installed Spanish and English Piper portfolio matrices
+  passed outside the sandbox with all six rates, zero external requests, zero
+  generated-audio files, bounded cleanup, and content-safe performance/resource
+  measurements. Two consecutive installer/repair/uninstall cycles and the exact
+  Defender scan also passed.
+- **2026-08-01:** Deterministic Piper/core/Windows/optional authority, release
+  audit, component inventory, and hostile optional-package gates pass. The
+  development host is not clean; an independent normal-user Windows core arm is
+  now underway, but no compatible clean-GPU host is available. Milestone 6
+  therefore remains in progress and the Chatterbox manifest remains withheld;
+  no local result is relabeled as clean-host acceptance.
+- **2026-08-01:** Complete portable and Windows repository gates plus all six
+  Chromium smokes passed outside the sandbox. A final content-safe privacy and
+  tracked-artifact scan reported zero findings. The system diagram was reviewed
+  and needs no topology change for the package-integrity fixes.
+- **2026-08-01:** The first independent Windows-host run installed the unsigned
+  candidate and opened a public-domain EPUB, then exposed a blank console for
+  packaged Piper. Root cause was the missing Windows `CREATE_NO_WINDOW` child-
+  creation flag. The minimal native fix, seven focused supervisor tests,
+  rebuilt-package lifecycle, Defender scan, and complete installed Spanish
+  Piper matrix pass outside the sandbox. Independent visual confirmation remains
+  pending against installer SHA-256
+  `d207fec2cc29de31f86eab67dc4b3cd17c27ef6175cecf4b2ef3d4292b5ed895`.
+- **2026-08-02:** The first real validation-build Download attempt exposed two
+  independent defects: the UI did not poll while the native command remained
+  active, and native optional-package I/O retained five 1-MiB stack buffers.
+  Windows recorded `c00000fd` for the resulting process termination. Progress
+  is now visible and byte-bounded while the command runs; all optional copy
+  paths use heap storage. Focused UI/native tests, the full 521-test desktop
+  suite, the 63-test feature-enabled Rust suite, types, format, and feature
+  Clippy pass outside the sandbox. The rebuilt unsigned validation installer is
+  `181,637,194` bytes, SHA-256
+  `a22219872d96684725011acb90bfa6185bd8da80775182f9dec39224db789054`,
+  and its exact Defender scan reports no threats. Maintainer lifecycle rerun is
+  still required.
+- **2026-08-02:** The verified optional package then failed before synthesis for
+  two independent packaging reasons. The published runtime omitted the two
+  generated VoxLeaf protocol modules imported by the service, and the legacy
+  profile root produced a 261-character Transformers path that existed through
+  the Windows verbatim API but was invisible to the conventional file API used
+  by embedded Python. Runtime/model hashes, CUDA availability, BF16 support,
+  and the selected GPU capability passed, so this is not a model or hardware
+  rejection. ADR-0046 retains the immutable published v2 parts, freezes a
+  37,101-byte repository-owned two-file correction, migrates only the exact
+  legacy manifest to `app-local-data/tts/cb/2`, and re-verifies the complete
+  corrected tree. The failed probe had also written six Librosa/Numba cache
+  files into the verified package; the migration removes only that known cache
+  class and all future Numba cache writes go to the removable
+  `app-local-data/tts/cb/cache` root. The longest measured final path is 218 characters. Focused
+  Python and feature-enabled Rust regressions pass outside the sandbox. The
+  rebuilt unsigned validation installer is `181,673,215` bytes with SHA-256
+  `0bcd54de8881f855ea8a707c91a8b73554425699b7223ce9c33144149268c449`,
+  and Defender reports no threats. Maintainer narration/lifecycle rerun remains
+  required before this Milestone 6 arm can close.
+- **2026-08-02:** A later installed-product rerun still returned contained
+  recovery after explicit Chatterbox activation. The exact installed runtime
+  separately passed content-safe Python, CUDA/BF16, model load/warmup, protocol
+  handshake, synthetic synthesis, and shutdown probes, so the result does not
+  reject Chatterbox or the host. Investigation found redundant complete-tree
+  verification at several product coordination boundaries. The corrective
+  design repairs only allowlisted generated bytecode/compilation cache entries,
+  preserves complete SHA-256 verification for every authority-listed file, and
+  reuses that successful result only through an in-memory process-lifetime
+  receipt. No receipt is written to disk, and application restart requires a
+  new complete verification. The rebuilt installed UI and lifecycle matrix have
+  not yet run, so this is implementation/diagnostic evidence rather than a pass.
+- **2026-08-02:** The remaining installed failure was a child-process path
+  representation defect. Native verification correctly retained canonical
+  Windows verbatim paths, but embedded Python/model loading failed with
+  `engine-failure` when those `\\?\` paths crossed the child boundary; the same
+  framed service passed with conventional paths. The supervisor now removes
+  only the verbatim prefix for child program/current-directory/environment
+  values, including UNC conversion, without weakening native containment. The
+  focused Windows regression and exact installed supervisor lifecycle pass; the
+  final unsigned `181,694,782`-byte installer (SHA-256
+  `289c93e63d07e0001b667d964396ea5a611a5bf38f411f9158e92e829d35f148`)
+  passes Defender, and its exact Spanish WebView2 arm passes with `45.990`-
+  second Quick command-to-audible, `1.23` warm Prepared RTF, `3,808`-MiB peak
+  VRAM, `4,865,605,632`-byte peak process-tree working set, `469`-ms
+  cancellation, `756`-ms cleanup, and zero generated files/external requests.
+  Milestone 6 stays in progress for English, restart, removal/reinstall,
+  Piper-after-removal, clean-host, and public-signing gates.
+- **2026-08-02:** Final review found that Settings refresh, explicit activation,
+  and service discovery could overlap package cache repair and verification.
+  Native package preparation/verification/promotion/removal is now serialized;
+  renderer refreshes are deduplicated and stale asynchronous completions cannot
+  overwrite newer profile state. Cache cleanup also rejects symlinks and Windows
+  reparse points before deleting only allowlisted `.nbi`/`.nbc` files. The final
+  installed Spanish matrix passes after a Piper-to-Chatterbox transition without
+  a second activation or recovery state. This closes the reported activation/
+  Play defect but does not close the remaining Milestone 6 arms. The native
+  removal boundary also rejects an active download/verifier, and every recursive
+  package cleanup rejects out-of-root junction/reparse targets. The package lock
+  remains process-local; cross-process locking or single-instance enforcement is
+  retained as release-hardening work before public optional-profile readiness.
 
 ## Discoveries and decisions
 
@@ -1068,6 +1401,38 @@ and never edit prior benchmark authority to make a release pass.
   removal of test/development-only payloads, and an explicit
   `Lib\\site-packages` entry in `python312._pth` make the private runtime
   executable without system Python while preserving the frozen graph.
+- **Decision:** Published runtime-v2 release parts remain immutable. An exact
+  legacy runtime may receive only the native-embedded correction frozen in the
+  acquisition manifest, and only after complete legacy verification. The
+  corrected package is fully re-verified at the shorter `cb/2` root; no unknown
+  package is migrated or repaired, and no multi-gigabyte redownload is required
+  for an already verified installation.
+- **Decision:** Python bytecode suppression is insufficient for libraries that
+  own separate compilation caches. Packaged Chatterbox redirects Numba cache
+  writes outside the verified runtime into a profile-owned removable cache that
+  removal deletes; migration cleans only the exact known `.nbi`/`.nbc` cache
+  class before complete legacy verification.
+- **Decision:** Interpreter-generated bytecode and compilation caches are
+  derived transient data, never installed-package authority. Repair may remove
+  only the frozen cache file classes under exact application-owned cache roots;
+  it may not modify or excuse any manifest-listed runtime/model file, and the
+  complete authority tree must still pass hashes before use.
+- **Decision:** A successful corrected-package verification may be represented
+  by one native in-memory receipt keyed to the exact package/manifest identity.
+  The receipt is scoped to one application process, is never serialized, and is
+  invalidated by installation, repair, or removal. An authority-key or observed
+  tree-metadata mismatch prevents its reuse. It prevents repeated
+  multi-gigabyte hashing during snapshot/activation/start in one run; it does
+  not authorize trust across an application restart and does not claim
+  protection from deliberate metadata-preserving tampering by another process
+  running as the current Windows user.
+- **Decision:** Canonical/verbatim Windows paths remain mandatory inside native
+  trust and containment checks. Only when constructing the already-approved
+  child process may the supervisor convert `\\?\C:\...` to `C:\...` and
+  `\\?\UNC\server\share\...` to `\\server\share\...`, because the embedded
+  Python/model stack does not reliably accept verbatim paths. No renderer input,
+  path discovery, package authority, or containment comparison uses the
+  converted representation.
 - **Discovery:** Download, reassembled archive, extracted runtime, and model
   files cannot all coexist with the source parts under the 15-GB staging
   ceiling. Removing the verified runtime parts immediately after successful
@@ -1161,6 +1526,21 @@ and never edit prior benchmark authority to make a release pass.
   SHA-256 values, compressed/install/staging sizes, and free-space requirements
   remain unavailable until Milestones 2-4 create the minimal production
   graphs. Recording that absence avoids inventing release evidence.
+- **Discovery:** A repository build can pass while an installed immutable
+  Python payload fails because Windows canonicalizes executable paths and the
+  interpreter normally writes bytecode beside imported modules. Installed-
+  artifact verification must therefore exercise the actual executable, disable
+  runtime mutation, and retain exact tree verification across repeat runs.
+- **Decision:** Current-host install and portfolio rehearsals are necessary
+  package evidence but never substitute for a fresh normal-user OS state. Prior
+  application data, developer tooling, caches, drivers, and WebView state make
+  this host unsuitable for the clean-host claim even when every measured arm
+  passes.
+- **Discovery:** Redirecting a console-subsystem child's standard streams does
+  not suppress its window when a Windows GUI parent has no console. Every
+  packaged TTS child must additionally use `CREATE_NO_WINDOW`; switching to
+  `pythonw.exe` is unnecessary and would complicate the frozen standard-stream
+  protocol.
 
 ## Final validation
 
@@ -1171,8 +1551,8 @@ M011 is complete only when:
 - every optional Chatterbox runtime artifact and each of the six official
   Hugging Face model-data files has the same evidence plus exact revision,
   consent, bounded download/cache, per-file verification, atomic installation,
-  safe loading, offline-use, and removal lifecycle, or the download action and
-  availability claim are absent;
+  safe loading, process-receipt invalidation, offline-use, and removal lifecycle,
+  or the download action and availability claim are absent;
 - the package installs and uninstalls safely on a clean normal-user Windows
   host without developer tooling or manual firewall configuration;
 - normal English/Spanish reading and narration remain local, bounded,

@@ -305,6 +305,25 @@ def load_acquisition_manifest(root: Path | None = None) -> dict[str, object]:
         }:
             raise ReleaseChatterboxError("chatterbox-acquisition-manifest-invalid")
     runtime_artifact = manifest.get("runtimeArtifact")
+    runtime_correction = manifest.get("runtimeCorrection")
+    if runtime_correction != {
+        "acceptedRuntimeManifestSha256": (
+            "cb5055580a28a0c97e50535a8317ea506081230b70e0099d8fe0194591e1c635"
+        ),
+        "files": [
+            {
+                "path": "runtime/Lib/site-packages/voxleaf_tts/generated/__init__.py",
+                "sha256": "17a64d50b529456f687df12500bd11c344b421ca33d87e3aedc21c1cdad14033",
+                "sizeBytes": 62,
+            },
+            {
+                "path": ("runtime/Lib/site-packages/voxleaf_tts/generated/protocol_schemas.py"),
+                "sha256": "6a00feebccaf7584f8304bd796661790c90efaa30b641b96d20fcd858a5f8650",
+                "sizeBytes": 37_039,
+            },
+        ],
+    }:
+        raise ReleaseChatterboxError("chatterbox-acquisition-manifest-invalid")
     withholding_reason = manifest.get("withholdingReason")
     if availability == "withheld":
         initial_withholding = (
@@ -316,7 +335,7 @@ def load_acquisition_manifest(root: Path | None = None) -> dict[str, object]:
             runtime_artifact
             == {
                 "archiveSha256": "af6b4f46f6b21df02d30cdfe992f77f9bda68111edd9042cd32a619c6376aee6",
-                "installedBytes": 5_019_513_881,
+                "installedBytes": 5_019_551_385,
                 "parts": [
                     {
                         "downloadBytes": 1_900_000_000,
@@ -344,7 +363,7 @@ def load_acquisition_manifest(root: Path | None = None) -> dict[str, object]:
                     },
                 ],
                 "runtimeManifestSha256": (
-                    "cb5055580a28a0c97e50535a8317ea506081230b70e0099d8fe0194591e1c635"
+                    "1bca3c4e5706771877ad837398e7930206c8f74eb03e9804a093a4c78f0b6262"
                 ),
             }
             and manifest.get("measurements") is None

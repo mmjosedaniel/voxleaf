@@ -11,6 +11,7 @@ from voxleaf_tts.release_core import (
     PackageMeasurement,
     ReleaseCoreError,
     _excluded_site_file,
+    _sync_core_environment,
     atomic_stage,
     build_runtime_manifest,
     load_source_manifest,
@@ -19,6 +20,22 @@ from voxleaf_tts.release_core import (
     safe_relative_path,
     verify_package_tree,
 )
+
+
+def test_core_sync_reinstalls_the_current_local_voxleaf_package(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed: list[str] = []
+
+    def capture(arguments: list[str], **_kwargs: object) -> None:
+        observed.extend(arguments)
+
+    monkeypatch.setattr("voxleaf_tts.release_core.subprocess.run", capture)
+
+    _sync_core_environment(tmp_path)
+
+    assert observed[-2:] == ["--reinstall-package", "voxleaf-tts"]
 
 
 def _sha256(value: bytes) -> str:

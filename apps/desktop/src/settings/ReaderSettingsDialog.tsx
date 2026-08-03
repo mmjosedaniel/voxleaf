@@ -1,7 +1,9 @@
+import { getVersion } from "@tauri-apps/api/app";
 import {
   useEffect,
   useId,
   useRef,
+  useState,
   useSyncExternalStore,
   type KeyboardEvent,
   type ReactElement,
@@ -21,7 +23,10 @@ import { OptionalChatterboxControls } from "../tts/OptionalChatterboxControls";
 import type { HardwareProfileCompatibilityCoordinator } from "../tts/hardware-profile-compatibility";
 import type { NarrationLanguageV1 } from "../tts/narration-language";
 import { NarrationStartPreferenceControls } from "../tts/NarrationStartPreferenceControls";
-import { OptionalChatterboxClient } from "../tts/optional-chatterbox-client";
+import {
+  CHATTERBOX_OPTIONAL_PROFILE_ID,
+  OptionalChatterboxClient,
+} from "../tts/optional-chatterbox-client";
 import type { ProductNarrationCoordinator } from "../tts/product-narration-coordinator";
 
 const FOCUSABLE_SELECTOR = [
@@ -71,6 +76,7 @@ export interface ReaderSettingsDialogProps {
   readonly optionalChatterbox: OptionalChatterboxClient;
   readonly onActivateChatterbox: () => Promise<boolean>;
   readonly onRemoveChatterbox: () => Promise<void>;
+  readonly loadApplicationVersion?: () => Promise<string>;
 }
 
 function CoordinatorNarrationStartSettings({
@@ -126,6 +132,36 @@ function focusableElements(root: HTMLElement): HTMLElement[] {
   );
 }
 
+function OptionalChatterboxSettings({
+  client,
+  hardwareCompatibility,
+  onActivate,
+  onRemove,
+}: Readonly<{
+  client: OptionalChatterboxClient;
+  hardwareCompatibility: HardwareProfileCompatibilityCoordinator;
+  onActivate: () => Promise<boolean>;
+  onRemove: () => Promise<void>;
+}>): ReactElement {
+  const compatibility = useSyncExternalStore(
+    (listener) => hardwareCompatibility.subscribe(listener),
+    () => hardwareCompatibility.observe(),
+    () => hardwareCompatibility.observe(),
+  );
+  return (
+    <OptionalChatterboxControls
+      client={client}
+      active={compatibility.activeProfileId === CHATTERBOX_OPTIONAL_PROFILE_ID}
+      onActivate={onActivate}
+      onRecheck={async () => {
+        await hardwareCompatibility.check("explicit-recheck");
+        return onActivate();
+      }}
+      onRemove={onRemove}
+    />
+  );
+}
+
 export function ReaderSettingsDialog({
   open,
   onClose,
@@ -143,17 +179,43 @@ export function ReaderSettingsDialog({
   optionalChatterbox,
   onActivateChatterbox,
   onRemoveChatterbox,
+  loadApplicationVersion = getVersion,
 }: ReaderSettingsDialogProps): ReactElement | null {
   const titleId = useId();
   const descriptionId = useId();
   const dialogRef = useRef<HTMLElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [applicationVersion, setApplicationVersion] = useState<
+    string | undefined
+  >();
 
   useEffect(() => {
     if (open) {
       closeButtonRef.current?.focus({ preventScroll: true });
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    let current = true;
+    void loadApplicationVersion()
+      .then((version) => {
+        const normalized = version.trim();
+        if (current && normalized.length > 0 && normalized.length <= 64) {
+          setApplicationVersion(normalized);
+        }
+      })
+      .catch(() => {
+        if (current) {
+          setApplicationVersion(undefined);
+        }
+      });
+    return () => {
+      current = false;
+    };
+  }, [loadApplicationVersion, open]);
 
   if (!open) {
     return null;
@@ -183,6 +245,14 @@ export function ReaderSettingsDialog({
       event.preventDefault();
       first.focus();
     }
+  };
+
+  const handleChatterboxActivation = async (): Promise<boolean> => {
+    const activated = await onActivateChatterbox();
+    if (activated) {
+      onRecoveryEpisodeReset();
+    }
+    return activated;
   };
 
   return (
@@ -257,9 +327,10 @@ export function ReaderSettingsDialog({
               onResetNarrationSettings={onResetNarrationSettings}
               onRecoveryEpisodeReset={onRecoveryEpisodeReset}
             />
-            <OptionalChatterboxControls
+            <OptionalChatterboxSettings
               client={optionalChatterbox}
-              onActivate={onActivateChatterbox}
+              hardwareCompatibility={hardwareCompatibility}
+              onActivate={handleChatterboxActivation}
               onRemove={onRemoveChatterbox}
             />
             <NarrationStartSettings
@@ -284,7 +355,11 @@ export function ReaderSettingsDialog({
             aria-labelledby={`${titleId}-about`}
           >
             <h3 id={`${titleId}-about`}>About</h3>
-            <p>VoxLeaf 0.0.0 development build.</p>
+            <p>
+              {applicationVersion === undefined
+                ? "VoxLeaf version unavailable."
+                : `VoxLeaf ${applicationVersion}.`}
+            </p>
             <p>
               EPUB processing and speech generation run locally. Generated
               narration is kept in bounded memory and is not saved by default.

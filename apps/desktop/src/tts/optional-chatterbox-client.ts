@@ -13,6 +13,18 @@ export type OptionalChatterboxState =
   | "removing"
   | "withheld";
 
+export type OptionalChatterboxFailure =
+  | "installed-package-invalid"
+  | "optional-profile-operation-failed"
+  | "tts-optional-profile-busy"
+  | "tts-optional-profile-cancelled"
+  | "tts-optional-profile-cleanup-failed"
+  | "tts-optional-profile-download-failed"
+  | "tts-optional-profile-incompatible-host"
+  | "tts-optional-profile-insufficient-space"
+  | "tts-optional-profile-invalid"
+  | "tts-optional-profile-unavailable";
+
 export interface OptionalChatterboxSnapshot {
   readonly profileId: typeof CHATTERBOX_OPTIONAL_PROFILE_ID;
   readonly state: OptionalChatterboxState;
@@ -30,7 +42,7 @@ export interface OptionalChatterboxSnapshot {
   readonly minimumAvailableDedicatedVramMiB: number;
   readonly recommendedTotalDedicatedVramMiB: number;
   readonly licenseSummary: string;
-  readonly failure: string | undefined;
+  readonly failure: OptionalChatterboxFailure | undefined;
 }
 
 type InvokePort = (
@@ -47,6 +59,19 @@ const STATES = new Set<OptionalChatterboxState>([
   "failed",
   "removing",
   "withheld",
+]);
+
+const FAILURES = new Set<OptionalChatterboxFailure>([
+  "installed-package-invalid",
+  "optional-profile-operation-failed",
+  "tts-optional-profile-busy",
+  "tts-optional-profile-cancelled",
+  "tts-optional-profile-cleanup-failed",
+  "tts-optional-profile-download-failed",
+  "tts-optional-profile-incompatible-host",
+  "tts-optional-profile-insufficient-space",
+  "tts-optional-profile-invalid",
+  "tts-optional-profile-unavailable",
 ]);
 
 const INITIAL_SNAPSHOT: OptionalChatterboxSnapshot = Object.freeze({
@@ -76,6 +101,16 @@ function boundedOptionalNumber(value: unknown): number | undefined {
     : undefined;
 }
 
+function decodeFailure(value: unknown): OptionalChatterboxFailure | undefined {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+  return typeof value === "string" &&
+    FAILURES.has(value as OptionalChatterboxFailure)
+    ? (value as OptionalChatterboxFailure)
+    : undefined;
+}
+
 function decodeSnapshot(value: unknown): OptionalChatterboxSnapshot {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("optional-chatterbox-invalid-response");
@@ -84,6 +119,7 @@ function decodeSnapshot(value: unknown): OptionalChatterboxSnapshot {
   const state = object.state;
   const profileId = object.profileId;
   const downloadedBytes = boundedOptionalNumber(object.downloadedBytes);
+  const failure = decodeFailure(object.failure);
   if (
     profileId !== CHATTERBOX_OPTIONAL_PROFILE_ID ||
     typeof state !== "string" ||
@@ -93,7 +129,7 @@ function decodeSnapshot(value: unknown): OptionalChatterboxSnapshot {
     object.licenseSummary.length === 0 ||
     (object.failure !== null &&
       object.failure !== undefined &&
-      typeof object.failure !== "string")
+      failure === undefined)
   ) {
     throw new Error("optional-chatterbox-invalid-response");
   }
@@ -148,7 +184,7 @@ function decodeSnapshot(value: unknown): OptionalChatterboxSnapshot {
     minimumAvailableDedicatedVramMiB: requiredValues[5]!,
     recommendedTotalDedicatedVramMiB: requiredValues[6]!,
     licenseSummary: object.licenseSummary,
-    failure: typeof object.failure === "string" ? object.failure : undefined,
+    failure,
   });
 }
 
@@ -156,6 +192,9 @@ export class OptionalChatterboxClient {
   readonly #invoke: InvokePort;
   readonly #listeners = new Set<() => void>();
   #snapshot = INITIAL_SNAPSHOT;
+  #nextRequestId = 0;
+  #lastAppliedRequestId = 0;
+  #refreshInFlight: Promise<OptionalChatterboxSnapshot> | undefined;
 
   public constructor(invokePort: InvokePort = invoke) {
     this.#invoke = invokePort;
@@ -171,7 +210,17 @@ export class OptionalChatterboxClient {
   }
 
   public async refresh(): Promise<OptionalChatterboxSnapshot> {
-    return this.#call("optional_chatterbox_snapshot");
+    if (this.#refreshInFlight !== undefined) {
+      return this.#refreshInFlight;
+    }
+    const request = this.#call("optional_chatterbox_snapshot");
+    this.#refreshInFlight = request;
+    void request.finally(() => {
+      if (this.#refreshInFlight === request) {
+        this.#refreshInFlight = undefined;
+      }
+    });
+    return request;
   }
 
   public async select(): Promise<OptionalChatterboxSnapshot> {
@@ -202,20 +251,30 @@ export class OptionalChatterboxClient {
     command: string,
     args?: Record<string, unknown>,
   ): Promise<OptionalChatterboxSnapshot> {
+    const requestId = ++this.#nextRequestId;
+    let result: OptionalChatterboxSnapshot;
     try {
-      const snapshot = decodeSnapshot(await this.#invoke(command, args));
-      this.#snapshot = snapshot;
-      this.#publish();
-      return snapshot;
-    } catch {
-      this.#snapshot = Object.freeze({
+      result = decodeSnapshot(await this.#invoke(command, args));
+    } catch (error) {
+      result = Object.freeze({
         ...this.#snapshot,
         state: "failed",
-        failure: "optional-profile-operation-failed",
+        failure: decodeFailure(error) ?? "optional-profile-operation-failed",
       });
-      this.#publish();
-      return this.#snapshot;
     }
+    if (requestId !== this.#nextRequestId) {
+      return Object.freeze({
+        ...this.#snapshot,
+        state: "failed",
+        failure: "tts-optional-profile-busy",
+      });
+    }
+    if (requestId >= this.#lastAppliedRequestId) {
+      this.#lastAppliedRequestId = requestId;
+      this.#snapshot = result;
+      this.#publish();
+    }
+    return result;
   }
 
   #publish(): void {

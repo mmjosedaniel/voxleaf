@@ -95,6 +95,26 @@ a reproducible reviewed runtime is divided into three bounded GitHub Release
 assets. The deterministic controller, measurements, and hostile-input tests
 pass; availability remains withheld until an authorized maintainer publishes
 those assets and the clean-user online/offline GPU matrix passes.
+ADR-0045 additionally permits a separately identified unsigned local
+validation installer on the only available compatible computer. That build
+may expose and fix the real acquisition lifecycle, but it does not change the
+normal withheld manifest or satisfy the clean-host/public-signing gates.
+The first installed Chatterbox launch subsequently proved two package defects,
+not a GPU/model rejection: two generated VoxLeaf protocol modules were absent
+and the historical installed root produced a 261-character Transformers path.
+ADR-0046 keeps the published runtime-v2 parts immutable while repairing only
+their exact legacy manifest at the shorter `app-local-data/tts/cb/2` root and
+fully re-verifying the result. The correction avoids another multi-gigabyte
+download. A subsequent content-safe direct model/service probe passes, while
+the remaining installed failure proved to be canonical Windows verbatim paths
+crossing into embedded Python/model loading. Native containment keeps those
+canonical paths; only child-process inputs receive conventional Windows/UNC
+forms. The first-use correction also repairs only allowlisted generated cache
+data and reuses the completed verification through a metadata-guarded
+process-memory receipt under the MVP no-hostile-same-user-tampering assumption;
+every application restart verifies the authority again. The installed Spanish
+matrix now passes. English, restart, removal/reinstall, clean-host, and signing
+remain M011 Milestone 6 work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -1117,6 +1137,19 @@ Defender checks pass outside the sandbox. Signing automation is implemented,
 but no trusted certificate is available, so public publication remains
 blocked. Enabled optional acquisition and complete clean-host validation remain
 open; automatic updates are deliberately excluded from the first MVP.
+
+The validation-only installer has since completed the real explicit Chatterbox
+download and verified installation on the compatible development host. Direct
+content-safe embedded-runtime and framed-service probes reach model load,
+warmup, synthetic synthesis, and shutdown. ADR-0046's clarified correction
+keeps authority-file hash verification and canonical native containment intact,
+repairs only allowlisted generated caches, holds a successful metadata-guarded
+verification receipt only for the current application process under the MVP
+no-hostile-same-user-tampering assumption, and converts verbatim paths
+only at the child-process boundary. The exact installed Spanish WebView2 matrix
+now passes with zero external requests or generated files. English narration,
+restart, removal/reinstall, Piper-after-removal, independent clean-host proof,
+and public signing remain pending, so optional readiness remains open.
 
 The remaining M011 execution order is explicit:
 

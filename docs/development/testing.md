@@ -987,15 +987,45 @@ pnpm.cmd package:windows:signed
 
 The check validates the frozen version, NSIS/current-user target, exact resource
 allowlist, exclusion boundary, uninstall hooks, and verified Piper payload.
-The unsigned build produced
-`VoxLeaf_0.1.0_x64-setup.exe` at `181,654,713` bytes with SHA-256
-`9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c`.
-The outside-sandbox lifecycle command passed installation, first start, same-
-version repair, uninstall, and unrelated-file preservation on the development
-host. Windows Defender reported no threats; SmartScreen was not observed. The
-signed command is fail-closed and remains unexecuted without an authorized
-external certificate. None of these local results substitutes for Milestone
-6's clean-user matrix.
+The current unsigned build produced
+`VoxLeaf_0.1.0_x64-setup.exe` at `181,658,228` bytes with SHA-256
+`f167dacdb4221cdd989ed5ed92d070b5fd5d9ecab89a9af6e54feec5be3a6b12`.
+Its immediate predecessor passed the outside-sandbox lifecycle command for
+installation, first start, same-version repair, uninstall, and unrelated-file
+preservation on the development host. Windows Defender reported no threats for
+that predecessor; SmartScreen was not observed. The current hash passes the
+static package gate and still requires the remaining Milestone 6 lifecycle and
+independent-host checks. The signed command is fail-closed and remains
+unexecuted without an authorized external certificate. None of these local
+results substitutes for Milestone 6's clean-user matrix.
+
+Milestone 6 adds an installed-artifact form of the native harness. It accepts
+exactly one absolute executable and does not build or select a repository
+binary implicitly:
+
+```powershell
+$app = (Resolve-Path "$env:LOCALAPPDATA\VoxLeaf\voxleaf-desktop.exe").Path
+node apps/desktop/scripts/native-startup-smoke.mjs "--executable=$app"
+```
+
+The current-host release rehearsal used that boundary for complete installed
+Spanish and English Piper matrices, including all six playback rates, and
+recorded zero external requests and zero generated-audio files. Two consecutive
+installer/first-start/repair/uninstall cycles and an exact-installer Defender
+scan also passed. The rehearsal exposed package-only stack-allocation,
+bytecode-mutation, canonical-Windows-path, and stale-local-package defects;
+focused regressions now protect each fix. This remains development-host
+evidence: independent clean normal-user Windows and clean compatible-GPU
+Chatterbox arms are still required.
+
+The first independent Windows-host attempt exposed a blank console when the
+private packaged Python/Piper child started. Standard-stream redirection alone
+does not suppress a console-subsystem child window under a GUI parent. The
+supervisor now applies Windows `CREATE_NO_WINDOW` to its child command before
+spawn; the focused Windows regression freezes that flag, and the rebuilt
+installed Piper matrix proves that protocol, narration, cancellation, and
+cleanup remain intact. Visual clean-host confirmation must use the current hash
+above rather than an earlier installer.
 
 The remaining release matrix must distinguish:
 
@@ -1027,6 +1057,24 @@ manifest records the published runtime but remains withheld, so no end-user
 acquisition is reachable. Clean-host installation/offline use, cross-version
 replacement, application-data removal, and complete product behavior remain
 Milestone 6 work; do not describe those release gates as passing.
+
+ADR-0045 adds a separate local validation build because no second compatible
+GPU computer is available. Its static check proves that the ordinary manifest
+remains `withheld`, the validation overlay is exact and not public-authorized,
+the product/identifier/data root are distinct, Chatterbox bytes are not bundled,
+and the Cargo feature is explicit. Native tests must pass both without and with
+`chatterbox-acquisition-validation`; the feature-enabled arm must expose
+consent without creating staging or contacting the network. Building and using
+this installer on the development computer is useful functional evidence but
+is never called clean-host acceptance.
+
+```powershell
+pnpm.cmd package:windows:chatterbox-validation:check
+cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml tts_optional_chatterbox
+cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml --features chatterbox-acquisition-validation tts_optional_chatterbox
+pnpm.cmd package:windows:chatterbox-validation
+```
+
 All final M011 commands run outside the automation sandbox under the existing
 repository testing rule.
 

@@ -3,6 +3,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -10,23 +11,44 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_READER_PREFERENCES } from "../reader/reader-preferences";
 import { DEFAULT_NARRATION_START_PREFERENCE_V1 } from "../persistence/narration-start-preference";
 import { HardwareProfileCompatibilityCoordinator } from "../tts/hardware-profile-compatibility";
-import { OptionalChatterboxClient } from "../tts/optional-chatterbox-client";
+import {
+  CHATTERBOX_OPTIONAL_PROFILE_ID,
+  OptionalChatterboxClient,
+} from "../tts/optional-chatterbox-client";
 import { ReaderSettingsDialog } from "./ReaderSettingsDialog";
 
 afterEach(() => cleanup());
 
-function renderSettings(overrides: { readonly onClose?: () => void } = {}) {
+function renderSettings(
+  overrides: {
+    readonly onClose?: () => void;
+    readonly loadApplicationVersion?: () => Promise<string>;
+    readonly chatterboxState?: "failed" | "withheld" | "installed";
+    readonly chatterboxActive?: boolean;
+    readonly onActivateChatterbox?: () => Promise<boolean>;
+  } = {},
+) {
   const hardwareCompatibility = new HardwareProfileCompatibilityCoordinator();
+  if (overrides.chatterboxActive === true) {
+    const activeSnapshot = Object.freeze({
+      ...hardwareCompatibility.observe(),
+      activeProfileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
+    });
+    vi.spyOn(hardwareCompatibility, "observe").mockReturnValue(activeSnapshot);
+  }
   const ensureChecked = vi.spyOn(hardwareCompatibility, "ensureChecked");
+  const checkCompatibility = vi.spyOn(hardwareCompatibility, "check");
   const onClose = overrides.onClose ?? vi.fn();
   const onReaderPreferenceChange = vi.fn();
   const onSelectProfile = vi.fn(async () => true);
   const onSelectLanguage = vi.fn(async () => true);
   const onResetNarrationSettings = vi.fn(async () => true);
   const onRecoveryEpisodeReset = vi.fn();
+  const onActivateChatterbox =
+    overrides.onActivateChatterbox ?? vi.fn(async () => true);
   const optionalChatterbox = new OptionalChatterboxClient(async () => ({
     profileId: "chatterbox-multilingual-v3-cuda-bf16-default-v4",
-    state: "withheld",
+    state: overrides.chatterboxState ?? "withheld",
     downloadBytes: null,
     downloadedBytes: 0,
     installedBytes: null,
@@ -42,7 +64,10 @@ function renderSettings(overrides: { readonly onClose?: () => void } = {}) {
     recommendedTotalDedicatedVramMiB: 7_680,
     licenseSummary:
       "Chatterbox, its reviewed model/default conditioning, and PerTh are MIT-licensed.",
-    failure: null,
+    failure:
+      overrides.chatterboxState === "failed"
+        ? "tts-optional-profile-incompatible-host"
+        : null,
   }));
 
   const rendered = render(
@@ -65,20 +90,25 @@ function renderSettings(overrides: { readonly onClose?: () => void } = {}) {
       onResetNarrationSettings={onResetNarrationSettings}
       onRecoveryEpisodeReset={onRecoveryEpisodeReset}
       optionalChatterbox={optionalChatterbox}
-      onActivateChatterbox={vi.fn(async () => true)}
+      onActivateChatterbox={onActivateChatterbox}
       onRemoveChatterbox={vi.fn(async () => undefined)}
+      loadApplicationVersion={
+        overrides.loadApplicationVersion ?? (async () => "0.1.0")
+      }
     />,
   );
 
   return {
     ...rendered,
     ensureChecked,
+    checkCompatibility,
     onClose,
     onReaderPreferenceChange,
     onSelectProfile,
     onSelectLanguage,
     onResetNarrationSettings,
     onRecoveryEpisodeReset,
+    onActivateChatterbox,
   };
 }
 
@@ -102,6 +132,12 @@ describe("reader Settings dialog", () => {
     expect(
       within(dialog).queryByLabelText("Playback speed"),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows the installed application version instead of a stale placeholder", async () => {
+    renderSettings({ loadApplicationVersion: async () => "0.1.0" });
+    expect(await screen.findByText("VoxLeaf 0.1.0.")).toBeInTheDocument();
+    expect(screen.queryByText(/0\.0\.0/)).not.toBeInTheDocument();
   });
 
   it("contains focus, closes with Escape, and performs no lifecycle action on open", () => {
@@ -137,5 +173,64 @@ describe("reader Settings dialog", () => {
       "contentWidth",
       "wide",
     );
+  });
+
+  it("clears an existing recovery episode after Chatterbox activates", async () => {
+    const subject = renderSettings({ chatterboxState: "installed" });
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Activate Chatterbox" }),
+    );
+
+    await waitFor(() =>
+      expect(subject.onActivateChatterbox).toHaveBeenCalledTimes(1),
+    );
+    expect(subject.onRecoveryEpisodeReset).toHaveBeenCalledTimes(1);
+  });
+
+  it("derives the installed Chatterbox active state from compatibility selection", async () => {
+    renderSettings({ chatterboxState: "installed", chatterboxActive: true });
+
+    expect(
+      await screen.findByText(
+        "The verified Chatterbox package is installed and selected.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Activate Chatterbox" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("preserves recovery when Chatterbox activation is rejected", async () => {
+    const subject = renderSettings({
+      chatterboxState: "installed",
+      onActivateChatterbox: vi.fn(async () => false),
+    });
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Activate Chatterbox" }),
+    );
+
+    await waitFor(() =>
+      expect(subject.onActivateChatterbox).toHaveBeenCalledTimes(1),
+    );
+    expect(subject.onRecoveryEpisodeReset).not.toHaveBeenCalled();
+  });
+
+  it("rechecks fresh hardware facts before retrying an incompatible profile", async () => {
+    const subject = renderSettings({ chatterboxState: "failed" });
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Recheck device compatibility",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(subject.checkCompatibility).toHaveBeenCalledWith(
+        "explicit-recheck",
+      ),
+    );
+    expect(subject.onActivateChatterbox).toHaveBeenCalledTimes(1);
   });
 });

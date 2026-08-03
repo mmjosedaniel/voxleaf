@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -9,12 +15,15 @@ import { OptionalChatterboxControls } from "./OptionalChatterboxControls";
 
 afterEach(() => cleanup());
 
-function snapshot(state: "confirming" | "installed") {
+function snapshot(
+  state: "absent" | "confirming" | "downloading" | "failed" | "installed",
+  downloadedBytes = 0,
+) {
   return {
     profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
     state,
     downloadBytes: 1_073_741_824,
-    downloadedBytes: 0,
+    downloadedBytes,
     installedBytes: 2_147_483_648,
     temporaryBytes: 3_221_225_472,
     minimumFreeBytes: 4_294_967_296,
@@ -33,6 +42,37 @@ function snapshot(state: "confirming" | "installed") {
 }
 
 describe("optional Chatterbox controls", () => {
+  it("lets an absent compatible package reach explicit download confirmation", async () => {
+    const invoke = vi.fn(async (command: string) =>
+      snapshot(
+        command === "optional_chatterbox_snapshot" ? "absent" : "confirming",
+      ),
+    );
+    const client = new OptionalChatterboxClient(invoke);
+
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
+        onRemove={vi.fn(async () => undefined)}
+      />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Review Chatterbox download",
+      }),
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Download Chatterbox" }),
+    ).toBeInTheDocument();
+    expect(invoke).toHaveBeenNthCalledWith(2, "select_optional_chatterbox", {
+      profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
+    });
+  });
+
   it("shows measured disclosure and starts only after the explicit Download action", async () => {
     const invoke = vi.fn(async (command: string) => {
       if (command === "optional_chatterbox_snapshot") {
@@ -46,6 +86,7 @@ describe("optional Chatterbox controls", () => {
       <OptionalChatterboxControls
         client={client}
         onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
         onRemove={vi.fn(async () => undefined)}
       />,
     );
@@ -69,8 +110,118 @@ describe("optional Chatterbox controls", () => {
     expect(
       await screen.findByRole("button", { name: "Activate Chatterbox" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Activate it before starting narration/),
+    ).toBeInTheDocument();
     expect(invoke).toHaveBeenNthCalledWith(2, "download_optional_chatterbox", {
       profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
     });
+  });
+
+  it("shows an installed selected profile as active without redundant activation", async () => {
+    const client = new OptionalChatterboxClient(async () =>
+      snapshot("installed"),
+    );
+
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        active
+        onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
+        onRemove={vi.fn(async () => undefined)}
+      />,
+    );
+
+    expect(
+      await screen.findByText(
+        "The verified Chatterbox package is installed and selected.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Activate Chatterbox" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Remove Chatterbox" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows safe actionable failure copy and lets the user check again", async () => {
+    const invoke = vi.fn(async () => ({
+      ...snapshot("failed"),
+      failure: "tts-optional-profile-incompatible-host",
+    }));
+    const client = new OptionalChatterboxClient(invoke);
+    const onRecheck = vi.fn(async () => true);
+
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={vi.fn(async () => true)}
+        onRecheck={onRecheck}
+        onRemove={vi.fn(async () => undefined)}
+      />,
+    );
+
+    expect(
+      await screen.findByText(
+        /does not currently meet the Chatterbox requirements/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("tts-optional-profile-incompatible-host"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Recheck device compatibility" }),
+    );
+    await waitFor(() => expect(onRecheck).toHaveBeenCalledTimes(1));
+    expect(invoke).toHaveBeenCalledTimes(1);
+  });
+
+  it("polls and exposes native progress while the download command remains active", async () => {
+    let downloadStarted = false;
+    const invoke = vi.fn((command: string): Promise<unknown> => {
+      if (command === "download_optional_chatterbox") {
+        downloadStarted = true;
+        return new Promise(() => undefined);
+      }
+      return Promise.resolve(
+        downloadStarted
+          ? snapshot("downloading", 536_870_912)
+          : snapshot("confirming"),
+      );
+    });
+    const client = new OptionalChatterboxClient(invoke);
+
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
+        onRemove={vi.fn(async () => undefined)}
+      />,
+    );
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Download Chatterbox" }),
+    );
+
+    expect(
+      await screen.findByText("Starting the Chatterbox download."),
+    ).toBeInTheDocument();
+    const progress = await screen.findByRole(
+      "progressbar",
+      { name: "Chatterbox download progress" },
+      { timeout: 1_000 },
+    );
+    expect(progress).toHaveAttribute("max", "1073741824");
+    expect(progress).toHaveAttribute("value", "536870912");
+    await waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith(
+        "optional_chatterbox_snapshot",
+        undefined,
+      ),
+    );
   });
 });

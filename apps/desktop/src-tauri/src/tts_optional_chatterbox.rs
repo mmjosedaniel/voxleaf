@@ -14,6 +14,7 @@ use std::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
     },
+    time::UNIX_EPOCH,
 };
 
 use serde::{Deserialize, Serialize};
@@ -25,6 +26,16 @@ pub(crate) const PROFILE_ID: &str = "chatterbox-multilingual-v3-cuda-bf16-defaul
 const PACKAGE_ID: &str = "voxleaf-chatterbox-v2";
 const PACKAGE_VERSION: &str = "2";
 const RUNTIME_MANIFEST_NAME: &str = "runtime-manifest-v2.json";
+const GENERATED_RUNTIME_FILES: [(&str, &[u8]); 2] = [
+    (
+        "runtime/Lib/site-packages/voxleaf_tts/generated/__init__.py",
+        include_bytes!("../../../../services/tts/src/voxleaf_tts/generated/__init__.py"),
+    ),
+    (
+        "runtime/Lib/site-packages/voxleaf_tts/generated/protocol_schemas.py",
+        include_bytes!("../../../../services/tts/src/voxleaf_tts/generated/protocol_schemas.py"),
+    ),
+];
 const MODEL_REVISION: &str = "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18";
 const MODEL_DOWNLOAD_BASE: &str = "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/";
 const CHATTERBOX_SOURCE: &str =
@@ -35,6 +46,10 @@ const PERTH_SOURCE: &str =
     "https://github.com/resemble-ai/perth/tree/ce86c2b567491eef3108ed3c137bd7bf1ddda52e";
 const MANIFEST_BYTES: &[u8] = include_bytes!(
     "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json"
+);
+#[cfg(feature = "chatterbox-acquisition-validation")]
+const VALIDATION_OVERLAY_BYTES: &[u8] = include_bytes!(
+    "../../../../services/tts/release/optional/chatterbox/optional-package-validation-overlay-v1.json"
 );
 const COPY_BUFFER_BYTES: usize = 1024 * 1024;
 const MODEL_DOWNLOAD_BYTES: u64 = 3_208_951_924;
@@ -124,6 +139,7 @@ struct OptionalPackageManifest {
     runtime: OptionalRuntime,
     withholding_reason: Option<String>,
     runtime_artifact: Option<RuntimeArtifact>,
+    runtime_correction: RuntimeCorrection,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -218,6 +234,17 @@ struct AcquisitionMeasurements {
     temporary_bytes: u64,
 }
 
+#[cfg(feature = "chatterbox-acquisition-validation")]
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct ValidationOverlay {
+    schema_version: u8,
+    purpose: String,
+    availability: String,
+    public_publication_allowed: bool,
+    measurements: AcquisitionMeasurements,
+}
+
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ModelArtifact {
@@ -243,6 +270,21 @@ struct RuntimeArtifact {
     installed_bytes: u64,
     parts: Vec<RuntimePart>,
     runtime_manifest_sha256: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RuntimeCorrection {
+    accepted_runtime_manifest_sha256: String,
+    files: Vec<RuntimeCorrectionFile>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RuntimeCorrectionFile {
+    path: String,
+    sha256: String,
+    size_bytes: u64,
 }
 
 trait DownloadIdentity {
@@ -279,7 +321,7 @@ impl DownloadIdentity for RuntimePart {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct InstalledRuntimeManifest {
     schema_version: u8,
@@ -293,7 +335,7 @@ struct InstalledRuntimeManifest {
     files: Vec<RuntimeFile>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct RuntimeFile {
     path: String,
@@ -306,7 +348,19 @@ pub(crate) struct InstalledChatterboxRuntime {
     pub python: PathBuf,
     pub model_root: PathBuf,
     pub site_packages: PathBuf,
+    pub numba_cache_root: PathBuf,
 }
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct VerifiedRuntimeReceipt {
+    canonical_root: PathBuf,
+    authority_key: String,
+    tree_stamp: String,
+    runtime: InstalledChatterboxRuntime,
+}
+
+static VERIFIED_RUNTIME_RECEIPT: OnceLock<Mutex<Option<VerifiedRuntimeReceipt>>> = OnceLock::new();
+static INSTALLED_RUNTIME_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum OptionalProfileError {
@@ -363,8 +417,42 @@ pub(crate) struct OptionalChatterboxManager {
 fn exact_manifest() -> Result<OptionalPackageManifest, OptionalProfileError> {
     let manifest = serde_json::from_slice::<OptionalPackageManifest>(MANIFEST_BYTES)
         .map_err(|_| OptionalProfileError::Invalid)?;
+    #[cfg(feature = "chatterbox-acquisition-validation")]
+    let manifest = {
+        let mut validation_manifest = manifest;
+        apply_validation_overlay(&mut validation_manifest)?;
+        validation_manifest
+    };
     validate_manifest(&manifest)?;
     Ok(manifest)
+}
+
+#[cfg(feature = "chatterbox-acquisition-validation")]
+fn apply_validation_overlay(
+    manifest: &mut OptionalPackageManifest,
+) -> Result<(), OptionalProfileError> {
+    let overlay = serde_json::from_slice::<ValidationOverlay>(VALIDATION_OVERLAY_BYTES)
+        .map_err(|_| OptionalProfileError::Invalid)?;
+    let measurements = &overlay.measurements;
+    if overlay.schema_version != 1
+        || overlay.purpose != "local-validation-only"
+        || overlay.availability != "downloadable"
+        || overlay.public_publication_allowed
+        || measurements.cold_start_seconds != 60
+        || measurements.download_bytes != 8_231_893_387
+        || measurements.installed_bytes != 8_228_503_309
+        || measurements.minimum_free_bytes != 20_000_000_000
+        || measurements.temporary_bytes != 13_254_834_850
+        || manifest.availability != "withheld"
+        || manifest.measurements.is_some()
+        || manifest.withholding_reason.as_deref() != Some("clean-host-validation-pending")
+    {
+        return Err(OptionalProfileError::Invalid);
+    }
+    manifest.availability = overlay.availability;
+    manifest.measurements = Some(overlay.measurements);
+    manifest.withholding_reason = None;
+    Ok(())
 }
 
 fn validate_sha256(value: &str) -> bool {
@@ -389,7 +477,7 @@ fn validate_manifest(manifest: &OptionalPackageManifest) -> Result<(), OptionalP
         || manifest.languages.as_slice() != ["en".to_owned(), "es".to_owned()]
         || manifest.layout.root != "app-local-data/tts"
         || manifest.layout.staging != format!("staging/{PROFILE_ID}/operation")
-        || manifest.layout.installed != format!("profiles/{PROFILE_ID}/{PACKAGE_VERSION}")
+        || manifest.layout.installed != format!("cb/{PACKAGE_VERSION}")
         || ![
             &manifest.licences.chatterbox,
             &manifest.licences.model,
@@ -428,6 +516,7 @@ fn validate_manifest(manifest: &OptionalPackageManifest) -> Result<(), OptionalP
         || limits.maximum_installed_bytes != 9_000_000_000
         || limits.maximum_staging_bytes != 15_000_000_000
         || limits.maximum_user_disclosed_free_bytes != 20_000_000_000
+        || !validate_runtime_correction(&manifest.runtime_correction)
     {
         return Err(OptionalProfileError::Invalid);
     }
@@ -466,6 +555,21 @@ fn validate_manifest(manifest: &OptionalPackageManifest) -> Result<(), OptionalP
         }
         _ => Err(OptionalProfileError::Invalid),
     }
+}
+
+fn validate_runtime_correction(correction: &RuntimeCorrection) -> bool {
+    correction.accepted_runtime_manifest_sha256
+        == "cb5055580a28a0c97e50535a8317ea506081230b70e0099d8fe0194591e1c635"
+        && correction.files.len() == GENERATED_RUNTIME_FILES.len()
+        && correction
+            .files
+            .iter()
+            .zip(GENERATED_RUNTIME_FILES)
+            .all(|(record, (path, contents))| {
+                record.path == path
+                    && record.size_bytes == contents.len() as u64
+                    && record.sha256 == format!("{:x}", Sha256::digest(contents))
+            })
 }
 
 fn validate_runtime_artifact(artifact: &RuntimeArtifact, limits: &AcquisitionLimits) -> bool {
@@ -565,10 +669,14 @@ fn safe_relative_path(value: &str) -> Result<PathBuf, OptionalProfileError> {
     Ok(path)
 }
 
+fn copy_buffer() -> Vec<u8> {
+    vec![0_u8; COPY_BUFFER_BYTES]
+}
+
 fn sha256_file(path: &Path) -> Result<String, OptionalProfileError> {
     let mut file = File::open(path).map_err(|_| OptionalProfileError::VerificationFailed)?;
     let mut digest = Sha256::new();
-    let mut buffer = [0_u8; COPY_BUFFER_BYTES];
+    let mut buffer = copy_buffer();
     loop {
         let read = file
             .read(&mut buffer)
@@ -586,7 +694,7 @@ fn sha256_file_cancelled(
 ) -> Result<String, OptionalProfileError> {
     let mut file = File::open(path).map_err(|_| OptionalProfileError::VerificationFailed)?;
     let mut digest = Sha256::new();
-    let mut buffer = [0_u8; COPY_BUFFER_BYTES];
+    let mut buffer = copy_buffer();
     loop {
         if cancelled.load(Ordering::Acquire) {
             return Err(OptionalProfileError::Cancelled);
@@ -602,23 +710,75 @@ fn sha256_file_cancelled(
 }
 
 fn profile_root(root: &Path) -> PathBuf {
-    root.join("profiles").join(PROFILE_ID)
+    root.join("cb")
 }
 
 fn package_root(root: &Path) -> PathBuf {
     profile_root(root).join(PACKAGE_VERSION)
 }
 
+fn legacy_package_root(root: &Path) -> PathBuf {
+    root.join("profiles").join(PROFILE_ID).join(PACKAGE_VERSION)
+}
+
 fn staging_root(root: &Path) -> PathBuf {
     root.join("staging").join(PROFILE_ID)
 }
 
+fn canonical_managed_root(root: &Path) -> Result<PathBuf, OptionalProfileError> {
+    let metadata =
+        fs::symlink_metadata(root).map_err(|_| OptionalProfileError::VerificationFailed)?;
+    if is_symlink_or_reparse_point(&metadata) || !metadata.is_dir() {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    root.canonicalize()
+        .map_err(|_| OptionalProfileError::VerificationFailed)
+}
+
+fn canonical_contained_directory(
+    root: &Path,
+    directory: &Path,
+) -> Result<PathBuf, OptionalProfileError> {
+    let canonical_root = canonical_managed_root(root)?;
+    let metadata =
+        fs::symlink_metadata(directory).map_err(|_| OptionalProfileError::VerificationFailed)?;
+    if is_symlink_or_reparse_point(&metadata) || !metadata.is_dir() {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    let canonical = directory
+        .canonicalize()
+        .map_err(|_| OptionalProfileError::VerificationFailed)?;
+    if !canonical.starts_with(canonical_root) {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    Ok(canonical)
+}
+
+fn remove_contained_directory(root: &Path, directory: &Path) -> Result<(), OptionalProfileError> {
+    if !directory.exists() {
+        return Ok(());
+    }
+    canonical_contained_directory(root, directory)?;
+    fs::remove_dir_all(directory).map_err(|_| OptionalProfileError::CleanupFailed)
+}
+
 fn clean_staging(root: &Path) -> Result<(), OptionalProfileError> {
     let staging = staging_root(root);
-    if staging.exists() {
-        fs::remove_dir_all(&staging).map_err(|_| OptionalProfileError::CleanupFailed)?;
+    remove_contained_directory(root, &staging)
+}
+
+fn is_symlink_or_reparse_point(metadata: &fs::Metadata) -> bool {
+    if metadata.file_type().is_symlink() {
+        return true;
     }
-    Ok(())
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x0400;
+        metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+    }
+    #[cfg(not(windows))]
+    false
 }
 
 fn collect_files(
@@ -632,7 +792,7 @@ fn collect_files(
         let path = entry.path();
         let metadata =
             fs::symlink_metadata(&path).map_err(|_| OptionalProfileError::VerificationFailed)?;
-        if metadata.file_type().is_symlink() {
+        if is_symlink_or_reparse_point(&metadata) {
             return Err(OptionalProfileError::VerificationFailed);
         }
         let canonical = path
@@ -657,6 +817,115 @@ fn collect_files(
         }
     }
     Ok(())
+}
+
+fn verified_runtime_receipt() -> &'static Mutex<Option<VerifiedRuntimeReceipt>> {
+    VERIFIED_RUNTIME_RECEIPT.get_or_init(|| Mutex::new(None))
+}
+
+fn with_installed_runtime_lock<T>(
+    operation: impl FnOnce() -> Result<T, OptionalProfileError>,
+) -> Result<T, OptionalProfileError> {
+    let _guard = INSTALLED_RUNTIME_LOCK
+        .get_or_init(|| Mutex::new(()))
+        .lock()
+        .map_err(|_| OptionalProfileError::Unavailable)?;
+    operation()
+}
+
+fn invalidate_verified_runtime_receipt() {
+    if let Ok(mut receipt) = verified_runtime_receipt().lock() {
+        *receipt = None;
+    }
+}
+
+fn update_receipt_hash(hasher: &mut Sha256, value: &[u8]) {
+    hasher.update((value.len() as u64).to_le_bytes());
+    hasher.update(value);
+}
+
+fn runtime_authority_key(
+    manifest_authority: &OptionalPackageManifest,
+) -> Result<String, OptionalProfileError> {
+    let runtime_authority = manifest_authority
+        .runtime_artifact
+        .as_ref()
+        .ok_or(OptionalProfileError::VerificationFailed)?;
+    let mut hasher = Sha256::new();
+    for value in [
+        PACKAGE_ID,
+        PACKAGE_VERSION,
+        PROFILE_ID,
+        runtime_authority.runtime_manifest_sha256.as_str(),
+    ] {
+        update_receipt_hash(&mut hasher, value.as_bytes());
+    }
+    for artifact in &manifest_authority.model_artifacts {
+        update_receipt_hash(&mut hasher, artifact.filename.as_bytes());
+        update_receipt_hash(&mut hasher, artifact.sha256.as_bytes());
+        update_receipt_hash(&mut hasher, &artifact.download_bytes.to_le_bytes());
+    }
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+fn collect_runtime_tree_stamp(
+    root: &Path,
+    directory: &Path,
+    canonical_root: &Path,
+    records: &mut Vec<(String, u64, u64, u32)>,
+) -> Result<(), OptionalProfileError> {
+    for entry in fs::read_dir(directory).map_err(|_| OptionalProfileError::VerificationFailed)? {
+        let entry = entry.map_err(|_| OptionalProfileError::VerificationFailed)?;
+        let path = entry.path();
+        let metadata =
+            fs::symlink_metadata(&path).map_err(|_| OptionalProfileError::VerificationFailed)?;
+        if is_symlink_or_reparse_point(&metadata) {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+        let canonical = path
+            .canonicalize()
+            .map_err(|_| OptionalProfileError::VerificationFailed)?;
+        if !canonical.starts_with(canonical_root) {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+        if metadata.is_dir() {
+            collect_runtime_tree_stamp(root, &path, canonical_root, records)?;
+        } else if metadata.is_file() {
+            let relative = path
+                .strip_prefix(root)
+                .map_err(|_| OptionalProfileError::VerificationFailed)?
+                .to_string_lossy()
+                .replace('\\', "/");
+            let modified = metadata
+                .modified()
+                .map_err(|_| OptionalProfileError::VerificationFailed)?
+                .duration_since(UNIX_EPOCH)
+                .map_err(|_| OptionalProfileError::VerificationFailed)?;
+            records.push((
+                relative,
+                metadata.len(),
+                modified.as_secs(),
+                modified.subsec_nanos(),
+            ));
+        } else {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+    }
+    Ok(())
+}
+
+fn runtime_tree_stamp(root: &Path, canonical_root: &Path) -> Result<String, OptionalProfileError> {
+    let mut records = Vec::new();
+    collect_runtime_tree_stamp(root, root, canonical_root, &mut records)?;
+    records.sort_by(|left, right| left.0.cmp(&right.0));
+    let mut hasher = Sha256::new();
+    for (relative, size, seconds, nanos) in records {
+        update_receipt_hash(&mut hasher, relative.as_bytes());
+        update_receipt_hash(&mut hasher, &size.to_le_bytes());
+        update_receipt_hash(&mut hasher, &seconds.to_le_bytes());
+        update_receipt_hash(&mut hasher, &nanos.to_le_bytes());
+    }
+    Ok(format!("{:x}", hasher.finalize()))
 }
 
 fn resolve_directory(
@@ -729,7 +998,7 @@ fn verify_runtime(
         let metadata =
             fs::symlink_metadata(&model).map_err(|_| OptionalProfileError::VerificationFailed)?;
         if !metadata.is_file()
-            || metadata.file_type().is_symlink()
+            || is_symlink_or_reparse_point(&metadata)
             || metadata.len() != artifact.download_bytes
             || sha256_file(&model)? != artifact.sha256
             || !actual.remove(&relative)
@@ -745,7 +1014,7 @@ fn verify_runtime(
         let metadata =
             fs::symlink_metadata(&path).map_err(|_| OptionalProfileError::VerificationFailed)?;
         if !metadata.is_file()
-            || metadata.file_type().is_symlink()
+            || is_symlink_or_reparse_point(&metadata)
             || metadata.len() != record.size_bytes
             || !validate_sha256(&record.sha256)
             || sha256_file(&path)? != record.sha256
@@ -767,6 +1036,383 @@ fn verify_runtime(
         python,
         model_root,
         site_packages,
+        numba_cache_root: root
+            .parent()
+            .ok_or(OptionalProfileError::VerificationFailed)?
+            .join("cache"),
+    })
+}
+
+fn verify_runtime_cached(
+    root: &Path,
+    manifest_authority: &OptionalPackageManifest,
+) -> Result<InstalledChatterboxRuntime, OptionalProfileError> {
+    let canonical_root = root
+        .canonicalize()
+        .map_err(|_| OptionalProfileError::VerificationFailed)?;
+    let authority_key = runtime_authority_key(manifest_authority)?;
+    let before = runtime_tree_stamp(root, &canonical_root)?;
+
+    if let Ok(receipt) = verified_runtime_receipt().lock()
+        && let Some(receipt) = receipt.as_ref()
+        && receipt.canonical_root == canonical_root
+        && receipt.authority_key == authority_key
+        && receipt.tree_stamp == before
+    {
+        return Ok(receipt.runtime.clone());
+    }
+
+    let runtime = verify_runtime(root, manifest_authority)?;
+    let after = runtime_tree_stamp(root, &canonical_root)?;
+    if before != after {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    if let Ok(mut receipt) = verified_runtime_receipt().lock() {
+        *receipt = Some(VerifiedRuntimeReceipt {
+            canonical_root,
+            authority_key,
+            tree_stamp: after,
+            runtime: runtime.clone(),
+        });
+    }
+    Ok(runtime)
+}
+
+fn runtime_manifest_for_bytecode_cleanup(
+    root: &Path,
+    manifest_authority: &OptionalPackageManifest,
+) -> Result<InstalledRuntimeManifest, OptionalProfileError> {
+    let runtime_authority = manifest_authority
+        .runtime_artifact
+        .as_ref()
+        .ok_or(OptionalProfileError::VerificationFailed)?;
+    let bytes = fs::read(root.join(RUNTIME_MANIFEST_NAME))
+        .map_err(|_| OptionalProfileError::VerificationFailed)?;
+    let hash = format!("{:x}", Sha256::digest(&bytes));
+    if hash != runtime_authority.runtime_manifest_sha256
+        && hash
+            != manifest_authority
+                .runtime_correction
+                .accepted_runtime_manifest_sha256
+    {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    let manifest = serde_json::from_slice::<InstalledRuntimeManifest>(&bytes)
+        .map_err(|_| OptionalProfileError::VerificationFailed)?;
+    if manifest.schema_version != 2
+        || manifest.package_id != PACKAGE_ID
+        || manifest.package_version != PACKAGE_VERSION
+        || manifest.profile_id != PROFILE_ID
+        || manifest.service_module != "voxleaf_tts.chatterbox_service"
+        || manifest.files.is_empty()
+    {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    Ok(manifest)
+}
+
+fn clean_unmanifested_python_bytecode_in(
+    root: &Path,
+    directory: &Path,
+    canonical_root: &Path,
+    inside_python_cache: bool,
+    expected: &HashSet<String>,
+    invalidated: &mut bool,
+) -> Result<(), OptionalProfileError> {
+    for entry in fs::read_dir(directory).map_err(|_| OptionalProfileError::CleanupFailed)? {
+        let entry = entry.map_err(|_| OptionalProfileError::CleanupFailed)?;
+        let path = entry.path();
+        let metadata =
+            fs::symlink_metadata(&path).map_err(|_| OptionalProfileError::CleanupFailed)?;
+        if is_symlink_or_reparse_point(&metadata) {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+        let canonical = path
+            .canonicalize()
+            .map_err(|_| OptionalProfileError::VerificationFailed)?;
+        if !canonical.starts_with(canonical_root) {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+        if metadata.is_dir() {
+            let is_python_cache = inside_python_cache
+                || path.file_name().and_then(|name| name.to_str()) == Some("__pycache__");
+            clean_unmanifested_python_bytecode_in(
+                root,
+                &path,
+                canonical_root,
+                is_python_cache,
+                expected,
+                invalidated,
+            )?;
+        } else if metadata.is_file() {
+            let relative = path
+                .strip_prefix(root)
+                .map_err(|_| OptionalProfileError::VerificationFailed)?
+                .to_string_lossy()
+                .replace('\\', "/");
+            if inside_python_cache
+                && path.extension().and_then(|value| value.to_str()) == Some("pyc")
+                && !expected.contains(&relative)
+            {
+                if !*invalidated {
+                    invalidate_verified_runtime_receipt();
+                    *invalidated = true;
+                }
+                fs::remove_file(&path).map_err(|_| OptionalProfileError::CleanupFailed)?;
+            }
+        } else {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+    }
+    Ok(())
+}
+
+fn remove_unmanifested_python_bytecode(
+    root: &Path,
+    manifest_authority: &OptionalPackageManifest,
+) -> Result<(), OptionalProfileError> {
+    let runtime = root.join("runtime");
+    if !runtime.exists() {
+        return Ok(());
+    }
+    let manifest = runtime_manifest_for_bytecode_cleanup(root, manifest_authority)?;
+    let expected = manifest
+        .files
+        .iter()
+        .map(|record| record.path.clone())
+        .collect::<HashSet<_>>();
+    if expected.len() != manifest.files.len() {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    let canonical_root = root
+        .canonicalize()
+        .map_err(|_| OptionalProfileError::VerificationFailed)?;
+    let canonical_runtime = runtime
+        .canonicalize()
+        .map_err(|_| OptionalProfileError::VerificationFailed)?;
+    if !canonical_runtime.is_dir() || !canonical_runtime.starts_with(&canonical_root) {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    let mut invalidated = false;
+    clean_unmanifested_python_bytecode_in(
+        root,
+        &runtime,
+        &canonical_root,
+        false,
+        &expected,
+        &mut invalidated,
+    )
+}
+
+fn remove_transient_numba_cache_files(root: &Path) -> Result<(), OptionalProfileError> {
+    let cache = root.join("runtime/Lib/site-packages/librosa/core/__pycache__");
+    if !cache.exists() {
+        return Ok(());
+    }
+    let canonical_root = root
+        .canonicalize()
+        .map_err(|_| OptionalProfileError::VerificationFailed)?;
+    let cache_metadata =
+        fs::symlink_metadata(&cache).map_err(|_| OptionalProfileError::VerificationFailed)?;
+    if is_symlink_or_reparse_point(&cache_metadata) || !cache_metadata.is_dir() {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    let canonical_cache = cache
+        .canonicalize()
+        .map_err(|_| OptionalProfileError::VerificationFailed)?;
+    if !canonical_cache.starts_with(&canonical_root) {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+    let mut invalidated = false;
+    for entry in fs::read_dir(&cache).map_err(|_| OptionalProfileError::CleanupFailed)? {
+        let entry = entry.map_err(|_| OptionalProfileError::CleanupFailed)?;
+        let path = entry.path();
+        let metadata =
+            fs::symlink_metadata(&path).map_err(|_| OptionalProfileError::CleanupFailed)?;
+        if is_symlink_or_reparse_point(&metadata) || !metadata.is_file() {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+        let canonical = path
+            .canonicalize()
+            .map_err(|_| OptionalProfileError::VerificationFailed)?;
+        if !canonical.starts_with(&canonical_cache) || !canonical.starts_with(&canonical_root) {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+        if matches!(
+            path.extension().and_then(|value| value.to_str()),
+            Some("nbc" | "nbi")
+        ) {
+            if !invalidated {
+                invalidate_verified_runtime_receipt();
+                invalidated = true;
+            }
+            fs::remove_file(path).map_err(|_| OptionalProfileError::CleanupFailed)?;
+        }
+    }
+    Ok(())
+}
+
+fn migrate_legacy_package_root(root: &Path) -> Result<(), OptionalProfileError> {
+    let destination = package_root(root);
+    if destination.exists() {
+        return Ok(());
+    }
+    let legacy = legacy_package_root(root);
+    if !legacy.exists() {
+        return Ok(());
+    }
+    canonical_contained_directory(root, &legacy)?;
+    let parent = destination
+        .parent()
+        .ok_or(OptionalProfileError::CleanupFailed)?;
+    canonical_managed_root(root)?;
+    if parent.exists() {
+        canonical_contained_directory(root, parent)?;
+    }
+    fs::create_dir_all(parent).map_err(|_| OptionalProfileError::CleanupFailed)?;
+    canonical_contained_directory(root, parent)?;
+    invalidate_verified_runtime_receipt();
+    fs::rename(&legacy, &destination).map_err(|_| OptionalProfileError::CleanupFailed)?;
+    invalidate_verified_runtime_receipt();
+    if let Some(profile) = legacy.parent() {
+        let _ = fs::remove_dir(profile);
+        if let Some(profiles) = profile.parent() {
+            let _ = fs::remove_dir(profiles);
+        }
+    }
+    Ok(())
+}
+
+fn corrected_runtime_manifest(manifest_bytes: &[u8]) -> Result<Vec<u8>, OptionalProfileError> {
+    let mut value = serde_json::from_slice::<serde_json::Value>(manifest_bytes)
+        .map_err(|_| OptionalProfileError::VerificationFailed)?;
+    let files = value
+        .get_mut("files")
+        .and_then(serde_json::Value::as_array_mut)
+        .ok_or(OptionalProfileError::VerificationFailed)?;
+    for (relative, contents) in GENERATED_RUNTIME_FILES {
+        if files
+            .iter()
+            .any(|record| record.get("path").and_then(serde_json::Value::as_str) == Some(relative))
+        {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+        files.push(serde_json::json!({
+            "path": relative,
+            "sha256": format!("{:x}", Sha256::digest(contents)),
+            "sizeBytes": contents.len(),
+        }));
+    }
+    files.sort_by(|left, right| {
+        left.get("path")
+            .and_then(serde_json::Value::as_str)
+            .cmp(&right.get("path").and_then(serde_json::Value::as_str))
+    });
+    let mut corrected =
+        serde_json::to_vec_pretty(&value).map_err(|_| OptionalProfileError::VerificationFailed)?;
+    corrected.push(b'\n');
+    Ok(corrected)
+}
+
+fn repair_runtime_modules(
+    root: &Path,
+    manifest_authority: &OptionalPackageManifest,
+    legacy_manifest_sha256: &str,
+) -> Result<(), OptionalProfileError> {
+    let runtime_authority = manifest_authority
+        .runtime_artifact
+        .as_ref()
+        .ok_or(OptionalProfileError::VerificationFailed)?;
+    let manifest_path = root.join(RUNTIME_MANIFEST_NAME);
+    let manifest_bytes =
+        fs::read(&manifest_path).map_err(|_| OptionalProfileError::VerificationFailed)?;
+    let manifest_hash = format!("{:x}", Sha256::digest(&manifest_bytes));
+    if manifest_hash == runtime_authority.runtime_manifest_sha256 {
+        return Ok(());
+    }
+    if manifest_hash != legacy_manifest_sha256 {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+
+    let corrected = corrected_runtime_manifest(&manifest_bytes)?;
+    if format!("{:x}", Sha256::digest(&corrected)) != runtime_authority.runtime_manifest_sha256 {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+
+    invalidate_verified_runtime_receipt();
+    for (relative, contents) in GENERATED_RUNTIME_FILES {
+        let target = root.join(safe_relative_path(relative)?);
+        if target.exists() {
+            if !target.is_file()
+                || sha256_file(&target)? != format!("{:x}", Sha256::digest(contents))
+            {
+                return Err(OptionalProfileError::VerificationFailed);
+            }
+            fs::remove_file(&target).map_err(|_| OptionalProfileError::CleanupFailed)?;
+        }
+    }
+    let mut legacy_authority = manifest_authority.clone();
+    legacy_authority
+        .runtime_artifact
+        .as_mut()
+        .ok_or(OptionalProfileError::VerificationFailed)?
+        .runtime_manifest_sha256 = legacy_manifest_sha256.to_owned();
+    verify_runtime(root, &legacy_authority)?;
+
+    for (relative, contents) in GENERATED_RUNTIME_FILES {
+        let target = root.join(safe_relative_path(relative)?);
+        fs::create_dir_all(
+            target
+                .parent()
+                .ok_or(OptionalProfileError::VerificationFailed)?,
+        )
+        .map_err(|_| OptionalProfileError::CleanupFailed)?;
+        fs::write(target, contents).map_err(|_| OptionalProfileError::CleanupFailed)?;
+    }
+    fs::write(&manifest_path, corrected).map_err(|_| OptionalProfileError::CleanupFailed)?;
+    verify_runtime(root, manifest_authority)?;
+    Ok(())
+}
+
+fn repair_legacy_runtime_modules(
+    root: &Path,
+    manifest_authority: &OptionalPackageManifest,
+) -> Result<(), OptionalProfileError> {
+    repair_runtime_modules(
+        root,
+        manifest_authority,
+        &manifest_authority
+            .runtime_correction
+            .accepted_runtime_manifest_sha256,
+    )
+}
+
+fn prepare_installed_runtime(
+    root: &Path,
+    manifest_authority: &OptionalPackageManifest,
+) -> Result<(), OptionalProfileError> {
+    migrate_legacy_package_root(root)?;
+    let package = package_root(root);
+    if package.exists() {
+        canonical_contained_directory(root, &package)?;
+        remove_transient_numba_cache_files(&package)?;
+        remove_unmanifested_python_bytecode(&package, manifest_authority)?;
+        repair_legacy_runtime_modules(&package, manifest_authority)?;
+    }
+    Ok(())
+}
+
+fn prepare_and_verify_installed_runtime(
+    root: &Path,
+    manifest_authority: &OptionalPackageManifest,
+    clean_abandoned_staging: bool,
+) -> Result<InstalledChatterboxRuntime, OptionalProfileError> {
+    with_installed_runtime_lock(|| {
+        if clean_abandoned_staging {
+            clean_staging(root)?;
+        }
+        prepare_installed_runtime(root, manifest_authority)?;
+        verify_runtime_cached(&package_root(root), manifest_authority)
     })
 }
 
@@ -822,7 +1468,7 @@ fn extract_archive(
         let mut output =
             File::create(destination).map_err(|_| OptionalProfileError::VerificationFailed)?;
         let mut copied = 0_u64;
-        let mut buffer = [0_u8; COPY_BUFFER_BYTES];
+        let mut buffer = copy_buffer();
         loop {
             if cancelled.load(Ordering::Acquire) {
                 return Err(OptionalProfileError::Cancelled);
@@ -853,12 +1499,20 @@ fn promote(
     staging: &Path,
     manifest: &OptionalPackageManifest,
 ) -> Result<(), OptionalProfileError> {
+    canonical_contained_directory(root, staging)?;
     let destination = package_root(root);
     let parent = destination.parent().ok_or(OptionalProfileError::Invalid)?;
+    canonical_managed_root(root)?;
+    if parent.exists() {
+        canonical_contained_directory(root, parent)?;
+    }
     fs::create_dir_all(parent).map_err(|_| OptionalProfileError::CleanupFailed)?;
+    canonical_contained_directory(root, parent)?;
+    repair_legacy_runtime_modules(staging, manifest)?;
     verify_runtime(staging, manifest)?;
     let backup = parent.join(".previous");
     let _ = fs::remove_dir_all(&backup);
+    invalidate_verified_runtime_receipt();
     let moved_previous = if destination.exists() {
         fs::rename(&destination, &backup).map_err(|_| OptionalProfileError::CleanupFailed)?;
         true
@@ -875,6 +1529,7 @@ fn promote(
     if moved_previous {
         fs::remove_dir_all(&backup).map_err(|_| OptionalProfileError::CleanupFailed)?;
     }
+    invalidate_verified_runtime_receipt();
     Ok(())
 }
 
@@ -982,7 +1637,7 @@ fn download_artifact(
     let partial = destination.with_file_name(format!(".{filename}.partial"));
     let _ = fs::remove_file(&partial);
     let mut output = File::create(&partial).map_err(|_| OptionalProfileError::DownloadFailed)?;
-    let mut buffer = [0_u8; COPY_BUFFER_BYTES];
+    let mut buffer = copy_buffer();
     let mut downloaded = 0_u64;
     loop {
         if cancelled.load(Ordering::Acquire) {
@@ -1027,7 +1682,7 @@ fn verify_downloaded_artifact(
     let metadata =
         fs::symlink_metadata(path).map_err(|_| OptionalProfileError::VerificationFailed)?;
     if !metadata.is_file()
-        || metadata.file_type().is_symlink()
+        || is_symlink_or_reparse_point(&metadata)
         || metadata.len() != artifact.download_bytes()
         || sha256_file_cancelled(path, cancelled)? != artifact.sha256()
     {
@@ -1051,7 +1706,7 @@ fn reassemble_runtime(
         File::create(destination).map_err(|_| OptionalProfileError::VerificationFailed)?;
     let mut digest = Sha256::new();
     let mut written = 0_u64;
-    let mut buffer = [0_u8; COPY_BUFFER_BYTES];
+    let mut buffer = copy_buffer();
     for part in &artifact.parts {
         if cancelled.load(Ordering::Acquire) {
             return Err(OptionalProfileError::Cancelled);
@@ -1141,7 +1796,6 @@ impl OptionalChatterboxManager {
         if let Some(snapshot) = self.operation_snapshot(&manifest) {
             return Ok(snapshot);
         }
-        clean_staging(root)?;
         if manifest.availability == "withheld" {
             return Ok(snapshot_from(
                 &manifest,
@@ -1154,7 +1808,7 @@ impl OptionalChatterboxManager {
             .runtime_artifact
             .as_ref()
             .ok_or(OptionalProfileError::Invalid)?;
-        match verify_runtime(&package_root(root), &manifest) {
+        match prepare_and_verify_installed_runtime(root, &manifest, true) {
             Ok(_) => Ok(snapshot_from(
                 &manifest,
                 OptionalProfileState::Installed,
@@ -1231,6 +1885,7 @@ impl OptionalChatterboxManager {
 
         let result = (|| {
             fs::create_dir_all(root).map_err(|_| OptionalProfileError::CleanupFailed)?;
+            canonical_managed_root(root)?;
             if !sufficient_space(available_space(root)?, measurements.minimum_free_bytes) {
                 return Err(OptionalProfileError::InsufficientSpace);
             }
@@ -1328,7 +1983,7 @@ impl OptionalChatterboxManager {
                 )
                 .map_err(|_| OptionalProfileError::VerificationFailed)?;
             }
-            promote(root, &extracted, &manifest)?;
+            with_installed_runtime_lock(|| promote(root, &extracted, &manifest))?;
             clean_staging(root)?;
             Ok(())
         })();
@@ -1377,7 +2032,7 @@ impl OptionalChatterboxManager {
             state
         };
         if state == OptionalProfileState::Confirming {
-            clean_staging(root)?;
+            with_installed_runtime_lock(|| clean_staging(root))?;
             self.clear_operation();
             return Ok(snapshot_from(
                 &manifest,
@@ -1407,12 +2062,36 @@ impl OptionalChatterboxManager {
                 None,
             ));
         }
-        self.set_operation(OptionalProfileState::Removing, 0, None, None);
-        let package = package_root(root);
-        if package.exists() {
-            fs::remove_dir_all(&package).map_err(|_| OptionalProfileError::CleanupFailed)?;
+        {
+            let operation = self
+                .operation
+                .lock()
+                .map_err(|_| OptionalProfileError::Busy)?;
+            if matches!(
+                operation.state,
+                Some(
+                    OptionalProfileState::Confirming
+                        | OptionalProfileState::Downloading
+                        | OptionalProfileState::Verifying
+                        | OptionalProfileState::Removing
+                )
+            ) {
+                return Err(OptionalProfileError::Busy);
+            }
         }
-        clean_staging(root)?;
+        self.set_operation(OptionalProfileState::Removing, 0, None, None);
+        with_installed_runtime_lock(|| {
+            let package = package_root(root);
+            invalidate_verified_runtime_receipt();
+            remove_contained_directory(root, &package)?;
+            let legacy = legacy_package_root(root);
+            remove_contained_directory(root, &legacy)?;
+            let cache = profile_root(root).join("cache");
+            remove_contained_directory(root, &cache)?;
+            clean_staging(root)?;
+            invalidate_verified_runtime_receipt();
+            Ok(())
+        })?;
         self.clear_operation();
         Ok(snapshot_from(
             &manifest,
@@ -1430,7 +2109,7 @@ pub(crate) fn discover_installed_chatterbox_runtime()
         return Ok(None);
     }
     let root = OptionalChatterboxManager::profile_root_for()?;
-    match verify_runtime(&package_root(root), &manifest) {
+    match prepare_and_verify_installed_runtime(root, &manifest, false) {
         Ok(runtime) => Ok(Some(runtime)),
         Err(OptionalProfileError::VerificationFailed) => Ok(None),
         Err(error) => Err(error),
@@ -1551,7 +2230,11 @@ pub async fn remove_optional_chatterbox(
 mod tests {
     use super::*;
     use std::{
-        sync::atomic::{AtomicU64, Ordering},
+        sync::{
+            Barrier,
+            atomic::{AtomicU64, Ordering},
+        },
+        thread,
         time::{SystemTime, UNIX_EPOCH},
     };
 
@@ -1661,6 +2344,7 @@ mod tests {
         authority
     }
 
+    #[cfg(not(feature = "chatterbox-acquisition-validation"))]
     #[test]
     fn checked_in_authority_records_the_release_but_remains_withheld_for_clean_host() {
         let manifest = exact_manifest().expect("checked in manifest should be valid");
@@ -1684,6 +2368,22 @@ mod tests {
             manifest.withholding_reason.as_deref(),
             Some("clean-host-validation-pending")
         );
+    }
+
+    #[cfg(feature = "chatterbox-acquisition-validation")]
+    #[test]
+    fn validation_feature_applies_only_the_frozen_download_disclosures() {
+        let manifest = exact_manifest().expect("validation manifest should be valid");
+        assert_eq!(manifest.availability, "downloadable");
+        assert!(manifest.withholding_reason.is_none());
+        let measurements = manifest
+            .measurements
+            .expect("validation measurements should be present");
+        assert_eq!(measurements.cold_start_seconds, 60);
+        assert_eq!(measurements.download_bytes, 8_231_893_387);
+        assert_eq!(measurements.installed_bytes, 8_228_503_309);
+        assert_eq!(measurements.temporary_bytes, 13_254_834_850);
+        assert_eq!(measurements.minimum_free_bytes, 20_000_000_000);
     }
 
     #[test]
@@ -1867,6 +2567,271 @@ mod tests {
     }
 
     #[test]
+    fn installed_legacy_runtime_moves_to_short_root_and_repairs_generated_modules() {
+        let root = TestRoot::new();
+        let legacy = legacy_package_root(&root.0);
+        let mut authority = write_runtime(&legacy);
+        let legacy_manifest = fs::read(legacy.join(RUNTIME_MANIFEST_NAME))
+            .expect("legacy manifest should be readable");
+        authority
+            .runtime_correction
+            .accepted_runtime_manifest_sha256 = format!("{:x}", Sha256::digest(&legacy_manifest));
+        let corrected =
+            corrected_runtime_manifest(&legacy_manifest).expect("corrected manifest should render");
+        authority
+            .runtime_artifact
+            .as_mut()
+            .expect("runtime authority should exist")
+            .runtime_manifest_sha256 = format!("{:x}", Sha256::digest(&corrected));
+
+        let transient_cache = legacy.join("runtime/Lib/site-packages/librosa/core/__pycache__");
+        fs::create_dir_all(&transient_cache).expect("transient cache should be created");
+        fs::write(transient_cache.join("audio.nbc"), b"cache")
+            .expect("transient data should be written");
+        fs::write(transient_cache.join("audio.nbi"), b"cache")
+            .expect("transient index should be written");
+
+        prepare_installed_runtime(&root.0, &authority)
+            .expect("legacy package should move and repair");
+        let installed = package_root(&root.0);
+        assert!(installed.exists());
+        assert!(!legacy.exists());
+        assert!(
+            installed
+                .join("runtime/Lib/site-packages/transformers/models/very_long_component.py")
+                .to_string_lossy()
+                .len()
+                < legacy
+                    .join("runtime/Lib/site-packages/transformers/models/very_long_component.py")
+                    .to_string_lossy()
+                    .len()
+        );
+
+        assert!(
+            !installed
+                .join("runtime/Lib/site-packages/librosa/core/__pycache__/audio.nbc")
+                .exists()
+        );
+        assert!(
+            !installed
+                .join("runtime/Lib/site-packages/librosa/core/__pycache__/audio.nbi")
+                .exists()
+        );
+        for (relative, contents) in GENERATED_RUNTIME_FILES {
+            assert_eq!(
+                fs::read(installed.join(relative)).expect("generated module should exist"),
+                contents
+            );
+        }
+        assert_eq!(
+            fs::read(installed.join(RUNTIME_MANIFEST_NAME))
+                .expect("corrected manifest should be readable"),
+            corrected
+        );
+        assert!(verify_runtime(&installed, &authority).is_ok());
+    }
+
+    #[test]
+    fn installed_runtime_removes_only_unmanifested_python_cache_bytecode() {
+        let root = TestRoot::new();
+        let authority = write_runtime(&root.0);
+        let python_cache = root.0.join("runtime/Lib/site-packages/example/__pycache__");
+        fs::create_dir_all(&python_cache).expect("Python cache directory should be created");
+        let stale_bytecode = python_cache.join("module.cpython-312.pyc");
+        let unexpected_cache_file = python_cache.join("keep.txt");
+        let bytecode_outside_cache = root.0.join("runtime/Lib/site-packages/example/module.pyc");
+        fs::write(&stale_bytecode, b"stale bytecode").expect("bytecode fixture should be written");
+        fs::write(&unexpected_cache_file, b"unexpected")
+            .expect("unexpected cache fixture should be written");
+        fs::write(&bytecode_outside_cache, b"unexpected")
+            .expect("outside-cache fixture should be written");
+
+        remove_unmanifested_python_bytecode(&root.0, &authority)
+            .expect("safe bytecode cleanup should succeed");
+
+        assert!(!stale_bytecode.exists());
+        assert!(unexpected_cache_file.exists());
+        assert!(bytecode_outside_cache.exists());
+        assert_eq!(
+            verify_runtime(&root.0, &authority),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+    }
+
+    #[test]
+    fn installed_runtime_verifies_after_safe_python_bytecode_cleanup() {
+        let root = TestRoot::new();
+        let authority = write_runtime(&root.0);
+        let python_cache = root.0.join("runtime/Lib/site-packages/example/__pycache__");
+        fs::create_dir_all(&python_cache).expect("Python cache directory should be created");
+        fs::write(
+            python_cache.join("module.cpython-312.pyc"),
+            b"stale bytecode",
+        )
+        .expect("bytecode fixture should be written");
+
+        remove_unmanifested_python_bytecode(&root.0, &authority)
+            .expect("safe bytecode cleanup should succeed");
+
+        assert!(verify_runtime(&root.0, &authority).is_ok());
+    }
+
+    #[test]
+    fn transient_numba_cache_path_must_be_a_contained_directory() {
+        let root = TestRoot::new();
+        let cache = root
+            .0
+            .join("runtime/Lib/site-packages/librosa/core/__pycache__");
+        fs::create_dir_all(cache.parent().expect("cache parent should exist"))
+            .expect("cache parent should be created");
+        fs::write(&cache, b"not a directory").expect("cache fixture should be written");
+
+        assert_eq!(
+            remove_transient_numba_cache_files(&root.0),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn transient_numba_cache_rejects_a_symlink_outside_the_package() {
+        use std::os::unix::fs::symlink;
+
+        let root = TestRoot::new();
+        let outside = TestRoot::new();
+        fs::write(outside.0.join("audio.nbc"), b"outside")
+            .expect("outside cache fixture should be written");
+        let cache = root
+            .0
+            .join("runtime/Lib/site-packages/librosa/core/__pycache__");
+        fs::create_dir_all(cache.parent().expect("cache parent should exist"))
+            .expect("cache parent should be created");
+        symlink(&outside.0, &cache).expect("cache symlink should be created");
+
+        assert_eq!(
+            remove_transient_numba_cache_files(&root.0),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+        assert!(outside.0.join("audio.nbc").exists());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn installed_package_root_rejects_a_symlink_outside_the_managed_root() {
+        use std::os::unix::fs::symlink;
+
+        let managed = TestRoot::new();
+        let outside = TestRoot::new();
+        let authority = write_runtime(&outside.0);
+        let package = package_root(&managed.0);
+        fs::create_dir_all(package.parent().expect("package parent should exist"))
+            .expect("package parent should be created");
+        symlink(&outside.0, &package).expect("package symlink should be created");
+
+        assert_eq!(
+            prepare_installed_runtime(&managed.0, &authority),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+        assert!(outside.0.join("runtime/python.exe").exists());
+    }
+
+    #[cfg(feature = "chatterbox-acquisition-validation")]
+    #[test]
+    fn removal_rejects_an_active_download_without_touching_staging() {
+        let root = TestRoot::new();
+        let staging = staging_root(&root.0).join("operation");
+        fs::create_dir_all(&staging).expect("staging fixture should be created");
+        fs::write(staging.join("partial.bin"), b"partial")
+            .expect("staging fixture should be written");
+        let manager = OptionalChatterboxManager::default();
+        manager.set_operation(
+            OptionalProfileState::Downloading,
+            1,
+            None,
+            Some(Arc::new(AtomicBool::new(false))),
+        );
+
+        assert_eq!(manager.remove_at(&root.0), Err(OptionalProfileError::Busy));
+        assert!(staging.join("partial.bin").exists());
+    }
+
+    #[test]
+    fn concurrent_installed_runtime_checks_are_serialized() {
+        invalidate_verified_runtime_receipt();
+        let root = TestRoot::new();
+        let package = package_root(&root.0);
+        fs::create_dir_all(&package).expect("package root should be created");
+        let authority = write_runtime(&package);
+        let python_cache = package.join("runtime/Lib/site-packages/example/__pycache__");
+        fs::create_dir_all(&python_cache).expect("Python cache directory should be created");
+        fs::write(
+            python_cache.join("module.cpython-312.pyc"),
+            b"stale bytecode",
+        )
+        .expect("bytecode fixture should be written");
+        let barrier = Arc::new(Barrier::new(3));
+        let mut workers = Vec::new();
+        for _ in 0..2 {
+            let worker_root = root.0.clone();
+            let worker_authority = authority.clone();
+            let worker_barrier = Arc::clone(&barrier);
+            workers.push(thread::spawn(move || {
+                worker_barrier.wait();
+                prepare_and_verify_installed_runtime(&worker_root, &worker_authority, false)
+            }));
+        }
+        barrier.wait();
+        for worker in workers {
+            assert!(
+                worker
+                    .join()
+                    .expect("runtime-check worker should not panic")
+                    .is_ok()
+            );
+        }
+        assert!(!python_cache.join("module.cpython-312.pyc").exists());
+        assert!(verify_runtime(&package, &authority).is_ok());
+        invalidate_verified_runtime_receipt();
+    }
+
+    #[test]
+    fn verified_runtime_receipt_rechecks_tree_and_authority_changes() {
+        invalidate_verified_runtime_receipt();
+        let root = TestRoot::new();
+        let authority = write_runtime(&root.0);
+        let first = verify_runtime_cached(&root.0, &authority)
+            .expect("first verification should create a receipt");
+        assert_eq!(
+            verify_runtime_cached(&root.0, &authority),
+            Ok(first.clone())
+        );
+
+        fs::write(root.0.join("unexpected.txt"), b"unexpected")
+            .expect("unexpected fixture should be written");
+        assert_eq!(
+            verify_runtime_cached(&root.0, &authority),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+        fs::remove_file(root.0.join("unexpected.txt"))
+            .expect("unexpected fixture should be removed");
+
+        let mut changed_authority = authority.clone();
+        changed_authority.model_artifacts[0].sha256 = "f".repeat(64);
+        assert_eq!(
+            verify_runtime_cached(&root.0, &changed_authority),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+
+        fs::write(root.0.join("runtime/python.exe"), b"changed-python")
+            .expect("runtime mutation should be written");
+        assert_eq!(
+            verify_runtime_cached(&root.0, &authority),
+            Err(OptionalProfileError::VerificationFailed)
+        );
+        invalidate_verified_runtime_receipt();
+    }
+
+    #[test]
     fn free_space_gate_is_inclusive_and_result_blind() {
         assert!(sufficient_space(20, 20));
         assert!(!sufficient_space(19, 20));
@@ -1952,6 +2917,23 @@ mod tests {
     }
 
     #[test]
+    fn hashes_optional_payloads_without_a_large_stack_allocation() {
+        let root = TestRoot::new();
+        let path = root.0.join("payload.bin");
+        fs::write(&path, vec![7_u8; 2 * COPY_BUFFER_BYTES]).expect("fixture should be written");
+        let expected = format!("{:x}", Sha256::digest(vec![7_u8; 2 * COPY_BUFFER_BYTES]));
+        let actual = std::thread::Builder::new()
+            .stack_size(256 * 1024)
+            .spawn(move || sha256_file(&path))
+            .expect("bounded-stack worker should start")
+            .join()
+            .expect("bounded-stack hashing should not overflow")
+            .expect("fixture should hash");
+        assert_eq!(actual, expected);
+    }
+
+    #[cfg(not(feature = "chatterbox-acquisition-validation"))]
+    #[test]
     fn withholding_does_not_create_staging_or_change_the_existing_profile() {
         let root = TestRoot::new();
         let stale_staging = staging_root(&root.0).join("operation/package.zip");
@@ -1967,6 +2949,25 @@ mod tests {
             .select_at(&root.0)
             .expect("select should be contained");
         assert_eq!(selected.state, OptionalProfileState::Withheld);
+        assert!(!staging_root(&root.0).exists());
+        assert!(!profile_root(&root.0).exists());
+    }
+
+    #[cfg(feature = "chatterbox-acquisition-validation")]
+    #[test]
+    fn validation_selection_requires_confirmation_without_creating_staging() {
+        let root = TestRoot::new();
+        let manager = OptionalChatterboxManager::default();
+        let before = manager
+            .snapshot_at(&root.0)
+            .expect("snapshot should succeed");
+        assert_eq!(before.state, OptionalProfileState::Absent);
+        let selected = manager
+            .select_at(&root.0)
+            .expect("selection should reach consent");
+        assert_eq!(selected.state, OptionalProfileState::Confirming);
+        assert_eq!(selected.download_bytes, Some(8_231_893_387));
+        assert_eq!(selected.minimum_free_bytes, Some(20_000_000_000));
         assert!(!staging_root(&root.0).exists());
         assert!(!profile_root(&root.0).exists());
     }

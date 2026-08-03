@@ -232,12 +232,26 @@ automatic updater. Ordinary development and repository builds remain
 unbundled. The exact resource allowlist excludes Chatterbox runtime/weights,
 Qwen, benchmark tools, candidate environments, books, audio, and private data.
 
-The measured unsigned local installer is `181,654,713` bytes with SHA-256
-`9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c`.
-Its local install/first-start/repair/uninstall matrix passed outside the
-automation sandbox, and Windows Defender reported no threats for the exact
-artifact. SmartScreen was not observed, so no reputation claim is made. This is
-content-safe local evidence, not clean-host or public-release acceptance.
+The current measured unsigned local installer is `181,658,228` bytes with
+SHA-256
+`f167dacdb4221cdd989ed5ed92d070b5fd5d9ecab89a9af6e54feec5be3a6b12`.
+Its immediate predecessor passed the installed bilingual portfolio matrix and
+two consecutive local install/first-start/repair/uninstall cycles outside the
+automation sandbox, and Microsoft Defender reported no threats for that exact
+predecessor. The current hash passes the static release-package gate but still
+requires the remaining lifecycle, Defender, and independent-host checks.
+SmartScreen was not observed, so no reputation claim is made. This is content-
+safe development-host evidence, not clean-host or public-release acceptance.
+The optional Chatterbox manifest remains withheld until a separate compatible
+clean-GPU host passes download, offline bilingual narration, restart, removal,
+and Piper-after-removal validation.
+
+An independent Windows-host attempt exposed a visible blank console for the
+private Piper child. The rebuilt candidate now starts every supervised child
+with Windows `CREATE_NO_WINDOW` while retaining the same pipe protocol and Job
+Object termination boundary. Local installed narration, lifecycle, and Defender
+validation pass for the corrected artifact; independent visual confirmation is
+still required before the clean-host core gate closes.
 
 The signing command accepts only an externally protected certificate
 thumbprint and HTTPS timestamp URL. It emits the release configuration outside
@@ -292,12 +306,12 @@ Before the application may offer **Download and enable Chatterbox**, M011 must:
 9. prove that normal EPUB reading and both Piper voices remain usable while the
    package is absent, declined, cancelled, corrupt, incompatible, or removed;
 10. prove installed Chatterbox Spanish/English narration offline on a compatible
-   clean Windows GPU host, with one service tree, existing cancellation and
-   memory bounds, no generated-audio persistence, and truthful cold-load and
-   resource disclosure; and
+    clean Windows GPU host, with one service tree, existing cancellation and
+    memory bounds, no generated-audio persistence, and truthful cold-load and
+    resource disclosure; and
 11. remove the optional package and its application-owned staging/cache state
-   without deleting the desktop application, preferences, reading progress, or
-   user EPUBs.
+    without deleting the desktop application, preferences, reading progress, or
+    user EPUBs.
 
 **Current M011 Milestone 4B status:** the repository implements the native-owned
 state machine and v2 closed multi-artifact controller. It fixes the exact six
@@ -309,16 +323,133 @@ only a complete versioned profile. It never executes model-repository code or
 accepts renderer-supplied network/path authority.
 
 The deterministic runtime-only builder produces the same 5,022,941,463-byte
-archive and three part hashes across two builds. Aggregate download is
-8,231,893,387 bytes; aggregate installation is 8,228,465,805 bytes; calculated
-peak staging is 13,254,834,850 bytes after verified parts are discarded before
-extraction. These are local package facts, not end-user availability evidence.
+archive and three part hashes across two builds. Those published v2 assets stay
+immutable. Aggregate download is 8,231,893,387 bytes. After the exact local
+closure correction in ADR-0046, aggregate installation is 8,228,503,309 bytes;
+calculated peak staging remains bounded by 13,254,834,850 bytes after verified
+parts are discarded before extraction. These are local package facts, not
+end-user availability evidence.
 The checked-in v2 manifest remains `withheld` even though the exact three
 runtime parts are published under `chatterbox-runtime-v2`: clean-user online
 acquisition, offline bilingual narration, removal, reinstall, licence/audit,
 and resource gates have not run. This is a fail-closed clean-host blocker for
 optional Chatterbox, not a failure of the Piper core or an authorization to
 claim Download works.
+
+ADR-0045 permits one compile-time, separately identified validation build on
+the maintainer's only compatible computer. Its exact overlay supplies the
+measured disclosure fields and `downloadable` state without changing the
+canonical manifest, URLs, hashes, limits, hardware gate, or normal package.
+This path remains unsigned and local-only, uses a distinct application-data
+root, and cannot be attached to a public release or counted as clean-host
+evidence. No renderer flag, environment override, arbitrary URL, or bundled
+Chatterbox payload is introduced.
+
+The first real Download attempts on that local validation build exposed two
+package-only defects rather than a Chatterbox model failure. The renderer did
+not poll native progress until the long-running command returned, and the
+native optional-package path allocated 1-MiB buffers on worker-thread stacks;
+Windows recorded stack-overflow exception `c00000fd`. The corrected build polls
+as soon as explicit consent starts the operation, displays an accessible
+byte-based progress bar, and uses heap-backed buffers for hashing, transfer,
+extraction, and runtime reassembly. The current unsigned local validation
+installer is `181,637,194` bytes with SHA-256
+`a22219872d96684725011acb90bfa6185bd8da80775182f9dec39224db789054`;
+Microsoft Defender reports no threats for that exact file. This correction does
+not relax the validation-only boundary: a maintainer rerun of the complete
+download, activation, offline narration, restart, removal, and Piper fallback
+journey is still required before any optional-profile readiness decision.
+
+The subsequent explicit download completed and installed the verified package,
+but installation did not itself select Chatterbox, as required by the frozen
+identity boundary. A separate UI defect made that distinction harder to recover
+from: optional activation selected the profile but did not reset an existing
+narration recovery episode, so the compact bar could remain on **Restart local
+narration** while Piper was still the supervised child. Successful optional
+activation now performs the same recovery reset as ordinary profile selection,
+failed activation preserves the existing failure, and Settings states clearly
+that an installed package must still be activated. This correction neither
+auto-activates downloaded code nor weakens the explicit-consent boundary. The
+resulting unsigned local validation installer is `181,628,621` bytes with
+SHA-256
+`c9de20363a329dd0f7e0bc8d66f8e795246f8c180dca5e32718d767cfc73971b`;
+its exact Microsoft Defender scan reports no threats.
+
+The next installed narration attempt proved that download verification and
+hardware admission were not the failing boundary. The installed runtime and
+model artifacts passed their hashes; Torch reported CUDA and BF16 available on
+the selected GPU. Service import then failed because the published runtime had
+omitted two generated VoxLeaf protocol modules. Supplying those modules exposed
+a second independent Windows issue: a required Transformers file existed but
+its historical installed path was 261 characters, beyond the conventional API
+limit used by the embedded Python stack. [ADR-0046](../architecture/decisions/ADR-0046-repair-chatterbox-runtime-closure-and-windows-path.md)
+keeps every published runtime-v2 part immutable, moves an exact legacy package
+to `app-local-data/tts/cb/2`, adds only the two hash-frozen repository modules,
+and fully verifies the corrected tree. The longest measured final path is 218
+characters. Existing verified downloads are repaired locally without another
+network transfer; unknown manifests or files fail closed. Model cold load and
+the initial multi-gigabyte integrity pass can still take tens of seconds and
+must remain visible rather than being described as an instant activation.
+The same failed probe created six Librosa/Numba `.nbi`/`.nbc` cache files inside
+the verified runtime despite Python bytecode suppression. Migration removes
+only that known cache class before legacy verification, and subsequent service
+children receive `NUMBA_CACHE_DIR=app-local-data/tts/cb/cache`. Chatterbox
+removal owns that transient cache; it never contains EPUB text or generated
+audio.
+The corrected unsigned validation installer is `181,673,215` bytes with
+SHA-256
+`0bcd54de8881f855ea8a707c91a8b73554425699b7223ce9c33144149268c449`;
+Microsoft Defender reports no threats for that exact file. Installed narration
+and the remaining lifecycle arms still require maintainer confirmation.
+
+The next installed-product attempt kept the Chatterbox profile selected but
+still returned contained recovery before audible narration. Direct framed
+service execution passed with conventional Windows paths but failed model load
+with `engine-failure` when given the canonical verbatim `\\?\` paths supplied
+by the native supervisor. Canonicalization remains correct for native trust and
+containment. The corrected supervisor strips only the verbatim prefix at the
+child-process construction boundary, including `\\?\UNC\` conversion, and
+retains canonical paths everywhere authority is discovered or checked. A
+focused Windows regression passes, and the exact installed supervisor completes
+load, warmup, synthetic synthesis, and shutdown. Two unchanged cold runs took
+`29.61` and `82.34` seconds, which records cold-run variability rather than a
+fixed initialization duration.
+
+The correction preserves the immutable package authority while separating it
+from derived runtime caches. Only allowlisted interpreter-generated bytecode or
+compilation cache entries under exact application-owned cache locations may be
+removed; no authority-listed runtime/model file may be modified, skipped, or
+accepted by path alone. The complete corrected manifest and every listed file
+are size/SHA-256 verified before the process receipt is created. A successful complete verification may then be
+represented by one receipt in native process memory, keyed to the exact package
+and manifest identity. That receipt is never persisted, is invalidated by
+install/repair/removal, is not reused when its authority key or observed tree
+metadata differs, and disappears when VoxLeaf exits.
+Consequently, every application process performs one full integrity pass before
+first Chatterbox use, while repeated Settings snapshots, activation, and start
+checks in the same run need not hash the approximately 8.23-GB tree again.
+Later checks compare the exact authority key and tree metadata rather than
+rehashing every file byte. This detects ordinary additions, removals, size or
+timestamp changes, and containment violations, but is not tamper-evident
+protection against malicious same-user mutation or a time-of-check/time-of-use
+race. VoxLeaf does not claim protection once another process running as the
+current Windows user is compromised.
+
+Activation remains a separate explicit action and does not start or preload the
+model. The first narration start in an application process may therefore still
+include the disclosed cold model load after integrity verification. The rebuilt
+final unsigned validation installer is `181,694,782` bytes with
+SHA-256
+`289c93e63d07e0001b667d964396ea5a611a5bf38f411f9158e92e829d35f148`;
+Microsoft Defender reports no threats for that exact file. Its exact installed
+Spanish WebView2 matrix passes with `45.990`-second Quick command-to-audible,
+`82.096`-second Prepared startup with `66.48` seconds retained, `1.23` warm
+Prepared RTF, `3,808` MiB peak VRAM, `4,865,605,632` bytes peak process-tree
+working set, `469`-ms cancellation, `756`-ms cleanup, and zero generated files
+or external requests. English narration, application restart (including fresh
+verification), removal/reinstall, Piper operation after removal, independent
+clean-host evidence, and public signing remain open before optional-profile
+readiness can be claimed.
 
 Hugging Face documents full-commit downloads, per-file downloads, filtered
 snapshots, and application-selected cache/local directories. VoxLeaf uses the

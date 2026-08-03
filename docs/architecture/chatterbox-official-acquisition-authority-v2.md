@@ -12,9 +12,10 @@ claims remain unchanged.
 
 Milestone 4A and its withheld schema-v1 archive manifest remain historical
 evidence. The v2 package identity is `voxleaf-chatterbox-v2`, package version
-`2`, installed beneath
-`app-local-data/tts/profiles/chatterbox-multilingual-v3-cuda-bf16-default-v4/2`.
-No v1 payload is accepted as v2.
+`2`. [ADR-0046](decisions/ADR-0046-repair-chatterbox-runtime-closure-and-windows-path.md)
+additively supersedes only the installed path and runtime-closure correction:
+the accepted final root is `app-local-data/tts/cb/2`. No v1 payload is accepted
+as v2.
 
 ## Closed acquisition set
 
@@ -60,6 +61,14 @@ The end user does not need system Python, `pip`, Git, a developer shell,
 administrator rights, a Hugging Face token, or a manually created firewall
 rule. Building and publishing the runtime are maintainer release actions;
 installing it is a native VoxLeaf operation.
+
+The published v2 parts remain immutable. Their exact legacy runtime manifest
+omits two repository-owned generated protocol modules needed by the packaged
+service. ADR-0046 therefore freezes a native correction that accepts only that
+legacy manifest hash, embeds the two exact VoxLeaf modules, renders the
+corrected complete manifest, and re-verifies the whole installed tree. The
+archive and part identities do not change; the final corrected runtime manifest
+is the installed execution authority.
 
 ## Trust and redirects
 
@@ -109,6 +118,13 @@ is a later explicit identity-first action. Removal first stops owned narration,
 then removes only the exact versioned profile and acquisition staging/cache.
 Piper remains usable after every absent, declined, partial, corrupt,
 interrupted, stale, removed, or incompatible Chatterbox outcome.
+
+For an already installed exact legacy package, the native manager performs a
+same-volume rename to `app-local-data/tts/cb/2`, verifies the legacy tree,
+applies the two-file correction, and verifies the corrected tree. Unknown
+manifest hashes, conflicting target files, a failed move, or any final tree
+mismatch fail closed. This migration performs no download and never selects or
+starts Chatterbox by itself.
 
 ## Deserialization and execution
 
