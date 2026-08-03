@@ -25,6 +25,16 @@ pub(crate) const PROFILE_ID: &str = "chatterbox-multilingual-v3-cuda-bf16-defaul
 const PACKAGE_ID: &str = "voxleaf-chatterbox-v2";
 const PACKAGE_VERSION: &str = "2";
 const RUNTIME_MANIFEST_NAME: &str = "runtime-manifest-v2.json";
+const GENERATED_RUNTIME_FILES: [(&str, &[u8]); 2] = [
+    (
+        "runtime/Lib/site-packages/voxleaf_tts/generated/__init__.py",
+        include_bytes!("../../../../services/tts/src/voxleaf_tts/generated/__init__.py"),
+    ),
+    (
+        "runtime/Lib/site-packages/voxleaf_tts/generated/protocol_schemas.py",
+        include_bytes!("../../../../services/tts/src/voxleaf_tts/generated/protocol_schemas.py"),
+    ),
+];
 const MODEL_REVISION: &str = "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18";
 const MODEL_DOWNLOAD_BASE: &str = "https://huggingface.co/ResembleAI/chatterbox/resolve/5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18/";
 const CHATTERBOX_SOURCE: &str =
@@ -128,6 +138,7 @@ struct OptionalPackageManifest {
     runtime: OptionalRuntime,
     withholding_reason: Option<String>,
     runtime_artifact: Option<RuntimeArtifact>,
+    runtime_correction: RuntimeCorrection,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -260,6 +271,21 @@ struct RuntimeArtifact {
     runtime_manifest_sha256: String,
 }
 
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RuntimeCorrection {
+    accepted_runtime_manifest_sha256: String,
+    files: Vec<RuntimeCorrectionFile>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RuntimeCorrectionFile {
+    path: String,
+    sha256: String,
+    size_bytes: u64,
+}
+
 trait DownloadIdentity {
     fn url(&self) -> &str;
     fn sha256(&self) -> &str;
@@ -294,7 +320,7 @@ impl DownloadIdentity for RuntimePart {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct InstalledRuntimeManifest {
     schema_version: u8,
@@ -308,7 +334,7 @@ struct InstalledRuntimeManifest {
     files: Vec<RuntimeFile>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct RuntimeFile {
     path: String,
@@ -321,6 +347,7 @@ pub(crate) struct InstalledChatterboxRuntime {
     pub python: PathBuf,
     pub model_root: PathBuf,
     pub site_packages: PathBuf,
+    pub numba_cache_root: PathBuf,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -401,7 +428,7 @@ fn apply_validation_overlay(
         || overlay.public_publication_allowed
         || measurements.cold_start_seconds != 60
         || measurements.download_bytes != 8_231_893_387
-        || measurements.installed_bytes != 8_228_465_805
+        || measurements.installed_bytes != 8_228_503_309
         || measurements.minimum_free_bytes != 20_000_000_000
         || measurements.temporary_bytes != 13_254_834_850
         || manifest.availability != "withheld"
@@ -438,7 +465,7 @@ fn validate_manifest(manifest: &OptionalPackageManifest) -> Result<(), OptionalP
         || manifest.languages.as_slice() != ["en".to_owned(), "es".to_owned()]
         || manifest.layout.root != "app-local-data/tts"
         || manifest.layout.staging != format!("staging/{PROFILE_ID}/operation")
-        || manifest.layout.installed != format!("profiles/{PROFILE_ID}/{PACKAGE_VERSION}")
+        || manifest.layout.installed != format!("cb/{PACKAGE_VERSION}")
         || ![
             &manifest.licences.chatterbox,
             &manifest.licences.model,
@@ -477,6 +504,7 @@ fn validate_manifest(manifest: &OptionalPackageManifest) -> Result<(), OptionalP
         || limits.maximum_installed_bytes != 9_000_000_000
         || limits.maximum_staging_bytes != 15_000_000_000
         || limits.maximum_user_disclosed_free_bytes != 20_000_000_000
+        || !validate_runtime_correction(&manifest.runtime_correction)
     {
         return Err(OptionalProfileError::Invalid);
     }
@@ -515,6 +543,21 @@ fn validate_manifest(manifest: &OptionalPackageManifest) -> Result<(), OptionalP
         }
         _ => Err(OptionalProfileError::Invalid),
     }
+}
+
+fn validate_runtime_correction(correction: &RuntimeCorrection) -> bool {
+    correction.accepted_runtime_manifest_sha256
+        == "cb5055580a28a0c97e50535a8317ea506081230b70e0099d8fe0194591e1c635"
+        && correction.files.len() == GENERATED_RUNTIME_FILES.len()
+        && correction
+            .files
+            .iter()
+            .zip(GENERATED_RUNTIME_FILES)
+            .all(|(record, (path, contents))| {
+                record.path == path
+                    && record.size_bytes == contents.len() as u64
+                    && record.sha256 == format!("{:x}", Sha256::digest(contents))
+            })
 }
 
 fn validate_runtime_artifact(artifact: &RuntimeArtifact, limits: &AcquisitionLimits) -> bool {
@@ -655,11 +698,15 @@ fn sha256_file_cancelled(
 }
 
 fn profile_root(root: &Path) -> PathBuf {
-    root.join("profiles").join(PROFILE_ID)
+    root.join("cb")
 }
 
 fn package_root(root: &Path) -> PathBuf {
     profile_root(root).join(PACKAGE_VERSION)
+}
+
+fn legacy_package_root(root: &Path) -> PathBuf {
+    root.join("profiles").join(PROFILE_ID).join(PACKAGE_VERSION)
 }
 
 fn staging_root(root: &Path) -> PathBuf {
@@ -820,7 +867,173 @@ fn verify_runtime(
         python,
         model_root,
         site_packages,
+        numba_cache_root: root
+            .parent()
+            .ok_or(OptionalProfileError::VerificationFailed)?
+            .join("cache"),
     })
+}
+
+fn remove_transient_numba_cache_files(root: &Path) -> Result<(), OptionalProfileError> {
+    let cache = root.join("runtime/Lib/site-packages/librosa/core/__pycache__");
+    if !cache.exists() {
+        return Ok(());
+    }
+    for entry in fs::read_dir(cache).map_err(|_| OptionalProfileError::CleanupFailed)? {
+        let entry = entry.map_err(|_| OptionalProfileError::CleanupFailed)?;
+        let path = entry.path();
+        let metadata =
+            fs::symlink_metadata(&path).map_err(|_| OptionalProfileError::CleanupFailed)?;
+        if metadata.file_type().is_symlink() || !metadata.is_file() {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+        if matches!(
+            path.extension().and_then(|value| value.to_str()),
+            Some("nbc" | "nbi")
+        ) {
+            fs::remove_file(path).map_err(|_| OptionalProfileError::CleanupFailed)?;
+        }
+    }
+    Ok(())
+}
+
+fn migrate_legacy_package_root(root: &Path) -> Result<(), OptionalProfileError> {
+    let destination = package_root(root);
+    if destination.exists() {
+        return Ok(());
+    }
+    let legacy = legacy_package_root(root);
+    if !legacy.exists() {
+        return Ok(());
+    }
+    let parent = destination
+        .parent()
+        .ok_or(OptionalProfileError::CleanupFailed)?;
+    fs::create_dir_all(parent).map_err(|_| OptionalProfileError::CleanupFailed)?;
+    fs::rename(&legacy, &destination).map_err(|_| OptionalProfileError::CleanupFailed)?;
+    if let Some(profile) = legacy.parent() {
+        let _ = fs::remove_dir(profile);
+        if let Some(profiles) = profile.parent() {
+            let _ = fs::remove_dir(profiles);
+        }
+    }
+    Ok(())
+}
+
+fn corrected_runtime_manifest(manifest_bytes: &[u8]) -> Result<Vec<u8>, OptionalProfileError> {
+    let mut value = serde_json::from_slice::<serde_json::Value>(manifest_bytes)
+        .map_err(|_| OptionalProfileError::VerificationFailed)?;
+    let files = value
+        .get_mut("files")
+        .and_then(serde_json::Value::as_array_mut)
+        .ok_or(OptionalProfileError::VerificationFailed)?;
+    for (relative, contents) in GENERATED_RUNTIME_FILES {
+        if files
+            .iter()
+            .any(|record| record.get("path").and_then(serde_json::Value::as_str) == Some(relative))
+        {
+            return Err(OptionalProfileError::VerificationFailed);
+        }
+        files.push(serde_json::json!({
+            "path": relative,
+            "sha256": format!("{:x}", Sha256::digest(contents)),
+            "sizeBytes": contents.len(),
+        }));
+    }
+    files.sort_by(|left, right| {
+        left.get("path")
+            .and_then(serde_json::Value::as_str)
+            .cmp(&right.get("path").and_then(serde_json::Value::as_str))
+    });
+    let mut corrected =
+        serde_json::to_vec_pretty(&value).map_err(|_| OptionalProfileError::VerificationFailed)?;
+    corrected.push(b'\n');
+    Ok(corrected)
+}
+
+fn repair_runtime_modules(
+    root: &Path,
+    manifest_authority: &OptionalPackageManifest,
+    legacy_manifest_sha256: &str,
+) -> Result<(), OptionalProfileError> {
+    let runtime_authority = manifest_authority
+        .runtime_artifact
+        .as_ref()
+        .ok_or(OptionalProfileError::VerificationFailed)?;
+    let manifest_path = root.join(RUNTIME_MANIFEST_NAME);
+    let manifest_bytes =
+        fs::read(&manifest_path).map_err(|_| OptionalProfileError::VerificationFailed)?;
+    let manifest_hash = format!("{:x}", Sha256::digest(&manifest_bytes));
+    if manifest_hash == runtime_authority.runtime_manifest_sha256 {
+        return Ok(());
+    }
+    if manifest_hash != legacy_manifest_sha256 {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+
+    let corrected = corrected_runtime_manifest(&manifest_bytes)?;
+    if format!("{:x}", Sha256::digest(&corrected)) != runtime_authority.runtime_manifest_sha256 {
+        return Err(OptionalProfileError::VerificationFailed);
+    }
+
+    for (relative, contents) in GENERATED_RUNTIME_FILES {
+        let target = root.join(safe_relative_path(relative)?);
+        if target.exists() {
+            if !target.is_file()
+                || sha256_file(&target)? != format!("{:x}", Sha256::digest(contents))
+            {
+                return Err(OptionalProfileError::VerificationFailed);
+            }
+            fs::remove_file(&target).map_err(|_| OptionalProfileError::CleanupFailed)?;
+        }
+    }
+    let mut legacy_authority = manifest_authority.clone();
+    legacy_authority
+        .runtime_artifact
+        .as_mut()
+        .ok_or(OptionalProfileError::VerificationFailed)?
+        .runtime_manifest_sha256 = legacy_manifest_sha256.to_owned();
+    verify_runtime(root, &legacy_authority)?;
+
+    for (relative, contents) in GENERATED_RUNTIME_FILES {
+        let target = root.join(safe_relative_path(relative)?);
+        fs::create_dir_all(
+            target
+                .parent()
+                .ok_or(OptionalProfileError::VerificationFailed)?,
+        )
+        .map_err(|_| OptionalProfileError::CleanupFailed)?;
+        fs::write(target, contents).map_err(|_| OptionalProfileError::CleanupFailed)?;
+    }
+    fs::write(&manifest_path, corrected).map_err(|_| OptionalProfileError::CleanupFailed)?;
+    verify_runtime(root, manifest_authority)?;
+    Ok(())
+}
+
+fn repair_legacy_runtime_modules(
+    root: &Path,
+    manifest_authority: &OptionalPackageManifest,
+) -> Result<(), OptionalProfileError> {
+    repair_runtime_modules(
+        root,
+        manifest_authority,
+        &manifest_authority
+            .runtime_correction
+            .accepted_runtime_manifest_sha256,
+    )
+}
+
+fn prepare_installed_runtime(
+    root: &Path,
+    manifest_authority: &OptionalPackageManifest,
+) -> Result<(), OptionalProfileError> {
+    migrate_legacy_package_root(root)?;
+    let package = package_root(root);
+    if package.exists() {
+        remove_transient_numba_cache_files(&package)?;
+        repair_legacy_runtime_modules(&package, manifest_authority)?;
+    }
+    Ok(())
 }
 
 fn extract_archive(
@@ -909,6 +1122,7 @@ fn promote(
     let destination = package_root(root);
     let parent = destination.parent().ok_or(OptionalProfileError::Invalid)?;
     fs::create_dir_all(parent).map_err(|_| OptionalProfileError::CleanupFailed)?;
+    repair_legacy_runtime_modules(staging, manifest)?;
     verify_runtime(staging, manifest)?;
     let backup = parent.join(".previous");
     let _ = fs::remove_dir_all(&backup);
@@ -1207,6 +1421,7 @@ impl OptionalChatterboxManager {
             .runtime_artifact
             .as_ref()
             .ok_or(OptionalProfileError::Invalid)?;
+        prepare_installed_runtime(root, &manifest)?;
         match verify_runtime(&package_root(root), &manifest) {
             Ok(_) => Ok(snapshot_from(
                 &manifest,
@@ -1465,6 +1680,14 @@ impl OptionalChatterboxManager {
         if package.exists() {
             fs::remove_dir_all(&package).map_err(|_| OptionalProfileError::CleanupFailed)?;
         }
+        let legacy = legacy_package_root(root);
+        if legacy.exists() {
+            fs::remove_dir_all(legacy).map_err(|_| OptionalProfileError::CleanupFailed)?;
+        }
+        let cache = profile_root(root).join("cache");
+        if cache.exists() {
+            fs::remove_dir_all(cache).map_err(|_| OptionalProfileError::CleanupFailed)?;
+        }
         clean_staging(root)?;
         self.clear_operation();
         Ok(snapshot_from(
@@ -1483,6 +1706,7 @@ pub(crate) fn discover_installed_chatterbox_runtime()
         return Ok(None);
     }
     let root = OptionalChatterboxManager::profile_root_for()?;
+    prepare_installed_runtime(root, &manifest)?;
     match verify_runtime(&package_root(root), &manifest) {
         Ok(runtime) => Ok(Some(runtime)),
         Err(OptionalProfileError::VerificationFailed) => Ok(None),
@@ -1751,7 +1975,7 @@ mod tests {
             .expect("validation measurements should be present");
         assert_eq!(measurements.cold_start_seconds, 60);
         assert_eq!(measurements.download_bytes, 8_231_893_387);
-        assert_eq!(measurements.installed_bytes, 8_228_465_805);
+        assert_eq!(measurements.installed_bytes, 8_228_503_309);
         assert_eq!(measurements.temporary_bytes, 13_254_834_850);
         assert_eq!(measurements.minimum_free_bytes, 20_000_000_000);
     }
@@ -1934,6 +2158,71 @@ mod tests {
         assert!(!previous.join("stale.txt").exists());
         assert!(previous.join("runtime/python.exe").is_file());
         assert!(!profile_root(&root.0).join(".previous").exists());
+    }
+
+    #[test]
+    fn installed_legacy_runtime_moves_to_short_root_and_repairs_generated_modules() {
+        let root = TestRoot::new();
+        let legacy = legacy_package_root(&root.0);
+        let mut authority = write_runtime(&legacy);
+        let legacy_manifest = fs::read(legacy.join(RUNTIME_MANIFEST_NAME))
+            .expect("legacy manifest should be readable");
+        authority
+            .runtime_correction
+            .accepted_runtime_manifest_sha256 = format!("{:x}", Sha256::digest(&legacy_manifest));
+        let corrected =
+            corrected_runtime_manifest(&legacy_manifest).expect("corrected manifest should render");
+        authority
+            .runtime_artifact
+            .as_mut()
+            .expect("runtime authority should exist")
+            .runtime_manifest_sha256 = format!("{:x}", Sha256::digest(&corrected));
+
+        let transient_cache = legacy.join("runtime/Lib/site-packages/librosa/core/__pycache__");
+        fs::create_dir_all(&transient_cache).expect("transient cache should be created");
+        fs::write(transient_cache.join("audio.nbc"), b"cache")
+            .expect("transient data should be written");
+        fs::write(transient_cache.join("audio.nbi"), b"cache")
+            .expect("transient index should be written");
+
+        prepare_installed_runtime(&root.0, &authority)
+            .expect("legacy package should move and repair");
+        let installed = package_root(&root.0);
+        assert!(installed.exists());
+        assert!(!legacy.exists());
+        assert!(
+            installed
+                .join("runtime/Lib/site-packages/transformers/models/very_long_component.py")
+                .to_string_lossy()
+                .len()
+                < legacy
+                    .join("runtime/Lib/site-packages/transformers/models/very_long_component.py")
+                    .to_string_lossy()
+                    .len()
+        );
+
+        assert!(
+            !installed
+                .join("runtime/Lib/site-packages/librosa/core/__pycache__/audio.nbc")
+                .exists()
+        );
+        assert!(
+            !installed
+                .join("runtime/Lib/site-packages/librosa/core/__pycache__/audio.nbi")
+                .exists()
+        );
+        for (relative, contents) in GENERATED_RUNTIME_FILES {
+            assert_eq!(
+                fs::read(installed.join(relative)).expect("generated module should exist"),
+                contents
+            );
+        }
+        assert_eq!(
+            fs::read(installed.join(RUNTIME_MANIFEST_NAME))
+                .expect("corrected manifest should be readable"),
+            corrected
+        );
+        assert!(verify_runtime(&installed, &authority).is_ok());
     }
 
     #[test]

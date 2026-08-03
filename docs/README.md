@@ -127,6 +127,13 @@ available compatible computer. It compile-time-enables the same native closed
 manifest with exact measured disclosures while the ordinary installer remains
 `withheld`; the resulting local journey cannot substitute for clean-host or
 public-release evidence.
+ADR-0046 records the next installed-package findings: the immutable runtime-v2
+parts omitted two generated VoxLeaf service modules and the historical
+installed root produced a failing 261-character Python path. The validation
+build now migrates only the exact legacy manifest to the shorter `cb/2` root,
+applies the hash-frozen two-file correction locally, and fully verifies the
+corrected package without another optional-payload download. Exact installed
+narration and lifecycle validation remain open.
 Milestone 5 now packages version `0.1.0` as a release-only current-user Windows
 x64 NSIS installer containing the exact verified bilingual Piper core. Local
 installation, first start, repair, uninstall, unrelated-file preservation, and
@@ -228,6 +235,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md`](architecture/decisions/ADR-0039-freeze-boundary-deferred-playback-authority-v3.md): freezes the immutable v3 candidate, boundary-transition, recurring-handoff, resource, lifecycle, licence/CSP, listening, and strict result-lineage authority before implementation or measurement.
 - [`architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md`](architecture/decisions/ADR-0040-select-repository-wsola-for-boundary-deferred-playback.md): selects repository-owned incremental WSOLA v3 after every frozen machine, privacy, lifecycle, and bilingual-listening gate passes; Milestone 5 implements the exact selection without dependency or CSP expansion.
 - [`architecture/decisions/ADR-0044-use-measured-capacity-for-chatterbox-vram-admission.md`](architecture/decisions/ADR-0044-use-measured-capacity-for-chatterbox-vram-admission.md): replaces the conservative 8-GB Chatterbox minimum with the measured-capacity 6-GB-class/4,668-MiB-free product gate while retaining 8 GB as recommended and evaluated.
+- [`architecture/decisions/ADR-0046-repair-chatterbox-runtime-closure-and-windows-path.md`](architecture/decisions/ADR-0046-repair-chatterbox-runtime-closure-and-windows-path.md): retains immutable runtime-v2 release assets while applying one hash-closed two-module correction and short Windows-safe install root before full re-verification.
 - [`architecture/decisions/`](architecture/decisions/): durable architecture decisions.
 
 ## Development

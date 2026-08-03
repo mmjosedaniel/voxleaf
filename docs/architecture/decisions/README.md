@@ -56,6 +56,7 @@ ADR-0002-short-description.md
 - [`ADR-0043-freeze-verified-official-chatterbox-acquisition.md`](ADR-0043-freeze-verified-official-chatterbox-acquisition.md): supersede only the historical single-archive Chatterbox transport with one split verified runtime from a versioned VoxLeaf GitHub Release and six exact revision-pinned official Hugging Face model files.
 - [`ADR-0044-use-measured-capacity-for-chatterbox-vram-admission.md`](ADR-0044-use-measured-capacity-for-chatterbox-vram-admission.md): replace the conservative 8-GB Chatterbox minimum with a measured-capacity 6-GB-class/4,668-MiB-free gate while retaining 8 GB as recommended and evaluated.
 - [`ADR-0045-enable-local-chatterbox-acquisition-validation-build.md`](ADR-0045-enable-local-chatterbox-acquisition-validation-build.md): preserve the normal withheld package while authorizing one separately identified, native-closed, unsigned validation build for real Chatterbox acquisition on the only available compatible computer.
+- [`ADR-0046-repair-chatterbox-runtime-closure-and-windows-path.md`](ADR-0046-repair-chatterbox-runtime-closure-and-windows-path.md): retain the immutable published runtime-v2 parts while repairing an exact legacy package with two missing VoxLeaf generated modules and a short Windows-safe installed root before complete re-verification.
 
 ## Template
 

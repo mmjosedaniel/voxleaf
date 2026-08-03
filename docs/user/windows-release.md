@@ -41,6 +41,14 @@ Chatterbox download**. That action performs the native admission check and
 opens the measured confirmation; only the separate **Download Chatterbox**
 action starts network transfer.
 
+Validation installer SHA-256
+`0bcd54de8881f855ea8a707c91a8b73554425699b7223ce9c33144149268c449`
+repairs the first installed runtime closure and moves only its exact verified
+legacy package to a Windows-safe short application-data path. Reinstalling this
+build preserves and reuses an already verified Chatterbox download; it does not
+download the optional package again. The first integrity pass and model cold
+load can still take tens of seconds.
+
 ## Repair or replace a version
 
 Close VoxLeaf so its local narration child process is stopped. Running the same

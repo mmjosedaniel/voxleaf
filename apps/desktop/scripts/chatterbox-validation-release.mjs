@@ -73,7 +73,7 @@ export async function validateChatterboxValidationRelease(
     overlay.publicPublicationAllowed !== false ||
     overlay.measurements?.coldStartSeconds !== 60 ||
     overlay.measurements?.downloadBytes !== 8_231_893_387 ||
-    overlay.measurements?.installedBytes !== 8_228_465_805 ||
+    overlay.measurements?.installedBytes !== 8_228_503_309 ||
     overlay.measurements?.temporaryBytes !== 13_254_834_850 ||
     overlay.measurements?.minimumFreeBytes !== 20_000_000_000
   ) {

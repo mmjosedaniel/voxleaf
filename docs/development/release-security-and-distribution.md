@@ -323,10 +323,12 @@ only a complete versioned profile. It never executes model-repository code or
 accepts renderer-supplied network/path authority.
 
 The deterministic runtime-only builder produces the same 5,022,941,463-byte
-archive and three part hashes across two builds. Aggregate download is
-8,231,893,387 bytes; aggregate installation is 8,228,465,805 bytes; calculated
-peak staging is 13,254,834,850 bytes after verified parts are discarded before
-extraction. These are local package facts, not end-user availability evidence.
+archive and three part hashes across two builds. Those published v2 assets stay
+immutable. Aggregate download is 8,231,893,387 bytes. After the exact local
+closure correction in ADR-0046, aggregate installation is 8,228,503,309 bytes;
+calculated peak staging remains bounded by 13,254,834,850 bytes after verified
+parts are discarded before extraction. These are local package facts, not
+end-user availability evidence.
 The checked-in v2 manifest remains `withheld` even though the exact three
 runtime parts are published under `chatterbox-runtime-v2`: clean-user online
 acquisition, offline bilingual narration, removal, reinstall, licence/audit,
@@ -372,6 +374,33 @@ resulting unsigned local validation installer is `181,628,621` bytes with
 SHA-256
 `c9de20363a329dd0f7e0bc8d66f8e795246f8c180dca5e32718d767cfc73971b`;
 its exact Microsoft Defender scan reports no threats.
+
+The next installed narration attempt proved that download verification and
+hardware admission were not the failing boundary. The installed runtime and
+model artifacts passed their hashes; Torch reported CUDA and BF16 available on
+the selected GPU. Service import then failed because the published runtime had
+omitted two generated VoxLeaf protocol modules. Supplying those modules exposed
+a second independent Windows issue: a required Transformers file existed but
+its historical installed path was 261 characters, beyond the conventional API
+limit used by the embedded Python stack. [ADR-0046](../architecture/decisions/ADR-0046-repair-chatterbox-runtime-closure-and-windows-path.md)
+keeps every published runtime-v2 part immutable, moves an exact legacy package
+to `app-local-data/tts/cb/2`, adds only the two hash-frozen repository modules,
+and fully verifies the corrected tree. The longest measured final path is 218
+characters. Existing verified downloads are repaired locally without another
+network transfer; unknown manifests or files fail closed. Model cold load and
+the initial multi-gigabyte integrity pass can still take tens of seconds and
+must remain visible rather than being described as an instant activation.
+The same failed probe created six Librosa/Numba `.nbi`/`.nbc` cache files inside
+the verified runtime despite Python bytecode suppression. Migration removes
+only that known cache class before legacy verification, and subsequent service
+children receive `NUMBA_CACHE_DIR=app-local-data/tts/cb/cache`. Chatterbox
+removal owns that transient cache; it never contains EPUB text or generated
+audio.
+The corrected unsigned validation installer is `181,673,215` bytes with
+SHA-256
+`0bcd54de8881f855ea8a707c91a8b73554425699b7223ce9c33144149268c449`;
+Microsoft Defender reports no threats for that exact file. Installed narration
+and the remaining lifecycle arms still require maintainer confirmation.
 
 Hugging Face documents full-commit downloads, per-file downloads, filtered
 snapshots, and application-selected cache/local directories. VoxLeaf uses the

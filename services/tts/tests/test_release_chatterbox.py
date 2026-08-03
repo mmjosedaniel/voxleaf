@@ -71,6 +71,21 @@ def test_acquisition_manifest_matches_the_runtime_and_official_model_authority()
     assert sum(part["downloadBytes"] for part in runtime["parts"]) == 5_022_941_463
     assert manifest["measurements"] is None
     assert manifest["withholdingReason"] == "clean-host-validation-pending"
+    layout = manifest["layout"]
+    assert isinstance(layout, dict)
+    assert layout["installed"] == "cb/2"
+    correction = manifest["runtimeCorrection"]
+    assert isinstance(correction, dict)
+    assert correction["acceptedRuntimeManifestSha256"] == (
+        "cb5055580a28a0c97e50535a8317ea506081230b70e0099d8fe0194591e1c635"
+    )
+    correction_files = correction["files"]
+    assert isinstance(correction_files, list)
+    assert all(isinstance(record, dict) for record in correction_files)
+    assert [record["path"] for record in correction_files if isinstance(record, dict)] == [
+        "runtime/Lib/site-packages/voxleaf_tts/generated/__init__.py",
+        "runtime/Lib/site-packages/voxleaf_tts/generated/protocol_schemas.py",
+    ]
     assert manifest["requirements"] == {
         "measuredPeakDedicatedVramMiB": 3_644,
         "minimumAvailableDedicatedVramMiB": 4_668,

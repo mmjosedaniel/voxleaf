@@ -1262,6 +1262,25 @@ and never edit prior benchmark authority to make a release pass.
   `a22219872d96684725011acb90bfa6185bd8da80775182f9dec39224db789054`,
   and its exact Defender scan reports no threats. Maintainer lifecycle rerun is
   still required.
+- **2026-08-02:** The verified optional package then failed before synthesis for
+  two independent packaging reasons. The published runtime omitted the two
+  generated VoxLeaf protocol modules imported by the service, and the legacy
+  profile root produced a 261-character Transformers path that existed through
+  the Windows verbatim API but was invisible to the conventional file API used
+  by embedded Python. Runtime/model hashes, CUDA availability, BF16 support,
+  and the selected GPU capability passed, so this is not a model or hardware
+  rejection. ADR-0046 retains the immutable published v2 parts, freezes a
+  37,101-byte repository-owned two-file correction, migrates only the exact
+  legacy manifest to `app-local-data/tts/cb/2`, and re-verifies the complete
+  corrected tree. The failed probe had also written six Librosa/Numba cache
+  files into the verified package; the migration removes only that known cache
+  class and all future Numba cache writes go to the removable
+  `app-local-data/tts/cb/cache` root. The longest measured final path is 218 characters. Focused
+  Python and feature-enabled Rust regressions pass outside the sandbox. The
+  rebuilt unsigned validation installer is `181,673,215` bytes with SHA-256
+  `0bcd54de8881f855ea8a707c91a8b73554425699b7223ce9c33144149268c449`,
+  and Defender reports no threats. Maintainer narration/lifecycle rerun remains
+  required before this Milestone 6 arm can close.
 
 ## Discoveries and decisions
 
@@ -1294,6 +1313,17 @@ and never edit prior benchmark authority to make a release pass.
   removal of test/development-only payloads, and an explicit
   `Lib\\site-packages` entry in `python312._pth` make the private runtime
   executable without system Python while preserving the frozen graph.
+- **Decision:** Published runtime-v2 release parts remain immutable. An exact
+  legacy runtime may receive only the native-embedded correction frozen in the
+  acquisition manifest, and only after complete legacy verification. The
+  corrected package is fully re-verified at the shorter `cb/2` root; no unknown
+  package is migrated or repaired, and no multi-gigabyte redownload is required
+  for an already verified installation.
+- **Decision:** Python bytecode suppression is insufficient for libraries that
+  own separate compilation caches. Packaged Chatterbox redirects Numba cache
+  writes outside the verified runtime into a profile-owned removable cache that
+  removal deletes; migration cleans only the exact known `.nbi`/`.nbc` cache
+  class before complete legacy verification.
 - **Discovery:** Download, reassembled archive, extracted runtime, and model
   files cannot all coexist with the source parts under the 15-GB staging
   ceiling. Removing the verified runtime parts immediately after successful

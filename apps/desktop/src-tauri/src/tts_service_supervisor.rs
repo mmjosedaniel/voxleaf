@@ -95,6 +95,7 @@ struct ExactRuntime {
     service_site_packages: PathBuf,
     service_module: &'static str,
     runtime_environment: Vec<(&'static str, &'static str)>,
+    numba_cache_root: Option<PathBuf>,
 }
 
 impl ExactRuntime {
@@ -143,6 +144,7 @@ impl ExactRuntime {
             service_site_packages,
             service_module: "voxleaf_tts.qwen_service",
             runtime_environment: vec![("VOXLEAF_TTS_RUNTIME_QWEN_VOICE", "serena-es")],
+            numba_cache_root: None,
         })
     }
 
@@ -216,6 +218,7 @@ impl ExactRuntime {
             service_site_packages,
             service_module: "voxleaf_tts.piper_service",
             runtime_environment: vec![("VOXLEAF_TTS_RUNTIME_PIPER_VOICE", runtime_voice)],
+            numba_cache_root: None,
         })
     }
 
@@ -231,6 +234,7 @@ impl ExactRuntime {
                     "VOXLEAF_TTS_RUNTIME_PIPER_VOICE",
                     runtime.runtime_voice,
                 )],
+                numba_cache_root: None,
             }),
             Ok(None) => Self::piper_from_environment(profile_id),
             Err(PackagedCoreError::Invalid | PackagedCoreError::Unavailable) => {
@@ -290,6 +294,7 @@ impl ExactRuntime {
                 "VOXLEAF_TTS_RUNTIME_CHATTERBOX_LANGUAGE",
                 if language == "es" { "es" } else { "en" },
             )],
+            numba_cache_root: None,
         })
     }
 
@@ -308,6 +313,7 @@ impl ExactRuntime {
                     "VOXLEAF_TTS_RUNTIME_CHATTERBOX_LANGUAGE",
                     if language == "es" { "es" } else { "en" },
                 )],
+                numba_cache_root: Some(runtime.numba_cache_root),
             }),
             Ok(None) => Self::chatterbox_from_environment(language),
             // Command-line validation and explicitly gated development sessions
@@ -353,6 +359,7 @@ impl ExactRuntime {
             .env("HF_HUB_OFFLINE", "1")
             .env("TRANSFORMERS_OFFLINE", "1")
             .env("HF_HUB_DISABLE_TELEMETRY", "1")
+            .env_remove("NUMBA_CACHE_DIR")
             .env_remove(DEV_ENABLED_KEY)
             .env_remove(DEV_PYTHON_KEY)
             .env_remove(DEV_MODEL_ROOT_KEY)
@@ -365,6 +372,10 @@ impl ExactRuntime {
             .env_remove(CHATTERBOX_ENABLED_KEY)
             .env_remove(CHATTERBOX_PYTHON_KEY)
             .env_remove(CHATTERBOX_MODEL_ROOT_KEY);
+        if let Some(cache_root) = &self.numba_cache_root {
+            fs::create_dir_all(cache_root).map_err(|_| TtsNativeFailure::ChildUnavailable)?;
+            command.env("NUMBA_CACHE_DIR", cache_root);
+        }
         for (key, value) in &self.runtime_environment {
             command.env(key, value);
         }
@@ -1687,11 +1698,38 @@ mod tests {
             service_site_packages: PathBuf::from("site-packages"),
             service_module: "voxleaf_tts.piper_service",
             runtime_environment: Vec::new(),
+            numba_cache_root: None,
         };
         let command = runtime.command().expect("command should be created");
         assert!(command.get_envs().any(|(key, value)| {
             key == "PYTHONDONTWRITEBYTECODE" && value == Some(std::ffi::OsStr::new("1"))
         }));
+    }
+
+    #[test]
+    fn exact_chatterbox_runtime_redirects_numba_cache_outside_the_verified_package() {
+        let cache =
+            std::env::temp_dir().join(format!("voxleaf-numba-cache-test-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&cache);
+        let runtime = ExactRuntime {
+            python: PathBuf::from("python.exe"),
+            model_root: PathBuf::from("model"),
+            service_source: PathBuf::from("source"),
+            service_site_packages: PathBuf::from("site-packages"),
+            service_module: "voxleaf_tts.chatterbox_service",
+            runtime_environment: Vec::new(),
+            numba_cache_root: Some(cache.clone()),
+        };
+
+        let command = runtime.command().expect("command should be created");
+
+        assert!(cache.is_dir());
+        assert!(
+            command.get_envs().any(|(key, value)| {
+                key == "NUMBA_CACHE_DIR" && value == Some(cache.as_os_str())
+            })
+        );
+        fs::remove_dir_all(cache).expect("test cache should be removed");
     }
 
     #[cfg(windows)]

@@ -3,7 +3,7 @@
   "measurements": {
     "coldStartSeconds": 60,
     "downloadBytes": 8231893387,
-    "installedBytes": 8228465805,
+    "installedBytes": 8228503309,
     "minimumFreeBytes": 20000000000,
     "temporaryBytes": 13254834850
   },

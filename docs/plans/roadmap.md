@@ -99,6 +99,14 @@ ADR-0045 additionally permits a separately identified unsigned local
 validation installer on the only available compatible computer. That build
 may expose and fix the real acquisition lifecycle, but it does not change the
 normal withheld manifest or satisfy the clean-host/public-signing gates.
+The first installed Chatterbox launch subsequently proved two package defects,
+not a GPU/model rejection: two generated VoxLeaf protocol modules were absent
+and the historical installed root produced a 261-character Transformers path.
+ADR-0046 keeps the published runtime-v2 parts immutable while repairing only
+their exact legacy manifest at the shorter `app-local-data/tts/cb/2` root and
+fully re-verifying the result. The correction avoids another multi-gigabyte
+download; the rebuilt validation installer and exact narration/lifecycle rerun
+remain M011 Milestone 6 work.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
