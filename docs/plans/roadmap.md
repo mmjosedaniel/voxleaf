@@ -1155,9 +1155,13 @@ feedback and uninstall closeout. It does not reopen the verified acquisition
 topology: it keeps Settings populated during transitions, makes first-Play
 startup phases and supported cancellation truthful, makes optional removal
 discoverable, clarifies incomplete-download cleanup, and separates optional-
-package retention from preferences in the Windows uninstall journey. No part of
-Milestone 6A is claimed implemented by the roadmap update, and Chatterbox stays
-withheld until the existing host and release gates pass.
+package retention from preferences in the Windows uninstall journey. The
+roadmap update does not claim that Milestone 6A is implemented.
+[ADR-0047](../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md)
+accepts default interactive Chatterbox removal, default preference/recovery
+retention, and non-destructive silent uninstall without an explicit bounded
+option; Chatterbox stays withheld until the existing host and release gates
+pass.
 
 The remaining M011 execution order is explicit:
 
@@ -1231,10 +1235,12 @@ explicit verified optional GPU quality package.
   application-owned cleanup pass on a clean normal-user Windows host without
   discovering or deleting user books.
 - Interactive uninstall distinguishes optional Chatterbox runtime/model/cache/
-  staging from ordinary preferences/recovery state and explains each default
-  and consequence. Silent uninstall stays non-destructive unless an explicit
-  bounded flag selects one data class; retaining optional data documents the
-  same-product reinstall-and-remove route instead of leaving a manager binary.
+  staging from ordinary preferences/recovery state. Optional Chatterbox removal
+  is selected by default; preference/recovery removal is not. The UI explains
+  each consequence, silent uninstall stays non-destructive unless an explicit
+  bounded option selects a data class, and retaining optional data documents
+  the same-product reinstall-and-remove route instead of leaving a manager
+  binary.
 - A compatible clean GPU host proves Chatterbox absent/declined, bounded
   multi-file download, revision/file/hash/size failure, cancellation, verified install, explicit
   activation, offline Spanish/English narration, restart, removal, and Piper
@@ -1258,6 +1264,9 @@ integrity, and claim authority is
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md).
 Milestone 4B accepted additive authority and ADR-0043 before implementation;
 they supersede only the historical single-archive acquisition shape.
+[ADR-0047](../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md)
+additively supersedes only the combined uninstall data choice; it preserves
+every existing owned cleanup root and release gate.
 
 ### Major risks and unknowns
 
@@ -1294,8 +1303,9 @@ they supersede only the historical single-archive acquisition shape.
   active identity, persisted preference, or recovery state. Milestone 6A must
   omit that action unless additive authority and tests close the rollback.
 - Splitting uninstall choices must not broaden deletion beyond exact existing
-  VoxLeaf-owned roots. Any new destructive default or cleanup scope requires
-  additive authority before implementation and measurement.
+  VoxLeaf-owned roots. ADR-0047 authorizes only its exact interactive defaults
+  and silent options; any further destructive default or cleanup-scope change
+  requires new additive authority before implementation and measurement.
 - Accessibility and long-session failures are expensive to fix if postponed until final packaging.
 - Portfolio or release claims must reflect validated behavior rather than the intended architecture.
 - Automatic updates, AppContainer, external penetration testing, formal

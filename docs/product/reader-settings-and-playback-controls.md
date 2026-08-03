@@ -143,11 +143,15 @@ reserved for bounded byte transfer; verification and removal use truthful
 indeterminate phase text.
 
 The Windows uninstall journey presents optional-package data separately from
-ordinary preferences/recovery state and explains the default and consequence of
-each choice. Destructive choices remain limited to explicit VoxLeaf-owned roots.
-Retaining optional data intentionally means its in-product management becomes
-available only after reinstalling the same product identity; VoxLeaf does not
-leave a second model-manager executable after uninstall.
+ordinary preferences/recovery state.
+[ADR-0047](../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md)
+selects optional Chatterbox removal by default and preference/recovery retention
+by default; the UI explains the consequence of each independent choice. Silent
+uninstall preserves both classes unless an explicit bounded option is supplied.
+Destructive choices remain limited to exact VoxLeaf-owned roots. Retaining
+optional data intentionally means its in-product management becomes available
+only after reinstalling the same product identity; VoxLeaf does not leave a
+second model-manager executable after uninstall.
 
 ## Goal
 

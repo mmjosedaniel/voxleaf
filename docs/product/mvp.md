@@ -424,12 +424,15 @@ Remaining:
   cache, and staging roots; it does not delete preferences, reading progress,
   Piper, or EPUBs.
 - Interactive uninstall distinguishes optional Chatterbox data from preferences
-  and recovery state, explains the consequence and default of each choice, and
-  limits deletion to exact VoxLeaf-owned roots. Silent removal remains non-
-  destructive unless an explicit documented flag requests a bounded data class.
-  If optional data is intentionally retained, the user is told that management
-  requires reinstalling the same VoxLeaf product identity; no residual model-
-  manager executable is left behind.
+  and recovery state. Under
+  [ADR-0047](../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md),
+  optional Chatterbox removal is selected by default while preference/recovery
+  removal is not; the UI explains each storage consequence and limits deletion
+  to exact VoxLeaf-owned roots. Silent removal remains non-destructive unless an
+  explicit documented option requests a bounded data class. If optional data is
+  intentionally retained, the user is told that management requires
+  reinstalling the same VoxLeaf product identity; no residual model-manager
+  executable is left behind.
 - Portfolio-ready local evidence may use an unsigned maintainer build with an
   explicit label. A general public installer additionally requires protected
   external signing credentials, signature verification, and a published

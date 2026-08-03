@@ -121,11 +121,14 @@ remove Chatterbox from Settings, and uninstall again. Do not guess at or broadly
 delete Local App Data paths.
 
 Planned M011 Milestone 6A will separate the optional Chatterbox package/cache/
-staging decision from preferences and recovery state, explain the default and
-space consequence of each choice, and retain non-destructive silent behavior
-unless an explicit bounded removal flag is supplied. This planned journey must
-pass install, repair, uninstall, reinstall, unrelated-file preservation, and
-optional-data outcome checks before it replaces the current instructions.
+staging decision from preferences and recovery state. Accepted
+[ADR-0047](../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md)
+selects Chatterbox removal by default and preference/recovery retention by
+default, explains the storage consequence of each independent choice, and
+retains non-destructive silent behavior unless an explicit bounded removal
+option is supplied. This planned journey must pass install, repair, uninstall,
+reinstall, unrelated-file preservation, and optional-data outcome checks before
+it replaces the current instructions.
 
 ## Verify a release artifact
 

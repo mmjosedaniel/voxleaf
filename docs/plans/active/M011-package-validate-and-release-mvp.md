@@ -306,8 +306,12 @@ That document is planning input, not proof that a release gate passes.
   cancellation remains absent until a rollback contract can restore preference,
   narration identity, service ownership, and recovery state safely.
 - Splitting optional-package and preference choices in uninstall must preserve
-  the exact owned cleanup roots. Any new destructive default or deletion scope
-  requires additive authority before implementation or measurement.
+  the exact owned cleanup roots.
+  [ADR-0047](../../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md)
+  authorizes default interactive Chatterbox removal, default
+  preference/recovery retention, and non-destructive silent uninstall without
+  explicit bounded options. Any further destructive default or deletion-scope
+  change requires new authority before implementation or measurement.
 - Generated audio remains memory-only and is released through the existing
   ownership/lifecycle path.
 - Network denial during normal reading/narration remains acceptance evidence;
@@ -942,12 +946,16 @@ cleanup boundaries.
    retained audio/work, and cannot emit stale playback. Return to **Stop** once
    playback begins.
 7. Separate the interactive NSIS choice for optional Chatterbox runtime/model/
-   cache/staging from ordinary preferences and recovery state. State the default
-   and consequence of each choice and preserve non-destructive silent uninstall
-   unless an explicit bounded flag selects a data class. Accept additive
-   authority before changing any destructive default or cleanup scope. Do not
-   leave a residual model-manager executable; document same-product reinstall
-   and removal when optional data is intentionally retained.
+   cache/staging from ordinary preferences and recovery state. Per accepted
+   [ADR-0047](../../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md),
+   select Chatterbox removal by default and preference/recovery retention by
+   default. State the consequence of each independent choice and preserve non-
+   destructive silent uninstall unless `/REMOVE_CHATTERBOX_DATA=1` or
+   `/REMOVE_PREFERENCES_AND_RECOVERY=1` selects its exact data class. The two
+   options compose, and `/REMOVE_APP_DATA=1` remains the explicit compatibility
+   option that selects both exact classes. Do not leave a residual model-manager
+   executable; document same-product reinstall and removal when optional data is
+   intentionally retained.
 8. Keep the supported Windows uninstall route discoverable through
    **Installed apps** and the About/user guidance. Extend the existing package
    lifecycle validation rather than inventing a parallel uninstaller.
@@ -973,8 +981,9 @@ that matches native cancellation cleanup. Native tests retain cancel,
 verification, promotion, busy-operation, exact-root removal, symlink/reparse,
 and unrelated-data containment coverage. Extend the existing
 `package:windows:lifecycle` implementation under that same command to exercise
-each new silent data-class flag; retain a manual interactive clean-host arm for
-the actual NSIS choices and displayed consequences.
+both new silent data-class options independently and together, plus the legacy
+full-data option; retain a manual interactive clean-host arm for the actual NSIS
+choices and displayed consequences.
 
 The compatible development-host and eventual clean-host arms repeat startup
 cancellation, Spanish/English offline narration, restart, removal/reinstall,
@@ -994,8 +1003,9 @@ Acceptance requires all of the following:
 - Installed or failed optional state gives the user a discoverable, contained
   removal route without making Piper or reader data unavailable.
 - Installer/uninstaller UI and documentation distinguish optional-package data
-  from preferences/recovery and prove install, repair, uninstall, reinstall,
-  unrelated-file preservation, and each optional-data outcome.
+  from preferences/recovery, apply the ADR-0047 defaults exactly, and prove
+  install, repair, uninstall, reinstall, unrelated-file preservation, and each
+  optional-data outcome.
 - The affected Milestone 6 host/package arms are rerun after implementation;
   development-host UI evidence does not close clean-host or public readiness.
 
@@ -1548,6 +1558,12 @@ and never edit prior benchmark authority to make a release pass.
   protocol, storage-ownership, and runtime topology; implementation that changes
   one of those boundaries must update architecture and accept the required
   additive authority first.
+- **2026-08-03:** The product owner approved the destructive-default decision
+  before Milestone 6A implementation. ADR-0047 now additively supersedes only the
+  combined uninstall data choice: interactive uninstall selects Chatterbox
+  removal and reader-state retention by default, silent uninstall preserves both
+  without an explicit bounded option, and the existing explicit full-data option
+  remains compatible. This is accepted authority, not implementation evidence.
 
 ## Discoveries and decisions
 
@@ -1560,9 +1576,12 @@ and never edit prior benchmark authority to make a release pass.
 - **Decision:** Milestone 6A does not expose profile-selection cancellation.
   Visible progress is required, but cancellation waits for explicit rollback
   authority that can restore preference, identity, service, and recovery state.
-- **Decision:** Optional-package and preference choices may be separated in the
-  NSIS journey only within the existing owned roots. Changing a destructive
-  default or deletion scope requires additive authority before implementation.
+- **Decision:** ADR-0047 separates optional-package and preference choices in
+  the NSIS journey only within the existing owned roots. Interactive uninstall
+  selects Chatterbox removal and preference/recovery retention by default;
+  silent uninstall preserves both classes without explicit bounded options.
+  Any further destructive default or deletion-scope change requires new
+  additive authority before implementation.
 - **Decision:** The minimum distributable MVP is intentionally smaller than the
   local development matrix. This lowers installer, vulnerability, licence,
   GPU, and support risk without removing implemented engines from source.

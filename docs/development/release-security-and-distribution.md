@@ -318,12 +318,17 @@ Before the application may offer **Download and enable Chatterbox**, M011 must:
 11. remove the optional package and its application-owned staging/cache state
     without deleting the desktop application, preferences, reading progress, or
     user EPUBs; and
-12. before changing the current uninstall data choice, accept an additive
-    product/installer authority that preserves the exact owned cleanup roots and
-    separates optional-package retention from ordinary preferences/recovery.
-    The interactive and silent journeys must state their defaults and effects;
-    any new destructive default or deletion scope requires explicit authority
-    before implementation or measurement.
+12. follow accepted
+    [ADR-0047](../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md),
+    which preserves the exact owned cleanup roots and separates optional-package
+    retention from ordinary preferences/recovery.
+    Interactive uninstall selects Chatterbox removal and reader-state retention
+    by default; silent uninstall preserves both classes without an explicit
+    bounded option. The separate silent options are
+    `/REMOVE_CHATTERBOX_DATA=1` and
+    `/REMOVE_PREFERENCES_AND_RECOVERY=1`; `/REMOVE_APP_DATA=1` remains the
+    explicit composition of both. Any further destructive default or deletion-
+    scope change requires new authority before implementation or measurement.
 
 **Current M011 Milestone 4B status:** the repository implements the native-owned
 state machine and v2 closed multi-artifact controller. It fixes the exact six
@@ -371,9 +376,13 @@ repeated:
   only the exact runtime/model/cache/staging roots and leaves Piper plus reader
   data intact.
 - The NSIS journey must distinguish optional-package data from preferences and
-  recovery state, document the default and consequence of each choice, and give
-  users who intentionally retain optional data a supported reinstall-and-remove
-  route. VoxLeaf does not leave a residual model-manager executable.
+  recovery state.
+  [ADR-0047](../architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md)
+  selects optional Chatterbox removal and reader-state retention by default,
+  retains non-destructive silent uninstall without an explicit bounded option,
+  and requires the consequence of each independent choice to be shown. Users
+  who intentionally retain optional data receive a supported reinstall-and-
+  remove route. VoxLeaf does not leave a residual model-manager executable.
 This subsection records planned release acceptance only. Until implementation,
 focused regressions, installed lifecycle evidence, and the remaining independent
 host gates pass, the current validation-build UI and one combined uninstall data
