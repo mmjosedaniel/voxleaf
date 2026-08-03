@@ -123,13 +123,8 @@ function createDomainBook(
   });
 
   const spineItemIds = new Set<string>();
-  const spineIndexes = new Set<number>();
   const spine = wire.spine.map((item, arrayIndex) => {
-    if (
-      spineItemIds.has(item.id) ||
-      spineIndexes.has(item.index) ||
-      item.index !== arrayIndex
-    ) {
+    if (spineItemIds.has(item.id) || item.index !== arrayIndex) {
       return malformedBookContract();
     }
 
@@ -139,7 +134,6 @@ function createDomainBook(
     }
 
     spineItemIds.add(item.id);
-    spineIndexes.add(item.index);
 
     return Object.freeze({
       id: createSpineItemId(item.id),
