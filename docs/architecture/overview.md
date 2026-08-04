@@ -48,8 +48,10 @@ detection remains unavailable, and
 [`tts-support-matrix-v1`](tts-support-matrix-v1.md) now makes Piper the sole
 supported and automatically recommendable profile when compatible and
 configured while retaining explicit selection and zero automatic failover.
-Replacement Ubuntu/Windows checks pass. M011 still owns production
-distribution and Piper's GPL/CC0 packaging obligations.
+Replacement Ubuntu/Windows checks pass. M011 fulfills Piper's GPL/CC0 package
+obligations and accepts its unsigned local/portfolio distribution under release
+authority v2. Trusted general-public distribution remains pending external
+signing authorization.
 
 M010.1 Milestones 1 through 5 freeze and execute explicit Spanish/English
 product, locator-safe normalization, exact candidate, corpus, schema, machine,
@@ -145,10 +147,17 @@ is retained. Milestone 5 connects it to product playback with boundary-
 deferred state, content-free preference ownership, and effective-lead
 accounting.
 
-M011 is in progress. Milestone 1 freezes
+M011's preliminary Milestone 7 record accepts the local/portfolio MVP support
+decision; planned Milestone 6B reopens ordinary Chatterbox availability and the
+release-runtime isolation proof. Milestone 1 freezes
 [`mvp-release-authority-v1`](mvp-release-authority-v1.md) and accepts
 [ADR-0042](decisions/ADR-0042-freeze-mvp-release-authority.md) before dependency
-or package results. Milestone 2 closes the exact production component identity:
+or package results. The preliminary Milestone 7 record accepts
+[ADR-0049](decisions/ADR-0049-use-representative-compatible-host-evidence.md)
+and
+[`mvp-release-authority-v2`](mvp-release-authority-v2.md), superseding only v1's
+independent-claim gates and exhaustive per-computer interpretation. Milestone 2
+closes the exact production component identity:
 a 15-entry private Piper core lock, a separately gated 79-package Chatterbox
 lock, repository-owned Node/Rust/Python release audits, bounded Dependabot
 intake, and a deterministic 400-component inventory. Milestone 3 packages the
@@ -162,9 +171,9 @@ withheld. The core
 topology is deliberately smaller than
 the implemented development matrix: Windows x64 plus Piper davefx/Spanish and
 Piper joe/English in one private embedded Python/Piper runtime. Supported
-Chatterbox Spanish/English is planned as a
-separate optional GPU quality package, never silently downloaded or embedded
-in the core installer; Qwen remains outside the first distributable product.
+Chatterbox Spanish/English has an implemented but withheld separate optional
+GPU quality package, never silently downloaded or embedded in the core
+installer; Qwen remains outside the first distributable product.
 The prior Chatterbox developer state occupied about 5.03 GiB of environment
 plus 2.99 GiB of model artifacts. Milestone 2 replaces that environment graph
 with the explicit 79-package runtime lock and proves the adapter offline in a
@@ -179,26 +188,39 @@ revisions, download arbitrary repository contents, execute Hub code, or rely on
 Hub scanning instead of local verification. The 79-package reviewed runtime is
 a separate deterministic 5,022,941,463-byte archive split into three bounded
 assets with reproducible SHA-256 evidence. Together with the model files, the
-implementation measures 8,231,893,387 download bytes, 8,228,465,805 installed
-bytes, and a 13,254,834,850-byte peak staging calculation. Native acquisition
+implementation measures 8,231,893,387 download bytes, ADR-0046's corrected
+8,228,503,309 installed bytes pending Milestone 6B reconciliation with the
+historical evidence total, and a 13,254,834,850-byte peak staging calculation.
+Native acquisition
 uses explicit consent, sequential application-owned transfers, closed
 redirects, per-artifact digest verification, safe extraction/loading, atomic
 versioned installation, separate activation, offline use, and application-
 owned removal. The exact runtime assets are published under
-`chatterbox-runtime-v2`; clean-host online/offline evidence remains open, so
-Download is not yet enabled. Milestone 5 sets release version `0.1.0` and
+`chatterbox-runtime-v2`. Its representative installed Spanish/English,
+offline, privacy, cancellation, and lifecycle evidence passes. The ordinary
+manifest remains `withheld`, so Download is not enabled in the normal build;
+this is a distribution state rather than a runtime-support failure. Milestone
+6B plans to promote that single manifest only behind the live native gate,
+compile repository-development fallback branches out of release, and prove the
+ordinary installed artifact under hostile environment inputs without removing
+developer tools from the host. Milestone
+5 sets release version `0.1.0` and
 packages the exact bilingual Piper core in a current-user Windows x64 NSIS
-installer through a release-only configuration. The local unsigned artifact is
-`181,654,713` bytes with SHA-256
-`9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c`.
-Outside-sandbox installation, first start, same-version repair, uninstall,
-unrelated-file preservation, and Defender observation pass. Signing automation
+installer through a release-only configuration. The exact current unsigned
+artifact is `181,704,648` bytes with SHA-256
+`56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
+Outside-sandbox static and local lifecycle evidence passes; Defender and
+SmartScreen were not observed for this exact hash. Signing automation
 uses only protected external credentials and verifies Authenticode, but no
-certificate is currently authorized; public publication and the complete
-clean-host matrix remain open.
-Piper-core portfolio readiness, optional-
-Chatterbox readiness, and signed public publication are separate decisions;
-signing is an external authorization for the last only. Automatic updates,
+certificate is currently authorized. The preliminary Milestone 7 record consumes
+completed M003.1's bounded OPF 2.0/NCX evidence and accepts **GO** for the packaged Piper local/
+portfolio core and **GO when the published host gate passes** for Chatterbox.
+Piper's representative evidence includes successful use on an independent
+older Windows computer; Chatterbox's includes installed Spanish and English
+journeys on the current compatible Windows/RTX 5060 Laptop computer. These
+results support the requirements-defined compatible classes without promising
+identical operation on every PC. Signed public publication remains **pending
+external authorization**. Automatic updates,
 enterprise process sandboxing, external certification, cross-platform
 packages, Qwen distribution, and bundling every engine remain post-MVP unless
 new evidence makes one release-critical.
@@ -320,8 +342,8 @@ Desktop application
 |-- Reader-first Settings and six boundary-deferred playback rates
 |   [M010.2 complete; repository WSOLA, English fallback, packaged validation]
 |-- Windows x64 MVP core plus optional quality package
-|   [M011 M1-M5; versioned Piper NSIS package and withheld exact optional
-|    acquisition implemented; clean-host and public-signing gates pending]
+|   [M011 Piper local/portfolio GO; Chatterbox supported behind its live gate;
+|    6B ordinary acquisition/release isolation planned; public signing pending]
 `-- Explicit bilingual narration and exact language/profile selection
     [M010.1 Milestones 2-6; Piper ES/EN and Chatterbox supported,
      Qwen Serena/Aiden development-only]

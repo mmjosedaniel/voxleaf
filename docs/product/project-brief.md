@@ -93,7 +93,7 @@ the small core. Supported Chatterbox Spanish/English becomes a separately
 gated optional GPU quality download rather than an approximately 8.02-GiB
 addition to the core installer. Qwen remains development-only and outside the
 first distributable product. The plan closes actual dependency, licence,
-integrity, clean-host, uninstall, privacy, and support risks; adds explicit
+integrity, compatible-host, uninstall, privacy, and support risks; adds explicit
 consent, bounded acquisition, verification, installation, activation, and
 removal for Chatterbox; and defers enterprise sandboxing, automatic updates,
 external certification, cross-platform packages, and bundling every engine.
@@ -103,20 +103,27 @@ official `ResembleAI/chatterbox` Hugging Face repository at one full frozen
 revision, verifies each size and SHA-256, and executes no model-repository code.
 The reviewed Chatterbox runtime remains a distinct release input with a
 reproducible three-part identity. The exact three parts are published under
-`chatterbox-runtime-v2`; they must pass clean-host validation before optional
-installation is enabled.
+`chatterbox-runtime-v2`. Representative compatible-host acquisition and
+bilingual operation now pass; the ordinary manifest still withholds optional
+installation as the current product-channel decision. Planned M011 Milestone
+6B will replace the separate validation identity with compatibility-gated
+ordinary acquisition, reconcile exact size authority, explain Chatterbox's
+generally more natural/expressive voice and substantial storage/startup/RAM/
+VRAM costs, and compile repository-development fallbacks out of the release.
+The ordinary installed proof uses a hostile environment without requiring
+Python or Rust to be uninstalled.
 Piper-core readiness, Chatterbox-package readiness, and signed public
 publication are separate decisions.
 ADR-0044 distinguishes Chatterbox's `3,644`-MiB measured peak from its host
 class: `5,632` MiB total and `4,668` MiB available are now the product admission
-floors, while nominal 8-GB hardware remains recommended and is the only class
-represented by the existing exact-host evaluation.
+floors, while nominal 8-GB hardware remains recommended and is the
+representative evaluated class.
 The rest of this brief describes the intended complete product unless it
 explicitly identifies implemented behavior.
 
 ## Summary
 
-VoxLeaf is a privacy-first desktop EPUB reader being built to turn book text into natural-sounding speech entirely on the user's computer. A reader can open a supported local EPUB, navigate its chapters, read its formatted semantic content, and restore a saved logical passage. On exact configured hosts, the user can start bounded quick or prepared local narration through supported Piper or Chatterbox profiles, while Qwen remains an explicitly gated development-only constrained-buffer option. M011 now owns the approved Windows/Piper core plus optional-download Chatterbox distribution plan. Its exact multi-artifact native acquisition controller is implemented but remains fail-closed and withheld. Version `0.1.0` has a measured local unsigned current-user NSIS installer containing the verified Piper core; it is not yet clean-host accepted or approved for public distribution.
+VoxLeaf is a privacy-first desktop EPUB reader being built to turn book text into natural-sounding speech entirely on the user's computer. A reader can open a supported local EPUB, navigate its chapters, read its formatted semantic content, and restore a saved logical passage. On compatible systems, the user can start bounded quick or prepared local narration through supported Piper or Chatterbox profiles, while Qwen remains an explicitly gated development-only constrained-buffer option. M011 now owns the approved Windows/Piper core plus optional-download Chatterbox distribution plan. Its exact multi-artifact native acquisition controller is implemented, but the current ordinary manifest remains withheld until Milestone 6B completes compatibility-gated availability and release-isolation validation. Version `0.1.0` has a measured unsigned current-user NSIS portfolio installer containing the verified Piper core; trusted public distribution remains pending external signing authorization.
 
 For document compatibility, “supported local EPUB” means either the bounded
 reflowable EPUB 3/XHTML-navigation profile or the bounded reflowable OPF
@@ -231,10 +238,11 @@ Segmentation should respect paragraphs, sentences, dialogue, headings, scene bre
 
 The implemented reader exposes book and chapter context, readable continuously
 scrolling chapter content, bounded typography/theme controls, and actionable
-reader errors. On exact configured hosts, narration adds accessible
+reader errors. On compatible systems, narration adds accessible
 quick/prepared playback controls, truthful buffer state, segment highlighting,
 focus-safe following, synchronized navigation, and non-skipping heard-position
-persistence. Playback is currently fixed at `1.0x`.
+persistence. Playback supports the implemented boundary-deferred `1.00x`
+through `0.75x` range.
 
 Approved M010.2 requirements move configuration into an accessible Settings
 drawer/sheet, keep the book as the sole large scroll surface, and add
@@ -257,20 +265,20 @@ directions are separated below:
 
 | Area                              | Status                                                                          | Direction or evaluated candidate                                                                                                                                                                                                         | Remaining validation                                                                                                                                                                                               |
 | --------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Desktop                           | Implemented                                                                     | Tauri 2, React, TypeScript, and Vite; M011 adds the local Windows x64 package and Milestone 6A lifecycle feedback plus bounded uninstall choices                                                                                         | Normal-user clean-host/manual lifecycle, independent optional-support evidence, and authorized public signing remain                                                                                               |
-| TTS process                       | Profile-aware local boundary implemented and exact-host validated               | One persistent native-owned child over framed standard streams, narrow typed commands, process-tree termination, complete-unit binary handoff, exact supported Piper/Chatterbox activation, and native-only development Qwen activation  | M011's minimal Piper-core and optional Chatterbox graphs are closed; the child has application containment but is not an OS sandbox, and cross-process optional-package coordination remains a public-release gate |
+| Desktop                           | Implemented; local/portfolio MVP GO                                               | Tauri 2, React, TypeScript, and Vite; M011 adds the unsigned local Windows x64 package and Milestone 6A lifecycle feedback plus bounded uninstall choices                                                                                | Milestone 6B plans compatibility-gated ordinary Chatterbox acquisition and truthful resource disclosure; trusted public signing remains externally pending                                                        |
+| TTS process                       | Profile-aware local boundary implemented and exact-host validated               | One persistent native-owned child over framed standard streams, narrow typed commands, process-tree termination, complete-unit binary handoff, exact supported Piper/Chatterbox activation, and native-only development Qwen activation  | Milestone 6B must compile repository fallbacks out of release and prove application-owned private runtimes under hostile environment inputs; the child has application containment but is not an OS sandbox        |
 | Balanced model                    | Rejected exact profile                                                          | Qwen3-TTS 0.6B CustomVoice, Aiden, CUDA bfloat16/SDPA                                                                                                                                                                                    | Failed startup, throughput, cancellation, zero-failure, and complete-quality gates                                                                                                                                 |
 | Compatibility model               | Rejected exact profile                                                          | Supertonic 3, F1, Spanish mode, ONNX Runtime CPU                                                                                                                                                                                         | Failed first-audio, cancellation, zero-failure, and complete-quality gates                                                                                                                                         |
-| CPU fallback                      | Supported; integrated Spanish/English packaged portfolio and closeout CI passed | Piper 1.4.2, davefx/Spanish and joe/English, ONNX Runtime CPU float32; davefx total sustained RTF 0.0252 and about 392 MiB measured peak model-tree RAM                                                                                  | M011's packaged core includes the applicable GPL/phonemizer source mechanics, model cards, provenance, and CC0 notices; clean-host release evidence remains                                                        |
+| CPU fallback                      | Supported; local/portfolio GO                                                     | Piper 1.4.2, davefx/Spanish and joe/English, ONNX Runtime CPU float32; davefx total sustained RTF 0.0252 and about 392 MiB measured peak model-tree RAM                                                                                  | Packaged core includes GPL/phonemizer source mechanics, model cards, provenance, and CC0 notices; no GPU is required, and independent older-PC use provides representative evidence                              |
 | Blocker-resolution candidate      | Standard `v3` failed; constrained demo implemented                              | Qwen3-TTS 12Hz 1.7B CustomVoice, Serena, neutral Spanish audiobook instruction, one CUDA bfloat16/SDPA worker                                                                                                                            | Retain development-only availability, truthful buffering, no persistence, and no passing standard-profile claim                                                                                                    |
 | Dual-worker scheduling experiment | Rejected by `selection-v5`                                                      | One GPU-primary Qwen worker plus one separately loaded CPU-only float32 support worker                                                                                                                                                   | CPU solo was too slow; low-load concurrency improved aggregate RTF by only about 2.6%, substantially slowed the GPU worker, and increased memory and operational risk                                              |
 | Adaptive demo buffering           | Exact-development path, policy, and synchronized host proof implemented         | Quick default; explicit 1-/2-/5-/10-minute preparation with 1 minute initially selected; 1-minute refill; 10-second warning; zero adaptive low-buffer wait; approximately 30-minute ceiling                                              | Exact-host evidence remains development-only; production/general-hardware graduation remains blocked                                                                                                               |
 | Audio-unit transitions            | M008.1 implemented, validated, and archived                                     | Boundary-specific scheduled delays between already-buffered units; no silent PCM, fade, model-input rewrite, or delay after real buffering/final completion                                                                              | Listening may tune only a future version                                                                                                                                                                           |
-| Bilingual narration               | Runtime integration, local portfolio matrix, and required CI complete           | Piper davefx/Spanish and joe/English are supported CPU paths; Chatterbox Spanish/English is supported; Qwen Serena/Spanish and Aiden/English are development-only                                                                        | M011 keeps Piper in the core, gates Chatterbox as an explicit optional download, and owns distribution/licence fulfillment                                                                                         |
+| Bilingual narration               | Piper GO; Chatterbox conditionally supported                                      | Piper davefx/Spanish and joe/English are supported CPU paths; Chatterbox Spanish/English is supported on systems passing its published host gate; Qwen Serena/Spanish and Aiden/English are development-only                            | Piper is in the core; Chatterbox ordinary Download remains withheld until Milestone 6B passes the live-gate, disclosure, and ordinary-package journey                                                               |
 | Built-in speaker and demo quality | Maintainer accepted for demo only                                               | Serena selected by the frozen intake screen; one fluent maintainer later scored the 12-case panel 4.2667/5 with three meaning-changing defects                                                                                           | One maintainer is sufficient for future MVP demo feedback; historical `v3` remains non-promotable and no standard quality pass is claimed                                                                          |
 | Base voice cloning                | Outside current MVP                                                             | Qwen3-TTS 1.7B Base ICL/x-vector modes require user reference audio                                                                                                                                                                      | Retained only as related-runtime prototype evidence; no enrollment, clone prompt, or reference-data path is planned                                                                                                |
 | OpenAI Whisper                    | Rejected as TTS candidate                                                       | Automatic speech recognition: audio input and text output                                                                                                                                                                                | Optional fully local benchmark-only transcription may be assessed separately; it cannot generate narration or replace human quality review                                                                         |
-| Process transport                 | Accepted, implemented, and validated                                            | Rust-owned child-process standard streams plus narrow optimized binary Tauri responses; no listener or renderer shell capability                                                                                                         | Protocol v1 remains unchanged; production distribution remains blocked                                                                                                                                             |
+| Process transport                 | Accepted, implemented, and validated                                            | Rust-owned child-process standard streams plus narrow optimized binary Tauri responses; no listener or renderer shell capability                                                                                                         | Protocol v1 remains unchanged; trusted public distribution remains pending external signing authorization                                                                                                          |
 | Internal audio                    | All admitted profile adapters and local packaged portfolio proof complete       | Bounded mono 24-kHz float32-le units; Piper converts native 22.05 kHz inside its adapter; Chatterbox and Qwen return bounded complete units; sole-owner FIFO and one transient active-device copy                                        | No audio persistence; one model child at a time; Qwen remains optional development-only and constrained-buffered                                                                                                   |
 | Playback mechanism                | Six boundary-deferred rates implemented and validated                           | One dedicated 24-kHz `AudioContext`, one gain node, one active source unit, bounded source-PCM FIFO, and repository-owned incremental WSOLA at `1.00x` through `0.75x`; newest pending rate activates at the next complete-unit boundary | Preserve source-frame progress/memory authority, pitch, queue/identity continuity, and `1.00x` bypass in M011 packaging                                                                                            |
 
@@ -291,10 +299,13 @@ bounded buffering, playback, and demo thresholds. Reader/narration
 segment projection, navigation, heard persistence, and exact-host
 synchronization are implemented through completed M009. Supported exact
 Piper/Chatterbox profiles, hardware matching, explicit fallback selection, and
-recovery are implemented. M011 still requires installer delivery for the
-implemented compliant Piper core; exact-revision official Hugging Face model
-acquisition plus separately verified runtime delivery for a minimal, explicit,
-removable Chatterbox option; and clean-host release evidence.
+recovery are implemented. M011 implements the compliant Piper core installer
+and the exact-revision official Hugging Face model acquisition plus separately
+verified runtime delivery for a minimal removable Chatterbox option. Under
+ADR-0049 and release authority v2, the preliminary Milestone 7 record accepts
+Piper local/portfolio GO and conditional Chatterbox GO for systems that pass the
+published gate. The ordinary Download action remains withheld while Milestone
+6B is planned, and signed public publication is pending external authorization.
 Current
 buffer and latency targets come from
 [`../architecture/performance-budget.md`](../architecture/performance-budget.md),
@@ -334,10 +345,11 @@ Possible post-MVP work includes the bounded [local TTS candidate backlog](post-m
 
 ## Public positioning
 
-Until M011 closes the exact shipped payload, licences, dependency/integrity
-audits, clean-host lifecycle, and applicable signing gate, describe release
-availability prospectively even though the local reader and narration paths
-are implemented:
+The preliminary Milestone 7 record confirms the local/portfolio support boundary
+using published requirements plus representative evidence. Milestone 6B must
+close the ordinary Download and release-isolation work before the decision is
+renewed. Describe the current unsigned/withheld limitations explicitly, and keep
+trusted public publication prospective until signing is authorized:
 
 > VoxLeaf is a privacy-first desktop EPUB reader in development, designed to generate narration on-device, stream it through bounded memory, and discard it after playback.
 

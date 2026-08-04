@@ -48,9 +48,61 @@ remains a development-only GPU engine. M010.1 Milestone 6 implements exact
 Piper Spanish/English CPU profiles, supported Chatterbox Spanish/English, and
 development-only Qwen Serena/Spanish plus Aiden/English. The current
 [`tts-support-matrix-v2`](../architecture/tts-support-matrix-v2.md) records the
-exact states, host margins, and language bindings, while M011 still owns
-release packaging and license fulfillment. All native-only local
-configurations are documented in [`setup.md`](setup.md).
+exact states, host margins, and language bindings. M011 implements the local
+Piper package and closed optional lifecycle. The preliminary Milestone 7 record
+accepts Piper local/portfolio GO and conditional Chatterbox GO for systems that
+pass the published host gate; trusted public signing remains externally pending.
+Planned Milestone 6B reopens only ordinary Download and release-runtime
+isolation. All native-only local configurations are documented in
+[`setup.md`](setup.md).
+
+### The current ordinary package does not offer Chatterbox download
+
+This is the expected current channel state, not a profile-detection bug and not
+evidence that Chatterbox failed. The checked-in ordinary manifest remains
+`withheld`, while the separate ADR-0045 validation build proves acquisition and
+installed Spanish/English use on a representative compatible computer. The
+preliminary Milestone 7 decision did not enable the ordinary Download action.
+Milestone 6B is planned to replace the separate validation identity with the
+ordinary path, but the current Download action remains withheld until its exact
+measurements, live pre-network host gate, release isolation, and installed
+ordinary journey pass.
+
+### Chatterbox validation takes a long time to start or the computer slows down
+
+This applies to the current maintainer validation build and, after Milestone 6B
+passes, to the planned ordinary channel. Chatterbox is the generally more natural
+and expressive quality option compared with Piper, but it is much larger and
+more resource-intensive. Its first load
+may exceed one minute; the two recorded direct cold runs were `29.61` and
+`82.34` seconds, while the representative installed Quick observations were
+about `40.0` seconds in Spanish and `33.9` seconds in English. These are
+observations, not a countdown or universal performance guarantee.
+
+During load and inference, Chatterbox uses GPU, VRAM, RAM, and CPU and may make
+the computer temporarily less responsive. Narration/model-related controls may
+be unavailable while a truthful loading phase is shown, but the visual reader
+must remain usable. Installing the package consumes disk; it does not reserve
+RAM or VRAM permanently. Use **Cancel start** before audible playback when
+available, or **Stop** after playback begins. Piper remains the lighter CPU
+alternative.
+
+### Verify that an ordinary release is not using development Python
+
+Do not uninstall Python, Rust, Cargo, Node.js, or virtual environments to test
+this. Milestone 6B must compile repository fallback branches out of release and
+add a checked-in ordinary-package isolation harness. That harness removes or
+poisons the `VOXLEAF_TTS_*`, Python, and environment-manager inputs for its child
+process, uses a misleading `PATH`, and asserts the absolute verified private
+`runtime/python.exe` and application-owned module/model roots. Missing or invalid
+package data must fail closed. Until 6B implements and documents the command,
+the validation procedure is planned rather than a current troubleshooting claim.
+
+The current Piper installer is an `unsigned-local` portfolio candidate. Piper
+does not require a GPU, and successful use on the independent older 16-GB-RAM/
+4-GB-VRAM Windows computer is representative functionality evidence. Continue
+recording hashes and reproducible diagnostics for defects, but do not interpret
+an untested PC as a failed PC.
 
 M010.1 Milestone 7's local packaged matrix confirms that Piper and Chatterbox
 sustain the one-minute quick observation without underruns on the measured

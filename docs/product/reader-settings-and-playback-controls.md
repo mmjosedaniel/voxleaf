@@ -154,6 +154,41 @@ optional data intentionally means its in-product management becomes available
 only after reinstalling the same product identity; VoxLeaf does not leave a
 second model-manager executable after uninstall.
 
+## Planned M011 ordinary acquisition disclosure addendum
+
+Milestone 6B will change only Chatterbox's ordinary acquisition presentation;
+the current Download action remains withheld until that implementation passes.
+Chatterbox
+stays visible as an optional quality profile, but **Review Chatterbox download**
+and **Download Chatterbox** become actionable only after the bounded compatibility
+presentation passes and native code repeats the same gate before network access.
+An unsupported or unknown requirement remains visible with a concise reason and
+recheck route while Piper stays available.
+
+The Settings card and confirmation must let a user make the performance/quality
+trade-off before acquiring several gigabytes:
+
+- Chatterbox is the generally more natural and expressive option compared with
+  Piper; that is qualitative positioning, not a promise that every listener will
+  prefer it.
+- Show exact authority-backed transfer, installed, peak temporary, and minimum
+  free-space values, with readable decimal/GiB equivalents. Keep storage separate
+  from runtime RAM/VRAM: installation does not permanently reserve memory, but
+  model load and inference consume GPU, VRAM, RAM, and CPU.
+- State that initial startup can exceed one minute and may temporarily make the
+  computer less responsive. Do not say the application is disabled: the visual
+  reader remains usable while narration/model controls show a truthful loading
+  phase.
+- Use indeterminate feedback for verification and service/model load, with no
+  fabricated percentage, countdown, or universal timing promise. Retain
+  Milestone 6A's **Cancel start**, **Stop**, download-cancellation cleanup, and
+  independent **Remove Chatterbox** behavior.
+
+The first-Play presentation may include representative-host observations only
+when labelled as observations rather than compatibility guarantees. Milestone
+6B reconciles those values with the final ordinary package and live hardware
+gate before release documentation becomes authoritative.
+
 ## Goal
 
 Make VoxLeaf's portfolio-facing reader feel like a reading application rather
