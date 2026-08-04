@@ -25,13 +25,16 @@ ADR-0048 is not an implementation claim.
 
 ## Current state
 
-- Completed M003 accepts only OPF `version="3.0"`, requires one XHTML
-  Navigation Document declared with `properties="nav"`, and rejects
-  `version="2.0"` as `unsupported-version`.
-- The current package parser requires EPUB 3 `dcterms:modified`, exposes an
-  internal literal `version: "3.0"`, and does not consume `spine@toc`.
-- The current navigation parser accepts only XHTML `<nav epub:type="toc">`;
-  there is no NCX parser.
+- Milestones 1 and 2 of this plan are complete. Rootfile selection now admits
+  exact OPF `version="2.0" | "3.0"`; the package parser applies their distinct
+  metadata/navigation rules without exposing that discriminator publicly.
+- The package parser requires EPUB 3 `dcterms:modified`, leaves it absent for
+  EPUB 2, validates direct or deprecated-wrapper OPF 2 metadata, consumes
+  `spine@toc`, and validates/ignores the bounded optional OPF 2 `guide`.
+- The current navigation parser still implements only XHTML
+  `<nav epub:type="toc">`. An admitted OPF 2 package stops at an explicit
+  content-free `unsupported-resource` boundary before NCX bytes are read;
+  Milestone 3 owns the NCX parser.
 - The shared public opener already separates archive, package, navigation,
   XHTML projection, book projection, locators, resources, and explicit close.
   The existing internal `ParsedNavigationDocument` is suitable as the common
@@ -40,9 +43,9 @@ ADR-0048 is not an implementation claim.
   restoration. Completed M005 provides bounded locator-linked narration
   preparation from the safe semantic model. Neither boundary should need an
   EPUB-version branch.
-- The deterministic fixture builder currently emits EPUB 3 packages and
-  XHTML navigation only. The public ingestion matrix intentionally freezes
-  EPUB 2 as unsupported.
+- The deterministic test support now has separate EPUB 3 and OPF2/NCX
+  builders. The public ingestion matrix proves OPF 2 package admission while
+  intentionally withholding publication output until NCX support exists.
 - M011 remains active. The user reports that VoxLeaf worked on an independent
   older Windows PC with 4 GB VRAM and 16 GB RAM; the report is retained in
   M011 as exploratory package evidence and does not affect this EPUB parser
@@ -284,9 +287,49 @@ Expected result: supported OPF 2 reaches the not-yet-implemented NCX parser;
 all invalid/unsupported relationships fail through fixed content-free codes;
 EPUB 3 output is unchanged.
 
+Milestone 2 baseline actual result on 2026-08-03, before production edits:
+
+- `pnpm.cmd --filter @voxleaf/epub typecheck` passed.
+- `pnpm.cmd --filter @voxleaf/epub test` passed with 34 files and 582 tests.
+- `pnpm.cmd --filter @voxleaf/epub build` passed.
+
+Milestone 2 actual result on 2026-08-03:
+
+- Rootfile selection and package-internal models now admit only exact OPF
+  `"2.0" | "3.0"`, with an internal `ncx | xhtml` navigation-source kind.
+  Neither discriminator enters the public package exports, shared contracts,
+  renderer, persistence, narration, TTS, or audio boundaries.
+- OPF 2 requires nonempty title/language/identifier and a valid
+  `unique-identifier` relation, leaves `modified` absent, and validates then
+  discards `dc:date`, supported supplemental Dublin Core values, legacy
+  `meta name/content`, and foreign supplemental metadata.
+- Direct metadata and exactly one deprecated `dc-metadata` plus optional
+  `x-metadata` are admitted as mutually exclusive forms. Mixed/duplicate
+  wrappers, misplaced metadata, malformed supplementals, and duplicate IDs
+  fail transactionally with content-free errors.
+- Required `spine@toc` now resolves one local, exact-media-type NCX manifest
+  item with no fallback. Existing local XHTML spine, fallback, layout,
+  protection, manifest, and cancellation restrictions remain active.
+- One optional post-spine OPF 2 `guide` is path/manifest/media-type validated
+  and discarded. It cannot replace a missing NCX relation; remote,
+  undeclared, non-XHTML targets, duplicate guides, and deprecated `tours` are
+  rejected.
+- The public OPF2 fixture now reaches the explicit pending-NCX branch and
+  returns `unsupported-resource` without reading NCX bytes or returning a
+  publication. EPUB 3 output and the public result schema are unchanged.
+- Focused coverage grew from 582 to 618 tests and includes direct/wrapped
+  metadata, required fields, duplicate IDs, malformed order, exact/max-plus-one
+  manifest/spine limits, cancellation, missing/wrong TOC, exact NCX media type,
+  remote/fallback NCX, guide validation/fallback exclusion, public privacy,
+  and EPUB 3 regressions.
+- From normal local PowerShell outside the sandbox,
+  `pnpm.cmd --filter @voxleaf/epub typecheck`, `test` (34 files/618 tests),
+  `build`, `pnpm.cmd format:check:typescript`, `pnpm.cmd lint:typescript`, and
+  `git diff --check` passed.
+
 #### Status
 
-Not started.
+Complete.
 
 ### Milestone 3: Parse NCX into the common navigation model
 
@@ -485,6 +528,16 @@ unsupported rather than ship a partially navigable profile.
   missing import; both were corrected before any checkpoint. Final external
   typecheck, 34-file/582-test suite, build, Prettier check, ESLint, and diff
   check pass. No production support is claimed.
+- **2026-08-03:** Created `codex/m003-2-opf2-package-profile` from updated
+  `main` at the merged Milestone 1 result. The unchanged external baseline
+  passed typecheck, 34 files/582 tests, and build before production edits.
+  Completed Milestone 2 in checkpoint `20f14d0`: exact OPF 2 package
+  selection, version-specific metadata, `spine@toc`/NCX relation validation,
+  optional guide validation, internal navigation-source dispatch, and 36 new
+  regressions. Final external typecheck, 34 files/618 tests, build, Prettier,
+  ESLint, and diff check pass. The public opener deliberately returns no
+  publication at the pending NCX parser, so end-user EPUB 2 support is not yet
+  claimed.
 
 ## Discoveries and decisions
 
@@ -515,6 +568,19 @@ unsupported rather than ship a partially navigable profile.
   package, NCX, guide, metadata-form, doctype, omission, additional-entry, and
   mutation controls. ZIP entry inspection must narrow directory entries before
   test extraction; no production abstraction is needed.
+- **Decision:** The package-internal navigation source is a closed
+  `ncx | xhtml` discriminator. Until Milestone 3 implements NCX parsing, the
+  NCX dispatch branch fails as content-free `unsupported-resource` before
+  reading navigation bytes; it does not pretend the admitted OPF 2 package is
+  an unsupported version.
+- **Decision:** OPF 2 guide and supplemental metadata bounds reuse the existing
+  package byte, XML node/attribute/depth/text, path, cancellation, and deadline
+  authorities. No caller-selectable maximum or new production dependency is
+  needed.
+- **Discovery:** The first exploratory post-change suite correctly exposed two
+  frozen assumptions that used OPF 2 as the generic unsupported-version case.
+  Those cases now use exact unsupported `version="1.0"`, while the dedicated
+  OPF2 public characterization asserts the pending-NCX boundary.
 
 ## Final validation results
 
@@ -526,3 +592,11 @@ dependency or opaque artifact was added. Full-plan browser/native, supported
 EPUB 2, privacy/hostile-input, and pull-request validation remain not started.
 Do not move this plan to `completed/` or describe EPUB 2 as supported before
 every later milestone and applicable gate passes.
+
+Milestone 2 passed on 2026-08-03 from normal local PowerShell outside the
+managed sandbox: focused typecheck, 34 files/618 tests, build, TypeScript
+Prettier, ESLint, and `git diff --check` are green. The implementation remains
+package-internal and introduces no dependency, public schema, renderer,
+persistence, narration, TTS, audio, or installer change. NCX parsing,
+EPUB2-XHTML doctype admission, end-to-end opening, downstream equivalence, and
+full-plan validation remain assigned to Milestones 3 through 5.
