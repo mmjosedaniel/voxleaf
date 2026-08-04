@@ -4,14 +4,14 @@
 
 The visual-reading portion of this MVP is implemented and roadmap Milestone 4 is complete: a user can open a supported local EPUB, read and navigate its bounded semantic text and static raster images in one continuous reflowable layout, adjust closed display preferences, and restore an exact or nearest-valid logical passage after reselecting the same exact bytes. Milestones 5 through 7 implement bounded narration preparation and the constrained local service while retaining the historical no-standard-profile decision. M008's six implementation milestones connect that work into an exact-development audible demo. Quick mode is the default; prepared mode is explicit and initially selects one minute; refill remains one minute; the low-water warning is 10 seconds; the optional low-buffer throughput wait remains disabled; and the simultaneous 30-minute ceiling is never a startup target. M008.1 now applies a separate bounded semantic transition pause between independently generated units when the next unit is already buffered. M010.2 later supersedes only M008's fixed playback-rate policy with six validated boundary-deferred values from `1.00x` through `0.75x`. Artificial hard/token splits remain continuous, genuine buffering replaces rather than compounds the pause, and no silent PCM is created. Deterministic and packaged tests cover ownership, cancellation, stale suppression, lifecycle cleanup, pause continuation, truthful buffering, privacy, and all four prepared options. M008's historical Qwen policy run measured 41.312 seconds to first audible output and 19.49 buffering seconds per playback minute; that constrained profile exceeded the MVP target and is not the M011 baseline Piper release family.
 
-The completed ingestion support profile in that reader is currently
-reflowable EPUB 3 with XHTML navigation. Accepted pre-release Milestone 3.1 and
-[ADR-0048](../architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md)
-define a separate bounded OPF 2.0/NCX profile before M011 Milestone 7.
-Milestones 1-3 implement its fixture, package, doctype, NCX parser, and public
-package-opening boundary. Reader/restoration/narration equivalence and the
-complete affected acceptance matrix remain pending, so general EPUB 2 support
-is not yet claimed.
+The completed ingestion support profile in that reader includes reflowable
+EPUB 3 with XHTML navigation and the bounded reflowable OPF 2.0/NCX profile
+defined by
+[ADR-0048](../architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md).
+Completed Milestone 3.1 proves package admission, exact inert doctypes, NCX
+navigation, common semantic/resource/locator behavior, reader restoration,
+narration preparation, browser use, and packaged startup. This is deliberately
+not a claim of full EPUB 2, EPUBCheck, or general reading-system conformance.
 
 Completed M009 connects audible segments to highlighting, focus-safe following,
 identity-first navigation, and bounded non-skipping heard-position persistence.
@@ -124,9 +124,8 @@ before download consent.
 1. The user opens VoxLeaf. VoxLeaf performs one bounded local compatibility
    check and shows only closed content-free status and rejection reasons.
 2. The user selects a local EPUB.
-3. VoxLeaf validates and loads the book. Current production accepts the
-   bounded EPUB 3 profile; Milestone 3.1 will add only the separately accepted
-   reflowable EPUB 2/NCX subset after validation.
+3. VoxLeaf validates and loads a book in the bounded reflowable EPUB 3/XHTML
+   navigation profile or the bounded reflowable OPF 2.0/NCX profile.
 4. VoxLeaf opens at the user's last saved passage, or the beginning for a new book.
 5. The user reads and navigates the EPUB in a continuous reflowable reader, adjusts closed display preferences, and can close or replace the publication.
 6. On an exact configured admitted host, the user can select a
@@ -376,8 +375,8 @@ Remaining:
 ### Reliability
 
 - Unsupported or malformed EPUBs produce a recoverable error.
-- Once M003.1 is complete, supported reflowable EPUB 2/NCX and EPUB 3 sources
-  produce the same public safe semantic, navigation, locator-resolution,
+- Supported reflowable EPUB 2/NCX and EPUB 3 sources produce the same public
+  safe semantic, navigation, locator-resolution,
   restoration, and narration schema and behavior while retaining distinct
   exact-byte identities; EPUB 2 variants outside ADR-0048 remain explicit
   recoverable unsupported inputs.

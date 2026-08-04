@@ -3,9 +3,10 @@
 ## Status
 
 Accepted; amended on 2026-07-22 for bounded EPUB 3 legacy-metadata and inert
-HTML-doctype compatibility. ADR-0048 accepts a separate additive EPUB 2/NCX
-profile for planned Milestone 3.1, but the implemented boundary remains EPUB
-3-only until that plan passes.
+HTML-doctype compatibility, and on 2026-08-03 to record the implemented
+additive EPUB 2/NCX profile authorized by ADR-0048. The original Milestone 3
+evidence remains the authority for the EPUB 3 path; completed Milestone 3.1 is
+the additive implementation and validation authority for OPF 2.0/NCX.
 
 ## Context
 
@@ -24,12 +25,14 @@ Milestone 3 accepts an EPUB only when all content needed for the default reading
 - The selected package document declares EPUB `version="3.0"` and uses EPUB 3 metadata, manifest, spine, and an EPUB navigation document.
 - An EPUB 3 package may additionally contain legacy EPUB 2 `meta` elements with nonempty `name` and `content` attributes. VoxLeaf validates and ignores these compatibility values; it does not expose them or treat their presence as EPUB 2 package/NCX support. Mixed EPUB 2/EPUB 3 `meta` forms and malformed legacy elements remain invalid.
 - `META-INF/container.xml` is processed in document order. VoxLeaf selects the first rootfile with media type `application/oebps-package+xml` whose well-formed package satisfies this profile. A valid but unsupported rendition may be skipped; malformed, unsafe, cancelled, or over-budget rootfile processing fails instead of falling through. A publication with no supported rootfile is unsupported.
-- EPUB 2 package documents, NCX-only navigation, deprecated EPUB 2 guide semantics, and EPUB 2 compatibility recovery are deferred. They require a separate bounded compatibility spike and an amendment or superseding ADR.
+- The original Milestone 3 decision deferred EPUB 2 package documents,
+  NCX-only navigation, deprecated EPUB 2 guide semantics, and compatibility
+  recovery to a separate bounded decision and implementation.
 - [ADR-0048](ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md) now
   supplies that separate bounded decision for exact OPF 2.0, NCX, inert
-  compatibility doctypes, and validated/ignored guide data. It does not
-  retroactively change this implemented support profile; Milestone 3.1 must
-  implement and validate the additive path before EPUB 2 becomes supported.
+  compatibility doctypes, and validated/ignored guide data. Completed
+  Milestone 3.1 implements and validates that additive path without changing
+  the historical EPUB 3 rules or the public publication model.
 - The default rendition is reflowable. A missing global `rendition:layout` is treated as reflowable. A fixed-layout-only publication is unsupported.
 - A spine item is accepted only when it is supported reflowable XHTML or reaches supported reflowable XHTML through a finite manifest fallback chain. A required foreign, SVG, scripted, remotely hosted, protected, or pre-paginated spine item without that fallback makes the publication unsupported.
 - Non-linear spine items may be represented when supported, but they do not replace the ordered linear reading path. At least one supported linear spine item is required.
@@ -201,10 +204,11 @@ A renderer-oriented EPUB framework remains prohibited in the ingestion core. The
 - Implemented ingestion has one exact support and budget authority, with every maximum and maximum-plus-one boundary tied to focused regression evidence.
 - Normal reading remains local: archive bytes, resources, publisher markup, and prose are not sent to a network service or extracted to disk.
 - A closed semantic projection prevents publisher markup from becoming trusted application UI.
-- Until Milestone 3.1 completes, EPUB 2 remains an explicit recoverable
-  unsupported outcome. ADR-0048 defines the narrower additive profile that may
-  change only that case; fixed-layout, active, protected, remotely dependent,
-  SVG-dependent, and media-dependent publications remain unsupported.
+- Completed Milestone 3.1 admits only ADR-0048's bounded reflowable OPF
+  2.0/NCX profile. Other EPUB 2 inputs remain explicit recoverable invalid or
+  unsupported outcomes; fixed-layout, active, protected, remotely dependent,
+  SVG-dependent, and media-dependent publications remain unsupported across
+  both package versions.
 - Strict limits may reject unusually large but valid EPUBs. Increasing a limit requires benchmark and security evidence plus an ADR amendment; callers cannot opt out.
 - Dropping CSS can include text that publishers hide only through the cascade. Milestone 4 must preserve this documented limitation or introduce a separately reviewed safe-style policy.
 - Byte-valid raster images are not yet proven safe to decode. Renderer-specific limits remain a required gate for Milestone 4.

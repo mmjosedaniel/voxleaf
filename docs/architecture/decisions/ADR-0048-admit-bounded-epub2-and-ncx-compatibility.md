@@ -2,9 +2,10 @@
 
 ## Status
 
-Accepted on 2026-08-03 for Milestone 3.1 implementation. VoxLeaf remains
-EPUB 3-only until that ExecPlan passes its final validation; this decision is
-not implementation evidence by itself.
+Accepted and implemented on 2026-08-03. The completed
+[Milestone 3.1 ExecPlan](../../plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md)
+records the additive implementation, downstream equivalence, and final
+validation evidence. This decision alone was not implementation evidence.
 
 ## Context
 
@@ -177,8 +178,9 @@ narration after substituting each fixture's expected identity; they never
 assert equal `bookId` values or byte-equal identity-bearing locators.
 
 Milestone 3 remains historical evidence for the original EPUB 3 boundary.
-The additive work belongs to the active Milestone 3.1 ExecPlan and must close
-before M011 Milestone 7 can make the final MVP support claim.
+The completed Milestone 3.1 ExecPlan is the additive OPF 2.0/NCX
+implementation authority. M011 Milestone 7 consumes that result and no longer
+owns an EPUB 2 parser gate.
 
 ## Consequences
 
@@ -191,11 +193,11 @@ before M011 Milestone 7 can make the final MVP support claim.
 - The exact NCX/XHTML doctype exceptions enlarge the XML attack surface and
   therefore require exact-positive plus near-miss, external-identifier,
   internal-subset, entity, cancellation, and maximum-plus-one regressions.
-- Once implemented, EPUB 2 files outside this profile will receive honest
-  recoverable invalid or unsupported outcomes. VoxLeaf does not claim
+- EPUB 2 files outside this profile receive honest recoverable invalid or
+  unsupported outcomes. VoxLeaf does not claim
   EPUBCheck or full EPUB 2 reading-system conformance.
-- M011 release closeout waits for Milestone 3.1 and the affected packaged
-  reader regression, but M011's installer, Piper, Chatterbox, and signing
+- M011 release closeout consumes completed Milestone 3.1 and the affected
+  packaged reader regression; M011's installer, Piper, Chatterbox, and signing
   authorities remain otherwise unchanged.
 - No copyrighted EPUB, private book, generated audio, model artifact, path,
   or publisher text may be added as evidence. Fixtures remain small,

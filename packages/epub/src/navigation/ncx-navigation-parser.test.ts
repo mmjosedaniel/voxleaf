@@ -252,6 +252,13 @@ describe("bounded NCX navigation parsing", () => {
       ncxDocument(validNavPoint(), { afterNavMap: "<pageList/>" }),
     ],
     [
+      "page list label after target",
+      ncxDocument(validNavPoint(), {
+        afterNavMap:
+          '<pageList><pageTarget type="normal"><navLabel><text>Page One</text></navLabel><content src="text/chapter.xhtml#page-one"/></pageTarget><navLabel><text>Late label</text></navLabel></pageList>',
+      }),
+    ],
+    [
       "empty nav list",
       ncxDocument(validNavPoint(), {
         afterNavMap:

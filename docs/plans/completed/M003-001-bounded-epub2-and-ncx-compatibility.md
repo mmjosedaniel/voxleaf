@@ -8,8 +8,8 @@ documents, and NCX navigation selected by `spine@toc`. Preserve the current
 EPUB 3 behavior, safe semantic model, stable locators, downstream narration,
 privacy, cancellation, and resource ceilings.
 
-This plan is an additive follow-up to completed Milestone 3. It must finish
-before M011 Milestone 7 records the final MVP release decision.
+This plan is a completed additive follow-up to Milestone 3. M011 Milestone 7
+consumes it when recording the final MVP release decision.
 
 ## User-visible outcome
 
@@ -19,13 +19,14 @@ Unsupported EPUB 2 variants fail with the existing recoverable content-free
 messages. Nothing is extracted to disk, no publication resource is fetched,
 and no publisher markup or DTD becomes executable.
 
-Until all milestones and final validation below pass, released and local
-production builds remain EPUB 3-only. The existence of this plan and
-ADR-0048 is not an implementation claim.
+All five milestones and the final validation below now pass. Released and
+local production builds support only ADR-0007's bounded EPUB 3 profile and
+ADR-0048's bounded OPF 2.0/NCX profile; neither claim implies full EPUB 2,
+EPUB 3, EPUBCheck, or reading-system conformance.
 
 ## Current state
 
-- Milestones 1 through 4 of this plan are complete. Rootfile selection admits
+- Milestones 1 through 5 of this plan are complete. Rootfile selection admits
   exact OPF `version="2.0" | "3.0"`; the package parser applies their distinct
   metadata/navigation rules without exposing that discriminator publicly.
 - The package parser requires EPUB 3 `dcterms:modified`, leaves it absent for
@@ -48,9 +49,10 @@ ADR-0048 is not an implementation claim.
   Chromium, and packaged WebView2 matrices prove safe semantic, navigation,
   resource, locator, lifecycle, restoration, and narration equivalence after
   substituting the fixtures' necessarily distinct exact-byte identities.
-- Milestone 5 still owns authority reconciliation, full portable/repository
-  validation, and the final supported-profile claim. This active plan remains
-  outside `completed/` until that closeout passes.
+- Milestone 5 reconciles the implemented support authority, records the
+  unsupported boundary and final test counts, passes focused, portable, full
+  repository, Chromium, and native Windows validation, and archives this plan
+  under `completed/`.
 - M011 remains active. The user reports that VoxLeaf worked on an independent
   older Windows PC with 4 GB VRAM and 16 GB RAM; the report is retained in
   M011 as exploratory package evidence and does not affect this EPUB parser
@@ -518,9 +520,23 @@ PowerShell session, the final diff contains no unrelated/generated/private
 artifact, and documentation distinguishes the bounded profile from full EPUB
 2 conformance.
 
+Actual result: all commands pass from normal local PowerShell outside the
+sandbox. Focused EPUB validation passes typecheck, build, and 35 files/652
+tests; Chromium passes 7 tests; packaged native startup passes the EPUB 2/NCX,
+reader, restart/restoration, narration, cancellation, and cleanup matrix with
+zero external requests. `check:portable` and `check` pass formatting, lint,
+typechecks, generated-contract verification, Shared 20 files/209 tests,
+desktop 53 files/536 Vitest tests plus 18 Node tests, Python 384 tests, Rust 72
+tests, and all portable/native builds. `git diff --check` passes. The final
+scope contains documentation and this ExecPlan only; no production source,
+dependency, lockfile, schema, capability, generated/private artifact, runtime
+edge, or system topology changes. The required production-dependency, Ubuntu
+portable, and Windows native checks are green on each result-bearing PR #199,
+#200, #201, and #202.
+
 #### Status
 
-Not started.
+Complete.
 
 ## Testing and benchmark strategy
 
@@ -642,15 +658,30 @@ unsupported rather than ship a partially navigable profile.
   formatting, ESLint, both focused typechecks, build, and diff checks.
   Milestone 4 is complete; Milestone 5 authority reconciliation and full-plan
   validation remain open.
+- **2026-08-03:** Created `codex/m003-5-close-epub2-validation` from updated
+  `main` at merged Milestone 4 commit `844fa94`. The unchanged external
+  baseline passed EPUB typecheck, 35 files/652 tests, build, Playwright 7
+  tests, and packaged native compilation/startup evidence before authority
+  edits.
+- **2026-08-03:** Completed Milestone 5. ADR-0007 retains historical EPUB 3
+  authority while ADR-0048 and this plan record the additive bounded OPF
+  2.0/NCX implementation. Product, architecture, testing, roadmap, M011,
+  documentation indexes, and the canonical system-diagram status/evidence now
+  describe the supported and excluded cases without changing topology. Final
+  external validation passes all eight plan commands. The result-bearing PRs
+  #199 through #202 each pass Production dependency graphs, Ubuntu portable
+  foundation, and Windows native foundation. The final scope is documentation
+  only and contains no dependency, capability, generated/private artifact, or
+  production-code change.
 
 ## Discoveries and decisions
 
 - **Decision:** This work is Milestone 3.1 and uses its own ExecPlan. It is not
   M011 Milestone 6B because it changes EPUB parsing/security rather than
   Chatterbox packaging or clean-host validation.
-- **Decision:** M011 Milestone 7 waits for M003.1 and the affected packaged
-  EPUB journey, while the remaining M011 Milestone 6 hardware/signing gates
-  stay independent.
+- **Decision:** M011 Milestone 7 now consumes completed M003.1 and its affected
+  packaged EPUB journey, while the remaining M011 Milestone 6 hardware/signing
+  gates stay independent.
 - **Decision:** EPUB 2 projects into the existing public publication and
   navigation model. No shared contract, renderer fork, or narration fork is
   authorized.
@@ -752,4 +783,27 @@ repository-authored test fixtures, integration/browser/native test evidence,
 and this actual-result record. No production dependency, public schema,
 renderer/version fork, persistence field, narration/TTS/audio behavior,
 network capability, committed EPUB binary, or architecture topology changed.
-Milestone 5 and the final general support/release claim remain open.
+Milestone 5 passed on 2026-08-03 from normal local PowerShell outside the
+managed sandbox. Focused EPUB typecheck/build and 35 files/652 tests pass;
+Playwright passes 7 tests; packaged native startup passes; `check:portable`
+and `check` pass all TypeScript, Python, Rust, generated-contract, dependency,
+test, and build gates; and `git diff --check` passes. The native matrix proves
+the bounded EPUB 2/NCX open/navigation path, exact restoration after restart,
+narration preparation, cancellation, cleanup, and zero external requests.
+Repository totals include Shared 20 files/209 tests, desktop 53 files/536
+Vitest tests plus 18 Node tests, Python 384 tests, and Rust 72 tests. The only
+non-failing output is the existing pytest cache-write warning and existing
+CSS/chunk-size build warnings; none changes command status or this profile's
+authority.
+
+The final diff changes documentation and this ExecPlan only. It adds no
+production source, dependency or lockfile, schema, native capability,
+generated/private artifact, committed EPUB binary, network surface,
+persistence field, narration/TTS/audio behavior, or architecture topology.
+Required Production dependency graphs, Ubuntu portable foundation, and
+Windows native foundation checks pass on the result-bearing PRs #199, #200,
+#201, and #202. The completed support claim is therefore limited to
+ADR-0048's bounded reflowable OPF 2.0/NCX profile alongside the unchanged
+bounded EPUB 3 profile; excluded legacy formats and full conformance remain
+out of scope. M011 Milestone 7 can consume this result while its independent
+Milestone 6 and public-release gates remain open.

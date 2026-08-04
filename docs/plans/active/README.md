@@ -17,12 +17,6 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`M003-001-bounded-epub2-and-ncx-compatibility.md`](M003-001-bounded-epub2-and-ncx-compatibility.md):
-  approved Milestone 3.1 follow-up for a bounded reflowable OPF 2.0/NCX
-  profile. It preserves the current public publication, locator, reader, and
-  narration boundaries and must complete before M011 Milestone 7 records the
-  final MVP release decision. Implementation has not started; current builds
-  remain EPUB 3-only.
 - [`M011-package-validate-and-release-mvp.md`](M011-package-validate-and-release-mvp.md):
   approved next-milestone plan. It freezes and implements the Windows x64/
   Piper Spanish-English core, a separately gated optional Chatterbox GPU
