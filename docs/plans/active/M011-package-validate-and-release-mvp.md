@@ -30,7 +30,8 @@ The ordinary installed-package journey passes acquisition cancellation, full
 verified acquisition, bilingual offline Chatterbox narration, restart, removal,
 Piper-after-removal, reacquisition, and uninstall from the ordinary product
 identity. Trusted public signing remains a separate externally authorized
-channel, and Milestone 7 must still record the renewed release decision.
+channel. Renewed Milestone 7 records the independent local/portfolio decisions;
+only required pull-request checks and final branch closeout remain.
 
 - a Windows x64 user can install VoxLeaf, open a supported local EPUB, restore
   progress, and use English or Spanish local narration through the included
@@ -89,8 +90,9 @@ Piper core and both voices. Its static authority and local lifecycle evidence
 pass. The maintainer also confirms VoxLeaf worked on the independent older
 Windows computer with 16 GB RAM and a 4-GB-VRAM GPU; Piper itself has no GPU
 requirement. The exact final artifact has no Defender or SmartScreen observation
-and is not signed, but authority v2 accepts it as a local/portfolio build rather
-than a trusted general-public release.
+because Defender was not run and SmartScreen was not observed. It is not signed,
+but authority v2 accepts it as a local/portfolio build rather than a trusted
+general-public release.
 
 Milestones 2 and 3 now provide the release dependency and Piper payload
 boundaries: a 15-entry private core lock, a separate 79-package Chatterbox
@@ -113,7 +115,8 @@ Chatterbox support for systems passing the published host gate. The preliminary
 Milestone 7 decision retained the ordinary manifest as `withheld`; Milestone 6B
 has now retired the validation-only product surface, promoted the canonical
 manifest, and passed the compatibility-gated ordinary installed journey. The
-renewed Milestone 7 decision and public signing remain separate pending work.
+renewed Milestone 7 decision now consumes that evidence. Public signing remains
+separate pending external authorization.
 
 Development TTS profiles may use ignored exact repository assets selected
 through explicit environment variables. The packaged Piper runtime and an
@@ -1221,13 +1224,15 @@ authorization and is not part of this completed submilestone.
 
 ### Milestone 7: Record the MVP release decision and close validation
 
-**Status:** In progress on the renewed Milestone 7 branch after completed
-Milestone 6B. The 2026-08-03 decision remains a
+**Status:** Renewed decision, exact-artifact host validation, and complete
+applicable local repository/package gates are recorded on the Milestone 7
+branch. Required pull-request checks and final branch closeout remain before
+archival. The 2026-08-03 decision remains a
 historical preliminary snapshot under ADR-0049/release authority v2: Piper was
 **GO**, Chatterbox was **GO when the published host gate passes**, ordinary
 Download was `withheld`, and trusted public signing was **pending external
-authorization**. Milestone 7 must now be rerun against the ordinary
-release-locked, compatibility-gated artifact produced by Milestone 6B.
+authorization**. The renewed result below consumes the ordinary release-locked,
+compatibility-gated artifact produced by Milestone 6B.
 
 1. Consume the completed M003.1 bounded EPUB 2/NCX result, then reconcile
    product, architecture, setup, testing, troubleshooting,
@@ -1252,6 +1257,17 @@ release-locked, compatibility-gated artifact produced by Milestone 6B.
 5. Record actual results, the release decision, and unresolved external
    channel limitations. Archive this ExecPlan after required branch checks and
    final closeout; public signing does not block the unsigned portfolio level.
+
+Renewed 2026-08-04 decision for the exact current artifact:
+
+| Claim                                 | Decision                                        | Evidence-backed scope                                                                                                                                                                                   |
+| ------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `piper-core-portfolio-ready`          | **GO**                                          | The packaged Windows x64 CPU core, exact-artifact lifecycle, offline Spanish/English Piper-after-removal arms, repository/package evidence, and representative independent-computer functionality pass. |
+| `chatterbox-runtime-support`          | **GO when the published host gate passes**      | Installed Spanish/English execution, offline privacy, bounded resources, cancellation, restart, and cleanup pass on the representative compatible host.                                                 |
+| `chatterbox-optional-portfolio-ready` | **GO on a compatible host**                     | The ordinary artifact passes consent, cancel/cleanup, complete verification, activation, installed bilingual use, removal, reacquisition, and uninstall.                                                |
+| `chatterbox-download-available`       | **GO only after both compatibility gates pass** | Settings presents Download only after renderer admission and native code repeats the Windows/CUDA/VRAM/RAM/CPU gate before network access.                                                              |
+| `unsigned-local-portfolio-build`      | **GO**                                          | Exact installer SHA-256 `aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc` is approved only as the unsigned local/portfolio candidate.                                                  |
+| `signed-public-windows-installer`     | **PENDING EXTERNAL AUTHORIZATION**              | No trusted signing identity is authorized; general-public publication remains disabled without recording an engine or package failure.                                                                  |
 
 Historical 2026-08-03 result, superseded for final closeout by Milestone 6B:
 
@@ -2201,6 +2217,27 @@ and never edit prior benchmark authority to make a release pass.
   `unsigned-local` and `publicPublicationAllowed: false`. The same artifact was
   reinstalled afterward, its installed-binary hash rechecked, and the original
   application data remained restored.
+- **2026-08-04:** Complete applicable local closeout validation passed from
+  normal PowerShell outside the sandbox without rebuilding the exact NSIS
+  artifact. `pnpm.cmd check:portable` and `pnpm.cmd check` pass shared 209/209,
+  EPUB 653/653, desktop 542/542 plus Node 32/32, Python 386/386, and Rust 79/79
+  default plus 80/80 release-locked tests together with format, lint, type, and
+  build gates. Chromium passes 7/7; packaged WebView2 passes its full startup,
+  restart, reader, synchronization, cancellation, cleanup, and zero-external-
+  request smoke after one bounded internal PageDown wait retry. The native
+  10,000-block reader benchmark passes at `180.6` ms selection-to-first-content,
+  `10.1` ms maximum scheduler callback, and zero final resource owners.
+- **2026-08-04:** Release audit, current 400-component inventory, Piper core,
+  Chatterbox source/acquisition, and ordinary Windows static authority all pass.
+  The audit retains 17 Rust informational notices and the four disclosed
+  Chatterbox optional-graph blind spots instead of overstating coverage. All 16
+  modified Markdown files pass Prettier and relative-link resolution;
+  `git diff --check` passes. The tracked-artifact/privacy audit reviews all 825
+  tracked paths and reports zero prohibited EPUB/audio/model/secret/log
+  artifacts, zero high-confidence secret files, zero local scan-context paths,
+  and zero sensitive diff matches. Required pull-request checks remain the only
+  unexecuted branch gate; trusted public signing remains separately pending
+  external authorization.
 
 ## Discoveries and decisions
 
@@ -2336,6 +2373,12 @@ and never edit prior benchmark authority to make a release pass.
   `signed-public-windows-installer` as
   **pending external authorization** because no trusted signing identity is
   authorized. The unsigned candidate remains valid for the local/portfolio MVP.
+- **Renewed decision:** The 2026-08-04 exact-artifact lifecycle and ordinary
+  journey close the identity-bound follow-up created by the post-6B audit
+  rebuild. Piper core, Chatterbox runtime support, compatible-host optional
+  packaging, compatibility-gated ordinary Download, and the unsigned local
+  portfolio build are independently **GO** within their scopes. Signed public
+  publication remains **pending external authorization**.
 - **Superseded decision:** Before Milestone 6B was added, this ExecPlan would
   have stayed in `active/` only until required pull-request checks and branch
   closeout. It now remains active through 6B and the renewed Milestone 7 record.
@@ -2486,39 +2529,53 @@ M011 is complete only when:
 - the final release decision records Piper-core portfolio readiness,
   Chatterbox-package readiness, and public-installer publication independently.
 
+### Renewed Milestone 7 closeout evidence
+
+| Gate                                          | Result on 2026-08-04                                                                                                                                                                                                                                                                                                       |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Completed M003.1 bounded EPUB 2/NCX evidence  | **Pass and consumed.** The release claim remains limited to ADR-0048's bounded reflowable OPF 2.0/NCX profile.                                                                                                                                                                                                             |
+| Current ordinary artifact                     | **Pass, unsigned local.** Installer `181,596,357` bytes, SHA-256 `aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc`; build binary SHA-256 `9e4bd21c482629c25d2eafcc998c35291e3b544cc5c3f3eb5b5cdb8fa1c9d337`; installed binary SHA-256 `3583333a1e2edb71277c562c78a2cc8378705fdf3cd050a896ff15168442da45`. |
+| Exact-artifact normal-user lifecycle          | **Pass.** Install, first start, repair, all six uninstall data-choice outcomes, unrelated-file preservation, and pre-existing-data restoration pass.                                                                                                                                                                       |
+| Exact-artifact ordinary Chatterbox journey    | **Pass.** Clean/hostile release isolation, both live gates, cancel/cleanup, complete acquisition, offline Chatterbox Spanish/English, restart, removal, offline Piper Spanish/English, reacquisition, and uninstall pass.                                                                                                  |
+| Privacy, cancellation, resources, and cleanup | **Pass.** All four accepted TTS arms report zero underruns, external narration requests, generated-audio files, stale playback, and retained cleanup units. Chatterbox cancellation is `281`/`311` ms; Piper-after-removal cancellation is `355`/`1,303` ms.                                                               |
+| Basic code, logic, and security audit         | **Pass within static scope.** Standard Codex Security scan `6db53928-14cd-4825-bd80-2680f7d5eac1` reviewed all 825 tracked items and recorded zero reportable findings; the two manual cleanup regressions remain incorporated. Static limitations stay explicit.                                                          |
+| Complete repository/package validation        | **Pass outside the sandbox.** Full/portable, Chromium 7/7, packaged WebView2, native reader benchmark, dependency audit, inventory, Piper/Chatterbox/Windows authorities, diff, 16-file Markdown link/format, and 825-path tracked-artifact/privacy gates pass.                                                            |
+| Required pull-request checks                  | **Pending external repository workflow.** The plan remains active until the branch is published and required checks pass.                                                                                                                                                                                                  |
+| Trusted signed public installer               | **Pending external authorization.** Evidence remains `unsigned-local` with `publicPublicationAllowed: false`; no general-public claim is made.                                                                                                                                                                             |
+
 ### Historical Milestone 6B closeout evidence
 
-| Gate | Result on 2026-08-04 |
-| ---- | -------------------- |
-| Deterministic repository gates | **Pass.** Full/portable checks, release audit, current inventory, Piper core, Chatterbox source/acquisition, ordinary package authority, Chromium 7/7, and packaged WebView2 pass outside the sandbox. |
-| Final ordinary artifact | **Pass, unsigned local.** Installer `181,589,616` bytes, SHA-256 `ca3064deea286d7cd71a7a1fb97beb002d6b525ad881fcb834c9f80ac7cc7f0a`; release-locked runtime and exact build/installed identities are retained in the historical 6B receipt/evidence record. |
-| Normal-user lifecycle | **Pass.** Install, first start, repair, six uninstall data-choice outcomes, unrelated-file preservation, and pre-existing-data restoration pass. |
-| Ordinary Chatterbox journey | **Pass.** Clean and hostile release isolation, double live gate, cancel/cleanup, acquisition, offline bilingual Chatterbox, restart, removal, offline bilingual Piper, reacquisition, and uninstall pass in the ordinary product identity. |
-| Privacy and bounded behavior | **Pass.** Zero external narration requests, zero generated-audio files, zero underruns in all four accepted arms, bounded cancellation/cleanup, and content-safe receipt with `privateBookTextLogged: false`. |
-| Basic code, logic, and security audit | **Pass, static scope.** Standard Codex Security scan `6db53928-14cd-4825-bd80-2680f7d5eac1` reviewed all 825 tracked items in its worktree inventory and recorded zero reportable findings; static limitations remain explicit. |
-| Post-audit cleanup regressions | **Pass.** Failed preparation waits for active shutdown before recovery recheck; failed Windows Job Object assignment terminates and reaps the spawned child. Focused TypeScript 33/33, desktop typecheck, and Rust 79/79 plus release-locked 80/80 pass outside the sandbox. |
-| Audit-fix branch validation | **Pass with exact-artifact lifecycle follow-up.** Full/portable, browser, packaged-native retry, dependency/inventory/manifest/package authority, and unsigned package build pass. Evidence v2 resets lifecycle and the ordinary Chatterbox journey to `not-run`; lifecycle stopped safely on a pre-existing installation and renewed Milestone 7 owns both exact-artifact reruns. |
-| Trusted signed public installer | **Pending external authorization.** The accepted artifact remains `unsigned-local`; no signing or general-public publication claim is made. |
-| Renewed Milestone 7 decision | **Ready, not executed here.** Milestone 7 must consume this 6B evidence and record the superseding release decision. |
+| Gate                                  | Result on 2026-08-04                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deterministic repository gates        | **Pass.** Full/portable checks, release audit, current inventory, Piper core, Chatterbox source/acquisition, ordinary package authority, Chromium 7/7, and packaged WebView2 pass outside the sandbox.                                                                                                                                                                             |
+| Final ordinary artifact               | **Pass, unsigned local.** Installer `181,589,616` bytes, SHA-256 `ca3064deea286d7cd71a7a1fb97beb002d6b525ad881fcb834c9f80ac7cc7f0a`; release-locked runtime and exact build/installed identities are retained in the historical 6B receipt/evidence record.                                                                                                                        |
+| Normal-user lifecycle                 | **Pass.** Install, first start, repair, six uninstall data-choice outcomes, unrelated-file preservation, and pre-existing-data restoration pass.                                                                                                                                                                                                                                   |
+| Ordinary Chatterbox journey           | **Pass.** Clean and hostile release isolation, double live gate, cancel/cleanup, acquisition, offline bilingual Chatterbox, restart, removal, offline bilingual Piper, reacquisition, and uninstall pass in the ordinary product identity.                                                                                                                                         |
+| Privacy and bounded behavior          | **Pass.** Zero external narration requests, zero generated-audio files, zero underruns in all four accepted arms, bounded cancellation/cleanup, and content-safe receipt with `privateBookTextLogged: false`.                                                                                                                                                                      |
+| Basic code, logic, and security audit | **Pass, static scope.** Standard Codex Security scan `6db53928-14cd-4825-bd80-2680f7d5eac1` reviewed all 825 tracked items in its worktree inventory and recorded zero reportable findings; static limitations remain explicit.                                                                                                                                                    |
+| Post-audit cleanup regressions        | **Pass.** Failed preparation waits for active shutdown before recovery recheck; failed Windows Job Object assignment terminates and reaps the spawned child. Focused TypeScript 33/33, desktop typecheck, and Rust 79/79 plus release-locked 80/80 pass outside the sandbox.                                                                                                       |
+| Audit-fix branch validation           | **Pass with exact-artifact lifecycle follow-up.** Full/portable, browser, packaged-native retry, dependency/inventory/manifest/package authority, and unsigned package build pass. Evidence v2 resets lifecycle and the ordinary Chatterbox journey to `not-run`; lifecycle stopped safely on a pre-existing installation and renewed Milestone 7 owns both exact-artifact reruns. |
+| Trusted signed public installer       | **Pending external authorization.** The accepted artifact remains `unsigned-local`; no signing or general-public publication claim is made.                                                                                                                                                                                                                                        |
+| Renewed Milestone 7 decision          | **Ready, not executed here.** Milestone 7 must consume this 6B evidence and record the superseding release decision.                                                                                                                                                                                                                                                               |
 
 ### Superseded preliminary Milestone 7 snapshot
 
-| Gate | Result on 2026-08-03 |
-| ---- | -------------------- |
-| Completed M003.1 bounded EPUB 2/NCX evidence | **Pass and consumed.** Current EPUB, browser, and packaged-native coverage retains the bounded-only claim. |
-| Repository and deterministic release gates | **Pass.** `check`, `check:portable`, release audit/inventory, both Windows static package authorities, Piper-core verification, browser, packaged WebView2, and reader benchmark pass outside the sandbox. |
-| Current-shell exact-host bilingual portfolio | **Unavailable, non-blocking.** Test-only preflight passes; real preflight rejects the missing shell configuration before model work. Earlier representative Piper/Chatterbox evidence remains valid. |
-| Fresh local lifecycle rerun | **Stopped safely by host state, non-blocking.** Both product identities are already installed; recorded deterministic and lifecycle evidence remains valid. |
-| Piper representative Windows evidence | **Pass; portfolio GO.** Piper is CPU-only and the independent older 16-GB-RAM/4-GB-VRAM Windows computer ran VoxLeaf successfully. |
-| Chatterbox representative compatible GPU evidence | **Pass conditionally.** Spanish/English installed evidence passes on the current compatible host; the live published gate remains mandatory. Ordinary Download remains `withheld` until Milestone 6B passes. |
+| Gate                                                  | Result on 2026-08-03                                                                                                                                                                                         |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Completed M003.1 bounded EPUB 2/NCX evidence          | **Pass and consumed.** Current EPUB, browser, and packaged-native coverage retains the bounded-only claim.                                                                                                   |
+| Repository and deterministic release gates            | **Pass.** `check`, `check:portable`, release audit/inventory, both Windows static package authorities, Piper-core verification, browser, packaged WebView2, and reader benchmark pass outside the sandbox.   |
+| Current-shell exact-host bilingual portfolio          | **Unavailable, non-blocking.** Test-only preflight passes; real preflight rejects the missing shell configuration before model work. Earlier representative Piper/Chatterbox evidence remains valid.         |
+| Fresh local lifecycle rerun                           | **Stopped safely by host state, non-blocking.** Both product identities are already installed; recorded deterministic and lifecycle evidence remains valid.                                                  |
+| Piper representative Windows evidence                 | **Pass; portfolio GO.** Piper is CPU-only and the independent older 16-GB-RAM/4-GB-VRAM Windows computer ran VoxLeaf successfully.                                                                           |
+| Chatterbox representative compatible GPU evidence     | **Pass conditionally.** Spanish/English installed evidence passes on the current compatible host; the live published gate remains mandatory. Ordinary Download remains `withheld` until Milestone 6B passes. |
 | Milestone 6B ordinary compatibility-gated acquisition | **Planned.** Reconcile exact measurements, promote one canonical manifest, compile out development fallbacks, validate a hostile environment, and pass the ordinary installed acquisition/lifecycle journey. |
-| Trusted signed public installer | **Pending external authorization.** No authorized certificate/signing identity exists; no Piper or Chatterbox failure is inferred. |
-| Required pull-request checks | **Pending external repository workflow.** No push or pull request is authorized by this implementation request. |
+| Trusted signed public installer                       | **Pending external authorization.** No authorized certificate/signing identity exists; no Piper or Chatterbox failure is inferred.                                                                           |
+| Required pull-request checks                          | **Pending external repository workflow.** No push or pull request is authorized by this implementation request.                                                                                              |
 
 This table preserves the 2026-08-03 preliminary decision; it is not the final
 closeout after the approved 6B scope change. Milestone 6B now passes, so
 compatibility-gated ordinary Download is implemented evidence rather than the
-historical planned state shown above. Milestone 7 and M011 remain active through
-the renewed release decision, required pull-request checks, and final branch
-closeout. Do not publish a trusted public installer without the separate signing
+historical planned state shown above. Renewed Milestone 7 is recorded; M011
+remains active through required pull-request checks and final branch closeout.
+Do not publish a trusted public installer without the separate signing
 authorization.

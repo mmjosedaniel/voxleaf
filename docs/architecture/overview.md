@@ -147,13 +147,14 @@ is retained. Milestone 5 connects it to product playback with boundary-
 deferred state, content-free preference ownership, and effective-lead
 accounting.
 
-M011's preliminary Milestone 7 record accepts the local/portfolio MVP support
-decision. Milestone 6B is complete: it promotes ordinary Chatterbox acquisition
+M011's renewed Milestone 7 record accepts the local/portfolio MVP support
+decision for the exact post-audit artifact. Milestone 6B is complete: it
+promotes ordinary Chatterbox acquisition
 only behind the renderer presentation gate and the native pre-network recheck,
 and proves release-runtime isolation. Milestone 1 freezes
 [`mvp-release-authority-v1`](mvp-release-authority-v1.md) and accepts
 [ADR-0042](decisions/ADR-0042-freeze-mvp-release-authority.md) before dependency
-or package results. The preliminary Milestone 7 record accepts
+or package results. The renewed Milestone 7 record applies
 [ADR-0049](decisions/ADR-0049-use-representative-compatible-host-evidence.md)
 and
 [`mvp-release-authority-v2`](mvp-release-authority-v2.md), superseding only v1's
@@ -207,7 +208,8 @@ repository-development and environment fallback branches out of release and
 accepts only the packaged Piper core or a verified installed Chatterbox profile.
 The ordinary representative journey is hash-bound and passes install, cancel,
 Spanish/English download, offline restart, removal, Piper Spanish/English,
-reacquisition, and uninstall. Milestone
+reacquisition, and uninstall. Renewed Milestone 7 repeats that journey and the
+normal-user lifecycle against the exact post-audit installer. Milestone
 5 sets release version `0.1.0` and
 packages the exact bilingual Piper core in a current-user Windows x64 NSIS
 installer through a release-only configuration. The unsigned-local artifact
@@ -215,9 +217,10 @@ identity is recorded in the current package evidence and must be regenerated
 after a rebuilt installer; no public-publication claim follows from it.
 Outside-sandbox static and local lifecycle evidence passes. Signing automation
 uses only protected external credentials and verifies Authenticode, but no
-certificate is currently authorized. The preliminary Milestone 7 record consumes
-completed M003.1's bounded OPF 2.0/NCX evidence and accepts **GO** for the packaged Piper local/
-portfolio core and **GO when the published host gate passes** for Chatterbox.
+certificate is currently authorized. Renewed Milestone 7 consumes completed
+M003.1's bounded OPF 2.0/NCX evidence and accepts **GO** for the packaged Piper
+local/portfolio core, **GO when the published host gate passes** for Chatterbox
+runtime support, and **GO on a compatible host** for the optional package.
 Piper's representative evidence includes successful use on an independent
 older Windows computer; Chatterbox's includes installed Spanish and English
 journeys on the current compatible Windows/RTX 5060 Laptop computer. These

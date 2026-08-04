@@ -77,12 +77,12 @@ without changing reader, preference, compatibility, or narration ownership.
 The sequential six-arm packaged matrix, browser/native-startup, portable, and
 complete Windows repository checks pass outside the sandbox. Renewed maintainer
 listening confirms correct slowdown across every admitted rate, and pull
-  request #170 passes the required Ubuntu and Windows checks. M011's preliminary
-  Milestone 7 decision recorded local/portfolio MVP GO under the requirements-
-  based support authority. Milestone 6B now completes the ordinary Chatterbox
-  delivery channel and release-isolation proof; Milestone 7 is ready to be
-  recorded again against that artifact. Milestone 1 freezes the
-  historical result-blind release authority; its
+request #170 passes the required Ubuntu and Windows checks. M011's renewed
+Milestone 7 decision records local/portfolio MVP GO under the requirements-
+based support authority. Milestone 6B completes the ordinary Chatterbox
+delivery channel and release-isolation proof, and the exact post-audit
+artifact now passes its renewed lifecycle and journey. Milestone 1 freezes the
+historical result-blind release authority; its
 detailed
 [`M011 ExecPlan`](active/M011-package-validate-and-release-mvp.md) scopes the
 core distributable candidate to Windows x64 and the measured Piper
@@ -97,12 +97,12 @@ implements the split acquisition: six exact model-data files come from the
 official revision-pinned `ResembleAI/chatterbox` Hugging Face repository, while
 a reproducible reviewed runtime is divided into three bounded GitHub Release
 assets. The deterministic controller, measurements, and hostile-input tests
-  pass; the ordinary manifest was originally withheld as a separate channel
-  decision. ADR-0045 additionally permitted a separately identified unsigned local
+pass; the ordinary manifest was originally withheld as a separate channel
+decision. ADR-0045 additionally permitted a separately identified unsigned local
 validation installer on the representative compatible computer. That build
-  exposed and validated the real acquisition lifecycle without changing the
-  normal manifest or satisfying the trusted-public-signing channel. Milestone
-  6B has now retired that distinct validation product surface.
+exposed and validated the real acquisition lifecycle without changing the
+normal manifest or satisfying the trusted-public-signing channel. Milestone
+6B has now retired that distinct validation product surface.
 The first installed Chatterbox launch subsequently proved two package defects,
 not a GPU/model rejection: two generated VoxLeaf protocol modules were absent
 and the historical installed root produced a 261-character Transformers path.
@@ -117,10 +117,10 @@ forms. The first-use correction also repairs only allowlisted generated cache
 data and reuses the completed verification through a metadata-guarded
 process-memory receipt under the MVP no-hostile-same-user-tampering assumption;
 every application restart verifies the authority again. The installed Spanish
-  and English representative-host arms pass. Milestone 6B now also passes
-  restart, package removal/reinstall, Piper-after-removal, truthful resource
-  disclosure, and the ordinary release-locked acquisition journey; signing
-  remains a separate external publication action.
+and English representative-host arms pass. Milestone 6B now also passes
+restart, package removal/reinstall, Piper-after-removal, truthful resource
+disclosure, and the ordinary release-locked acquisition journey; signing
+remains a separate external publication action.
 
 On 2026-08-03 the user reported that VoxLeaf worked on the independent older
 Windows computer with 4 GB VRAM and 16 GB RAM. Piper is a CPU profile with no
@@ -136,10 +136,10 @@ packaged-native matrices pass without changing public schemas, persistence,
 dependencies, capabilities, or topology. M011 Milestone 7 consumes this bounded
 result without making a full EPUB 2 conformance claim. ADR-0049 and
 [`mvp-release-authority-v2`](../architecture/mvp-release-authority-v2.md)
-  record Piper local/portfolio GO and conditional Chatterbox GO for systems that
-  pass the published gate. Milestone 6B now enables ordinary Chatterbox Download
-  only after that live gate passes; public signing remains pending trusted
-  external authority.
+record Piper local/portfolio GO and conditional Chatterbox GO for systems that
+pass the published gate. Milestone 6B now enables ordinary Chatterbox Download
+only after that live gate passes; public signing remains pending trusted
+external authority.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -1199,13 +1199,14 @@ through newly frozen authority and regression evidence.
 
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** Milestone 6B complete; renewed Milestone 7 decision ready. The
-2026-08-03 preliminary decision recorded Piper local/portfolio GO and
-conditional Chatterbox support through ADR-0049 and release authority v2.
-Milestones 1 through 6B are complete at their documented boundaries. M011 now
-remains active through the renewed decision, required pull-request checks, and
-final branch closeout. Trusted public signing is a separate externally
-authorized future channel.
+**Status:** Renewed Milestone 7 local release decision and exact-artifact host
+validation complete. The 2026-08-03 preliminary decision remains historical;
+the 2026-08-04 result records Piper local/portfolio GO, Chatterbox runtime and
+optional-package GO on a compatible host, and ordinary Download GO only after
+both live gates. Milestones 1 through 7 are complete at their local documented
+boundaries. M011 remains active for required pull-request checks and final
+branch closeout. Trusted public signing is a separate externally authorized
+future channel.
 The subsequent basic code, logic, and security audit recorded a Standard Codex
 Security static review of all 825 tracked items in its worktree inventory, with
 zero reportable findings. Manual review additionally serialized
@@ -1213,7 +1214,8 @@ failed-preparation recovery
 behind active narration shutdown and made Windows Job Object assignment failure
 terminate and reap the spawned child. Static-review limitations remain; these
 results do not replace dynamic, dependency/advisory, package, fuzzing,
-penetration, or external testing. Renewed Milestone 7 remains the next action.
+penetration, or external testing. Renewed Milestone 7 consumes that audit and
+retains its stated limitations.
 Milestone 4B's
 deterministic authority, implementation, and authorized runtime publication are
 complete. Milestone 1 froze
@@ -1293,9 +1295,10 @@ of pre-existing application data. Its hash-bound ordinary journey passes clean
 and hostile release isolation, double live admission, real cancel/staging
 cleanup, verified acquisition, offline Chatterbox Spanish/English, restart,
 removal, offline Piper Spanish/English, Chatterbox reacquisition, and uninstall
-with zero external narration requests or generated-audio files. The historical
-6B record keeps this artifact `unsigned-local`; renewed Milestone 7 release
-recording is next and trusted public signing remains external.
+with zero external narration requests or generated-audio files. This historical
+6B record keeps the artifact `unsigned-local`; renewed Milestone 7 supersedes it
+with the exact `aca8ff0d...` candidate below. Trusted public signing remains
+external.
 
 The basic audit after Milestone 6B preserves those claim boundaries. Standard
 Codex Security scan `6db53928-14cd-4825-bd80-2680f7d5eac1` reviewed all 825
@@ -1307,11 +1310,12 @@ assignment cannot leave the just-spawned TTS child running. Focused TypeScript
 and default/release-locked Rust regressions pass. The audit-fix branch also
 passes full and portable repository checks, browser 7/7, packaged native startup
 on one clean retry, release audits, inventory/manifest/package authority, and an
-unsigned Windows rebuild. That rebuild has a new exact identity, so generated
-package evidence resets lifecycle and the representative Chatterbox journey to
-`not-run`; the lifecycle harness stopped safely on a pre-existing installation.
-Renewed Milestone 7 must execute those exact-artifact gates and remains a
-separate step.
+unsigned Windows rebuild. Renewed Milestone 7 now binds that exact
+`181,596,357`-byte installer, SHA-256
+`aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc`,
+to passing normal-user lifecycle and ordinary compatible-host Chatterbox
+receipts. Generated evidence remains `unsigned-local` and disallows public
+publication.
 
 The user subsequently reported that VoxLeaf worked on the independent older
 Windows host with 4 GB VRAM and 16 GB RAM. Under authority v2, that is valid
@@ -1333,23 +1337,26 @@ completed 1 -> completed 2 -> completed 3 -> completed 4A
     -> preliminary 7 local/portfolio GO decision recorded
     -> completed 6B ordinary compatibility-gated acquisition, truthful resource
        disclosure, release-locked runtime, and representative ordinary journey
-    -> renewed 7 decision and required PR checks (next)
+    -> renewed 7 exact-artifact lifecycle, ordinary journey, and independent
+       local/portfolio release decisions complete
+    -> required PR checks and final branch closeout (next)
     -> trusted public signing stays separately externally authorized
 ```
 
-The preliminary Milestone 7 decisions remain historical inputs. After 6B,
+The preliminary Milestone 7 decisions remain historical inputs. Renewed
 Milestone 7 decides the superseding v2 claims independently again:
 
-| Claim | Decision | Scope |
-| ----- | -------- | ----- |
-| Piper core portfolio readiness | **GO** | Packaged Windows x64 CPU profile, repository/package evidence, and representative independent-computer functionality pass. |
-| Optional Chatterbox portfolio readiness | **GO when the published host gate passes** | Installed Spanish/English representative-host evidence passes; live Windows/CUDA/VRAM/RAM/CPU admission remains mandatory. |
-| Chatterbox Download in the ordinary build | **6B PASS; available only when the live host gate passes** | One canonical manifest is downloadable, native code rechecks the gate before network access, release binaries exclude development fallbacks, and the ordinary installed journey passes. Milestone 7 must record the renewed release decision. |
-| Signed public Windows publication | **PENDING EXTERNAL AUTHORIZATION** | No trusted signing identity is authorized. |
+| Claim                                     | Decision                                   | Scope                                                                                                                                                                                                      |
+| ----------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Piper core portfolio readiness            | **GO**                                     | Packaged Windows x64 CPU profile, repository/package evidence, and representative independent-computer functionality pass.                                                                                 |
+| Chatterbox runtime support                | **GO when the published host gate passes** | Installed Spanish/English representative-host evidence passes; live Windows/CUDA/VRAM/RAM/CPU admission remains mandatory.                                                                                 |
+| Optional Chatterbox portfolio readiness   | **GO on a compatible host**                | The exact ordinary artifact passes cancellation cleanup, verified acquisition, activation, offline bilingual use, restart, removal, reacquisition, and uninstall.                                          |
+| Chatterbox Download in the ordinary build | **GO only after both live gates pass**     | One canonical manifest is downloadable, native code rechecks the gate before network access, release binaries exclude development fallbacks, and the renewed hash-bound ordinary installed journey passes. |
+| Signed public Windows publication         | **PENDING EXTERNAL AUTHORIZATION**         | No trusted signing identity is authorized.                                                                                                                                                                 |
 
 The unsigned package remains a local/portfolio MVP, not a trusted public
-release. The M011 ExecPlan stays in `active/` through the renewed Milestone 7
-record, required pull-request checks, and the final closeout merge.
+release. The M011 ExecPlan stays in `active/` through required pull-request
+checks and the final closeout merge.
 
 ### Goal
 
@@ -1665,8 +1672,10 @@ and its fail-closed optional-package foundation are complete.
 Milestone 4B freezes and implements official revision-pinned Hugging Face model
 data plus separately verified split-runtime delivery and publication. Milestone
 7 records the historical local/portfolio GO under ADR-0049/release authority
-v2. Milestone 6B now passes ordinary compatibility-gated Chatterbox Download;
-the renewed Milestone 7 record is next, and trusted public signing remains
+v2. Milestone 6B passes ordinary compatibility-gated Chatterbox Download;
+renewed Milestone 7 now binds the post-audit artifact to passing lifecycle/
+journey evidence and records the superseding local decision. Required pull-
+request checks remain before archival, and trusted public signing remains
 externally pending.
 
 ## MVP completion boundary

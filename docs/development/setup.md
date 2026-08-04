@@ -65,12 +65,13 @@ build exposes Download only after its live compatibility gate passes twice.
 Milestone 5 implements the unsigned local installer and
 external-credential signing command; Milestone 6A implements lifecycle feedback
 and bounded uninstall choices. Under ADR-0049 and release authority v2,
-the preliminary Milestone 7 record accepts Piper local/portfolio GO and
-Chatterbox on systems that pass its published host gate. The ordinary
+renewed Milestone 7 accepts Piper local/portfolio GO, Chatterbox runtime support
+on systems that pass its published host gate, and the optional package on a
+compatible host. The ordinary
 Chatterbox manifest is compatibility-gated and the release is compiled without
 development-runtime fallbacks. Signed public publication remains pending external
-authorization. M011 stays active through 6B, the renewed decision, branch
-checks, and closeout.
+authorization. M011 stays active only through required branch checks and
+closeout.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
@@ -568,10 +569,13 @@ package evidence. The installer includes the WebView2 bootstrapper; when the
 Windows prerequisite is absent, that Microsoft bootstrapper can require
 network access. Normal EPUB reading and Piper narration remain local.
 
-The rebuilt candidate identity is emitted into generated package evidence.
-It is `unsigned-local` and accepted for controlled local use and the portfolio
-MVP under ADR-0049/release authority v2. It is not a trusted public artifact;
-that channel requires an authorized signature and its verification evidence.
+The rebuilt candidate identity is emitted into generated package evidence. A
+rebuild changes that identity and requires new hash-bound lifecycle and ordinary
+journey receipts before carrying forward exact-artifact acceptance. The current
+candidate has those receipts, is `unsigned-local`, and is accepted for
+controlled local use and the portfolio MVP under ADR-0049/release authority v2.
+It is not a trusted public artifact; that channel requires an authorized
+signature and its verification evidence.
 
 The signed maintainer path is:
 
@@ -602,8 +606,8 @@ The `package:chatterbox-optional` builder is a release-maintainer operation,
 not an end-user setup step. It requires an explicitly supplied, absolute,
 ignored exact-model root, enough controlled build capacity, and the final
 licence/provenance review. It creates all runtime, archive, and model output
-  only beneath ignored `services/tts/release/optional/chatterbox/dist`; it does
-  not update the checked-in ordinary acquisition manifest. Do not run it merely to
+only beneath ignored `services/tts/release/optional/chatterbox/dist`; it does
+not update the checked-in ordinary acquisition manifest. Do not run it merely to
 use the application or to enable the optional profile.
 
 ### Historical local Chatterbox acquisition validation installer

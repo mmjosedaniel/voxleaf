@@ -7,15 +7,16 @@ Milestone 11 must close. It is deliberately proportional to VoxLeaf's first
 MVP and portfolio goal. It is not a security certification and does not claim
 that the current unsigned installer is ready for general-public distribution.
 
-M011 Milestones 1 through 5, 6A, and 6B are complete at their documented
-boundaries; final Milestone 7 closeout remains separately reopened.
+M011 Milestones 1 through 6B and the renewed Milestone 7 local release decision
+are complete at their documented boundaries. Required pull-request checks and
+final plan archival remain branch closeout work.
 Milestone 6's originally frozen exhaustive clean-host matrix was not completed.
 The result-blind
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
 [ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
 govern the package topology, optional-profile lifecycle, threat model,
-dependency/licence/integrity policy, and cleanup ownership. The preliminary
-Milestone 7 record accepts
+dependency/licence/integrity policy, and cleanup ownership. The renewed
+Milestone 7 record applies
 [ADR-0049](../architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md)
 and
 [`mvp-release-authority-v2`](../architecture/mvp-release-authority-v2.md), which
@@ -31,11 +32,13 @@ closed controller, and publishes the exact runtime parts. Completed Milestone
 6B promotes the ordinary manifest behind renderer and native live gates and
 retires the validation overlay. Milestone 5
 builds the versioned unsigned local Windows package and implements the external-
-credential signing path. The preliminary Milestone 7 record accepts **GO** for the Piper local/
-portfolio core and **GO when the published host gate passes** for Chatterbox.
+credential signing path. Renewed Milestone 7 records **GO** for the Piper local/
+portfolio core, **GO when the published host gate passes** for Chatterbox
+runtime support, and **GO only after both live gates pass** for ordinary
+Download.
 Signed public publication is **pending external authorization**, not a runtime
-failure. Completed Milestone 6B leaves M011 active through the renewed Milestone
-7 decision, the branch's required pull-request checks, and final closeout.
+failure. M011 remains active only through the branch's required pull-request
+checks and final closeout.
 
 The subsequent basic audit adds proportional static evidence rather than a
 security certification. Standard Codex Security scan
@@ -52,50 +55,55 @@ native startup after one non-reproducing WebDriver restart-session failure, and
 the release audit, inventory, manifest, and package-authority checks outside the
 sandbox. The release audit still names the four existing optional-graph advisory
 blind spots instead of treating them as clean. A fresh unsigned Windows package
-was built for the changed binary. Its generated evidence correctly records
-lifecycle and the representative ordinary Chatterbox journey as `not-run`: the
-lifecycle harness stopped before mutation because it detected a pre-existing
-VoxLeaf installation. Renewed Milestone 7 owns those exact-artifact reruns.
+was built for the changed binary. Its generated evidence initially reset
+lifecycle and the representative ordinary Chatterbox journey to `not-run`.
+Renewed Milestone 7 now closes both identity-bound reruns for that exact
+artifact without changing the package bytes.
 
 ## Current assessment
 
-The current repository and fresh unsigned package are suitable for controlled
+The current repository and exact unsigned package are suitable for controlled
 local validation with trusted runtimes and synthetic, self-authored, or public-
-domain EPUBs. The completed Milestone 6B artifact and representative-host
-evidence support the preliminary `piper-core-portfolio-ready` and conditional
-Chatterbox decisions, but the changed audit-fix artifact still needs its renewed
-Milestone 7 lifecycle and ordinary-journey receipts. It is not a trusted general-
-public Windows download because it is unsigned.
+domain EPUBs. Exact-artifact lifecycle and ordinary compatible-host Chatterbox
+receipts now support the renewed `piper-core-portfolio-ready`, optional-package,
+and guarded-Download decisions. It is not a trusted general-public Windows
+download because it is unsigned.
 
-### Preliminary Milestone 7 release decision (2026-08-03)
+### Renewed Milestone 7 release decision (2026-08-04)
 
 The independent claims are decided under the superseding
 [`mvp-release-authority-v2`](../architecture/mvp-release-authority-v2.md):
 
-| Release claim                            | Decision | Evidence-backed disposition |
-| ---------------------------------------- | -------- | --------------------------- |
-| `piper-core-portfolio-ready`             | **GO** | The exact final unsigned candidate passes deterministic/static, local lifecycle, browser, packaged WebView2, and reader-performance gates. Piper is a CPU profile, and the maintainer also confirmed VoxLeaf working on an independent older Windows computer with 16 GB RAM and a 4-GB-VRAM GPU. |
-| `chatterbox-optional-portfolio-ready`    | **GO when the published host gate passes** | Spanish and English plus offline, privacy, cancellation, and installed-package lifecycle evidence pass on the representative compatible computer. The application still enforces Windows x64, CUDA bfloat16, VRAM, RAM, and processor requirements. |
-| `chatterbox-download-available`          | **GO when the live gate passes** | The canonical ordinary manifest exposes Download only after the renderer reports a pass and native code repeats the gate before network access. |
-| `signed-public-windows-installer`        | **PENDING EXTERNAL AUTHORIZATION** | No trusted external signing identity is authorized. Public publication remains disabled without recording a Piper or Chatterbox technical failure. |
+| Release claim                         | Decision                                   | Evidence-backed disposition                                                                                                                                                                                                                           |
+| ------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `piper-core-portfolio-ready`          | **GO**                                     | The exact final unsigned candidate passes its normal-user lifecycle and offline Spanish/English Piper-after-removal arms. Deterministic/static, browser, packaged WebView2, reader-performance, and representative older-computer evidence also pass. |
+| `chatterbox-runtime-support`          | **GO when the published host gate passes** | Spanish and English plus offline, privacy, cancellation, restart, and cleanup evidence pass on the representative compatible computer. The application still enforces Windows x64, CUDA bfloat16, VRAM, RAM, and processor requirements.              |
+| `chatterbox-optional-portfolio-ready` | **GO on a compatible host**                | The exact ordinary artifact passes consent, cancellation cleanup, complete verification, activation, bilingual use, removal, reacquisition, and uninstall.                                                                                            |
+| `chatterbox-download-available`       | **GO when the live gate passes**           | The canonical ordinary manifest exposes Download only after the renderer reports a pass and native code repeats the gate before network access.                                                                                                       |
+| `signed-public-windows-installer`     | **PENDING EXTERNAL AUTHORIZATION**         | No trusted external signing identity is authorized. Public publication remains disabled without recording a Piper or Chatterbox technical failure.                                                                                                    |
 
 This support boundary relies on published requirements plus representative
 compatible-host evidence, not a claim that every possible PC has been tested.
 Completed Milestone 6B supplies ordinary Download and release-runtime isolation
-evidence. Renewed Milestone 7 must also consume the 825/825-item Standard static
-scan, the two manual cleanup regressions, complete applicable dynamic/package/
-dependency validation, and required pull-request evidence. Trusted signing
-remains a future external publication action.
+evidence. Renewed Milestone 7 consumes the 825/825-item Standard static scan,
+the two manual cleanup regressions, and the exact-artifact host lifecycle and
+journey. Complete applicable branch validation is recorded in the ExecPlan;
+required pull-request checks remain before archival. Trusted signing remains a
+future external publication action.
 
 ### Exact current candidate identity
 
 The canonical current evidence is the checked-in release evidence and package
 manifests, not older hashes retained in the historical implementation record:
 
-- Windows x64 current-user NSIS installer and application binary: their rebuilt
-  size and SHA-256 are emitted only in generated package evidence; state is
-  `unsigned-local`, public publication false, and no Defender or SmartScreen
-  claim is made for the rebuilt artifact;
+- Windows x64 current-user NSIS installer: `181,596,357` bytes, SHA-256
+  `aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc`;
+  pre-bundle application binary: `11,840,000` bytes, SHA-256
+  `9e4bd21c482629c25d2eafcc998c35291e3b544cc5c3f3eb5b5cdb8fa1c9d337`;
+  installed application binary: `11,840,000` bytes, SHA-256
+  `3583333a1e2edb71277c562c78a2cc8378705fdf3cd050a896ff15168442da45`.
+  State is `unsigned-local`, public publication false, lifecycle and ordinary
+  journey pass, and no Defender or SmartScreen claim is made for this artifact;
 - Piper core: `191,240,146` compressed bytes, `281,213,569` installed bytes,
   archive SHA-256
   `17fe3456bd7fca519b3e3b0c3b0bbf2579c733e13b660d740c5a56a0781f0843`,
@@ -316,9 +324,9 @@ The rebuilt unsigned local installer identity is recorded in generated package
 evidence. The artifact passes the static release-package gate and records local
 install/first-start/repair/uninstall lifecycle evidence outside the automation
 sandbox. An exact predecessor passed the installed bilingual portfolio matrix
-and Microsoft Defender; neither Defender nor SmartScreen was observed against
-the current hash, so no antivirus or reputation claim is made. Under authority
-v2, the current artifact is accepted for the unsigned local/portfolio MVP; it
+and Microsoft Defender; Defender was not run and SmartScreen was not observed
+against the current hash, so no antivirus or reputation claim is made. Under
+authority v2, the current artifact is accepted for the unsigned local/portfolio MVP; it
 is not a trusted public-release artifact. The optional Chatterbox manifest
 is downloadable in the ordinary build only after the compatible-host live gate
 passes twice.
@@ -326,9 +334,10 @@ passes twice.
 An independent Windows-host attempt exposed a visible blank console for the
 private Piper child. The rebuilt candidate now starts every supervised child
 with Windows `CREATE_NO_WINDOW` while retaining the same pipe protocol and Job
-Object termination boundary. Local installed narration, lifecycle, and Defender
-validation pass for the corrected artifact. The visible-console correction is
-included in the current package evidence; it is not a global Piper support
+Object termination boundary. Local installed narration and lifecycle validation
+pass for the corrected artifact; Defender was not run against the current hash.
+The visible-console correction is included in the current package evidence; it
+is not a global Piper support
 blocker.
 
 The signing command accepts only an externally protected certificate
@@ -646,11 +655,11 @@ ordinary installed gate/consent/cancel/download/activate/bilingual-offline/
 restart/remove/reinstall/Piper-after-removal journey. Evidence remains content-
 safe and records no book text, private command line, or raw host path.
 
-The final hash-bound ordinary journey passed with zero Chatterbox underruns:
-Spanish command-to-audible was `42.955` seconds with `5,786,320,896` bytes peak
-RAM and `3,797` MiB VRAM; English was `33.869` seconds with `5,156,061,184`
-bytes and `3,671` MiB. After removal, Piper remained usable at `4.152` seconds
-(Spanish) and `4.161` seconds (English), without additional dedicated-VRAM use.
+The renewed hash-bound ordinary journey passed with zero Chatterbox underruns:
+Spanish command-to-audible was `49.269` seconds with `4,855,865,344` bytes peak
+RAM and `3,745` MiB VRAM; English was `37.773` seconds with `4,898,762,752`
+bytes and `3,709` MiB. After removal, Piper remained usable at `4.964` seconds
+(Spanish) and `4.388` seconds (English), without additional dedicated-VRAM use.
 Both families recorded zero external narration requests and zero generated-audio
 files. These are variable observations on one passing host, not latency or
 capacity guarantees. Cancellation deletes only incomplete staging;
@@ -698,10 +707,10 @@ before publication.
 
 ## Portfolio and public-distribution gates
 
-M011 has two honest completion levels. The preliminary Milestone 7 record says
-that the local/portfolio support level passes and the trusted public channel
-remains externally pending. Milestone 6B completed ordinary acquisition and
-release isolation before Milestone 7 is renewed:
+M011 has two honest completion levels. Renewed Milestone 7 records that the
+local/portfolio support level passes and the trusted public channel remains
+externally pending. Milestone 6B supplied ordinary acquisition and release
+isolation; Milestone 7 renewed the exact-artifact lifecycle and journey:
 
 ### Portfolio-ready local MVP
 
