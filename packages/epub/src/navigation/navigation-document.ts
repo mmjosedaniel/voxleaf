@@ -625,6 +625,9 @@ export async function parseNavigationDocument(
   packageDocument: ParsedPackageDocument,
 ): Promise<ParsedNavigationDocument> {
   archive.budget.checkpoint();
+  if (packageDocument.navigation.kind === "ncx") {
+    return fail("unsupported-resource");
+  }
   const bytes = await archive.readEntry(packageDocument.navigation.path, {
     maximumBytes: archive.budget.policy.maxContentDocumentBytes,
   });

@@ -428,6 +428,7 @@ function createPackageDocument(
     manifest,
     spine: overrides.spine ?? spine,
     navigation: Object.freeze({
+      kind: "xhtml",
       resourceId: "nav",
       path: filePath("EPUB/nav.xhtml"),
     }),

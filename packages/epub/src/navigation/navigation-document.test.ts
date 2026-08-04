@@ -234,6 +234,32 @@ describe("EPUB 3 navigation document parsing", () => {
     },
   );
 
+  it("stops an admitted OPF 2 package at the pending NCX parser before reading it", async () => {
+    await withArchive(
+      navigationDocument(
+        `<h:li><h:a href="text/chapter.xhtml">One</h:a></h:li>`,
+      ),
+      {},
+      async (archive) => {
+        const epub3Package = createPackageDocument();
+        const epub2Package = Object.freeze({
+          ...epub3Package,
+          version: "2.0",
+          navigation: Object.freeze({
+            kind: "ncx",
+            resourceId: "ncx",
+            path: filePath("EPUB/not-present.ncx"),
+          }),
+        }) satisfies ParsedPackageDocument;
+
+        await expectNavigationActionError(
+          () => parseNavigationDocument(archive, epub2Package),
+          "unsupported-resource",
+        );
+      },
+    );
+  });
+
   it("honors cancellation before reading navigation bytes", async () => {
     const controller = new AbortController();
     await withArchive(
@@ -326,6 +352,7 @@ function createPackageDocument(): ParsedPackageDocument {
       }),
     ]),
     navigation: Object.freeze({
+      kind: "xhtml",
       resourceId: "nav",
       path: filePath("EPUB/nav.xhtml"),
     }),
