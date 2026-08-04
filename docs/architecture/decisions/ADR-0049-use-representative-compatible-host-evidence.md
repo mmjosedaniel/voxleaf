@@ -4,7 +4,10 @@
 
 Accepted on 2026-08-03. The accompanying
 [`mvp-release-authority-v2`](../mvp-release-authority-v2.md) records the revised
-claim boundary and Milestone 7 result.
+claim boundary and preliminary Milestone 7 result. ADR-0050 later supersedes
+only this decision's acquisition-channel state by enabling the ordinary
+manifest after the same published live host gate; the representative-evidence
+support rule remains current.
 
 ## Context
 
@@ -47,9 +50,10 @@ the independent-claim gates and exhaustive clean-host interpretation in
 - Record Chatterbox as **GO when the published runtime host gate passes**. A
   host below that gate is incompatible with Chatterbox; it is not evidence that
   the profile fails everywhere.
-- Keep the ordinary Chatterbox manifest's current `withheld` state distinct
-  from runtime support. This documentation-only decision does not enable the
-  Download action.
+- At this 2026-08-03 decision checkpoint, keep the ordinary Chatterbox
+  manifest's `withheld` state distinct from runtime support. This decision does
+  not itself enable the Download action; ADR-0050 later records that bounded
+  implementation change.
 - Record signed public Windows publication as **pending external
   authorization**, not as a technical NO-GO for either TTS engine.
 - Retain every existing licence, provenance, digest, safe-loading, bounded
@@ -67,8 +71,9 @@ the independent-claim gates and exhaustive clean-host interpretation in
 - Performance can vary and a particular compatible-looking computer may still
   expose a driver, resource, or installation defect. Such a result is
   actionable troubleshooting or bug evidence, not an automatic global NO-GO.
-- The current ordinary build still hides Chatterbox Download until a separate
-  implementation change publishes the approved manifest state.
+- At this decision checkpoint, the ordinary build still hid Chatterbox Download
+  pending a separate implementation change. ADR-0050 and M011 Milestone 6B now
+  provide that change behind the unchanged renderer and native live gates.
 - A general public Windows installer remains unavailable until trusted signing
   is authorized and the resulting signature and checksum are verified.
 

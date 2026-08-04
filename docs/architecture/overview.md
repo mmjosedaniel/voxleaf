@@ -148,8 +148,9 @@ deferred state, content-free preference ownership, and effective-lead
 accounting.
 
 M011's preliminary Milestone 7 record accepts the local/portfolio MVP support
-decision; planned Milestone 6B reopens ordinary Chatterbox availability and the
-release-runtime isolation proof. Milestone 1 freezes
+decision. Milestone 6B is complete: it promotes ordinary Chatterbox acquisition
+only behind the renderer presentation gate and the native pre-network recheck,
+and proves release-runtime isolation. Milestone 1 freezes
 [`mvp-release-authority-v1`](mvp-release-authority-v1.md) and accepts
 [ADR-0042](decisions/ADR-0042-freeze-mvp-release-authority.md) before dependency
 or package results. The preliminary Milestone 7 record accepts
@@ -165,14 +166,15 @@ core as a deterministic private CPython/Piper runtime with both voices,
 complete notices, and exact corresponding-source archives. Native discovery
 accepts only the fixed install-relative root after exact manifest/file/hash
 verification. Milestone 4A implements the native-owned optional-profile
-lifecycle and its source-package checker. Milestone 4B now implements exact
-multi-artifact acquisition, while its compiled v2 manifest remains deliberately
-withheld. The core
+lifecycle and its source-package checker. Milestone 4B implements exact
+multi-artifact acquisition. The ordinary v2 manifest is `downloadable` only
+after the two live compatibility gates pass; the retired validation-only overlay
+remains historical evidence. The core
 topology is deliberately smaller than
 the implemented development matrix: Windows x64 plus Piper davefx/Spanish and
 Piper joe/English in one private embedded Python/Piper runtime. Supported
-Chatterbox Spanish/English has an implemented but withheld separate optional
-GPU quality package, never silently downloaded or embedded in the core
+Chatterbox Spanish/English has an implemented separate optional GPU quality
+package, never silently downloaded or embedded in the core
 installer; Qwen remains outside the first distributable product.
 The prior Chatterbox developer state occupied about 5.03 GiB of environment
 plus 2.99 GiB of model artifacts. Milestone 2 replaces that environment graph
@@ -188,9 +190,10 @@ revisions, download arbitrary repository contents, execute Hub code, or rely on
 Hub scanning instead of local verification. The 79-package reviewed runtime is
 a separate deterministic 5,022,941,463-byte archive split into three bounded
 assets with reproducible SHA-256 evidence. Together with the model files, the
-implementation measures 8,231,893,387 download bytes, ADR-0046's corrected
-8,228,503,309 installed bytes pending Milestone 6B reconciliation with the
-historical evidence total, and a 13,254,834,850-byte peak staging calculation.
+implementation measures 8,231,893,387 download bytes, 8,228,503,309 installed
+bytes, and a 13,254,834,850-byte peak staging calculation, with
+20,000,000,000 minimum free bytes. Runtime evidence v3 is current; v2 remains
+historical with its prior installed total corrected by 37,504 bytes.
 Native acquisition
 uses explicit consent, sequential application-owned transfers, closed
 redirects, per-artifact digest verification, safe extraction/loading, atomic
@@ -198,19 +201,19 @@ versioned installation, separate activation, offline use, and application-
 owned removal. The exact runtime assets are published under
 `chatterbox-runtime-v2`. Its representative installed Spanish/English,
 offline, privacy, cancellation, and lifecycle evidence passes. The ordinary
-manifest remains `withheld`, so Download is not enabled in the normal build;
-this is a distribution state rather than a runtime-support failure. Milestone
-6B plans to promote that single manifest only behind the live native gate,
-compile repository-development fallback branches out of release, and prove the
-ordinary installed artifact under hostile environment inputs without removing
-developer tools from the host. Milestone
+manifest is `downloadable` only after renderer presentation and a native
+pre-network recheck of the live gate. The release-locked runtime compiles
+repository-development and environment fallback branches out of release and
+accepts only the packaged Piper core or a verified installed Chatterbox profile.
+The ordinary representative journey is hash-bound and passes install, cancel,
+Spanish/English download, offline restart, removal, Piper Spanish/English,
+reacquisition, and uninstall. Milestone
 5 sets release version `0.1.0` and
 packages the exact bilingual Piper core in a current-user Windows x64 NSIS
-installer through a release-only configuration. The exact current unsigned
-artifact is `181,704,648` bytes with SHA-256
-`56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
-Outside-sandbox static and local lifecycle evidence passes; Defender and
-SmartScreen were not observed for this exact hash. Signing automation
+installer through a release-only configuration. The unsigned-local artifact
+identity is recorded in the current package evidence and must be regenerated
+after a rebuilt installer; no public-publication claim follows from it.
+Outside-sandbox static and local lifecycle evidence passes. Signing automation
 uses only protected external credentials and verifies Authenticode, but no
 certificate is currently authorized. The preliminary Milestone 7 record consumes
 completed M003.1's bounded OPF 2.0/NCX evidence and accepts **GO** for the packaged Piper local/
@@ -342,8 +345,8 @@ Desktop application
 |-- Reader-first Settings and six boundary-deferred playback rates
 |   [M010.2 complete; repository WSOLA, English fallback, packaged validation]
 |-- Windows x64 MVP core plus optional quality package
-|   [M011 Piper local/portfolio GO; Chatterbox supported behind its live gate;
-|    6B ordinary acquisition/release isolation planned; public signing pending]
+|   [M011 Piper local/portfolio GO; Chatterbox ordinary acquisition after its
+|    renderer + native live gate; 6B complete; public signing pending]
 `-- Explicit bilingual narration and exact language/profile selection
     [M010.1 Milestones 2-6; Piper ES/EN and Chatterbox supported,
      Qwen Serena/Aiden development-only]

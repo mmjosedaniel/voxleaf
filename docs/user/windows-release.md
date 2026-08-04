@@ -27,18 +27,17 @@ general-public download. Public distribution requires a trusted signature, succe
 signature verification, a matching published SHA-256 checksum, and the release
 checks documented by the project.
 
-The current installer is `181,704,648` bytes with SHA-256
-`56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
-It is `unsigned-local`; Defender and SmartScreen were not observed for this
-exact artifact. The preliminary Milestone 7 record accepts Chatterbox as
-supported when the published host gate passes. The current ordinary build still
-withholds its Download action while planned Milestone 6B implements that channel;
-signed public publication remains pending external authorization. These are
+The rebuilt installer SHA-256 and size are supplied beside the installer and in
+generated package evidence. It is `unsigned-local`; Defender and SmartScreen
+were not observed for the evaluated artifact. The preliminary Milestone 7 record accepts Chatterbox as
+supported when the published host gate passes. The ordinary build offers its
+Download action only after Settings and native code pass that live gate; signed
+public publication remains pending external authorization. These are
 separate channel states, not engine failures.
 
-### Current maintainer-only Chatterbox validation build (retired by 6B)
+### Historical maintainer-only Chatterbox validation build
 
-`VoxLeaf-Chatterbox-Validation 0.1.0` is a separate unsigned package used only
+`VoxLeaf-Chatterbox-Validation 0.1.0` was a separate unsigned package used only
 to test the optional download on the maintainer's compatible computer. It has a
 different Windows identity and data root, does not replace ordinary VoxLeaf,
 and is not a public installer. Before downloading, Settings discloses an
@@ -111,20 +110,19 @@ While no audio owns playback, the existing safe Stop path is labelled
 or invented percentage is shown for verification or model loading. This
 feedback does not make the validation build public-release evidence.
 
-### Planned ordinary Chatterbox download
+### Ordinary Chatterbox download
 
-Milestone 6B will retire the separate validation identity after the same closed
-acquisition path is enabled in ordinary VoxLeaf. This section describes planned
-acceptance, not current availability: the current ordinary manifest remains
-withheld until the implementation and its installed-package evidence pass.
+Milestone 6B retired the separate validation identity. The same closed
+acquisition path is enabled in ordinary VoxLeaf only after the renderer-facing
+compatibility presentation passes and native code repeats the gate before any
+network operation.
 
 On a passing computer, Settings will present Chatterbox as the generally more
 natural and expressive quality option compared with Piper, while noting that
 voice preference varies. Before network access, the confirmation must disclose:
 
 - `8,231,893,387` download bytes (about 8.23 GB/7.67 GiB);
-- a corrected installed total of `8,228,503,309` bytes (about 8.23 GB/7.66 GiB),
-  after its 37,504-byte evidence discrepancy is formally reconciled;
+- a corrected installed total of `8,228,503,309` bytes (about 8.23 GB/7.66 GiB);
 - a peak temporary requirement of `13,254,834,850` bytes (about 13.25 GB/
   12.35 GiB) and at least 20 GB/18.63 GiB free before transfer;
 - 64-bit Windows, CUDA bfloat16, at least 8 logical processors, 24,576 MiB total

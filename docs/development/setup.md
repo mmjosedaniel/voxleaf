@@ -59,17 +59,16 @@ portfolio and full local repository checks pass. Maintainer all-rate
 confirmation and pull request #170's required Ubuntu/Windows checks also pass,
 and M010.2 is archived.
 M011 Milestone 3 implements the deterministic licence-complete Piper core
-payload. Milestone 4 adds the deliberately withheld optional-Chatterbox
-acquisition lifecycle and source-package checks; the exact runtime parts are
-published, but the ordinary build still exposes no end-user Download action.
+payload. Milestone 4 adds the optional-Chatterbox acquisition lifecycle and
+source-package checks; the exact runtime parts are published, and the ordinary
+build exposes Download only after its live compatibility gate passes twice.
 Milestone 5 implements the unsigned local installer and
 external-credential signing command; Milestone 6A implements lifecycle feedback
 and bounded uninstall choices. Under ADR-0049 and release authority v2,
 the preliminary Milestone 7 record accepts Piper local/portfolio GO and
 Chatterbox on systems that pass its published host gate. The ordinary
-Chatterbox manifest remains withheld while planned Milestone 6B implements
-compatibility-gated availability and a release compiled without development-
-runtime fallbacks. Signed public publication remains pending external
+Chatterbox manifest is compatibility-gated and the release is compiled without
+development-runtime fallbacks. Signed public publication remains pending external
 authorization. M011 stays active through 6B, the renewed decision, branch
 checks, and closeout.
 
@@ -368,8 +367,8 @@ compatibility alone does not enable Play.
 These variables are development inputs, not end-user prerequisites. The current
 supervisor checks explicit enablement and exact repository paths rather than an
 arbitrary Python on `PATH`; packaged runtimes use their own absolute private
-interpreter. Milestone 6B must additionally compile these fallback branches out
-of the ordinary release, so its installed-package proof may run on this same
+interpreter. Milestone 6B compiles these fallback branches out of the ordinary
+release, so its installed-package proof can run on this same
 computer without uninstalling Python, Rust, Cargo, Node.js, or model-development
 environments.
 
@@ -569,8 +568,7 @@ package evidence. The installer includes the WebView2 bootstrapper; when the
 Windows prerequisite is absent, that Microsoft bootstrapper can require
 network access. Normal EPUB reading and Piper narration remain local.
 
-The exact current candidate is `181,704,648` bytes with SHA-256
-`56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
+The rebuilt candidate identity is emitted into generated package evidence.
 It is `unsigned-local` and accepted for controlled local use and the portfolio
 MVP under ADR-0049/release authority v2. It is not a trusted public artifact;
 that channel requires an authorized signature and its verification evidence.
@@ -592,7 +590,7 @@ package behavior.
 
 ### Check the M011 optional Chatterbox package source authority
 
-Milestone 4 has a deliberately withheld optional-package manifest. This command
+Milestone 4 has a compatibility-gated optional-package manifest. This command
 checks only the tracked source manifest: it performs no model download, archive
 build, installation, acquisition, or narration.
 
@@ -604,41 +602,26 @@ The `package:chatterbox-optional` builder is a release-maintainer operation,
 not an end-user setup step. It requires an explicitly supplied, absolute,
 ignored exact-model root, enough controlled build capacity, and the final
 licence/provenance review. It creates all runtime, archive, and model output
-only beneath ignored `services/tts/release/optional/chatterbox/dist`; it does
-not update the checked-in withheld download manifest. Do not run it merely to
+  only beneath ignored `services/tts/release/optional/chatterbox/dist`; it does
+  not update the checked-in ordinary acquisition manifest. Do not run it merely to
 use the application or to enable the optional profile.
 
-### Build the local Chatterbox acquisition validation installer
+### Historical local Chatterbox acquisition validation installer
 
-ADR-0045 authorizes one separate unsigned build for the maintainer's current
-compatible Windows computer. It does not enable Chatterbox in the ordinary
-VoxLeaf package and it is not a public-release artifact.
+ADR-0045 authorized one separate unsigned build for the maintainer's compatible
+Windows computer. That historical build had the distinct identity
+`com.voxleaf.desktop.chatterbox-validation`, contained Piper but not Chatterbox
+runtime/model bytes, and exercised the real gated download without changing the
+ordinary manifest. ADR-0050 and Milestone 6B retire its overlay, Cargo feature,
+package configuration, and commands after promoting the same closed path into
+ordinary VoxLeaf. The historical hashes and results remain in the M011 progress
+log; they are not current build instructions or public-release artifacts.
 
-```powershell
-pnpm.cmd package:windows:chatterbox-validation:check
-pnpm.cmd package:windows:chatterbox-validation
-```
+### M011 6B ordinary-release isolation validation
 
-The build has the distinct identity `com.voxleaf.desktop.chatterbox-validation`
-and can coexist with ordinary VoxLeaf. It contains Piper but not Chatterbox
-runtime or model bytes. Settings exposes the real download only in this build;
-the native host and free-space gates still run before consent/download, and
-the user must explicitly approve the approximately 7.67-GiB transfer. The
-ignored installer and checksum are created beneath
-`apps/desktop/src-tauri/target/release/bundle/nsis` and must remain local.
-Passing the representative-host Spanish and English arms supports Chatterbox
-on systems that pass the published gate, but it does not enable the ordinary
-manifest. The normal build therefore still exposes no Download action; trusted
-public signing remains a separate channel.
-
-### Planned Milestone 6B ordinary-release isolation validation
-
-The validation-only identity above remains historical/current tooling until 6B
-is implemented. Milestone 6B must replace it with the ordinary package path,
-promote only the single canonical manifest after exact measurement
-reconciliation, and add or extend a checked-in ordinary-package test command.
-Do not run an invented command before that implementation documents its actual
-repository name.
+The validation-only identity above is historical evidence. Milestone 6B uses
+the ordinary package path, the single canonical manifest after exact measurement
+reconciliation, and a checked-in ordinary-package test command.
 
 The test builds the ordinary installer with a release-only compile feature that
 excludes repository/environment runtime fallbacks. It launches the installed

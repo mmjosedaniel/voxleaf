@@ -89,9 +89,10 @@ M011 Milestone 6A additively closes release-facing gaps discovered after the
 completed M010.2 Settings shell reached the installed Chatterbox validation
 journey. Focused desktop regressions and the packaged development-host lifecycle
 matrix now cover this behavior. That implementation is not evidence that the
-optional package is ready for end users: it does not reopen the M010.2 reader
-layout, playback-rate authority, TTS protocol v1, one-child ownership, hardware
-gates, or Chatterbox's withheld release state.
+optional package is ready for end users: 6A itself did not reopen the M010.2
+reader layout, playback-rate authority, TTS protocol v1, one-child ownership,
+hardware gates, or the then-withheld Chatterbox release state. M011 Milestone
+6B later enables ordinary acquisition behind those unchanged live gates.
 
 ### Stable Settings transitions
 
@@ -154,10 +155,9 @@ optional data intentionally means its in-product management becomes available
 only after reinstalling the same product identity; VoxLeaf does not leave a
 second model-manager executable after uninstall.
 
-## Planned M011 ordinary acquisition disclosure addendum
+## M011 ordinary acquisition disclosure
 
-Milestone 6B will change only Chatterbox's ordinary acquisition presentation;
-the current Download action remains withheld until that implementation passes.
+Milestone 6B changes only Chatterbox's ordinary acquisition presentation.
 Chatterbox
 stays visible as an optional quality profile, but **Review Chatterbox download**
 and **Download Chatterbox** become actionable only after the bounded compatibility
@@ -172,7 +172,9 @@ trade-off before acquiring several gigabytes:
   Piper; that is qualitative positioning, not a promise that every listener will
   prefer it.
 - Show exact authority-backed transfer, installed, peak temporary, and minimum
-  free-space values, with readable decimal/GiB equivalents. Keep storage separate
+  free-space values: `8,231,893,387` download bytes, `8,228,503,309` installed
+  bytes, `13,254,834,850` temporary bytes, and a 20-GB preflight, with readable
+  decimal/GiB equivalents. Keep storage separate
   from runtime RAM/VRAM: installation does not permanently reserve memory, but
   model load and inference consume GPU, VRAM, RAM, and CPU.
 - State that initial startup can exceed one minute and may temporarily make the
@@ -184,10 +186,11 @@ trade-off before acquiring several gigabytes:
   Milestone 6A's **Cancel start**, **Stop**, download-cancellation cleanup, and
   independent **Remove Chatterbox** behavior.
 
-The first-Play presentation may include representative-host observations only
-when labelled as observations rather than compatibility guarantees. Milestone
-6B reconciles those values with the final ordinary package and live hardware
-gate before release documentation becomes authoritative.
+The first-Play presentation includes representative-host observations only when
+labelled as observations rather than compatibility guarantees: Spanish/English
+command-to-audible were `43.815`/`33.375` seconds, RAM peaks
+`4,928,229,376`/`4,414,746,624` bytes, and VRAM peaks `3,707`/`3,671` MiB,
+with zero underruns. These values do not replace the live hardware gate.
 
 ## Goal
 

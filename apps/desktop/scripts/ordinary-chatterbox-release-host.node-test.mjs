@@ -127,7 +127,9 @@ test("native gating retries only the content-free overlapping probe failure", ()
     true,
   );
   assert.equal(
-    isRetriableHostGateError(new WebDriverClientError("webdriver-session-timeout")),
+    isRetriableHostGateError(
+      new WebDriverClientError("webdriver-session-timeout"),
+    ),
     false,
   );
   assert.equal(
@@ -236,11 +238,21 @@ test("WebDriver profile cleanup retries transient Windows file locks", async () 
 test("a WebDriver child terminated by signal is already finished", () => {
   assert.equal(processTerminated({ exitCode: null, signalCode: null }), false);
   assert.equal(processTerminated({ exitCode: 0, signalCode: null }), true);
-  assert.equal(processTerminated({ exitCode: null, signalCode: "SIGTERM" }), true);
+  assert.equal(
+    processTerminated({ exitCode: null, signalCode: "SIGTERM" }),
+    true,
+  );
 });
 
 test("uninstall completion requires a stable absent installation root", async () => {
-  const observations = ["present", "missing", "missing", "missing", "missing", "missing"];
+  const observations = [
+    "present",
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+    "missing",
+  ];
   const waits = [];
   await waitForStableInstallRootAbsence(
     "C:\\synthetic-install",

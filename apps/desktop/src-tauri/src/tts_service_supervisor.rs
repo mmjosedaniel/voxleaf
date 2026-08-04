@@ -523,7 +523,7 @@ impl ServiceChild {
     fn configured() -> Self {
         #[cfg(feature = "release-locked-runtime")]
         {
-            return Self::Unavailable;
+            Self::Unavailable
         }
         #[cfg(not(feature = "release-locked-runtime"))]
         {

@@ -296,7 +296,7 @@ try {
 
   $resultJson = [ordered]@{
     schemaVersion = 2
-    product = $Product
+    product = $productName
     install = "passed"
     firstStart = "passed"
     repair = "passed"

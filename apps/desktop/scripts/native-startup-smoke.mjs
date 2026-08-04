@@ -1707,7 +1707,8 @@ async function runAdaptiveTtsExactHostMatrix(
     const quickCommandAtMs = Date.now();
     await runWebDriverElementInteractionWithRetry({
       action: async () => {
-        const quickStartButton = await prepareParagraphLeafForInteraction(driver);
+        const quickStartButton =
+          await prepareParagraphLeafForInteraction(driver);
         await driver.sendKeys(quickStartButton, WEBDRIVER_SPACE);
       },
       accepted: async () => await paragraphLeafActivationDelivered(driver),

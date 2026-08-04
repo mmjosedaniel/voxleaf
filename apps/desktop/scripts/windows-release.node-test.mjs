@@ -112,13 +112,18 @@ test("the release authority rejects broad uninstall roots and incomplete lifecyc
       (value.lifecycleScript =
         "default chatterbox-only preferences-only both legacy invalid"),
     (value) => (value.lifecycleScript += "\\nnot-exercised"),
+    (value) =>
+      (value.lifecycleScript = value.lifecycleScript.replace(
+        "product = $productName",
+        "product = $Product",
+      )),
     (value) => (value.nsisHooks = value.nsisHooks.replaceAll("w R0", "w r0")),
   ]) {
     const value = { ...source };
     mutate(value);
     assert.throws(
       () => validateClosedReleaseValues(value),
-      /windows-release:(uninstall-authority|uninstall-scope|lifecycle-flag-coverage|lifecycle-not-exercised)/,
+      /windows-release:(uninstall-authority|uninstall-scope|lifecycle-flag-coverage|lifecycle-not-exercised|lifecycle-product-identity)/,
     );
   }
 });

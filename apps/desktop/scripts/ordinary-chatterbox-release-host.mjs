@@ -104,7 +104,9 @@ function fail(code) {
   throw new Error(`ordinary-chatterbox-release-host:${code}`);
 }
 
-export function createStageReporter(write = (line) => process.stdout.write(line)) {
+export function createStageReporter(
+  write = (line) => process.stdout.write(line),
+) {
   return Object.freeze({
     mark(stage) {
       if (!OBSERVABLE_STAGES.has(stage)) fail("stage");
@@ -392,7 +394,7 @@ async function waitFor(condition, timeoutMs, code) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (await condition()) return;
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+    await delay(POLL_INTERVAL_MS);
   }
   fail(code);
 }

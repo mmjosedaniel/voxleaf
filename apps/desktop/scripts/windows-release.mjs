@@ -181,6 +181,9 @@ export function validateUninstallAuthority({
     if (!lifecycleScript.includes(scenario)) fail("lifecycle-matrix-coverage");
   }
   if (/not-exercised/i.test(lifecycleScript)) fail("lifecycle-not-exercised");
+  if (!/product\s*=\s*\$productName\b/.test(lifecycleScript)) {
+    fail("lifecycle-product-identity");
+  }
 }
 
 export function validateClosedReleaseValues(documents) {
@@ -374,10 +377,7 @@ function option(arguments_, name, fallback = undefined) {
   return index === -1 ? fallback : arguments_[index + 1];
 }
 
-export function validateOrdinaryChatterboxReceipt(
-  receipt,
-  installerIdentity,
-) {
+export function validateOrdinaryChatterboxReceipt(receipt, installerIdentity) {
   const installedBinary = receipt?.artifact?.applicationBinary;
   if (
     JSON.stringify(Object.keys(receipt ?? {}).sort()) !==
