@@ -1,28 +1,25 @@
 import { EpubArchiveError } from "../archive/archive-error.js";
 import type { EpubArchiveErrorCode } from "../archive/archive-error.js";
 import type { OpenedEpubArchive } from "../archive/archive-inventory.js";
-import type {
-  PackageManifestItem,
-  ParsedPackageDocument,
-} from "../package/package-document.js";
-import type { ArchiveFilePath } from "../paths/archive-path.js";
-import {
-  parseOcfReference,
-  resolveOcfReference,
-} from "../paths/ocf-reference.js";
-import { EpubPathError } from "../paths/path-error.js";
+import type { ParsedPackageDocument } from "../package/package-document.js";
 import { createXmlEventReader } from "../xml/xml-event-reader.js";
 import type {
   XmlEvent,
   XmlExpandedName,
   XmlStartElementEvent,
 } from "../xml/xml-event-reader.js";
+import { NcxNavigationParser } from "./ncx-navigation-parser.js";
+import { NavigationTargetResolver } from "./navigation-target-resolver.js";
+import type { ParsedNavigationTarget } from "./navigation-target-resolver.js";
+export type {
+  NonSpineNavigationTarget,
+  ParsedNavigationTarget,
+  SpineNavigationTarget,
+} from "./navigation-target-resolver.js";
 
 const XHTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
 const EPUB_NAMESPACE = "http://www.idpf.org/2007/ops";
-const XHTML_MEDIA_TYPE = "application/xhtml+xml";
 const MAX_BOOK_NAVIGATION_LABEL_CODE_POINTS = 1_024;
-const ACTIVE_RESOURCE_PROPERTIES = new Set(["remote-resources", "scripted"]);
 const ASCII_WHITESPACE = /^[\t\n\f\r ]$/u;
 const NON_XML_WHITESPACE = /[^\t\n\r ]/u;
 const FORBIDDEN_LABEL_ELEMENTS = new Set([
@@ -36,22 +33,6 @@ const FORBIDDEN_LABEL_ELEMENTS = new Set([
   "style",
   "template",
 ]);
-
-export interface SpineNavigationTarget {
-  readonly kind: "spine";
-  readonly path: ArchiveFilePath;
-  readonly spineItemIndex: number;
-  readonly fragment?: string;
-}
-
-export interface NonSpineNavigationTarget {
-  readonly kind: "non-spine";
-  readonly path: ArchiveFilePath;
-  readonly fragment?: string;
-}
-
-export type ParsedNavigationTarget =
-  NonSpineNavigationTarget | SpineNavigationTarget;
 
 export interface ParsedNavigationNode {
   readonly label: string;
@@ -133,37 +114,9 @@ function hasTocType(event: XmlStartElementEvent): boolean {
   return value?.split(/[\t\n\f\r ]+/u).includes("toc") === true;
 }
 
-function isSupportedContentDocument(item: PackageManifestItem): boolean {
-  return (
-    item.location.kind === "local" &&
-    item.kind === "content-document" &&
-    item.mediaType === XHTML_MEDIA_TYPE &&
-    !item.properties.some((property) =>
-      ACTIVE_RESOURCE_PROPERTIES.has(property),
-    )
-  );
-}
-
-function mapReferenceError(error: unknown): never {
-  if (error instanceof EpubArchiveError) {
-    throw error;
-  }
-
-  if (
-    error instanceof EpubPathError &&
-    error.code === "resource-limit-exceeded"
-  ) {
-    return fail("resource-limit-exceeded");
-  }
-
-  return fail("broken-reference");
-}
-
 class NavigationDocumentParser {
   readonly #archive: OpenedEpubArchive;
-  readonly #packageDocument: ParsedPackageDocument;
-  readonly #supportedDocumentPaths = new Set<string>();
-  readonly #firstSpineIndexByPath = new Map<string, number>();
+  readonly #targetResolver: NavigationTargetResolver;
   readonly #elementStack: XmlExpandedName[] = [];
   readonly #lists: ListBuilder[] = [];
   #navigation: NavigationBuilder | undefined;
@@ -180,22 +133,10 @@ class NavigationDocumentParser {
     packageDocument: ParsedPackageDocument,
   ) {
     this.#archive = archive;
-    this.#packageDocument = packageDocument;
-
-    for (const item of packageDocument.manifest) {
-      archive.budget.checkpoint();
-      if (isSupportedContentDocument(item) && item.location.kind === "local") {
-        this.#supportedDocumentPaths.add(String(item.location.path));
-      }
-    }
-
-    for (const item of packageDocument.spine) {
-      archive.budget.checkpoint();
-      const path = String(item.path);
-      if (!this.#firstSpineIndexByPath.has(path)) {
-        this.#firstSpineIndexByPath.set(path, item.index);
-      }
-    }
+    this.#targetResolver = new NavigationTargetResolver(
+      archive,
+      packageDocument,
+    );
   }
 
   public consume(event: XmlEvent): void {
@@ -483,7 +424,7 @@ class NavigationDocumentParser {
       if (label.href === undefined) {
         return fail("internal-failure");
       }
-      item.target = this.resolveTarget(label.href);
+      item.target = this.#targetResolver.resolve(label.href);
     }
     item.stage = "after-label";
     this.#label = undefined;
@@ -578,46 +519,6 @@ class NavigationDocumentParser {
       }
     }
   }
-
-  private resolveTarget(href: string): ParsedNavigationTarget {
-    if (href !== href.trim() || /^[a-z][a-z0-9+.-]*:/iu.test(href)) {
-      return fail("broken-reference");
-    }
-
-    try {
-      const resolved = resolveOcfReference(
-        this.#packageDocument.navigation.path,
-        parseOcfReference(href, this.#archive.budget.policy),
-        this.#archive.budget.policy,
-      );
-      const pathText = String(resolved.path);
-      if (!this.#supportedDocumentPaths.has(pathText)) {
-        return fail("broken-reference");
-      }
-
-      const spineItemIndex = this.#firstSpineIndexByPath.get(pathText);
-      if (spineItemIndex === undefined) {
-        return Object.freeze({
-          kind: "non-spine",
-          path: resolved.path,
-          ...(resolved.fragment === undefined
-            ? {}
-            : { fragment: resolved.fragment }),
-        });
-      }
-
-      return Object.freeze({
-        kind: "spine",
-        path: resolved.path,
-        spineItemIndex,
-        ...(resolved.fragment === undefined
-          ? {}
-          : { fragment: resolved.fragment }),
-      });
-    } catch (error: unknown) {
-      return mapReferenceError(error);
-    }
-  }
 }
 
 export async function parseNavigationDocument(
@@ -625,15 +526,17 @@ export async function parseNavigationDocument(
   packageDocument: ParsedPackageDocument,
 ): Promise<ParsedNavigationDocument> {
   archive.budget.checkpoint();
-  if (packageDocument.navigation.kind === "ncx") {
-    return fail("unsupported-resource");
-  }
   const bytes = await archive.readEntry(packageDocument.navigation.path, {
     maximumBytes: archive.budget.policy.maxContentDocumentBytes,
   });
-  const parser = new NavigationDocumentParser(archive, packageDocument);
-  createXmlEventReader(archive.budget).read(bytes, "content", (event) =>
-    parser.consume(event),
+  const parser =
+    packageDocument.navigation.kind === "ncx"
+      ? new NcxNavigationParser(archive, packageDocument)
+      : new NavigationDocumentParser(archive, packageDocument);
+  createXmlEventReader(archive.budget).read(
+    bytes,
+    packageDocument.navigation.kind === "ncx" ? "ncx" : "content",
+    (event) => parser.consume(event),
   );
   return parser.complete();
 }

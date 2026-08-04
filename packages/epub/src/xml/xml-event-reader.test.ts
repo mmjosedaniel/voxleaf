@@ -151,6 +151,23 @@ describe("bounded namespace-aware XML events", () => {
     expect(readXml(`${doctype}${root}`, kind).summary.elementCount).toBe(1);
   });
 
+  it("accepts absent EPUB 2 doctypes and XML-permitted whitespace in canonical declarations", () => {
+    expect(readXml("<ncx/>", "ncx").summary.elementCount).toBe(1);
+    expect(readXml("<html/>", "epub2-content").summary.elementCount).toBe(1);
+    expect(
+      readXml(
+        "<!DOCTYPE\tncx\nPUBLIC\r'-//NISO//DTD ncx 2005-1//EN'\t'http://www.daisy.org/z3986/2005/ncx-2005-1.dtd' ><ncx/>",
+        "ncx",
+      ).summary.elementCount,
+    ).toBe(1);
+    expect(
+      readXml(
+        "<!DOCTYPE html\tPUBLIC '-//W3C//DTD XHTML 1.1//EN'\n'http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd'><html/>",
+        "epub2-content",
+      ).summary.elementCount,
+    ).toBe(1);
+  });
+
   it.each([
     [
       "NCX public identifier",

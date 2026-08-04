@@ -34,6 +34,7 @@ const EXPECTED_OPERATIONAL_CODE = Object.freeze({
 } as const satisfies Readonly<Record<EpubArchiveErrorCode, string>>);
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -110,7 +111,7 @@ describe("public privacy-safe EPUB opening", () => {
     });
   });
 
-  it("admits deterministic OPF 2 through the package stage and stops at the pending NCX parser", async () => {
+  it("opens deterministic OPF 2 through NCX and XHTML 1.1 without exposing ignored data", async () => {
     const privacyCanary = "SYNTHETIC_EPUB2_PRIVATE_METADATA_CANARY";
     const worker = vi.fn(() => {
       throw new Error("worker must not be constructed");
@@ -136,21 +137,58 @@ describe("public privacy-safe EPUB opening", () => {
 
     expect(repeatedBytes).toEqual(bytes);
     expect(bytes).toEqual(originalBytes);
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error(`unexpected fixed failure: ${result.detail}`);
+    }
+    try {
+      expect(result.publication.book.metadata).toEqual({
+        title: "Synthetic minimal EPUB 2 publication",
+        authors: ["Synthetic EPUB 2 Author"],
+      });
+      expect(result.publication.book.navigation).toEqual([
+        { label: "Chapter One", targetSpineItemId: "spine:0" },
+      ]);
+      expect(result.publication.navigation).toEqual([
+        {
+          kind: "link",
+          label: "Chapter One",
+          target: { documentId: "document:1", fragment: "chapter-one" },
+          children: [],
+        },
+      ]);
+      expect(result.publication.documents).toHaveLength(1);
+      expect(JSON.stringify(result)).not.toContain(privacyCanary);
+      expect(JSON.stringify(result)).not.toContain("toc.ncx");
+      expect(worker).not.toHaveBeenCalled();
+      expect(fetch).not.toHaveBeenCalled();
+    } finally {
+      await result.publication.close();
+    }
+  });
+
+  it("releases archive state and returns no publication after malformed NCX", async () => {
+    const close = vi.spyOn(ZipReader.prototype, "close");
+    const privacyCanary = "SYNTHETIC_PRIVATE_NCX_CANARY";
+    const result = await openEpubPublication(
+      await buildMinimalEpub2Fixture({
+        ncxDocument: `<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="urn:synthetic"/></head><docTitle><text>Title</text></docTitle><navMap>${privacyCanary}</navMap></ncx>`,
+      }),
+    );
+
     expect(result).toEqual({
       ok: false,
-      detail: "unsupported-resource",
+      detail: "malformed-package",
       error: {
         schemaVersion: 1,
-        code: "unsupported-input",
+        code: "invalid-input",
         category: "input",
         severity: "recoverable",
       },
     });
     expect(result).not.toHaveProperty("publication");
     expect(JSON.stringify(result)).not.toContain(privacyCanary);
-    expect(JSON.stringify(result)).not.toContain("toc.ncx");
-    expect(worker).not.toHaveBeenCalled();
-    expect(fetch).not.toHaveBeenCalled();
+    expect(close).toHaveBeenCalledTimes(1);
   });
 
   it("releases archive state and returns no publication after a later-stage failure", async () => {
