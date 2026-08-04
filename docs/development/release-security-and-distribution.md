@@ -8,50 +8,56 @@ MVP and portfolio goal. It is not a security certification and does not claim
 that the current unsigned installer is ready for general-public distribution.
 
 M011 Milestones 1 through 5 and 6A are complete at their documented boundaries.
-Milestone 6 remains open at its clean-host gates. The
-result-blind
+Milestone 6's originally frozen exhaustive clean-host matrix was not completed.
+The result-blind
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
 [ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
-now govern the package topology, optional-profile lifecycle, threat model,
-dependency/licence/integrity policy, cleanup ownership, and release claims
-before implementation or package measurements. Milestone 2 closes the exact
+govern the package topology, optional-profile lifecycle, threat model,
+dependency/licence/integrity policy, and cleanup ownership. Milestone 7 accepts
+[ADR-0049](../architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md)
+and
+[`mvp-release-authority-v2`](../architecture/mvp-release-authority-v2.md), which
+supersede only v1's independent claim table and exhaustive per-computer
+interpretation. Milestone 2 closes the exact
 dependency graphs, repeatable advisory checks, bounded update intake, and
 content-safe component inventory. Milestone 3 adds the deterministic bilingual
 Piper core, full notices/corresponding-source fulfillment, exact payload
 measurements, offline process-level smoke, and native fixed-manifest verifier.
 Milestone 4A adds the optional lifecycle and UI in a deliberately withheld
 state. Milestone 4B accepts additive official-source authority, implements the
-closed controller, and publishes the exact runtime parts; clean-host acquisition
-evidence must still pass before any Download action is enabled. Milestone 5
+closed controller, and publishes the exact runtime parts. The ordinary manifest
+still withholds Download as a separate product-channel state. Milestone 5
 builds the versioned unsigned local Windows package and implements the external-
-credential signing path. Milestone 7 records a three-part NO-GO release
-decision: the exact Piper candidate still lacks formal corrected clean-host
-acceptance, Chatterbox remains withheld, and signed public publication remains
-blocked. M011 therefore remains active rather than being archived.
+credential signing path. Milestone 7 records **GO** for the Piper local/
+portfolio core and **GO when the published host gate passes** for Chatterbox.
+Signed public publication is **pending external authorization**, not a runtime
+failure. M011 remains active only until the branch's required pull-request
+checks and closeout are recorded.
 
 ## Current assessment
 
-The current repository is suitable for controlled local development and local
-validation with trusted runtimes and a synthetic or public-domain EPUB. The
-unsigned package is not yet `piper-core-portfolio-ready`, must not be described
-as a distributable portfolio MVP, and is not a general public Windows download.
+The current repository and exact unsigned package are suitable for controlled
+local use, validation, and a portfolio MVP with trusted runtimes and synthetic,
+self-authored, or public-domain EPUBs. The package is
+`piper-core-portfolio-ready`; it is not a trusted general-public Windows
+download because it is unsigned.
 
 ### Milestone 7 release decision (2026-08-03)
 
-The three claims frozen by
-[`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) are
-decided independently:
+The independent claims are decided under the superseding
+[`mvp-release-authority-v2`](../architecture/mvp-release-authority-v2.md):
 
 | Release claim                            | Decision | Evidence-backed disposition |
 | ---------------------------------------- | -------- | --------------------------- |
-| `piper-core-portfolio-ready`             | **NO-GO** | The exact final unsigned candidate passes deterministic/static, local lifecycle, browser, packaged WebView2, and reader-performance gates, but it lacks the formal corrected clean normal-user host matrix bound to its exact hash. The older-PC report is exploratory only. |
-| `chatterbox-optional-portfolio-ready`    | **NO-GO** | The ordinary manifest stays `withheld`. Spanish and English pass on the compatible development host, but a compatible clean GPU host has not completed acquisition, offline use, restart, removal/reinstall, and Piper-after-removal. |
-| `signed-public-windows-installer`        | **NO-GO** | The prerequisite Piper claim has not passed and no trusted external signing identity is authorized. Public publication remains disabled. |
+| `piper-core-portfolio-ready`             | **GO** | The exact final unsigned candidate passes deterministic/static, local lifecycle, browser, packaged WebView2, and reader-performance gates. Piper is a CPU profile, and the maintainer also confirmed VoxLeaf working on an independent older Windows computer with 16 GB RAM and a 4-GB-VRAM GPU. |
+| `chatterbox-optional-portfolio-ready`    | **GO when the published host gate passes** | Spanish and English plus offline, privacy, cancellation, and installed-package lifecycle evidence pass on the representative compatible computer. The application still enforces Windows x64, CUDA bfloat16, VRAM, RAM, and processor requirements. |
+| `chatterbox-download-available`          | **WITHHELD in the current ordinary build** | The checked-in ordinary manifest exposes no Download action. This delivery-channel state does not change the profile's functional support decision. |
+| `signed-public-windows-installer`        | **PENDING EXTERNAL AUTHORIZATION** | No trusted external signing identity is authorized. Public publication remains disabled without recording a Piper or Chatterbox technical failure. |
 
-Milestone 7's decision record is complete because it records the measured
-result without weakening a gate. Its final closeout and M011 are blocked:
-clean-host, compatible clean-GPU-host, trusted-signing, and required pull-
-request evidence remain unavailable.
+Milestone 7's support decision is complete. It relies on published requirements
+plus representative compatible-host evidence, not a claim that every possible
+PC has been tested. Required pull-request evidence remains for branch closeout;
+trusted signing is a future external publication action.
 
 ### Exact current candidate identity
 
@@ -76,8 +82,9 @@ manifests, not older hashes retained in the historical implementation record:
 - withheld Chatterbox option: `8,231,893,387` download bytes,
   `8,228,503,309` installed bytes, and `13,254,834,850` peak staging bytes. The
   gate requires Windows x64, CUDA bfloat16, `5,632` MiB total and `4,668` MiB
-  currently available dedicated VRAM, `24,576` MiB RAM, and eight logical
-  processors; `7,680` MiB VRAM remains the recommended evaluated class.
+  currently available dedicated VRAM, `24,576` MiB total and `4,096` MiB
+  currently available RAM, and eight logical processors; `7,680` MiB VRAM
+  remains the recommended evaluated class.
 
 The release audit passes for Node, Rust, the base/Piper Python graph, and the
 closed optional graph while explicitly retaining advisory-service blind spots
@@ -179,11 +186,12 @@ quality profile:
 - Piper davefx/Spanish and Piper joe/English are the baseline distributable
   narration profiles because they are measured, CPU-compatible, comparatively
   small, and their candidate environments passed the planning audit.
-- Chatterbox Spanish/English is the planned optional downloadable GPU quality
-  profile. It is never silently downloaded or embedded in the core installer,
-  and it becomes an end-user option only after its exact minimal dependency,
-  advisory, licence, provenance, artifact, size, hardware, integrity,
-  install/remove, and clean-host gates pass.
+- Chatterbox Spanish/English is the supported optional GPU quality profile when
+  its published live host gate passes. It is never silently downloaded or
+  embedded in the core installer. End-user Download availability remains a
+  separate manifest/channel choice and is currently withheld in the ordinary
+  build; every dependency, advisory, licence, provenance, artifact, size,
+  integrity, install, and removal control still applies.
 - Qwen remains available only through the documented development setup and is
   outside the first distributable product.
 - The application starts with English as the product fallback while retaining
@@ -244,23 +252,24 @@ The following work is required before the corresponding release claim:
    replace third-party terms. Profiles excluded from the payload must not be
    represented as redistributed.
 4. **Integrity and offline behavior — core payload mechanics complete;
-   OS-level release observation remains open.** Pin every shipped or deliberately
+   public-channel observation remains separate.** Pin every shipped or deliberately
    acquired artifact, verify its digest before use, prevent path substitution,
    retain zero silent runtime download, and prove normal reading/narration with
    external connectivity unavailable.
-5. **Windows package lifecycle — local path complete; clean-host replacement
-   remains open.** The versioned per-user package documents size and
+5. **Windows package lifecycle — local/portfolio path complete.** The versioned per-user package documents size and
    prerequisites and passed local install, first start, same-version repair,
    uninstall, exact-root cleanup behavior, and unrelated-file preservation
    without a development shell, administrator-created firewall rule, or
    repository checkout. Cross-version replacement and destructive application-
-   data removal remain isolated to Milestone 6's clean host.
-6. **Clean-host product validation.** On a normal Windows host, exercise
+   data removal remain bounded future lifecycle coverage rather than a claim
+   that the current engine does not work.
+6. **Representative compatible-host validation.** On representative Windows hosts, exercise
    installation, first start, synthetic/public-domain EPUB open, English and
    Spanish narration, restoration, all admitted playback rates, cancellation,
    profile/language changes, failure containment, application restart,
    uninstall, privacy, accessibility, resource bounds, and the existing
-   hostile-EPUB regression boundary.
+   hostile-EPUB regression boundary. Publish and enforce compatibility
+   requirements instead of treating untested hardware combinations as failed.
 7. **Truthful release decision.** Publish supported hardware, exclusions,
    startup/resource measurements, known limitations, dependency-audit status,
    hashes, licences, troubleshooting, and recovery behavior. A failed gate
@@ -282,26 +291,26 @@ The current hash passes the static release-package gate and records local
 install/first-start/repair/uninstall lifecycle evidence outside the automation
 sandbox. An exact predecessor passed the installed bilingual portfolio matrix
 and Microsoft Defender; neither Defender nor SmartScreen was observed against
-the current hash, so no antivirus or reputation claim is made. Independent
-clean-host checks and signing remain required. This is content-safe
-development-host evidence, not portfolio-ready or public-release acceptance.
-The optional Chatterbox manifest remains withheld until a separate compatible
-clean-GPU host passes download, offline bilingual narration, restart, removal,
-and Piper-after-removal validation.
+the current hash, so no antivirus or reputation claim is made. Under authority
+v2, the current artifact is accepted for the unsigned local/portfolio MVP; it
+is not a trusted public-release artifact. The optional Chatterbox manifest
+remains withheld in the ordinary build even though compatible-host runtime
+support is accepted.
 
 An independent Windows-host attempt exposed a visible blank console for the
 private Piper child. The rebuilt candidate now starts every supervised child
 with Windows `CREATE_NO_WINDOW` while retaining the same pipe protocol and Job
 Object termination boundary. Local installed narration, lifecycle, and Defender
-validation pass for the corrected artifact; independent visual confirmation is
-still required before the clean-host core gate closes.
+validation pass for the corrected artifact. The visible-console correction is
+included in the current package evidence; it is not a global Piper support
+blocker.
 
 The signing command accepts only an externally protected certificate
 thumbprint and HTTPS timestamp URL. It emits the release configuration outside
 Git, verifies Authenticode on the executable and installer, and writes the
 adjacent checksum. No credential is committed or logged. Because no trusted
 certificate is currently authorized, the exact measured artifact remains
-`unsigned-local` and public publication is blocked. See the
+`unsigned-local` and public publication is pending external authorization. See the
 [Windows package guide](../user/windows-release.md) for installation,
 replacement, removal, and verification behavior and the
 [official Tauri Windows installer documentation](https://v2.tauri.app/distribute/windows-installer/)
@@ -386,14 +395,15 @@ archive and three part hashes across two builds. Those published v2 assets stay
 immutable. Aggregate download is 8,231,893,387 bytes. After the exact local
 closure correction in ADR-0046, aggregate installation is 8,228,503,309 bytes;
 calculated peak staging remains bounded by 13,254,834,850 bytes after verified
-parts are discarded before extraction. These are local package facts, not
-end-user availability evidence.
+parts are discarded before extraction. These are exact package facts. End-user
+availability remains an explicit manifest/channel decision.
 The checked-in v2 manifest remains `withheld` even though the exact three
-runtime parts are published under `chatterbox-runtime-v2`: clean-user online
-acquisition, offline bilingual narration, removal, reinstall, licence/audit,
-and resource gates have not run. This is a fail-closed clean-host blocker for
-optional Chatterbox, not a failure of the Piper core or an authorization to
-claim Download works.
+runtime parts are published under `chatterbox-runtime-v2`. The validation build
+has exercised acquisition and installed bilingual operation on the
+representative compatible computer, but the documentation-only Milestone 7
+decision does not change the ordinary manifest. It is therefore correct to say
+that Chatterbox is supported behind its host gate and also that Download is not
+offered by the ordinary build.
 
 ### Implemented M011 Milestone 6A lifecycle closeout
 
@@ -431,17 +441,17 @@ implemented. Both unsigned local product identities build and pass static
 package checks plus a development-host lifecycle matrix covering first start,
 repair-time data preservation, default preservation, each data class alone,
 both explicit classes, the legacy combined option, invalid-value preservation,
-and unrelated-file containment. Chatterbox remains withheld: interactive NSIS
-confirmation on a normal-user clean host, the independent optional-support
-matrix, and public-signing gates have not been closed by that local automation.
+and unrelated-file containment. Chatterbox Download remains withheld in the
+ordinary build; the local automation nevertheless contributes valid lifecycle
+evidence for its compatible-host support decision.
 
 ADR-0045 permits one compile-time, separately identified validation build on
-the maintainer's only compatible computer. Its exact overlay supplies the
+the maintainer's representative compatible computer. Its exact overlay supplies the
 measured disclosure fields and `downloadable` state without changing the
 canonical manifest, URLs, hashes, limits, hardware gate, or normal package.
 This path remains unsigned and local-only, uses a distinct application-data
-root, and cannot be attached to a public release or counted as clean-host
-evidence. No renderer flag, environment override, arbitrary URL, or bundled
+root, and does not change ordinary-build availability or trusted public
+publication. No renderer flag, environment override, arbitrary URL, or bundled
 Chatterbox payload is introduced.
 
 The first real Download attempts on that local validation build exposed two
@@ -545,7 +555,7 @@ Spanish WebView2 matrix passes with `45.990`-second Quick command-to-audible,
 `82.096`-second Prepared startup with `66.48` seconds retained, `1.23` warm
 Prepared RTF, `3,808` MiB peak VRAM, `4,865,605,632` bytes peak process-tree
 working set, `469`-ms cancellation, `756`-ms cleanup, and zero generated files
-  or external requests. At that checkpoint, English narration, application
+  or external requests. At that historical checkpoint, English narration, application
   restart (including fresh verification), removal/reinstall, Piper operation
   after removal, independent clean-host evidence, and public signing remained
   open.
@@ -556,9 +566,11 @@ Quick command-to-audible measured `39.966` seconds, warm Prepared RTF `0.93`,
 `3,711` MiB peak VRAM. English measured `33.905` seconds, `0.93`, `313` ms,
 `4,896,034,816` bytes, and `3,731` MiB respectively. Both recorded zero
 underruns, generated-audio files, and external requests. This closes the two
-development-host language arms only; restart, real removal/reinstall,
-Piper-after-removal, and compatible clean-GPU-host proof remain open. Milestone
-7 therefore records optional-profile NO-GO and keeps Download withheld.
+representative-host language arms. Together with the deterministic acquisition,
+offline, privacy, cancellation, and six-outcome package-lifecycle evidence,
+authority v2 accepts Chatterbox support for systems that pass the published
+gate. Download remains withheld only because the ordinary manifest has not
+been changed.
 
 Hugging Face documents full-commit downloads, per-file downloads, filtered
 snapshots, and application-selected cache/local directories. VoxLeaf uses the
@@ -576,14 +588,16 @@ blind trust:
 The historical exact-host evidence remains useful capacity input: approximately
 0.52-0.54 sustained RTF, greater-than-30-second cold load, about 4.88 GiB peak
 process-tree RAM, and about 3.56 GiB dedicated VRAM. The M6A packaged values
-above supersede it for the current development-host lifecycle, but neither set
-is compatible clean-host release proof.
+above supersede it for the current representative-host lifecycle. These results
+support the requirements-defined compatible class without promising identical
+performance on every GPU or driver combination.
 ADR-0044 uses the existing result-blind capacity reserve rather than treating
 the evaluated GPU size as model consumption. Optional acquisition now requires
 `5,632` MiB total and `4,668` MiB available dedicated VRAM, recommends the
 evaluated nominal 8-GB class, and discloses the `3,644`-MiB measured peak. A
-passing lower-class gate is an admission result, not a claim that every 6-GB
-GPU/driver combination completed clean-host validation.
+passing lower-class gate is an admission result for that computer. As with
+ordinary software support, it is not a guarantee that every nominally similar
+GPU/driver combination will be defect-free.
 
 Authoritative licence inputs for the current baseline include the exact
 [`piper-tts` 1.4.2 package record](https://pypi.org/project/piper-tts/1.4.2/),
@@ -600,31 +614,33 @@ before publication.
 
 ## Portfolio and public-distribution gates
 
-M011 has two honest completion levels. Milestone 7 records that neither level
-currently passes:
+M011 has two honest completion levels. Milestone 7 records that the local/
+portfolio level passes and the trusted public channel remains externally
+pending:
 
 ### Portfolio-ready local MVP
 
 A locally built package or maintainer-operated demo may be used in a portfolio
-after the mandatory functional, privacy, dependency, licence, and clean-host
-checks pass. If it is unsigned, it must be described as a local development or
-portfolio build and must not be offered as a trusted general-public installer.
+after the mandatory functional, privacy, dependency, licence, integrity, and
+representative compatible-host checks pass. The current candidate meets that
+boundary. Because it is unsigned, it must be described as a local or portfolio
+build and must not be offered as a trusted general-public installer.
 A video, screenshots, and sample flow must use synthetic, self-authored, or
 public-domain content rather than copyrighted private books.
 
-Portfolio readiness has two separately reportable profile levels: the Piper
-core MVP and the optional Chatterbox quality package. If Chatterbox's gates do
-not pass, the core MVP may still close, but the portfolio and product must not
-claim that end users can download or install Chatterbox.
+Portfolio readiness has separately reportable profile and channel levels. The
+Piper core is GO. Chatterbox is supported when its live gate passes, while the
+ordinary build currently exposes no Download action. Documentation must not
+turn the latter channel fact into a claim that Chatterbox itself failed.
 
 ### Public Windows installer
 
 A general download additionally requires trusted code signing, protected
 signing credentials outside the repository, signature verification in the
 release procedure, checksum publication, and documented antivirus/SmartScreen
-observation. If no signing certificate or external authorization is available,
-M011 may still close the portfolio-ready level, but public installer
-publication remains explicitly blocked.
+observation. No signing certificate or external authorization is currently
+available, so M011 may close the portfolio-ready level while public installer
+publication remains explicitly pending.
 
 Automatic updating is not required for the first MVP. A manual, versioned,
 signed replacement procedure is acceptable. If an updater is introduced, its

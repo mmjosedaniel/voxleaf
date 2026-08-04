@@ -49,24 +49,25 @@ Piper Spanish/English CPU profiles, supported Chatterbox Spanish/English, and
 development-only Qwen Serena/Spanish plus Aiden/English. The current
 [`tts-support-matrix-v2`](../architecture/tts-support-matrix-v2.md) records the
 exact states, host margins, and language bindings. M011 implements the local
-Piper package and closed optional lifecycle, but Milestone 7 records NO-GO for
-Piper portfolio readiness, optional Chatterbox readiness, and signed public
-publication. All native-only local
+Piper package and closed optional lifecycle. Milestone 7 records Piper local/
+portfolio GO and conditional Chatterbox GO for systems that pass the published
+host gate; trusted public signing remains externally pending. All native-only local
 configurations are documented in [`setup.md`](setup.md).
 
 ### The ordinary package does not offer Chatterbox download
 
-This is the expected fail-closed release state, not a profile-detection bug.
-The checked-in ordinary manifest remains `withheld` after Milestone 7 because a
-compatible clean GPU host has not completed exact acquisition, offline Spanish
-and English use, restart, removal/reinstall, and Piper-after-removal. The
-separate ADR-0045 validation build is local-only and cannot be used to enable
-the ordinary product or claim release readiness.
+This is the expected current channel state, not a profile-detection bug and not
+evidence that Chatterbox failed. The checked-in ordinary manifest remains
+`withheld`, while the separate ADR-0045 validation build proves acquisition and
+installed Spanish/English use on a representative compatible computer. A
+documentation-only Milestone 7 decision does not enable the ordinary Download
+action.
 
-The current Piper installer is likewise an `unsigned-local` validation
-candidate. If it installs successfully on another computer, record the exact
-installer hash and the complete normal-user bilingual/offline/lifecycle matrix;
-an unbound success report does not close the clean-host release gate.
+The current Piper installer is an `unsigned-local` portfolio candidate. Piper
+does not require a GPU, and successful use on the independent older 16-GB-RAM/
+4-GB-VRAM Windows computer is representative functionality evidence. Continue
+recording hashes and reproducible diagnostics for defects, but do not interpret
+an untested PC as a failed PC.
 
 M010.1 Milestone 7's local packaged matrix confirms that Piper and Chatterbox
 sustain the one-minute quick observation without underruns on the measured

@@ -49,8 +49,9 @@ detection remains unavailable, and
 supported and automatically recommendable profile when compatible and
 configured while retaining explicit selection and zero automatic failover.
 Replacement Ubuntu/Windows checks pass. M011 fulfills Piper's GPL/CC0 package
-obligations but remains blocked from production distribution by its release
-gates.
+obligations and accepts its unsigned local/portfolio distribution under release
+authority v2. Trusted general-public distribution remains pending external
+signing authorization.
 
 M010.1 Milestones 1 through 5 freeze and execute explicit Spanish/English
 product, locator-safe normalization, exact candidate, corpus, schema, machine,
@@ -146,11 +147,15 @@ is retained. Milestone 5 connects it to product playback with boundary-
 deferred state, content-free preference ownership, and effective-lead
 accounting.
 
-M011 is blocked at its release gates after Milestone 7 records a three-part
-NO-GO decision. Milestone 1 freezes
+M011 Milestone 7 records the local/portfolio MVP support decision. Milestone 1 freezes
 [`mvp-release-authority-v1`](mvp-release-authority-v1.md) and accepts
 [ADR-0042](decisions/ADR-0042-freeze-mvp-release-authority.md) before dependency
-or package results. Milestone 2 closes the exact production component identity:
+or package results. Milestone 7 accepts
+[ADR-0049](decisions/ADR-0049-use-representative-compatible-host-evidence.md)
+and
+[`mvp-release-authority-v2`](mvp-release-authority-v2.md), superseding only v1's
+independent-claim gates and exhaustive per-computer interpretation. Milestone 2
+closes the exact production component identity:
 a 15-entry private Piper core lock, a separately gated 79-package Chatterbox
 lock, repository-owned Node/Rust/Python release audits, bounded Dependabot
 intake, and a deterministic 400-component inventory. Milestone 3 packages the
@@ -187,8 +192,11 @@ uses explicit consent, sequential application-owned transfers, closed
 redirects, per-artifact digest verification, safe extraction/loading, atomic
 versioned installation, separate activation, offline use, and application-
 owned removal. The exact runtime assets are published under
-`chatterbox-runtime-v2`; clean-host online/offline evidence remains open, so
-Download is not enabled. Milestone 5 sets release version `0.1.0` and
+`chatterbox-runtime-v2`. Its representative installed Spanish/English,
+offline, privacy, cancellation, and lifecycle evidence passes. The ordinary
+manifest remains `withheld`, so Download is not enabled in the normal build;
+this is a distribution state rather than a runtime-support failure. Milestone
+5 sets release version `0.1.0` and
 packages the exact bilingual Piper core in a current-user Windows x64 NSIS
 installer through a release-only configuration. The exact current unsigned
 artifact is `181,704,648` bytes with SHA-256
@@ -196,14 +204,15 @@ artifact is `181,704,648` bytes with SHA-256
 Outside-sandbox static and local lifecycle evidence passes; Defender and
 SmartScreen were not observed for this exact hash. Signing automation
 uses only protected external credentials and verifies Authenticode, but no
-certificate is currently authorized; public publication and the complete
-clean-host matrix remain open. Milestone 7 consumes completed M003.1's bounded
-OPF 2.0/NCX evidence and records NO-GO for Piper-core portfolio readiness,
-optional-Chatterbox readiness, and signed public publication. The first lacks
-formal corrected clean-host evidence for the exact hash, the second lacks its
-compatible clean-GPU-host lifecycle, and the third additionally lacks trusted
-signing authority. These remain separate decisions; signing is an external
-authorization for the last only. Automatic updates,
+certificate is currently authorized. Milestone 7 consumes completed M003.1's
+bounded OPF 2.0/NCX evidence and records **GO** for the packaged Piper local/
+portfolio core and **GO when the published host gate passes** for Chatterbox.
+Piper's representative evidence includes successful use on an independent
+older Windows computer; Chatterbox's includes installed Spanish and English
+journeys on the current compatible Windows/RTX 5060 Laptop computer. These
+results support the requirements-defined compatible classes without promising
+identical operation on every PC. Signed public publication remains **pending
+external authorization**. Automatic updates,
 enterprise process sandboxing, external certification, cross-platform
 packages, Qwen distribution, and bundling every engine remain post-MVP unless
 new evidence makes one release-critical.
@@ -325,8 +334,8 @@ Desktop application
 |-- Reader-first Settings and six boundary-deferred playback rates
 |   [M010.2 complete; repository WSOLA, English fallback, packaged validation]
 |-- Windows x64 MVP core plus optional quality package
-|   [M011 local package/acquisition implemented; M7 release claims NO-GO
-|    pending clean-host, clean-GPU-host, and trusted-signing evidence]
+|   [M011 Piper local/portfolio GO; Chatterbox supported behind its live gate,
+|    ordinary Download withheld; public signing pending external authority]
 `-- Explicit bilingual narration and exact language/profile selection
     [M010.1 Milestones 2-6; Piper ES/EN and Chatterbox supported,
      Qwen Serena/Aiden development-only]

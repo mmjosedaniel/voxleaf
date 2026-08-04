@@ -940,17 +940,17 @@ model artifact, path, or raw host identity may enter a result or fixture.
 ## M011 packaging and release validation
 
 M011 Milestones 1 through 5 and 6A are implemented at their documented
-boundaries. Milestone 7 records independent NO-GO decisions for Piper portfolio
-readiness, optional Chatterbox readiness, and signed public publication;
-Milestone 6 remains open at its clean-host gates.
+boundaries. Under ADR-0049 and release authority v2, Milestone 7 records Piper
+local/portfolio GO and conditional compatible-host Chatterbox GO; signed public
+publication remains pending external authorization.
 The dependency/audit, standalone Piper-core, optional runtime-package,
 acquisition-controller, public runtime identity, and local Windows package
-evidence below is current. Clean-host validation and signed public publication
-remain requirements rather than pass evidence. Its
+evidence below is current. Representative compatible-host evidence supports
+the requirements-defined classes; signed public publication remains separate. Its
 active
 [`ExecPlan`](../plans/active/M011-package-validate-and-release-mvp.md)
-requires a clean normal-user Windows package matrix in addition to the
-existing deterministic, Chromium, packaged WebView2, and exact-host suites.
+retains the originally planned clean normal-user Windows package matrix as
+useful regression coverage, not as an exhaustive per-device support gate.
 
 Milestone 3 adds these repository-owned commands:
 
@@ -995,8 +995,8 @@ wrong/truncated/oversized artifacts, cancellation, bounded reassembly/
 extraction, staging cleanup, runtime tampering/staleness, atomic promotion, and
 absence of profile mutation before explicit activation. Two outside-sandbox
 builds produced identical v2 hashes/sizes. An authorized maintainer published
-the exact resulting parts under `chatterbox-runtime-v2`; the manifest remains
-withheld until the clean-host gates pass.
+the exact resulting parts under `chatterbox-runtime-v2`; the ordinary manifest
+remains withheld as a separate current channel state.
 
 Milestone 5 adds these Windows-only commands:
 
@@ -1026,8 +1026,8 @@ SHA-256
 passed Windows Defender; Defender was not run against the current ordinary
 hash, and SmartScreen was not observed.
 The signed command is fail-closed and remains unexecuted without an authorized
-external certificate. None of these local results substitutes for Milestone
-6's clean-user matrix.
+external certificate. The local results are representative product evidence;
+they do not claim identical behavior on every Windows computer.
 
 Milestone 6 adds an installed-artifact form of the native harness. It accepts
 exactly one absolute executable and does not build or select a repository
@@ -1044,9 +1044,8 @@ recorded zero external requests and zero generated-audio files. Two consecutive
 installer/first-start/repair/uninstall cycles and a predecessor-installer
 Defender scan also passed. The rehearsal exposed package-only stack-allocation,
 bytecode-mutation, canonical-Windows-path, and stale-local-package defects;
-focused regressions now protect each fix. This remains development-host
-evidence: independent clean normal-user Windows and clean compatible-GPU
-Chatterbox arms are still required.
+focused regressions now protect each fix. Under authority v2, this is valid
+representative-host evidence for systems that meet the published requirements.
 
 The first independent Windows-host attempt exposed a blank console when the
 private packaged Python/Piper child started. Standard-stream redirection alone
@@ -1054,10 +1053,10 @@ does not suppress a console-subsystem child window under a GUI parent. The
 supervisor now applies Windows `CREATE_NO_WINDOW` to its child command before
 spawn; the focused Windows regression freezes that flag, and the rebuilt
 installed Piper matrix proves that protocol, narration, cancellation, and
-cleanup remain intact. Visual clean-host confirmation must use the current hash
-above rather than an earlier installer.
+cleanup remain intact. Any additional visual regression run must use the current
+hash above rather than an earlier installer.
 
-Evidence required to change a Milestone 7 NO-GO decision must distinguish:
+Evidence supporting or extending the Milestone 7 decisions must distinguish:
 
 - exact shipped Node, Rust, base Python, and core/optional-profile dependency
   audits, including packages the advisory source cannot identify;
@@ -1075,7 +1074,7 @@ Evidence required to change a Milestone 7 NO-GO decision must distinguish:
   manifest identity, size/disk limits, wrong digest/version, traversal,
   interruption, cancellation, atomic install, restart recovery, explicit
   activation, removal, and unchanged Piper availability;
-- a compatible clean-GPU-host Chatterbox arm covering absent/declined,
+- additional representative compatible-GPU Chatterbox arms covering absent/declined,
   verified download, Spanish/English offline narration, cold load, RTF,
   RAM/VRAM, application restart, removal, and Piper use afterward; and
 - Piper-core portfolio, optional-Chatterbox, and signed public-installer
@@ -1084,22 +1083,22 @@ Evidence required to change a Milestone 7 NO-GO decision must distinguish:
 M011 audit, Piper-core assembly, optional runtime assembly, v2 acquisition-
 authority, and local installer commands now exist. The current optional
 manifest records the published runtime but remains withheld, so no end-user
-acquisition is reachable. Development-host bounded application-data removal now
-passes, but clean-host installation/offline use, cross-version replacement,
-interactive uninstall, and complete product behavior remain Milestone 6 work;
-do not describe those release gates as passing. The exact final Piper hash has
-no complete corrected clean-host matrix, so it remains an unsigned local
-validation candidate rather than a portfolio-ready distributable.
+acquisition is reachable in the ordinary build. Bounded application-data
+removal and the representative package journeys pass. Cross-version replacement
+and interactive uninstall remain useful future regression coverage, not an
+engine-functionality veto. The exact final Piper hash is an unsigned local/
+portfolio candidate rather than a trusted public distributable.
 
-ADR-0045 adds a separate local validation build because no second compatible
-GPU computer is available. Its static check proves that the ordinary manifest
+ADR-0045 adds a separate local validation build for the representative
+compatible GPU computer. Its static check proves that the ordinary manifest
 remains `withheld`, the validation overlay is exact and not public-authorized,
 the product/identifier/data root are distinct, Chatterbox bytes are not bundled,
 and the Cargo feature is explicit. Native tests must pass both without and with
 `chatterbox-acquisition-validation`; the feature-enabled arm must expose
 consent without creating staging or contacting the network. Building and using
-this installer on the development computer is useful functional evidence but
-is never called clean-host acceptance.
+this installer on the development computer is accepted representative
+functional evidence under authority v2; it does not change ordinary-build
+Download availability.
 
 ```powershell
 pnpm.cmd package:windows:chatterbox-validation:check
@@ -1113,9 +1112,10 @@ repository testing rule.
 
 ### Milestone 7 decision and closeout result
 
-The 2026-08-03 Milestone 7 run consumes completed M003.1 and records NO-GO for
-Piper portfolio readiness, optional Chatterbox readiness, and signed public
-publication. The following commands ran from normal local PowerShell outside
+The 2026-08-03 Milestone 7 run consumes completed M003.1. ADR-0049 then corrects
+the decision boundary to record Piper portfolio GO, conditional compatible-host
+Chatterbox GO, current ordinary Download `withheld`, and signed public
+publication pending external authorization. The following commands ran from normal local PowerShell outside
 the sandbox:
 
 | Command or gate | Result |
@@ -1133,10 +1133,10 @@ the sandbox:
 | Exact-host portfolio preflight | Test-only suites pass; real preflight reports `Exact bilingual portfolio configuration is unavailable.` before model work. |
 | `pnpm.cmd package:windows:lifecycle` | Stops before mutation with `windows-release-lifecycle-preexisting-install`; both local product identities already exist, so a fresh run needs an explicitly prepared host or user-authorized removal. |
 
-The lifecycle stop is a safe host-state blocker, not a product assertion. It
-does not replace the previously recorded local lifecycle evidence and cannot
-close the clean-host gate. Required pull-request checks also remain pending
-until a branch is pushed and a pull request is authorized.
+The lifecycle stop is a safe host-state observation, not a product assertion.
+It does not replace the previously recorded lifecycle evidence. Required pull-
+request checks remain pending until a branch is pushed and a pull request is
+authorized.
 
 ## Deferred coverage
 
@@ -1148,9 +1148,10 @@ or model; model-backed timing, profile, navigation, persistence, and cleanup
 matrices remain separate exact-host commands. Non-Windows hardware support,
 automatic updates, enterprise sandboxing, and cross-platform packaging remain
 deferred. The minimum bilingual Piper payload and local Windows installer path
-are implemented. Clean-host product validation and separately gated optional
-Chatterbox acquisition/removal remain approved M011 work. The examples below
-are requirements, not claims about those later gates.
+are implemented. Additional Windows and GPU combinations, cross-version
+replacement, and interactive optional acquisition/removal remain useful future
+coverage. The examples below are test directions, not a requirement to test
+every possible PC before declaring requirements-based support.
 
 ## Test levels
 

@@ -18,17 +18,17 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 ## Current plans
 
 - [`M011-package-validate-and-release-mvp.md`](M011-package-validate-and-release-mvp.md):
-  active blocked release plan. It freezes and implements the Windows x64/
+  active closeout plan. It freezes and implements the Windows x64/
   Piper Spanish-English core, a separately gated optional Chatterbox GPU
   download with explicit consent and verified lifecycle, exact core/optional
-  dependency/licence/integrity boundaries, clean-host complete-MVP validation,
+  dependency/licence/integrity boundaries, representative-host complete-MVP validation,
   signing path, and independent core/optional/public release decisions.
-  Milestones 1-5 and 6A are complete at their documented boundaries. Milestone
-  7 records independent NO-GO decisions for Piper portfolio readiness,
-  downloadable Chatterbox, and signed public publication. The plan remains
-  active because formal corrected Piper clean-host evidence, a compatible
-  clean-GPU-host Chatterbox lifecycle, and trusted signing authority are still
-  unavailable; it must not be archived as a completed distributable MVP.
+  Milestones 1-5 and 6A are complete at their documented boundaries. Under
+  ADR-0049 and release authority v2, Milestone 7 records Piper local/portfolio
+  GO and Chatterbox GO on systems that pass its published host gate. The
+  ordinary build still withholds Chatterbox Download, and trusted public
+  signing remains pending external authorization. The plan remains active only
+  until required pull-request checks and final closeout are recorded.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through 9.

@@ -38,10 +38,9 @@ Derived narration text has the same sensitive-content boundary as source book te
 
 ## Current release readiness
 
-VoxLeaf is pre-alpha. The current repository is appropriate for controlled
-local development and local validation, but the exact unsigned candidate is
-not approved as a portfolio-ready distributable or a general public Windows
-installer.
+VoxLeaf is pre-alpha. The exact unsigned candidate is approved as a local or
+portfolio Windows x64 MVP with Piper. It is not a trusted general-public
+Windows installer because no signing identity is currently authorized.
 
 The native supervisor provides strict profile selection, framed protocol
 bounds, identity-first cancellation, and process-tree cleanup. It does not
@@ -59,12 +58,15 @@ Spanish/English; Chatterbox Spanish/English is a separate optional GPU download
 only after explicit consent, minimal dependency/advisory closure,
 fixed-manifest integrity checks, atomic installation, offline proof, and
 application-owned removal. Qwen is not part of the first distributable product.
-Milestone 7 records independent NO-GO decisions for Piper-core portfolio
-readiness, optional-Chatterbox readiness, and signed public publication: the
-exact Piper hash lacks formal corrected clean-host proof, Chatterbox remains
-withheld pending a compatible clean-GPU-host lifecycle, and trusted signing
-authority is unavailable. The unsigned package remains a local validation
-candidate only.
+Milestone 7 records Piper-core portfolio readiness as **GO** and Chatterbox as
+**supported when its published host gate passes**, using representative
+compatible-host evidence under
+[`mvp-release-authority-v2`](docs/architecture/mvp-release-authority-v2.md).
+The ordinary Chatterbox manifest remains `withheld`, so this build does not
+offer its Download action; that distribution state is not a runtime failure.
+Signed public publication is **pending external authorization** because a
+trusted signing identity is unavailable. All integrity, privacy, cancellation,
+bounded acquisition, and cleanup controls remain required.
 
 See
 [`docs/development/release-security-and-distribution.md`](docs/development/release-security-and-distribution.md)

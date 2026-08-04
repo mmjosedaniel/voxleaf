@@ -18,20 +18,22 @@ If a compatible WebView2 runtime is absent, the embedded Microsoft bootstrapper
 requires an internet connection to install that Windows prerequisite. Normal
 EPUB reading and Piper narration do not require a network connection.
 
-The current unsigned local build is suitable only for controlled
-maintainer-operated validation. Milestone 7 records NO-GO for portfolio
-readiness because the exact final hash lacks the formal corrected clean-host
-matrix. Do not describe it as a portfolio-ready distributable or offer it as a
-trusted general-public download. Public distribution requires a trusted signature, successful
+The current unsigned local build is accepted for controlled local use and as a
+portfolio MVP. Piper is a Windows x64 CPU profile with no discrete-GPU
+requirement; representative evidence includes successful use on an independent
+older Windows computer with 16 GB RAM and a 4-GB-VRAM GPU. This does not promise
+identical behavior on every PC. Do not offer the unsigned artifact as a trusted
+general-public download. Public distribution requires a trusted signature, successful
 signature verification, a matching published SHA-256 checksum, and the release
 checks documented by the project.
 
 The current installer is `181,704,648` bytes with SHA-256
 `56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
 It is `unsigned-local`; Defender and SmartScreen were not observed for this
-exact artifact. Milestone 7 also records NO-GO for optional Chatterbox and
-signed public publication. These are release dispositions, not installation
-errors.
+exact artifact. Milestone 7 records Chatterbox as supported when the published
+host gate passes. The ordinary build still withholds its Download action, and
+signed public publication remains pending external authorization. These are
+separate channel states, not engine failures.
 
 ### Maintainer-only Chatterbox validation build
 
@@ -89,15 +91,15 @@ removable cache, and staging data. It does not uninstall VoxLeaf, remove Piper,
 delete preferences or reading progress, or search for EPUB files.
 
 The exact installed Spanish and English Chatterbox playback arms now pass on the
-maintainer's compatible computer. The Milestone 6A rerun measured Quick startup
+representative compatible computer. The Milestone 6A rerun measured Quick startup
 at about `40.0` seconds in Spanish and `33.9` seconds in English, so the UI can
 remain in preparation while integrity verification and cold model load complete.
 Both arms recorded zero underruns, generated-audio files, and external requests.
-This is development-host evidence, not general hardware or public-release
-proof. Application restart, real package removal/reinstall, Piper-after-removal,
-independent clean-host validation, and public signing remain open. Milestone 7
-therefore keeps the ordinary manifest withheld and records NO-GO for the
-optional-profile release claim.
+Together with the published Windows x64/CUDA/VRAM/RAM/CPU admission gate, this
+is representative evidence for the compatible hardware class; it is not a
+guarantee for every GPU or driver combination. The ordinary manifest remains
+withheld because this documentation-only decision does not expose Download.
+Public signing remains separately pending.
 
 Settings stays populated during profile transitions and reports a truthful
 content-free applying phase instead of going blank. First Chatterbox Play can
@@ -151,9 +153,9 @@ If Chatterbox is intentionally retained, Windows removes the application UI
 that exposes **Remove Chatterbox**. Reinstall the same VoxLeaf product identity
 (ordinary VoxLeaf or the separate Chatterbox validation build), remove
 Chatterbox from Settings, and uninstall again. Do not guess at or broadly delete
-Local App Data paths. Automated development-host lifecycle validation covers
-repair and all six silent outcomes for both identities; the actual interactive
-journey remains part of the normal-user clean-host release arm.
+Local App Data paths. Automated lifecycle validation covers repair and all six
+silent outcomes for both identities. A future interactive journey remains
+useful regression coverage, not a prerequisite for saying that Piper works.
 
 ## Verify a release artifact
 
