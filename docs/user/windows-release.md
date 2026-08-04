@@ -63,8 +63,8 @@ already completed verified installation.
 
 The validation installer is unsigned and ships with an adjacent SHA-256 file;
 verify that checksum before use. The exact local artifact and Defender result
-are recorded in the active M011 ExecPlan rather than embedded here, because this
-document is itself part of the installer payload. The build repairs the first
+are recorded in the completed M011 ExecPlan rather than embedded here, because
+this document is itself part of the installer payload. The build repairs the first
 installed runtime closure, moves only its exact verified legacy package to a
 Windows-safe short application-data path, and converts native verbatim paths to
 conventional Windows paths only when starting the embedded Python child.

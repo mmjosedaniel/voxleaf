@@ -95,5 +95,5 @@ bounded acquisition, and cleanup controls remain required.
 See
 [`docs/development/release-security-and-distribution.md`](docs/development/release-security-and-distribution.md)
 for the proportional MVP boundary and
-[`docs/plans/active/M011-package-validate-and-release-mvp.md`](docs/plans/active/M011-package-validate-and-release-mvp.md)
+[`docs/plans/completed/M011-package-validate-and-release-mvp.md`](docs/plans/completed/M011-package-validate-and-release-mvp.md)
 for the implementation and validation plan.

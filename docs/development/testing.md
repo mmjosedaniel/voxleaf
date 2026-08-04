@@ -948,9 +948,9 @@ external authorization.
 The dependency/audit, standalone Piper-core, optional runtime-package,
 acquisition-controller, public runtime identity, and local Windows package
 evidence below is current. Representative compatible-host evidence supports
-the requirements-defined classes; signed public publication remains separate. Its
-active
-[`ExecPlan`](../plans/active/M011-package-validate-and-release-mvp.md)
+the requirements-defined classes; signed public publication remains separate.
+Its completed
+[`ExecPlan`](../plans/completed/M011-package-validate-and-release-mvp.md)
 retains the originally planned clean normal-user Windows package matrix as
 useful regression coverage, not as an exhaustive per-device support gate.
 
@@ -1204,11 +1204,12 @@ from normal local PowerShell outside the sandbox:
 | Documentation, diff, tracked artifacts, and privacy      | Prettier and relative links pass for all 16 modified Markdown files, `git diff --check` passes, and all 825 tracked paths report zero prohibited private/release artifacts, high-confidence secrets, local scan context, or sensitive diff matches.                                                              |
 
 The ExecPlan records the current Chatterbox/Piper startup, RTF, RAM, VRAM, and
-cancellation measurements. Final M011 archival waits only for required
-pull-request checks and final branch closeout; trusted public signing remains
-separately externally authorized. Do not rerun `pnpm.cmd package:windows` after
-these hash-bound receipts unless a new installer identity and both host journeys
-will be renewed again.
+cancellation measurements. PR #207's Windows native, Ubuntu portable, and
+production-dependency checks pass on the exact implementation-and-evidence head,
+so M011 is archived. Trusted public signing remains separately externally
+authorized. Do not rerun `pnpm.cmd package:windows` after these hash-bound
+receipts unless a new installer identity and both host journeys will be renewed
+again.
 
 ## Deferred coverage
 

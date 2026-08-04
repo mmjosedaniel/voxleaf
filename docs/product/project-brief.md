@@ -87,12 +87,12 @@ repository matrices pass; maintainer all-rate confirmation and pull request
 #170's required Ubuntu/Windows checks also pass. Installer distribution and
 license fulfillment remain deferred to M011.
 
-M011 is now approved with a detailed active ExecPlan. Its first distributable
+M011 is complete with a detailed archived ExecPlan. Its first distributable
 candidate keeps Windows x64 with Piper davefx/Spanish and Piper joe/English in
 the small core. Supported Chatterbox Spanish/English becomes a separately
 gated optional GPU quality download rather than an approximately 8.02-GiB
 addition to the core installer. Qwen remains development-only and outside the
-first distributable product. The plan closes actual dependency, licence,
+first distributable product. The plan closed actual dependency, licence,
 integrity, compatible-host, uninstall, privacy, and support risks; adds explicit
 consent, bounded acquisition, verification, installation, activation, and
 removal for Chatterbox; and defers enterprise sandboxing, automatic updates,

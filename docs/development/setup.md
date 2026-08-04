@@ -70,8 +70,7 @@ on systems that pass its published host gate, and the optional package on a
 compatible host. The ordinary
 Chatterbox manifest is compatibility-gated and the release is compiled without
 development-runtime fallbacks. Signed public publication remains pending external
-authorization. M011 stays active only through required branch checks and
-closeout.
+authorization. PR #207's required checks pass and M011 is archived.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,

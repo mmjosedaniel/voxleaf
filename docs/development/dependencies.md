@@ -75,8 +75,8 @@ Ryan, Base voice cloning, and VoiceDesign add no graph and remain outside v8.
 
 ## M011 release dependency boundary
 
-The active closeout
-[`M011 ExecPlan`](../plans/active/M011-package-validate-and-release-mvp.md)
+The completed
+[`M011 ExecPlan`](../plans/completed/M011-package-validate-and-release-mvp.md)
 does not approve copying an evaluation environment into an installer. M011
 Milestone 2 closes both production graphs, and Milestone 3 packages the exact
 Piper graph as the standalone core payload. Milestones 4A-4B implement the

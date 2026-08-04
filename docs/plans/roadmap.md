@@ -84,7 +84,7 @@ delivery channel and release-isolation proof, and the exact post-audit
 artifact now passes its renewed lifecycle and journey. Milestone 1 freezes the
 historical result-blind release authority; its
 detailed
-[`M011 ExecPlan`](active/M011-package-validate-and-release-mvp.md) scopes the
+[`M011 ExecPlan`](completed/M011-package-validate-and-release-mvp.md) scopes the
 core distributable candidate to Windows x64 and the measured Piper
 Spanish/English CPU family. It now adds supported Chatterbox Spanish/English
 as a separately gated optional GPU quality download rather than embedding its
@@ -1199,14 +1199,14 @@ through newly frozen authority and regression evidence.
 
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** Renewed Milestone 7 local release decision and exact-artifact host
-validation complete. The 2026-08-03 preliminary decision remains historical;
-the 2026-08-04 result records Piper local/portfolio GO, Chatterbox runtime and
-optional-package GO on a compatible host, and ordinary Download GO only after
-both live gates. Milestones 1 through 7 are complete at their local documented
-boundaries. M011 remains active for required pull-request checks and final
-branch closeout. Trusted public signing is a separate externally authorized
-future channel.
+**Status:** Complete and archived. The 2026-08-03 preliminary decision remains
+historical; the 2026-08-04 result records Piper local/portfolio GO, Chatterbox
+runtime and optional-package GO on a compatible host, and ordinary Download GO
+only after both live gates. Milestones 1 through 7 are complete. Pull request
+#207 passed Windows native foundation, Ubuntu portable foundation, and
+Production dependency graphs on exact implementation-and-evidence head
+`b81ee8a9b77658f5b9f640fe2a9b63334b4a5a90`. Trusted public signing is a
+separate externally authorized future channel.
 The subsequent basic code, logic, and security audit recorded a Standard Codex
 Security static review of all 825 tracked items in its worktree inventory, with
 zero reportable findings. Manual review additionally serialized
@@ -1339,7 +1339,7 @@ completed 1 -> completed 2 -> completed 3 -> completed 4A
        disclosure, release-locked runtime, and representative ordinary journey
     -> renewed 7 exact-artifact lifecycle, ordinary journey, and independent
        local/portfolio release decisions complete
-    -> required PR checks and final branch closeout (next)
+    -> required PR checks pass and M011 is archived
     -> trusted public signing stays separately externally authorized
 ```
 
@@ -1355,8 +1355,8 @@ Milestone 7 decides the superseding v2 claims independently again:
 | Signed public Windows publication         | **PENDING EXTERNAL AUTHORIZATION**         | No trusted signing identity is authorized.                                                                                                                                                                 |
 
 The unsigned package remains a local/portfolio MVP, not a trusted public
-release. The M011 ExecPlan stays in `active/` through required pull-request
-checks and the final closeout merge.
+release. PR #207's required checks pass and the completed M011 ExecPlan is
+archived.
 
 ### Goal
 
@@ -1454,7 +1454,7 @@ for the renewed release decision.
 ### Dependencies
 
 All earlier milestones. The detailed implementation authority is
-[`M011-package-validate-and-release-mvp.md`](active/M011-package-validate-and-release-mvp.md),
+[`M011-package-validate-and-release-mvp.md`](completed/M011-package-validate-and-release-mvp.md),
 and the proportional security boundary is
 [`release-security-and-distribution.md`](../development/release-security-and-distribution.md).
 The frozen result-blind package, threat, optional-profile, cleanup, licence,
@@ -1674,9 +1674,9 @@ data plus separately verified split-runtime delivery and publication. Milestone
 7 records the historical local/portfolio GO under ADR-0049/release authority
 v2. Milestone 6B passes ordinary compatibility-gated Chatterbox Download;
 renewed Milestone 7 now binds the post-audit artifact to passing lifecycle/
-journey evidence and records the superseding local decision. Required pull-
-request checks remain before archival, and trusted public signing remains
-externally pending.
+journey evidence and records the superseding local decision. PR #207's required
+checks pass, M011 is archived, and trusted public signing remains externally
+pending.
 
 ## MVP completion boundary
 

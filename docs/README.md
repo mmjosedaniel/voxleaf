@@ -97,8 +97,10 @@ Windows checks.
 
 M011's renewed Milestone 7 record accepts a local/portfolio MVP GO; its
 detailed
-[`packaging and release ExecPlan`](plans/active/M011-package-validate-and-release-mvp.md)
-remains active for required pull-request checks and final closeout.
+[`packaging and release ExecPlan`](plans/completed/M011-package-validate-and-release-mvp.md)
+is archived after PR #207 passed Windows native foundation, Ubuntu portable
+foundation, and Production dependency graphs on the exact implementation-and-
+evidence head.
 Milestone 1 freezes
 [`mvp-release-authority-v1`](architecture/mvp-release-authority-v1.md) and
 accepts
@@ -207,8 +209,8 @@ Signed-public readiness is a separate **pending external authorization** state
 because no trusted signing identity is available. The unsigned package is a
 local/portfolio MVP, not a trusted general-public installer. The 2026-08-03
 Milestone 7 record remains a historical preliminary snapshot; the renewed
-decision leaves M011 in `active/` only through required pull-request checks and
-final closeout.
+decision and PR #207's required checks close M011 at the unsigned local/
+portfolio level.
 
 The basic MVP code, logic, and security audit reviewed all 825 tracked items in
 its worktree inventory. Standard Codex Security scan
@@ -332,7 +334,6 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
 - [`plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md`](plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md): completed Milestone 3.1 plan for the bounded OPF 2.0/NCX package, navigation, downstream-equivalence, and final acceptance path consumed by M011 release closeout.
 - [`plans/completed/typescript-maintainability-batch-20260803.md`](plans/completed/typescript-maintainability-batch-20260803.md): completed recovery and independent-validation record for the small cross-package TypeScript/TSX maintainability batch.
-- [`plans/active/M011-package-validate-and-release-mvp.md`](plans/active/M011-package-validate-and-release-mvp.md): active Windows/Piper local-portfolio and optional-Chatterbox release plan; renewed Milestone 7 records the exact unsigned candidate's lifecycle, representative compatible-host ordinary journey, and independent release decisions. The plan remains active only for required pull-request checks and final closeout; public signing stays an external future action.
 - [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.
 - [`plans/completed/M002-shared-contracts-and-test-harness.md`](plans/completed/M002-shared-contracts-and-test-harness.md): completed ExecPlan and validation evidence for roadmap Milestone 2.
 - [`plans/completed/M003-secure-epub-ingestion-and-document-model.md`](plans/completed/M003-secure-epub-ingestion-and-document-model.md): completed ExecPlan and validation evidence for secure EPUB ingestion and the framework-independent document model in roadmap Milestone 3.
@@ -350,6 +351,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md`](plans/completed/M010-hardware-profiles-fallback-and-operational-resilience.md): completed ExecPlan for privacy-safe host detection, evidence-backed profile matching, CPU-fallback admission, identity-safe operational recovery, final support decisions, and repository/CI closeout.
 - [`plans/completed/M010-001-bilingual-narration-and-candidate-screening.md`](plans/completed/M010-001-bilingual-narration-and-candidate-screening.md): completed bilingual follow-up covering evaluation, exact profile integration, packaged portfolio validation, and passing Ubuntu/Windows closeout.
 - [`plans/completed/M010-002-reader-settings-and-playback-controls.md`](plans/completed/M010-002-reader-settings-and-playback-controls.md): completed pre-M011 reader-first settings and playback-control follow-up, including bounded English-default language/start/playback preferences, the reader-first Settings shell, six-rate boundary-deferred repository-WSOLA playback, the sequential six-arm portfolio, renewed human all-rate confirmation, and passing Ubuntu/Windows closeout checks.
+- [`plans/completed/M011-package-validate-and-release-mvp.md`](plans/completed/M011-package-validate-and-release-mvp.md): completed Windows/Piper local-portfolio and optional-Chatterbox release plan; renewed Milestone 7 records the exact unsigned candidate's lifecycle, representative compatible-host ordinary journey, independent release decisions, and passing PR #207 checks. Public signing stays an external future action.
 - [`plans/active/synchronized-reader-and-startup-buffer.md`](plans/active/synchronized-reader-and-startup-buffer.md): broad historical context superseded by the completed M009 plan for synchronization work.
 - [`plans/completed/`](plans/completed/): historical implementation plans.
 

@@ -31,7 +31,7 @@ verified acquisition, bilingual offline Chatterbox narration, restart, removal,
 Piper-after-removal, reacquisition, and uninstall from the ordinary product
 identity. Trusted public signing remains a separate externally authorized
 channel. Renewed Milestone 7 records the independent local/portfolio decisions;
-only required pull-request checks and final branch closeout remain.
+PR #207's three required checks pass, and this ExecPlan is archived as complete.
 
 - a Windows x64 user can install VoxLeaf, open a supported local EPUB, restore
   progress, and use English or Spanish local narration through the included
@@ -1224,10 +1224,12 @@ authorization and is not part of this completed submilestone.
 
 ### Milestone 7: Record the MVP release decision and close validation
 
-**Status:** Renewed decision, exact-artifact host validation, and complete
-applicable local repository/package gates are recorded on the Milestone 7
-branch. Required pull-request checks and final branch closeout remain before
-archival. The 2026-08-03 decision remains a
+**Status:** Complete. Renewed decision, exact-artifact host validation, complete
+applicable local repository/package gates, and PR #207's three required checks
+pass. Exact implementation-and-evidence head
+`b81ee8a9b77658f5b9f640fe2a9b63334b4a5a90` passed Windows native foundation,
+Ubuntu portable foundation, and Production dependency graphs. The 2026-08-03
+decision remains a
 historical preliminary snapshot under ADR-0049/release authority v2: Piper was
 **GO**, Chatterbox was **GO when the published host gate passes**, ordinary
 Download was `withheld`, and trusted public signing was **pending external
@@ -1319,10 +1321,9 @@ Historical 2026-08-03 result, superseded for final closeout by Milestone 6B:
   is not invalidated by that shell configuration; pull-request evidence remains
   external follow-up.
 - This snapshot remains evidence for the support boundary but is not the final
-  M011 closeout decision. The plan stays in `active/` through Milestone 6B, the
-  renewed Milestone 7 decision, required pull-request checks, and final branch
-  closeout. Trusted public signing remains outside the unsigned portfolio
-  completion level.
+  M011 closeout decision. Milestone 6B, the renewed Milestone 7 decision, and
+  PR #207's required checks now close M011. Trusted public signing remains
+  outside the unsigned portfolio completion level.
 
 ## Testing and validation strategy
 
@@ -2235,9 +2236,14 @@ and never edit prior benchmark authority to make a release pass.
   `git diff --check` passes. The tracked-artifact/privacy audit reviews all 825
   tracked paths and reports zero prohibited EPUB/audio/model/secret/log
   artifacts, zero high-confidence secret files, zero local scan-context paths,
-  and zero sensitive diff matches. Required pull-request checks remain the only
-  unexecuted branch gate; trusted public signing remains separately pending
-  external authorization.
+  and zero sensitive diff matches. Trusted public signing remains separately
+  pending external authorization.
+- **2026-08-04:** Pull request #207 tested exact implementation-and-evidence
+  head `b81ee8a9b77658f5b9f640fe2a9b63334b4a5a90`. `Windows native foundation`,
+  `Ubuntu portable foundation`, and `Production dependency graphs` all passed;
+  GitHub reports the PR mergeable with a clean merge state. This final
+  documentation-only checkpoint archives M011. Any later source or documentation
+  change remains subject to the same required checks before merge.
 
 ## Discoveries and decisions
 
@@ -2381,9 +2387,9 @@ and never edit prior benchmark authority to make a release pass.
   publication remains **pending external authorization**.
 - **Superseded decision:** Before Milestone 6B was added, this ExecPlan would
   have stayed in `active/` only until required pull-request checks and branch
-  closeout. It now remains active through 6B and the renewed Milestone 7 record.
-  Trusted public signing is still not a prerequisite for the unsigned portfolio
-  level.
+  closeout. Milestone 6B, the renewed Milestone 7 record, and PR #207's required
+  checks are now complete, so the plan is archived. Trusted public signing is
+  still not a prerequisite for the unsigned portfolio level.
 - **Decision:** Chatterbox's evaluated nominal 8-GB host is a recommendation,
   not its technical minimum. Product admission uses the `3,644`-MiB measured
   peak plus the frozen `1,024`-MiB reserve (`4,668` MiB available), together
@@ -2540,7 +2546,7 @@ M011 is complete only when:
 | Privacy, cancellation, resources, and cleanup | **Pass.** All four accepted TTS arms report zero underruns, external narration requests, generated-audio files, stale playback, and retained cleanup units. Chatterbox cancellation is `281`/`311` ms; Piper-after-removal cancellation is `355`/`1,303` ms.                                                               |
 | Basic code, logic, and security audit         | **Pass within static scope.** Standard Codex Security scan `6db53928-14cd-4825-bd80-2680f7d5eac1` reviewed all 825 tracked items and recorded zero reportable findings; the two manual cleanup regressions remain incorporated. Static limitations stay explicit.                                                          |
 | Complete repository/package validation        | **Pass outside the sandbox.** Full/portable, Chromium 7/7, packaged WebView2, native reader benchmark, dependency audit, inventory, Piper/Chatterbox/Windows authorities, diff, 16-file Markdown link/format, and 825-path tracked-artifact/privacy gates pass.                                                            |
-| Required pull-request checks                  | **Pending external repository workflow.** The plan remains active until the branch is published and required checks pass.                                                                                                                                                                                                  |
+| Required pull-request checks                  | **Pass.** PR #207 tested exact implementation-and-evidence head `b81ee8a9b77658f5b9f640fe2a9b63334b4a5a90`; Windows native foundation, Ubuntu portable foundation, and Production dependency graphs all completed successfully.                                                                                            |
 | Trusted signed public installer               | **Pending external authorization.** Evidence remains `unsigned-local` with `publicPublicationAllowed: false`; no general-public claim is made.                                                                                                                                                                             |
 
 ### Historical Milestone 6B closeout evidence
@@ -2576,6 +2582,5 @@ This table preserves the 2026-08-03 preliminary decision; it is not the final
 closeout after the approved 6B scope change. Milestone 6B now passes, so
 compatibility-gated ordinary Download is implemented evidence rather than the
 historical planned state shown above. Renewed Milestone 7 is recorded; M011
-remains active through required pull-request checks and final branch closeout.
-Do not publish a trusted public installer without the separate signing
-authorization.
+is complete and archived after PR #207's required checks passed. Do not publish
+a trusted public installer without the separate signing authorization.

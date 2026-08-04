@@ -325,9 +325,6 @@ Remaining channel and regression work:
 
 - Continue representative Windows/package lifecycle coverage without treating
   every untested hardware combination as a failed support result.
-- Complete the M011 branch's required pull-request checks and archive the
-  ExecPlan without weakening its minimal graph, advisory/licence/provenance,
-  integrity, size, GPU, install/remove, or offline controls.
 - Obtain protected trusted signing authority and repeat signature/checksum/
   reputation evidence before any general-public Windows publication.
 

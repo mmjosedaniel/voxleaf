@@ -8,8 +8,8 @@ MVP and portfolio goal. It is not a security certification and does not claim
 that the current unsigned installer is ready for general-public distribution.
 
 M011 Milestones 1 through 6B and the renewed Milestone 7 local release decision
-are complete at their documented boundaries. Required pull-request checks and
-final plan archival remain branch closeout work.
+are complete at their documented boundaries. PR #207's required Windows,
+Ubuntu, and production-dependency checks pass, and the plan is archived.
 Milestone 6's originally frozen exhaustive clean-host matrix was not completed.
 The result-blind
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
@@ -37,8 +37,7 @@ portfolio core, **GO when the published host gate passes** for Chatterbox
 runtime support, and **GO only after both live gates pass** for ordinary
 Download.
 Signed public publication is **pending external authorization**, not a runtime
-failure. M011 remains active only through the branch's required pull-request
-checks and final closeout.
+failure. M011 is complete at the unsigned local/portfolio level.
 
 The subsequent basic audit adds proportional static evidence rather than a
 security certification. Standard Codex Security scan
@@ -88,8 +87,8 @@ Completed Milestone 6B supplies ordinary Download and release-runtime isolation
 evidence. Renewed Milestone 7 consumes the 825/825-item Standard static scan,
 the two manual cleanup regressions, and the exact-artifact host lifecycle and
 journey. Complete applicable branch validation is recorded in the ExecPlan;
-required pull-request checks remain before archival. Trusted signing remains a
-future external publication action.
+PR #207's required checks pass and the plan is archived. Trusted signing remains
+a future external publication action.
 
 ### Exact current candidate identity
 
