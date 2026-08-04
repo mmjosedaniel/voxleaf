@@ -11,6 +11,7 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  buildEpubVersionEquivalenceFixture,
   buildNarrationIntegrationEpubFixture,
   NARRATION_INTEGRATION_FIXTURE_EXPECTATIONS,
   NARRATION_INTEGRATION_FIXTURE_PROVENANCE,
@@ -39,6 +40,94 @@ describe("public synthetic EPUB-to-narration integration matrix", () => {
         await buildNarrationIntegrationEpubFixture(),
       ),
     ).toBe(true);
+  });
+
+  it("keeps EPUB 2 and EPUB 3 narration ranges, continuation, cancellation, and output equivalent", async () => {
+    const capabilities = installExternalCapabilitySpies();
+    const [epub2Result, epub3Result] = await Promise.all([
+      openEpubPublication(await buildEpubVersionEquivalenceFixture("2.0")),
+      openEpubPublication(await buildEpubVersionEquivalenceFixture("3.0")),
+    ]);
+    if (!epub2Result.ok || !epub3Result.ok) {
+      throw new Error("narration-version-equivalence-open-failed");
+    }
+
+    const epub2 = epub2Result.publication;
+    const epub3 = epub3Result.publication;
+    const epub2DisplayedBefore = structuredClone(epub2.documents);
+    const epub3DisplayedBefore = structuredClone(epub3.documents);
+    const resourceRead = spyOnPublicResourceReads(epub2);
+
+    try {
+      expect(epub2.book.identity).not.toEqual(epub3.book.identity);
+      const epub2Start = requiredBlock(epub2, "opening").startLocator;
+      const epub3Start = requiredBlock(epub3, "opening").startLocator;
+      const [epub2Segments, epub3Segments] = await Promise.all([
+        collectPreparedSegments(epub2, epub2Start, 2),
+        collectPreparedSegments(epub3, epub3Start, 2),
+      ]);
+
+      expect(epub2Segments.requestCount).toBe(epub3Segments.requestCount);
+      expect(
+        identityIndependentValue(comparableSegments(epub2Segments.segments)),
+      ).toEqual(
+        identityIndependentValue(comparableSegments(epub3Segments.segments)),
+      );
+      for (const [sequence, segment] of epub2Segments.segments.entries()) {
+        assertPublicSegment(epub2, segment, sequence);
+      }
+      for (const [sequence, segment] of epub3Segments.segments.entries()) {
+        assertPublicSegment(epub3, segment, sequence);
+      }
+      assertSourceOrdered(epub2Segments.segments);
+      assertSourceOrdered(epub3Segments.segments);
+
+      const controller = new AbortController();
+      controller.abort("private-cancellation-reason");
+      const cancelled = await epub2.prepareNarration({
+        startLocator: epub2Start,
+        profile: "narration-v1",
+        defaultLanguage: "und",
+        maximumSegments: 1,
+        signal: controller.signal,
+      });
+      expect(cancelled).toMatchObject({
+        status: "cancelled",
+        error: { code: "operation-cancelled" },
+      });
+      expect(JSON.stringify(cancelled)).not.toContain(
+        "private-cancellation-reason",
+      );
+
+      const retry = await epub2.prepareNarration({
+        startLocator: epub2Start,
+        profile: "narration-v1",
+        defaultLanguage: "und",
+        maximumSegments: 1,
+      });
+      expect(retry.status).toBe("batch");
+      if (retry.status !== "batch") {
+        throw new Error("narration-version-equivalence-retry-failed");
+      }
+      expect(
+        identityIndependentValue(comparableSegments(retry.segments)),
+      ).toEqual(
+        identityIndependentValue(
+          comparableSegments(epub2Segments.segments.slice(0, 1)),
+        ),
+      );
+
+      expect(contentFreeDeepEqual(epub2.documents, epub2DisplayedBefore)).toBe(
+        true,
+      );
+      expect(contentFreeDeepEqual(epub3.documents, epub3DisplayedBefore)).toBe(
+        true,
+      );
+      expect(resourceRead).not.toHaveBeenCalled();
+      assertNoExternalCapability(capabilities);
+    } finally {
+      await Promise.all([epub2.close(), epub3.close()]);
+    }
   });
 
   it("prepares deterministic neutral and Spanish segments through only the public boundary", async () => {
@@ -367,6 +456,16 @@ function comparableSegments(
     boundaryReason: segment.boundaryReason,
     measurements: segment.measurements,
   }));
+}
+
+function identityIndependentValue(value: unknown): unknown {
+  return JSON.parse(
+    JSON.stringify(value, (key, current) =>
+      key === "bookIdentity"
+        ? { algorithm: "sha256", value: "<exact-byte-identity>" }
+        : current,
+    ),
+  ) as unknown;
 }
 
 function assertPublicSegment(

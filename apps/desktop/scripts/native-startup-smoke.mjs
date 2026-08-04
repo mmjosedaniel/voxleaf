@@ -3358,7 +3358,7 @@ async function exerciseNativeFileIngressMatrix(driver, fixturePaths, setStage) {
 
   setStage("native same-file reselection");
   await injectNativeFile(driver, fixturePaths.primary);
-  await waitForReadyPublication(driver, "Synthetic comprehensive publication");
+  await waitForReadyPublication(driver, "Synthetic EPUB version equivalence");
   await driver.execute(
     `document.querySelector(".semantic-raster-host")
        ?.scrollIntoView({ block: "center" });
@@ -3416,7 +3416,7 @@ async function exerciseNativeFileIngressMatrix(driver, fixturePaths, setStage) {
      };`,
   );
   assert(
-    beforePickerCancellation?.title === "Synthetic comprehensive publication" &&
+    beforePickerCancellation?.title === "Synthetic EPUB version equivalence" &&
       afterPickerCancellation?.title === beforePickerCancellation.title &&
       afterPickerCancellation.status === beforePickerCancellation.status &&
       afterPickerCancellation.imageSource ===
@@ -3438,7 +3438,7 @@ async function exerciseNativeFileIngressMatrix(driver, fixturePaths, setStage) {
 
   setStage("native ready publication replacement recovery");
   await injectNativeFile(driver, fixturePaths.primary);
-  await waitForReadyPublication(driver, "Synthetic comprehensive publication");
+  await waitForReadyPublication(driver, "Synthetic EPUB version equivalence");
 
   setStage("native active file-read cancellation setup");
   await driver.execute(
@@ -3499,7 +3499,7 @@ async function exerciseNativeFileIngressMatrix(driver, fixturePaths, setStage) {
 
   setStage("native active file-read replacement");
   await injectNativeFile(driver, fixturePaths.primary);
-  await waitForReadyPublication(driver, "Synthetic comprehensive publication");
+  await waitForReadyPublication(driver, "Synthetic EPUB version equivalence");
   const cancellationObservation = await driver.execute(
     `const state = globalThis.__voxleafNativeFileReadControl;
      const observation = {
@@ -3555,11 +3555,11 @@ async function exerciseNativeFileIngressMatrix(driver, fixturePaths, setStage) {
 
   setStage("native file-ingress failure recovery");
   await injectNativeFile(driver, fixturePaths.primary);
-  await waitForReadyPublication(driver, "Synthetic comprehensive publication");
+  await waitForReadyPublication(driver, "Synthetic EPUB version equivalence");
   assert(
     (await driver.execute(
       `return document.querySelector("#publication-title")?.textContent ===
-         "Synthetic comprehensive publication" &&
+         "Synthetic EPUB version equivalence" &&
        document.querySelector(".semantic-reader") !== null;`,
     )) === true,
     "Native application did not recover after local file-ingress failures.",
@@ -5025,6 +5025,7 @@ async function run() {
     ),
   );
   const {
+    buildEpubVersionEquivalenceFixture,
     buildMinimalEpubFixture,
     buildReaderLongChapterEpubFixture,
     buildReaderNavigationEpubFixture,
@@ -5106,7 +5107,7 @@ async function run() {
     await writeFile(fixturePath, adaptiveFixture, { flag: "wx" });
   } else {
     const [primaryFixture, replacementFixture] = await Promise.all([
-      buildReaderNavigationEpubFixture(),
+      buildEpubVersionEquivalenceFixture("2.0"),
       buildReaderReflowEpubFixture({
         paragraphCount: 4,
         preservedPassageIndex: 2,
@@ -5328,7 +5329,7 @@ async function run() {
       driver,
       `return Array.from(document.querySelectorAll("h2")).some(
          (heading) =>
-           heading.textContent === "Synthetic comprehensive publication" &&
+           heading.textContent === "Synthetic EPUB version equivalence" &&
            heading.getClientRects().length > 0,
        );`,
     );
