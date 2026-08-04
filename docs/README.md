@@ -155,6 +155,14 @@ both unless an explicit bounded option is supplied. Focused desktop regressions
 and the six-outcome packaged lifecycle matrix pass for both local product
 identities on the development host. This does not change Chatterbox's withheld,
 manual clean-host, optional-support, or public-signing gates.
+A separate pre-release Milestone 3.1 is now approved and ready but not
+implemented. [ADR-0048](architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md)
+and its
+[`active ExecPlan`](plans/active/M003-001-bounded-epub2-and-ncx-compatibility.md)
+freeze a bounded reflowable OPF 2.0/NCX profile that must preserve the current
+semantic, locator, reader, restoration, narration, privacy, cancellation, and
+resource boundaries. Current builds remain EPUB 3-only, and M011 Milestone 7
+waits for the completed M003.1 result.
 Milestone 5 now packages version `0.1.0` as a release-only current-user Windows
 x64 NSIS installer containing the exact verified bilingual Piper core. Local
 installation, first start, repair, uninstall, unrelated-file preservation, and
@@ -196,6 +204,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/reader-settings-playback-authority-v3.md`](architecture/reader-settings-playback-authority-v3.md): frozen M010.2 Milestone 2C selected/pending/active rate state, exact boundary-deferred candidates, first-activation/recurring-handoff, resource, lifecycle, licence/CSP, listening, and strict result-lineage authority.
 - [`architecture/mvp-release-authority-v1.md`](architecture/mvp-release-authority-v1.md): frozen historical M011 Windows/Piper core and single-archive optional Chatterbox topology, trust, cleanup, dependency/licence/integrity, signing, and independent release-claim authority; Milestone 4B additively supersedes only its Chatterbox acquisition shape through authority v2.
 - [`architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md`](architecture/decisions/ADR-0047-separate-chatterbox-uninstall-retention.md): accepted additive installer authority separating default interactive Chatterbox removal from default reader-state retention while keeping silent uninstall non-destructive without explicit bounded options.
+- [`architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md`](architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md): accepted pre-implementation authority for bounded reflowable OPF 2.0, NCX navigation, exact inert compatibility doctypes, and unchanged public semantic/locator boundaries.
 - [`architecture/chatterbox-official-acquisition-authority-v2.md`](architecture/chatterbox-official-acquisition-authority-v2.md): accepted M011 Milestone 4B authority for a separately verified split runtime and the six exact official revision-pinned Hugging Face model files, with closed redirects, limits, cancellation, safe loading, atomic promotion, and fail-closed release gates.
 - [`../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json`](../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json): content-safe reproducible runtime/part/aggregate size evidence, verified public release identity, and the remaining clean-host gates that keep Chatterbox withheld.
 - [`architecture/hardware-profile-recovery-authority-v1.md`](architecture/hardware-profile-recovery-authority-v1.md): frozen M010 Milestone 1 privacy-safe host report, immutable profile/evidence shape, result-blind margins, matching/preference rules, failure taxonomy, and identity-first recovery authority.
@@ -278,6 +287,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
+- [`plans/active/M003-001-bounded-epub2-and-ncx-compatibility.md`](plans/active/M003-001-bounded-epub2-and-ncx-compatibility.md): approved Milestone 3.1 plan for implementing and validating bounded EPUB 2/NCX support before M011 release closeout; no EPUB 2 implementation is claimed yet.
 - [`plans/completed/typescript-maintainability-batch-20260803.md`](plans/completed/typescript-maintainability-batch-20260803.md): completed recovery and independent-validation record for the small cross-package TypeScript/TSX maintainability batch.
 - [`plans/active/M011-package-validate-and-release-mvp.md`](plans/active/M011-package-validate-and-release-mvp.md): approved detailed plan for the Windows/Piper core, implemented versioned local NSIS/signing path, fail-closed optional Chatterbox lifecycle, exact-revision Hugging Face model-data plus published split-runtime acquisition boundary, remaining clean-host/public-signing gates, and independent core/optional/public release decisions.
 - [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.

@@ -3,7 +3,11 @@ import { decodeOperationalErrorV1 } from "@voxleaf/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  buildMinimalEpub2Fixture,
   buildMinimalEpubFixture,
+  EPUB2_CANONICAL_NCX_DOCTYPE,
+  EPUB2_CANONICAL_XHTML11_DOCTYPE,
+  minimalEpub2Guide,
   minimalChapterDocument,
   minimalNavigationDocument,
   minimalPackageDocument,
@@ -104,6 +108,49 @@ describe("public privacy-safe EPUB opening", () => {
         severity: "recoverable",
       },
     });
+  });
+
+  it("keeps deterministic OPF 2 and NCX input behind the content-free unsupported-version boundary", async () => {
+    const privacyCanary = "SYNTHETIC_EPUB2_PRIVATE_METADATA_CANARY";
+    const worker = vi.fn(() => {
+      throw new Error("worker must not be constructed");
+    });
+    const fetch = vi.fn(() => {
+      throw new Error("network must not be requested");
+    });
+    vi.stubGlobal("Worker", worker);
+    vi.stubGlobal("fetch", fetch);
+
+    const options = {
+      metadataForm: "deprecated-wrappers" as const,
+      guide: minimalEpub2Guide().replace("Synthetic opening", privacyCanary),
+      ncxDoctype: EPUB2_CANONICAL_NCX_DOCTYPE,
+      chapterDoctype: EPUB2_CANONICAL_XHTML11_DOCTYPE,
+    };
+    const [bytes, repeatedBytes] = await Promise.all([
+      buildMinimalEpub2Fixture(options),
+      buildMinimalEpub2Fixture(options),
+    ]);
+    const originalBytes = bytes.slice();
+    const result = await openEpubPublication(bytes);
+
+    expect(repeatedBytes).toEqual(bytes);
+    expect(bytes).toEqual(originalBytes);
+    expect(result).toEqual({
+      ok: false,
+      detail: "unsupported-version",
+      error: {
+        schemaVersion: 1,
+        code: "unsupported-input",
+        category: "input",
+        severity: "recoverable",
+      },
+    });
+    expect(result).not.toHaveProperty("publication");
+    expect(JSON.stringify(result)).not.toContain(privacyCanary);
+    expect(JSON.stringify(result)).not.toContain("toc.ncx");
+    expect(worker).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("releases archive state and returns no publication after a later-stage failure", async () => {

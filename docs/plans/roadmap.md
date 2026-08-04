@@ -117,6 +117,20 @@ and English development-host arms now pass. Restart, real package removal/
 reinstall, Piper-after-removal, clean-host, and signing remain M011 Milestone 6
 work.
 
+On 2026-08-03 the user reported that VoxLeaf worked on the independent older
+Windows computer with 4 GB VRAM and 16 GB RAM. The report is useful
+exploratory evidence that the application can run away from the development
+computer, but it did not identify the exact installer/hash, profile/language,
+offline state, account, or complete install/repair/uninstall matrix. It does
+not yet close the formal clean-host Piper gate and cannot validate Chatterbox
+because the GPU is below ADR-0044's admission floor.
+
+ADR-0048 now accepts a separate pre-release Milestone 3.1 for bounded
+reflowable EPUB 2/NCX compatibility. Its active ExecPlan is ready, production
+implementation has not started, and current builds remain EPUB 3-only. M011
+Milestone 7 must wait for both the applicable remaining Milestone 6 evidence
+and the completed Milestone 3.1 result.
+
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
 ## Guiding constraints
@@ -151,7 +165,9 @@ Every milestone must preserve the product's defining constraints:
     -> 10. Hardware profiles, fallback, and resilience
     -> 10.1. Bilingual narration and candidate screening
     -> 10.2. Reader settings and playback controls
-    -> 11. Packaging and MVP validation
+    -> 11. Packaging and MVP validation through the remaining Milestone 6 matrix
+    -> 3.1. Bounded EPUB 2 and NCX compatibility (approved pre-release extension)
+    -> 11.7. MVP release decision and closeout
 ```
 
 Some prototypes may inform later milestones before their full implementation begins, but the dependency order should remain explicit. In particular, model benchmarking can start once the engineering foundation and benchmark contracts exist, while EPUB and reader work continue independently.
@@ -237,6 +253,72 @@ Milestone 2 supplies the book, document, locator, error, and fixture contracts.
 - Archive bombs, malformed paths, encoded traversal, and oversized resources require explicit bounds.
 - Sanitization must preserve meaningful reading structure without allowing active or remote content.
 - Locator round-tripping must be prototyped before a dependency becomes difficult to replace.
+
+## Milestone 3.1: Add bounded EPUB 2 and NCX compatibility
+
+**Status:** Approved and ready; implementation has not started. The detailed
+ExecPlan is
+[`M003-001-bounded-epub2-and-ncx-compatibility.md`](active/M003-001-bounded-epub2-and-ncx-compatibility.md),
+and
+[ADR-0048](../architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md)
+freezes the additive profile before result-bearing work.
+
+This is a pre-release follow-up to completed Milestone 3, not a rewrite of its
+historical EPUB 3 evidence. It is the next planned implementation task and
+must complete before M011 Milestone 7 records VoxLeaf's final MVP support and
+release decision. Remaining M011 Milestone 6 clean-host, Chatterbox, and
+signing gates stay independently owned by M011.
+
+### Goal
+
+Admit a deliberately bounded class of reflowable EPUB 2.0.1 publications with
+OPF `version="2.0"`, local safe XHTML spine documents, and NCX navigation,
+while preserving the current archive, semantic, locator, privacy,
+cancellation, resource, reader, restoration, and narration boundaries.
+
+### Expected outcome
+
+- A supported synthetic EPUB 2 book opens, renders, navigates through its NCX,
+  restores a stable logical locator, and prepares narration through the same
+  public schema and format-neutral behavior as an equivalent EPUB 3 book while
+  retaining the distinct SHA-256 identity of each exact archive.
+- `spine@toc`, the exact local NCX manifest relationship, bounded nested
+  `navMap`, exact inert compatibility doctypes, and validated/ignored `guide`
+  data are covered by focused positive and hostile tests.
+- EPUB 3 behavior, including its existing legacy-meta and inert-HTML-doctype
+  compatibility, remains unchanged.
+- DTBook, SVG spine documents, deprecated OEB content, CSS fidelity, scripts,
+  remote/protected/media/fixed-layout content, arbitrary DTDs/entities,
+  missing-NCX recovery, tours, CFI, and full EPUBCheck conformance remain
+  explicitly outside the profile.
+- No new shared schema, renderer fork, persisted field, narration policy, TTS
+  behavior, package topology, or production dependency is introduced unless
+  separately authorized by evidence.
+
+### Dependencies
+
+Completed Milestone 3 supplies the secure archive/package/semantic/locator
+pipeline. Completed Milestone 4 supplies the reader/restoration consumers, and
+completed Milestone 5 supplies format-neutral locator-linked narration
+preparation. ADR-0048 and the active ExecPlan are the implementation
+authority. M011 Milestone 7 depends on the completed result and its affected
+packaged-reader regression; M011 Milestone 6 does not transfer its hardware or
+signing concerns into this plan.
+
+### Major risks and unknowns
+
+- Common EPUB 2 books may rely on DTD-defined entities, DTBook, deprecated OEB
+  media types, SVG, guide fallback, or malformed recovery beyond the admitted
+  subset. Those inputs must fail honestly rather than widening scope ad hoc.
+- Exact inert NCX/XHTML declarations must not enable DTD loading, entity-table
+  mutation, external identifiers, network, filesystem, or raw parser errors.
+- Version-specific package rules can duplicate logic or drift EPUB 3 behavior
+  unless both formats project immediately into the same internal model.
+- NCX targets, guide references, depth, labels, and node counts are untrusted
+  and must reuse the current path and budget authorities.
+- A plan or ADR is not support evidence. Product documentation may say EPUB 2
+  is planned, but not implemented, until all focused, browser, packaged,
+  privacy, and repository gates pass.
 
 ## Milestone 4: Deliver the reflowable visual reader and position restoration
 
@@ -1166,6 +1248,13 @@ retention, and non-destructive silent uninstall without an explicit bounded
 option; Chatterbox stays withheld until the existing host and release gates
 pass.
 
+The user subsequently reported that VoxLeaf worked on the independent older
+Windows host with 4 GB VRAM and 16 GB RAM. Because the report does not yet bind
+the exact installer/hash or enumerate the required bilingual, offline,
+repair/uninstall, privacy, and lifecycle observations, it is recorded as a
+successful exploratory host check rather than a formal clean-host pass. The
+machine remains ineligible for Chatterbox's positive GPU matrix.
+
 The remaining M011 execution order is explicit:
 
 ```text
@@ -1177,6 +1266,8 @@ completed 1 -> completed 2 -> completed 3 -> completed 4A
     -> 6 clean-host matrix in progress
        -> completed 6A lifecycle-feedback and development-host uninstall closeout
        -> rerun affected 6 clean-host/manual package evidence
+    -> complete M003.1 bounded EPUB 2/NCX compatibility and its affected
+       packaged-reader regression
     -> 7 release decision and closeout
 ```
 
@@ -1357,7 +1448,12 @@ engines demonstrate distinct requirements.
 The following decisions should be made when evidence is available, not assumed silently:
 
 1. **Desktop stack gate:** validate and adopt the desktop framework, workspace, package manager, and supported development environments during Milestone 1.
-2. **EPUB gate:** validate archive limits, sanitization, rendering isolation, locator round-tripping, and dependency licensing before completing Milestone 3.
+2. **EPUB gate:** completed Milestone 3 validates archive limits,
+   sanitization, rendering isolation, locator round-tripping, and dependency
+   licensing for EPUB 3. Accepted Milestone 3.1 must separately prove exact
+   OPF 2.0/NCX/doctype/guide compatibility under the same bounds, preserve
+   EPUB 3, and pass the affected reader/narration/package journeys before M011
+   Milestone 7 may claim EPUB 2 support.
 3. **Persistence gate:** ADR-0011 selects bounded WebView `localStorage`, separate versioned position/preference envelopes, save lifecycle, and desktop-owned migration; implement and validate that boundary before completing Milestone 4.
 4. **TTS gate:** the completed Milestone 6 cycle and failed Milestone 6.1 `v3` matrix select no standard passing profile. Milestone 6.2 rejects CPU-only and dual-worker scheduling. ADR-0015 permits only one exact GPU worker for a bounded adaptive development demo. A production role must still pass every applicable gate or receive a separate explicit acceptance decision before production graduation.
 5. **Protocol gate:** record transport, framing, backpressure, and local exposure decisions before completing Milestone 7.
@@ -1446,6 +1542,12 @@ fallback, bounded preference, pitch-preserving playback, timing semantics,
 portfolio validation, maintainer all-rate confirmation, and passing required
 checks.
 
+[`active/M003-001-bounded-epub2-and-ncx-compatibility.md`](active/M003-001-bounded-epub2-and-ncx-compatibility.md)
+is the approved pre-release Milestone 3.1 authority. It adds no implemented
+support yet; it must preserve the completed M003/M004/M005 boundaries while
+projecting a bounded OPF 2.0/NCX source into the same public publication,
+locator, reader, restoration, and narration model.
+
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by completed
 M009/M009.1 for synchronization and reader stabilization. It does not
@@ -1465,4 +1567,9 @@ optional clean-host evidence remains open.
 
 ## MVP completion boundary
 
-The roadmap is complete only when Milestone 11 validates the complete user journey and the definition of done in `AGENTS.md`. Finishing scaffolding, one EPUB parser, one TTS prototype, or one successful playback demonstration is progress, not completion of VoxLeaf.
+The roadmap is complete only when Milestone 3.1 has either passed its bounded
+EPUB 2 acceptance matrix or been explicitly removed from the MVP promise, and
+Milestone 11 then validates the complete user journey and the definition of
+done in `AGENTS.md`. Finishing scaffolding, one EPUB parser, one TTS prototype,
+one host observation, or one successful playback demonstration is progress,
+not completion of VoxLeaf.
