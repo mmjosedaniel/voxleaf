@@ -10,6 +10,10 @@ import type {
 } from "./xml-event-reader.js";
 
 const UTF8_BOM = Uint8Array.of(0xef, 0xbb, 0xbf);
+const CANONICAL_NCX_DOCTYPE =
+  '<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">';
+const CANONICAL_XHTML11_DOCTYPE =
+  '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -128,6 +132,58 @@ describe("bounded namespace-aware XML events", () => {
         ),
       "malformed-xml",
     );
+  });
+
+  it.each([
+    [
+      "NCX",
+      "ncx" as const,
+      CANONICAL_NCX_DOCTYPE,
+      '<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/"/>',
+    ],
+    [
+      "EPUB 2 XHTML 1.1",
+      "epub2-content" as const,
+      CANONICAL_XHTML11_DOCTYPE,
+      '<html xmlns="http://www.w3.org/1999/xhtml"/>',
+    ],
+  ])("accepts the exact inert %s doctype", (_name, kind, doctype, root) => {
+    expect(readXml(`${doctype}${root}`, kind).summary.elementCount).toBe(1);
+  });
+
+  it.each([
+    [
+      "NCX public identifier",
+      "ncx" as const,
+      '<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//FR" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx/>',
+    ],
+    [
+      "NCX system identifier",
+      "ncx" as const,
+      '<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "https://www.daisy.org/z3986/2005/ncx-2005-1.dtd"><ncx/>',
+    ],
+    [
+      "NCX internal subset",
+      "ncx" as const,
+      '<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd" [<!ENTITY private-canary "secret">]><ncx/>',
+    ],
+    [
+      "XHTML public identifier",
+      "epub2-content" as const,
+      '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html/>',
+    ],
+    [
+      "XHTML system identifier",
+      "epub2-content" as const,
+      '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "https://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html/>',
+    ],
+    [
+      "plain XHTML declaration",
+      "epub2-content" as const,
+      "<!DOCTYPE html><html/>",
+    ],
+  ])("rejects a near-miss %s doctype", (_name, kind, xml) => {
+    expectXmlError(() => readXml(xml, kind), "malformed-xml");
   });
 
   it.each([
