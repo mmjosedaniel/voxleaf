@@ -64,13 +64,15 @@ native-supervised TTS child, bounded in-memory audio, English/Spanish selection,
 supported Piper and Chatterbox profiles, development-only Qwen profiles,
 identity-first recovery, and six boundary-deferred playback rates.
 
-That secure-ingestion implementation currently accepts the bounded EPUB 3
-profile only. [ADR-0048](../../architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md)
-and the separate active
-[Milestone 3.1 ExecPlan](M003-001-bounded-epub2-and-ncx-compatibility.md)
-now authorize EPUB 2/NCX work before this plan's Milestone 7. M011 does not own
-that parser implementation; its final release decision must consume the
-completed M003.1 result and rerun only the affected packaged reader evidence.
+That secure-ingestion implementation now accepts the bounded EPUB 3 profile
+and ADR-0048's bounded reflowable OPF 2.0/NCX profile.
+[ADR-0048](../../architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md)
+and the separate completed
+[Milestone 3.1 ExecPlan](../completed/M003-001-bounded-epub2-and-ncx-compatibility.md)
+record focused package, downstream-equivalence, browser, and packaged-native
+evidence. M011 does not own that parser implementation; its final release
+decision consumes the result and reruns only the affected packaged reader
+evidence needed by the release matrix.
 
 The repository now has deliberate application version `0.1.0` and a separate
 release-only Tauri configuration that builds a per-user Windows x64 NSIS
@@ -217,9 +219,9 @@ That document is planning input, not proof that a release gate passes.
 - Reopening EPUB semantics, protocol v1, TTS evaluation decisions, buffer
   ceilings, synchronization, reader behavior, or playback-rate authority
   unless packaging exposes a concrete defect.
-- The separately approved M003.1 EPUB 2/NCX implementation. It may proceed in
-  parallel with independent M011 validation, but M011 Milestone 7 waits for
-  its final result and affected packaged-reader regression.
+- Reopening the completed M003.1 EPUB 2/NCX parser/security profile. M011
+  Milestone 7 consumes its bounded result and may rerun affected packaged
+  reader evidence, but does not expand that profile toward full EPUB 2.
 
 ## Relevant files and documentation
 
@@ -1030,7 +1032,7 @@ Acceptance requires all of the following:
 
 **Status:** Not started.
 
-1. Require the completed M003.1 bounded EPUB 2/NCX result, then reconcile
+1. Consume the completed M003.1 bounded EPUB 2/NCX result, then reconcile
    product, architecture, setup, testing, troubleshooting,
    dependencies, security, system diagram, roadmap, support matrix, and release
    documentation with measured results.
@@ -1693,6 +1695,13 @@ and never edit prior benchmark authority to make a release pass.
   release decision. No M011 package, TTS, installer, Chatterbox, signing, or
   clean-host authority changed. Milestone 7 now waits for the completed M003.1
   result and its affected packaged-reader regression.
+- **2026-08-03:** M003.1 completed its bounded OPF 2.0/NCX implementation and
+  validation. Its final evidence passes EPUB 35 files/652 tests, desktop 53
+  files/536 Vitest tests plus 18 Node tests, Playwright 7 tests, packaged
+  native startup, portable/full repository checks, and the privacy,
+  capability, dependency, and artifact review. No M011 package, TTS,
+  Chatterbox, signing, or clean-host authority changed. Milestone 7 can now
+  consume this result while the remaining Milestone 6 evidence stays open.
 
 ## Discoveries and decisions
 
@@ -1704,8 +1713,8 @@ and never edit prior benchmark authority to make a release pass.
   release-readiness gaps discovered while M011 is still active.
 - **Decision:** EPUB 2/NCX is not another M011 release-readiness correction.
   It changes the completed EPUB parser/security profile and therefore belongs
-  to the separate M003.1 ExecPlan under ADR-0048. M011 Milestone 7 consumes its
-  completed result without relabeling it as Milestone 6B.
+  to the separate completed M003.1 ExecPlan under ADR-0048. M011 Milestone 7
+  consumes its result without relabeling it as Milestone 6B.
 - **Decision:** Milestone 6A does not expose profile-selection cancellation.
   Visible progress is required, but cancellation waits for explicit rollback
   authority that can restore preference, identity, service, and recovery state.
@@ -1886,9 +1895,8 @@ and never edit prior benchmark authority to make a release pass.
 
 M011 is complete only when:
 
-- M003.1 has completed its bounded EPUB 2/NCX implementation and affected
-  packaged-reader validation, or the product owner has explicitly removed
-  EPUB 2 from the MVP promise and recorded that scope decision;
+- completed M003.1 supplies the bounded EPUB 2/NCX implementation and affected
+  packaged-reader validation consumed by this release decision;
 - every included artifact, runtime, voice, dependency, licence, source, and
   hash is identified and its obligations are fulfilled;
 - every optional Chatterbox runtime artifact and each of the six official

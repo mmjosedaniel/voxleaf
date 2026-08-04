@@ -18,12 +18,12 @@ paragraph leaf, and separates passive viewport inspection from explicit
 narration replacement. Its private-EPUB, exact-host, repository/privacy,
 portable, packaged, and required CI validation pass.
 
-The completed ingestion support profile is currently bounded reflowable EPUB
-3 with XHTML navigation. Accepted pre-release Milestone 3.1 and ADR-0048 add a
-bounded OPF 2.0/NCX profile without changing the public reader or narration
-model. Its first three milestones now implement the package/navigation path;
-the support claim remains EPUB 3-only until downstream equivalence and the
-full plan pass.
+The completed ingestion support profile includes bounded reflowable EPUB 3
+with XHTML navigation and ADR-0048's bounded reflowable OPF 2.0/NCX profile.
+Completed Milestone 3.1 projects both through the same public reader,
+restoration, locator, resource, and narration model and validates their
+equivalence while retaining distinct exact-byte identities. It does not claim
+full EPUB 2 or EPUBCheck conformance.
 
 M008.1 adds one engine-neutral playback transition policy after exact listening
 showed that independently generated units could sound joined even though
@@ -118,11 +118,12 @@ explicitly identifies implemented behavior.
 
 VoxLeaf is a privacy-first desktop EPUB reader being built to turn book text into natural-sounding speech entirely on the user's computer. A reader can open a supported local EPUB, navigate its chapters, read its formatted semantic content, and restore a saved logical passage. On exact configured hosts, the user can start bounded quick or prepared local narration through supported Piper or Chatterbox profiles, while Qwen remains an explicitly gated development-only constrained-buffer option. M011 now owns the approved Windows/Piper core plus optional-download Chatterbox distribution plan. Its exact multi-artifact native acquisition controller is implemented but remains fail-closed and withheld. Version `0.1.0` has a measured local unsigned current-user NSIS installer containing the verified Piper core; it is not yet clean-host accepted or approved for public distribution.
 
-For document compatibility, “supported local EPUB” currently means the
-bounded EPUB 3 profile. The approved
-[M003.1 ExecPlan](../plans/active/M003-001-bounded-epub2-and-ncx-compatibility.md)
-must implement and validate reflowable OPF 2.0/NCX before M011 records the
-final MVP release decision.
+For document compatibility, “supported local EPUB” means either the bounded
+reflowable EPUB 3/XHTML-navigation profile or the bounded reflowable OPF
+2.0/NCX profile recorded by the
+[completed M003.1 ExecPlan](../plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md).
+Inputs outside those profiles fail honestly; VoxLeaf does not claim complete
+EPUB 2 or EPUB 3 reading-system conformance.
 
 The intended narration pipeline will generate progressively instead of converting a complete book or chapter into an audiobook. It will retain only a bounded amount of audio in memory, play it while preparing later segments, and discard it after playback.
 

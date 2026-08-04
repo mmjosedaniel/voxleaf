@@ -7,12 +7,12 @@ M009.1 are complete. The secure EPUB boundary, visual reader, bounded restoratio
 locator-linked narration preparation, M007 service, exact-development M008
 coordinator/player path, M009 segment-level synchronization, and M009.1 reader
 stabilization are implemented and validated within their documented scopes.
-The released support claim remains reflowable EPUB 3 with XHTML navigation.
-Accepted ADR-0048 and active Milestone 3.1 add a bounded OPF 2.0/NCX extension
-before M011 release closeout. Milestones 1-3 now implement fixture authority,
-OPF 2 admission, exact inert doctypes, bounded NCX parsing, and package-level
-opening; downstream reader/restoration/narration equivalence and full-plan
-validation remain open, so general EPUB 2 support is not claimed yet.
+The implemented support claim includes reflowable EPUB 3 with XHTML
+navigation and ADR-0048's bounded reflowable OPF 2.0/NCX extension. Completed
+Milestone 3.1 validates fixture authority, exact package and doctype
+admission, bounded NCX parsing, common semantic/resource/locator projection,
+reader restoration, narration preparation, browser use, and packaged startup.
+VoxLeaf does not claim general EPUB 2 or full reading-system conformance.
 M009.1 implements the
 [`reader-experience-authority-v1`](reader-experience-authority-v1.md): stronger
 paint-aware evidence, the same-spine materialization repair, one dedicated
@@ -613,7 +613,7 @@ The completed support profile accepts EPUB 3 reflowable XHTML with EPUB
 navigation and supported local raster resources. Its bounded compatibility
 policy validates and ignores legacy EPUB 2 `meta name/content` values and
 permits only the inert HTML doctype for EPUB 3 XHTML content/navigation.
-Milestone 3.1 now additionally implements exact OPF `version="2.0"` admission,
+Completed Milestone 3.1 additionally implements exact OPF `version="2.0"` admission,
 the required local `spine@toc` NCX relationship, exact inert NCX/XHTML 1.1
 doctype profiles, and a streaming NCX parser that projects into the same
 internal navigation tree. It still performs no DTD/entity processing and
@@ -627,13 +627,11 @@ nodes, CSS, executable SVG, and scripts never cross the ingestion boundary.
 [ADR-0048](decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md)
 accepts the additive profile for exact OPF `version="2.0"`, local safe XHTML,
 NCX selected by `spine@toc`, exact inert NCX/XHTML 1.1 declarations, and
-validated/ignored guide data. Milestones 1-3 of the active ExecPlan implement
-that package and navigation boundary through the same internal tree. The plan
-must still prove unchanged locator policy, reader/restoration behavior,
-narration preparation, browser/package integration, privacy, cancellation,
-limits, and public contracts while retaining each archive's distinct
-exact-byte identity before this section can describe EPUB 2 as a completed
-support profile.
+validated/ignored guide data. The completed ExecPlan proves that package and
+navigation boundary through the same internal tree plus unchanged locator
+policy, reader/restoration behavior, narration preparation, browser/package
+integration, privacy, cancellation, limits, and public contracts. Equivalent
+EPUB 2 and EPUB 3 fixtures deliberately retain distinct exact-byte identities.
 
 `@voxleaf/shared` continues to own serialized book, locator, and operational-error contracts. `@voxleaf/epub` owns package relationships, immutable semantic nodes, detailed navigation, bounded resource handles, locator and semantic-target indexes, and fixed EPUB detail codes. The desktop now consumes those detailed navigation and target-resolution values without moving package matching into React or changing a serialized contract. Exact EPUB bytes define the book's `sha256` identity; source-derived or generated structural anchors contain no prose or host path. Expected failures and diagnostics remain content-free, and the EPUB package performs no logging.
 
