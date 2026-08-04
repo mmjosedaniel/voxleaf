@@ -18,10 +18,12 @@ paragraph leaf, and separates passive viewport inspection from explicit
 narration replacement. Its private-EPUB, exact-host, repository/privacy,
 portable, packaged, and required CI validation pass.
 
-The implemented ingestion source profile is currently bounded reflowable EPUB
+The completed ingestion support profile is currently bounded reflowable EPUB
 3 with XHTML navigation. Accepted pre-release Milestone 3.1 and ADR-0048 add a
-planned OPF 2.0/NCX profile without changing the public reader or narration
-model. Current builds remain EPUB 3-only until that plan passes.
+bounded OPF 2.0/NCX profile without changing the public reader or narration
+model. Its first three milestones now implement the package/navigation path;
+the support claim remains EPUB 3-only until downstream equivalence and the
+full plan pass.
 
 M008.1 adds one engine-neutral playback transition policy after exact listening
 showed that independently generated units could sound joined even though

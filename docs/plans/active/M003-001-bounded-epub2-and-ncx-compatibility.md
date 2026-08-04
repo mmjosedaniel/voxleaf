@@ -356,9 +356,41 @@ Expected result: a supported OPF2/NCX fixture opens through the public package
 API; all hostile or over-budget cases fail without partial publication,
 external access, or sensitive diagnostics.
 
+Milestone 3 actual result on 2026-08-03:
+
+- Added narrowly named XML profiles for absent or exact canonical NCX and EPUB
+  2 XHTML 1.1 declarations. The declarations are counted and discarded; the
+  adapter still has no DTD resolver, custom entity table, DOM, filesystem, or
+  network path, and rejects internal subsets and identifier near misses.
+- Extracted the existing package-internal local navigation-target resolver.
+  EPUB 3 XHTML navigation and NCX now share identical path, manifest,
+  spine/non-spine, fragment, cancellation, resource-limit, and content-free
+  error rules.
+- Added a streaming namespace-aware NCX parser for the exact ADR-0048 grammar.
+  It preserves `navMap` document order, returns the existing immutable
+  `ParsedNavigationDocument`, validates/discards head/title/author and optional
+  page/navigation lists, and counts `navPoint`, `pageTarget`, and `navTarget`
+  against one aggregate node budget.
+- Package-internal navigation dispatch now selects XHTML or NCX from the
+  already-validated source kind. EPUB 2 XHTML projection uses the exact
+  XHTML 1.1 XML profile while EPUB 3 keeps its existing inert-HTML profile.
+- The deterministic public OPF2 fixture now opens successfully through NCX
+  and XHTML projection without changing the public schema. Focused coverage
+  includes nested targets and order, ignored lists, exact/max-plus-one depth,
+  node and 1,024-code-point label limits, malformed grammar, duplicate IDs,
+  remote/query/undeclared/non-content targets, doctype/entity attempts,
+  cancellation, cleanup, immutability, privacy canaries, and EPUB 3
+  non-regression.
+- The unchanged external baseline was 34 files/618 tests. After both logical
+  checkpoints, the external suite is 35 files/650 tests; focused typecheck,
+  build, TypeScript formatting, ESLint, and diff checks pass. Reader,
+  locator/restoration, narration-equivalence, browser/package, and full-plan
+  evidence remain assigned to Milestones 4 and 5, so no general EPUB 2 support
+  or release claim is made here.
+
 #### Status
 
-Not started.
+Complete.
 
 ### Milestone 4: Prove reader, locator, restoration, and narration equivalence
 
@@ -538,6 +570,16 @@ unsupported rather than ship a partially navigable profile.
   ESLint, and diff check pass. The public opener deliberately returns no
   publication at the pending NCX parser, so end-user EPUB 2 support is not yet
   claimed.
+- **2026-08-03:** Created `codex/m003-3-ncx-navigation-model` from updated
+  `main` at merged Milestone 2 commit `1e6c1fc`. The unchanged external
+  baseline passed typecheck, 34 files/618 tests, build, and diff check.
+  Checkpoint `f6319c8` added the exact inert NCX/XHTML 1.1 XML profiles;
+  checkpoint `e74daaa` extracted the common target resolver, added bounded NCX
+  parsing and source-kind dispatch, selected the EPUB 2 XHTML profile, and
+  replaced the pending public boundary with a successful minimal OPF2/NCX
+  open. The post-change external suite passes 35 files/650 tests plus
+  typecheck, build, TypeScript formatting, ESLint, and diff checks. Milestone
+  3 is complete; downstream equivalence and full-plan closeout remain open.
 
 ## Discoveries and decisions
 
@@ -568,11 +610,10 @@ unsupported rather than ship a partially navigable profile.
   package, NCX, guide, metadata-form, doctype, omission, additional-entry, and
   mutation controls. ZIP entry inspection must narrow directory entries before
   test extraction; no production abstraction is needed.
-- **Decision:** The package-internal navigation source is a closed
-  `ncx | xhtml` discriminator. Until Milestone 3 implements NCX parsing, the
-  NCX dispatch branch fails as content-free `unsupported-resource` before
-  reading navigation bytes; it does not pretend the admitted OPF 2 package is
-  an unsupported version.
+- **Decision:** The package-internal navigation source remains the closed
+  `ncx | xhtml` discriminator established in Milestone 2. Milestone 3 now
+  dispatches that validated source to one of two bounded event parsers which
+  project into the same immutable internal navigation model.
 - **Decision:** OPF 2 guide and supplemental metadata bounds reuse the existing
   package byte, XML node/attribute/depth/text, path, cancellation, and deadline
   authorities. No caller-selectable maximum or new production dependency is
@@ -581,6 +622,13 @@ unsupported rather than ship a partially navigable profile.
   frozen assumptions that used OPF 2 as the generic unsupported-version case.
   Those cases now use exact unsupported `version="1.0"`, while the dedicated
   OPF2 public characterization asserts the pending-NCX boundary.
+- **Discovery:** The existing navigation target logic was already the correct
+  NCX policy. Extracting it as one package-internal resolver preserved EPUB 3
+  behavior while preventing a second path/manifest/error implementation.
+- **Decision:** Ignored NCX `pageList` and `navList` targets consume the same
+  aggregate detailed-navigation maximum and local-target validation as
+  projected `navPoint` values. They cannot provide fallback navigation or
+  escape budgets merely because they are not returned publicly.
 
 ## Final validation results
 
@@ -600,3 +648,14 @@ package-internal and introduces no dependency, public schema, renderer,
 persistence, narration, TTS, audio, or installer change. NCX parsing,
 EPUB2-XHTML doctype admission, end-to-end opening, downstream equivalence, and
 full-plan validation remain assigned to Milestones 3 through 5.
+
+Milestone 3 passed on 2026-08-03 from normal local PowerShell outside the
+managed sandbox. The unchanged baseline passed focused typecheck, 34
+files/618 tests, build, and `git diff --check`. Final focused validation passes
+typecheck, 35 files/650 tests, build, TypeScript Prettier, ESLint, and
+`git diff --check`. The implementation adds no production dependency, public
+schema, persistence field, renderer branch, narration/TTS/audio behavior, or
+installer change. It proves package-level OPF2/NCX opening and hostile-input
+containment only; Milestones 4 and 5 still own format-equivalent reader,
+locator, restoration, narration, browser/package, repository, and full-plan
+evidence.
