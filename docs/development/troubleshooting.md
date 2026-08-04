@@ -49,9 +49,10 @@ Piper Spanish/English CPU profiles, supported Chatterbox Spanish/English, and
 development-only Qwen Serena/Spanish plus Aiden/English. The current
 [`tts-support-matrix-v2`](../architecture/tts-support-matrix-v2.md) records the
 exact states, host margins, and language bindings. M011 implements the local
-Piper package and closed optional lifecycle. The preliminary Milestone 7 record
-accepts Piper local/portfolio GO and conditional Chatterbox GO for systems that
-pass the published host gate; trusted public signing remains externally pending.
+Piper package and closed optional lifecycle. Renewed Milestone 7 accepts Piper
+local/portfolio GO, Chatterbox runtime support for systems that pass the
+published host gate, and the optional package on a compatible host; trusted
+public signing remains externally pending.
 Milestone 6B closes ordinary Download and release-runtime isolation. All
 native-only local configurations are documented in
 [`setup.md`](setup.md).

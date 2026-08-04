@@ -87,6 +87,18 @@ test("the ordinary release requires one downloadable manifest and locked runtime
     ],
     [
       (value) =>
+        (value.rootPackage.scripts[
+          "package:windows:ordinary-chatterbox:evidence"
+        ] = value.rootPackage.scripts[
+          "package:windows:ordinary-chatterbox:evidence"
+        ].replace(
+          "--lifecycle-status local-install-first-start-repair-uninstall-passed ",
+          "",
+        )),
+      "release-runtime-boundary",
+    ],
+    [
+      (value) =>
         (value.rootPackage.scripts["test:rust"] =
           "cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml"),
       "release-runtime-boundary",

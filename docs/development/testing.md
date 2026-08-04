@@ -939,18 +939,18 @@ model artifact, path, or raw host identity may enter a result or fixture.
 
 ## M011 packaging and release validation
 
-M011 Milestones 1 through 5 and 6A are implemented at their documented
-boundaries. Under ADR-0049 and release authority v2, the preliminary Milestone 7
-record accepts Piper local/portfolio GO and conditional compatible-host
-Chatterbox GO. Milestone 6B closes ordinary Download and release-runtime
-isolation; signed public publication remains pending external
-authorization.
+M011 Milestones 1 through 6B and the renewed Milestone 7 local decision are
+implemented at their documented boundaries. Under ADR-0049 and release authority
+v2, Piper is local/portfolio GO, Chatterbox runtime and the optional package are
+GO on a compatible host within their separate scopes, and ordinary Download is
+GO only after both live gates pass. Signed public publication remains pending
+external authorization.
 The dependency/audit, standalone Piper-core, optional runtime-package,
 acquisition-controller, public runtime identity, and local Windows package
 evidence below is current. Representative compatible-host evidence supports
-the requirements-defined classes; signed public publication remains separate. Its
-active
-[`ExecPlan`](../plans/active/M011-package-validate-and-release-mvp.md)
+the requirements-defined classes; signed public publication remains separate.
+Its completed
+[`ExecPlan`](../plans/completed/M011-package-validate-and-release-mvp.md)
 retains the originally planned clean normal-user Windows package matrix as
 useful regression coverage, not as an exhaustive per-device support gate.
 
@@ -1142,7 +1142,8 @@ The checked-in ordinary-release harness proves this journey under the hostile
 environment. All 6B acceptance commands run from normal local PowerShell outside
 the sandbox.
 
-The final unsigned ordinary installer is `181,589,616` bytes with SHA-256
+The historical Milestone 6B unsigned ordinary installer is `181,589,616` bytes
+with SHA-256
 `ca3064deea286d7cd71a7a1fb97beb002d6b525ad881fcb834c9f80ac7cc7f0a`.
 Its receipt separately records the installed NSIS payload identity because it
 need not equal the pre-bundle build executable. The lifecycle matrix passes
@@ -1153,7 +1154,8 @@ of pre-existing application data. The ordinary journey then passes clean and
 hostile release boundaries, live gate, consent, real cancellation/staging
 cleanup, verified acquisition, offline Chatterbox Spanish/English, restart,
 removal, offline Piper Spanish/English, Chatterbox reacquisition, and uninstall.
-The receipt records no private book text.
+The receipt records no private book text. Renewed Milestone 7 supersedes this
+identity with the exact `aca8ff0d...` candidate documented below.
 
 ### Superseded preliminary Milestone 7 decision and closeout result
 
@@ -1163,26 +1165,51 @@ Chatterbox GO, compatibility-gated ordinary Download, and signed public
 publication pending external authorization. The following commands ran from normal local PowerShell outside
 the sandbox:
 
-| Command or gate | Result |
-| --------------- | ------ |
-| `pnpm.cmd check:portable` | Pass: shared 20 files/209 tests, EPUB 35/653, desktop 53/536 plus 18 Node, Python 384, type/lint/format/build stages. |
-| `pnpm.cmd check` | Pass: the preceding suites plus Rust formatting/lint, 72 Rust tests, and native release build. |
-| `pnpm.cmd audit:release` | Pass with 17 Rust informational notices and explicit blind spots for `chatterbox-tts`, `resemble-perth`, Torch, and Torchaudio. |
-| `pnpm.cmd inventory:release:check` | Pass/current. |
-| `pnpm.cmd package:piper-core:check` | Pass/current. |
-| `pnpm.cmd package:windows:check` | Pass/current. |
-| Historical validation-package check | Preserved historical evidence; it is not ordinary-release authority. |
-| `pnpm.cmd test:browser` | Pass, 7/7, including the bounded EPUB 2/NCX browser journey. |
-| `pnpm.cmd test:native-startup` | Pass with packaged WebView2, lifecycle/restoration/synchronization, zero external requests, and no page/console error. |
-| `pnpm.cmd benchmark:reader:native` | Pass: 10,000 blocks, 158-ms selection to first content, 9.5-ms maximum scheduler callback, bounded cleanup, and no retained resource owner. |
-| Exact-host portfolio preflight | Test-only suites pass; real preflight reports `Exact bilingual portfolio configuration is unavailable.` before model work. |
+| Command or gate                      | Result                                                                                                                                                                                                |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm.cmd check:portable`            | Pass: shared 20 files/209 tests, EPUB 35/653, desktop 53/536 plus 18 Node, Python 384, type/lint/format/build stages.                                                                                 |
+| `pnpm.cmd check`                     | Pass: the preceding suites plus Rust formatting/lint, 72 Rust tests, and native release build.                                                                                                        |
+| `pnpm.cmd audit:release`             | Pass with 17 Rust informational notices and explicit blind spots for `chatterbox-tts`, `resemble-perth`, Torch, and Torchaudio.                                                                       |
+| `pnpm.cmd inventory:release:check`   | Pass/current.                                                                                                                                                                                         |
+| `pnpm.cmd package:piper-core:check`  | Pass/current.                                                                                                                                                                                         |
+| `pnpm.cmd package:windows:check`     | Pass/current.                                                                                                                                                                                         |
+| Historical validation-package check  | Preserved historical evidence; it is not ordinary-release authority.                                                                                                                                  |
+| `pnpm.cmd test:browser`              | Pass, 7/7, including the bounded EPUB 2/NCX browser journey.                                                                                                                                          |
+| `pnpm.cmd test:native-startup`       | Pass with packaged WebView2, lifecycle/restoration/synchronization, zero external requests, and no page/console error.                                                                                |
+| `pnpm.cmd benchmark:reader:native`   | Pass: 10,000 blocks, 158-ms selection to first content, 9.5-ms maximum scheduler callback, bounded cleanup, and no retained resource owner.                                                           |
+| Exact-host portfolio preflight       | Test-only suites pass; real preflight reports `Exact bilingual portfolio configuration is unavailable.` before model work.                                                                            |
 | `pnpm.cmd package:windows:lifecycle` | Stops before mutation with `windows-release-lifecycle-preexisting-install`; both local product identities already exist, so a fresh run needs an explicitly prepared host or user-authorized removal. |
 
-The lifecycle stop is a safe host-state observation, not a product assertion.
-It does not replace the previously recorded lifecycle evidence. Required pull-
-request checks from that snapshot remain historical. Final M011 closeout now
-waits for Milestone 6B, the renewed Milestone 7 decision, and its required pull-
-request evidence.
+The lifecycle stop is a safe historical host-state observation, not a product
+assertion. It does not replace the subsequently renewed evidence below. Required
+pull-request checks from that snapshot remain historical.
+
+### Renewed Milestone 7 exact-artifact validation
+
+Renewed Milestone 7 validates installer SHA-256
+`aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc`
+from normal local PowerShell outside the sandbox:
+
+| Command or gate                                          | Result                                                                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm.cmd package:windows:ordinary-chatterbox:preflight` | Pass for the ordinary and hostile release-runtime boundaries plus both live host gates.                                                                                                                                                                                                                          |
+| `pnpm.cmd package:windows:lifecycle`                     | Pass for install, first start, repair, all six uninstall data choices, unrelated-file preservation, and restoration of pre-existing application data.                                                                                                                                                            |
+| `pnpm.cmd package:windows:ordinary-chatterbox`           | Pass for cancellation cleanup, verified acquisition, offline Chatterbox Spanish/English, restart, removal, offline Piper Spanish/English, reacquisition, and uninstall; all four TTS arms record zero underruns, external narration requests, generated-audio files, stale playback, and retained cleanup units. |
+| `pnpm.cmd package:windows:ordinary-chatterbox:evidence`  | Pass; generated evidence v2 records both exact-artifact receipts, installed binary SHA-256 `3583333a1e2edb71277c562c78a2cc8378705fdf3cd050a896ff15168442da45`, `unsigned-local`, and `publicPublicationAllowed: false`.                                                                                          |
+| `pnpm.cmd check:portable` and `pnpm.cmd check`           | Pass: shared 20 files/209 tests, EPUB 35/653, desktop 53/542 plus 32 Node, Python 386, Rust 79 default plus 80 release-locked, and all format/lint/type/build stages.                                                                                                                                            |
+| `pnpm.cmd test:browser`                                  | Pass, 7/7, including the bounded EPUB 2/NCX browser journey.                                                                                                                                                                                                                                                     |
+| `pnpm.cmd test:native-startup`                           | Pass with packaged WebView2 after one bounded internal PageDown wait retry; startup/restart, local EPUB, reader, synchronization, cancellation, cleanup, persistence, zero errors, and zero external requests pass.                                                                                              |
+| `pnpm.cmd benchmark:reader:native`                       | Pass at 10,000 blocks: `180.6` ms selection-to-first-content, `10.1` ms maximum scheduler callback, and zero final observers/object URLs.                                                                                                                                                                        |
+| Release audit and current authorities                    | `audit:release`, the 400-component inventory, Piper core, Chatterbox source/acquisition, and ordinary Windows static authority pass; the four optional-graph advisory blind spots remain disclosed.                                                                                                              |
+| Documentation, diff, tracked artifacts, and privacy      | Prettier and relative links pass for all 16 modified Markdown files, `git diff --check` passes, and all 825 tracked paths report zero prohibited private/release artifacts, high-confidence secrets, local scan context, or sensitive diff matches.                                                              |
+
+The ExecPlan records the current Chatterbox/Piper startup, RTF, RAM, VRAM, and
+cancellation measurements. PR #207's Windows native, Ubuntu portable, and
+production-dependency checks pass on the exact implementation-and-evidence head,
+so M011 is archived. Trusted public signing remains separately externally
+authorized. Do not rerun `pnpm.cmd package:windows` after these hash-bound
+receipts unless a new installer identity and both host journeys will be renewed
+again.
 
 ## Deferred coverage
 

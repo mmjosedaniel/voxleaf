@@ -238,6 +238,11 @@ export function validateClosedReleaseValues(documents) {
     !rootPackage.scripts?.[
       "package:windows:ordinary-chatterbox:evidence"
     ]?.includes("--ordinary-chatterbox-receipt") ||
+    !rootPackage.scripts?.[
+      "package:windows:ordinary-chatterbox:evidence"
+    ]?.includes(
+      "--lifecycle-status local-install-first-start-repair-uninstall-passed",
+    ) ||
     !rootPackage.scripts?.["test:rust"]?.includes(
       "--features release-locked-runtime",
     ) ||

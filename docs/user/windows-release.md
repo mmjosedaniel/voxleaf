@@ -27,13 +27,16 @@ general-public download. Public distribution requires a trusted signature, succe
 signature verification, a matching published SHA-256 checksum, and the release
 checks documented by the project.
 
-The rebuilt installer SHA-256 and size are supplied beside the installer and in
-generated package evidence. It is `unsigned-local`; Defender and SmartScreen
-were not observed for the evaluated artifact. The preliminary Milestone 7 record accepts Chatterbox as
-supported when the published host gate passes. The ordinary build offers its
-Download action only after Settings and native code pass that live gate; signed
-public publication remains pending external authorization. These are
-separate channel states, not engine failures.
+The current installer is `181,596,357` bytes with SHA-256
+`aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc`.
+Generated package evidence records its normal-user lifecycle and ordinary
+compatible-host Chatterbox journey as passed. It remains `unsigned-local`;
+Defender was not run and SmartScreen was not observed for this exact artifact.
+Renewed
+Milestone 7 accepts Chatterbox as supported when the published host gate passes.
+The ordinary build offers Download only after Settings and native code pass
+that live gate; signed public publication remains pending external
+authorization. These are separate channel states, not engine failures.
 
 ### Historical maintainer-only Chatterbox validation build
 
@@ -60,8 +63,8 @@ already completed verified installation.
 
 The validation installer is unsigned and ships with an adjacent SHA-256 file;
 verify that checksum before use. The exact local artifact and Defender result
-are recorded in the active M011 ExecPlan rather than embedded here, because this
-document is itself part of the installer payload. The build repairs the first
+are recorded in the completed M011 ExecPlan rather than embedded here, because
+this document is itself part of the installer payload. The build repairs the first
 installed runtime closure, moves only its exact verified legacy package to a
 Windows-safe short application-data path, and converts native verbatim paths to
 conventional Windows paths only when starting the embedded Python child.
@@ -97,8 +100,8 @@ remain in preparation while integrity verification and cold model load complete.
 Both arms recorded zero underruns, generated-audio files, and external requests.
 Together with the published Windows x64/CUDA/VRAM/RAM/CPU admission gate, this
 is representative evidence for the compatible hardware class; it is not a
-guarantee for every GPU or driver combination. The ordinary manifest remains
-withheld because this documentation-only decision does not expose Download.
+guarantee for every GPU or driver combination. The ordinary manifest was
+withheld at that historical validation-build checkpoint.
 Public signing remains separately pending.
 
 Settings stays populated during profile transitions and reports a truthful
@@ -133,11 +136,12 @@ voice preference varies. Before network access, the confirmation must disclose:
   consequences.
 
 Initial Chatterbox load can exceed one minute. Representative direct cold runs
-were `29.61` and `82.34` seconds; installed Quick command-to-audible observations
-were `39.966` seconds in Spanish and `33.905` seconds in English. Representative
-process-tree working-set peaks were `4,861,247,488`/`4,896,034,816` bytes and
-dedicated-VRAM peaks were `3,711`/`3,731` MiB. Those figures describe the tested
-computer, not a fixed countdown or guarantee for every compatible computer.
+were `29.61` and `82.34` seconds; the renewed exact-artifact journey measured
+Quick command-to-audible at `49.269` seconds in Spanish and `37.773` seconds in
+English. Representative process-tree working-set peaks were
+`4,855,865,344`/`4,898,762,752` bytes and dedicated-VRAM peaks were
+`3,745`/`3,709` MiB. Those figures describe the tested computer, not a fixed
+countdown or guarantee for every compatible computer.
 
 The package occupies disk after installation; it does not permanently reserve
 RAM or VRAM. Loading and inference do use GPU, VRAM, RAM, and CPU and may

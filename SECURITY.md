@@ -59,8 +59,9 @@ only after explicit consent, both live compatibility gates, documented
 dependency/advisory review, fixed-manifest integrity checks, bounded atomic
 installation, offline proof, and application-owned removal. Qwen is not part of
 the first distributable product.
-The preliminary Milestone 7 record accepts Piper-core portfolio readiness as
-**GO** and Chatterbox as
+The renewed Milestone 7 record accepts Piper-core portfolio readiness as
+**GO**, the optional Chatterbox package as **GO on a compatible host**, and
+Chatterbox runtime support as
 **supported when its published host gate passes**, using representative
 compatible-host evidence under
 [`mvp-release-authority-v2`](docs/architecture/mvp-release-authority-v2.md).
@@ -81,10 +82,11 @@ testing. Manual review also ensured that failed narration preparation completes
 active shutdown before availability recovery restarts and that failed Windows
 Job Object assignment terminates and reaps the just-spawned child.
 
-The fresh audit-fix package has a new exact identity. Its generated evidence
-records lifecycle and the representative ordinary Chatterbox journey as
-`not-run` pending renewed Milestone 7 validation; this identity-bound follow-up
-does not mean that Piper or Chatterbox failed.
+The exact audit-fix package now passes its renewed normal-user lifecycle and
+ordinary Chatterbox journey. Generated evidence binds those passes to installer
+SHA-256
+`aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc`
+while retaining `unsigned-local` and `publicPublicationAllowed: false`.
 
 Signed public publication is **pending external authorization** because a
 trusted signing identity is unavailable. All integrity, privacy, cancellation,
@@ -93,5 +95,5 @@ bounded acquisition, and cleanup controls remain required.
 See
 [`docs/development/release-security-and-distribution.md`](docs/development/release-security-and-distribution.md)
 for the proportional MVP boundary and
-[`docs/plans/active/M011-package-validate-and-release-mvp.md`](docs/plans/active/M011-package-validate-and-release-mvp.md)
+[`docs/plans/completed/M011-package-validate-and-release-mvp.md`](docs/plans/completed/M011-package-validate-and-release-mvp.md)
 for the implementation and validation plan.

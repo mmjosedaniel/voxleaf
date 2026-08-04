@@ -89,9 +89,10 @@ Piper Spanish/English at every rate, and runs Chatterbox Spanish/English plus
 development-only Qwen Serena/Aiden. The maintainer confirms the full admitted
 rate range, and pull request #170 passes the required Ubuntu and Windows checks.
 
-M011's preliminary Milestone 7 record accepted its requirements-based support
-decision. Milestone 6B closes ordinary compatibility-gated Chatterbox availability;
-trusted public signing remains a separate externally authorized future channel.
+M011's renewed Milestone 7 record accepts its requirements-based support
+decision against the exact post-audit artifact. Milestone 6B closes ordinary
+compatibility-gated Chatterbox availability; trusted public signing remains a
+separate externally authorized future channel.
 Milestones 1 through 5 and 6A are complete at their documented boundaries. The
 implemented standalone core
 payload targets Windows x64 with the measured Piper davefx/Spanish and Piper
@@ -102,7 +103,7 @@ runtime, both voices, notices/model cards, and exact GPL source, and is verified
 natively before use. Milestone 5 packages that core in the versioned `0.1.0`
 per-user Windows x64 NSIS path. Its exact rebuilt installer identity is recorded
 only in generated package evidence. Its deterministic/static and local lifecycle
-evidence passes. Defender and SmartScreen were not observed for the evaluated
+evidence passes. No Defender or SmartScreen claim is made for the current exact
 artifact. Piper is a CPU profile with
 no GPU requirement, and the maintainer additionally confirmed VoxLeaf working
 on an independent older Windows computer with 16 GB RAM and a 4-GB-VRAM GPU.
@@ -115,9 +116,9 @@ verifies every file's expected name, byte size, and SHA-256. It does not execute
 model-repository code. The exact reviewed Chatterbox runtime has reproducible
 three-part identity and is published under `chatterbox-runtime-v2`. Installed
 Spanish/English, offline, privacy, cancellation, and package-lifecycle evidence
-passes on the representative compatible computer. The preliminary Milestone 7
-record accepts **GO
-when the published host gate passes** for Chatterbox. The ordinary product
+passes on the representative compatible computer. Renewed Milestone 7 accepts
+**GO when the published host gate passes** for Chatterbox runtime support and
+**GO on a compatible host** for the optional package. The ordinary product
 manifest exposes Download only after Settings presents a pass and native code
 repeats the live host gate. Signed public publication is **pending external authorization**
 because no trusted signing identity is available. The package is an unsigned
@@ -247,13 +248,12 @@ parser/security result without claiming general EPUB 2 conformance.
    ordinary installed acquisition, bilingual narration, restart,
    removal/reinstall, and Piper-after-removal journey. The ordinary Download
    action is compatibility-gated by those passing checks.
-7. M011 Milestone 7 then decides Piper-core portfolio readiness, compatible-host
+7. M011 Milestone 7 decides Piper-core portfolio readiness, compatible-host
    Chatterbox support, ordinary Download availability, and signed public-
-   installer publication independently again. The preliminary record had Piper
-   GO, Chatterbox GO when its published gate passes, Download withheld at that
-   checkpoint, and signed publication pending external authorization. Milestone
-   6B now supplies the guarded ordinary-Download evidence that the renewed
-   decision must consume.
+   installer publication independently again. The renewed record has Piper GO,
+   Chatterbox runtime support GO when its published gate passes, optional-package
+   GO on a compatible host, ordinary Download GO only after both live gates, and
+   signed publication pending external authorization.
 
 M010.1 is a deliberately narrow pre-M011 exception to the earlier post-MVP
 candidate order because English narration and a stronger portfolio demo are
@@ -325,10 +325,6 @@ Remaining channel and regression work:
 
 - Continue representative Windows/package lifecycle coverage without treating
   every untested hardware combination as a failed support result.
-- Deliberately publish the separately gated optional Chatterbox manifest before
-  claiming that the ordinary build exposes Download; retain its minimal graph,
-  advisory/licence/provenance, integrity, size, GPU, install/remove, and offline
-  controls.
 - Obtain protected trusted signing authority and repeat signature/checksum/
   reputation evidence before any general-public Windows publication.
 
