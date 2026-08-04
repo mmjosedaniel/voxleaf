@@ -62,8 +62,12 @@ M011 Milestone 3 implements the deterministic licence-complete Piper core
 payload. Milestone 4 adds the deliberately withheld optional-Chatterbox
 acquisition lifecycle and source-package checks; the exact runtime parts are
 published, but no end-user Download action is enabled until final release
-evidence exists. Installer integration, clean-host release validation, and
-signing remain M011 work.
+evidence exists. Milestone 5 implements the unsigned local installer and
+external-credential signing command; Milestone 6A implements lifecycle feedback
+and bounded uninstall choices. Milestone 7 records NO-GO for Piper portfolio
+readiness, optional Chatterbox readiness, and signed public publication because
+formal corrected clean-host, compatible clean-GPU-host, and trusted-signing
+evidence remains unavailable. M011 stays active at those gates.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
@@ -82,8 +86,8 @@ playback. The constrained development inference, transport, narration
 dispatch, audio playback, and segment-level synchronization path is implemented
 and exact-host validated. Measured matching does not promote the development
 profile: supported Piper fallback and explicit identity-safe recovery are now
-implemented, while compliant distribution and installers remain
-unimplemented.
+implemented. The unsigned local Piper installer also exists, while compliant
+portfolio/public distribution remains blocked by M011's release gates.
 The content-free `benchmarks/tts/selection-v3.md` record retains that failed
 standard result and separately identifies the constrained demo input.
 
@@ -553,6 +557,13 @@ package evidence. The installer includes the WebView2 bootstrapper; when the
 Windows prerequisite is absent, that Microsoft bootstrapper can require
 network access. Normal EPUB reading and Piper narration remain local.
 
+The exact current candidate is `181,704,648` bytes with SHA-256
+`56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
+It is `unsigned-local` and suitable only for controlled local validation. The
+command's success does not make the artifact portfolio-ready or public; bind a
+future candidate to the complete corrected clean-host matrix before changing
+that claim.
+
 The signed maintainer path is:
 
 ```powershell
@@ -604,6 +615,10 @@ the native host and free-space gates still run before consent/download, and
 the user must explicitly approve the approximately 7.67-GiB transfer. The
 ignored installer and checksum are created beneath
 `apps/desktop/src-tauri/target/release/bundle/nsis` and must remain local.
+Passing the development-host Spanish and English arms does not enable the
+ordinary manifest. Milestone 7 leaves this path NO-GO pending clean-host
+acquisition, offline bilingual use, restart, removal/reinstall, and
+Piper-after-removal on a compatible clean GPU host.
 
 ## Local TTS feasibility preflight
 

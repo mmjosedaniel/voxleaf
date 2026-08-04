@@ -48,9 +48,25 @@ remains a development-only GPU engine. M010.1 Milestone 6 implements exact
 Piper Spanish/English CPU profiles, supported Chatterbox Spanish/English, and
 development-only Qwen Serena/Spanish plus Aiden/English. The current
 [`tts-support-matrix-v2`](../architecture/tts-support-matrix-v2.md) records the
-exact states, host margins, and language bindings, while M011 still owns
-release packaging and license fulfillment. All native-only local
+exact states, host margins, and language bindings. M011 implements the local
+Piper package and closed optional lifecycle, but Milestone 7 records NO-GO for
+Piper portfolio readiness, optional Chatterbox readiness, and signed public
+publication. All native-only local
 configurations are documented in [`setup.md`](setup.md).
+
+### The ordinary package does not offer Chatterbox download
+
+This is the expected fail-closed release state, not a profile-detection bug.
+The checked-in ordinary manifest remains `withheld` after Milestone 7 because a
+compatible clean GPU host has not completed exact acquisition, offline Spanish
+and English use, restart, removal/reinstall, and Piper-after-removal. The
+separate ADR-0045 validation build is local-only and cannot be used to enable
+the ordinary product or claim release readiness.
+
+The current Piper installer is likewise an `unsigned-local` validation
+candidate. If it installs successfully on another computer, record the exact
+installer hash and the complete normal-user bilingual/offline/lifecycle matrix;
+an unbound success report does not close the clean-host release gate.
 
 M010.1 Milestone 7's local packaged matrix confirms that Piper and Chatterbox
 sustain the one-minute quick observation without underruns on the measured

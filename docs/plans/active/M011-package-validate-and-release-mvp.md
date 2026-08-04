@@ -23,6 +23,9 @@ profile, or additional operating systems.
 
 ## User-visible outcome
 
+These are acceptance conditions for reopening and passing a failed release
+claim, not a description of current release availability.
+
 After the applicable M011 release gate passes:
 
 - a Windows x64 user can install VoxLeaf, open a supported local EPUB, restore
@@ -78,10 +81,10 @@ The repository now has deliberate application version `0.1.0` and a separate
 release-only Tauri configuration that builds a per-user Windows x64 NSIS
 installer while leaving ordinary development builds unbundled. The current
 measured unsigned local installer contains the deterministic, manifest-verified
-Piper core and both voices. Its installed Spanish/English portfolio matrix, two
-install/first-start/same-version-repair/uninstall cycles, and exact-artifact
-Defender scan pass on the development host. It is not signed, is not a general-
-public release, and is not clean-host acceptance evidence.
+Piper core and both voices. Its static authority and local lifecycle evidence
+pass on the development host. The exact final artifact has not received the
+complete clean-host matrix or a Defender observation, is not signed, and is
+neither a portfolio-ready build nor a general-public release.
 
 Milestones 2 and 3 now provide the release dependency and Piper payload
 boundaries: a 15-entry private core lock, a separate 79-package Chatterbox
@@ -100,7 +103,8 @@ completed the explicit download and verified installation on the compatible
 development host. Its exact installed Spanish and English Chatterbox supervisor
 and WebView2 narration arms now pass, but restart, real package removal/
 reinstall, Piper-after-removal, independent clean-host acquisition, and public
-signing remain open.
+signing remain open. Milestone 7 therefore retains the ordinary manifest as
+`withheld` and records no downloadable-profile claim.
 
 The current TTS runtimes are ignored developer assets selected through
 environment variables. Development firewall rules target exact candidate
@@ -1030,7 +1034,10 @@ Acceptance requires all of the following:
 
 ### Milestone 7: Record the MVP release decision and close validation
 
-**Status:** Not started.
+**Status:** Release decision recorded on 2026-08-03 with three **NO-GO**
+outcomes; closeout is blocked pending the required pull-request checks and the
+external evidence needed to change any failed claim. M011 remains active and
+does not claim that the distributable MVP is complete.
 
 1. Consume the completed M003.1 bounded EPUB 2/NCX result, then reconcile
    product, architecture, setup, testing, troubleshooting,
@@ -1049,8 +1056,58 @@ Acceptance requires all of the following:
 4. Run the complete applicable repository and package validation outside the
    sandbox, review the final diff and tracked-artifact/privacy audit, and obtain
    passing required pull-request checks.
-5. Archive this ExecPlan only after its actual results, release decision, and
-   unresolved external blockers are recorded.
+5. Record actual results, the release decision, and unresolved external
+   blockers. Archive this ExecPlan only if M011's completion conditions pass;
+   a NO-GO outcome remains active/blocked rather than being presented as a
+   completed distributable MVP.
+
+Actual result:
+
+- Completed M003.1 and ADR-0048 are consumed as bounded OPF 2.0/NCX evidence.
+  The M011 release surface claims only that bounded profile, not general EPUB 2
+  or reading-system conformance.
+- The exact current unsigned local installer is
+  `VoxLeaf_0.1.0_x64-setup.exe`, `181,704,648` bytes, SHA-256
+  `56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
+  Its application binary is `12,339,200` bytes with SHA-256
+  `7ea14036048c385e8067c97a9aeb0e58c3eb537c2db81aeb9d9a7b823800e5c6`.
+  It is an `unsigned-local` validation candidate and public publication is
+  disabled.
+- The Piper core archive is `191,240,146` bytes compressed and `281,213,569`
+  bytes installed, with archive SHA-256
+  `17fe3456bd7fca519b3e3b0c3b0bbf2579c733e13b660d740c5a56a0781f0843`
+  and runtime-manifest SHA-256
+  `45aad7d39d04066c8875040c1389dc9047d0c56d94a586ed814dfb432c5620c8`.
+  It contains the private CPython/Piper runtime, davefx/Spanish and joe/English,
+  notices, model cards, and exact corresponding source; it requires neither
+  system Python nor a first-run core download.
+- The withheld Chatterbox option records `8,231,893,387` download bytes,
+  `8,228,503,309` installed bytes, and a `13,254,834,850`-byte peak staging
+  requirement. It requires Windows x64, CUDA bfloat16, at least `5,632` MiB
+  total and `4,668` MiB currently available dedicated VRAM, `24,576` MiB RAM,
+  and eight logical processors; `7,680` MiB VRAM remains the recommended
+  evaluated class. Its three runtime parts plus six model files retain their
+  checked-in per-file hashes and full model revision.
+- **Piper core: NO-GO for `piper-core-portfolio-ready`.** The exact final
+  candidate lacks the formal corrected clean normal-user host matrix. The old-
+  PC report remains useful exploratory evidence but is not bound to the exact
+  hash or complete bilingual/offline/repair/restart/privacy/uninstall journey.
+- **Chatterbox: NO-GO for `chatterbox-optional-portfolio-ready`.** The ordinary
+  manifest remains withheld because no compatible clean GPU host has completed
+  acquisition, offline bilingual narration, restart, removal/reinstall, and
+  Piper-after-removal. Passing Spanish and English development-host arms do not
+  change this result.
+- **Public Windows installer: NO-GO for `signed-public-windows-installer`.** The
+  Piper portfolio gate has not passed and no trusted external signing identity
+  is authorized. The signing command remains fail-closed.
+- Deterministic repository, release-graph, package, browser, packaged WebView2,
+  and reader-performance gates pass outside the sandbox. The full exact-host
+  portfolio command cannot run in the current shell because its exact bilingual
+  configuration is unavailable; clean-host and pull-request evidence remain
+  external follow-up rather than being relabeled as a pass.
+- The plan stays in `active/`. It may move to `completed/` only after all
+  completion conditions below pass, including required pull-request checks, or
+  after a separately authorized scope decision supersedes those conditions.
 
 ## Testing and validation strategy
 
@@ -1702,6 +1759,40 @@ and never edit prior benchmark authority to make a release pass.
   capability, dependency, and artifact review. No M011 package, TTS,
   Chatterbox, signing, or clean-host authority changed. Milestone 7 can now
   consume this result while the remaining Milestone 6 evidence stays open.
+- **2026-08-03:** Created
+  `codex/m011-7-close-mvp-release-validation` from clean `main` at
+  `ceeb3e005a28045fe60bdf7e3ec3d0d86e08cb3a`. The unchanged outside-sandbox
+  baseline passes `pnpm.cmd check:portable` (shared 20 files/209 tests, EPUB 35/
+  653, desktop 53/536 plus 18 Node, Python 384), `test:browser` (7/7),
+  `test:native-startup`, and `benchmark:reader:native`. Release audit,
+  inventory, Piper-core, ordinary Windows-package, and Chatterbox-validation
+  package checks pass and stay current. The release audit retains 17 Rust
+  informational notices and the four declared optional-package advisory blind
+  spots; neither is hidden as a clean result.
+- **2026-08-03:** The exact-host test-only preflight passes 37 Vitest, 8 Node,
+  and 5 portfolio-script tests. The real preflight exits before model work with
+  `Exact bilingual portfolio configuration is unavailable.` No full six-profile
+  exact-host run is applicable from this shell. Milestone 7 does not treat that
+  unavailable configuration, the exploratory old-PC report, or historical
+  predecessor-artifact measurements as current release acceptance.
+- **2026-08-03:** Reconciled product, architecture, setup, testing,
+  troubleshooting, dependency, security, system-diagram, roadmap, support-
+  matrix, and Windows-package documentation with the exact current artifact and
+  three NO-GO decisions. The decision record is complete, but Milestone 7
+  closeout and M011 remain blocked because clean-host, compatible clean-GPU-
+  host, trusted-signing, and later pull-request completion conditions have not
+  passed.
+- **2026-08-03:** Final outside-sandbox repository validation passes
+  `pnpm.cmd check`: Prettier, Rust/Python formatting, TypeScript/Rust/Python
+  lint, type checks, shared 209, EPUB 653, desktop 536 plus Node 18, Rust 72,
+  Python 384, and all production builds pass. The five deterministic release
+  gates pass/current again. `pnpm.cmd package:windows:lifecycle` stops safely
+  before mutation with `windows-release-lifecycle-preexisting-install` because
+  the ordinary install root already exists; a read-only check also finds the
+  isolated validation product installed. No installation or application data
+  was changed. A fresh rerun now requires an explicitly prepared host or user-
+  authorized removal of existing installations, so the prior lifecycle evidence
+  remains historical support and the clean-host NO-GO is unchanged.
 
 ## Discoveries and decisions
 
@@ -1790,6 +1881,24 @@ and never edit prior benchmark authority to make a release pass.
 - **Decision:** Piper-core, optional-Chatterbox, and signed-public readiness are
   independent decisions. Failure of one narrows its claim without rewriting
   historical support evidence or automatically failing the others.
+- **Decision:** Milestone 7 records `piper-core-portfolio-ready` as **NO-GO**.
+  The exact final unsigned installer lacks the complete corrected clean normal-
+  user host matrix. Passing deterministic, local lifecycle, browser, packaged,
+  and performance gates plus the unbound older-PC observation do not substitute
+  for that matrix.
+- **Decision:** Milestone 7 records `chatterbox-optional-portfolio-ready` as
+  **NO-GO** and retains the ordinary manifest as `withheld`. Passing installed
+  Spanish and English development-host arms do not replace a compatible clean-
+  GPU-host acquisition, offline, restart, removal/reinstall, and Piper-after-
+  removal matrix.
+- **Decision:** Milestone 7 records `signed-public-windows-installer` as
+  **NO-GO** because the prerequisite Piper claim has not passed and no trusted
+  external signing identity is authorized. The unsigned candidate remains local
+  validation only.
+- **Decision:** Completing Milestone 7 with a NO-GO decision does not satisfy
+  M011's definition of done. Keep this ExecPlan in `active/`; archive it only
+  after the remaining gates pass or separately accepted authority supersedes
+  them.
 - **Decision:** Chatterbox's evaluated nominal 8-GB host is a recommendation,
   not its technical minimum. Product admission uses the `3,644`-MiB measured
   peak plus the frozen `1,024`-MiB reserve (`4,668` MiB available), together
@@ -1924,3 +2033,19 @@ M011 is complete only when:
   and
 - the final release decision records Piper-core portfolio readiness,
   Chatterbox-package readiness, and public-installer publication independently.
+
+### Milestone 7 closeout snapshot
+
+| Gate | Result on 2026-08-03 |
+| ---- | -------------------- |
+| Completed M003.1 bounded EPUB 2/NCX evidence | **Pass and consumed.** Current EPUB, browser, and packaged-native coverage retains the bounded-only claim. |
+| Repository and deterministic release gates | **Pass.** `check`, `check:portable`, release audit/inventory, both Windows static package authorities, Piper-core verification, browser, packaged WebView2, and reader benchmark pass outside the sandbox. |
+| Exact-host bilingual portfolio | **Unavailable in the current shell.** Test-only preflight passes; real preflight rejects the missing exact configuration before model work. |
+| Fresh local lifecycle rerun | **Blocked safely by host state.** Both product identities are already installed; the standard harness exits before mutation. |
+| Piper clean normal-user host | **Missing; release claim NO-GO.** The older-PC report is exploratory and not exact-hash/full-matrix evidence. |
+| Chatterbox compatible clean GPU host | **Missing; release claim NO-GO.** The ordinary manifest remains `withheld`. |
+| Trusted signed public installer | **Unavailable; release claim NO-GO.** No authorized certificate/signing identity exists and the Piper prerequisite has not passed. |
+| Required pull-request checks | **Pending external repository workflow.** No push or pull request is authorized by this implementation request. |
+
+The release decision is recorded, but Milestone 7 closeout and M011 remain
+blocked. Do not archive this plan or publish any of the three release claims.

@@ -77,8 +77,9 @@ without changing reader, preference, compatibility, or narration ownership.
 The sequential six-arm packaged matrix, browser/native-startup, portable, and
 complete Windows repository checks pass outside the sandbox. Renewed maintainer
 listening confirms correct slowdown across every admitted rate, and pull
-request #170 passes the required Ubuntu and Windows checks. M011 is now in
-progress. Milestone 1 freezes the exact result-blind release authority; its
+  request #170 passes the required Ubuntu and Windows checks. M011 is blocked at
+  its release gates after Milestone 7 recorded a three-part NO-GO decision.
+  Milestone 1 freezes the exact result-blind release authority; its
 detailed
 [`M011 ExecPlan`](active/M011-package-validate-and-release-mvp.md) scopes the
 core distributable candidate to Windows x64 and the measured Piper
@@ -129,8 +130,11 @@ ADR-0048's separate pre-release Milestone 3.1 for bounded reflowable EPUB
 2/NCX compatibility is complete. Its focused package, shared-target,
 semantic/resource/locator, reader/restoration, narration, browser, and
 packaged-native matrices pass without changing public schemas, persistence,
-dependencies, capabilities, or topology. M011 Milestone 7 now waits only for
-the applicable remaining Milestone 6 evidence before consuming this result.
+dependencies, capabilities, or topology. M011 Milestone 7 consumes this bounded
+result without making a full EPUB 2 conformance claim. The exact final Piper
+candidate still lacks the formal corrected clean-host matrix, Chatterbox remains
+withheld pending a compatible clean-GPU-host lifecycle, and public signing lacks
+trusted external authority; all three release claims are therefore NO-GO.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -1190,7 +1194,12 @@ through newly frozen authority and regression evidence.
 
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** In progress. Milestones 1 through 5 are complete. Milestone 4B's
+**Status:** Blocked at release gates after the 2026-08-03 Milestone 7 NO-GO
+decision. Milestones 1 through 5 and 6A are complete at their documented
+boundaries. Milestone 7's decision record is complete, but its closeout remains
+blocked pending required pull-request checks. M011 remains active because the
+distributable-MVP completion conditions have not passed.
+Milestone 4B's
 deterministic authority, implementation, and authorized runtime publication are
 complete, but its clean-host gates remain open. Milestone 1 froze
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
@@ -1214,11 +1223,12 @@ also reproducibly builds, splits, and publishes the exact reviewed runtime as
 clean-host validation; either set alone is not a complete installation.
 Milestone 5 sets version `0.1.0` and builds the release-only Windows x64
 current-user NSIS installer with the exact private Piper core, both voices,
-notices, inventory, acquisition authority, and user guide. The measured local
-installer is `181,654,713` bytes with SHA-256
-`9dcc7fea72dd3d4eefd3ae79c8045f968328e5fde0a29d25c244a12b8169473c`;
-installation, first start, repair, uninstall, unrelated-file preservation, and
-Defender checks pass outside the sandbox. Signing automation is implemented,
+notices, inventory, acquisition authority, and user guide. The exact current
+local installer is `181,704,648` bytes with SHA-256
+`56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`;
+its static authority and local installation, first start, repair, uninstall,
+and unrelated-file preservation evidence pass outside the sandbox. Defender
+and SmartScreen were not observed for this exact hash. Signing automation is implemented,
 but no trusted certificate is available, so public publication remains
 blocked. Enabled optional acquisition and complete clean-host validation remain
 open; automatic updates are deliberately excluded from the first MVP.
@@ -1234,8 +1244,9 @@ no-hostile-same-user-tampering assumption, and converts verbatim paths
 only at the child-process boundary. The exact installed Spanish and English
 WebView2 arms now pass with zero external requests or generated files.
 Application restart, real package removal/reinstall, Piper-after-removal,
-independent clean-host proof, and public signing remain pending, so optional
-readiness remains open.
+independent clean-host proof, and public signing remain pending, so Milestone 7
+records optional readiness as NO-GO and retains the ordinary manifest as
+`withheld`.
 Corrective Milestone 6A now closes the development-host lifecycle-feedback and
 uninstall implementation without reopening the verified acquisition topology.
 Settings stays populated during transitions; first-Play phases and supported
@@ -1257,7 +1268,7 @@ repair/uninstall, privacy, and lifecycle observations, it is recorded as a
 successful exploratory host check rather than a formal clean-host pass. The
 machine remains ineligible for Chatterbox's positive GPU matrix.
 
-The remaining M011 execution order is explicit:
+The remaining M011 execution order after the recorded decision is explicit:
 
 ```text
 completed 1 -> completed 2 -> completed 3 -> completed 4A
@@ -1265,13 +1276,27 @@ completed 1 -> completed 2 -> completed 3 -> completed 4A
        clean host pending
     -> completed 5 Windows package/signing path;
        public signing externally blocked
-    -> 6 clean-host matrix in progress
+    -> 6 clean-host matrix blocked pending suitable external evidence
        -> completed 6A lifecycle-feedback and development-host uninstall closeout
        -> rerun affected 6 clean-host/manual package evidence
     -> completed M003.1 bounded EPUB 2/NCX compatibility and its affected
        packaged-reader regression
-    -> 7 release decision and closeout
+    -> 7 three-part NO-GO decision recorded; required PR checks pending
+    -> reopen only the failed claim when its exact missing evidence becomes available
 ```
+
+Milestone 7 decides the frozen claims independently:
+
+| Claim | Decision | Blocking evidence |
+| ----- | -------- | ----------------- |
+| Piper core portfolio readiness | **NO-GO** | The exact final hash has no complete corrected clean normal-user host matrix. |
+| Optional Chatterbox portfolio readiness | **NO-GO** | No compatible clean GPU host has completed acquisition, offline bilingual use, restart, removal/reinstall, and Piper-after-removal. |
+| Signed public Windows publication | **NO-GO** | The Piper prerequisite has not passed and no trusted signing identity is authorized. |
+
+The unsigned package remains a local validation candidate. It is not a
+portfolio-ready distributable or a public release. The M011 ExecPlan stays in
+`active/` until its completion conditions pass or separately accepted authority
+changes them.
 
 ### Goal
 
@@ -1282,6 +1307,9 @@ Spanish/English in the portfolio-sized core and provide Chatterbox only as an
 explicit verified optional GPU quality package.
 
 ### Expected outcome
+
+These remain acceptance conditions for reopening a failed release claim, not
+current release behavior.
 
 - A normal Windows user can install VoxLeaf without a repository checkout,
   developer shell, manual firewall rule, or separately installed build tools;

@@ -32,10 +32,10 @@ interpreter after the native supervisor verifies the candidate lock and local
 voice root. The adapter also verifies runtime versions, artifact hashes,
 CPU-only provider use, and offline controls before synthesis. This makes the
 admitted profile executable for local validation; it does not move Piper into
-`services/tts/uv.lock`, bundle an engine or voice, or satisfy GPL/CC0
-distribution obligations. M011 still owns notices, corresponding-source or
-written-offer mechanics, model provenance, installer size, signing, and
-updates.
+`services/tts/uv.lock` or bundle an engine or voice through development setup.
+M011's release graph now fulfills the Piper GPL/CC0 notices, exact corresponding
+source, model provenance, and measured installer boundary. Clean-host release
+acceptance and trusted signing remain separate unavailable evidence.
 
 M010 Milestone 7 adds no dependency, manifest, lockfile, runtime capability,
 or distribution edge. The final
@@ -75,7 +75,7 @@ Ryan, Base voice cloning, and VoiceDesign add no graph and remain outside v8.
 
 ## M011 release dependency boundary
 
-The active
+The active, release-blocked
 [`M011 ExecPlan`](../plans/active/M011-package-validate-and-release-mvp.md)
 does not approve copying an evaluation environment into an installer. M011
 Milestone 2 closes both production graphs, and Milestone 3 packages the exact
@@ -88,7 +88,10 @@ the smallest locked production service/profile graph from actual adapter and
 runtime needs. Chatterbox Spanish/English remains a separate optional GPU
 download with its own minimal production lock, audit, inventory, manifest, and
 release decision; Qwen remains a development environment outside the first
-distributable product.
+distributable product. Milestone 7 records NO-GO for the Piper core portfolio,
+optional Chatterbox, and signed public claims. Those decisions arise from
+missing clean-host, compatible clean-GPU-host, and trusted-signing evidence,
+not from an unclosed dependency graph.
 
 The measured Chatterbox developer state is approximately 5.03 GiB for its
 isolated environment and 2.99 GiB for model artifacts. Its installed package
@@ -131,9 +134,11 @@ the ecosystem locks plus reviewed licence metadata. Repository-owned JSON was
 selected instead of adding several SBOM generators because one cross-ecosystem
 record must retain release scope, Windows reachability, process/cleanup owner,
 profile state, audit blind spots, and packaging state. The standalone Piper
-runtime/archive hashes and sizes are recorded by Milestone 3; final installer
-and optional-package measurements remain Milestones 4-5 work. No known high or critical reachable core or
-optional package vulnerability may be silently accepted. See
+runtime/archive, final installer, and optional-package hashes and sizes are now
+recorded by their checked-in M011 evidence. The current audit still declares
+four advisory-service blind spots for URL-pinned Chatterbox/PerTh and CUDA
+Torch/Torchaudio rather than calling them clean. No known high or critical
+reachable core or optional package vulnerability may be silently accepted. See
 [`release-security-and-distribution.md`](release-security-and-distribution.md).
 
 ## Shipped application dependencies

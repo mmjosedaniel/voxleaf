@@ -89,30 +89,36 @@ Piper Spanish/English at every rate, and runs Chatterbox Spanish/English plus
 development-only Qwen Serena/Aiden. The maintainer confirms the full admitted
 rate range, and pull request #170 passes the required Ubuntu and Windows checks.
 
-M011 is in progress with Milestones 1 through 5 complete at their documented
-boundaries. Its implemented
-standalone core payload targets Windows x64 with the measured Piper
-davefx/Spanish and Piper joe/English CPU profiles. Chatterbox Spanish/English
-is a separately gated optional GPU quality download, not part of
-the core installer; Qwen remains development-only. This keeps the portfolio
-MVP small while permitting a higher-quality demonstration after Chatterbox's
-exact dependency, advisory, licence, artifact, integrity, size, hardware,
-installation/removal, and clean-host gates pass. A portfolio-ready local build
-may close without a signing certificate; a general public installer may not.
-The deterministic core contains a private CPython/Piper runtime, both voices,
-notices/model cards, and exact GPL source, and is verified natively before use.
-Milestone 5 packages that core in the versioned `0.1.0` per-user Windows x64
-NSIS path. Its local unsigned installer, first start, same-version repair,
-uninstall, unrelated-file preservation, checksum, and Defender checks pass;
-clean-host acceptance and trusted public signing remain open. Milestone 4B
-obtains only
-the six approved model-data files from the official
+M011 Milestone 7 has recorded its truthful release decision, while final
+closeout and M011 remain blocked at external gates and required pull-request
+checks. Milestones 1 through 5 and 6A are
+complete at their documented boundaries. The implemented standalone core
+payload targets Windows x64 with the measured Piper davefx/Spanish and Piper
+joe/English CPU profiles. Chatterbox Spanish/English is a separately gated
+optional GPU quality download, not part of the core installer; Qwen remains
+development-only. The deterministic core contains a private CPython/Piper
+runtime, both voices, notices/model cards, and exact GPL source, and is verified
+natively before use. Milestone 5 packages that core in the versioned `0.1.0`
+per-user Windows x64 NSIS path. The exact current installer is `181,704,648`
+bytes with SHA-256
+`56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
+Its deterministic/static and local lifecycle evidence passes, but the exact
+hash lacks the formal corrected clean normal-user host matrix and has no
+Defender or SmartScreen observation. Milestone 7 therefore records **NO-GO**
+for Piper portfolio readiness.
+
+Milestone 4B obtains only the six approved model-data files from the official
 `ResembleAI/chatterbox` Hugging Face repository at a full frozen revision and
-verify every file's expected name, byte size, and SHA-256. It will not execute
+verifies every file's expected name, byte size, and SHA-256. It does not execute
 model-repository code. The exact reviewed Chatterbox runtime has reproducible
 three-part identity and is published under `chatterbox-runtime-v2`, but clean-
-host acquisition has not passed; therefore the product manifest remains
-withheld and the application does not expose Download.
+host acquisition and the full removal/reinstall lifecycle have not passed;
+therefore the product manifest remains withheld and the application does not
+expose Download. Milestone 7 records **NO-GO** for optional readiness. It also
+records **NO-GO** for signed public publication because the Piper gate has not
+passed and no trusted signing identity is authorized. The package is an
+unsigned local validation candidate, not a distributable portfolio MVP or a
+general-public installer.
 Chatterbox's measured `3,644`-MiB VRAM peak no longer inherits the evaluated
 host's 8-GB capacity as an absolute minimum. ADR-0044 admits at `5,632` MiB
 total and `4,668` MiB currently available, keeps nominal 8-GB hardware as the
@@ -173,11 +179,11 @@ before download consent.
 The narration path is deliberately hidden when no exact local admitted
 configuration is available. Piper is the supported CPU fallback, Chatterbox
 is the supported bilingual GPU profile, and Qwen remains constrained and
-development-only. M011 keeps Piper in the core distribution and will expose
+development-only. M011 intends Piper for the core distribution and may expose
 Chatterbox only as an explicit verified optional download. Piper payload and
 licence/source fulfillment plus the local installer path are implemented;
-clean-host installer acceptance and optional acquisition remain M011 work, so
-the current unsigned artifact is not a general end-user distribution.
+clean-host installer acceptance and optional acquisition remain blocked, so
+the current unsigned artifact is a local validation candidate only.
 
 The highlight/follow path above passed repository-authored synthetic,
 Chromium, packaged WebView2, exact-host, M009.1 clean-host, and ephemeral
@@ -187,13 +193,13 @@ range without a DOM target, then corrected passive-scroll retargeting without
 committing the user's EPUB or weakening the completed M009 synchronization
 authority.
 
-## Remaining target user flow
+## Release-gate disposition
 
-Before the final M011 release decision, M003.1 adds the bounded reflowable
-EPUB 2/NCX profile and proves that it produces the same public schema and
-format-neutral semantic, navigation, locator-resolution, restoration, and
-narration behavior as EPUB 3 while each exact archive retains its own identity.
-This is a separate parser/security milestone, not M011 Milestone 6B.
+Completed M003.1 adds the bounded reflowable EPUB 2/NCX profile and proves that
+it produces the same public schema and format-neutral semantic, navigation,
+locator-resolution, restoration, and narration behavior as EPUB 3 while each
+exact archive retains its own identity. M011 Milestone 7 consumes this separate
+parser/security result without claiming general EPUB 2 conformance.
 
 1. M011 has frozen the exact Piper core, optional Chatterbox package, threat
    model, acquisition, dependency, and licence authority before packaging
@@ -224,8 +230,10 @@ This is a separate parser/security milestone, not M011 Milestone 6B.
    ordinary preferences. Focused and packaged development-host validation
    passes; clean-host, optional-support, and public-release readiness remain
    separate open gates.
-6. M011 decides Piper-core portfolio readiness, optional Chatterbox readiness,
-   and signed public-installer publication independently.
+6. M011 Milestone 7 decides Piper-core portfolio readiness, optional Chatterbox
+   readiness, and signed public-installer publication independently. All three
+   are currently NO-GO for the evidence reasons above; no failed gate is
+   represented as an implemented release claim.
 
 M010.1 is a deliberately narrow pre-M011 exception to the earlier post-MVP
 candidate order because English narration and a stronger portfolio demo are
@@ -295,15 +303,14 @@ Implemented and validated:
 
 Remaining:
 
-- Implement and validate the ADR-0048 reflowable OPF 2.0/NCX profile without
-  changing the existing EPUB 3, semantic, locator, privacy, cancellation,
-  reader, restoration, or narration authorities.
-- Provide compliant minimal Piper runtime/voice distribution, exact shipped
-  dependency and licence closure, installer packaging, and a validated
-  normal-user Windows path in M011.
+- Bind the exact final Piper installer hash to the complete corrected clean
+  normal-user Windows matrix before claiming a portfolio-ready distributable.
 - Provide the separately gated optional Chatterbox download only after its
   minimal graph, advisory/licence/provenance, integrity, size, GPU,
   install/remove, offline, and clean-host evidence passes.
+- Obtain protected trusted signing authority and repeat signature/checksum/
+  reputation evidence only after the Piper release gate passes before any
+  general-public Windows publication.
 
 ## Target acceptance criteria
 

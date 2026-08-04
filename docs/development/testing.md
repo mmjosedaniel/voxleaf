@@ -939,7 +939,10 @@ model artifact, path, or raw host identity may enter a result or fixture.
 
 ## M011 packaging and release validation
 
-M011 Milestones 1 through 5 are implemented at their documented boundaries.
+M011 Milestones 1 through 5 and 6A are implemented at their documented
+boundaries. Milestone 7 records independent NO-GO decisions for Piper portfolio
+readiness, optional Chatterbox readiness, and signed public publication;
+Milestone 6 remains open at its clean-host gates.
 The dependency/audit, standalone Piper-core, optional runtime-package,
 acquisition-controller, public runtime identity, and local Windows package
 evidence below is current. Clean-host validation and signed public publication
@@ -1035,11 +1038,11 @@ $app = (Resolve-Path "$env:LOCALAPPDATA\VoxLeaf\voxleaf-desktop.exe").Path
 node apps/desktop/scripts/native-startup-smoke.mjs "--executable=$app"
 ```
 
-The current-host release rehearsal used that boundary for complete installed
+An earlier current-host release rehearsal used that boundary for complete installed
 Spanish and English Piper matrices, including all six playback rates, and
 recorded zero external requests and zero generated-audio files. Two consecutive
-installer/first-start/repair/uninstall cycles and an exact-installer Defender
-scan also passed. The rehearsal exposed package-only stack-allocation,
+installer/first-start/repair/uninstall cycles and a predecessor-installer
+Defender scan also passed. The rehearsal exposed package-only stack-allocation,
 bytecode-mutation, canonical-Windows-path, and stale-local-package defects;
 focused regressions now protect each fix. This remains development-host
 evidence: independent clean normal-user Windows and clean compatible-GPU
@@ -1054,7 +1057,7 @@ installed Piper matrix proves that protocol, narration, cancellation, and
 cleanup remain intact. Visual clean-host confirmation must use the current hash
 above rather than an earlier installer.
 
-The remaining release matrix must distinguish:
+Evidence required to change a Milestone 7 NO-GO decision must distinguish:
 
 - exact shipped Node, Rust, base Python, and core/optional-profile dependency
   audits, including packages the advisory source cannot identify;
@@ -1084,7 +1087,9 @@ manifest records the published runtime but remains withheld, so no end-user
 acquisition is reachable. Development-host bounded application-data removal now
 passes, but clean-host installation/offline use, cross-version replacement,
 interactive uninstall, and complete product behavior remain Milestone 6 work;
-do not describe those release gates as passing.
+do not describe those release gates as passing. The exact final Piper hash has
+no complete corrected clean-host matrix, so it remains an unsigned local
+validation candidate rather than a portfolio-ready distributable.
 
 ADR-0045 adds a separate local validation build because no second compatible
 GPU computer is available. Its static check proves that the ordinary manifest
@@ -1105,6 +1110,33 @@ pnpm.cmd package:windows:chatterbox-validation
 
 All final M011 commands run outside the automation sandbox under the existing
 repository testing rule.
+
+### Milestone 7 decision and closeout result
+
+The 2026-08-03 Milestone 7 run consumes completed M003.1 and records NO-GO for
+Piper portfolio readiness, optional Chatterbox readiness, and signed public
+publication. The following commands ran from normal local PowerShell outside
+the sandbox:
+
+| Command or gate | Result |
+| --------------- | ------ |
+| `pnpm.cmd check:portable` | Pass: shared 20 files/209 tests, EPUB 35/653, desktop 53/536 plus 18 Node, Python 384, type/lint/format/build stages. |
+| `pnpm.cmd check` | Pass: the preceding suites plus Rust formatting/lint, 72 Rust tests, and native release build. |
+| `pnpm.cmd audit:release` | Pass with 17 Rust informational notices and explicit blind spots for `chatterbox-tts`, `resemble-perth`, Torch, and Torchaudio. |
+| `pnpm.cmd inventory:release:check` | Pass/current. |
+| `pnpm.cmd package:piper-core:check` | Pass/current. |
+| `pnpm.cmd package:windows:check` | Pass/current. |
+| `pnpm.cmd package:windows:chatterbox-validation:check` | Pass/current while the ordinary manifest remains withheld. |
+| `pnpm.cmd test:browser` | Pass, 7/7, including the bounded EPUB 2/NCX browser journey. |
+| `pnpm.cmd test:native-startup` | Pass with packaged WebView2, lifecycle/restoration/synchronization, zero external requests, and no page/console error. |
+| `pnpm.cmd benchmark:reader:native` | Pass: 10,000 blocks, 158-ms selection to first content, 9.5-ms maximum scheduler callback, bounded cleanup, and no retained resource owner. |
+| Exact-host portfolio preflight | Test-only suites pass; real preflight reports `Exact bilingual portfolio configuration is unavailable.` before model work. |
+| `pnpm.cmd package:windows:lifecycle` | Stops before mutation with `windows-release-lifecycle-preexisting-install`; both local product identities already exist, so a fresh run needs an explicitly prepared host or user-authorized removal. |
+
+The lifecycle stop is a safe host-state blocker, not a product assertion. It
+does not replace the previously recorded local lifecycle evidence and cannot
+close the clean-host gate. Required pull-request checks also remain pending
+until a branch is pushed and a pull request is authorized.
 
 ## Deferred coverage
 

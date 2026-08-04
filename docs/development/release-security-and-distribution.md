@@ -7,7 +7,8 @@ Milestone 11 must close. It is deliberately proportional to VoxLeaf's first
 MVP and portfolio goal. It is not a security certification and does not claim
 that the current unsigned installer is ready for general-public distribution.
 
-M011 Milestones 1 through 5 are complete at their documented boundaries. The
+M011 Milestones 1 through 5 and 6A are complete at their documented boundaries.
+Milestone 6 remains open at its clean-host gates. The
 result-blind
 [`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) and
 [ADR-0042](../architecture/decisions/ADR-0042-freeze-mvp-release-authority.md)
@@ -23,15 +24,65 @@ state. Milestone 4B accepts additive official-source authority, implements the
 closed controller, and publishes the exact runtime parts; clean-host acquisition
 evidence must still pass before any Download action is enabled. Milestone 5
 builds the versioned unsigned local Windows package and implements the external-
-credential signing path; clean-host acceptance and signed public publication
-remain separate open gates.
+credential signing path. Milestone 7 records a three-part NO-GO release
+decision: the exact Piper candidate still lacks formal corrected clean-host
+acceptance, Chatterbox remains withheld, and signed public publication remains
+blocked. M011 therefore remains active rather than being archived.
 
 ## Current assessment
 
-The current repository is suitable for controlled local development and a
-maintainer-operated portfolio demonstration with trusted local runtimes and a
-synthetic or public-domain EPUB. It is not yet ready to be presented as a
-general public Windows download.
+The current repository is suitable for controlled local development and local
+validation with trusted runtimes and a synthetic or public-domain EPUB. The
+unsigned package is not yet `piper-core-portfolio-ready`, must not be described
+as a distributable portfolio MVP, and is not a general public Windows download.
+
+### Milestone 7 release decision (2026-08-03)
+
+The three claims frozen by
+[`mvp-release-authority-v1`](../architecture/mvp-release-authority-v1.md) are
+decided independently:
+
+| Release claim                            | Decision | Evidence-backed disposition |
+| ---------------------------------------- | -------- | --------------------------- |
+| `piper-core-portfolio-ready`             | **NO-GO** | The exact final unsigned candidate passes deterministic/static, local lifecycle, browser, packaged WebView2, and reader-performance gates, but it lacks the formal corrected clean normal-user host matrix bound to its exact hash. The older-PC report is exploratory only. |
+| `chatterbox-optional-portfolio-ready`    | **NO-GO** | The ordinary manifest stays `withheld`. Spanish and English pass on the compatible development host, but a compatible clean GPU host has not completed acquisition, offline use, restart, removal/reinstall, and Piper-after-removal. |
+| `signed-public-windows-installer`        | **NO-GO** | The prerequisite Piper claim has not passed and no trusted external signing identity is authorized. Public publication remains disabled. |
+
+Milestone 7's decision record is complete because it records the measured
+result without weakening a gate. Its final closeout and M011 are blocked:
+clean-host, compatible clean-GPU-host, trusted-signing, and required pull-
+request evidence remain unavailable.
+
+### Exact current candidate identity
+
+The canonical current evidence is the checked-in release evidence and package
+manifests, not older hashes retained in the historical implementation record:
+
+- Windows x64 current-user NSIS installer: `VoxLeaf_0.1.0_x64-setup.exe`,
+  `181,704,648` bytes, SHA-256
+  `56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`;
+  application binary `12,339,200` bytes, SHA-256
+  `7ea14036048c385e8067c97a9aeb0e58c3eb537c2db81aeb9d9a7b823800e5c6`;
+  state `unsigned-local`, public publication false, and no Defender or
+  SmartScreen claim for this exact artifact;
+- Piper core: `191,240,146` compressed bytes, `281,213,569` installed bytes,
+  archive SHA-256
+  `17fe3456bd7fca519b3e3b0c3b0bbf2579c733e13b660d740c5a56a0781f0843`,
+  runtime-manifest SHA-256
+  `45aad7d39d04066c8875040c1389dc9047d0c56d94a586ed814dfb432c5620c8`;
+  private CPython/Piper, davefx/Spanish, joe/English, notices, model cards, and
+  exact corresponding source are included without system Python or first-run
+  download; and
+- withheld Chatterbox option: `8,231,893,387` download bytes,
+  `8,228,503,309` installed bytes, and `13,254,834,850` peak staging bytes. The
+  gate requires Windows x64, CUDA bfloat16, `5,632` MiB total and `4,668` MiB
+  currently available dedicated VRAM, `24,576` MiB RAM, and eight logical
+  processors; `7,680` MiB VRAM remains the recommended evaluated class.
+
+The release audit passes for Node, Rust, the base/Piper Python graph, and the
+closed optional graph while explicitly retaining advisory-service blind spots
+for URL-pinned `chatterbox-tts`, `resemble-perth`, Torch, and Torchaudio. A blind
+spot is not represented as a clean advisory result.
 
 Existing implementation already provides substantial local protections:
 
@@ -146,22 +197,14 @@ quality profile:
   interpreter/model path from the renderer, and retain the existing exact
   profile and process-tree containment.
 
-The currently evaluated Chatterbox developer assets occupy approximately
-8.02 GiB on disk: 5.03 GiB for the isolated environment and 2.99 GiB for the
-model artifacts. More than 4.3 GiB of that environment is PyTorch. These are
-local development measurements, not a promised download or installed-package
-size. M011 must measure and disclose the final compressed download size,
-installed size, temporary staging allowance, and required free-space margin
-for the exact production package.
-
-The selected Milestone 4B planning direction does not republish the six model
-files in a VoxLeaf-hosted archive. VoxLeaf will request them from the official
+The implemented optional package does not republish the six model files in a
+VoxLeaf-hosted archive. VoxLeaf requests exactly those files from the official
 `ResembleAI/chatterbox` Hugging Face repository at full revision
-`5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18`. The separate approximately
-4.83-GiB measured minimal runtime graph is not provided by that model
-repository. Its exact delivery origin remains a required pre-implementation
-authority decision; direct weight acquisition alone is not an installed
-profile.
+`5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18`. The separately reviewed runtime is
+published as three immutable `chatterbox-runtime-v2` parts. Each source,
+filename, byte count, and SHA-256 remains fixed; direct weight acquisition alone
+is not an installed profile. The measured sizes and hardware gate above are
+disclosed facts, not end-user availability evidence.
 
 Selecting an available-but-uninstalled Chatterbox profile may open an
 accessible acquisition confirmation. The confirmation must state that the
@@ -232,17 +275,16 @@ automatic updater. Ordinary development and repository builds remain
 unbundled. The exact resource allowlist excludes Chatterbox runtime/weights,
 Qwen, benchmark tools, candidate environments, books, audio, and private data.
 
-The current measured unsigned local installer is `181,685,408` bytes with
+The current measured unsigned local installer is `181,704,648` bytes with
 SHA-256
-`355226cfb390ee9e1a080e6ff04d1f8d1232813a2fa495eb3600ab6867284f82`.
-The current hash passes the static release-package gate, local install/first-
-start/repair/uninstall lifecycle, final reinstall, and visible installed-start
-smoke outside the automation sandbox. An exact predecessor passed the installed
-bilingual portfolio matrix and Microsoft Defender, but Defender was not run
-against the current hash. SmartScreen was not observed, so no reputation claim
-is made. Independent clean-host checks and signing remain required. This is
-content-safe development-host evidence, not clean-host or public-release
-acceptance.
+`56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
+The current hash passes the static release-package gate and records local
+install/first-start/repair/uninstall lifecycle evidence outside the automation
+sandbox. An exact predecessor passed the installed bilingual portfolio matrix
+and Microsoft Defender; neither Defender nor SmartScreen was observed against
+the current hash, so no antivirus or reputation claim is made. Independent
+clean-host checks and signing remain required. This is content-safe
+development-host evidence, not portfolio-ready or public-release acceptance.
 The optional Chatterbox manifest remains withheld until a separate compatible
 clean-GPU host passes download, offline bilingual narration, restart, removal,
 and Piper-after-removal validation.
@@ -503,10 +545,20 @@ Spanish WebView2 matrix passes with `45.990`-second Quick command-to-audible,
 `82.096`-second Prepared startup with `66.48` seconds retained, `1.23` warm
 Prepared RTF, `3,808` MiB peak VRAM, `4,865,605,632` bytes peak process-tree
 working set, `469`-ms cancellation, `756`-ms cleanup, and zero generated files
-or external requests. English narration, application restart (including fresh
-verification), removal/reinstall, Piper operation after removal, independent
-clean-host evidence, and public signing remain open before optional-profile
-readiness can be claimed.
+  or external requests. At that checkpoint, English narration, application
+  restart (including fresh verification), removal/reinstall, Piper operation
+  after removal, independent clean-host evidence, and public signing remained
+  open.
+
+Milestone 6A later reran both installed development-host languages. Spanish
+Quick command-to-audible measured `39.966` seconds, warm Prepared RTF `0.93`,
+`422`-ms cancellation, `4,861,247,488` bytes peak process-tree working set, and
+`3,711` MiB peak VRAM. English measured `33.905` seconds, `0.93`, `313` ms,
+`4,896,034,816` bytes, and `3,731` MiB respectively. Both recorded zero
+underruns, generated-audio files, and external requests. This closes the two
+development-host language arms only; restart, real removal/reinstall,
+Piper-after-removal, and compatible clean-GPU-host proof remain open. Milestone
+7 therefore records optional-profile NO-GO and keeps Download withheld.
 
 Hugging Face documents full-commit downloads, per-file downloads, filtered
 snapshots, and application-selected cache/local directories. VoxLeaf uses the
@@ -521,11 +573,11 @@ blind trust:
 - [Hugging Face pickle-scanning guidance](https://huggingface.co/docs/hub/security-pickle)
 - [PyTorch `torch.load` documentation](https://docs.pytorch.org/docs/stable/generated/torch.load.html)
 
-The current exact-host evidence remains useful capacity input: approximately
+The historical exact-host evidence remains useful capacity input: approximately
 0.52-0.54 sustained RTF, greater-than-30-second cold load, about 4.88 GiB peak
-process-tree RAM, and about 3.56 GiB dedicated VRAM. M011 must repeat the
-applicable measurements against the exact production package; it must not
-present the benchmark environment's figures as release-package proof.
+process-tree RAM, and about 3.56 GiB dedicated VRAM. The M6A packaged values
+above supersede it for the current development-host lifecycle, but neither set
+is compatible clean-host release proof.
 ADR-0044 uses the existing result-blind capacity reserve rather than treating
 the evaluated GPU size as model consumption. Optional acquisition now requires
 `5,632` MiB total and `4,668` MiB available dedicated VRAM, recommends the
@@ -548,7 +600,8 @@ before publication.
 
 ## Portfolio and public-distribution gates
 
-M011 has two honest completion levels:
+M011 has two honest completion levels. Milestone 7 records that neither level
+currently passes:
 
 ### Portfolio-ready local MVP
 

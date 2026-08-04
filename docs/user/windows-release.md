@@ -18,11 +18,20 @@ If a compatible WebView2 runtime is absent, the embedded Microsoft bootstrapper
 requires an internet connection to install that Windows prerequisite. Normal
 EPUB reading and Piper narration do not require a network connection.
 
-An unsigned local build is suitable only for maintainer-operated validation or
-a portfolio demonstration. Do not offer it as a trusted general-public
-download. Public distribution requires a trusted signature, successful
+The current unsigned local build is suitable only for controlled
+maintainer-operated validation. Milestone 7 records NO-GO for portfolio
+readiness because the exact final hash lacks the formal corrected clean-host
+matrix. Do not describe it as a portfolio-ready distributable or offer it as a
+trusted general-public download. Public distribution requires a trusted signature, successful
 signature verification, a matching published SHA-256 checksum, and the release
 checks documented by the project.
+
+The current installer is `181,704,648` bytes with SHA-256
+`56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
+It is `unsigned-local`; Defender and SmartScreen were not observed for this
+exact artifact. Milestone 7 also records NO-GO for optional Chatterbox and
+signed public publication. These are release dispositions, not installation
+errors.
 
 ### Maintainer-only Chatterbox validation build
 
@@ -86,7 +95,9 @@ remain in preparation while integrity verification and cold model load complete.
 Both arms recorded zero underruns, generated-audio files, and external requests.
 This is development-host evidence, not general hardware or public-release
 proof. Application restart, real package removal/reinstall, Piper-after-removal,
-independent clean-host validation, and public signing remain open.
+independent clean-host validation, and public signing remain open. Milestone 7
+therefore keeps the ordinary manifest withheld and records NO-GO for the
+optional-profile release claim.
 
 Settings stays populated during profile transitions and reports a truthful
 content-free applying phase instead of going blank. First Chatterbox Play can

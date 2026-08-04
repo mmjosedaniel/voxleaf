@@ -39,8 +39,9 @@ Derived narration text has the same sensitive-content boundary as source book te
 ## Current release readiness
 
 VoxLeaf is pre-alpha. The current repository is appropriate for controlled
-local development and maintainer-operated portfolio demonstrations, but it is
-not yet approved as a general public Windows installer.
+local development and local validation, but the exact unsigned candidate is
+not approved as a portfolio-ready distributable or a general public Windows
+installer.
 
 The native supervisor provides strict profile selection, framed protocol
 bounds, identity-first cancellation, and process-tree cleanup. It does not
@@ -50,17 +51,20 @@ current Windows user. Development firewall rules and offline environment
 variables are additional local controls, not end-user installation or sandbox
 evidence.
 
-Roadmap Milestone 11 owns exact shipped dependency audits, runtime/model/voice
-integrity and acquisition, third-party licence and provenance fulfillment,
-normal-user packaging, uninstall safety, clean-host privacy validation, and
-the signing path. Its planned core contains Piper Spanish/English; Chatterbox
-Spanish/English is a separate optional GPU download only after explicit
-consent, minimal dependency/advisory closure, fixed-manifest integrity checks,
-atomic installation, offline proof, and application-owned removal. Qwen is not
-part of the first distributable product. Piper-core readiness,
-optional-Chatterbox readiness, and signed public publication are separate
-gates. An unsigned local build may be demonstrated honestly, but must not be
-offered as a trusted general-public installer.
+Roadmap Milestone 11 implements exact shipped dependency audits,
+runtime/model/voice integrity and acquisition, third-party licence and
+provenance fulfillment, the unsigned local package, bounded uninstall choices,
+and an external-credential signing path. Its intended core contains Piper
+Spanish/English; Chatterbox Spanish/English is a separate optional GPU download
+only after explicit consent, minimal dependency/advisory closure,
+fixed-manifest integrity checks, atomic installation, offline proof, and
+application-owned removal. Qwen is not part of the first distributable product.
+Milestone 7 records independent NO-GO decisions for Piper-core portfolio
+readiness, optional-Chatterbox readiness, and signed public publication: the
+exact Piper hash lacks formal corrected clean-host proof, Chatterbox remains
+withheld pending a compatible clean-GPU-host lifecycle, and trusted signing
+authority is unavailable. The unsigned package remains a local validation
+candidate only.
 
 See
 [`docs/development/release-security-and-distribution.md`](docs/development/release-security-and-distribution.md)

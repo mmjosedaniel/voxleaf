@@ -95,7 +95,8 @@ cleanup units. Renewed maintainer listening confirms correct slowdown across
 the admitted range, and pull request #170 passes the required Ubuntu and
 Windows checks.
 
-M011 is in progress and has a detailed active
+M011 is blocked at its release gates after Milestone 7 recorded a three-part
+NO-GO decision, and it retains a detailed active
 [`packaging and release ExecPlan`](plans/active/M011-package-validate-and-release-mvp.md).
 Milestone 1 freezes
 [`mvp-release-authority-v1`](architecture/mvp-release-authority-v1.md) and
@@ -164,23 +165,27 @@ profile. Current EPUB evidence passes 35 files/653 tests; the completed
 downstream evidence passes desktop 53 files/536 tests plus 18 Node,
 Playwright 7-test, and packaged-native matrices prove package, navigation,
 semantic/resource/locator, reader/restoration, narration, privacy, and
-cancellation behavior. This is not full EPUB 2 conformance; M011 Milestone 7
-now consumes the completed result.
-Milestone 5 now packages version `0.1.0` as a release-only current-user Windows
-x64 NSIS installer containing the exact verified bilingual Piper core. Local
-installation, first start, repair, uninstall, unrelated-file preservation, and
-Defender checks pass outside the sandbox. The artifact is unsigned and not a
-public release; clean-host validation and authorized public signing remain
-open. Milestone 2
+  cancellation behavior. This is not full EPUB 2 conformance; M011 Milestone 7
+  consumes the completed result.
+Milestone 5 packages version `0.1.0` as a release-only current-user Windows x64
+NSIS installer containing the exact verified bilingual Piper core. The current
+unsigned local artifact is `181,704,648` bytes with SHA-256
+`56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
+Its static authority and local lifecycle evidence pass outside the sandbox;
+Defender and SmartScreen were not observed for this exact hash. Milestone 7
+records NO-GO for Piper portfolio readiness because the exact candidate lacks
+the formal corrected clean normal-user host matrix. Milestone 2
 closes the exact 15-entry core and 79-package optional locks, automated
 audits, bounded update intake, and the component inventory. Milestone 3 adds
 the deterministic bilingual Piper core, complete notices/source fulfillment,
 offline smoke evidence, and native fixed-manifest verification. Enabled
 official-source acquisition and clean-host release claims remain open.
-Piper-core, optional-Chatterbox, and signed-public readiness are separate
-gates. Signing
-does not block a truthful local demo, but an unsigned general download is not
-approved.
+Piper-core, optional-Chatterbox, and signed-public readiness are separate gates.
+All three are currently NO-GO: Chatterbox remains withheld pending a compatible
+clean-GPU-host lifecycle, and public publication additionally lacks trusted
+signing authority. The unsigned package is a local validation candidate, not a
+portfolio-ready distributable or general download. M011 stays active until the
+missing evidence passes or separately accepted authority changes its gates.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -281,7 +286,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
   availability, startup, buffering, cancellation, resource, and recovery
   guidance.
 - [`development/dependencies.md`](development/dependencies.md): dependency ownership, purpose, alternatives, and review policy.
-- [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current M011 security assessment, implemented local Windows package/signing path, closed Piper core and optional Chatterbox dependency/audit boundary, remaining clean-host/public gates, independent core/optional/public decisions, and deliberately deferred enterprise hardening.
+- [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current M011 security assessment, exact unsigned candidate identity, Milestone 7 three-part NO-GO decision, remaining clean-host/clean-GPU/signing gates, and deliberately deferred enterprise hardening.
 - [`user/windows-release.md`](user/windows-release.md): current-user Windows install, repair/replacement, uninstall, checksum, signature, prerequisite, and payload-exclusion guidance for the versioned local package.
 - [`development/git-workflow.md`](development/git-workflow.md): branches, commits, pull requests, and the bounded Luna Git-steward authority.
 - [`development/agentic-refactoring.md`](development/agentic-refactoring.md): bounded Sol-directed audit, Terra implementation, independent validation, Luna Git stewardship, safety contracts, and the reusable prompt for behavior-preserving TypeScript maintainability campaigns.
@@ -292,7 +297,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
 - [`plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md`](plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md): completed Milestone 3.1 plan for the bounded OPF 2.0/NCX package, navigation, downstream-equivalence, and final acceptance path consumed by M011 release closeout.
 - [`plans/completed/typescript-maintainability-batch-20260803.md`](plans/completed/typescript-maintainability-batch-20260803.md): completed recovery and independent-validation record for the small cross-package TypeScript/TSX maintainability batch.
-- [`plans/active/M011-package-validate-and-release-mvp.md`](plans/active/M011-package-validate-and-release-mvp.md): approved detailed plan for the Windows/Piper core, implemented versioned local NSIS/signing path, fail-closed optional Chatterbox lifecycle, exact-revision Hugging Face model-data plus published split-runtime acquisition boundary, remaining clean-host/public-signing gates, and independent core/optional/public release decisions.
+- [`plans/active/M011-package-validate-and-release-mvp.md`](plans/active/M011-package-validate-and-release-mvp.md): active blocked plan for the Windows/Piper core, implemented versioned local NSIS/signing path, fail-closed optional Chatterbox lifecycle, exact-revision Hugging Face model-data plus published split-runtime acquisition boundary, and Milestone 7's recorded NO-GO decisions pending clean-host, clean-GPU-host, and trusted-signing evidence.
 - [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.
 - [`plans/completed/M002-shared-contracts-and-test-harness.md`](plans/completed/M002-shared-contracts-and-test-harness.md): completed ExecPlan and validation evidence for roadmap Milestone 2.
 - [`plans/completed/M003-secure-epub-ingestion-and-document-model.md`](plans/completed/M003-secure-epub-ingestion-and-document-model.md): completed ExecPlan and validation evidence for secure EPUB ingestion and the framework-independent document model in roadmap Milestone 3.

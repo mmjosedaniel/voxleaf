@@ -18,9 +18,9 @@ as production support. `deferred` and `unsupported` remain non-selectable.
 
 | Exact profile                                                                | Language            | Current state              | Next boundary                                                                                                                                           |
 | ---------------------------------------------------------------------------- | ------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Piper 1.4.2 / davefx / ONNX CPU                                              | Spanish             | **Supported**              | Retain as a lightweight CPU profile; M011 owns packaging and distribution obligations.                                                                  |
-| Piper 1.4.2 / joe / ONNX CPU                                                 | English             | **Supported**              | Retain as the language-matched lightweight CPU profile; M011 owns packaging and distribution obligations.                                               |
-| Chatterbox Multilingual V3 / bundled default conditioning / CUDA bfloat16 v4 | Spanish and English | **Supported**              | M011 separately gates an optional explicit download. ADR-0044 requires 5,632 MiB total and 4,668 MiB free VRAM, recommends the evaluated 8-GB class, and requires package/cold-load/RAM/VRAM disclosure. The installed development-host Spanish matrix passes; English/restart/removal/reinstall and clean-host gates remain. |
+| Piper 1.4.2 / davefx / ONNX CPU                                              | Spanish             | **Supported**              | Retain as a lightweight CPU profile. The packaged runtime exists, but M011 Milestone 7 records portfolio-release NO-GO pending formal corrected clean-host evidence for the exact installer hash. |
+| Piper 1.4.2 / joe / ONNX CPU                                                 | English             | **Supported**              | Retain as the language-matched lightweight CPU profile. The packaged runtime exists, but the same M011 clean-host release gate remains. |
+| Chatterbox Multilingual V3 / bundled default conditioning / CUDA bfloat16 v4 | Spanish and English | **Supported**              | Runtime support is not download availability. ADR-0044 requires 5,632 MiB total and 4,668 MiB free VRAM and recommends the evaluated 8-GB class. Installed development-host Spanish and English arms pass; M011 Milestone 7 records optional-release NO-GO and keeps the manifest withheld pending clean-host acquisition, restart, removal/reinstall, and Piper-after-removal. |
 | Qwen3-TTS 1.7B CustomVoice / Serena / CUDA bfloat16 v8                       | Spanish             | **Development-only**       | Keep constrained buffering and require the exact Qwen developer gate and measured host.                                                                 |
 | Qwen3-TTS 1.7B CustomVoice / Aiden / CUDA bfloat16 v8                        | English             | **Development-only**       | Keep constrained buffering and require the exact Qwen developer gate and measured host.                                                                 |
 | MOSS-TTS-Nano 100M ONNX / Ava                                                | Spanish and English | **Deferred, not rejected** | Future separately frozen dialogue/punctuation and voice/accent investigation.                                                                           |
@@ -41,7 +41,7 @@ as production support. `deferred` and `unsupported` remain non-selectable.
 The historical
 [`tts-support-matrix-v1.md`](tts-support-matrix-v1.md) remains the record of
 M010's original runtime closeout. This v2 matrix is the current executable
-M010.1 overlay. Milestone 7's six packaged bilingual portfolio journeys pass
+M010.1 overlay. M010.1 Milestone 7's six packaged bilingual portfolio journeys pass
 locally; pull request #159 passed required Ubuntu/Windows checks and merged the
 plan closeout. M010.2 may reorganize presentation and playback controls but
 must not change this matrix. M011 keeps Piper in the core and treats Chatterbox
@@ -50,8 +50,10 @@ distribution, licensing fulfillment, acquisition/removal, installers, and
 production support claims. A process-lifetime verification receipt may avoid
 repeating complete Chatterbox tree hashing within one application run, but it
 is not persisted and does not change this support decision: every application
-process must verify the exact installed authority before first use, and M011
-still requires English narration, restart, removal/reinstall,
-Piper-after-removal, clean-host, and public-signing evidence.
+process must verify the exact installed authority before first use. M011 has
+development-host English narration evidence but still requires clean-host
+acquisition and offline bilingual narration, restart, removal/reinstall,
+Piper-after-removal, and public-signing evidence. Its Milestone 7 decision
+therefore leaves Chatterbox withheld and records no end-user download claim.
 The receipt is a performance optimization, not same-user tamper protection;
 full hash verification occurs when each application process first creates it.
