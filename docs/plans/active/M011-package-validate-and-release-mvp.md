@@ -1221,8 +1221,8 @@ authorization and is not part of this completed submilestone.
 
 ### Milestone 7: Record the MVP release decision and close validation
 
-**Status:** Ready for renewed execution after completed Milestone 6B; not
-executed by the 6B implementation branch. The 2026-08-03 decision remains a
+**Status:** In progress on the renewed Milestone 7 branch after completed
+Milestone 6B. The 2026-08-03 decision remains a
 historical preliminary snapshot under ADR-0049/release authority v2: Piper was
 **GO**, Chatterbox was **GO when the published host gate passes**, ordinary
 Download was `withheld`, and trusted public signing was **pending external
@@ -2149,6 +2149,22 @@ and never edit prior benchmark authority to make a release pass.
   stopped before mutation with `windows-release-lifecycle-preexisting-install`;
   renewed Milestone 7 must rerun the exact-artifact lifecycle and journey after
   the pre-existing installation is handled deliberately.
+- **2026-08-04:** Created
+  `codex/m011-milestone-7-release-closeout` from clean updated `main` at
+  `6fe18bc0cbd1`. The unchanged outside-sandbox desktop baseline passes 53
+  Vitest files/542 tests plus 32 Node tests, and the ordinary Windows static
+  package authority reports `windows-release:current`.
+- **2026-08-04:** Renewed closeout review found that the checked-in
+  `package:windows:ordinary-chatterbox:evidence` command supplied the exact
+  journey receipt but omitted the already required passing lifecycle status.
+  A successful final promotion would therefore have reset lifecycle to
+  `not-run`. The command now supplies
+  `local-install-first-start-repair-uninstall-passed`, the static release
+  authority requires that exact argument, and a mutation regression rejects
+  its removal. The unchanged outside-sandbox desktop suite again passes 53
+  Vitest files/542 tests plus 32 Node tests, and
+  `pnpm.cmd package:windows:check` remains current. No installer or runtime
+  bytes changed at this checkpoint.
 
 ## Discoveries and decisions
 
