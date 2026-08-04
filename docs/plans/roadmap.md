@@ -77,9 +77,11 @@ without changing reader, preference, compatibility, or narration ownership.
 The sequential six-arm packaged matrix, browser/native-startup, portable, and
 complete Windows repository checks pass outside the sandbox. Renewed maintainer
 listening confirms correct slowdown across every admitted rate, and pull
-  request #170 passes the required Ubuntu and Windows checks. M011 Milestone 7
-  records local/portfolio MVP GO under the requirements-based support authority;
-  only its branch checks and final closeout remain. Milestone 1 freezes the
+  request #170 passes the required Ubuntu and Windows checks. M011's preliminary
+  Milestone 7 decision recorded local/portfolio MVP GO under the requirements-
+  based support authority. Milestone 6B now reopens only the ordinary
+  Chatterbox delivery channel and its final release-isolation proof; Milestone 7
+  will be recorded again afterward. Milestone 1 freezes the
   historical result-blind release authority; its
 detailed
 [`M011 ExecPlan`](active/M011-package-validate-and-release-mvp.md) scopes the
@@ -114,9 +116,10 @@ forms. The first-use correction also repairs only allowlisted generated cache
 data and reuses the completed verification through a metadata-guarded
 process-memory receipt under the MVP no-hostile-same-user-tampering assumption;
 every application restart verifies the authority again. The installed Spanish
-and English representative-host arms now pass. Additional restart, package
-removal/reinstall, and Piper-after-removal journeys remain useful regression
-coverage; signing is a separate external publication action.
+  and English representative-host arms now pass. Milestone 6B turns restart,
+  package removal/reinstall, Piper-after-removal, truthful resource disclosure,
+  and an ordinary release-locked acquisition journey into explicit acceptance
+  work; signing remains a separate external publication action.
 
 On 2026-08-03 the user reported that VoxLeaf worked on the independent older
 Windows computer with 4 GB VRAM and 16 GB RAM. Piper is a CPU profile with no
@@ -132,9 +135,10 @@ packaged-native matrices pass without changing public schemas, persistence,
 dependencies, capabilities, or topology. M011 Milestone 7 consumes this bounded
 result without making a full EPUB 2 conformance claim. ADR-0049 and
 [`mvp-release-authority-v2`](../architecture/mvp-release-authority-v2.md)
-record Piper local/portfolio GO and conditional Chatterbox GO for systems that
-pass the published gate. The ordinary Chatterbox Download remains withheld,
-and public signing remains pending trusted external authority.
+  record Piper local/portfolio GO and conditional Chatterbox GO for systems that
+  pass the published gate. The ordinary Chatterbox Download remains withheld
+  today while Milestone 6B implements compatibility-gated availability; public
+  signing remains pending trusted external authority.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -1194,12 +1198,14 @@ through newly frozen authority and regression evidence.
 
 ## Milestone 11: Package, validate, and release the MVP
 
-**Status:** Local/portfolio MVP GO after the 2026-08-03 Milestone 7 decision was
-reconciled through ADR-0049 and release authority v2. Milestones 1 through 5 and
-6A are complete at their documented boundaries. Milestone 7's decision record
-is complete; M011 remains active only until required pull-request checks and
-final branch closeout are recorded. Trusted public signing is a separate
-externally authorized future channel.
+**Status:** Milestone 6B planned; final Milestone 7 decision reopened. The
+2026-08-03 preliminary decision recorded Piper local/portfolio GO and
+conditional Chatterbox support through ADR-0049 and release authority v2.
+Milestones 1 through 5 and 6A are complete at their documented boundaries.
+M011 now remains active through compatibility-gated ordinary acquisition,
+release-runtime isolation, the renewed decision, required pull-request checks,
+and final branch closeout. Trusted public signing is a separate externally
+authorized future channel.
 Milestone 4B's
 deterministic authority, implementation, and authorized runtime publication are
 complete. Milestone 1 froze
@@ -1251,8 +1257,9 @@ only at the child-process boundary. The exact installed Spanish and English
 WebView2 arms now pass with zero external requests or generated files.
 Together with the deterministic and six-outcome lifecycle evidence, these
 representative results support Chatterbox on systems passing the published host
-gate. The ordinary manifest remains `withheld`, and public signing remains
-pending; neither channel state is a Chatterbox runtime failure.
+gate. The ordinary manifest remains `withheld` while planned Milestone 6B owns
+its guarded promotion; public signing remains pending. Neither current channel
+state is a Chatterbox runtime failure.
 Corrective Milestone 6A now closes the development-host lifecycle-feedback and
 uninstall implementation without reopening the verified acquisition topology.
 Settings stays populated during transitions; first-Play phases and supported
@@ -1273,7 +1280,7 @@ representative Piper functionality evidence; Piper does not require a GPU. It
 does not assert the exact current hash or identical behavior on every PC. The
 machine remains ineligible for Chatterbox because it is below the GPU gate.
 
-The remaining M011 execution order after the corrected decision is explicit:
+The remaining M011 execution order after the approved 6B addition is explicit:
 
 ```text
 completed 1 -> completed 2 -> completed 3 -> completed 4A
@@ -1284,22 +1291,26 @@ completed 1 -> completed 2 -> completed 3 -> completed 4A
        -> completed 6A lifecycle-feedback and uninstall closeout
     -> completed M003.1 bounded EPUB 2/NCX compatibility and its affected
        packaged-reader regression
-    -> 7 local/portfolio GO decision recorded; required PR checks pending
-    -> ordinary Chatterbox Download and trusted public signing stay separate
+    -> preliminary 7 local/portfolio GO decision recorded
+    -> planned 6B ordinary compatibility-gated acquisition, truthful resource
+       disclosure, release-locked runtime, and representative ordinary journey
+    -> renewed 7 decision and required PR checks
+    -> trusted public signing stays separately externally authorized
 ```
 
-Milestone 7 decides the superseding v2 claims independently:
+The preliminary Milestone 7 decisions remain historical inputs. After 6B,
+Milestone 7 decides the superseding v2 claims independently again:
 
 | Claim | Decision | Scope |
 | ----- | -------- | ----- |
 | Piper core portfolio readiness | **GO** | Packaged Windows x64 CPU profile, repository/package evidence, and representative independent-computer functionality pass. |
 | Optional Chatterbox portfolio readiness | **GO when the published host gate passes** | Installed Spanish/English representative-host evidence passes; live Windows/CUDA/VRAM/RAM/CPU admission remains mandatory. |
-| Chatterbox Download in the ordinary build | **WITHHELD** | The checked-in ordinary manifest exposes no Download action; this is not a runtime-support failure. |
+| Chatterbox Download in the ordinary build | **WITHHELD now; target GO only when the live host gate passes** | Milestone 6B must promote one canonical manifest, recheck the native gate before network access, compile out development fallbacks, and pass the ordinary installed journey before this decision changes. |
 | Signed public Windows publication | **PENDING EXTERNAL AUTHORIZATION** | No trusted signing identity is authorized. |
 
-The unsigned package is a local/portfolio MVP, not a trusted public release.
-The M011 ExecPlan stays in `active/` only until required pull-request checks and
-the final closeout merge are recorded.
+The unsigned package remains a local/portfolio MVP, not a trusted public
+release. The M011 ExecPlan stays in `active/` through Milestone 6B, the renewed
+Milestone 7 record, required pull-request checks, and the final closeout merge.
 
 ### Goal
 
@@ -1328,6 +1339,13 @@ current release behavior.
   with measured download, storage, hardware, startup, and licence information.
   Decline/cancel performs no network request or profile change. Verification
   and installation complete before a separate explicit activation action.
+- The confirmation and first-Play state explain that Chatterbox is the generally
+  more natural and expressive quality option, while voice preference varies;
+  that acquisition requires about 8.23 GB transfer, about 8.23 GB installed,
+  up to about 13.25 GB temporary space, and 20 GB free before transfer; and that
+  first load can exceed one minute and temporarily reduce host responsiveness.
+  Package storage is distinct from transient RAM/VRAM use, and visual reading
+  remains available while narration/model controls load.
 - Cancelling an acquisition already in progress removes only its incomplete
   application-owned staging and partial files, never a verified installation.
   Settings remains populated during profile transitions, and first Play exposes
@@ -1347,6 +1365,11 @@ current release behavior.
   minimal private embedded Python/Piper runtime, both exact voices,
   notices/provenance, and one native-owned fixed-manifest Chatterbox acquisition
   boundary with no silent runtime download.
+- The ordinary release compiles repository/environment runtime fallbacks out,
+  resolves only verified application-owned private interpreters and roots, and
+  fails closed when they are absent or invalid. A hostile-environment package
+  test proves this without uninstalling Python, Rust, Cargo, Node.js, or other
+  development tools from the representative computer.
 - Exact shipped JavaScript, Rust, Python, native, model, and voice components
   are inventoried and audited. Unused release packages are removed, known
   high/critical reachable vulnerabilities block release, and audit blind

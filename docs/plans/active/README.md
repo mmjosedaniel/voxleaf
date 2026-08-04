@@ -24,11 +24,16 @@ Follow `.agents/PLANS.md` and update the progress log while working.
   dependency/licence/integrity boundaries, representative-host complete-MVP validation,
   signing path, and independent core/optional/public release decisions.
   Milestones 1-5 and 6A are complete at their documented boundaries. Under
-  ADR-0049 and release authority v2, Milestone 7 records Piper local/portfolio
-  GO and Chatterbox GO on systems that pass its published host gate. The
-  ordinary build still withholds Chatterbox Download, and trusted public
-  signing remains pending external authorization. The plan remains active only
-  until required pull-request checks and final closeout are recorded.
+  ADR-0049 and release authority v2, the preliminary Milestone 7 record accepts
+  Piper local/portfolio GO and Chatterbox on systems that pass its published
+  host gate. Planned Milestone 6B now owns compatibility-gated ordinary
+  acquisition, truthful quality/resource disclosure, a release compiled without
+  development-runtime fallbacks, and the representative ordinary installer
+  journey. The current ordinary Chatterbox Download action remains withheld
+  until 6B passes; trusted public signing remains pending external authorization.
+  The plan stays active
+  through 6B, the renewed Milestone 7 decision, required pull-request checks,
+  and final closeout.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through 9.

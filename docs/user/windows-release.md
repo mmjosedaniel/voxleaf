@@ -30,12 +30,13 @@ checks documented by the project.
 The current installer is `181,704,648` bytes with SHA-256
 `56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
 It is `unsigned-local`; Defender and SmartScreen were not observed for this
-exact artifact. Milestone 7 records Chatterbox as supported when the published
-host gate passes. The ordinary build still withholds its Download action, and
+exact artifact. The preliminary Milestone 7 record accepts Chatterbox as
+supported when the published host gate passes. The current ordinary build still
+withholds its Download action while planned Milestone 6B implements that channel;
 signed public publication remains pending external authorization. These are
 separate channel states, not engine failures.
 
-### Maintainer-only Chatterbox validation build
+### Current maintainer-only Chatterbox validation build (retired by 6B)
 
 `VoxLeaf-Chatterbox-Validation 0.1.0` is a separate unsigned package used only
 to test the optional download on the maintainer's compatible computer. It has a
@@ -109,6 +110,53 @@ While no audio owns playback, the existing safe Stop path is labelled
 **Cancel start**; once playback begins it returns to **Stop**. No fixed duration
 or invented percentage is shown for verification or model loading. This
 feedback does not make the validation build public-release evidence.
+
+### Planned ordinary Chatterbox download
+
+Milestone 6B will retire the separate validation identity after the same closed
+acquisition path is enabled in ordinary VoxLeaf. This section describes planned
+acceptance, not current availability: the current ordinary manifest remains
+withheld until the implementation and its installed-package evidence pass.
+
+On a passing computer, Settings will present Chatterbox as the generally more
+natural and expressive quality option compared with Piper, while noting that
+voice preference varies. Before network access, the confirmation must disclose:
+
+- `8,231,893,387` download bytes (about 8.23 GB/7.67 GiB);
+- a corrected installed total of `8,228,503,309` bytes (about 8.23 GB/7.66 GiB),
+  after its 37,504-byte evidence discrepancy is formally reconciled;
+- a peak temporary requirement of `13,254,834,850` bytes (about 13.25 GB/
+  12.35 GiB) and at least 20 GB/18.63 GiB free before transfer;
+- 64-bit Windows, CUDA bfloat16, at least 8 logical processors, 24,576 MiB total
+  and 4,096 MiB currently available RAM, and 5,632 MiB total and 4,668 MiB
+  currently available dedicated VRAM; nominal 7,680-MiB/8-GB-class VRAM remains
+  the evaluated recommendation; and
+- licence, offline, cancellation, activation, removal, and reacquisition
+  consequences.
+
+Initial Chatterbox load can exceed one minute. Representative direct cold runs
+were `29.61` and `82.34` seconds; installed Quick command-to-audible observations
+were `39.966` seconds in Spanish and `33.905` seconds in English. Representative
+process-tree working-set peaks were `4,861,247,488`/`4,896,034,816` bytes and
+dedicated-VRAM peaks were `3,711`/`3,731` MiB. Those figures describe the tested
+computer, not a fixed countdown or guarantee for every compatible computer.
+
+The package occupies disk after installation; it does not permanently reserve
+RAM or VRAM. Loading and inference do use GPU, VRAM, RAM, and CPU and may
+temporarily make the computer less responsive. Narration/model controls may be
+unavailable during a truthful loading phase, but visual reading must remain
+usable. **Cancel start** is available while the existing identity-safe startup
+path can honor it; **Stop** returns once audio is playing. No fake non-byte
+percentage or fixed duration is shown.
+
+The ordinary release must use only its verified application-owned private
+runtime. End users do not need system Python, Rust, Cargo, Node.js, `uv`, `pip`,
+or CUDA Toolkit. The release test does not uninstall those tools: it compiles
+development fallbacks out, launches the installed product under removed or
+hostile development/Python variables and a misleading `PATH`, and proves that
+the absolute private `runtime/python.exe` and application-owned module/model
+roots are used. Windows/WebView2 and the NVIDIA driver/hardware gate above remain
+real prerequisites.
 
 ## Repair or replace a version
 

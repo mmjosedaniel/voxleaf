@@ -89,10 +89,11 @@ Piper Spanish/English at every rate, and runs Chatterbox Spanish/English plus
 development-only Qwen Serena/Aiden. The maintainer confirms the full admitted
 rate range, and pull request #170 passes the required Ubuntu and Windows checks.
 
-M011 Milestone 7 has recorded its requirements-based release decision. Only
-required pull-request checks remain for branch closeout; trusted public signing
-is a separate externally authorized future channel. Milestones 1 through 5 and 6A are
-complete at their documented boundaries. The implemented standalone core
+M011's preliminary Milestone 7 record accepted its requirements-based support
+decision. Planned Milestone 6B now reopens ordinary Chatterbox availability;
+trusted public signing remains a separate externally authorized future channel.
+Milestones 1 through 5 and 6A are complete at their documented boundaries. The
+implemented standalone core
 payload targets Windows x64 with the measured Piper davefx/Spanish and Piper
 joe/English CPU profiles. Chatterbox Spanish/English is a separately gated
 optional GPU quality download, not part of the core installer; Qwen remains
@@ -115,7 +116,8 @@ verifies every file's expected name, byte size, and SHA-256. It does not execute
 model-repository code. The exact reviewed Chatterbox runtime has reproducible
 three-part identity and is published under `chatterbox-runtime-v2`. Installed
 Spanish/English, offline, privacy, cancellation, and package-lifecycle evidence
-passes on the representative compatible computer. Milestone 7 records **GO
+passes on the representative compatible computer. The preliminary Milestone 7
+record accepts **GO
 when the published host gate passes** for Chatterbox. The ordinary product
 manifest nevertheless remains withheld, so this build does not expose
 Download. Signed public publication is **pending external authorization**
@@ -126,6 +128,13 @@ host's 8-GB capacity as an absolute minimum. ADR-0044 admits at `5,632` MiB
 total and `4,668` MiB currently available, keeps nominal 8-GB hardware as the
 evaluated recommendation, and requires all three quantities to be disclosed
 before download consent.
+Milestone 6B must pair Chatterbox's generally more natural and expressive voice
+with exact transfer/install/temporary-space disclosure, representative startup/
+RAM/VRAM observations, and a warning that first load can exceed one minute and
+temporarily reduce computer responsiveness while visual reading remains usable.
+It also makes the ordinary release independent of repository-development
+fallbacks and proves private-runtime use under hostile environment inputs
+without requiring Python or Rust to be removed from the test computer.
 
 ## Current implemented flow
 
@@ -231,11 +240,18 @@ parser/security result without claiming general EPUB 2 conformance.
    ordinary preferences. Focused and packaged representative-host validation
    passes; ordinary Download availability and trusted public signing remain
    separate channel states.
-6. M011 Milestone 7 decides Piper-core portfolio readiness, compatible-host
+6. Planned M011 Milestone 6B promotes the ordinary manifest only behind the
+   native live gate, reconciles exact package measurements, supplies truthful
+   quality/resource/startup disclosure, compiles development-runtime fallbacks
+   out of the release, and validates the ordinary installed acquisition,
+   bilingual narration, restart, removal/reinstall, and Piper-after-removal
+   journey. The current ordinary Download action remains withheld until those
+   gates pass.
+7. M011 Milestone 7 then decides Piper-core portfolio readiness, compatible-host
    Chatterbox support, ordinary Download availability, and signed public-
-   installer publication independently. Piper is GO; Chatterbox is GO when its
-   published gate passes; Download is withheld in the current ordinary build;
-   and signed publication is pending external authorization.
+   installer publication independently again. The preliminary record has Piper
+   GO, Chatterbox GO when its published gate passes, Download withheld in the
+   current ordinary build, and signed publication pending external authorization.
 
 M010.1 is a deliberately narrow pre-M011 exception to the earlier post-MVP
 candidate order because English narration and a stronger portfolio demo are

@@ -940,9 +940,11 @@ model artifact, path, or raw host identity may enter a result or fixture.
 ## M011 packaging and release validation
 
 M011 Milestones 1 through 5 and 6A are implemented at their documented
-boundaries. Under ADR-0049 and release authority v2, Milestone 7 records Piper
-local/portfolio GO and conditional compatible-host Chatterbox GO; signed public
-publication remains pending external authorization.
+boundaries. Under ADR-0049 and release authority v2, the preliminary Milestone 7
+record accepts Piper local/portfolio GO and conditional compatible-host
+Chatterbox GO. Planned Milestone 6B reopens ordinary Download and release-
+runtime isolation; signed public publication remains pending external
+authorization.
 The dependency/audit, standalone Piper-core, optional runtime-package,
 acquisition-controller, public runtime identity, and local Windows package
 evidence below is current. Representative compatible-host evidence supports
@@ -1083,7 +1085,8 @@ Evidence supporting or extending the Milestone 7 decisions must distinguish:
 M011 audit, Piper-core assembly, optional runtime assembly, v2 acquisition-
 authority, and local installer commands now exist. The current optional
 manifest records the published runtime but remains withheld, so no end-user
-acquisition is reachable in the ordinary build. Bounded application-data
+acquisition is reachable in the ordinary build until Milestone 6B passes.
+Bounded application-data
 removal and the representative package journeys pass. Cross-version replacement
 and interactive uninstall remain useful future regression coverage, not an
 engine-functionality veto. The exact final Piper hash is an unsigned local/
@@ -1110,9 +1113,49 @@ pnpm.cmd package:windows:chatterbox-validation
 All final M011 commands run outside the automation sandbox under the existing
 repository testing rule.
 
-### Milestone 7 decision and closeout result
+### Planned Milestone 6B ordinary-release proof
 
-The 2026-08-03 Milestone 7 run consumes completed M003.1. ADR-0049 then corrects
+Milestone 6B must add a compile-time release boundary that excludes the exact
+repository/environment fallback branches retained for development. Focused Rust
+tests run with that feature and prove that valid or hostile `VOXLEAF_TTS_DEV_*`,
+`VOXLEAF_TTS_PIPER_*`, and `VOXLEAF_TTS_CHATTERBOX_*` inputs cannot select a
+development interpreter/model root. The validation-only
+`VOXLEAF_CHATTERBOX_VALIDATION_PACKAGE_ROOT` hook must also be unavailable in
+the ordinary release. With installed data absent or invalid, the
+release-locked profile must be `ChildUnavailable`; with valid data, the command
+program is the absolute private `runtime/python.exe`, `PYTHONPATH` contains only
+package roots, `PYTHONNOUSERSITE=1`, and `PYTHONHOME`, `PYTHONUSERBASE`,
+`VIRTUAL_ENV`, `CONDA_PREFIX`, and `CONDA_DEFAULT_ENV` are removed.
+
+Static ordinary-package validation must require that release-only boundary and
+exclude the validation overlay and development candidates. It must also prove
+that the native host gate blocks exact one-below/unknown fixtures before any
+network action and that exact-threshold compatible fixtures can reach consent.
+The existing `package:windows:lifecycle` script continues to prove install,
+first-start, repair, uninstall, and data-class cleanup; it does not by itself
+prove real Chatterbox acquisition or synthesis. The existing bilingual portfolio
+harness also depends on explicit development variables, so 6B must add a focused
+ordinary-installed mode or sibling harness rather than relabel either result.
+
+The ordinary installed harness runs under a process-scoped hostile environment:
+development keys and Python/virtual-environment keys are removed or poisoned,
+and a misleading `PATH` puts sentinel Python/Rust/Cargo/Node/uv/pip names first.
+It records content-safe executable/root ownership and Boolean/status/measurement
+results only. Python, Rust, and other tools may remain installed because the
+compile-time boundary and hostile-environment assertions—not destructive host
+preparation—prove independence. One representative compatible host then covers
+ordinary gate, disclosure/consent, cancellation/cleanup, complete verified
+download, activation, Spanish/English offline narration, restart, removal,
+reinstall, and Piper after removal.
+
+Until implementation checks in and documents the actual command, use only the
+existing focused commands listed above; do not invent or report a future harness
+as passing. All 6B acceptance commands run from normal local PowerShell outside
+the sandbox.
+
+### Superseded preliminary Milestone 7 decision and closeout result
+
+The 2026-08-03 preliminary Milestone 7 run consumes completed M003.1. ADR-0049 then corrects
 the decision boundary to record Piper portfolio GO, conditional compatible-host
 Chatterbox GO, current ordinary Download `withheld`, and signed public
 publication pending external authorization. The following commands ran from normal local PowerShell outside
@@ -1135,8 +1178,9 @@ the sandbox:
 
 The lifecycle stop is a safe host-state observation, not a product assertion.
 It does not replace the previously recorded lifecycle evidence. Required pull-
-request checks remain pending until a branch is pushed and a pull request is
-authorized.
+request checks from that snapshot remain historical. Final M011 closeout now
+waits for Milestone 6B, the renewed Milestone 7 decision, and its required pull-
+request evidence.
 
 ## Deferred coverage
 

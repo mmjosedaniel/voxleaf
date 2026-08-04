@@ -147,10 +147,12 @@ is retained. Milestone 5 connects it to product playback with boundary-
 deferred state, content-free preference ownership, and effective-lead
 accounting.
 
-M011 Milestone 7 records the local/portfolio MVP support decision. Milestone 1 freezes
+M011's preliminary Milestone 7 record accepts the local/portfolio MVP support
+decision; planned Milestone 6B reopens ordinary Chatterbox availability and the
+release-runtime isolation proof. Milestone 1 freezes
 [`mvp-release-authority-v1`](mvp-release-authority-v1.md) and accepts
 [ADR-0042](decisions/ADR-0042-freeze-mvp-release-authority.md) before dependency
-or package results. Milestone 7 accepts
+or package results. The preliminary Milestone 7 record accepts
 [ADR-0049](decisions/ADR-0049-use-representative-compatible-host-evidence.md)
 and
 [`mvp-release-authority-v2`](mvp-release-authority-v2.md), superseding only v1's
@@ -186,8 +188,10 @@ revisions, download arbitrary repository contents, execute Hub code, or rely on
 Hub scanning instead of local verification. The 79-package reviewed runtime is
 a separate deterministic 5,022,941,463-byte archive split into three bounded
 assets with reproducible SHA-256 evidence. Together with the model files, the
-implementation measures 8,231,893,387 download bytes, 8,228,503,309 installed
-bytes, and a 13,254,834,850-byte peak staging calculation. Native acquisition
+implementation measures 8,231,893,387 download bytes, ADR-0046's corrected
+8,228,503,309 installed bytes pending Milestone 6B reconciliation with the
+historical evidence total, and a 13,254,834,850-byte peak staging calculation.
+Native acquisition
 uses explicit consent, sequential application-owned transfers, closed
 redirects, per-artifact digest verification, safe extraction/loading, atomic
 versioned installation, separate activation, offline use, and application-
@@ -196,6 +200,10 @@ owned removal. The exact runtime assets are published under
 offline, privacy, cancellation, and lifecycle evidence passes. The ordinary
 manifest remains `withheld`, so Download is not enabled in the normal build;
 this is a distribution state rather than a runtime-support failure. Milestone
+6B plans to promote that single manifest only behind the live native gate,
+compile repository-development fallback branches out of release, and prove the
+ordinary installed artifact under hostile environment inputs without removing
+developer tools from the host. Milestone
 5 sets release version `0.1.0` and
 packages the exact bilingual Piper core in a current-user Windows x64 NSIS
 installer through a release-only configuration. The exact current unsigned
@@ -204,8 +212,8 @@ artifact is `181,704,648` bytes with SHA-256
 Outside-sandbox static and local lifecycle evidence passes; Defender and
 SmartScreen were not observed for this exact hash. Signing automation
 uses only protected external credentials and verifies Authenticode, but no
-certificate is currently authorized. Milestone 7 consumes completed M003.1's
-bounded OPF 2.0/NCX evidence and records **GO** for the packaged Piper local/
+certificate is currently authorized. The preliminary Milestone 7 record consumes
+completed M003.1's bounded OPF 2.0/NCX evidence and accepts **GO** for the packaged Piper local/
 portfolio core and **GO when the published host gate passes** for Chatterbox.
 Piper's representative evidence includes successful use on an independent
 older Windows computer; Chatterbox's includes installed Spanish and English
@@ -334,8 +342,8 @@ Desktop application
 |-- Reader-first Settings and six boundary-deferred playback rates
 |   [M010.2 complete; repository WSOLA, English fallback, packaged validation]
 |-- Windows x64 MVP core plus optional quality package
-|   [M011 Piper local/portfolio GO; Chatterbox supported behind its live gate,
-|    ordinary Download withheld; public signing pending external authority]
+|   [M011 Piper local/portfolio GO; Chatterbox supported behind its live gate;
+|    6B ordinary acquisition/release isolation planned; public signing pending]
 `-- Explicit bilingual narration and exact language/profile selection
     [M010.1 Milestones 2-6; Piper ES/EN and Chatterbox supported,
      Qwen Serena/Aiden development-only]

@@ -65,10 +65,13 @@ published, but the ordinary build still exposes no end-user Download action.
 Milestone 5 implements the unsigned local installer and
 external-credential signing command; Milestone 6A implements lifecycle feedback
 and bounded uninstall choices. Under ADR-0049 and release authority v2,
-Milestone 7 records Piper local/portfolio GO and Chatterbox GO on systems that
-pass its published host gate. The ordinary Chatterbox manifest remains
-withheld, and signed public publication remains pending external authorization.
-M011 stays active only for branch checks and closeout.
+the preliminary Milestone 7 record accepts Piper local/portfolio GO and
+Chatterbox on systems that pass its published host gate. The ordinary
+Chatterbox manifest remains withheld while planned Milestone 6B implements
+compatibility-gated availability and a release compiled without development-
+runtime fallbacks. Signed public publication remains pending external
+authorization. M011 stays active through 6B, the renewed decision, branch
+checks, and closeout.
 
 M009.1 keeps passive viewport inspection separate from the active narration
 locator. Scrolling does not cancel or restart narration; explicit leaf,
@@ -362,6 +365,14 @@ new terminal does not inherit values set in an older terminal. VoxLeaf
 separately checks hardware fit and exact runtime configuration; hardware
 compatibility alone does not enable Play.
 
+These variables are development inputs, not end-user prerequisites. The current
+supervisor checks explicit enablement and exact repository paths rather than an
+arbitrary Python on `PATH`; packaged runtimes use their own absolute private
+interpreter. Milestone 6B must additionally compile these fallback branches out
+of the ordinary release, so its installed-package proof may run on this same
+computer without uninstalling Python, Rust, Cargo, Node.js, or model-development
+environments.
+
 These values remain native-only and are never returned to the renderer,
 logged, persisted, or placed in protocol frames. Both Piper voices use the
 same bounded `narration-piper-v2` segment policy; the English path composes it
@@ -619,6 +630,43 @@ Passing the representative-host Spanish and English arms supports Chatterbox
 on systems that pass the published gate, but it does not enable the ordinary
 manifest. The normal build therefore still exposes no Download action; trusted
 public signing remains a separate channel.
+
+### Planned Milestone 6B ordinary-release isolation validation
+
+The validation-only identity above remains historical/current tooling until 6B
+is implemented. Milestone 6B must replace it with the ordinary package path,
+promote only the single canonical manifest after exact measurement
+reconciliation, and add or extend a checked-in ordinary-package test command.
+Do not run an invented command before that implementation documents its actual
+repository name.
+
+The test builds the ordinary installer with a release-only compile feature that
+excludes repository/environment runtime fallbacks. It launches the installed
+artifact from a child process where every `VOXLEAF_TTS_DEV_*`,
+`VOXLEAF_TTS_PIPER_*`, and `VOXLEAF_TTS_CHATTERBOX_*` key plus
+`VOXLEAF_CHATTERBOX_VALIDATION_PACKAGE_ROOT` is removed or poisoned;
+`PYTHONHOME`, `PYTHONPATH`, `PYTHONUSERBASE`, `VIRTUAL_ENV`, `CONDA_PREFIX`, and
+`CONDA_DEFAULT_ENV` are removed; and a misleading `PATH` places sentinel Python,
+Rust, Cargo, Node.js, `uv`, and `pip` names first. The assertions must show that
+the child executable is the absolute application-owned `runtime/python.exe`, its
+module/model roots are verified application-owned roots, and missing or invalid
+package data fails closed rather than falling back.
+
+This process-scoped environment is sufficient and safer than uninstalling
+development tools. Rust is already compiled into the desktop executable. Piper
+ships a private interpreter, service packages, and voices; installed Chatterbox
+ships its own CPython/runtime graph and exact model data. End users do not need
+system Python, Rust, Cargo, Node.js, `uv`, `pip`, or CUDA Toolkit. Actual external
+requirements remain 64-bit Windows, WebView2 (the installer carries Microsoft's
+bootstrapper, which may need a network if WebView2 is absent), and for
+Chatterbox the published NVIDIA driver/GPU/CUDA-bfloat16, RAM, VRAM, processor,
+and storage gate.
+
+After deterministic/static isolation checks, run the ordinary installed
+gate/consent/cancel/download/verify/activate, Spanish and English offline
+narration, restart, removal, reinstall, and Piper-after-removal journey on the
+representative compatible computer. Keep content-safe results and do not record
+private paths or process command lines.
 
 ## Local TTS feasibility preflight
 

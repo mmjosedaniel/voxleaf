@@ -58,12 +58,19 @@ Spanish/English; Chatterbox Spanish/English is a separate optional GPU download
 only after explicit consent, minimal dependency/advisory closure,
 fixed-manifest integrity checks, atomic installation, offline proof, and
 application-owned removal. Qwen is not part of the first distributable product.
-Milestone 7 records Piper-core portfolio readiness as **GO** and Chatterbox as
+The preliminary Milestone 7 record accepts Piper-core portfolio readiness as
+**GO** and Chatterbox as
 **supported when its published host gate passes**, using representative
 compatible-host evidence under
 [`mvp-release-authority-v2`](docs/architecture/mvp-release-authority-v2.md).
 The ordinary Chatterbox manifest remains `withheld`, so this build does not
 offer its Download action; that distribution state is not a runtime failure.
+Planned M011 Milestone 6B will enable ordinary acquisition only behind the same
+native gate, reconcile exact package measurements and user resource warnings,
+compile repository-development fallbacks out of the release, and prove private-
+runtime use under hostile environment inputs without requiring Python or Rust
+to be uninstalled from the test computer. Milestone 7 will be recorded again
+after that work passes.
 Signed public publication is **pending external authorization** because a
 trusted signing identity is unavailable. All integrity, privacy, cancellation,
 bounded acquisition, and cleanup controls remain required.
