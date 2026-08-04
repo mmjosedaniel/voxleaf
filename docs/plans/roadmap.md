@@ -125,11 +125,12 @@ offline state, account, or complete install/repair/uninstall matrix. It does
 not yet close the formal clean-host Piper gate and cannot validate Chatterbox
 because the GPU is below ADR-0044's admission floor.
 
-ADR-0048 now accepts a separate pre-release Milestone 3.1 for bounded
-reflowable EPUB 2/NCX compatibility. Its active ExecPlan is ready, production
-implementation has not started, and current builds remain EPUB 3-only. M011
-Milestone 7 must wait for both the applicable remaining Milestone 6 evidence
-and the completed Milestone 3.1 result.
+ADR-0048 accepts a separate pre-release Milestone 3.1 for bounded reflowable
+EPUB 2/NCX compatibility. Its active ExecPlan is in progress: Milestones 1-3
+implement and focus-test the fixture, package, doctype, NCX, shared-target, and
+public package-opening boundary; downstream equivalence and full acceptance
+remain. M011 Milestone 7 must wait for both the applicable remaining Milestone
+6 evidence and the completed Milestone 3.1 result.
 
 Create or refine a detailed ExecPlan only when a milestone is ready to begin. Keep implementation focused on one active milestone or independently safe task at a time, update the roadmap when evidence changes the sequence, and do not mark planned behavior as implemented until its acceptance checks pass.
 
@@ -256,8 +257,8 @@ Milestone 2 supplies the book, document, locator, error, and fixture contracts.
 
 ## Milestone 3.1: Add bounded EPUB 2 and NCX compatibility
 
-**Status:** Approved and ready; implementation has not started. The detailed
-ExecPlan is
+**Status:** In progress; Milestones 1-3 are complete and Milestones 4-5 remain.
+The detailed ExecPlan is
 [`M003-001-bounded-epub2-and-ncx-compatibility.md`](active/M003-001-bounded-epub2-and-ncx-compatibility.md),
 and
 [ADR-0048](../architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md)
@@ -316,9 +317,9 @@ signing concerns into this plan.
   unless both formats project immediately into the same internal model.
 - NCX targets, guide references, depth, labels, and node counts are untrusted
   and must reuse the current path and budget authorities.
-- A plan or ADR is not support evidence. Product documentation may say EPUB 2
-  is planned, but not implemented, until all focused, browser, packaged,
-  privacy, and repository gates pass.
+- A plan or ADR is not support evidence. Product documentation may describe
+  completed implementation gates, but must not claim general EPUB 2 support
+  until all focused, browser, packaged, privacy, and repository gates pass.
 
 ## Milestone 4: Deliver the reflowable visual reader and position restoration
 
@@ -1543,10 +1544,11 @@ portfolio validation, maintainer all-rate confirmation, and passing required
 checks.
 
 [`active/M003-001-bounded-epub2-and-ncx-compatibility.md`](active/M003-001-bounded-epub2-and-ncx-compatibility.md)
-is the approved pre-release Milestone 3.1 authority. It adds no implemented
-support yet; it must preserve the completed M003/M004/M005 boundaries while
-projecting a bounded OPF 2.0/NCX source into the same public publication,
-locator, reader, restoration, and narration model.
+is the in-progress pre-release Milestone 3.1 authority. Milestones 1-3
+implement the bounded OPF 2.0/NCX package/navigation path; the remaining
+milestones must preserve the completed M003/M004/M005 boundaries while proving
+the same public publication, locator, reader, restoration, and narration
+model.
 
 [`active/synchronized-reader-and-startup-buffer.md`](active/synchronized-reader-and-startup-buffer.md)
 is retained only as broad historical context and is superseded by completed
