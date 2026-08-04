@@ -50,27 +50,42 @@ current Windows user. Development firewall rules and offline environment
 variables are additional local controls, not end-user installation or sandbox
 evidence.
 
-Roadmap Milestone 11 implements exact shipped dependency audits,
+Roadmap Milestone 11 through Milestone 6B implements exact shipped dependency audits,
 runtime/model/voice integrity and acquisition, third-party licence and
 provenance fulfillment, the unsigned local package, bounded uninstall choices,
 and an external-credential signing path. Its intended core contains Piper
 Spanish/English; Chatterbox Spanish/English is a separate optional GPU download
-only after explicit consent, minimal dependency/advisory closure,
-fixed-manifest integrity checks, atomic installation, offline proof, and
-application-owned removal. Qwen is not part of the first distributable product.
+only after explicit consent, both live compatibility gates, documented
+dependency/advisory review, fixed-manifest integrity checks, bounded atomic
+installation, offline proof, and application-owned removal. Qwen is not part of
+the first distributable product.
 The preliminary Milestone 7 record accepts Piper-core portfolio readiness as
 **GO** and Chatterbox as
 **supported when its published host gate passes**, using representative
 compatible-host evidence under
 [`mvp-release-authority-v2`](docs/architecture/mvp-release-authority-v2.md).
-The ordinary Chatterbox manifest remains `withheld`, so this build does not
-offer its Download action; that distribution state is not a runtime failure.
-Planned M011 Milestone 6B will enable ordinary acquisition only behind the same
-native gate, reconcile exact package measurements and user resource warnings,
-compile repository-development fallbacks out of the release, and prove private-
-runtime use under hostile environment inputs without requiring Python or Rust
-to be uninstalled from the test computer. Milestone 7 will be recorded again
-after that work passes.
+
+Completed M011 Milestone 6B enables ordinary Chatterbox acquisition only after
+the renderer compatibility gate passes, while native code repeats the gate
+before any network access. It reconciles exact package measurements and user
+resource warnings, compiles repository-development fallbacks out of release
+binaries, and passes the representative private-runtime journey under hostile
+environment inputs without requiring Python or Rust to be uninstalled.
+
+The post-6B basic code, logic, and security audit includes Standard Codex
+Security scan `6db53928-14cd-4825-bd80-2680f7d5eac1`, which reviewed all 825
+tracked items in its worktree inventory and recorded zero reportable findings.
+This was a static source review and does not replace runtime,
+dependency/advisory, package, fuzzing, penetration, or external security
+testing. Manual review also ensured that failed narration preparation completes
+active shutdown before availability recovery restarts and that failed Windows
+Job Object assignment terminates and reaps the just-spawned child.
+
+The fresh audit-fix package has a new exact identity. Its generated evidence
+records lifecycle and the representative ordinary Chatterbox journey as
+`not-run` pending renewed Milestone 7 validation; this identity-bound follow-up
+does not mean that Piper or Chatterbox failed.
+
 Signed public publication is **pending external authorization** because a
 trusted signing identity is unavailable. All integrity, privacy, cancellation,
 bounded acquisition, and cleanup controls remain required.

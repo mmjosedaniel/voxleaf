@@ -398,6 +398,7 @@ export class ProductNarrationCoordinator {
   #playerAudibleUnsubscribe: (() => void) | undefined;
   #operation: Promise<void> | undefined;
   #stopOperation: Promise<void> | undefined;
+  #recoveryResetPending = false;
   #recoveryOperation: Promise<void> | undefined;
   #tickHandle: unknown;
   #closed = false;
@@ -878,6 +879,23 @@ export class ProductNarrationCoordinator {
    */
   public resetRecoveryEpisode(): void {
     if (this.#closed) {
+      return;
+    }
+    if (this.#stopOperation !== undefined) {
+      this.#recoveryResetPending = true;
+      this.#availability = "checking";
+      this.#publish();
+      const stop = this.#stopOperation;
+      void stop.finally(() => {
+        if (
+          !this.#closed &&
+          this.#stopOperation === undefined &&
+          this.#recoveryResetPending
+        ) {
+          this.#recoveryResetPending = false;
+          this.resetRecoveryEpisode();
+        }
+      });
       return;
     }
     try {
@@ -1764,22 +1782,10 @@ export class ProductNarrationCoordinator {
     }
     this.#failure = "narration-preparation-failed";
     this.#terminalState = this.#stateFromActiveOwners();
-    this.#runToken += 1;
-    this.#identity = undefined;
     this.#playIntent = "inactive";
     this.#pendingNavigation = undefined;
-    this.#player?.close();
-    this.#playerAudibleUnsubscribe?.();
-    this.#playerAudibleUnsubscribe = undefined;
-    this.#stopTicker();
-    this.#prepared.clear();
-    this.#preparationAbort?.abort();
-    this.#preparationAbort = undefined;
-    this.#continuation = undefined;
-    this.#activeScope = undefined;
-    this.#audibleRange = undefined;
     this.#publish();
-    void this.#client.shutdown().catch(() => undefined);
+    void this.#stopActiveRun();
   }
 
   #stateFromActiveOwners(): AdaptivePreparationUiState | undefined {

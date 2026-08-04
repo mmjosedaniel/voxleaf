@@ -595,6 +595,32 @@ struct ChildProcess {
 
 impl ChildProcess {
     fn spawn(child_configuration: &ServiceChild) -> Result<Self, TtsNativeFailure> {
+        #[cfg(windows)]
+        return Self::spawn_with_job_assigner(child_configuration, assign_kill_on_close_job);
+
+        #[cfg(not(windows))]
+        Self::spawn_without_job(child_configuration)
+    }
+
+    #[cfg(windows)]
+    fn spawn_with_job_assigner(
+        child_configuration: &ServiceChild,
+        assign_job: fn(&Child) -> Result<windows_sys::Win32::Foundation::HANDLE, TtsNativeFailure>,
+    ) -> Result<Self, TtsNativeFailure> {
+        let mut process = Self::spawn_without_job(child_configuration)?;
+        match assign_job(&process.child) {
+            Ok(job) => {
+                process.job = job as usize;
+                Ok(process)
+            }
+            Err(error) => {
+                let _ = process.terminate();
+                Err(error)
+            }
+        }
+    }
+
+    fn spawn_without_job(child_configuration: &ServiceChild) -> Result<Self, TtsNativeFailure> {
         let mut command = child_configuration.command()?;
         configure_supervised_child(&mut command);
         let child = command
@@ -603,12 +629,10 @@ impl ChildProcess {
             .stderr(Stdio::null())
             .spawn()
             .map_err(|_| TtsNativeFailure::ChildUnavailable)?;
-        #[cfg(windows)]
-        let job = assign_kill_on_close_job(&child)? as usize;
         Ok(Self {
             child,
             #[cfg(windows)]
-            job,
+            job: 0,
         })
     }
 
@@ -1731,6 +1755,20 @@ fn verify_exact_audio(audio: &[u8]) -> Result<(), &'static str> {
 mod tests {
     use super::*;
 
+    #[cfg(windows)]
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    #[cfg(windows)]
+    static ASSIGNMENT_FAILURE_CHILD_ID: AtomicU32 = AtomicU32::new(0);
+
+    #[cfg(windows)]
+    fn fail_job_assignment(
+        child: &Child,
+    ) -> Result<windows_sys::Win32::Foundation::HANDLE, TtsNativeFailure> {
+        ASSIGNMENT_FAILURE_CHILD_ID.store(child.id(), Ordering::SeqCst);
+        Err(TtsNativeFailure::ChildUnavailable)
+    }
+
     fn fixture_segment() -> Value {
         serde_json::from_str::<Value>(include_str!(
             "../../../../packages/shared/fixtures/contracts/tts-protocol-control/v1/valid-synthesize.json"
@@ -1984,5 +2022,34 @@ mod tests {
     fn supervised_children_use_the_windows_no_console_flag() {
         assert_eq!(SUPERVISED_CHILD_CREATION_FLAGS, CREATE_NO_WINDOW);
         assert_eq!(SUPERVISED_CHILD_CREATION_FLAGS, 0x0800_0000);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn failed_job_assignment_kills_and_reaps_the_spawned_child() {
+        use windows_sys::Win32::{
+            Foundation::CloseHandle,
+            System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION},
+        };
+
+        ASSIGNMENT_FAILURE_CHILD_ID.store(0, Ordering::SeqCst);
+        assert!(matches!(
+            ChildProcess::spawn_with_job_assigner(
+                &ServiceChild::Fake(NORMAL_SCENARIO),
+                fail_job_assignment,
+            ),
+            Err(TtsNativeFailure::ChildUnavailable)
+        ));
+
+        let child_id = ASSIGNMENT_FAILURE_CHILD_ID.load(Ordering::SeqCst);
+        assert_ne!(child_id, 0, "the assigner should observe the spawned child");
+        let process = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, child_id) };
+        assert!(
+            process.is_null(),
+            "the failed assignment path must wait until the child process is reaped"
+        );
+        if !process.is_null() {
+            unsafe { CloseHandle(process) };
+        }
     }
 }

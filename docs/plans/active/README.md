@@ -32,7 +32,12 @@ Follow `.agents/PLANS.md` and update the progress log while working.
   journey. The ordinary Chatterbox Download action is available only after both
   live host gates pass; trusted public signing remains pending external
   authorization. The plan stays active through the renewed Milestone 7 decision,
-  required pull-request checks, and final closeout.
+  required pull-request checks, and final closeout. Its basic audit now also
+  records an 825/825-item Standard static security scan with zero reportable
+  findings plus the failed-preparation recovery and Windows child-reaping
+  corrections; static limitations remain explicit. Because those fixes change
+  the packaged binary, the fresh unsigned artifact resets its exact lifecycle
+  and ordinary-journey receipts to `not-run`; renewed Milestone 7 reruns them.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through 9.
