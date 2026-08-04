@@ -25,16 +25,16 @@ ADR-0048 is not an implementation claim.
 
 ## Current state
 
-- Milestones 1 and 2 of this plan are complete. Rootfile selection now admits
+- Milestones 1 through 4 of this plan are complete. Rootfile selection admits
   exact OPF `version="2.0" | "3.0"`; the package parser applies their distinct
   metadata/navigation rules without exposing that discriminator publicly.
 - The package parser requires EPUB 3 `dcterms:modified`, leaves it absent for
   EPUB 2, validates direct or deprecated-wrapper OPF 2 metadata, consumes
   `spine@toc`, and validates/ignores the bounded optional OPF 2 `guide`.
-- The current navigation parser still implements only XHTML
-  `<nav epub:type="toc">`. An admitted OPF 2 package stops at an explicit
-  content-free `unsupported-resource` boundary before NCX bytes are read;
-  Milestone 3 owns the NCX parser.
+- The navigation boundary dispatches the validated package-internal source to
+  bounded XHTML or NCX event parsers and projects both into the same immutable
+  navigation tree. Exact inert NCX and XHTML 1.1 declarations are admitted
+  without DTD/entity resolution.
 - The shared public opener already separates archive, package, navigation,
   XHTML projection, book projection, locators, resources, and explicit close.
   The existing internal `ParsedNavigationDocument` is suitable as the common
@@ -44,8 +44,13 @@ ADR-0048 is not an implementation claim.
   preparation from the safe semantic model. Neither boundary should need an
   EPUB-version branch.
 - The deterministic test support now has separate EPUB 3 and OPF2/NCX
-  builders. The public ingestion matrix proves OPF 2 package admission while
-  intentionally withholding publication output until NCX support exists.
+  builders plus one paired EPUB 2/3 equivalence fixture. Public, desktop,
+  Chromium, and packaged WebView2 matrices prove safe semantic, navigation,
+  resource, locator, lifecycle, restoration, and narration equivalence after
+  substituting the fixtures' necessarily distinct exact-byte identities.
+- Milestone 5 still owns authority reconciliation, full portable/repository
+  validation, and the final supported-profile claim. This active plan remains
+  outside `completed/` until that closeout passes.
 - M011 remains active. The user reports that VoxLeaf worked on an independent
   older Windows PC with 4 GB VRAM and 16 GB RAM; the report is retained in
   M011 as exploratory package evidence and does not affect this EPUB parser
@@ -428,9 +433,55 @@ schema and downstream behavior as EPUB 3 while preserving its distinct
 exact-byte identity; no external request, persisted book content, generated
 audio, or new capability is observed.
 
+Milestone 4 baseline actual result on 2026-08-03, before fixture or test edits:
+
+- `pnpm.cmd --filter @voxleaf/epub typecheck`, `test` (35 files/650 tests),
+  and `build` passed.
+- `pnpm.cmd --filter @voxleaf/desktop test` passed with 53 files/535 Vitest
+  tests plus 18 Node tests.
+- `pnpm.cmd test:browser` passed 6 Playwright tests.
+- `pnpm.cmd test:native-startup` built the Windows release executable and
+  passed the complete packaged WebView2 startup/reader/lifecycle matrix.
+
+Milestone 4 actual result on 2026-08-03:
+
+- Added one provenance-labelled deterministic EPUB 2/3 fixture pair with the
+  same metadata, manifest ordering, safe XHTML semantics, linked nested
+  navigation, fallback-resolved spine, nonlinear appendix, and local PNG. The
+  EPUB 2 arm uses canonical inert NCX/XHTML 1.1 declarations and `spine@toc`;
+  archive bytes and SHA-256 identities remain deliberately different.
+- The public ingestion matrix proves identical safe book, document,
+  navigation, resource, locator, exact/nearest resolution, and lifecycle
+  results after identity substitution. Cross-book identity use remains a
+  fixed `locator-unresolved` failure, and both resource reads remain local.
+- The desktop matrix follows the nested NCX `Continuation` target through the
+  existing reader, saves only the content-free locator, closes/reopens the
+  same EPUB 2 bytes, restores exactly, and then recovers an over-end offset to
+  the nearest canonical locator. Version, path, filename, metadata, NCX/XHTML
+  names, and prose are absent from persisted state.
+- The public narration matrix produces identical source ranges, boundary
+  reasons, measurements, ordering, continuation count, and output after
+  identity substitution. A pre-cancelled EPUB 2 request returns the fixed
+  cancellation value and a subsequent retry succeeds; displayed semantics and
+  raster resources remain untouched.
+- Playwright selects the EPUB 2 file through the real browser input, renders
+  `Opening`, follows the nested NCX target to `Continuation`, persists no book
+  content, and observes zero external requests. The normal packaged Windows
+  startup matrix now uses the EPUB 2 fixture as its primary book and passes
+  reselection, cancellation, replacement, keyboard navigation, image,
+  restart/restoration, cleanup, and no-network assertions.
+- No production source, public/shared contract, persistence schema, M005
+  normalization/packing rule, dependency, native capability, generated audio,
+  or system topology changed. The canonical system diagram remains accurate
+  and therefore required no edit.
+- Final normal-PowerShell validation passes EPUB typecheck, 35 files/652
+  tests, build, desktop 53 files/536 Vitest tests plus 18 Node tests,
+  Playwright 7 tests, packaged native startup, TypeScript formatting, ESLint,
+  desktop typecheck, and `git diff --check`.
+
 #### Status
 
-Not started.
+Complete.
 
 ### Milestone 5: Reconcile authority and close validation
 
@@ -580,6 +631,17 @@ unsupported rather than ship a partially navigable profile.
   open. The post-change external suite passes 35 files/650 tests plus
   typecheck, build, TypeScript formatting, ESLint, and diff checks. Milestone
   3 is complete; downstream equivalence and full-plan closeout remain open.
+- **2026-08-03:** Created `codex/m003-4-reader-equivalence` from updated
+  `main` at merged Milestone 3 commit `d0720b5`. The unchanged external
+  baseline passed EPUB typecheck, 35 files/650 tests and build; desktop 53
+  files/535 Vitest tests plus 18 Node tests; Playwright 6 tests; and the full
+  packaged native startup matrix. Checkpoint `83d59bc` added one paired
+  EPUB 2/3 fixture and public, desktop, browser, and packaged-native evidence.
+  Final external validation passes EPUB 35 files/652 tests, desktop 53
+  files/536 Vitest tests plus 18 Node tests, Playwright 7 tests, native startup,
+  formatting, ESLint, both focused typechecks, build, and diff checks.
+  Milestone 4 is complete; Milestone 5 authority reconciliation and full-plan
+  validation remain open.
 
 ## Discoveries and decisions
 
@@ -629,6 +691,25 @@ unsupported rather than ship a partially navigable profile.
   aggregate detailed-navigation maximum and local-target validation as
   projected `navPoint` values. They cannot provide fallback navigation or
   escape budgets merely because they are not returned publicly.
+- **Decision:** Equivalence evidence uses repository-authored paired archives
+  and substitutes only the exact-byte identity in comparisons. It does not
+  weaken locator identity matching or add package version to a public or
+  persisted contract.
+- **Discovery:** EPUB 3 `nav.xhtml` is also projected as one safe non-spine
+  XHTML document/resource, while the NCX authority is navigation-only. The
+  paired EPUB 2 fixture therefore declares the same XHTML as an ordinary
+  non-spine manifest resource in addition to its required NCX. This makes the
+  public resource/document surfaces genuinely equivalent while `spine@toc`
+  remains the sole EPUB 2 navigation authority.
+- **Discovery:** The canonical comprehensive reader fixture contains an
+  intentionally oversized indivisible code token for horizontal-reflow proof;
+  it is not valid narration input. The paired fixture retains that scenario
+  with a bounded synthetic token so `narration-v1` equivalence can complete;
+  the original M004 fixture and all M005 policy/packing code remain unchanged.
+- **Decision:** The normal native startup smoke uses the EPUB 2 arm as its
+  primary synthetic publication. Existing performance and adaptive-TTS modes
+  retain their purpose-built fixtures, so this adds the requested packaged
+  EPUB 2 journey without changing those authorities.
 
 ## Final validation results
 
@@ -659,3 +740,16 @@ installer change. It proves package-level OPF2/NCX opening and hostile-input
 containment only; Milestones 4 and 5 still own format-equivalent reader,
 locator, restoration, narration, browser/package, repository, and full-plan
 evidence.
+
+Milestone 4 passed on 2026-08-03 from normal local PowerShell outside the
+managed sandbox. The unchanged baseline was EPUB 35 files/650 tests, desktop
+53 files/535 Vitest tests plus 18 Node tests, Playwright 6 tests, and one green
+packaged native startup matrix. Final validation passes focused EPUB
+typecheck, 35 files/652 tests and build; desktop 53 files/536 Vitest tests plus
+18 Node tests and typecheck; Playwright 7 tests; packaged native startup;
+TypeScript Prettier; ESLint; and `git diff --check`. The diff adds only
+repository-authored test fixtures, integration/browser/native test evidence,
+and this actual-result record. No production dependency, public schema,
+renderer/version fork, persistence field, narration/TTS/audio behavior,
+network capability, committed EPUB binary, or architecture topology changed.
+Milestone 5 and the final general support/release claim remain open.

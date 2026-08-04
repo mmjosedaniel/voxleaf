@@ -15,7 +15,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   applyEpubFixtureMutations,
   buildComprehensiveEpubFixture,
+  buildEpubVersionEquivalenceFixture,
   buildMinimalEpubFixture,
+  EPUB_VERSION_EQUIVALENCE_FIXTURE_PROVENANCE,
   minimalChapterDocument,
   minimalContainerDocument,
   minimalNavigationDocument,
@@ -531,6 +533,116 @@ describe("public EPUB ingestion matrix", () => {
     }
   });
 
+  it("keeps EPUB 2 and EPUB 3 reader semantics equivalent under exact-byte identity isolation", async () => {
+    const { worker, fetch, logSpies } = prohibitExternalCapabilities();
+    const [epub2Bytes, epub3Bytes] = await Promise.all([
+      buildEpubVersionEquivalenceFixture("2.0"),
+      buildEpubVersionEquivalenceFixture("3.0"),
+    ]);
+    expect(EPUB_VERSION_EQUIVALENCE_FIXTURE_PROVENANCE).toEqual({
+      kind: "repository-authored-synthetic",
+      source: "packages/epub/test-support/epub-fixture.ts",
+      versions: ["2.0", "3.0"],
+    });
+    expect(epub2Bytes).not.toEqual(epub3Bytes);
+
+    const [epub2, epub3] = await Promise.all([
+      requirePublication(epub2Bytes),
+      requirePublication(epub3Bytes),
+    ]);
+
+    try {
+      expect(epub2.book.identity).not.toEqual(epub3.book.identity);
+      expect(identityIndependentSnapshot(epub2)).toEqual(
+        identityIndependentSnapshot(epub3),
+      );
+      expect(epub2.navigation).toMatchObject([
+        {
+          kind: "link",
+          label: "Part One",
+          children: [{ kind: "link", label: "Continuation" }],
+        },
+        { kind: "link", label: "Appendix" },
+      ]);
+
+      for (const [index, epub2Block] of epub2.locators.entries()) {
+        const epub3Block = required(epub3.locators[index]);
+        expect(
+          identityIndependentValue(
+            epub2.resolveLocator(epub2Block.startLocator),
+          ),
+        ).toEqual(
+          identityIndependentValue(
+            epub3.resolveLocator(epub3Block.startLocator),
+          ),
+        );
+      }
+
+      const epub2Opening = required(epub2.locators[0]);
+      const epub3Opening = required(epub3.locators[0]);
+      const epub2Recovered = epub2.resolveLocator({
+        ...epub2Opening.startLocator,
+        anchor: {
+          ...epub2Opening.startLocator.anchor,
+          value: "missing-equivalence-anchor",
+          anchorIndex: 999,
+        },
+        textOffsetCodePoints: 999,
+      });
+      const epub3Recovered = epub3.resolveLocator({
+        ...epub3Opening.startLocator,
+        anchor: {
+          ...epub3Opening.startLocator.anchor,
+          value: "missing-equivalence-anchor",
+          anchorIndex: 999,
+        },
+        textOffsetCodePoints: 999,
+      });
+      expect(identityIndependentValue(epub2Recovered)).toEqual(
+        identityIndependentValue(epub3Recovered),
+      );
+      expect(epub2Recovered).toMatchObject({
+        status: "recovered",
+        reason: "nearest-anchor",
+      });
+
+      expectFixedError(
+        captureFixedError(() =>
+          epub2.resolveLocator({
+            ...epub2Opening.startLocator,
+            bookIdentity: epub3Opening.startLocator.bookIdentity,
+          }),
+        ),
+        "locator-unresolved",
+      );
+      await expect(
+        epub2.readResource(required(epub2.resources[0]).id),
+      ).resolves.toEqual(PNG);
+      await expect(
+        epub3.readResource(required(epub3.resources[0]).id),
+      ).resolves.toEqual(PNG);
+      expect(worker).not.toHaveBeenCalled();
+      expect(fetch).not.toHaveBeenCalled();
+      for (const log of logSpies) {
+        expect(log).not.toHaveBeenCalled();
+      }
+    } finally {
+      await Promise.all([epub2.close(), epub3.close()]);
+    }
+
+    const reopened = await requirePublication(epub2Bytes.slice());
+    const firstClose = reopened.close();
+    expect(reopened.close()).toBe(firstClose);
+    await firstClose;
+    expect(reopened.closed).toBe(true);
+    expectFixedError(
+      captureFixedError(() =>
+        reopened.resolveLocator(required(reopened.locators[0]).startLocator),
+      ),
+      "internal-failure",
+    );
+  });
+
   it("keeps malformed lazy resource bytes private and returns no partial data", async () => {
     const packageDocument = addManifestItem(
       minimalPackageDocument(),
@@ -689,6 +801,20 @@ function publicationSnapshot(publication: OpenedPublication): unknown {
       }),
     ),
   };
+}
+
+function identityIndependentSnapshot(publication: OpenedPublication): unknown {
+  return identityIndependentValue(publicationSnapshot(publication));
+}
+
+function identityIndependentValue(value: unknown): unknown {
+  return JSON.parse(
+    JSON.stringify(value, (key, current) =>
+      key === "bookIdentity" || key === "identity"
+        ? { algorithm: "sha256", value: "<exact-byte-identity>" }
+        : current,
+    ),
+  ) as unknown;
 }
 
 function captureFixedError(action: () => unknown): EpubArchiveError {

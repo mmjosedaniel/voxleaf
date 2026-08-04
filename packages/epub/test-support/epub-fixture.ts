@@ -31,6 +31,18 @@ const FIXED_ZIP_OPTIONS = Object.freeze({
 export type EpubFixtureContent = string | Uint8Array;
 export type EpubFixtureCompression = "deflate" | "stored";
 
+export type EpubVersionEquivalenceFixtureVersion = "2.0" | "3.0";
+
+/**
+ * Provenance for the paired EPUB 2/3 fixture used to prove that package
+ * version differences do not alter the public reader or narration semantics.
+ */
+export const EPUB_VERSION_EQUIVALENCE_FIXTURE_PROVENANCE = Object.freeze({
+  kind: "repository-authored-synthetic",
+  source: "packages/epub/test-support/epub-fixture.ts",
+  versions: Object.freeze(["2.0", "3.0"] as const),
+} as const);
+
 /** The approved reader semantic-block ceiling from ADR-0008. */
 export const READER_SEMANTIC_BLOCK_LIMIT = 10_000;
 
@@ -633,6 +645,90 @@ export async function buildComprehensiveEpubFixture(): Promise<Uint8Array> {
 }
 
 /**
+ * Builds paired EPUB 2 and EPUB 3 archives with deliberately identical public
+ * publication semantics. The package and navigation bytes remain distinct so
+ * exact-byte identity isolation can be proved without special test remapping.
+ */
+export async function buildEpubVersionEquivalenceFixture(
+  version: EpubVersionEquivalenceFixtureVersion,
+): Promise<Uint8Array> {
+  const epub2 = version === "2.0";
+  return buildDeterministicZipFixture([
+    Object.freeze({
+      name: "mimetype",
+      content: EPUB_MIMETYPE,
+      compression: "stored",
+    }),
+    Object.freeze({
+      name: "META-INF/container.xml",
+      content: minimalContainerDocument(),
+      compression: "deflate",
+    }),
+    Object.freeze({
+      name: "EPUB/package.opf",
+      content: epub2
+        ? epubVersionEquivalencePackageDocument2()
+        : epubVersionEquivalencePackageDocument3(),
+      compression: "deflate",
+    }),
+    ...(epub2
+      ? [
+          Object.freeze({
+            name: "EPUB/toc.ncx",
+            content: `${EPUB2_CANONICAL_NCX_DOCTYPE}${epubVersionEquivalenceNcxDocument()}`,
+            compression: "deflate" as const,
+          }),
+          Object.freeze({
+            name: "EPUB/nav.xhtml",
+            content: epubVersionEquivalenceContent(
+              epubVersionEquivalenceNavigationDocument(),
+              true,
+            ),
+            compression: "deflate" as const,
+          }),
+        ]
+      : [
+          Object.freeze({
+            name: "EPUB/nav.xhtml",
+            content: epubVersionEquivalenceNavigationDocument(),
+            compression: "deflate" as const,
+          }),
+        ]),
+    Object.freeze({
+      name: "EPUB/text/chapter-1.xhtml",
+      content: epubVersionEquivalenceContent(
+        comprehensiveFirstChapter(),
+        epub2,
+      ),
+      compression: "deflate",
+    }),
+    Object.freeze({
+      name: "EPUB/text/chapter-2.xhtml",
+      content: epubVersionEquivalenceContent(
+        epubVersionEquivalenceSecondChapter(),
+        epub2,
+      ),
+      compression: "deflate",
+    }),
+    Object.freeze({
+      name: "EPUB/text/appendix.xhtml",
+      content: epubVersionEquivalenceContent(comprehensiveAppendix(), epub2),
+      compression: "deflate",
+    }),
+    Object.freeze({
+      name: "EPUB/foreign.bin",
+      content: Uint8Array.of(0x00),
+      compression: "stored",
+    }),
+    Object.freeze({
+      name: "EPUB/images/cover.png",
+      content: syntheticStaticPngBytes(),
+      compression: "stored",
+    }),
+  ]);
+}
+
+/**
  * Builds the short provenance-labeled public EPUB-to-segment matrix fixture.
  * It is deliberately separate from reader and ingestion fixtures so narration
  * expectations cannot be inferred from production output.
@@ -885,6 +981,34 @@ function comprehensiveSecondChapter(): string {
 
 function comprehensiveAppendix(): string {
   return `<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Appendix</title></head><body><h2 id="appendix">Appendix</h2><p>Nonlinear synthetic material.</p></body></html>`;
+}
+
+function epubVersionEquivalencePackageDocument2(): string {
+  return `<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:epub-version-equivalence</dc:identifier><dc:title>Synthetic EPUB version equivalence</dc:title><dc:language>en</dc:language><dc:creator>First Synthetic Author</dc:creator><dc:creator>Second Synthetic Author</dc:creator></metadata><manifest><item id="nav-xhtml" href="nav.xhtml" media-type="application/xhtml+xml"/><item id="chapter-one" href="text/chapter-1.xhtml" media-type="application/xhtml+xml"/><item id="chapter-two" href="text/chapter-2.xhtml" media-type="application/xhtml+xml"/><item id="appendix" href="text/appendix.xhtml" media-type="application/xhtml+xml"/><item id="foreign" href="foreign.bin" media-type="application/octet-stream" fallback="chapter-two"/><item id="cover" href="images/cover.png" media-type="image/png"/><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/></manifest><spine toc="ncx"><itemref idref="chapter-one"/><itemref idref="foreign"/><itemref idref="appendix" linear="no"/></spine></package>`;
+}
+
+function epubVersionEquivalencePackageDocument3(): string {
+  return `<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" version="3.0" unique-identifier="pub-id"><metadata><dc:identifier id="pub-id">urn:synthetic:epub-version-equivalence</dc:identifier><dc:title>Synthetic EPUB version equivalence</dc:title><dc:language>en</dc:language><dc:creator>First Synthetic Author</dc:creator><dc:creator>Second Synthetic Author</dc:creator><meta property="dcterms:modified">2026-08-03T00:00:00Z</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="chapter-one" href="text/chapter-1.xhtml" media-type="application/xhtml+xml"/><item id="chapter-two" href="text/chapter-2.xhtml" media-type="application/xhtml+xml"/><item id="appendix" href="text/appendix.xhtml" media-type="application/xhtml+xml"/><item id="foreign" href="foreign.bin" media-type="application/octet-stream" fallback="chapter-two"/><item id="cover" href="images/cover.png" media-type="image/png"/></manifest><spine><itemref idref="chapter-one"/><itemref idref="foreign"/><itemref idref="appendix" linear="no"/></spine></package>`;
+}
+
+function epubVersionEquivalenceNavigationDocument(): string {
+  return `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Contents</title></head><body><nav epub:type="toc"><h2>Contents</h2><ol><li><a href="text/chapter-1.xhtml#opening">Part One</a><ol><li><a href="text/chapter-2.xhtml#continuation">Continuation</a></li></ol></li><li><a href="text/appendix.xhtml#appendix">Appendix</a></li></ol></nav></body></html>`;
+}
+
+function epubVersionEquivalenceSecondChapter(): string {
+  const boundedCode = "synthetic_unbroken_code_token_".repeat(4);
+  return `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><title>Continuation</title></head><body><h1 id="continuation">Continuation</h1><blockquote><p id="duplicate">A synthetic quotation.</p></blockquote><ol><li><p id="duplicate">First item</p></li><li>Second <code>item()</code></li></ol><p><code>${boundedCode}</code></p></body></html>`;
+}
+
+function epubVersionEquivalenceNcxDocument(): string {
+  return `<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="urn:synthetic:epub-version-equivalence"/></head><docTitle><text>Synthetic EPUB version equivalence</text></docTitle><navMap><navPoint id="part-one" playOrder="30"><navLabel><text>Part One</text></navLabel><content src="text/chapter-1.xhtml#opening"/><navPoint id="continuation" playOrder="10"><navLabel><text>Continuation</text></navLabel><content src="text/chapter-2.xhtml#continuation"/></navPoint></navPoint><navPoint id="appendix" playOrder="20"><navLabel><text>Appendix</text></navLabel><content src="text/appendix.xhtml#appendix"/></navPoint></navMap></ncx>`;
+}
+
+function epubVersionEquivalenceContent(
+  document: string,
+  epub2: boolean,
+): string {
+  return epub2 ? `${EPUB2_CANONICAL_XHTML11_DOCTYPE}${document}` : document;
 }
 
 function narrationIntegrationPackageDocument(): string {
