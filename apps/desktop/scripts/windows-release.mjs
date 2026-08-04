@@ -377,8 +377,8 @@ function option(arguments_, name, fallback = undefined) {
 export function validateOrdinaryChatterboxReceipt(
   receipt,
   installerIdentity,
-  binaryIdentity,
 ) {
+  const installedBinary = receipt?.artifact?.applicationBinary;
   if (
     JSON.stringify(Object.keys(receipt ?? {}).sort()) !==
       JSON.stringify(
@@ -407,8 +407,10 @@ export function validateOrdinaryChatterboxReceipt(
       JSON.stringify(ORDINARY_CHATTERBOX_JOURNEY_OUTCOMES) ||
     JSON.stringify(receipt.artifact?.installer) !==
       JSON.stringify(installerIdentity) ||
-    JSON.stringify(receipt.artifact?.applicationBinary) !==
-      JSON.stringify(binaryIdentity)
+    installedBinary?.fileName !== "voxleaf-desktop.exe" ||
+    !Number.isSafeInteger(installedBinary?.sizeBytes) ||
+    installedBinary.sizeBytes <= 0 ||
+    !/^[a-f0-9]{64}$/.test(installedBinary?.sha256 ?? "")
   ) {
     fail("ordinary-chatterbox-receipt");
   }
@@ -447,7 +449,6 @@ export async function createPackageEvidence({
     validateOrdinaryChatterboxReceipt(
       ordinaryChatterboxReceipt,
       installerIdentity,
-      binaryIdentity,
     );
   }
   const ordinaryChatterboxStatus =
@@ -491,6 +492,12 @@ export async function createPackageEvidence({
       updaterIncluded: false,
       installer: installerIdentity,
       applicationBinary: binaryIdentity,
+      ...(ordinaryChatterboxReceipt === undefined
+        ? {}
+        : {
+            installedApplicationBinary:
+              ordinaryChatterboxReceipt.artifact.applicationBinary,
+          }),
     },
     payload: {
       piperCoreBundled: true,

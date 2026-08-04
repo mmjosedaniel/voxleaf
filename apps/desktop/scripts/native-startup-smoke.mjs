@@ -17,6 +17,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL, URL } from "node:url";
 
 import {
+  runWebDriverElementInteractionWithRetry,
   runWebDriverInteractionWithRetry,
   WebDriverClient,
   WebDriverClientError,
@@ -957,6 +958,66 @@ async function adaptiveReaderExperienceObservation(driver) {
   );
 }
 
+async function prepareParagraphLeafForInteraction(driver) {
+  await waitForCondition(
+    driver,
+    `const leaf = document.querySelector(".paragraph-leaf");
+     const host = leaf?.closest(".paragraph-leaf-host");
+     const rect = leaf?.getBoundingClientRect();
+     return leaf instanceof HTMLButtonElement &&
+       host instanceof HTMLElement &&
+       host.hidden === false &&
+       leaf.disabled === false &&
+       rect !== undefined && rect.width > 0 && rect.height > 0;`,
+  );
+  const focused = await driver.execute(
+    `const leaf = document.querySelector(".paragraph-leaf");
+     if (!(leaf instanceof HTMLButtonElement)) return false;
+     leaf.scrollIntoView({ block: "center", inline: "nearest" });
+     leaf.focus({ preventScroll: true });
+     return document.activeElement === leaf;`,
+  );
+  assert(focused === true, "Native synchronized narration proof failed.");
+  await waitForCondition(
+    driver,
+    `const leaf = document.querySelector(".paragraph-leaf");
+     const host = leaf?.closest(".paragraph-leaf-host");
+     const owner = document.querySelector('[data-reader-scroll-owner="true"]');
+     if (!(leaf instanceof HTMLButtonElement) ||
+         !(host instanceof HTMLElement) ||
+         !(owner instanceof HTMLElement)) return false;
+     const leafRect = leaf.getBoundingClientRect();
+     const ownerRect = owner.getBoundingClientRect();
+     return host.hidden === false &&
+       leaf.disabled === false &&
+       document.activeElement === leaf &&
+       leafRect.width > 0 && leafRect.height > 0 &&
+       leafRect.bottom > ownerRect.top && leafRect.top < ownerRect.bottom &&
+       leafRect.right > ownerRect.left && leafRect.left < ownerRect.right;`,
+  );
+  return await driver.findElement(".paragraph-leaf");
+}
+
+async function paragraphLeafActivationDelivered(driver) {
+  try {
+    await waitForCondition(
+      driver,
+      `return document.querySelector(".paragraph-leaf")
+         ?.getAttribute("data-leaf-state") === "preparing";`,
+      5_000,
+    );
+    return true;
+  } catch (error) {
+    if (
+      error instanceof WebDriverClientError &&
+      error.code === "webdriver-condition-timeout"
+    ) {
+      return false;
+    }
+    throw error;
+  }
+}
+
 async function adaptiveActiveHighlightPerceivability(driver) {
   return await driver.execute(
     `const highlightName = "voxleaf-narration-active";
@@ -1644,8 +1705,19 @@ async function runAdaptiveTtsExactHostMatrix(
   try {
     setStage("adaptive exact-host keyboard leaf quick start");
     const quickCommandAtMs = Date.now();
-    const quickStartButton = await driver.findElement(".paragraph-leaf");
-    await driver.sendKeys(quickStartButton, WEBDRIVER_SPACE);
+    await runWebDriverElementInteractionWithRetry({
+      action: async () => {
+        const quickStartButton = await prepareParagraphLeafForInteraction(driver);
+        await driver.sendKeys(quickStartButton, WEBDRIVER_SPACE);
+      },
+      accepted: async () => await paragraphLeafActivationDelivered(driver),
+      onAttempt: async (attempt, maximumAttempts) => {
+        setStage(
+          `adaptive exact-host keyboard leaf quick start (attempt ${String(attempt)} of ${String(maximumAttempts)})`,
+        );
+      },
+      onRetry: async () => await delay(250),
+    });
     await waitForCondition(
       driver,
       `return document.querySelector(".paragraph-leaf")
@@ -1722,8 +1794,19 @@ async function runAdaptiveTtsExactHostMatrix(
       "Native synchronized narration proof failed.",
     );
     const leafReplacementStartedAtMs = Date.now();
-    const activeLeaf = await driver.findElement(".paragraph-leaf");
-    await driver.sendKeys(activeLeaf, WEBDRIVER_SPACE);
+    await runWebDriverElementInteractionWithRetry({
+      action: async () => {
+        const activeLeaf = await prepareParagraphLeafForInteraction(driver);
+        await driver.sendKeys(activeLeaf, WEBDRIVER_SPACE);
+      },
+      accepted: async () => await paragraphLeafActivationDelivered(driver),
+      onAttempt: async (attempt, maximumAttempts) => {
+        setStage(
+          `adaptive exact-host active leaf replacement (attempt ${String(attempt)} of ${String(maximumAttempts)})`,
+        );
+      },
+      onRetry: async () => await delay(250),
+    });
     await waitForCondition(
       driver,
       `return document.querySelector(".paragraph-leaf")
@@ -2243,11 +2326,22 @@ async function runAdaptiveTtsExactHostMatrix(
     await closeReaderSettings(driver);
 
     setStage("adaptive exact-host one-minute prepared checkpoint leaf start");
-    const preparedButton = await driver.findElement(".paragraph-leaf");
     // The earlier active-leaf replacement proves keyboard activation. Use the
-    // native WebDriver click here so the prepared-mode lifecycle does not
-    // repeat WebView2's intermittent off-screen Space-key delivery.
-    await driver.click(preparedButton);
+    // native WebDriver click here after applying the same visible/focused leaf
+    // guard so prepared-mode startup cannot race the post-Settings layout.
+    await runWebDriverElementInteractionWithRetry({
+      action: async () => {
+        const preparedButton = await prepareParagraphLeafForInteraction(driver);
+        await driver.click(preparedButton);
+      },
+      accepted: async () => await paragraphLeafActivationDelivered(driver),
+      onAttempt: async (attempt, maximumAttempts) => {
+        setStage(
+          `adaptive exact-host one-minute prepared checkpoint leaf start (attempt ${String(attempt)} of ${String(maximumAttempts)})`,
+        );
+      },
+      onRetry: async () => await delay(250),
+    });
     await waitForCondition(
       driver,
       `return document.querySelector(".paragraph-leaf")

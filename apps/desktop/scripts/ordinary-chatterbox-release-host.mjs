@@ -13,9 +13,13 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
+import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { WebDriverClient } from "./native-webdriver-client.mjs";
+import {
+  WebDriverClient,
+  WebDriverClientError,
+} from "./native-webdriver-client.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(scriptDirectory, "../../..");
@@ -33,6 +37,37 @@ const DEFAULT_RECEIPT = path.join(
 const STARTUP_TIMEOUT_MS = 90_000;
 const ACQUISITION_TIMEOUT_MS = 8 * 60 * 60 * 1_000;
 const POLL_INTERVAL_MS = 250;
+const WEBDRIVER_SHUTDOWN_TIMEOUT_MS = 15_000;
+const PROFILE_CLEANUP_ATTEMPTS = 8;
+const UNINSTALL_STABLE_ABSENCE_OBSERVATIONS = 5;
+const OBSERVABLE_STAGES = new Set([
+  "preflight-artifact",
+  "preflight-ordinary-session",
+  "preflight-ordinary-release-boundary",
+  "preflight-ordinary-host-gate",
+  "preflight-hostile-session",
+  "preflight-hostile-release-boundary",
+  "preflight-hostile-host-gate",
+  "journey-preflight-artifact",
+  "journey-install",
+  "journey-ordinary-session",
+  "journey-ordinary-release-boundary",
+  "journey-ordinary-host-gate",
+  "journey-hostile-session",
+  "journey-hostile-release-boundary",
+  "journey-hostile-host-gate",
+  "journey-optional-snapshot",
+  "journey-download-cancel",
+  "journey-download-retry",
+  "journey-chatterbox-es",
+  "journey-chatterbox-en",
+  "journey-restart",
+  "journey-remove",
+  "journey-piper-es",
+  "journey-piper-en",
+  "journey-reinstall",
+  "journey-uninstall",
+]);
 const DEVELOPMENT_ENVIRONMENT_KEYS = Object.freeze([
   "VOXLEAF_TTS_DEV_ENABLED",
   "VOXLEAF_TTS_DEV_PYTHON",
@@ -67,6 +102,15 @@ const FORBIDDEN_ARTIFACT_PATHS = Object.freeze([
 
 function fail(code) {
   throw new Error(`ordinary-chatterbox-release-host:${code}`);
+}
+
+export function createStageReporter(write = (line) => process.stdout.write(line)) {
+  return Object.freeze({
+    mark(stage) {
+      if (!OBSERVABLE_STAGES.has(stage)) fail("stage");
+      write(`ordinary-chatterbox-release-host:stage=${stage}\n`);
+    },
+  });
 }
 
 function isAbsoluteWindowsPath(value) {
@@ -353,6 +397,64 @@ async function waitFor(condition, timeoutMs, code) {
   fail(code);
 }
 
+export function processTerminated(child) {
+  return child.exitCode !== null || child.signalCode !== null;
+}
+
+async function waitForProcessExit(child) {
+  if (processTerminated(child)) return;
+  await Promise.race([
+    new Promise((resolve) => child.once("exit", resolve)),
+    delay(WEBDRIVER_SHUTDOWN_TIMEOUT_MS),
+  ]);
+  if (!processTerminated(child)) fail("webdriver-shutdown");
+}
+
+export async function removeWebDriverProfile(
+  directory,
+  removeDirectory = rm,
+  wait = delay,
+) {
+  let lastError;
+  for (let attempt = 0; attempt < PROFILE_CLEANUP_ATTEMPTS; attempt += 1) {
+    try {
+      await removeDirectory(directory, {
+        recursive: true,
+        force: true,
+        maxRetries: 4,
+        retryDelay: 200,
+      });
+      return;
+    } catch (error) {
+      lastError = error;
+      if (error?.code !== "EBUSY" && error?.code !== "EPERM") throw error;
+      await wait((attempt + 1) * POLL_INTERVAL_MS);
+    }
+  }
+  throw lastError;
+}
+
+export async function waitForStableInstallRootAbsence(
+  installedRoot,
+  inspect = lstat,
+  wait = delay,
+) {
+  let consecutiveMissing = 0;
+  const deadline = Date.now() + WEBDRIVER_SHUTDOWN_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    try {
+      await inspect(installedRoot);
+      consecutiveMissing = 0;
+    } catch (error) {
+      if (!isMissing(error)) throw error;
+      consecutiveMissing += 1;
+      if (consecutiveMissing >= UNINSTALL_STABLE_ABSENCE_OBSERVATIONS) return;
+    }
+    await wait(POLL_INTERVAL_MS);
+  }
+  fail("uninstall-root-retained");
+}
+
 async function reserveLoopbackPort() {
   const { createServer } = await import("node:net");
   const server = createServer();
@@ -419,16 +521,18 @@ async function createOrdinarySession({ executable, environment }) {
     );
   } catch (error) {
     await client.deleteSession().catch(() => undefined);
-    driverProcess.kill();
-    await rm(profileDirectory, { recursive: true, force: true });
+    if (!processTerminated(driverProcess)) driverProcess.kill();
+    await waitForProcessExit(driverProcess).catch(() => undefined);
+    await removeWebDriverProfile(profileDirectory);
     throw error;
   }
   return Object.freeze({
     client,
     async close() {
       await client.deleteSession().catch(() => undefined);
-      driverProcess.kill();
-      await rm(profileDirectory, { recursive: true, force: true });
+      if (!processTerminated(driverProcess)) driverProcess.kill();
+      await waitForProcessExit(driverProcess);
+      await removeWebDriverProfile(profileDirectory);
     },
   });
 }
@@ -439,8 +543,31 @@ async function invoke(client, command, payload = undefined) {
   );
 }
 
+export function isRetriableHostGateError(error) {
+  return (
+    error instanceof WebDriverClientError &&
+    error.code === "webdriver-command-failed"
+  );
+}
+
 async function hostGate(client) {
-  const report = await invoke(client, "detect_host_profile_compatibility");
+  // The renderer starts its own native probe at mount. The native guard rejects
+  // overlap, so retry only that content-free WebDriver failure until the first
+  // probe releases the guard. Other driver failures remain immediate errors.
+  let report;
+  await waitFor(
+    async () => {
+      try {
+        report = await invoke(client, "detect_host_profile_compatibility");
+        return true;
+      } catch (error) {
+        if (isRetriableHostGateError(error)) return false;
+        throw error;
+      }
+    },
+    STARTUP_TIMEOUT_MS,
+    "host-probe-unavailable",
+  );
   if (!evaluateHostGate(report)) fail("host-gate");
   return report;
 }
@@ -519,6 +646,10 @@ async function runUninstaller(installedRoot, environment) {
       else reject(new Error("ordinary-chatterbox-release-host:uninstaller"));
     });
   });
+  // NSIS can hand cleanup to a temporary child after its visible parent exits.
+  // Do not let the wrapper restore application state until the installation root
+  // has remained absent across a short, bounded observation window.
+  await waitForStableInstallRootAbsence(installedRoot);
 }
 
 async function backupApplicationData() {
@@ -588,6 +719,8 @@ export async function runPreflight(options, environment = process.env) {
 }
 
 export async function runJourney(options, environment = process.env) {
+  const stages = createStageReporter();
+  stages.mark("journey-preflight-artifact");
   await existingFile(options.installer, "installer-missing");
   const expectedInstallRoot = installRoot();
   if (
@@ -612,23 +745,31 @@ export async function runJourney(options, environment = process.env) {
   let applicationInstalled = false;
   let journeyReceipt;
   try {
+    stages.mark("journey-install");
     await runInstaller(options.installer, releaseEnv);
     applicationInstalled = true;
     const { artifact } = await runPreflight(options, environment);
+    stages.mark("journey-ordinary-session");
     session = await createOrdinarySession({
       executable: artifact.executable,
       environment: releaseEnv,
     });
+    stages.mark("journey-ordinary-release-boundary");
     await releaseBoundary(session.client);
+    stages.mark("journey-ordinary-host-gate");
     await hostGate(session.client);
     await session.close();
     session = undefined;
+    stages.mark("journey-hostile-session");
     session = await createOrdinarySession({
       executable: artifact.executable,
       environment: hostileEnv,
     });
+    stages.mark("journey-hostile-release-boundary");
     await releaseBoundary(session.client);
+    stages.mark("journey-hostile-host-gate");
     await hostGate(session.client);
+    stages.mark("journey-optional-snapshot");
     const initial = await invoke(
       session.client,
       "optional_chatterbox_snapshot",
@@ -640,6 +781,7 @@ export async function runJourney(options, environment = process.env) {
       { profileId: PROFILE_ID },
     );
     if (confirming?.state !== "confirming") fail("consent-state");
+    stages.mark("journey-download-cancel");
     await session.client.execute(
       `globalThis.__TAURI_INTERNALS__.invoke("download_optional_chatterbox", { profileId: ${JSON.stringify(PROFILE_ID)} }).catch(() => undefined); return true;`,
     );
@@ -665,6 +807,7 @@ export async function runJourney(options, environment = process.env) {
       .catch((error) => {
         if (error?.message?.includes("staging-retained")) throw error;
       });
+    stages.mark("journey-download-retry");
     const retryConfirmation = await invoke(
       session.client,
       "select_optional_chatterbox",
@@ -683,8 +826,11 @@ export async function runJourney(options, environment = process.env) {
     );
     await session.close();
     session = undefined;
+    stages.mark("journey-chatterbox-es");
     await runBilingualSmoke(artifact.executable, PROFILE_ID, "es", hostileEnv);
+    stages.mark("journey-chatterbox-en");
     await runBilingualSmoke(artifact.executable, PROFILE_ID, "en", hostileEnv);
+    stages.mark("journey-restart");
     session = await createOrdinarySession({
       executable: artifact.executable,
       environment: hostileEnv,
@@ -695,6 +841,7 @@ export async function runJourney(options, environment = process.env) {
       "optional_chatterbox_snapshot",
     );
     if (restarted?.state !== "installed") fail("restart-discovery");
+    stages.mark("journey-remove");
     await invoke(session.client, "remove_optional_chatterbox", {
       profileId: PROFILE_ID,
     });
@@ -707,18 +854,21 @@ export async function runJourney(options, environment = process.env) {
     );
     await session.close();
     session = undefined;
+    stages.mark("journey-piper-es");
     await runBilingualSmoke(
       artifact.executable,
       "piper-1-4-2-onnx-cpu-es-es-davefx-medium-v1",
       "es",
       hostileEnv,
     );
+    stages.mark("journey-piper-en");
     await runBilingualSmoke(
       artifact.executable,
       "piper-1-4-2-onnx-cpu-en-us-joe-medium-v1",
       "en",
       hostileEnv,
     );
+    stages.mark("journey-reinstall");
     session = await createOrdinarySession({
       executable: artifact.executable,
       environment: hostileEnv,
@@ -747,6 +897,7 @@ export async function runJourney(options, environment = process.env) {
     });
     await session.close();
     session = undefined;
+    stages.mark("journey-uninstall");
     await runUninstaller(options.installedRoot, releaseEnv);
     applicationInstalled = false;
   } finally {
@@ -774,24 +925,32 @@ export async function runJourney(options, environment = process.env) {
 async function main(arguments_) {
   const options = parseArguments(arguments_);
   if (options.mode === "preflight") {
+    const stages = createStageReporter();
+    stages.mark("preflight-artifact");
     const { artifact, environment, hostileEnvironment } =
       await runPreflight(options);
+    stages.mark("preflight-ordinary-session");
     let session = await createOrdinarySession({
       executable: artifact.executable,
       environment,
     });
     try {
+      stages.mark("preflight-ordinary-release-boundary");
       await releaseBoundary(session.client);
+      stages.mark("preflight-ordinary-host-gate");
       await hostGate(session.client);
     } finally {
       await session.close();
     }
+    stages.mark("preflight-hostile-session");
     session = await createOrdinarySession({
       executable: artifact.executable,
       environment: hostileEnvironment,
     });
     try {
+      stages.mark("preflight-hostile-release-boundary");
       await releaseBoundary(session.client);
+      stages.mark("preflight-hostile-host-gate");
       await hostGate(session.client);
     } finally {
       await session.close();

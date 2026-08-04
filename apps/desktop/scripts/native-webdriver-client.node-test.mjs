@@ -5,6 +5,7 @@ import { createServer } from "node:http";
 import test from "node:test";
 
 import {
+  runWebDriverElementInteractionWithRetry,
   runWebDriverInteractionWithRetry,
   WebDriverClient,
   WebDriverClientError,
@@ -198,6 +199,38 @@ test("contains transport and protocol details behind fixed error codes", async (
   }
 });
 
+test("classifies retryable element failures without exposing driver details", async () => {
+  for (const [protocolCode, expectedCode] of [
+    ["stale element reference", "webdriver-stale-element-reference"],
+    ["element not interactable", "webdriver-element-not-interactable"],
+  ]) {
+    const fake = await startServer(() => ({
+      body: {
+        value: {
+          error: protocolCode,
+          message: "private driver detail",
+        },
+      },
+      status: 500,
+    }));
+    const client = new WebDriverClient(fake.endpoint);
+    try {
+      await assert.rejects(
+        client.createSession(
+          "C:\\private\\book-name.exe",
+          "C:\\private\\profile",
+        ),
+        (error) =>
+          error instanceof WebDriverClientError &&
+          error.code === expectedCode &&
+          !error.message.includes("private"),
+      );
+    } finally {
+      await fake.stop();
+    }
+  }
+});
+
 test("classifies known session failures without exposing driver messages", async () => {
   const fake = await startServer(() => ({
     body: {
@@ -315,6 +348,59 @@ test("stops after the second timed-out interaction", async () => {
     [1, 2],
     [2, 2],
   ]);
+});
+
+test("retries one stale element interaction after checking delivery state", async () => {
+  let actions = 0;
+  let acceptedChecks = 0;
+  let retries = 0;
+  await runWebDriverElementInteractionWithRetry({
+    action: async () => {
+      actions += 1;
+      if (actions === 1) {
+        throw new WebDriverClientError("webdriver-stale-element-reference");
+      }
+    },
+    accepted: async () => {
+      acceptedChecks += 1;
+      return false;
+    },
+    onRetry: async () => {
+      retries += 1;
+    },
+  });
+  assert.equal(actions, 2);
+  assert.equal(acceptedChecks, 1);
+  assert.equal(retries, 1);
+});
+
+test("accepts a delivered element interaction without sending it twice", async () => {
+  let actions = 0;
+  await runWebDriverElementInteractionWithRetry({
+    action: async () => {
+      actions += 1;
+      throw new WebDriverClientError("webdriver-element-not-interactable");
+    },
+    accepted: async () => true,
+  });
+  assert.equal(actions, 1);
+});
+
+test("does not retry unclassified WebDriver interaction failures", async () => {
+  let actions = 0;
+  await assert.rejects(
+    runWebDriverElementInteractionWithRetry({
+      action: async () => {
+        actions += 1;
+        throw new WebDriverClientError("webdriver-command-failed");
+      },
+      accepted: async () => false,
+    }),
+    (error) =>
+      error instanceof WebDriverClientError &&
+      error.code === "webdriver-command-failed",
+  );
+  assert.equal(actions, 1);
 });
 
 test("reports only fixed content-safe native smoke invariant codes", () => {

@@ -6,14 +6,20 @@ import test from "node:test";
 
 import {
   assertNoDevelopmentEnvironment,
+  createStageReporter,
   assertHostileDevelopmentEnvironment,
   evaluateHostGate,
   hostileReleaseEnvironment,
+  isRetriableHostGateError,
   journeySteps,
   parseArguments,
+  processTerminated,
+  removeWebDriverProfile,
   releaseEnvironment,
   validateOrdinaryArtifact,
+  waitForStableInstallRootAbsence,
 } from "./ordinary-chatterbox-release-host.mjs";
+import { WebDriverClientError } from "./native-webdriver-client.mjs";
 
 const root = await mkdtemp(path.join(tmpdir(), "voxleaf-ordinary-host-test-"));
 
@@ -103,6 +109,33 @@ test("arguments resolve the ordinary package defaults without PATH lookup", () =
   );
 });
 
+test("stage reporting emits only a fixed content-free stage identifier", () => {
+  const lines = [];
+  const reporter = createStageReporter((line) => lines.push(line));
+  reporter.mark("journey-hostile-host-gate");
+  assert.deepEqual(lines, [
+    "ordinary-chatterbox-release-host:stage=journey-hostile-host-gate\n",
+  ]);
+  assert.throws(() => reporter.mark("C:\\private\\book.epub"), /stage/);
+});
+
+test("native gating retries only the content-free overlapping probe failure", () => {
+  assert.equal(
+    isRetriableHostGateError(
+      new WebDriverClientError("webdriver-command-failed"),
+    ),
+    true,
+  );
+  assert.equal(
+    isRetriableHostGateError(new WebDriverClientError("webdriver-session-timeout")),
+    false,
+  );
+  assert.equal(
+    isRetriableHostGateError({ code: "webdriver-command-failed" }),
+    false,
+  );
+});
+
 test("hostile development variables are removed and the misleading PATH is retained", () => {
   const sanitized = releaseEnvironment({
     PATH: "C:\\Python",
@@ -179,6 +212,50 @@ test("the bounded host gate admits only the published Chatterbox profile state",
     }),
     false,
   );
+});
+
+test("WebDriver profile cleanup retries transient Windows file locks", async () => {
+  let calls = 0;
+  const waits = [];
+  await removeWebDriverProfile(
+    "C:\\synthetic-profile",
+    async () => {
+      calls += 1;
+      if (calls < 3) {
+        const error = new Error("busy");
+        error.code = "EBUSY";
+        throw error;
+      }
+    },
+    async (milliseconds) => waits.push(milliseconds),
+  );
+  assert.equal(calls, 3);
+  assert.deepEqual(waits, [250, 500]);
+});
+
+test("a WebDriver child terminated by signal is already finished", () => {
+  assert.equal(processTerminated({ exitCode: null, signalCode: null }), false);
+  assert.equal(processTerminated({ exitCode: 0, signalCode: null }), true);
+  assert.equal(processTerminated({ exitCode: null, signalCode: "SIGTERM" }), true);
+});
+
+test("uninstall completion requires a stable absent installation root", async () => {
+  const observations = ["present", "missing", "missing", "missing", "missing", "missing"];
+  const waits = [];
+  await waitForStableInstallRootAbsence(
+    "C:\\synthetic-install",
+    async () => {
+      if (observations.shift() === "missing") {
+        const error = new Error("missing");
+        error.code = "ENOENT";
+        throw error;
+      }
+    },
+    async (milliseconds) => waits.push(milliseconds),
+  );
+  assert.equal(observations.length, 0);
+  assert.equal(waits.length, 5);
+  assert.ok(waits.every((milliseconds) => milliseconds === 250));
 });
 
 test("journey has one ordered ordinary identity path through cancellation, restart, removal, reinstall, and Piper", () => {

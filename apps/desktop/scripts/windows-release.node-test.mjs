@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -132,8 +132,12 @@ test("content-safe evidence distinguishes unsigned local and signed public gates
     `VoxLeaf_${APP_VERSION}_x64-setup.exe`,
   );
   const binary = path.join(temporary, "voxleaf-desktop.exe");
+  const installedRoot = path.join(temporary, "installed");
+  const installedBinary = path.join(installedRoot, "voxleaf-desktop.exe");
   await writeFile(installer, "installer");
   await writeFile(binary, "binary");
+  await mkdir(installedRoot);
+  await writeFile(installedBinary, "installed binary");
   const unsigned = await createPackageEvidence({
     root: repositoryRoot(),
     installer,
@@ -157,7 +161,7 @@ test("content-safe evidence distinguishes unsigned local and signed public gates
 
   const receipt = await createJourneyReceipt({
     installer,
-    executable: binary,
+    executable: installedBinary,
   });
   const signed = await createPackageEvidence({
     root: repositoryRoot(),
@@ -172,12 +176,24 @@ test("content-safe evidence distinguishes unsigned local and signed public gates
   assert.equal(signed.signature.publicPublicationAllowed, true);
   assert.equal(signed.lifecycle.localReleaseGatesPassed, true);
   assert.equal(
+    signed.package.applicationBinary.sha256,
+    unsigned.package.applicationBinary.sha256,
+  );
+  assert.equal(
+    signed.package.installedApplicationBinary.sha256,
+    receipt.artifact.applicationBinary.sha256,
+  );
+  assert.notEqual(
+    signed.package.applicationBinary.sha256,
+    signed.package.installedApplicationBinary.sha256,
+  );
+  assert.equal(
     signed.optionalChatterbox.representativeCompatibleHostJourney,
     "representative-compatible-host-passed",
   );
 
   const mismatched = JSON.parse(JSON.stringify(receipt));
-  mismatched.artifact.applicationBinary.sha256 = "0".repeat(64);
+  mismatched.artifact.installer.sha256 = "0".repeat(64);
   await assert.rejects(
     () =>
       createPackageEvidence({
