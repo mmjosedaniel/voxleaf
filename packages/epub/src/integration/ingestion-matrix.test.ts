@@ -157,7 +157,7 @@ const FAILURE_SCENARIOS: readonly FailureScenario[] = [
         packageDocument: replaceOnce(
           minimalPackageDocument(),
           `version="3.0"`,
-          `version="2.0"`,
+          `version="1.0"`,
         ),
       }),
     }),

@@ -21,7 +21,7 @@ const CONTAINER_PATH = parseArchiveEntryPath("META-INF/container.xml", "file");
 const ARCHIVE_ROOT_BASE_PATH = parseArchiveEntryPath("root", "file");
 const OPF_NAMESPACE = "http://www.idpf.org/2007/opf";
 const PACKAGE_MEDIA_TYPE = "application/oebps-package+xml";
-const SUPPORTED_PACKAGE_VERSION = "3.0";
+const SUPPORTED_PACKAGE_VERSIONS = new Set<string>(["2.0", "3.0"]);
 const RENDITION_LAYOUT_PROPERTY = "rendition:layout";
 const REFLOWED_LAYOUT = "reflowable";
 const FIXED_LAYOUT = "pre-paginated";
@@ -36,11 +36,19 @@ interface PackageProfile {
   readonly renditionLayout: string | undefined;
 }
 
+export type PackageDocumentVersion = "2.0" | "3.0";
+
 export interface ResolvedPackageDocument {
   readonly path: ArchiveFilePath;
   readonly bytes: Uint8Array;
-  readonly version: "3.0";
+  readonly version: PackageDocumentVersion;
   readonly renditionLayout: "reflowable";
+}
+
+function isSupportedPackageVersion(
+  value: string,
+): value is PackageDocumentVersion {
+  return SUPPORTED_PACKAGE_VERSIONS.has(value);
 }
 
 function fail(code: EpubArchiveErrorCode): never {
@@ -383,7 +391,7 @@ export async function resolveContainerPackage(
     });
     const profile = inspectPackageProfile(archive, bytes);
 
-    if (profile.version !== SUPPORTED_PACKAGE_VERSION) {
+    if (!isSupportedPackageVersion(profile.version)) {
       firstUnsupportedReason ??= "unsupported-version";
       continue;
     }
@@ -401,7 +409,7 @@ export async function resolveContainerPackage(
     return Object.freeze({
       path: rootfile.path,
       bytes,
-      version: SUPPORTED_PACKAGE_VERSION,
+      version: profile.version,
       renditionLayout: REFLOWED_LAYOUT,
     });
   }

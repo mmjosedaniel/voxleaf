@@ -581,6 +581,7 @@ function syntheticPackageDocument(): ParsedPackageDocument {
     manifest: Object.freeze([]),
     spine: Object.freeze([]),
     navigation: Object.freeze({
+      kind: "xhtml",
       resourceId: "nav",
       path: filePath("EPUB/nav.xhtml"),
     }),

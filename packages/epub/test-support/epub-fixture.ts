@@ -504,8 +504,9 @@ export async function buildMinimalEpubFixture(
 
 /**
  * Builds a deterministic synthetic OPF 2/NCX archive without changing the
- * EPUB 3 defaults of `buildMinimalEpubFixture`. Production currently rejects
- * these bytes as `unsupported-version`; later milestones replace that boundary.
+ * EPUB 3 defaults of `buildMinimalEpubFixture`. Milestone 2 admits this package
+ * profile and stops at the pending NCX parser; later milestones replace that
+ * boundary.
  */
 export async function buildMinimalEpub2Fixture(
   options: MinimalEpub2FixtureOptions = {},

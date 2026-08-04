@@ -110,7 +110,7 @@ describe("public privacy-safe EPUB opening", () => {
     });
   });
 
-  it("keeps deterministic OPF 2 and NCX input behind the content-free unsupported-version boundary", async () => {
+  it("admits deterministic OPF 2 through the package stage and stops at the pending NCX parser", async () => {
     const privacyCanary = "SYNTHETIC_EPUB2_PRIVATE_METADATA_CANARY";
     const worker = vi.fn(() => {
       throw new Error("worker must not be constructed");
@@ -138,7 +138,7 @@ describe("public privacy-safe EPUB opening", () => {
     expect(bytes).toEqual(originalBytes);
     expect(result).toEqual({
       ok: false,
-      detail: "unsupported-version",
+      detail: "unsupported-resource",
       error: {
         schemaVersion: 1,
         code: "unsupported-input",
