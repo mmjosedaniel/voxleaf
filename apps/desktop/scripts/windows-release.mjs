@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFile, stat, writeFile } from "node:fs/promises";
+import { access, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -15,6 +15,38 @@ export const LIFECYCLE_STATUSES = new Set([
   "not-run",
   "local-install-first-start-repair-uninstall-passed",
 ]);
+const ORDINARY_CHATTERBOX_JOURNEY_STEPS = Object.freeze([
+  "preflight",
+  "install",
+  "gate",
+  "consent",
+  "cancel-download",
+  "verify-staging-cleanup",
+  "retry-download",
+  "activate",
+  "offline-chatterbox-es",
+  "offline-chatterbox-en",
+  "restart",
+  "remove",
+  "offline-piper-after-removal-es",
+  "offline-piper-after-removal-en",
+  "reinstall-optional-package",
+  "verify-reinstalled-package",
+  "uninstall",
+]);
+const ORDINARY_CHATTERBOX_JOURNEY_OUTCOMES = Object.freeze({
+  releaseLockedRuntime: true,
+  cleanDevelopmentEnvironmentPassed: true,
+  hostileDevelopmentEnvironmentPassed: true,
+  nativeCompatibilityGatePassed: true,
+  downloadCancellationCleanupPassed: true,
+  bilingualOfflineNarrationPassed: true,
+  restartDiscoveryPassed: true,
+  removalPassed: true,
+  piperAfterRemovalPassed: true,
+  optionalPackageReinstallPassed: true,
+  privateBookTextLogged: false,
+});
 
 const PIPER_CORE_RESOURCE =
   "../../../services/tts/release/core/dist/voxleaf-piper-core-v1/";
@@ -29,6 +61,8 @@ const EXPECTED_RESOURCES = Object.freeze({
     "resources/release/optional/chatterbox/THIRD-PARTY-NOTICES.md",
   "../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json":
     "resources/release/optional/chatterbox/optional-package-manifest-v2.json",
+  "../../../services/tts/release/optional/chatterbox/runtime-package-evidence-v3.json":
+    "resources/release/optional/chatterbox/runtime-package-evidence-v3.json",
   "../../../services/tts/release/optional/chatterbox/source-manifest-v2.json":
     "resources/release/optional/chatterbox/source-manifest-v2.json",
 });
@@ -68,6 +102,16 @@ export async function loadReleaseDocuments(root) {
     baseConfig: await readJson(path.join(srcTauri, "tauri.conf.json")),
     releaseConfig: await readJson(
       path.join(srcTauri, "tauri.release.conf.json"),
+    ),
+    optionalManifest: await readJson(
+      path.join(
+        root,
+        "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+      ),
+    ),
+    buildScript: await readFile(
+      path.join(root, "scripts/build-windows-release.ps1"),
+      "utf8",
     ),
     nsisHooks: await readFile(
       path.join(srcTauri, "windows/nsis-hooks.nsh"),
@@ -146,6 +190,8 @@ export function validateClosedReleaseValues(documents) {
     cargoToml,
     baseConfig,
     releaseConfig,
+    optionalManifest,
+    buildScript,
     nsisHooks,
     lifecycleScript,
   } = documents;
@@ -167,6 +213,57 @@ export function validateClosedReleaseValues(documents) {
     baseConfig.bundle?.active !== false
   ) {
     fail("application-identity");
+  }
+  if (
+    !/^release-locked-runtime = \[\]$/m.test(cargoToml) ||
+    /chatterbox-acquisition-validation/.test(cargoToml) ||
+    !buildScript.includes('"--features"') ||
+    !buildScript.includes('"release-locked-runtime"') ||
+    /OrdinaryChatterboxStatus|ordinary-chatterbox-status/.test(buildScript) ||
+    rootPackage.scripts?.["package:windows:chatterbox-validation"] ||
+    rootPackage.scripts?.["package:windows:chatterbox-validation:check"] ||
+    desktopPackage.scripts?.test?.includes("chatterbox-validation-release") ||
+    !desktopPackage.scripts?.test?.includes(
+      "ordinary-chatterbox-release-host.node-test.mjs",
+    ) ||
+    !rootPackage.scripts?.["package:windows:ordinary-chatterbox"]?.includes(
+      "ordinary-chatterbox-release-host.mjs --mode journey",
+    ) ||
+    !rootPackage.scripts?.[
+      "package:windows:ordinary-chatterbox:preflight"
+    ]?.includes("ordinary-chatterbox-release-host.mjs --mode preflight") ||
+    !rootPackage.scripts?.[
+      "package:windows:ordinary-chatterbox:evidence"
+    ]?.includes("--ordinary-chatterbox-receipt") ||
+    !rootPackage.scripts?.["test:rust"]?.includes(
+      "--features release-locked-runtime",
+    ) ||
+    lifecycleScript.includes("com.voxleaf.desktop.chatterbox-validation") ||
+    lifecycleScript.includes("chatterbox-validation")
+  ) {
+    fail("release-runtime-boundary");
+  }
+  if (
+    optionalManifest.availability !== "downloadable" ||
+    "withholdingReason" in optionalManifest ||
+    JSON.stringify(optionalManifest.measurements) !==
+      JSON.stringify({
+        coldStartSeconds: 83,
+        downloadBytes: 8_231_893_387,
+        installedBytes: 8_228_503_309,
+        minimumFreeBytes: 20_000_000_000,
+        temporaryBytes: 13_254_834_850,
+      }) ||
+    optionalManifest.requirements?.platform !== "windows-x86_64" ||
+    optionalManifest.requirements?.provider !== "cuda" ||
+    optionalManifest.requirements?.precision !== "bfloat16" ||
+    optionalManifest.requirements?.minimumLogicalProcessors !== 8 ||
+    optionalManifest.requirements?.minimumTotalRamMiB !== 24_576 ||
+    optionalManifest.requirements?.minimumAvailableRamMiB !== 4_096 ||
+    optionalManifest.requirements?.minimumTotalDedicatedVramMiB !== 5_632 ||
+    optionalManifest.requirements?.minimumAvailableDedicatedVramMiB !== 4_668
+  ) {
+    fail("optional-acquisition-authority");
   }
 
   const bundle = releaseConfig.bundle;
@@ -242,6 +339,28 @@ export async function validateReleaseConfiguration(root, requireCore = false) {
       fail("piper-core-manifest-stale");
     }
   }
+  for (const retired of [
+    "apps/desktop/src-tauri/tauri.chatterbox-validation.conf.json",
+    "apps/desktop/src-tauri/windows/nsis-chatterbox-validation-hooks.nsh",
+    "apps/desktop/scripts/chatterbox-validation-release.mjs",
+    "services/tts/release/optional/chatterbox/optional-package-validation-overlay-v1.json",
+    "scripts/build-windows-chatterbox-validation.ps1",
+  ]) {
+    try {
+      await access(path.join(root, retired));
+      fail("validation-channel-retained");
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.startsWith("windows-release:")
+      ) {
+        throw error;
+      }
+      if (!error || typeof error !== "object" || error.code !== "ENOENT") {
+        fail("validation-channel-check");
+      }
+    }
+  }
 }
 
 async function sha256(file) {
@@ -255,6 +374,46 @@ function option(arguments_, name, fallback = undefined) {
   return index === -1 ? fallback : arguments_[index + 1];
 }
 
+export function validateOrdinaryChatterboxReceipt(
+  receipt,
+  installerIdentity,
+  binaryIdentity,
+) {
+  if (
+    JSON.stringify(Object.keys(receipt ?? {}).sort()) !==
+      JSON.stringify(
+        [
+          "application",
+          "artifact",
+          "outcomes",
+          "result",
+          "schemaVersion",
+          "steps",
+        ].sort(),
+      ) ||
+    JSON.stringify(Object.keys(receipt?.artifact ?? {}).sort()) !==
+      JSON.stringify(["applicationBinary", "installer"].sort()) ||
+    receipt?.schemaVersion !== 1 ||
+    JSON.stringify(receipt.application) !==
+      JSON.stringify({
+        identifier: "com.voxleaf.desktop",
+        platform: "windows-x86_64",
+        version: APP_VERSION,
+      }) ||
+    receipt.result !== "passed" ||
+    JSON.stringify(receipt.steps) !==
+      JSON.stringify(ORDINARY_CHATTERBOX_JOURNEY_STEPS) ||
+    JSON.stringify(receipt.outcomes) !==
+      JSON.stringify(ORDINARY_CHATTERBOX_JOURNEY_OUTCOMES) ||
+    JSON.stringify(receipt.artifact?.installer) !==
+      JSON.stringify(installerIdentity) ||
+    JSON.stringify(receipt.artifact?.applicationBinary) !==
+      JSON.stringify(binaryIdentity)
+  ) {
+    fail("ordinary-chatterbox-receipt");
+  }
+}
+
 export async function createPackageEvidence({
   root,
   installer,
@@ -262,6 +421,7 @@ export async function createPackageEvidence({
   signatureStatus,
   antivirusStatus,
   lifecycleStatus,
+  ordinaryChatterboxReceipt,
 }) {
   if (!SIGNATURE_STATUSES.has(signatureStatus)) fail("signature-status");
   if (!ANTIVIRUS_STATUSES.has(antivirusStatus)) fail("antivirus-status");
@@ -273,8 +433,32 @@ export async function createPackageEvidence({
   const installerStats = await stat(installer);
   const binaryStats = await stat(binary);
   const signed = signatureStatus === "signed-valid";
+  const installerIdentity = {
+    fileName: installerName,
+    sizeBytes: installerStats.size,
+    sha256: await sha256(installer),
+  };
+  const binaryIdentity = {
+    fileName: path.basename(binary),
+    sizeBytes: binaryStats.size,
+    sha256: await sha256(binary),
+  };
+  if (ordinaryChatterboxReceipt !== undefined) {
+    validateOrdinaryChatterboxReceipt(
+      ordinaryChatterboxReceipt,
+      installerIdentity,
+      binaryIdentity,
+    );
+  }
+  const ordinaryChatterboxStatus =
+    ordinaryChatterboxReceipt === undefined
+      ? "not-run"
+      : "representative-compatible-host-passed";
+  const localReleaseGatesPassed =
+    lifecycleStatus === "local-install-first-start-repair-uninstall-passed" &&
+    ordinaryChatterboxStatus === "representative-compatible-host-passed";
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     application: {
       identifier: "com.voxleaf.desktop",
       platform: "windows-x86_64",
@@ -287,22 +471,26 @@ export async function createPackageEvidence({
       piperRuntimeManifestSha256: await sha256(
         path.join(root, "services/tts/release/core/runtime-manifest-v1.json"),
       ),
+      optionalChatterboxManifestSha256: await sha256(
+        path.join(
+          root,
+          "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+        ),
+      ),
+      optionalChatterboxRuntimeEvidenceSha256: await sha256(
+        path.join(
+          root,
+          "services/tts/release/optional/chatterbox/runtime-package-evidence-v3.json",
+        ),
+      ),
     },
     package: {
       target: "nsis",
       installMode: "current-user",
       webview2Bootstrapper: "embedded",
       updaterIncluded: false,
-      installer: {
-        fileName: installerName,
-        sizeBytes: installerStats.size,
-        sha256: await sha256(installer),
-      },
-      applicationBinary: {
-        fileName: path.basename(binary),
-        sizeBytes: binaryStats.size,
-        sha256: await sha256(binary),
-      },
+      installer: installerIdentity,
+      applicationBinary: binaryIdentity,
     },
     payload: {
       piperCoreBundled: true,
@@ -314,16 +502,29 @@ export async function createPackageEvidence({
       benchmarkToolsBundled: false,
       generatedAudioOrBooksBundled: false,
     },
+    optionalChatterbox: {
+      availability: "downloadable-after-live-compatible-host-gate",
+      packageBundled: false,
+      releaseLockedRuntime: true,
+      rendererCompatibilityGateRequired: true,
+      nativePreNetworkCompatibilityGateRequired: true,
+      downloadBytes: 8_231_893_387,
+      installedBytes: 8_228_503_309,
+      temporaryBytes: 13_254_834_850,
+      minimumFreeBytes: 20_000_000_000,
+      representativeCompatibleHostJourney: ordinaryChatterboxStatus,
+    },
     signature: {
       status: signatureStatus,
       executableAndInstallerVerified: signed,
-      publicPublicationAllowed: signed,
+      publicPublicationAllowed: signed && localReleaseGatesPassed,
       checksumFileName: `${installerName}.sha256`,
       credentialStoredInRepository: false,
     },
     lifecycle: {
       status: lifecycleStatus,
-      cleanHostStillRequired: true,
+      representativeNormalUserHostRequired: true,
+      localReleaseGatesPassed,
       explicitApplicationDataRemovalStructurallyVerified: true,
       silentUninstallPreservesApplicationData: true,
     },
@@ -333,7 +534,7 @@ export async function createPackageEvidence({
       universalReputationClaimed: false,
     },
     limitations: [
-      "This artifact is not clean-host acceptance evidence; that belongs to M011 Milestone 6.",
+      "Ordinary Chatterbox acquisition is accepted only when the exact hash-bound representative compatible-host receipt is present.",
       signed
         ? "A valid local signature does not by itself authorize publication before all release gates pass."
         : "This unsigned artifact is restricted to local or maintainer-operated portfolio validation.",
@@ -352,6 +553,7 @@ async function main(arguments_) {
   }
   if (command === "evidence") {
     await validateReleaseConfiguration(root, true);
+    const receiptPath = option(rest, "--ordinary-chatterbox-receipt");
     const evidence = await createPackageEvidence({
       root,
       installer: option(rest, "--installer"),
@@ -359,13 +561,17 @@ async function main(arguments_) {
       signatureStatus: option(rest, "--signature-status", "unsigned-local"),
       antivirusStatus: option(rest, "--antivirus-status", "not-run"),
       lifecycleStatus: option(rest, "--lifecycle-status", "not-run"),
+      ordinaryChatterboxReceipt:
+        receiptPath === undefined
+          ? undefined
+          : await readJson(path.resolve(root, receiptPath)),
     });
     const rendered = `${JSON.stringify(evidence, null, 2)}\n`;
     if (rest.includes("--write")) {
       await writeFile(
         path.join(
           root,
-          "apps/desktop/src-tauri/release/windows-package-evidence-v1.json",
+          "apps/desktop/src-tauri/release/windows-package-evidence-v2.json",
         ),
         rendered,
         "utf8",

@@ -24,10 +24,11 @@ profile, or additional operating systems.
 ## User-visible outcome
 
 The core functional/local conditions and support decisions below pass under
-ADR-0049 and release authority v2. The ordinary Chatterbox acquisition outcome
-described below does not pass yet: Milestone 6B owns the bounded implementation
-needed to change Download from its current withheld state to a live-host-gated
-state. Trusted public signing remains a separate externally authorized channel.
+ADR-0049 and release authority v2. The Milestone 6B implementation branch now
+contains a `downloadable` ordinary-manifest candidate behind renderer and native
+live-host gates, but that acquisition outcome remains unaccepted until the
+ordinary installed-package journey and the final validation matrix pass.
+Trusted public signing remains a separate externally authorized channel.
 
 - a Windows x64 user can install VoxLeaf, open a supported local EPUB, restore
   progress, and use English or Spanish local narration through the included
@@ -1058,13 +1059,13 @@ Acceptance requires all of the following:
 
 ### Milestone 6B: Enable compatibility-gated ordinary Chatterbox acquisition
 
-**Status:** Planned on 2026-08-03. This additive corrective submilestone reopens
-only the ordinary Chatterbox delivery channel. The ordinary manifest and its
-Download action remain `withheld` until the implementation and validation below
-pass. Milestone
-6B does not weaken the v1/v2 package, integrity, privacy, cancellation, cleanup,
-normal-user, support, or signing boundaries, and it does not redefine the
-representative-host evidence accepted by ADR-0049.
+**Status:** In progress on 2026-08-04. This additive corrective submilestone
+reopens only the ordinary Chatterbox delivery channel. The implementation branch
+has promoted the one canonical manifest to `downloadable`; this is a candidate
+state, not completed release evidence, until the implementation and validation
+below pass. Milestone 6B does not weaken the v1/v2 package, integrity, privacy,
+cancellation, cleanup, normal-user, support, or signing boundaries, and it does
+not redefine the representative-host evidence accepted by ADR-0049.
 
 The objective is to offer Chatterbox from the ordinary Windows package only when
 the current computer passes the published native Windows x64/CUDA bfloat16/
@@ -2019,6 +2020,42 @@ and never edit prior benchmark authority to make a release pass.
   environment variables without uninstalling Python, Rust, or other tools.
   Milestone 7 is reopened until those implementation and validation results are
   recorded.
+- **2026-08-04:** Created
+  `codex/m011-6b-ordinary-chatterbox-acquisition` from clean updated `main` at
+  `018b912`. Before the first change, the normal outside-sandbox baseline passed
+  desktop 53 files/536 tests plus 18 Node tests, ordinary and validation-feature
+  optional-package Rust 20/20, Chromium 7/7, native startup, Chatterbox source/
+  acquisition authority, and the ordinary Windows static package check.
+- **2026-08-04:** Reconciled the immutable v2 runtime evidence with ADR-0046's
+  exact 37,504-byte correction through repository-generated v3 evidence; the v2
+  file remains unchanged. The canonical v2 manifest now owns the single
+  `downloadable` state and exact 8,231,893,387-byte transfer,
+  8,228,503,309-byte installed, 13,254,834,850-byte temporary, and
+  20,000,000,000-byte free-space values. The ADR-0045 feature, overlay, product
+  identity, hook, scripts, and lifecycle branch are retired. Native acquisition
+  retains its immediate pre-network host recheck; focused tests now cover every
+  numeric threshold exactly, one below each threshold, unknown capacity facts,
+  categorical Windows/x64/discrete-CUDA/BF16 rejection, and rejection before
+  confirmation or staging. Outside-sandbox Python 18/18, optional-package Rust
+  22/22, native-gate Rust 4/4, acquisition authority, ordinary package static,
+  and Windows release-script 5/5 checks pass for this checkpoint.
+- **2026-08-04:** Added the renderer-facing exact-profile acquisition gate,
+  complete pre-download and first-Play resource/startup disclosures, and the
+  compile-time `release-locked-runtime` boundary. Release children now use only
+  absolute application-owned interpreters, `-s`, package-only `PYTHONPATH`,
+  offline controls, and a scrubbed Python/virtual-environment surface; Qwen and
+  repository fallback constructors fail closed in that build. Added the checked-
+  in ordinary-package preflight/journey harness covering clean and hostile
+  environments, native artifact identity, cancellation cleanup, acquisition,
+  explicit bilingual activation, restart, removal, Piper after removal, optional-
+  package reacquisition, and uninstall. The executable command resolves the
+  exact ordinary installer/install roots and driver paths without `PATH`; a
+  passing journey emits a content-safe receipt tied to the exact installer and
+  binary hashes. Only that receipt can promote the journey field in a future
+  `windows-package-evidence-v2.json`, without changing historical v1. Outside-
+  sandbox desktop 53 files/541 tests plus 23 Node tests, release-feature Rust
+  79/79, and the focused ordinary harness/package Node tests 10/10 pass at this
+  checkpoint; the real installer journey remains pending the built artifact.
 
 ## Discoveries and decisions
 

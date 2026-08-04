@@ -297,6 +297,36 @@ describe("product narration controls", () => {
     expect(screen.queryByRole("button", { name: "Cancel start" })).toBeNull();
   });
 
+  it("discloses variable Chatterbox load cost before first audible playback", () => {
+    const current: ProductNarrationSnapshot = Object.freeze({
+      ...snapshot(),
+      profileId: "chatterbox-multilingual-v3-cuda-bf16-default-v4",
+    });
+    const coordinator = {
+      subscribe: vi.fn(() => () => undefined),
+      observe: vi.fn(() => current),
+      checkAvailability: vi.fn(async () => undefined),
+      setSelection: vi.fn(),
+      start: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(async () => undefined),
+      setVolumePercent: vi.fn(),
+      setPlaybackRatePercent: vi.fn(async () => true),
+      goToPreviousBoundary: vi.fn(),
+      goToNextBoundary: vi.fn(),
+      startAtVisibleLocator: vi.fn(),
+    } as unknown as ProductNarrationCoordinator;
+
+    render(<ProductNarrationControls coordinator={coordinator} />);
+
+    expect(
+      screen.getByText(/Chatterbox may take more than one minute to load/),
+    ).toHaveTextContent(
+      "visual reading remains available. Cancel start stops this work without keeping stale audio.",
+    );
+  });
+
   it("reports preparation failure without calling it active cleanup", () => {
     const current: ProductNarrationSnapshot = Object.freeze({
       ...snapshot(),

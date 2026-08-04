@@ -58,11 +58,14 @@ const PIPER_EN_MODEL_ROOT_KEY: &str = "VOXLEAF_TTS_PIPER_EN_MODEL_ROOT";
 const CHATTERBOX_ENABLED_KEY: &str = "VOXLEAF_TTS_CHATTERBOX_ENABLED";
 const CHATTERBOX_PYTHON_KEY: &str = "VOXLEAF_TTS_CHATTERBOX_PYTHON";
 const CHATTERBOX_MODEL_ROOT_KEY: &str = "VOXLEAF_TTS_CHATTERBOX_MODEL_ROOT";
+#[cfg(not(feature = "release-locked-runtime"))]
 const CANDIDATE_LOCK_BYTES: &[u8] = include_bytes!(
     "../../../../services/tts/benchmarks/candidates/qwen3_1_7b_customvoice_cuda/uv.lock"
 );
+#[cfg(not(feature = "release-locked-runtime"))]
 const PIPER_LOCK_BYTES: &[u8] =
     include_bytes!("../../../../services/tts/benchmarks/candidates/piper_1_4_2_cpu/uv.lock");
+#[cfg(not(feature = "release-locked-runtime"))]
 const CHATTERBOX_LOCK_BYTES: &[u8] = include_bytes!(
     "../../../../services/tts/benchmarks/candidates/chatterbox_multilingual_v3_v4/uv.lock"
 );
@@ -145,6 +148,7 @@ struct ExactRuntime {
 }
 
 impl ExactRuntime {
+    #[cfg(not(feature = "release-locked-runtime"))]
     fn from_environment() -> Result<Self, TtsNativeFailure> {
         if std::env::var_os(DEV_ENABLED_KEY).as_deref() != Some(std::ffi::OsStr::new("1")) {
             return Err(TtsNativeFailure::ChildUnavailable);
@@ -194,6 +198,7 @@ impl ExactRuntime {
         })
     }
 
+    #[cfg(not(feature = "release-locked-runtime"))]
     fn qwen_from_environment(profile_id: &str) -> Result<Self, TtsNativeFailure> {
         let mut runtime = Self::from_environment()?;
         runtime.runtime_environment = match profile_id {
@@ -206,6 +211,7 @@ impl ExactRuntime {
         Ok(runtime)
     }
 
+    #[cfg(not(feature = "release-locked-runtime"))]
     fn piper_from_environment(profile_id: &str) -> Result<Self, TtsNativeFailure> {
         let (enabled_key, python_key, model_root_key, runtime_voice) = match profile_id {
             PIPER_SPANISH_PROFILE_ID => (
@@ -282,13 +288,23 @@ impl ExactRuntime {
                 )],
                 numba_cache_root: None,
             }),
-            Ok(None) => Self::piper_from_environment(profile_id),
+            Ok(None) => {
+                #[cfg(feature = "release-locked-runtime")]
+                {
+                    Err(TtsNativeFailure::ChildUnavailable)
+                }
+                #[cfg(not(feature = "release-locked-runtime"))]
+                {
+                    Self::piper_from_environment(profile_id)
+                }
+            }
             Err(PackagedCoreError::Invalid | PackagedCoreError::Unavailable) => {
                 Err(TtsNativeFailure::ChildUnavailable)
             }
         }
     }
 
+    #[cfg(not(feature = "release-locked-runtime"))]
     fn chatterbox_from_environment(language: &str) -> Result<Self, TtsNativeFailure> {
         if !matches!(language, "es" | "en") {
             return Err(TtsNativeFailure::InvalidInput);
@@ -361,22 +377,42 @@ impl ExactRuntime {
                 )],
                 numba_cache_root: Some(runtime.numba_cache_root),
             }),
-            Ok(None) => Self::chatterbox_from_environment(language),
-            // Command-line validation and explicitly gated development sessions
-            // run before the installed application's Local App Data root exists.
-            // End-user discovery still fails closed: the only fallback is the
-            // separately gated exact development environment.
-            Err(_) => Self::chatterbox_from_environment(language),
+            Ok(None) | Err(_) => {
+                #[cfg(feature = "release-locked-runtime")]
+                {
+                    Err(TtsNativeFailure::ChildUnavailable)
+                }
+                #[cfg(not(feature = "release-locked-runtime"))]
+                {
+                    // Explicitly gated development sessions may run before the
+                    // installed application's Local App Data root exists.
+                    Self::chatterbox_from_environment(language)
+                }
+            }
         }
     }
 
     fn for_profile(profile_id: &str, language: Option<&str>) -> Result<Self, TtsNativeFailure> {
         match profile_id {
             QWEN_SERENA_PROFILE_ID if language.is_none_or(|value| value == "es") => {
-                Self::qwen_from_environment(profile_id)
+                #[cfg(feature = "release-locked-runtime")]
+                {
+                    Err(TtsNativeFailure::ChildUnavailable)
+                }
+                #[cfg(not(feature = "release-locked-runtime"))]
+                {
+                    Self::qwen_from_environment(profile_id)
+                }
             }
             QWEN_AIDEN_PROFILE_ID if language.is_none_or(|value| value == "en") => {
-                Self::qwen_from_environment(profile_id)
+                #[cfg(feature = "release-locked-runtime")]
+                {
+                    Err(TtsNativeFailure::ChildUnavailable)
+                }
+                #[cfg(not(feature = "release-locked-runtime"))]
+                {
+                    Self::qwen_from_environment(profile_id)
+                }
             }
             PIPER_SPANISH_PROFILE_ID if language.is_none_or(|value| value == "es") => {
                 Self::piper(profile_id)
@@ -412,6 +448,12 @@ impl ExactRuntime {
             .env("TRANSFORMERS_OFFLINE", "1")
             .env("HF_HUB_DISABLE_TELEMETRY", "1")
             .env_remove("NUMBA_CACHE_DIR")
+            .env_remove("PYTHONHOME")
+            .env_remove("PYTHONUSERBASE")
+            .env_remove("VIRTUAL_ENV")
+            .env_remove("CONDA_PREFIX")
+            .env_remove("CONDA_DEFAULT_ENV")
+            .env_remove("VOXLEAF_CHATTERBOX_VALIDATION_PACKAGE_ROOT")
             .env_remove(DEV_ENABLED_KEY)
             .env_remove(DEV_PYTHON_KEY)
             .env_remove(DEV_MODEL_ROOT_KEY)
@@ -454,6 +496,7 @@ pub(crate) struct SynthesisMeasurement {
     pub native_frame_handoff: Duration,
 }
 
+#[cfg(not(feature = "release-locked-runtime"))]
 fn absolute_existing_path(key: &str, directory: bool) -> Result<PathBuf, TtsNativeFailure> {
     let value = std::env::var_os(key).ok_or(TtsNativeFailure::ChildUnavailable)?;
     let configured = PathBuf::from(value);
@@ -478,17 +521,24 @@ enum ServiceChild {
 
 impl ServiceChild {
     fn configured() -> Self {
-        if std::env::var_os(DEV_ENABLED_KEY).as_deref() == Some(std::ffi::OsStr::new("1")) {
-            return ExactRuntime::from_environment()
-                .map(Self::Exact)
-                .unwrap_or(Self::Unavailable);
+        #[cfg(feature = "release-locked-runtime")]
+        {
+            return Self::Unavailable;
         }
-        if std::env::var_os(PIPER_ENABLED_KEY).as_deref() == Some(std::ffi::OsStr::new("1")) {
-            return ExactRuntime::piper(PIPER_SPANISH_PROFILE_ID)
-                .map(Self::Exact)
-                .unwrap_or(Self::Unavailable);
+        #[cfg(not(feature = "release-locked-runtime"))]
+        {
+            if std::env::var_os(DEV_ENABLED_KEY).as_deref() == Some(std::ffi::OsStr::new("1")) {
+                return ExactRuntime::from_environment()
+                    .map(Self::Exact)
+                    .unwrap_or(Self::Unavailable);
+            }
+            if std::env::var_os(PIPER_ENABLED_KEY).as_deref() == Some(std::ffi::OsStr::new("1")) {
+                return ExactRuntime::piper(PIPER_SPANISH_PROFILE_ID)
+                    .map(Self::Exact)
+                    .unwrap_or(Self::Unavailable);
+            }
+            Self::Fake(NORMAL_SCENARIO)
         }
-        Self::Fake(NORMAL_SCENARIO)
     }
 
     fn command(&self) -> Result<Command, TtsNativeFailure> {
@@ -784,14 +834,27 @@ impl TtsServiceSupervisor {
         }
     }
 
+    #[cfg(not(feature = "release-locked-runtime"))]
     pub(crate) fn exact_from_environment() -> Result<Self, TtsNativeFailure> {
         Ok(Self::with_child(ServiceChild::Exact(
             ExactRuntime::from_environment()?,
         )))
     }
 
+    #[cfg(feature = "release-locked-runtime")]
+    pub(crate) fn exact_from_environment() -> Result<Self, TtsNativeFailure> {
+        Err(TtsNativeFailure::ChildUnavailable)
+    }
+
     fn exact_demo_available(&self) -> bool {
-        ExactRuntime::from_environment().is_ok()
+        #[cfg(feature = "release-locked-runtime")]
+        {
+            false
+        }
+        #[cfg(not(feature = "release-locked-runtime"))]
+        {
+            ExactRuntime::from_environment().is_ok()
+        }
     }
 
     fn configure_profile(
@@ -1316,6 +1379,14 @@ pub async fn exact_tts_demo_available(
     Ok(supervisor.exact_demo_available())
 }
 
+/// Content-free artifact identity used by the ordinary-package isolation
+/// harness. This reports the compile-time boundary of the running binary; it
+/// does not inspect the host or expose paths.
+#[tauri::command]
+pub fn release_locked_runtime_enabled() -> bool {
+    cfg!(feature = "release-locked-runtime")
+}
+
 #[tauri::command]
 pub async fn tts_profile_configuration_available(profile_id: String) -> Result<bool, &'static str> {
     blocking(move || Ok(profile_configuration_available(&profile_id))).await
@@ -1484,8 +1555,15 @@ pub fn run_host() -> Result<(), &'static str> {
 }
 
 pub fn run_exact_host() -> Result<(), &'static str> {
-    let runtime = ExactRuntime::from_environment().map_err(TtsNativeFailure::code)?;
-    run_profile_host(runtime, verify_exact_capabilities)
+    #[cfg(feature = "release-locked-runtime")]
+    {
+        Err(TtsNativeFailure::ChildUnavailable.code())
+    }
+    #[cfg(not(feature = "release-locked-runtime"))]
+    {
+        let runtime = ExactRuntime::from_environment().map_err(TtsNativeFailure::code)?;
+        run_profile_host(runtime, verify_exact_capabilities)
+    }
 }
 
 pub fn run_piper_host() -> Result<(), &'static str> {
@@ -1760,6 +1838,82 @@ mod tests {
     }
 
     #[test]
+    fn exact_runtime_uses_an_absolute_private_interpreter_and_scrubs_host_python_state() {
+        let private_root = std::env::temp_dir().join("voxleaf-private-runtime-command-test");
+        let runtime = ExactRuntime {
+            python: private_root.join("runtime/python.exe"),
+            model_root: private_root.join("models"),
+            service_source: private_root.join("runtime/Lib/site-packages"),
+            service_site_packages: private_root.join("runtime/Lib/site-packages"),
+            service_module: "voxleaf_tts.chatterbox_service",
+            runtime_environment: Vec::new(),
+            numba_cache_root: None,
+        };
+
+        let command = runtime.command().expect("command should be created");
+        assert!(Path::new(command.get_program()).is_absolute());
+        assert_eq!(command.get_program(), runtime.python.as_os_str());
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            [
+                std::ffi::OsStr::new("-s"),
+                std::ffi::OsStr::new("-m"),
+                std::ffi::OsStr::new("voxleaf_tts.chatterbox_service"),
+            ]
+        );
+        for removed in [
+            "PYTHONHOME",
+            "PYTHONUSERBASE",
+            "VIRTUAL_ENV",
+            "CONDA_PREFIX",
+            "CONDA_DEFAULT_ENV",
+            "VOXLEAF_TTS_DEV_ENABLED",
+            "VOXLEAF_TTS_DEV_PYTHON",
+            "VOXLEAF_TTS_DEV_MODEL_ROOT",
+            "VOXLEAF_TTS_PIPER_ENABLED",
+            "VOXLEAF_TTS_PIPER_PYTHON",
+            "VOXLEAF_TTS_PIPER_MODEL_ROOT",
+            "VOXLEAF_TTS_PIPER_EN_ENABLED",
+            "VOXLEAF_TTS_PIPER_EN_PYTHON",
+            "VOXLEAF_TTS_PIPER_EN_MODEL_ROOT",
+            "VOXLEAF_TTS_CHATTERBOX_ENABLED",
+            "VOXLEAF_TTS_CHATTERBOX_PYTHON",
+            "VOXLEAF_TTS_CHATTERBOX_MODEL_ROOT",
+            "VOXLEAF_CHATTERBOX_VALIDATION_PACKAGE_ROOT",
+        ] {
+            assert!(
+                command.get_envs().any(|(key, value)| {
+                    key == std::ffi::OsStr::new(removed) && value.is_none()
+                })
+            );
+        }
+        assert!(!command.get_envs().any(|(key, _)| key == "PATH"));
+    }
+
+    #[cfg(feature = "release-locked-runtime")]
+    #[test]
+    fn release_locked_runtime_rejects_development_only_profiles_and_defaults() {
+        assert!(release_locked_runtime_enabled());
+        assert!(matches!(
+            ExactRuntime::for_profile(QWEN_SERENA_PROFILE_ID, Some("es")),
+            Err(TtsNativeFailure::ChildUnavailable)
+        ));
+        assert!(matches!(
+            ExactRuntime::for_profile(QWEN_AIDEN_PROFILE_ID, Some("en")),
+            Err(TtsNativeFailure::ChildUnavailable)
+        ));
+        assert!(matches!(
+            ServiceChild::configured(),
+            ServiceChild::Unavailable
+        ));
+        assert!(!TtsServiceSupervisor::default().exact_demo_available());
+        assert!(matches!(
+            TtsServiceSupervisor::exact_from_environment(),
+            Err(TtsNativeFailure::ChildUnavailable)
+        ));
+    }
+
+    #[test]
     fn exact_chatterbox_runtime_redirects_numba_cache_outside_the_verified_package() {
         let cache =
             std::env::temp_dir().join(format!("voxleaf-numba-cache-test-{}", std::process::id()));
@@ -1783,54 +1937,6 @@ mod tests {
             })
         );
         fs::remove_dir_all(cache).expect("test cache should be removed");
-    }
-
-    #[cfg(all(windows, feature = "chatterbox-acquisition-validation"))]
-    #[test]
-    #[ignore = "requires the exact installed Chatterbox package and evaluated GPU"]
-    fn installed_chatterbox_supervisor_completes_the_synthetic_lifecycle() {
-        let package_root = std::env::var_os("VOXLEAF_CHATTERBOX_VALIDATION_PACKAGE_ROOT")
-            .map(PathBuf::from)
-            .expect("validation package root should be configured");
-        let runtime_root = package_root.join("runtime");
-        let site_packages = runtime_root.join("Lib/site-packages");
-        let runtime = ExactRuntime {
-            python: runtime_root
-                .join("python.exe")
-                .canonicalize()
-                .expect("installed Python should exist"),
-            model_root: package_root
-                .join("models")
-                .canonicalize()
-                .expect("installed model root should exist"),
-            service_source: site_packages
-                .canonicalize()
-                .expect("installed service source should exist"),
-            service_site_packages: site_packages
-                .canonicalize()
-                .expect("installed site-packages should exist"),
-            service_module: "voxleaf_tts.chatterbox_service",
-            runtime_environment: vec![("VOXLEAF_TTS_RUNTIME_CHATTERBOX_LANGUAGE", "es")],
-            numba_cache_root: Some(
-                package_root
-                    .parent()
-                    .expect("installed package should have a profile root")
-                    .join("cache"),
-            ),
-        };
-        let supervisor = TtsServiceSupervisor::with_child(ServiceChild::Exact(runtime));
-
-        supervisor.start().expect("installed service should start");
-        supervisor
-            .prepare()
-            .expect("installed service should load and warm");
-        let audio = supervisor
-            .synthesize(fixture_segment())
-            .expect("installed service should synthesize the canonical fixture");
-        verify_exact_audio(&audio).expect("installed audio should be bounded");
-        supervisor
-            .shutdown()
-            .expect("installed service should shut down");
     }
 
     #[cfg(windows)]

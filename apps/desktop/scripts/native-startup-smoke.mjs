@@ -2606,10 +2606,12 @@ async function selectAdaptiveTtsProfile(
       `return document.querySelector(".optional-chatterbox-controls")
          ?.getAttribute("data-optional-profile-state") ?? "missing";`,
     );
-    console.log(`ADAPTIVE_TTS_OPTIONAL_PROFILE ${JSON.stringify({
-      profileId,
-      state: optionalState,
-    })}`);
+    console.log(
+      `ADAPTIVE_TTS_OPTIONAL_PROFILE ${JSON.stringify({
+        profileId,
+        state: optionalState,
+      })}`,
+    );
     assert(
       optionalState === "installed",
       "Native synchronized narration proof failed.",
@@ -2703,8 +2705,7 @@ async function selectAdaptiveTtsProfile(
        return { profileId: alternate.value, changed };`,
     );
     assert(
-      typeof switched?.profileId === "string" &&
-        switched.profileId.length > 0,
+      typeof switched?.profileId === "string" && switched.profileId.length > 0,
       "Native synchronized narration proof failed.",
     );
     if (switched.changed === true) {

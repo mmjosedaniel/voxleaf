@@ -218,6 +218,15 @@ export function ProductNarrationControls({
             </p>
           )}
           <p className="product-narration-policy">{startupPolicy}</p>
+          {snapshot.profileId === CHATTERBOX_BILINGUAL_PROFILE_ID &&
+          snapshot.metrics.commandToAudibleMs === undefined ? (
+            <p className="product-narration-policy">
+              Chatterbox may take more than one minute to load. Narration and
+              model controls can be temporarily unavailable and the computer may
+              be less responsive, while visual reading remains available. Cancel
+              start stops this work without keeping stale audio.
+            </p>
+          ) : null}
           {state !== undefined &&
           state.pendingPlaybackRatePercent !== null &&
           state.activePlaybackRatePercent !== null ? (

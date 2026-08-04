@@ -12,8 +12,10 @@ from voxleaf_tts.release_chatterbox import (
     _configure_embedded_python,
     build_runtime_manifest,
     load_acquisition_manifest,
+    load_current_runtime_evidence,
     load_runtime_evidence,
     load_source_manifest,
+    reconcile_runtime_evidence,
     render_manifest,
     safe_relative_path,
     split_archive,
@@ -64,13 +66,19 @@ def test_source_manifest_closes_the_one_optional_profile_and_six_model_files() -
 def test_acquisition_manifest_matches_the_runtime_and_official_model_authority() -> None:
     manifest = load_acquisition_manifest()
     assert manifest["schemaVersion"] == 2
-    assert manifest["availability"] == "withheld"
+    assert manifest["availability"] == "downloadable"
     runtime = manifest["runtimeArtifact"]
     assert isinstance(runtime, dict)
     assert len(runtime["parts"]) == 3
     assert sum(part["downloadBytes"] for part in runtime["parts"]) == 5_022_941_463
-    assert manifest["measurements"] is None
-    assert manifest["withholdingReason"] == "clean-host-validation-pending"
+    assert manifest["measurements"] == {
+        "coldStartSeconds": 83,
+        "downloadBytes": 8_231_893_387,
+        "installedBytes": 8_228_503_309,
+        "minimumFreeBytes": 20_000_000_000,
+        "temporaryBytes": 13_254_834_850,
+    }
+    assert "withholdingReason" not in manifest
     layout = manifest["layout"]
     assert isinstance(layout, dict)
     assert layout["installed"] == "cb/2"
@@ -111,6 +119,60 @@ def test_v2_runtime_evidence_is_content_safe_and_arithmetically_closed() -> None
     assert distribution["published"] is True
     assert distribution["withholdingReason"] == "clean-host-validation-pending"
     assert measurements["reproducibleBuildCount"] == 2
+    assert measurements["totalInstalledBytes"] == 8_228_465_805
+
+
+def test_current_runtime_evidence_reconciles_historical_bytes_with_manifest_authority() -> None:
+    historical = load_runtime_evidence()
+    current = load_current_runtime_evidence()
+    historical_measurements = historical["measurements"]
+    distribution = current["distribution"]
+    measurements = current["measurements"]
+    assert isinstance(historical_measurements, dict)
+    assert isinstance(distribution, dict)
+    assert isinstance(measurements, dict)
+    assert measurements["totalInstalledBytes"] == 8_228_503_309
+    assert measurements["fileCount"] == 12_671
+    assert measurements["runtimeManifestSha256"] == (
+        "1bca3c4e5706771877ad837398e7930206c8f74eb03e9804a093a4c78f0b6262"
+    )
+    assert (
+        measurements["totalInstalledBytes"] - historical_measurements["totalInstalledBytes"]
+        == 37_504
+    )
+    assert current["parts"] == historical["parts"]
+    assert distribution["availability"] == "downloadable"
+    assert "withholdingReason" not in distribution
+
+
+def test_current_runtime_evidence_generator_is_idempotent_and_rejects_drift(tmp_path: Path) -> None:
+    root = Path(__file__).resolve().parents[3]
+    relative_files = (
+        "services/tts/release/optional/chatterbox/source-manifest-v2.json",
+        "services/tts/release/optional/chatterbox/optional-package-manifest-v2.json",
+        "services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json",
+        "services/tts/release/profiles/chatterbox/requirements.lock",
+    )
+    for relative in relative_files:
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((root / relative).read_bytes())
+
+    generated = reconcile_runtime_evidence(tmp_path)
+    first = generated.read_bytes()
+    reconcile_runtime_evidence(tmp_path)
+    assert generated.read_bytes() == first
+    assert b"\r\n" not in first
+    load_current_runtime_evidence(tmp_path)
+
+    current = json.loads(generated.read_text(encoding="utf-8"))
+    current["measurements"]["totalInstalledBytes"] += 1
+    generated.write_text(json.dumps(current), encoding="utf-8")
+    with pytest.raises(
+        ReleaseChatterboxError,
+        match="^chatterbox-current-runtime-evidence-invalid$",
+    ):
+        load_current_runtime_evidence(tmp_path)
 
 
 def test_v2_runtime_evidence_rejects_measurement_drift(tmp_path: Path) -> None:
