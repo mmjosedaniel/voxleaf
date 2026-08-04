@@ -20,7 +20,10 @@ import type {
 import type { AdaptiveBufferStartMode } from "../tts/adaptive-buffer-scheduler";
 import { HardwareCompatibilityControls } from "../tts/HardwareCompatibilityControls";
 import { OptionalChatterboxControls } from "../tts/OptionalChatterboxControls";
-import type { HardwareProfileCompatibilityCoordinator } from "../tts/hardware-profile-compatibility";
+import {
+  chatterboxAcquisitionPresentation,
+  type HardwareProfileCompatibilityCoordinator,
+} from "../tts/hardware-profile-compatibility";
 import type { NarrationLanguageV1 } from "../tts/narration-language";
 import { NarrationStartPreferenceControls } from "../tts/NarrationStartPreferenceControls";
 import {
@@ -164,6 +167,7 @@ function OptionalChatterboxSettings({
     () => hardwareCompatibility.observe(),
     () => hardwareCompatibility.observe(),
   );
+  const acquisition = chatterboxAcquisitionPresentation(compatibility);
   return (
     <OptionalChatterboxControls
       client={client}
@@ -171,10 +175,14 @@ function OptionalChatterboxSettings({
       onActivate={onActivate}
       onRecheck={async () => {
         await hardwareCompatibility.check("explicit-recheck");
-        return onActivate();
+        return chatterboxAcquisitionPresentation(
+          hardwareCompatibility.observe(),
+        ).allowed;
       }}
       onRemove={onRemove}
       disabled={disabled}
+      acquisitionAllowed={acquisition.allowed}
+      acquisitionBlockMessage={acquisition.message}
     />
   );
 }

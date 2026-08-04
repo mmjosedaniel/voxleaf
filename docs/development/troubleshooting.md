@@ -52,26 +52,22 @@ exact states, host margins, and language bindings. M011 implements the local
 Piper package and closed optional lifecycle. The preliminary Milestone 7 record
 accepts Piper local/portfolio GO and conditional Chatterbox GO for systems that
 pass the published host gate; trusted public signing remains externally pending.
-Planned Milestone 6B reopens only ordinary Download and release-runtime
-isolation. All native-only local configurations are documented in
+Milestone 6B closes ordinary Download and release-runtime isolation. All
+native-only local configurations are documented in
 [`setup.md`](setup.md).
 
-### The current ordinary package does not offer Chatterbox download
+### Chatterbox Download is disabled
 
-This is the expected current channel state, not a profile-detection bug and not
-evidence that Chatterbox failed. The checked-in ordinary manifest remains
-`withheld`, while the separate ADR-0045 validation build proves acquisition and
-installed Spanish/English use on a representative compatible computer. The
-preliminary Milestone 7 decision did not enable the ordinary Download action.
-Milestone 6B is planned to replace the separate validation identity with the
-ordinary path, but the current Download action remains withheld until its exact
-measurements, live pre-network host gate, release isolation, and installed
-ordinary journey pass.
+This is a compatibility result, not a profile-detection bug or evidence that
+Chatterbox failed. The ordinary manifest is downloadable only when Settings
+reports a passing bounded compatibility presentation and native code repeats the
+same gate immediately before network access. Unknown or failing requirements
+keep Piper usable and must not start acquisition. ADR-0045's validation build is
+historical evidence, not a competing installed product.
 
 ### Chatterbox validation takes a long time to start or the computer slows down
 
-This applies to the current maintainer validation build and, after Milestone 6B
-passes, to the planned ordinary channel. Chatterbox is the generally more natural
+This applies to the ordinary channel. Chatterbox is the generally more natural
 and expressive quality option compared with Piper, but it is much larger and
 more resource-intensive. Its first load
 may exceed one minute; the two recorded direct cold runs were `29.61` and
@@ -90,13 +86,13 @@ alternative.
 ### Verify that an ordinary release is not using development Python
 
 Do not uninstall Python, Rust, Cargo, Node.js, or virtual environments to test
-this. Milestone 6B must compile repository fallback branches out of release and
-add a checked-in ordinary-package isolation harness. That harness removes or
+this. Milestone 6B compiles repository fallback branches out of release and
+uses a checked-in ordinary-package isolation harness. That harness removes or
 poisons the `VOXLEAF_TTS_*`, Python, and environment-manager inputs for its child
 process, uses a misleading `PATH`, and asserts the absolute verified private
 `runtime/python.exe` and application-owned module/model roots. Missing or invalid
-package data must fail closed. Until 6B implements and documents the command,
-the validation procedure is planned rather than a current troubleshooting claim.
+package data must fail closed. This process-scoped proof is sufficient and does
+not require removing developer tools from the computer.
 
 The current Piper installer is an `unsigned-local` portfolio candidate. Piper
 does not require a GPU, and successful use on the independent older 16-GB-RAM/

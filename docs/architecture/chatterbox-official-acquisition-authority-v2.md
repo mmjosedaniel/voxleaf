@@ -55,7 +55,8 @@ manifest freezes every exact asset URL, filename, byte size, and SHA-256, plus
 the reassembled archive SHA-256 and runtime-manifest SHA-256. The manifest may
 contain at most four parts, at most 5,500,000,000 runtime download bytes, and at
 most 5,500,000,000 extracted runtime bytes. A missing, unpublished, mutable, or
-unmeasured runtime keeps the product manifest `withheld`.
+unmeasured runtime is rejected before acquisition; it cannot become an
+installable profile.
 
 The end user does not need system Python, `pip`, Git, a developer shell,
 administrator rights, a Hugging Face token, or a manually created firewall
@@ -136,7 +137,16 @@ Downloaded bytes cannot execute or deserialize from staging.
 
 ## Result lineage and release gates
 
-The v2 manifest remains `withheld` until all of the following are true:
+The former `withheld` condition is historical: its requirements are now met by
+the ordinary, hash-bound representative compatible-host journey. Under
+[ADR-0050](decisions/ADR-0050-promote-ordinary-chatterbox-acquisition-and-retire-validation-overlay.md),
+the v2 manifest is `downloadable` only after both of the following live gates:
+
+1. the renderer presents the compatible selected profile; and
+2. native code repeats the published host check before confirmation or network
+   activity.
+
+The evidence required for that promotion was:
 
 1. deterministic source, redirect, integrity, limit, cancellation, restart,
    atomicity, safe-loading, activation, and removal tests pass outside the
@@ -151,5 +161,13 @@ The v2 manifest remains `withheld` until all of the following are true:
 
 Evidence records the authority commit, execution commit, manifest SHA-256, and
 content-free measurements. Network-backed evidence created before the authority
-commit is invalid. If any gate remains unavailable, Chatterbox stays withheld
-and the independently passing Piper MVP continues.
+commit is invalid. If either live gate fails, native code rejects the action
+before confirmation or network activity and the independently passing Piper MVP
+continues. The validation-only overlay, configuration, and script are retired
+from the active release surface; their evidence remains historical.
+
+The current runtime reconciliation is evidence v3. Runtime evidence v2 remains
+historical: its prior installed total is corrected by `37,504` bytes. The
+current exact totals are `8,231,893,387` download bytes,
+`8,228,503,309` installed bytes, `13,254,834,850` temporary bytes, and
+`20,000,000,000` minimum free bytes.

@@ -16,7 +16,13 @@ const PROTOCOL_FAILURE_PATTERNS = Object.freeze([
 const PROTOCOL_FAILURE_CODES = new Map([
   ["invalid argument", "webdriver-capability-invalid"],
   ["session not created", "webdriver-session-not-created"],
+  ["stale element reference", "webdriver-stale-element-reference"],
+  ["element not interactable", "webdriver-element-not-interactable"],
   ["unknown error", "webdriver-unknown-error"],
+]);
+const RETRIABLE_ELEMENT_INTERACTION_CODES = new Set([
+  "webdriver-stale-element-reference",
+  "webdriver-element-not-interactable",
 ]);
 
 export class WebDriverClientError extends Error {
@@ -54,6 +60,33 @@ export async function runWebDriverInteractionWithRetry({
       if (attempt === maximumAttempts) {
         throw error;
       }
+    }
+  }
+}
+
+export async function runWebDriverElementInteractionWithRetry({
+  accepted,
+  action,
+  onAttempt = async () => undefined,
+  onRetry = async () => undefined,
+}) {
+  const maximumAttempts = 2;
+
+  for (let attempt = 1; attempt <= maximumAttempts; attempt += 1) {
+    await onAttempt(attempt, maximumAttempts);
+    try {
+      await action();
+      return;
+    } catch (error) {
+      if (
+        !(error instanceof WebDriverClientError) ||
+        !RETRIABLE_ELEMENT_INTERACTION_CODES.has(error.code)
+      ) {
+        throw error;
+      }
+      if (await accepted()) return;
+      if (attempt === maximumAttempts) throw error;
+      await onRetry(attempt, maximumAttempts);
     }
   }
 }

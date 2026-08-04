@@ -94,7 +94,15 @@ try {
     $configArgument = "src-tauri/$temporaryName"
   }
 
-  Invoke-CheckedCommand pnpm.cmd "--filter" "@voxleaf/desktop" "tauri" "build" "--config" $configArgument
+  Invoke-CheckedCommand pnpm.cmd `
+    "--filter" `
+    "@voxleaf/desktop" `
+    "tauri" `
+    "build" `
+    "--config" `
+    $configArgument `
+    "--features" `
+    "release-locked-runtime"
 
   $binary = Join-Path $srcTauri "target\release\voxleaf-desktop.exe"
   $installer = Join-Path $srcTauri "target\release\bundle\nsis\VoxLeaf_0.1.0_x64-setup.exe"

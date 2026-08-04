@@ -220,7 +220,7 @@ describe("reader Settings dialog", () => {
     expect(subject.onRecoveryEpisodeReset).not.toHaveBeenCalled();
   });
 
-  it("rechecks fresh hardware facts before retrying an incompatible profile", async () => {
+  it("rechecks fresh hardware facts without activating Chatterbox", async () => {
     const subject = renderSettings({ chatterboxState: "failed" });
 
     fireEvent.click(
@@ -234,6 +234,6 @@ describe("reader Settings dialog", () => {
         "explicit-recheck",
       ),
     );
-    expect(subject.onActivateChatterbox).toHaveBeenCalledTimes(1);
+    expect(subject.onActivateChatterbox).not.toHaveBeenCalled();
   });
 });

@@ -29,6 +29,13 @@ RUNTIME_MANIFEST_NAME: Final = "runtime-manifest-v2.json"
 SOURCE_MANIFEST_NAME: Final = "source-manifest-v2.json"
 RUNTIME_ARCHIVE_NAME: Final = "voxleaf-chatterbox-runtime-v2.zip"
 MAXIMUM_PART_BYTES: Final = 1_900_000_000
+HISTORICAL_INSTALLED_BYTES: Final = 8_228_465_805
+INSTALLED_BYTES_CORRECTION: Final = 37_504
+CURRENT_INSTALLED_BYTES: Final = HISTORICAL_INSTALLED_BYTES + INSTALLED_BYTES_CORRECTION
+CURRENT_DOWNLOAD_BYTES: Final = 8_231_893_387
+CURRENT_TEMPORARY_BYTES: Final = 13_254_834_850
+CURRENT_MINIMUM_FREE_BYTES: Final = 20_000_000_000
+REPRESENTATIVE_COLD_START_ROUNDED_SECONDS: Final = 83
 HASH_BLOCK_BYTES: Final = 8 * 1024 * 1024
 DOWNLOAD_TIMEOUT_SECONDS: Final = 120
 FIXED_ZIP_TIMESTAMP: Final = (1980, 1, 1, 0, 0, 0)
@@ -324,6 +331,38 @@ def load_acquisition_manifest(root: Path | None = None) -> dict[str, object]:
         ],
     }:
         raise ReleaseChatterboxError("chatterbox-acquisition-manifest-invalid")
+    expected_runtime_artifact = {
+        "archiveSha256": "af6b4f46f6b21df02d30cdfe992f77f9bda68111edd9042cd32a619c6376aee6",
+        "installedBytes": 5_019_551_385,
+        "parts": [
+            {
+                "downloadBytes": 1_900_000_000,
+                "filename": "voxleaf-chatterbox-runtime-v2.zip.part-001",
+                "sha256": "168f46ae0d11c132ef414732064e81337390be9f578a8f14346b2bdab7bd386b",
+                "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-001",
+            },
+            {
+                "downloadBytes": 1_900_000_000,
+                "filename": "voxleaf-chatterbox-runtime-v2.zip.part-002",
+                "sha256": "35a23ce31119f1ccd386b7b9a2e3dca48b6b2d8d66d83cf0c4d649a085967bee",
+                "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-002",
+            },
+            {
+                "downloadBytes": 1_222_941_463,
+                "filename": "voxleaf-chatterbox-runtime-v2.zip.part-003",
+                "sha256": "9959167239073cd14f84388e5965576b4caa6c2e28e02927aa4efd71c8e14101",
+                "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-003",
+            },
+        ],
+        "runtimeManifestSha256": "1bca3c4e5706771877ad837398e7930206c8f74eb03e9804a093a4c78f0b6262",
+    }
+    expected_measurements = {
+        "coldStartSeconds": REPRESENTATIVE_COLD_START_ROUNDED_SECONDS,
+        "downloadBytes": CURRENT_DOWNLOAD_BYTES,
+        "installedBytes": CURRENT_INSTALLED_BYTES,
+        "minimumFreeBytes": CURRENT_MINIMUM_FREE_BYTES,
+        "temporaryBytes": CURRENT_TEMPORARY_BYTES,
+    }
     withholding_reason = manifest.get("withholdingReason")
     if availability == "withheld":
         initial_withholding = (
@@ -332,45 +371,18 @@ def load_acquisition_manifest(root: Path | None = None) -> dict[str, object]:
             and withholding_reason == "runtime-artifacts-not-published"
         )
         published_withholding = (
-            runtime_artifact
-            == {
-                "archiveSha256": "af6b4f46f6b21df02d30cdfe992f77f9bda68111edd9042cd32a619c6376aee6",
-                "installedBytes": 5_019_551_385,
-                "parts": [
-                    {
-                        "downloadBytes": 1_900_000_000,
-                        "filename": "voxleaf-chatterbox-runtime-v2.zip.part-001",
-                        "sha256": (
-                            "168f46ae0d11c132ef414732064e81337390be9f578a8f14346b2bdab7bd386b"
-                        ),
-                        "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-001",
-                    },
-                    {
-                        "downloadBytes": 1_900_000_000,
-                        "filename": "voxleaf-chatterbox-runtime-v2.zip.part-002",
-                        "sha256": (
-                            "35a23ce31119f1ccd386b7b9a2e3dca48b6b2d8d66d83cf0c4d649a085967bee"
-                        ),
-                        "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-002",
-                    },
-                    {
-                        "downloadBytes": 1_222_941_463,
-                        "filename": "voxleaf-chatterbox-runtime-v2.zip.part-003",
-                        "sha256": (
-                            "9959167239073cd14f84388e5965576b4caa6c2e28e02927aa4efd71c8e14101"
-                        ),
-                        "url": "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v2/voxleaf-chatterbox-runtime-v2.zip.part-003",
-                    },
-                ],
-                "runtimeManifestSha256": (
-                    "1bca3c4e5706771877ad837398e7930206c8f74eb03e9804a093a4c78f0b6262"
-                ),
-            }
+            runtime_artifact == expected_runtime_artifact
             and manifest.get("measurements") is None
             and withholding_reason == "clean-host-validation-pending"
         )
         if not initial_withholding and not published_withholding:
             raise ReleaseChatterboxError("chatterbox-acquisition-manifest-invalid")
+    elif (
+        runtime_artifact != expected_runtime_artifact
+        or manifest.get("measurements") != expected_measurements
+        or "withholdingReason" in manifest
+    ):
+        raise ReleaseChatterboxError("chatterbox-acquisition-manifest-invalid")
     return manifest
 
 
@@ -379,7 +391,6 @@ def load_runtime_evidence(root: Path | None = None) -> dict[str, object]:
 
     base = root or repository_root()
     source = load_source_manifest(base)
-    acquisition = load_acquisition_manifest(base)
     evidence = _load_json(
         base / "services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json",
         "chatterbox-runtime-evidence-invalid",
@@ -416,12 +427,12 @@ def load_runtime_evidence(root: Path | None = None) -> dict[str, object]:
         raise ReleaseChatterboxError("chatterbox-runtime-evidence-invalid")
     distribution = _object(evidence["distribution"], "chatterbox-runtime-evidence-invalid")
     if distribution != {
-        "availability": acquisition["availability"],
+        "availability": "withheld",
         "modelRepositoryCodeExecuted": False,
         "modelSource": "official-revision-pinned-hugging-face",
         "published": True,
         "runtimeReleaseTag": "chatterbox-runtime-v2",
-        "withholdingReason": acquisition["withholdingReason"],
+        "withholdingReason": "clean-host-validation-pending",
     }:
         raise ReleaseChatterboxError("chatterbox-runtime-evidence-invalid")
     parts = _array(evidence["parts"], "chatterbox-runtime-evidence-invalid")
@@ -493,6 +504,98 @@ def load_runtime_evidence(root: Path | None = None) -> dict[str, object]:
     if len(gates) != 3 or any(not isinstance(gate, str) or not gate for gate in gates):
         raise ReleaseChatterboxError("chatterbox-runtime-evidence-invalid")
     return evidence
+
+
+def _current_runtime_evidence(root: Path) -> dict[str, object]:
+    """Derive the current authority from immutable v2 evidence and manifest v2.
+
+    This deliberately records a reconciliation, not a fresh runtime execution.
+    The historical evidence remains the source for archive identity, part hashes,
+    and build provenance; the checked-in acquisition authority supplies the
+    accepted runtime correction and user-facing package measurements.
+    """
+
+    historical = load_runtime_evidence(root)
+    acquisition = load_acquisition_manifest(root)
+    historical_measurements = _object(
+        historical["measurements"], "chatterbox-runtime-evidence-invalid"
+    )
+    runtime = _object(acquisition["runtimeArtifact"], "chatterbox-runtime-evidence-invalid")
+    acquisition_measurements = _object(
+        acquisition["measurements"], "chatterbox-runtime-evidence-invalid"
+    )
+    correction = _object(acquisition["runtimeCorrection"], "chatterbox-runtime-evidence-invalid")
+    return {
+        "authority": historical["authority"],
+        "derivedFrom": {
+            "historicalEvidence": "runtime-package-evidence-v2.json",
+            "historicalInstalledBytes": HISTORICAL_INSTALLED_BYTES,
+            "installedBytesCorrection": INSTALLED_BYTES_CORRECTION,
+        },
+        "distribution": {
+            "availability": acquisition["availability"],
+            "modelRepositoryCodeExecuted": False,
+            "modelSource": "official-revision-pinned-hugging-face",
+            "published": True,
+            "runtimeReleaseTag": "chatterbox-runtime-v2",
+        },
+        "measurements": {
+            "archiveSha256": historical_measurements["archiveSha256"],
+            "fileCount": _positive(
+                historical_measurements["fileCount"],
+                "chatterbox-runtime-evidence-invalid",
+            )
+            + len(_array(correction["files"], "chatterbox-runtime-evidence-invalid")),
+            "modelDownloadBytes": historical_measurements["modelDownloadBytes"],
+            "peakStagingBytes": acquisition_measurements["temporaryBytes"],
+            "reproducibleBuildCount": historical_measurements["reproducibleBuildCount"],
+            "runtimeArchiveBytes": historical_measurements["runtimeArchiveBytes"],
+            "runtimeInstalledBytes": runtime["installedBytes"],
+            "runtimeManifestSha256": runtime["runtimeManifestSha256"],
+            "totalDownloadBytes": acquisition_measurements["downloadBytes"],
+            "totalInstalledBytes": acquisition_measurements["installedBytes"],
+        },
+        "parts": historical["parts"],
+        "runtimeCorrection": correction,
+        "schemaVersion": 3,
+    }
+
+
+def render_current_runtime_evidence(root: Path | None = None) -> str:
+    """Render the repository-owned current evidence with canonical LF output."""
+
+    return (
+        json.dumps(
+            _current_runtime_evidence(root or repository_root()),
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    )
+
+
+def load_current_runtime_evidence(root: Path | None = None) -> dict[str, object]:
+    """Validate that v3 is exactly the reconciliation produced from authority."""
+
+    base = root or repository_root()
+    evidence_path = (
+        base / "services/tts/release/optional/chatterbox/runtime-package-evidence-v3.json"
+    )
+    evidence = _load_json(evidence_path, "chatterbox-current-runtime-evidence-invalid")
+    expected = _current_runtime_evidence(base)
+    canonical = render_current_runtime_evidence(base)
+    if evidence != expected or evidence_path.read_text(encoding="utf-8") != canonical:
+        raise ReleaseChatterboxError("chatterbox-current-runtime-evidence-invalid")
+    return evidence
+
+
+def reconcile_runtime_evidence(root: Path | None = None) -> Path:
+    """Idempotently write the canonical current evidence from checked-in inputs."""
+
+    base = root or repository_root()
+    target = base / "services/tts/release/optional/chatterbox/runtime-package-evidence-v3.json"
+    target.write_text(render_current_runtime_evidence(base), encoding="utf-8", newline="\n")
+    return target
 
 
 def _artifact(value: object) -> dict[str, object]:
@@ -931,7 +1034,10 @@ def measurement_json(measurement: PackageMeasurement) -> str:
 
 def main(arguments: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=("build", "check-acquisition", "check-source"))
+    parser.add_argument(
+        "command",
+        choices=("build", "check-acquisition", "check-source", "reconcile-evidence"),
+    )
     parser.add_argument("--no-sync", action="store_true")
     args = parser.parse_args(sys.argv[1:] if arguments is None else arguments)
     if args.command == "check-source":
@@ -941,7 +1047,12 @@ def main(arguments: list[str] | None = None) -> int:
     if args.command == "check-acquisition":
         load_acquisition_manifest()
         load_runtime_evidence()
+        load_current_runtime_evidence()
         print("chatterbox-official-acquisition:current")
+        return 0
+    if args.command == "reconcile-evidence":
+        reconcile_runtime_evidence()
+        print("chatterbox-runtime-evidence:reconciled")
         return 0
     print(measurement_json(build_package(synchronise=not args.no_sync)))
     return 0

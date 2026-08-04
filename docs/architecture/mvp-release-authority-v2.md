@@ -10,6 +10,11 @@ clean-host interpretation in
 trust, dependency, licence, integrity, privacy, cancellation, cleanup,
 installation, and normal-user boundaries remain in force.
 
+[ADR-0050](decisions/ADR-0050-promote-ordinary-chatterbox-acquisition-and-retire-validation-overlay.md)
+subsequently supersedes ADR-0045 only for the acquisition channel and its
+validation-only overlay. It does not widen the support claim or authorize
+signed public publication.
+
 ## Purpose
 
 VoxLeaf supports a profile when all of the following are true:
@@ -71,14 +76,30 @@ of the Chatterbox profile as a whole.
 | --- | --- | --- |
 | `piper-core-portfolio-ready` | **GO** | The Windows x64 bilingual Piper core is implemented, packaged, locally validated, and backed by representative independent-computer use. It is an unsigned portfolio/local MVP, not a trusted public installer. |
 | `chatterbox-runtime-support` | **GO when the published host gate passes** | Installed Spanish/English execution, offline use, privacy, cancellation, and bounded resources pass on the representative compatible computer. Incompatible computers must be rejected before acquisition or activation. |
-| `chatterbox-optional-portfolio-ready` | **GO for local validation/portfolio use on a compatible host** | The separate validation build proves bounded acquisition, complete verification, explicit activation, installed bilingual use, and contained removal. This claim does not say that the ordinary build exposes Download or that every device has run an identical lifecycle matrix. |
-| `chatterbox-download-available` | **WITHHELD in the current ordinary build** | The checked-in ordinary manifest still does not expose Download. This is a release-channel state, not a Chatterbox functionality failure. A later bounded manifest change may expose it without redefining hardware support, while retaining explicit consent and every v1/v2 integrity and lifecycle control. |
+| `chatterbox-optional-portfolio-ready` | **GO on a compatible host** | The ordinary release path proves bounded acquisition, complete verification, explicit activation, installed bilingual use, contained removal, and reacquisition. The historical validation-only overlay is retired as an active channel. |
+| `chatterbox-download-available` | **GO only after both compatibility gates pass** | The ordinary manifest is `downloadable` only after renderer presentation of the compatible profile and a native pre-network recheck. A failed gate performs no confirmation or network transfer; acquisition cancellation removes only incomplete staging. This does not redefine hardware support. |
 | `unsigned-local-portfolio-build` | **GO** | The exact `0.1.0` Windows x64/Piper candidate may be described as an unsigned local or portfolio MVP with its SHA-256 identity and limitations. |
 | `signed-public-windows-installer` | **PENDING EXTERNAL AUTHORIZATION** | No product failure is recorded. General public publication waits for an authorized signing identity plus signature, checksum, and release-channel verification. |
 
 The public signed state is not inferred from the local GO. Likewise, runtime
 support does not imply that a particular build exposes an optional-package
 download action.
+
+## Current ordinary artifact evidence
+
+The representative compatible-host journey is hash-bound to the ordinary
+manifest and has passed install, cancelled download, complete verified
+acquisition, Spanish and English offline Chatterbox narration, restart,
+removal, Piper Spanish and English use,
+reacquisition, and uninstall. The release-locked runtime compiles out
+repository and environment fallbacks: it accepts only the packaged Piper core
+or a verified installed Chatterbox profile.
+
+The current unsigned-local Windows evidence is version 2. Its installer and
+build/installed-payload identities are recorded separately because packaging
+time can change the installed payload; they must be regenerated after the
+installer rebuild. This evidence sets `publicPublicationAllowed` to `false` and
+is not a signature or a general public-publication claim.
 
 ## Evidence and change control
 

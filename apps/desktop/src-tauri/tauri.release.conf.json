@@ -15,6 +15,7 @@
       "../../../services/tts/release/core/dist/voxleaf-piper-core-v1/": "resources/tts/voxleaf-piper-core-v1/",
       "../../../services/tts/release/optional/chatterbox/THIRD-PARTY-NOTICES.md": "resources/release/optional/chatterbox/THIRD-PARTY-NOTICES.md",
       "../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json": "resources/release/optional/chatterbox/optional-package-manifest-v2.json",
+      "../../../services/tts/release/optional/chatterbox/runtime-package-evidence-v3.json": "resources/release/optional/chatterbox/runtime-package-evidence-v3.json",
       "../../../services/tts/release/optional/chatterbox/source-manifest-v2.json": "resources/release/optional/chatterbox/source-manifest-v2.json"
     },
     "windows": {

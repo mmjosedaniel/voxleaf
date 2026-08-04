@@ -90,7 +90,7 @@ development-only Qwen Serena/Aiden. The maintainer confirms the full admitted
 rate range, and pull request #170 passes the required Ubuntu and Windows checks.
 
 M011's preliminary Milestone 7 record accepted its requirements-based support
-decision. Planned Milestone 6B now reopens ordinary Chatterbox availability;
+decision. Milestone 6B closes ordinary compatibility-gated Chatterbox availability;
 trusted public signing remains a separate externally authorized future channel.
 Milestones 1 through 5 and 6A are complete at their documented boundaries. The
 implemented standalone core
@@ -100,11 +100,10 @@ optional GPU quality download, not part of the core installer; Qwen remains
 development-only. The deterministic core contains a private CPython/Piper
 runtime, both voices, notices/model cards, and exact GPL source, and is verified
 natively before use. Milestone 5 packages that core in the versioned `0.1.0`
-per-user Windows x64 NSIS path. The exact current installer is `181,704,648`
-bytes with SHA-256
-`56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
-Its deterministic/static and local lifecycle evidence passes. Defender and
-SmartScreen were not observed for this exact hash. Piper is a CPU profile with
+per-user Windows x64 NSIS path. Its exact rebuilt installer identity is recorded
+only in generated package evidence. Its deterministic/static and local lifecycle
+evidence passes. Defender and SmartScreen were not observed for the evaluated
+artifact. Piper is a CPU profile with
 no GPU requirement, and the maintainer additionally confirmed VoxLeaf working
 on an independent older Windows computer with 16 GB RAM and a 4-GB-VRAM GPU.
 Under ADR-0049 and release authority v2, Milestone 7 therefore records **GO**
@@ -119,8 +118,8 @@ Spanish/English, offline, privacy, cancellation, and package-lifecycle evidence
 passes on the representative compatible computer. The preliminary Milestone 7
 record accepts **GO
 when the published host gate passes** for Chatterbox. The ordinary product
-manifest nevertheless remains withheld, so this build does not expose
-Download. Signed public publication is **pending external authorization**
+manifest exposes Download only after Settings presents a pass and native code
+repeats the live host gate. Signed public publication is **pending external authorization**
 because no trusted signing identity is available. The package is an unsigned
 local/portfolio MVP, not a trusted general-public installer.
 Chatterbox's measured `3,644`-MiB VRAM peak no longer inherits the evaluated
@@ -128,7 +127,7 @@ host's 8-GB capacity as an absolute minimum. ADR-0044 admits at `5,632` MiB
 total and `4,668` MiB currently available, keeps nominal 8-GB hardware as the
 evaluated recommendation, and requires all three quantities to be disclosed
 before download consent.
-Milestone 6B must pair Chatterbox's generally more natural and expressive voice
+Milestone 6B pairs Chatterbox's generally more natural and expressive, but subjective, voice
 with exact transfer/install/temporary-space disclosure, representative startup/
 RAM/VRAM observations, and a warning that first load can exceed one minute and
 temporarily reduce computer responsiveness while visual reading remains usable.
@@ -194,7 +193,8 @@ development-only. M011 intends Piper for the core distribution and may expose
 Chatterbox only as an explicit verified optional download. Piper payload and
 licence/source fulfillment plus the local installer path are implemented and
 accepted for the local/portfolio MVP. Chatterbox is supported behind its live
-host gate, while its ordinary Download channel remains withheld.
+host gate, while its ordinary Download channel is enabled only after that gate
+passes in Settings and native code repeats it before network access.
 
 The highlight/follow path above passed repository-authored synthetic,
 Chromium, packaged WebView2, exact-host, M009.1 clean-host, and ephemeral
@@ -240,18 +240,20 @@ parser/security result without claiming general EPUB 2 conformance.
    ordinary preferences. Focused and packaged representative-host validation
    passes; ordinary Download availability and trusted public signing remain
    separate channel states.
-6. Planned M011 Milestone 6B promotes the ordinary manifest only behind the
-   native live gate, reconciles exact package measurements, supplies truthful
-   quality/resource/startup disclosure, compiles development-runtime fallbacks
-   out of the release, and validates the ordinary installed acquisition,
-   bilingual narration, restart, removal/reinstall, and Piper-after-removal
-   journey. The current ordinary Download action remains withheld until those
-   gates pass.
+6. M011 Milestone 6B now promotes the ordinary manifest only behind renderer
+   presentation plus the native live gate, reconciles exact package
+   measurements, supplies truthful quality/resource/startup disclosure,
+   compiles development-runtime fallbacks out of the release, and passes the
+   ordinary installed acquisition, bilingual narration, restart,
+   removal/reinstall, and Piper-after-removal journey. The ordinary Download
+   action is compatibility-gated by those passing checks.
 7. M011 Milestone 7 then decides Piper-core portfolio readiness, compatible-host
    Chatterbox support, ordinary Download availability, and signed public-
-   installer publication independently again. The preliminary record has Piper
-   GO, Chatterbox GO when its published gate passes, Download withheld in the
-   current ordinary build, and signed publication pending external authorization.
+   installer publication independently again. The preliminary record had Piper
+   GO, Chatterbox GO when its published gate passes, Download withheld at that
+   checkpoint, and signed publication pending external authorization. Milestone
+   6B now supplies the guarded ordinary-Download evidence that the renewed
+   decision must consume.
 
 M010.1 is a deliberately narrow pre-M011 exception to the earlier post-MVP
 candidate order because English narration and a stronger portfolio demo are

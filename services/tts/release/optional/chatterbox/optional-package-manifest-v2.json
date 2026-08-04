@@ -1,5 +1,5 @@
 {
-  "availability": "withheld",
+  "availability": "downloadable",
   "identity": {
     "engineVersion": "0.1.7",
     "modelId": "ResembleAI/chatterbox",
@@ -31,7 +31,13 @@
     "maximumTransferBytes": 9000000000,
     "maximumUserDisclosedFreeBytes": 20000000000
   },
-  "measurements": null,
+  "measurements": {
+    "coldStartSeconds": 83,
+    "downloadBytes": 8231893387,
+    "installedBytes": 8228503309,
+    "minimumFreeBytes": 20000000000,
+    "temporaryBytes": 13254834850
+  },
   "modelArtifacts": [
     {
       "downloadBytes": 2143989928,
@@ -137,6 +143,5 @@
       }
     ]
   },
-  "schemaVersion": 2,
-  "withholdingReason": "clean-host-validation-pending"
+  "schemaVersion": 2
 }

@@ -116,7 +116,8 @@ targets a Windows x64 portfolio MVP with Piper Spanish/English in the small
 core and Chatterbox Spanish/English as a separately gated optional GPU quality
 download. Milestone 4A implements the fail-closed native lifecycle and
 Settings controls. Milestone 4B now implements the split acquisition while its
-v2 manifest remains deliberately withheld: six allowlisted model-data files
+v2 manifest is downloadable only after the renderer and native live compatibility
+gates pass: six allowlisted model-data files
 are acquired directly from the official
 `ResembleAI/chatterbox` Hugging Face repository at one full frozen revision.
 Each file remains bounded and SHA-256 verified; no model-repository code may
@@ -125,19 +126,16 @@ three bounded assets, and published under the immutable
 [`chatterbox-runtime-v2`](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v2)
 release. The validated optional path requires explicit consent, bounded
 download, exact verification, atomic installation, separate activation,
-offline operation, and application-owned removal. The ordinary manifest still
-keeps Download disabled in this build as a separate distribution state; that
-does not revoke Chatterbox runtime support. Qwen stays development-only and
+offline operation, and application-owned removal. The ordinary manifest exposes
+Download only to a compatible current host; that does not revoke Chatterbox
+runtime support on a host that fails the gate. Qwen stays development-only and
 outside the first distributable product.
 ADR-0044 corrects only current Chatterbox product admission: the measured
 `3,644`-MiB peak now yields a `5,632`-MiB-total/`4,668`-MiB-free technical gate,
 while the evaluated nominal 8-GB class remains recommended and disclosed.
-ADR-0045 adds a distinct unsigned local validation installer for the
-representative compatible computer. It compile-time-enables the same native
-closed manifest with exact measured disclosures while the ordinary installer
-remains `withheld`; those results support the published compatible-host class
-without claiming identical behavior on every computer or enabling Download in
-the ordinary build.
+ADR-0045's distinct unsigned local validation installer is preserved as
+historical evidence. Milestone 6B retired it as a competing product surface
+after the ordinary release-locked journey passed on the representative host.
 ADR-0046 records the next installed-package findings: the immutable runtime-v2
 parts omitted two generated VoxLeaf service modules and the historical
 installed root produced a failing 261-character Python path. The validation
@@ -165,18 +163,13 @@ preference/recovery removal is not selected, and silent uninstall preserves
 both unless an explicit bounded option is supplied. Focused desktop regressions
 and the six-outcome packaged lifecycle matrix pass for both local product
 identities on the development host. Authority v2 accepts those results for
-conditional Chatterbox support while preserving the ordinary manifest's
-`withheld` availability and the separate public-signing boundary.
-Milestone 6B is now planned inside M011 to replace that validation-only channel
-with compatibility-gated acquisition in the ordinary package. It will reconcile
-the corrected exact package size, disclose Chatterbox's generally more natural/
-expressive voice together with its substantial disk, startup, RAM/VRAM, GPU/CPU,
-and responsiveness costs, and compile repository-development fallbacks out of
-the release. Its ordinary installed test deliberately removes or poisons
-development environment inputs and proves use of private package runtimes; it
-does not require uninstalling Python, Rust, Node.js, Cargo, or other tools from
-the representative computer. The current ordinary Chatterbox Download action
-remains withheld until that work passes.
+conditional Chatterbox support, ordinary compatibility-gated availability, and
+the separate public-signing boundary. Milestone 6B reconciles the exact package
+size, discloses Chatterbox's generally more natural/expressive but subjective
+quality and resource costs, and compiles repository-development fallbacks out
+of the release. Its ordinary installed journey passes under poisoned development
+environment inputs without uninstalling Python, Rust, Node.js, Cargo, or other
+tools from the representative computer.
 Pre-release Milestone 3.1 is complete.
 [ADR-0048](architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md)
 and its
@@ -190,8 +183,8 @@ semantic/resource/locator, reader/restoration, narration, privacy, and
   consumes the completed result.
 Milestone 5 packages version `0.1.0` as a release-only current-user Windows x64
 NSIS installer containing the exact verified bilingual Piper core. The current
-unsigned local artifact is `181,704,648` bytes with SHA-256
-`56b3d0c0d991c8ded3989d6283fdca39e1071765eaf09530c4a59b9152fedc2d`.
+unsigned local artifact identity is recorded in the generated package evidence
+after each rebuild; it is not a public-release identity.
 Its static authority and local lifecycle evidence pass outside the sandbox;
 Defender and SmartScreen were not observed for this exact hash. Milestone 7
 records **GO** for Piper portfolio readiness. Piper is a CPU path with no GPU
@@ -205,13 +198,14 @@ the deterministic bilingual Piper core, complete notices/source fulfillment,
 offline smoke evidence, and native fixed-manifest verification. Chatterbox is
 also **GO when the published Windows/CUDA/VRAM/RAM/CPU gate passes**, backed by
 the Spanish and English representative-host results. The ordinary optional
-manifest remains `withheld`, so this build exposes no Chatterbox Download.
+manifest exposes Chatterbox Download only after the current host passes its
+published live compatibility gate.
 Signed-public readiness is a separate **pending external authorization** state
 because no trusted signing identity is available. The unsigned package is a
 local/portfolio MVP, not a trusted general-public installer. The earlier
-Milestone 7 record is now preliminary; M011 remains in `active/` through
-Milestone 6B, the renewed release decision, required pull-request checks, and
-closeout.
+Milestone 7 record is now preliminary; completed Milestone 6B leaves M011 in
+`active/` through the renewed release decision, required pull-request checks,
+and closeout.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -242,7 +236,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md`](architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md): implemented authority for bounded reflowable OPF 2.0, NCX navigation, exact inert compatibility doctypes, and unchanged public semantic/locator boundaries; final evidence is recorded in the completed M003.1 ExecPlan.
 - [`architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md`](architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md): accept support claims based on published requirements and representative compatible-host evidence rather than exhaustive per-computer testing.
 - [`architecture/chatterbox-official-acquisition-authority-v2.md`](architecture/chatterbox-official-acquisition-authority-v2.md): accepted M011 Milestone 4B authority for a separately verified split runtime and the six exact official revision-pinned Hugging Face model files, with closed redirects, limits, cancellation, safe loading, atomic promotion, and fail-closed release gates.
-- [`../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json`](../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json): content-safe reproducible runtime/part/aggregate size evidence and verified public release identity; the ordinary manifest remains independently withheld until Milestone 6B reconciles and promotes the current authority.
+- [`../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json`](../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json) and [`../services/tts/release/optional/chatterbox/runtime-package-evidence-v3.json`](../services/tts/release/optional/chatterbox/runtime-package-evidence-v3.json): preserved historical evidence and repository-reconciled current ordinary authority; neither is a signature or public-publication claim.
 - [`architecture/hardware-profile-recovery-authority-v1.md`](architecture/hardware-profile-recovery-authority-v1.md): frozen M010 Milestone 1 privacy-safe host report, immutable profile/evidence shape, result-blind margins, matching/preference rules, failure taxonomy, and identity-first recovery authority.
 - [`architecture/qwen-development-vram-admission-v1.md`](architecture/qwen-development-vram-admission-v1.md): corrective development-only authority retaining generic total VRAM while admitting the exact Qwen demo with its measured peak plus a frozen 512-MiB available-VRAM reserve.
 - [`architecture/tts-support-matrix-v1.md`](architecture/tts-support-matrix-v1.md): final M010 product support matrix, admitted host margins, explicit selection/fallback policy, recovery policy, limitations, and runtime/license/distribution boundary.

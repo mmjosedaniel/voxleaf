@@ -47,10 +47,6 @@ const PERTH_SOURCE: &str =
 const MANIFEST_BYTES: &[u8] = include_bytes!(
     "../../../../services/tts/release/optional/chatterbox/optional-package-manifest-v2.json"
 );
-#[cfg(feature = "chatterbox-acquisition-validation")]
-const VALIDATION_OVERLAY_BYTES: &[u8] = include_bytes!(
-    "../../../../services/tts/release/optional/chatterbox/optional-package-validation-overlay-v1.json"
-);
 const COPY_BUFFER_BYTES: usize = 1024 * 1024;
 const MODEL_DOWNLOAD_BYTES: u64 = 3_208_951_924;
 const MODEL_FILES: [(&str, u64, &str); 6] = [
@@ -234,17 +230,6 @@ struct AcquisitionMeasurements {
     temporary_bytes: u64,
 }
 
-#[cfg(feature = "chatterbox-acquisition-validation")]
-#[derive(Clone, Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct ValidationOverlay {
-    schema_version: u8,
-    purpose: String,
-    availability: String,
-    public_publication_allowed: bool,
-    measurements: AcquisitionMeasurements,
-}
-
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ModelArtifact {
@@ -417,42 +402,8 @@ pub(crate) struct OptionalChatterboxManager {
 fn exact_manifest() -> Result<OptionalPackageManifest, OptionalProfileError> {
     let manifest = serde_json::from_slice::<OptionalPackageManifest>(MANIFEST_BYTES)
         .map_err(|_| OptionalProfileError::Invalid)?;
-    #[cfg(feature = "chatterbox-acquisition-validation")]
-    let manifest = {
-        let mut validation_manifest = manifest;
-        apply_validation_overlay(&mut validation_manifest)?;
-        validation_manifest
-    };
     validate_manifest(&manifest)?;
     Ok(manifest)
-}
-
-#[cfg(feature = "chatterbox-acquisition-validation")]
-fn apply_validation_overlay(
-    manifest: &mut OptionalPackageManifest,
-) -> Result<(), OptionalProfileError> {
-    let overlay = serde_json::from_slice::<ValidationOverlay>(VALIDATION_OVERLAY_BYTES)
-        .map_err(|_| OptionalProfileError::Invalid)?;
-    let measurements = &overlay.measurements;
-    if overlay.schema_version != 1
-        || overlay.purpose != "local-validation-only"
-        || overlay.availability != "downloadable"
-        || overlay.public_publication_allowed
-        || measurements.cold_start_seconds != 60
-        || measurements.download_bytes != 8_231_893_387
-        || measurements.installed_bytes != 8_228_503_309
-        || measurements.minimum_free_bytes != 20_000_000_000
-        || measurements.temporary_bytes != 13_254_834_850
-        || manifest.availability != "withheld"
-        || manifest.measurements.is_some()
-        || manifest.withholding_reason.as_deref() != Some("clean-host-validation-pending")
-    {
-        return Err(OptionalProfileError::Invalid);
-    }
-    manifest.availability = overlay.availability;
-    manifest.measurements = Some(overlay.measurements);
-    manifest.withholding_reason = None;
-    Ok(())
 }
 
 fn validate_sha256(value: &str) -> bool {
@@ -2128,6 +2079,28 @@ pub(crate) fn configure_application_data_root(app: &AppHandle) -> Result<(), Opt
         .map_err(|_| OptionalProfileError::Unavailable)
 }
 
+fn select_at_if_host_admitted(
+    manager: &OptionalChatterboxManager,
+    root: &Path,
+    admitted: bool,
+) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
+    if !admitted {
+        return Err(OptionalProfileError::IncompatibleHost);
+    }
+    manager.select_at(root)
+}
+
+fn download_at_if_host_admitted(
+    manager: &OptionalChatterboxManager,
+    root: &Path,
+    admitted: bool,
+) -> Result<OptionalProfileSnapshot, OptionalProfileError> {
+    if !admitted {
+        return Err(OptionalProfileError::IncompatibleHost);
+    }
+    manager.download_at(root)
+}
+
 #[tauri::command]
 pub async fn optional_chatterbox_snapshot(
     manager: State<'_, Arc<OptionalChatterboxManager>>,
@@ -2153,11 +2126,8 @@ pub async fn select_optional_chatterbox(
     let manager = Arc::clone(manager.inner());
     tauri::async_runtime::spawn_blocking(move || {
         let manifest = exact_manifest()?;
-        if !host_is_admitted(&manifest) {
-            return Err(OptionalProfileError::IncompatibleHost);
-        }
         let root = OptionalChatterboxManager::profile_root_for()?;
-        manager.select_at(root)
+        select_at_if_host_admitted(&manager, root, host_is_admitted(&manifest))
     })
     .await
     .map_err(|_| OptionalProfileError::Unavailable.code())?
@@ -2175,11 +2145,8 @@ pub async fn download_optional_chatterbox(
     let manager = Arc::clone(manager.inner());
     tauri::async_runtime::spawn_blocking(move || {
         let manifest = exact_manifest()?;
-        if !host_is_admitted(&manifest) {
-            return Err(OptionalProfileError::IncompatibleHost);
-        }
         let root = OptionalChatterboxManager::profile_root_for()?;
-        manager.download_at(root)
+        download_at_if_host_admitted(&manager, root, host_is_admitted(&manifest))
     })
     .await
     .map_err(|_| OptionalProfileError::Unavailable.code())?
@@ -2345,11 +2312,10 @@ mod tests {
         authority
     }
 
-    #[cfg(not(feature = "chatterbox-acquisition-validation"))]
     #[test]
-    fn checked_in_authority_records_the_release_but_remains_withheld_for_clean_host() {
+    fn checked_in_authority_enables_the_measured_ordinary_package() {
         let manifest = exact_manifest().expect("checked in manifest should be valid");
-        assert_eq!(manifest.availability, "withheld");
+        assert_eq!(manifest.availability, "downloadable");
         let runtime = manifest
             .runtime_artifact
             .as_ref()
@@ -2363,24 +2329,12 @@ mod tests {
                 .sum::<u64>(),
             5_022_941_463
         );
-        assert!(manifest.measurements.is_none());
         assert_eq!(manifest.model_artifacts.len(), 6);
-        assert_eq!(
-            manifest.withholding_reason.as_deref(),
-            Some("clean-host-validation-pending")
-        );
-    }
-
-    #[cfg(feature = "chatterbox-acquisition-validation")]
-    #[test]
-    fn validation_feature_applies_only_the_frozen_download_disclosures() {
-        let manifest = exact_manifest().expect("validation manifest should be valid");
-        assert_eq!(manifest.availability, "downloadable");
         assert!(manifest.withholding_reason.is_none());
         let measurements = manifest
             .measurements
-            .expect("validation measurements should be present");
-        assert_eq!(measurements.cold_start_seconds, 60);
+            .expect("ordinary measurements should be present");
+        assert_eq!(measurements.cold_start_seconds, 83);
         assert_eq!(measurements.download_bytes, 8_231_893_387);
         assert_eq!(measurements.installed_bytes, 8_228_503_309);
         assert_eq!(measurements.temporary_bytes, 13_254_834_850);
@@ -2736,7 +2690,6 @@ mod tests {
         assert!(outside.0.join("runtime/python.exe").exists());
     }
 
-    #[cfg(feature = "chatterbox-acquisition-validation")]
     #[test]
     fn removal_rejects_an_active_download_without_touching_staging() {
         let root = TestRoot::new();
@@ -2933,9 +2886,8 @@ mod tests {
         assert_eq!(actual, expected);
     }
 
-    #[cfg(not(feature = "chatterbox-acquisition-validation"))]
     #[test]
-    fn withheld_snapshot_is_read_only() {
+    fn ordinary_snapshot_cleans_an_incomplete_prior_operation_and_reports_absent() {
         let root = TestRoot::new();
         let stale_staging = staging_root(&root.0).join("operation/package.zip");
         fs::create_dir_all(stale_staging.parent().expect("parent should exist"))
@@ -2945,32 +2897,33 @@ mod tests {
         let before = manager
             .snapshot_at(&root.0)
             .expect("snapshot should succeed");
-        assert_eq!(before.state, OptionalProfileState::Withheld);
-        assert!(stale_staging.exists());
+        assert_eq!(before.state, OptionalProfileState::Absent);
+        assert!(!stale_staging.exists());
         assert!(!profile_root(&root.0).exists());
     }
 
-    #[cfg(not(feature = "chatterbox-acquisition-validation"))]
     #[test]
-    fn withheld_selection_cleans_stale_staging_without_changing_profile() {
+    fn native_host_gate_rejects_before_confirmation_staging_or_network_work() {
         let root = TestRoot::new();
-        let stale_staging = staging_root(&root.0).join("operation/package.zip");
-        fs::create_dir_all(stale_staging.parent().expect("parent should exist"))
-            .expect("staging fixture should be created");
-        fs::write(&stale_staging, b"incomplete").expect("staging fixture should be written");
         let manager = OptionalChatterboxManager::default();
 
-        let selected = manager
-            .select_at(&root.0)
-            .expect("select should be contained");
-        assert_eq!(selected.state, OptionalProfileState::Withheld);
+        assert_eq!(
+            select_at_if_host_admitted(&manager, &root.0, false),
+            Err(OptionalProfileError::IncompatibleHost)
+        );
+        assert_eq!(
+            download_at_if_host_admitted(&manager, &root.0, false),
+            Err(OptionalProfileError::IncompatibleHost)
+        );
+
+        let manifest = exact_manifest().expect("checked in manifest should be valid");
+        assert!(manager.operation_snapshot(&manifest).is_none());
         assert!(!staging_root(&root.0).exists());
         assert!(!profile_root(&root.0).exists());
     }
 
-    #[cfg(feature = "chatterbox-acquisition-validation")]
     #[test]
-    fn validation_selection_requires_confirmation_without_creating_staging() {
+    fn ordinary_selection_requires_confirmation_without_creating_staging() {
         let root = TestRoot::new();
         let manager = OptionalChatterboxManager::default();
         let before = manager

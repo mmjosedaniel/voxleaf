@@ -73,6 +73,37 @@ describe("optional Chatterbox controls", () => {
     });
   });
 
+  it("blocks review until the bounded Chatterbox compatibility presentation passes", async () => {
+    const invoke = vi.fn(async () => snapshot("absent"));
+    const client = new OptionalChatterboxClient(invoke);
+    const onRecheck = vi.fn(async () => true);
+
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={vi.fn(async () => true)}
+        onRecheck={onRecheck}
+        onRemove={vi.fn(async () => undefined)}
+        acquisitionAllowed={false}
+        acquisitionBlockMessage="Chatterbox compatibility is not established. Recheck device compatibility."
+      />,
+    );
+
+    const review = await screen.findByRole("button", {
+      name: "Review Chatterbox download",
+    });
+    expect(review).toBeDisabled();
+    expect(
+      screen.getByText(/compatibility is not established/),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Recheck device compatibility" }),
+    );
+    await waitFor(() => expect(onRecheck).toHaveBeenCalledOnce());
+    expect(invoke).toHaveBeenCalledOnce();
+  });
+
   it("shows measured disclosure and starts only after the explicit Download action", async () => {
     const invoke = vi.fn(async (command: string) => {
       if (command === "optional_chatterbox_snapshot") {
@@ -102,6 +133,25 @@ describe("optional Chatterbox controls", () => {
       screen.getByText(/6-GB-class hardware is admitted/),
     ).toBeInTheDocument();
     expect(screen.getByText(/24.00 GiB RAM total/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/13,254,834,850 bytes \(13.25 GB \/ 12.35 GiB\)/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/8,228,503,309 bytes \(8.23 GB \/ 7.66 GiB\)/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/8,231,893,387 bytes \(8.23 GB \/ 7.67 GiB\)/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/generally more natural and expressive than Piper/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/first model load can exceed one minute/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/A representative cold start rounded to 31 seconds/),
+    ).toHaveTextContent("actual startup varies and can exceed one minute");
+    expect(screen.queryByText(/60 seconds/)).not.toBeInTheDocument();
     expect(invoke).toHaveBeenCalledTimes(1);
 
     fireEvent.click(
@@ -116,6 +166,30 @@ describe("optional Chatterbox controls", () => {
     expect(invoke).toHaveBeenNthCalledWith(2, "download_optional_chatterbox", {
       profileId: CHATTERBOX_OPTIONAL_PROFILE_ID,
     });
+  });
+
+  it("blocks Download in confirmation when Chatterbox compatibility no longer passes", async () => {
+    const client = new OptionalChatterboxClient(async () =>
+      snapshot("confirming"),
+    );
+
+    render(
+      <OptionalChatterboxControls
+        client={client}
+        onActivate={vi.fn(async () => true)}
+        onRecheck={vi.fn(async () => true)}
+        onRemove={vi.fn(async () => undefined)}
+        acquisitionAllowed={false}
+        acquisitionBlockMessage="This device does not currently meet the Chatterbox requirements. Recheck device compatibility after its available resources change."
+      />,
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Download Chatterbox" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByText(/does not currently meet the Chatterbox requirements/),
+    ).toBeInTheDocument();
   });
 
   it("shows an installed selected profile as active without redundant activation", async () => {

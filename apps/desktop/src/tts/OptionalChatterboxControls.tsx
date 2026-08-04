@@ -17,6 +17,9 @@ export interface OptionalChatterboxControlsProps {
   readonly onRecheck: () => Promise<boolean>;
   readonly onRemove: () => Promise<void>;
   readonly disabled?: boolean;
+  /** The renderer-side presentation gate; native repeats this before network. */
+  readonly acquisitionAllowed?: boolean;
+  readonly acquisitionBlockMessage?: string;
 }
 
 function displayBytes(value: number | undefined): string {
@@ -32,6 +35,46 @@ function displayMiB(value: number): string {
 
 const CANCELLATION_SCOPE_COPY =
   "Cancelling download or verification removes only this operation's incomplete staging and partial files. It cannot resume later and never removes a verified installed package.";
+
+const CHATTERBOX_DISCLOSURE = Object.freeze({
+  transfer: "8,231,893,387 bytes (8.23 GB / 7.67 GiB)",
+  installed: "8,228,503,309 bytes (8.23 GB / 7.66 GiB)",
+  temporary: "13,254,834,850 bytes (13.25 GB / 12.35 GiB)",
+  preflight: "20,000,000,000 bytes (20 GB / 18.63 GiB)",
+});
+
+function ChatterboxDisclosure(): ReactElement {
+  return (
+    <div className="optional-chatterbox-disclosure">
+      <p>
+        Chatterbox is generally more natural and expressive than Piper, though
+        voice preference varies by listener.
+      </p>
+      <p>
+        Download: {CHATTERBOX_DISCLOSURE.transfer}. Installed local storage:{" "}
+        {CHATTERBOX_DISCLOSURE.installed}. Temporary storage during setup:{" "}
+        {CHATTERBOX_DISCLOSURE.temporary}. Free storage required before setup:{" "}
+        {CHATTERBOX_DISCLOSURE.preflight}.
+      </p>
+      <p>
+        Installed storage is disk space, not permanent RAM or VRAM. Loading and
+        inference use GPU/VRAM, RAM, and CPU and can reduce computer
+        responsiveness. The visual reader remains usable, but narration and
+        model controls may be temporarily unavailable.
+      </p>
+      <p>
+        The first model load can exceed one minute; VoxLeaf does not show a
+        fixed countdown or a made-up percentage for that work.
+      </p>
+      <p>
+        Representative observations, not guarantees: Quick audible start was
+        39.966 seconds (Spanish) and 33.905 seconds (English); direct cold runs
+        were 29.61 and 82.34 seconds; working-set peaks were 4,861,247,488 and
+        4,896,034,816 bytes; VRAM peaks were 3,711 and 3,731 MiB.
+      </p>
+    </div>
+  );
+}
 
 function renderOptionalChatterboxFailure(
   failure: OptionalChatterboxSnapshot["failure"],
@@ -156,6 +199,8 @@ export function OptionalChatterboxControls({
   onRecheck,
   onRemove,
   disabled = false,
+  acquisitionAllowed = true,
+  acquisitionBlockMessage = "",
 }: OptionalChatterboxControlsProps): ReactElement {
   const snapshot = useSyncExternalStore(
     (listener) => client.subscribe(listener),
@@ -207,6 +252,20 @@ export function OptionalChatterboxControls({
         downloadRequested={downloadRequested}
         active={active}
       />
+      {snapshot.state === "absent" ? <ChatterboxDisclosure /> : null}
+      {!acquisitionAllowed &&
+      (snapshot.state === "absent" || snapshot.state === "confirming") ? (
+        <div>
+          <p role="status">{acquisitionBlockMessage}</p>
+          <button
+            type="button"
+            disabled={disabled || pending}
+            onClick={() => run(onRecheck)}
+          >
+            Recheck device compatibility
+          </button>
+        </div>
+      ) : null}
       {snapshot.state === "installed" || snapshot.state === "failed" ? (
         <>
           <p>{`Chatterbox is ${active ? "active" : "not active"}.`}</p>
@@ -218,7 +277,7 @@ export function OptionalChatterboxControls({
       {snapshot.state === "absent" ? (
         <button
           type="button"
-          disabled={disabled || pending}
+          disabled={disabled || pending || !acquisitionAllowed}
           onClick={() => run(() => client.select())}
         >
           Review Chatterbox download
@@ -231,9 +290,12 @@ export function OptionalChatterboxControls({
             {displayBytes(snapshot.downloadBytes)}; install{" "}
             {displayBytes(snapshot.installedBytes)}; temporary storage{" "}
             {displayBytes(snapshot.temporaryBytes)}; free space required{" "}
-            {displayBytes(snapshot.minimumFreeBytes)}. Cold start is about{" "}
-            {snapshot.coldStartSeconds ?? "a measured"} seconds.
+            {displayBytes(snapshot.minimumFreeBytes)}. A representative cold
+            start rounded to{" "}
+            {snapshot.coldStartSeconds ?? "a measured number of"} seconds;
+            actual startup varies and can exceed one minute.
           </p>
+          <ChatterboxDisclosure />
           <p>
             GPU: Chatterbox measured{" "}
             {displayMiB(snapshot.measuredPeakDedicatedVramMiB)} VRAM. VoxLeaf
@@ -253,7 +315,7 @@ export function OptionalChatterboxControls({
           <p>{CANCELLATION_SCOPE_COPY}</p>
           <button
             type="button"
-            disabled={disabled || pending}
+            disabled={disabled || pending || !acquisitionAllowed}
             onClick={download}
           >
             Download Chatterbox

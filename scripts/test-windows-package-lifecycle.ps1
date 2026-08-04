@@ -1,23 +1,15 @@
 [CmdletBinding()]
 param(
-  [string]$Installer = "",
-  [ValidateSet("standard", "chatterbox-validation")]
-  [string]$Product = "standard"
+  [string]$Installer = ""
 )
 
 $ErrorActionPreference = "Stop"
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $profileId = "chatterbox-multilingual-v3-cuda-bf16-default-v4"
 
-if ($Product -eq "chatterbox-validation") {
-  $productName = "VoxLeaf-Chatterbox-Validation"
-  $dataIdentifier = "com.voxleaf.desktop.chatterbox-validation"
-  $defaultInstallerName = "VoxLeaf-Chatterbox-Validation_0.1.0_x64-setup.exe"
-} else {
-  $productName = "VoxLeaf"
-  $dataIdentifier = "com.voxleaf.desktop"
-  $defaultInstallerName = "VoxLeaf_0.1.0_x64-setup.exe"
-}
+$productName = "VoxLeaf"
+$dataIdentifier = "com.voxleaf.desktop"
+$defaultInstallerName = "VoxLeaf_0.1.0_x64-setup.exe"
 
 if (-not $Installer) {
   $Installer = Join-Path $repositoryRoot "apps\desktop\src-tauri\target\release\bundle\nsis\$defaultInstallerName"
@@ -304,7 +296,7 @@ try {
 
   $resultJson = [ordered]@{
     schemaVersion = 2
-    product = $Product
+    product = $productName
     install = "passed"
     firstStart = "passed"
     repair = "passed"
