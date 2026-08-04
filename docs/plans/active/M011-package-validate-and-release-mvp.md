@@ -2165,6 +2165,42 @@ and never edit prior benchmark authority to make a release pass.
   Vitest files/542 tests plus 32 Node tests, and
   `pnpm.cmd package:windows:check` remains current. No installer or runtime
   bytes changed at this checkpoint.
+- **2026-08-04:** The current audit-fix artifact passed its renewed normal-user
+  host evidence outside the sandbox. The non-destructive ordinary preflight
+  passed both clean and hostile release-runtime boundaries plus both live host
+  gates. After the existing ordinary installation was deliberately removed
+  with its default data-preserving silent uninstall, the exact
+  `181,596,357`-byte installer with SHA-256
+  `aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc`
+  passed install, first start, repair, all six uninstall data-choice outcomes,
+  unrelated-file preservation, and restoration of the pre-existing application
+  data.
+- **2026-08-04:** The same exact ordinary artifact then passed the complete
+  compatibility-gated Chatterbox journey: clean/hostile release isolation,
+  renderer and native host gates, real acquisition cancellation and staging
+  cleanup, complete acquisition, offline Chatterbox Spanish/English, restart,
+  application-owned removal, offline Piper Spanish/English after removal,
+  Chatterbox reacquisition, and final uninstall. Chatterbox Spanish/English
+  measured Quick command-to-audible at `49.269`/`37.773` seconds, Prepared at
+  `67.365`/`70.313` seconds, warm Prepared RTF `1.01`/`1.05`, peak process-tree
+  RAM `4,855,865,344`/`4,898,762,752` bytes, peak dedicated VRAM `3,745`/`3,709`
+  MiB, and cancellation `281`/`311` ms. Piper Spanish/English after removal
+  measured Quick at `4.964`/`4.388` seconds, warm Prepared RTF `0.10`/`0.10`,
+  peak process-tree RAM `1,134,739,456`/`1,174,315,008` bytes, no additional
+  dedicated-VRAM use, and cancellation `355`/`1,303` ms. All four arms report
+  zero underruns, external narration requests, generated-audio files, stale
+  playback, or retained cleanup units.
+- **2026-08-04:** The regenerated ordinary journey receipt now binds installer
+  SHA-256
+  `aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc`
+  to installed application-binary SHA-256
+  `3583333a1e2edb71277c562c78a2cc8378705fdf3cd050a896ff15168442da45`.
+  Canonical package evidence v2 simultaneously records the journey as
+  `representative-compatible-host-passed` and lifecycle as
+  `local-install-first-start-repair-uninstall-passed`, while retaining
+  `unsigned-local` and `publicPublicationAllowed: false`. The same artifact was
+  reinstalled afterward, its installed-binary hash rechecked, and the original
+  application data remained restored.
 
 ## Discoveries and decisions
 

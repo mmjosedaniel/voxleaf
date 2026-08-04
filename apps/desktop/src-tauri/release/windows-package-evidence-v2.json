@@ -25,6 +25,11 @@
       "fileName": "voxleaf-desktop.exe",
       "sizeBytes": 11840000,
       "sha256": "9e4bd21c482629c25d2eafcc998c35291e3b544cc5c3f3eb5b5cdb8fa1c9d337"
+    },
+    "installedApplicationBinary": {
+      "fileName": "voxleaf-desktop.exe",
+      "sizeBytes": 11840000,
+      "sha256": "3583333a1e2edb71277c562c78a2cc8378705fdf3cd050a896ff15168442da45"
     }
   },
   "payload": {
@@ -47,7 +52,7 @@
     "installedBytes": 8228503309,
     "temporaryBytes": 13254834850,
     "minimumFreeBytes": 20000000000,
-    "representativeCompatibleHostJourney": "not-run"
+    "representativeCompatibleHostJourney": "representative-compatible-host-passed"
   },
   "signature": {
     "status": "unsigned-local",
@@ -57,9 +62,9 @@
     "credentialStoredInRepository": false
   },
   "lifecycle": {
-    "status": "not-run",
+    "status": "local-install-first-start-repair-uninstall-passed",
     "representativeNormalUserHostRequired": true,
-    "localReleaseGatesPassed": false,
+    "localReleaseGatesPassed": true,
     "explicitApplicationDataRemovalStructurallyVerified": true,
     "silentUninstallPreservesApplicationData": true
   },

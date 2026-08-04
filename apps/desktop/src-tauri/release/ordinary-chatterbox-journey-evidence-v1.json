@@ -8,13 +8,13 @@
   "artifact": {
     "installer": {
       "fileName": "VoxLeaf_0.1.0_x64-setup.exe",
-      "sizeBytes": 181589616,
-      "sha256": "ca3064deea286d7cd71a7a1fb97beb002d6b525ad881fcb834c9f80ac7cc7f0a"
+      "sizeBytes": 181596357,
+      "sha256": "aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc"
     },
     "applicationBinary": {
       "fileName": "voxleaf-desktop.exe",
       "sizeBytes": 11840000,
-      "sha256": "a9ed5896562ae1986fb7b331177df5ef6309d5c05e63cc439c727c4fb6c45fcf"
+      "sha256": "3583333a1e2edb71277c562c78a2cc8378705fdf3cd050a896ff15168442da45"
     }
   },
   "result": "passed",
