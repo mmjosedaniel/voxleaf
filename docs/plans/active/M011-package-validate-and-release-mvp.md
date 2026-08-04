@@ -1243,9 +1243,12 @@ release-locked, compatibility-gated artifact produced by Milestone 6B.
    signed public installer publication. Do not block the Piper core solely
    because Chatterbox or signing authority is unavailable, and do not inherit a
    core pass into the optional package or its delivery channel.
-4. Run the complete applicable repository and package validation outside the
-   sandbox, review the final diff and tracked-artifact/privacy audit, and obtain
-   passing required pull-request checks.
+4. Consume the completed 825/825-item Standard Codex Security scan and the two
+   manual cleanup regressions, run the complete applicable repository and
+   package validation outside the sandbox, review the final diff and
+   tracked-artifact/privacy audit, and obtain passing required pull-request
+   checks. The static scan does not replace dynamic, dependency/advisory,
+   package, fuzzing, penetration, or external security testing.
 5. Record actual results, the release decision, and unresolved external
    channel limitations. Archive this ExecPlan after required branch checks and
    final closeout; public signing does not block the unsigned portfolio level.
@@ -2115,6 +2118,37 @@ and never edit prior benchmark authority to make a release pass.
   release-locked 79, and Python 386 passes. A final documentation/link review
   found no missing relative target and reconciled current 6B claims with the
   explicitly historical withheld/validation-build record.
+- **2026-08-04:** The post-6B basic code, logic, and security audit reviewed all
+  825 tracked items in its worktree inventory, including three uncommitted
+  cleanup-fix files. Standard Codex Security scan
+  `6db53928-14cd-4825-bd80-2680f7d5eac1` covered that entire inventory and
+  recorded zero reportable findings. Its static scope does
+  not replace dynamic, dependency/advisory, package, fuzzing, penetration, or
+  external security testing. Manual review found and repaired two bounded
+  lifecycle gaps: failed narration preparation now serializes availability
+  recovery behind the existing active-run shutdown, and failed Windows Job
+  Object assignment now terminates and reaps the spawned child before returning
+  failure. Focused coordinator tests pass 33/33, desktop typecheck passes, and
+  Rust passes 79/79 default plus 80/80 `release-locked-runtime` tests outside
+  the sandbox. The renewed Milestone 7 decision remains unexecuted.
+- **2026-08-04:** Audit-fix branch validation from normal PowerShell outside the
+  sandbox passes `pnpm.cmd check`, `pnpm.cmd check:portable`, Chromium 7/7,
+  release audit, current inventory, Piper core, Chatterbox source/acquisition,
+  and ordinary Windows package authority. The full matrices record shared
+  209/209, EPUB 653/653, desktop 542/542 plus Node 32/32, Python 386/386, and
+  Rust 79/79 default plus 80/80 release-locked tests. Packaged native startup
+  passed on one clean retry after the first run reached only a classified
+  `webdriver-session-not-created` at restart-session creation and cleaned its
+  temporary profile; the retry completed restart, cleanup, and zero-external-
+  request assertions. The release audit again passes while preserving the four
+  disclosed optional-graph advisory blind spots. `pnpm.cmd package:windows`
+  built a fresh `unsigned-local` installer of `181,596,357` bytes with SHA-256
+  `aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc`.
+  Generated evidence v2 resets lifecycle and the representative ordinary
+  Chatterbox journey to `not-run` for that new identity. The lifecycle command
+  stopped before mutation with `windows-release-lifecycle-preexisting-install`;
+  renewed Milestone 7 must rerun the exact-artifact lifecycle and journey after
+  the pre-existing installation is handled deliberately.
 
 ## Discoveries and decisions
 
@@ -2400,15 +2434,18 @@ M011 is complete only when:
 - the final release decision records Piper-core portfolio readiness,
   Chatterbox-package readiness, and public-installer publication independently.
 
-### Milestone 6B closeout evidence
+### Historical Milestone 6B closeout evidence
 
 | Gate | Result on 2026-08-04 |
 | ---- | -------------------- |
 | Deterministic repository gates | **Pass.** Full/portable checks, release audit, current inventory, Piper core, Chatterbox source/acquisition, ordinary package authority, Chromium 7/7, and packaged WebView2 pass outside the sandbox. |
-| Final ordinary artifact | **Pass, unsigned local.** Installer `181,589,616` bytes, SHA-256 `ca3064deea286d7cd71a7a1fb97beb002d6b525ad881fcb834c9f80ac7cc7f0a`; release-locked runtime and exact build/installed identities are recorded in evidence v2. |
+| Final ordinary artifact | **Pass, unsigned local.** Installer `181,589,616` bytes, SHA-256 `ca3064deea286d7cd71a7a1fb97beb002d6b525ad881fcb834c9f80ac7cc7f0a`; release-locked runtime and exact build/installed identities are retained in the historical 6B receipt/evidence record. |
 | Normal-user lifecycle | **Pass.** Install, first start, repair, six uninstall data-choice outcomes, unrelated-file preservation, and pre-existing-data restoration pass. |
 | Ordinary Chatterbox journey | **Pass.** Clean and hostile release isolation, double live gate, cancel/cleanup, acquisition, offline bilingual Chatterbox, restart, removal, offline bilingual Piper, reacquisition, and uninstall pass in the ordinary product identity. |
 | Privacy and bounded behavior | **Pass.** Zero external narration requests, zero generated-audio files, zero underruns in all four accepted arms, bounded cancellation/cleanup, and content-safe receipt with `privateBookTextLogged: false`. |
+| Basic code, logic, and security audit | **Pass, static scope.** Standard Codex Security scan `6db53928-14cd-4825-bd80-2680f7d5eac1` reviewed all 825 tracked items in its worktree inventory and recorded zero reportable findings; static limitations remain explicit. |
+| Post-audit cleanup regressions | **Pass.** Failed preparation waits for active shutdown before recovery recheck; failed Windows Job Object assignment terminates and reaps the spawned child. Focused TypeScript 33/33, desktop typecheck, and Rust 79/79 plus release-locked 80/80 pass outside the sandbox. |
+| Audit-fix branch validation | **Pass with exact-artifact lifecycle follow-up.** Full/portable, browser, packaged-native retry, dependency/inventory/manifest/package authority, and unsigned package build pass. Evidence v2 resets lifecycle and the ordinary Chatterbox journey to `not-run`; lifecycle stopped safely on a pre-existing installation and renewed Milestone 7 owns both exact-artifact reruns. |
 | Trusted signed public installer | **Pending external authorization.** The accepted artifact remains `unsigned-local`; no signing or general-public publication claim is made. |
 | Renewed Milestone 7 decision | **Ready, not executed here.** Milestone 7 must consume this 6B evidence and record the superseding release decision. |
 

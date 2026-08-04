@@ -18,18 +18,13 @@
     "updaterIncluded": false,
     "installer": {
       "fileName": "VoxLeaf_0.1.0_x64-setup.exe",
-      "sizeBytes": 181589616,
-      "sha256": "ca3064deea286d7cd71a7a1fb97beb002d6b525ad881fcb834c9f80ac7cc7f0a"
+      "sizeBytes": 181596357,
+      "sha256": "aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc"
     },
     "applicationBinary": {
       "fileName": "voxleaf-desktop.exe",
       "sizeBytes": 11840000,
-      "sha256": "c160790559728814d46587ba0d6af69a324d537d212dec1c87b603e7e0591b63"
-    },
-    "installedApplicationBinary": {
-      "fileName": "voxleaf-desktop.exe",
-      "sizeBytes": 11840000,
-      "sha256": "a9ed5896562ae1986fb7b331177df5ef6309d5c05e63cc439c727c4fb6c45fcf"
+      "sha256": "9e4bd21c482629c25d2eafcc998c35291e3b544cc5c3f3eb5b5cdb8fa1c9d337"
     }
   },
   "payload": {
@@ -52,7 +47,7 @@
     "installedBytes": 8228503309,
     "temporaryBytes": 13254834850,
     "minimumFreeBytes": 20000000000,
-    "representativeCompatibleHostJourney": "representative-compatible-host-passed"
+    "representativeCompatibleHostJourney": "not-run"
   },
   "signature": {
     "status": "unsigned-local",
@@ -62,9 +57,9 @@
     "credentialStoredInRepository": false
   },
   "lifecycle": {
-    "status": "local-install-first-start-repair-uninstall-passed",
+    "status": "not-run",
     "representativeNormalUserHostRequired": true,
-    "localReleaseGatesPassed": true,
+    "localReleaseGatesPassed": false,
     "explicitApplicationDataRemovalStructurallyVerified": true,
     "silentUninstallPreservesApplicationData": true
   },

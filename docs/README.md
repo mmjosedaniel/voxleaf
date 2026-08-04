@@ -98,7 +98,8 @@ Windows checks.
 M011's preliminary Milestone 7 record accepted a local/portfolio MVP GO; its
 detailed
 [`packaging and release ExecPlan`](plans/active/M011-package-validate-and-release-mvp.md)
-remains active for Milestone 6B and the renewed decision.
+remains active for the renewed Milestone 7 decision, required pull-request
+checks, and final closeout.
 Milestone 1 freezes
 [`mvp-release-authority-v1`](architecture/mvp-release-authority-v1.md) and
 accepts
@@ -164,12 +165,12 @@ both unless an explicit bounded option is supplied. Focused desktop regressions
 and the six-outcome packaged lifecycle matrix pass for both local product
 identities on the development host. Authority v2 accepts those results for
 conditional Chatterbox support, ordinary compatibility-gated availability, and
-the separate public-signing boundary. Milestone 6B reconciles the exact package
-size, discloses Chatterbox's generally more natural/expressive but subjective
-quality and resource costs, and compiles repository-development fallbacks out
-of the release. Its ordinary installed journey passes under poisoned development
-environment inputs without uninstalling Python, Rust, Node.js, Cargo, or other
-tools from the representative computer.
+the separate public-signing boundary. Completed Milestone 6B reconciles the
+exact package size, discloses Chatterbox's generally more natural/expressive but
+subjective quality and resource costs, compiles repository-development
+fallbacks out of the release, and passes its ordinary installed journey under
+poisoned development environment inputs without uninstalling Python, Rust,
+Node.js, Cargo, or other tools from the representative computer.
 Pre-release Milestone 3.1 is complete.
 [ADR-0048](architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md)
 and its
@@ -185,10 +186,15 @@ Milestone 5 packages version `0.1.0` as a release-only current-user Windows x64
 NSIS installer containing the exact verified bilingual Piper core. The current
 unsigned local artifact identity is recorded in the generated package evidence
 after each rebuild; it is not a public-release identity.
-Its static authority and local lifecycle evidence pass outside the sandbox;
-Defender and SmartScreen were not observed for this exact hash. Milestone 7
-records **GO** for Piper portfolio readiness. Piper is a CPU path with no GPU
-requirement, and the maintainer also confirmed that VoxLeaf worked on an
+The completed Milestone 6B artifact passed static authority and local lifecycle
+evidence outside the sandbox; Defender and SmartScreen were not observed for
+that exact hash. The post-6B audit fixes required a fresh unsigned build, so its
+generated evidence truthfully resets the hash-bound lifecycle and ordinary
+Chatterbox journey to `not-run` until renewed Milestone 7 executes them against
+the new artifact. That identity reset does not turn the earlier Piper or
+Chatterbox functionality results into failures. The preliminary Milestone 7
+record says **GO** for Piper portfolio readiness. Piper is a CPU path with no
+GPU requirement, and the maintainer also confirmed that VoxLeaf worked on an
 independent older Windows computer with 16 GB RAM and a 4-GB-VRAM GPU. This is
 representative functionality evidence, not a promise of identical performance
 on every Windows computer. Milestone 2
@@ -206,6 +212,16 @@ local/portfolio MVP, not a trusted general-public installer. The earlier
 Milestone 7 record is now preliminary; completed Milestone 6B leaves M011 in
 `active/` through the renewed release decision, required pull-request checks,
 and closeout.
+
+The basic MVP code, logic, and security audit reviewed all 825 tracked items in
+its worktree inventory. Standard Codex Security scan
+`6db53928-14cd-4825-bd80-2680f7d5eac1` covered that 825/825 inventory and
+recorded zero reportable findings; it was a static source review and does not
+replace runtime, dependency/advisory, package, fuzzing, penetration, or external
+security testing. The accompanying manual review closed two bounded lifecycle
+gaps: failed narration preparation now completes active shutdown before
+availability recovery restarts, and a Windows Job Object assignment failure now
+terminates and reaps the just-spawned TTS child.
 
 Use the [canonical system diagram](architecture/system-diagram.md) for component-level status and the [roadmap](plans/roadmap.md) for milestone authority.
 
@@ -308,7 +324,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
   availability, startup, buffering, cancellation, resource, and recovery
   guidance.
 - [`development/dependencies.md`](development/dependencies.md): dependency ownership, purpose, alternatives, and review policy.
-- [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current M011 security assessment, exact unsigned candidate identity, preliminary Milestone 7 decisions, planned 6B ordinary acquisition/release-isolation boundary, current Chatterbox download state, pending external signing, and deliberately deferred enterprise hardening.
+- [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current M011 security assessment, exact unsigned candidate identity, preliminary Milestone 7 decision, completed 6B ordinary acquisition/release isolation, basic audit result, renewed Milestone 7 next, pending external signing, and deliberately deferred enterprise hardening.
 - [`user/windows-release.md`](user/windows-release.md): current-user Windows install, repair/replacement, uninstall, checksum, signature, prerequisite, and payload-exclusion guidance for the versioned local package.
 - [`development/git-workflow.md`](development/git-workflow.md): branches, commits, pull requests, and the bounded Luna Git-steward authority.
 - [`development/agentic-refactoring.md`](development/agentic-refactoring.md): bounded Sol-directed audit, Terra implementation, independent validation, Luna Git stewardship, safety contracts, and the reusable prompt for behavior-preserving TypeScript maintainability campaigns.
@@ -319,7 +335,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
 - [`plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md`](plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md): completed Milestone 3.1 plan for the bounded OPF 2.0/NCX package, navigation, downstream-equivalence, and final acceptance path consumed by M011 release closeout.
 - [`plans/completed/typescript-maintainability-batch-20260803.md`](plans/completed/typescript-maintainability-batch-20260803.md): completed recovery and independent-validation record for the small cross-package TypeScript/TSX maintainability batch.
-- [`plans/active/M011-package-validate-and-release-mvp.md`](plans/active/M011-package-validate-and-release-mvp.md): active Windows/Piper local-portfolio and optional-Chatterbox release plan; Milestone 6B now owns compatibility-gated ordinary acquisition, truthful quality/resource disclosure, release-locked private-runtime proof, and the representative ordinary installer journey before Milestone 7 is recorded again. Public signing stays an external future action.
+- [`plans/active/M011-package-validate-and-release-mvp.md`](plans/active/M011-package-validate-and-release-mvp.md): active Windows/Piper local-portfolio and optional-Chatterbox release plan; Milestone 6B completed compatibility-gated ordinary acquisition, truthful quality/resource disclosure, release-locked private-runtime proof, and the representative ordinary installer journey. The plan remains active for renewed Milestone 7 closeout; public signing stays an external future action.
 - [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.
 - [`plans/completed/M002-shared-contracts-and-test-harness.md`](plans/completed/M002-shared-contracts-and-test-harness.md): completed ExecPlan and validation evidence for roadmap Milestone 2.
 - [`plans/completed/M003-secure-epub-ingestion-and-document-model.md`](plans/completed/M003-secure-epub-ingestion-and-document-model.md): completed ExecPlan and validation evidence for secure EPUB ingestion and the framework-independent document model in roadmap Milestone 3.

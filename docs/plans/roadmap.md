@@ -1206,6 +1206,14 @@ Milestones 1 through 6B are complete at their documented boundaries. M011 now
 remains active through the renewed decision, required pull-request checks, and
 final branch closeout. Trusted public signing is a separate externally
 authorized future channel.
+The subsequent basic code, logic, and security audit recorded a Standard Codex
+Security static review of all 825 tracked items in its worktree inventory, with
+zero reportable findings. Manual review additionally serialized
+failed-preparation recovery
+behind active narration shutdown and made Windows Job Object assignment failure
+terminate and reap the spawned child. Static-review limitations remain; these
+results do not replace dynamic, dependency/advisory, package, fuzzing,
+penetration, or external testing. Renewed Milestone 7 remains the next action.
 Milestone 4B's
 deterministic authority, implementation, and authorized runtime publication are
 complete. Milestone 1 froze
@@ -1285,9 +1293,25 @@ of pre-existing application data. Its hash-bound ordinary journey passes clean
 and hostile release isolation, double live admission, real cancel/staging
 cleanup, verified acquisition, offline Chatterbox Spanish/English, restart,
 removal, offline Piper Spanish/English, Chatterbox reacquisition, and uninstall
-with zero external narration requests or generated-audio files. Package evidence
-v2 keeps this artifact `unsigned-local`; renewed Milestone 7 release recording is
-next and trusted public signing remains external.
+with zero external narration requests or generated-audio files. The historical
+6B record keeps this artifact `unsigned-local`; renewed Milestone 7 release
+recording is next and trusted public signing remains external.
+
+The basic audit after Milestone 6B preserves those claim boundaries. Standard
+Codex Security scan `6db53928-14cd-4825-bd80-2680f7d5eac1` reviewed all 825
+tracked items in its worktree inventory and recorded zero reportable findings
+under its static scope.
+The accompanying manual fixes ensure failed narration preparation cannot restart
+availability before shutdown settles and that failed Windows Job Object
+assignment cannot leave the just-spawned TTS child running. Focused TypeScript
+and default/release-locked Rust regressions pass. The audit-fix branch also
+passes full and portable repository checks, browser 7/7, packaged native startup
+on one clean retry, release audits, inventory/manifest/package authority, and an
+unsigned Windows rebuild. That rebuild has a new exact identity, so generated
+package evidence resets lifecycle and the representative Chatterbox journey to
+`not-run`; the lifecycle harness stopped safely on a pre-existing installation.
+Renewed Milestone 7 must execute those exact-artifact gates and remains a
+separate step.
 
 The user subsequently reported that VoxLeaf worked on the independent older
 Windows host with 4 GB VRAM and 16 GB RAM. Under authority v2, that is valid

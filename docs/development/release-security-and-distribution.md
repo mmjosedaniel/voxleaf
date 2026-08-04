@@ -27,8 +27,8 @@ Piper core, full notices/corresponding-source fulfillment, exact payload
 measurements, offline process-level smoke, and native fixed-manifest verifier.
 Milestone 4A adds the optional lifecycle and UI in a deliberately withheld
 state. Milestone 4B accepts additive official-source authority, implements the
-closed controller, and publishes the exact runtime parts. Milestone 6B later
-promotes the ordinary manifest behind renderer and native live gates and
+closed controller, and publishes the exact runtime parts. Completed Milestone
+6B promotes the ordinary manifest behind renderer and native live gates and
 retires the validation overlay. Milestone 5
 builds the versioned unsigned local Windows package and implements the external-
 credential signing path. The preliminary Milestone 7 record accepts **GO** for the Piper local/
@@ -37,13 +37,35 @@ Signed public publication is **pending external authorization**, not a runtime
 failure. Completed Milestone 6B leaves M011 active through the renewed Milestone
 7 decision, the branch's required pull-request checks, and final closeout.
 
+The subsequent basic audit adds proportional static evidence rather than a
+security certification. Standard Codex Security scan
+`6db53928-14cd-4825-bd80-2680f7d5eac1` reviewed all 825 tracked items in its
+worktree inventory and recorded zero reportable findings. It does not replace
+runtime, dependency/advisory, package, fuzzing, penetration, or external
+security testing. Manual review also repaired two bounded lifecycle gaps:
+failed narration preparation now completes active shutdown before availability
+recovery restarts, and failed Windows Job Object assignment terminates and
+reaps the just-spawned child before failure returns.
+
+The audit-fix branch passes full and portable checks, Chromium 7/7, packaged
+native startup after one non-reproducing WebDriver restart-session failure, and
+the release audit, inventory, manifest, and package-authority checks outside the
+sandbox. The release audit still names the four existing optional-graph advisory
+blind spots instead of treating them as clean. A fresh unsigned Windows package
+was built for the changed binary. Its generated evidence correctly records
+lifecycle and the representative ordinary Chatterbox journey as `not-run`: the
+lifecycle harness stopped before mutation because it detected a pre-existing
+VoxLeaf installation. Renewed Milestone 7 owns those exact-artifact reruns.
+
 ## Current assessment
 
-The current repository and exact unsigned package are suitable for controlled
-local use, validation, and a portfolio MVP with trusted runtimes and synthetic,
-self-authored, or public-domain EPUBs. The package is
-`piper-core-portfolio-ready`; it is not a trusted general-public Windows
-download because it is unsigned.
+The current repository and fresh unsigned package are suitable for controlled
+local validation with trusted runtimes and synthetic, self-authored, or public-
+domain EPUBs. The completed Milestone 6B artifact and representative-host
+evidence support the preliminary `piper-core-portfolio-ready` and conditional
+Chatterbox decisions, but the changed audit-fix artifact still needs its renewed
+Milestone 7 lifecycle and ordinary-journey receipts. It is not a trusted general-
+public Windows download because it is unsigned.
 
 ### Preliminary Milestone 7 release decision (2026-08-03)
 
@@ -60,9 +82,10 @@ The independent claims are decided under the superseding
 This support boundary relies on published requirements plus representative
 compatible-host evidence, not a claim that every possible PC has been tested.
 Completed Milestone 6B supplies ordinary Download and release-runtime isolation
-evidence; Milestone 7 must be recorded again after that implementation and its
-required pull-request evidence. Trusted signing remains a future external
-publication action.
+evidence. Renewed Milestone 7 must also consume the 825/825-item Standard static
+scan, the two manual cleanup regressions, complete applicable dynamic/package/
+dependency validation, and required pull-request evidence. Trusted signing
+remains a future external publication action.
 
 ### Exact current candidate identity
 
@@ -692,10 +715,10 @@ public-domain content rather than copyrighted private books.
 
 Portfolio readiness has separately reportable profile and channel levels. The
 Piper core is GO. Chatterbox is supported when its live gate passes, while the
-ordinary build currently exposes no Download action. Milestone 6B targets an
-ordinary Download GO only when that live gate passes; until its implementation
-and evidence complete, documentation must not claim availability or turn the
-current channel fact into a claim that Chatterbox itself failed.
+ordinary build exposes Download only after renderer presentation and the native
+pre-network live gate both pass. Completed Milestone 6B records that bounded
+channel GO without turning a failing or unknown host gate into a claim that
+Chatterbox itself failed.
 
 ### Public Windows installer
 
