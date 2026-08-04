@@ -160,7 +160,8 @@ Pre-release Milestone 3.1 is complete.
 and its
 [`completed ExecPlan`](plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md)
 admit a bounded reflowable OPF 2.0/NCX profile alongside the unchanged EPUB 3
-profile. Focused EPUB 35-file/652-test, desktop 53-file/536-test plus 18 Node,
+profile. Current EPUB evidence passes 35 files/653 tests; the completed
+downstream evidence passes desktop 53 files/536 tests plus 18 Node,
 Playwright 7-test, and packaged-native matrices prove package, navigation,
 semantic/resource/locator, reader/restoration, narration, privacy, and
 cancellation behavior. This is not full EPUB 2 conformance; M011 Milestone 7

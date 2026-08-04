@@ -193,11 +193,11 @@ owns an EPUB 2 parser gate.
 - The exact NCX/XHTML doctype exceptions enlarge the XML attack surface and
   therefore require exact-positive plus near-miss, external-identifier,
   internal-subset, entity, cancellation, and maximum-plus-one regressions.
-- Once implemented, EPUB 2 files outside this profile will receive honest
-  recoverable invalid or unsupported outcomes. VoxLeaf does not claim
+- EPUB 2 files outside this profile receive honest recoverable invalid or
+  unsupported outcomes. VoxLeaf does not claim
   EPUBCheck or full EPUB 2 reading-system conformance.
-- M011 release closeout waits for Milestone 3.1 and the affected packaged
-  reader regression, but M011's installer, Piper, Chatterbox, and signing
+- M011 release closeout consumes completed Milestone 3.1 and the affected
+  packaged reader regression; M011's installer, Piper, Chatterbox, and signing
   authorities remain otherwise unchanged.
 - No copyrighted EPUB, private book, generated audio, model artifact, path,
   or publisher text may be added as evidence. Fixtures remain small,

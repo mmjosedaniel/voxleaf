@@ -371,7 +371,11 @@ export class NcxNavigationParser {
     parent: NcxFrame,
     event: XmlStartElementEvent,
   ): NcxFrame {
-    if (event.name.localName === "navLabel" && parent.stage === 0) {
+    if (
+      event.name.localName === "navLabel" &&
+      parent.stage === 0 &&
+      parent.count === 0
+    ) {
       this.requireNoAttributes(event);
       parent.stage = 1;
       return { kind: "navLabel", stage: 0, count: 0 };

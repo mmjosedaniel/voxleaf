@@ -375,8 +375,8 @@ Remaining:
 ### Reliability
 
 - Unsupported or malformed EPUBs produce a recoverable error.
-- Once M003.1 is complete, supported reflowable EPUB 2/NCX and EPUB 3 sources
-  produce the same public safe semantic, navigation, locator-resolution,
+- Supported reflowable EPUB 2/NCX and EPUB 3 sources produce the same public
+  safe semantic, navigation, locator-resolution,
   restoration, and narration schema and behavior while retaining distinct
   exact-byte identities; EPUB 2 variants outside ADR-0048 remain explicit
   recoverable unsupported inputs.

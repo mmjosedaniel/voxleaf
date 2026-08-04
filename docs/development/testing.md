@@ -193,10 +193,13 @@ roles fail; default tests and CI still load no model or generated audio.
   guide data, and inert NCX/XHTML 1.1 doctypes. Focused package tests cover
   bounded NCX depth/nodes/labels/targets, malformed and hostile relationships,
   limits, cancellation, privacy, caller-input ownership, and absence of
-  network/Worker capability. The paired EPUB 2/3 fixture proves equivalent
+  network/Worker capability. A post-close grammar regression additionally
+  proves that `pageList` labels cannot appear after its first `pageTarget`.
+  The paired EPUB 2/3 fixture proves equivalent
   semantic, resource, locator, reader/restoration, and narration behavior with
-  deliberately distinct exact-byte identities. Final evidence passes EPUB 35
-  files/652 tests, desktop 53 files/536 Vitest tests plus 18 Node tests,
+  deliberately distinct exact-byte identities. Current evidence passes EPUB
+  35 files/653 tests; the completed downstream evidence passes desktop 53
+  files/536 Vitest tests plus 18 Node tests,
   Playwright 7 tests, and the packaged native-startup matrix. DTBook, OEB
   content, SVG spine content, guide-as-navigation recovery, arbitrary DTDs or
   entities, CFI, fixed/active/protected/remote/media-dependent publications,
