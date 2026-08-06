@@ -236,6 +236,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 ## Architecture
 
 - [`architecture/system-diagram.md`](architecture/system-diagram.md): canonical implemented/approved component map, EPUB-to-audio flow, status legend, and maintenance conditions.
+- [`architecture/system-diagram-compact.md`](architecture/system-diagram-compact.md): simplified product-level map of local EPUB reading, local narration, bounded playback, synchronization, and optional Chatterbox installation.
 - [`architecture/overview.md`](architecture/overview.md): detailed component boundaries, invariants, implemented EPUB/reader/narration-preparation behavior, and the current TTS feasibility boundary.
 - [`architecture/performance-budget.md`](architecture/performance-budget.md): latency, buffering, memory, and measurement targets.
 - [`architecture/adaptive-buffer-authority-v1.md`](architecture/adaptive-buffer-authority-v1.md): frozen M008 quick/prepared/refill thresholds, simultaneous resource limits, ownership, lifecycle, volume/speed, and truthful UX authority.
