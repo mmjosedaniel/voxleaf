@@ -326,13 +326,15 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`development/dependencies.md`](development/dependencies.md): dependency ownership, purpose, alternatives, and review policy.
 - [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current M011 security assessment, exact unsigned candidate identity, renewed Milestone 7 decision and exact-artifact receipts, completed 6B ordinary acquisition/release isolation, basic audit result and limitations, pending external signing, and deliberately deferred enterprise hardening.
 - [`user/windows-release.md`](user/windows-release.md): current-user Windows install, repair/replacement, uninstall, checksum, signature, prerequisite, and payload-exclusion guidance for the versioned local package.
-- [`development/git-workflow.md`](development/git-workflow.md): branches, commits, pull requests, and the bounded Luna Git-steward authority.
-- [`development/agentic-refactoring.md`](development/agentic-refactoring.md): bounded Sol-directed audit, Terra implementation, independent validation, Luna Git stewardship, safety contracts, and the reusable prompt for behavior-preserving TypeScript maintainability campaigns.
+- [`development/git-workflow.md`](development/git-workflow.md): branches, commits, pull requests, and the bounded Sol Git-steward authority.
+- [`development/agentic-change-review.md`](development/agentic-change-review.md): independent Astra review of feature and bug-fix behavior, regression coverage, exact-patch evidence, and correction handling.
+- [`development/agentic-refactoring.md`](development/agentic-refactoring.md): bounded Sol/Astra-directed audit, Sol implementation, independent Astra validation, Sol Git stewardship, safety contracts, and the reusable prompt for behavior-preserving TypeScript maintainability campaigns.
 
 ## Plans
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
+- [`plans/active/bounded-settings-and-chatterbox-modularization.md`](plans/active/bounded-settings-and-chatterbox-modularization.md): planned internal settings-action extraction and conditional native Chatterbox modularization; implementation and validation have not started.
 - [`plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md`](plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md): completed Milestone 3.1 plan for the bounded OPF 2.0/NCX package, navigation, downstream-equivalence, and final acceptance path consumed by M011 release closeout.
 - [`plans/completed/typescript-maintainability-batch-20260803.md`](plans/completed/typescript-maintainability-batch-20260803.md): completed recovery and independent-validation record for the small cross-package TypeScript/TSX maintainability batch.
 - [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.

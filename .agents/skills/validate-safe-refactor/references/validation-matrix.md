@@ -20,7 +20,12 @@ Git inspection is evidence review, not a substitute for tests.
 At unit start, `git diff --cached --quiet` must exit zero and
 `git status --short -- <exact allowlisted paths>` must produce no output. This
 still permits unrelated unstaged user changes outside the closed allowlist.
-After a post-change `PASS`, the director stages each exact allowlisted path with
+Before and after the commands below, the validator records and rechecks HEAD
+and path identities using the Validation Report contract. Its immutable Report
+ID binds PASS to that exact state. Before staging, the Git executor verifies
+that report against both the order and live files; identity drift returns
+BLOCKED for revalidation, even if every prior command passed.
+After a matching post-change `PASS`, the Git executor stages each exact path with
 `git add -- <path>`. Before commit, inspect `git diff --cached --name-only`,
 `git diff --cached`, and `git diff --cached --check`. A staged unrelated,
 prohibited, or unreviewed path changes the verdict to `FAIL`. Return the index

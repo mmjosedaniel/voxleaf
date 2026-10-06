@@ -8,10 +8,25 @@ description: Direct a systematic, behavior-preserving VoxLeaf clean-code or read
 Use the primary thread as the director. Delegate evidence gathering to
 `clean_code_auditor`, implementation to `clean_code_worker`, and baseline plus
 post-change acceptance to `refactor_validator`. Prefer to delegate ordered
-Git-only mutations to `git_steward`; if the current surface cannot spawn Luna,
-record that limitation and have the Sol director execute the identical Git
+Git-only mutations to `git_steward`; if the current surface cannot spawn that role,
+record that limitation and have the director execute the identical Git
 Action Order directly. Never run a source writer and Git mutation at the same
 time.
+
+## Agent context and availability
+
+Use the named custom roles so their model, effort, and instructions stay
+explicit. Before implementation, verify that the current session exposes the
+configured role definitions; editing TOML does not reload an existing session.
+If definitions are stale, start a fresh task before running the campaign.
+If an audit, worker, or validation model is unavailable, report the exact blocker
+and obtain a model decision rather than silently substituting or self-validating.
+
+For each unit, provide its target ID, current source paths, invariants, and the
+applicable packet or order. Prefer a fresh context at batch start when supported,
+then reuse the role within that bounded batch. Re-read current files between
+units; prior messages are context, not evidence of the current worktree.
+Supporting agents must not delegate. Keep the four-role concurrency limit.
 
 ## Required context
 
@@ -72,25 +87,32 @@ review misleading.
 7. Ask `refactor_validator` for post-change mode using the same baseline
    commands plus risk-triggered gates from `$validate-safe-refactor`.
 8. Review correctness, tests, and readability as director. Accept only when the
-   Validation Report is `PASS` and every invariant is demonstrably preserved.
+   Validation Report is `PASS`, its identity recheck passes, and every invariant
+   is demonstrably preserved. Retain the immutable report with its Report ID.
 9. When correction is needed, send one precise Correction Order to the same
    worker. Permit at most two correction loops; after that, stop and redesign
    the work order instead of accumulating patches. Do not start another unit
    until the rejected patch is absent. Remove only verified worker-authored
    hunks; never discard overlapping user changes.
 10. Confirm the index is still empty and that the only changes in allowlisted
-    paths are the reviewed worker patch. Bind the order to the current HEAD and
-    exact approved path identities, then issue a GIT ACTION ORDER to the idle
-    `git_steward` using the contract in the reference file. If Luna was recorded
-    unavailable at campaign start, Sol executes that order directly. Require
+    paths are the reviewed worker patch. Copy the HEAD, closed allowlist, and path
+    identities from the accepted POST-CHANGE report into the Git Action Order;
+    do not replace them with newer hashes. Require the executor to compare the
+    report, order, and live state and return BLOCKED for revalidation on drift.
+    Then issue the GIT ACTION ORDER to the idle
+    `git_steward` using the contract in the reference file. If the steward was
+    recorded unavailable at campaign start, the director executes that order
+    directly. Require
     exact-path staging, staged path and diff inspection, the approved commit
     message, and a Git Report. Review the report, confirm the index is empty
     again, update the ExecPlan or inventory record, then continue.
 
 Create one auditor, one worker, and one validator task per campaign batch and
 reuse those role tasks for every unit. Also create and reuse one Git-steward
-task when `gpt-5.6-luna` is exposed to subagents. Do not silently replace it
-with another model. Custom-agent sandbox values are role defaults rather than
+task when available. The auditor and worker use GPT-6.1 Sol high, the validator
+uses GPT-6 Astra high, and the steward uses GPT-6.1 Sol medium. The director
+may use Sol or Astra. Do not silently replace an unavailable role model.
+Custom-agent sandbox values are role defaults rather than
 hard isolation because the parent task's active permission mode can override or
 constrain them. Start the director with workspace-write, enforce role boundaries
 through instructions and diff review, and use narrow host approvals only for
@@ -130,7 +152,8 @@ or contributor workflow changed, and report skipped or blocked targets without
 portraying them as defects.
 
 Push and pull-request creation are separate remote mutations. Delegate either
-to an available `git_steward`, or execute the order directly as Sol after a
-recorded Luna availability failure, only when the user explicitly authorizes it
-in the current task and the Git Action Order names the exact remote, branch,
+to an available `git_steward`, or execute the order directly as director after a
+recorded Git-steward availability failure, only when the user explicitly
+authorizes it in the current task and the Git Action Order names the exact
+remote, branch,
 base, title, and draft state. The steward never merges or closes a pull request.
