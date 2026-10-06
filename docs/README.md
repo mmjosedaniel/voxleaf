@@ -326,8 +326,8 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`development/dependencies.md`](development/dependencies.md): dependency ownership, purpose, alternatives, and review policy.
 - [`development/release-security-and-distribution.md`](development/release-security-and-distribution.md): current M011 security assessment, exact unsigned candidate identity, renewed Milestone 7 decision and exact-artifact receipts, completed 6B ordinary acquisition/release isolation, basic audit result and limitations, pending external signing, and deliberately deferred enterprise hardening.
 - [`user/windows-release.md`](user/windows-release.md): current-user Windows install, repair/replacement, uninstall, checksum, signature, prerequisite, and payload-exclusion guidance for the versioned local package.
-- [`development/git-workflow.md`](development/git-workflow.md): branches, commits, pull requests, and the bounded Luna Git-steward authority.
-- [`development/agentic-refactoring.md`](development/agentic-refactoring.md): bounded Sol-directed audit, Terra implementation, independent validation, Luna Git stewardship, safety contracts, and the reusable prompt for behavior-preserving TypeScript maintainability campaigns.
+- [`development/git-workflow.md`](development/git-workflow.md): branches, commits, pull requests, and the bounded Sol Git-steward authority.
+- [`development/agentic-refactoring.md`](development/agentic-refactoring.md): bounded Sol/Astra-directed audit, Sol implementation, independent Astra validation, Sol Git stewardship, safety contracts, and the reusable prompt for behavior-preserving TypeScript maintainability campaigns.
 
 ## Plans
 

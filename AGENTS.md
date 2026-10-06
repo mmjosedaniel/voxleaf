@@ -75,11 +75,12 @@ Before changing code or architecture:
   the staged names and diff before committing, and never carry a rejected
   worker patch into the next unit.
 - Reuse one auditor, one worker, and one validator task throughout a campaign
-  batch. Also reuse one Luna Git-steward task when the current Codex surface
-  exposes that model. Do not silently substitute another model: if Luna is
-  unavailable, record that fact and let Sol execute the same Git Action Order
-  directly. Bind accepted-change orders to the exact HEAD and approved path
-  identities. Git may mutate only while source writing and validation are idle.
+  batch. Use GPT-6.1 Sol for audit, implementation, and Git stewardship, and
+  GPT-6 Astra for independent validation. The primary director may use either
+  model. If the Git-steward role is unavailable, record that fact and let the
+  director execute the same Git Action Order directly. Do not silently replace
+  an unavailable auditor, worker, or validator with another model.
+  Bind accepted-change orders to the exact HEAD and approved path identities. Git may mutate only while source writing and validation are idle.
 - Never manually refactor generated sources, frozen evaluation authority,
   historical evidence, or completed ExecPlans.
 - Require an ExecPlan before a significant, multi-package, or multi-stage

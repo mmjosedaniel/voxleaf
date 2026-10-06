@@ -124,8 +124,8 @@ Do not bundle multiple unrelated review preferences into one correction.
 
 ## Git Action Order
 
-The Sol director issues this only while every source writer and validator is
-idle. Read-only Git inspection does not need an order; every Git mutation does.
+The director (Sol or Astra) issues this only while every source writer and
+validator is idle. Read-only Git inspection does not need an order; every Git mutation does.
 A `SETUP` order may precede validation and is limited to one clean-state update
 or branch action. An `ACCEPTED-CHANGE` order requires an accepted Validation
 Report. A `REMOTE-HANDOFF` order requires final validation plus explicit
@@ -156,8 +156,8 @@ merge, cherry-pick, amend, force-push, branch/tag deletion, PR merge/close
 Completion output: Git Report only
 ```
 
-Use separate SETUP orders for `UPDATE-MAIN-FF` and branch creation: Sol reviews
-the first Git Report and uses its ending HEAD as the second order's expected
+Use separate SETUP orders for `UPDATE-MAIN-FF` and branch creation: the director
+reviews the first Git Report and uses its ending HEAD as the second order's expected
 HEAD. `STAGE` and `COMMIT` may appear together as the ordered list
 `[STAGE, COMMIT]`; the steward must stop before the second action if the first
 does not pass every staged review.

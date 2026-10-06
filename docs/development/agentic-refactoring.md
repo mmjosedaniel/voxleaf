@@ -21,11 +21,11 @@ not a changed line in every file.
 
 | Role | Configuration | Default model | Writes source? | Responsibility |
 | --- | --- | --- | --- | --- |
-| Director/orchestrator | Primary Codex task | Sol, selected in the UI | No source; Git only when Luna is unavailable | Own requirements, approve work and Git orders, review diffs, request corrections, and accept results |
-| Auditor | `.codex/agents/clean-code-auditor.toml` | `gpt-5.6-terra`, high | Prohibited by role instructions | Inspect one cohesive unit and return evidence, invariants, risk, and a bounded proposal or skip |
-| Worker | `.codex/agents/clean-code-worker.toml` | `gpt-5.6-terra`, high | Yes | Apply exactly one approved work order and return a Change Packet |
-| Validator | `.codex/agents/refactor-validator.toml` | `gpt-5.6-terra`, high | Prohibited by role instructions | Establish the baseline, inspect the diff, and run focused plus risk-triggered gates outside the sandbox |
-| Git steward, when available | `.codex/agents/git-steward.toml` | `gpt-5.6-luna`, max | Git state only | Inspect Git and execute exact branch, staging, commit, push, or PR orders after authorization |
+| Director/orchestrator | Primary Codex task | GPT-6.1 Sol or GPT-6 Astra, selected in the UI | No source; Git only when the steward is unavailable | Own requirements, approve work and Git orders, review diffs, request corrections, and accept results |
+| Auditor | `.codex/agents/clean-code-auditor.toml` | `gpt-6.1-sol`, high | Prohibited by role instructions | Inspect one cohesive unit and return evidence, invariants, risk, and a bounded proposal or skip |
+| Worker | `.codex/agents/clean-code-worker.toml` | `gpt-6.1-sol`, high | Yes | Apply exactly one approved work order and return a Change Packet |
+| Validator | `.codex/agents/refactor-validator.toml` | `gpt-6-astra`, high | Prohibited by role instructions | Establish the baseline, inspect the diff, and run focused plus risk-triggered gates outside the sandbox |
+| Git steward, when available | `.codex/agents/git-steward.toml` | `gpt-6.1-sol`, medium | Git state only | Inspect Git and execute exact branch, staging, commit, push, or PR orders after authorization |
 
 Start the primary director task with **workspace-write** permission. Custom
 agent `sandbox_mode` values express safe role defaults, but they are not a
@@ -41,43 +41,49 @@ documentation, configuration, and Git edits.
 
 The project configuration permits up to four supporting threads. Spawn and
 reuse one auditor, one worker, and one validator. Also spawn and reuse one Git
-steward when the current Codex surface exposes Luna to subagents. If it does
-not, record the availability failure and let Sol execute the same Git Action
-Orders directly; do not silently substitute a different model. The workflow is
-sequential: Git remains idle while the worker writes or the validator runs, so
+steward when the current Codex surface exposes that role. If it does not,
+record the availability failure and let the director execute the same Git
+Action Orders directly; do not silently substitute a different role model.
+The workflow is sequential: Git remains idle while the worker writes or the validator runs, so
 the thread limit does not authorize parallel mutations.
 
-## Director model selection
+## Model selection and delegation
 
-Use `gpt-5.6-sol` for the primary task:
+Choose `gpt-6.1-sol` or `gpt-6-astra` for the primary task in the composer.
+The project does not pin the primary model, so either choice remains available.
+Use Sol high for ordinary bounded work; consider Sol xhigh or Astra high when
+cross-package contracts, cancellation, synchronization, or ambiguous evidence
+need deeper review. These are starting settings, not measured quality claims.
 
-- `high`: a small, low-risk unit with strong existing tests;
-- `xhigh`: recommended default for this campaign;
-- `max`: initial inventory, cross-package ownership, contracts, EPUB parsing,
-  synchronization, persistence, or TTS scheduling;
-- `ultra`: reserve for the highest-risk planning or review when the account and
-  model expose it. It is unnecessary for routine batches and consumes more
-  reasoning time and tokens.
+The auditor and worker use Sol high. Independent validation uses Astra high;
+its different model is not a substitute for tests or independent evidence.
+The Git steward uses Sol medium because its orders are explicit and bounded.
+Unnamed subagents default to Sol medium, but campaigns must select the named
+roles to retain their instructions and model settings.
 
-The audit, implementation, and validation agents use Terra because their inputs
-and outputs are narrow but still require code comprehension. The optional Git
-steward uses Luna Max because Git execution is clear, repeatable, and high
-volume while the Sol director retains every judgment and authorization. Model
-exposure varies by Codex surface and account, so Sol is the documented safe
-fallback rather than an automatic model substitution. This normally reduces
-expensive Sol usage, but multi-agent work does not reduce total tokens
-automatically: the agents separately read, reason, and report. Its primary
-benefits are context isolation, independent validation, and clearer
-accountability.
+Do not silently replace an unavailable auditor, worker, or validator. Record
+the unavailable role/model and obtain an explicit model decision. Only the
+Git-steward fallback to the director is pre-authorized by this workflow.
+
+At batch start, prefer fresh supporting-agent context when the client supports
+it. Supply the unit ID, paths, invariants, and exact packet or order. Reuse each
+role within the bounded batch, but require it to re-read current files between
+units. Supporting agents may not delegate or inherit approval from a prior unit.
+The director controls the four supporting slots and the sole active writer.
+
+Compare correction count, elapsed time, and available usage data after real
+batches before raising effort. No speed, cost, or quality improvement is claimed
+solely from this model migration. Model IDs and per-role configuration follow
+the [official subagent documentation](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
 ## Repository components
 
 - `.codex/config.toml` enables a maximum of four supporting threads and sets a
-  conservative Terra default for unnamed subagents.
+  Sol medium default for unnamed subagents.
 - `.codex/agents/clean-code-auditor.toml` defines the read-only audit role.
 - `.codex/agents/clean-code-worker.toml` defines the sole writer role.
 - `.codex/agents/refactor-validator.toml` defines the independent test gate.
-- `.codex/agents/git-steward.toml` defines the Luna Git-only execution role.
+- `.codex/agents/git-steward.toml` defines the Sol Git-only execution role.
 - `$orchestrate-safe-refactor` owns inventory, delegation, work orders,
   correction loops, and completion policy.
 - `$validate-safe-refactor` owns command routing and acceptance evidence.
@@ -86,7 +92,9 @@ accountability.
 
 Codex detects repository skills and custom-agent files when a new task starts.
 If an already-open task does not display them, start a new task or restart
-Codex.
+Codex. Parsing TOML and reviewing the diff validate configuration only; they
+do not prove the app loaded the new definitions or that either model executed.
+Before a campaign, confirm the exposed roles match the table above.
 
 ## Safety model
 
@@ -116,7 +124,8 @@ evidence by itself.
 
 1. On a clean worktree, have the available Git steward execute separate `SETUP`
    Git Action Orders for fast-forwarding `main` and then creating the dedicated
-   campaign branch. If Luna is unavailable, Sol executes the same orders.
+   campaign branch. If the steward is unavailable, the director executes the
+   same orders.
 2. For a broad or multi-package campaign, create an ExecPlan following
    `.agents/PLANS.md`.
 3. Build the tracked inventory with
@@ -134,16 +143,16 @@ evidence by itself.
 8. Let exactly one worker implement the frozen order.
 9. Have the validator inspect the patch and rerun the same tests plus the
    required risk-triggered gates.
-10. Let the Sol director review the diff and validation report. It may accept
+10. Let the director review the diff and validation report. It may accept
     the unit or issue one exact correction order. After two failed correction
     loops, redesign the work order.
 11. Confirm the Git index and every allowlisted worktree path were clean before
     the unit. Bind the current HEAD and exact approved path identities into a
-    Git Action Order for the idle steward, or for Sol after a recorded Luna
-    availability failure. The executor stages only the allowlisted paths,
+    Git Action Order for the idle steward, or for the director after a recorded
+    steward availability failure. The executor stages only the allowlisted paths,
     verifies staged identities and diff, commits the accepted unit, and returns
-    a Git Report. Sol reviews the report and confirms the index is empty. If a
-    patch is rejected or abandoned, stop until only its verified
+    a Git Report. The director reviews the report and confirms the index is
+    empty. If a patch is rejected or abandoned, stop until only its verified
     worker-authored hunks are removed; never continue with that diff
     contaminating another unit.
 12. Run a broader package gate after a package group and the complete applicable
@@ -181,9 +190,9 @@ quality and keeps each task resumable from the ExecPlan.
 
 ## Recommended director prompt
 
-Select **Sol XHigh** in the task composer for a normal batch. Use Max for the
-initial campaign inventory or high-risk boundaries. Then copy this prompt and
-replace the two bracketed values:
+Select **GPT-6.1 Sol High** in the task composer for a normal batch. Use
+**GPT-6 Astra High** for difficult cross-package planning or review. Then copy
+this prompt and replace the two bracketed values:
 
 ```text
 Use $orchestrate-safe-refactor as the controlling workflow.
@@ -219,15 +228,15 @@ For each unit, proceed sequentially:
    concurrently. The worker must not commit or push.
 6. Have refactor_validator inspect the diff and run post-change validation
    outside the sandbox using $validate-safe-refactor.
-7. Review the diff yourself using Sol. Accept only a PASS report with preserved
+7. Review the diff yourself as director. Accept only a PASS report with preserved
    behavior and a clearer implementation. Otherwise issue one precise
    Correction Order to the same worker; allow at most two correction loops.
 8. Require an empty Git index and clean allowlisted worktree paths at unit
    start. After accepting the unit, issue an exact GIT ACTION ORDER to
-   git_steward when Luna is available; otherwise record that and have Sol execute
+   git_steward when available; otherwise record that and have the director execute
    it directly. Bind the order to the exact HEAD and approved path identities.
    Require literal allowlisted staging, identity and staged-diff inspection, the
-   approved commit message, and a Git Report. Review that report with Sol and
+   approved commit message, and a Git Report. Review that report as director and
    update the campaign record. Never begin another unit while an unaccepted
    patch remains.
 
@@ -236,8 +245,8 @@ sources, frozen authority, privacy, cancellation, bounded-resource behavior,
 stable locators, narration synchronization, persistence, or error semantics.
 Do not weaken tests or perform unrelated cleanup. No supporting role other than
 an available git_steward may mutate Git. It may act only under an exact
-director-issued Git Action Order; if Luna is unavailable, Sol executes the same
-order directly. Push or PR creation additionally needs my explicit
+director-issued Git Action Order; if the steward is unavailable, the director
+executes the same order directly. Push or PR creation additionally needs my explicit
 authorization in the current task.
 
 Run no more than the stated batch limit in this task. Finish with the audited,
@@ -250,9 +259,9 @@ push or create a PR unless I explicitly request it.
 
 Use the first task only to inventory and plan one package. A sensible starting
 scope is `packages/shared/src` because it is smaller than the desktop surface,
-but its contracts are high impact: use Sol Max for the initial plan and require
-all generated contract files to remain excluded. Begin implementation in a
-separate task using Sol XHigh and a three-unit limit.
+but its contracts are high impact: consider Astra high for the initial plan
+and require all generated contract files to remain excluded. Begin implementation in a
+separate task using Sol high and a three-unit limit.
 
 After one or two real batches, review where the agents produced unnecessary
 work or missed context. Update the skills from observed friction rather than
