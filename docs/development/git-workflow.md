@@ -32,6 +32,9 @@ Open pull requests as drafts while implementation is incomplete.
 Before requesting review:
 
 - Review the complete diff.
+- For behavioral feature/bug changes, obtain a current APPROVE report through
+  [independent change review](agentic-change-review.md); it supplements required
+  checks and does not authorize a commit, push, or PR.
 - Run every relevant available check.
 - Update tests.
 - Update documentation.

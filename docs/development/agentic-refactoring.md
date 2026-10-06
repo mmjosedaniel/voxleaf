@@ -5,6 +5,11 @@ problems without treating every file as defective or changing product behavior.
 It is repository tooling for contributors; it is not part of the application
 runtime and does not change the system diagram or product roadmap.
 
+Features and behavioral bug fixes use the separate
+[independent change review](agentic-change-review.md) workflow. Its
+`change_reviewer` does not replace this campaign's `refactor_validator` and is
+not an additional mandatory role for behavior-preserving units.
+
 ## Why the workflow is bounded
 
 VoxLeaf currently has hundreds of TypeScript and TSX files. A literal

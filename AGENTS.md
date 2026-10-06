@@ -54,6 +54,19 @@ Before changing code or architecture:
 - Do not silently change public contracts.
 - Do not rewrite unrelated code.
 
+## Feature and bug review
+
+- For runtime behavior, public-contract, or cross-component feature/bug changes,
+  delegate an independent review to `change_reviewer` (GPT-6 Astra high) before
+  acceptance. Follow `docs/development/agentic-change-review.md`.
+- The reviewer inspects code and host-test evidence without editing or running
+  tests. Resolve actionable findings and obtain approval for the exact current
+  patch; missing evidence or an unavailable reviewer must be reported as blocked.
+- Trivial nonbehavioral documentation/spelling/formatting changes are exempt.
+  Refactor campaigns retain their existing validator instead of adding this role.
+- Keep the existing concurrency limit and user authorization boundaries. A review
+  report does not replace required checks or authorize Git mutations.
+
 ## Systematic refactoring
 
 - Use `$orchestrate-safe-refactor` for a multi-file clean-code, readability, or
