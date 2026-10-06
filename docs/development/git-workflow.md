@@ -54,6 +54,15 @@ paths, verifies the expected HEAD plus exact worktree and staged identities,
 checks the complete staged diff, and reports the resulting commit or remote
 action. It never edits source and never uses broad staging commands.
 
+For an ACCEPTED-CHANGE order, the immutable POST-CHANGE Validation Report is
+the authority for the allowed paths, HEAD, and file identities. The steward
+retrieves that exact Report ID and compares the report, order, and current
+files before staging, then rechecks worktree and staged content before commit.
+A missing report or any mismatch returns BLOCKED for a new validation run and
+report; recomputing hashes alone cannot renew approval. If drift is detected
+after staging, preserve the index and stop without committing or discarding
+user work. SETUP orders remain exempt from validation evidence.
+
 The steward cannot independently reset, clean, restore, stash, rebase, merge,
 cherry-pick, amend, force-push, delete branches or tags, or merge or close pull
 requests. Push and pull-request creation additionally require explicit user

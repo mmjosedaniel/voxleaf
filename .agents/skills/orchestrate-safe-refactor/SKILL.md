@@ -87,15 +87,19 @@ review misleading.
 7. Ask `refactor_validator` for post-change mode using the same baseline
    commands plus risk-triggered gates from `$validate-safe-refactor`.
 8. Review correctness, tests, and readability as director. Accept only when the
-   Validation Report is `PASS` and every invariant is demonstrably preserved.
+   Validation Report is `PASS`, its identity recheck passes, and every invariant
+   is demonstrably preserved. Retain the immutable report with its Report ID.
 9. When correction is needed, send one precise Correction Order to the same
    worker. Permit at most two correction loops; after that, stop and redesign
    the work order instead of accumulating patches. Do not start another unit
    until the rejected patch is absent. Remove only verified worker-authored
    hunks; never discard overlapping user changes.
 10. Confirm the index is still empty and that the only changes in allowlisted
-    paths are the reviewed worker patch. Bind the order to the current HEAD and
-    exact approved path identities, then issue a GIT ACTION ORDER to the idle
+    paths are the reviewed worker patch. Copy the HEAD, closed allowlist, and path
+    identities from the accepted POST-CHANGE report into the Git Action Order;
+    do not replace them with newer hashes. Require the executor to compare the
+    report, order, and live state and return BLOCKED for revalidation on drift.
+    Then issue the GIT ACTION ORDER to the idle
     `git_steward` using the contract in the reference file. If the steward was
     recorded unavailable at campaign start, the director executes that order
     directly. Require

@@ -147,16 +147,31 @@ evidence by itself.
     the unit or issue one exact correction order. After two failed correction
     loops, redesign the work order.
 11. Confirm the Git index and every allowlisted worktree path were clean before
-    the unit. Bind the current HEAD and exact approved path identities into a
-    Git Action Order for the idle steward, or for the director after a recorded
-    steward availability failure. The executor stages only the allowlisted paths,
-    verifies staged identities and diff, commits the accepted unit, and returns
+    the unit. Copy the accepted POST-CHANGE Report ID, HEAD, closed allowlist, and
+    exact validated path identities into a Git Action Order for the idle steward,
+    or for the director after a recorded steward availability failure. The executor stages only the allowlisted paths,
+    checks report/order/live identity agreement, verifies the staged identities
+    and diff, commits the accepted unit, and returns
     a Git Report. The director reviews the report and confirms the index is
     empty. If a patch is rejected or abandoned, stop until only its verified
     worker-authored hunks are removed; never continue with that diff
     contaminating another unit.
 12. Run a broader package gate after a package group and the complete applicable
     repository gate before the PR.
+
+## Approval applies to one validated state
+
+Every Validation Report has a unique ID and records HEAD plus the closed path
+identity manifest before acceptance commands. The validator rechecks both after
+the commands; identity drift is BLOCKED even if the commands passed. A later
+edit or changed HEAD requires a new report and rerunning the required acceptance
+commands. The director and Git steward cannot renew PASS by replacing hashes.
+
+The Git steward compares the immutable report, order, and current files before
+staging, then rechecks validated content and staged blobs before commit. It
+stops on a mismatch without committing or discarding staged/user work. Detailed
+fields, deletion/addition handling, and phase rules live in the
+[agent contracts](../../.agents/skills/orchestrate-safe-refactor/references/refactor-contracts.md#validation-report).
 
 ## Durable traceability
 
@@ -169,14 +184,20 @@ the unit is committed. Record:
   diff ceiling from the accepted Audit Packet;
 - the baseline report identifier, exact commands, environment, and outcome;
 - the frozen Approved Work Order goal and required transformations;
-- the post-change validation verdict and any correction loop;
+- the immutable post-change Report ID, validated HEAD/path identities,
+  identity recheck, validation verdict, and any correction loop;
 - the accepted commit identity and broader package/final gate outcomes; and
 - the next inventory position, including skipped and blocked units.
 
 Do not paste private content, complete chat transcripts, or dynamic book/model
 data into the plan. The exact conversational packet may remain task-local, but
 the repository summary must be sufficient for a later Codex task to understand
-what was authorized and validated without relying on that conversation.
+what was authorized and validated without relying on that conversation. Keep
+this evidence outside its own validated-path manifest. Write the summary before
+the source commit, leave it unstaged, then commit evidence-only plan updates
+separately under their own order after the source commit. Never append an
+unvalidated plan edit to the accepted source commit. Changes to a plan already included
+in a work order invalidate that report just like source changes.
 
 One genuinely isolated unit that does not meet `.agents/PLANS.md` criteria may
 rely on its focused commit, tests, and pull-request review. Multiple units,
@@ -234,7 +255,9 @@ For each unit, proceed sequentially:
 8. Require an empty Git index and clean allowlisted worktree paths at unit
    start. After accepting the unit, issue an exact GIT ACTION ORDER to
    git_steward when available; otherwise record that and have the director execute
-   it directly. Bind the order to the exact HEAD and approved path identities.
+   it directly. Bind the order to the immutable POST-CHANGE Report ID and copy
+   its HEAD, validated paths, and identities. Require report/order/live agreement;
+   any drift needs a new validation report, never refreshed approval hashes.
    Require literal allowlisted staging, identity and staged-diff inspection, the
    approved commit message, and a Git Report. Review that report as director and
    update the campaign record. Never begin another unit while an unaccepted

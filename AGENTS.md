@@ -80,7 +80,10 @@ Before changing code or architecture:
   model. If the Git-steward role is unavailable, record that fact and let the
   director execute the same Git Action Order directly. Do not silently replace
   an unavailable auditor, worker, or validator with another model.
-  Bind accepted-change orders to the exact HEAD and approved path identities. Git may mutate only while source writing and validation are idle.
+  Bind accepted-change orders to the immutable validation Report ID, HEAD, and
+  exact validated path identities. Recheck that evidence before staging and
+  commit; drift requires a new validation report, never refreshed approval
+  hashes. Git may mutate only while source writing and validation are idle.
 - Never manually refactor generated sources, frozen evaluation authority,
   historical evidence, or completed ExecPlans.
 - Require an ExecPlan before a significant, multi-package, or multi-stage
