@@ -334,6 +334,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
+- [`plans/active/bounded-settings-and-chatterbox-modularization.md`](plans/active/bounded-settings-and-chatterbox-modularization.md): planned internal settings-action extraction and conditional native Chatterbox modularization; implementation and validation have not started.
 - [`plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md`](plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md): completed Milestone 3.1 plan for the bounded OPF 2.0/NCX package, navigation, downstream-equivalence, and final acceptance path consumed by M011 release closeout.
 - [`plans/completed/typescript-maintainability-batch-20260803.md`](plans/completed/typescript-maintainability-batch-20260803.md): completed recovery and independent-validation record for the small cross-package TypeScript/TSX maintainability batch.
 - [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.
