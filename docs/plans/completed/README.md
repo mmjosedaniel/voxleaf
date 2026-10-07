@@ -6,6 +6,7 @@ Completed plans are historical evidence. Do not edit them to describe a later im
 
 ## Completed plans
 
+- [`residual-code-cleanup.md`](residual-code-cleanup.md): removed unused reader styles and language options, retired the temporary narration bridge, and migrated its lifecycle tests to the public API; independent browser, package, portable, and native repository gates passed.
 - [`bootstrap-test-cleanup.md`](bootstrap-test-cleanup.md): retired unused EPUB dependency probes and a shared-only test, transferred incremental XML coverage to the production reader, and strengthened isolated Python import verification; independent host validation passed.
 - [`chatterbox-security-dependency-refresh.md`](chatterbox-security-dependency-refresh.md): admitted the security-refreshed v3 runtime, repaired validated cancellation containment, passed Piper/Chatterbox ES/EN installed journeys and independent review, and resolved all three integration CI gates.
 - [`bounded-settings-and-chatterbox-modularization.md`](bounded-settings-and-chatterbox-modularization.md): extracted narration settings actions with independent acceptance, repaired bounded host-test profile synchronization, validated Piper/Chatterbox in Spanish and English, and closed the native Chatterbox audit as SKIP. Qwen3 work is deferred under ADR-0051.
