@@ -40,10 +40,7 @@ import {
 } from "../narration/narration-piper-policy.js";
 import { NARRATION_V1_SOURCE_WINDOW_POLICY } from "../narration/narration-policy.js";
 import type { NarrationYieldScheduler } from "../narration/narration-source-window.js";
-import {
-  createOpenedPublication,
-  prepareOpenedPublicationNarrationSource,
-} from "./opened-publication.js";
+import { createOpenedPublication } from "./opened-publication.js";
 
 const encoder = new TextEncoder();
 const ZIP_WRITER_OPTIONS = Object.freeze({
@@ -311,16 +308,30 @@ describe("bounded local publication resources", () => {
 
     try {
       const before = archive.budget.getSnapshot().observedUncompressedBytes;
-      const active = prepareOpenedPublicationNarrationSource(publication, {
+      const active = publication.prepareNarration({
         startLocator: start,
+        profile: "narration-v1",
+        defaultLanguage: "und",
+        maximumSegments: 1,
       });
       await deferred.started;
 
       await expect(
-        prepareOpenedPublicationNarrationSource(publication, {
+        publication.prepareNarration({
           startLocator: start,
+          profile: "narration-v1",
+          defaultLanguage: "und",
+          maximumSegments: 1,
         }),
-      ).resolves.toEqual({ status: "operation-active" });
+      ).resolves.toEqual({
+        status: "operation-active",
+        error: {
+          schemaVersion: 1,
+          code: "resource-exhausted",
+          category: "resource",
+          severity: "recoverable",
+        },
+      });
       await expect(publication.readResource(imageId(2))).resolves.toEqual(PNG);
       expect(archive.budget.getSnapshot().observedUncompressedBytes).toBe(
         before + PNG.byteLength,
@@ -328,7 +339,7 @@ describe("bounded local publication resources", () => {
 
       deferred.release();
       const result = await active;
-      expect(result.status).toBe("window");
+      expect(result.status).toBe("batch");
     } finally {
       deferred.release();
       await publication.close();
@@ -350,8 +361,11 @@ describe("bounded local publication resources", () => {
     const start = requiredLocatedBlock(
       values.locatorIndex.blocks[0],
     ).startLocator;
-    const active = prepareOpenedPublicationNarrationSource(publication, {
+    const active = publication.prepareNarration({
       startLocator: start,
+      profile: "narration-v1",
+      defaultLanguage: "und",
+      maximumSegments: 1,
     });
     await deferred.started;
 
@@ -362,14 +376,33 @@ describe("bounded local publication resources", () => {
     expect(archive.closeCount).toBe(0);
 
     deferred.release();
-    await expect(active).resolves.toEqual({ status: "cancelled" });
+    await expect(active).resolves.toEqual({
+      status: "cancelled",
+      error: {
+        schemaVersion: 1,
+        code: "operation-cancelled",
+        category: "cancellation",
+        severity: "recoverable",
+      },
+    });
     await firstClose;
     expect(archive.closeCount).toBe(1);
     await expect(
-      prepareOpenedPublicationNarrationSource(publication, {
+      publication.prepareNarration({
         startLocator: start,
+        profile: "narration-v1",
+        defaultLanguage: "und",
+        maximumSegments: 1,
       }),
-    ).resolves.toEqual({ status: "internal-failure" });
+    ).resolves.toEqual({
+      status: "internal-failure",
+      error: {
+        schemaVersion: 1,
+        code: "internal-failure",
+        category: "internal",
+        severity: "fatal",
+      },
+    });
   });
 
   it("allows retry after caller cancellation without publishing stale source", async () => {
@@ -387,14 +420,28 @@ describe("bounded local publication resources", () => {
     controller.abort("private-canary");
 
     await expect(
-      prepareOpenedPublicationNarrationSource(publication, {
+      publication.prepareNarration({
         startLocator: start,
+        profile: "narration-v1",
+        defaultLanguage: "und",
+        maximumSegments: 1,
         signal: controller.signal,
       }),
-    ).resolves.toEqual({ status: "cancelled" });
+    ).resolves.toEqual({
+      status: "cancelled",
+      error: {
+        schemaVersion: 1,
+        code: "operation-cancelled",
+        category: "cancellation",
+        severity: "recoverable",
+      },
+    });
 
-    const retry = await prepareOpenedPublicationNarrationSource(publication, {
+    const retry = await publication.prepareNarration({
       startLocator: start,
+      profile: "narration-v1",
+      defaultLanguage: "und",
+      maximumSegments: 1,
     });
     expect(retry.status).toBe("complete");
     expect(JSON.stringify(retry)).not.toContain("private-canary");
