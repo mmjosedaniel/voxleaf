@@ -1,5 +1,9 @@
 # Chatterbox security dependency refresh
 
+Status: complete on 2026-10-07. See the final closeout for accepted review,
+integration CI and remaining release limitations. Earlier checkpoints preserve
+the investigation history.
+
 ## Goal
 
 Resolve the release-audit failure exposed by PR #226 with a bounded dependency
@@ -175,16 +179,18 @@ assertions to obtain a pass. Obtain independent change review before acceptance.
 2. **Candidate graph and bilingual feasibility — complete.** Generated an
    isolated exact lock, audit it, install an isolated environment, verify compatible
    imports/safe loading and run bounded offline Spanish/English inference.
-3. **Versioned package integration — in progress.** The reproducible v3 runtime
+3. **Versioned package integration — complete.** The reproducible v3 runtime
    passed independent preparation review and was published with user approval.
    Native admission, cleanup-only retention of v2 and active audit/inventory
    integration are implemented. Full host checks, production audit, installer
    assembly, fresh lifecycle and the complete rebuilt ordinary installed journey
    pass. The bounded client containment follow-up also passes independent
-   focused checks. Independent combined review remains required.
-4. **Independent review and PR handoff — pending.** Run relevant host checks,
-   obtain change_reviewer approval for exact identities, commit/push the accepted
-   patch under explicit Git orders, and inspect CI. Never call a failed gate green.
+   focused checks. Independent combined review approved the exact integration.
+4. **Independent review and PR handoff — complete.** Host checks passed,
+   `CB-V3-INTEGRATION-REVIEW-01-20261007` approved the closed snapshot, and
+   integration commit `f86b3b819a2f9440580d83e9eb1571fe7be8dcb0` passed all
+   three required GitHub checks. The documentation-only archival commit is
+   subject to a fresh final-head CI readback before the PR is marked ready.
 
 ## Testing and benchmark strategy
 
@@ -404,7 +410,7 @@ separately. Fresh plain and complete installed evidence now pass.
 Launcher-only failures and diagnostic identities/results are recorded in
 [integration host evidence](../evidence/chatterbox-security-refresh/integration-host-validation.md).
 
-In progress. The original refactor and v3 preparation unit are accepted. Commit
+Pre-handoff checkpoint: the original refactor and v3 preparation unit are accepted. Commit
 `998c7b24cda7e969e9ed0344f348506bf38af3b0` was pushed to the existing PR; its
 reviewed inputs match the published prerelease artifacts. Before the containment
 repair, full local checks, production audit and installer lifecycle passed; the
@@ -415,3 +421,52 @@ still evaluates the preceding preparation commit: Windows/Ubuntu pass and its
 active-v2 audit fails. No green-CI claim applies until the accepted integration
 is pushed and that new head passes. No PR merge or new installer publication
 is authorized by this plan.
+
+## Final closeout — 2026-10-07
+
+The implementation, independent review and integration CI gates are complete.
+Earlier pending/failed statements above are chronological checkpoints, not the
+final outcome. The accepted integration commit is
+`f86b3b819a2f9440580d83e9eb1571fe7be8dcb0` on
+[PR #226](https://github.com/mmjosedaniel/voxleaf/pull/226).
+
+Independent review
+[`CB-V3-INTEGRATION-REVIEW-01-20261007`](../evidence/chatterbox-security-refresh/change-review-integration-01.md)
+returned APPROVE with no findings, matching all 108 reviewed identities. The
+director rechecked HEAD, content and filter-aware staged blobs before committing
+the 38 owned paths and two derived review records. The Git steward's refactor
+report requirement does not apply as behavioral-review authority; its explicit
+role limitation and the director's authorized ordinary handoff are recorded in
+that report. The index and worktree were clean after the integration commit.
+
+GitHub results for that exact commit:
+
+- [Production dependency graphs](https://github.com/mmjosedaniel/voxleaf/actions/runs/37647287128/job/112881253708): SUCCESS.
+- [Ubuntu portable foundation](https://github.com/mmjosedaniel/voxleaf/actions/runs/37647287013/job/112881254098): SUCCESS.
+- [Windows native foundation](https://github.com/mmjosedaniel/voxleaf/actions/runs/37647287013/job/112881254454): SUCCESS.
+
+The local commands and exact results are preserved in
+[host validation](../evidence/chatterbox-security-refresh/integration-host-validation.md):
+full `pnpm.cmd check`, `pnpm.cmd audit:release`, Windows assembly/check/lifecycle,
+the complete ordinary installed Chatterbox/Piper ES/EN journey, evidence
+generation, inventory and v3 acquisition checks all passed outside the sandbox.
+The six new client regressions also passed independent baseline/post-change
+validation. Original application data, installation, registry and shortcuts were
+restored without errors. The generated receipts bind the fresh installer.
+
+The canonical system diagram matches v3 acquisition and unchanged process/data
+boundaries. Original MOD-A remains accepted; MOD-B remains SKIP. Qwen3 is
+deferred under ADR-0051. The three authorized runtime prerelease assets are
+published; v2 assets remain unchanged. No new public installer, merge, signing,
+coordinator change or historical-normalizer change is included.
+
+Remaining limitations are explicitly bounded: four URL-package advisory blind
+spots, Unix-only symlink branches not run on Windows, an unsigned local installer,
+and resource observations limited to the measured host. The deterministic race
+does not retrospectively explain every prior host failure. These are disclosed
+limits, not missing acceptance gates for this authorized unit.
+
+This archival step changes documentation and links only and is exempt from a
+new behavior review under `agentic-change-review.md`. The final documentation
+commit's fresh CI readback is reported in the task/PR handoff; it does not require
+rewriting this completed historical plan with its own future commit identity.

@@ -162,7 +162,7 @@ previously hidden by the earlier Rust policy mismatch. That historical checkpoin
 did not advance the passing audit date. The subsequent bounded v3 update below
 resolves those findings without advisory suppression.
 
-The [security refresh plan](../plans/active/chatterbox-security-dependency-refresh.md)
+The [security refresh plan](../plans/completed/chatterbox-security-dependency-refresh.md)
 adds a separate `chatterbox-v3` graph with Transformers `5.17.0`, Tokenizers
 `0.23.1` and urllib3 `2.8.0`; the other 76 packages retain their exact pins.
 The complete candidate audit reports zero known findings and the same four

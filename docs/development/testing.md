@@ -45,7 +45,7 @@ pending, fails or returns malformed/wrong-service controls. Normal cancellation,
 other errors and invalid scopes retain their behavior. The coordinator and
 harness assertions/deadlines are unchanged. Independent initial/post-change
 evidence and the rebuilt plain/installed routes are recorded in the
-[security refresh plan](../plans/active/chatterbox-security-dependency-refresh.md).
+[security refresh plan](../plans/completed/chatterbox-security-dependency-refresh.md).
 
 Run `pnpm.cmd check` from native Windows after the locked JavaScript and Python environments are installed. It is the authoritative local foundation check and covers formatting, linting, type checking, smoke tests, framework-independent package builds, the React production build, the native Tauri release executable, and the Python source and wheel distributions.
 

@@ -17,7 +17,6 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`chatterbox-security-dependency-refresh.md`](chatterbox-security-dependency-refresh.md): resolve withdrawn Rust policy notices and vulnerable Chatterbox dependencies with an isolated candidate, package validation and independent review; Qwen remains deferred.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through 9.

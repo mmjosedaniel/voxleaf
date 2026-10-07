@@ -24,7 +24,7 @@ journey passed acquisition/cancellation, Chatterbox ES/EN, restart, removal,
 Piper ES/EN, reinstallation and uninstall. Those generated receipts bind the
 result to the exact installer and separately recorded installed executable;
 preparation/publication alone does not establish these gates.
-The [active plan](../plans/active/chatterbox-security-dependency-refresh.md)
+The [completed plan](../plans/completed/chatterbox-security-dependency-refresh.md)
 records exact commands, results and independent review. Existing M011 artifact
 values below are historical checkpoints, not hashes of the refreshed installer.
 No new installer is publicly published, and no signing claim is added.

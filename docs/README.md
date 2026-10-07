@@ -9,13 +9,14 @@ production completion and unresolved runtime investigation are deferred to a
 future plan under [ADR-0051](architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md).
 Existing development-only integration, tests and historical evidence are retained.
 
-The [Chatterbox security dependency refresh](plans/active/chatterbox-security-dependency-refresh.md)
+The [Chatterbox security dependency refresh](plans/completed/chatterbox-security-dependency-refresh.md)
 integrates the separately published v3 prerelease after the 2026-10-06 audit
 exposed advisories in v2. The production v3 dependency audit and the rebuilt
 installed journey now pass, including Chatterbox/Piper in both languages,
 removal and reinstallation. A reproduced completion/cancellation race is
 contained in the shared process client without changing the coordinator.
-Independent review and PR CI remain tracked in the plan. Historical v2 assets
+Independent review approved the integration, and all three integration CI gates
+passed; the completed plan records their exact evidence. Historical v2 assets
 and evidence are retained, and no new installer is published.
 
 Roadmap Milestones 1 through 10.2, M008.1, and M009.1 are complete. M008 provides
