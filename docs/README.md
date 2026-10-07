@@ -9,6 +9,11 @@ production completion and unresolved runtime investigation are deferred to a
 future plan under [ADR-0051](architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md).
 Existing development-only integration, tests and historical evidence are retained.
 
+The [Chatterbox security dependency refresh](plans/active/chatterbox-security-dependency-refresh.md)
+is in progress after the 2026-10-06 release audit exposed advisories in the
+published v2 dependency graph. A successor candidate is being built and checked;
+the existing release is not yet remediated or newly accepted.
+
 Roadmap Milestones 1 through 10.2, M008.1, and M009.1 are complete. M008 provides
 the constrained one-GPU narration demo; M008.1 adds bounded semantic
 transitions between already-buffered units; M009 and M009.1 add synchronized

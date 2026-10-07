@@ -2,14 +2,21 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
+import zipfile
 from pathlib import Path
 
 import pytest
 
 from voxleaf_tts.release_chatterbox import (
     PACKAGE_DIRECTORY_NAME,
+    PackageLayout,
     ReleaseChatterboxError,
     _configure_embedded_python,
+    _copy_notices,
+    _copy_runtime_modules,
+    _copy_successor_license,
+    _zip_package,
     build_runtime_manifest,
     load_acquisition_manifest,
     load_current_runtime_evidence,
@@ -17,11 +24,184 @@ from voxleaf_tts.release_chatterbox import (
     load_source_manifest,
     reconcile_runtime_evidence,
     render_manifest,
+    repository_root,
     safe_relative_path,
     split_archive,
     verify_package_tree,
     verify_safe_model_load_sites,
+    write_successor_source_manifest,
 )
+
+
+@pytest.mark.parametrize("failure", ["missing", "tampered", "different-wheel"])
+def test_successor_license_rejects_incomplete_or_mismatched_closure(
+    tmp_path: Path, failure: str
+) -> None:
+    root = tmp_path / "repo"
+    relative = "services/tts/release/optional/chatterbox/licenses/tokenizers-0.23.1-LICENSE.txt"
+    source = root / relative
+    source.parent.mkdir(parents=True)
+    if failure != "missing":
+        shutil.copyfile(repository_root() / relative, source)
+    if failure == "tampered":
+        source.write_bytes(source.read_bytes() + b"tampered")
+    environment = tmp_path / "environment"
+    (
+        environment
+        / (
+            "tokenizers-0.22.2.dist-info"
+            if failure == "different-wheel"
+            else "tokenizers-0.23.1.dist-info"
+        )
+    ).mkdir(parents=True)
+    notices = tmp_path / "notices"
+    with pytest.raises(ReleaseChatterboxError, match="tokenizers-license-invalid"):
+        _copy_successor_license(root, notices, environment)
+    assert not notices.exists()
+
+
+def test_successor_license_copies_exact_upstream_bytes(tmp_path: Path) -> None:
+    environment = tmp_path / "environment"
+    (environment / "tokenizers-0.23.1.dist-info").mkdir(parents=True)
+    notices = tmp_path / "notices"
+    _copy_successor_license(repository_root(), notices, environment)
+    expected = (
+        repository_root()
+        / "services/tts/release/optional/chatterbox/licenses/tokenizers-0.23.1-LICENSE.txt"
+    )
+    assert (notices / "python/tokenizers-0.23.1/LICENSE").read_bytes() == expected.read_bytes()
+
+
+def test_v2_notices_do_not_require_successor_license(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    _write_tree(
+        root,
+        {
+            "LICENSE": b"project licence",
+            "services/tts/release/optional/chatterbox/THIRD-PARTY-NOTICES.md": b"notices",
+            "services/tts/release/optional/chatterbox/source-manifest-v2.json": b"original source",
+            "services/tts/release/profiles/chatterbox/requirements.lock": b"original lock",
+        },
+    )
+    staging = tmp_path / "staging"
+    _copy_notices(
+        root,
+        staging,
+        tmp_path / "environment",
+        {"chatterboxLock": {"path": "services/tts/release/profiles/chatterbox/requirements.lock"}},
+    )
+    assert (staging / "source-manifest-v2.json").read_bytes() == b"original source"
+    assert not (staging / "notices/python/tokenizers-0.23.1/LICENSE").exists()
+
+
+def _successor_root(root: Path) -> Path:
+    for relative in (
+        "services/tts/release/optional/chatterbox/source-manifest-v2.json",
+        "services/tts/release/profiles/chatterbox-v3/requirements.lock",
+    ):
+        target = root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(repository_root() / relative, target)
+    return root
+
+
+def test_successor_layout_keeps_v2_outputs_and_environment_isolated(tmp_path: Path) -> None:
+    original, successor = PackageLayout(), PackageLayout("3")
+    assert original.directory == PACKAGE_DIRECTORY_NAME
+    assert original.dist(tmp_path) / "v3" == successor.dist(tmp_path)
+    assert original.lock_path != successor.lock_path
+    assert original.archive != successor.archive
+    assert original.runtime_manifest != successor.runtime_manifest
+    with pytest.raises(ReleaseChatterboxError, match="chatterbox-package-version-invalid"):
+        PackageLayout("4")  # type: ignore[arg-type]
+
+
+def test_successor_input_changes_only_the_three_security_pins() -> None:
+    profiles = repository_root() / "services/tts/release/profiles"
+    original = (profiles / "chatterbox/requirements.in").read_text().splitlines()
+    successor = (profiles / "chatterbox-v3/requirements.in").read_text().splitlines()
+    expected = {
+        "transformers==5.5.0": "transformers==5.17.0",
+        "tokenizers==0.22.2": "tokenizers==0.23.1",
+        "urllib3==2.7.0": "urllib3==2.8.0",
+    }
+    assert successor == [expected.get(line, line) for line in original]
+
+
+def test_successor_source_preserves_provenance_and_adds_generated_closure(tmp_path: Path) -> None:
+    root = _successor_root(tmp_path)
+    original = load_source_manifest(root)
+    original_bytes = (
+        root / "services/tts/release/optional/chatterbox/source-manifest-v2.json"
+    ).read_bytes()
+    path = write_successor_source_manifest(root)
+    first = path.read_bytes()
+    assert write_successor_source_manifest(root).read_bytes() == first
+    successor = load_source_manifest(root, package_version="3")
+    assert successor["schemaVersion"] == 2
+    assert successor["packageVersion"] == "3"
+    assert successor["packageId"] == "voxleaf-chatterbox-v3"
+    for field in ("modelFiles", "python", "profileId", "platform", "provenance"):
+        assert successor[field] == original[field]
+    assert successor["runtimeModules"] == original["runtimeModules"] + [  # type: ignore[operator]
+        "generated/__init__.py",
+        "generated/protocol_schemas.py",
+    ]
+    assert (
+        root / "services/tts/release/optional/chatterbox/source-manifest-v2.json"
+    ).read_bytes() == original_bytes
+
+
+@pytest.mark.parametrize(
+    "field,value", [("packageVersion", "2"), ("modelFiles", []), ("runtimeModules", ["service.py"])]
+)
+def test_successor_source_rejects_version_provenance_and_closure_tampering(
+    tmp_path: Path, field: str, value: object
+) -> None:
+    root = _successor_root(tmp_path)
+    path = write_successor_source_manifest(root)
+    manifest = json.loads(path.read_bytes())
+    manifest[field] = value
+    path.write_bytes(render_manifest(manifest))
+    with pytest.raises(ReleaseChatterboxError, match="source-manifest-invalid"):
+        load_source_manifest(root, package_version="3")
+
+
+def test_successor_source_rejects_lock_drift_until_explicit_regeneration(tmp_path: Path) -> None:
+    root = _successor_root(tmp_path)
+    write_successor_source_manifest(root)
+    lock = root / PackageLayout("3").lock_path
+    lock.write_bytes(lock.read_bytes() + b"\n# changed\n")
+    with pytest.raises(ReleaseChatterboxError, match="source-manifest-invalid"):
+        load_source_manifest(root, package_version="3")
+    write_successor_source_manifest(root)
+    load_source_manifest(root, package_version="3")
+
+
+def test_successor_copies_generated_modules_and_verifies_archive_identity(tmp_path: Path) -> None:
+    root = _successor_root(tmp_path / "repo")
+    write_successor_source_manifest(root)
+    source = load_source_manifest(root, package_version="3")
+    modules = source["runtimeModules"]
+    assert isinstance(modules, list)
+    for module in modules:
+        assert isinstance(module, str)
+        _write_tree(root / "services/tts/src/voxleaf_tts", {module: module.encode()})
+    staging = tmp_path / "staging"
+    _copy_runtime_modules(root, staging, source)
+    manifest = build_runtime_manifest(staging, package_version="3")
+    (staging / "runtime-manifest-v3.json").write_bytes(render_manifest(manifest))
+    verify_package_tree(staging, manifest, package_version="3")
+    archive = tmp_path / "runtime.zip"
+    _zip_package(staging, archive, package_version="3")
+    with zipfile.ZipFile(archive) as opened:
+        assert all(name.startswith("voxleaf-chatterbox-v3/") for name in opened.namelist())
+        assert any(name.endswith("generated/protocol_schemas.py") for name in opened.namelist())
+    (staging / "runtime/Lib/site-packages/voxleaf_tts/generated/protocol_schemas.py").write_bytes(
+        b"tampered"
+    )
+    with pytest.raises(ReleaseChatterboxError, match="runtime-invalid"):
+        verify_package_tree(staging, manifest, package_version="3")
 
 
 def _sha256(value: bytes) -> str:
