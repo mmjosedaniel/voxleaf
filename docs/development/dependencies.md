@@ -151,18 +151,18 @@ The exact locked graph now reports seven informational notices: the same five
 Windows-build-reachable Unicode notices and two non-Windows notices for
 `proc-macro-error` and `glib`. The policy removes only those ten withdrawn
 entries. It still rejects new or changed notices, reachability changes and any
-known Rust vulnerability. Dependencies, lockfiles and the four Python advisory
-blind spots are unchanged; the earlier 17-notice checkpoint remains historical.
+known Rust vulnerability. That policy-only correction left dependencies,
+lockfiles and the four Python advisory blind spots unchanged; the earlier
+17-notice checkpoint remains historical.
 The same local audit then passed Node, Rust, base Python and Piper core, but
 failed the optional Chatterbox graph: `transformers==5.5.0` reports
 `PYSEC-2026-3929` and `PYSEC-2026-4174`; `urllib3==2.7.0` reports
 `PYSEC-2026-4175`, `PYSEC-2026-4176` and `PYSEC-2026-4177`. These findings were
-previously hidden by the earlier Rust policy mismatch. The last full passing
-audit date remains unchanged; no current clean-graph or exploitability claim
-is made. Resolving these findings requires reviewed dependency updates and
-applicable package/model validation, not an advisory suppression.
+previously hidden by the earlier Rust policy mismatch. That historical checkpoint
+did not advance the passing audit date. The subsequent bounded v3 update below
+resolves those findings without advisory suppression.
 
-The [successor preparation plan](../plans/active/chatterbox-security-dependency-refresh.md)
+The [security refresh plan](../plans/active/chatterbox-security-dependency-refresh.md)
 adds a separate `chatterbox-v3` graph with Transformers `5.17.0`, Tokenizers
 `0.23.1` and urllib3 `2.8.0`; the other 76 packages retain their exact pins.
 The complete candidate audit reports zero known findings and the same four
@@ -170,7 +170,11 @@ blind spots. Version `5.10.4` was rejected despite its empty advisory result:
 its custom-generation implementation still downloaded executable code before
 checking trust. The chosen upstream version includes that ordering repair;
 the real-library security probe tests it and tokenizer template containment.
-This candidate has not replaced the admitted, published v2 runtime.
+Native admission and the production audit/inventory now select v3. The complete
+production audit passed on 2026-10-06 before updating its recorded date; four
+URL-package blind spots remain explicit. Published v2 assets remain unchanged
+and installed v2 roots are cleanup-only. Installed v3 acceptance is tracked in
+the plan and [ADR-0052](../architecture/decisions/ADR-0052-admit-security-refreshed-chatterbox-v3.md).
 
 Successor maintainer commands are explicit:
 `pnpm.cmd package:chatterbox-optional:v3:write-source`,
@@ -180,6 +184,15 @@ retain their prior behavior. Build from a short Windows checkout path: nested
 dependency paths can still exceed conventional Windows path limits. The host
 validation uses an isolated short mirror of the exact reviewed source inputs.
 V3 output/environment lives in the builder's separate `dist/v3` directory.
+
+`pnpm.cmd package:chatterbox-optional:v3:check-acquisition` validates the generated
+v3 acquisition manifest and runtime evidence v4. The explicit maintainer command
+`pnpm.cmd package:chatterbox-optional:v3:write-acquisition --publication <receipt>`
+requires the actual GitHub publication readback with exact commit, tag, three
+names, sizes, digests and URLs. It cannot replace already published assets.
+Capture licences from the actual core and v3 interpreters with the existing
+`scripts/release_inventory.py --capture-python-licenses --python <core-python>
+--python <v3-python>` interface, then run `pnpm.cmd inventory:release` and its check.
 
 Run `scripts/test-chatterbox-dependency-security.py` with the newly assembled
 package's `runtime/python.exe`, without `PYTHONPATH`, and with

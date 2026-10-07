@@ -10,6 +10,7 @@ import pytest
 
 from voxleaf_tts.release_chatterbox import (
     PACKAGE_DIRECTORY_NAME,
+    SUCCESSOR_BUILD_COMMIT,
     PackageLayout,
     ReleaseChatterboxError,
     _configure_embedded_python,
@@ -18,6 +19,7 @@ from voxleaf_tts.release_chatterbox import (
     _copy_successor_license,
     _zip_package,
     build_runtime_manifest,
+    check_successor_authority,
     load_acquisition_manifest,
     load_current_runtime_evidence,
     load_runtime_evidence,
@@ -27,10 +29,66 @@ from voxleaf_tts.release_chatterbox import (
     repository_root,
     safe_relative_path,
     split_archive,
+    successor_acquisition_manifest,
+    successor_runtime_evidence,
     verify_package_tree,
     verify_safe_model_load_sites,
+    write_successor_authority,
     write_successor_source_manifest,
 )
+
+
+def test_successor_authority_binds_current_artifacts_and_inherited_profile_evidence() -> None:
+    check_successor_authority()
+    authority = successor_acquisition_manifest()
+    assert "runtimeCorrection" not in authority
+    assert authority["measurements"] == {
+        "coldStartSeconds": 83,
+        "downloadBytes": 8_239_933_601,
+        "installedBytes": 8_236_377_725,
+        "temporaryBytes": 13_270_915_278,
+        "minimumFreeBytes": 20_000_000_000,
+    }
+    evidence = successor_runtime_evidence()
+    assert evidence["runtimeCorrection"] is None
+    build_authority = evidence["authority"]
+    inherited = evidence["inheritedProfileObservations"]
+    assert isinstance(build_authority, dict)
+    assert isinstance(inherited, dict)
+    assert build_authority["runtimeBuildCommitSha"] == SUCCESSOR_BUILD_COMMIT
+    assert inherited["status"] == "historical-v2-profile-policy-not-new-v3-measurements"
+
+
+def test_successor_publication_rejects_incomplete_or_substituted_assets(tmp_path: Path) -> None:
+    authority = successor_acquisition_manifest()
+    runtime = authority["runtimeArtifact"]
+    assert isinstance(runtime, dict)
+    receipt = {
+        "tagName": "chatterbox-runtime-v3",
+        "targetCommitish": SUCCESSOR_BUILD_COMMIT,
+        "isDraft": False,
+        "isPrerelease": True,
+        "publishedAt": "2026-10-07T03:24:00Z",
+        "assets": [
+            {
+                "name": part["filename"],
+                "size": part["downloadBytes"],
+                "digest": f"sha256:{part['sha256']}",
+                "url": part["url"],
+                "state": "uploaded",
+            }
+            for part in runtime["parts"]
+        ],
+    }
+    path = tmp_path / "publication.json"
+    receipt["assets"][0]["digest"] = "sha256:" + "0" * 64  # type: ignore[index]
+    path.write_text(json.dumps(receipt))
+    with pytest.raises(ReleaseChatterboxError, match="publication-invalid"):
+        write_successor_authority(path)
+    receipt["assets"] = []
+    path.write_text(json.dumps(receipt))
+    with pytest.raises(ReleaseChatterboxError, match="publication-invalid"):
+        write_successor_authority(path)
 
 
 @pytest.mark.parametrize("failure", ["missing", "tampered", "different-wheel"])

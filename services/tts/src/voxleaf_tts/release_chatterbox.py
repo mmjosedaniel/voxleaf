@@ -63,6 +63,14 @@ TOKENIZERS_LICENSE_PATH: Final = (
 TOKENIZERS_LICENSE_SHA256: Final = (
     "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
 )
+SUCCESSOR_BUILD_COMMIT: Final = "998c7b24cda7e969e9ed0344f348506bf38af3b0"
+SUCCESSOR_ARCHIVE_SHA256: Final = "87bfb2baae44cf13daae15328f8287cbee60e6782f04735d814d2ed849e8c45c"
+SUCCESSOR_RUNTIME_SHA256: Final = "470ec7e8a6fa1e91f9831e42de7988249220b51d4ecd4352452f3c70b2b6084a"
+SUCCESSOR_PARTS: Final = (
+    (1_900_000_000, "b7d4939d4b862b8f4d5ebafcba3289716f27641b846598032b8426a3d7c44196"),
+    (1_900_000_000, "a882c2e06b6de1dd690328fe7793aa99ef03ac53f510e06be1740dad4e839c3d"),
+    (1_230_981_677, "11c2a048187cf501c6ccf6a8ae288d6a7c14fb7e1cc5aedf7a10b0da228f1606"),
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -333,6 +341,182 @@ def write_successor_source_manifest(root: Path | None = None) -> Path:
     target = base / ("services/tts/release/optional/chatterbox/source-manifest-v3.json")
     target.write_bytes(render_manifest(successor_source_manifest(base)))
     return target
+
+
+def successor_acquisition_manifest(root: Path | None = None) -> dict[str, object]:
+    """Generate current admission from reviewed build measurements, preserving v2."""
+
+    base = root or repository_root()
+    source = load_source_manifest(base, package_version="3")
+    manifest = copy.deepcopy(load_acquisition_manifest(base))
+    cast(dict[str, object], manifest["identity"])["packageVersion"] = "3"
+    cast(dict[str, object], manifest["layout"])["installed"] = "cb/3"
+    runtime = cast(dict[str, object], manifest["runtime"])
+    runtime["releaseTag"] = "chatterbox-runtime-v3"
+    runtime["dependencyLock"] = source["chatterboxLock"]
+    runtime["adapterSha256"] = sha256_file(
+        base / "services/tts/src/voxleaf_tts/chatterbox_adapter.py"
+    )
+    runtime["serviceSha256"] = sha256_file(
+        base / "services/tts/src/voxleaf_tts/chatterbox_service.py"
+    )
+    manifest.pop("runtimeCorrection")
+    parts = [
+        {
+            "downloadBytes": size,
+            "filename": f"voxleaf-chatterbox-runtime-v3.zip.part-{index:03}",
+            "sha256": digest,
+            "url": (
+                "https://github.com/mmjosedaniel/voxleaf/releases/download/chatterbox-runtime-v3/"
+                f"voxleaf-chatterbox-runtime-v3.zip.part-{index:03}"
+            ),
+        }
+        for index, (size, digest) in enumerate(SUCCESSOR_PARTS, start=1)
+    ]
+    manifest["runtimeArtifact"] = {
+        "archiveSha256": SUCCESSOR_ARCHIVE_SHA256,
+        "installedBytes": 5_027_425_801,
+        "runtimeManifestSha256": SUCCESSOR_RUNTIME_SHA256,
+        "parts": parts,
+    }
+    models = sum(
+        cast(int, cast(dict[str, object], artifact)["sizeBytes"])
+        for artifact in cast(list[object], source["modelFiles"])
+    )
+    archive_bytes = sum(size for size, _ in SUCCESSOR_PARTS)
+    manifest["measurements"] = {
+        # Retained conservative profile observation; provenance is explicit in v4 evidence.
+        "coldStartSeconds": REPRESENTATIVE_COLD_START_ROUNDED_SECONDS,
+        "downloadBytes": archive_bytes + models,
+        "installedBytes": 5_027_425_801 + models,
+        "temporaryBytes": 2 * archive_bytes + models,
+        "minimumFreeBytes": CURRENT_MINIMUM_FREE_BYTES,
+    }
+    return manifest
+
+
+def successor_runtime_evidence(root: Path | None = None) -> dict[str, object]:
+    manifest = successor_acquisition_manifest(root)
+    measurements = cast(dict[str, object], manifest["measurements"])
+    return {
+        "schemaVersion": 4,
+        "authority": {
+            "runtimeBuildCommitSha": SUCCESSOR_BUILD_COMMIT,
+            "preparationReview": "CB-V3-PREP-REVIEW-01-20261006",
+            "buildEvidence": "docs/plans/evidence/chatterbox-security-refresh/host-validation.md",
+            "modelRevision": "5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18",
+        },
+        "distribution": {
+            "availability": "downloadable",
+            "published": True,
+            "prerelease": True,
+            "runtimeReleaseTag": "chatterbox-runtime-v3",
+            "publishedAt": "2026-10-07T03:24:00Z",
+            "modelSource": "official-revision-pinned-hugging-face",
+            "modelRepositoryCodeExecuted": False,
+        },
+        "inheritedProfileObservations": {
+            "source": "ADR-0044 benchmark v12 and optional-package-manifest-v2.json",
+            "coldStartSeconds": REPRESENTATIVE_COLD_START_ROUNDED_SECONDS,
+            "measuredPeakDedicatedVramMiB": 3_644,
+            "status": "historical-v2-profile-policy-not-new-v3-measurements",
+        },
+        "measurements": {
+            "archiveSha256": SUCCESSOR_ARCHIVE_SHA256,
+            "runtimeManifestSha256": SUCCESSOR_RUNTIME_SHA256,
+            "runtimeArchiveBytes": sum(size for size, _ in SUCCESSOR_PARTS),
+            "runtimeInstalledBytes": 5_027_425_801,
+            "fileCount": 13_084,
+            "reproducibleBuildCount": 2,
+            "totalDownloadBytes": measurements["downloadBytes"],
+            "totalInstalledBytes": measurements["installedBytes"],
+            "peakStagingBytes": measurements["temporaryBytes"],
+            "modelDownloadBytes": 3_208_951_924,
+        },
+        "parts": [
+            {
+                "filename": f"voxleaf-chatterbox-runtime-v3.zip.part-{index:03}",
+                "sha256": digest,
+                "sizeBytes": size,
+            }
+            for index, (size, digest) in enumerate(SUCCESSOR_PARTS, start=1)
+        ],
+        "runtimeCorrection": None,
+        "measurementProvenance": {
+            "runtimeIdentityAndSizes": "two-identical-assemblies-in-preparation-build-evidence",
+            "totalDownloadBytes": "runtimeArchiveBytes + modelDownloadBytes",
+            "totalInstalledBytes": "runtimeInstalledBytes + modelDownloadBytes",
+            "peakStagingBytes": "conservative bound: totalDownloadBytes + runtimeArchiveBytes",
+            "minimumFreeBytes": "unchanged-20000000000-byte-preflight-policy",
+        },
+        "ordinaryHostEvidence": (
+            "apps/desktop/src-tauri/release/ordinary-chatterbox-journey-evidence-v2.json"
+        ),
+    }
+
+
+def write_successor_authority(publication: Path, root: Path | None = None) -> None:
+    """Require the actual published asset receipt before generating admission."""
+
+    base = root or repository_root()
+    receipt = _load_json(publication, "chatterbox-publication-invalid")
+    if (
+        receipt.get("tagName") != "chatterbox-runtime-v3"
+        or receipt.get("targetCommitish") != SUCCESSOR_BUILD_COMMIT
+        or receipt.get("isDraft") is not False
+        or receipt.get("isPrerelease") is not True
+        or receipt.get("publishedAt") != "2026-10-07T03:24:00Z"
+    ):
+        raise ReleaseChatterboxError("chatterbox-publication-invalid")
+    assets = _array(receipt.get("assets"), "chatterbox-publication-invalid")
+    if len(assets) != len(SUCCESSOR_PARTS):
+        raise ReleaseChatterboxError("chatterbox-publication-invalid")
+    expected_parts = cast(
+        dict[str, object], successor_acquisition_manifest(base)["runtimeArtifact"]
+    )["parts"]
+    actual = {
+        _text(
+            _object(asset, "chatterbox-publication-invalid").get("name"),
+            "chatterbox-publication-invalid",
+        ): _object(asset, "chatterbox-publication-invalid")
+        for asset in assets
+    }
+    for raw_part in cast(list[dict[str, object]], expected_parts):
+        asset = actual.get(cast(str, raw_part["filename"]))
+        if (
+            asset is None
+            or asset.get("size") != raw_part["downloadBytes"]
+            or asset.get("digest") != f"sha256:{raw_part['sha256']}"
+            or asset.get("url") != raw_part["url"]
+            or asset.get("state") != "uploaded"
+        ):
+            raise ReleaseChatterboxError("chatterbox-publication-invalid")
+    destination = base / "services/tts/release/optional/chatterbox"
+    (destination / "optional-package-manifest-v3.json").write_bytes(
+        render_successor_authority(successor_acquisition_manifest(base))
+    )
+    (destination / "runtime-package-evidence-v4.json").write_bytes(
+        render_successor_authority(successor_runtime_evidence(base))
+    )
+
+
+def render_successor_authority(manifest: Mapping[str, object]) -> bytes:
+    """Keep the closed two-language authority compatible with repository formatting."""
+
+    return render_manifest(manifest).replace(
+        b'"languages": [\n    "en",\n    "es"\n  ]', b'"languages": ["en", "es"]'
+    )
+
+
+def check_successor_authority(root: Path | None = None) -> None:
+    base = root or repository_root()
+    destination = base / "services/tts/release/optional/chatterbox"
+    for name, expected in (
+        ("optional-package-manifest-v3.json", successor_acquisition_manifest(base)),
+        ("runtime-package-evidence-v4.json", successor_runtime_evidence(base)),
+    ):
+        if (destination / name).read_bytes() != render_successor_authority(expected):
+            raise ReleaseChatterboxError("chatterbox-successor-authority-stale")
 
 
 def load_acquisition_manifest(root: Path | None = None) -> dict[str, object]:
@@ -1171,14 +1355,26 @@ def main(arguments: list[str] | None = None) -> int:
             "check-source",
             "reconcile-evidence",
             "write-source",
+            "write-acquisition",
         ),
     )
     parser.add_argument("--no-sync", action="store_true")
+    parser.add_argument("--publication", type=Path)
     parser.add_argument("--package-version", choices=("2", "3"), default="2")
     args = parser.parse_args(sys.argv[1:] if arguments is None else arguments)
     version = cast(PackageVersion, args.package_version)
-    if version == "3" and args.command in {"check-acquisition", "reconcile-evidence"}:
-        parser.error("successor acquisition authority is not prepared")
+    if version == "3" and args.command == "check-acquisition":
+        check_successor_authority()
+        print("chatterbox-v3-acquisition:current")
+        return 0
+    if args.command == "write-acquisition":
+        if version != "3" or args.publication is None:
+            parser.error("write-acquisition requires version 3 and --publication")
+        write_successor_authority(args.publication)
+        print("chatterbox-v3-acquisition:written")
+        return 0
+    if version == "3" and args.command == "reconcile-evidence":
+        parser.error("historical evidence reconciliation requires version 2")
     if args.command == "write-source":
         if version != "3":
             parser.error("write-source requires --package-version 3")

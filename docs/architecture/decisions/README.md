@@ -64,6 +64,8 @@ ADR-0002-short-description.md
 
 - [`ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md`](ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md): prioritize Piper and Chatterbox in Spanish/English; defer Qwen3 production completion and investigation to a future plan while preserving development-only code, tests and historical evidence.
 
+- [`ADR-0052-admit-security-refreshed-chatterbox-v3.md`](ADR-0052-admit-security-refreshed-chatterbox-v3.md): admit the separately published security-refreshed package, preserve v2 as cleanup-only data, and retain explicit hardware/evidence boundaries.
+
 ## Template
 
 ```markdown

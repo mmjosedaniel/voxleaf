@@ -104,16 +104,84 @@ a concrete reviewed artifact and applicable release authorization.
 
 ## Milestones
 
+### Frozen integration unit CB-V3-INTEGRATION-01
+
+Starting HEAD is `998c7b24cda7e969e9ed0344f348506bf38af3b0`. Preparation was
+accepted by `CB-V3-PREP-REVIEW-01-20261006` and committed after all reviewed
+identities were rechecked. The retained identity snapshot is `.txt` to preserve
+the reviewed JSON bytes without formatter normalization. Full TypeScript
+format checking passes after retention; the earlier `.json` retention attempt
+failed formatting and was renamed without changing its bytes.
+
+The user explicitly authorized publication of exactly the three reviewed parts
+as prerelease `chatterbox-runtime-v3`, retaining v2 assets and publishing no new
+VoxLeaf installer. The release targets the preparation commit above. It remains
+a validation candidate until the ordinary installed-application gates pass.
+PR #226 is draft while this authorized security integration is incomplete.
+
+One general implementation worker owns the following closed source allowlist,
+after the independent integration baseline:
+
+- `apps/desktop/src-tauri/src/tts_optional_chatterbox.rs`
+- `services/tts/src/voxleaf_tts/release_chatterbox.py`
+- `services/tts/tests/test_release_chatterbox.py`
+- New `services/tts/release/optional/chatterbox/optional-package-manifest-v3.json`
+- New `services/tts/release/optional/chatterbox/runtime-package-evidence-v4.json`
+- `apps/desktop/src-tauri/tauri.release.conf.json`
+- `apps/desktop/src-tauri/windows/nsis-hooks.nsh`
+- `apps/desktop/scripts/windows-release.mjs`
+- `apps/desktop/scripts/windows-release.node-test.mjs`
+- `apps/desktop/scripts/ordinary-chatterbox-release-host.mjs`
+- `apps/desktop/scripts/ordinary-chatterbox-release-host.node-test.mjs`
+- `scripts/test-windows-package-lifecycle.ps1`
+- `services/tts/release/audit-policy.json`
+- `scripts/release_inventory.py`
+- Generated `services/tts/release/python-license-evidence.json`
+- Generated `services/tts/release/component-inventory-v1.json`
+- `services/tts/tests/test_release_dependency_graphs.py`
+- `.github/dependabot.yml`
+- `package.json`
+- `apps/desktop/src/tts/OptionalChatterboxControls.tsx`
+- `apps/desktop/src/tts/OptionalChatterboxControls.test.tsx`
+
+The final acceptance generators may add only
+`apps/desktop/src-tauri/release/ordinary-chatterbox-journey-evidence-v2.json` and
+`apps/desktop/src-tauri/release/windows-package-evidence-v3.json`. Historical
+receipts remain unchanged. Generated files must come from their generators.
+
+Director documentation scope is this active plan, `docs/README.md`, current
+development dependencies/testing/release-security-and-distribution guidance,
+`docs/user/windows-release.md`, `docs/architecture/system-diagram.md`, the ADR
+index and new `ADR-0052-admit-security-refreshed-chatterbox-v3.md`. New integration
+baseline/host-validation/review/identity reports go under the existing evidence
+directory. Preparation reports, v2 authorities, v3 source/lock/license, embedded
+runtime modules and the embedded third-party notice remain byte-identical.
+
+The baseline runs `pnpm.cmd check`, both historical source/acquisition checks,
+the v3 source check, inventory check and full audit. The known v2 audit failure
+is the explicitly authorized defect to remedy, not an unrelated baseline
+regression. Acceptance adds the new generated v3 acquisition check and the
+existing Windows package/check/lifecycle/ordinary preflight/journey/evidence
+commands. All run in local PowerShell outside sandbox. No Qwen portfolio gate.
+
+Preserve all existing scenarios. Add meaningful coverage for v3 exact admission,
+absent correction, retained-v2 cleanup without migration/execution, withheld
+cleanup, busy/containment guards, generated authority identity, resource closure
+and accurate size disclosures. Do not alter journey deadlines or acceptance
+assertions to obtain a pass. Obtain independent change review before acceptance.
+
 1. **Diagnose and freeze candidate scope — complete.** Reproduce failure, verify
    withdrawn Rust notices, identify optional Python findings and inspect coupling.
 2. **Candidate graph and bilingual feasibility — complete.** Generated an
    isolated exact lock, audit it, install an isolated environment, verify compatible
    imports/safe loading and run bounded offline Spanish/English inference.
-3. **Versioned package integration — in progress.** The additive v3 builder,
-   exact lock, source and licence are implemented; its first build and embedded
-   bilingual/security probes pass. Reproducible assembly and independent
-   preparation review precede publication/native admission and the applicable
-   acquisition/lifecycle checks. Record the release boundary explicitly.
+3. **Versioned package integration — in progress.** The reproducible v3 runtime
+   passed independent preparation review and was published with user approval.
+   Native admission, cleanup-only retention of v2 and active audit/inventory
+   integration are implemented. Full host checks, production audit, installer
+   assembly, fresh lifecycle and the complete rebuilt ordinary installed journey
+   pass. The bounded client containment follow-up also passes independent
+   focused checks. Independent combined review remains required.
 4. **Independent review and PR handoff — pending.** Run relevant host checks,
    obtain change_reviewer approval for exact identities, commit/push the accepted
    patch under explicit Git orders, and inspect CI. Never call a failed gate green.
@@ -138,6 +206,48 @@ do not modify live installations or replace release assets. Retain rejected
 candidate evidence. Remove only task-owned temporary outputs after path checks.
 
 ## Progress log
+
+- 2026-10-07: After the independently baselined two-file client repair, full
+  `pnpm.cmd check` passes with 587 desktop tests (six new cases), unchanged
+  shared/EPUB/Node/Rust/Python gates, and a rebuilt Windows installer. Fresh
+  audit, package check, inventory, v3 acquisition and format checks pass.
+  Fresh lifecycle and the complete ordinary installed journey pass all four
+  narration arms, restart, removal, reinstallation and uninstall. The generated
+  journey receipt now exists and passes exact-artifact checks. Original app data
+  and all 2,018 installation files/metadata were restored without errors.
+  Independent combined review and updated-head GitHub CI remain pending.
+- The installed retry exited 1 at Piper English active-leaf replacement with
+  `tts-service-failed` / `protocol-failed`. Chatterbox ES/EN, restart, removal and
+  Piper ES passed; reinstallation was not reached and no passing journey receipt
+  exists. The original 2,018 installation files and metadata were restored and
+  verified. Focused diagnosis is required; no coordinator or historical
+  normalizer change is authorized or made. See the integration host report for
+  measured passing arms and the exact failure. Do not accept the incomplete
+  composite run or treat the generic failure code as a root-cause diagnosis.
+- Integration source passed director `pnpm.cmd check`: 209 shared, 653 EPUB,
+  581 desktop, 38 Node, 82/83 Rust and 402 Python tests, plus format/lint/types
+  and builds. `pnpm.cmd package:windows` passed after correcting only the
+  command's inherited Windows PowerShell module-path environment; its first
+  signature-inspection attempt failed and is retained in the evidence record.
+  `pnpm.cmd package:windows:check` and the installed lifecycle matrix passed.
+- Ordinary installed artifact/preflight passed, but the first WebDriver session
+  failed because the host retained driver 150 with WebView2 154. Original
+  installation files, metadata and application data were restored and checked.
+  The Microsoft-signed matching driver is isolated under ignored task files.
+  The retry passed both ordinary and hostile-environment release/host gates,
+  cancellation, and reached acquisition from the actual v3 release. Narration
+  and the remaining journey are still running; no completion is inferred.
+- Integration baseline `CB-V3-INTEGRATION-01-BASELINE-01-20261006` completed:
+  full `pnpm.cmd check` and source/acquisition/inventory checks pass; the sole
+  BASELINE-FAIL is the five known v2 Python advisories being remedied. All 23
+  closed identities remained clean/absent and unchanged. See
+  [integration baseline](../evidence/chatterbox-security-refresh/integration-baseline.md).
+- The three candidate assets were published as the authorized prerelease at
+  `2026-10-07T03:24:00Z`; all remote digests/sizes match, v2 remains unchanged.
+  Representative v3 resource probes pass ES/EN: max(process-attributed WDDM,
+  PyTorch reserved memory) plus the original 1,024-MiB reserve fits the existing
+  4,668-MiB available gate. Historical 83-second/3,644-MiB references remain
+  explicitly historical. See [integration host evidence](../evidence/chatterbox-security-refresh/integration-host-validation.md).
 
 - 2026-10-06: CI PR run 37560176447 and main run 37528162391 fail the same Rust
   informational-policy comparison. Host `pnpm.cmd audit:release` reproduced exit 1.
@@ -228,10 +338,80 @@ candidate evidence. Remove only task-owned temporary outputs after path checks.
   and retained roots, with the existing busy, containment and shutdown guards.
   A withheld successor must not prevent removal of retained data. Preserve v2
   bytes on observation, cancellation and failed acquisition. These are next-unit
-  requirements; no native implementation has changed yet.
+  requirements implemented in the integration unit, with focused native tests;
+  ordinary installed acceptance is tracked separately.
 
 ## Final validation results
 
-In progress. The original refactor remains accepted, but release security CI is
-not green. No dependency candidate or successor runtime has been accepted yet.
-No new commit, push, release publication or PR merge has occurred in this plan.
+### Bounded cancellation containment follow-up
+
+The user requested a global analysis and continued execution after the installed
+journey and plain Piper diagnostic failed. Independent read-only analysis
+separates the security audit remedy, the terminal installed leaf failure, and
+the incompletely diagnosed chapter timeout. A deterministic probe importing the
+unchanged real `TtsProcessClient` reproduced a stranded `cancelling` state when
+native synthesis completes before cancellation reaches the native boundary.
+The probe does not attribute the prior host failures to this interleaving.
+
+Freeze unit `PIPER-CANCEL-CONTAINMENT-01` before editing:
+
+- Production/test allowlist: `apps/desktop/src/tts/process-client.ts` and
+  `apps/desktop/src/tts/process-client.test.ts` only, at most approximately 150
+  added/deleted lines. Both paths must remain free of pre-existing changes.
+- Handle only the native `tts-service-invalid-state` cancellation rejection
+  after the existing scope check and identity/audio invalidation. Attempt the
+  existing validated shutdown; always preserve the original cancellation error.
+  Permit restart only after shutdown actually establishes stopped state.
+- A rejected or malformed shutdown must leave restart refused. Do not assign
+  stopped state speculatively, add retries, poll, or wait without a bound.
+  Other rejection codes and the successful cancellation path stay unchanged.
+- Keep the coordinator, native supervisor, Python service, IPC contracts,
+  historical normalizers, models and dependency pins frozen.
+- The existing validator supplies a host baseline before implementation. One
+  worker owns the two files. Add meaningful deferred-response regressions for
+  confirmed containment, failed/malformed containment, unchanged normal cancel,
+  other error codes and late-audio disposal. Independent behavior review is
+  required after focused checks, full checks and the rebuilt installed journey.
+- Documentation/evidence updates belong to the director: this plan,
+  `integration-host-validation.md`, a diagnosis report, and new baseline/review
+  reports. Generated installer/journey receipts must be regenerated by their
+  existing commands after rebuilding; previous build evidence cannot certify
+  a changed executable. No new public installer or merge is authorized.
+
+The bounded implementation is complete at 143 changed lines. Initial report
+`PIPER-CANCEL-CONTAINMENT-01-BASELINE-01-20261007` passed 45 tests and typecheck.
+Four new containment assertions failed for the expected missing shutdown before
+the repair; the six new cases then passed with the existing suite. Independent
+post-change report `PIPER-CANCEL-CONTAINMENT-01-HOSTVALIDATION-01-20261007` passed
+51 tests and typecheck, with matching before/after source identities and empty
+index. See [immutable unit reports](../evidence/chatterbox-security-refresh/piper-containment-validation.md)
+and [global diagnosis](../evidence/chatterbox-security-refresh/piper-transition-diagnosis.md).
+Full `pnpm.cmd check` and `pnpm.cmd package:windows` now pass on the containment
+snapshot. The rebuilt local installer has SHA-256
+`8bc8d5a54e82a113b9ed2bb727c64742a2d7bd5ba9558d7aab1fd417bc77711d`.
+The plain Piper English adaptive comparison, package check, fresh installer
+lifecycle and complete installed journey also pass. The generated current
+receipts record all four narration arms, restart/removal/reinstallation and
+uninstall. Combined review and updated-head CI remain pending. No prior
+installer receipt substitutes for this new frontend's evidence.
+
+Before the containment repair, two isolated observed Piper English runs passed
+the unchanged adaptive harness, while the plain comparison failed at chapter
+transition. No diagnostic required a Chatterbox download; each restored the
+original application data by hash. The earlier installed failure remains
+unattributed; the deterministic defect and its correction are established
+separately. Fresh plain and complete installed evidence now pass.
+Launcher-only failures and diagnostic identities/results are recorded in
+[integration host evidence](../evidence/chatterbox-security-refresh/integration-host-validation.md).
+
+In progress. The original refactor and v3 preparation unit are accepted. Commit
+`998c7b24cda7e969e9ed0344f348506bf38af3b0` was pushed to the existing PR; its
+reviewed inputs match the published prerelease artifacts. Before the containment
+repair, full local checks, production audit and installer lifecycle passed; the
+ordinary installed journey failed at Piper English active-leaf replacement.
+The repaired client has independent focused validation, full checks and passing
+current installed evidence. Independent combined review remains pending. GitHub CI
+still evaluates the preceding preparation commit: Windows/Ubuntu pass and its
+active-v2 audit fails. No green-CI claim applies until the accepted integration
+is pushed and that new head passes. No PR merge or new installer publication
+is authorized by this plan.

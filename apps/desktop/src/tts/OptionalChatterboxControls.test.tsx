@@ -134,13 +134,18 @@ describe("optional Chatterbox controls", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/24.00 GiB RAM total/)).toBeInTheDocument();
     expect(
-      screen.getByText(/13,254,834,850 bytes \(13.25 GB \/ 12.35 GiB\)/),
+      screen.getByText(/13,270,915,278 bytes \(13.27 GB \/ 12.36 GiB\)/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/8,228,503,309 bytes \(8.23 GB \/ 7.66 GiB\)/),
+      screen.getByText(/8,236,377,725 bytes \(8.24 GB \/ 7.67 GiB\)/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/8,231,893,387 bytes \(8.23 GB \/ 7.67 GiB\)/),
+      screen.getByText(/8,239,933,601 bytes \(8.24 GB \/ 7.67 GiB\)/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Historical v2 observations, not current v3 measurements/,
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/generally more natural and expressive than Piper/),

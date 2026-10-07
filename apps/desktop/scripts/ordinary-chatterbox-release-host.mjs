@@ -32,7 +32,7 @@ const DEFAULT_INSTALLER = path.join(
 );
 const DEFAULT_RECEIPT = path.join(
   repositoryRoot,
-  "apps/desktop/src-tauri/release/ordinary-chatterbox-journey-evidence-v1.json",
+  "apps/desktop/src-tauri/release/ordinary-chatterbox-journey-evidence-v2.json",
 );
 const STARTUP_TIMEOUT_MS = 90_000;
 const ACQUISITION_TIMEOUT_MS = 8 * 60 * 60 * 1_000;
@@ -90,9 +90,9 @@ const DEVELOPMENT_ENVIRONMENT_KEYS = Object.freeze([
 ]);
 const REQUIRED_RESOURCES = Object.freeze([
   "resources/tts/voxleaf-piper-core-v1/runtime-manifest-v1.json",
-  "resources/release/optional/chatterbox/optional-package-manifest-v2.json",
-  "resources/release/optional/chatterbox/runtime-package-evidence-v3.json",
-  "resources/release/optional/chatterbox/source-manifest-v2.json",
+  "resources/release/optional/chatterbox/optional-package-manifest-v3.json",
+  "resources/release/optional/chatterbox/runtime-package-evidence-v4.json",
+  "resources/release/optional/chatterbox/source-manifest-v3.json",
   "resources/release/optional/chatterbox/THIRD-PARTY-NOTICES.md",
 ]);
 const FORBIDDEN_ARTIFACT_PATHS = Object.freeze([
@@ -255,7 +255,7 @@ export async function validateOrdinaryArtifact(installedRoot) {
   );
   const manifestPath = path.join(
     installedRoot,
-    "resources/release/optional/chatterbox/optional-package-manifest-v2.json",
+    "resources/release/optional/chatterbox/optional-package-manifest-v3.json",
   );
   for (const resource of REQUIRED_RESOURCES) {
     await existingFile(path.join(installedRoot, resource), "resource-missing");
@@ -263,10 +263,14 @@ export async function validateOrdinaryArtifact(installedRoot) {
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   if (
     manifest?.availability !== "downloadable" ||
+    manifest?.identity?.packageVersion !== "3" ||
+    manifest?.layout?.installed !== "cb/3" ||
+    manifest?.runtime?.releaseTag !== "chatterbox-runtime-v3" ||
+    manifest?.runtimeCorrection !== undefined ||
     manifest?.withholdingReason !== undefined ||
-    manifest?.measurements?.downloadBytes !== 8_231_893_387 ||
-    manifest?.measurements?.installedBytes !== 8_228_503_309 ||
-    manifest?.measurements?.temporaryBytes !== 13_254_834_850 ||
+    manifest?.measurements?.downloadBytes !== 8_239_933_601 ||
+    manifest?.measurements?.installedBytes !== 8_236_377_725 ||
+    manifest?.measurements?.temporaryBytes !== 13_270_915_278 ||
     manifest?.measurements?.minimumFreeBytes !== 20_000_000_000
   ) {
     fail("ordinary-manifest-authority");

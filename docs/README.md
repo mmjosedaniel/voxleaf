@@ -10,9 +10,13 @@ future plan under [ADR-0051](architecture/decisions/ADR-0051-defer-qwen3-and-pri
 Existing development-only integration, tests and historical evidence are retained.
 
 The [Chatterbox security dependency refresh](plans/active/chatterbox-security-dependency-refresh.md)
-is in progress after the 2026-10-06 release audit exposed advisories in the
-published v2 dependency graph. A successor candidate is being built and checked;
-the existing release is not yet remediated or newly accepted.
+integrates the separately published v3 prerelease after the 2026-10-06 audit
+exposed advisories in v2. The production v3 dependency audit and the rebuilt
+installed journey now pass, including Chatterbox/Piper in both languages,
+removal and reinstallation. A reproduced completion/cancellation race is
+contained in the shared process client without changing the coordinator.
+Independent review and PR CI remain tracked in the plan. Historical v2 assets
+and evidence are retained, and no new installer is published.
 
 Roadmap Milestones 1 through 10.2, M008.1, and M009.1 are complete. M008 provides
 the constrained one-GPU narration demo; M008.1 adds bounded semantic
@@ -128,15 +132,15 @@ targets a Windows x64 portfolio MVP with Piper Spanish/English in the small
 core and Chatterbox Spanish/English as a separately gated optional GPU quality
 download. Milestone 4A implements the fail-closed native lifecycle and
 Settings controls. Milestone 4B now implements the split acquisition while its
-v2 manifest is downloadable only after the renderer and native live compatibility
+v3 manifest is downloadable only after the renderer and native live compatibility
 gates pass: six allowlisted model-data files
 are acquired directly from the official
 `ResembleAI/chatterbox` Hugging Face repository at one full frozen revision.
 Each file remains bounded and SHA-256 verified; no model-repository code may
 execute. The reviewed Chatterbox runtime is reproducibly built, split into
 three bounded assets, and published under the immutable
-[`chatterbox-runtime-v2`](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v2)
-release. The validated optional path requires explicit consent, bounded
+[`chatterbox-runtime-v3`](https://github.com/mmjosedaniel/voxleaf/releases/tag/chatterbox-runtime-v3)
+prerelease. The optional path requires explicit consent, bounded
 download, exact verification, atomic installation, separate activation,
 offline operation, and application-owned removal. The ordinary manifest exposes
 Download only to a compatible current host; that does not revoke Chatterbox
@@ -262,7 +266,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 - [`architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md`](architecture/decisions/ADR-0048-admit-bounded-epub2-and-ncx-compatibility.md): implemented authority for bounded reflowable OPF 2.0, NCX navigation, exact inert compatibility doctypes, and unchanged public semantic/locator boundaries; final evidence is recorded in the completed M003.1 ExecPlan.
 - [`architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md`](architecture/decisions/ADR-0049-use-representative-compatible-host-evidence.md): accept support claims based on published requirements and representative compatible-host evidence rather than exhaustive per-computer testing.
 - [`architecture/chatterbox-official-acquisition-authority-v2.md`](architecture/chatterbox-official-acquisition-authority-v2.md): accepted M011 Milestone 4B authority for a separately verified split runtime and the six exact official revision-pinned Hugging Face model files, with closed redirects, limits, cancellation, safe loading, atomic promotion, and fail-closed release gates.
-- [`../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json`](../services/tts/release/optional/chatterbox/runtime-package-evidence-v2.json) and [`../services/tts/release/optional/chatterbox/runtime-package-evidence-v3.json`](../services/tts/release/optional/chatterbox/runtime-package-evidence-v3.json): preserved historical evidence and repository-reconciled current ordinary authority; neither is a signature or public-publication claim.
+- [`../services/tts/release/optional/chatterbox/runtime-package-evidence-v4.json`](../services/tts/release/optional/chatterbox/runtime-package-evidence-v4.json): generated security-refreshed v3 package and publication identities. Earlier runtime evidence v2/v3 remains historical; runtime evidence alone does not establish installer acceptance or signing.
 - [`architecture/hardware-profile-recovery-authority-v1.md`](architecture/hardware-profile-recovery-authority-v1.md): frozen M010 Milestone 1 privacy-safe host report, immutable profile/evidence shape, result-blind margins, matching/preference rules, failure taxonomy, and identity-first recovery authority.
 - [`architecture/qwen-development-vram-admission-v1.md`](architecture/qwen-development-vram-admission-v1.md): corrective development-only authority retaining generic total VRAM while admitting the exact Qwen demo with its measured peak plus a frozen 512-MiB available-VRAM reserve.
 - [`architecture/tts-support-matrix-v1.md`](architecture/tts-support-matrix-v1.md): final M010 product support matrix, admitted host margins, explicit selection/fallback policy, recovery policy, limitations, and runtime/license/distribution boundary.
