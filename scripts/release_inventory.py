@@ -16,7 +16,7 @@ RELEASE_ROOT = REPOSITORY_ROOT / "services" / "tts" / "release"
 INVENTORY_PATH = RELEASE_ROOT / "component-inventory-v1.json"
 PYTHON_LICENSE_PATH = RELEASE_ROOT / "python-license-evidence.json"
 CORE_LOCK = RELEASE_ROOT / "core" / "uv.lock"
-CHATTERBOX_LOCK = RELEASE_ROOT / "profiles" / "chatterbox" / "requirements.lock"
+CHATTERBOX_LOCK = RELEASE_ROOT / "profiles" / "chatterbox-v3" / "requirements.lock"
 CARGO_LOCK = REPOSITORY_ROOT / "apps" / "desktop" / "src-tauri" / "Cargo.lock"
 PNPM_LOCK = REPOSITORY_ROOT / "pnpm-lock.yaml"
 AUDIT_POLICY = RELEASE_ROOT / "audit-policy.json"
@@ -353,7 +353,7 @@ def _chatterbox_components(licenses: dict[str, dict[str, str]]) -> list[dict[str
                     "algorithm": "SHA-256",
                     "value": hashes[0],
                     "lockedAlternativeHashCount": len(hashes),
-                    "lock": "services/tts/release/profiles/chatterbox/requirements.lock",
+                    "lock": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
                 },
                 purpose="Minimal bilingual Chatterbox inference dependency.",
                 process_boundary="optional private local TTS child",
@@ -758,7 +758,7 @@ def build_inventory() -> dict[str, Any]:
                 "sha256": _sha256(CORE_LOCK),
             },
             "chatterboxOptional": {
-                "path": "services/tts/release/profiles/chatterbox/requirements.lock",
+                "path": "services/tts/release/profiles/chatterbox-v3/requirements.lock",
                 "sha256": _sha256(CHATTERBOX_LOCK),
             },
         },

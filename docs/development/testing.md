@@ -15,6 +15,38 @@
 
 ## Deterministic foundation checks
 
+The Chatterbox security refresh adds explicit successor authority checks:
+`pnpm.cmd package:chatterbox-optional:v3:check-source` and
+`pnpm.cmd package:chatterbox-optional:v3:check-acquisition`. Default v2 commands
+remain historical regression gates. Generate successor authority only with
+`pnpm.cmd package:chatterbox-optional:v3:write-acquisition --publication
+../../tmp/chatterbox-security-refresh/published-v3.json`; the path is relative
+to the service directory selected by that pnpm script and contains a real
+GitHub publication readback, not invented acceptance evidence.
+
+Current security integration acceptance runs the full foundation check,
+`pnpm.cmd audit:release`, inventory check and the existing Windows package,
+check, lifecycle, ordinary preflight/journey/evidence commands outside sandbox.
+The journey uses actual acquisition twice and Chatterbox/Piper ES/EN without
+Qwen inference. New generated outputs are
+`ordinary-chatterbox-journey-evidence-v2.json` and
+`windows-package-evidence-v3.json`; historical receipts remain unchanged.
+Native regressions cover each retained v2 root independently, both together,
+available/withheld states, non-migration, cancellation, exact removal, unrelated
+root preservation and busy guards. Unix-only symlink branches do not run on
+Windows, and the existing Ubuntu portable job does not run Rust. This local
+record therefore does not claim execution of those branches.
+
+The same follow-up reproduced a native-completion/cancellation interleaving in
+the real process client with a simulated invoke boundary. Focused client tests
+now verify validated shutdown on that exact invalid-state rejection, original
+error propagation, late-audio zeroing, and restart refusal while shutdown is
+pending, fails or returns malformed/wrong-service controls. Normal cancellation,
+other errors and invalid scopes retain their behavior. The coordinator and
+harness assertions/deadlines are unchanged. Independent initial/post-change
+evidence and the rebuilt plain/installed routes are recorded in the
+[security refresh plan](../plans/completed/chatterbox-security-dependency-refresh.md).
+
 Run `pnpm.cmd check` from native Windows after the locked JavaScript and Python environments are installed. It is the authoritative local foundation check and covers formatting, linting, type checking, smoke tests, framework-independent package builds, the React production build, the native Tauri release executable, and the Python source and wheel distributions.
 
 GitHub Actions runs the same authoritative check in the `Windows native foundation` job on the explicit supported `windows-2022` image. That image is pinned as the known-good hosted image/runtime pair: Tauri's supported EdgeDriver launch created its automation marker with WebView2 `131.0.2903.86`, while repeated `windows-2025` runs with WebView2 `150.0.4078.65` kept the host process alive without creating `DevToolsActivePort`. Because the runner image and WebView2 major version changed together, this evidence does not isolate an operating-system defect from a WebView2 150 or image/runtime interaction. The job also explicitly installs the Playwright-managed Chromium revision and runs `pnpm.cmd test:browser` before the native smoke and aggregate check. The root browser command builds the shared and EPUB workspace packages before Playwright starts Vite, so a clean runner does not depend on ignored package `dist` outputs from an earlier command. The separate `Ubuntu portable foundation` job runs `pnpm check:portable` on `ubuntu-24.04`, covering TypeScript and Python validation plus the browser-only desktop build without installing Rust, Playwright browsers, or Linux desktop dependencies. A portable success does not replace native Windows validation.

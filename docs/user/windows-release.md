@@ -18,8 +18,8 @@ If a compatible WebView2 runtime is absent, the embedded Microsoft bootstrapper
 requires an internet connection to install that Windows prerequisite. Normal
 EPUB reading and Piper narration do not require a network connection.
 
-The current unsigned local build is accepted for controlled local use and as a
-portfolio MVP. Piper is a Windows x64 CPU profile with no discrete-GPU
+Unsigned local builds are intended for controlled local validation and portfolio
+use. Piper is a Windows x64 CPU profile with no discrete-GPU
 requirement; representative evidence includes successful use on an independent
 older Windows computer with 16 GB RAM and a 4-GB-VRAM GPU. This does not promise
 identical behavior on every PC. Do not offer the unsigned artifact as a trusted
@@ -27,11 +27,10 @@ general-public download. Public distribution requires a trusted signature, succe
 signature verification, a matching published SHA-256 checksum, and the release
 checks documented by the project.
 
-The current installer is `181,596,357` bytes with SHA-256
-`aca8ff0d233d5d996012eb43708765aba77dced3c1924de1d0b8c7f570fc4fdc`.
-Generated package evidence records its normal-user lifecycle and ordinary
-compatible-host Chatterbox journey as passed. It remains `unsigned-local`;
-Defender was not run and SmartScreen was not observed for this exact artifact.
+Generated Windows package evidence records the exact installer size, SHA-256,
+normal-user lifecycle and ordinary compatible-host journey results. An earlier
+installer's checksum does not identify a rebuilt artifact. Local validation
+does not establish a trusted signature, Defender or SmartScreen result.
 Renewed
 Milestone 7 accepts Chatterbox as supported when the published host gate passes.
 The ordinary build offers Download only after Settings and native code pass
@@ -124,10 +123,10 @@ On a passing computer, Settings will present Chatterbox as the generally more
 natural and expressive quality option compared with Piper, while noting that
 voice preference varies. Before network access, the confirmation must disclose:
 
-- `8,231,893,387` download bytes (about 8.23 GB/7.67 GiB);
-- a corrected installed total of `8,228,503,309` bytes (about 8.23 GB/7.66 GiB);
-- a peak temporary requirement of `13,254,834,850` bytes (about 13.25 GB/
-  12.35 GiB) and at least 20 GB/18.63 GiB free before transfer;
+- `8,239,933,601` download bytes (about 8.24 GB/7.67 GiB);
+- an installed total of `8,236,377,725` bytes (about 8.24 GB/7.67 GiB);
+- a peak temporary requirement of `13,270,915,278` bytes (about 13.27 GB/
+  12.36 GiB) and at least 20 GB/18.63 GiB free before transfer;
 - 64-bit Windows, CUDA bfloat16, at least 8 logical processors, 24,576 MiB total
   and 4,096 MiB currently available RAM, and 5,632 MiB total and 4,668 MiB
   currently available dedicated VRAM; nominal 7,680-MiB/8-GB-class VRAM remains
@@ -135,13 +134,23 @@ voice preference varies. Before network access, the confirmation must disclose:
 - licence, offline, cancellation, activation, removal, and reacquisition
   consequences.
 
-Initial Chatterbox load can exceed one minute. Representative direct cold runs
+The security-refreshed runtime uses package v3. Retained v2 data is not executed
+or migrated into v3. If only older data remains, Settings offers removal;
+acquiring v3 requires explicit consent. Observation, failed downloads and
+cancellation preserve retained data. Explicit Remove Chatterbox removes the
+owned current and retained package roots; unrelated versions and reader data
+remain outside that operation. Disk usage can include both retained and current
+packages until removal.
+
+Initial Chatterbox load can exceed one minute. Historical v2 direct cold runs
 were `29.61` and `82.34` seconds; the renewed exact-artifact journey measured
 Quick command-to-audible at `49.269` seconds in Spanish and `37.773` seconds in
-English. Representative process-tree working-set peaks were
+English. Historical v2 process-tree working-set peaks were
 `4,855,865,344`/`4,898,762,752` bytes and dedicated-VRAM peaks were
 `3,745`/`3,709` MiB. Those figures describe the tested computer, not a fixed
-countdown or guarantee for every compatible computer.
+countdown or guarantee for every compatible computer, and are not new v3
+measurements. The historical hardware gate is retained after representative
+v3 memory checks; current artifact evidence records successor observations.
 
 The package occupies disk after installation; it does not permanently reserve
 RAM or VRAM. Loading and inference do use GPU, VRAM, RAM, and CPU and may

@@ -372,7 +372,129 @@ describe("typed native TTS process client", () => {
     expect(mockedInvoke).toHaveBeenCalledWith("cancel_tts_generation", {
       scope: scope(),
     });
+    expect(mockedInvoke).not.toHaveBeenCalledWith(
+      "shutdown_tts_service",
+      undefined,
+    );
   });
+
+  it("contains completed native work before restart and discards late audio", async () => {
+    const client = await readyClient();
+    const lateBuffer = audioBuffer();
+    let deliver: ((value: ArrayBuffer) => void) | undefined;
+    let confirmShutdown: ((value: unknown) => void) | undefined;
+    mockedInvoke
+      .mockImplementationOnce(
+        () =>
+          new Promise<ArrayBuffer>((resolve) => {
+            deliver = resolve;
+          }),
+      )
+      .mockRejectedValueOnce("tts-service-invalid-state")
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            confirmShutdown = resolve;
+          }),
+      );
+    const synthesis = client.synthesize(segment());
+    const cancellation = client
+      .cancel(scope())
+      .catch((error: unknown) => error);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(mockedInvoke).toHaveBeenCalledWith(
+      "shutdown_tts_service",
+      undefined,
+    );
+    await expect(client.start()).rejects.toEqual(
+      expect.objectContaining({ code: "tts-service-invalid-state" }),
+    );
+    confirmShutdown?.(shutdownControls());
+    expect(await cancellation).toEqual(
+      expect.objectContaining({ code: "tts-service-invalid-state" }),
+    );
+    deliver?.(lateBuffer);
+    await expect(synthesis).rejects.toEqual(
+      expect.objectContaining({ code: "tts-service-cancelled" }),
+    );
+    expect(new Uint8Array(lateBuffer).every((value) => value === 0)).toBe(true);
+    expect(client.observe()).toEqual({
+      serviceInstanceId: undefined,
+      state: "stopped",
+      hasActiveGeneration: false,
+      retainedAudioUnits: 0,
+    });
+    mockedInvoke.mockResolvedValueOnce(startControls());
+    await expect(client.start()).resolves.toEqual(
+      expect.objectContaining({ state: "unloaded" }),
+    );
+  });
+
+  it.each(["rejected", "malformed", "mismatched"])(
+    "preserves cancellation failure and refuses restart after %s shutdown",
+    async (failure) => {
+      const client = await readyClient();
+      const cancellationError = new TtsProcessClientError(
+        "tts-service-invalid-state",
+      );
+      mockedInvoke
+        .mockImplementationOnce(() => new Promise(() => undefined))
+        .mockRejectedValueOnce(cancellationError);
+      if (failure === "rejected") {
+        mockedInvoke.mockRejectedValueOnce("tts-service-unavailable");
+      } else {
+        mockedInvoke.mockResolvedValueOnce(
+          failure === "malformed"
+            ? [state("stopping")]
+            : [
+                state("stopping"),
+                { ...state("stopped"), serviceInstanceId: "service:other" },
+              ],
+        );
+      }
+      void client.synthesize(segment());
+      await expect(client.cancel(scope())).rejects.toBe(cancellationError);
+      expect(mockedInvoke).toHaveBeenCalledWith(
+        "shutdown_tts_service",
+        undefined,
+      );
+      expect(client.observe()).toEqual(
+        expect.objectContaining({ state: "cancelling" }),
+      );
+      const calls = mockedInvoke.mock.calls.length;
+      await expect(client.start()).rejects.toEqual(
+        expect.objectContaining({ code: "tts-service-invalid-state" }),
+      );
+      expect(mockedInvoke).toHaveBeenCalledTimes(calls);
+    },
+  );
+
+  it.each(["tts-service-timeout", "tts-service-unavailable"])(
+    "does not attempt shutdown for cancellation failure %s or an invalid scope",
+    async (code) => {
+      const client = await readyClient();
+      mockedInvoke
+        .mockImplementationOnce(() => new Promise(() => undefined))
+        .mockRejectedValueOnce(code);
+      void client.synthesize(segment());
+      const calls = mockedInvoke.mock.calls.length;
+      await expect(
+        client.cancel({ ...scope(), segmentId: "segment:other" }),
+      ).rejects.toEqual(
+        expect.objectContaining({ code: "tts-service-invalid-state" }),
+      );
+      expect(mockedInvoke).toHaveBeenCalledTimes(calls);
+      await expect(client.cancel(scope())).rejects.toEqual(
+        expect.objectContaining({ code }),
+      );
+      expect(
+        mockedInvoke.mock.calls.some(
+          ([command]) => command === "shutdown_tts_service",
+        ),
+      ).toBe(false);
+    },
+  );
 
   it("releases retained bytes on shutdown and maps dynamic native failures safely", async () => {
     const client = await readyClient();
