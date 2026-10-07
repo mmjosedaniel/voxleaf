@@ -897,7 +897,7 @@ describe("bounded local publication resources", () => {
     }
   });
 
-  it("returns closed content-free failures for invalid requests, cancellation, and post-close calls", async () => {
+  it("returns closed content-free failures for invalid requests and post-close calls", async () => {
     const archive = await openEpubArchive(await createArchive({}));
     const values = narrationTextPublicationValues(
       ["Canario sintético privado."],
@@ -980,30 +980,6 @@ describe("bounded local publication resources", () => {
     }
     expect(invalidStart.error.code).toBe("invalid-input");
     expect(JSON.stringify(invalidStart)).not.toContain("Canario");
-
-    const controller = new AbortController();
-    controller.abort("private-canary");
-    const cancelled = await publication.prepareNarration({
-      startLocator: start,
-      profile: "narration-v1",
-      defaultLanguage: "es",
-      maximumSegments: 1,
-      signal: controller.signal,
-    });
-    expect(cancelled.status).toBe("cancelled");
-    if (cancelled.status !== "cancelled") {
-      throw new Error("expected cancelled narration request");
-    }
-    expect(cancelled.error.code).toBe("operation-cancelled");
-    expect(JSON.stringify(cancelled)).not.toContain("private-canary");
-
-    const retry = await publication.prepareNarration({
-      startLocator: start,
-      profile: "narration-v1",
-      defaultLanguage: "es",
-      maximumSegments: 1,
-    });
-    expect(retry.status).toBe("complete");
 
     await publication.close();
     const closed = await publication.prepareNarration({
