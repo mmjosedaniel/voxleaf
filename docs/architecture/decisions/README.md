@@ -62,6 +62,8 @@ ADR-0002-short-description.md
 - [`ADR-0049-use-representative-compatible-host-evidence.md`](ADR-0049-use-representative-compatible-host-evidence.md): replace an exhaustive per-computer interpretation with published compatibility requirements plus representative host evidence, record Piper and compatible-host Chatterbox GO, and keep trusted public signing separate.
 - [`ADR-0050-promote-ordinary-chatterbox-acquisition-and-retire-validation-overlay.md`](ADR-0050-promote-ordinary-chatterbox-acquisition-and-retire-validation-overlay.md): supersede ADR-0045 only for channel/overlay, promote ordinary compatible-host acquisition behind renderer and native gates, and retain unsigned-local/publication limits.
 
+- [`ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md`](ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md): prioritize Piper and Chatterbox in Spanish/English; defer Qwen3 production completion and investigation to a future plan while preserving development-only code, tests and historical evidence.
+
 ## Template
 
 ```markdown

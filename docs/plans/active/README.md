@@ -17,10 +17,6 @@ Follow `.agents/PLANS.md` and update the progress log while working.
 
 ## Current plans
 
-- [`bounded-settings-and-chatterbox-modularization.md`](bounded-settings-and-chatterbox-modularization.md):
-  planned behavior-preserving settings-action extraction, followed by a
-  conditional audit and bounded native Chatterbox extraction. Implementation
-  and acceptance checks have not started.
 - [`synchronized-reader-and-startup-buffer.md`](synchronized-reader-and-startup-buffer.md):
   retained broad historical context. Completed M009 supersedes its
   synchronization work; it does not supersede completed Milestones 4 through 9.

@@ -4,6 +4,11 @@ Documentation is organized by purpose so contributors and Codex can load only th
 
 ## Current project status
 
+Current model priority: **Piper and Chatterbox in Spanish and English**. Qwen3
+production completion and unresolved runtime investigation are deferred to a
+future plan under [ADR-0051](architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md).
+Existing development-only integration, tests and historical evidence are retained.
+
 Roadmap Milestones 1 through 10.2, M008.1, and M009.1 are complete. M008 provides
 the constrained one-GPU narration demo; M008.1 adds bounded semantic
 transitions between already-buffered units; M009 and M009.1 add synchronized
@@ -334,7 +339,7 @@ Use the [canonical system diagram](architecture/system-diagram.md) for component
 
 - [`plans/roadmap.md`](plans/roadmap.md): high-level milestone sequence, dependencies, decision gates, and major risks.
 - [`plans/active/`](plans/active/): current approved ExecPlans and retained cross-milestone context.
-- [`plans/active/bounded-settings-and-chatterbox-modularization.md`](plans/active/bounded-settings-and-chatterbox-modularization.md): planned internal settings-action extraction and conditional native Chatterbox modularization; implementation and validation have not started.
+- [`plans/completed/bounded-settings-and-chatterbox-modularization.md`](plans/completed/bounded-settings-and-chatterbox-modularization.md): completed settings-action extraction with independent acceptance for Piper/Chatterbox in Spanish and English; native Chatterbox audit concluded SKIP. Qwen3 is deferred under ADR-0051.
 - [`plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md`](plans/completed/M003-001-bounded-epub2-and-ncx-compatibility.md): completed Milestone 3.1 plan for the bounded OPF 2.0/NCX package, navigation, downstream-equivalence, and final acceptance path consumed by M011 release closeout.
 - [`plans/completed/typescript-maintainability-batch-20260803.md`](plans/completed/typescript-maintainability-batch-20260803.md): completed recovery and independent-validation record for the small cross-package TypeScript/TSX maintainability batch.
 - [`plans/completed/M001-engineering-foundation.md`](plans/completed/M001-engineering-foundation.md): completed ExecPlan and validation evidence for the first roadmap milestone.

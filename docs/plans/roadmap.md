@@ -2,6 +2,16 @@
 
 ## Status and purpose
 
+Current model priority, accepted on 2026-10-06: **Piper and Chatterbox in Spanish
+and English**. Qwen3 production completion, promotion and unresolved runtime
+investigation are deferred to a separate future plan, without a scheduled date.
+Existing development-only Qwen code, tests and historical results remain valid
+records of work already done; deferral does not mean they never existed or that
+the current Qwen post-seek failure passed. See
+[ADR-0051](../architecture/decisions/ADR-0051-defer-qwen3-and-prioritize-piper-and-chatterbox.md).
+The milestone descriptions below retain their historical implementation/evidence
+status; this priority does not reopen or rewrite completed plans.
+
 VoxLeaf is pre-alpha. Milestones 1 through 10.2, M008.1, and M009.1 are
 complete. M010 records the final support/recovery decision. Privacy-safe host
 detection, immutable measured matching, bounded preference and compatibility

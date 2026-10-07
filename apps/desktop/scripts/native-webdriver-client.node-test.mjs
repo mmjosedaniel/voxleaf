@@ -3,6 +3,9 @@ import { Buffer } from "node:buffer";
 import { once } from "node:events";
 import { createServer } from "node:http";
 import test from "node:test";
+import { JSDOM } from "jsdom";
+
+import { selectAdaptiveTtsAlternateProfile } from "./adaptive-tts-profile-selection.mjs";
 
 import {
   runWebDriverElementInteractionWithRetry,
@@ -426,4 +429,152 @@ test("reports only fixed content-safe native smoke invariant codes", () => {
       error.message === "Unknown native smoke invariant." &&
       nativeSmokeInvariantFailureCode(error) === undefined,
   );
+});
+
+function alternateProfileFixture(
+  t,
+  { disabled = false, active = "requested" } = {},
+) {
+  const dom = new JSDOM(
+    `<div class="hardware-compatibility" data-compatibility-profile="${active}"></div>
+     <fieldset ${disabled ? "disabled" : ""}>
+       <input type="radio" name="hardware-profile" value="requested">
+       <input type="radio" name="hardware-profile" value="alternate">
+       <input type="radio" name="hardware-profile" value="other">
+     </fieldset>`,
+    { runScripts: "outside-only" },
+  );
+  t.after(() => dom.window.close());
+  const owner = dom.window.document.querySelector(".hardware-compatibility");
+  const input = dom.window.document.querySelector('[value="alternate"]');
+  const fieldset = dom.window.document.querySelector("fieldset");
+  const clicks = [];
+  for (const candidate of dom.window.document.querySelectorAll("input")) {
+    candidate.addEventListener("click", () => clicks.push(candidate.value));
+  }
+  const driver = {
+    async execute(script) {
+      return new dom.window.Function(script).call(dom.window);
+    },
+  };
+  const run = (waitForCondition, now = () => 0) =>
+    selectAdaptiveTtsAlternateProfile({
+      driver,
+      profileId: "requested",
+      waitForCondition,
+      assert: (condition, message) => {
+        if (!condition) throw new Error(message);
+      },
+      timeoutMs: 90_000,
+      now,
+    });
+  return { owner, input, fieldset, clicks, driver, run };
+}
+
+test("alternate selection waits for inherited enablement then one click and activation", async (t) => {
+  const f = alternateProfileFixture(t, { disabled: true });
+  let release;
+  let entered;
+  const waiting = new Promise((resolve) => {
+    entered = resolve;
+  });
+  const ready = new Promise((resolve) => {
+    release = resolve;
+  });
+  let clock = 0;
+  const budgets = [];
+  const pending = f.run(
+    async (driver, script, budget) => {
+      budgets.push(budget);
+      if (budgets.length === 1) {
+        assert.equal(f.input.disabled, false);
+        assert.equal(await driver.execute(script), false);
+        entered();
+        await ready;
+        assert.equal(await driver.execute(script), true);
+      } else {
+        assert.deepEqual(f.clicks, ["alternate"]);
+        assert.equal(await driver.execute(script), false);
+        f.owner.setAttribute("data-compatibility-profile", "alternate");
+        assert.equal(await driver.execute(script), true);
+      }
+    },
+    () => clock,
+  );
+  await waiting;
+  assert.deepEqual(f.clicks, []);
+  f.fieldset.disabled = false;
+  clock = 30_000;
+  release();
+  await pending;
+  assert.deepEqual(budgets, [90_000, 60_000]);
+  assert.deepEqual(f.clicks, ["alternate"]);
+});
+
+test("already-active alternate does not wait or click", async (t) => {
+  const f = alternateProfileFixture(t, { active: "alternate", disabled: true });
+  const result = await f.run(() => assert.fail("unexpected wait"));
+  assert.equal(result.changed, false);
+  assert.equal(result.profileId, "alternate");
+  assert.deepEqual(f.clicks, []);
+});
+
+test("missing alternate retains the fixed assertion and performs no wait or click", async (t) => {
+  const f = alternateProfileFixture(t);
+  f.input.remove();
+  f.fieldset.querySelector('[value="other"]').remove();
+  await assert.rejects(
+    f.run(() => assert.fail("unexpected wait")),
+    {
+      message: "Native synchronized narration proof failed.",
+    },
+  );
+  assert.deepEqual(f.clicks, []);
+});
+
+test("enablement rejected or lost before the click stops without retry", async (t) => {
+  for (const rejected of [false, true]) {
+    const f = alternateProfileFixture(t);
+    const error = new WebDriverClientError("webdriver-condition-timeout");
+    let waits = 0;
+    await assert.rejects(
+      f.run(async (driver, script) => {
+        waits += 1;
+        if (rejected) throw error;
+        assert.equal(await driver.execute(script), true);
+        f.fieldset.disabled = true;
+      }),
+      (failure) =>
+        rejected
+          ? failure === error
+          : failure.message === "Native synchronized narration proof failed.",
+    );
+    assert.equal(waits, 1);
+    assert.deepEqual(f.clicks, []);
+  }
+});
+
+test("activation rejection preserves one click and cannot renew the shared budget", async (t) => {
+  const f = alternateProfileFixture(t);
+  const error = new WebDriverClientError("webdriver-condition-timeout");
+  let clock = 0;
+  const budgets = [];
+  await assert.rejects(
+    f.run(
+      async (driver, script, budget) => {
+        budgets.push(budget);
+        if (budgets.length === 1) {
+          assert.equal(await driver.execute(script), true);
+          clock = 90_000;
+        } else {
+          assert.equal(await driver.execute(script), false);
+          throw error;
+        }
+      },
+      () => clock,
+    ),
+    (failure) => failure === error,
+  );
+  assert.deepEqual(budgets, [90_000, 0]);
+  assert.deepEqual(f.clicks, ["alternate"]);
 });
